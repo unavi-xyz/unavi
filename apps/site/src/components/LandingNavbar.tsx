@@ -17,7 +17,13 @@ import MenuIcon from "@mui/icons-material/Menu";
 import DiscordIcon from "./DiscordIcon";
 import MediumIcon from "./MediumIcon";
 
-import { DISCORD_URL, TWITTER_URL, MEDIUM_URL, GITHUB_URL } from "../constants";
+import {
+  DISCORD_URL,
+  TWITTER_URL,
+  MEDIUM_URL,
+  GITHUB_URL,
+  DOCS_URL,
+} from "../constants";
 import { useWindowDimensions } from "../hooks";
 
 export default function WelcomeNavbar() {
@@ -93,11 +99,15 @@ export default function WelcomeNavbar() {
                 onKeyDown={toggleDrawer(false)}
               >
                 <List>
-                  <ListItem button>Log In</ListItem>
+                  <ListItem button>
+                    <Link href="/home/login">Log In</Link>
+                  </ListItem>
                 </List>
                 <Divider />
                 <List>
-                  <ListItem button>Docs</ListItem>
+                  <ListItem button href={DOCS_URL} target="_blank">
+                    Docs
+                  </ListItem>
                 </List>
               </Box>
             </Drawer>
@@ -105,7 +115,7 @@ export default function WelcomeNavbar() {
         ) : (
           <Grid item xs container justifyContent="flex-end" columnSpacing={1}>
             <Grid item style={{ paddingRight: "8px" }}>
-              <Button href={""} target="_blank">
+              <Button href={DOCS_URL} target="_blank">
                 Docs
               </Button>
             </Grid>

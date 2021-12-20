@@ -6,6 +6,7 @@ function getWindowDimensions() {
     width,
     height,
     isMobile: width < 600,
+    isXs: width < 900,
   };
 }
 
@@ -13,7 +14,8 @@ export function useWindowDimensions() {
   const [windowDimensions, setWindowDimensions] = useState({
     width: 1920,
     height: 1080,
-    isMobile: false,
+    isMobile: true,
+    isXs: true,
   });
 
   function handleResize() {
@@ -21,6 +23,7 @@ export function useWindowDimensions() {
   }
 
   useEffect(() => {
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);

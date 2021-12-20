@@ -2,23 +2,23 @@ import Link from "next/link";
 import Image from "next/image";
 import { Grid, Button, Typography, Link as MuiLink } from "@mui/material";
 
-import WelcomeNavbar from "../src/components/WelcomeNavbar";
+import LandingNavbar from "../src/components/LandingNavbar";
 import { GITHUB_URL, DISCORD_URL } from "../src/constants";
 import { useWindowDimensions } from "../src/hooks";
 
 import awooga from "../public/awooga.jpg";
 
-export default function Welcome() {
+export default function Landing() {
   return (
     <div>
-      <WelcomeNavbar />
+      <LandingNavbar />
       <Body />
     </div>
   );
 }
 
 function Body() {
-  const { isMobile } = useWindowDimensions();
+  const { isXs } = useWindowDimensions();
 
   return (
     <Grid container direction="column">
@@ -55,7 +55,7 @@ function Body() {
             </Grid>
             <Grid item>
               <Typography variant="h4" style={{ color: "white" }}>
-                A decentralized VR social platform owned by its users
+                An open source, decentralized VR social platform
               </Typography>
             </Grid>
             <Grid item>
@@ -87,27 +87,50 @@ function Body() {
           <Grid item container direction="column" rowSpacing={2}>
             <Grid item>
               <Typography variant="h6" color="primary">
-                The app is entirely client side, in the browser.
-              </Typography>
-            </Grid>
-            <Grid item>
-              <Typography variant="h6" color="primary">
-                All data is stored in a decentralized database using{" "}
+                The Wired is built on top of{" "}
                 <MuiLink
-                  href="https://github.com/amark/gun#readme"
+                  href="https://matrix.org/docs/guides/introduction"
                   target="_blank"
                   color="secondary"
                 >
-                  GunDB
+                  Matrix
                 </MuiLink>
-                . Everyone playing the game becomes a node in the network,
-                collectively forming a database without reliance on a server.
+                , an open standard for interoperable and decentralized
+                communication.
               </Typography>
             </Grid>
             <Grid item>
               <Typography variant="h6" color="primary">
-                This means there is no single source of truth - no company that
-                decides what is and isn{"'"}t allowed.
+                Matrix uses a federated network architecture. Each user chooses
+                a homeserver to log in to. These servers then communicate with
+                each other, forming a decentralized network with no single point
+                of control.
+              </Typography>
+            </Grid>
+          </Grid>
+
+          <Grid item style={{ marginTop: "32px" }}>
+            <Typography variant="h3">🤳 Interoperable</Typography>
+          </Grid>
+          <Grid item container direction="column" rowSpacing={2}>
+            <Grid item>
+              <Typography variant="h6" color="primary">
+                With the interoperability of Matrix, you have a persistant
+                identity across different apps.
+              </Typography>
+            </Grid>
+            <Grid item>
+              <Typography variant="h6" color="primary">
+                For example, you can friend someone in The Wired, then open a
+                chat app later (such as{" "}
+                <MuiLink
+                  href="https://element.io/personal"
+                  target="_blank"
+                  color="secondary"
+                >
+                  Element
+                </MuiLink>
+                ) and message them. They both use the same Matrix account.
               </Typography>
             </Grid>
           </Grid>
@@ -115,15 +138,17 @@ function Body() {
           <Grid item style={{ marginTop: "32px" }}>
             <Typography variant="h3">📂 Open Source</Typography>
           </Grid>
-          <Grid item>
-            <Typography variant="h6" color="primary">
-              All code is{" "}
-              <MuiLink href={GITHUB_URL} target="_blank" color="secondary">
-                open source
-              </MuiLink>
-              . The repository is open for contributions, or you can fork it and
-              build your own client.
-            </Typography>
+          <Grid item container direction="column" rowSpacing={2}>
+            <Grid item>
+              <Typography variant="h6" color="primary">
+                All code is{" "}
+                <MuiLink href={GITHUB_URL} target="_blank" color="secondary">
+                  open source
+                </MuiLink>
+                . The repository is open for contributions, or you can fork it
+                and build your own client.
+              </Typography>
+            </Grid>
           </Grid>
 
           <Grid item style={{ marginTop: "32px" }}>
@@ -142,16 +167,15 @@ function Body() {
         </Grid>
 
         <Grid item xs={12} md={6} style={{ paddingLeft: "24px" }}>
-          {!isMobile && (
-            <div
-              style={{
-                border: "solid grey 2px",
-                width: "100%",
-              }}
-            >
-              <Image src={awooga} alt="" />
-            </div>
-          )}
+          <div
+            style={{
+              border: "solid grey 2px",
+              lineHeight: "0px",
+              marginTop: isXs ? "32px" : "0px",
+            }}
+          >
+            <Image src={awooga} alt="anime girls" />
+          </div>
         </Grid>
       </Grid>
 

@@ -1,4 +1,4 @@
-# Turborepo starter
+# The Wired Turborepo
 
 ## What's inside?
 
@@ -6,10 +6,11 @@ This turborepo uses [Yarn](https://yarnpkg.com/) v3 as a package manager. It inc
 
 ### Apps and Packages
 
-- `docs`: a [Next.js](https://nextjs.org) app
-- `web`: another [Next.js](https://nextjs.org) app
-- `ui`: a stub React component library shared by both `web` and `docs` applications
-- `config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
+- `client`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
+- `editor`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
+- `site`: a [Next.js](https://nextjs.org) app
+- `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components shared by the `client` and `editor`
+- `config`: `eslint` configurations
 - `tsconfig`: `tsconfig.json`s used throughout the monorepo
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).

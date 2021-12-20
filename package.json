@@ -1,5 +1,5 @@
 {
-  "name": "turborepo-basic-shared",
+  "name": "web",
   "version": "0.0.0",
   "private": true,
   "workspaces": [

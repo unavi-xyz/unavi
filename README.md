@@ -4,13 +4,16 @@
 
 This turborepo uses [Yarn](https://yarnpkg.com/) v3 as a package manager. It includes the following packages/apps:
 
-### Apps and Packages
+### Apps
 
 - `client`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
 - `editor`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
 - `site`: a [Next.js](https://nextjs.org) app
+
+### Packages
+
 - `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components shared by the `client` and `editor`
-- `avatar`: a [Three.js](https://github.com/pmndrs/react-three-fiber) avatar library
+- `avatars`: a [Three.js](https://github.com/pmndrs/react-three-fiber) avatar library
 - `config`: `eslint` configurations
 - `tsconfig`: `tsconfig.json`s used throughout the monorepo
 
@@ -28,7 +31,7 @@ This turborepo has some additional tools already setup for you:
 
 To build all apps and packages, run the following command:
 
-```
+```bash
 yarn run build
 ```
 
@@ -36,7 +39,7 @@ yarn run build
 
 To develop all apps and packages, run the following command:
 
-```
+```bash
 yarn run dev
 ```
 
@@ -46,7 +49,7 @@ Turborepo can use a technique known as [Remote Caching (Beta)](https://turborepo
 
 By default, Turborepo will cache locally. To enable Remote Caching (Beta) you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup), then enter the following commands:
 
-```
+```bash
 npx turbo login
 ```
 
@@ -54,7 +57,7 @@ This will authenticate the Turborepo CLI with your [Vercel account](https://verc
 
 Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your turborepo:
 
-```
+```bash
 npx turbo link
 ```
 

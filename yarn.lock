@@ -6032,15 +6032,6 @@ turbo@latest:
   languageName: node
   linkType: hard
 
-"turborepo-basic-shared@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "turborepo-basic-shared@workspace:."
-  dependencies:
-    prettier: ^2.5.1
-    turbo: latest
-  languageName: unknown
-  linkType: soft
-
 "tweetnacl@npm:^0.14.3, tweetnacl@npm:~0.14.0":
   version: 0.14.5
   resolution: "tweetnacl@npm:0.14.5"
@@ -6237,6 +6228,15 @@ turbo@latest:
   checksum: 54f577fe311ae6130b43c3202ddc5c66ea8cdc5e0569b6e1dbccf5c0f5f4f8d4d00b7b97f6ae6d53e9361766bf0dc4e6dc7b30e57392948af9795217f6d9d7a7
   languageName: node
   linkType: hard
+
+"web@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "web@workspace:."
+  dependencies:
+    prettier: ^2.5.1
+    turbo: latest
+  languageName: unknown
+  linkType: soft
 
 "webgl-constants@npm:^1.1.1":
   version: 1.1.1

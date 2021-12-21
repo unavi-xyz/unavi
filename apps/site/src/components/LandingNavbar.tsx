@@ -58,6 +58,14 @@ export default function WelcomeNavbar() {
 
         <Grid item xs container justifyContent="flex-end" columnSpacing={1}>
           <Grid item>
+            <Button
+              href="https://the-wired.gitbook.io/the-wired/"
+              target="_blank"
+            >
+              Docs
+            </Button>
+          </Grid>
+          <Grid item>
             <Link href="/home/login" passHref>
               <Button variant="contained">Login</Button>
             </Link>

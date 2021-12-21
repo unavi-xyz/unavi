@@ -59,13 +59,15 @@ function Body() {
               </Typography>
             </Grid>
             <Grid item>
-              <Button
-                variant="outlined"
-                color="secondary"
-                style={{ margin: "auto", fontSize: "2ch" }}
-              >
-                <Link href="/home/login">Join Now</Link>
-              </Button>
+              <Link href="/home/login" passHref>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  style={{ margin: "auto", fontSize: "2ch" }}
+                >
+                  Join Now
+                </Button>
+              </Link>
             </Grid>
           </Grid>
 
@@ -107,6 +109,12 @@ function Body() {
                 of control.
               </Typography>
             </Grid>
+            <Grid item>
+              <Typography variant="h6" color="primary">
+                Importantly, anyone can host their own server and join the
+                network.
+              </Typography>
+            </Grid>
           </Grid>
 
           <Grid item style={{ marginTop: "32px" }}>
@@ -130,7 +138,8 @@ function Body() {
                 >
                   Element
                 </MuiLink>
-                ) and message them. They both use the same Matrix account.
+                ) and message them. They both use the same Matrix account, with
+                the same friends list.
               </Typography>
             </Grid>
           </Grid>

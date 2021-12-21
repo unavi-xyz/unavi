@@ -18,6 +18,10 @@ a {
   padding-right: 5vw;
 }
 
+.underNavbar {
+  padding-top: 4vh;
+}
+
 .arrows path {
   stroke: #f85f73;
   fill: transparent;

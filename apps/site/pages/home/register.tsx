@@ -16,10 +16,10 @@ import { useRouter } from "next/router";
 
 import { MatrixContext } from "../../src/matrix/MatrixProvider";
 
-export default function Login() {
+export default function Register() {
   const router = useRouter();
 
-  const { login } = useContext(MatrixContext);
+  const { register } = useContext(MatrixContext);
 
   const [homeserver, setHomeserver] = useState("matrix.org");
   const [username, setUsername] = useState("");
@@ -31,8 +31,8 @@ export default function Login() {
     setOpenError(false);
   }
 
-  async function handleLogin() {
-    const err = await login(homeserver, username, password);
+  async function handleRegister() {
+    const err = await register(homeserver, username, password);
 
     if (!err) {
       router.push("/home");
@@ -55,7 +55,7 @@ export default function Login() {
         rowSpacing={4}
       >
         <Grid item>
-          <Typography variant="h2">Login</Typography>
+          <Typography variant="h2">Create Account</Typography>
         </Grid>
 
         <Grid item container direction="column" rowSpacing={2}>
@@ -103,20 +103,20 @@ export default function Login() {
         <Grid item>
           <Button
             variant="contained"
-            onClick={handleLogin}
+            onClick={handleRegister}
             style={{ width: "100%" }}
           >
-            Log In
+            Create Account
           </Button>
         </Grid>
 
         <Grid item xs container alignItems="baseline" columnSpacing={0.5}>
           <Grid item>
-            <Typography variant="body2">New?</Typography>
+            <Typography variant="body2">Already have an account?</Typography>
           </Grid>
           <Grid item>
             <Typography variant="body2" className="link" color="secondary">
-              <Link href="/home/register">Create account</Link>
+              <Link href="/home/login">Log in</Link>
             </Typography>
           </Grid>
         </Grid>

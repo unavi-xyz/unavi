@@ -2,7 +2,7 @@ import { Grid, Typography } from "@mui/material";
 
 import HomeLayout from "../../src/layouts/HomeLayout";
 
-export default function Home() {
+export default function Avatars() {
   return (
     <Grid
       className="container underNavbar"
@@ -11,10 +11,10 @@ export default function Home() {
       rowSpacing={4}
     >
       <Grid item container>
-        <Typography variant="h2">🏠 Home</Typography>
+        <Typography variant="h2">💃 Avatars</Typography>
       </Grid>
     </Grid>
   );
 }
 
-Home.Layout = HomeLayout;
+Avatars.Layout = HomeLayout;

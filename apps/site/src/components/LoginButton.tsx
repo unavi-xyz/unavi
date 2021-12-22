@@ -10,9 +10,11 @@ export default function LoginButton() {
   return (
     <div>
       {loggedIn ? (
-        <Button variant="outlined" onClick={logout}>
-          Logout
-        </Button>
+        <Link href="/home/login" passHref>
+          <Button variant="outlined" onClick={logout}>
+            Logout
+          </Button>
+        </Link>
       ) : (
         <Link href="/home/login" passHref>
           <Button variant="contained">Login</Button>

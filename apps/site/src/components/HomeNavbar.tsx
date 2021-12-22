@@ -20,7 +20,7 @@ import LoginButton from "./LoginButton";
 export default function HomeNavbar() {
   const { isMobile } = useWindowDimensions();
 
-  const { loggedIn } = useContext(MatrixContext);
+  const { loggedIn, userId } = useContext(MatrixContext);
 
   const [open, setOpen] = useState(false);
 
@@ -100,7 +100,7 @@ export default function HomeNavbar() {
         ) : (
           <Grid
             item
-            xs={10}
+            xs={7}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -144,8 +144,8 @@ export default function HomeNavbar() {
         >
           <Grid item>
             {loggedIn && (
-              <Link href={`/home/user/id`} passHref>
-                <a className="link">user</a>
+              <Link href={`/home/user/${userId}`} passHref>
+                <a className="link">{userId}</a>
               </Link>
             )}
           </Grid>

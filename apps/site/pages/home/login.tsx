@@ -61,7 +61,7 @@ export default function Login() {
         <Grid item container direction="column" rowSpacing={2}>
           <Grid item>
             <TextField
-              label="Home Server"
+              label="Homeserver"
               style={{ width: "100%" }}
               value={homeserver}
               onChange={(e) => setHomeserver(e.target.value)}

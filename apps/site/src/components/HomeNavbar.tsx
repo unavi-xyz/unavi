@@ -13,6 +13,7 @@ import {
 import { Box } from "@mui/system";
 import MenuIcon from "@mui/icons-material/Menu";
 
+import useProfile from "../matrix/useProfile";
 import { MatrixContext } from "../matrix/MatrixProvider";
 import { useWindowDimensions } from "../hooks";
 import LoginButton from "./LoginButton";
@@ -20,7 +21,8 @@ import LoginButton from "./LoginButton";
 export default function HomeNavbar() {
   const { isMobile } = useWindowDimensions();
 
-  const { loggedIn, userId } = useContext(MatrixContext);
+  const { loggedIn, userId, client } = useContext(MatrixContext);
+  const profile = useProfile(client, userId);
 
   const [open, setOpen] = useState(false);
 
@@ -59,7 +61,7 @@ export default function HomeNavbar() {
             <IconButton onClick={toggleDrawer(true)}>
               <MenuIcon color="primary" />
             </IconButton>
-            <Drawer anchor={"left"} open={open} onClose={toggleDrawer(false)}>
+            <Drawer anchor="left" open={open} onClose={toggleDrawer(false)}>
               <Box
                 sx={{
                   width: 250,
@@ -78,6 +80,11 @@ export default function HomeNavbar() {
                     <ListItem button>🌏 Worlds</ListItem>
                   </List>
                 </Link>
+                <Link href="/home/rooms" passHref>
+                  <List>
+                    <ListItem button>🚪 Rooms</ListItem>
+                  </List>
+                </Link>
                 <Link href="/home/friends" passHref>
                   <List>
                     <ListItem button>🤝 Friends</ListItem>
@@ -89,9 +96,11 @@ export default function HomeNavbar() {
                   </List>
                 </Link>
                 <Divider />
-                <Link href="/home/editor" passHref>
+                <Link href="/home/avatars" passHref>
                   <List>
-                    <ListItem button>🚧 Editor</ListItem>
+                    <ListItem button>
+                      <LoginButton />
+                    </ListItem>
                   </List>
                 </Link>
               </Box>
@@ -100,7 +109,7 @@ export default function HomeNavbar() {
         ) : (
           <Grid
             item
-            xs={7}
+            xs={8}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -117,6 +126,11 @@ export default function HomeNavbar() {
               </Link>
             </Grid>
             <Grid item>
+              <Link href="/home/rooms" passHref>
+                <Button>🚪 Rooms</Button>
+              </Link>
+            </Grid>
+            <Grid item>
               <Link href="/home/friends" passHref>
                 <Button>🤝 Friends</Button>
               </Link>
@@ -124,11 +138,6 @@ export default function HomeNavbar() {
             <Grid item>
               <Link href="/home/avatars" passHref>
                 <Button>💃 Avatars</Button>
-              </Link>
-            </Grid>
-            <Grid item>
-              <Link href="/home/editor" passHref>
-                <Button>🚧 Editor</Button>
               </Link>
             </Grid>
           </Grid>
@@ -142,16 +151,18 @@ export default function HomeNavbar() {
           justifyContent="flex-end"
           columnSpacing={2}
         >
-          <Grid item>
-            {loggedIn && (
+          {loggedIn && (
+            <Grid item>
               <Link href={`/home/user/${userId}`} passHref>
-                <a className="link">{userId}</a>
+                <a className="link">{profile?.displayname ?? userId}</a>
               </Link>
-            )}
-          </Grid>
-          <Grid item>
-            <LoginButton />
-          </Grid>
+            </Grid>
+          )}
+          {(!isMobile || !loggedIn) && (
+            <Grid item>
+              <LoginButton />
+            </Grid>
+          )}
         </Grid>
       </Grid>
     </Paper>

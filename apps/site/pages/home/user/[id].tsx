@@ -2,10 +2,10 @@ import React, { useContext } from "react";
 import { useRouter } from "next/router";
 import { Grid, Typography } from "@mui/material";
 
-import HomeLayout from "../../../../src/layouts/HomeLayout";
-import { MatrixContext } from "../../../../src/matrix/MatrixProvider";
-import { useIdenticon } from "../../../../src/hooks";
-import useProfile from "../../../../src/matrix/useProfile";
+import HomeLayout from "../../../src/layouts/HomeLayout";
+import { MatrixContext } from "../../../src/matrix/MatrixProvider";
+import { useIdenticon } from "../../../src/hooks";
+import useProfile from "../../../src/matrix/useProfile";
 
 export default function Id() {
   const router = useRouter();
@@ -48,6 +48,7 @@ export default function Id() {
       <Grid item>
         <img
           src={profile.avatar_url ?? identicon}
+          alt="profile picture"
           style={{
             height: "20ch",
             width: "20ch",

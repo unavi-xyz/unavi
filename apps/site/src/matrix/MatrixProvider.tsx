@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from "react";
-import sdk, { MatrixClient } from "matrix-js-sdk";
+import sdk, { MatrixClient, ICreateClientOpts } from "matrix-js-sdk";
 
 const withHttps = (url: string) =>
   !/^https?:\/\//i.test(url) ? `https://${url}` : url;
+
+function initClient(
+  baseUrl: string,
+  accessToken: string,
+  deviceId: string,
+  userId: string
+) {
+  const opts: ICreateClientOpts = { baseUrl, accessToken, deviceId, userId };
+  const client = sdk.createClient(opts);
+  return client;
+}
 
 export const MatrixContext = React.createContext({
   loggedIn: false,
@@ -22,21 +33,22 @@ export default function MatrixProvider({ children }) {
 
   async function login(homeserver: string, username: string, password: string) {
     try {
-      const tmpClient = sdk.createClient(withHttps(homeserver));
+      const baseUrl = withHttps(homeserver);
+      const tmpClient = sdk.createClient(baseUrl);
       const { user_id, device_id, access_token } =
         await tmpClient.loginWithPassword(username, password);
 
       localStorage.setItem(
         "matrix-auth-store",
         JSON.stringify({
-          homeserver: withHttps(homeserver),
+          baseUrl,
           user_id,
           device_id,
           access_token,
         })
       );
 
-      setClient(tmpClient);
+      setClient(initClient(baseUrl, access_token, device_id, user_id));
       setUserId(user_id);
       setLoggedIn(true);
 
@@ -51,38 +63,7 @@ export default function MatrixProvider({ children }) {
     homeserver: string,
     username: string,
     password: string
-  ) {
-    try {
-      const tmpClient = sdk.createClient(withHttps(homeserver));
-      const { user_id, device_id, access_token } = await tmpClient.register(
-        username,
-        password,
-        null,
-        {
-          type: "m.login.dummy",
-        }
-      );
-
-      localStorage.setItem(
-        "matrix-auth-store",
-        JSON.stringify({
-          homeserver: withHttps(homeserver),
-          user_id,
-          device_id,
-          access_token,
-        })
-      );
-
-      setClient(tmpClient);
-      setUserId(user_id);
-      setLoggedIn(true);
-
-      return;
-    } catch (e) {
-      logout();
-      return e;
-    }
-  }
+  ) {}
 
   function logout() {
     localStorage.removeItem("matrix-auth-store");
@@ -95,12 +76,19 @@ export default function MatrixProvider({ children }) {
     const store = JSON.parse(localStorage.getItem("matrix-auth-store"));
     if (
       store &&
-      store.homeserver &&
-      store.user_id &&
+      store.baseUrl &&
+      store.access_token &&
       store.device_id &&
-      store.access_token
+      store.user_id
     ) {
-      setClient(sdk.createClient(String(store.homeserver)));
+      setClient(
+        initClient(
+          store.baseUrl,
+          store.access_token,
+          store.device_id,
+          store.user_id
+        )
+      );
       setUserId(String(store.user_id));
       setLoggedIn(true);
     } else {

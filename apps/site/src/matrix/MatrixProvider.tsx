@@ -23,12 +23,12 @@ interface ContextInterface {
     homeserver: string,
     user: string,
     password: string
-  ) => Promise<boolean>;
+  ) => Promise<undefined | Error>;
   register: (
     homeserver: string,
     user: string,
     password: string
-  ) => Promise<boolean>;
+  ) => Promise<undefined | Error>;
   logout: () => void;
 }
 

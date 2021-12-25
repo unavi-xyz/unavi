@@ -9,7 +9,7 @@ import { useProfile, useMatrixContent } from "../../../src/matrix/hooks";
 
 export default function Id() {
   const router = useRouter();
-  const { id } = router.query;
+  const id = `${router.query.id}`;
 
   const { client } = useContext(MatrixContext);
 

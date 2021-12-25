@@ -15,21 +15,38 @@ function initClient(
   return client;
 }
 
-export const MatrixContext = React.createContext({
+interface ContextInterface {
+  loggedIn: boolean;
+  userId: null | string;
+  client: null | MatrixClient;
+  login: (
+    homeserver: string,
+    user: string,
+    password: string
+  ) => Promise<boolean>;
+  register: (
+    homeserver: string,
+    user: string,
+    password: string
+  ) => Promise<boolean>;
+  logout: () => void;
+}
+
+const defaultContext: ContextInterface = {
   loggedIn: false,
-  userId: "",
+  userId: null,
   client: null,
-  login: async (homeserver: string, user: string, password: string) =>
-    undefined,
-  register: async (homeserver: string, user: string, password: string) =>
-    undefined,
-  logout: () => {},
-});
+  login: null,
+  register: null,
+  logout: null,
+};
+
+export const MatrixContext = React.createContext(defaultContext);
 
 export default function MatrixProvider({ children }) {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [userId, setUserId] = useState("");
-  const [client, setClient] = useState<null | MatrixClient>(null);
+  const [loggedIn, setLoggedIn] = useState(defaultContext.loggedIn);
+  const [userId, setUserId] = useState(defaultContext.userId);
+  const [client, setClient] = useState(defaultContext.client);
 
   async function login(homeserver: string, username: string, password: string) {
     try {
@@ -63,7 +80,9 @@ export default function MatrixProvider({ children }) {
     homeserver: string,
     username: string,
     password: string
-  ) {}
+  ) {
+    return Promise.reject();
+  }
 
   function logout() {
     localStorage.removeItem("matrix-auth-store");

@@ -5,7 +5,7 @@ import { Grid, Typography } from "@mui/material";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import { MatrixContext } from "../../../src/matrix/MatrixProvider";
 import { useIdenticon } from "../../../src/hooks";
-import useProfile from "../../../src/matrix/useProfile";
+import { useProfile, useMatrixContent } from "../../../src/matrix/hooks";
 
 export default function Id() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export default function Id() {
 
   const identicon = useIdenticon(id);
   const profile = useProfile(client, id);
+  const picture = useMatrixContent(profile?.avatar_url);
 
   if (!profile) {
     return (
@@ -47,12 +48,12 @@ export default function Id() {
 
       <Grid item>
         <img
-          src={profile.avatar_url ?? identicon}
+          src={picture ?? identicon}
           alt="profile picture"
           style={{
             height: "20ch",
             width: "20ch",
-            border: "2px solid black",
+            border: "4px solid black",
           }}
         />
       </Grid>

@@ -13,7 +13,7 @@ import {
 import { Box } from "@mui/system";
 import MenuIcon from "@mui/icons-material/Menu";
 
-import useProfile from "../matrix/useProfile";
+import { useProfile } from "../matrix/hooks";
 import { MatrixContext } from "../matrix/MatrixProvider";
 import { useWindowDimensions } from "../hooks";
 import LoginButton from "./LoginButton";

@@ -6,21 +6,21 @@ export const ROOM_TOPIC = "wired-room";
 export const WORLD_TOPIC = "wired-world";
 
 //create
-export async function createRoom(client: MatrixClient, name: string) {
+export async function createRoom(
+  client: MatrixClient,
+  worldId: string,
+  name: string
+) {
   const room = await client.createRoom({
     name,
-    topic: ROOM_TOPIC,
+    topic: `${ROOM_TOPIC}#${worldId}`,
     visibility: Visibility.Public,
   });
 
   return room;
 }
 
-export async function createWorld(
-  client: MatrixClient,
-  name: string,
-  scene: string
-) {
+export async function createWorld(client: MatrixClient, name: string) {
   const room = await client.createRoom({
     name,
     topic: WORLD_TOPIC,
@@ -39,7 +39,15 @@ export async function getWorlds(client: MatrixClient) {
   return rooms.chunk;
 }
 
-export async function getRooms(client: MatrixClient) {
+export async function getWorldInstances(client: MatrixClient, worldId: string) {
+  const options: IRoomDirectoryOptions = {
+    filter: { generic_search_term: `${ROOM_TOPIC}#${worldId}` },
+  };
+  const rooms = await client.publicRooms(options);
+  return rooms.chunk;
+}
+
+export async function getPublicRooms(client: MatrixClient) {
   const options: IRoomDirectoryOptions = {
     filter: { generic_search_term: ROOM_TOPIC },
   };

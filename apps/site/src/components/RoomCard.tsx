@@ -1,9 +1,7 @@
 import Link from "next/link";
 import {
-  Button,
   Card,
   CardActionArea,
-  CardActions,
   CardContent,
   CardMedia,
   Grid,

@@ -1,20 +1,28 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { useRouter } from "next/router";
 import { Button, Grid, Input, TextField, Typography } from "@mui/material";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import { MatrixContext } from "../../../src/matrix/MatrixProvider";
-import { createRoom } from "../../../src/matrix/rooms";
+import { createWorld } from "../../../src/matrix/rooms";
 
 export default function New() {
   const router = useRouter();
 
-  const { userId, client } = useContext(MatrixContext);
+  const { client } = useContext(MatrixContext);
+
+  const [name, setName] = useState("");
 
   async function handleCreateWorld() {
-    const { room_id } = await createRoom(client, "Test Room");
-
+    const { room_id } = await createWorld(
+      client,
+      name.length === 0 ? "World" : name
+    );
     router.push(`/home/world/${room_id}`);
+  }
+
+  function handleNameChange(e) {
+    setName(e.target.value);
   }
 
   return (
@@ -39,7 +47,12 @@ export default function New() {
           rowSpacing={1.5}
         >
           <Grid item>
-            <TextField label="World Name" style={{ width: "100%" }} />
+            <TextField
+              label="World Name"
+              value={name}
+              onChange={handleNameChange}
+              style={{ width: "100%" }}
+            />
           </Grid>
 
           <Grid item>

@@ -3,7 +3,7 @@ import { useContext, useEffect, useState } from "react";
 
 import HomeLayout from "../../src/layouts/HomeLayout";
 import { MatrixContext } from "../../src/matrix/MatrixProvider";
-import { getRooms } from "../../src/matrix/rooms";
+import { getPublicRooms } from "../../src/matrix/rooms";
 import RoomCard from "../../src/components/RoomCard";
 
 export default function Rooms() {
@@ -13,7 +13,7 @@ export default function Rooms() {
 
   useEffect(() => {
     if (!client) return;
-    getRooms(client).then((res) => {
+    getPublicRooms(client).then((res) => {
       setRooms(res);
     });
   }, [client]);

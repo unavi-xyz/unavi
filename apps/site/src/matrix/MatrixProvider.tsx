@@ -1,17 +1,39 @@
 import React, { useEffect, useState } from "react";
 import sdk, { MatrixClient, ICreateClientOpts } from "matrix-js-sdk";
 
+const DEFAULT_HOMESERVER = "https://matrix.org";
+
 const withHttps = (url: string) =>
   !/^https?:\/\//i.test(url) ? `https://${url}` : url;
 
-function initClient(
+function waitForSync(client: MatrixClient) {
+  return new Promise<void>((resolve) => {
+    function onSync(state: string) {
+      if (state === "PREPARED") {
+        client.removeListener("sync", onSync);
+        resolve();
+      }
+    }
+    client.on("sync", onSync);
+  });
+}
+
+async function initClient(
   baseUrl: string,
   accessToken: string,
   deviceId: string,
-  userId: string
+  userId: string,
+  guest: boolean = false
 ) {
   const opts: ICreateClientOpts = { baseUrl, accessToken, deviceId, userId };
   const client = sdk.createClient(opts);
+
+  if (guest) client.setGuest(true);
+
+  await client.startClient({});
+
+  await waitForSync(client);
+
   return client;
 }
 
@@ -65,7 +87,14 @@ export default function MatrixProvider({ children }) {
         })
       );
 
-      setClient(initClient(baseUrl, access_token, device_id, user_id));
+      const newClient = await initClient(
+        baseUrl,
+        access_token,
+        device_id,
+        user_id
+      );
+
+      setClient(newClient);
       setUserId(user_id);
       setLoggedIn(true);
 
@@ -74,6 +103,23 @@ export default function MatrixProvider({ children }) {
       logout();
       return e;
     }
+  }
+
+  async function registerGuest() {
+    const tmpClient = sdk.createClient(DEFAULT_HOMESERVER);
+    const { user_id, device_id, access_token } = await tmpClient.registerGuest(
+      {}
+    );
+
+    const newClient = await initClient(
+      DEFAULT_HOMESERVER,
+      access_token,
+      device_id,
+      user_id,
+      true
+    );
+
+    setClient(newClient);
   }
 
   async function register(
@@ -86,8 +132,8 @@ export default function MatrixProvider({ children }) {
 
   function logout() {
     localStorage.removeItem("matrix-auth-store");
-    setClient(null);
-    setUserId("");
+    setClient(defaultContext.client);
+    setUserId(defaultContext.userId);
     setLoggedIn(false);
   }
 
@@ -100,20 +146,25 @@ export default function MatrixProvider({ children }) {
       store.device_id &&
       store.user_id
     ) {
-      setClient(
-        initClient(
-          store.baseUrl,
-          store.access_token,
-          store.device_id,
-          store.user_id
-        )
-      );
-      setUserId(String(store.user_id));
-      setLoggedIn(true);
+      initClient(
+        store.baseUrl,
+        store.access_token,
+        store.device_id,
+        store.user_id
+      ).then((newClient) => {
+        setClient(newClient);
+        setUserId(String(store.user_id));
+        setLoggedIn(true);
+      });
     } else {
       logout();
     }
   }, []);
+
+  useEffect(() => {
+    if (client) return;
+    registerGuest();
+  }, [client]);
 
   return (
     <MatrixContext.Provider

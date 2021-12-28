@@ -9,7 +9,7 @@ import { MatrixContext } from "../../../src/matrix/MatrixProvider";
 import WorldCard from "../../../src/components/WorldCard";
 
 export default function Worlds() {
-  const { client } = useContext(MatrixContext);
+  const { client, loggedIn } = useContext(MatrixContext);
 
   const [worlds, setWorlds] = useState([]);
 
@@ -32,13 +32,15 @@ export default function Worlds() {
           <Typography variant="h2">🌏 Worlds</Typography>
         </Grid>
         <Grid item>
-          <Link href="/home/worlds/new" passHref>
-            <Tooltip title="New world" placement="right">
-              <IconButton>
-                <AddBoxOutlinedIcon />
-              </IconButton>
-            </Tooltip>
-          </Link>
+          {loggedIn && (
+            <Link href="/home/worlds/new" passHref>
+              <Tooltip title="New world" placement="right">
+                <IconButton>
+                  <AddBoxOutlinedIcon />
+                </IconButton>
+              </Tooltip>
+            </Link>
+          )}
         </Grid>
       </Grid>
 

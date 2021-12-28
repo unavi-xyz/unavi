@@ -1,9 +1,6 @@
 import { MatrixClient, IRoomDirectoryOptions } from "matrix-js-sdk";
 import { Visibility } from "matrix-js-sdk/lib/@types/partials";
-
-//use these strings to filter matrix rooms
-export const ROOM_TOPIC = "wired-room";
-export const WORLD_TOPIC = "wired-world";
+import { getRoomTopic, ROOM_TOPIC, WORLD_TOPIC } from "./topics";
 
 //create
 export async function createRoom(
@@ -39,14 +36,6 @@ export async function getWorlds(client: MatrixClient) {
   return rooms.chunk;
 }
 
-export async function getWorldInstances(client: MatrixClient, worldId: string) {
-  const options: IRoomDirectoryOptions = {
-    filter: { generic_search_term: `${ROOM_TOPIC}#${worldId}` },
-  };
-  const rooms = await client.publicRooms(options);
-  return rooms.chunk;
-}
-
 export async function getPublicRooms(client: MatrixClient) {
   const options: IRoomDirectoryOptions = {
     filter: { generic_search_term: ROOM_TOPIC },
@@ -55,7 +44,24 @@ export async function getPublicRooms(client: MatrixClient) {
   return rooms.chunk;
 }
 
-export async function getRoom(client: MatrixClient, roomId: string) {
-  const room = await client.getRoom(roomId);
-  return room;
+export async function getWorldInstances(client: MatrixClient, worldId: string) {
+  const options: IRoomDirectoryOptions = {
+    filter: { generic_search_term: getRoomTopic(worldId) },
+  };
+  const rooms = await client.publicRooms(options);
+  return rooms.chunk;
+}
+
+export async function getRoom(
+  client: MatrixClient,
+  roomId: string,
+  world: boolean = false
+) {
+  const options: IRoomDirectoryOptions = {
+    filter: { generic_search_term: world ? WORLD_TOPIC : ROOM_TOPIC },
+  };
+  const rooms = await client.publicRooms(options);
+
+  const room = rooms.chunk.filter((room) => room.room_id === roomId);
+  return room[0];
 }

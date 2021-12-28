@@ -112,7 +112,7 @@ function Body() {
             <Grid item>
               <Typography variant="h6" color="primary">
                 Importantly, anyone can host their own server and join the
-                network.
+                network, giving you full control over your data.
               </Typography>
             </Grid>
           </Grid>

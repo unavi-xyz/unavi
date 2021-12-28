@@ -1,10 +1,13 @@
-import React, { useContext, useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Typography } from "@mui/material";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import { MatrixContext } from "../../../src/matrix/MatrixProvider";
 import { getRoom } from "../../../src/matrix/rooms";
+import { parseRoomTopic } from "../../../src/matrix/topics";
 
 function getSubdomain(hostname) {
   var regexParse = new RegExp("[a-z-0-9]{2,63}.[a-z.]{2,5}$");
@@ -14,17 +17,19 @@ function getSubdomain(hostname) {
 
 export default function Id() {
   const router = useRouter();
-  const id = `${router.query.id}`;
+  const { id } = router.query;
 
   const { client } = useContext(MatrixContext);
 
   const [roomURL, setRoomURL] = useState("");
+  const [room, setRoom] = useState<null | IPublicRoomsChunkRoom>(null);
+  const [world, setWorld] = useState<null | IPublicRoomsChunkRoom>(null);
 
   useEffect(() => {
     const subdomain = getSubdomain(window.location.hostname);
 
     //in production, direct the user to app.domain.com
-    //in development, direct them to the port the app is on
+    //in development, direct them to localhost
     if (subdomain === "www") {
       setRoomURL(
         `https://${window.location.hostname.replace("www", "app")}?room=${id}`
@@ -35,11 +40,21 @@ export default function Id() {
   }, [id]);
 
   useEffect(() => {
-    if (!client) return;
-    getRoom(client, id).then((res) => {
-      console.log(res);
+    if (!client || !id) return;
+    getRoom(client, `${id}`).then((res) => {
+      setRoom(res);
     });
   }, [client, id]);
+
+  useEffect(() => {
+    if (!client || !room) return;
+
+    const worldId = parseRoomTopic(room.topic);
+
+    getRoom(client, worldId, true).then((res) => {
+      setWorld(res);
+    });
+  }, [client, room]);
 
   return (
     <Grid
@@ -50,8 +65,25 @@ export default function Id() {
     >
       <Grid item>
         <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-          🚪 {id}
+          🚪 {room?.name ?? id}
         </Typography>
+      </Grid>
+
+      <Grid item container columnSpacing={1}>
+        <Grid item>
+          <Typography variant="h6">World:</Typography>
+        </Grid>
+        <Grid item>
+          <Link href={`/home/world/${world?.room_id}`} passHref>
+            <Typography
+              className="link"
+              variant="h6"
+              style={{ wordBreak: "break-word" }}
+            >
+              {world?.name}
+            </Typography>
+          </Link>
+        </Grid>
       </Grid>
 
       <Grid item>

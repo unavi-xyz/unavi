@@ -1,11 +1,9 @@
 import { useMemo, useRef } from "react";
 import { Api } from "@react-three/cannon";
-// import { useXR } from "@react-three/xr";
 import { Camera, MathUtils, Vector3 } from "three";
 
 export const useSpringVelocity = (bodyApi: Api[1], speed: number) => {
   const direction = useRef(new Vector3());
-  // const { isPresenting } = useXR();
   const dummy = useMemo(() => new Vector3(), []);
 
   const updateVelocity = (cam: Camera, velocity: Vector3) => {

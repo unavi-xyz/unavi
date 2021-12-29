@@ -1,43 +1,49 @@
-import * as THREE from "three";
-import { useEffect, useRef } from "react";
-import { useSphere } from "@react-three/cannon";
-import { useFrame, useThree, Vector3 } from "@react-three/fiber";
+import { MutableRefObject, useEffect, useRef } from "react";
+import { Triplet, useSphere } from "@react-three/cannon";
+import { useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
+import { Group, Raycaster, Vector3 } from "three";
 
 import { PHYSICS_GROUPS, VOID_LEVEL } from "../constants";
-import { useSpringVelocity } from "./hooks";
+import { useSpringVelocity } from "./hooks/useSpringVelocity";
 
 import KeyboardMovement from "./controls/KeyboardMovement";
 import Crosshair from "./Crosshair";
-import { Triplet } from "../../../node_modules/@react-three/cannon/dist/hooks";
 
 const PLAYER_HEIGHT = 1.6;
-const PLAYER_SPEED = 2;
+const PLAYER_SPEED = 5;
+const JUMP_STRENGTH = 3;
 const SPHERE_RADIUS = 1;
-const DOWN_VECTOR = new THREE.Vector3(0, -1, 0);
-const HEIGHT_OFFSET = new THREE.Vector3(0, PLAYER_HEIGHT - SPHERE_RADIUS, 0);
+
+const DOWN_VECTOR = new Vector3(0, -1, 0);
+const HEIGHT_OFFSET = new Vector3(0, PLAYER_HEIGHT - SPHERE_RADIUS, 0);
 
 interface Props {
-  paused: boolean;
-  spawn: Vector3;
+  paused?: boolean;
+  spawn?: Vector3;
+  world: MutableRefObject<Group>;
 }
 
-export function Player({ paused = false, spawn = new THREE.Vector3(0, 2, 0) }) {
+export function Player({
+  paused = false,
+  spawn = new Vector3(0, 2, 0),
+  world,
+}: Props) {
   const args: [number] = [SPHERE_RADIUS];
 
-  const ray = useRef();
-  const crosshair = useRef();
-  const jump = useRef();
-  const position = useRef(new THREE.Vector3());
-  const velocity = useRef(new THREE.Vector3());
-  const rotation = useRef(new THREE.Vector3());
+  const downRay = useRef<undefined | Raycaster>();
+  const crosshair = useRef<undefined | Group>();
 
-  const { camera, scene, mouse } = useThree();
+  const jump = useRef(false);
+  const position = useRef(new Vector3());
+  const velocity = useRef(new Vector3());
+
+  const { camera } = useThree();
 
   const [ref, api] = useSphere(() => ({
     args,
     mass: 1,
-    type: "Kinematic",
+    type: "Dynamic",
     position: spawn.toArray(),
     collisionFilterGroup: PHYSICS_GROUPS.PLAYER,
   }));
@@ -50,28 +56,30 @@ export function Player({ paused = false, spawn = new THREE.Vector3(0, 2, 0) }) {
   }, []);
 
   useFrame(() => {
-    // if (position.current.y < VOID_LEVEL) {
-    //   api.position.set(...spawn);
-    // }
-
-    //move hud
-    // crosshair.current.rotation.copy(camera.rotation);
-    // crosshair.current.position
-    //   .copy(camera.position)
-    //   .add(camera.getWorldDirection(rotation.current).multiplyScalar(1));
+    if (position.current.y < VOID_LEVEL) {
+      api.position.copy(spawn);
+    }
 
     //move camera
     camera.position.copy(position.current).add(HEIGHT_OFFSET);
-    // console.log("👨‍🏫", position.current);
+
+    //move hud
+    if (crosshair.current) {
+      crosshair.current.rotation.copy(camera.rotation);
+      crosshair.current.position.copy(camera.position);
+    }
 
     //jumping
-    // ray.current.set(camera.position, DOWN_VECTOR);
-    // const intersects = ray.current.intersectObjects(scene.children);
-    // const distance = intersects[0]?.distance;
+    if (downRay.current && world.current) {
+      downRay.current.set(camera.position, DOWN_VECTOR);
 
-    // if (jump.current && distance < PLAYER_HEIGHT + 0.1) {
-    //   velocity.current.y = JUMP_STRENGTH;
-    // }
+      const intersects = downRay.current.intersectObject(world.current);
+      const distance = intersects[0]?.distance;
+
+      if (jump.current && distance < PLAYER_HEIGHT + 0.1) {
+        velocity.current.y = JUMP_STRENGTH;
+      }
+    }
 
     //apply velocity
     updateVelocity(camera, velocity.current);
@@ -80,18 +88,14 @@ export function Player({ paused = false, spawn = new THREE.Vector3(0, 2, 0) }) {
   return (
     <group>
       <mesh ref={ref} />
+      <raycaster ref={downRay} />
 
       <group ref={crosshair}>
         <Crosshair />
       </group>
 
       <KeyboardMovement paused={paused} direction={direction} jump={jump} />
-      <PointerLockControls
-        addEventListener={undefined}
-        hasEventListener={undefined}
-        removeEventListener={undefined}
-        dispatchEvent={undefined}
-      />
+      <PointerLockControls />
     </group>
   );
 }

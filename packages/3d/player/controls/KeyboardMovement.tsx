@@ -1,4 +1,11 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, MutableRefObject } from "react";
+import { Vector3 } from "three";
+
+interface Props {
+  paused: boolean;
+  direction: MutableRefObject<Vector3>;
+  jump: MutableRefObject<boolean>;
+}
 
 /**
  * KeyboardMovement gives the player a direction to move by taking
@@ -13,9 +20,7 @@ import { useRef, useEffect } from "react";
  * @param props
  * @constructor
  */
-export default function KeyboardMovement(props) {
-  const { paused, direction, jump } = props;
-
+export default function KeyboardMovement({ paused, direction, jump }: Props) {
   const pressedKeys = useRef([false, false, false, false]);
 
   // key events
@@ -26,58 +31,50 @@ export default function KeyboardMovement(props) {
     return [xAxis, yAxis, 0];
   };
 
-  const onKeyDown = (ev) => {
-    if (ev.defaultPrevented) {
+  function onKeyDown(e: KeyboardEvent) {
+    if (e.defaultPrevented) {
       return;
     }
 
     // We don't want to mess with the browser's shortcuts
-    if (ev.ctrlKey || ev.altKey || ev.metaKey) {
+    if (e.ctrlKey || e.altKey || e.metaKey) {
       return;
     }
 
-    updatePressedKeys(ev, true);
+    updatePressedKeys(e, true);
 
     const [x, y, z] = calcDirection();
     direction.current.set(x, y, z);
-  };
+  }
 
-  const onKeyUp = (ev) => {
-    updatePressedKeys(ev, false);
+  function onKeyUp(e: KeyboardEvent) {
+    updatePressedKeys(e, false);
 
     const [x, y, z] = calcDirection();
     direction.current.set(x, y, z);
-  };
+  }
 
-  const updatePressedKeys = (ev, pressedState) => {
-    // We try to use `code` first because that's the layout-independent property.
-    // Then we use `key` because some browsers, notably Internet Explorer and
-    // Edge, support it but not `code`. Then we use `keyCode` to support older
-    // browsers like Safari, older Internet Explorer and older Chrome.
-    switch (ev.code || ev.key || ev.keyCode) {
+  function updatePressedKeys(e: KeyboardEvent, pressedState: boolean) {
+    switch (e.code || e.key) {
       case "KeyW":
       case "ArrowUp":
       case "Numpad8":
-      case 38: // keyCode for arrow up
         pressedKeys.current[0] = pressedState;
         break;
       case "KeyA":
       case "ArrowLeft":
       case "Numpad4":
-      case 37: // keyCode for arrow left
         pressedKeys.current[1] = pressedState;
         break;
       case "KeyS":
       case "ArrowDown":
       case "Numpad5":
       case "Numpad2":
-      case 40: // keyCode for arrow down
         pressedKeys.current[2] = pressedState;
         break;
       case "KeyD":
       case "ArrowRight":
       case "Numpad6":
-      case 39: // keyCode for arrow right
         pressedKeys.current[3] = pressedState;
         break;
       case "Space":
@@ -86,7 +83,7 @@ export default function KeyboardMovement(props) {
       default:
         return;
     }
-  };
+  }
 
   useEffect(() => {
     if (paused) {

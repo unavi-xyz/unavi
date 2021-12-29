@@ -2,7 +2,7 @@
 
 ## What's inside?
 
-This turborepo uses [Yarn](https://yarnpkg.com/) v3 as a package manager. It includes the following packages/apps:
+This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includes the following packages/apps:
 
 ### Apps
 

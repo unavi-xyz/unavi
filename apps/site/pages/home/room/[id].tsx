@@ -33,7 +33,7 @@ export default function Id() {
         `https://${window.location.hostname.replace("www", "app")}?room=${id}`
       );
     } else {
-      setRoomURL(`http://localhost:3000?room=${id}`);
+      setRoomURL(`http://localhost:3001?room=${id}`);
     }
   }, [id]);
 

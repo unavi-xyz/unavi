@@ -12,13 +12,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: creyD/prettier_action@v4.1.1
+        with:
+          prettier_options: --write **/*.{js,jsx,ts,tsx,md}
 
-      - name: Prettify code
-          uses: creyD/prettier_action@v4.1.1
-          with:
-            prettier_options: --write **/*.{js,jsx,ts,tsx,md}
-
-  
   build:
     runs-on: ubuntu-latest
 

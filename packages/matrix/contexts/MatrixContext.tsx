@@ -143,7 +143,7 @@ export function MatrixProvider({ children }: { children: ReactChild }) {
   }
 
   useEffect(() => {
-    const store = JSON.parse(localStorage.getItem("matrix-auth-store") ?? "");
+    const store = JSON.parse(localStorage.getItem("matrix-auth-store") ?? "{}");
     if (
       store &&
       store.baseUrl &&

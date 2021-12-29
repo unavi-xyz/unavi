@@ -11,13 +11,13 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { MatrixContext } from "matrix";
+import { ClientContext } from "matrix";
 import HomeserverDialog from "../../src/components/HomeserverDialog";
 
 export default function Login() {
   const router = useRouter();
 
-  const { login } = useContext(MatrixContext);
+  const { login } = useContext(ClientContext);
 
   const [homeserver, setHomeserver] = useState("matrix.org");
   const [username, setUsername] = useState("");

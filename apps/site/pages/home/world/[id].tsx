@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 import { customAlphabet } from "nanoid";
 
-import { MatrixContext, createRoom, getRoom, getWorldInstances } from "matrix";
+import { ClientContext, createRoom, getRoom, getWorldInstances } from "matrix";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import RoomCard from "../../../src/components/RoomCard";
 
@@ -15,7 +15,7 @@ export default function Id() {
   const router = useRouter();
   const { id } = router.query;
 
-  const { client, loggedIn } = useContext(MatrixContext);
+  const { client, loggedIn } = useContext(ClientContext);
 
   const [world, setWorld] = useState<null | IPublicRoomsChunkRoom>(null);
   const [rooms, setRooms] = useState([]);

@@ -13,14 +13,14 @@ import { Box } from "@mui/system";
 import MenuIcon from "@mui/icons-material/Menu";
 import Link from "next/link";
 
-import { MatrixContext, useProfile } from "matrix";
+import { ClientContext, useProfile } from "matrix";
 import { useWindowDimensions } from "../hooks";
 import LoginButton from "./LoginButton";
 
 export default function HomeNavbar() {
   const { isMobile } = useWindowDimensions();
 
-  const { loggedIn, userId, client } = useContext(MatrixContext);
+  const { loggedIn, userId, client } = useContext(ClientContext);
   const profile = useProfile(client, userId);
 
   const [open, setOpen] = useState(false);

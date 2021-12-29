@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import { MatrixContext, getRoom, parseRoomTopic } from "matrix";
+import { ClientContext, getRoom, parseRoomTopic } from "matrix";
 
 function getSubdomain(hostname) {
   var regexParse = new RegExp("[a-z-0-9]{2,63}.[a-z.]{2,5}$");
@@ -17,7 +17,7 @@ export default function Id() {
   const router = useRouter();
   const { id } = router.query;
 
-  const { client } = useContext(MatrixContext);
+  const { client } = useContext(ClientContext);
 
   const [roomURL, setRoomURL] = useState("");
   const [room, setRoom] = useState<null | IPublicRoomsChunkRoom>(null);

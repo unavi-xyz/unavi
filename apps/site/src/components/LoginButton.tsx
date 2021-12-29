@@ -2,10 +2,10 @@ import { useContext } from "react";
 import { Button } from "@mui/material";
 import Link from "next/link";
 
-import { MatrixContext } from "matrix";
+import { ClientContext } from "matrix";
 
 export default function LoginButton() {
-  const { loggedIn, logout } = useContext(MatrixContext);
+  const { loggedIn, logout } = useContext(ClientContext);
 
   return (
     <div>

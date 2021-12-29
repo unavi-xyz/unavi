@@ -1,12 +1,12 @@
 import { useContext, useEffect, useState } from "react";
 import { Grid, Typography } from "@mui/material";
 
-import { MatrixContext, getPublicRooms } from "matrix";
+import { ClientContext, getPublicRooms } from "matrix";
 import HomeLayout from "../../src/layouts/HomeLayout";
 import RoomCard from "../../src/components/RoomCard";
 
 export default function Rooms() {
-  const { client } = useContext(MatrixContext);
+  const { client } = useContext(ClientContext);
 
   const [rooms, setRooms] = useState([]);
 

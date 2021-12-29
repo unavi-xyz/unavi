@@ -68,9 +68,9 @@ const defaultContext: ContextInterface = {
   logout: null,
 };
 
-export const MatrixContext = React.createContext(defaultContext);
+export const ClientContext = React.createContext(defaultContext);
 
-export function MatrixProvider({ children }: { children: ReactChild }) {
+export function ClientProvider({ children }: { children: ReactChild }) {
   const [loggedIn, setLoggedIn] = useState(defaultContext.loggedIn);
   const [userId, setUserId] = useState(defaultContext.userId);
   const [client, setClient] = useState(defaultContext.client);
@@ -172,10 +172,10 @@ export function MatrixProvider({ children }: { children: ReactChild }) {
   }, [client]);
 
   return (
-    <MatrixContext.Provider
+    <ClientContext.Provider
       value={{ loggedIn, userId, client, login, logout, register }}
     >
       {children}
-    </MatrixContext.Provider>
+    </ClientContext.Provider>
   );
 }

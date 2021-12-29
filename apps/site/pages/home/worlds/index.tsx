@@ -3,12 +3,12 @@ import { Grid, IconButton, Tooltip, Typography } from "@mui/material";
 import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 import Link from "next/link";
 
-import { getWorlds, MatrixContext } from "matrix";
+import { getWorlds, ClientContext } from "matrix";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import WorldCard from "../../../src/components/WorldCard";
 
 export default function Worlds() {
-  const { client, loggedIn } = useContext(MatrixContext);
+  const { client, loggedIn } = useContext(ClientContext);
 
   const [worlds, setWorlds] = useState([]);
 

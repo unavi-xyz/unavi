@@ -2,13 +2,13 @@ import { useContext, useState } from "react";
 import { Button, Grid, Input, TextField, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 
-import { MatrixContext, createWorld } from "matrix";
+import { ClientContext, createWorld } from "matrix";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
 export default function New() {
   const router = useRouter();
 
-  const { client } = useContext(MatrixContext);
+  const { client } = useContext(ClientContext);
 
   const [name, setName] = useState("");
 

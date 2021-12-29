@@ -1,11 +1,10 @@
 import { useContext, useEffect, useState } from "react";
-import Link from "next/link";
 import { Grid, IconButton, Tooltip, Typography } from "@mui/material";
 import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
+import Link from "next/link";
 
+import { getWorlds, MatrixContext } from "matrix";
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import { getWorlds } from "../../../src/matrix/rooms";
-import { MatrixContext } from "../../../src/matrix/MatrixProvider";
 import WorldCard from "../../../src/components/WorldCard";
 
 export default function Worlds() {

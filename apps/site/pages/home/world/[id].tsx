@@ -5,13 +5,8 @@ import { useRouter } from "next/router";
 import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 import { customAlphabet } from "nanoid";
 
+import { MatrixContext, createRoom, getRoom, getWorldInstances } from "matrix";
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import { MatrixContext } from "../../../src/matrix/MatrixProvider";
-import {
-  createRoom,
-  getRoom,
-  getWorldInstances,
-} from "../../../src/matrix/rooms";
 import RoomCard from "../../../src/components/RoomCard";
 
 const nanoid = customAlphabet("1234567890", 8);

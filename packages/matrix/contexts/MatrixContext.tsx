@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { ReactChild, useEffect, useState } from "react";
 import sdk, { MatrixClient, ICreateClientOpts } from "matrix-js-sdk";
 
 const DEFAULT_HOMESERVER = "https://matrix.org";
 
-const withHttps = (url: string) =>
-  !/^https?:\/\//i.test(url) ? `https://${url}` : url;
+function withHttps(url: string) {
+  return !/^https?:\/\//i.test(url) ? `https://${url}` : url;
+}
 
 function waitForSync(client: MatrixClient) {
   return new Promise<void>((resolve) => {
@@ -41,17 +42,21 @@ interface ContextInterface {
   loggedIn: boolean;
   userId: null | string;
   client: null | MatrixClient;
-  login: (
-    homeserver: string,
-    user: string,
-    password: string
-  ) => Promise<undefined | Error>;
-  register: (
-    homeserver: string,
-    user: string,
-    password: string
-  ) => Promise<undefined | Error>;
-  logout: () => void;
+  login:
+    | null
+    | ((
+        homeserver: string,
+        user: string,
+        password: string
+      ) => Promise<undefined | Error>);
+  register:
+    | null
+    | ((
+        homeserver: string,
+        user: string,
+        password: string
+      ) => Promise<undefined | Error>);
+  logout: null | (() => void);
 }
 
 const defaultContext: ContextInterface = {
@@ -65,7 +70,7 @@ const defaultContext: ContextInterface = {
 
 export const MatrixContext = React.createContext(defaultContext);
 
-export default function MatrixProvider({ children }) {
+export function MatrixProvider({ children }: { children: ReactChild }) {
   const [loggedIn, setLoggedIn] = useState(defaultContext.loggedIn);
   const [userId, setUserId] = useState(defaultContext.userId);
   const [client, setClient] = useState(defaultContext.client);
@@ -101,7 +106,7 @@ export default function MatrixProvider({ children }) {
       return;
     } catch (e) {
       logout();
-      return e;
+      return e as Error;
     }
   }
 
@@ -138,7 +143,7 @@ export default function MatrixProvider({ children }) {
   }
 
   useEffect(() => {
-    const store = JSON.parse(localStorage.getItem("matrix-auth-store"));
+    const store = JSON.parse(localStorage.getItem("matrix-auth-store") ?? "{}");
     if (
       store &&
       store.baseUrl &&

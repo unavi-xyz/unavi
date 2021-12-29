@@ -1,9 +1,8 @@
-import { Grid, Typography } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
+import { Grid, Typography } from "@mui/material";
 
+import { MatrixContext, getPublicRooms } from "matrix";
 import HomeLayout from "../../src/layouts/HomeLayout";
-import { MatrixContext } from "../../src/matrix/MatrixProvider";
-import { getPublicRooms } from "../../src/matrix/rooms";
 import RoomCard from "../../src/components/RoomCard";
 
 export default function Rooms() {

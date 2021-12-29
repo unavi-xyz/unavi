@@ -1,5 +1,4 @@
 import { useContext, useState } from "react";
-import Link from "next/link";
 import {
   Button,
   Divider,
@@ -12,9 +11,9 @@ import {
 } from "@mui/material";
 import { Box } from "@mui/system";
 import MenuIcon from "@mui/icons-material/Menu";
+import Link from "next/link";
 
-import { useProfile } from "../matrix/hooks";
-import { MatrixContext } from "../matrix/MatrixProvider";
+import { MatrixContext, useProfile } from "matrix";
 import { useWindowDimensions } from "../hooks";
 import LoginButton from "./LoginButton";
 

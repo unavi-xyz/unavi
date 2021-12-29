@@ -1,5 +1,5 @@
 {
-  "name": "3d",
+  "name": "matrix",
   "version": "0.0.0",
   "main": "./index.ts",
   "types": "./index.ts",
@@ -7,14 +7,10 @@
   "devDependencies": {
     "@types/react": "17.0.37",
     "@types/react-dom": "^17",
-    "@types/three": "^0.135.0",
     "tsconfig": "*",
     "typescript": "^4.5.3"
   },
   "dependencies": {
-    "@react-three/cannon": "^4.3.0",
-    "@react-three/drei": "^8.3.1",
-    "@react-three/fiber": "^7.0.24",
-    "three": "^0.136.0"
+    "matrix-js-sdk": "^15.2.1"
   }
 }

@@ -1,10 +1,9 @@
 import { useContext, useState } from "react";
-import { useRouter } from "next/router";
 import { Button, Grid, Input, TextField, Typography } from "@mui/material";
+import { useRouter } from "next/router";
 
+import { MatrixContext, createWorld } from "matrix";
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import { MatrixContext } from "../../../src/matrix/MatrixProvider";
-import { createWorld } from "../../../src/matrix/rooms";
 
 export default function New() {
   const router = useRouter();

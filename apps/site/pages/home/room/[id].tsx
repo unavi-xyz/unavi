@@ -5,9 +5,7 @@ import { useRouter } from "next/router";
 import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import { MatrixContext } from "../../../src/matrix/MatrixProvider";
-import { getRoom } from "../../../src/matrix/rooms";
-import { parseRoomTopic } from "../../../src/matrix/topics";
+import { MatrixContext, getRoom, parseRoomTopic } from "matrix";
 
 function getSubdomain(hostname) {
   var regexParse = new RegExp("[a-z-0-9]{2,63}.[a-z.]{2,5}$");

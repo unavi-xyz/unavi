@@ -1,11 +1,10 @@
 import React, { useContext } from "react";
-import { useRouter } from "next/router";
 import { Grid, Typography } from "@mui/material";
+import { useRouter } from "next/router";
 
-import HomeLayout from "../../../src/layouts/HomeLayout";
-import { MatrixContext } from "../../../src/matrix/MatrixProvider";
+import { MatrixContext, useProfile, useMatrixContent } from "matrix";
 import { useIdenticon } from "../../../src/hooks";
-import { useProfile, useMatrixContent } from "../../../src/matrix/hooks";
+import HomeLayout from "../../../src/layouts/HomeLayout";
 
 export default function Id() {
   const router = useRouter();

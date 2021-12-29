@@ -1,6 +1,4 @@
 import { useContext, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/router";
 import {
   Alert,
   Button,
@@ -10,8 +8,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import Link from "next/link";
+import { useRouter } from "next/router";
 
-import { MatrixContext } from "../../src/matrix/MatrixProvider";
+import { MatrixContext } from "matrix";
 import HomeserverDialog from "../../src/components/HomeserverDialog";
 
 export default function Login() {

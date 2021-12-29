@@ -14,7 +14,7 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { MatrixContext } from "../../src/matrix/MatrixProvider";
+import { MatrixContext } from "matrix";
 
 export default function Register() {
   const router = useRouter();

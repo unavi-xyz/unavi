@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   Card,
   CardActionArea,
@@ -7,6 +6,7 @@ import {
   Grid,
   Typography,
 } from "@mui/material";
+import Link from "next/link";
 import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 
 interface Props {

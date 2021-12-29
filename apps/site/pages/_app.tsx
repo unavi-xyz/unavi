@@ -5,7 +5,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 import "../styles/globals.css";
 import theme from "../src/theme";
-import MatrixProvider from "../src/matrix/MatrixProvider";
+import { MatrixProvider } from "matrix";
 
 export default function MyApp(props) {
   const { Component, pageProps } = props;
@@ -20,10 +20,12 @@ export default function MyApp(props) {
       </Head>
       <ThemeProvider theme={theme}>
         <MatrixProvider>
-          <CssBaseline />
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
+          <>
+            <CssBaseline />
+            <Layout>
+              <Component {...pageProps} />
+            </Layout>
+          </>
         </MatrixProvider>
       </ThemeProvider>
     </>

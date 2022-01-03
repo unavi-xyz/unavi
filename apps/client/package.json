@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "3d": "*",
-    "@react-three/cannon": "^4.3.0",
+    "@react-three/cannon": "^4.4.0",
     "@react-three/fiber": "^7.0.24",
     "matrix-js-sdk": "^15.2.1",
     "next": "^12.0.7",

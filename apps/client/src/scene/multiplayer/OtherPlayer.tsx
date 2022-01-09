@@ -15,21 +15,22 @@ export default function OtherPlayer({ member }: Props) {
 
   const position = useRef(new Vector3());
 
-  function onObserve(e: YMapEvent<any>) {
-    if (!e.keysChanged.has(member.userId)) return;
-
-    const pos = ymap.get(member.userId);
-    position.current.fromArray(pos);
-  }
-
   useEffect(() => {
     if (!ymap) return;
+
+    function onObserve(e: YMapEvent<any>) {
+      if (!e.keysChanged.has(member.userId)) return;
+
+      const pos = ymap.get(member.userId);
+      position.current.fromArray(pos);
+    }
+
     ymap.observe(onObserve);
 
     return () => {
       ymap.unobserve(onObserve);
     };
-  }, [ymap]);
+  }, [member.userId, ymap]);
 
   return (
     <group>

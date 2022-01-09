@@ -22,10 +22,10 @@ export const PointerLockControls = React.forwardRef(
       } else {
         controls?.dispatchEvent({ type: "unpause" });
       }
-    }, [paused]);
+    }, [controls, paused]);
 
     useEffect(() => {
-      const callback = (e) => {
+      const callback = (e: any) => {
         invalidate();
         if (onChange) onChange(e);
       };
@@ -62,6 +62,8 @@ export const PointerLockControls = React.forwardRef(
     ) : null;
   }
 );
+
+PointerLockControls.displayName = "PointerLockControls";
 
 class PointerLockControlsImpl extends EventDispatcher {
   camera;

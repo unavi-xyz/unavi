@@ -54,12 +54,12 @@ export function Player({
 
   const { direction, updateVelocity } = useSpringVelocity(api, PLAYER_SPEED);
 
-  function publishPosition() {
-    ymap.set(userId, position.current.toArray());
-  }
-
   useEffect(() => {
-    if (!ymap) return;
+    if (!ymap || !userId) return;
+
+    function publishPosition() {
+      ymap.set(userId, position.current.toArray());
+    }
 
     api.position.subscribe((p: Triplet) => position.current.fromArray(p));
     api.velocity.subscribe((v: Triplet) => velocity.current.fromArray(v));
@@ -69,7 +69,7 @@ export function Player({
     return () => {
       clearInterval(interval);
     };
-  }, [ymap]);
+  }, [ymap, userId, api.position, api.velocity]);
 
   useFrame(() => {
     if (position.current.y < VOID_LEVEL) {

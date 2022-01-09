@@ -7,7 +7,7 @@ import MediumIcon from "./MediumIcon";
 
 import { DISCORD_URL, TWITTER_URL, MEDIUM_URL, GITHUB_URL } from "../constants";
 
-export default function WelcomeNavbar() {
+export default function LandingNavbar() {
   return (
     <Paper
       square
@@ -29,7 +29,7 @@ export default function WelcomeNavbar() {
       >
         <Grid
           item
-          xs={8}
+          xs={6}
           container
           justifyContent="flex-start"
           columnSpacing={1}
@@ -49,11 +49,11 @@ export default function WelcomeNavbar() {
               <GitHubIcon color="primary" />
             </IconButton>
           </Grid>
-          <Grid item style={{ paddingRight: "8px" }}>
+          {/* <Grid item style={{ paddingRight: "8px" }}>
             <IconButton href={MEDIUM_URL} target="_blank">
               <MediumIcon color="primary" />
             </IconButton>
-          </Grid>
+          </Grid> */}
         </Grid>
 
         <Grid item xs container justifyContent="flex-end" columnSpacing={1}>

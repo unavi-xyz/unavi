@@ -22,7 +22,7 @@ export default function WorldCard({ world }: Props) {
             <CardMedia
               component="img"
               height="140px"
-              image={world.avatar_url ?? "/imagefallback.jpg"}
+              image={world.avatar_url ?? "/images/imagefallback.jpg"}
             />
             <CardContent>
               <Typography>{world.name}</Typography>

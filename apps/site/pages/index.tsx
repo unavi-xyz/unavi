@@ -6,7 +6,7 @@ import LandingNavbar from "../src/components/LandingNavbar";
 import { GITHUB_URL, DISCORD_URL } from "../src/constants";
 import { useWindowDimensions } from "../src/hooks";
 
-import awooga from "../public/awooga.jpg";
+import awooga from "../public/images/awooga.jpg";
 
 export default function Landing() {
   return (
@@ -26,7 +26,7 @@ function Body() {
         item
         style={{
           background:
-            "linear-gradient( rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7) ), url(street.png)",
+            "linear-gradient( rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7) ), url(images/street.png)",
           backgroundPosition: "50%",
           height: "min(1220px, 100vh)",
           marginBottom: "10ch",
@@ -103,10 +103,10 @@ function Body() {
             </Grid>
             <Grid item>
               <Typography variant="h6" color="primary">
-                Matrix uses a federated network architecture. Each user chooses
-                a homeserver to log in to. These servers then communicate with
-                each other, forming a decentralized network with no single point
-                of control.
+                Matrix uses a federated network architecture (similar to how
+                email works). Each user chooses a homeserver to log in to. These
+                servers then communicate with each other, forming a
+                decentralized network with no single point of control.
               </Typography>
             </Grid>
             <Grid item>

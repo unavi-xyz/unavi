@@ -22,7 +22,7 @@ export default function RoomCard({ room }: Props) {
             <CardMedia
               component="img"
               height="140px"
-              image={room.avatar_url ?? "/imagefallback.jpg"}
+              image={room.avatar_url ?? "/images/imagefallback.jpg"}
             />
             <CardContent>
               <Typography>{room.name}</Typography>

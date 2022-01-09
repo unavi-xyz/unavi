@@ -1,180 +1,82 @@
-import React, { ReactChild, useEffect, useState } from "react";
-import sdk, { MatrixClient, ICreateClientOpts } from "matrix-js-sdk";
+import React, { ReactChild, useContext, useEffect, useState } from "react";
+import { Room } from "matrix-js-sdk";
+import { ClientContext, parseRoomTopic } from "..";
 
-const DEFAULT_HOMESERVER = "https://matrix.org";
+import * as Y from "yjs";
+import { WebrtcProvider } from "y-webrtc";
 
-function withHttps(url: string) {
-  return !/^https?:\/\//i.test(url) ? `https://${url}` : url;
-}
-
-function waitForSync(client: MatrixClient) {
-  return new Promise<void>((resolve) => {
-    function onSync(state: string) {
-      if (state === "PREPARED") {
-        client.removeListener("sync", onSync);
-        resolve();
-      }
-    }
-    client.on("sync", onSync);
-  });
-}
-
-async function initClient(
-  baseUrl: string,
-  accessToken: string,
-  deviceId: string,
-  userId: string,
-  guest: boolean = false
-) {
-  const opts: ICreateClientOpts = { baseUrl, accessToken, deviceId, userId };
-  const client = sdk.createClient(opts);
-
-  if (guest) client.setGuest(true);
-
-  await client.startClient({});
-
-  await waitForSync(client);
-
-  return client;
-}
+const SIGNALING_SERVERS = [
+  "wss://signaling.yjs.dev",
+  "wss://y-webrtc-signaling-eu.herokuapp.com",
+  "wss://y-webrtc-signaling-us.herokuapp.com",
+];
 
 interface ContextInterface {
-  loggedIn: boolean;
-  userId: null | string;
-  client: null | MatrixClient;
-  login:
-    | null
-    | ((
-        homeserver: string,
-        user: string,
-        password: string
-      ) => Promise<undefined | Error>);
-  register:
-    | null
-    | ((
-        homeserver: string,
-        user: string,
-        password: string
-      ) => Promise<undefined | Error>);
-  logout: null | (() => void);
+  room: null | Room;
+  ymap: null | Y.Map<any>;
 }
-
-const defaultContext: ContextInterface = {
-  loggedIn: false,
-  userId: null,
-  client: null,
-  login: null,
-  register: null,
-  logout: null,
-};
+const defaultContext: ContextInterface = { room: null, ymap: null };
 
 export const MultiplayerContext = React.createContext(defaultContext);
 
-export function MultiplayerProvider({ children }: { children: ReactChild }) {
-  const [loggedIn, setLoggedIn] = useState(defaultContext.loggedIn);
-  const [userId, setUserId] = useState(defaultContext.userId);
-  const [client, setClient] = useState(defaultContext.client);
+interface Props {
+  children: ReactChild;
+}
 
-  async function login(homeserver: string, username: string, password: string) {
-    try {
-      const baseUrl = withHttps(homeserver);
-      const tmpClient = sdk.createClient(baseUrl);
-      const { user_id, device_id, access_token } =
-        await tmpClient.loginWithPassword(username, password);
+export function MultiplayerProvider({ children }: Props) {
+  const { client } = useContext(ClientContext);
 
-      localStorage.setItem(
-        "matrix-auth-store",
-        JSON.stringify({
-          baseUrl,
-          user_id,
-          device_id,
-          access_token,
-        })
-      );
-
-      const newClient = await initClient(
-        baseUrl,
-        access_token,
-        device_id,
-        user_id
-      );
-
-      setClient(newClient);
-      setUserId(user_id);
-      setLoggedIn(true);
-
-      return;
-    } catch (e) {
-      logout();
-      return e as Error;
-    }
-  }
-
-  async function registerGuest() {
-    const tmpClient = sdk.createClient(DEFAULT_HOMESERVER);
-    const { user_id, device_id, access_token } = await tmpClient.registerGuest(
-      {}
-    );
-
-    const newClient = await initClient(
-      DEFAULT_HOMESERVER,
-      access_token,
-      device_id,
-      user_id,
-      true
-    );
-
-    setClient(newClient);
-  }
-
-  async function register(
-    homeserver: string,
-    username: string,
-    password: string
-  ) {
-    return Promise.reject();
-  }
-
-  function logout() {
-    localStorage.removeItem("matrix-auth-store");
-    setClient(defaultContext.client);
-    setUserId(defaultContext.userId);
-    setLoggedIn(false);
-  }
+  const [room, setRoom] = useState<ContextInterface["room"]>(null);
+  const [ymap, setYmap] = useState<ContextInterface["ymap"]>(null);
+  const [ydoc, setYdoc] = useState<null | Y.Doc>(null);
 
   useEffect(() => {
-    const store = JSON.parse(localStorage.getItem("matrix-auth-store") ?? "{}");
-    if (
-      store &&
-      store.baseUrl &&
-      store.access_token &&
-      store.device_id &&
-      store.user_id
-    ) {
-      initClient(
-        store.baseUrl,
-        store.access_token,
-        store.device_id,
-        store.user_id
-      ).then((newClient) => {
-        setClient(newClient);
-        setUserId(String(store.user_id));
-        setLoggedIn(true);
+    if (!client) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get("room");
+    if (!roomId) return;
+
+    client
+      .joinRoom(roomId)
+      .then((res) => {
+        setRoom(res);
+
+        client.getStateEvent(roomId, "m.room.topic", "").then((res) => {
+          const { topic } = res;
+          const worldId = parseRoomTopic(topic);
+        });
+      })
+      .catch((err) => {
+        //error joining room
+        //probably means the user is not logged in
       });
-    } else {
-      logout();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (client) return;
-    registerGuest();
   }, [client]);
 
+  useEffect(() => {
+    if (!room) return;
+    if (ydoc) ydoc.destroy();
+
+    const doc = new Y.Doc();
+
+    const opts: any = {
+      signaling: SIGNALING_SERVERS,
+    };
+
+    new WebrtcProvider(room.roomId, doc, opts);
+
+    doc.on("update", (update: any) => {
+      Y.applyUpdate(doc, update);
+    });
+
+    const map = doc.getMap("positions");
+
+    setYmap(map);
+    setYdoc(doc);
+  }, [room]);
+
   return (
-    <MultiplayerContext.Provider
-      value={{ loggedIn, userId, client, login, logout, register }}
-    >
+    <MultiplayerContext.Provider value={{ room, ymap }}>
       {children}
     </MultiplayerContext.Provider>
   );

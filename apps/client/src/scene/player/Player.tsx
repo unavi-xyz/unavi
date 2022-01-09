@@ -1,14 +1,15 @@
-import { MutableRefObject, useEffect, useRef } from "react";
+import { MutableRefObject, useContext, useEffect, useRef } from "react";
 import { Triplet, useSphere } from "@react-three/cannon";
 import { useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
 import { Group, Raycaster, Vector3 } from "three";
 
-import { PHYSICS_GROUPS, VOID_LEVEL } from "../constants";
+import { PHYSICS_GROUPS, PUBLISH_INTERVAL, VOID_LEVEL } from "../../constants";
 import { useSpringVelocity } from "./hooks/useSpringVelocity";
 
 import KeyboardMovement from "./controls/KeyboardMovement";
 import Crosshair from "./Crosshair";
+import { ClientContext, MultiplayerContext } from "matrix";
 
 const PLAYER_HEIGHT = 1.6;
 const PLAYER_SPEED = 5;
@@ -31,6 +32,9 @@ export function Player({
 }: Props) {
   const args: [number] = [SPHERE_RADIUS];
 
+  const { ymap } = useContext(MultiplayerContext);
+  const { userId } = useContext(ClientContext);
+
   const downRay = useRef<undefined | Raycaster>();
   const crosshair = useRef<undefined | Group>();
 
@@ -50,10 +54,22 @@ export function Player({
 
   const { direction, updateVelocity } = useSpringVelocity(api, PLAYER_SPEED);
 
+  function publishPosition() {
+    ymap.set(userId, position.current.toArray());
+  }
+
   useEffect(() => {
+    if (!ymap) return;
+
     api.position.subscribe((p: Triplet) => position.current.fromArray(p));
     api.velocity.subscribe((v: Triplet) => velocity.current.fromArray(v));
-  }, []);
+
+    const interval = setInterval(publishPosition, PUBLISH_INTERVAL);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [ymap]);
 
   useFrame(() => {
     if (position.current.y < VOID_LEVEL) {

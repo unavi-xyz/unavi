@@ -25,7 +25,7 @@
     "@types/react": "17.0.37",
     "@types/react-dom": "^17",
     "config": "*",
-    "eslint": "7.32.0",
+    "eslint": "8.6.0",
     "next-transpile-modules": "9.0.0",
     "tsconfig": "*",
     "typescript": "^4.5.3"

@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   Button,
   Divider,
@@ -15,6 +15,8 @@ import Link from "next/link";
 
 import { ClientContext, useProfile } from "matrix";
 import { useWindowDimensions } from "../hooks";
+import { getAppUrl } from "../helpers";
+
 import LoginButton from "./LoginButton";
 
 export default function HomeNavbar() {
@@ -23,7 +25,12 @@ export default function HomeNavbar() {
   const { loggedIn, userId, client } = useContext(ClientContext);
   const profile = useProfile(client, userId);
 
+  const [appUrl, setAppUrl] = useState("");
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setAppUrl(getAppUrl());
+  }, []);
 
   const toggleDrawer = (newOpen) => (event) => {
     if (
@@ -157,7 +164,18 @@ export default function HomeNavbar() {
               </Link>
             </Grid>
           )}
-          {(!isMobile || !loggedIn) && (
+          {loggedIn ? (
+            <Grid item>
+              <Button
+                variant="contained"
+                color="primary"
+                href={appUrl}
+                target="_blank"
+              >
+                Play Now
+              </Button>
+            </Grid>
+          ) : (
             <Grid item>
               <LoginButton />
             </Grid>

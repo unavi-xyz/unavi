@@ -4,14 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 
-import HomeLayout from "../../../src/layouts/HomeLayout";
 import { ClientContext, getRoom, parseRoomTopic } from "matrix";
-
-function getSubdomain(hostname) {
-  var regexParse = new RegExp("[a-z-0-9]{2,63}.[a-z.]{2,5}$");
-  var urlParts = regexParse.exec(hostname);
-  return hostname.replace(urlParts[0], "").slice(0, -1);
-}
+import { getAppUrl } from "../../../src/helpers";
+import HomeLayout from "../../../src/layouts/HomeLayout";
 
 export default function Id() {
   const router = useRouter();
@@ -24,17 +19,8 @@ export default function Id() {
   const [world, setWorld] = useState<null | IPublicRoomsChunkRoom>(null);
 
   useEffect(() => {
-    const subdomain = getSubdomain(window.location.hostname);
-
-    //in production, direct the user to app.domain.com
-    //in development, direct them to localhost
-    if (subdomain === "www") {
-      setRoomURL(
-        `https://${window.location.hostname.replace("www", "app")}?room=${id}`
-      );
-    } else {
-      setRoomURL(`http://localhost:3001?room=${id}`);
-    }
+    const url = getAppUrl();
+    setRoomURL(`${url}?room=${id}`);
   }, [id]);
 
   useEffect(() => {

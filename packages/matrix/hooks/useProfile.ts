@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { IMatrixProfile, MatrixClient } from "matrix-js-sdk";
 
-export function useProfile(client: MatrixClient, userId: string) {
+export function useProfile(client: MatrixClient | null, userId: string | null) {
   const [profile, setProfile] = useState<null | IMatrixProfile>(null);
 
   useEffect(() => {

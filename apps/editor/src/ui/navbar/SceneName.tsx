@@ -21,6 +21,7 @@ export default function SceneName() {
       direction="row"
       alignItems="center"
       spacing={1}
+      style={{ marginLeft: 5 }}
     >
       <Typography variant="h6">New Scene</Typography>
 
@@ -30,7 +31,7 @@ export default function SceneName() {
         onMouseOut={handleMouseOut}
         style={{
           background: "rgba(0,0,0,0)",
-          color: hover ? theme.palette.secondary.main : "rgba(255,255,255,0.2)",
+          color: hover ? theme.palette.secondary.main : "rgba(0,0,0,0.2)",
         }}
       />
     </Stack>

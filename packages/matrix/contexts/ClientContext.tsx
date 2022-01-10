@@ -56,7 +56,7 @@ interface ContextInterface {
         user: string,
         password: string
       ) => Promise<undefined | Error>);
-  logout: null | (() => void);
+  logout: () => void;
 }
 
 const defaultContext: ContextInterface = {
@@ -65,7 +65,7 @@ const defaultContext: ContextInterface = {
   client: null,
   login: null,
   register: null,
-  logout: null,
+  logout: () => {},
 };
 
 export const ClientContext = React.createContext(defaultContext);

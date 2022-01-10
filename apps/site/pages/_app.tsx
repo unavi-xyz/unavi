@@ -18,14 +18,14 @@ export default function MyApp(props) {
         <title>The Wired</title>
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
+
+      <CssBaseline />
+
       <ThemeProvider theme={theme}>
         <ClientProvider>
-          <>
-            <CssBaseline />
-            <Layout>
-              <Component {...pageProps} />
-            </Layout>
-          </>
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
         </ClientProvider>
       </ThemeProvider>
     </>

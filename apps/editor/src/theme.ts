@@ -1,11 +1,17 @@
 import { createTheme } from "@mui/material/styles";
 
-const primary = "#ffffff";
+//https://colorhunt.co/palette/f85f73fbe8d3928a97283c63
+const primary = "#283C63";
 const secondary = "#F85F73";
+const background = "#FBE8D3";
 
 const theme = createTheme({
   palette: {
-    mode: "dark",
+    mode: "light",
+    background: {
+      paper: background,
+      default: background,
+    },
     primary: {
       main: primary,
     },

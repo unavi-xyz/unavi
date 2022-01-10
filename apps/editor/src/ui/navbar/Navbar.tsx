@@ -1,6 +1,7 @@
 import { Button, Grid, Paper, Stack } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import Link from "next/link";
 
 import ColorIconButton from "../components/ColorIconButton";
 import SceneName from "./SceneName";
@@ -9,7 +10,7 @@ import Tools from "./Tools";
 export default function Navbar() {
   return (
     <Paper square variant="outlined" style={{ padding: "0.2rem" }}>
-      <Grid container>
+      <Grid container alignItems="center">
         <Grid item xs={4}>
           <Stack
             direction="row"
@@ -17,9 +18,11 @@ export default function Navbar() {
             justifyContent="flex-start"
             spacing={1}
           >
-            <ColorIconButton>
-              <ArrowBackIosNewIcon className="NavbarIcon" />
-            </ColorIconButton>
+            <Link href="/" passHref>
+              <ColorIconButton>
+                <ArrowBackIosNewIcon className="NavbarIcon" />
+              </ColorIconButton>
+            </Link>
 
             <SceneName />
           </Stack>

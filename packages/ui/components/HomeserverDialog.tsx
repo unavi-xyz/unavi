@@ -11,7 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 
-function validateUrl(url) {
+function validateUrl(url: string) {
   if (!url || url.length === 0) return false;
 
   return true;
@@ -31,11 +31,11 @@ export default function HomeserverDialog({
   const [selectedValue, setSelectedValue] = useState("default");
   const [customServer, setCustomServer] = useState("");
 
-  function handleRadioChange(event) {
-    setSelectedValue(event.target.value);
+  function handleRadioChange(e: any) {
+    setSelectedValue(e.target.value);
   }
 
-  function handleCustomChange(e) {
+  function handleCustomChange(e: any) {
     setCustomServer(e.target.value);
   }
 

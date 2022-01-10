@@ -25,3 +25,26 @@ body,
 .clickable {
   cursor: pointer;
 }
+
+.page {
+  margin: auto !important;
+  padding-left: 5vw;
+  padding-right: 5vw;
+}
+
+.link:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.container {
+  max-width: 1400px !important;
+  margin: auto !important;
+  padding-left: 5vw;
+  padding-right: 5vw;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}

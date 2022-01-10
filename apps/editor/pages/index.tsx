@@ -1,23 +1,41 @@
-import { Canvas } from "@react-three/fiber";
-import Split from "react-split";
+import { useState } from "react";
+import { Grid, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 
-import { RAYCASTER_SETTINGS } from "3d";
-import Scene from "../src/scene/Scene";
-import Navbar from "../src/ui/navbar/Navbar";
-import RightPanel from "../src/ui/RightPanel";
+export default function Friends() {
+  const [scenes, setScenes] = useState([]);
 
-export default function App() {
   return (
-    <div className="App">
-      <Navbar />
+    <Grid className="page" container direction="column" rowSpacing={4}>
+      <Grid item>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography variant="h2">🌲 Scenes</Typography>
 
-      <Split className="split App" gutterSize={6} sizes={[70, 30]}>
-        <Canvas raycaster={RAYCASTER_SETTINGS}>
-          <Scene />
-        </Canvas>
+          <span>
+            <Tooltip title="New Scene">
+              <IconButton>
+                <AddBoxOutlinedIcon />
+              </IconButton>
+            </Tooltip>
+          </span>
+        </Stack>
+      </Grid>
 
-        <RightPanel />
-      </Split>
-    </div>
+      <Grid item>
+        {scenes.length === 0 ? (
+          <div>
+            <Typography>
+              It looks like you don{"'"}t have any scenes.
+            </Typography>
+            <Typography>
+              <Typography className="link" color="secondary" component="span">
+                Click Here
+              </Typography>{" "}
+              to get started.
+            </Typography>
+          </div>
+        ) : null}
+      </Grid>
+    </Grid>
   );
 }

@@ -22,7 +22,7 @@ export default function Tools() {
           style={{
             borderRadius: 5,
             background:
-              selected === TOOLS.translate ? "rgba(255, 255, 255, 0.1)" : null,
+              selected === TOOLS.translate ? "rgba(0, 0, 0, 0.05)" : null,
           }}
         >
           <TranslateIcon className="NavbarIcon" />
@@ -35,7 +35,7 @@ export default function Tools() {
           style={{
             borderRadius: 5,
             background:
-              selected === TOOLS.rotate ? "rgba(255, 255, 255, 0.1)" : null,
+              selected === TOOLS.rotate ? "rgba(0, 0, 0, 0.05)" : null,
           }}
         >
           <RotateIcon className="NavbarIcon" />
@@ -47,8 +47,7 @@ export default function Tools() {
           onClick={() => setSelected(TOOLS.scale)}
           style={{
             borderRadius: 5,
-            background:
-              selected === TOOLS.scale ? "rgba(255, 255, 255, 0.1)" : null,
+            background: selected === TOOLS.scale ? "rgba(0, 0, 0, 0.05)" : null,
           }}
         >
           <ScaleIcon className="NavbarIcon" />

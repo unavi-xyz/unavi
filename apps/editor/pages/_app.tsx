@@ -3,8 +3,10 @@ import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import Head from "next/head";
 
-import "../styles/globals.css";
+import { ClientProvider } from "matrix";
 import theme from "../src/theme";
+
+import "../styles/globals.css";
 
 export default function MyApp(props) {
   const { Component, pageProps } = props;
@@ -16,9 +18,12 @@ export default function MyApp(props) {
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
+      <CssBaseline />
+
       <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Component {...pageProps} />
+        <ClientProvider>
+          <Component {...pageProps} />
+        </ClientProvider>
       </ThemeProvider>
     </>
   );

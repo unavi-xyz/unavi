@@ -29,7 +29,7 @@ export default function ColorIconButton({
           color: hover
             ? theme.palette.secondary.main
             : dark
-            ? "rgba(255,255,255,0.2)"
+            ? "rgba(0,0,0,0.2)"
             : null,
         }}
         {...rest}

@@ -2,9 +2,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { Grid, Button, Typography, Link as MuiLink } from "@mui/material";
 
-import Navbar from "../src/components/Navbar";
+import { useWindowDimensions } from "ui";
 import { GITHUB_URL, DISCORD_URL } from "../src/constants";
-import { useWindowDimensions } from "../src/hooks";
+import Navbar from "../src/components/Navbar";
 
 import awooga from "../public/images/awooga.jpg";
 

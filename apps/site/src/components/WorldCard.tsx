@@ -9,7 +9,7 @@ import {
 import Link from "next/link";
 import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 
-import { useIdenticon } from "../hooks";
+import { useIdenticon } from "ui";
 
 interface Props {
   world: IPublicRoomsChunkRoom;

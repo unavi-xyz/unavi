@@ -1,28 +1,30 @@
-import { useContext, useEffect, useState } from "react";
-import {
-  Button,
-  ClickAwayListener,
-  Collapse,
-  Divider,
-  Stack,
-} from "@mui/material";
+import { ReactChild, useContext, useState } from "react";
+import { Button, ClickAwayListener, Collapse, Stack } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import Link from "next/link";
+
 import { ClientContext, useMatrixContent, useProfile } from "matrix";
+import { useIdenticon } from "../hooks/useIdenticon";
+import { SidebarButton } from "..";
 
-import { useIdenticon } from "ui";
-import { getAppUrl, getEditorUrl } from "../helpers";
+interface Props {
+  titleHref?: string;
+  loginHref?: string;
+  viewProfile?: boolean;
+  children: ReactChild | ReactChild[];
+}
 
-export default function Sidebar() {
+export function Sidebar({
+  titleHref = "/",
+  loginHref = "/login",
+  viewProfile = true,
+  children,
+}: Props) {
   const { loggedIn, userId, client, logout } = useContext(ClientContext);
 
   const profile = useProfile(client, userId);
   const identicon = useIdenticon(userId);
   const picture = useMatrixContent(profile?.avatar_url);
-
-  const [appUrl, setAppUrl] = useState("/");
-  const [editorUrl, setEditorUrl] = useState("/");
 
   const [open, setOpen] = useState(false);
 
@@ -34,11 +36,6 @@ export default function Sidebar() {
     setOpen(false);
   }
 
-  useEffect(() => {
-    setAppUrl(getAppUrl());
-    setEditorUrl(getEditorUrl());
-  }, []);
-
   return (
     <Stack justifyContent="space-between" style={{ height: "100%" }}>
       <Stack spacing={1.5}>
@@ -48,21 +45,12 @@ export default function Sidebar() {
             marginRight: "auto",
           }}
         >
-          <Link href="/home" passHref>
+          <Link href={titleHref} passHref>
             <h1>The Wired</h1>
           </Link>
         </div>
 
-        <SideButton emoji="🏠" text="Home" href="/home" />
-        <SideButton emoji="🌏" text="Worlds" href="/home/worlds" />
-        <SideButton emoji="🚪" text="Rooms" href="/home/rooms" />
-        <SideButton emoji="🤝" text="Friends" href="/home/friends" />
-        <SideButton emoji="💃" text="Avatars" href="/home/avatars" />
-
-        <Divider />
-
-        <SideButton emoji="🎮" text="Play" href={appUrl} external />
-        <SideButton emoji="🚧" text="Editor" href={editorUrl} external />
+        {children}
       </Stack>
 
       {loggedIn ? (
@@ -80,7 +68,12 @@ export default function Sidebar() {
                 Log Out
               </Button>
 
-              <SideButton text="View Profile" href={`/home/user/${userId}`} />
+              {viewProfile && (
+                <SidebarButton
+                  text="View Profile"
+                  href={`/home/user/${userId}`}
+                />
+              )}
             </Stack>
           </Collapse>
 
@@ -115,7 +108,7 @@ export default function Sidebar() {
           </Stack>
         </span>
       ) : (
-        <Link href="/home/login" passHref>
+        <Link href={loginHref} passHref>
           <Button
             variant="contained"
             style={{
@@ -129,46 +122,5 @@ export default function Sidebar() {
         </Link>
       )}
     </Stack>
-  );
-}
-
-function SideButton({ emoji = "", text = "", href = "", external = false }) {
-  if (external) {
-    return (
-      <Button
-        href={href}
-        target="_blank"
-        style={{
-          paddingLeft: "30%",
-          paddingRight: "2rem",
-          fontSize: "1rem",
-          borderRadius: 0,
-          justifyContent: "space-between",
-        }}
-      >
-        <Stack direction="row" style={{ justifyContent: "left" }}>
-          {emoji && <span style={{ width: "2rem" }}>{emoji}</span>}
-          <span>{text}</span>
-        </Stack>
-
-        <OpenInNewIcon />
-      </Button>
-    );
-  }
-
-  return (
-    <Link href={href} passHref>
-      <Button
-        style={{
-          paddingLeft: "30%",
-          fontSize: "1rem",
-          justifyContent: "left",
-          borderRadius: 0,
-        }}
-      >
-        {emoji && <span style={{ width: "2rem" }}>{emoji}</span>}
-        <span>{text}</span>
-      </Button>
-    </Link>
   );
 }

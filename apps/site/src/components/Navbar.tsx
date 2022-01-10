@@ -2,12 +2,12 @@ import Link from "next/link";
 import { Grid, Button, IconButton, Paper } from "@mui/material";
 import TwitterIcon from "@mui/icons-material/Twitter";
 import GitHubIcon from "@mui/icons-material/GitHub";
-import DiscordIcon from "./DiscordIcon";
-import MediumIcon from "./MediumIcon";
+import DiscordIcon from "./icons/DiscordIcon";
+import MediumIcon from "./icons/MediumIcon";
 
 import { DISCORD_URL, TWITTER_URL, MEDIUM_URL, GITHUB_URL } from "../constants";
 
-export default function LandingNavbar() {
+export default function Navbar() {
   return (
     <Paper
       square

@@ -19,8 +19,10 @@ a {
   padding-right: 5vw;
 }
 
-.underNavbar {
-  padding-top: 4vh;
+.page {
+  margin: auto !important;
+  padding-left: 5vw;
+  padding-right: 5vw;
 }
 
 .arrows path {

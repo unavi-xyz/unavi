@@ -20,12 +20,7 @@ export default function Worlds() {
   }, [client]);
 
   return (
-    <Grid
-      className="container underNavbar"
-      container
-      direction="column"
-      rowSpacing={4}
-    >
+    <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item container alignItems="center" columnSpacing={1}>
         <Grid item>
           <Typography variant="h2">🌏 Worlds</Typography>

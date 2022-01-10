@@ -1,7 +1,8 @@
 import React from "react";
+import { Grid, Paper } from "@mui/material";
 import Head from "next/head";
 
-import HomeNavbar from "../components/HomeNavbar";
+import Sidebar from "../components/Sidebar";
 
 export default function HomeLayout({ children }) {
   return (
@@ -10,8 +11,17 @@ export default function HomeLayout({ children }) {
         <title>The Wired - Home</title>
       </Head>
 
-      <HomeNavbar />
-      {children}
+      <Grid container>
+        <Grid item xs={4} style={{ maxWidth: "320px" }}>
+          <Sidebar />
+        </Grid>
+
+        <Grid item xs>
+          <Paper square variant="outlined" style={{ height: "100vh" }}>
+            {children}
+          </Paper>
+        </Grid>
+      </Grid>
     </div>
   );
 }

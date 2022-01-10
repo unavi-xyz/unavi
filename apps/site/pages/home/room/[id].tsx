@@ -41,12 +41,7 @@ export default function Id() {
   }, [client, room]);
 
   return (
-    <Grid
-      className="container underNavbar"
-      container
-      direction="column"
-      rowSpacing={4}
-    >
+    <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h4" style={{ wordBreak: "break-word" }}>
           🚪 {room?.name ?? id}

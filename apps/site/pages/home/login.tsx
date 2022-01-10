@@ -61,7 +61,7 @@ export default function Login() {
 
       <Grid container>
         <Grid
-          className="container underNavbar"
+          className="container"
           item
           sm={8}
           xl={5}

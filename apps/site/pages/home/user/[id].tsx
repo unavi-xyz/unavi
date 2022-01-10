@@ -18,12 +18,7 @@ export default function Id() {
 
   if (!profile) {
     return (
-      <Grid
-        className="container underNavbar"
-        container
-        direction="column"
-        rowSpacing={4}
-      >
+      <Grid className="page" container direction="column" rowSpacing={4}>
         <Grid item>
           <Typography variant="h4">User not found.</Typography>
         </Grid>
@@ -32,12 +27,7 @@ export default function Id() {
   }
 
   return (
-    <Grid
-      className="container underNavbar"
-      container
-      direction="column"
-      rowSpacing={4}
-    >
+    <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h4">{profile.displayname ?? id}</Typography>
         <Typography variant="body1" style={{ color: "GrayText" }}>

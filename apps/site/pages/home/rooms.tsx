@@ -18,12 +18,7 @@ export default function Rooms() {
   }, [client]);
 
   return (
-    <Grid
-      className="container underNavbar"
-      container
-      direction="column"
-      rowSpacing={4}
-    >
+    <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h2">🚪 Rooms</Typography>
       </Grid>

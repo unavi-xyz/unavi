@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Grid, Button, Typography, Link as MuiLink } from "@mui/material";
 
-import LandingNavbar from "../src/components/LandingNavbar";
+import Navbar from "../src/components/Navbar";
 import { GITHUB_URL, DISCORD_URL } from "../src/constants";
 import { useWindowDimensions } from "../src/hooks";
 
@@ -11,7 +11,7 @@ import awooga from "../public/images/awooga.jpg";
 export default function Landing() {
   return (
     <div>
-      <LandingNavbar />
+      <Navbar />
       <Body />
     </div>
   );

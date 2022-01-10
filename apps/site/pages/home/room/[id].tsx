@@ -2,65 +2,29 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 
+import { ClientContext, useRoomFromId, useWorldFromRoom } from "matrix";
+import { getAppUrl } from "../../../src/helpers";
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import { MatrixContext, getRoom, parseRoomTopic } from "matrix";
-
-function getSubdomain(hostname) {
-  var regexParse = new RegExp("[a-z-0-9]{2,63}.[a-z.]{2,5}$");
-  var urlParts = regexParse.exec(hostname);
-  return hostname.replace(urlParts[0], "").slice(0, -1);
-}
 
 export default function Id() {
   const router = useRouter();
   const { id } = router.query;
 
-  const { client } = useContext(MatrixContext);
+  const { client } = useContext(ClientContext);
 
   const [roomURL, setRoomURL] = useState("");
-  const [room, setRoom] = useState<null | IPublicRoomsChunkRoom>(null);
-  const [world, setWorld] = useState<null | IPublicRoomsChunkRoom>(null);
+
+  const room = useRoomFromId(client, id as string);
+  const world = useWorldFromRoom(client, room?.topic);
 
   useEffect(() => {
-    const subdomain = getSubdomain(window.location.hostname);
-
-    //in production, direct the user to app.domain.com
-    //in development, direct them to localhost
-    if (subdomain === "www") {
-      setRoomURL(
-        `https://${window.location.hostname.replace("www", "app")}?room=${id}`
-      );
-    } else {
-      setRoomURL(`http://localhost:3000?room=${id}`);
-    }
+    const url = getAppUrl();
+    setRoomURL(`${url}?room=${id}`);
   }, [id]);
 
-  useEffect(() => {
-    if (!client || !id) return;
-    getRoom(client, `${id}`).then((res) => {
-      setRoom(res);
-    });
-  }, [client, id]);
-
-  useEffect(() => {
-    if (!client || !room) return;
-
-    const worldId = parseRoomTopic(room.topic);
-
-    getRoom(client, worldId, true).then((res) => {
-      setWorld(res);
-    });
-  }, [client, room]);
-
   return (
-    <Grid
-      className="container underNavbar"
-      container
-      direction="column"
-      rowSpacing={4}
-    >
+    <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h4" style={{ wordBreak: "break-word" }}>
           🚪 {room?.name ?? id}

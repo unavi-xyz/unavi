@@ -3,20 +3,21 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
-    "3d": "*",
     "@react-three/cannon": "^4.3.0",
     "@react-three/fiber": "^7.0.24",
     "matrix-js-sdk": "^15.2.1",
     "next": "^12.0.7",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "three": "^0.136.0"
+    "three": "^0.136.0",
+    "y-webrtc": "^10.2.2",
+    "yjs": "^13.5.23"
   },
   "devDependencies": {
     "@types/react": "17.0.37",

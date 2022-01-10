@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { Grid, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 
-import { MatrixContext, useProfile, useMatrixContent } from "matrix";
+import { ClientContext, useProfile, useMatrixContent } from "matrix";
 import { useIdenticon } from "../../../src/hooks";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
@@ -10,7 +10,7 @@ export default function Id() {
   const router = useRouter();
   const id = `${router.query.id}`;
 
-  const { client } = useContext(MatrixContext);
+  const { client } = useContext(ClientContext);
 
   const identicon = useIdenticon(id);
   const profile = useProfile(client, id);
@@ -18,12 +18,7 @@ export default function Id() {
 
   if (!profile) {
     return (
-      <Grid
-        className="container underNavbar"
-        container
-        direction="column"
-        rowSpacing={4}
-      >
+      <Grid className="page" container direction="column" rowSpacing={4}>
         <Grid item>
           <Typography variant="h4">User not found.</Typography>
         </Grid>
@@ -32,12 +27,7 @@ export default function Id() {
   }
 
   return (
-    <Grid
-      className="container underNavbar"
-      container
-      direction="column"
-      rowSpacing={4}
-    >
+    <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h4">{profile.displayname ?? id}</Typography>
         <Typography variant="body1" style={{ color: "GrayText" }}>

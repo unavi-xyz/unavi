@@ -9,7 +9,7 @@ export default function MyApp(props) {
   return (
     <>
       <Head>
-        <title>The Wired</title>
+        <title>The Wired - App</title>
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 

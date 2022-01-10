@@ -1,4 +1,4 @@
-# Web Turborepo
+# The Wired
 
 ## What's inside?
 
@@ -7,21 +7,17 @@ This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includ
 ### Apps
 
 - `client`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
-- `editor`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
 - `site`: a [Next.js](https://nextjs.org) app
 
 ### Packages
 
-- `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components shared by the `client` and `editor`
-- `avatars`: a [Three.js](https://github.com/pmndrs/react-three-fiber) avatar library
+- `matrix`: helpers for interacting with [Matrix](https://matrix.org/)
 - `config`: `eslint` configurations
 - `tsconfig`: `tsconfig.json`s used throughout the monorepo
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
 ### Utilities
-
-This turborepo has some additional tools already setup for you:
 
 - [TypeScript](https://www.typescriptlang.org/) for static type checking
 - [ESLint](https://eslint.org/) for code linting

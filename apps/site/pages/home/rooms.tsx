@@ -1,12 +1,12 @@
 import { useContext, useEffect, useState } from "react";
 import { Grid, Typography } from "@mui/material";
 
-import { MatrixContext, getPublicRooms } from "matrix";
+import { ClientContext, getPublicRooms } from "matrix";
 import HomeLayout from "../../src/layouts/HomeLayout";
 import RoomCard from "../../src/components/RoomCard";
 
 export default function Rooms() {
-  const { client } = useContext(MatrixContext);
+  const { client } = useContext(ClientContext);
 
   const [rooms, setRooms] = useState([]);
 
@@ -18,12 +18,7 @@ export default function Rooms() {
   }, [client]);
 
   return (
-    <Grid
-      className="container underNavbar"
-      container
-      direction="column"
-      rowSpacing={4}
-    >
+    <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h2">🚪 Rooms</Typography>
       </Grid>

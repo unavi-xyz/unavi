@@ -5,9 +5,10 @@ import { Vector3 } from "three";
 import { PHYSICS_GROUPS } from "../constants";
 import { grid_vertex, grid_fragment } from "../shaders/grid";
 
+const position = new Vector3();
+
 export default function Ground() {
   const args: Triplet = [50, 0.1, 50];
-  const position = new Vector3();
 
   const [ref, api] = useBox(() => ({
     args,
@@ -17,7 +18,7 @@ export default function Ground() {
 
   useEffect(() => {
     api.position.copy(position);
-  }, [position]);
+  }, [api.position]);
 
   return (
     <mesh ref={ref}>

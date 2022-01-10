@@ -1,11 +1,16 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext } from "react";
 import { Grid, IconButton, Tooltip, Typography } from "@mui/material";
 import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 import { useRouter } from "next/router";
-import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 import { customAlphabet } from "nanoid";
 
-import { MatrixContext, createRoom, getRoom, getWorldInstances } from "matrix";
+import {
+  ClientContext,
+  createRoom,
+  useRoomsFromWorld,
+  useWorldFromId,
+} from "matrix";
+
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import RoomCard from "../../../src/components/RoomCard";
 
@@ -15,22 +20,10 @@ export default function Id() {
   const router = useRouter();
   const { id } = router.query;
 
-  const { client, loggedIn } = useContext(MatrixContext);
+  const { client, loggedIn } = useContext(ClientContext);
 
-  const [world, setWorld] = useState<null | IPublicRoomsChunkRoom>(null);
-  const [rooms, setRooms] = useState([]);
-
-  useEffect(() => {
-    if (!client || !id) return;
-
-    getRoom(client, `${id}`, true).then((res) => {
-      setWorld(res);
-    });
-
-    getWorldInstances(client, `${id}`).then((res) => {
-      setRooms(res);
-    });
-  }, [client, id]);
+  const world = useWorldFromId(client, id as string);
+  const rooms = useRoomsFromWorld(client, id as string);
 
   async function handleNewRoom() {
     if (!client || !id || !world) return;
@@ -40,12 +33,7 @@ export default function Id() {
   }
 
   return (
-    <Grid
-      className="container underNavbar"
-      container
-      direction="column"
-      rowSpacing={4}
-    >
+    <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h4" style={{ wordBreak: "break-word" }}>
           🌍 {world?.name ?? id}

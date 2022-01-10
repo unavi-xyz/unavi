@@ -14,12 +14,12 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { MatrixContext } from "matrix";
+import { ClientContext } from "matrix";
 
 export default function Register() {
   const router = useRouter();
 
-  const { register } = useContext(MatrixContext);
+  const { register } = useContext(ClientContext);
 
   const [homeserver, setHomeserver] = useState("matrix.org");
   const [username, setUsername] = useState("");
@@ -46,7 +46,7 @@ export default function Register() {
   return (
     <Grid container>
       <Grid
-        className="container underNavbar"
+        className="container"
         item
         sm={8}
         xl={5}

@@ -1,7 +1,7 @@
 import { Vector3 } from "three";
 
-const distanceX = 1;
-const distanceY = 1;
+const distanceX = 0.8;
+const distanceY = 0.7;
 
 const positions = [
   new Vector3(0, 0, -100),
@@ -24,7 +24,7 @@ export default function Crosshair() {
 function Circle({ position }: { position: Vector3 }) {
   return (
     <mesh position={position} renderOrder={999}>
-      <sphereGeometry args={[0.1, 8, 8]} />
+      <sphereGeometry args={[0.11, 8, 8]} />
       <meshBasicMaterial
         color="white"
         depthTest={false}

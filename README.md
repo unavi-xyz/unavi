@@ -7,10 +7,12 @@ This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includ
 ### Apps
 
 - `client`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
+- `editor`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
 - `site`: a [Next.js](https://nextjs.org) app
 
 ### Packages
 
+- `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components used by both `client` and `editor`
 - `matrix`: helpers for interacting with [Matrix](https://matrix.org/)
 - `config`: `eslint` configurations
 - `tsconfig`: `tsconfig.json`s used throughout the monorepo

@@ -9,11 +9,15 @@ import {
 import Link from "next/link";
 import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 
+import { useIdenticon } from "../hooks";
+
 interface Props {
   room: IPublicRoomsChunkRoom;
 }
 
 export default function RoomCard({ room }: Props) {
+  const identicon = useIdenticon(room.room_id);
+
   return (
     <Grid item xs={12} sm={6} md={4}>
       <Card elevation={4}>
@@ -22,7 +26,7 @@ export default function RoomCard({ room }: Props) {
             <CardMedia
               component="img"
               height="140px"
-              image={room.avatar_url ?? "/images/imagefallback.jpg"}
+              image={room.avatar_url ?? identicon}
             />
             <CardContent>
               <Typography>{room.name}</Typography>

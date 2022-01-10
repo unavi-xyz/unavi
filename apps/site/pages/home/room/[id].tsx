@@ -2,9 +2,8 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 
-import { ClientContext, getRoom, parseRoomTopic } from "matrix";
+import { ClientContext, useRoomFromId, useWorldFromRoom } from "matrix";
 import { getAppUrl } from "../../../src/helpers";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
@@ -15,30 +14,14 @@ export default function Id() {
   const { client } = useContext(ClientContext);
 
   const [roomURL, setRoomURL] = useState("");
-  const [room, setRoom] = useState<null | IPublicRoomsChunkRoom>(null);
-  const [world, setWorld] = useState<null | IPublicRoomsChunkRoom>(null);
+
+  const room = useRoomFromId(client, id as string);
+  const world = useWorldFromRoom(client, room?.topic);
 
   useEffect(() => {
     const url = getAppUrl();
     setRoomURL(`${url}?room=${id}`);
   }, [id]);
-
-  useEffect(() => {
-    if (!client || !id) return;
-    getRoom(client, `${id}`).then((res) => {
-      setRoom(res);
-    });
-  }, [client, id]);
-
-  useEffect(() => {
-    if (!client || !room) return;
-
-    const worldId = parseRoomTopic(room.topic);
-
-    getRoom(client, worldId, true).then((res) => {
-      setWorld(res);
-    });
-  }, [client, room]);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>

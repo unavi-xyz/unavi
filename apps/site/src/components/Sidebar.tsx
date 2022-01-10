@@ -4,12 +4,10 @@ import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import Link from "next/link";
 
 import { ClientContext, useMatrixContent, useProfile } from "matrix";
-import { useIdenticon, useWindowDimensions } from "../hooks";
+import { useIdenticon } from "../hooks";
 
 export default function Sidebar() {
   const containerRef = useRef();
-
-  const { isMobile } = useWindowDimensions();
 
   const { loggedIn, userId, client, logout } = useContext(ClientContext);
   const profile = useProfile(client, userId);

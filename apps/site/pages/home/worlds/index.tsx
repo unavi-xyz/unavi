@@ -26,7 +26,7 @@ export default function Worlds() {
           <Typography variant="h2">🌏 Worlds</Typography>
         </Grid>
         <Grid item>
-          {loggedIn && (
+          {/* {loggedIn && (
             <Link href="/home/worlds/new" passHref>
               <Tooltip title="New world" placement="right">
                 <IconButton>
@@ -34,7 +34,7 @@ export default function Worlds() {
                 </IconButton>
               </Tooltip>
             </Link>
-          )}
+          )} */}
         </Grid>
       </Grid>
 

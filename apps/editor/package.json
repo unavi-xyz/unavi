@@ -1,9 +1,9 @@
 {
-  "name": "client",
+  "name": "editor",
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev -p 3002",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -17,9 +17,7 @@
     "next": "^12.0.7",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "three": "^0.136.0",
-    "y-webrtc": "^10.2.2",
-    "yjs": "^13.5.23"
+    "three": "^0.136.0"
   },
   "devDependencies": {
     "@types/react": "17.0.37",

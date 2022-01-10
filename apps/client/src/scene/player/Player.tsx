@@ -111,7 +111,12 @@ export function Player({
       </group>
 
       <KeyboardMovement paused={paused} direction={direction} jump={jump} />
-      <PointerLockControls />
+      <PointerLockControls
+        addEventListener={undefined}
+        hasEventListener={undefined}
+        removeEventListener={undefined}
+        dispatchEvent={undefined}
+      />
     </group>
   );
 }

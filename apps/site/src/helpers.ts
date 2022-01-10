@@ -15,3 +15,13 @@ export function getAppUrl() {
     return `http://localhost:3001`;
   }
 }
+
+export function getEditorUrl() {
+  const subdomain = getSubdomain(window.location.hostname);
+
+  if (subdomain === "www") {
+    return `https://${window.location.hostname.replace("www", "editor")}`;
+  } else {
+    return `http://localhost:3002`;
+  }
+}

@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   Alert,
   Button,
@@ -17,7 +17,7 @@ import HomeserverDialog from "../../src/components/HomeserverDialog";
 export default function Login() {
   const router = useRouter();
 
-  const { login } = useContext(ClientContext);
+  const { login, loggedIn } = useContext(ClientContext);
 
   const [homeserver, setHomeserver] = useState("matrix.org");
   const [username, setUsername] = useState("");
@@ -50,6 +50,10 @@ export default function Login() {
   function handleCloseHomeserver() {
     setOpenHomeserver(false);
   }
+
+  useEffect(() => {
+    if (loggedIn) router.push("/home");
+  }, [loggedIn, router]);
 
   return (
     <div>

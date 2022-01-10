@@ -1,10 +1,10 @@
-import { Button, Grid, Paper, Stack, Typography } from "@mui/material";
+import { Button, Grid, Paper, Stack } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import EditIcon from "@mui/icons-material/Edit";
 
-import Tools from "./Tools";
 import ColorIconButton from "../components/ColorIconButton";
+import SceneName from "./SceneName";
+import Tools from "./Tools";
 
 export default function Navbar() {
   return (
@@ -21,18 +21,7 @@ export default function Navbar() {
               <ArrowBackIosNewIcon className="NavbarIcon" />
             </ColorIconButton>
 
-            <Stack
-              className="clickable"
-              direction="row"
-              alignItems="center"
-              spacing={1}
-            >
-              <Typography variant="h6">New Scene</Typography>
-
-              <ColorIconButton dark>
-                <EditIcon className="NavbarIcon" />
-              </ColorIconButton>
-            </Stack>
+            <SceneName />
           </Stack>
         </Grid>
 
@@ -54,8 +43,6 @@ export default function Navbar() {
                 marginTop: 5,
                 marginBottom: 5,
                 marginRight: 5,
-                paddingTop: 0,
-                paddingBottom: 0,
                 paddingLeft: 16,
                 paddingRight: 16,
               }}

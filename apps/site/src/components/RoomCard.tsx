@@ -19,7 +19,7 @@ export default function RoomCard({ room }: Props) {
   const identicon = useIdenticon(room.room_id);
 
   return (
-    <Grid item xs={12} sm={6} md={4}>
+    <Grid item xs={12} sm={6} md={4} xl={3}>
       <Card elevation={4}>
         <Link href={`/home/room/${room.room_id}`} passHref>
           <CardActionArea>

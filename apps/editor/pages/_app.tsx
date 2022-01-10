@@ -1,7 +1,10 @@
 import * as React from "react";
+import { CssBaseline } from "@mui/material";
+import { ThemeProvider } from "@mui/material/styles";
 import Head from "next/head";
 
 import "../styles/globals.css";
+import theme from "../src/theme";
 
 export default function MyApp(props) {
   const { Component, pageProps } = props;
@@ -13,7 +16,10 @@ export default function MyApp(props) {
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
-      <Component {...pageProps} />
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Component {...pageProps} />
+      </ThemeProvider>
     </>
   );
 }

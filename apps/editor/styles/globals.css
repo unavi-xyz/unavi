@@ -6,4 +6,22 @@ body,
   background-color: #fbe8d3;
   height: 100%;
   margin: 0;
+  overflow: hidden;
+}
+
+.split {
+  display: flex;
+  flex-direction: row;
+}
+
+.gutter:hover {
+  cursor: col-resize;
+}
+
+.NavbarIcon {
+  font-size: 1.4rem;
+}
+
+.clickable {
+  cursor: pointer;
 }

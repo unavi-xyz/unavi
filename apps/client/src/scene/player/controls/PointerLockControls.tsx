@@ -66,7 +66,10 @@ export const PointerLockControls = React.forwardRef(
 PointerLockControls.displayName = "PointerLockControls";
 
 class PointerLockControlsImpl extends EventDispatcher {
-  [x: string]: any; // EventDispatcher isn't typed
+  addEventListener; // EventDispatcher isn't typed
+  removeEventListener;
+  dispatchEvent;
+
   camera;
   domElement;
 

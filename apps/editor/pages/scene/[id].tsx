@@ -12,7 +12,7 @@ export default function Id() {
 
   const { client } = useContext(ClientContext);
 
-  const [roomURL, setRoomURL] = useState("");
+  const [roomURL, setRoomURL] = useState("/");
 
   const room = useRoomFromId(client, id as string);
 

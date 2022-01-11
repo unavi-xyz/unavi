@@ -1,9 +1,9 @@
-import React, { useContext } from "react";
+import { useContext } from "react";
 import { Grid, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 
 import { ClientContext, useProfile, useMatrixContent } from "matrix";
-import { useIdenticon } from "../../../src/hooks";
+import { useIdenticon } from "ui";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
 export default function Id() {
@@ -20,7 +20,7 @@ export default function Id() {
     return (
       <Grid className="page" container direction="column" rowSpacing={4}>
         <Grid item>
-          <Typography variant="h4">User not found.</Typography>
+          <Typography variant="h3">User not found.</Typography>
         </Grid>
       </Grid>
     );
@@ -29,7 +29,7 @@ export default function Id() {
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
-        <Typography variant="h4">{profile.displayname ?? id}</Typography>
+        <Typography variant="h3">{profile.displayname ?? id}</Typography>
         <Typography variant="body1" style={{ color: "GrayText" }}>
           {id}
         </Typography>
@@ -45,6 +45,10 @@ export default function Id() {
             border: "4px solid black",
           }}
         />
+      </Grid>
+
+      <Grid item>
+        <Typography variant="h4">Worlds</Typography>
       </Grid>
     </Grid>
   );

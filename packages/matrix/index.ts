@@ -4,6 +4,7 @@ export * from "./helpers/rooms";
 export * from "./helpers/topics";
 export * from "./hooks/useMatrixContent";
 export * from "./hooks/useProfile";
+export * from "./hooks/usePublicRoomFromId";
 export * from "./hooks/useRoomFromId";
 export * from "./hooks/useRoomsFromWorld";
 export * from "./hooks/useWorldFromId";

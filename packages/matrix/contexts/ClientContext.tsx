@@ -56,7 +56,7 @@ interface ContextInterface {
         user: string,
         password: string
       ) => Promise<undefined | Error>);
-  logout: null | (() => void);
+  logout: () => void;
 }
 
 const defaultContext: ContextInterface = {
@@ -65,7 +65,7 @@ const defaultContext: ContextInterface = {
   client: null,
   login: null,
   register: null,
-  logout: null,
+  logout: () => {},
 };
 
 export const ClientContext = React.createContext(defaultContext);
@@ -140,6 +140,7 @@ export function ClientProvider({ children }: { children: ReactChild }) {
     setClient(defaultContext.client);
     setUserId(defaultContext.userId);
     setLoggedIn(false);
+    registerGuest();
   }
 
   useEffect(() => {
@@ -165,11 +166,6 @@ export function ClientProvider({ children }: { children: ReactChild }) {
       logout();
     }
   }, []);
-
-  useEffect(() => {
-    if (client) return;
-    registerGuest();
-  }, [client]);
 
   return (
     <ClientContext.Provider

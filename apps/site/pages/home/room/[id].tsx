@@ -3,7 +3,7 @@ import { Button, Grid, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { ClientContext, useRoomFromId, useWorldFromRoom } from "matrix";
+import { ClientContext, usePublicRoomFromId, useWorldFromRoom } from "matrix";
 import { getAppUrl } from "../../../src/helpers";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
@@ -15,7 +15,7 @@ export default function Id() {
 
   const [roomURL, setRoomURL] = useState("");
 
-  const room = useRoomFromId(client, id as string);
+  const room = usePublicRoomFromId(client, id as string);
   const world = useWorldFromRoom(client, room?.topic);
 
   useEffect(() => {

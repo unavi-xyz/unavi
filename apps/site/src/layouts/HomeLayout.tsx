@@ -1,10 +1,18 @@
-import React from "react";
-import { Grid, Paper } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Divider, Grid, Paper } from "@mui/material";
 import Head from "next/head";
 
-import Sidebar from "../components/Sidebar";
+import { Sidebar, SidebarButton, getAppUrl, getEditorUrl } from "ui";
 
 export default function HomeLayout({ children }) {
+  const [appUrl, setAppUrl] = useState("/");
+  const [editorUrl, setEditorUrl] = useState("/");
+
+  useEffect(() => {
+    setAppUrl(getAppUrl());
+    setEditorUrl(getEditorUrl());
+  }, []);
+
   return (
     <div>
       <Head>
@@ -13,7 +21,18 @@ export default function HomeLayout({ children }) {
 
       <Grid container>
         <Grid item xs={4} style={{ maxWidth: "320px" }}>
-          <Sidebar />
+          <Sidebar titleHref="/home" loginHref="/home/login">
+            <SidebarButton emoji="🏠" text="Home" href="/home" />
+            <SidebarButton emoji="🌏" text="Worlds" href="/home/worlds" />
+            <SidebarButton emoji="🚪" text="Rooms" href="/home/rooms" />
+            <SidebarButton emoji="🤝" text="Friends" href="/home/friends" />
+            <SidebarButton emoji="💃" text="Avatars" href="/home/avatars" />
+
+            <Divider />
+
+            <SidebarButton emoji="🎮" text="Play" href={appUrl} external />
+            <SidebarButton emoji="🚧" text="Editor" href={editorUrl} external />
+          </Sidebar>
         </Grid>
 
         <Grid item xs>

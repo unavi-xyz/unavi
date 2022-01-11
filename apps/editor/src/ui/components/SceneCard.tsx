@@ -7,27 +7,23 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
+import { Room } from "matrix-js-sdk";
 
 import { useIdenticon } from "ui";
 
 interface Props {
-  room: IPublicRoomsChunkRoom;
+  room: Room;
 }
 
-export default function RoomCard({ room }: Props) {
-  const identicon = useIdenticon(room.room_id);
+export default function SceneCard({ room }: Props) {
+  const identicon = useIdenticon(room.roomId);
 
   return (
     <Grid item xs={12} sm={6} md={4} xl={3}>
       <Card elevation={4}>
-        <Link href={`/home/room/${room.room_id}`} passHref>
+        <Link href={`/scene/${room.roomId}`} passHref>
           <CardActionArea>
-            <CardMedia
-              component="img"
-              height="140px"
-              image={room.avatar_url ?? identicon}
-            />
+            <CardMedia component="img" height="140px" image={identicon} />
             <CardContent>
               <Typography>{room.name}</Typography>
             </CardContent>

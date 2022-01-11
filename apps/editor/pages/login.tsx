@@ -5,9 +5,9 @@ export default function Login() {
   return (
     <div>
       <Head>
-        <title>The Wired - Home</title>
+        <title>The Wired - Editor</title>
       </Head>
-      <LoginPage finishedHref="/home" registerHref="/home/register" />;
+      <LoginPage />;
     </div>
   );
 }

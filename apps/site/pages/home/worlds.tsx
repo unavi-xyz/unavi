@@ -1,14 +1,12 @@
 import { useContext, useEffect, useState } from "react";
-import { Grid, IconButton, Tooltip, Typography } from "@mui/material";
-import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
-import Link from "next/link";
+import { Grid, Typography } from "@mui/material";
 
 import { getWorlds, ClientContext } from "matrix";
-import HomeLayout from "../../../src/layouts/HomeLayout";
-import WorldCard from "../../../src/components/WorldCard";
+import HomeLayout from "../../src/layouts/HomeLayout";
+import WorldCard from "../../src/components/WorldCard";
 
 export default function Worlds() {
-  const { client, loggedIn } = useContext(ClientContext);
+  const { client } = useContext(ClientContext);
 
   const [worlds, setWorlds] = useState([]);
 
@@ -25,17 +23,7 @@ export default function Worlds() {
         <Grid item>
           <Typography variant="h2">🌏 Worlds</Typography>
         </Grid>
-        <Grid item>
-          {/* {loggedIn && (
-            <Link href="/home/worlds/new" passHref>
-              <Tooltip title="New world" placement="right">
-                <IconButton>
-                  <AddBoxOutlinedIcon />
-                </IconButton>
-              </Tooltip>
-            </Link>
-          )} */}
-        </Grid>
+        <Grid item></Grid>
       </Grid>
 
       <Grid item container spacing={4}>

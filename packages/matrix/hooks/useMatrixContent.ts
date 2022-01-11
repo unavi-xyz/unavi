@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-export function useMatrixContent(url: string) {
-  const [content, setContent] = useState<null | string>(null);
+export function useMatrixContent(url: string | undefined) {
+  const [content, setContent] = useState<string | null>(null);
 
   useEffect(() => {
     if (!url) {

@@ -12,8 +12,8 @@ export function getEditorUrl() {
 
   if (!subdomain) return `http://localhost:3002`;
 
-  const url = `https://${window.location.hostname}`;
-  return url.replace(/^[^.]*/, "editor");
+  const url = `https://${window.location.hostname.replace(/^[^.]*/, "editor")}`;
+  return url;
 }
 
 export function getAppUrl() {
@@ -21,8 +21,8 @@ export function getAppUrl() {
 
   if (!subdomain) return `http://localhost:3001`;
 
-  const url = `https://${window.location.hostname}`;
-  return url.replace(/^[^.]*/, "app");
+  const url = `https://${window.location.hostname.replace(/^[^.]*/, "app")}`;
+  return url;
 }
 
 export function getHomeUrl() {
@@ -30,6 +30,9 @@ export function getHomeUrl() {
 
   if (!subdomain) return `http://localhost:3000/home`;
 
-  const url = `https://${window.location.hostname}`;
-  return `${url.replace(/^[^.]*/, "www")}/home`;
+  const url = `https://${window.location.hostname.replace(
+    /^[^.]*/,
+    "www"
+  )}/home`;
+  return url;
 }

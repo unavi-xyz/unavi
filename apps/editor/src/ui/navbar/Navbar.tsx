@@ -1,13 +1,27 @@
+import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Paper, Stack } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import Link from "next/link";
 
+import { ClientContext, useRoomFromId } from "matrix";
 import ColorIconButton from "../components/ColorIconButton";
 import SceneName from "./SceneName";
 import Tools from "./Tools";
 
 export default function Navbar() {
+  const { client } = useContext(ClientContext);
+
+  const [id, setId] = useState("");
+
+  const room = useRoomFromId(client, id);
+
+  useEffect(() => {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    setId(urlParams.get("scene"));
+  }, []);
+
   return (
     <Paper square variant="outlined" style={{ padding: "0.2rem" }}>
       <Grid container alignItems="center">
@@ -18,13 +32,15 @@ export default function Navbar() {
             justifyContent="flex-start"
             spacing={1}
           >
-            <Link href="/" passHref>
-              <ColorIconButton>
-                <ArrowBackIosNewIcon className="NavbarIcon" />
-              </ColorIconButton>
+            <Link href={`/scene/${id}`} passHref>
+              <span>
+                <ColorIconButton>
+                  <ArrowBackIosNewIcon className="NavbarIcon" />
+                </ColorIconButton>
+              </span>
             </Link>
 
-            <SceneName />
+            <SceneName name={room?.name} />
           </Stack>
         </Grid>
 

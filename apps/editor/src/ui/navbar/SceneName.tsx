@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Stack, Typography, useTheme } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 
-export default function SceneName() {
+export default function SceneName({ name = "" }) {
   const theme = useTheme();
 
   const [hover, setHover] = useState(false);
@@ -23,7 +23,7 @@ export default function SceneName() {
       spacing={1}
       style={{ marginLeft: 5 }}
     >
-      <Typography variant="h6">New Scene</Typography>
+      <Typography variant="h6">{name}</Typography>
 
       <EditIcon
         className="NavbarIcon"

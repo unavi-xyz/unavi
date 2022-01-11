@@ -11,6 +11,8 @@ import "../styles/globals.css";
 export default function MyApp(props) {
   const { Component, pageProps } = props;
 
+  const Layout = Component.Layout ?? EmptyLayout;
+
   return (
     <>
       <Head>
@@ -22,9 +24,15 @@ export default function MyApp(props) {
 
       <ThemeProvider theme={theme}>
         <ClientProvider>
-          <Component {...pageProps} />
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
         </ClientProvider>
       </ThemeProvider>
     </>
   );
+}
+
+function EmptyLayout({ children }) {
+  return children;
 }

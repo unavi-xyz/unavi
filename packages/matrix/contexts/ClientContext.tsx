@@ -140,6 +140,7 @@ export function ClientProvider({ children }: { children: ReactChild }) {
     setClient(defaultContext.client);
     setUserId(defaultContext.userId);
     setLoggedIn(false);
+    registerGuest();
   }
 
   useEffect(() => {
@@ -165,11 +166,6 @@ export function ClientProvider({ children }: { children: ReactChild }) {
       logout();
     }
   }, []);
-
-  useEffect(() => {
-    if (client) return;
-    registerGuest();
-  }, [client]);
 
   return (
     <ClientContext.Provider

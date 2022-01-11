@@ -1,17 +1,8 @@
-import { useEffect, useState } from "react";
 import { Grid, Paper } from "@mui/material";
 
-import { Sidebar, SidebarButton, getAppUrl, getEditorUrl } from "ui";
+import { Sidebar, SidebarButton } from "ui";
 
 export default function SidebarLayout({ children }) {
-  const [appUrl, setAppUrl] = useState("/");
-  const [editorUrl, setEditorUrl] = useState("/");
-
-  useEffect(() => {
-    setAppUrl(getAppUrl());
-    setEditorUrl(getEditorUrl());
-  }, []);
-
   return (
     <div>
       <Grid container>

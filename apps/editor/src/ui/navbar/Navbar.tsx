@@ -40,7 +40,7 @@ export default function Navbar() {
               </span>
             </Link>
 
-            <SceneName name={room?.name} />
+            <SceneName room={room} />
           </Stack>
         </Grid>
 

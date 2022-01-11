@@ -5,6 +5,8 @@ const primary = "#283C63";
 const secondary = "#F85F73";
 const background = "#FBE8D3";
 
+const info = "#998b81";
+
 const theme = createTheme({
   palette: {
     mode: "light",
@@ -17,6 +19,9 @@ const theme = createTheme({
     },
     secondary: {
       main: secondary,
+    },
+    info: {
+      main: info,
     },
   },
 });

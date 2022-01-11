@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 
+import Objects from "./Objects";
+
 const GRID_SIZE = 20;
 
 export default function Scene() {
@@ -20,6 +22,10 @@ export default function Scene() {
         dispatchEvent={undefined}
       />
       <gridHelper args={[GRID_SIZE, GRID_SIZE]} />
+      <ambientLight />
+      <directionalLight />
+
+      <Objects />
     </group>
   );
 }

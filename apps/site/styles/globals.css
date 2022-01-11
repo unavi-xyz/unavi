@@ -1,5 +1,6 @@
+html,
 body {
-  background-color: #fbe8d3;
+  background-color: #fbe8d3 !important;
 }
 
 a {

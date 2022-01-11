@@ -4,46 +4,32 @@ function getSubdomain(hostname: string) {
   if (urlParts) return hostname.replace(urlParts[0], "").slice(0, -1);
 }
 
-const SUBDOMAINS = ["www", "app", "editor"];
-
 export function getEditorUrl() {
   const subdomain = getSubdomain(window.location.hostname);
 
   //in production, direct the user to editor.domain.com
   //in development, direct them to localhost
 
-  SUBDOMAINS.forEach((sub) => {
-    if (subdomain === sub) {
-      return `https://${window.location.hostname.replace(subdomain, "editor")}`;
-    }
-  });
+  if (!subdomain) return `http://localhost:3002`;
 
-  return `http://localhost:3002`;
+  const url = `https://${window.location.hostname}`;
+  return url.replace(/^[^.]*/, "editor");
 }
 
 export function getAppUrl() {
   const subdomain = getSubdomain(window.location.hostname);
 
-  SUBDOMAINS.forEach((sub) => {
-    if (subdomain === sub) {
-      return `https://${window.location.hostname.replace(subdomain, "app")}`;
-    }
-  });
+  if (!subdomain) return `http://localhost:3001`;
 
-  return `http://localhost:3001`;
+  const url = `https://${window.location.hostname}`;
+  return url.replace(/^[^.]*/, "app");
 }
 
 export function getHomeUrl() {
   const subdomain = getSubdomain(window.location.hostname);
 
-  SUBDOMAINS.forEach((sub) => {
-    if (subdomain === sub) {
-      return `https://${window.location.hostname.replace(
-        subdomain,
-        "www"
-      )}/home`;
-    }
-  });
+  if (!subdomain) return `http://localhost:3000/home`;
 
-  return `http://localhost:3000/home`;
+  const url = `https://${window.location.hostname}`;
+  return `${url.replace(/^[^.]*/, "www")}/home`;
 }

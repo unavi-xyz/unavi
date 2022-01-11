@@ -8,6 +8,7 @@ import { useIdenticon } from "../hooks/useIdenticon";
 import { SidebarButton } from "..";
 
 interface Props {
+  title?: string;
   titleHref?: string;
   loginHref?: string;
   viewProfile?: boolean;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function Sidebar({
+  title = "The Wired",
   titleHref = "/",
   loginHref = "/login",
   viewProfile = true,
@@ -46,7 +48,7 @@ export function Sidebar({
           }}
         >
           <Link href={titleHref} passHref>
-            <h1>The Wired</h1>
+            <h1>{title}</h1>
           </Link>
         </div>
 

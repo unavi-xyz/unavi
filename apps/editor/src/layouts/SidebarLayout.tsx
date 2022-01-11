@@ -16,7 +16,7 @@ export default function SidebarLayout({ children }) {
     <div>
       <Grid container>
         <Grid item xs={4} style={{ maxWidth: "320px" }}>
-          <Sidebar viewProfile={false}>
+          <Sidebar title="Editor" viewProfile={false}>
             <SidebarButton emoji="🌲" text="Scenes" href="/" />
           </Sidebar>
         </Grid>

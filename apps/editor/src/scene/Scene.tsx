@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import { OrbitControls, Sky, TransformControls } from "@react-three/drei";
 
-import { useStore } from "../state";
+import { useStore } from "../hooks/useStore";
 import Objects from "./Objects";
 
 const GRID_SIZE = 20;
@@ -14,7 +14,7 @@ export default function Scene() {
   const { camera } = useThree();
 
   useEffect(() => {
-    camera.position.set(9, 9, 9);
+    camera.position.set(5, 5, 5);
   }, [camera]);
 
   return (

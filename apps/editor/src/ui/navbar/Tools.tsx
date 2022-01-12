@@ -1,6 +1,6 @@
 import { IconButton, Stack, Tooltip } from "@mui/material";
 
-import { TOOLS, useStore } from "../../state";
+import { TOOLS, useStore } from "../../hooks/useStore";
 import TranslateIcon from "../icons/TranslateIcon";
 import RotateIcon from "../icons/RotateIcon";
 import ScaleIcon from "../icons/ScaleIcon";
@@ -11,7 +11,7 @@ export default function Tools() {
 
   return (
     <Stack direction="row" justifyContent="center" spacing={2}>
-      <Tooltip title="Translate">
+      <Tooltip title="Translate (W)">
         <IconButton
           onClick={() => setTool(TOOLS.translate)}
           style={{
@@ -23,7 +23,7 @@ export default function Tools() {
         </IconButton>
       </Tooltip>
 
-      <Tooltip title="Rotate">
+      <Tooltip title="Rotate (E)">
         <IconButton
           onClick={() => setTool(TOOLS.rotate)}
           style={{
@@ -35,7 +35,7 @@ export default function Tools() {
         </IconButton>
       </Tooltip>
 
-      <Tooltip title="Scale">
+      <Tooltip title="Scale (R)">
         <IconButton
           onClick={() => setTool(TOOLS.scale)}
           style={{

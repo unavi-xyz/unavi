@@ -8,14 +8,14 @@ import {
 } from "@mui/material";
 import { OBJ_NAMES } from "3d";
 
-import { useStore } from "../../state";
+import { useScene } from "../../hooks/useScene";
 
 interface Props {
   name: OBJ_NAMES;
 }
 
 export default function ObjectCard({ name }: Props) {
-  const newObject = useStore((state) => state.newObject);
+  const newObject = useScene((state) => state.newObject);
 
   function handleClick() {
     newObject(name);

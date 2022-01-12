@@ -1,12 +1,14 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import Link from "next/link";
 import { useRouter } from "next/router";
-
 import { ClientContext, useRoomFromId } from "matrix";
 import { useIdenticon } from "ui";
+
 import SidebarLayout from "../../src/layouts/SidebarLayout";
 import SceneActions from "../../src/ui/components/SceneActions";
+import ColorIconButton from "../../src/ui/components/ColorIconButton";
 
 export default function Id() {
   const router = useRouter();
@@ -36,9 +38,19 @@ export default function Id() {
           alignItems="center"
           justifyContent="space-between"
         >
-          <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-            {room?.name ?? id}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Link href="/" passHref>
+              <span>
+                <ColorIconButton>
+                  <ArrowBackIosNewIcon />
+                </ColorIconButton>
+              </span>
+            </Link>
+
+            <Typography variant="h4" style={{ wordBreak: "break-word" }}>
+              {room?.name ?? id}
+            </Typography>
+          </Stack>
 
           <Stack direction="row" alignItems="center" spacing={2}>
             <Link href={roomURL} passHref>

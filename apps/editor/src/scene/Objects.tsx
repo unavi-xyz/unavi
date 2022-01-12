@@ -35,7 +35,6 @@ export default function Objects() {
   return (
     <group>
       {Object.values(scene).map((object) => {
-        console.log("🤝", object);
         return <EditorObject key={object.id} object={object} />;
       })}
     </group>

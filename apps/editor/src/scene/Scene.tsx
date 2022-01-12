@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
-import { OrbitControls, TransformControls } from "@react-three/drei";
+import { OrbitControls, Sky, TransformControls } from "@react-three/drei";
 
 import { useStore } from "../state";
 import Objects from "./Objects";
@@ -29,6 +29,7 @@ export default function Scene() {
       <gridHelper args={[GRID_SIZE, GRID_SIZE]} />
       <ambientLight />
       <directionalLight />
+      <Sky />
 
       <TransformControls // kek
         type={undefined}

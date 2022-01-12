@@ -8,7 +8,7 @@ export default function RightPanel() {
     <Paper
       square
       variant="outlined"
-      style={{ width: "100%", padding: "1rem", borderTop: 0 }}
+      style={{ width: "100%", padding: "1rem", border: 0 }}
     >
       <Typography variant="h3" sx={{ marginBottom: 2 }}>
         Objects

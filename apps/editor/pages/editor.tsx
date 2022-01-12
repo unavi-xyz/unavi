@@ -18,7 +18,12 @@ export default function Editor() {
     <div className="App">
       <Navbar />
 
-      <Split className="split App" gutterSize={6} sizes={[80, 20]}>
+      <Split
+        className="split App"
+        gutterSize={6}
+        sizes={[80, 20]}
+        gutterAlign="end"
+      >
         <Canvas onPointerMissed={clearSelected}>
           <Scene />
         </Canvas>

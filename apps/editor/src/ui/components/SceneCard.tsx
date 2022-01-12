@@ -1,15 +1,18 @@
+import { useState } from "react";
 import {
   Card,
   CardActionArea,
   CardContent,
   CardMedia,
   Grid,
+  Stack,
   Typography,
 } from "@mui/material";
 import Link from "next/link";
 import { Room } from "matrix-js-sdk";
-
 import { useIdenticon } from "ui";
+
+import SceneActions from "./SceneActions";
 
 interface Props {
   room: Room;
@@ -18,14 +21,31 @@ interface Props {
 export default function SceneCard({ room }: Props) {
   const identicon = useIdenticon(room.roomId);
 
+  const [hover, setHover] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+
+  if (deleted) return <></>;
+
   return (
     <Grid item xs={12} sm={6} md={4} xl={3}>
-      <Card elevation={4}>
+      <Card variant="outlined">
         <Link href={`/scene/${room.roomId}`} passHref>
-          <CardActionArea>
+          <CardActionArea
+            onMouseOver={() => setHover(true)}
+            onMouseOut={() => setHover(false)}
+          >
             <CardMedia component="img" height="140px" image={identicon} />
-            <CardContent>
-              <Typography>{room.name}</Typography>
+            <CardContent sx={{ p: 1, borderTop: "1px solid rgba(0,0,0,0.12)" }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Typography>{room.name}</Typography>
+                <span style={{ visibility: hover ? "visible" : "hidden" }}>
+                  <SceneActions roomId={room.roomId} setDeleted={setDeleted} />
+                </span>
+              </Stack>
             </CardContent>
           </CardActionArea>
         </Link>

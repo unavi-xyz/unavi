@@ -14,8 +14,13 @@ body,
   flex-direction: row;
 }
 
+.gutter {
+  border-left: 1px solid rgba(0, 0, 0, 0.12);
+}
+
 .gutter:hover {
   cursor: col-resize;
+  border-left: 3px solid rgba(0, 0, 0, 0.12);
 }
 
 .NavbarIcon {

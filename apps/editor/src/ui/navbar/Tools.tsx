@@ -1,53 +1,46 @@
-import { useState } from "react";
 import { IconButton, Stack, Tooltip } from "@mui/material";
 
+import { TOOLS, useStore } from "../../hooks/useStore";
 import TranslateIcon from "../icons/TranslateIcon";
 import RotateIcon from "../icons/RotateIcon";
 import ScaleIcon from "../icons/ScaleIcon";
 
-const TOOLS = {
-  translate: "Translate",
-  rotate: "Rotate",
-  scale: "Scale",
-};
-
 export default function Tools() {
-  const [selected, setSelected] = useState(TOOLS.translate);
+  const tool = useStore((state) => state.tool);
+  const setTool = useStore((state) => state.setTool);
 
   return (
     <Stack direction="row" justifyContent="center" spacing={2}>
-      <Tooltip title="Translate">
+      <Tooltip title="Translate (W)">
         <IconButton
-          onClick={() => setSelected(TOOLS.translate)}
+          onClick={() => setTool(TOOLS.translate)}
           style={{
             borderRadius: 5,
-            background:
-              selected === TOOLS.translate ? "rgba(0, 0, 0, 0.05)" : null,
+            background: tool === TOOLS.translate ? "rgba(0, 0, 0, 0.05)" : null,
           }}
         >
           <TranslateIcon className="NavbarIcon" />
         </IconButton>
       </Tooltip>
 
-      <Tooltip title="Rotate">
+      <Tooltip title="Rotate (E)">
         <IconButton
-          onClick={() => setSelected(TOOLS.rotate)}
+          onClick={() => setTool(TOOLS.rotate)}
           style={{
             borderRadius: 5,
-            background:
-              selected === TOOLS.rotate ? "rgba(0, 0, 0, 0.05)" : null,
+            background: tool === TOOLS.rotate ? "rgba(0, 0, 0, 0.05)" : null,
           }}
         >
           <RotateIcon className="NavbarIcon" />
         </IconButton>
       </Tooltip>
 
-      <Tooltip title="Scale">
+      <Tooltip title="Scale (R)">
         <IconButton
-          onClick={() => setSelected(TOOLS.scale)}
+          onClick={() => setTool(TOOLS.scale)}
           style={{
             borderRadius: 5,
-            background: selected === TOOLS.scale ? "rgba(0, 0, 0, 0.05)" : null,
+            background: tool === TOOLS.scale ? "rgba(0, 0, 0, 0.05)" : null,
           }}
         >
           <ScaleIcon className="NavbarIcon" />

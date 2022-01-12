@@ -1,3 +1,4 @@
+//centers clicks to the middle of the screen
 export const RAYCASTER_SETTINGS = {
   computeOffsets: (e: any) => ({
     offsetX: e.target.width / 2,

@@ -1,12 +1,18 @@
-import { useState } from "react";
+import { ReactChild, useState } from "react";
 import { IconButton, Tooltip, useTheme } from "@mui/material";
 
-export default function ColorIconButton({
+interface Props {
+  tooltip?: string;
+  dark?: boolean;
+  children?: ReactChild | ReactChild[];
+}
+
+export function ColorIconButton({
   tooltip = "",
   dark = false,
   children,
   ...rest
-}) {
+}: Props) {
   const theme = useTheme();
 
   const [hover, setHover] = useState(false);
@@ -30,7 +36,7 @@ export default function ColorIconButton({
             ? theme.palette.secondary.main
             : dark
             ? "rgba(0,0,0,0.2)"
-            : null,
+            : undefined,
         }}
         {...rest}
       >

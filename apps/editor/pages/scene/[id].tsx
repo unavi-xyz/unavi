@@ -4,11 +4,10 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { ClientContext, useRoomFromId } from "matrix";
-import { useIdenticon } from "ui";
+import { useIdenticon, ColorIconButton } from "ui";
 
 import SidebarLayout from "../../src/layouts/SidebarLayout";
 import SceneActions from "../../src/ui/components/SceneActions";
-import ColorIconButton from "../../src/ui/components/ColorIconButton";
 
 export default function Id() {
   const router = useRouter();

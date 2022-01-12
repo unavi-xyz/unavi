@@ -4,9 +4,9 @@ import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import Link from "next/link";
 import { ClientContext, useRoomFromId } from "matrix";
+import { ColorIconButton } from "ui";
 
 import { useStore } from "../../hooks/useStore";
-import ColorIconButton from "../components/ColorIconButton";
 import SceneName from "./SceneName";
 import Tools from "./Tools";
 

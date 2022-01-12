@@ -20,7 +20,7 @@ body,
 
 .gutter:hover {
   cursor: col-resize;
-  border-left: 2px solid rgba(0, 0, 0, 0.12);
+  border-left: 3px solid rgba(0, 0, 0, 0.12);
 }
 
 .NavbarIcon {

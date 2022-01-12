@@ -28,7 +28,7 @@
     "zustand": "^3.6.9"
   },
   "devDependencies": {
-    "@types/react": "17.0.37",
+    "@types/react": "17.0.38",
     "@types/react-dom": "^17",
     "config": "*",
     "eslint": "8.6.0",

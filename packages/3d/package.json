@@ -5,7 +5,7 @@
   "types": "./index.ts",
   "license": "MIT",
   "devDependencies": {
-    "@types/react": "17.0.37",
+    "@types/react": "17.0.38",
     "@types/react-dom": "^17",
     "@types/three": "^0.136.0",
     "tsconfig": "*",

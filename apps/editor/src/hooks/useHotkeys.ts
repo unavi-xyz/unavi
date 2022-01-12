@@ -14,8 +14,10 @@ export function useHotkeys() {
       switch (e.key) {
         case "Delete":
         case "Backspace":
-          deleteObject(selected);
-          setSelected(null, null);
+          if (selected) {
+            deleteObject(selected);
+            setSelected(null, null);
+          }
           break;
 
         case "w":

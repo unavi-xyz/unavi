@@ -1,12 +1,12 @@
 import { useContext, useEffect, useState } from "react";
-import { Button, Grid, IconButton, Stack, Typography } from "@mui/material";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import { Button, Grid, Stack, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
 import { ClientContext, useRoomFromId } from "matrix";
 import { useIdenticon } from "ui";
 import SidebarLayout from "../../src/layouts/SidebarLayout";
+import SceneActions from "../../src/ui/components/SceneActions";
 
 export default function Id() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export default function Id() {
   const { client } = useContext(ClientContext);
 
   const [roomURL, setRoomURL] = useState("/");
+  const [deleted, setDeleted] = useState(false);
 
   const room = useRoomFromId(client, id as string);
   const identicon = useIdenticon(room?.roomId);
@@ -22,6 +23,10 @@ export default function Id() {
   useEffect(() => {
     setRoomURL(`/editor?scene=${id}`);
   }, [id]);
+
+  useEffect(() => {
+    if (deleted) router.push("/");
+  }, [deleted, router]);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
@@ -42,9 +47,7 @@ export default function Id() {
               </Button>
             </Link>
 
-            <IconButton>
-              <MoreHorizIcon />
-            </IconButton>
+            <SceneActions roomId={room?.roomId} setDeleted={setDeleted} />
           </Stack>
         </Stack>
       </Grid>

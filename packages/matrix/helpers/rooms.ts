@@ -95,3 +95,7 @@ export async function getScenes(client: MatrixClient) {
   const scenes = rooms.filter((room) => room.tags.scene?.value === true);
   return scenes;
 }
+
+export async function deleteScene(client: MatrixClient, roomId: string) {
+  client.leave(roomId);
+}

@@ -4,6 +4,7 @@ import Split from "react-split";
 
 import { useStore } from "../src/hooks/useStore";
 import { useScene } from "../src/hooks/useScene";
+import { useHotkeys } from "../src/hooks/useHotkeys";
 
 import Scene from "../src/scene/Scene";
 import Navbar from "../src/ui/navbar/Navbar";
@@ -14,6 +15,8 @@ export default function Editor() {
   const setRoomId = useStore((state) => state.setRoomId);
 
   const setScene = useScene((state) => state.setScene);
+
+  useHotkeys();
 
   function clearSelected() {
     setSelected(null, null);

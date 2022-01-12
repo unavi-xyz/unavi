@@ -26,7 +26,10 @@ export const useStore = create((set: any) => ({
     });
   },
 
-  setSelected: (object: SceneObject, ref: MutableRefObject<undefined>) => {
+  setSelected: (
+    object: SceneObject | null,
+    ref: MutableRefObject<undefined> | null
+  ) => {
     set((state) => {
       state.selected = object;
       state.selectedRef = ref;

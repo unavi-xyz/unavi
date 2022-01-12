@@ -21,6 +21,14 @@ export const useScene = create((set: any, get: any) => ({
     });
   },
 
+  deleteObject: (object: SceneObject) => {
+    set((state) => {
+      const newScene = { ...state.scene };
+      delete newScene[object.id];
+      return { scene: newScene };
+    });
+  },
+
   addObject: (object: SceneObject) => {
     set((state) => {
       const newScene = { ...state.scene };

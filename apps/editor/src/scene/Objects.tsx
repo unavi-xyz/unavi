@@ -5,7 +5,7 @@ import { useStore } from "../hooks/useStore";
 
 import EditorObject from "./EditorObject";
 
-const AUTOSAVE_INTERVAL = 1000;
+const AUTOSAVE_INTERVAL = 5000;
 
 export default function Objects() {
   const scene = useScene((state) => state.scene);

@@ -28,7 +28,8 @@ export default function Editor() {
     setRoomId(urlParams.get("scene"));
 
     setScene({});
-  }, [setRoomId, setScene]);
+    setSelected(null, null);
+  }, [setRoomId, setScene, setSelected]);
 
   return (
     <div className="App">
@@ -40,7 +41,10 @@ export default function Editor() {
         sizes={[80, 20]}
         gutterAlign="end"
       >
-        <Canvas onPointerMissed={clearSelected}>
+        <Canvas
+          onPointerMissed={clearSelected}
+          gl={{ preserveDrawingBuffer: true }}
+        >
           <Scene />
         </Canvas>
 

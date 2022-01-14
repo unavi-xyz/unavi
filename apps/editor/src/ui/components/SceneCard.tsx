@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardActionArea,
@@ -23,6 +23,11 @@ export default function SceneCard({ room }: Props) {
 
   const [hover, setHover] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [preview, setPreview] = useState("");
+
+  useEffect(() => {
+    setPreview(localStorage.getItem(`${room?.roomId}-preview`));
+  }, [room?.roomId]);
 
   if (deleted) return <></>;
 
@@ -34,7 +39,11 @@ export default function SceneCard({ room }: Props) {
             onMouseOver={() => setHover(true)}
             onMouseOut={() => setHover(false)}
           >
-            <CardMedia component="img" height="140px" image={identicon} />
+            <CardMedia
+              component="img"
+              height="140px"
+              image={preview ?? identicon}
+            />
             <CardContent sx={{ p: 1, borderTop: "1px solid rgba(0,0,0,0.12)" }}>
               <Stack
                 direction="row"

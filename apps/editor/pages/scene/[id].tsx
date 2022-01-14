@@ -17,12 +17,14 @@ export default function Id() {
 
   const [roomURL, setRoomURL] = useState("/");
   const [deleted, setDeleted] = useState(false);
+  const [preview, setPreview] = useState("");
 
   const room = useRoomFromId(client, id as string);
   const identicon = useIdenticon(room?.roomId);
 
   useEffect(() => {
     setRoomURL(`/editor?scene=${id}`);
+    setPreview(localStorage.getItem(`${id}-preview`));
   }, [id]);
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function Id() {
 
       <Grid item>
         <img
-          src={identicon}
+          src={preview ?? identicon}
           alt="scene preview"
           style={{ width: "800px", border: "1px solid black" }}
         />

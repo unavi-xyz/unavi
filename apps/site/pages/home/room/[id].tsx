@@ -1,29 +1,40 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Typography } from "@mui/material";
 import Link from "next/link";
-import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
-import { getGuestClient, getPublicRoom, parseRoomTopic } from "matrix";
+import { ClientContext, getPublicRoom, parseRoomTopic } from "matrix";
 
 import { getAppUrl } from "../../../src/helpers";
 import HomeLayout from "../../../src/layouts/HomeLayout";
+import useSWR from "swr";
+import { useRouter } from "next/router";
 
-interface Props {
-  room: IPublicRoomsChunkRoom;
-  world: IPublicRoomsChunkRoom;
-}
-export default function Id({ room, world }: Props) {
+export default function Id() {
+  const router = useRouter();
+  const id = router.query.id;
+
+  const { client } = useContext(ClientContext);
+
   const [joinUrl, setJoinUrl] = useState("");
+
+  async function fetcher(id) {
+    const room = await getPublicRoom(client, id);
+    const worldId = parseRoomTopic(room.topic);
+    const world = await getPublicRoom(client, worldId, true);
+    return { room, world };
+  }
+
+  const { data } = useSWR(id, fetcher);
 
   useEffect(() => {
     const url = getAppUrl();
-    setJoinUrl(`${url}?room=${room.room_id}`);
-  }, [room.room_id]);
+    setJoinUrl(`${url}?room=${data?.room.room_id}`);
+  }, [data?.room.room_id]);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-          🚪 {room.name}
+          🚪 {data?.room.name}
         </Typography>
       </Grid>
 
@@ -32,13 +43,13 @@ export default function Id({ room, world }: Props) {
           <Typography variant="h6">World:</Typography>
         </Grid>
         <Grid item>
-          <Link href={`/home/world/${world.room_id}`} passHref>
+          <Link href={`/home/world/${data?.world.room_id}`} passHref>
             <Typography
               className="link"
               variant="h6"
               style={{ wordBreak: "break-word" }}
             >
-              {world.name}
+              {data?.world.name}
             </Typography>
           </Link>
         </Grid>
@@ -59,15 +70,3 @@ export default function Id({ room, world }: Props) {
 }
 
 Id.Layout = HomeLayout;
-
-export async function getServerSideProps(context) {
-  const id = context.params.id;
-
-  const client = await getGuestClient();
-  const room = await getPublicRoom(client, id);
-
-  const worldId = parseRoomTopic(room.topic);
-  const world = await getPublicRoom(client, worldId, true);
-
-  return { props: { room, world } };
-}

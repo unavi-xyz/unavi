@@ -4,13 +4,12 @@ import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
+import useSWR from "swr";
 import { customAlphabet } from "nanoid";
 import { ColorIconButton } from "ui";
 import {
   ClientContext,
   createRoom,
-  getGuestClient,
   getPublicRoom,
   getWorldInstances,
 } from "matrix";
@@ -20,20 +19,24 @@ import RoomCard from "../../../src/components/RoomCard";
 
 const nanoid = customAlphabet("1234567890", 8);
 
-interface Props {
-  world: IPublicRoomsChunkRoom;
-  rooms: IPublicRoomsChunkRoom[];
-}
-
-export default function Id({ world, rooms }: Props) {
+export default function Id() {
   const router = useRouter();
   const { id } = router.query;
 
   const { client, loggedIn } = useContext(ClientContext);
 
+  async function fetcher(worldId) {
+    const world = await getPublicRoom(client, worldId as string, true);
+    const rooms = await getWorldInstances(client, worldId as string);
+
+    return { world, rooms };
+  }
+
+  const { data } = useSWR(id, fetcher);
+
   async function handleNewRoom() {
-    if (!client || !id || !world) return;
-    const name = `${world.name}#${nanoid()}`;
+    if (!client || !id || !data?.world) return;
+    const name = `${data?.world.name}#${nanoid()}`;
     const { room_id } = await createRoom(client, `${id}`, name);
     router.push(`/home/room/${room_id}`);
   }
@@ -50,7 +53,7 @@ export default function Id({ world, rooms }: Props) {
             </span>
           </Link>
           <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-            {world.name}
+            {data?.world.name}
           </Typography>
         </Stack>
       </Grid>
@@ -71,7 +74,7 @@ export default function Id({ world, rooms }: Props) {
       </Grid>
 
       <Grid item container spacing={4}>
-        {rooms.map((room) => {
+        {data?.rooms.map((room) => {
           return <RoomCard key={room.room_id} room={room} />;
         })}
       </Grid>
@@ -80,18 +83,3 @@ export default function Id({ world, rooms }: Props) {
 }
 
 Id.Layout = HomeLayout;
-
-export async function getServerSideProps(context) {
-  const id = context.params.id;
-
-  const client = await getGuestClient();
-  const world = await getPublicRoom(client, id, true);
-  const rooms = await getWorldInstances(client, id);
-
-  return {
-    props: {
-      world,
-      rooms,
-    },
-  };
-}

@@ -2,31 +2,34 @@ import { useContext } from "react";
 import { Grid, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import Link from "next/link";
 import { useRouter } from "next/router";
+import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 import { customAlphabet } from "nanoid";
-
+import { ColorIconButton } from "ui";
 import {
   ClientContext,
   createRoom,
-  useRoomsFromWorld,
-  useWorldFromId,
+  getGuestClient,
+  getPublicRoom,
+  getWorldInstances,
 } from "matrix";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import RoomCard from "../../../src/components/RoomCard";
-import Link from "next/link";
-import { ColorIconButton } from "ui";
 
 const nanoid = customAlphabet("1234567890", 8);
 
-export default function Id() {
+interface Props {
+  world: IPublicRoomsChunkRoom;
+  rooms: IPublicRoomsChunkRoom[];
+}
+
+export default function Id({ world, rooms }: Props) {
   const router = useRouter();
   const { id } = router.query;
 
   const { client, loggedIn } = useContext(ClientContext);
-
-  const world = useWorldFromId(client, id as string);
-  const rooms = useRoomsFromWorld(client, id as string);
 
   async function handleNewRoom() {
     if (!client || !id || !world) return;
@@ -47,7 +50,7 @@ export default function Id() {
             </span>
           </Link>
           <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-            {world?.name ?? id}
+            {world.name}
           </Typography>
         </Stack>
       </Grid>
@@ -77,3 +80,18 @@ export default function Id() {
 }
 
 Id.Layout = HomeLayout;
+
+export async function getServerSideProps(context) {
+  const id = context.params.id;
+
+  const client = await getGuestClient();
+  const world = await getPublicRoom(client, id, true);
+  const rooms = await getWorldInstances(client, id);
+
+  return {
+    props: {
+      world,
+      rooms,
+    },
+  };
+}

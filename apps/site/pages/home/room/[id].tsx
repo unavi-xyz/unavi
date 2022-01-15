@@ -1,33 +1,29 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Grid, Typography } from "@mui/material";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
+import { getGuestClient, getPublicRoom, parseRoomTopic } from "matrix";
 
-import { ClientContext, usePublicRoomFromId, useWorldFromRoom } from "matrix";
 import { getAppUrl } from "../../../src/helpers";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
-export default function Id() {
-  const router = useRouter();
-  const { id } = router.query;
-
-  const { client } = useContext(ClientContext);
-
-  const [roomURL, setRoomURL] = useState("");
-
-  const room = usePublicRoomFromId(client, id as string);
-  const world = useWorldFromRoom(client, room?.topic);
+interface Props {
+  room: IPublicRoomsChunkRoom;
+  world: IPublicRoomsChunkRoom;
+}
+export default function Id({ room, world }: Props) {
+  const [joinUrl, setJoinUrl] = useState("");
 
   useEffect(() => {
     const url = getAppUrl();
-    setRoomURL(`${url}?room=${id}`);
-  }, [id]);
+    setJoinUrl(`${url}?room=${room.room_id}`);
+  }, [room.room_id]);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-          🚪 {room?.name ?? id}
+          🚪 {room.name}
         </Typography>
       </Grid>
 
@@ -36,13 +32,13 @@ export default function Id() {
           <Typography variant="h6">World:</Typography>
         </Grid>
         <Grid item>
-          <Link href={`/home/world/${world?.room_id}`} passHref>
+          <Link href={`/home/world/${world.room_id}`} passHref>
             <Typography
               className="link"
               variant="h6"
               style={{ wordBreak: "break-word" }}
             >
-              {world?.name}
+              {world.name}
             </Typography>
           </Link>
         </Grid>
@@ -52,7 +48,7 @@ export default function Id() {
         <Button
           variant="contained"
           color="secondary"
-          href={roomURL}
+          href={joinUrl}
           target="_blank"
         >
           Join Room
@@ -63,3 +59,15 @@ export default function Id() {
 }
 
 Id.Layout = HomeLayout;
+
+export async function getServerSideProps(context) {
+  const id = context.params.id;
+
+  const client = await getGuestClient();
+  const room = await getPublicRoom(client, id);
+
+  const worldId = parseRoomTopic(room.topic);
+  const world = await getPublicRoom(client, worldId, true);
+
+  return { props: { room, world } };
+}

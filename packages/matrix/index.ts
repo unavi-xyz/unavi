@@ -1,5 +1,6 @@
 export * from "./contexts/ClientContext";
 export * from "./contexts/MultiplayerContext";
+export * from "./helpers/client";
 export * from "./helpers/rooms";
 export * from "./helpers/topics";
 export * from "./hooks/useMatrixContent";
@@ -9,3 +10,4 @@ export * from "./hooks/useRoomFromId";
 export * from "./hooks/useRoomsFromWorld";
 export * from "./hooks/useWorldFromId";
 export * from "./hooks/useWorldFromRoom";
+export * from "./constants";

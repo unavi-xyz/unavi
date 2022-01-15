@@ -1,22 +1,14 @@
-import { useContext, useEffect, useState } from "react";
 import { Grid, Typography } from "@mui/material";
+import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
+import { getWorlds, getGuestClient } from "matrix";
 
-import { getWorlds, ClientContext } from "matrix";
 import HomeLayout from "../../src/layouts/HomeLayout";
 import WorldCard from "../../src/components/WorldCard";
 
-export default function Worlds() {
-  const { client } = useContext(ClientContext);
-
-  const [worlds, setWorlds] = useState([]);
-
-  useEffect(() => {
-    if (!client) return;
-    getWorlds(client).then((res) => {
-      setWorlds(res);
-    });
-  }, [client]);
-
+interface Props {
+  worlds: IPublicRoomsChunkRoom[];
+}
+export default function Worlds({ worlds }: Props) {
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item container alignItems="center" columnSpacing={1}>
@@ -36,3 +28,10 @@ export default function Worlds() {
 }
 
 Worlds.Layout = HomeLayout;
+
+export async function getStaticProps() {
+  const client = await getGuestClient();
+  const worlds = await getWorlds(client);
+
+  return { props: { worlds } };
+}

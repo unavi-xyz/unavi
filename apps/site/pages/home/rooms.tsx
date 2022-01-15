@@ -1,22 +1,14 @@
-import { useContext, useEffect, useState } from "react";
 import { Grid, Typography } from "@mui/material";
 
-import { ClientContext, getPublicRooms } from "matrix";
+import { getGuestClient, getPublicRooms } from "matrix";
 import HomeLayout from "../../src/layouts/HomeLayout";
 import RoomCard from "../../src/components/RoomCard";
+import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 
-export default function Rooms() {
-  const { client } = useContext(ClientContext);
-
-  const [rooms, setRooms] = useState([]);
-
-  useEffect(() => {
-    if (!client) return;
-    getPublicRooms(client).then((res) => {
-      setRooms(res);
-    });
-  }, [client]);
-
+interface Props {
+  rooms: IPublicRoomsChunkRoom[];
+}
+export default function Rooms({ rooms }: Props) {
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
@@ -33,3 +25,10 @@ export default function Rooms() {
 }
 
 Rooms.Layout = HomeLayout;
+
+export async function getStaticProps() {
+  const client = await getGuestClient();
+  const rooms = await getPublicRooms(client);
+
+  return { props: { rooms } };
+}

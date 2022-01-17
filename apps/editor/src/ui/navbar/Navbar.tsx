@@ -1,9 +1,9 @@
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { Button, Grid, Paper, Stack } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { useRouter } from "next/router";
-import { ClientContext, useRoomFromId } from "matrix";
+import { ClientContext, useRoom } from "matrix";
 import { ColorIconButton } from "ui";
 
 import { useStore } from "../../hooks/useStore";
@@ -17,7 +17,7 @@ export default function Navbar() {
 
   const roomId = useStore((set) => set.roomId);
 
-  const room = useRoomFromId(client, roomId);
+  const room = useRoom(client, roomId);
 
   async function handleBack() {
     const canvas = document.querySelector("canvas");

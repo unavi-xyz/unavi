@@ -1,9 +1,9 @@
 import { useContext } from "react";
 import { Grid, Typography } from "@mui/material";
 import { useRouter } from "next/router";
-
-import { ClientContext, useProfile, useMatrixContent } from "matrix";
+import { ClientContext, useProfile } from "matrix";
 import { useIdenticon } from "ui";
+
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
 export default function Id() {
@@ -13,8 +13,7 @@ export default function Id() {
   const { client } = useContext(ClientContext);
 
   const identicon = useIdenticon(id);
-  const profile = useProfile(client, id);
-  const picture = useMatrixContent(profile?.avatar_url);
+  const { profile, picture } = useProfile(client, id);
 
   if (!profile) {
     return (

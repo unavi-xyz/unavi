@@ -39,8 +39,8 @@ export async function initClient(
 
 interface ContextInterface {
   loggedIn: boolean;
-  userId: null | string;
-  client: null | MatrixClient;
+  userId: string;
+  client: MatrixClient;
   login:
     | null
     | ((
@@ -60,8 +60,8 @@ interface ContextInterface {
 
 const defaultContext: ContextInterface = {
   loggedIn: false,
-  userId: null,
-  client: null,
+  userId: "",
+  client: sdk.createClient(""),
   login: null,
   register: null,
   logout: () => {},

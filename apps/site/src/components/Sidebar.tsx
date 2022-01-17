@@ -9,21 +9,19 @@ import {
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import Link from "next/link";
-import { ClientContext, useMatrixContent, useProfile } from "matrix";
-
+import { ClientContext, useProfile } from "matrix";
 import { useIdenticon } from "ui";
+
 import { getAppUrl, getEditorUrl } from "../helpers";
 
 export default function Sidebar() {
   const { loggedIn, userId, client, logout } = useContext(ClientContext);
 
-  const profile = useProfile(client, userId);
   const identicon = useIdenticon(userId);
-  const picture = useMatrixContent(profile?.avatar_url);
+  const { profile, picture } = useProfile(client, userId);
 
   const [appUrl, setAppUrl] = useState("/");
   const [editorUrl, setEditorUrl] = useState("/");
-
   const [open, setOpen] = useState(false);
 
   function handleToggle() {
@@ -105,7 +103,7 @@ export default function Sidebar() {
                   />
 
                   <Stack>
-                    <div>{profile?.displayname ?? userId}</div>
+                    <div>{profile.displayname ?? userId}</div>
                   </Stack>
 
                   <MoreHorizIcon />

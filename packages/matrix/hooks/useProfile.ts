@@ -1,21 +1,17 @@
-import { useEffect, useState } from "react";
-import { IMatrixProfile, MatrixClient } from "matrix-js-sdk";
+import { MatrixClient } from "matrix-js-sdk";
+import useSWR from "swr";
 
-export function useProfile(client: MatrixClient | null, userId: string | null) {
-  const [profile, setProfile] = useState<null | IMatrixProfile>(null);
+export function useProfile(client: MatrixClient, id: string) {
+  async function fetcher() {
+    const profile = await client.getProfileInfo(id);
+    const picture = profile.avatar_url
+      ? client.mxcUrlToHttp(profile.avatar_url)
+      : null;
 
-  useEffect(() => {
-    if (!client || !userId) return;
+    return { profile, picture };
+  }
 
-    client
-      .getProfileInfo(String(userId))
-      .then((res) => {
-        setProfile(res);
-      })
-      .catch(() => {
-        setProfile(null);
-      });
-  }, [client, userId]);
+  const { data } = useSWR(id, fetcher);
 
-  return profile;
+  return data ?? { profile: null, picture: null };
 }

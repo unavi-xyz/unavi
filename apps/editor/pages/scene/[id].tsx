@@ -3,7 +3,7 @@ import { Button, Grid, Stack, Typography } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ClientContext, useRoomFromId } from "matrix";
+import { ClientContext, useRoom } from "matrix";
 import { useIdenticon, ColorIconButton } from "ui";
 
 import SidebarLayout from "../../src/layouts/SidebarLayout";
@@ -19,7 +19,7 @@ export default function Id() {
   const [deleted, setDeleted] = useState(false);
   const [preview, setPreview] = useState("");
 
-  const room = useRoomFromId(client, id as string);
+  const room = useRoom(client, id as string);
   const identicon = useIdenticon(room?.roomId);
 
   useEffect(() => {

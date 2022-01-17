@@ -11,7 +11,7 @@ export function useProfile(client: MatrixClient, id: string) {
     return { profile, picture };
   }
 
-  const { data } = useSWR(id, fetcher);
+  const { data } = useSWR(`profile-${id}`, fetcher);
 
   return data ?? { profile: null, picture: null };
 }

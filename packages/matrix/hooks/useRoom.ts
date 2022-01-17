@@ -9,7 +9,7 @@ export function useRoom(client: MatrixClient, id: string) {
     return res;
   }
 
-  const { data } = useSWR(id, fetcher);
+  const { data } = useSWR(`room-${id}`, fetcher);
 
   return data;
 }

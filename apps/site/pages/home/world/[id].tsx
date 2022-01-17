@@ -10,8 +10,8 @@ import { ColorIconButton } from "ui";
 import {
   ClientContext,
   createRoom,
-  getPublicRoom,
   getWorldInstances,
+  usePublicRoom,
 } from "matrix";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
@@ -25,18 +25,20 @@ export default function Id() {
 
   const { client, loggedIn } = useContext(ClientContext);
 
-  async function fetcher(worldId) {
-    const world = await getPublicRoom(client, worldId as string, true);
-    const rooms = await getWorldInstances(client, worldId as string);
-
-    return { world, rooms };
+  async function fetcher() {
+    const rooms = await getWorldInstances(client, id as string);
+    return rooms;
   }
 
-  const { data } = useSWR(id, fetcher);
+  const world = usePublicRoom(client, id as string, true);
+
+  const { data } = useSWR(`instances-${id}`, fetcher, {
+    refreshInterval: 30000,
+  });
 
   async function handleNewRoom() {
-    if (!client || !id || !data?.world) return;
-    const name = `${data?.world.name}#${nanoid()}`;
+    if (!client || !id || !world) return;
+    const name = `${world.name}#${nanoid()}`;
     const { room_id } = await createRoom(client, `${id}`, name);
     router.push(`/home/room/${room_id}`);
   }
@@ -53,7 +55,7 @@ export default function Id() {
             </span>
           </Link>
           <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-            {data?.world.name}
+            {world?.name}
           </Typography>
         </Stack>
       </Grid>
@@ -74,7 +76,7 @@ export default function Id() {
       </Grid>
 
       <Grid item container spacing={4}>
-        {data?.rooms.map((room) => {
+        {data?.map((room) => {
           return <RoomCard key={room.room_id} room={room} />;
         })}
       </Grid>

@@ -5,6 +5,7 @@ export * from "./helpers/client";
 export * from "./helpers/rooms";
 export * from "./helpers/topics";
 export * from "./hooks/useProfile";
+export * from "./hooks/usePublicRoom";
 export * from "./hooks/useRoom";
 export * from "./hooks/useRooms";
 export * from "./hooks/useWorlds";

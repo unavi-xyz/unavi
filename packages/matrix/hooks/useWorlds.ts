@@ -9,7 +9,7 @@ export function useWorlds(client: MatrixClient) {
     return res;
   }
 
-  const { data } = useSWR("b", fetcher);
+  const { data } = useSWR("worlds", fetcher);
 
   return data;
 }

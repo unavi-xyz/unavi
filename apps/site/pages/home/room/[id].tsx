@@ -1,12 +1,11 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Typography } from "@mui/material";
 import Link from "next/link";
-import { ClientContext, getPublicRoom, parseRoomTopic } from "matrix";
+import { useRouter } from "next/router";
+import { ClientContext, parseRoomTopic, usePublicRoom } from "matrix";
 
 import { getAppUrl } from "../../../src/helpers";
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import useSWR from "swr";
-import { useRouter } from "next/router";
 
 export default function Id() {
   const router = useRouter();
@@ -16,25 +15,21 @@ export default function Id() {
 
   const [joinUrl, setJoinUrl] = useState("");
 
-  async function fetcher(id) {
-    const room = await getPublicRoom(client, id);
-    const worldId = parseRoomTopic(room.topic);
-    const world = await getPublicRoom(client, worldId, true);
-    return { room, world };
-  }
+  const room = usePublicRoom(client, id as string);
 
-  const { data } = useSWR(id, fetcher);
+  const worldId = parseRoomTopic(room?.topic ?? "");
+  const world = usePublicRoom(client, worldId, true);
 
   useEffect(() => {
     const url = getAppUrl();
-    setJoinUrl(`${url}?room=${data?.room.room_id}`);
-  }, [data?.room.room_id]);
+    setJoinUrl(`${url}?room=${room?.room_id}`);
+  }, [room?.room_id]);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-          🚪 {data?.room.name}
+          🚪 {room?.name}
         </Typography>
       </Grid>
 
@@ -43,13 +38,13 @@ export default function Id() {
           <Typography variant="h6">World:</Typography>
         </Grid>
         <Grid item>
-          <Link href={`/home/world/${data?.world.room_id}`} passHref>
+          <Link href={`/home/world/${world?.room_id}`} passHref>
             <Typography
               className="link"
               variant="h6"
               style={{ wordBreak: "break-word" }}
             >
-              {data?.world.name}
+              {world?.name}
             </Typography>
           </Link>
         </Grid>

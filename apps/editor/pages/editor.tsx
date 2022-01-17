@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import Split from "react-split";
 
-import { useStore } from "../src/hooks/useStore";
-import { useScene } from "../src/hooks/useScene";
+import { useStore } from "../src/state/useStore";
+import { useScene } from "../src/state/useScene";
 import { useHotkeys } from "../src/hooks/useHotkeys";
 
 import Scene from "../src/scene/Scene";

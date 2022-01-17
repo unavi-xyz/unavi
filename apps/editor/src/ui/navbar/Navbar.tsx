@@ -6,7 +6,9 @@ import { useRouter } from "next/router";
 import { ClientContext, useRoom } from "matrix";
 import { ColorIconButton } from "ui";
 
-import { useStore } from "../../hooks/useStore";
+import { useStore } from "../../state/useStore";
+import { useScene } from "../../state/useScene";
+
 import SceneName from "./SceneName";
 import Tools from "./Tools";
 
@@ -16,14 +18,20 @@ export default function Navbar() {
   const { client } = useContext(ClientContext);
 
   const roomId = useStore((set) => set.roomId);
+  const save = useScene((set) => set.save);
+  const toJSON = useScene((set) => set.toJSON);
 
   const room = useRoom(client, roomId);
 
   async function handleBack() {
     const canvas = document.querySelector("canvas");
     const image = canvas.toDataURL("image/jpeg");
-
     localStorage.setItem(`${roomId}-preview`, image);
+
+    save();
+    const json = toJSON();
+    const time = Date.now();
+    await client.sendStateEvent(roomId, "wired.scene", { json, time }, "wired");
 
     router.push(`/scene/${roomId}`);
   }

@@ -1,13 +1,16 @@
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
+import { ClientContext } from "matrix";
 
-import { useScene } from "../hooks/useScene";
-import { useStore } from "../hooks/useStore";
+import { useScene } from "../state/useScene";
+import { useStore } from "../state/useStore";
 
 import EditorObject from "./EditorObject";
 
 const AUTOSAVE_INTERVAL = 5000;
 
 export default function Objects() {
+  const { client } = useContext(ClientContext);
+
   const scene = useScene((state) => state.scene);
   const save = useScene((state) => state.save);
   const toJSON = useScene((state) => state.toJSON);
@@ -19,7 +22,10 @@ export default function Objects() {
     const interval = setInterval(() => {
       save();
       const json = toJSON();
-      localStorage.setItem(roomId, json);
+      const time = Date.now();
+      const obj = JSON.stringify({ json, time });
+
+      localStorage.setItem(roomId, obj);
     }, AUTOSAVE_INTERVAL);
 
     return () => {
@@ -28,9 +34,18 @@ export default function Objects() {
   }, [scene, roomId, save, toJSON]);
 
   useEffect(() => {
-    const json = localStorage.getItem(roomId);
-    fromJSON(json);
-  }, [fromJSON, roomId]);
+    const local = JSON.parse(localStorage.getItem(roomId));
+
+    client
+      .getStateEvent(roomId, "wired.scene", "wired")
+      .then((remote) => {
+        if (!local || remote.time > local.time) fromJSON(remote.json);
+        else fromJSON(local.json);
+      })
+      .catch(() => {
+        if (local) fromJSON(local.json);
+      });
+  }, [client, fromJSON, roomId]);
 
   return (
     <group>

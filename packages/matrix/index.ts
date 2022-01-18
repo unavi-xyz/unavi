@@ -4,6 +4,7 @@ export * from "./contexts/MultiplayerContext";
 export * from "./helpers/client";
 export * from "./helpers/rooms";
 export * from "./helpers/topics";
+export * from "./helpers/world";
 export * from "./hooks/useProfile";
 export * from "./hooks/usePublicRoom";
 export * from "./hooks/useRoom";

@@ -1,16 +1,22 @@
 import { MatrixClient, IRoomDirectoryOptions } from "matrix-js-sdk";
 import { Visibility } from "matrix-js-sdk/lib/@types/partials";
 
-import { getRoomTopic, ROOM_TOPIC, WORLD_TOPIC } from "..";
+import { getRoomTopic, ROOM_TOPIC, setScene, WORLD_TOPIC } from "..";
 
 //world
 
-export async function createWorld(client: MatrixClient, name: string) {
+export async function createWorld(
+  client: MatrixClient,
+  name: string,
+  scene: string
+) {
   const room = await client.createRoom({
     name,
     topic: WORLD_TOPIC,
     visibility: Visibility.Public,
   });
+
+  setScene(client, room.room_id, scene);
 
   return room;
 }

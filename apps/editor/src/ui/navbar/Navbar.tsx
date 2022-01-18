@@ -3,8 +3,8 @@ import { Button, Grid, Paper, Stack } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { useRouter } from "next/router";
-import { ClientContext, useRoom } from "matrix";
-import { ColorIconButton } from "ui";
+import { ClientContext, createWorld, useRoom } from "matrix";
+import { ColorIconButton, getHomeUrl } from "ui";
 
 import { useStore } from "../../state/useStore";
 import { useScene } from "../../state/useScene";
@@ -34,6 +34,18 @@ export default function Navbar() {
     await client.sendStateEvent(roomId, "wired.scene", { json, time }, "wired");
 
     router.push(`/scene/${roomId}`);
+  }
+
+  async function handlePublish() {
+    if (!room) return;
+
+    save();
+    const json = toJSON();
+
+    const world = await createWorld(client, room.name, json);
+
+    const url = `${getHomeUrl()}/world/${world.room_id}`;
+    router.push(url);
   }
 
   return (
@@ -68,6 +80,7 @@ export default function Navbar() {
               variant="contained"
               color="secondary"
               size="small"
+              onClick={handlePublish}
               style={{
                 marginTop: 5,
                 marginBottom: 5,

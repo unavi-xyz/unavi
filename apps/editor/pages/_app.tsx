@@ -2,9 +2,9 @@ import * as React from "react";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import Head from "next/head";
-
 import { ClientProvider } from "matrix";
-import theme from "../src/theme";
+
+import theme from "../src/ui/theme";
 
 import "../styles/globals.css";
 

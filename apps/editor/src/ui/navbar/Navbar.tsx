@@ -3,7 +3,7 @@ import { Button, Grid, Paper, Stack } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { useRouter } from "next/router";
-import { ClientContext, createWorld, useRoom } from "matrix";
+import { ClientContext, createWorld } from "matrix";
 import { ColorIconButton, getHomeUrl } from "ui";
 
 import { useStore } from "../../state/useStore";
@@ -17,32 +17,29 @@ export default function Navbar() {
 
   const { client } = useContext(ClientContext);
 
-  const roomId = useStore((set) => set.roomId);
+  const id = useStore((set) => set.id);
   const save = useScene((set) => set.save);
   const toJSON = useScene((set) => set.toJSON);
-
-  const room = useRoom(client, roomId);
 
   async function handleBack() {
     const canvas = document.querySelector("canvas");
     const image = canvas.toDataURL("image/jpeg");
-    localStorage.setItem(`${roomId}-preview`, image);
+    localStorage.setItem(`${id}-preview`, image);
 
     save();
     const json = toJSON();
-    const time = Date.now();
-    await client.sendStateEvent(roomId, "wired.scene", { json, time }, "wired");
+    localStorage.setItem(`${id}-scene`, json);
 
-    router.push(`/scene/${roomId}`);
+    router.push(`/scene/${id}`);
   }
 
   async function handlePublish() {
-    if (!room) return;
+    const name = localStorage.getItem(`${id}-name`);
 
     save();
-    const json = toJSON();
+    const scene = toJSON();
 
-    const world = await createWorld(client, room.name, json);
+    const world = await createWorld(client, name, scene);
 
     const url = `${getHomeUrl()}/world/${world.room_id}`;
     router.push(url);
@@ -62,7 +59,7 @@ export default function Navbar() {
               <ArrowBackIosNewIcon className="NavbarIcon" />
             </ColorIconButton>
 
-            <SceneName room={room} />
+            <SceneName id={id} />
           </Stack>
         </Grid>
 

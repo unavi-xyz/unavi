@@ -1,9 +1,8 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ClientContext, useRoom } from "matrix";
 import { useIdenticon, ColorIconButton } from "ui";
 
 import SidebarLayout from "../../src/layouts/SidebarLayout";
@@ -13,23 +12,15 @@ export default function Id() {
   const router = useRouter();
   const { id } = router.query;
 
-  const { client } = useContext(ClientContext);
+  const [preview, setPreview] = useState<null | string>();
+  const [name, setName] = useState<null | string>();
 
-  const [roomURL, setRoomURL] = useState("/");
-  const [deleted, setDeleted] = useState(false);
-  const [preview, setPreview] = useState("");
-
-  const room = useRoom(client, id as string);
-  const identicon = useIdenticon(room?.roomId);
+  const identicon = useIdenticon(id as string);
 
   useEffect(() => {
-    setRoomURL(`/editor?scene=${id}`);
     setPreview(localStorage.getItem(`${id}-preview`));
+    setName(localStorage.getItem(`${id}-name`));
   }, [id]);
-
-  useEffect(() => {
-    if (deleted) router.push("/");
-  }, [deleted, router]);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
@@ -49,18 +40,18 @@ export default function Id() {
             </Link>
 
             <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-              {room?.name ?? id}
+              {name ?? id}
             </Typography>
           </Stack>
 
           <Stack direction="row" alignItems="center" spacing={2}>
-            <Link href={roomURL} passHref>
+            <Link href={`/editor?scene=${id}`} passHref>
               <Button variant="contained" color="secondary">
                 Open in Editor
               </Button>
             </Link>
 
-            <SceneActions roomId={room?.roomId} setDeleted={setDeleted} />
+            <SceneActions id={id as string} />
           </Stack>
         </Stack>
       </Grid>

@@ -1,15 +1,15 @@
-import { Dispatch, SetStateAction, useContext, useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import { ClientContext, deleteScene } from "matrix";
+import { useRouter } from "next/router";
 
 interface Props {
-  roomId: string;
-  setDeleted: Dispatch<SetStateAction<boolean>>;
+  id: string;
+  setDeleted?: Dispatch<SetStateAction<boolean>>;
 }
 
-export default function SceneActions({ roomId, setDeleted }: Props) {
-  const { client } = useContext(ClientContext);
+export default function SceneActions({ id, setDeleted }: Props) {
+  const router = useRouter();
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -26,8 +26,18 @@ export default function SceneActions({ roomId, setDeleted }: Props) {
 
   function handleDelete(e: any) {
     handleClose(e);
-    deleteScene(client, roomId);
-    setDeleted(true);
+    const str = localStorage.getItem("scenes");
+    const list = JSON.parse(str);
+    const newList = list.filter((item) => item !== id);
+    localStorage.setItem("scenes", JSON.stringify(newList));
+
+    localStorage.setItem(`${id}-name`, null);
+    localStorage.setItem(`${id}-preview`, null);
+    localStorage.setItem(`${id}-scene`, null);
+
+    if (setDeleted) setDeleted(true);
+
+    router.push("/");
   }
 
   return (

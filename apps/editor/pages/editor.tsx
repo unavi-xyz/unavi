@@ -12,7 +12,7 @@ import RightPanel from "../src/ui/panel/RightPanel";
 
 export default function Editor() {
   const setSelected = useStore((state) => state.setSelected);
-  const setRoomId = useStore((state) => state.setRoomId);
+  const setRoomId = useStore((state) => state.setId);
 
   const setScene = useScene((state) => state.setScene);
 

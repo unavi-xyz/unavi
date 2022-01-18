@@ -1,32 +1,37 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Grid, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 import { useRouter } from "next/router";
-import { Room } from "matrix-js-sdk";
+import { customAlphabet } from "nanoid";
 
-import { ClientContext, createScene, getScenes } from "matrix";
 import SceneCard from "../src/ui/components/SceneCard";
 import SidebarLayout from "../src/layouts/SidebarLayout";
+
+const nanoid = customAlphabet("1234567890", 16);
 
 export default function Scenes() {
   const router = useRouter();
 
-  const { client } = useContext(ClientContext);
+  const [scenes, setScenes] = useState([]);
 
-  const [scenes, setScenes] = useState<Room[]>([]);
+  async function handleNewScene() {
+    const id = nanoid();
 
-  async function handleModalOpen() {
-    const room = await createScene(client, "New Scene");
-    router.push(`/editor?scene=${room.room_id}`);
+    const str = localStorage.getItem("scenes");
+    const list = JSON.parse(str) ?? [];
+    list.push(id);
+    localStorage.setItem("scenes", JSON.stringify(list));
+
+    localStorage.setItem(`${id}-name`, "New Scene");
+
+    router.push(`/scene/${id}`);
   }
 
   useEffect(() => {
-    if (!client) return;
-
-    getScenes(client).then((res) => {
-      setScenes(res);
-    });
-  }, [client]);
+    const str = localStorage.getItem("scenes") ?? "[]";
+    const list = JSON.parse(str);
+    setScenes(list);
+  }, []);
 
   return (
     <div>
@@ -37,7 +42,7 @@ export default function Scenes() {
 
             <span>
               <Tooltip title="New Scene">
-                <IconButton onClick={handleModalOpen}>
+                <IconButton onClick={handleNewScene}>
                   <AddBoxOutlinedIcon />
                 </IconButton>
               </Tooltip>
@@ -46,7 +51,7 @@ export default function Scenes() {
         </Grid>
 
         <Grid item>
-          {scenes.length === 0 ? (
+          {!scenes || scenes.length === 0 ? (
             <div>
               <Typography>
                 It looks like you don{"'"}t have any scenes.
@@ -56,7 +61,7 @@ export default function Scenes() {
                   className="link"
                   color="secondary"
                   component="span"
-                  onClick={handleModalOpen}
+                  onClick={handleNewScene}
                 >
                   Click Here
                 </Typography>{" "}
@@ -65,8 +70,8 @@ export default function Scenes() {
             </div>
           ) : (
             <Grid container spacing={3}>
-              {scenes.map((scene) => {
-                return <SceneCard key={scene.roomId} room={scene} />;
+              {scenes.map((id) => {
+                return <SceneCard key={id} id={id} />;
               })}
             </Grid>
           )}

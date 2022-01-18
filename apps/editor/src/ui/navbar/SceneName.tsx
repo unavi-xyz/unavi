@@ -1,30 +1,30 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Stack, TextField, Typography, useTheme } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import { Room } from "matrix-js-sdk";
 
-import { ClientContext } from "matrix";
 import BasicModal from "../components/BasicModal";
 
 interface Props {
-  room: null | Room;
+  id: string;
 }
 
-export default function SceneName({ room }: Props) {
+export default function SceneName({ id }: Props) {
   const theme = useTheme();
-
-  const { client } = useContext(ClientContext);
 
   const [hover, setHover] = useState(false);
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState(room?.name);
+  const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [displayedName, setDisplayedName] = useState("");
 
   useEffect(() => {
-    setTitle(room?.name);
-    setDisplayedName(room?.name);
-  }, [room]);
+    const name = localStorage.getItem(`${id}-name`) ?? "";
+    setName(name);
+    setDisplayedName(name);
+
+    const description = localStorage.getItem(`${id}-description`) ?? "";
+    setDescription(description);
+  }, [id]);
 
   function handleMouseOver() {
     setHover(true);
@@ -39,11 +39,13 @@ export default function SceneName({ room }: Props) {
   }
 
   function handleClose() {
+    setName(localStorage.getItem(`${id}-name`) ?? "");
+    setDescription(localStorage.getItem(`${id}-description`) ?? "");
     setOpen(false);
   }
 
-  function handleTitleChange(e: any) {
-    setTitle(e.target.value);
+  function handleNameChange(e: any) {
+    setName(e.target.value);
   }
 
   function handleDescriptionChange(e: any) {
@@ -51,8 +53,10 @@ export default function SceneName({ room }: Props) {
   }
 
   async function handleSave() {
-    await client.setRoomName(room?.roomId, title);
-    setDisplayedName(title);
+    localStorage.setItem(`${id}-name`, name);
+    localStorage.setItem(`${id}-description`, description);
+
+    setDisplayedName(name);
     handleClose();
   }
 
@@ -83,8 +87,8 @@ export default function SceneName({ room }: Props) {
         <TextField
           variant="standard"
           label="Title"
-          value={title}
-          onChange={handleTitleChange}
+          value={name}
+          onChange={handleNameChange}
         />
 
         <TextField

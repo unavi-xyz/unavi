@@ -1,7 +1,8 @@
 export const DEFAULT_HOMESERVER = "https://matrix.org";
 
-export const EVENTS = {
-  scene: "wired.scene",
-};
+export enum EVENTS {
+  scene = "wired.scene",
+  description = "wired.description",
+}
 
 export const STATE_KEY = "wired";

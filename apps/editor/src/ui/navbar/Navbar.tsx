@@ -35,11 +35,12 @@ export default function Navbar() {
 
   async function handlePublish() {
     const name = localStorage.getItem(`${id}-name`);
+    const description = localStorage.getItem(`${id}-description`);
 
     save();
     const scene = toJSON();
 
-    const world = await createWorld(client, name, scene);
+    const world = await createWorld(client, name, description, scene);
 
     const url = `${getHomeUrl()}/world/${world.room_id}`;
     router.push(url);

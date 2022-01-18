@@ -2,32 +2,34 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { ClientContext, parseRoomTopic, usePublicRoom } from "matrix";
 
-import { ClientContext, usePublicRoomFromId, useWorldFromRoom } from "matrix";
 import { getAppUrl } from "../../../src/helpers";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
 export default function Id() {
   const router = useRouter();
-  const { id } = router.query;
+  const id = router.query.id;
 
   const { client } = useContext(ClientContext);
 
-  const [roomURL, setRoomURL] = useState("");
+  const [joinUrl, setJoinUrl] = useState("");
 
-  const room = usePublicRoomFromId(client, id as string);
-  const world = useWorldFromRoom(client, room?.topic);
+  const room = usePublicRoom(client, id as string);
+
+  const worldId = parseRoomTopic(room?.topic ?? "");
+  const world = usePublicRoom(client, worldId, true);
 
   useEffect(() => {
     const url = getAppUrl();
-    setRoomURL(`${url}?room=${id}`);
-  }, [id]);
+    setJoinUrl(`${url}?room=${room?.room_id}`);
+  }, [room?.room_id]);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
         <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-          🚪 {room?.name ?? id}
+          🚪 {room?.name}
         </Typography>
       </Grid>
 
@@ -52,7 +54,7 @@ export default function Id() {
         <Button
           variant="contained"
           color="secondary"
-          href={roomURL}
+          href={joinUrl}
           target="_blank"
         >
           Join Room

@@ -1,33 +1,23 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext } from "react";
 import { Grid, Typography } from "@mui/material";
+import { useWorlds, ClientContext } from "matrix";
 
-import { getWorlds, ClientContext } from "matrix";
 import HomeLayout from "../../src/layouts/HomeLayout";
 import WorldCard from "../../src/components/WorldCard";
 
 export default function Worlds() {
   const { client } = useContext(ClientContext);
 
-  const [worlds, setWorlds] = useState([]);
-
-  useEffect(() => {
-    if (!client) return;
-    getWorlds(client).then((res) => {
-      setWorlds(res);
-    });
-  }, [client]);
+  const worlds = useWorlds(client);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
-      <Grid item container alignItems="center" columnSpacing={1}>
-        <Grid item>
-          <Typography variant="h2">🌏 Worlds</Typography>
-        </Grid>
-        <Grid item></Grid>
+      <Grid item>
+        <Typography variant="h2">🌏 Worlds</Typography>
       </Grid>
 
       <Grid item container spacing={4}>
-        {worlds.map((world) => {
+        {worlds?.map((world) => {
           return <WorldCard key={world.room_id} world={world} />;
         })}
       </Grid>

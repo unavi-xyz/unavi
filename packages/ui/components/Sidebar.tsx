@@ -2,8 +2,9 @@ import { ReactChild, useContext, useState } from "react";
 import { Button, ClickAwayListener, Collapse, Stack } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import Link from "next/link";
+import useSWR from "swr";
+import { ClientContext } from "matrix";
 
-import { ClientContext, useMatrixContent, useProfile } from "matrix";
 import { useIdenticon } from "../hooks/useIdenticon";
 import { SidebarButton } from "..";
 
@@ -24,9 +25,15 @@ export function Sidebar({
 }: Props) {
   const { loggedIn, userId, client, logout } = useContext(ClientContext);
 
-  const profile = useProfile(client, userId);
   const identicon = useIdenticon(userId);
-  const picture = useMatrixContent(profile?.avatar_url);
+
+  async function fetcher(id: string) {
+    const profile = await client.getProfileInfo(id);
+    const picture = client.mxcUrlToHttp(profile.avatar_url ?? "");
+    return { profile, picture };
+  }
+
+  const { data } = useSWR(userId, fetcher);
 
   const [open, setOpen] = useState(false);
 
@@ -90,7 +97,11 @@ export function Sidebar({
                   style={{ width: "100%", fontSize: "1rem", padding: ".2rem" }}
                 >
                   <img
-                    src={picture ?? identicon}
+                    src={
+                      data?.picture === ""
+                        ? identicon
+                        : data?.picture ?? identicon
+                    }
                     alt="profile picture"
                     style={{
                       height: "3rem",
@@ -100,7 +111,7 @@ export function Sidebar({
                   />
 
                   <Stack>
-                    <div>{profile?.displayname ?? userId}</div>
+                    <div>{data?.profile.displayname ?? userId}</div>
                   </Stack>
 
                   <MoreHorizIcon />

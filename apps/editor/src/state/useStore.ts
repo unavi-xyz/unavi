@@ -12,11 +12,11 @@ export const useStore = create((set: any) => ({
   selected: null,
   selectedRef: null,
   tool: TOOLS.translate,
-  roomId: "",
+  id: "",
 
-  setRoomId: (id: string) => {
+  setId: (id: string) => {
     set((state) => {
-      state.roomId = id;
+      state.id = id;
     });
   },
 

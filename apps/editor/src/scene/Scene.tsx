@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import { OrbitControls, Sky, TransformControls } from "@react-three/drei";
 
-import { useStore } from "../hooks/useStore";
+import { useStore } from "../state/useStore";
 import Objects from "./Objects";
 
 const GRID_SIZE = 20;

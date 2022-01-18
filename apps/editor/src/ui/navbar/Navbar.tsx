@@ -2,20 +2,49 @@ import { useContext } from "react";
 import { Button, Grid, Paper, Stack } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import Link from "next/link";
-import { ClientContext, useRoomFromId } from "matrix";
-import { ColorIconButton } from "ui";
+import { useRouter } from "next/router";
+import { ClientContext, createWorld } from "matrix";
+import { ColorIconButton, getHomeUrl } from "ui";
 
-import { useStore } from "../../hooks/useStore";
+import { useStore } from "../../state/useStore";
+import { useScene } from "../../state/useScene";
+
 import SceneName from "./SceneName";
 import Tools from "./Tools";
 
 export default function Navbar() {
+  const router = useRouter();
+
   const { client } = useContext(ClientContext);
 
-  const roomId = useStore((set) => set.roomId);
+  const id = useStore((set) => set.id);
+  const save = useScene((set) => set.save);
+  const toJSON = useScene((set) => set.toJSON);
 
-  const room = useRoomFromId(client, roomId);
+  async function handleBack() {
+    const canvas = document.querySelector("canvas");
+    const image = canvas.toDataURL("image/jpeg");
+    localStorage.setItem(`${id}-preview`, image);
+
+    save();
+    const json = toJSON();
+    localStorage.setItem(`${id}-scene`, json);
+
+    router.push(`/scene/${id}`);
+  }
+
+  async function handlePublish() {
+    const name = localStorage.getItem(`${id}-name`);
+    const description = localStorage.getItem(`${id}-description`);
+
+    save();
+    const scene = toJSON();
+
+    const world = await createWorld(client, name, description, scene);
+
+    const url = `${getHomeUrl()}/world/${world.room_id}`;
+    router.push(url);
+  }
 
   return (
     <Paper square variant="outlined" style={{ padding: "0.2rem" }}>
@@ -27,15 +56,11 @@ export default function Navbar() {
             justifyContent="flex-start"
             spacing={1}
           >
-            <Link href={`/scene/${roomId}`} passHref>
-              <span>
-                <ColorIconButton>
-                  <ArrowBackIosNewIcon className="NavbarIcon" />
-                </ColorIconButton>
-              </span>
-            </Link>
+            <ColorIconButton onClick={handleBack}>
+              <ArrowBackIosNewIcon className="NavbarIcon" />
+            </ColorIconButton>
 
-            <SceneName room={room} />
+            <SceneName id={id} />
           </Stack>
         </Grid>
 
@@ -53,6 +78,7 @@ export default function Navbar() {
               variant="contained"
               color="secondary"
               size="small"
+              onClick={handlePublish}
               style={{
                 marginTop: 5,
                 marginBottom: 5,

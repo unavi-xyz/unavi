@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
-import { TOOLS, useScene } from "./useScene";
-import { useStore } from "./useStore";
+import { TOOLS, useScene } from "../state/useScene";
+import { useStore } from "../state/useStore";
 
 export function useHotkeys() {
   const selected = useStore((state) => state.selected);

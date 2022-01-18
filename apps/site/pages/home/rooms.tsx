@@ -1,21 +1,14 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext } from "react";
 import { Grid, Typography } from "@mui/material";
+import { ClientContext, useRooms } from "matrix";
 
-import { ClientContext, getPublicRooms } from "matrix";
 import HomeLayout from "../../src/layouts/HomeLayout";
 import RoomCard from "../../src/components/RoomCard";
 
 export default function Rooms() {
   const { client } = useContext(ClientContext);
 
-  const [rooms, setRooms] = useState([]);
-
-  useEffect(() => {
-    if (!client) return;
-    getPublicRooms(client).then((res) => {
-      setRooms(res);
-    });
-  }, [client]);
+  const rooms = useRooms(client);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
@@ -24,7 +17,7 @@ export default function Rooms() {
       </Grid>
 
       <Grid item container spacing={4}>
-        {rooms.map((room) => {
+        {rooms?.map((room) => {
           return <RoomCard key={room.room_id} room={room} />;
         })}
       </Grid>

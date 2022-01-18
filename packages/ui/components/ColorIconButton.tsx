@@ -5,6 +5,7 @@ interface Props {
   tooltip?: string;
   dark?: boolean;
   children?: ReactChild | ReactChild[];
+  [x: string]: any;
 }
 
 export function ColorIconButton({

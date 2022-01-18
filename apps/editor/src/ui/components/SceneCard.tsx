@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardActionArea,
@@ -9,41 +9,51 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { Room } from "matrix-js-sdk";
 import { useIdenticon } from "ui";
 
 import SceneActions from "./SceneActions";
 
 interface Props {
-  room: Room;
+  id: string;
 }
 
-export default function SceneCard({ room }: Props) {
-  const identicon = useIdenticon(room.roomId);
+export default function SceneCard({ id }: Props) {
+  const identicon = useIdenticon(id);
 
   const [hover, setHover] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [preview, setPreview] = useState("");
+  const [name, setName] = useState<null | string>();
+
+  useEffect(() => {
+    setPreview(localStorage.getItem(`${id}-preview`));
+    setName(localStorage.getItem(`${id}-name`));
+  }, [id]);
 
   if (deleted) return <></>;
 
   return (
     <Grid item xs={12} sm={6} md={4} xl={3}>
       <Card variant="outlined">
-        <Link href={`/scene/${room.roomId}`} passHref>
+        <Link href={`/scene/${id}`} passHref>
           <CardActionArea
             onMouseOver={() => setHover(true)}
             onMouseOut={() => setHover(false)}
           >
-            <CardMedia component="img" height="140px" image={identicon} />
+            <CardMedia
+              component="img"
+              height="140px"
+              image={preview ?? identicon}
+            />
             <CardContent sx={{ p: 1, borderTop: "1px solid rgba(0,0,0,0.12)" }}>
               <Stack
                 direction="row"
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Typography>{room.name}</Typography>
+                <Typography>{name ?? id}</Typography>
                 <span style={{ visibility: hover ? "visible" : "hidden" }}>
-                  <SceneActions roomId={room.roomId} setDeleted={setDeleted} />
+                  <SceneActions id={id} setDeleted={setDeleted} />
                 </span>
               </Stack>
             </CardContent>

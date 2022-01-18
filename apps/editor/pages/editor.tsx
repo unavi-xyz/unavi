@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import Split from "react-split";
 
-import { useStore } from "../src/hooks/useStore";
-import { useScene } from "../src/hooks/useScene";
+import { useStore } from "../src/state/useStore";
+import { useScene } from "../src/state/useScene";
 import { useHotkeys } from "../src/hooks/useHotkeys";
 
 import Scene from "../src/scene/Scene";
@@ -12,7 +12,7 @@ import RightPanel from "../src/ui/panel/RightPanel";
 
 export default function Editor() {
   const setSelected = useStore((state) => state.setSelected);
-  const setRoomId = useStore((state) => state.setRoomId);
+  const setRoomId = useStore((state) => state.setId);
 
   const setScene = useScene((state) => state.setScene);
 
@@ -28,7 +28,8 @@ export default function Editor() {
     setRoomId(urlParams.get("scene"));
 
     setScene({});
-  }, [setRoomId, setScene]);
+    setSelected(null, null);
+  }, [setRoomId, setScene, setSelected]);
 
   return (
     <div className="App">
@@ -40,7 +41,10 @@ export default function Editor() {
         sizes={[80, 20]}
         gutterAlign="end"
       >
-        <Canvas onPointerMissed={clearSelected}>
+        <Canvas
+          onPointerMissed={clearSelected}
+          gl={{ preserveDrawingBuffer: true }}
+        >
           <Scene />
         </Canvas>
 

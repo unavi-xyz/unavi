@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 
-import { useScene } from "../hooks/useScene";
-import { useStore } from "../hooks/useStore";
+import { useScene } from "../state/useScene";
+import { useStore } from "../state/useStore";
 
 import EditorObject from "./EditorObject";
 
-const AUTOSAVE_INTERVAL = 1000;
+const AUTOSAVE_INTERVAL = 5000;
 
 export default function Objects() {
   const scene = useScene((state) => state.scene);
@@ -13,24 +13,24 @@ export default function Objects() {
   const toJSON = useScene((state) => state.toJSON);
   const fromJSON = useScene((state) => state.fromJSON);
 
-  const roomId = useStore((state) => state.roomId);
+  const id = useStore((state) => state.id);
 
   useEffect(() => {
     const interval = setInterval(() => {
       save();
       const json = toJSON();
-      localStorage.setItem(roomId, json);
+      localStorage.setItem(`${id}-scene`, json);
     }, AUTOSAVE_INTERVAL);
 
     return () => {
       clearInterval(interval);
     };
-  }, [scene, roomId, save, toJSON]);
+  }, [scene, id, save, toJSON]);
 
   useEffect(() => {
-    const json = localStorage.getItem(roomId);
-    fromJSON(json);
-  }, [fromJSON, roomId]);
+    const scene = localStorage.getItem(`${id}-scene`);
+    if (scene) fromJSON(scene);
+  }, [fromJSON, id]);
 
   return (
     <group>

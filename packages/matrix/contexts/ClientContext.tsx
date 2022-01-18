@@ -1,7 +1,6 @@
 import React, { ReactChild, useEffect, useState } from "react";
 import sdk, { MatrixClient, ICreateClientOpts } from "matrix-js-sdk";
-
-const DEFAULT_HOMESERVER = "https://matrix.org";
+import { DEFAULT_HOMESERVER } from "..";
 
 function withHttps(url: string) {
   return !/^https?:\/\//i.test(url) ? `https://${url}` : url;
@@ -19,7 +18,7 @@ function waitForSync(client: MatrixClient) {
   });
 }
 
-async function initClient(
+export async function initClient(
   baseUrl: string,
   accessToken: string,
   deviceId: string,
@@ -40,8 +39,8 @@ async function initClient(
 
 interface ContextInterface {
   loggedIn: boolean;
-  userId: null | string;
-  client: null | MatrixClient;
+  userId: string;
+  client: MatrixClient;
   login:
     | null
     | ((
@@ -61,8 +60,8 @@ interface ContextInterface {
 
 const defaultContext: ContextInterface = {
   loggedIn: false,
-  userId: null,
-  client: null,
+  userId: "",
+  client: sdk.createClient(""),
   login: null,
   register: null,
   logout: () => {},

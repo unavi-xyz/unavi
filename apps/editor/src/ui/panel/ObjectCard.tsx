@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import { OBJ_NAMES } from "3d";
 
-import { useScene } from "../../hooks/useScene";
+import { useScene } from "../../state/useScene";
 
 interface Props {
   name: OBJ_NAMES;

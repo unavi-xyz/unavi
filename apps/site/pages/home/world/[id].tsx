@@ -3,18 +3,11 @@ import { Grid, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 import { useRouter } from "next/router";
 import useSWR from "swr";
-import { customAlphabet } from "nanoid";
-import {
-  ClientContext,
-  createRoom,
-  getWorldInstances,
-  usePublicRoom,
-} from "matrix";
+import { ClientContext, createRoom, getWorldInstances, useWorld } from "matrix";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import RoomCard from "../../../src/components/RoomCard";
-
-const nanoid = customAlphabet("1234567890", 8);
+import Link from "next/link";
 
 export default function Id() {
   const router = useRouter();
@@ -27,7 +20,7 @@ export default function Id() {
     return rooms;
   }
 
-  const world = usePublicRoom(client, id as string, true);
+  const world = useWorld(client, id as string);
 
   const { data } = useSWR(`instances-${id}`, fetcher, {
     refreshInterval: 30000,
@@ -35,8 +28,7 @@ export default function Id() {
 
   async function handleNewRoom() {
     if (!client || !id || !world) return;
-    const name = `${world.name}#${nanoid()}`;
-    const { room_id } = await createRoom(client, `${id}`, name);
+    const { room_id } = await createRoom(client, `${id}`, world.name);
     router.push(`/home/room/${room_id}`);
   }
 
@@ -53,12 +45,16 @@ export default function Id() {
           <Stack spacing={1}>
             <Stack direction="row" alignItems="center" spacing={1}>
               <Typography variant="h6">Author:</Typography>
-              <Typography variant="h6"></Typography>
+              <Link href={`/home/user/${world?.author?.userId}`} passHref>
+                <Typography className="link" variant="h6">
+                  {world?.author?.displayName}
+                </Typography>
+              </Link>
             </Stack>
 
             <Stack direction="row" alignItems="center" spacing={1}>
               <Typography variant="h6">Description:</Typography>
-              <Typography variant="h6"></Typography>
+              <Typography variant="h6">{world?.description}</Typography>
             </Stack>
           </Stack>
         </Grid>

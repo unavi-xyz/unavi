@@ -36,13 +36,23 @@ export default function Navbar() {
   async function handlePublish() {
     const name = localStorage.getItem(`${id}-name`);
     const description = localStorage.getItem(`${id}-description`);
+    const image = localStorage.getItem(`${id}-preview`);
 
     save();
     const scene = toJSON();
 
-    const world = await createWorld(client, name, description, scene);
+    const author = await client.getUserId();
 
-    const url = `${getHomeUrl()}/world/${world.room_id}`;
+    const roomId = await createWorld(
+      client,
+      name,
+      author,
+      description,
+      image,
+      scene
+    );
+
+    const url = `${getHomeUrl()}/world/${roomId}`;
     router.push(url);
   }
 

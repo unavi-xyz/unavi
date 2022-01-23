@@ -1,18 +1,23 @@
 import { MatrixClient, IRoomDirectoryOptions } from "matrix-js-sdk";
 import { Visibility } from "matrix-js-sdk/lib/@types/partials";
+import { customAlphabet } from "nanoid";
 
-import { ROOM_TOPIC, WORLD_TOPIC } from "..";
+import { ROOM_TOPICS, Topic, TOPICS, Room } from "..";
 
-//room
+const nanoid = customAlphabet("1234567890", 8);
 
 export async function createRoom(
   client: MatrixClient,
   worldId: string,
   name: string
 ) {
+  const topic = new Topic(TOPICS.room);
+
+  topic.setKey(ROOM_TOPICS.world, worldId);
+
   const room = await client.createRoom({
-    name,
-    topic: `${ROOM_TOPIC}#${worldId}`,
+    name: `${name}#${nanoid()}`,
+    topic: topic.string,
     visibility: Visibility.Public,
   });
 
@@ -21,53 +26,19 @@ export async function createRoom(
 
 export async function getPublicRooms(client: MatrixClient) {
   const options: IRoomDirectoryOptions = {
-    filter: { generic_search_term: ROOM_TOPIC },
+    filter: { generic_search_term: TOPICS.room },
   };
   const rooms = await client.publicRooms(options);
   return rooms.chunk;
 }
 
-export async function getPublicRoom(
-  client: MatrixClient,
-  roomId: string,
-  world: boolean = false
-) {
+export async function getPublicRoom(client: MatrixClient, roomId: string) {
   const options: IRoomDirectoryOptions = {
-    filter: { generic_search_term: world ? WORLD_TOPIC : ROOM_TOPIC },
+    filter: { generic_search_term: TOPICS.room },
   };
   const rooms = await client.publicRooms(options);
 
-  const room = rooms.chunk.filter((room) => room.room_id === roomId);
-  return room[0];
-}
+  const [room] = rooms.chunk.filter((room) => room.room_id === roomId);
 
-export async function getRoom(client: MatrixClient, roomId: string) {
-  const room = await client.getRoom(roomId);
-  return room;
-}
-
-//scene
-
-export async function createScene(client: MatrixClient, name: string) {
-  const room = await client.createRoom({
-    name,
-    visibility: Visibility.Private,
-  });
-
-  //use room tag rather than topic for storing the fact that this is a scene
-  //this is because the room topic is not exposed when we grab the rooms in the getScenes function
-  //idk why its not, matrix sucks tbh
-  await client.setRoomTag(room.room_id, "scene", { value: true, order: 0 });
-
-  return room;
-}
-
-export async function getScenes(client: MatrixClient) {
-  const rooms = await client.getRooms();
-  const scenes = rooms.filter((room) => room.tags.scene?.value === true);
-  return scenes;
-}
-
-export async function deleteScene(client: MatrixClient, roomId: string) {
-  client.leave(roomId);
+  return new Room(client, room);
 }

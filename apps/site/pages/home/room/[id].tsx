@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ClientContext, parseRoomTopic, usePublicRoom } from "matrix";
+import { ClientContext, useRoom, useWorld } from "matrix";
 
 import { getAppUrl } from "../../../src/helpers";
 import HomeLayout from "../../../src/layouts/HomeLayout";
@@ -15,15 +15,13 @@ export default function Id() {
 
   const [joinUrl, setJoinUrl] = useState("");
 
-  const room = usePublicRoom(client, id as string);
-
-  const worldId = parseRoomTopic(room?.topic ?? "");
-  const world = usePublicRoom(client, worldId, true);
+  const room = useRoom(client, id as string);
+  const world = useWorld(client, room?.world);
 
   useEffect(() => {
     const url = getAppUrl();
-    setJoinUrl(`${url}?room=${room?.room_id}`);
-  }, [room?.room_id]);
+    setJoinUrl(`${url}?room=${id}`);
+  }, [id]);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
@@ -38,7 +36,7 @@ export default function Id() {
           <Typography variant="h6">World:</Typography>
         </Grid>
         <Grid item>
-          <Link href={`/home/world/${world?.room_id}`} passHref>
+          <Link href={`/home/world/${world?.room?.roomId}`} passHref>
             <Typography
               className="link"
               variant="h6"

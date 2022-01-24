@@ -1,14 +1,25 @@
-import { Grid, Paper } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Divider, Grid, Paper } from "@mui/material";
 
-import { Sidebar, SidebarButton } from "ui";
+import { getHomeUrl, Sidebar, SidebarButton } from "ui";
 
 export default function SidebarLayout({ children }) {
+  const [homeUrl, setHomeUrl] = useState("");
+
+  useEffect(() => {
+    setHomeUrl(getHomeUrl());
+  }, []);
+
   return (
     <div>
       <Grid container>
         <Grid item xs={4} style={{ maxWidth: "320px" }}>
-          <Sidebar title="Editor" viewProfile={false}>
+          <Sidebar title="Editor">
             <SidebarButton emoji="🌲" text="Scenes" href="/" />
+
+            <Divider />
+
+            <SidebarButton emoji="🏠" text="Home" href={homeUrl} />
           </Sidebar>
         </Grid>
 

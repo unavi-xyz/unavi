@@ -5,7 +5,6 @@ import { MatrixRoom } from "./MatrixRoom";
 export enum WORLD_TOPICS {
   author = "author",
   description = "description",
-  image = "image",
   scene = "scene",
 }
 

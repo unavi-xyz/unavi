@@ -27,7 +27,6 @@ export async function createWorld(
 
   topic.setKey(WORLD_TOPICS.author, author);
   topic.setKey(WORLD_TOPICS.description, description);
-  topic.setKey(WORLD_TOPICS.image, imageURL);
   topic.setKey(WORLD_TOPICS.scene, sceneURL);
 
   const { room_id } = await client.createRoom({

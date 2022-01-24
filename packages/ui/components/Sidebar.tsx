@@ -1,4 +1,4 @@
-import { ReactChild, useContext, useState } from "react";
+import { ReactChild, useContext, useState, useEffect } from "react";
 import { Button, ClickAwayListener, Collapse, Stack } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import Link from "next/link";
@@ -6,21 +6,17 @@ import useSWR from "swr";
 import { ClientContext } from "matrix";
 
 import { useIdenticon } from "../hooks/useIdenticon";
-import { SidebarButton } from "..";
+import { getHomeUrl, SidebarButton } from "..";
 
 interface Props {
   title?: string;
   titleHref?: string;
-  loginHref?: string;
-  viewProfile?: boolean;
   children: ReactChild | ReactChild[];
 }
 
 export function Sidebar({
   title = "The Wired",
   titleHref = "/",
-  loginHref = "/login",
-  viewProfile = true,
   children,
 }: Props) {
   const { loggedIn, userId, client, logout } = useContext(ClientContext);
@@ -36,6 +32,11 @@ export function Sidebar({
   const { data } = useSWR(userId, fetcher);
 
   const [open, setOpen] = useState(false);
+  const [homeUrl, setHomeUrl] = useState("");
+
+  useEffect(() => {
+    setHomeUrl(getHomeUrl());
+  }, []);
 
   function handleToggle() {
     setOpen((prev) => !prev);
@@ -77,12 +78,10 @@ export function Sidebar({
                 Log Out
               </Button>
 
-              {viewProfile && (
-                <SidebarButton
-                  text="View Profile"
-                  href={`/home/user/${userId}`}
-                />
-              )}
+              <SidebarButton
+                text="View Profile"
+                href={`${homeUrl}/user/${userId}`}
+              />
             </Stack>
           </Collapse>
 
@@ -121,7 +120,7 @@ export function Sidebar({
           </Stack>
         </span>
       ) : (
-        <Link href={loginHref} passHref>
+        <Link href={`${homeUrl}/login`} passHref>
           <Button
             variant="contained"
             style={{

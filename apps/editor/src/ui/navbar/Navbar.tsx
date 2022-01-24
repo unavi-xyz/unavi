@@ -53,9 +53,7 @@ export default function Navbar() {
     );
 
     const url = `${getHomeUrl()}/world/${roomId}`;
-    console.log("👭", roomId);
-
-    // router.push(url);
+    router.push(url);
   }
 
   return (

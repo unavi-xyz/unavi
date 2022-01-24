@@ -30,9 +30,24 @@ export default function Id() {
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
-        <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-          🚪 {room?.name}
-        </Typography>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          <Typography variant="h4" style={{ wordBreak: "break-word" }}>
+            🚪 {room?.name}
+          </Typography>
+
+          <Button
+            variant="contained"
+            color="secondary"
+            href={joinUrl}
+            target="_blank"
+          >
+            Join Room
+          </Button>
+        </Stack>
       </Grid>
 
       <Grid item container>
@@ -57,23 +72,12 @@ export default function Id() {
             alt="world image"
             style={{
               border: "2px solid black",
-              width: "800px",
+              width: "100%",
               height: "400px",
               objectFit: "cover",
             }}
           />
         </Grid>
-      </Grid>
-
-      <Grid item>
-        <Button
-          variant="contained"
-          color="secondary"
-          href={joinUrl}
-          target="_blank"
-        >
-          Join Room
-        </Button>
       </Grid>
     </Grid>
   );

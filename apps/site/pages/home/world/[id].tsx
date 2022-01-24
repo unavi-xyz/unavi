@@ -78,7 +78,7 @@ export default function Id() {
             alt="world image"
             style={{
               border: "2px solid black",
-              width: "800px",
+              width: "100%",
               height: "400px",
               objectFit: "cover",
             }}

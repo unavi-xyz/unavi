@@ -14,7 +14,7 @@
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
     "@mui/icons-material": "^5.2.4",
-    "@mui/material": "^5.2.4",
+    "@mui/material": "^5.3.1",
     "@mui/styles": "^5.2.3",
     "matrix": "*",
     "matrix-js-sdk": "^15.2.1",

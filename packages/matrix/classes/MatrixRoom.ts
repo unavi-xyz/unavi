@@ -4,12 +4,14 @@ import { Topic } from "./Topic";
 
 export class MatrixRoom {
   client: MatrixClient;
+  chunk: IPublicRoomsChunkRoom;
   topic = new Topic();
 
   roomId = "";
 
   constructor(client: MatrixClient, room: IPublicRoomsChunkRoom) {
     this.client = client;
+    this.chunk = room;
     this.roomId = room.room_id;
     this.topic = new Topic(room.topic);
   }

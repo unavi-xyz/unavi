@@ -1,8 +1,9 @@
 import { useContext, useEffect, useState } from "react";
-import { Button, Grid, Typography } from "@mui/material";
+import { Button, Grid, Typography, Stack } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ClientContext, useRoom, useWorld } from "matrix";
+import { ClientContext, useRoom, useWorld, useRoomAvatar } from "matrix";
+import { useIdenticon } from "ui";
 
 import { getAppUrl } from "../../../src/helpers";
 import HomeLayout from "../../../src/layouts/HomeLayout";
@@ -18,6 +19,9 @@ export default function Id() {
   const room = useRoom(client, id as string);
   const world = useWorld(client, room?.world);
 
+  const avatar = useRoomAvatar(client, room?.room.chunk);
+  const identicon = useIdenticon(id as string);
+
   useEffect(() => {
     const url = getAppUrl();
     setJoinUrl(`${url}?room=${id}`);
@@ -31,20 +35,33 @@ export default function Id() {
         </Typography>
       </Grid>
 
-      <Grid item container columnSpacing={1}>
-        <Grid item>
-          <Typography variant="h6">World:</Typography>
+      <Grid item container>
+        <Grid item xs>
+          <Stack direction="row" spacing={1}>
+            <Typography variant="h6">World:</Typography>
+            <Link href={`/home/world/${world?.room?.roomId}`} passHref>
+              <Typography
+                className="link"
+                variant="h6"
+                style={{ wordBreak: "break-word" }}
+              >
+                {world?.name}
+              </Typography>
+            </Link>
+          </Stack>
         </Grid>
-        <Grid item>
-          <Link href={`/home/world/${world?.room?.roomId}`} passHref>
-            <Typography
-              className="link"
-              variant="h6"
-              style={{ wordBreak: "break-word" }}
-            >
-              {world?.name}
-            </Typography>
-          </Link>
+
+        <Grid item xs>
+          <img
+            src={avatar ?? identicon}
+            alt="world image"
+            style={{
+              border: "2px solid black",
+              width: "800px",
+              height: "400px",
+              objectFit: "cover",
+            }}
+          />
         </Grid>
       </Grid>
 

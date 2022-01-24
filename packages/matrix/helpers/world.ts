@@ -3,6 +3,13 @@ import { Visibility } from "matrix-js-sdk/lib/@types/partials";
 
 import { ROOM_TOPICS, Topic, TOPICS, World, WORLD_TOPICS } from "..";
 
+async function dataURLtoFile(url: string, filename: string) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  const file = new File([blob], filename, { type: "image/jpeg" });
+  return file;
+}
+
 export async function createWorld(
   client: MatrixClient,
   name: string,
@@ -11,7 +18,9 @@ export async function createWorld(
   image: string,
   scene: string
 ) {
-  const imageURL = await client.uploadContent(image);
+  const img = await dataURLtoFile(image, "avatar");
+
+  const imageURL = await client.uploadContent(img);
   const sceneURL = await client.uploadContent(scene);
 
   const topic = new Topic(TOPICS.world);
@@ -26,6 +35,8 @@ export async function createWorld(
     topic: topic.string,
     visibility: Visibility.Public,
   });
+
+  await client.sendStateEvent(room_id, "m.room.avatar", { url: imageURL });
 
   return room_id;
 }

@@ -12,6 +12,7 @@ export * from "./helpers/world";
 
 export * from "./hooks/useProfile";
 export * from "./hooks/useRoom";
+export * from "./hooks/useRoomAvatar";
 export * from "./hooks/useRooms";
 export * from "./hooks/useWorld";
 export * from "./hooks/useWorlds";

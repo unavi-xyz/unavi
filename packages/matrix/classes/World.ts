@@ -30,8 +30,8 @@ export class World {
   }
 
   get image() {
-    const mxc = this.room.getKey(WORLD_TOPICS.image);
-    return this.client.mxcUrlToHttp(mxc) ?? "";
+    const mxc = this.room.chunk.avatar_url ?? "";
+    return this.client.mxcUrlToHttp(mxc);
   }
 
   get scene() {

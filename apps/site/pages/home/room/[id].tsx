@@ -42,6 +42,7 @@ export default function Id() {
           <Button
             variant="contained"
             color="secondary"
+            size="large"
             href={joinUrl}
             target="_blank"
           >

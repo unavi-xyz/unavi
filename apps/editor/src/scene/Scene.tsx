@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import { OrbitControls, Sky, TransformControls } from "@react-three/drei";
+import { Ground } from "3d";
 
 import { useStore } from "../state/useStore";
-import Objects from "./Objects";
 
-const GRID_SIZE = 20;
+import Objects from "./Objects";
 
 export default function Scene() {
   const selectedRef = useStore((state) => state.selectedRef);
@@ -14,7 +14,7 @@ export default function Scene() {
   const { camera } = useThree();
 
   useEffect(() => {
-    camera.position.set(5, 5, 5);
+    camera.position.set(10, 10, 10);
   }, [camera]);
 
   return (
@@ -26,12 +26,14 @@ export default function Scene() {
         dispatchEvent={undefined}
         makeDefault
       />
-      <gridHelper args={[GRID_SIZE, GRID_SIZE]} />
+
       <ambientLight />
       <directionalLight />
-      <Sky />
 
-      <TransformControls // kek
+      <Sky />
+      <Ground />
+
+      <TransformControls // I LOVE TYPESCRIPT
         type={undefined}
         isGroup={undefined}
         id={undefined}

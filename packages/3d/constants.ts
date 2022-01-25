@@ -5,3 +5,10 @@ export const RAYCASTER_SETTINGS = {
     offsetY: e.target.height / 2,
   }),
 };
+
+export enum PHYSICS_GROUPS {
+  NONE = 0,
+  PLAYER = 1,
+  WORLD = 2,
+  OBJECTS = 4,
+}

@@ -1,3 +1,4 @@
+import { useContext } from "react";
 import {
   Card,
   CardActionArea,
@@ -9,12 +10,16 @@ import {
 import Link from "next/link";
 import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 import { useIdenticon } from "ui";
+import { ClientContext, useRoomAvatar } from "matrix";
 
 interface Props {
   room: IPublicRoomsChunkRoom;
 }
 
 export default function RoomCard({ room }: Props) {
+  const { client } = useContext(ClientContext);
+
+  const avatar = useRoomAvatar(client, room);
   const identicon = useIdenticon(room.room_id);
 
   return (
@@ -25,7 +30,7 @@ export default function RoomCard({ room }: Props) {
             <CardMedia
               component="img"
               height="140px"
-              image={room.avatar_url ?? identicon}
+              image={avatar ?? identicon}
             />
             <CardContent style={{ borderTop: "1px solid rgba(0,0,0,0.12)" }}>
               <Typography>{room.name}</Typography>

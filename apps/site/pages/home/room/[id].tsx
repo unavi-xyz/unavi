@@ -1,8 +1,9 @@
 import { useContext, useEffect, useState } from "react";
-import { Button, Grid, Typography } from "@mui/material";
+import { Button, Grid, Typography, Stack } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ClientContext, parseRoomTopic, usePublicRoom } from "matrix";
+import { ClientContext, useRoom, useWorld, useRoomAvatar } from "matrix";
+import { useIdenticon } from "ui";
 
 import { getAppUrl } from "../../../src/helpers";
 import HomeLayout from "../../../src/layouts/HomeLayout";
@@ -15,50 +16,69 @@ export default function Id() {
 
   const [joinUrl, setJoinUrl] = useState("");
 
-  const room = usePublicRoom(client, id as string);
+  const room = useRoom(client, id as string);
+  const world = useWorld(client, room?.world);
 
-  const worldId = parseRoomTopic(room?.topic ?? "");
-  const world = usePublicRoom(client, worldId, true);
+  const avatar = useRoomAvatar(client, room?.room.chunk);
+  const identicon = useIdenticon(id as string);
 
   useEffect(() => {
     const url = getAppUrl();
-    setJoinUrl(`${url}?room=${room?.room_id}`);
-  }, [room?.room_id]);
+    setJoinUrl(`${url}?room=${id}`);
+  }, [id]);
 
   return (
     <Grid className="page" container direction="column" rowSpacing={4}>
       <Grid item>
-        <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-          🚪 {room?.name}
-        </Typography>
-      </Grid>
-
-      <Grid item container columnSpacing={1}>
-        <Grid item>
-          <Typography variant="h6">World:</Typography>
-        </Grid>
-        <Grid item>
-          <Link href={`/home/world/${world?.room_id}`} passHref>
-            <Typography
-              className="link"
-              variant="h6"
-              style={{ wordBreak: "break-word" }}
-            >
-              {world?.name}
-            </Typography>
-          </Link>
-        </Grid>
-      </Grid>
-
-      <Grid item>
-        <Button
-          variant="contained"
-          color="secondary"
-          href={joinUrl}
-          target="_blank"
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
         >
-          Join Room
-        </Button>
+          <Typography variant="h4" style={{ wordBreak: "break-word" }}>
+            🚪 {room?.name}
+          </Typography>
+
+          <Button
+            variant="contained"
+            color="secondary"
+            size="large"
+            href={joinUrl}
+            target="_blank"
+          >
+            Join Room
+          </Button>
+        </Stack>
+      </Grid>
+
+      <Grid item container>
+        <Grid item xs>
+          <Stack direction="row" spacing={1}>
+            <Typography variant="h6">World:</Typography>
+            <Link href={`/home/world/${world?.room?.roomId}`} passHref>
+              <Typography
+                className="link"
+                variant="h6"
+                style={{ wordBreak: "break-word" }}
+              >
+                {world?.name}
+              </Typography>
+            </Link>
+          </Stack>
+        </Grid>
+
+        <Grid item xs>
+          <img
+            src={avatar ?? identicon}
+            alt="world image"
+            style={{
+              border: "2px solid black",
+              width: "100%",
+              height: "400px",
+              objectFit: "cover",
+            }}
+          />
+        </Grid>
       </Grid>
     </Grid>
   );

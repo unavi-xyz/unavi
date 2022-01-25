@@ -1,6 +1,6 @@
 import React, { ReactChild, useContext, useEffect, useState } from "react";
 import { Room } from "matrix-js-sdk";
-import { ClientContext, parseRoomTopic } from "..";
+import { ClientContext } from "..";
 
 import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
@@ -44,7 +44,6 @@ export function MultiplayerProvider({ children }: Props) {
 
         client.getStateEvent(roomId, "m.room.topic", "").then((res) => {
           const { topic } = res;
-          const worldId = parseRoomTopic(topic);
         });
       })
       .catch((err) => {

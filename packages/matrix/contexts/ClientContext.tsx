@@ -48,13 +48,6 @@ interface ContextInterface {
         user: string,
         password: string
       ) => Promise<undefined | Error>);
-  register:
-    | null
-    | ((
-        homeserver: string,
-        user: string,
-        password: string
-      ) => Promise<undefined | Error>);
   logout: () => void;
 }
 
@@ -63,7 +56,6 @@ const defaultContext: ContextInterface = {
   userId: "",
   client: sdk.createClient(""),
   login: null,
-  register: null,
   logout: () => {},
 };
 
@@ -126,14 +118,6 @@ export function ClientProvider({ children }: { children: ReactChild }) {
     setClient(newClient);
   }
 
-  async function register(
-    homeserver: string,
-    username: string,
-    password: string
-  ) {
-    return Promise.reject();
-  }
-
   function logout() {
     localStorage.removeItem("matrix-auth-store");
     setClient(defaultContext.client);
@@ -167,9 +151,7 @@ export function ClientProvider({ children }: { children: ReactChild }) {
   }, []);
 
   return (
-    <ClientContext.Provider
-      value={{ loggedIn, userId, client, login, logout, register }}
-    >
+    <ClientContext.Provider value={{ loggedIn, userId, client, login, logout }}>
       {children}
     </ClientContext.Provider>
   );

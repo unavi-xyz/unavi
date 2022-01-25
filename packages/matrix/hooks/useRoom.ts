@@ -1,11 +1,11 @@
 import { MatrixClient } from "matrix-js-sdk";
 import useSWR from "swr";
 
-import { getRoom } from "..";
+import { getPublicRoom } from "..";
 
 export function useRoom(client: MatrixClient, id: string) {
   async function fetcher() {
-    const res = await getRoom(client, id);
+    const res = await getPublicRoom(client, id);
     return res;
   }
 

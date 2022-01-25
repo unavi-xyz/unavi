@@ -2,14 +2,12 @@ import { useEffect, useState } from "react";
 import { Divider, Grid, Paper } from "@mui/material";
 import Head from "next/head";
 
-import { Sidebar, SidebarButton, getAppUrl, getEditorUrl } from "ui";
+import { Sidebar, SidebarButton, getEditorUrl } from "ui";
 
 export default function HomeLayout({ children }) {
-  const [appUrl, setAppUrl] = useState("/");
   const [editorUrl, setEditorUrl] = useState("/");
 
   useEffect(() => {
-    setAppUrl(getAppUrl());
     setEditorUrl(getEditorUrl());
   }, []);
 
@@ -21,7 +19,7 @@ export default function HomeLayout({ children }) {
 
       <Grid container>
         <Grid item xs={4} style={{ maxWidth: "320px" }}>
-          <Sidebar titleHref="/home" loginHref="/home/login">
+          <Sidebar titleHref="/home">
             <SidebarButton emoji="🏠" text="Home" href="/home" />
             <SidebarButton emoji="🌏" text="Worlds" href="/home/worlds" />
             <SidebarButton emoji="🚪" text="Rooms" href="/home/rooms" />
@@ -30,8 +28,7 @@ export default function HomeLayout({ children }) {
 
             <Divider />
 
-            <SidebarButton emoji="🎮" text="Play" href={appUrl} external />
-            <SidebarButton emoji="🚧" text="Editor" href={editorUrl} external />
+            <SidebarButton emoji="🚧" text="Editor" href={editorUrl} />
           </Sidebar>
         </Grid>
 

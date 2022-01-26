@@ -4,7 +4,7 @@ import { Divider, Grid, Paper } from "@mui/material";
 import { getHomeUrl, Sidebar, SidebarButton } from "ui";
 
 export default function SidebarLayout({ children }) {
-  const [homeUrl, setHomeUrl] = useState("");
+  const [homeUrl, setHomeUrl] = useState("/");
 
   useEffect(() => {
     setHomeUrl(getHomeUrl());

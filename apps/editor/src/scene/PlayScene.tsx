@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Group, Vector3 } from "three";
+import { Sky } from "@react-three/drei";
 import { ASSET_NAMES, Ground, Player } from "3d";
 
 import { IScene, useScene } from "../state/useScene";
@@ -29,6 +30,7 @@ export default function PlayScene() {
       <group ref={world}>
         <ambientLight intensity={0.1} />
         <directionalLight intensity={0.5} />
+        <Sky />
         <Ground />
 
         {Object.values(scene).map((object) => {

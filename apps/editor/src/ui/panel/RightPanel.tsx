@@ -3,7 +3,7 @@ import { SceneObject } from "3d";
 
 import { useStore } from "../../state/useStore";
 
-import Assets from "./Assets";
+import Packs from "./Packs";
 import Inspect from "./Inspect";
 
 export default function RightPanel() {
@@ -15,7 +15,7 @@ export default function RightPanel() {
       variant="outlined"
       style={{ width: "100%", padding: "1rem", border: 0 }}
     >
-      {selected ? <Inspect key={selected.id} object={selected} /> : <Assets />}
+      {selected ? <Inspect key={selected.id} object={selected} /> : <Packs />}
     </Paper>
   );
 }

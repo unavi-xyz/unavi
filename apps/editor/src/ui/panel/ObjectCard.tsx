@@ -6,12 +6,12 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { OBJ_NAMES } from "3d";
+import { OBJECTS } from "3d";
 
 import { useScene } from "../../state/useScene";
 
 interface Props {
-  name: OBJ_NAMES;
+  name: OBJECTS;
 }
 
 export default function ObjectCard({ name }: Props) {

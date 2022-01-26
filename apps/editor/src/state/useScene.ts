@@ -1,5 +1,5 @@
 import create from "zustand";
-import { OBJECTS, OBJ_NAMES, SceneObject } from "3d";
+import { OBJECTS, SceneObject } from "3d";
 
 export enum TOOLS {
   translate = "translate",
@@ -37,8 +37,8 @@ export const useScene = create((set: any, get: any) => ({
     });
   },
 
-  newObject: (name: OBJ_NAMES) => {
-    const obj = OBJECTS[name].clone();
+  newObject: (name: OBJECTS) => {
+    const obj = new SceneObject(name);
     set((state) => {
       state.addObject(obj);
     });
@@ -67,6 +67,7 @@ export const useScene = create((set: any, get: any) => ({
     const loaded: sceneInterface = {};
     Object.values(objects).forEach((object: any) => {
       const obj = new SceneObject(
+        object.type,
         object.name,
         object.position,
         object.rotation,

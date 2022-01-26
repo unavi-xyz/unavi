@@ -3,11 +3,12 @@ import { Triplet } from "@react-three/cannon";
 import { Object3D } from "three";
 import { nanoid } from "nanoid";
 
-import { OBJ_NAMES } from "../..";
+import { OBJECTS } from "..";
 
 export class SceneObject {
   id: string;
-  name: OBJ_NAMES;
+  type: OBJECTS;
+  name: string;
 
   ref: MutableRefObject<Object3D> | null;
 
@@ -19,7 +20,8 @@ export class SceneObject {
   opacity: number;
 
   constructor(
-    name: OBJ_NAMES,
+    type: OBJECTS,
+    name?: string,
     position: Triplet = [0, 0, 0],
     rotation: Triplet = [0, 0, 0],
     scale: Triplet = [1, 1, 1],
@@ -27,7 +29,8 @@ export class SceneObject {
     opacity: number = 1
   ) {
     this.id = nanoid();
-    this.name = name;
+    this.type = type;
+    this.name = name ?? type;
 
     this.ref = null;
 
@@ -56,6 +59,14 @@ export class SceneObject {
   }
 
   clone() {
-    return new SceneObject(this.name, this.position, this.rotation, this.scale);
+    return new SceneObject(
+      this.type,
+      this.name,
+      this.position,
+      this.rotation,
+      this.scale,
+      this.color,
+      this.opacity
+    );
   }
 }

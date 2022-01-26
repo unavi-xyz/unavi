@@ -14,8 +14,8 @@ export const OBJECTS: { [key in OBJ_NAMES]: SceneObject } = {
 export function getObjectComponent(object: SceneObject) {
   switch (object.name) {
     case OBJ_NAMES.box:
-      return <Box />;
+      return <Box object={object} />;
     case OBJ_NAMES.sphere:
-      return <Sphere />;
+      return <Sphere object={object} />;
   }
 }

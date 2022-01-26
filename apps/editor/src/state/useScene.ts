@@ -70,7 +70,9 @@ export const useScene = create((set: any, get: any) => ({
         object.name,
         object.position,
         object.rotation,
-        object.scale
+        object.scale,
+        object.color,
+        object.opacity
       );
       loaded[obj.id] = obj;
     });

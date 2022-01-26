@@ -20,8 +20,8 @@ export default function Inspect({ object }: Props) {
   const [pos, setPos] = useState(object.position);
   const [rot, setRot] = useState(object.rotation);
   const [scale, setScale] = useState(object.scale);
-  const [color, setColor] = useState("#ffffff");
-  const [opacity, setOpacity] = useState(1);
+  const [color, setColor] = useState(object.color);
+  const [opacity, setOpacity] = useState(object.opacity);
 
   useEffect(() => {
     //save object values to ui
@@ -34,6 +34,9 @@ export default function Inspect({ object }: Props) {
     setPos(object.position);
     setRot(degrees);
     setScale(object.scale);
+
+    setColor(object.color);
+    setOpacity(object.opacity);
   }, [object, usingGizmo]);
 
   useEffect(() => {
@@ -46,8 +49,11 @@ export default function Inspect({ object }: Props) {
     object.rotation = radians;
     object.scale = scale;
 
+    object.color = color;
+    object.opacity = opacity;
+
     object.load();
-  }, [object, pos, rot, scale, usingGizmo]);
+  }, [color, object, opacity, pos, rot, scale, usingGizmo]);
 
   return (
     <Stack spacing={3}>

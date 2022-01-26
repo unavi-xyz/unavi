@@ -15,11 +15,16 @@ export class SceneObject {
   rotation: Triplet;
   scale: Triplet;
 
+  color: string;
+  opacity: number;
+
   constructor(
     name: OBJ_NAMES,
     position: Triplet = [0, 0, 0],
     rotation: Triplet = [0, 0, 0],
-    scale: Triplet = [1, 1, 1]
+    scale: Triplet = [1, 1, 1],
+    color: string = "#ffffff",
+    opacity: number = 1
   ) {
     this.id = nanoid();
     this.name = name;
@@ -29,6 +34,9 @@ export class SceneObject {
     this.position = position;
     this.rotation = rotation;
     this.scale = scale;
+
+    this.color = color;
+    this.opacity = opacity;
   }
 
   save() {

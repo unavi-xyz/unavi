@@ -15,7 +15,7 @@ export default function RightPanel() {
       variant="outlined"
       style={{ width: "100%", padding: "1rem", border: 0 }}
     >
-      {selected ? <Inspect object={selected} /> : <Assets />}
+      {selected ? <Inspect key={selected.id} object={selected} /> : <Assets />}
     </Paper>
   );
 }

@@ -7,15 +7,15 @@ interface Props {
 }
 
 export default function ColorField({ value, setValue }: Props) {
-  const ref = useRef(value);
+  const ref = useRef<null | HTMLInputElement>();
 
-  function handleChange(e) {
-    ref.current = e.target.value;
-  }
+  useEffect(() => {
+    ref.current.value = value;
+  }, [value]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setValue(ref.current);
+      setValue(ref.current.value);
     }, 100);
 
     return () => {
@@ -25,7 +25,8 @@ export default function ColorField({ value, setValue }: Props) {
 
   return (
     <TextField
-      onChange={handleChange}
+      inputRef={ref}
+      id="inspect-input-color"
       type="color"
       variant="standard"
       fullWidth

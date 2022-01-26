@@ -23,7 +23,7 @@ export default function ObjectCard({ name }: Props) {
   const limit = ASSETS[name].limit;
 
   function handleClick() {
-    if (count < limit) newObject(name);
+    if (count < limit || limit < 0) newObject(name);
   }
 
   useEffect(() => {

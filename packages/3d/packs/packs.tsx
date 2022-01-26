@@ -25,11 +25,7 @@ export enum ASSET_NAMES {
 export const ASSETS: { [type: string]: Asset } = {
   Box: new Asset(ASSET_NAMES.Box, [...properties_basic]),
   Sphere: new Asset(ASSET_NAMES.Sphere, [...properties_basic]),
-  Spawn: new Asset(
-    ASSET_NAMES.Spawn,
-    [PROPERTIES.position, PROPERTIES.rotation],
-    1
-  ),
+  Spawn: new Asset(ASSET_NAMES.Spawn, [PROPERTIES.position], 1),
 };
 
 export const PACKS: { [pack: string]: ASSET_NAMES[] } = {

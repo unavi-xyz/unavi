@@ -12,9 +12,11 @@ export enum PROPERTIES {
 export class Asset {
   name: ASSET_NAMES;
   properties: PROPERTIES[];
+  limit: number;
 
-  constructor(name: ASSET_NAMES, properties: PROPERTIES[]) {
+  constructor(name: ASSET_NAMES, properties: PROPERTIES[], limit = -1) {
     this.name = name;
     this.properties = properties;
+    this.limit = limit;
   }
 }

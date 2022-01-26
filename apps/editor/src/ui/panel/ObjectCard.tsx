@@ -1,12 +1,12 @@
+import { useEffect, useState } from "react";
 import {
   Card,
   CardActionArea,
   CardContent,
   Grid,
-  Stack,
   Typography,
 } from "@mui/material";
-import { ASSET_NAMES } from "3d";
+import { ASSETS, ASSET_NAMES } from "3d";
 
 import { useScene } from "../../state/useScene";
 
@@ -15,20 +15,42 @@ interface Props {
 }
 
 export default function ObjectCard({ name }: Props) {
+  const scene = useScene((state) => state.scene);
   const newObject = useScene((state) => state.newObject);
 
+  const [count, setCount] = useState(0);
+
+  const limit = ASSETS[name].limit;
+
   function handleClick() {
-    newObject(name);
+    if (count < limit) newObject(name);
   }
+
+  useEffect(() => {
+    const found = Object.values(scene).filter((item) => item.type === name);
+    setCount(found.length);
+  }, [name, scene]);
 
   return (
     <Grid item xs sx={{ minWidth: "120px" }}>
       <Card variant="outlined">
         <CardActionArea onClick={handleClick}>
           <CardContent>
-            <Stack alignItems="center">
-              <Typography>{name}</Typography>
-            </Stack>
+            <Grid container>
+              <Grid item xs={3}></Grid>
+
+              <Grid item xs={6} container justifyContent="center">
+                <Typography>{name}</Typography>
+              </Grid>
+
+              <Grid item xs={3} container justifyContent="flex-end">
+                {limit > -1 && (
+                  <Typography>
+                    {count}/{limit}
+                  </Typography>
+                )}
+              </Grid>
+            </Grid>
           </CardContent>
         </CardActionArea>
       </Card>

@@ -1,15 +1,15 @@
 import create from "zustand";
 import { ASSET_NAMES, SceneObject } from "3d";
 
-interface sceneInterface {
+export interface IScene {
   [key: string]: SceneObject;
 }
-const typedScene: sceneInterface = {};
+const typedScene: IScene = {};
 
 export const useScene = create((set: any, get: any) => ({
   scene: typedScene,
 
-  setScene: (newScene: sceneInterface) => {
+  setScene: (newScene: IScene) => {
     set((state) => {
       state.scene = newScene;
     });
@@ -58,7 +58,7 @@ export const useScene = create((set: any, get: any) => ({
     const objects = JSON.parse(json);
     if (!objects) return;
 
-    const loaded: sceneInterface = {};
+    const loaded: IScene = {};
     Object.values(objects).forEach((object: any) => {
       const obj = new SceneObject(
         object.type,

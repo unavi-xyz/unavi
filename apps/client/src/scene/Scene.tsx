@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { Group } from "three";
+import { Player } from "3d";
 
-import { Player } from "./player/Player";
 import { OtherPlayers } from "./multiplayer/OtherPlayers";
 
 import World from "./World";

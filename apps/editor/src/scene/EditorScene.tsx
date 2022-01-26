@@ -7,7 +7,7 @@ import { TOOLS, useStore } from "../state/useStore";
 
 import Objects from "./Objects";
 
-export default function Scene() {
+export default function EditorScene() {
   const selected = useStore((state) => state.selected);
   const selectedRef = useStore((state) => state.selectedRef);
   const tool = useStore((state) => state.tool);

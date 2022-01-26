@@ -12,3 +12,6 @@ export enum PHYSICS_GROUPS {
   WORLD = 2,
   OBJECTS = 4,
 }
+
+export const VOID_LEVEL = -50;
+export const PUBLISH_INTERVAL = 100;

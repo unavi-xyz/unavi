@@ -13,6 +13,7 @@ export const useStore = create((set: any) => ({
   selectedRef: null,
   usingGizmo: false,
   tool: TOOLS.translate,
+  playMode: false,
   id: "",
 
   setId: (id: string) => {
@@ -24,6 +25,12 @@ export const useStore = create((set: any) => ({
   setUsingGizmo: (value: Boolean) => {
     set((state) => {
       state.usingGizmo = value;
+    });
+  },
+
+  setPlayMode: (value: Boolean) => {
+    set((state) => {
+      state.playMode = value;
     });
   },
 

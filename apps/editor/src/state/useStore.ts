@@ -11,12 +11,19 @@ export enum TOOLS {
 export const useStore = create((set: any) => ({
   selected: null,
   selectedRef: null,
+  usingGizmo: false,
   tool: TOOLS.translate,
   id: "",
 
   setId: (id: string) => {
     set((state) => {
       state.id = id;
+    });
+  },
+
+  setUsingGizmo: (value: Boolean) => {
+    set((state) => {
+      state.usingGizmo = value;
     });
   },
 

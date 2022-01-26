@@ -13,7 +13,6 @@ export function useHotkeys() {
     function handleKeypress(e: KeyboardEvent) {
       switch (e.key) {
         case "Delete":
-        case "Backspace":
           if (selected) {
             deleteObject(selected);
             setSelected(null, null);

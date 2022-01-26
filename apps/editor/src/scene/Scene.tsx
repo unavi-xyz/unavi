@@ -8,14 +8,24 @@ import { useStore } from "../state/useStore";
 import Objects from "./Objects";
 
 export default function Scene() {
+  const selected = useStore((state) => state.selected);
   const selectedRef = useStore((state) => state.selectedRef);
   const tool = useStore((state) => state.tool);
+  const setUsingGizmo = useStore((state) => state.setUsingGizmo);
 
   const { camera } = useThree();
 
   useEffect(() => {
     camera.position.set(10, 10, 10);
   }, [camera]);
+
+  function handleMouseDown() {
+    setUsingGizmo(true);
+  }
+
+  function handleMouseUp() {
+    setUsingGizmo(false);
+  }
 
   return (
     <group>
@@ -98,6 +108,8 @@ export default function Scene() {
         hasEventListener={undefined}
         removeEventListener={undefined}
         dispatchEvent={undefined}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
         object={selectedRef}
         enabled={Boolean(selectedRef)}
         showX={Boolean(selectedRef)}

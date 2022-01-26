@@ -1,11 +1,5 @@
 import create from "zustand";
-import { OBJECTS, SceneObject } from "3d";
-
-export enum TOOLS {
-  translate = "translate",
-  rotate = "rotate",
-  scale = "scale",
-}
+import { ASSET_NAMES, SceneObject } from "3d";
 
 interface sceneInterface {
   [key: string]: SceneObject;
@@ -37,7 +31,7 @@ export const useScene = create((set: any, get: any) => ({
     });
   },
 
-  newObject: (name: OBJECTS) => {
+  newObject: (name: ASSET_NAMES) => {
     const obj = new SceneObject(name);
     set((state) => {
       state.addObject(obj);

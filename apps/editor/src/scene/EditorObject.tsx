@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ThreeEvent } from "@react-three/fiber";
-import { getObjectComponent, SceneObject } from "3d";
+import { getComponent, SceneObject } from "3d";
 
 import { useStore } from "../state/useStore";
 
@@ -25,7 +25,7 @@ export default function EditorObject({ object }: Props) {
 
   return (
     <group ref={ref} onClick={handleClick}>
-      {getObjectComponent(object)}
+      {getComponent(object)}
     </group>
   );
 }

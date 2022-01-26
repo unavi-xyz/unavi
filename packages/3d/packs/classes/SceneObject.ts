@@ -3,11 +3,12 @@ import { Triplet } from "@react-three/cannon";
 import { Object3D } from "three";
 import { nanoid } from "nanoid";
 
-import { OBJECTS } from "..";
+import { ASSET_NAMES } from "..";
 
+//each SceneObject represents an object within the scene
 export class SceneObject {
   id: string;
-  type: OBJECTS;
+  type: ASSET_NAMES;
   name: string;
 
   ref: MutableRefObject<Object3D> | null;
@@ -20,7 +21,7 @@ export class SceneObject {
   opacity: number;
 
   constructor(
-    type: OBJECTS,
+    type: ASSET_NAMES,
     name?: string,
     position: Triplet = [0, 0, 0],
     rotation: Triplet = [0, 0, 0],

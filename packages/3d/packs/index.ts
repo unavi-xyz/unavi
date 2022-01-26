@@ -1,5 +1,3 @@
-export * from "./basic/Box";
-export * from "./basic/Sphere";
-
+export * from "./classes/Asset";
 export * from "./classes/SceneObject";
 export * from "./packs";

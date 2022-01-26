@@ -1,16 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useThree } from "@react-three/fiber";
 import { OrbitControls, Sky, TransformControls } from "@react-three/drei";
-import { Ground } from "3d";
+import { ASSETS, PROPERTIES, Ground } from "3d";
 
-import { useStore } from "../state/useStore";
+import { TOOLS, useStore } from "../state/useStore";
 
 import Objects from "./Objects";
 
 export default function Scene() {
+  const selected = useStore((state) => state.selected);
   const selectedRef = useStore((state) => state.selectedRef);
   const tool = useStore((state) => state.tool);
   const setUsingGizmo = useStore((state) => state.setUsingGizmo);
+
+  const [enabled, setEnabled] = useState(false);
 
   const { camera } = useThree();
 
@@ -25,6 +28,26 @@ export default function Scene() {
   function handleMouseUp() {
     setUsingGizmo(false);
   }
+
+  useEffect(() => {
+    if (!selected) {
+      setEnabled(false);
+      return;
+    }
+
+    const properties = ASSETS[selected.type].properties;
+
+    const hasType =
+      tool === TOOLS.translate
+        ? properties.includes(PROPERTIES.position)
+        : tool === TOOLS.rotate
+        ? properties.includes(PROPERTIES.rotation)
+        : tool === TOOLS.scale
+        ? properties.includes(PROPERTIES.scale)
+        : false;
+
+    setEnabled(hasType);
+  }, [selected, tool]);
 
   return (
     <group>
@@ -110,7 +133,7 @@ export default function Scene() {
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         object={selectedRef}
-        enabled={Boolean(selectedRef)}
+        enabled={enabled}
         showX={Boolean(selectedRef)}
         showY={Boolean(selectedRef)}
         showZ={Boolean(selectedRef)}

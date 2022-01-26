@@ -1,27 +1,48 @@
 import "@react-three/fiber"; // idk why i need this to stop type errors
 
-import { SceneObject, Box, Sphere } from "..";
+import { SceneObject } from "..";
 
-export enum OBJECTS {
+import { Asset, PROPERTIES } from "./classes/Asset";
+
+import { Box } from "./basic/Box";
+import { Sphere } from "./basic/Sphere";
+import { Spawn } from "./game/Spawn";
+
+const properties_basic = [
+  PROPERTIES.position,
+  PROPERTIES.rotation,
+  PROPERTIES.scale,
+  PROPERTIES.color,
+  PROPERTIES.opacity,
+];
+
+export enum ASSET_NAMES {
   Box = "Box",
   Sphere = "Sphere",
-  Portal = "Portal",
   Spawn = "Spawn",
 }
 
-export const PACKS = {
-  Basic: [OBJECTS.Box, OBJECTS.Sphere],
-  Game: [OBJECTS.Portal, OBJECTS.Spawn],
+export const ASSETS: { [type: string]: Asset } = {
+  Box: new Asset(ASSET_NAMES.Box, [...properties_basic]),
+  Sphere: new Asset(ASSET_NAMES.Sphere, [...properties_basic]),
+  Spawn: new Asset(ASSET_NAMES.Spawn, [
+    PROPERTIES.position,
+    PROPERTIES.rotation,
+  ]),
 };
 
-export function getObjectComponent(object: SceneObject) {
-  switch (object.name) {
-    case OBJECTS.Box:
+export const PACKS: { [pack: string]: ASSET_NAMES[] } = {
+  Basic: [ASSET_NAMES.Box, ASSET_NAMES.Sphere],
+  Game: [ASSET_NAMES.Spawn],
+};
+
+export function getComponent(object: SceneObject) {
+  switch (object.type) {
+    case ASSET_NAMES.Box:
       return <Box object={object} />;
-    case OBJECTS.Sphere:
+    case ASSET_NAMES.Sphere:
       return <Sphere object={object} />;
-    case OBJECTS.Portal:
-    case OBJECTS.Spawn:
-      break;
+    case ASSET_NAMES.Spawn:
+      return <Spawn />;
   }
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Grid, IconButton, Stack, Typography } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import { OBJECTS, PACKS } from "3d";
+import { PACKS } from "3d";
 
 import ObjectCard from "./ObjectCard";
 import PackCard from "./PackCard";
@@ -11,8 +11,8 @@ export default function Packs() {
 
   if (pack) {
     return (
-      <Stack spacing={2}>
-        <Grid container alignItems="center">
+      <Grid container spacing={2}>
+        <Grid item container alignItems="center">
           <Grid item xs={2}>
             <IconButton onClick={() => setPack(null)}>
               <ArrowBackIosNewIcon />
@@ -26,12 +26,12 @@ export default function Packs() {
           <Grid item xs={2}></Grid>
         </Grid>
 
-        <Grid container spacing={2}>
-          {PACKS[pack].map((name: OBJECTS) => {
+        <Grid item container spacing={2}>
+          {PACKS[pack].map((name) => {
             return <ObjectCard key={name} name={name} />;
           })}
         </Grid>
-      </Stack>
+      </Grid>
     );
   }
 

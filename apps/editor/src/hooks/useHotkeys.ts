@@ -15,7 +15,7 @@ export function useHotkeys() {
         case "Delete":
           if (selected) {
             deleteObject(selected);
-            setSelected(null, null);
+            setSelected(null);
           }
           break;
 

@@ -10,9 +10,9 @@ import SidebarLayout from "../src/layouts/SidebarLayout";
 
 const nanoid = customAlphabet("1234567890", 16);
 
-const spawn = new SceneObject(ASSET_NAMES.Spawn);
-const defaultScene = {};
-defaultScene[spawn.id] = spawn;
+const spawn = new SceneObject();
+spawn.params.type = ASSET_NAMES.Spawn;
+const defaultScene = [spawn];
 
 export default function Scenes() {
   const router = useRouter();

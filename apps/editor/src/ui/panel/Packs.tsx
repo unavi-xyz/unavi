@@ -3,7 +3,7 @@ import { Grid, IconButton, Stack, Typography } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { PACKS } from "3d";
 
-import ObjectCard from "./ObjectCard";
+import AssetCard from "./AssetCard";
 import PackCard from "./PackCard";
 
 export default function Packs() {
@@ -28,7 +28,7 @@ export default function Packs() {
 
         <Grid item container spacing={2}>
           {PACKS[pack].map((name) => {
-            return <ObjectCard key={name} name={name} />;
+            return <AssetCard key={name} name={name} />;
           })}
         </Grid>
       </Grid>

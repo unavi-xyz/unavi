@@ -14,7 +14,7 @@ interface Props {
   name: ASSET_NAMES;
 }
 
-export default function ObjectCard({ name }: Props) {
+export default function AssetCard({ name }: Props) {
   const scene = useScene((state) => state.scene);
   const newObject = useScene((state) => state.newObject);
 
@@ -27,7 +27,9 @@ export default function ObjectCard({ name }: Props) {
   }
 
   useEffect(() => {
-    const found = Object.values(scene).filter((item) => item.type === name);
+    const found = Object.values(scene).filter(
+      (item) => item.params.type === name
+    );
     setCount(found.length);
   }, [name, scene]);
 

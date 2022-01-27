@@ -4,8 +4,10 @@ export enum PROPERTIES {
   position,
   rotation,
   scale,
+  radius,
   color,
   opacity,
+  physics,
 }
 
 //each Asset defines a type of SceneObject

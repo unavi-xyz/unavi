@@ -1,13 +1,12 @@
 import { useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Debug, Physics } from "@react-three/cannon";
+import { Physics } from "@react-three/cannon";
 import { IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import Split from "react-split";
 import { RAYCASTER_SETTINGS } from "3d";
 
 import { useStore } from "../src/state/useStore";
-import { useScene } from "../src/state/useScene";
 import { useHotkeys } from "../src/hooks/useHotkeys";
 
 import Navbar from "../src/ui/navbar/Navbar";
@@ -21,18 +20,13 @@ export default function Editor() {
   const setPlayMode = useStore((state) => state.setPlayMode);
   const playMode = useStore((state) => state.playMode);
 
-  const setScene = useScene((state) => state.setScene);
-
   useHotkeys();
 
   useEffect(() => {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     setId(urlParams.get("scene"));
-
-    setScene({});
-    setSelected(null, null);
-  }, [setId, setScene, setSelected]);
+  }, [setId]);
 
   return (
     <div className="App">
@@ -40,9 +34,7 @@ export default function Editor() {
         <span>
           <Canvas raycaster={RAYCASTER_SETTINGS}>
             <Physics>
-              <Debug>
-                <PlayScene />
-              </Debug>
+              <PlayScene />
             </Physics>
           </Canvas>
 
@@ -68,7 +60,7 @@ export default function Editor() {
             gutterAlign="end"
           >
             <Canvas
-              onPointerMissed={() => setSelected(null, null)}
+              onPointerMissed={() => setSelected(null)}
               gl={{ preserveDrawingBuffer: true }}
             >
               <Physics>

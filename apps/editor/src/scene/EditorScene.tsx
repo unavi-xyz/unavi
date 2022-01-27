@@ -9,7 +9,6 @@ import Objects from "./Objects";
 
 export default function EditorScene() {
   const selected = useStore((state) => state.selected);
-  const selectedRef = useStore((state) => state.selectedRef);
   const tool = useStore((state) => state.tool);
   const setUsingGizmo = useStore((state) => state.setUsingGizmo);
 
@@ -35,7 +34,7 @@ export default function EditorScene() {
       return;
     }
 
-    const properties = ASSETS[selected.type].properties;
+    const properties = ASSETS[selected.params.type].properties;
 
     const hasType =
       tool === TOOLS.translate
@@ -63,78 +62,14 @@ export default function EditorScene() {
       <Sky />
       <Ground />
 
-      <TransformControls // I LOVE TYPESCRIPT
-        type={undefined}
-        isGroup={undefined}
-        id={undefined}
-        uuid={undefined}
-        name={undefined}
-        parent={undefined}
-        modelViewMatrix={undefined}
-        normalMatrix={undefined}
-        matrixWorld={undefined}
-        matrixAutoUpdate={undefined}
-        matrixWorldNeedsUpdate={undefined}
-        castShadow={undefined}
-        receiveShadow={undefined}
-        frustumCulled={undefined}
-        renderOrder={undefined}
-        animations={undefined}
-        userData={undefined}
-        customDepthMaterial={undefined}
-        customDistanceMaterial={undefined}
-        isObject3D={undefined}
-        onBeforeRender={undefined}
-        onAfterRender={undefined}
-        applyMatrix4={undefined}
-        applyQuaternion={undefined}
-        setRotationFromAxisAngle={undefined}
-        setRotationFromEuler={undefined}
-        setRotationFromMatrix={undefined}
-        setRotationFromQuaternion={undefined}
-        rotateOnAxis={undefined}
-        rotateOnWorldAxis={undefined}
-        rotateX={undefined}
-        rotateY={undefined}
-        rotateZ={undefined}
-        translateOnAxis={undefined}
-        translateX={undefined}
-        translateY={undefined}
-        translateZ={undefined}
-        localToWorld={undefined}
-        worldToLocal={undefined}
-        lookAt={undefined}
-        add={undefined}
-        remove={undefined}
-        removeFromParent={undefined}
-        clear={undefined}
-        getObjectById={undefined}
-        getObjectByName={undefined}
-        getObjectByProperty={undefined}
-        getWorldPosition={undefined}
-        getWorldQuaternion={undefined}
-        getWorldScale={undefined}
-        getWorldDirection={undefined}
-        raycast={undefined}
-        traverse={undefined}
-        traverseVisible={undefined}
-        traverseAncestors={undefined}
-        updateMatrix={undefined}
-        updateWorldMatrix={undefined}
-        toJSON={undefined}
-        clone={undefined}
-        copy={undefined}
-        addEventListener={undefined}
-        hasEventListener={undefined}
-        removeEventListener={undefined}
-        dispatchEvent={undefined}
+      <TransformControls
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
-        object={selectedRef}
+        object={selected?.ref}
         enabled={enabled}
-        showX={Boolean(selectedRef)}
-        showY={Boolean(selectedRef)}
-        showZ={Boolean(selectedRef)}
+        showX={Boolean(selected)}
+        showY={Boolean(selected)}
+        showZ={Boolean(selected)}
         size={0.7}
         mode={tool}
       />

@@ -5,7 +5,7 @@ import { useStore } from "../state/useStore";
 
 import EditorObject from "./EditorObject";
 
-const AUTOSAVE_INTERVAL = 5000;
+const AUTOSAVE_INTERVAL = 3000;
 
 export default function Objects() {
   const scene = useScene((state) => state.scene);
@@ -34,8 +34,8 @@ export default function Objects() {
 
   return (
     <group>
-      {Object.values(scene).map((object) => {
-        return <EditorObject key={object.id} object={object} />;
+      {Object.keys(scene).map((id) => {
+        return <EditorObject key={id} id={id} />;
       })}
     </group>
   );

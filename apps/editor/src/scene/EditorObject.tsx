@@ -1,31 +1,34 @@
 import { useEffect, useRef } from "react";
 import { ThreeEvent } from "@react-three/fiber";
-import { getComponent, SceneObject } from "3d";
+import { Group } from "three";
+import { Object } from "3d";
 
 import { useStore } from "../state/useStore";
+import { useScene } from "../state/useScene";
 
 interface Props {
-  object: SceneObject;
+  id: string;
 }
 
-export default function EditorObject({ object }: Props) {
-  const ref = useRef();
-
+export default function Editorid({ id }: Props) {
   const setSelected = useStore((state) => state.setSelected);
+  const object = useScene((state) => state.scene[id]);
 
-  function handleClick(e: ThreeEvent<MouseEvent>) {
-    e.stopPropagation();
-    setSelected(object, ref);
-  }
+  const ref = useRef<Group>();
 
   useEffect(() => {
     object.ref = ref;
     object.load();
-  }, [object, ref]);
+  }, [object]);
+
+  function handleClick(e: ThreeEvent<MouseEvent>) {
+    e.stopPropagation();
+    setSelected(object);
+  }
 
   return (
     <group ref={ref} onClick={handleClick}>
-      {getComponent(object)}
+      <Object object={object} editor />
     </group>
   );
 }

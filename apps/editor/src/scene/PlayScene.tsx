@@ -9,9 +9,12 @@ import PlayObject from "./PlayObject";
 
 function getSpawn(scene: IScene) {
   const object = Object.values(scene).find(
-    (obj) => obj.type === ASSET_NAMES.Spawn
+    (obj) => obj.params.type === ASSET_NAMES.Spawn
   );
-  const spawn = new Vector3().fromArray(object.position);
+
+  if (!object) return new Vector3(0, 2, 0);
+
+  const spawn = new Vector3().fromArray(object.params.position);
   spawn.add(new Vector3(0, 2, 0));
   return spawn;
 }

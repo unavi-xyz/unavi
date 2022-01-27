@@ -1,5 +1,5 @@
 import create from "zustand";
-import { ASSET_NAMES, SceneObject } from "3d";
+import { ASSET_NAMES, Params, SceneObject } from "3d";
 
 export interface IScene {
   [key: string]: SceneObject;
@@ -31,8 +31,11 @@ export const useScene = create((set: any, get: any) => ({
     });
   },
 
-  newObject: (name: ASSET_NAMES) => {
-    const obj = new SceneObject(name);
+  newObject: (type: ASSET_NAMES) => {
+    const obj = new SceneObject();
+    obj.params.type = type;
+    obj.params.name = type;
+
     set((state) => {
       state.addObject(obj);
     });
@@ -51,24 +54,19 @@ export const useScene = create((set: any, get: any) => ({
   },
 
   toJSON() {
-    return JSON.stringify(get().scene);
+    const map = Object.values(get().scene).map(
+      (object: SceneObject) => object.params
+    );
+    return JSON.stringify(map);
   },
 
   fromJSON(json: string) {
-    const objects = JSON.parse(json);
-    if (!objects) return;
+    const map = JSON.parse(json);
+    if (!map) return;
 
     const loaded: IScene = {};
-    Object.values(objects).forEach((object: any) => {
-      const obj = new SceneObject(
-        object.type,
-        object.name,
-        object.position,
-        object.rotation,
-        object.scale,
-        object.color,
-        object.opacity
-      );
+    map.forEach((param: Params) => {
+      const obj = new SceneObject(param);
       loaded[obj.id] = obj;
     });
 

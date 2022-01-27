@@ -1,24 +1,21 @@
-import { Grid, Paper, Typography } from "@mui/material";
-import { OBJECTS, OBJ_NAMES } from "3d";
+import { Paper } from "@mui/material";
+import { SceneObject } from "3d";
 
-import ObjectCard from "./ObjectCard";
+import { useStore } from "../../state/useStore";
+
+import Packs from "./Packs";
+import Inspect from "./Inspect";
 
 export default function RightPanel() {
+  const selected: SceneObject = useStore((state) => state.selected);
+
   return (
     <Paper
       square
       variant="outlined"
       style={{ width: "100%", padding: "1rem", border: 0 }}
     >
-      <Typography variant="h3" sx={{ marginBottom: 2 }}>
-        Objects
-      </Typography>
-
-      <Grid container spacing={2}>
-        {Array.from(Object.keys(OBJECTS)).map((name: OBJ_NAMES) => {
-          return <ObjectCard key={name} name={name} />;
-        })}
-      </Grid>
+      {selected ? <Inspect key={selected.id} object={selected} /> : <Packs />}
     </Paper>
   );
 }

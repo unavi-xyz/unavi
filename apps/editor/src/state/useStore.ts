@@ -1,4 +1,3 @@
-import { MutableRefObject } from "react";
 import create from "zustand";
 import { SceneObject } from "3d";
 
@@ -10,13 +9,26 @@ export enum TOOLS {
 
 export const useStore = create((set: any) => ({
   selected: null,
-  selectedRef: null,
+  usingGizmo: false,
   tool: TOOLS.translate,
+  playMode: false,
   id: "",
 
   setId: (id: string) => {
     set((state) => {
       state.id = id;
+    });
+  },
+
+  setUsingGizmo: (value: Boolean) => {
+    set((state) => {
+      state.usingGizmo = value;
+    });
+  },
+
+  setPlayMode: (value: Boolean) => {
+    set((state) => {
+      state.playMode = value;
     });
   },
 
@@ -26,13 +38,9 @@ export const useStore = create((set: any) => ({
     });
   },
 
-  setSelected: (
-    object: SceneObject | null,
-    ref: MutableRefObject<undefined> | null
-  ) => {
+  setSelected: (object: SceneObject) => {
     set((state) => {
       state.selected = object;
-      state.selectedRef = ref;
     });
   },
 }));

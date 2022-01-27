@@ -1,3 +1,4 @@
+export * from "./components/Ground";
+export * from "./player/Player";
+export * from "./packs";
 export * from "./constants";
-export * from "./objects/objects";
-export * from "./objects/classes/SceneObject";

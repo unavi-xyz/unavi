@@ -17,9 +17,10 @@ export default function Navbar() {
 
   const { client } = useContext(ClientContext);
 
-  const id = useStore((set) => set.id);
-  const save = useScene((set) => set.save);
-  const toJSON = useScene((set) => set.toJSON);
+  const id = useStore((state) => state.id);
+  const setPlayMode = useStore((state) => state.setPlayMode);
+  const save = useScene((state) => state.save);
+  const toJSON = useScene((state) => state.toJSON);
 
   async function handleBack() {
     const canvas = document.querySelector("canvas");
@@ -56,6 +57,10 @@ export default function Navbar() {
     router.push(url);
   }
 
+  function handlePlay() {
+    setPlayMode(true);
+  }
+
   return (
     <Paper square variant="outlined" style={{ padding: "0.2rem" }}>
       <Grid container alignItems="center">
@@ -88,7 +93,7 @@ export default function Navbar() {
               variant="contained"
               color="secondary"
               size="small"
-              onClick={handlePublish}
+              onClick={handlePlay}
               style={{
                 marginTop: 5,
                 marginBottom: 5,
@@ -97,7 +102,7 @@ export default function Navbar() {
                 paddingRight: 16,
               }}
             >
-              Publish
+              Play
             </Button>
           </Stack>
         </Grid>

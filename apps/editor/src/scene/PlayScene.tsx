@@ -36,8 +36,8 @@ export default function PlayScene() {
         <Sky />
         <Ground />
 
-        {Object.values(scene).map((object) => {
-          return <PlayObject key={object.id} object={object} />;
+        {Object.keys(scene).map((id) => {
+          return <PlayObject key={id} id={id} />;
         })}
       </group>
     </group>

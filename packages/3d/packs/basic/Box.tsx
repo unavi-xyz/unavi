@@ -1,15 +1,14 @@
 import { Triplet, useBox } from "@react-three/cannon";
 
-import { PHYSICS_GROUPS, SceneObject } from "../..";
+import { Params } from "..";
+import { PHYSICS_GROUPS } from "../..";
 
 interface Props {
-  object: SceneObject;
+  params: Params;
   editor?: boolean;
 }
 
-export function Box({ object, editor = false }: Props) {
-  const { params } = object;
-
+export function Box({ params, editor = false }: Props) {
   const args: Triplet = editor ? [1, 1, 1] : params.scale;
 
   const disablePhysics = params.physEnabled === false || editor;

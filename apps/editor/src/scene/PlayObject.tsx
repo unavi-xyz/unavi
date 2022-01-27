@@ -1,13 +1,16 @@
-import { ASSET_NAMES, Object, SceneObject } from "3d";
+import { ASSET_NAMES, Object } from "3d";
+import { useScene } from "../state/useScene";
 
 interface Props {
-  object: SceneObject;
+  id: string;
 }
 
-export default function PlayObject({ object }: Props) {
+export default function PlayObject({ id }: Props) {
+  const params = useScene((state) => state.scene[id].params);
+
   return (
     <group>
-      {object.params.type !== ASSET_NAMES.Spawn && <Object object={object} />}
+      {params.type !== ASSET_NAMES.Spawn && <Object params={params} />}
     </group>
   );
 }

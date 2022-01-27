@@ -1,15 +1,14 @@
 import { useSphere } from "@react-three/cannon";
 
-import { PHYSICS_GROUPS, SceneObject } from "../..";
+import { Params } from "..";
+import { PHYSICS_GROUPS } from "../..";
 
 interface Props {
-  object: SceneObject;
+  params: Params;
   editor?: boolean;
 }
 
-export function Sphere({ object, editor = false }: Props) {
-  const { params } = object;
-
+export function Sphere({ params, editor = false }: Props) {
   const args: [number] = editor ? [0.5] : [params.radius];
 
   const disablePhysics = params.physEnabled === false || editor;

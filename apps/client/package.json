@@ -11,7 +11,7 @@
   "dependencies": {
     "3d": "*",
     "@react-three/cannon": "^4.5.0",
-    "@react-three/drei": "^8.3.1",
+    "@react-three/drei": "^8.7.4",
     "@react-three/fiber": "^7.0.24",
     "matrix-js-sdk": "^15.2.1",
     "next": "^12.0.7",

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Physics } from "@react-three/cannon";
+import { Debug, Physics } from "@react-three/cannon";
 import { IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import Split from "react-split";
@@ -32,8 +32,7 @@ export default function Editor() {
 
     setScene({});
     setSelected(null, null);
-    setPlayMode(false);
-  }, [setId, setPlayMode, setScene, setSelected]);
+  }, [setId, setScene, setSelected]);
 
   return (
     <div className="App">
@@ -41,7 +40,9 @@ export default function Editor() {
         <span>
           <Canvas raycaster={RAYCASTER_SETTINGS}>
             <Physics>
-              <PlayScene />
+              <Debug>
+                <PlayScene />
+              </Debug>
             </Physics>
           </Canvas>
 
@@ -70,7 +71,9 @@ export default function Editor() {
               onPointerMissed={() => setSelected(null, null)}
               gl={{ preserveDrawingBuffer: true }}
             >
-              <EditorScene />
+              <Physics>
+                <EditorScene />
+              </Physics>
             </Canvas>
 
             <RightPanel />

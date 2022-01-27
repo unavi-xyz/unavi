@@ -58,10 +58,8 @@ export default function EditorScene() {
         dispatchEvent={undefined}
         makeDefault
       />
-
-      <ambientLight />
-      <directionalLight />
-
+      <ambientLight intensity={0.1} />
+      <directionalLight intensity={0.5} />
       <Sky />
       <Ground />
 

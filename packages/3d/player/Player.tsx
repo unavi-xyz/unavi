@@ -39,7 +39,7 @@ export function Player({
   const crosshair = useRef<undefined | Group>();
 
   const jump = useRef(false);
-  const position = useRef(spawn);
+  const position = useRef(spawn.clone());
   const velocity = useRef(new Vector3());
 
   const { camera } = useThree();
@@ -55,22 +55,22 @@ export function Player({
   const { direction, updateVelocity } = useSpringVelocity(api, PLAYER_SPEED);
 
   useEffect(() => {
-    if (!ymap || !userId) return;
+    // if (!ymap || !userId) return;
 
-    function publishPosition() {
-      if (!ymap) return;
-      ymap.set(userId, position.current.toArray());
-    }
+    // function publishPosition() {
+    //   if (!ymap) return;
+    //   ymap.set(userId, position.current.toArray());
+    // }
 
     api.position.subscribe((p: Triplet) => position.current.fromArray(p));
     api.velocity.subscribe((v: Triplet) => velocity.current.fromArray(v));
 
-    const interval = setInterval(publishPosition, PUBLISH_INTERVAL);
+    // const interval = setInterval(publishPosition, PUBLISH_INTERVAL);
 
-    return () => {
-      clearInterval(interval);
-    };
-  }, [ymap, userId, api.position, api.velocity]);
+    // return () => {
+    //   clearInterval(interval);
+    // };
+  }, [api.position, api.velocity]);
 
   useFrame(() => {
     if (position.current.y < VOID_LEVEL) {

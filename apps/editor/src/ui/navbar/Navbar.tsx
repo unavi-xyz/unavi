@@ -60,7 +60,7 @@ export default function Navbar() {
     //add tile to worlds did record
     const store = new DIDDataStore({ ceramic, model: worldsModel });
     const oldWorlds = await store.get("worlds");
-    const newWorlds = [...oldWorlds, streamId];
+    const newWorlds = oldWorlds ? [...oldWorlds, streamId] : [streamId];
     await store.merge("worlds", newWorlds);
 
     const url = `${getHomeUrl()}/world/${streamId}`;

@@ -50,7 +50,11 @@ export default function Navbar() {
     const world: Scene = { name, description, image, scene };
 
     //create tile
-    const stream = await loader.create(world, { schema: sceneSchemaId });
+    const stream = await loader.create(
+      world,
+      { schema: sceneSchemaId },
+      { pin: true }
+    );
     const streamId = stream.id.toString();
 
     //add tile to worlds did record

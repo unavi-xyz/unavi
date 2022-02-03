@@ -16,7 +16,7 @@ jobs:
           ref: ${{ github.head_ref }}
       - uses: creyD/prettier_action@v4.1.1
         with:
-          prettier_options: --write **/*.{js,jsx,ts,tsx,md}
+          prettier_options: --write **/*.{js,jsx,ts,tsx,md,json}
 
   build:
     runs-on: ubuntu-latest

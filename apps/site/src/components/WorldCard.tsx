@@ -1,4 +1,3 @@
-import { useContext } from "react";
 import {
   Card,
   CardActionArea,
@@ -8,32 +7,29 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { IPublicRoomsChunkRoom } from "matrix-js-sdk";
 import { useIdenticon } from "ui";
-import { ClientContext, useRoomAvatar } from "matrix";
+import { useWorld } from "ceramic";
 
 interface Props {
-  world: IPublicRoomsChunkRoom;
+  id: string;
 }
 
-export default function WorldCard({ world }: Props) {
-  const { client } = useContext(ClientContext);
-
-  const identicon = useIdenticon(world.room_id);
-  const avatar = useRoomAvatar(client, world);
+export default function WorldCard({ id }: Props) {
+  const world = useWorld(id);
+  const identicon = useIdenticon(id);
 
   return (
-    <Grid item xs={12} sm={6} md={4} xl={3}>
+    <Grid item xs={12} sm={6} md={4}>
       <Card variant="outlined">
-        <Link href={`/home/world/${world.room_id}`} passHref>
+        <Link href={`/home/world/${id}`} passHref>
           <CardActionArea>
             <CardMedia
               component="img"
               height="140px"
-              image={avatar ?? identicon}
+              image={world?.image ?? identicon}
             />
             <CardContent style={{ borderTop: "1px solid rgba(0,0,0,0.12)" }}>
-              <Typography>{world.name}</Typography>
+              <Typography>{world?.name}</Typography>
             </CardContent>
           </CardActionArea>
         </Link>

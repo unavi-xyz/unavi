@@ -59,10 +59,11 @@ function Body() {
               </Typography>
             </Grid>
             <Grid item>
-              <Link href="/home/login" passHref>
+              <Link href="/home" passHref>
                 <Button
                   variant="outlined"
                   color="secondary"
+                  size="large"
                   style={{ margin: "auto", fontSize: "2ch" }}
                 >
                   Join Now
@@ -91,28 +92,26 @@ function Body() {
               <Typography variant="h6" color="primary">
                 The Wired is built on top of{" "}
                 <MuiLink
-                  href="https://matrix.org/docs/guides/introduction"
+                  href="https://ceramic.network/"
                   target="_blank"
                   color="secondary"
                 >
-                  Matrix
+                  Ceramic
                 </MuiLink>
-                , an open standard for interoperable and decentralized
-                communication.
+                , a decentralized and open source network for sharing data.
               </Typography>
             </Grid>
             <Grid item>
               <Typography variant="h6" color="primary">
-                Matrix uses a federated network architecture (similar to how
-                email works). Each user chooses a homeserver to log in to. These
-                servers then communicate with each other, forming a
-                decentralized network with no single point of control.
+                The effect of this decentralization is a platform{" "}
+                <strong>controlled by the users</strong>. There is no company
+                that decides what is and isn{"'"}t allowed.
               </Typography>
             </Grid>
             <Grid item>
               <Typography variant="h6" color="primary">
-                Importantly, anyone can host their own server and join the
-                network, giving you full control over your data.
+                Anyone can host their own server and join the Ceramic network,
+                giving you full control over your data.
               </Typography>
             </Grid>
           </Grid>
@@ -123,23 +122,23 @@ function Body() {
           <Grid item container direction="column" rowSpacing={2}>
             <Grid item>
               <Typography variant="h6" color="primary">
-                With the interoperability of Matrix, you have a persistant
-                identity across different apps.
+                Data is handled using decentralized identifiers (
+                <MuiLink
+                  href="https://thenewstack.io/did-you-hear-decentralized-identifiers-are-coming/"
+                  target="_blank"
+                  color="secondary"
+                >
+                  DIDs
+                </MuiLink>
+                ).
               </Typography>
             </Grid>
             <Grid item>
               <Typography variant="h6" color="primary">
-                For example, you can friend someone in The Wired, then open a
-                chat app later (such as{" "}
-                <MuiLink
-                  href="https://element.io/personal"
-                  target="_blank"
-                  color="secondary"
-                >
-                  Element
-                </MuiLink>
-                ) and message them. They both use the same Matrix account, with
-                the same friends list.
+                This means your identity, and the data you create, is not
+                limited to this platform. For example, you could log in to a
+                chat app using your DID, and all your friends from The Wired
+                would show up as contacts.
               </Typography>
             </Grid>
           </Grid>

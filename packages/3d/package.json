@@ -14,7 +14,10 @@
   "dependencies": {
     "@react-three/cannon": "^4.5.0",
     "@react-three/fiber": "^7.0.24",
+    "ceramic": "*",
     "nanoid": "^3.1.31",
-    "three": "^0.136.0"
+    "three": "^0.136.0",
+    "y-webrtc": "^10.2.2",
+    "yjs": "^13.5.24"
   }
 }

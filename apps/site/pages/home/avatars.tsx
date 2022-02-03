@@ -1,12 +1,13 @@
-import { Grid, Typography } from "@mui/material";
+import { Grid } from "@mui/material";
+import { BackNavbar } from "ui";
 
 import HomeLayout from "../../src/layouts/HomeLayout";
 
 export default function Avatars() {
   return (
-    <Grid className="page" container direction="column" rowSpacing={4}>
-      <Grid item container>
-        <Typography variant="h2">💃 Avatars</Typography>
+    <Grid container direction="column">
+      <Grid item>
+        <BackNavbar text="Avatars" back={false} />
       </Grid>
     </Grid>
   );

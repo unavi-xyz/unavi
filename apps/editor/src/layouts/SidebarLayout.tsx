@@ -12,13 +12,10 @@ export default function SidebarLayout({ children }) {
 
   return (
     <div>
-      <Grid container>
-        <Grid item xs={4} style={{ maxWidth: "320px" }}>
+      <Grid container sx={{ maxWidth: "1400px", margin: "auto" }}>
+        <Grid item sx={{ width: "260px" }}>
           <Sidebar title="Editor">
             <SidebarButton emoji="🌲" text="Scenes" href="/" />
-
-            <Divider />
-
             <SidebarButton emoji="🏠" text="Home" href={homeUrl} />
           </Sidebar>
         </Grid>
@@ -28,6 +25,8 @@ export default function SidebarLayout({ children }) {
             {children}
           </Paper>
         </Grid>
+
+        <Grid item sx={{ width: "260px" }}></Grid>
       </Grid>
     </div>
   );

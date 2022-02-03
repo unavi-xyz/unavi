@@ -1,0 +1,21 @@
+{
+  "title": "Scene",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 420
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 800
+    },
+    "image": {
+      "type": "string"
+    },
+    "scene": {
+      "type": "string"
+    }
+  },
+  "required": ["scene"]
+}

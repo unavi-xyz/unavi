@@ -31,12 +31,6 @@ body,
   cursor: pointer;
 }
 
-.page {
-  margin: auto !important;
-  padding-left: 5vw;
-  padding-right: 5vw;
-}
-
 .link:hover {
   text-decoration: underline;
   cursor: pointer;

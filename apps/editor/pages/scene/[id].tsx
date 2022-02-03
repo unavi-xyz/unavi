@@ -23,7 +23,7 @@ export default function Id() {
   }, [id]);
 
   return (
-    <Grid className="page" container direction="column" rowSpacing={4}>
+    <Grid container direction="column" rowSpacing={4} sx={{ padding: 4 }}>
       <Grid item style={{ maxWidth: "800px" }}>
         <Stack
           direction="row"

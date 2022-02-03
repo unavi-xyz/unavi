@@ -20,6 +20,8 @@ export class SceneObject {
   load() {
     if (!this.ref?.current) return;
 
+    console.log("👨‍👧", this.params);
+
     this.ref.current.position.set(...this.params.position);
     this.ref.current.rotation.set(...this.params.rotation);
     this.ref.current.scale.set(...this.params.scale);

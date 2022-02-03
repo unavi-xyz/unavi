@@ -2,7 +2,7 @@
 
 ## What's inside?
 
-This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includes the following packages/apps:
+This monorepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includes the following packages/apps:
 
 ### Apps
 
@@ -13,12 +13,12 @@ This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includ
 ### Packages
 
 - `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components used by both `client` and `editor`
-- `matrix`: helpers for interacting with [Matrix](https://matrix.org/)
+- `ceramic`: helpers for interacting with [Ceramic](https://ceramic.network/)
 - `ui`: react ui components
 - `config`: `eslint` configurations
 - `tsconfig`: `tsconfig.json`s used throughout the monorepo
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+Each app/package is 100% [TypeScript](https://www.typescriptlang.org/).
 
 ### Utilities
 
@@ -40,24 +40,6 @@ To develop all apps and packages, run the following command:
 
 ```bash
 yarn run dev
-```
-
-### Remote Caching
-
-Turborepo can use a technique known as [Remote Caching (Beta)](https://turborepo.org/docs/features/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching (Beta) you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup), then enter the following commands:
-
-```bash
-npx turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your turborepo:
-
-```bash
-npx turbo link
 ```
 
 ## Useful Links

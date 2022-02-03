@@ -1,113 +1,94 @@
 import { useContext } from "react";
-import { Grid, IconButton, Stack, Tooltip, Typography } from "@mui/material";
-import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
+import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
-import useSWR from "swr";
-import {
-  ClientContext,
-  createRoom,
-  getWorldInstances,
-  useRoomAvatar,
-  useWorld,
-} from "matrix";
+import { BackNavbar, useIdenticon } from "ui";
+import { CeramicContext, useWorld, Room } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import RoomCard from "../../../src/components/RoomCard";
-import Link from "next/link";
-import { useIdenticon } from "ui";
 
-export default function Id() {
+import { customAlphabet } from "nanoid";
+const nanoid = customAlphabet("1234567890", 8);
+
+const roomModel = require("ceramic/models/Room/model.json");
+const roomSchemaId = roomModel.schemas.Scene;
+
+export default function World() {
   const router = useRouter();
-  const { id } = router.query;
+  const id = router.query.id as string;
 
-  const { client, loggedIn } = useContext(ClientContext);
+  const { loader } = useContext(CeramicContext);
 
-  async function fetcher() {
-    const rooms = await getWorldInstances(client, id as string);
-    return rooms;
-  }
-
-  const world = useWorld(client, id as string);
-  const avatar = useRoomAvatar(client, world?.room.chunk);
-  const identicon = useIdenticon(id as string);
-
-  const { data } = useSWR(`instances-${id}`, fetcher, {
-    refreshInterval: 30000,
-  });
+  const world = useWorld(id);
+  const identicon = useIdenticon(id);
 
   async function handleNewRoom() {
-    if (!client || !id || !world) return;
-    const { room_id } = await createRoom(client, `${id}`, world.name);
+    if (!id || !world) return;
 
-    await client.sendStateEvent(room_id, "m.room.avatar", {
-      url: world.room.chunk.avatar_url,
-    });
+    const name = `${world.name}#${nanoid()}`;
+    const room: Room = { name, sceneStreamId: id };
 
-    router.push(`/home/room/${room_id}`);
+    //create tile
+    const stream = await loader.create(room, { schema: roomSchemaId });
+    const streamId = stream.id.toString();
+
+    const url = `/home/room/${streamId}`;
+    router.push(url);
   }
 
   return (
-    <Grid className="page" container direction="column" rowSpacing={4}>
+    <Grid container direction="column">
       <Grid item>
-        <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-          🌍 {world?.name}
-        </Typography>
+        <BackNavbar text={world?.name} />
       </Grid>
 
-      <Grid item container>
-        <Grid item xs>
-          <Stack spacing={1}>
-            <Stack direction="row" alignItems="center" spacing={1}>
+      <Grid item>
+        <img
+          src={world?.image ?? identicon}
+          alt="world image"
+          style={{
+            width: "100%",
+            height: "400px",
+            objectFit: "cover",
+            borderBottom: "1px solid rgba(0,0,0,.1)",
+          }}
+        />
+      </Grid>
+
+      <Grid item sx={{ padding: 4 }}>
+        <Stack spacing={2}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Typography variant="h4" style={{ wordBreak: "break-word" }}>
+              {world?.name}
+            </Typography>
+
+            <Button
+              variant="contained"
+              color="secondary"
+              size="large"
+              onClick={handleNewRoom}
+            >
+              Create Room
+            </Button>
+          </Stack>
+
+          {/* <Stack direction="row" alignItems="center" spacing={1}>
               <Typography variant="h6">Author:</Typography>
               <Link href={`/home/user/${world?.author?.userId}`} passHref>
                 <Typography className="link" variant="h6">
                   {world?.author?.displayName}
                 </Typography>
               </Link>
-            </Stack>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Typography variant="h6">Description:</Typography>
-              <Typography variant="h6">{world?.description}</Typography>
-            </Stack>
-          </Stack>
-        </Grid>
+            </Stack> */}
 
-        <Grid item xs>
-          <img
-            src={avatar ?? identicon}
-            alt="world image"
-            style={{
-              border: "2px solid black",
-              width: "100%",
-              height: "400px",
-              objectFit: "cover",
-            }}
-          />
-        </Grid>
-      </Grid>
-
-      <Grid item container alignItems="center" columnSpacing={1}>
-        <Grid item>
-          <Typography variant="h5">Rooms</Typography>
-        </Grid>
-        <Grid item>
-          {loggedIn && (
-            <Tooltip title="New room" placement="right">
-              <IconButton onClick={handleNewRoom}>
-                <AddBoxOutlinedIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Grid>
-      </Grid>
-
-      <Grid item container spacing={4}>
-        {data?.map((room) => {
-          return <RoomCard key={room.room_id} room={room} />;
-        })}
+          <Typography>{world?.description}</Typography>
+        </Stack>
       </Grid>
     </Grid>
   );
 }
 
-Id.Layout = HomeLayout;
+World.Layout = HomeLayout;

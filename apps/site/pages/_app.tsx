@@ -4,8 +4,8 @@ import { ThemeProvider } from "@mui/material/styles";
 import Head from "next/head";
 
 import "../styles/globals.css";
-import theme from "../src/theme";
-import { ClientProvider } from "matrix";
+import { theme } from "ui";
+import { CeramicProvider } from "ceramic";
 
 export default function MyApp(props) {
   const { Component, pageProps } = props;
@@ -22,11 +22,11 @@ export default function MyApp(props) {
       <CssBaseline />
 
       <ThemeProvider theme={theme}>
-        <ClientProvider>
+        <CeramicProvider>
           <Layout>
             <Component {...pageProps} />
           </Layout>
-        </ClientProvider>
+        </CeramicProvider>
       </ThemeProvider>
     </>
   );

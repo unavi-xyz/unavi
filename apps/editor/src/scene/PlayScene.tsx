@@ -1,11 +1,8 @@
 import { useRef, useState } from "react";
 import { Group, Vector3 } from "three";
-import { Sky } from "@react-three/drei";
-import { ASSET_NAMES, Ground, Player } from "3d";
+import { ASSET_NAMES, Player, Scene } from "3d";
 
 import { IScene, useScene } from "../state/useScene";
-
-import PlayObject from "./PlayObject";
 
 function getSpawn(scene: IScene) {
   const object = Object.values(scene).find(
@@ -26,20 +23,12 @@ export default function PlayScene() {
 
   const [spawn] = useState(getSpawn(scene));
 
+  const params = Object.values(scene).map((obj) => obj.params);
+
   return (
     <group>
       <Player world={world} spawn={spawn} />
-
-      <group ref={world}>
-        <ambientLight intensity={0.1} />
-        <directionalLight intensity={0.5} />
-        <Sky />
-        <Ground />
-
-        {Object.keys(scene).map((id) => {
-          return <PlayObject key={id} id={id} />;
-        })}
-      </group>
+      <Scene scene={params} />
     </group>
   );
 }

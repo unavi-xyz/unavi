@@ -2,7 +2,7 @@ import { useContext } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import { BackNavbar, useIdenticon } from "ui";
-import { CeramicContext, useWorld, Room } from "ceramic";
+import { CeramicContext, useScene, Room } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
@@ -18,7 +18,7 @@ export default function World() {
 
   const { loader } = useContext(CeramicContext);
 
-  const world = useWorld(id);
+  const world = useScene(id);
   const identicon = useIdenticon(id);
 
   async function handleNewRoom() {

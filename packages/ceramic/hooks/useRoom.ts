@@ -7,7 +7,7 @@ export function useRoom(id: string) {
   const [room, setRoom] = useState<Room>();
 
   useEffect(() => {
-    if (!authenticated) return;
+    if (!authenticated || !id) return;
 
     async function get() {
       const doc = await loader.load(id);

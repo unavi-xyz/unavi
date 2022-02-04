@@ -3,7 +3,7 @@ import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { BackNavbar, getAppUrl, useIdenticon } from "ui";
-import { useWorld, useRoom } from "ceramic";
+import { useScene, useRoom } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
@@ -12,7 +12,7 @@ export default function Room() {
   const id = router.query.id as string;
 
   const room = useRoom(id);
-  const world = useWorld(room?.sceneStreamId);
+  const world = useScene(room?.sceneStreamId);
   const identicon = useIdenticon(id);
 
   const [joinUrl, setJoinUrl] = useState("/");

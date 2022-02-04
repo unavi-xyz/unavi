@@ -25,6 +25,7 @@ export default function Navbar() {
   const { ceramic, loader, authenticated } = useContext(CeramicContext);
 
   const id = useStore((state) => state.id);
+  const scene = useScene((state) => state.scene);
   const setPlayMode = useStore((state) => state.setPlayMode);
   const save = useScene((state) => state.save);
   const toJSON = useScene((state) => state.toJSON);
@@ -45,9 +46,10 @@ export default function Navbar() {
     const name = localStorage.getItem(`${id}-name`);
     const description = localStorage.getItem(`${id}-description`);
     const image = localStorage.getItem(`${id}-preview`);
-    save();
-    const scene = toJSON();
-    const world: Scene = { name, description, image, scene };
+
+    const params = Object.values(scene).map((obj) => obj.params);
+
+    const world: Scene = { name, description, image, scene: params };
 
     //create tile
     const stream = await loader.create(

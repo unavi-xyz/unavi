@@ -8,14 +8,14 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useIdenticon } from "ui";
-import { useWorld } from "ceramic";
+import { useScene } from "ceramic";
 
 interface Props {
   id: string;
 }
 
 export default function WorldCard({ id }: Props) {
-  const world = useWorld(id);
+  const world = useScene(id);
   const identicon = useIdenticon(id);
 
   return (

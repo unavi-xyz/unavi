@@ -10,7 +10,7 @@ export enum PROPERTIES {
   physics,
 }
 
-//each Asset defines a type of SceneObject
+//each Asset defines a type of EditorObject
 export class Asset {
   name: ASSET_NAMES;
   properties: PROPERTIES[];

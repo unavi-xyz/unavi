@@ -1,10 +1,10 @@
 import { useSphere } from "@react-three/cannon";
 
-import { Params } from "..";
+import { SceneObject } from "..";
 import { PHYSICS_GROUPS } from "../..";
 
 interface Props {
-  params: Params;
+  params: SceneObject;
   editor?: boolean;
 }
 

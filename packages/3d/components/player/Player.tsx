@@ -5,9 +5,9 @@ import { PointerLockControls } from "@react-three/drei";
 import { Group, Raycaster, Vector3 } from "three";
 import { CeramicContext } from "ceramic";
 
-import { PHYSICS_GROUPS, PUBLISH_INTERVAL, VOID_LEVEL } from "..";
+import { PHYSICS_GROUPS, PUBLISH_INTERVAL, VOID_LEVEL } from "../..";
 import { useSpringVelocity } from "./hooks/useSpringVelocity";
-import { MultiplayerContext } from "../contexts/MultiplayerContext";
+import { MultiplayerContext } from "../../contexts/MultiplayerContext";
 
 import KeyboardMovement from "./controls/KeyboardMovement";
 import Crosshair from "./Crosshair";
@@ -23,7 +23,7 @@ const HEIGHT_OFFSET = new Vector3(0, PLAYER_HEIGHT - SPHERE_RADIUS, 0);
 interface Props {
   paused?: boolean;
   spawn?: Vector3;
-  world: MutableRefObject<Group>;
+  world?: MutableRefObject<Group>;
 }
 
 export function Player({
@@ -70,7 +70,7 @@ export function Player({
     };
   }, [api.position, api.velocity]);
 
-  useFrame(() => {
+  useFrame((state) => {
     if (position.current.y < VOID_LEVEL) {
       api.position.copy(spawn);
     }
@@ -85,10 +85,12 @@ export function Player({
     }
 
     //jumping
-    if (downRay.current && world.current) {
+    if (downRay.current && world?.current) {
       downRay.current.set(camera.position, DOWN_VECTOR);
 
-      const intersects = downRay.current.intersectObject(world.current);
+      const intersects = downRay.current.intersectObject(
+        world?.current ?? state.scene
+      );
       const distance = intersects[0]?.distance;
 
       if (jump.current && distance < PLAYER_HEIGHT + 0.1) {

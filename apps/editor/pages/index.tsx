@@ -3,14 +3,14 @@ import { Grid, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 import { useRouter } from "next/router";
 import { customAlphabet } from "nanoid";
-import { ASSET_NAMES, SceneObject } from "3d";
+import { ASSET_NAMES, EditorObject } from "3d";
 
 import SceneCard from "../src/ui/components/SceneCard";
 import SidebarLayout from "../src/layouts/SidebarLayout";
 
 const nanoid = customAlphabet("1234567890", 16);
 
-const spawn = new SceneObject();
+const spawn = new EditorObject();
 spawn.params.type = ASSET_NAMES.Spawn;
 const defaultScene = [spawn.params];
 

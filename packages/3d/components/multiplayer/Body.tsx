@@ -3,7 +3,10 @@ import { useFrame } from "@react-three/fiber";
 import { useSphere } from "@react-three/cannon";
 import { Vector3 } from "three";
 
-import { PHYSICS_GROUPS, PUBLISH_INTERVAL } from "../../constants";
+import {
+  PHYSICS_GROUPS,
+  PUBLISH_INTERVAL,
+} from "../../../../apps/client/src/constants";
 
 const args: [number] = [1];
 
@@ -41,11 +44,9 @@ export default function Body({ position }: Props) {
   });
 
   return (
-    <group>
-      <mesh ref={ref}>
-        <sphereGeometry args={args} />
-        <meshPhongMaterial />
-      </mesh>
-    </group>
+    <mesh ref={ref}>
+      <sphereGeometry args={args} />
+      <meshPhongMaterial />
+    </mesh>
   );
 }

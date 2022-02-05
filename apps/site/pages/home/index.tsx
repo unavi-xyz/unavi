@@ -20,7 +20,7 @@ export default function Home() {
             <Link href={DISCORD_URL} target="_blank" color="secondary">
               Discord
             </Link>{" "}
-            if you have any issues!
+            if you have any questions!
           </Typography>
         </Stack>
       </Grid>

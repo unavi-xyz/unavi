@@ -30,7 +30,7 @@ export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
   const args: [number] = [SPHERE_RADIUS];
 
   const { id } = useContext(CeramicContext);
-  const { ymap } = useContext(MultiplayerContext);
+  const { ydoc } = useContext(MultiplayerContext);
 
   const downRay = useRef<undefined | Raycaster>();
   const crosshair = useRef<undefined | Group>();
@@ -53,7 +53,9 @@ export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
 
   useEffect(() => {
     function publishPosition() {
-      ymap?.set(id, position.current.toArray());
+      if (!ydoc) return;
+      const map = ydoc.getMap("positions");
+      map.set(id, position.current.toArray());
     }
 
     api.position.subscribe((p: Triplet) => position.current.fromArray(p));

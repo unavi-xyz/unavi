@@ -14,8 +14,8 @@ export function Scene({ objects }: Props) {
       <Ground />
       <Sky />
 
-      {objects?.map((object: SceneObject) => {
-        if (object.type === ASSET_NAMES.Spawn) return <group></group>;
+      {objects?.map((object: SceneObject, i) => {
+        if (object.type === ASSET_NAMES.Spawn) return <group key={i}></group>;
         return <InstancedObject key={object.id} object={object} />;
       })}
     </group>

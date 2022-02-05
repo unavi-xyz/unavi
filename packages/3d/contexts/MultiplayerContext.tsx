@@ -1,6 +1,6 @@
 import React, { ReactChild, useEffect, useState } from "react";
-import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
+import * as Y from "yjs";
 
 const SIGNALING_SERVERS = [
   "wss://signaling.yjs.dev",
@@ -9,9 +9,9 @@ const SIGNALING_SERVERS = [
 ];
 
 interface ContextInterface {
-  ymap: Y.Map<any> | undefined;
+  ydoc: Y.Doc | undefined;
 }
-const defaultContext: ContextInterface = { ymap: undefined };
+const defaultContext: ContextInterface = { ydoc: undefined };
 
 export const MultiplayerContext = React.createContext(defaultContext);
 
@@ -20,7 +20,6 @@ interface Props {
 }
 
 export function MultiplayerProvider({ children }: Props) {
-  const [ymap, setYmap] = useState<Y.Map<any>>();
   const [ydoc, setYdoc] = useState<Y.Doc>();
 
   useEffect(() => {
@@ -28,28 +27,27 @@ export function MultiplayerProvider({ children }: Props) {
     const roomId = urlParams.get("room");
     if (!roomId) return;
 
-    ydoc?.destroy();
-
     const doc = new Y.Doc();
 
     const opts: any = {
       signaling: SIGNALING_SERVERS,
     };
 
-    // new WebrtcProvider(roomId, doc, opts);
+    new WebrtcProvider(roomId, doc as any, opts);
 
     doc.on("update", (update: any) => {
       Y.applyUpdate(doc, update);
     });
 
-    const map = doc.getMap("positions");
-
-    setYmap(map);
     setYdoc(doc);
+
+    return () => {
+      doc.destroy();
+    };
   }, []);
 
   return (
-    <MultiplayerContext.Provider value={{ ymap }}>
+    <MultiplayerContext.Provider value={{ ydoc }}>
       {children}
     </MultiplayerContext.Provider>
   );

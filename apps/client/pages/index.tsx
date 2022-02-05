@@ -6,6 +6,8 @@ import { useRouter } from "next/router";
 import { CeramicContext, useRoom, useScene } from "ceramic";
 import {
   ASSET_NAMES,
+  Multiplayer,
+  MultiplayerContext,
   Player,
   RAYCASTER_SETTINGS,
   Scene,
@@ -25,7 +27,7 @@ function getSpawn(scene: SceneObject[]) {
 }
 
 export default function App() {
-  const ContextBridge = useContextBridge(CeramicContext);
+  const ContextBridge = useContextBridge(CeramicContext, MultiplayerContext);
 
   const router = useRouter();
   const roomId = router.query.room as string;
@@ -42,6 +44,7 @@ export default function App() {
           <Physics>
             <Player spawn={scene.spawn} />
             <Scene objects={scene?.objects} />
+            <Multiplayer roomId={roomId} />
           </Physics>
         </ContextBridge>
       </Canvas>

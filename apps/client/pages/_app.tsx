@@ -3,6 +3,7 @@ import Head from "next/head";
 
 import "../styles/globals.css";
 import { CeramicProvider } from "ceramic";
+import { MultiplayerProvider } from "3d";
 
 export default function MyApp(props) {
   const { Component, pageProps } = props;
@@ -15,7 +16,9 @@ export default function MyApp(props) {
       </Head>
 
       <CeramicProvider>
-        <Component {...pageProps} />
+        <MultiplayerProvider>
+          <Component {...pageProps} />
+        </MultiplayerProvider>
       </CeramicProvider>
     </>
   );

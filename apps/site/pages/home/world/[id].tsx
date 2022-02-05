@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -7,6 +7,7 @@ import { BackNavbar, useIdenticon } from "ui";
 import { CeramicContext, Room, loader, useScene, useProfile } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
+import EditWorldModal from "../../../src/components/EditWorldModal";
 
 const nanoid = customAlphabet("1234567890", 8);
 
@@ -17,11 +18,13 @@ export default function World() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { authenticated } = useContext(CeramicContext);
+  const { id: userId, authenticated } = useContext(CeramicContext);
 
   const identicon = useIdenticon(id);
   const { scene, author } = useScene(id);
   const { profile } = useProfile(author);
+
+  const [open, setOpen] = useState(false);
 
   async function handleNewRoom() {
     const name = `${scene.name}#${nanoid()}`;
@@ -37,8 +40,13 @@ export default function World() {
 
   return (
     <Grid container direction="column">
+      <EditWorldModal open={open} handleClose={() => setOpen(false)} />
+
       <Grid item>
-        <BackNavbar text={scene?.name} />
+        <BackNavbar
+          text={scene?.name}
+          more={userId === author ? () => setOpen(true) : undefined}
+        />
       </Grid>
 
       <Grid item>

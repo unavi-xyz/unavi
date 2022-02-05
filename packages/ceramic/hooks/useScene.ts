@@ -13,5 +13,16 @@ export function useScene(id: string) {
 
   const { data } = useSWR(`scene-${id}`, fetcher);
 
-  return data ?? { scene: undefined, author: undefined };
+  async function merge(data: any) {
+    const doc = await loader.load(id);
+    const newContent = Object.assign(doc.content, data);
+    await doc.update(newContent, undefined, { pin: true });
+  }
+
+  async function abandon() {
+    const doc = await loader.load(id);
+    await doc.update(doc.content, undefined, { pin: false });
+  }
+
+  return { scene: data?.scene, author: data?.author, merge, abandon };
 }

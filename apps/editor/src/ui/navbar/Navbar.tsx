@@ -66,7 +66,7 @@ export default function Navbar() {
     const store = new DIDDataStore({ ceramic, model: worldsModel });
     const oldWorlds = await store.get("worlds");
     const newWorlds = oldWorlds ? [...oldWorlds, streamId] : [streamId];
-    await store.merge("worlds", newWorlds);
+    await store.set("worlds", newWorlds, { pin: true });
 
     const url = `${getHomeUrl()}/world/${streamId}`;
     router.push(url);

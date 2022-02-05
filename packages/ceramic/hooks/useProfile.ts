@@ -18,7 +18,7 @@ export function useProfile(did: string | undefined) {
 
   async function merge(data: any) {
     const store = new DIDDataStore({ ceramic, model });
-    await store.merge("basicProfile", data);
+    await store.merge("basicProfile", data, { pin: true });
   }
 
   return { profile: data, merge };

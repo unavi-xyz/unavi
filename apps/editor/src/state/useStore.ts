@@ -1,5 +1,5 @@
 import create from "zustand";
-import { SceneObject } from "3d";
+import { EditorObject } from "3d";
 
 export enum TOOLS {
   translate = "translate",
@@ -38,7 +38,7 @@ export const useStore = create((set: any) => ({
     });
   },
 
-  setSelected: (object: SceneObject) => {
+  setSelected: (object: EditorObject) => {
     set((state) => {
       state.selected = object;
     });

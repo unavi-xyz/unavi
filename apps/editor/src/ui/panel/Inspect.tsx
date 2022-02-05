@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Grid, Stack, Typography } from "@mui/material";
 import { Triplet } from "@react-three/cannon";
 import { degToRad, radToDeg } from "three/src/math/MathUtils";
-import { ASSETS, ASSET_NAMES, SceneObject } from "3d";
+import { ASSETS, ASSET_NAMES, EditorObject } from "3d";
 
 import { useStore } from "../../state/useStore";
 
@@ -14,7 +14,7 @@ import SelectField from "../components/fields/SelectField";
 import CheckField from "../components/fields/CheckField";
 
 interface Props {
-  object: SceneObject;
+  object: EditorObject;
 }
 
 export default function Inspect({ object }: Props) {

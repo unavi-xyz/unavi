@@ -1,21 +1,18 @@
 import { useRef, useState } from "react";
-import { Group, Vector3 } from "three";
-import { Sky } from "@react-three/drei";
-import { ASSET_NAMES, Ground, Player } from "3d";
+import { Group } from "three";
+import { ASSET_NAMES, Player, Scene } from "3d";
 
-import { IScene, useScene } from "../state/useScene";
+import { EditorScene, useScene } from "../state/useScene";
 
-import PlayObject from "./PlayObject";
-
-function getSpawn(scene: IScene) {
+function getSpawn(scene: EditorScene) {
   const object = Object.values(scene).find(
     (obj) => obj.params.type === ASSET_NAMES.Spawn
   );
 
-  if (!object) return new Vector3(0, 2, 0);
+  if (!object) return;
 
-  const spawn = new Vector3().fromArray(object.params.position);
-  spawn.add(new Vector3(0, 2, 0));
+  const spawn = object.params.position;
+  spawn[1] += 2;
   return spawn;
 }
 
@@ -26,20 +23,12 @@ export default function PlayScene() {
 
   const [spawn] = useState(getSpawn(scene));
 
+  const objects = Object.values(scene).map((obj) => obj.params);
+
   return (
     <group>
       <Player world={world} spawn={spawn} />
-
-      <group ref={world}>
-        <ambientLight intensity={0.1} />
-        <directionalLight intensity={0.5} />
-        <Sky />
-        <Ground />
-
-        {Object.keys(scene).map((id) => {
-          return <PlayObject key={id} id={id} />;
-        })}
-      </group>
+      <Scene objects={objects} />
     </group>
   );
 }

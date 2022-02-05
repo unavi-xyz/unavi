@@ -1,24 +1,24 @@
 import { Triplet, useBox } from "@react-three/cannon";
 
-import { Params } from "..";
 import { PHYSICS_GROUPS } from "../..";
+import { SceneObject } from "..";
 
 interface Props {
-  params: Params;
+  object: SceneObject;
   editor?: boolean;
 }
 
-export function Box({ params, editor = false }: Props) {
-  const args: Triplet = editor ? [1, 1, 1] : params.scale;
+export function Box({ object, editor = false }: Props) {
+  const args: Triplet = editor ? [1, 1, 1] : object.scale;
 
-  const disablePhysics = params.physEnabled === false || editor;
+  const disablePhysics = object.physEnabled === false || editor;
 
   const [ref] = useBox(() => ({
     args,
-    position: editor ? undefined : params.position,
-    rotation: editor ? undefined : params.rotation,
-    mass: params.mass,
-    type: params.physType,
+    position: editor ? undefined : object.position,
+    rotation: editor ? undefined : object.rotation,
+    mass: object.mass,
+    type: object.physType,
     collisionFilterMask: disablePhysics ? PHYSICS_GROUPS.NONE : undefined,
   }));
 
@@ -26,9 +26,9 @@ export function Box({ params, editor = false }: Props) {
     <mesh ref={ref}>
       <boxBufferGeometry args={args} />
       <meshPhongMaterial
-        color={params.color}
-        opacity={params.opacity}
-        transparent={Boolean(params.opacity < 1)}
+        color={object.color}
+        opacity={object.opacity}
+        transparent={Boolean(object.opacity < 1)}
       />
     </mesh>
   );

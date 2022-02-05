@@ -2,7 +2,7 @@ const withTM = require("next-transpile-modules")([
   "three",
   "3d",
   "ui",
-  "matrix",
+  "ceramic",
 ]);
 
 module.exports = withTM({

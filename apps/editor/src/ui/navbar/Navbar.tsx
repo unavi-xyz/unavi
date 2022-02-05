@@ -2,22 +2,31 @@ import { useContext } from "react";
 import { Button, Grid, Paper, Stack } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
-import { ClientContext, createWorld } from "matrix";
 import { ColorIconButton, getHomeUrl } from "ui";
+import { CeramicContext, Scene } from "ceramic";
+import { ASSET_NAMES } from "3d";
 
 import { useStore } from "../../state/useStore";
-import { useScene } from "../../state/useScene";
+import { EditorScene, useScene } from "../../state/useScene";
 
 import SceneName from "./SceneName";
 import Tools from "./Tools";
 
+const sceneModel = require("ceramic/models/Scene/model.json");
+const worldsModel = require("ceramic/models/Worlds/model.json");
+
+const sceneSchemaId = sceneModel.schemas.Scene;
+
 export default function Navbar() {
   const router = useRouter();
 
-  const { client } = useContext(ClientContext);
+  const { ceramic, loader, authenticated } = useContext(CeramicContext);
 
   const id = useStore((state) => state.id);
+  const scene = useScene((state) => state.scene);
   const setPlayMode = useStore((state) => state.setPlayMode);
   const save = useScene((state) => state.save);
   const toJSON = useScene((state) => state.toJSON);
@@ -39,21 +48,27 @@ export default function Navbar() {
     const description = localStorage.getItem(`${id}-description`);
     const image = localStorage.getItem(`${id}-preview`);
 
-    save();
-    const scene = toJSON();
+    const objects = Object.values(scene).map((obj) => obj.params);
 
-    const author = await client.getUserId();
+    const spawn = getSpawn(scene);
 
-    const roomId = await createWorld(
-      client,
-      name,
-      author,
-      description,
-      image,
-      scene
+    const world: Scene = { name, description, image, spawn, objects };
+
+    //create tile
+    const stream = await loader.create(
+      world,
+      { schema: sceneSchemaId },
+      { pin: true }
     );
+    const streamId = stream.id.toString();
 
-    const url = `${getHomeUrl()}/world/${roomId}`;
+    //add tile to worlds did record
+    const store = new DIDDataStore({ ceramic, model: worldsModel });
+    const oldWorlds = await store.get("worlds");
+    const newWorlds = oldWorlds ? [...oldWorlds, streamId] : [streamId];
+    await store.merge("worlds", newWorlds);
+
+    const url = `${getHomeUrl()}/world/${streamId}`;
     router.push(url);
   }
 
@@ -85,28 +100,49 @@ export default function Navbar() {
 
         <Grid item xs={4}>
           <Stack direction="row" justifyContent="flex-end" spacing={2}>
-            <ColorIconButton tooltip="Download">
-              <DownloadIcon className="NavbarIcon" />
-            </ColorIconButton>
+            <Stack direction="row" justifyContent="flex-end" spacing={1}>
+              <ColorIconButton onClick={handlePlay} tooltip="Preview">
+                <VisibilityIcon className="NavbarIcon" />
+              </ColorIconButton>
+
+              <ColorIconButton tooltip="Download">
+                <DownloadIcon className="NavbarIcon" />
+              </ColorIconButton>
+            </Stack>
 
             <Button
               variant="contained"
               color="secondary"
               size="small"
-              onClick={handlePlay}
+              onClick={handlePublish}
+              disabled={!authenticated}
+              sx={{
+                paddingLeft: 2,
+                paddingRight: 2,
+              }}
               style={{
-                marginTop: 5,
-                marginBottom: 5,
-                marginRight: 5,
-                paddingLeft: 16,
-                paddingRight: 16,
+                marginTop: "4px",
+                marginBottom: "4px",
+                marginRight: "2px",
               }}
             >
-              Play
+              Publish
             </Button>
           </Stack>
         </Grid>
       </Grid>
     </Paper>
   );
+}
+
+function getSpawn(scene: EditorScene) {
+  const object = Object.values(scene).find(
+    (obj) => obj.params.type === ASSET_NAMES.Spawn
+  );
+
+  if (!object) return;
+
+  const spawn = object.params.position;
+  spawn[1] += 2;
+  return spawn;
 }

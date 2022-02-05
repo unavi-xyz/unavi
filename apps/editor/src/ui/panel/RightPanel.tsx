@@ -1,5 +1,5 @@
 import { Paper } from "@mui/material";
-import { SceneObject } from "3d";
+import { EditorObject } from "3d";
 
 import { useStore } from "../../state/useStore";
 
@@ -7,7 +7,7 @@ import Packs from "./Packs";
 import Inspect from "./Inspect";
 
 export default function RightPanel() {
-  const selected: SceneObject = useStore((state) => state.selected);
+  const selected: EditorObject = useStore((state) => state.selected);
 
   return (
     <Paper

@@ -1,0 +1,14 @@
+{
+  "title": "Room",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 420
+    },
+    "sceneStreamId": {
+      "type": "string"
+    }
+  },
+  "required": ["sceneStreamId"]
+}

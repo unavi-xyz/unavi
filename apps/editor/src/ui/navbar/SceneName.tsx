@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Stack, TextField, Typography, useTheme } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-
-import BasicModal from "../components/BasicModal";
+import { BasicModal } from "ui";
 
 interface Props {
   id: string;

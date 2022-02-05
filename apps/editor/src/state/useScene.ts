@@ -1,21 +1,23 @@
 import create from "zustand";
-import { ASSET_NAMES, Params, SceneObject } from "3d";
+import { ASSET_NAMES, SceneObject, EditorObject } from "3d";
+import { Scene } from "ceramic";
 
-export interface IScene {
-  [key: string]: SceneObject;
+export interface EditorScene {
+  [key: string]: EditorObject;
 }
-const typedScene: IScene = {};
+const editorScene: EditorScene = {};
 
 export const useScene = create((set: any, get: any) => ({
-  scene: typedScene,
+  scene: editorScene,
+  spawn: [0, 0, 0],
 
-  setScene: (newScene: IScene) => {
+  setScene: (newScene: Scene) => {
     set((state) => {
       state.scene = newScene;
     });
   },
 
-  deleteObject: (object: SceneObject) => {
+  deleteObject: (object: EditorObject) => {
     set((state) => {
       const newScene = { ...state.scene };
       delete newScene[object.id];
@@ -23,7 +25,7 @@ export const useScene = create((set: any, get: any) => ({
     });
   },
 
-  addObject: (object: SceneObject) => {
+  addObject: (object: EditorObject) => {
     set((state) => {
       const newScene = { ...state.scene };
       newScene[object.id] = object;
@@ -32,7 +34,7 @@ export const useScene = create((set: any, get: any) => ({
   },
 
   newObject: (type: ASSET_NAMES) => {
-    const obj = new SceneObject();
+    const obj = new EditorObject();
     obj.params.type = type;
     obj.params.name = type;
 
@@ -42,20 +44,20 @@ export const useScene = create((set: any, get: any) => ({
   },
 
   save() {
-    Object.values(get().scene).forEach((object: SceneObject) => {
+    Object.values(get().scene).forEach((object: EditorObject) => {
       object.save();
     });
   },
 
   load() {
-    Object.values(get().scene).forEach((object: SceneObject) => {
+    Object.values(get().scene).forEach((object: EditorObject) => {
       object.load();
     });
   },
 
   toJSON() {
     const map = Object.values(get().scene).map(
-      (object: SceneObject) => object.params
+      (object: EditorObject) => object.params
     );
     return JSON.stringify(map);
   },
@@ -64,9 +66,9 @@ export const useScene = create((set: any, get: any) => ({
     const map = JSON.parse(json);
     if (!map) return;
 
-    const loaded: IScene = {};
-    map.forEach((param: Params) => {
-      const obj = new SceneObject(param);
+    const loaded: EditorScene = {};
+    map.forEach((param: SceneObject) => {
+      const obj = new EditorObject(param);
       loaded[obj.id] = obj;
     });
 

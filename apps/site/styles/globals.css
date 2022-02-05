@@ -20,12 +20,6 @@ a {
   padding-right: 5vw;
 }
 
-.page {
-  margin: auto !important;
-  padding-left: 5vw;
-  padding-right: 5vw;
-}
-
 .arrows path {
   stroke: #f85f73;
   fill: transparent;

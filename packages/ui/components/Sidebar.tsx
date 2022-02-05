@@ -1,12 +1,16 @@
-import { ReactChild, useContext, useState, useEffect } from "react";
-import { Button, ClickAwayListener, Collapse, Stack } from "@mui/material";
+import { ReactChild, useContext, useState } from "react";
+import {
+  Button,
+  ClickAwayListener,
+  Collapse,
+  Stack,
+  Typography,
+} from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import Link from "next/link";
-import useSWR from "swr";
-import { ClientContext } from "matrix";
+import { CeramicContext, shortenDid, useProfile } from "ceramic";
 
 import { useIdenticon } from "../hooks/useIdenticon";
-import { getHomeUrl, SidebarButton } from "..";
 
 interface Props {
   title?: string;
@@ -19,24 +23,12 @@ export function Sidebar({
   titleHref = "/",
   children,
 }: Props) {
-  const { loggedIn, userId, client, logout } = useContext(ClientContext);
+  const { authenticated, id, connect, disconnect } = useContext(CeramicContext);
 
-  const identicon = useIdenticon(userId);
-
-  async function fetcher(id: string) {
-    const profile = await client.getProfileInfo(id);
-    const picture = client.mxcUrlToHttp(profile.avatar_url ?? "");
-    return { profile, picture };
-  }
-
-  const { data } = useSWR(userId, fetcher);
+  const identicon = useIdenticon(id);
+  const { profile } = useProfile(id);
 
   const [open, setOpen] = useState(false);
-  const [homeUrl, setHomeUrl] = useState("");
-
-  useEffect(() => {
-    setHomeUrl(getHomeUrl());
-  }, []);
 
   function handleToggle() {
     setOpen((prev) => !prev);
@@ -49,45 +41,40 @@ export function Sidebar({
   return (
     <Stack justifyContent="space-between" style={{ height: "100%" }}>
       <Stack spacing={1.5}>
-        <div
-          style={{
-            marginLeft: "auto",
-            marginRight: "auto",
-          }}
-        >
-          <Link href={titleHref} passHref>
-            <h1>{title}</h1>
-          </Link>
-        </div>
+        <Link href={titleHref} passHref>
+          <h1>{title}</h1>
+        </Link>
 
         {children}
       </Stack>
 
-      {loggedIn ? (
+      {authenticated ? (
         <span>
           <Collapse in={open}>
             <Stack>
               <Button
-                onClick={logout}
+                onClick={() => {
+                  handleClose();
+                  disconnect();
+                }}
                 style={{
                   paddingLeft: "30%",
                   justifyContent: "left",
                   fontSize: "1rem",
+                  borderRadius: "0px",
                 }}
               >
                 Log Out
               </Button>
-
-              <SidebarButton
-                text="View Profile"
-                href={`${homeUrl}/user/${userId}`}
-              />
             </Stack>
           </Collapse>
 
           <Stack>
             <ClickAwayListener onClickAway={handleClose}>
-              <Button onClick={handleToggle} style={{ textTransform: "none" }}>
+              <Button
+                onClick={handleToggle}
+                style={{ textTransform: "none", borderRadius: "0px" }}
+              >
                 <Stack
                   direction="row"
                   alignItems="center"
@@ -96,11 +83,7 @@ export function Sidebar({
                   style={{ width: "100%", fontSize: "1rem", padding: ".2rem" }}
                 >
                   <img
-                    src={
-                      data?.picture === ""
-                        ? identicon
-                        : data?.picture ?? identicon
-                    }
+                    src={identicon}
                     alt="profile picture"
                     style={{
                       height: "3rem",
@@ -109,8 +92,28 @@ export function Sidebar({
                     }}
                   />
 
-                  <Stack>
-                    <div>{data?.profile.displayname ?? userId}</div>
+                  <Stack alignItems="start">
+                    <Typography
+                      sx={{
+                        color: "black",
+                        maxWidth: "140px",
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {profile?.name}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "GrayText",
+                        maxWidth: "140px",
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {id}
+                    </Typography>
                   </Stack>
 
                   <MoreHorizIcon />
@@ -120,18 +123,17 @@ export function Sidebar({
           </Stack>
         </span>
       ) : (
-        <Link href={`${homeUrl}/login`} passHref>
-          <Button
-            variant="contained"
-            style={{
-              fontSize: "1rem",
-              margin: "2rem",
-              borderRadius: 0,
-            }}
-          >
-            Log In
-          </Button>
-        </Link>
+        <Button
+          variant="contained"
+          onClick={connect}
+          style={{
+            fontSize: "1rem",
+            margin: "2rem",
+            borderRadius: 0,
+          }}
+        >
+          Connect Wallet
+        </Button>
       )}
     </Stack>
   );

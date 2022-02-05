@@ -1,56 +1,83 @@
-import { useContext } from "react";
-import { Grid, Typography } from "@mui/material";
+import { useContext, useState } from "react";
+import { Button, Divider, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
-import { ClientContext, useProfile } from "matrix";
-import { useIdenticon } from "ui";
+import { BackNavbar, useIdenticon } from "ui";
+import { CeramicContext, useProfile, useWorlds } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
+import WorldCard from "../../../src/components/WorldCard";
+import EditProfileModal from "../../../src/components/EditProfileModal";
 
-export default function Id() {
+export default function User() {
   const router = useRouter();
-  const id = `${router.query.id}`;
+  const id = router.query.id as string;
 
-  const { client } = useContext(ClientContext);
+  const { id: userId } = useContext(CeramicContext);
 
+  const [open, setOpen] = useState(false);
+
+  const { profile } = useProfile(id);
   const identicon = useIdenticon(id);
-  const { profile, picture } = useProfile(client, id);
-
-  if (!profile) {
-    return (
-      <Grid className="page" container direction="column" rowSpacing={4}>
-        <Grid item>
-          <Typography variant="h3">User not found.</Typography>
-        </Grid>
-      </Grid>
-    );
-  }
+  const worlds = useWorlds(id);
 
   return (
-    <Grid className="page" container direction="column" rowSpacing={4}>
-      <Grid item>
-        <Typography variant="h3">{profile.displayname ?? id}</Typography>
-        <Typography variant="body1" style={{ color: "GrayText" }}>
-          {id}
-        </Typography>
-      </Grid>
+    <span>
+      <EditProfileModal open={open} handleClose={() => setOpen(false)} />
 
-      <Grid item>
-        <img
-          src={picture ?? identicon}
-          alt="profile picture"
-          style={{
-            height: "20ch",
-            width: "20ch",
-            border: "4px solid black",
-          }}
-        />
-      </Grid>
+      <Grid container direction="column">
+        <Grid item>
+          <BackNavbar text={profile?.name} />
+        </Grid>
 
-      <Grid item>
-        <Typography variant="h4">Worlds</Typography>
+        <Stack spacing={2} sx={{ padding: 4 }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="end"
+          >
+            <img
+              src={identicon}
+              alt="profile picture"
+              style={{
+                height: "20ch",
+                width: "20ch",
+                border: "4px solid black",
+              }}
+            />
+
+            {userId === id && (
+              <Button variant="outlined" onClick={() => setOpen(true)}>
+                Edit Profile
+              </Button>
+            )}
+          </Stack>
+
+          <Stack spacing={0}>
+            <Typography variant="h6">{profile?.name}</Typography>
+            <Typography variant="body1" style={{ color: "GrayText" }}>
+              {id}
+            </Typography>
+          </Stack>
+
+          <Typography variant="body1">{profile?.description}</Typography>
+        </Stack>
+
+        <Divider />
+
+        <Stack sx={{ padding: 4 }}>
+          <Typography variant="h4" sx={{ marginBottom: 4 }}>
+            Worlds
+          </Typography>
+
+          <Grid container spacing={2}>
+            {worlds?.map((id) => {
+              return <WorldCard key={id} id={id} />;
+            })}
+          </Grid>
+        </Stack>
       </Grid>
-    </Grid>
+    </span>
   );
 }
 
-Id.Layout = HomeLayout;
+User.Layout = HomeLayout;

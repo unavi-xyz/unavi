@@ -7,9 +7,10 @@ import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
 import { ColorIconButton, getHomeUrl } from "ui";
 import { CeramicContext, Scene } from "ceramic";
+import { ASSET_NAMES } from "3d";
 
 import { useStore } from "../../state/useStore";
-import { useScene } from "../../state/useScene";
+import { EditorScene, useScene } from "../../state/useScene";
 
 import SceneName from "./SceneName";
 import Tools from "./Tools";
@@ -47,9 +48,11 @@ export default function Navbar() {
     const description = localStorage.getItem(`${id}-description`);
     const image = localStorage.getItem(`${id}-preview`);
 
-    const params = Object.values(scene).map((obj) => obj.params);
+    const objects = Object.values(scene).map((obj) => obj.params);
 
-    const world: Scene = { name, description, image, scene: params };
+    const spawn = getSpawn(scene);
+
+    const world: Scene = { name, description, image, spawn, objects };
 
     //create tile
     const stream = await loader.create(
@@ -130,4 +133,16 @@ export default function Navbar() {
       </Grid>
     </Paper>
   );
+}
+
+function getSpawn(scene: EditorScene) {
+  const object = Object.values(scene).find(
+    (obj) => obj.params.type === ASSET_NAMES.Spawn
+  );
+
+  if (!object) return;
+
+  const spawn = object.params.position;
+  spawn[1] += 2;
+  return spawn;
 }

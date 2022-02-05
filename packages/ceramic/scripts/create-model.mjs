@@ -7,7 +7,7 @@ import { getResolver } from "key-did-resolver";
 import { randomBytes } from "@stablelib/random";
 
 //params
-const NAME = "Room";
+const NAME = "Scene";
 
 //init
 const schema = await import(`../models/${NAME}/schema.json`);

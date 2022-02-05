@@ -1,24 +1,24 @@
 import { useSphere } from "@react-three/cannon";
 
-import { SceneObject } from "..";
 import { PHYSICS_GROUPS } from "../..";
+import { SceneObject } from "..";
 
 interface Props {
-  params: SceneObject;
+  object: SceneObject;
   editor?: boolean;
 }
 
-export function Sphere({ params, editor = false }: Props) {
-  const args: [number] = editor ? [0.5] : [params.radius];
+export function Sphere({ object, editor = false }: Props) {
+  const args: [number] = editor ? [0.5] : [object.radius];
 
-  const disablePhysics = params.physEnabled === false || editor;
+  const disablePhysics = object.physEnabled === false || editor;
 
   const [ref] = useSphere(() => ({
     args,
-    position: editor ? undefined : params.position,
-    rotation: editor ? undefined : params.rotation,
-    mass: params.mass,
-    type: editor ? "Static" : params.physType,
+    position: editor ? undefined : object.position,
+    rotation: editor ? undefined : object.rotation,
+    mass: object.mass,
+    type: editor ? "Static" : object.physType,
     collisionFilterMask: disablePhysics ? PHYSICS_GROUPS.NONE : undefined,
   }));
 
@@ -26,9 +26,9 @@ export function Sphere({ params, editor = false }: Props) {
     <mesh ref={ref}>
       <sphereBufferGeometry args={args} />
       <meshPhongMaterial
-        color={params.color}
-        opacity={params.opacity}
-        transparent={Boolean(params.opacity < 1)}
+        color={object.color}
+        opacity={object.opacity}
+        transparent={Boolean(object.opacity < 1)}
       />
     </mesh>
   );

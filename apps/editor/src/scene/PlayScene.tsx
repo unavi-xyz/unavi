@@ -1,18 +1,18 @@
 import { useRef, useState } from "react";
-import { Group, Vector3 } from "three";
+import { Group } from "three";
 import { ASSET_NAMES, Player, Scene } from "3d";
 
-import { IScene, useScene } from "../state/useScene";
+import { EditorScene, useScene } from "../state/useScene";
 
-function getSpawn(scene: IScene) {
+function getSpawn(scene: EditorScene) {
   const object = Object.values(scene).find(
     (obj) => obj.params.type === ASSET_NAMES.Spawn
   );
 
-  if (!object) return new Vector3(0, 2, 0);
+  if (!object) return;
 
-  const spawn = new Vector3().fromArray(object.params.position);
-  spawn.add(new Vector3(0, 2, 0));
+  const spawn = object.params.position;
+  spawn[1] += 2;
   return spawn;
 }
 
@@ -23,12 +23,12 @@ export default function PlayScene() {
 
   const [spawn] = useState(getSpawn(scene));
 
-  const params = Object.values(scene).map((obj) => obj.params);
+  const objects = Object.values(scene).map((obj) => obj.params);
 
   return (
     <group>
       <Player world={world} spawn={spawn} />
-      <Scene scene={params} />
+      <Scene objects={objects} />
     </group>
   );
 }

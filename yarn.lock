@@ -864,6 +864,14 @@
     cannon-es "^0.18.0"
     cannon-es-debugger "^1.0.0"
 
+"@react-three/cannon@^4.6.1":
+  version "4.6.1"
+  resolved "https://registry.yarnpkg.com/@react-three/cannon/-/cannon-4.6.1.tgz#0b7e5eb17d8cd2385b12c9d51fb73b84631f3a7d"
+  integrity sha512-T6sSUhwhu+LzcT99w6hT/byb02xoWwWoT3wVc1dUNe1GQFq4huWwmXaTsa3+B5l2JJbuOaG5TrSp+MpswgYF4A==
+  dependencies:
+    cannon-es "^0.18.0"
+    cannon-es-debugger "^1.0.0"
+
 "@react-three/drei@^8.3.1":
   version "8.3.1"
   resolved "https://registry.yarnpkg.com/@react-three/drei/-/drei-8.3.1.tgz#df5b83c602e82994970613697e94811490161488"

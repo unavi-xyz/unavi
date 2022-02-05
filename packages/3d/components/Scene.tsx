@@ -3,10 +3,10 @@ import { Scene } from "ceramic";
 import { ASSET_NAMES, Ground, InstancedObject, SceneObject } from "..";
 
 interface Props {
-  scene: SceneObject[];
+  objects: SceneObject[];
 }
 
-export function Scene({ scene }: Props) {
+export function Scene({ objects }: Props) {
   return (
     <group>
       <ambientLight intensity={0.1} />
@@ -14,9 +14,9 @@ export function Scene({ scene }: Props) {
       <Ground />
       <Sky />
 
-      {scene?.map((params: SceneObject, i) => {
-        if (params.type === ASSET_NAMES.Spawn) return <group></group>;
-        return <InstancedObject key={i} params={params} />;
+      {objects?.map((object: SceneObject) => {
+        if (object.type === ASSET_NAMES.Spawn) return <group></group>;
+        return <InstancedObject key={object.id} object={object} />;
       })}
     </group>
   );

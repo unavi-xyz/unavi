@@ -50,17 +50,12 @@ export default function EditorScene() {
 
   return (
     <group>
-      <OrbitControls
-        addEventListener={undefined}
-        hasEventListener={undefined}
-        removeEventListener={undefined}
-        dispatchEvent={undefined}
-        makeDefault
-      />
       <ambientLight intensity={0.1} />
       <directionalLight intensity={0.5} />
       <Sky />
       <Ground />
+
+      <OrbitControls makeDefault />
 
       <TransformControls
         onMouseDown={handleMouseDown}

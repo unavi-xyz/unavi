@@ -22,15 +22,11 @@ const HEIGHT_OFFSET = new Vector3(0, PLAYER_HEIGHT - SPHERE_RADIUS, 0);
 
 interface Props {
   paused?: boolean;
-  spawn?: Vector3;
+  spawn?: Triplet;
   world?: MutableRefObject<Group>;
 }
 
-export function Player({
-  paused = false,
-  spawn = new Vector3(0, 0, 0),
-  world,
-}: Props) {
+export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
   const args: [number] = [SPHERE_RADIUS];
 
   const { id } = useContext(CeramicContext);
@@ -40,7 +36,7 @@ export function Player({
   const crosshair = useRef<undefined | Group>();
 
   const jump = useRef(false);
-  const position = useRef(spawn.clone());
+  const position = useRef(new Vector3().fromArray(spawn));
   const velocity = useRef(new Vector3());
 
   const { camera } = useThree();
@@ -49,7 +45,7 @@ export function Player({
     args,
     mass: 1,
     type: "Dynamic",
-    position: spawn.toArray(),
+    position: spawn,
     collisionFilterGroup: PHYSICS_GROUPS.PLAYER,
   }));
 
@@ -72,7 +68,7 @@ export function Player({
 
   useFrame((state) => {
     if (position.current.y < VOID_LEVEL) {
-      api.position.copy(spawn);
+      api.position.set(...spawn);
     }
 
     //move camera

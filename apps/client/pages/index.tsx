@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
@@ -34,21 +33,15 @@ export default function App() {
   const room = useRoom(roomId);
   const scene = useScene(room?.sceneStreamId);
 
-  const [spawn, setSpawn] = useState<Vector3>();
-
-  useEffect(() => {
-    setSpawn(getSpawn(scene?.scene));
-  }, [scene?.scene]);
-
-  if (!spawn) return <div>Loading...</div>;
+  if (!scene) return <div>Loading...</div>;
 
   return (
     <div className="App">
       <Canvas raycaster={RAYCASTER_SETTINGS}>
         <ContextBridge>
           <Physics>
-            <Player spawn={spawn} />
-            <Scene scene={scene?.scene} />
+            <Player spawn={scene.spawn} />
+            <Scene objects={scene?.objects} />
           </Physics>
         </ContextBridge>
       </Canvas>

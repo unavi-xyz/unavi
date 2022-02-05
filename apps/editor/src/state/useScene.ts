@@ -1,15 +1,17 @@
 import create from "zustand";
 import { ASSET_NAMES, SceneObject, EditorObject } from "3d";
+import { Scene } from "ceramic";
 
-export interface IScene {
+export interface EditorScene {
   [key: string]: EditorObject;
 }
-const typedScene: IScene = {};
+const editorScene: EditorScene = {};
 
 export const useScene = create((set: any, get: any) => ({
-  scene: typedScene,
+  scene: editorScene,
+  spawn: [0, 0, 0],
 
-  setScene: (newScene: IScene) => {
+  setScene: (newScene: Scene) => {
     set((state) => {
       state.scene = newScene;
     });
@@ -64,7 +66,7 @@ export const useScene = create((set: any, get: any) => ({
     const map = JSON.parse(json);
     if (!map) return;
 
-    const loaded: IScene = {};
+    const loaded: EditorScene = {};
     map.forEach((param: SceneObject) => {
       const obj = new EditorObject(param);
       loaded[obj.id] = obj;

@@ -30,7 +30,8 @@ export default function HomeLayout({ children }) {
             <SidebarButton
               emoji="💎"
               text="Profile"
-              href={authenticated ? `/home/user/${id}` : "/home"}
+              href={`/home/user/${id}`}
+              disabled={!authenticated}
             />
             <SidebarButton emoji="🚧" text="Editor" href={editorUrl} />
           </Sidebar>

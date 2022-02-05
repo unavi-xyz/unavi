@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { CeramicContext } from "ceramic";
 
-export function SidebarButton({ emoji = "", text = "", href = "" }) {
+export function SidebarButton({
+  emoji = "",
+  text = "",
+  href = "",
+  disabled = false,
+}) {
   const router = useRouter();
 
   const { id } = useContext(CeramicContext);
@@ -22,6 +27,7 @@ export function SidebarButton({ emoji = "", text = "", href = "" }) {
   return (
     <Link href={href} passHref>
       <Button
+        disabled={disabled}
         style={{
           fontSize: "1rem",
           justifyContent: "left",

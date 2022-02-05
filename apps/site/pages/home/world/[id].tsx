@@ -1,12 +1,13 @@
 import { useContext } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
+import Link from "next/link";
+import { customAlphabet } from "nanoid";
 import { BackNavbar, useIdenticon } from "ui";
-import { CeramicContext, useScene, Room } from "ceramic";
+import { CeramicContext, Room, loader, useScene, useProfile } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
-import { customAlphabet } from "nanoid";
 const nanoid = customAlphabet("1234567890", 8);
 
 const roomModel = require("ceramic/models/Room/model.json");
@@ -16,15 +17,14 @@ export default function World() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { loader } = useContext(CeramicContext);
+  const { authenticated } = useContext(CeramicContext);
 
-  const world = useScene(id);
   const identicon = useIdenticon(id);
+  const { scene, author } = useScene(id);
+  const { profile } = useProfile(author);
 
   async function handleNewRoom() {
-    if (!id || !world) return;
-
-    const name = `${world.name}#${nanoid()}`;
+    const name = `${scene.name}#${nanoid()}`;
     const room: Room = { name, sceneStreamId: id };
 
     //create tile
@@ -38,12 +38,12 @@ export default function World() {
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text={world?.name} />
+        <BackNavbar text={scene?.name} />
       </Grid>
 
       <Grid item>
         <img
-          src={world?.image ?? identicon}
+          src={scene?.image ?? identicon}
           alt="world image"
           style={{
             width: "100%",
@@ -62,7 +62,7 @@ export default function World() {
             alignItems="center"
           >
             <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-              {world?.name}
+              {scene?.name}
             </Typography>
 
             <Button
@@ -70,21 +70,26 @@ export default function World() {
               color="secondary"
               size="large"
               onClick={handleNewRoom}
+              disabled={!authenticated}
             >
               Create Room
             </Button>
           </Stack>
 
-          {/* <Stack direction="row" alignItems="center" spacing={1}>
-              <Typography variant="h6">Author:</Typography>
-              <Link href={`/home/user/${world?.author?.userId}`} passHref>
-                <Typography className="link" variant="h6">
-                  {world?.author?.displayName}
-                </Typography>
-              </Link>
-            </Stack> */}
+          <Stack direction="row" alignItems="center" spacing={1}>
+            {author && (
+              <>
+                <Typography variant="h6">By</Typography>
+                <Link href={`/home/user/${author}`} passHref>
+                  <Typography className="link" variant="h6">
+                    {profile?.name ?? author}
+                  </Typography>
+                </Link>
+              </>
+            )}
+          </Stack>
 
-          <Typography>{world?.description}</Typography>
+          <Typography>{scene?.description}</Typography>
         </Stack>
       </Grid>
     </Grid>

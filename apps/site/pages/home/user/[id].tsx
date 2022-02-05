@@ -16,9 +16,9 @@ export default function User() {
 
   const [open, setOpen] = useState(false);
 
-  const { profile } = useProfile(id);
   const identicon = useIdenticon(id);
   const worlds = useWorlds(id);
+  const { profile } = useProfile(id);
 
   return (
     <span>
@@ -65,10 +65,11 @@ export default function User() {
         <Divider />
 
         <Stack sx={{ padding: 4 }}>
-          <Typography variant="h4" sx={{ marginBottom: 4 }}>
-            Worlds
-          </Typography>
-
+          {worlds && (
+            <Typography variant="h4" sx={{ marginBottom: 4 }}>
+              Worlds
+            </Typography>
+          )}
           <Grid container spacing={2}>
             {worlds?.map((id) => {
               return <WorldCard key={id} id={id} />;

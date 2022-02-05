@@ -33,7 +33,7 @@ export default function App() {
   const roomId = router.query.room as string;
 
   const room = useRoom(roomId);
-  const scene = useScene(room?.sceneStreamId);
+  const { scene } = useScene(room?.sceneStreamId);
 
   if (!scene) return <div>Loading...</div>;
 

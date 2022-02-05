@@ -9,13 +9,12 @@ import { API_URL } from "../constants";
 
 declare let window: any;
 
-const ceramic = new CeramicClient(API_URL);
+export const ceramicRead = new CeramicClient(API_URL);
+export const ceramic = new CeramicClient(API_URL);
 const resolver = ThreeIdResolver.getResolver(ceramic);
-const loader = new TileLoader({ ceramic, cache: true });
+export const loader = new TileLoader({ ceramic, cache: true });
 
 const defaultValue = {
-  ceramic,
-  loader,
   authenticated: false,
   id: "",
   connect: () => {},
@@ -33,10 +32,6 @@ export function CeramicProvider({ children }: { children: ReactChild }) {
   useEffect(() => {
     ceramic.did = did;
   }, [did]);
-
-  useEffect(() => {
-    connect();
-  }, []);
 
   async function connect() {
     const addresses = await window.ethereum.enable();
@@ -65,7 +60,12 @@ export function CeramicProvider({ children }: { children: ReactChild }) {
 
   return (
     <CeramicContext.Provider
-      value={{ ceramic, loader, authenticated, id, connect, disconnect }}
+      value={{
+        authenticated,
+        id,
+        connect,
+        disconnect,
+      }}
     >
       {children}
     </CeramicContext.Provider>

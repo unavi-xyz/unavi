@@ -58,7 +58,7 @@ export default function Navbar() {
 
         <Grid item xs container alignItems="center" justifyContent="flex-end">
           <Link href="/home" passHref>
-            <Button variant="contained">Login</Button>
+            <Button variant="contained">Home</Button>
           </Link>
         </Grid>
       </Grid>

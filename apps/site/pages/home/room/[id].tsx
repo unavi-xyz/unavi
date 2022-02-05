@@ -3,7 +3,7 @@ import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { BackNavbar, getAppUrl, useIdenticon } from "ui";
-import { useScene, useRoom } from "ceramic";
+import { useRoom, useScene } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
@@ -11,9 +11,9 @@ export default function Room() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const room = useRoom(id);
-  const world = useScene(room?.sceneStreamId);
   const identicon = useIdenticon(id);
+  const room = useRoom(id);
+  const { scene } = useScene(room?.sceneStreamId);
 
   const [joinUrl, setJoinUrl] = useState("/");
 
@@ -29,7 +29,7 @@ export default function Room() {
 
       <Grid item>
         <img
-          src={world?.image ?? identicon}
+          src={scene?.image ?? identicon}
           alt="world image"
           style={{
             width: "100%",
@@ -68,7 +68,7 @@ export default function Room() {
             </Button>
           </Stack>
 
-          <Typography>{world?.description}</Typography>
+          <Typography>{scene?.description}</Typography>
         </Stack>
       </Grid>
     </Grid>

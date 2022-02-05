@@ -6,7 +6,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
 import { ColorIconButton, getHomeUrl } from "ui";
-import { CeramicContext, Scene } from "ceramic";
+import { CeramicContext, ceramic, loader, Scene } from "ceramic";
 import { ASSET_NAMES } from "3d";
 
 import { useStore } from "../../state/useStore";
@@ -23,7 +23,7 @@ const sceneSchemaId = sceneModel.schemas.Scene;
 export default function Navbar() {
   const router = useRouter();
 
-  const { ceramic, loader, authenticated } = useContext(CeramicContext);
+  const { authenticated } = useContext(CeramicContext);
 
   const id = useStore((state) => state.id);
   const scene = useScene((state) => state.scene);

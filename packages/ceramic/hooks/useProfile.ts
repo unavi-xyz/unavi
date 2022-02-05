@@ -1,32 +1,25 @@
-import { useContext, useEffect, useState } from "react";
 import { DIDDataStore } from "@glazed/did-datastore";
-
-import { BasicProfile } from "../models/BasicProfile/types";
-import { CeramicContext } from "..";
+import useSWR from "swr";
+import { BasicProfile, ceramicRead } from "..";
 
 const model = require("../models/BasicProfile/model.json");
 
 export function useProfile(did: string | undefined) {
-  const { ceramic, authenticated } = useContext(CeramicContext);
+  const ceramic = ceramicRead;
 
-  const [profile, setProfile] = useState<BasicProfile>();
+  async function fetcher() {
+    if (!did) return;
+    const store = new DIDDataStore({ ceramic, model });
+    const data = (await store.get("basicProfile", did)) as BasicProfile;
+    return data;
+  }
 
-  useEffect(() => {
-    if (!authenticated || !did) return;
-
-    async function get() {
-      const store = new DIDDataStore({ ceramic, model });
-      const data = await store.get("basicProfile", did);
-      setProfile(data);
-    }
-
-    get();
-  }, [authenticated, ceramic, did]);
+  const { data } = useSWR(`basicProfile-${did}`, fetcher);
 
   async function merge(data: any) {
     const store = new DIDDataStore({ ceramic, model });
     await store.merge("basicProfile", data);
   }
 
-  return { profile, merge };
+  return { profile: data, merge };
 }

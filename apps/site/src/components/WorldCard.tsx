@@ -15,8 +15,10 @@ interface Props {
 }
 
 export default function WorldCard({ id }: Props) {
-  const world = useScene(id);
+  const { scene } = useScene(id);
   const identicon = useIdenticon(id);
+
+  if (!scene) return <></>;
 
   return (
     <Grid item xs={12} sm={6} md={4}>
@@ -26,10 +28,10 @@ export default function WorldCard({ id }: Props) {
             <CardMedia
               component="img"
               height="140px"
-              image={world?.image ?? identicon}
+              image={scene?.image ?? identicon}
             />
             <CardContent style={{ borderTop: "1px solid rgba(0,0,0,0.12)" }}>
-              <Typography>{world?.name}</Typography>
+              <Typography>{scene?.name}</Typography>
             </CardContent>
           </CardActionArea>
         </Link>

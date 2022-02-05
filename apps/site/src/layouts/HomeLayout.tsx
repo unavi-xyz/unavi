@@ -5,7 +5,7 @@ import { Sidebar, SidebarButton, getEditorUrl } from "ui";
 import { CeramicContext } from "ceramic";
 
 export default function HomeLayout({ children }) {
-  const { id } = useContext(CeramicContext);
+  const { id, authenticated } = useContext(CeramicContext);
 
   const [editorUrl, setEditorUrl] = useState("/");
 
@@ -30,7 +30,7 @@ export default function HomeLayout({ children }) {
             <SidebarButton
               emoji="💎"
               text="Profile"
-              href={`/home/user/${id}`}
+              href={authenticated ? `/home/user/${id}` : ""}
             />
             <SidebarButton emoji="🚧" text="Editor" href={editorUrl} />
           </Sidebar>

@@ -7,7 +7,7 @@ export default function Rooms() {
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text="Rooms" back={false} />
+        <BackNavbar text="Rooms" />
       </Grid>
     </Grid>
   );

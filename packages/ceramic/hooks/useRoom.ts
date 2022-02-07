@@ -1,21 +1,15 @@
-import { useContext, useEffect, useState } from "react";
-import { CeramicContext, Room } from "..";
+import useSWR from "swr";
+import { loader, Room } from "..";
 
 export function useRoom(id: string) {
-  const { ceramic, authenticated, loader } = useContext(CeramicContext);
+  async function fetcher() {
+    if (!id) return;
+    const doc = await loader.load(id);
+    const room = doc.content as Room;
+    return room;
+  }
 
-  const [room, setRoom] = useState<Room>();
+  const { data } = useSWR(`room-${id}`, fetcher);
 
-  useEffect(() => {
-    if (!authenticated || !id) return;
-
-    async function get() {
-      const doc = await loader.load(id);
-      setRoom(doc.content as Room);
-    }
-
-    get();
-  }, [authenticated, ceramic, id]);
-
-  return room;
+  return data;
 }

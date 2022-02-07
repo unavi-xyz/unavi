@@ -128,7 +128,8 @@ export function Sidebar({
           onClick={connect}
           style={{
             fontSize: "1rem",
-            margin: "2rem",
+            margin: "1rem",
+            marginBottom: "2rem",
             borderRadius: 0,
           }}
         >

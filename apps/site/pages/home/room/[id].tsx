@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { BackNavbar, getAppUrl, useIdenticon } from "ui";
-import { useScene, useRoom } from "ceramic";
+import { BackNavbar, useIdenticon } from "ui";
+import { useRoom, useScene } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
@@ -11,25 +10,19 @@ export default function Room() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const room = useRoom(id);
-  const world = useScene(room?.sceneStreamId);
   const identicon = useIdenticon(id);
-
-  const [joinUrl, setJoinUrl] = useState("/");
-
-  useEffect(() => {
-    setJoinUrl(`${getAppUrl()}?room=${id}`);
-  }, [id]);
+  const room = useRoom(id);
+  const { scene } = useScene(room?.sceneStreamId);
 
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text={room?.name} />
+        <BackNavbar text={room?.name} back />
       </Grid>
 
       <Grid item>
         <img
-          src={world?.image ?? identicon}
+          src={scene?.image ?? identicon}
           alt="world image"
           style={{
             width: "100%",
@@ -57,18 +50,14 @@ export default function Room() {
               </Typography>
             </Link>
 
-            <Button
-              variant="contained"
-              color="secondary"
-              size="large"
-              href={joinUrl}
-              target="_blank"
-            >
-              Join Room
-            </Button>
+            <Link href={`/app?room=${id}`} passHref>
+              <Button variant="contained" color="secondary" size="large">
+                Join Room
+              </Button>
+            </Link>
           </Stack>
 
-          <Typography>{world?.description}</Typography>
+          <Typography>{scene?.description}</Typography>
         </Stack>
       </Grid>
     </Grid>

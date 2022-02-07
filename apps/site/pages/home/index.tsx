@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text="Home" back={false} />
+        <BackNavbar text="Home" />
       </Grid>
 
       <Grid item sx={{ padding: 4 }}>

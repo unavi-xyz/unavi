@@ -1,21 +1,28 @@
-import { useContext, useEffect, useState } from "react";
-import { CeramicContext, Scene } from "..";
+import useSWR from "swr";
+import { loader, Scene } from "..";
 
 export function useScene(id: string) {
-  const { ceramic, authenticated, loader } = useContext(CeramicContext);
+  async function fetcher() {
+    if (!id) return;
+    const doc = await loader.load(id);
+    const scene = doc.content as Scene;
+    const author = doc.metadata.controllers[0];
 
-  const [scene, setScene] = useState<Scene>();
+    return { scene, author };
+  }
 
-  useEffect(() => {
-    if (!authenticated || !id) return;
+  const { data } = useSWR(`scene-${id}`, fetcher);
 
-    async function get() {
-      const doc = await loader.load(id);
-      setScene(doc.content as Scene);
-    }
+  async function merge(data: any) {
+    const doc = await loader.load(id);
+    const newContent = Object.assign(doc.content, data);
+    await doc.update(newContent, undefined, { pin: true });
+  }
 
-    get();
-  }, [authenticated, ceramic, id]);
+  async function abandon() {
+    const doc = await loader.load(id);
+    await doc.update(doc.content, undefined, { pin: false });
+  }
 
-  return scene;
+  return { scene: data?.scene, author: data?.author, merge, abandon };
 }

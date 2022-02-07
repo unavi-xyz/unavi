@@ -1,51 +1,43 @@
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
-import { Vector3 } from "three";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import { CeramicContext, useRoom, useScene } from "ceramic";
 import {
-  ASSET_NAMES,
   Multiplayer,
-  MultiplayerContext,
+  MultiplayerProvider,
   Player,
   RAYCASTER_SETTINGS,
   Scene,
-  SceneObject,
 } from "3d";
 
-function getSpawn(scene: SceneObject[]) {
-  if (!scene) return;
-
-  const object = scene.find((obj) => obj.type === ASSET_NAMES.Spawn);
-
-  if (!object) return new Vector3(0, 2, 0);
-
-  const spawn = new Vector3().fromArray(object.position);
-  spawn.add(new Vector3(0, 2, 0));
-  return spawn;
-}
-
 export default function App() {
-  const ContextBridge = useContextBridge(CeramicContext, MultiplayerContext);
+  const ContextBridge = useContextBridge(CeramicContext);
 
   const router = useRouter();
   const roomId = router.query.room as string;
 
   const room = useRoom(roomId);
-  const scene = useScene(room?.sceneStreamId);
+  const { scene } = useScene(room?.sceneStreamId);
 
   if (!scene) return <div>Loading...</div>;
 
   return (
     <div className="App">
+      <Head>
+        <title>The Wired - App</title>
+      </Head>
+
       <Canvas raycaster={RAYCASTER_SETTINGS}>
         <ContextBridge>
-          <Physics>
-            <Player spawn={scene.spawn} />
-            <Scene objects={scene?.objects} />
-            <Multiplayer roomId={roomId} />
-          </Physics>
+          <MultiplayerProvider>
+            <Physics>
+              <Player spawn={scene.spawn} />
+              <Scene objects={scene?.objects} />
+              <Multiplayer roomId={roomId} />
+            </Physics>
+          </MultiplayerProvider>
         </ContextBridge>
       </Canvas>
     </div>

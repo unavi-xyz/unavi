@@ -5,8 +5,8 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
-import { ColorIconButton, getHomeUrl } from "ui";
-import { CeramicContext, Scene } from "ceramic";
+import { ColorIconButton } from "ui";
+import { CeramicContext, ceramic, loader, Scene } from "ceramic";
 import { ASSET_NAMES } from "3d";
 
 import { useStore } from "../../state/useStore";
@@ -23,7 +23,7 @@ const sceneSchemaId = sceneModel.schemas.Scene;
 export default function Navbar() {
   const router = useRouter();
 
-  const { ceramic, loader, authenticated } = useContext(CeramicContext);
+  const { authenticated } = useContext(CeramicContext);
 
   const id = useStore((state) => state.id);
   const scene = useScene((state) => state.scene);
@@ -40,7 +40,7 @@ export default function Navbar() {
     const json = toJSON();
     localStorage.setItem(`${id}-scene`, json);
 
-    router.push(`/scene/${id}`);
+    router.push(`/home/scene/${id}`);
   }
 
   async function handlePublish() {
@@ -66,10 +66,9 @@ export default function Navbar() {
     const store = new DIDDataStore({ ceramic, model: worldsModel });
     const oldWorlds = await store.get("worlds");
     const newWorlds = oldWorlds ? [...oldWorlds, streamId] : [streamId];
-    await store.merge("worlds", newWorlds);
+    await store.set("worlds", newWorlds, { pin: true });
 
-    const url = `${getHomeUrl()}/world/${streamId}`;
-    router.push(url);
+    router.push(`/home/world/${streamId}`);
   }
 
   function handlePlay() {

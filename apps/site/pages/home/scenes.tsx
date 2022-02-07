@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
-import { Grid, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  Grid,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 import { useRouter } from "next/router";
 import { customAlphabet } from "nanoid";
-import { ASSET_NAMES, EditorObject } from "3d";
+import { BackNavbar } from "ui";
 
-import SceneCard from "../src/ui/components/SceneCard";
-import SidebarLayout from "../src/layouts/SidebarLayout";
+import HomeLayout from "../../src/layouts/HomeLayout";
+import SceneCard from "../../src/components/SceneCard";
 
 const nanoid = customAlphabet("1234567890", 16);
-
-const spawn = new EditorObject();
-spawn.params.type = ASSET_NAMES.Spawn;
-const defaultScene = [spawn.params];
 
 export default function Scenes() {
   const router = useRouter();
@@ -24,13 +27,14 @@ export default function Scenes() {
 
     const str = localStorage.getItem("scenes");
     const list = JSON.parse(str) ?? [];
+
     list.push(id);
+
     localStorage.setItem("scenes", JSON.stringify(list));
-
     localStorage.setItem(`${id}-name`, "New Scene");
-    localStorage.setItem(`${id}-scene`, JSON.stringify(defaultScene));
+    localStorage.setItem(`${id}-scene`, JSON.stringify([]));
 
-    router.push(`/scene/${id}`);
+    router.push(`/home/scene/${id}`);
   }
 
   useEffect(() => {
@@ -39,23 +43,35 @@ export default function Scenes() {
     setScenes(list);
   }, []);
 
-  return (
-    <Grid container direction="column" rowSpacing={4} sx={{ padding: 4 }}>
-      <Grid item>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography variant="h2">🌲 Scenes</Typography>
+  function onDelete(id: string) {
+    const newScenes = scenes.filter((scene) => scene !== id);
+    setScenes(newScenes);
+  }
 
-          <span>
-            <Tooltip title="New Scene">
-              <IconButton onClick={handleNewScene}>
-                <AddBoxOutlinedIcon />
-              </IconButton>
-            </Tooltip>
-          </span>
-        </Stack>
+  return (
+    <Grid container direction="column">
+      <Grid item>
+        <BackNavbar text="Editor" />
       </Grid>
 
-      <Grid item>
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+        sx={{ padding: 4, paddingBottom: 0 }}
+      >
+        <Typography variant="h4">Scenes</Typography>
+
+        <span>
+          <Tooltip title="New Scene">
+            <IconButton onClick={handleNewScene}>
+              <AddBoxOutlinedIcon />
+            </IconButton>
+          </Tooltip>
+        </span>
+      </Stack>
+
+      <Box sx={{ padding: 4 }}>
         {!scenes || scenes.length === 0 ? (
           <div>
             <Typography>
@@ -76,13 +92,13 @@ export default function Scenes() {
         ) : (
           <Grid container spacing={3}>
             {scenes.map((id) => {
-              return <SceneCard key={id} id={id} />;
+              return <SceneCard key={id} id={id} onDelete={onDelete} />;
             })}
           </Grid>
         )}
-      </Grid>
+      </Box>
     </Grid>
   );
 }
 
-Scenes.Layout = SidebarLayout;
+Scenes.Layout = HomeLayout;

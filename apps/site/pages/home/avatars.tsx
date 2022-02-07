@@ -7,7 +7,7 @@ export default function Avatars() {
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text="Avatars" back={false} />
+        <BackNavbar text="Avatars" />
       </Grid>
     </Grid>
   );

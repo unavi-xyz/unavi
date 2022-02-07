@@ -2,17 +2,15 @@
 
 ## What's inside?
 
-This monorepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includes the following packages/apps:
+This monorepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includes the following apps/packages:
 
 ### Apps
 
-- `client`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
-- `editor`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
 - `site`: a [Next.js](https://nextjs.org) app
 
 ### Packages
 
-- `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components used by both `client` and `editor`
+- `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components
 - `ceramic`: helpers for interacting with [Ceramic](https://ceramic.network/)
 - `ui`: react ui components
 - `config`: `eslint` configurations

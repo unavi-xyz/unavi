@@ -1,17 +1,11 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext } from "react";
 import { Grid, Paper } from "@mui/material";
 import Head from "next/head";
-import { Sidebar, SidebarButton, getEditorUrl } from "ui";
+import { Sidebar, SidebarButton } from "ui";
 import { CeramicContext } from "ceramic";
 
 export default function HomeLayout({ children }) {
   const { id, authenticated } = useContext(CeramicContext);
-
-  const [editorUrl, setEditorUrl] = useState("/");
-
-  useEffect(() => {
-    setEditorUrl(getEditorUrl());
-  }, []);
 
   return (
     <div>
@@ -30,9 +24,10 @@ export default function HomeLayout({ children }) {
             <SidebarButton
               emoji="💎"
               text="Profile"
-              href={authenticated ? `/home/user/${id}` : ""}
+              href={`/home/user/${id}`}
+              disabled={!authenticated}
             />
-            <SidebarButton emoji="🚧" text="Editor" href={editorUrl} />
+            <SidebarButton emoji="🚧" text="Editor" href="/home/scenes" />
           </Sidebar>
         </Grid>
 

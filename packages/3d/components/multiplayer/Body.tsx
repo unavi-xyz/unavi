@@ -3,10 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { useSphere } from "@react-three/cannon";
 import { Vector3 } from "three";
 
-import {
-  PHYSICS_GROUPS,
-  PUBLISH_INTERVAL,
-} from "../../../../apps/client/src/constants";
+import { PHYSICS_GROUPS, PUBLISH_INTERVAL } from "../../constants";
 
 const args: [number] = [1];
 

@@ -71,6 +71,7 @@ export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
   useFrame((state) => {
     if (position.current.y < VOID_LEVEL) {
       api.position.set(...spawn);
+      velocity.current.set(0, 0, 0);
     }
 
     //move camera

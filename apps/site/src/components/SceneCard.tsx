@@ -15,9 +15,10 @@ import SceneActions from "./SceneActions";
 
 interface Props {
   id: string;
+  onDelete?: (id: string) => void;
 }
 
-export default function SceneCard({ id }: Props) {
+export default function SceneCard({ id, onDelete }: Props) {
   const identicon = useIdenticon(id);
 
   const [hover, setHover] = useState(false);
@@ -30,12 +31,16 @@ export default function SceneCard({ id }: Props) {
     setName(localStorage.getItem(`${id}-name`));
   }, [id]);
 
+  useEffect(() => {
+    if (deleted) onDelete(id);
+  }, [deleted, id, onDelete]);
+
   if (deleted) return <></>;
 
   return (
     <Grid item xs={12} sm={6}>
       <Card variant="outlined">
-        <Link href={`/scene/${id}`} passHref>
+        <Link href={`/home/scene/${id}`} passHref>
           <CardActionArea
             onMouseOver={() => setHover(true)}
             onMouseOut={() => setHover(false)}

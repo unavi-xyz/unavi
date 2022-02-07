@@ -21,6 +21,7 @@
     "dids": "^2.4.3",
     "key-did-provider-ed25519": "^1.1.0",
     "key-did-resolver": "^1.4.4",
+    "swr": "^1.2.1",
     "uint8arrays": "^3.0.0"
   },
   "scripts": {

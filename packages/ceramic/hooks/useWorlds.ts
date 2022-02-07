@@ -1,26 +1,20 @@
-import { useContext, useEffect, useState } from "react";
+import useSWR from "swr";
 import { DIDDataStore } from "@glazed/did-datastore";
-
-import { CeramicContext } from "..";
+import { ceramicRead } from "..";
 
 const model = require("../models/Worlds/model.json");
 
 export function useWorlds(did: string) {
-  const { ceramic, authenticated } = useContext(CeramicContext);
+  const ceramic = ceramicRead;
 
-  const [worlds, setWorlds] = useState<string[]>();
+  async function fetcher() {
+    if (!did) return;
+    const store = new DIDDataStore({ ceramic, model });
+    const data = (await store.get("worlds", did)) as string[];
+    return data;
+  }
 
-  useEffect(() => {
-    if (!authenticated) return;
+  const { data } = useSWR(`worlds-${did}`, fetcher);
 
-    async function get() {
-      const store = new DIDDataStore({ ceramic, model });
-      const data = await store.get("worlds", did);
-      setWorlds(data);
-    }
-
-    get();
-  }, [authenticated, ceramic, did]);
-
-  return worlds;
+  return data;
 }

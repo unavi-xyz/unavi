@@ -1,6 +1,34 @@
 html,
-body {
-  background-color: #fbe8d3 !important;
+body,
+.App,
+#root,
+#__next {
+  background-color: #fbe8d3;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.split {
+  display: flex;
+  flex-direction: row;
+}
+
+.gutter {
+  border-left: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.gutter:hover {
+  cursor: col-resize;
+  border-left: 3px solid rgba(0, 0, 0, 0.12);
+}
+
+.NavbarIcon {
+  font-size: 1.4rem;
+}
+
+.clickable {
+  cursor: pointer;
 }
 
 a {

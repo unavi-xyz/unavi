@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -6,7 +5,6 @@ import { BackNavbar, useIdenticon } from "ui";
 import { useRoom, useScene } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import { getAppUrl } from "../../../src/helpers";
 
 export default function Room() {
   const router = useRouter();
@@ -15,12 +13,6 @@ export default function Room() {
   const identicon = useIdenticon(id);
   const room = useRoom(id);
   const { scene } = useScene(room?.sceneStreamId);
-
-  const [joinUrl, setJoinUrl] = useState("/");
-
-  useEffect(() => {
-    setJoinUrl(`${getAppUrl()}?room=${id}`);
-  }, [id]);
 
   return (
     <Grid container direction="column">
@@ -58,15 +50,11 @@ export default function Room() {
               </Typography>
             </Link>
 
-            <Button
-              variant="contained"
-              color="secondary"
-              size="large"
-              href={joinUrl}
-              target="_blank"
-            >
-              Join Room
-            </Button>
+            <Link href={`/app?room=${id}`} passHref>
+              <Button variant="contained" color="secondary" size="large">
+                Join Room
+              </Button>
+            </Link>
           </Stack>
 
           <Typography>{scene?.description}</Typography>

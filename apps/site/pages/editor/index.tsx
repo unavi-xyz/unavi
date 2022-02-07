@@ -3,6 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/cannon";
 import { IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import Head from "next/head";
 import Split from "react-split";
 import { RAYCASTER_SETTINGS } from "3d";
 
@@ -30,6 +31,10 @@ export default function Editor() {
 
   return (
     <div className="App">
+      <Head>
+        <title>The Wired - Editor</title>
+      </Head>
+
       {playMode ? (
         <span>
           <Canvas raycaster={RAYCASTER_SETTINGS}>

@@ -1,8 +1,10 @@
+import { useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import { Group } from "three";
 import { CeramicContext, useRoom, useScene } from "ceramic";
 import {
   Multiplayer,
@@ -17,6 +19,8 @@ export default function App() {
 
   const router = useRouter();
   const roomId = router.query.room as string;
+
+  const world = useRef<Group>();
 
   const room = useRoom(roomId);
   const { scene } = useScene(room?.sceneStreamId);
@@ -33,9 +37,11 @@ export default function App() {
         <ContextBridge>
           <MultiplayerProvider>
             <Physics>
-              <Player spawn={scene.spawn} />
-              <Scene objects={scene?.objects} />
+              <Player world={world} spawn={scene.spawn} />
               <Multiplayer roomId={roomId} />
+              <group ref={world}>
+                <Scene objects={scene?.objects} />
+              </group>
             </Physics>
           </MultiplayerProvider>
         </ContextBridge>

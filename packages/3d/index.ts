@@ -1,7 +1,7 @@
 export * from "./components/multiplayer/Multiplayer";
 export * from "./components/player/Player";
-export * from "./components/Ground";
-export * from "./components/Scene";
+export * from "./components/scene/Scene";
+export * from "./components/scene/Ground";
 
 export * from "./contexts/MultiplayerContext";
 

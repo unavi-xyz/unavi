@@ -17,7 +17,7 @@ function getSpawn(scene: EditorScene) {
 }
 
 export default function PlayScene() {
-  const world = useRef<undefined | Group>();
+  const world = useRef<Group>();
 
   const scene = useScene((state) => state.scene);
 
@@ -28,7 +28,9 @@ export default function PlayScene() {
   return (
     <group>
       <Player world={world} spawn={spawn} />
-      <Scene objects={objects} />
+      <group ref={world}>
+        <Scene objects={objects} />
+      </group>
     </group>
   );
 }

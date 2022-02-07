@@ -66,7 +66,7 @@ function Body() {
                   size="large"
                   style={{ margin: "auto", fontSize: "2ch" }}
                 >
-                  Join Now
+                  Play Now
                 </Button>
               </Link>
             </Grid>

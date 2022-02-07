@@ -18,7 +18,7 @@ export function Box({ object, editor = false }: Props) {
     position: editor ? undefined : object.position,
     rotation: editor ? undefined : object.rotation,
     mass: object.mass,
-    type: object.physType,
+    type: editor ? "Static" : object.physType,
     collisionFilterMask: disablePhysics ? PHYSICS_GROUPS.NONE : undefined,
   }));
 

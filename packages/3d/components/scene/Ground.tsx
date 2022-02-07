@@ -1,5 +1,5 @@
 import { Triplet, useBox } from "@react-three/cannon";
-import { grid_vertex, grid_fragment } from "../shaders/grid";
+import { grid_vertex, grid_fragment } from "../../shaders/grid";
 
 const THICKNESS = 0.1;
 

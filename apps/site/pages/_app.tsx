@@ -16,9 +16,10 @@ export default function MyApp(props) {
   const router = useRouter();
 
   useEffect(() => {
-    const prev = sessionStorage.getItem("currentPath");
-    sessionStorage.setItem("prevPath", prev);
-    sessionStorage.setItem("currentPath", router.asPath);
+    if (router.asPath !== window.location.pathname) return;
+    const history = JSON.parse(sessionStorage.getItem("pathHistory")) ?? [];
+    const newHistory = JSON.stringify([...history, window.location.pathname]);
+    sessionStorage.setItem("pathHistory", newHistory);
   }, [router.asPath]);
 
   return (

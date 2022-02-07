@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { Stack, Typography } from "@mui/material";
+import { IconButton, Stack, Typography } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import Link from "next/link";
-
-import { ColorIconButton } from "./ColorIconButton";
 
 interface Props {
   text?: string;
@@ -17,9 +15,20 @@ export function BackNavbar({ text = "", href, back, more }: Props) {
   const [prevPath, setPrevPath] = useState("/home");
 
   useEffect(() => {
-    const value = sessionStorage.getItem("prevPath") ?? "/home";
+    const history: string[] = JSON.parse(
+      sessionStorage.getItem("pathHistory") ?? "[]"
+    );
+    const value = history[history.length - 2] ?? "/home";
     setPrevPath(value);
-  }, []);
+  });
+
+  function onBack() {
+    const history: string[] = JSON.parse(
+      sessionStorage.getItem("pathHistory") ?? "[]"
+    );
+    const newHistory = history.slice(0, -2);
+    sessionStorage.setItem("pathHistory", JSON.stringify(newHistory));
+  }
 
   return (
     <Stack
@@ -28,7 +37,7 @@ export function BackNavbar({ text = "", href, back, more }: Props) {
       justifyContent="space-between"
       sx={{
         borderBottom: "1px solid rgba(0,0,0,.1)",
-        paddingLeft: back || href ? 0 : 2,
+        paddingLeft: back || href ? 0.5 : 2,
         paddingRight: 1,
         height: "50px",
       }}
@@ -36,17 +45,17 @@ export function BackNavbar({ text = "", href, back, more }: Props) {
       <Stack direction="row" alignItems="center" spacing={1}>
         {back && (
           <Link href={prevPath} passHref>
-            <ColorIconButton>
+            <IconButton onClick={onBack}>
               <ArrowBackIosNewIcon />
-            </ColorIconButton>
+            </IconButton>
           </Link>
         )}
 
         {href && (
           <Link href={href} passHref>
-            <ColorIconButton>
+            <IconButton>
               <ArrowBackIosNewIcon />
-            </ColorIconButton>
+            </IconButton>
           </Link>
         )}
 
@@ -54,9 +63,9 @@ export function BackNavbar({ text = "", href, back, more }: Props) {
       </Stack>
 
       {more && (
-        <ColorIconButton onClick={more}>
+        <IconButton onClick={more}>
           <MoreHorizIcon />
-        </ColorIconButton>
+        </IconButton>
       )}
     </Stack>
   );

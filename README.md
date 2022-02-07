@@ -6,7 +6,6 @@ This monorepo uses [Yarn](https://yarnpkg.com/) as a package manager. It include
 
 ### Apps
 
-- `client`: a [Next.js](https://nextjs.org) / [Three.js](https://github.com/pmndrs/react-three-fiber) app
 - `site`: a [Next.js](https://nextjs.org) app
 
 ### Packages

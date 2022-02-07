@@ -1,7 +1,7 @@
+import { useEffect, useState } from "react";
 import { Stack, Typography } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import { useRouter } from "next/router";
 import Link from "next/link";
 
 import { ColorIconButton } from "./ColorIconButton";
@@ -14,7 +14,12 @@ interface Props {
 }
 
 export function BackNavbar({ text = "", href, back, more }: Props) {
-  const router = useRouter();
+  const [prevPath, setPrevPath] = useState("/home");
+
+  useEffect(() => {
+    const value = sessionStorage.getItem("prevPath") ?? "/home";
+    setPrevPath(value);
+  }, []);
 
   return (
     <Stack
@@ -30,9 +35,11 @@ export function BackNavbar({ text = "", href, back, more }: Props) {
     >
       <Stack direction="row" alignItems="center" spacing={1}>
         {back && (
-          <ColorIconButton onClick={router.back}>
-            <ArrowBackIosNewIcon />
-          </ColorIconButton>
+          <Link href={prevPath} passHref>
+            <ColorIconButton>
+              <ArrowBackIosNewIcon />
+            </ColorIconButton>
+          </Link>
         )}
 
         {href && (

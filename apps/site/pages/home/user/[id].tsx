@@ -26,7 +26,7 @@ export default function User() {
 
       <Grid container direction="column">
         <Grid item>
-          <BackNavbar text={profile?.name} />
+          <BackNavbar text={profile?.name} back />
         </Grid>
 
         <Stack spacing={2} sx={{ padding: 4 }}>

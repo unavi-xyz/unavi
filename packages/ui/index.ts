@@ -7,5 +7,4 @@ export * from "./components/SidebarButton";
 export * from "./hooks/useIdenticon";
 export * from "./hooks/useWindowDimensions";
 
-export * from "./helpers";
 export * from "./theme";

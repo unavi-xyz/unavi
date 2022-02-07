@@ -6,13 +6,13 @@ import CloseIcon from "@mui/icons-material/Close";
 import Split from "react-split";
 import { RAYCASTER_SETTINGS } from "3d";
 
-import { useStore } from "../src/state/useStore";
-import { useHotkeys } from "../src/hooks/useHotkeys";
+import { useStore } from "../../src/editor/state/useStore";
+import { useHotkeys } from "../../src/editor/hooks/useHotkeys";
 
-import Navbar from "../src/ui/navbar/Navbar";
-import RightPanel from "../src/ui/panel/RightPanel";
-import PlayScene from "../src/scene/PlayScene";
-import EditorScene from "../src/scene/EditorScene";
+import Navbar from "../../src/editor/ui/navbar/Navbar";
+import RightPanel from "../../src/editor/ui/panel/RightPanel";
+import PlayScene from "../../src/editor/scene/PlayScene";
+import EditorScene from "../../src/editor/scene/EditorScene";
 
 export default function Editor() {
   const setSelected = useStore((state) => state.setSelected);

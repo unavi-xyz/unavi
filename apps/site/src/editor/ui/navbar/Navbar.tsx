@@ -5,7 +5,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
-import { ColorIconButton, getHomeUrl } from "ui";
+import { ColorIconButton } from "ui";
 import { CeramicContext, ceramic, loader, Scene } from "ceramic";
 import { ASSET_NAMES } from "3d";
 
@@ -40,7 +40,7 @@ export default function Navbar() {
     const json = toJSON();
     localStorage.setItem(`${id}-scene`, json);
 
-    router.push(`/scene/${id}`);
+    router.push(`/home/scene/${id}`);
   }
 
   async function handlePublish() {
@@ -68,8 +68,7 @@ export default function Navbar() {
     const newWorlds = oldWorlds ? [...oldWorlds, streamId] : [streamId];
     await store.set("worlds", newWorlds, { pin: true });
 
-    const url = `${getHomeUrl()}/world/${streamId}`;
-    router.push(url);
+    router.push(`/home/world/${streamId}`);
   }
 
   function handlePlay() {

@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { BackNavbar, getAppUrl, useIdenticon } from "ui";
+import { BackNavbar, useIdenticon } from "ui";
 import { useRoom, useScene } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
+import { getAppUrl } from "../../../src/helpers";
 
 export default function Room() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function Room() {
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text={room?.name} />
+        <BackNavbar text={room?.name} back />
       </Grid>
 
       <Grid item>

@@ -1,16 +1,13 @@
 import { Dispatch, SetStateAction, useState } from "react";
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import { useRouter } from "next/router";
 
 interface Props {
   id: string;
-  setDeleted?: Dispatch<SetStateAction<boolean>>;
+  setDeleted: Dispatch<SetStateAction<boolean>>;
 }
 
 export default function SceneActions({ id, setDeleted }: Props) {
-  const router = useRouter();
-
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -35,9 +32,7 @@ export default function SceneActions({ id, setDeleted }: Props) {
     localStorage.setItem(`${id}-preview`, null);
     localStorage.setItem(`${id}-scene`, null);
 
-    if (setDeleted) setDeleted(true);
-
-    router.push("/");
+    setDeleted(true);
   }
 
   return (

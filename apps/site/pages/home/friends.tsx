@@ -7,7 +7,7 @@ export default function Friends() {
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text="Friends" back={false} />
+        <BackNavbar text="Friends" />
       </Grid>
     </Grid>
   );

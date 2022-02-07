@@ -45,6 +45,7 @@ export default function World() {
       <Grid item>
         <BackNavbar
           text={scene?.name}
+          back
           more={userId === author ? () => setOpen(true) : undefined}
         />
       </Grid>

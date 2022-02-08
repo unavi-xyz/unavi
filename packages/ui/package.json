@@ -13,7 +13,7 @@
   "dependencies": {
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
-    "@mui/icons-material": "^5.2.4",
+    "@mui/icons-material": "^5.4.1",
     "@mui/material": "^5.2.4",
     "@mui/styles": "^5.2.3",
     "ceramic": "*",

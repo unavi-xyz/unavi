@@ -7,7 +7,7 @@ import { PUBLISH_INTERVAL } from "../../constants";
 
 interface Props {
   position: MutableRefObject<Vector3>;
-  rotation: MutableRefObject<Vector3>;
+  rotation: MutableRefObject<number>;
 }
 
 export default function Body({ position, rotation }: Props) {
@@ -31,8 +31,10 @@ export default function Body({ position, rotation }: Props) {
     const alpha = Math.min(deltaPos.current * (1000 / PUBLISH_INTERVAL), 1);
     interpPos.current.lerpVectors(lastPos.current, currentPos.current, alpha);
 
-    group.current?.position.copy(interpPos.current);
-    group.current?.rotation.setFromVector3(rotation.current);
+    if (!group.current) return;
+
+    group.current.position.copy(interpPos.current);
+    group.current.rotation.y = rotation.current;
   });
 
   return (

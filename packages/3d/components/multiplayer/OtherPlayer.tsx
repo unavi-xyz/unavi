@@ -14,7 +14,7 @@ export default function OtherPlayer({ id }: Props) {
   const { ydoc } = useContext(MultiplayerContext);
 
   const position = useRef(new Vector3());
-  const rotation = useRef(new Vector3());
+  const rotation = useRef(0);
 
   useEffect(() => {
     if (!ydoc) return;
@@ -28,7 +28,7 @@ export default function OtherPlayer({ id }: Props) {
       if (!object) return;
 
       position.current.fromArray(object.position);
-      rotation.current.fromArray(object.rotation);
+      rotation.current = object.rotation;
     }
 
     map.observe(onObserve);

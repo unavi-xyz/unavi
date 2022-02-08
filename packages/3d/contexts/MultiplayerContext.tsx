@@ -20,7 +20,7 @@ const SIGNALING_SERVERS = [
 interface ContextInterface {
   ydoc: Y.Doc | undefined;
   setRoomId: Dispatch<SetStateAction<string | undefined>> | undefined;
-  publishLocation: ((position: Triplet, rotation: Triplet) => void) | undefined;
+  publishLocation: ((position: Triplet, rotation: number) => void) | undefined;
 }
 const defaultContext: ContextInterface = {
   ydoc: undefined,
@@ -62,7 +62,7 @@ export function MultiplayerProvider({ children }: Props) {
     };
   }, [roomId]);
 
-  function publishLocation(position: Triplet, rotation: Triplet) {
+  function publishLocation(position: Triplet, rotation: number) {
     if (!ydoc || !id) return;
 
     const map = ydoc.getMap("locations");
@@ -80,5 +80,5 @@ export function MultiplayerProvider({ children }: Props) {
 
 export type LocationObject = {
   position: Triplet;
-  rotation: Triplet;
+  rotation: number;
 };

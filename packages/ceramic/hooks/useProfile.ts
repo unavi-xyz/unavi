@@ -1,16 +1,15 @@
 import { DIDDataStore } from "@glazed/did-datastore";
 import useSWR from "swr";
-import { BasicProfile, ceramicRead } from "..";
+import { BasicProfile, ceramic, ceramicRead } from "..";
 
 const model = require("../models/BasicProfile/model.json");
 
 export function useProfile(did: string | undefined) {
-  const ceramic = ceramicRead;
-
   async function fetcher() {
     if (!did) return;
-    const store = new DIDDataStore({ ceramic, model });
+    const store = new DIDDataStore({ ceramic: ceramicRead, model });
     const data = (await store.get("basicProfile", did)) as BasicProfile;
+
     return data;
   }
 
@@ -21,5 +20,8 @@ export function useProfile(did: string | undefined) {
     await store.merge("basicProfile", data, { pin: true });
   }
 
-  return { profile: data, merge };
+  const imageHash = data?.image?.original.src.replace("ipfs://", "");
+  const imageUrl = `https://ipfs.infura.io:5001/api/v0/cat?arg=${imageHash}`;
+
+  return { profile: data, imageUrl, merge };
 }

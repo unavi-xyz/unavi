@@ -1,7 +1,14 @@
 import { useContext, useEffect, useState } from "react";
-import { Button, Stack, TextField } from "@mui/material";
-import { BasicModal } from "ui";
-import { CeramicContext, useProfile } from "ceramic";
+import {
+  Button,
+  CardActionArea,
+  CardMedia,
+  Stack,
+  TextField,
+  Tooltip,
+} from "@mui/material";
+import { BasicModal, useIdenticon } from "ui";
+import { CeramicContext, ImageSources, useProfile } from "ceramic";
 
 interface Props {
   open: boolean;
@@ -11,10 +18,12 @@ interface Props {
 export default function EditProfileModal({ open, handleClose }: Props) {
   const { id } = useContext(CeramicContext);
 
-  const { profile, merge } = useProfile(id);
+  const { profile, imageUrl, merge } = useProfile(id);
+  const identicon = useIdenticon(id);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [image, setImage] = useState<File>();
 
   useEffect(() => {
     setName(profile?.name);
@@ -22,14 +31,76 @@ export default function EditProfileModal({ open, handleClose }: Props) {
   }, [profile]);
 
   async function handleSave() {
-    await merge({ name, description });
-    location.reload();
-    handleClose();
+    //upload image to IPFS
+    const body = new FormData();
+    body.append("path", image, image.name);
+    const res = await fetch(`https://ipfs.infura.io:5001/api/v0/add`, {
+      method: "POST",
+      body,
+    });
+
+    const { Hash } = await res.json();
+
+    const testt = new Image();
+    testt.src = URL.createObjectURL(image);
+
+    testt.onload = async () => {
+      //update ceramic basic profile
+      const imageObject: ImageSources = {
+        original: {
+          src: "ipfs://" + Hash,
+          height: testt.height,
+          width: testt.width,
+          mimeType: image.type,
+          size: image.size,
+        },
+      };
+
+      await merge({ name, description, image: imageObject });
+
+      location.reload();
+      handleClose();
+    };
   }
 
   return (
     <BasicModal open={open} handleClose={handleClose} title="Edit Profile">
       <Stack spacing={3}>
+        <Stack direction="row">
+          <div>
+            <input
+              accept="image/*"
+              style={{ display: "none" }}
+              id="profile-picture-input"
+              multiple
+              type="file"
+              onChange={(e) => setImage(e.target.files[0])}
+            />
+
+            <label htmlFor="profile-picture-input">
+              <Tooltip
+                title="Upload image"
+                placement="right-end"
+                enterDelay={500}
+              >
+                <CardActionArea component="span">
+                  <CardMedia
+                    component="img"
+                    image={
+                      image ? URL.createObjectURL(image) : imageUrl ?? identicon
+                    }
+                    style={{
+                      height: "120px",
+                      width: "120px",
+                      border: "4px solid black",
+                    }}
+                  />
+                </CardActionArea>
+              </Tooltip>
+            </label>
+          </div>
+        </Stack>
+
         <TextField
           variant="standard"
           label="Name"

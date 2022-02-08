@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import Link from "next/link";
-import { CeramicContext, shortenDid, useProfile } from "ceramic";
+import { CeramicContext, useProfile } from "ceramic";
 
 import { useIdenticon } from "../hooks/useIdenticon";
 
@@ -26,7 +26,7 @@ export function Sidebar({
   const { authenticated, id, connect, disconnect } = useContext(CeramicContext);
 
   const identicon = useIdenticon(id);
-  const { profile } = useProfile(id);
+  const { profile, imageUrl } = useProfile(id);
 
   const [open, setOpen] = useState(false);
 
@@ -83,12 +83,13 @@ export function Sidebar({
                   style={{ width: "100%", fontSize: "1rem", padding: ".2rem" }}
                 >
                   <img
-                    src={identicon}
+                    src={imageUrl ?? identicon}
                     alt="profile picture"
                     style={{
                       height: "3rem",
                       width: "3rem",
                       border: "1px solid black",
+                      objectFit: "cover",
                     }}
                   />
 

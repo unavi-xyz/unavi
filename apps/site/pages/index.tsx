@@ -122,13 +122,13 @@ function Body() {
           <Grid item container direction="column" rowSpacing={2}>
             <Grid item>
               <Typography variant="h6" color="primary">
-                Data is handled using decentralized identifiers (
+                Your account is stored as a decentralized identifier (
                 <MuiLink
                   href="https://thenewstack.io/did-you-hear-decentralized-identifiers-are-coming/"
                   target="_blank"
                   color="secondary"
                 >
-                  DIDs
+                  DID
                 </MuiLink>
                 ).
               </Typography>
@@ -137,7 +137,7 @@ function Body() {
               <Typography variant="h6" color="primary">
                 This means your identity, and the data you create, is not
                 limited to this platform. For example, you could log in to a
-                chat app using your DID, and all your friends from The Wired
+                chat app using your DID, and all of your friends from The Wired
                 would show up as contacts.
               </Typography>
             </Grid>

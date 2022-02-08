@@ -30,7 +30,7 @@ export default function Editor() {
   }, [setId]);
 
   return (
-    <div className="App">
+    <div className="App" style={{ overflow: "hidden" }}>
       <Head>
         <title>The Wired - Editor</title>
       </Head>

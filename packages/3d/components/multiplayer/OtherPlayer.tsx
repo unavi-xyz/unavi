@@ -1,9 +1,9 @@
 import { useContext, useEffect, useRef } from "react";
-import { Triplet } from "@react-three/cannon";
 import { Vector3 } from "three";
 import { YMapEvent } from "yjs";
 import { MultiplayerContext } from "3d";
 
+import { LocationObject } from "../../contexts/MultiplayerContext";
 import Body from "./Body";
 
 interface Props {
@@ -14,19 +14,21 @@ export default function OtherPlayer({ id }: Props) {
   const { ydoc } = useContext(MultiplayerContext);
 
   const position = useRef(new Vector3());
+  const rotation = useRef(new Vector3());
 
   useEffect(() => {
     if (!ydoc) return;
 
-    const map = ydoc.getMap("positions");
+    const map = ydoc.getMap("locations");
 
     function onObserve(e: YMapEvent<any>) {
       if (!e.keysChanged.has(id)) return;
 
-      const pos = map.get(id) as Triplet | undefined;
-      if (!pos) return;
+      const object = map.get(id) as LocationObject | undefined;
+      if (!object) return;
 
-      position.current.fromArray(pos);
+      position.current.fromArray(object.position);
+      rotation.current.fromArray(object.rotation);
     }
 
     map.observe(onObserve);
@@ -36,5 +38,5 @@ export default function OtherPlayer({ id }: Props) {
     };
   }, [id, ydoc]);
 
-  return <Body position={position} />;
+  return <Body position={position} rotation={rotation} />;
 }

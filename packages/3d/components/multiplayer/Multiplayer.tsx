@@ -20,14 +20,14 @@ export function Multiplayer({ roomId }: Props) {
   const [players, setPlayers] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!ydoc) return;
+    if (!ydoc || !id) return;
 
-    const map = ydoc.getMap("positions");
+    const map = ydoc.getMap("locations");
 
     function onObserve() {
       const keys = map.keys();
       const newPlayer = Array.from(keys).find((key) => {
-        if (key in players || key === id) return false;
+        if (players.includes(key) || key === id) return false;
         return true;
       });
 
@@ -39,7 +39,7 @@ export function Multiplayer({ roomId }: Props) {
     return () => {
       map.unobserve(onObserve);
     };
-  }, [ydoc, players]);
+  }, [ydoc, players, id]);
 
   return (
     <group>

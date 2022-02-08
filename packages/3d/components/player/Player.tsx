@@ -3,7 +3,6 @@ import { Triplet, useSphere } from "@react-three/cannon";
 import { useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
 import { Group, Raycaster, Vector3 } from "three";
-import { CeramicContext } from "ceramic";
 
 import { PHYSICS_GROUPS, PUBLISH_INTERVAL, VOID_LEVEL } from "../..";
 import { useSpringVelocity } from "./hooks/useSpringVelocity";
@@ -29,14 +28,14 @@ interface Props {
 export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
   const args: [number] = [SPHERE_RADIUS];
 
-  const { id } = useContext(CeramicContext);
-  const { ydoc } = useContext(MultiplayerContext);
+  const { publishLocation } = useContext(MultiplayerContext);
 
   const downRay = useRef<undefined | Raycaster>();
   const crosshair = useRef<undefined | Group>();
 
   const jump = useRef(false);
   const position = useRef(new Vector3().fromArray(spawn));
+  const rotation = useRef(new Vector3());
   const velocity = useRef(new Vector3());
 
   const { camera } = useThree();
@@ -53,9 +52,12 @@ export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
 
   useEffect(() => {
     function publishPosition() {
-      if (!ydoc || !id) return;
-      const map = ydoc.getMap("positions");
-      map.set(id, position.current.toArray());
+      if (!publishLocation) return;
+
+      const adjustedPos = position.current.toArray();
+      adjustedPos[1] -= SPHERE_RADIUS;
+
+      publishLocation(adjustedPos, rotation.current.toArray());
     }
 
     api.position.subscribe((p: Triplet) => position.current.fromArray(p));
@@ -66,7 +68,7 @@ export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
     return () => {
       clearInterval(interval);
     };
-  }, [api.position, api.velocity, ydoc, id]);
+  }, [api.position, api.velocity, publishLocation]);
 
   useFrame((state) => {
     if (position.current.y < VOID_LEVEL) {
@@ -111,12 +113,7 @@ export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
       </group>
 
       <KeyboardMovement paused={paused} direction={direction} jump={jump} />
-      <PointerLockControls
-        addEventListener={undefined}
-        hasEventListener={undefined}
-        removeEventListener={undefined}
-        dispatchEvent={undefined}
-      />
+      <PointerLockControls />
     </group>
   );
 }

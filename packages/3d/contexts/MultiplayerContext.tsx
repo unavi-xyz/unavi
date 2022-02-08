@@ -1,7 +1,10 @@
+import { Triplet } from "@react-three/cannon";
+import { CeramicContext } from "ceramic";
 import React, {
   Dispatch,
   ReactChild,
   SetStateAction,
+  useContext,
   useEffect,
   useState,
 } from "react";
@@ -17,10 +20,12 @@ const SIGNALING_SERVERS = [
 interface ContextInterface {
   ydoc: Y.Doc | undefined;
   setRoomId: Dispatch<SetStateAction<string | undefined>> | undefined;
+  publishLocation: ((position: Triplet, rotation: Triplet) => void) | undefined;
 }
 const defaultContext: ContextInterface = {
   ydoc: undefined,
   setRoomId: undefined,
+  publishLocation: undefined,
 };
 
 export const MultiplayerContext = React.createContext(defaultContext);
@@ -30,6 +35,8 @@ interface Props {
 }
 
 export function MultiplayerProvider({ children }: Props) {
+  const { id } = useContext(CeramicContext);
+
   const [ydoc, setYdoc] = useState<Y.Doc>();
   const [roomId, setRoomId] = useState<string>();
 
@@ -55,9 +62,23 @@ export function MultiplayerProvider({ children }: Props) {
     };
   }, [roomId]);
 
+  function publishLocation(position: Triplet, rotation: Triplet) {
+    if (!ydoc || !id) return;
+
+    const map = ydoc.getMap("locations");
+
+    const object: LocationObject = { position, rotation };
+    map.set(id, object);
+  }
+
   return (
-    <MultiplayerContext.Provider value={{ ydoc, setRoomId }}>
+    <MultiplayerContext.Provider value={{ ydoc, setRoomId, publishLocation }}>
       {children}
     </MultiplayerContext.Provider>
   );
 }
+
+export type LocationObject = {
+  position: Triplet;
+  rotation: Triplet;
+};

@@ -1,29 +1,22 @@
 import { MutableRefObject, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { SphereArgs, useSphere } from "@react-three/cannon";
-import { Vector3 } from "three";
+import { Group, Vector3 } from "three";
+import { Avatar } from "avatars";
 
-import { PHYSICS_GROUPS, PUBLISH_INTERVAL } from "../../constants";
-
-const args: SphereArgs = [1];
+import { PUBLISH_INTERVAL } from "../../constants";
 
 interface Props {
   position: MutableRefObject<Vector3>;
+  rotation: MutableRefObject<Vector3>;
 }
 
-export default function Body({ position }: Props) {
+export default function Body({ position, rotation }: Props) {
+  const group = useRef<Group>();
+
   const deltaPos = useRef(0);
   const lastPos = useRef(new Vector3());
   const currentPos = useRef(new Vector3());
   const interpPos = useRef(new Vector3());
-
-  const [ref, api] = useSphere(() => ({
-    args,
-    mass: 1,
-    type: "Static",
-    position: [0, -100, 0],
-    collisionFilterMask: PHYSICS_GROUPS.NONE,
-  }));
 
   useFrame((_, delta) => {
     //interpolation
@@ -38,13 +31,13 @@ export default function Body({ position }: Props) {
     const alpha = Math.min(deltaPos.current * (1000 / PUBLISH_INTERVAL), 1);
     interpPos.current.lerpVectors(lastPos.current, currentPos.current, alpha);
 
-    api.position.copy(interpPos.current);
+    group.current?.position.copy(interpPos.current);
+    group.current?.rotation.setFromVector3(rotation.current);
   });
 
   return (
-    <mesh ref={ref}>
-      <sphereGeometry args={args} />
-      <meshPhongMaterial />
-    </mesh>
+    <group ref={group}>
+      <Avatar />
+    </group>
   );
 }

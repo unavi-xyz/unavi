@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/cannon";
-import { useContextBridge } from "@react-three/drei";
+import { Stats, useContextBridge } from "@react-three/drei";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { Group } from "three";

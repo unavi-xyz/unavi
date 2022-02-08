@@ -66,7 +66,7 @@ export default function User() {
         <Divider />
 
         <Stack sx={{ padding: 4 }}>
-          {worlds && (
+          {worlds?.length > 0 && (
             <Typography variant="h4" sx={{ marginBottom: 4 }}>
               Worlds
             </Typography>

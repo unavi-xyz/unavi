@@ -1,24 +1,40 @@
-import { ASSET_NAMES } from "..";
+import { Triplet } from "@react-three/cannon";
+import { ASSET_NAMES } from "../assets";
 
-export enum PROPERTIES {
-  position,
-  rotation,
-  scale,
-  radius,
-  color,
-  opacity,
-  physics,
+export enum PARAM_NAMES {
+  type = "type",
+  position = "position",
+  rotation = "rotation",
+  scale = "scale",
+  radius = "radius",
+  color = "color",
+  opacity = "opacity",
+  physEnabled = "physEnabled",
+  physType = "physType",
+  mass = "mass",
 }
 
-//each Asset defines a type of EditorObject
-export class Asset {
-  name: ASSET_NAMES;
-  properties: PROPERTIES[];
+export type PARAMS = {
+  [PARAM_NAMES.type]: ASSET_NAMES;
+  [PARAM_NAMES.position]: Triplet;
+  [PARAM_NAMES.rotation]: Triplet;
+  [PARAM_NAMES.scale]: Triplet;
+  [PARAM_NAMES.radius]: number;
+  [PARAM_NAMES.color]: string;
+  [PARAM_NAMES.opacity]: number;
+  [PARAM_NAMES.physEnabled]: boolean;
+  [PARAM_NAMES.physType]: "Static" | "Dynamic";
+  [PARAM_NAMES.mass]: number;
+};
+
+export class Asset<T> {
+  type: ASSET_NAMES;
+  params: T;
   limit: number;
 
-  constructor(name: ASSET_NAMES, properties: PROPERTIES[], limit = -1) {
-    this.name = name;
-    this.properties = properties;
+  constructor(type: ASSET_NAMES, params: T, limit = -1) {
+    this.type = type;
+    this.params = params;
     this.limit = limit;
   }
 }

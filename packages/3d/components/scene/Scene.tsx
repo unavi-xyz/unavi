@@ -3,7 +3,7 @@ import { Scene } from "ceramic";
 import { ASSET_NAMES, Ground, InstancedObject, SceneObject } from "../..";
 
 interface Props {
-  objects: SceneObject[];
+  objects: SceneObject<ASSET_NAMES>[];
 }
 
 export function Scene({ objects }: Props) {
@@ -14,9 +14,9 @@ export function Scene({ objects }: Props) {
       <Ground />
       <Sky />
 
-      {objects?.map((object: SceneObject, i) => {
+      {objects?.map((object: SceneObject<ASSET_NAMES>, i) => {
         if (object.type === ASSET_NAMES.Spawn) return <group key={i}></group>;
-        return <InstancedObject key={object.id} object={object} />;
+        return <InstancedObject key={object.id} instance={object} />;
       })}
     </group>
   );

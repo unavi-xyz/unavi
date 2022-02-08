@@ -1,5 +1,5 @@
 import { Triplet } from "@react-three/cannon";
-import { SceneObject } from "3d";
+import { ASSET_NAMES, SceneObject } from "3d";
 export interface Scene {
   name?: string;
   description?: string;
@@ -7,5 +7,5 @@ export interface Scene {
 
   spawn?: Triplet;
 
-  objects: SceneObject[];
+  objects: SceneObject<ASSET_NAMES>[];
 }

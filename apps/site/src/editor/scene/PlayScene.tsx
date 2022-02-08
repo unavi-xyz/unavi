@@ -6,12 +6,12 @@ import { EditorScene, useScene } from "../state/useScene";
 
 function getSpawn(scene: EditorScene) {
   const object = Object.values(scene).find(
-    (obj) => obj.params.type === ASSET_NAMES.Spawn
+    (obj) => obj.instance.type === ASSET_NAMES.Spawn
   );
 
   if (!object) return;
 
-  const spawn = object.params.position;
+  const spawn = object.instance.params.position;
   spawn[1] += 2;
   return spawn;
 }
@@ -23,7 +23,7 @@ export default function PlayScene() {
 
   const [spawn] = useState(getSpawn(scene));
 
-  const objects = Object.values(scene).map((obj) => obj.params);
+  const objects = Object.values(scene).map((obj) => obj.instance);
 
   return (
     <group>

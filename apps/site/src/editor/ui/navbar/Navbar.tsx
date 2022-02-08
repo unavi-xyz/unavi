@@ -48,7 +48,7 @@ export default function Navbar() {
     const description = localStorage.getItem(`${id}-description`);
     const image = localStorage.getItem(`${id}-preview`);
 
-    const objects = Object.values(scene).map((obj) => obj.params);
+    const objects = Object.values(scene).map((obj) => obj.instance);
 
     const spawn = getSpawn(scene);
 
@@ -136,12 +136,12 @@ export default function Navbar() {
 
 function getSpawn(scene: EditorScene) {
   const object = Object.values(scene).find(
-    (obj) => obj.params.type === ASSET_NAMES.Spawn
+    (obj) => obj.instance.type === ASSET_NAMES.Spawn
   );
 
   if (!object) return;
 
-  const spawn = object.params.position;
+  const spawn = object.instance.params.position;
   spawn[1] += 2;
   return spawn;
 }

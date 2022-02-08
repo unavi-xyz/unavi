@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import { ASSETS, ASSET_NAMES } from "3d";
 
-import { useScene } from "../../state/useScene";
+import { useScene } from "../../../state/useScene";
 
 interface Props {
   name: ASSET_NAMES;
@@ -28,7 +28,7 @@ export default function AssetCard({ name }: Props) {
 
   useEffect(() => {
     const found = Object.values(scene).filter(
-      (item) => item.params.type === name
+      (item) => item.instance.type === name
     );
     setCount(found.length);
   }, [name, scene]);

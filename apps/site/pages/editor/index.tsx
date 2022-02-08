@@ -65,7 +65,7 @@ export default function Editor() {
             gutterAlign="end"
           >
             <Canvas
-              onPointerMissed={() => setSelected(null)}
+              onPointerMissed={() => setSelected(undefined)}
               gl={{ preserveDrawingBuffer: true }}
             >
               <Physics>

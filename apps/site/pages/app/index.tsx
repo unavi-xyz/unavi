@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/cannon";
-import { Stats, useContextBridge } from "@react-three/drei";
+import { useContextBridge } from "@react-three/drei";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { Group } from "three";
@@ -38,6 +38,8 @@ export default function App() {
       <Head>
         <title>The Wired - App</title>
       </Head>
+
+      <div className="crosshair" />
 
       <Canvas raycaster={RAYCASTER_SETTINGS}>
         <ContextBridge>

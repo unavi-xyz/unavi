@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
@@ -16,6 +16,12 @@ import {
 
 export default function App() {
   const ContextBridge = useContextBridge(CeramicContext);
+
+  const { authenticated, connect } = useContext(CeramicContext);
+
+  useEffect(() => {
+    if (!authenticated) connect();
+  }, [authenticated, connect]);
 
   const router = useRouter();
   const roomId = router.query.room as string;

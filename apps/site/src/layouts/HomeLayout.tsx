@@ -14,7 +14,7 @@ export default function HomeLayout({ children }) {
       </Head>
 
       <Grid container sx={{ maxWidth: "1400px", margin: "auto" }}>
-        <Grid item sx={{ width: "260px" }}>
+        <Grid item sx={{ width: "260px", marginLeft: 2 }}>
           <Sidebar titleHref="/home">
             <SidebarButton emoji="🏠" text="Home" href="/home" />
             <SidebarButton emoji="🌏" text="Worlds" href="/home/worlds" />

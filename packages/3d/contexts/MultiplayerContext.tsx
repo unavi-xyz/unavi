@@ -1,4 +1,10 @@
-import React, { ReactChild, useEffect, useState } from "react";
+import React, {
+  Dispatch,
+  ReactChild,
+  SetStateAction,
+  useEffect,
+  useState,
+} from "react";
 import { WebrtcProvider } from "y-webrtc";
 import * as Y from "yjs";
 
@@ -10,8 +16,12 @@ const SIGNALING_SERVERS = [
 
 interface ContextInterface {
   ydoc: Y.Doc | undefined;
+  setRoomId: Dispatch<SetStateAction<string | undefined>> | undefined;
 }
-const defaultContext: ContextInterface = { ydoc: undefined };
+const defaultContext: ContextInterface = {
+  ydoc: undefined,
+  setRoomId: undefined,
+};
 
 export const MultiplayerContext = React.createContext(defaultContext);
 
@@ -21,10 +31,9 @@ interface Props {
 
 export function MultiplayerProvider({ children }: Props) {
   const [ydoc, setYdoc] = useState<Y.Doc>();
+  const [roomId, setRoomId] = useState<string>();
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get("room");
     if (!roomId) return;
 
     const doc = new Y.Doc();
@@ -44,10 +53,10 @@ export function MultiplayerProvider({ children }: Props) {
     return () => {
       doc.destroy();
     };
-  }, []);
+  }, [roomId]);
 
   return (
-    <MultiplayerContext.Provider value={{ ydoc }}>
+    <MultiplayerContext.Provider value={{ ydoc, setRoomId }}>
       {children}
     </MultiplayerContext.Provider>
   );

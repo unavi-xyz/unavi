@@ -53,7 +53,7 @@ export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
 
   useEffect(() => {
     function publishPosition() {
-      if (!ydoc) return;
+      if (!ydoc || !id) return;
       const map = ydoc.getMap("positions");
       map.set(id, position.current.toArray());
     }
@@ -66,7 +66,7 @@ export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
     return () => {
       clearInterval(interval);
     };
-  }, [api.position, api.velocity]);
+  }, [api.position, api.velocity, ydoc, id]);
 
   useFrame((state) => {
     if (position.current.y < VOID_LEVEL) {

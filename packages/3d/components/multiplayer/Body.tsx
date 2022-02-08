@@ -1,11 +1,11 @@
 import { MutableRefObject, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useSphere } from "@react-three/cannon";
+import { SphereArgs, useSphere } from "@react-three/cannon";
 import { Vector3 } from "three";
 
 import { PHYSICS_GROUPS, PUBLISH_INTERVAL } from "../../constants";
 
-const args: [number] = [1];
+const args: SphereArgs = [1];
 
 interface Props {
   position: MutableRefObject<Vector3>;
@@ -26,6 +26,7 @@ export default function Body({ position }: Props) {
   }));
 
   useFrame((_, delta) => {
+    //interpolation
     deltaPos.current += delta;
 
     if (!currentPos.current.equals(position.current)) {

@@ -16,7 +16,9 @@ export function useProfile(did: string | undefined) {
     const data = (await store.get("basicProfile", did)) as BasicProfile;
 
     const imageHash = data?.image?.original.src.replace("ipfs://", "");
-    const imageUrl = `https://ipfs.infura.io:5001/api/v0/cat?arg=${imageHash}`;
+    const imageUrl = imageHash
+      ? `https://ipfs.infura.io:5001/api/v0/cat?arg=${imageHash}`
+      : undefined;
 
     return { profile: data, imageUrl };
   }

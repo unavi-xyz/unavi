@@ -1,3 +1,4 @@
+import { CeramicContext } from "ceramic";
 import { useContext, useEffect, useState } from "react";
 import { MultiplayerContext } from "../..";
 
@@ -8,7 +9,13 @@ interface Props {
 }
 
 export function Multiplayer({ roomId }: Props) {
-  const { ydoc } = useContext(MultiplayerContext);
+  const { id } = useContext(CeramicContext);
+  const { ydoc, setRoomId } = useContext(MultiplayerContext);
+
+  useEffect(() => {
+    if (!setRoomId) return;
+    setRoomId(roomId);
+  }, [roomId]);
 
   const [players, setPlayers] = useState<string[]>([]);
 
@@ -19,7 +26,12 @@ export function Multiplayer({ roomId }: Props) {
 
     function onObserve() {
       const keys = map.keys();
-      setPlayers(Array.from(keys)); //! yucky
+      const newPlayer = Array.from(keys).find((key) => {
+        if (key in players || key === id) return false;
+        return true;
+      });
+
+      if (newPlayer) setPlayers(Array.from(new Set([...players, newPlayer])));
     }
 
     map.observe(onObserve);
@@ -27,7 +39,7 @@ export function Multiplayer({ roomId }: Props) {
     return () => {
       map.unobserve(onObserve);
     };
-  }, [ydoc]);
+  }, [ydoc, players]);
 
   return (
     <group>

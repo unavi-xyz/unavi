@@ -23,7 +23,7 @@ export default function OtherPlayer({ id }: Props) {
     function onObserve(e: YMapEvent<any>) {
       if (!e.keysChanged.has(id)) return;
 
-      const pos = map.get(id) as Triplet;
+      const pos = map.get(id) as Triplet | undefined;
       if (!pos) return;
 
       position.current.fromArray(pos);
@@ -36,9 +36,5 @@ export default function OtherPlayer({ id }: Props) {
     };
   }, [id, ydoc]);
 
-  return (
-    <group>
-      <Body position={position} />
-    </group>
-  );
+  return <Body position={position} />;
 }

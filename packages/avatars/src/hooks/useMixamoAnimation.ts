@@ -1,7 +1,6 @@
-import { useEffect, useRef } from "react";
 import { VRM, VRMSchema } from "@pixiv/three-vrm";
 import { useFrame } from "@react-three/fiber";
-import { AnimationMixer, Group } from "three";
+import { Group } from "three";
 
 import useMixamoBone from "./useMixamoBone";
 
@@ -29,26 +28,8 @@ export default function useMixamoAnimation(fbx?: Group, vrm?: VRM) {
   useMixamoBone(fbx, "mixamorigRightLeg", vrm, HumanBone.RightLowerLeg);
   useMixamoBone(fbx, "mixamorigRightFoot", vrm, HumanBone.RightFoot);
 
-  const mixer = useRef<AnimationMixer>();
-
-  useEffect(() => {
+  useFrame(() => {
     if (!fbx) return;
-
-    const scale = 0.01;
-    fbx.scale.set(scale, scale, scale);
-    fbx.rotation.y = Math.PI;
-
-    mixer.current = new AnimationMixer(fbx);
-    const action = mixer.current.clipAction(fbx.animations[0]);
-    action.play();
-  }, [fbx]);
-
-  useFrame(({ clock }) => {
-    const delta = Math.max(clock.getDelta(), 0.0001) * 60;
-    mixer.current?.update(delta);
-
-    if (!fbx) return;
-
     const hips = fbx.getObjectByName("mixamorigHips");
     hips?.position.set(-100, 100, 0);
   });

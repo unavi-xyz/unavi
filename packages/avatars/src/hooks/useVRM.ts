@@ -7,7 +7,7 @@ export default function useVRM(url: string) {
   const [vrm, setVrm] = useState<VRM>();
 
   useEffect(() => {
-    if (!url) return;
+    if (!url || vrm) return;
     loader.current.loadAsync(url).then(async (gltf) => {
       const vrm = await VRM.from(gltf);
       setVrm(vrm);

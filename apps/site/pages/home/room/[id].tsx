@@ -1,14 +1,17 @@
+import { useContext } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { BackNavbar, useIdenticon } from "ui";
-import { useRoom, useScene } from "ceramic";
+import { CeramicContext, useRoom, useScene } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 
 export default function Room() {
   const router = useRouter();
   const id = router.query.id as string;
+
+  const { authenticated } = useContext(CeramicContext);
 
   const identicon = useIdenticon(id);
   const room = useRoom(id);
@@ -51,7 +54,12 @@ export default function Room() {
             </Link>
 
             <Link href={`/app?room=${id}`} passHref>
-              <Button variant="contained" color="secondary" size="large">
+              <Button
+                variant="contained"
+                color="secondary"
+                size="large"
+                disabled={!authenticated}
+              >
                 Join Room
               </Button>
             </Link>

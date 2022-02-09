@@ -1,16 +1,26 @@
-import * as React from "react";
+import { useEffect } from "react";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import Head from "next/head";
+import { useRouter } from "next/router";
+import { CeramicProvider } from "ceramic";
+import { theme } from "ui";
 
 import "../styles/globals.css";
-import { theme } from "ui";
-import { CeramicProvider } from "ceramic";
 
 export default function MyApp(props) {
   const { Component, pageProps } = props;
 
   const Layout = Component.Layout ?? EmptyLayout;
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (router.asPath !== window.location.pathname) return;
+    const history = JSON.parse(sessionStorage.getItem("pathHistory")) ?? [];
+    const newHistory = JSON.stringify([...history, window.location.pathname]);
+    sessionStorage.setItem("pathHistory", newHistory);
+  }, [router.asPath]);
 
   return (
     <>

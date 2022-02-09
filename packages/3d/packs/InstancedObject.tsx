@@ -1,19 +1,32 @@
-import { ASSET_NAMES, SceneObject } from ".";
+import { ASSETS, ASSET_NAMES, SceneObject } from "..";
+
 import { Box } from "./basic/Box";
 import { Sphere } from "./basic/Sphere";
 import { Spawn } from "./game/Spawn";
 
 interface Props {
-  object: SceneObject;
+  instance: SceneObject<ASSET_NAMES>;
   editor?: boolean;
 }
 
-export function InstancedObject({ object, editor = false }: Props) {
-  switch (object.type) {
+export function InstancedObject({ instance, editor = false }: Props) {
+  switch (instance.type) {
     case ASSET_NAMES.Box:
-      return <Box object={object} editor={editor} />;
+      return (
+        <Box
+          params={instance.params as typeof ASSETS[ASSET_NAMES.Box]["params"]}
+          editor={editor}
+        />
+      );
     case ASSET_NAMES.Sphere:
-      return <Sphere object={object} editor={editor} />;
+      return (
+        <Sphere
+          params={
+            instance.params as typeof ASSETS[ASSET_NAMES.Sphere]["params"]
+          }
+          editor={editor}
+        />
+      );
     case ASSET_NAMES.Spawn:
       return <Spawn />;
     default:

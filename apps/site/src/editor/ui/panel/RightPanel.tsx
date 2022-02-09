@@ -1,13 +1,12 @@
 import { Paper } from "@mui/material";
-import { EditorObject } from "3d";
 
 import { useStore } from "../../state/useStore";
 
-import Packs from "./Packs";
-import Inspect from "./Inspect";
+import Packs from "./packs/Packs";
+import Inspect from "./inspect/Inspect";
 
 export default function RightPanel() {
-  const selected: EditorObject = useStore((state) => state.selected);
+  const selected = useStore((state) => state.selected);
 
   return (
     <Paper
@@ -15,7 +14,7 @@ export default function RightPanel() {
       variant="outlined"
       style={{ width: "100%", padding: "1rem", border: 0 }}
     >
-      {selected ? <Inspect key={selected.id} object={selected} /> : <Packs />}
+      {selected ? <Inspect key={selected.id} /> : <Packs />}
     </Paper>
   );
 }

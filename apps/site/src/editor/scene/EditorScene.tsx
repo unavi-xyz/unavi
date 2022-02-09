@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useThree } from "@react-three/fiber";
 import { OrbitControls, Sky, TransformControls } from "@react-three/drei";
-import { ASSETS, PROPERTIES, Ground } from "3d";
+import { Ground, PARAM_NAMES } from "3d";
 
 import { TOOLS, useStore } from "../state/useStore";
 
@@ -25,6 +25,7 @@ export default function EditorScene() {
   }
 
   function handleMouseUp() {
+    selected.save();
     setUsingGizmo(false);
   }
 
@@ -34,15 +35,13 @@ export default function EditorScene() {
       return;
     }
 
-    const properties = ASSETS[selected.params.type].properties;
-
     const hasType =
       tool === TOOLS.translate
-        ? properties.includes(PROPERTIES.position)
+        ? PARAM_NAMES.position in selected.instance.params
         : tool === TOOLS.rotate
-        ? properties.includes(PROPERTIES.rotation)
+        ? PARAM_NAMES.rotation in selected.instance.params
         : tool === TOOLS.scale
-        ? properties.includes(PROPERTIES.scale)
+        ? PARAM_NAMES.scale in selected.instance.params
         : false;
 
     setEnabled(hasType);

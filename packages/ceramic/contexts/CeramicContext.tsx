@@ -1,4 +1,4 @@
-import React, { ReactChild, useEffect, useState } from "react";
+import React, { ReactChild, useState } from "react";
 import { ThreeIdConnect, EthereumAuthProvider } from "@3id/connect";
 import { CeramicClient } from "@ceramicnetwork/http-client";
 import ThreeIdResolver from "@ceramicnetwork/3id-did-resolver";
@@ -16,7 +16,7 @@ export const loader = new TileLoader({ ceramic, cache: true });
 
 const defaultValue = {
   authenticated: false,
-  id: "",
+  id: undefined as string | undefined,
   connect: () => {},
   disconnect: () => {},
 };
@@ -24,14 +24,8 @@ const defaultValue = {
 export const CeramicContext = React.createContext(defaultValue);
 
 export function CeramicProvider({ children }: { children: ReactChild }) {
-  const [did, setDid] = useState(new DID({ resolver }));
-
   const [authenticated, setAuthenticated] = useState(false);
-  const [id, setId] = useState("");
-
-  useEffect(() => {
-    ceramic.did = did;
-  }, [did]);
+  const [id, setId] = useState<string>();
 
   async function connect() {
     const addresses = await window.ethereum.enable();
@@ -45,15 +39,16 @@ export function CeramicProvider({ children }: { children: ReactChild }) {
 
     const provider = await threeIdConnect.getDidProvider();
 
-    ceramic.did?.setProvider(provider);
-    await ceramic.did?.authenticate();
+    const did = new DID({ resolver });
+    did.setProvider(provider);
+    await did.authenticate();
+    ceramic.did = did;
 
     setAuthenticated(did.authenticated);
     setId(did.id);
   }
 
   function disconnect() {
-    setDid(new DID({ resolver }));
     setAuthenticated(false);
     setId("");
   }

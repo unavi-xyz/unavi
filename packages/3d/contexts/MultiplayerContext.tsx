@@ -1,4 +1,13 @@
-import React, { ReactChild, useEffect, useState } from "react";
+import { Triplet } from "@react-three/cannon";
+import { CeramicContext } from "ceramic";
+import React, {
+  Dispatch,
+  ReactChild,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { WebrtcProvider } from "y-webrtc";
 import * as Y from "yjs";
 
@@ -10,8 +19,14 @@ const SIGNALING_SERVERS = [
 
 interface ContextInterface {
   ydoc: Y.Doc | undefined;
+  setRoomId: Dispatch<SetStateAction<string | undefined>> | undefined;
+  publishLocation: ((position: Triplet, rotation: number) => void) | undefined;
 }
-const defaultContext: ContextInterface = { ydoc: undefined };
+const defaultContext: ContextInterface = {
+  ydoc: undefined,
+  setRoomId: undefined,
+  publishLocation: undefined,
+};
 
 export const MultiplayerContext = React.createContext(defaultContext);
 
@@ -20,11 +35,12 @@ interface Props {
 }
 
 export function MultiplayerProvider({ children }: Props) {
+  const { id } = useContext(CeramicContext);
+
   const [ydoc, setYdoc] = useState<Y.Doc>();
+  const [roomId, setRoomId] = useState<string>();
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get("room");
     if (!roomId) return;
 
     const doc = new Y.Doc();
@@ -44,11 +60,25 @@ export function MultiplayerProvider({ children }: Props) {
     return () => {
       doc.destroy();
     };
-  }, []);
+  }, [roomId]);
+
+  function publishLocation(position: Triplet, rotation: number) {
+    if (!ydoc || !id) return;
+
+    const map = ydoc.getMap("locations");
+
+    const object: LocationObject = { position, rotation };
+    map.set(id, object);
+  }
 
   return (
-    <MultiplayerContext.Provider value={{ ydoc }}>
+    <MultiplayerContext.Provider value={{ ydoc, setRoomId, publishLocation }}>
       {children}
     </MultiplayerContext.Provider>
   );
 }
+
+export type LocationObject = {
+  position: Triplet;
+  rotation: number;
+};

@@ -28,7 +28,7 @@ export default function EditorObject({ id }: Props) {
 
   return (
     <group ref={ref} onClick={handleClick}>
-      <InstancedObject object={object.params} editor />
+      <InstancedObject instance={object.instance} editor />
     </group>
   );
 }

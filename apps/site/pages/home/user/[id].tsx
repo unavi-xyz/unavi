@@ -18,7 +18,7 @@ export default function User() {
 
   const identicon = useIdenticon(id);
   const worlds = useWorlds(id);
-  const { profile } = useProfile(id);
+  const { profile, imageUrl } = useProfile(id);
 
   return (
     <span>
@@ -36,12 +36,13 @@ export default function User() {
             alignItems="end"
           >
             <img
-              src={identicon}
+              src={imageUrl ?? identicon}
               alt="profile picture"
               style={{
                 height: "20ch",
                 width: "20ch",
                 border: "4px solid black",
+                objectFit: "cover",
               }}
             />
 
@@ -65,7 +66,7 @@ export default function User() {
         <Divider />
 
         <Stack sx={{ padding: 4 }}>
-          {worlds && (
+          {worlds?.length > 0 && (
             <Typography variant="h4" sx={{ marginBottom: 4 }}>
               Worlds
             </Typography>

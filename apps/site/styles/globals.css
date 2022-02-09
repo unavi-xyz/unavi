@@ -6,7 +6,6 @@ body,
   background-color: #fbe8d3;
   height: 100%;
   margin: 0;
-  overflow: hidden;
 }
 
 .split {
@@ -99,4 +98,28 @@ a {
 .arrows path.a3 {
   animation-delay: 0s;
   -webkit-animation-delay: 0s; /* Safari Chrome */
+}
+
+.crosshair {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  mix-blend-mode: difference;
+}
+
+.crosshair::before {
+  content: "";
+  display: block;
+  height: 11px;
+  border-left: 1px solid #fff;
+  margin-bottom: -6px;
+}
+
+.crosshair::after {
+  content: "";
+  display: block;
+  width: 11px;
+  border-top: 1px solid #fff;
+  margin-left: -5px;
 }

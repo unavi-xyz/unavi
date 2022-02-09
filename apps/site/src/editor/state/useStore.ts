@@ -1,5 +1,5 @@
 import create from "zustand";
-import { EditorObject } from "3d";
+import { ASSET_NAMES, EditorObject } from "3d";
 
 export enum TOOLS {
   translate = "translate",
@@ -8,7 +8,7 @@ export enum TOOLS {
 }
 
 export const useStore = create((set: any) => ({
-  selected: null,
+  selected: undefined as EditorObject<ASSET_NAMES>,
   usingGizmo: false,
   tool: TOOLS.translate,
   playMode: false,
@@ -38,7 +38,7 @@ export const useStore = create((set: any) => ({
     });
   },
 
-  setSelected: (object: EditorObject) => {
+  setSelected: (object: EditorObject<ASSET_NAMES>) => {
     set((state) => {
       state.selected = object;
     });

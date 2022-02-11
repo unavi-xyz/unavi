@@ -25,9 +25,10 @@ export default function World() {
   const [name, setName] = useState("");
 
   useEffect(() => {
+    if (!world) return;
     if (world?.name?.length > 0) setName(world.name);
     else setName(id);
-  }, [id, world.name]);
+  }, [id, world]);
 
   async function handleNewRoom() {
     const room: Room = { worldStreamId: id };

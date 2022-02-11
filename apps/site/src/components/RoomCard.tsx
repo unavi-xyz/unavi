@@ -9,29 +9,33 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useIdenticon } from "ui";
-import { useWorld } from "ceramic";
+import { useRoom, useWorld } from "ceramic";
 
 interface Props {
   id: string;
 }
 
-export default function WorldCard({ id }: Props) {
-  const { world } = useWorld(id);
+export default function RoomCard({ id }: Props) {
+  const { room } = useRoom(id);
+  const { world } = useWorld(room?.worldStreamId);
   const identicon = useIdenticon(id);
 
   const [name, setName] = useState("");
 
   useEffect(() => {
-    if (world?.name?.length > 0) setName(world.name);
-    else setName(id);
-  }, [id, world.name]);
+    if (!room || !world) return;
 
-  if (!world) return <></>;
+    if (room?.name?.length > 0) setName(room.name);
+    else if (world?.name?.length > 0) setName(world.name);
+    else setName(id);
+  }, [id, room, world]);
+
+  if (!room) return <></>;
 
   return (
     <Grid item xs={12} sm={6} md={4}>
       <Card variant="outlined">
-        <Link href={`/home/world/${id}`} passHref>
+        <Link href={`/home/room/${id}`} passHref>
           <CardActionArea>
             <CardMedia
               component="img"

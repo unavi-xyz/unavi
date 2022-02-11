@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -14,14 +14,21 @@ export default function Room() {
 
   const { authenticated, id: userId } = useContext(CeramicContext);
 
-  const [open, setOpen] = useState(false);
-
   const identicon = useIdenticon(id);
   const { room, controller } = useRoom(id);
   const { world } = useWorld(room?.worldStreamId);
   const { profile } = useProfile(controller);
 
-  const name = room?.name ?? world?.name ?? id;
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    if (!room || !world) return;
+
+    if (room?.name?.length > 0) setName(room.name);
+    else if (world?.name?.length > 0) setName(world.name);
+    else setName(id);
+  }, [id, room, world]);
 
   return (
     <Grid container direction="column">

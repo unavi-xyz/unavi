@@ -40,12 +40,12 @@ export default function EditRoomModal({ open, handleClose }: Props) {
       //add tile to rooms did record
       const store = new DIDDataStore({ ceramic, model });
       const oldRooms = await store.get("rooms");
-      const newRooms = oldRooms ? [...oldRooms, id] : [id];
+      const newRooms = oldRooms ? [...Object.values(oldRooms), id] : [id];
       await store.set("rooms", newRooms, { pin: true });
     } else {
       //remove tile from rooms
       const store = new DIDDataStore({ ceramic, model });
-      const data = await store.get("rooms", userId);
+      const data = Object.values(await store.get("rooms", userId));
       const newRooms = data.filter((roomId) => roomId !== id);
       await store.set("rooms", newRooms, { pin: true });
     }

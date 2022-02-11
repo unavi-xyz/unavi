@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -22,6 +22,12 @@ export default function World() {
   const { profile } = useProfile(controller);
 
   const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    if (world?.name?.length > 0) setName(world.name);
+    else setName(id);
+  }, [id, world.name]);
 
   async function handleNewRoom() {
     const room: Room = { worldStreamId: id };
@@ -33,8 +39,6 @@ export default function World() {
     const url = `/home/room/${streamId}`;
     router.push(url);
   }
-
-  const name = world?.name ?? id;
 
   return (
     <Grid container direction="column">
@@ -87,7 +91,7 @@ export default function World() {
             {controller && (
               <>
                 <Typography variant="h6">By</Typography>
-                <Link href={`/home/user/${controller}`} passHref>
+                <Link href={`/home/user/${controller}/worlds`} passHref>
                   <Typography className="link" variant="h6">
                     {profile?.name ?? controller}
                   </Typography>

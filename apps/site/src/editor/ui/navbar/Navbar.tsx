@@ -65,7 +65,9 @@ export default function Navbar() {
     //add tile to worlds did record
     const store = new DIDDataStore({ ceramic, model: worldsModel });
     const oldWorlds = await store.get("worlds");
-    const newWorlds = oldWorlds ? [...oldWorlds, streamId] : [streamId];
+    const newWorlds = oldWorlds
+      ? [...Object.values(oldWorlds), streamId]
+      : [streamId];
     await store.set("worlds", newWorlds, { pin: true });
 
     router.push(`/home/world/${streamId}`);

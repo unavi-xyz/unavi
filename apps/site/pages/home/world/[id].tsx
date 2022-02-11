@@ -2,14 +2,11 @@ import { useContext, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { customAlphabet } from "nanoid";
 import { BackNavbar, useIdenticon } from "ui";
-import { CeramicContext, Room, loader, useScene, useProfile } from "ceramic";
+import { CeramicContext, Room, loader, useWorld, useProfile } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import EditWorldModal from "../../../src/components/EditWorldModal";
-
-const nanoid = customAlphabet("1234567890", 8);
 
 const roomModel = require("ceramic/models/Room/model.json");
 const roomSchemaId = roomModel.schemas.Scene;
@@ -21,14 +18,13 @@ export default function World() {
   const { id: userId, authenticated } = useContext(CeramicContext);
 
   const identicon = useIdenticon(id);
-  const { scene, author } = useScene(id);
-  const { profile } = useProfile(author);
+  const { world, controller } = useWorld(id);
+  const { profile } = useProfile(controller);
 
   const [open, setOpen] = useState(false);
 
   async function handleNewRoom() {
-    const name = `${scene.name}#${nanoid()}`;
-    const room: Room = { name, sceneStreamId: id };
+    const room: Room = { worldStreamId: id };
 
     //create tile
     const stream = await loader.create(room, { schema: roomSchemaId });
@@ -38,21 +34,23 @@ export default function World() {
     router.push(url);
   }
 
+  const name = world?.name ?? id;
+
   return (
     <Grid container direction="column">
       <EditWorldModal open={open} handleClose={() => setOpen(false)} />
 
       <Grid item>
         <BackNavbar
-          text={scene?.name}
+          text={`🌏 ${name}`}
           back
-          more={userId === author ? () => setOpen(true) : undefined}
+          more={userId === controller ? () => setOpen(true) : undefined}
         />
       </Grid>
 
       <Grid item>
         <img
-          src={scene?.image ?? identicon}
+          src={world?.image ?? identicon}
           alt="world image"
           style={{
             width: "100%",
@@ -71,7 +69,7 @@ export default function World() {
             alignItems="center"
           >
             <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-              {scene?.name}
+              {name}
             </Typography>
 
             <Button
@@ -86,19 +84,19 @@ export default function World() {
           </Stack>
 
           <Stack direction="row" alignItems="center" spacing={1}>
-            {author && (
+            {controller && (
               <>
                 <Typography variant="h6">By</Typography>
-                <Link href={`/home/user/${author}`} passHref>
+                <Link href={`/home/user/${controller}`} passHref>
                   <Typography className="link" variant="h6">
-                    {profile?.name ?? author}
+                    {profile?.name ?? controller}
                   </Typography>
                 </Link>
               </>
             )}
           </Stack>
 
-          <Typography>{scene?.description}</Typography>
+          <Typography>{world?.description}</Typography>
         </Stack>
       </Grid>
     </Grid>

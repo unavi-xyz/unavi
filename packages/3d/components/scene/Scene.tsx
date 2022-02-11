@@ -1,5 +1,4 @@
 import { Sky } from "@react-three/drei";
-import { Scene } from "ceramic";
 import { ASSET_NAMES, Ground, InstancedObject, SceneObject } from "../..";
 
 interface Props {

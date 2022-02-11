@@ -1,31 +1,43 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { BackNavbar, useIdenticon } from "ui";
-import { CeramicContext, useRoom, useScene } from "ceramic";
+import { CeramicContext, useProfile, useRoom, useWorld } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
+import EditRoomModal from "../../../src/components/EditRoomModal";
 
 export default function Room() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { authenticated } = useContext(CeramicContext);
+  const { authenticated, id: userId } = useContext(CeramicContext);
+
+  const [open, setOpen] = useState(false);
 
   const identicon = useIdenticon(id);
-  const room = useRoom(id);
-  const { scene } = useScene(room?.sceneStreamId);
+  const { room, controller } = useRoom(id);
+  const { world } = useWorld(room?.worldStreamId);
+  const { profile } = useProfile(controller);
+
+  const name = room?.name ?? world?.name ?? id;
 
   return (
     <Grid container direction="column">
+      <EditRoomModal open={open} handleClose={() => setOpen(false)} />
+
       <Grid item>
-        <BackNavbar text={room?.name} back />
+        <BackNavbar
+          text={`🚪 ${name}`}
+          back
+          more={userId === controller ? () => setOpen(true) : undefined}
+        />
       </Grid>
 
       <Grid item>
         <img
-          src={scene?.image ?? identicon}
+          src={world?.image ?? identicon}
           alt="world image"
           style={{
             width: "100%",
@@ -36,38 +48,45 @@ export default function Room() {
         />
       </Grid>
 
-      <Grid item sx={{ padding: 4 }}>
-        <Stack spacing={2}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
+      <Stack spacing={4} sx={{ padding: 4 }}>
+        <Link href={`/app?room=${id}`} passHref>
+          <Button
+            variant="contained"
+            color="secondary"
+            size="large"
+            fullWidth
+            disabled={!authenticated}
           >
-            <Link href={`/home/world/${room?.sceneStreamId}`} passHref>
-              <Typography
-                className="link"
-                variant="h4"
-                style={{ wordBreak: "break-word" }}
-              >
-                {room?.name}
-              </Typography>
-            </Link>
+            Join Room
+          </Button>
+        </Link>
 
-            <Link href={`/app?room=${id}`} passHref>
-              <Button
-                variant="contained"
-                color="secondary"
-                size="large"
-                disabled={!authenticated}
-              >
-                Join Room
-              </Button>
+        <Stack spacing={2}>
+          <Typography variant="h4" style={{ wordBreak: "break-word" }}>
+            {name}
+          </Typography>
+
+          <Stack direction="row" spacing={0.5}>
+            <Typography>World:</Typography>
+
+            <Link href={`/home/world/${room?.worldStreamId}`} passHref>
+              <Typography className="link" sx={{ fontWeight: "bold" }}>
+                {world?.name}
+              </Typography>
             </Link>
           </Stack>
 
-          <Typography>{scene?.description}</Typography>
+          <Stack direction="row" spacing={0.5}>
+            <Typography>Owner:</Typography>
+
+            <Link href={`/home/user/${controller}`} passHref>
+              <Typography className="link" sx={{ fontWeight: "bold" }}>
+                {profile?.name ?? controller}
+              </Typography>
+            </Link>
+          </Stack>
         </Stack>
-      </Grid>
+      </Stack>
     </Grid>
   );
 }

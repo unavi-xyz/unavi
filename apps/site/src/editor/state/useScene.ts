@@ -1,5 +1,5 @@
 import create from "zustand";
-import { Scene } from "ceramic";
+import { World } from "ceramic";
 import { ASSET_NAMES, EditorObject, ASSETS } from "3d";
 
 export interface EditorScene {
@@ -11,7 +11,7 @@ export const useScene = create((set: any, get: any) => ({
   scene: editorScene,
   spawn: [0, 0, 0],
 
-  setScene: (newScene: Scene) => {
+  setScene: (newScene: World) => {
     set((state) => {
       state.scene = newScene;
     });

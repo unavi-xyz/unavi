@@ -1,9 +1,9 @@
 {
   "definitions": {
-    "room": "kjzl6cwe1jw1462u9aqc72hgnwa2091vfs5m729dphebokux6kb9t67foztjtu4"
+    "room": "kjzl6cwe1jw146e099atyhdrpeqk1zmx6j31taojixf7j3rh1hmyknw3xzm97f6"
   },
   "schemas": {
-    "Room": "ceramic://k3y52l7qbv1frylneois493qa7h252lyqk7xxgqgxflng21j4kdpotgkdk78ht5hc"
+    "Room": "ceramic://k3y52l7qbv1frye4mtt29dv9gh53dxw4h27dt2bfhvycfasoo9m685i8o4hp2an0g"
   },
   "tiles": {}
 }

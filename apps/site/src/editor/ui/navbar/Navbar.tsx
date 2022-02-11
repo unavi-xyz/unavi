@@ -6,7 +6,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
 import { ColorIconButton } from "ui";
-import { CeramicContext, ceramic, loader, Scene } from "ceramic";
+import { CeramicContext, ceramic, loader, World } from "ceramic";
 import { ASSET_NAMES } from "3d";
 
 import { useStore } from "../../state/useStore";
@@ -15,10 +15,10 @@ import { EditorScene, useScene } from "../../state/useScene";
 import SceneName from "./SceneName";
 import Tools from "./Tools";
 
-const sceneModel = require("ceramic/models/Scene/model.json");
+const worldModel = require("ceramic/models/World/model.json");
 const worldsModel = require("ceramic/models/Worlds/model.json");
 
-const sceneSchemaId = sceneModel.schemas.Scene;
+const worldSchemaId = worldModel.schemas.World;
 
 export default function Navbar() {
   const router = useRouter();
@@ -52,12 +52,12 @@ export default function Navbar() {
 
     const spawn = getSpawn(scene);
 
-    const world: Scene = { name, description, image, spawn, objects };
+    const world: World = { name, description, image, spawn, scene: objects };
 
     //create tile
     const stream = await loader.create(
       world,
-      { schema: sceneSchemaId },
+      { schema: worldSchemaId },
       { pin: true }
     );
     const streamId = stream.id.toString();

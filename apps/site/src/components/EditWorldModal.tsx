@@ -3,7 +3,7 @@ import { Button, Stack, TextField } from "@mui/material";
 import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
 import { BasicModal } from "ui";
-import { ceramic, CeramicContext, useScene } from "ceramic";
+import { ceramic, CeramicContext, merge, unpin, useWorld } from "ceramic";
 
 const model = require("ceramic/models/Worlds/model.json");
 
@@ -18,21 +18,21 @@ export default function EditWorldModal({ open, handleClose }: Props) {
 
   const { id: userId } = useContext(CeramicContext);
 
-  const { scene, merge, abandon } = useScene(id);
+  const { world } = useWorld(id);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
   useEffect(() => {
-    if (!scene) return;
+    if (!world) return;
 
-    setName(scene.name ?? "");
-    setDescription(scene.description ?? "");
-  }, [scene]);
+    setName(world.name ?? "");
+    setDescription(world.description ?? "");
+  }, [world]);
 
   async function handleSave() {
     const newContent = { name, description };
-    await merge(newContent);
+    await merge(id, newContent);
 
     location.reload();
     handleClose();
@@ -40,7 +40,7 @@ export default function EditWorldModal({ open, handleClose }: Props) {
 
   async function handleDelete() {
     //unpin the tile
-    await abandon();
+    await unpin(id);
 
     //remove from user worlds
     const store = new DIDDataStore({ ceramic, model });

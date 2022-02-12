@@ -11,7 +11,7 @@ import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import { useRouter } from "next/router";
 import { customAlphabet } from "nanoid";
-import { BackNavbar } from "ui";
+import { HomeNavbar } from "ui";
 
 import HomeLayout from "../../src/layouts/HomeLayout";
 import SceneCard from "../../src/components/cards/SceneCard";
@@ -58,7 +58,7 @@ export default function Scenes() {
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text="Editor" />
+        <HomeNavbar text="Editor" />
       </Grid>
 
       <Stack

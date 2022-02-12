@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { Box, Button, Divider, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { BackNavbar, useIdenticon } from "ui";
+import { HomeNavbar, useIdenticon } from "ui";
 import { CeramicContext, useProfile } from "ceramic";
 
 import HomeLayout from "./HomeLayout";
@@ -26,7 +26,7 @@ export default function UserLayout({ children }) {
 
         <Grid container direction="column">
           <Grid item>
-            <BackNavbar text={profile?.name} back />
+            <HomeNavbar text={profile?.name} back />
           </Grid>
 
           <Stack spacing={2} sx={{ padding: 4 }}>

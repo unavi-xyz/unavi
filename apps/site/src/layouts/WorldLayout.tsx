@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Box, Button, Divider, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { BackNavbar, useIdenticon } from "ui";
+import { HomeNavbar, useIdenticon } from "ui";
 import { CeramicContext, useWorld, useProfile } from "ceramic";
 
 import HomeLayout from "./HomeLayout";
@@ -33,7 +33,7 @@ export default function WorldLayout({ children }) {
         <EditWorldModal open={open} handleClose={() => setOpen(false)} />
 
         <Grid item>
-          <BackNavbar
+          <HomeNavbar
             text={world?.name}
             emoji="🌏"
             back

@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Divider, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { BackNavbar, useIdenticon } from "ui";
+import { HomeNavbar, useIdenticon } from "ui";
 import { CeramicContext, useProfile, useRoom, useWorld } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
@@ -35,7 +35,7 @@ export default function Room() {
       <EditRoomModal open={open} handleClose={() => setOpen(false)} />
 
       <Grid item>
-        <BackNavbar
+        <HomeNavbar
           text={name}
           emoji="🚪"
           back

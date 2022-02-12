@@ -1,5 +1,5 @@
 import { Grid } from "@mui/material";
-import { BackNavbar } from "ui";
+import { HomeNavbar } from "ui";
 
 import HomeLayout from "../../src/layouts/HomeLayout";
 
@@ -7,7 +7,7 @@ export default function Rooms() {
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text="Rooms" />
+        <HomeNavbar text="Rooms" />
       </Grid>
     </Grid>
   );

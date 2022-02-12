@@ -1,5 +1,5 @@
 import { Grid, Link, Stack, Typography } from "@mui/material";
-import { BackNavbar } from "ui";
+import { HomeNavbar } from "ui";
 
 import { DISCORD_URL } from "../../src/constants";
 import HomeLayout from "../../src/layouts/HomeLayout";
@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text="Home" />
+        <HomeNavbar text="Home" />
       </Grid>
 
       <Grid item sx={{ padding: 4 }}>

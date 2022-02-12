@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button, Grid, Stack, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { BackNavbar, useIdenticon } from "ui";
+import { HomeNavbar, useIdenticon } from "ui";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import EditSceneModal from "../../../src/components/modals/EditSceneModal";
@@ -27,7 +27,7 @@ export default function Scene() {
       <EditSceneModal id={id} open={open} handleClose={() => setOpen(false)} />
 
       <Grid item>
-        <BackNavbar
+        <HomeNavbar
           text={name ?? id}
           emoji="🚧"
           href="/home/scenes"

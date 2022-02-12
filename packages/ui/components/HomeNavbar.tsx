@@ -12,7 +12,7 @@ interface Props {
   more?: undefined | (() => void);
 }
 
-export function BackNavbar({ text = "", emoji = "", href, back, more }: Props) {
+export function HomeNavbar({ text = "", emoji = "", href, back, more }: Props) {
   const [prevPath, setPrevPath] = useState("/home");
 
   useEffect(() => {
@@ -38,29 +38,36 @@ export function BackNavbar({ text = "", emoji = "", href, back, more }: Props) {
       alignItems="center"
       sx={{
         borderBottom: "1px solid rgba(0,0,0,.1)",
-        paddingLeft: back || href ? 0.5 : 2,
+        paddingLeft: back || href ? 0.5 : 3,
         paddingRight: 1,
         height: "50px",
       }}
     >
-      <Grid item xs>
-        {back && (
-          <Link href={prevPath} passHref>
-            <IconButton onClick={onBack}>
-              <ArrowBackIosNewIcon />
-            </IconButton>
-          </Link>
-        )}
-        {href && (
-          <Link href={href} passHref>
-            <IconButton>
-              <ArrowBackIosNewIcon />
-            </IconButton>
-          </Link>
-        )}
-      </Grid>
+      {(back || href) && (
+        <Grid item xs>
+          {back && (
+            <Link href={prevPath} passHref>
+              <IconButton onClick={onBack}>
+                <ArrowBackIosNewIcon />
+              </IconButton>
+            </Link>
+          )}
+          {href && (
+            <Link href={href} passHref>
+              <IconButton>
+                <ArrowBackIosNewIcon />
+              </IconButton>
+            </Link>
+          )}
+        </Grid>
+      )}
 
-      <Grid item xs container justifyContent="center">
+      <Grid
+        item
+        xs
+        container
+        justifyContent={back || href ? "center" : "flex-start"}
+      >
         <Stack direction="row" spacing={1}>
           <Typography variant="h6" align="center">
             {emoji}

@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useRooms } from "ceramic";
 
 import UserLayout from "../../../../src/layouts/UserLayout";
-import RoomCard from "../../../../src/components/RoomCard";
+import RoomCard from "../../../../src/components/cards/RoomCard";
 
 export default function Rooms() {
   const router = useRouter();

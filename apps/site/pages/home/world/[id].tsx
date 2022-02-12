@@ -6,7 +6,7 @@ import { BackNavbar, useIdenticon } from "ui";
 import { CeramicContext, Room, loader, useWorld, useProfile } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import EditWorldModal from "../../../src/components/EditWorldModal";
+import EditWorldModal from "../../../src/components/modals/EditWorldModal";
 
 const roomModel = require("ceramic/models/Room/model.json");
 const roomSchemaId = roomModel.schemas.Scene;

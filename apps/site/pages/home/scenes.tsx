@@ -14,7 +14,7 @@ import { customAlphabet } from "nanoid";
 import { BackNavbar } from "ui";
 
 import HomeLayout from "../../src/layouts/HomeLayout";
-import SceneCard from "../../src/components/SceneCard";
+import SceneCard from "../../src/components/cards/SceneCard";
 
 const nanoid = customAlphabet("1234567890", 16);
 
@@ -53,11 +53,6 @@ export default function Scenes() {
     localStorage.setItem(`${id}-scene`, startingScene);
 
     router.push(`/home/scene/${id}`);
-  }
-
-  function onDelete(id: string) {
-    const newScenes = scenes.filter((scene) => scene !== id);
-    setScenes(newScenes);
   }
 
   return (
@@ -125,7 +120,7 @@ export default function Scenes() {
         ) : (
           <Grid container spacing={3}>
             {scenes.map((id) => {
-              return <SceneCard key={id} id={id} onDelete={onDelete} />;
+              return <SceneCard key={id} id={id} />;
             })}
           </Grid>
         )}

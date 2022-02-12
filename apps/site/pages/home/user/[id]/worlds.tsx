@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useWorlds } from "ceramic";
 
 import UserLayout from "../../../../src/layouts/UserLayout";
-import WorldCard from "../../../../src/components/WorldCard";
+import WorldCard from "../../../../src/components/cards/WorldCard";
 
 export default function Worlds() {
   const router = useRouter();

@@ -5,13 +5,15 @@ import { useRouter } from "next/router";
 import { BackNavbar, useIdenticon } from "ui";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
+import EditSceneModal from "../../../src/components/modals/EditSceneModal";
 
 export default function Scene() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const [preview, setPreview] = useState<null | string>();
-  const [name, setName] = useState<null | string>();
+  const [preview, setPreview] = useState<string>();
+  const [name, setName] = useState<string>();
+  const [open, setOpen] = useState(false);
 
   const identicon = useIdenticon(id);
 
@@ -22,8 +24,14 @@ export default function Scene() {
 
   return (
     <Grid container direction="column">
+      <EditSceneModal id={id} open={open} handleClose={() => setOpen(false)} />
+
       <Grid item>
-        <BackNavbar text={`🚧 ${name ?? id}`} href="/home/scenes" />
+        <BackNavbar
+          text={`🚧 ${name ?? id}`}
+          href="/home/scenes"
+          more={() => setOpen(true)}
+        />
       </Grid>
 
       <Grid item>

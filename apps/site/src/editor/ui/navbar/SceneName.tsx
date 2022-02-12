@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Button, Stack, TextField, Typography, useTheme } from "@mui/material";
+import { Stack, Typography, useTheme } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import { BasicModal } from "ui";
+import EditSceneModal from "../../../components/modals/EditSceneModal";
 
 interface Props {
   id: string;
@@ -12,17 +12,11 @@ export default function SceneName({ id }: Props) {
 
   const [hover, setHover] = useState(false);
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [displayedName, setDisplayedName] = useState("");
 
   useEffect(() => {
     const name = localStorage.getItem(`${id}-name`) ?? "";
-    setName(name);
     setDisplayedName(name);
-
-    const description = localStorage.getItem(`${id}-description`) ?? "";
-    setDescription(description);
   }, [id]);
 
   function handleMouseOver() {
@@ -33,41 +27,17 @@ export default function SceneName({ id }: Props) {
     setHover(false);
   }
 
-  function handleClick() {
-    setOpen(true);
-  }
-
-  function handleClose() {
-    setName(localStorage.getItem(`${id}-name`) ?? "");
-    setDescription(localStorage.getItem(`${id}-description`) ?? "");
-    setOpen(false);
-  }
-
-  function handleNameChange(e: any) {
-    setName(e.target.value);
-  }
-
-  function handleDescriptionChange(e: any) {
-    setDescription(e.target.value);
-  }
-
-  async function handleSave() {
-    localStorage.setItem(`${id}-name`, name);
-    localStorage.setItem(`${id}-description`, description);
-
-    setDisplayedName(name);
-    handleClose();
-  }
-
   return (
     <div>
+      <EditSceneModal id={id} open={open} handleClose={() => setOpen(false)} />
+
       <Stack
         className="clickable"
         direction="row"
         alignItems="center"
         spacing={1}
         style={{ marginLeft: 5 }}
-        onClick={handleClick}
+        onClick={() => setOpen(true)}
       >
         <Typography variant="h6">{displayedName}</Typography>
 
@@ -81,41 +51,6 @@ export default function SceneName({ id }: Props) {
           }}
         />
       </Stack>
-
-      <BasicModal open={open} handleClose={handleClose} title="Scene Details">
-        <TextField
-          variant="standard"
-          label="Title"
-          value={name}
-          onChange={handleNameChange}
-        />
-
-        <TextField
-          variant="standard"
-          label="Description"
-          value={description}
-          onChange={handleDescriptionChange}
-        />
-
-        <Stack direction="row" spacing={1}>
-          <Button
-            variant="contained"
-            color="info"
-            sx={{ width: "100%" }}
-            onClick={handleClose}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            sx={{ width: "100%" }}
-            onClick={handleSave}
-          >
-            Save
-          </Button>
-        </Stack>
-      </BasicModal>
     </div>
   );
 }

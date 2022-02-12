@@ -6,7 +6,7 @@ import { BackNavbar, useIdenticon } from "ui";
 import { CeramicContext, useProfile } from "ceramic";
 
 import HomeLayout from "./HomeLayout";
-import EditProfileModal from "../components/EditProfileModal";
+import EditProfileModal from "../components/modals/EditProfileModal";
 
 export default function UserLayout({ children }) {
   const router = useRouter();

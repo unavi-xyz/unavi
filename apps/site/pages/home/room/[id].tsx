@@ -6,7 +6,7 @@ import { BackNavbar, useIdenticon } from "ui";
 import { CeramicContext, useProfile, useRoom, useWorld } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
-import EditRoomModal from "../../../src/components/EditRoomModal";
+import EditRoomModal from "../../../src/components/modals/EditRoomModal";
 
 export default function Room() {
   const router = useRouter();

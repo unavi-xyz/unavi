@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
-import { IconButton, Stack, Typography } from "@mui/material";
+import { Grid, IconButton, Stack, Typography } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import Link from "next/link";
 
 interface Props {
   text?: string;
+  emoji?: string;
   href?: string;
   back?: boolean;
   more?: undefined | (() => void);
 }
 
-export function BackNavbar({ text = "", href, back, more }: Props) {
+export function BackNavbar({ text = "", emoji = "", href, back, more }: Props) {
   const [prevPath, setPrevPath] = useState("/home");
 
   useEffect(() => {
@@ -31,10 +32,10 @@ export function BackNavbar({ text = "", href, back, more }: Props) {
   }
 
   return (
-    <Stack
+    <Grid
+      container
       direction="row"
       alignItems="center"
-      justifyContent="space-between"
       sx={{
         borderBottom: "1px solid rgba(0,0,0,.1)",
         paddingLeft: back || href ? 0.5 : 2,
@@ -42,7 +43,7 @@ export function BackNavbar({ text = "", href, back, more }: Props) {
         height: "50px",
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1}>
+      <Grid item xs>
         {back && (
           <Link href={prevPath} passHref>
             <IconButton onClick={onBack}>
@@ -50,7 +51,6 @@ export function BackNavbar({ text = "", href, back, more }: Props) {
             </IconButton>
           </Link>
         )}
-
         {href && (
           <Link href={href} passHref>
             <IconButton>
@@ -58,15 +58,27 @@ export function BackNavbar({ text = "", href, back, more }: Props) {
             </IconButton>
           </Link>
         )}
+      </Grid>
 
-        <Typography variant="h5">{text}</Typography>
-      </Stack>
+      <Grid item xs container justifyContent="center">
+        <Stack direction="row" spacing={1}>
+          <Typography variant="h6" align="center">
+            {emoji}
+          </Typography>
 
-      {more && (
-        <IconButton onClick={more}>
-          <MoreHorizIcon />
-        </IconButton>
-      )}
-    </Stack>
+          <Typography variant="h6" align="center">
+            {text}
+          </Typography>
+        </Stack>
+      </Grid>
+
+      <Grid item xs container justifyContent="flex-end">
+        {more && (
+          <IconButton onClick={more}>
+            <MoreHorizIcon />
+          </IconButton>
+        )}
+      </Grid>
+    </Grid>
   );
 }

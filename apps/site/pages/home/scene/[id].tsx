@@ -28,7 +28,8 @@ export default function Scene() {
 
       <Grid item>
         <BackNavbar
-          text={`🚧 ${name ?? id}`}
+          text={name ?? id}
+          emoji="🚧"
           href="/home/scenes"
           more={() => setOpen(true)}
         />

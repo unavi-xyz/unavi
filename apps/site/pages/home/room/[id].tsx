@@ -36,7 +36,8 @@ export default function Room() {
 
       <Grid item>
         <BackNavbar
-          text={`🚪 ${name}`}
+          text={name}
+          emoji="🚪"
           back
           more={userId === controller ? () => setOpen(true) : undefined}
         />

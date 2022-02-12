@@ -23,7 +23,7 @@ export default function Scene() {
   return (
     <Grid container direction="column">
       <Grid item>
-        <BackNavbar text={name ?? id} href="/home/scenes" />
+        <BackNavbar text={`🚧 ${name ?? id}`} href="/home/scenes" />
       </Grid>
 
       <Grid item>

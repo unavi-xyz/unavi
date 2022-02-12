@@ -8,6 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 import { useRouter } from "next/router";
 import { customAlphabet } from "nanoid";
 import { BackNavbar } from "ui";
@@ -21,8 +22,25 @@ export default function Scenes() {
   const router = useRouter();
 
   const [scenes, setScenes] = useState([]);
+  const [uploaded, setUploaded] = useState<File>();
 
-  async function handleNewScene() {
+  useEffect(() => {
+    const str = localStorage.getItem("scenes") ?? "[]";
+    const list = JSON.parse(str);
+    setScenes(list);
+  }, []);
+
+  useEffect(() => {
+    if (!uploaded) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => handleNewScene(e.target.result as string);
+    reader.readAsText(uploaded);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploaded]);
+
+  async function handleNewScene(startingScene = "[]") {
     const id = nanoid();
 
     const str = localStorage.getItem("scenes");
@@ -32,16 +50,10 @@ export default function Scenes() {
 
     localStorage.setItem("scenes", JSON.stringify(list));
     localStorage.setItem(`${id}-name`, "New Scene");
-    localStorage.setItem(`${id}-scene`, JSON.stringify([]));
+    localStorage.setItem(`${id}-scene`, startingScene);
 
     router.push(`/home/scene/${id}`);
   }
-
-  useEffect(() => {
-    const str = localStorage.getItem("scenes") ?? "[]";
-    const list = JSON.parse(str);
-    setScenes(list);
-  }, []);
 
   function onDelete(id: string) {
     const newScenes = scenes.filter((scene) => scene !== id);
@@ -57,18 +69,39 @@ export default function Scenes() {
       <Stack
         direction="row"
         alignItems="center"
-        spacing={1}
+        justifyContent="space-between"
         sx={{ padding: 4, paddingBottom: 0 }}
       >
         <Typography variant="h4">Scenes</Typography>
 
-        <span>
-          <Tooltip title="New Scene">
-            <IconButton onClick={handleNewScene}>
-              <AddBoxOutlinedIcon />
-            </IconButton>
-          </Tooltip>
-        </span>
+        <Stack direction="row" spacing={1}>
+          <div>
+            <input
+              accept="application/json"
+              style={{ display: "none" }}
+              id="scene-import-input"
+              multiple
+              type="file"
+              onChange={(e) => setUploaded(e.target.files[0])}
+            />
+
+            <label htmlFor="scene-import-input">
+              <Tooltip title="Import Scene">
+                <IconButton component="span">
+                  <FileUploadIcon />
+                </IconButton>
+              </Tooltip>
+            </label>
+          </div>
+
+          <span>
+            <Tooltip title="New Scene">
+              <IconButton onClick={() => handleNewScene()}>
+                <AddBoxOutlinedIcon />
+              </IconButton>
+            </Tooltip>
+          </span>
+        </Stack>
       </Stack>
 
       <Box sx={{ padding: 4 }}>
@@ -82,7 +115,7 @@ export default function Scenes() {
                 className="link"
                 color="secondary"
                 component="span"
-                onClick={handleNewScene}
+                onClick={() => handleNewScene()}
               >
                 Click Here
               </Typography>{" "}

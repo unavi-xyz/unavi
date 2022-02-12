@@ -77,6 +77,12 @@ export default function Navbar() {
     setPlayMode(true);
   }
 
+  function handleDownload() {
+    save();
+    const json = toJSON();
+    downloadJson(json, "scene.json");
+  }
+
   return (
     <Paper square variant="outlined" style={{ padding: "0.2rem" }}>
       <Grid container alignItems="center">
@@ -106,7 +112,7 @@ export default function Navbar() {
                 <VisibilityIcon className="NavbarIcon" />
               </ColorIconButton>
 
-              <ColorIconButton tooltip="Download">
+              <ColorIconButton onClick={handleDownload} tooltip="Download">
                 <DownloadIcon className="NavbarIcon" />
               </ColorIconButton>
             </Stack>
@@ -146,4 +152,11 @@ function getSpawn(scene: EditorScene) {
   const spawn = object.instance.params.position;
   spawn[1] += 2;
   return spawn;
+}
+
+function downloadJson(text, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  a.download = name;
+  a.click();
 }

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Button, Grid, Stack, Typography } from "@mui/material";
+import { Button, Divider, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { BackNavbar, useIdenticon } from "ui";
@@ -56,26 +56,40 @@ export default function Room() {
         />
       </Grid>
 
-      <Stack spacing={4} sx={{ padding: 4 }}>
+      <Grid item sx={{ padding: 4 }}>
+        <Typography
+          variant="h4"
+          align="center"
+          style={{ wordBreak: "break-word" }}
+        >
+          {name}
+        </Typography>
+      </Grid>
+
+      <Grid item sx={{ padding: 4, paddingTop: 0 }}>
         <Link href={`/app?room=${id}`} passHref>
           <Button
             variant="contained"
             color="secondary"
             size="large"
-            fullWidth
             disabled={!authenticated}
+            fullWidth
           >
             Join Room
           </Button>
         </Link>
+      </Grid>
 
+      <Stack direction="row" justifyContent="space-around">
+        <Tab text="About" href={`/home/room/${id}`} />
+      </Stack>
+
+      <Divider />
+
+      <Stack spacing={4} sx={{ padding: 4 }}>
         <Stack spacing={2}>
-          <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-            {name}
-          </Typography>
-
           <Stack direction="row" spacing={0.5}>
-            <Typography>World:</Typography>
+            <Typography>🌏 World:</Typography>
 
             <Link href={`/home/world/${room?.worldStreamId}`} passHref>
               <Typography className="link" sx={{ fontWeight: "bold" }}>
@@ -85,7 +99,7 @@ export default function Room() {
           </Stack>
 
           <Stack direction="row" spacing={0.5}>
-            <Typography>Owner:</Typography>
+            <Typography>🔒 Room controller:</Typography>
 
             <Link href={`/home/user/${controller}`} passHref>
               <Typography className="link" sx={{ fontWeight: "bold" }}>
@@ -100,3 +114,24 @@ export default function Room() {
 }
 
 Room.Layout = HomeLayout;
+
+function Tab({ text, href }: { text: string; href: string }) {
+  const router = useRouter();
+  const selected = router.asPath === href;
+
+  return (
+    <Link href={href} passHref>
+      <Button
+        size="large"
+        fullWidth
+        sx={{
+          fontWeight: selected ? "bold" : undefined,
+          borderRadius: 0,
+          color: "black",
+        }}
+      >
+        {text}
+      </Button>
+    </Link>
+  );
+}

@@ -34,7 +34,7 @@ export default function RoomCard({ id }: Props) {
 
   return (
     <Grid item xs={12} sm={6} md={4}>
-      <Card variant="outlined">
+      <Card variant="outlined" sx={{ borderRadius: 0 }}>
         <Link href={`/home/room/${id}`} passHref>
           <CardActionArea>
             <CardMedia
@@ -44,7 +44,7 @@ export default function RoomCard({ id }: Props) {
             />
             <CardContent style={{ borderTop: "1px solid rgba(0,0,0,0.12)" }}>
               <Typography style={{ wordBreak: "break-word" }}>
-                {name}
+                🚪 {name}
               </Typography>
             </CardContent>
           </CardActionArea>

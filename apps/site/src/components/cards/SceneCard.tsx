@@ -27,7 +27,7 @@ export default function SceneCard({ id }: Props) {
 
   return (
     <Grid item xs={12} sm={6}>
-      <Card variant="outlined">
+      <Card variant="outlined" sx={{ borderRadius: 0 }}>
         <Link href={`/home/scene/${id}`} passHref>
           <CardActionArea>
             <CardMedia
@@ -36,7 +36,7 @@ export default function SceneCard({ id }: Props) {
               image={preview ?? identicon}
             />
             <CardContent sx={{ p: 2, borderTop: "1px solid rgba(0,0,0,0.12)" }}>
-              <Typography>{name ?? id}</Typography>
+              <Typography>🚧 {name ?? id}</Typography>
             </CardContent>
           </CardActionArea>
         </Link>

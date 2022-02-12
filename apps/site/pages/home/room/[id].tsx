@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Box, Button, Divider, Stack, Typography } from "@mui/material";
+import { Box, Button, Divider, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { HomeNavbar, useIdenticon } from "ui";
@@ -62,72 +62,50 @@ export default function Room() {
         </Typography>
       </Box>
 
-      <Box sx={{ padding: 4, paddingTop: 0 }}>
-        <Link href={`/app?room=${id}`} passHref>
-          <Button
-            variant="contained"
-            color="secondary"
-            size="large"
-            disabled={!authenticated}
-            fullWidth
-          >
-            Join Room
-          </Button>
-        </Link>
-      </Box>
-
-      <Stack direction="row" justifyContent="space-around">
-        <Tab text="About" href={`/home/room/${id}`} />
-      </Stack>
-
       <Divider />
 
-      <Stack spacing={4} sx={{ padding: 4 }}>
-        <Stack spacing={2}>
-          <Stack direction="row" spacing={0.5}>
-            <Typography>🌏 World:</Typography>
+      <Grid container sx={{ padding: 4 }}>
+        <Grid item xs>
+          <Stack spacing={4}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={0.5}>
+                <Typography>🌏 World:</Typography>
 
-            <Link href={`/home/world/${room?.worldStreamId}`} passHref>
-              <Typography className="link" sx={{ fontWeight: "bold" }}>
-                {world?.name}
-              </Typography>
-            </Link>
+                <Link href={`/home/world/${room?.worldStreamId}`} passHref>
+                  <Typography className="link" sx={{ fontWeight: "bold" }}>
+                    {world?.name}
+                  </Typography>
+                </Link>
+              </Stack>
+
+              <Stack direction="row" spacing={0.5}>
+                <Typography>🔒 Room controller:</Typography>
+
+                <Link href={`/home/user/${controller}`} passHref>
+                  <Typography className="link" sx={{ fontWeight: "bold" }}>
+                    {profile?.name ?? controller}
+                  </Typography>
+                </Link>
+              </Stack>
+            </Stack>
           </Stack>
+        </Grid>
 
-          <Stack direction="row" spacing={0.5}>
-            <Typography>🔒 Room controller:</Typography>
-
-            <Link href={`/home/user/${controller}`} passHref>
-              <Typography className="link" sx={{ fontWeight: "bold" }}>
-                {profile?.name ?? controller}
-              </Typography>
-            </Link>
-          </Stack>
-        </Stack>
-      </Stack>
+        <Grid item xs>
+          <Link href={`/app?room=${id}`} passHref>
+            <Button
+              variant="contained"
+              color="secondary"
+              disabled={!authenticated}
+              fullWidth
+            >
+              Join Room
+            </Button>
+          </Link>
+        </Grid>
+      </Grid>
     </div>
   );
 }
 
 Room.Layout = HomeLayout;
-
-function Tab({ text, href }: { text: string; href: string }) {
-  const router = useRouter();
-  const selected = router.asPath === href;
-
-  return (
-    <Link href={href} passHref>
-      <Button
-        size="large"
-        fullWidth
-        sx={{
-          fontWeight: selected ? "bold" : undefined,
-          borderRadius: 0,
-          color: "black",
-        }}
-      >
-        {text}
-      </Button>
-    </Link>
-  );
-}

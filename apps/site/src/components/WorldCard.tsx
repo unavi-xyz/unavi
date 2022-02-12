@@ -22,9 +22,10 @@ export default function WorldCard({ id }: Props) {
   const [name, setName] = useState("");
 
   useEffect(() => {
-    if (world?.name?.length > 0) setName(world.name);
+    if (!world) return;
+    if (world.name?.length > 0) setName(world.name);
     else setName(id);
-  }, [id, world.name]);
+  }, [id, world]);
 
   if (!world) return <></>;
 

@@ -1,5 +1,5 @@
 {
-  "title": "Scene",
+  "title": "World",
   "type": "object",
   "properties": {
     "name": {
@@ -13,7 +13,7 @@
     "image": {
       "type": "string"
     },
-    "objects": {
+    "scene": {
       "type": "string"
     }
   },

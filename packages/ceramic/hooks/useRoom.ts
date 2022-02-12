@@ -6,10 +6,12 @@ export function useRoom(id: string) {
     if (!id) return;
     const doc = await loader.load(id);
     const room = doc.content as Room;
-    return room;
+    const controller = doc.controllers[0];
+
+    return { room, controller };
   }
 
   const { data } = useSWR(`room-${id}`, fetcher);
 
-  return data;
+  return data ?? { room: undefined, controller: undefined };
 }

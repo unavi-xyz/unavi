@@ -1,11 +1,12 @@
 import { Triplet } from "@react-three/cannon";
 import { ASSET_NAMES, SceneObject } from "3d";
-export interface Scene {
+
+export interface World {
   name?: string;
   description?: string;
   image?: string;
 
   spawn?: Triplet;
 
-  objects: SceneObject<ASSET_NAMES>[];
+  scene: SceneObject<ASSET_NAMES>[];
 }

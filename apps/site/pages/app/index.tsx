@@ -5,7 +5,7 @@ import { useContextBridge } from "@react-three/drei";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { Group } from "three";
-import { CeramicContext, useRoom, useScene } from "ceramic";
+import { CeramicContext, useRoom, useWorld } from "ceramic";
 import {
   Multiplayer,
   MultiplayerProvider,
@@ -26,12 +26,12 @@ export default function App() {
   const router = useRouter();
   const roomId = router.query.room as string;
 
-  const world = useRef<Group>();
+  const floor = useRef<Group>();
 
-  const room = useRoom(roomId);
-  const { scene } = useScene(room?.sceneStreamId);
+  const { room } = useRoom(roomId);
+  const { world } = useWorld(room?.worldStreamId);
 
-  if (!scene) return <div>Loading...</div>;
+  if (!world) return <div>Loading...</div>;
 
   return (
     <div className="App">
@@ -45,10 +45,10 @@ export default function App() {
         <ContextBridge>
           <MultiplayerProvider>
             <Physics>
-              <Player world={world} spawn={scene.spawn} />
+              <Player world={floor} spawn={world.spawn} />
               <Multiplayer roomId={roomId} />
-              <group ref={world}>
-                <Scene objects={scene?.objects} />
+              <group ref={floor}>
+                <Scene objects={world?.scene} />
               </group>
             </Physics>
           </MultiplayerProvider>

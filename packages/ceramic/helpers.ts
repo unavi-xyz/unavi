@@ -1,7 +1,17 @@
-export function shortenDid(did: string) {
-  const chars = 4;
-  return `${did.slice(0, chars + 6)}...${did.slice(
-    did.length - chars,
-    did.length
-  )}`;
+import { loader } from ".";
+
+export async function merge(id: string, data: any, pin = false) {
+  const doc = await loader.load(id);
+  const newContent = Object.assign(doc.content, data);
+  await doc.update(newContent, undefined, { pin });
+}
+
+export async function pin(id: string) {
+  const doc = await loader.load(id);
+  await doc.update(doc.content, undefined, { pin: true });
+}
+
+export async function unpin(id: string) {
+  const doc = await loader.load(id);
+  await doc.update(doc.content, undefined, { pin: false });
 }

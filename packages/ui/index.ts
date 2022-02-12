@@ -1,4 +1,4 @@
-export * from "./components/BackNavbar";
+export * from "./components/HomeNavbar";
 export * from "./components/BasicModal";
 export * from "./components/ColorIconButton";
 export * from "./components/Sidebar";

@@ -1,14 +1,14 @@
 import { useContext, useState } from "react";
-import { Button, Divider, Grid, Stack, Typography } from "@mui/material";
+import { Box, Button, Divider, Grid, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
-import { BackNavbar, useIdenticon } from "ui";
-import { CeramicContext, useProfile, useWorlds } from "ceramic";
+import Link from "next/link";
+import { HomeNavbar, useIdenticon } from "ui";
+import { CeramicContext, useProfile } from "ceramic";
 
-import HomeLayout from "../../../src/layouts/HomeLayout";
-import WorldCard from "../../../src/components/WorldCard";
-import EditProfileModal from "../../../src/components/EditProfileModal";
+import HomeLayout from "./HomeLayout";
+import EditProfileModal from "../components/modals/EditProfileModal";
 
-export default function User() {
+export default function UserLayout({ children }) {
   const router = useRouter();
   const id = router.query.id as string;
 
@@ -17,17 +17,14 @@ export default function User() {
   const [open, setOpen] = useState(false);
 
   const identicon = useIdenticon(id);
-  const worlds = useWorlds(id);
   const { profile, imageUrl } = useProfile(id);
 
   return (
-    <span>
-      <EditProfileModal open={open} handleClose={() => setOpen(false)} />
+    <HomeLayout>
+      <span>
+        <EditProfileModal open={open} handleClose={() => setOpen(false)} />
 
-      <Grid container direction="column">
-        <Grid item>
-          <BackNavbar text={profile?.name} back />
-        </Grid>
+        <HomeNavbar text={profile?.name} back />
 
         <Stack spacing={2} sx={{ padding: 4 }}>
           <Stack
@@ -63,23 +60,37 @@ export default function User() {
           <Typography variant="body1">{profile?.description}</Typography>
         </Stack>
 
+        <Stack direction="row" justifyContent="space-around">
+          <Tab text="Feed" href={`/home/user/${id}`} />
+          <Tab text="Worlds" href={`/home/user/${id}/worlds`} />
+          <Tab text="Rooms" href={`/home/user/${id}/rooms`} />
+        </Stack>
+
         <Divider />
 
-        <Stack sx={{ padding: 4 }}>
-          {worlds?.length > 0 && (
-            <Typography variant="h4" sx={{ marginBottom: 4 }}>
-              Worlds
-            </Typography>
-          )}
-          <Grid container spacing={2}>
-            {worlds?.map((id) => {
-              return <WorldCard key={id} id={id} />;
-            })}
-          </Grid>
-        </Stack>
-      </Grid>
-    </span>
+        <Box sx={{ padding: 4 }}>{children}</Box>
+      </span>
+    </HomeLayout>
   );
 }
 
-User.Layout = HomeLayout;
+function Tab({ text, href }: { text: string; href: string }) {
+  const router = useRouter();
+  const selected = router.asPath === href;
+
+  return (
+    <Link href={href} passHref>
+      <Button
+        size="large"
+        fullWidth
+        sx={{
+          fontWeight: selected ? "bold" : undefined,
+          borderRadius: 0,
+          color: "black",
+        }}
+      >
+        {text}
+      </Button>
+    </Link>
+  );
+}

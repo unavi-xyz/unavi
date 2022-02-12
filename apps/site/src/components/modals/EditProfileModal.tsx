@@ -31,36 +31,40 @@ export default function EditProfileModal({ open, handleClose }: Props) {
   }, [profile]);
 
   async function handleSave() {
-    //upload image to IPFS
-    const body = new FormData();
-    body.append("path", image, image.name);
-    const res = await fetch(`https://ipfs.infura.io:5001/api/v0/add`, {
-      method: "POST",
-      body,
-    });
+    if (image) {
+      //upload image to IPFS
+      const body = new FormData();
+      body.append("path", image, image.name);
+      const res = await fetch(`https://ipfs.infura.io:5001/api/v0/add`, {
+        method: "POST",
+        body,
+      });
 
-    const { Hash } = await res.json();
+      const { Hash } = await res.json();
 
-    const testt = new Image();
-    testt.src = URL.createObjectURL(image);
+      const testt = new Image();
+      testt.src = URL.createObjectURL(image);
 
-    testt.onload = async () => {
-      //update ceramic basic profile
-      const imageObject: ImageSources = {
-        original: {
-          src: "ipfs://" + Hash,
-          height: testt.height,
-          width: testt.width,
-          mimeType: image.type,
-          size: image.size,
-        },
+      testt.onload = async () => {
+        //update basic profile
+        const imageObject: ImageSources = {
+          original: {
+            src: "ipfs://" + Hash,
+            height: testt.height,
+            width: testt.width,
+            mimeType: image.type,
+            size: image.size,
+          },
+        };
+
+        await merge({ image: imageObject });
       };
+    }
 
-      await merge({ name, description, image: imageObject });
+    await merge({ name, description });
 
-      location.reload();
-      handleClose();
-    };
+    location.reload();
+    handleClose();
   }
 
   return (

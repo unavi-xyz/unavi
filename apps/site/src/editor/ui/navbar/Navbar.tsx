@@ -6,7 +6,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
 import { ColorIconButton } from "ui";
-import { CeramicContext, ceramic, loader, Scene } from "ceramic";
+import { CeramicContext, ceramic, loader, World } from "ceramic";
 import { ASSET_NAMES } from "3d";
 
 import { useStore } from "../../state/useStore";
@@ -15,10 +15,10 @@ import { EditorScene, useScene } from "../../state/useScene";
 import SceneName from "./SceneName";
 import Tools from "./Tools";
 
-const sceneModel = require("ceramic/models/Scene/model.json");
+const worldModel = require("ceramic/models/World/model.json");
 const worldsModel = require("ceramic/models/Worlds/model.json");
 
-const sceneSchemaId = sceneModel.schemas.Scene;
+const worldSchemaId = worldModel.schemas.World;
 
 export default function Navbar() {
   const router = useRouter();
@@ -52,12 +52,12 @@ export default function Navbar() {
 
     const spawn = getSpawn(scene);
 
-    const world: Scene = { name, description, image, spawn, objects };
+    const world: World = { name, description, image, spawn, scene: objects };
 
     //create tile
     const stream = await loader.create(
       world,
-      { schema: sceneSchemaId },
+      { schema: worldSchemaId },
       { pin: true }
     );
     const streamId = stream.id.toString();
@@ -65,7 +65,9 @@ export default function Navbar() {
     //add tile to worlds did record
     const store = new DIDDataStore({ ceramic, model: worldsModel });
     const oldWorlds = await store.get("worlds");
-    const newWorlds = oldWorlds ? [...oldWorlds, streamId] : [streamId];
+    const newWorlds = oldWorlds
+      ? [...Object.values(oldWorlds), streamId]
+      : [streamId];
     await store.set("worlds", newWorlds, { pin: true });
 
     router.push(`/home/world/${streamId}`);
@@ -73,6 +75,15 @@ export default function Navbar() {
 
   function handlePlay() {
     setPlayMode(true);
+  }
+
+  function handleDownload() {
+    const name = localStorage.getItem(`${id}-name`);
+    const fileName = name?.length > 0 ? name : "scene";
+
+    save();
+    const json = toJSON();
+    downloadJson(json, `${fileName}.json`);
   }
 
   return (
@@ -104,7 +115,7 @@ export default function Navbar() {
                 <VisibilityIcon className="NavbarIcon" />
               </ColorIconButton>
 
-              <ColorIconButton tooltip="Download">
+              <ColorIconButton onClick={handleDownload} tooltip="Download">
                 <DownloadIcon className="NavbarIcon" />
               </ColorIconButton>
             </Stack>
@@ -144,4 +155,11 @@ function getSpawn(scene: EditorScene) {
   const spawn = object.instance.params.position;
   spawn[1] += 2;
   return spawn;
+}
+
+function downloadJson(text, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  a.download = name;
+  a.click();
 }

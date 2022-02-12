@@ -33,14 +33,19 @@ export default function Scenes() {
   useEffect(() => {
     if (!uploaded) return;
 
+    const name = uploaded.name.slice(0, -5);
+
     const reader = new FileReader();
-    reader.onload = (e) => handleNewScene(e.target.result as string);
+    reader.onload = (e) => handleNewScene(e.target.result as string, name);
     reader.readAsText(uploaded);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploaded]);
 
-  async function handleNewScene(startingScene = "[]") {
+  async function handleNewScene(
+    startingScene = "[]",
+    startingName = "New Scene"
+  ) {
     const id = nanoid();
 
     const str = localStorage.getItem("scenes");
@@ -49,7 +54,7 @@ export default function Scenes() {
     list.push(id);
 
     localStorage.setItem("scenes", JSON.stringify(list));
-    localStorage.setItem(`${id}-name`, "New Scene");
+    localStorage.setItem(`${id}-name`, startingName);
     localStorage.setItem(`${id}-scene`, startingScene);
 
     router.push(`/home/scene/${id}`);

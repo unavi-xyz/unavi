@@ -24,55 +24,51 @@ export default function UserLayout({ children }) {
       <span>
         <EditProfileModal open={open} handleClose={() => setOpen(false)} />
 
-        <Grid container direction="column">
-          <Grid item>
-            <HomeNavbar text={profile?.name} back />
-          </Grid>
+        <HomeNavbar text={profile?.name} back />
 
-          <Stack spacing={2} sx={{ padding: 4 }}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="end"
-            >
-              <img
-                src={imageUrl ?? identicon}
-                alt="profile picture"
-                style={{
-                  height: "20ch",
-                  width: "20ch",
-                  border: "4px solid black",
-                  objectFit: "cover",
-                }}
-              />
+        <Stack spacing={2} sx={{ padding: 4 }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="end"
+          >
+            <img
+              src={imageUrl ?? identicon}
+              alt="profile picture"
+              style={{
+                height: "20ch",
+                width: "20ch",
+                border: "4px solid black",
+                objectFit: "cover",
+              }}
+            />
 
-              {userId === id && (
-                <Button variant="outlined" onClick={() => setOpen(true)}>
-                  Edit Profile
-                </Button>
-              )}
-            </Stack>
-
-            <Stack spacing={0}>
-              <Typography variant="h6">{profile?.name}</Typography>
-              <Typography variant="body1" style={{ color: "GrayText" }}>
-                {id}
-              </Typography>
-            </Stack>
-
-            <Typography variant="body1">{profile?.description}</Typography>
+            {userId === id && (
+              <Button variant="outlined" onClick={() => setOpen(true)}>
+                Edit Profile
+              </Button>
+            )}
           </Stack>
 
-          <Stack direction="row" justifyContent="space-around">
-            <Tab text="Feed" href={`/home/user/${id}`} />
-            <Tab text="Worlds" href={`/home/user/${id}/worlds`} />
-            <Tab text="Rooms" href={`/home/user/${id}/rooms`} />
+          <Stack spacing={0}>
+            <Typography variant="h6">{profile?.name}</Typography>
+            <Typography variant="body1" style={{ color: "GrayText" }}>
+              {id}
+            </Typography>
           </Stack>
 
-          <Divider />
+          <Typography variant="body1">{profile?.description}</Typography>
+        </Stack>
 
-          <Box sx={{ padding: 4 }}>{children}</Box>
-        </Grid>
+        <Stack direction="row" justifyContent="space-around">
+          <Tab text="Feed" href={`/home/user/${id}`} />
+          <Tab text="Worlds" href={`/home/user/${id}/worlds`} />
+          <Tab text="Rooms" href={`/home/user/${id}/rooms`} />
+        </Stack>
+
+        <Divider />
+
+        <Box sx={{ padding: 4 }}>{children}</Box>
       </span>
     </HomeLayout>
   );

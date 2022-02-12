@@ -15,8 +15,8 @@ export default function SceneName({ id }: Props) {
   const [displayedName, setDisplayedName] = useState("");
 
   useEffect(() => {
-    const name = localStorage.getItem(`${id}-name`) ?? "";
-    setDisplayedName(name);
+    const name = localStorage.getItem(`${id}-name`);
+    setDisplayedName(name?.length > 0 ? name : id);
   }, [id]);
 
   function handleMouseOver() {

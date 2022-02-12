@@ -78,9 +78,12 @@ export default function Navbar() {
   }
 
   function handleDownload() {
+    const name = localStorage.getItem(`${id}-name`);
+    const fileName = name?.length > 0 ? name : "scene";
+
     save();
     const json = toJSON();
-    downloadJson(json, "scene.json");
+    downloadJson(json, `${fileName}.json`);
   }
 
   return (

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Box, Button, Divider, Grid, Stack, Typography } from "@mui/material";
+import { Box, Button, Divider, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { HomeNavbar, useIdenticon } from "ui";
@@ -29,59 +29,51 @@ export default function WorldLayout({ children }) {
 
   return (
     <HomeLayout>
-      <Grid container direction="column">
-        <EditWorldModal open={open} handleClose={() => setOpen(false)} />
+      <EditWorldModal open={open} handleClose={() => setOpen(false)} />
 
-        <Grid item>
-          <HomeNavbar
-            text={world?.name}
-            emoji="🌏"
-            back
-            more={userId === controller ? () => setOpen(true) : undefined}
-          />
-        </Grid>
+      <HomeNavbar
+        text={world?.name}
+        emoji="🌏"
+        back
+        more={userId === controller ? () => setOpen(true) : undefined}
+      />
 
-        <Grid item>
-          <img
-            src={world?.image ?? identicon}
-            alt="picture of world"
-            style={{
-              width: "100%",
-              height: "400px",
-              objectFit: "cover",
-              borderBottom: "1px solid rgba(0,0,0,.1)",
-            }}
-          />
-        </Grid>
+      <img
+        src={world?.image ?? identicon}
+        alt="picture of world"
+        style={{
+          width: "100%",
+          height: "400px",
+          objectFit: "cover",
+          borderBottom: "1px solid rgba(0,0,0,.1)",
+        }}
+      />
 
-        <Grid spacing={2} item sx={{ padding: 4 }}>
-          <Stack alignItems="center">
-            <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-              {name}
-            </Typography>
+      <Stack alignItems="center" sx={{ padding: 4 }}>
+        <Typography variant="h4" style={{ wordBreak: "break-word" }}>
+          {name}
+        </Typography>
 
-            {controller && (
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Typography variant="h6">By</Typography>
-                <Link href={`/home/user/${controller}/worlds`} passHref>
-                  <Typography className="link" variant="h6">
-                    {profile ? profile?.name ?? controller : ""}
-                  </Typography>
-                </Link>
-              </Stack>
-            )}
+        {controller && (
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Typography variant="h6">By</Typography>
+            <Link href={`/home/user/${controller}/worlds`} passHref>
+              <Typography className="link" variant="h6">
+                {profile ? profile?.name ?? controller : ""}
+              </Typography>
+            </Link>
           </Stack>
-        </Grid>
+        )}
+      </Stack>
 
-        <Stack direction="row" justifyContent="space-around">
-          <Tab text="About" href={`/home/world/${id}`} />
-          <Tab text="Rooms" href={`/home/world/${id}/rooms`} />
-        </Stack>
+      <Stack direction="row" justifyContent="space-around">
+        <Tab text="About" href={`/home/world/${id}`} />
+        <Tab text="Rooms" href={`/home/world/${id}/rooms`} />
+      </Stack>
 
-        <Divider />
+      <Divider />
 
-        <Box sx={{ padding: 4 }}>{children}</Box>
-      </Grid>
+      <Box sx={{ padding: 4 }}>{children}</Box>
     </HomeLayout>
   );
 }

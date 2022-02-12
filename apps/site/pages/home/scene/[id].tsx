@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Grid, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { HomeNavbar, useIdenticon } from "ui";
@@ -19,53 +19,51 @@ export default function Scene() {
 
   useEffect(() => {
     setPreview(localStorage.getItem(`${id}-preview`));
-    setName(localStorage.getItem(`${id}-name`));
+
+    const newName = localStorage.getItem(`${id}-name`);
+    setName(newName?.length > 0 ? newName : id);
   }, [id]);
 
   return (
-    <Grid container direction="column">
+    <div>
       <EditSceneModal id={id} open={open} handleClose={() => setOpen(false)} />
 
-      <Grid item>
-        <HomeNavbar
-          text={name ?? id}
-          emoji="🚧"
-          href="/home/scenes"
-          more={() => setOpen(true)}
-        />
-      </Grid>
+      <HomeNavbar
+        text={name}
+        emoji="🚧"
+        href="/home/scenes"
+        more={() => setOpen(true)}
+      />
 
-      <Grid item>
-        <img
-          src={preview ?? identicon}
-          alt="world image"
-          style={{
-            width: "100%",
-            height: "400px",
-            objectFit: "cover",
-            borderBottom: "1px solid rgba(0,0,0,.1)",
-          }}
-        />
-      </Grid>
+      <img
+        src={preview ?? identicon}
+        alt="world image"
+        style={{
+          width: "100%",
+          height: "400px",
+          objectFit: "cover",
+          borderBottom: "1px solid rgba(0,0,0,.1)",
+        }}
+      />
 
-      <Grid item sx={{ padding: 4 }}>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          <Typography variant="h4" style={{ wordBreak: "break-word" }}>
-            {name ?? id}
+      <Box sx={{ padding: 4 }}>
+        <Stack spacing={4}>
+          <Typography
+            variant="h4"
+            align="center"
+            style={{ wordBreak: "break-word" }}
+          >
+            {name}
           </Typography>
 
           <Link href={`/editor?scene=${id}`} passHref>
-            <Button variant="contained" color="secondary">
+            <Button variant="contained" color="secondary" fullWidth>
               Open in Editor
             </Button>
           </Link>
         </Stack>
-      </Grid>
-    </Grid>
+      </Box>
+    </div>
   );
 }
 

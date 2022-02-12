@@ -22,7 +22,9 @@ export default function SceneCard({ id }: Props) {
 
   useEffect(() => {
     setPreview(localStorage.getItem(`${id}-preview`));
-    setName(localStorage.getItem(`${id}-name`));
+
+    const newName = localStorage.getItem(`${id}-name`);
+    setName(newName?.length > 0 ? newName : id);
   }, [id]);
 
   return (
@@ -36,7 +38,7 @@ export default function SceneCard({ id }: Props) {
               image={preview ?? identicon}
             />
             <CardContent sx={{ p: 2, borderTop: "1px solid rgba(0,0,0,0.12)" }}>
-              <Typography>🚧 {name ?? id}</Typography>
+              <Typography>🚧 {name}</Typography>
             </CardContent>
           </CardActionArea>
         </Link>

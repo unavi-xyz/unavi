@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Button, Divider, Grid, Stack, Typography } from "@mui/material";
+import { Box, Button, Divider, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { HomeNavbar, useIdenticon } from "ui";
@@ -31,32 +31,28 @@ export default function Room() {
   }, [id, room, world]);
 
   return (
-    <Grid container direction="column">
+    <div>
       <EditRoomModal open={open} handleClose={() => setOpen(false)} />
 
-      <Grid item>
-        <HomeNavbar
-          text={name}
-          emoji="🚪"
-          back
-          more={userId === controller ? () => setOpen(true) : undefined}
-        />
-      </Grid>
+      <HomeNavbar
+        text={name}
+        emoji="🚪"
+        back
+        more={userId === controller ? () => setOpen(true) : undefined}
+      />
 
-      <Grid item>
-        <img
-          src={world?.image ?? identicon}
-          alt="world image"
-          style={{
-            width: "100%",
-            height: "400px",
-            objectFit: "cover",
-            borderBottom: "1px solid rgba(0,0,0,.1)",
-          }}
-        />
-      </Grid>
+      <img
+        src={world?.image ?? identicon}
+        alt="world image"
+        style={{
+          width: "100%",
+          height: "400px",
+          objectFit: "cover",
+          borderBottom: "1px solid rgba(0,0,0,.1)",
+        }}
+      />
 
-      <Grid item sx={{ padding: 4 }}>
+      <Box sx={{ padding: 4 }}>
         <Typography
           variant="h4"
           align="center"
@@ -64,9 +60,9 @@ export default function Room() {
         >
           {name}
         </Typography>
-      </Grid>
+      </Box>
 
-      <Grid item sx={{ padding: 4, paddingTop: 0 }}>
+      <Box sx={{ padding: 4, paddingTop: 0 }}>
         <Link href={`/app?room=${id}`} passHref>
           <Button
             variant="contained"
@@ -78,7 +74,7 @@ export default function Room() {
             Join Room
           </Button>
         </Link>
-      </Grid>
+      </Box>
 
       <Stack direction="row" justifyContent="space-around">
         <Tab text="About" href={`/home/room/${id}`} />
@@ -109,7 +105,7 @@ export default function Room() {
           </Stack>
         </Stack>
       </Stack>
-    </Grid>
+    </div>
   );
 }
 

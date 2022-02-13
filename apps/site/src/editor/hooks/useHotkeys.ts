@@ -46,7 +46,7 @@ export function useHotkeys() {
               (item) => item.instance.type === copied.current.instance.type
             ).length;
             const limit = ASSETS[copied.current.instance.type].limit;
-            if (count >= limit) return;
+            if (count >= limit && limit >= 0) return;
 
             const obj = copied.current.clone();
             obj.instance.params[PARAM_NAMES.position][0] += 0.2;

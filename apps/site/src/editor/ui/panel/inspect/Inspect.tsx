@@ -54,6 +54,7 @@ export default function Inspect() {
             type={PARAM_NAMES.rotation}
             params={uiParams}
             setParams={setUiParams}
+            variant="radians"
             step={1}
           />
         )}

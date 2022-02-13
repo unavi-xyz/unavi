@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { ASSET_NAMES, EditorObject, PARAM_NAMES } from "3d";
 
 import { useScene } from "../state/useScene";
 import { useStore, TOOLS } from "../state/useStore";
@@ -8,9 +9,13 @@ export function useHotkeys() {
   const setSelected = useStore((state) => state.setSelected);
   const setTool = useStore((state) => state.setTool);
   const deleteObject = useScene((state) => state.deleteObject);
+  const addObject = useScene((state) => state.addObject);
+
+  const copied = useRef<EditorObject<ASSET_NAMES>>();
+  const holdingV = useRef(false);
 
   useEffect(() => {
-    function handleKeypress(e: KeyboardEvent) {
+    function handleKeyDown(e: KeyboardEvent) {
       switch (e.key) {
         case "Delete":
           if (selected) {
@@ -29,14 +34,44 @@ export function useHotkeys() {
           setTool(TOOLS.scale);
           break;
 
+        case "c":
+          if (e.ctrlKey) {
+            copied.current = selected;
+          }
+          break;
+        case "v":
+          if (e.ctrlKey && copied.current && !holdingV.current) {
+            const obj = copied.current.clone();
+            obj.instance.params[PARAM_NAMES.position][0] += 0.2;
+            obj.instance.params[PARAM_NAMES.position][1] += 0.2;
+            obj.instance.params[PARAM_NAMES.position][2] += 0.2;
+
+            addObject(obj);
+            setSelected(obj);
+          }
+
+          holdingV.current = true;
+          break;
+
         default:
           break;
       }
     }
 
-    document.addEventListener("keydown", handleKeypress);
+    function handleKeyUp(e: KeyboardEvent) {
+      switch (e.key) {
+        case "v":
+          holdingV.current = false;
+        default:
+          break;
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keyup", handleKeyUp);
     return () => {
-      document.removeEventListener("keydown", handleKeypress);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keyup", handleKeyUp);
     };
-  }, [deleteObject, selected, setSelected, setTool]);
+  }, [addObject, deleteObject, selected, setSelected, setTool]);
 }

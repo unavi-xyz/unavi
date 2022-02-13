@@ -4,11 +4,11 @@ import { OrbitControls, Sky, TransformControls } from "@react-three/drei";
 import { Ground, PARAM_NAMES } from "3d";
 
 import { TOOLS, useStore } from "../state/useStore";
-
 import Objects from "./Objects";
 
 export default function EditorScene() {
   const selected = useStore((state) => state.selected);
+  const setSelected = useStore((state) => state.setSelected);
   const tool = useStore((state) => state.tool);
   const setUsingGizmo = useStore((state) => state.setUsingGizmo);
 
@@ -46,6 +46,12 @@ export default function EditorScene() {
 
     setEnabled(hasType);
   }, [selected, tool]);
+
+  useEffect(() => {
+    return () => {
+      setSelected(undefined);
+    };
+  }, [setSelected]);
 
   return (
     <group>

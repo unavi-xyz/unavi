@@ -34,10 +34,9 @@ export const useScene = create((set: any, get: any) => ({
   },
 
   newObject: (type: ASSET_NAMES) => {
-    const obj: EditorObject<ASSET_NAMES> = new EditorObject(
-      type,
-      ASSETS[type].params
-    );
+    const obj: EditorObject<ASSET_NAMES> = new EditorObject(type, {
+      ...ASSETS[type].params,
+    });
 
     set((state) => {
       state.addObject(obj);

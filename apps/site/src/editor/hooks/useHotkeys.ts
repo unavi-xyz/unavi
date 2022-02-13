@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ASSET_NAMES, EditorObject, PARAM_NAMES } from "3d";
+import { ASSETS, ASSET_NAMES, EditorObject, PARAM_NAMES } from "3d";
 
 import { useScene } from "../state/useScene";
 import { useStore, TOOLS } from "../state/useStore";
@@ -10,6 +10,7 @@ export function useHotkeys() {
   const setTool = useStore((state) => state.setTool);
   const deleteObject = useScene((state) => state.deleteObject);
   const addObject = useScene((state) => state.addObject);
+  const scene = useScene((state) => state.scene);
 
   const copied = useRef<EditorObject<ASSET_NAMES>>();
   const holdingV = useRef(false);
@@ -41,6 +42,12 @@ export function useHotkeys() {
           break;
         case "v":
           if (e.ctrlKey && copied.current && !holdingV.current) {
+            const count = Object.values(scene).filter(
+              (item) => item.instance.type === copied.current.instance.type
+            ).length;
+            const limit = ASSETS[copied.current.instance.type].limit;
+            if (count >= limit) return;
+
             const obj = copied.current.clone();
             obj.instance.params[PARAM_NAMES.position][0] += 0.2;
             obj.instance.params[PARAM_NAMES.position][1] += 0.2;
@@ -73,5 +80,5 @@ export function useHotkeys() {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
     };
-  }, [addObject, deleteObject, selected, setSelected, setTool]);
+  }, [addObject, deleteObject, scene, selected, setSelected, setTool]);
 }

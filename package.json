@@ -8,16 +8,15 @@
     "packages/*"
   ],
   "scripts": {
-    "ready": "yarn format && yarn lint && yarn build",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
-    "precommit-msg": "echo 'Pre-commit checks...' && exit 0"
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
   },
   "pre-commit": [
-    "precommit-msg",
-    "ready"
+    "format",
+    "lint",
+    "build"
   ],
   "devDependencies": {
     "pre-commit": "^1.2.2",

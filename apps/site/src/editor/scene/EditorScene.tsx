@@ -4,7 +4,7 @@ import { OrbitControls, Sky, TransformControls } from "@react-three/drei";
 import { Ground, PARAM_NAMES } from "3d";
 
 import { TOOLS, useStore } from "../state/useStore";
-import Objects from "./Objects";
+import EditorObjects from "./EditorObjects";
 
 export default function EditorScene() {
   const selected = useStore((state) => state.selected);
@@ -74,7 +74,7 @@ export default function EditorScene() {
         mode={tool}
       />
 
-      <Objects />
+      <EditorObjects />
     </group>
   );
 }

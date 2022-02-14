@@ -31,7 +31,7 @@ const defaultContext: ContextInterface = {
 export const MultiplayerContext = React.createContext(defaultContext);
 
 interface Props {
-  children: ReactChild;
+  children: ReactChild | ReactChild[];
 }
 
 export function MultiplayerProvider({ children }: Props) {

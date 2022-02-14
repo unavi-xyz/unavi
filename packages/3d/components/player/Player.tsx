@@ -1,8 +1,8 @@
-import { MutableRefObject, useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { Triplet, useBox } from "@react-three/cannon";
 import { useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
-import { Group, Raycaster, Vector3 } from "three";
+import { Raycaster, Vector3 } from "three";
 
 import { PHYSICS_GROUPS, PUBLISH_INTERVAL, VOID_LEVEL } from "../..";
 import { useSpringVelocity } from "./hooks/useSpringVelocity";
@@ -19,12 +19,10 @@ const DOWN_VECTOR = new Vector3(0, -1, 0);
 const HEIGHT_OFFSET = new Vector3(0, PLAYER_HEIGHT / 2, 0);
 
 interface Props {
-  paused?: boolean;
   spawn?: Triplet;
-  world?: MutableRefObject<Group>;
 }
 
-export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
+export function Player({ spawn = [0, 0, 0] }: Props) {
   const { publishLocation } = useContext(MultiplayerContext);
 
   const downRay = useRef<undefined | Raycaster>();
@@ -78,12 +76,10 @@ export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
     camera.position.copy(position.current).add(HEIGHT_OFFSET);
 
     //ground detection
-    if (downRay.current && world?.current) {
+    if (downRay.current) {
       downRay.current.set(camera.position, DOWN_VECTOR);
 
-      const intersects = downRay.current.intersectObject(
-        world?.current ?? state.scene
-      );
+      const intersects = downRay.current.intersectObject(state.scene);
       const distance = intersects[0]?.distance;
 
       if (distance < PLAYER_HEIGHT + 0.1) {
@@ -110,7 +106,7 @@ export function Player({ paused = false, spawn = [0, 2, 0], world }: Props) {
     <group ref={ref}>
       <raycaster ref={downRay} />
 
-      <KeyboardMovement paused={paused} direction={direction} jump={jump} />
+      <KeyboardMovement direction={direction} jump={jump} />
       <PointerLockControls />
     </group>
   );

@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
-import { Group } from "three";
-import { ASSET_NAMES, Player, Scene } from "3d";
+import { useState } from "react";
+import { Sky } from "@react-three/drei";
+import { ASSET_NAMES, Player, Objects, Ground } from "3d";
 
 import { EditorScene, useScene } from "../state/useScene";
 
@@ -17,20 +17,21 @@ function getSpawn(scene: EditorScene) {
 }
 
 export default function PlayScene() {
-  const world = useRef<Group>();
-
   const scene = useScene((state) => state.scene);
-
-  const [spawn] = useState(getSpawn(scene));
 
   const objects = Object.values(scene).map((obj) => obj.instance);
 
+  const [spawn] = useState(getSpawn(scene));
+
   return (
     <group>
-      <Player world={world} spawn={spawn} />
-      <group ref={world}>
-        <Scene objects={objects} />
-      </group>
+      <ambientLight intensity={0.1} />
+      <directionalLight intensity={0.5} />
+      <Sky />
+      <Ground />
+
+      <Player spawn={spawn} />
+      <Objects objects={objects} />
     </group>
   );
 }

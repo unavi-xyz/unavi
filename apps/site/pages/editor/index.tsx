@@ -37,6 +37,8 @@ export default function Editor() {
 
       {playMode ? (
         <span>
+          <div className="crosshair" />
+
           <Canvas raycaster={RAYCASTER_SETTINGS}>
             <Physics>
               <PlayScene />

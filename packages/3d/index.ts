@@ -6,9 +6,10 @@ export * from "./assets/assets";
 export * from "./assets/packs";
 
 export * from "./components/multiplayer/Multiplayer";
+export * from "./components/objects/Objects";
 export * from "./components/player/Player";
-export * from "./components/scene/Scene";
-export * from "./components/scene/Ground";
+export * from "./components/room/Room";
+export * from "./components/world/World";
 
 export * from "./contexts/MultiplayerContext";
 

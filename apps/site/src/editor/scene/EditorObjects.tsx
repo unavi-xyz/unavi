@@ -7,7 +7,7 @@ import EditorObject from "./EditorObject";
 
 const AUTOSAVE_INTERVAL = 2000;
 
-export default function Objects() {
+export default function EditorObjects() {
   const scene = useScene((state) => state.scene);
   const save = useScene((state) => state.save);
   const toJSON = useScene((state) => state.toJSON);

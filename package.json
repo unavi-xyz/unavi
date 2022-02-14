@@ -12,9 +12,15 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "precommit-msg": "echo 'Pre-commit checks...' && exit 0"
   },
+  "pre-commit": [
+    "precommit-msg",
+    "ready"
+  ],
   "devDependencies": {
+    "pre-commit": "^1.2.2",
     "prettier": "^2.5.1",
     "turbo": "latest"
   },

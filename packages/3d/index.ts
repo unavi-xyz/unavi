@@ -10,6 +10,7 @@ export * from "./components/objects/Objects";
 export * from "./components/player/Player";
 export * from "./components/room/Room";
 export * from "./components/world/World";
+export * from "./components/world/Ground";
 
 export * from "./contexts/MultiplayerContext";
 

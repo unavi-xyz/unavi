@@ -8,28 +8,27 @@ const AUTOSAVE_INTERVAL = 2000;
 
 export default function EditorObjects() {
   const scene = useStore((state) => state.scene);
+  const sceneId = useStore((state) => state.sceneId);
   const save = useStore((state) => state.save);
   const toJSON = useStore((state) => state.toJSON);
   const fromJSON = useStore((state) => state.fromJSON);
-
-  const id = useStore((state) => state.id);
 
   useEffect(() => {
     const interval = setInterval(() => {
       save();
       const json = toJSON();
-      localStorage.setItem(`${id}-scene`, json);
+      localStorage.setItem(`${sceneId}-scene`, json);
     }, AUTOSAVE_INTERVAL);
 
     return () => {
       clearInterval(interval);
     };
-  }, [scene, id, save, toJSON]);
+  }, [scene, sceneId, save, toJSON]);
 
   useEffect(() => {
-    const scene = localStorage.getItem(`${id}-scene`);
+    const scene = localStorage.getItem(`${sceneId}-scene`);
     if (scene) fromJSON(scene);
-  }, [fromJSON, id]);
+  }, [fromJSON, sceneId]);
 
   return (
     <group>

@@ -20,6 +20,34 @@ export default function EditorScene() {
     camera.position.set(10, 10, 10);
   }, [camera]);
 
+  useEffect(() => {
+    return () => setSelected(undefined);
+  }, [setSelected]);
+
+  useEffect(() => {
+    const params = selected?.instance?.params;
+
+    if (!params) {
+      setEnabled(false);
+      return;
+    }
+
+    switch (tool) {
+      case TOOLS.translate:
+        setEnabled(PARAM_NAMES.position in params);
+        break;
+      case TOOLS.rotate:
+        setEnabled(PARAM_NAMES.rotation in params);
+        break;
+      case TOOLS.scale:
+        setEnabled(PARAM_NAMES.scale in params);
+        break;
+      default:
+        setEnabled(false);
+        break;
+    }
+  }, [selected?.instance?.params, tool]);
+
   function handleMouseDown() {
     setUsingGizmo(true);
   }
@@ -28,30 +56,6 @@ export default function EditorScene() {
     selected.save();
     setUsingGizmo(false);
   }
-
-  useEffect(() => {
-    if (!selected) {
-      setEnabled(false);
-      return;
-    }
-
-    const hasType =
-      tool === TOOLS.translate
-        ? PARAM_NAMES.position in selected.instance.params
-        : tool === TOOLS.rotate
-        ? PARAM_NAMES.rotation in selected.instance.params
-        : tool === TOOLS.scale
-        ? PARAM_NAMES.scale in selected.instance.params
-        : false;
-
-    setEnabled(hasType);
-  }, [selected, tool]);
-
-  useEffect(() => {
-    return () => {
-      setSelected(undefined);
-    };
-  }, [setSelected]);
 
   return (
     <group>

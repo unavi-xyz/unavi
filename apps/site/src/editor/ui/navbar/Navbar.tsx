@@ -24,7 +24,7 @@ export default function Navbar() {
 
   const { authenticated } = useContext(CeramicContext);
 
-  const id = useStore((state) => state.id);
+  const sceneId = useStore((state) => state.sceneId);
   const scene = useStore((state) => state.scene);
   const setPlayMode = useStore((state) => state.setPlayMode);
   const save = useStore((state) => state.save);
@@ -33,19 +33,19 @@ export default function Navbar() {
   async function handleBack() {
     const canvas = document.querySelector("canvas");
     const image = canvas.toDataURL("image/jpeg");
-    localStorage.setItem(`${id}-preview`, image);
+    localStorage.setItem(`${sceneId}-preview`, image);
 
     save();
     const json = toJSON();
-    localStorage.setItem(`${id}-scene`, json);
+    localStorage.setItem(`${sceneId}-scene`, json);
 
-    router.push(`/home/scene/${id}`);
+    router.push(`/home/scene/${sceneId}`);
   }
 
   async function handlePublish() {
-    const name = localStorage.getItem(`${id}-name`);
-    const description = localStorage.getItem(`${id}-description`);
-    const image = localStorage.getItem(`${id}-preview`);
+    const name = localStorage.getItem(`${sceneId}-name`);
+    const description = localStorage.getItem(`${sceneId}-description`);
+    const image = localStorage.getItem(`${sceneId}-preview`);
 
     const objects = Object.values(scene).map((obj) => obj.instance);
 
@@ -77,7 +77,7 @@ export default function Navbar() {
   }
 
   function handleDownload() {
-    const name = localStorage.getItem(`${id}-name`);
+    const name = localStorage.getItem(`${sceneId}-name`);
     const fileName = name?.length > 0 ? name : "scene";
 
     save();
@@ -99,7 +99,7 @@ export default function Navbar() {
               <ArrowBackIosNewIcon className="NavbarIcon" />
             </ColorIconButton>
 
-            <SceneName id={id} />
+            <SceneName id={sceneId} />
           </Stack>
         </Grid>
 

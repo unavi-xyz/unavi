@@ -17,7 +17,7 @@ import EditorScene from "../../src/editor/scene/EditorScene";
 
 export default function Editor() {
   const setSelected = useStore((state) => state.setSelected);
-  const setId = useStore((state) => state.setId);
+  const setSceneId = useStore((state) => state.setSceneId);
   const setPlayMode = useStore((state) => state.setPlayMode);
   const playMode = useStore((state) => state.playMode);
 
@@ -26,8 +26,8 @@ export default function Editor() {
   useEffect(() => {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
-    setId(urlParams.get("scene"));
-  }, [setId]);
+    setSceneId(urlParams.get("scene"));
+  }, [setSceneId]);
 
   return (
     <div className="App" style={{ overflow: "hidden" }}>

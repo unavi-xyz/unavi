@@ -18,9 +18,9 @@ export const useStore = create((set: any, get: any) => ({
   usingGizmo: false,
   tool: TOOLS.translate,
   playMode: false,
-  id: "",
+  sceneId: "",
 
-  setId: (id: string) => {
+  setSceneId: (id: string) => {
     set((state) => {
       state.id = id;
     });

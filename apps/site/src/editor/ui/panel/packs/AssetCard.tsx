@@ -8,15 +8,15 @@ import {
 } from "@mui/material";
 import { ASSETS, ASSET_NAMES } from "3d";
 
-import { useScene } from "../../../state/useScene";
+import { useStore } from "../../../state/useStore";
 
 interface Props {
   name: ASSET_NAMES;
 }
 
 export default function AssetCard({ name }: Props) {
-  const scene = useScene((state) => state.scene);
-  const newObject = useScene((state) => state.newObject);
+  const scene = useStore((state) => state.scene);
+  const newObject = useStore((state) => state.newObject);
 
   const [count, setCount] = useState(0);
 

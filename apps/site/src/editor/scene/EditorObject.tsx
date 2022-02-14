@@ -4,7 +4,6 @@ import { Group } from "three";
 import { InstancedObject } from "3d";
 
 import { useStore } from "../state/useStore";
-import { useScene } from "../state/useScene";
 
 interface Props {
   id: string;
@@ -12,7 +11,7 @@ interface Props {
 
 export default function EditorObject({ id }: Props) {
   const setSelected = useStore((state) => state.setSelected);
-  const object = useScene((state) => state.scene[id]);
+  const object = useStore((state) => state.scene[id]);
 
   const ref = useRef<Group>();
 

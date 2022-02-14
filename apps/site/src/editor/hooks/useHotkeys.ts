@@ -1,16 +1,15 @@
 import { useEffect, useRef } from "react";
 import { ASSETS, ASSET_NAMES, EditorObject, PARAM_NAMES } from "3d";
 
-import { useScene } from "../state/useScene";
 import { useStore, TOOLS } from "../state/useStore";
 
 export function useHotkeys() {
   const selected = useStore((state) => state.selected);
   const setSelected = useStore((state) => state.setSelected);
   const setTool = useStore((state) => state.setTool);
-  const deleteObject = useScene((state) => state.deleteObject);
-  const addObject = useScene((state) => state.addObject);
-  const scene = useScene((state) => state.scene);
+  const deleteObject = useStore((state) => state.deleteObject);
+  const addObject = useStore((state) => state.addObject);
+  const scene = useStore((state) => state.scene);
 
   const copied = useRef<EditorObject<ASSET_NAMES>>();
   const holdingV = useRef(false);

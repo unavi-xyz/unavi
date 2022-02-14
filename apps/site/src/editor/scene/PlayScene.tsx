@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sky } from "@react-three/drei";
 import { ASSET_NAMES, Player, Objects, Ground } from "3d";
 
-import { EditorScene, useScene } from "../state/useScene";
+import { EditorScene, useStore } from "../state/useStore";
 
 function getSpawn(scene: EditorScene) {
   const object = Object.values(scene).find(
@@ -17,7 +17,7 @@ function getSpawn(scene: EditorScene) {
 }
 
 export default function PlayScene() {
-  const scene = useScene((state) => state.scene);
+  const scene = useStore((state) => state.scene);
 
   const objects = Object.values(scene).map((obj) => obj.instance);
 

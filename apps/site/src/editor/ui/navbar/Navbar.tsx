@@ -9,8 +9,7 @@ import { ColorIconButton } from "ui";
 import { CeramicContext, ceramic, loader, World } from "ceramic";
 import { ASSET_NAMES } from "3d";
 
-import { useStore } from "../../state/useStore";
-import { EditorScene, useScene } from "../../state/useScene";
+import { useStore, EditorScene } from "../../state/useStore";
 
 import SceneName from "./SceneName";
 import Tools from "./Tools";
@@ -26,10 +25,10 @@ export default function Navbar() {
   const { authenticated } = useContext(CeramicContext);
 
   const id = useStore((state) => state.id);
-  const scene = useScene((state) => state.scene);
+  const scene = useStore((state) => state.scene);
   const setPlayMode = useStore((state) => state.setPlayMode);
-  const save = useScene((state) => state.save);
-  const toJSON = useScene((state) => state.toJSON);
+  const save = useStore((state) => state.save);
+  const toJSON = useStore((state) => state.toJSON);
 
   async function handleBack() {
     const canvas = document.querySelector("canvas");

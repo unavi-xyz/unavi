@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "ready": "yarn format && yarn lint && yarn build",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",

@@ -7,7 +7,7 @@ import Head from "next/head";
 import Split from "react-split";
 import { RAYCASTER_SETTINGS } from "3d";
 
-import { useStore } from "../../src/editor/state/useStore";
+import { useStore } from "../../src/editor/hooks/useStore";
 import { useHotkeys } from "../../src/editor/hooks/useHotkeys";
 
 import Navbar from "../../src/editor/ui/navbar/Navbar";

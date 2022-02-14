@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sky } from "@react-three/drei";
 import { ASSET_NAMES, Player, Objects, Ground } from "3d";
 
-import { EditorScene, useStore } from "../state/useStore";
+import { EditorScene, useStore } from "../hooks/useStore";
 
 function getSpawn(scene: EditorScene) {
   const object = Object.values(scene).find(

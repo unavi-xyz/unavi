@@ -3,7 +3,7 @@ import { useThree } from "@react-three/fiber";
 import { OrbitControls, Sky, TransformControls } from "@react-three/drei";
 import { Ground, PARAM_NAMES } from "3d";
 
-import { TOOLS, useStore } from "../state/useStore";
+import { TOOLS, useStore } from "../hooks/useStore";
 import EditorObjects from "./EditorObjects";
 
 export default function EditorScene() {

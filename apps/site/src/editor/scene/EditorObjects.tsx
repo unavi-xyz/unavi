@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { useStore } from "../state/useStore";
+import { useStore } from "../hooks/useStore";
 
 import EditorObject from "./EditorObject";
 

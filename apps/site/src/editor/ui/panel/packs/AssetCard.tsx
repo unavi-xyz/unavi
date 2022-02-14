@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import { ASSETS, ASSET_NAMES } from "3d";
 
-import { useStore } from "../../../state/useStore";
+import { useStore } from "../../../hooks/useStore";
 
 interface Props {
   name: ASSET_NAMES;

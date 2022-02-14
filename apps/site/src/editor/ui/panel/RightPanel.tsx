@@ -1,6 +1,6 @@
 import { Paper } from "@mui/material";
 
-import { useStore } from "../../state/useStore";
+import { useStore } from "../../hooks/useStore";
 
 import Packs from "./packs/Packs";
 import Inspect from "./inspect/Inspect";

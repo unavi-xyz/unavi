@@ -9,7 +9,7 @@ import { ColorIconButton } from "ui";
 import { CeramicContext, ceramic, loader, World } from "ceramic";
 import { ASSET_NAMES } from "3d";
 
-import { useStore, EditorScene } from "../../state/useStore";
+import { useStore, EditorScene } from "../../hooks/useStore";
 
 import SceneName from "./SceneName";
 import Tools from "./Tools";

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { ASSETS, ASSET_NAMES, EditorObject, PARAM_NAMES } from "3d";
 
-import { useStore, TOOLS } from "../state/useStore";
+import { useStore, TOOLS } from "./useStore";
 
 export function useHotkeys() {
   const selected = useStore((state) => state.selected);

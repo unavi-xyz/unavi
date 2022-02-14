@@ -3,7 +3,7 @@ import { ThreeEvent } from "@react-three/fiber";
 import { Group } from "three";
 import { InstancedObject } from "3d";
 
-import { useStore } from "../state/useStore";
+import { useStore } from "../hooks/useStore";
 
 interface Props {
   id: string;

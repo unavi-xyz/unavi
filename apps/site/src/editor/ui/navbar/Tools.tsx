@@ -1,9 +1,9 @@
 import { IconButton, Stack, Tooltip } from "@mui/material";
 
-import { TOOLS, useStore } from "../../state/useStore";
-import TranslateIcon from "../icons/TranslateIcon";
-import RotateIcon from "../icons/RotateIcon";
-import ScaleIcon from "../icons/ScaleIcon";
+import { TOOLS, useStore } from "../../hooks/useStore";
+import TranslateIcon from "./icons/TranslateIcon";
+import RotateIcon from "./icons/RotateIcon";
+import ScaleIcon from "./icons/ScaleIcon";
 
 export default function Tools() {
   const tool = useStore((state) => state.tool);

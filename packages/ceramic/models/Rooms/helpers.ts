@@ -18,7 +18,7 @@ export async function removeRoom(
   ceramic: CeramicClient
 ) {
   const store = new DIDDataStore({ ceramic, model });
-  const data = (await store.get("rooms", userId)) as string[];
-  const newRooms = data.filter((id) => id !== streamId);
+  const data = await store.get("rooms", userId);
+  const newRooms = Object.values(data).filter((id) => id !== streamId);
   await store.set("rooms", newRooms, { pin: true });
 }

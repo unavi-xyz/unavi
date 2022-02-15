@@ -10,6 +10,7 @@ import {
   removeRoom,
   useRoom,
   useRooms,
+  useWorld,
 } from "ceramic";
 
 interface Props {
@@ -24,6 +25,7 @@ export default function EditRoomModal({ open, handleClose }: Props) {
   const { userId } = useContext(CeramicContext);
 
   const { room } = useRoom(id);
+  const { world } = useWorld(room?.worldStreamId);
   const rooms = useRooms(userId);
 
   const [name, setName] = useState("");
@@ -31,8 +33,8 @@ export default function EditRoomModal({ open, handleClose }: Props) {
 
   useEffect(() => {
     if (!room) return;
-    setName(room.name ?? "");
-  }, [room]);
+    setName(room.name ?? world?.name ?? "");
+  }, [room, world?.name]);
 
   useEffect(() => {
     if (!rooms) return;

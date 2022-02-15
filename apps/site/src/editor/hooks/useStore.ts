@@ -1,6 +1,6 @@
+import { Triplet } from "@react-three/cannon";
 import create from "zustand";
-import { ASSETS, ASSET_NAMES, EditorObject } from "3d";
-import { World } from "ceramic";
+import { ASSETS, ASSET_NAMES, EditorObject, PARAM_NAMES } from "3d";
 
 export enum TOOLS {
   translate = "translate",
@@ -11,18 +11,18 @@ export enum TOOLS {
 export interface EditorScene {
   [key: string]: EditorObject<ASSET_NAMES>;
 }
-const editorScene: EditorScene = {};
 
 export const useStore = create((set: any, get: any) => ({
+  //editor
   selected: undefined as EditorObject<ASSET_NAMES>,
   usingGizmo: false,
   tool: TOOLS.translate,
   playMode: false,
   sceneId: "",
 
-  setSceneId: (id: string) => {
+  setSceneId: (value: string) => {
     set((state) => {
-      state.id = id;
+      state.sceneId = value;
     });
   },
 
@@ -50,29 +50,22 @@ export const useStore = create((set: any, get: any) => ({
     });
   },
 
-  //scene
-  scene: editorScene,
-  spawn: [0, 0, 0],
-
-  setScene: (newScene: World) => {
-    set((state) => {
-      state.scene = newScene;
-    });
-  },
+  //objects
+  objects: {} as EditorScene,
 
   deleteObject: (object: EditorObject<ASSET_NAMES>) => {
     set((state) => {
-      const newScene = { ...state.scene };
-      delete newScene[object.id];
-      return { scene: newScene };
+      const newObjects = { ...state.objects };
+      delete newObjects[object.id];
+      return { objects: newObjects };
     });
   },
 
   addObject: (object: EditorObject<ASSET_NAMES>) => {
     set((state) => {
-      const newScene = { ...state.scene };
-      newScene[object.id] = object;
-      return { scene: newScene };
+      const newObjects = { ...state.objects };
+      newObjects[object.id] = object;
+      return { objects: newObjects };
     });
   },
 
@@ -81,25 +74,28 @@ export const useStore = create((set: any, get: any) => ({
       ...ASSETS[type].params,
     });
 
-    set((state) => {
-      state.addObject(obj);
-    });
+    get().addObject(obj);
   },
 
   save() {
-    Object.values(get().scene).forEach((object: EditorObject<ASSET_NAMES>) => {
+    const objects = Object.values(get().objects);
+
+    objects.forEach((object: EditorObject<ASSET_NAMES>) => {
       object.save();
     });
   },
 
   load() {
-    Object.values(get().scene).forEach((object: EditorObject<ASSET_NAMES>) => {
-      object.load();
-    });
+    Object.values(get().objects).forEach(
+      (object: EditorObject<ASSET_NAMES>) => {
+        object.load();
+      }
+    );
   },
 
   toJSON() {
-    const map: EditorObject<ASSET_NAMES>[] = Object.values(get().scene);
+    get().save();
+    const map: EditorObject<ASSET_NAMES>[] = Object.values(get().objects);
     return JSON.stringify(map);
   },
 
@@ -114,6 +110,9 @@ export const useStore = create((set: any, get: any) => ({
       );
       loaded[obj.id] = obj;
     });
-    get().setScene(loaded);
+
+    set((state) => {
+      state.objects = loaded;
+    });
   },
 }));

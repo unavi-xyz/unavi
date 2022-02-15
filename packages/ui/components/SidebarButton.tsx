@@ -12,7 +12,7 @@ export function SidebarButton({
 }) {
   const router = useRouter();
 
-  const { id } = useContext(CeramicContext);
+  const { userId: id } = useContext(CeramicContext);
 
   const [selected, setSelected] = useState(false);
 

@@ -15,7 +15,7 @@ interface Props {
 }
 
 export default function AssetCard({ name }: Props) {
-  const scene = useStore((state) => state.scene);
+  const objects = useStore((state) => state.objects);
   const newObject = useStore((state) => state.newObject);
 
   const [count, setCount] = useState(0);
@@ -27,11 +27,12 @@ export default function AssetCard({ name }: Props) {
   }
 
   useEffect(() => {
-    const found = Object.values(scene).filter(
+    const found = Object.values(objects).filter(
       (item) => item.instance.type === name
     );
+
     setCount(found.length);
-  }, [name, scene]);
+  }, [name, objects]);
 
   return (
     <Grid item xs sx={{ minWidth: "120px" }}>

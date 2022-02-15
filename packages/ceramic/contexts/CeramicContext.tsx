@@ -16,7 +16,7 @@ export const loader = new TileLoader({ ceramic, cache: true });
 
 const defaultValue = {
   authenticated: false,
-  id: undefined as string | undefined,
+  userId: undefined as string | undefined,
   connect: () => {},
   disconnect: () => {},
 };
@@ -25,7 +25,7 @@ export const CeramicContext = React.createContext(defaultValue);
 
 export function CeramicProvider({ children }: { children: ReactChild }) {
   const [authenticated, setAuthenticated] = useState(false);
-  const [id, setId] = useState<string>();
+  const [userId, setUserId] = useState<string>();
 
   async function connect() {
     const addresses = await window.ethereum.enable();
@@ -45,19 +45,19 @@ export function CeramicProvider({ children }: { children: ReactChild }) {
     ceramic.did = did;
 
     setAuthenticated(did.authenticated);
-    setId(did.id);
+    setUserId(did.id);
   }
 
   function disconnect() {
     setAuthenticated(false);
-    setId("");
+    setUserId("");
   }
 
   return (
     <CeramicContext.Provider
       value={{
         authenticated,
-        id,
+        userId,
         connect,
         disconnect,
       }}

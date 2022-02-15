@@ -26,7 +26,8 @@ export default function Editor() {
   useEffect(() => {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
-    setSceneId(urlParams.get("scene"));
+    const id = urlParams.get("scene");
+    setSceneId(id);
   }, [setSceneId]);
 
   return (

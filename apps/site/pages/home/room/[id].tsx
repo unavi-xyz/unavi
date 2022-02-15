@@ -12,7 +12,7 @@ export default function Room() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { authenticated, id: userId } = useContext(CeramicContext);
+  const { authenticated, userId: userId } = useContext(CeramicContext);
 
   const identicon = useIdenticon(id);
   const { room, controller } = useRoom(id);

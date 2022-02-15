@@ -19,7 +19,7 @@ export function World({ worldId }: Props) {
       <directionalLight intensity={0.5} />
       <Ground />
       <Sky />
-      <Objects objects={world.scene} />;
+      <Objects objects={Object.values(world.objects)} />;
     </group>
   );
 }

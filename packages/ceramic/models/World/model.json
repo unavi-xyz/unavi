@@ -1,9 +1,9 @@
 {
   "definitions": {
-    "world": "kjzl6cwe1jw14antr1k7i50sccut74tl194djjhs8doyemh02l4e0537rz17h6g"
+    "world": "kjzl6cwe1jw14859e5wvw2fz5t25yk86ebr2sdb8sp4xyipk9prq8cav203f05p"
   },
   "schemas": {
-    "World": "ceramic://k3y52l7qbv1fryd2aq6pj6fncgywmhcl3f76v18ew84brobxr3k8u2kroxgmqwjy8"
+    "World": "ceramic://k3y52l7qbv1fryhd1a27woodkg07iqh6oa8w4a15f5ujq95tvl4oietnqd2jzxdz4"
   },
   "tiles": {}
 }

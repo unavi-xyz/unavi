@@ -11,7 +11,7 @@ interface Props {
 
 export default function EditorObject({ id }: Props) {
   const setSelected = useStore((state) => state.setSelected);
-  const object = useStore((state) => state.scene[id]);
+  const object = useStore((state) => state.objects[id]);
 
   const ref = useRef<Group>();
 

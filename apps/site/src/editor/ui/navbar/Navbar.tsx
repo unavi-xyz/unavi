@@ -3,21 +3,21 @@ import { Button, Grid, Paper, Stack } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
 import { ColorIconButton } from "ui";
-import { CeramicContext, ceramic, loader, World } from "ceramic";
-import { ASSET_NAMES } from "3d";
+import {
+  CeramicContext,
+  ceramic,
+  loader,
+  World,
+  addWorld,
+  newWorld,
+} from "ceramic";
 
-import { useStore, EditorScene } from "../../hooks/useStore";
-
+import { useStore } from "../../hooks/useStore";
 import SceneName from "./SceneName";
 import Tools from "./Tools";
-
-const worldModel = require("ceramic/models/World/model.json");
-const worldsModel = require("ceramic/models/Worlds/model.json");
-
-const worldSchemaId = worldModel.schemas.World;
+import { ASSET_NAMES, PARAM_NAMES } from "3d";
 
 export default function Navbar() {
   const router = useRouter();
@@ -25,19 +25,14 @@ export default function Navbar() {
   const { authenticated } = useContext(CeramicContext);
 
   const sceneId = useStore((state) => state.sceneId);
-  const scene = useStore((state) => state.scene);
-  const setPlayMode = useStore((state) => state.setPlayMode);
-  const save = useStore((state) => state.save);
   const toJSON = useStore((state) => state.toJSON);
+  const setPlayMode = useStore((state) => state.setPlayMode);
+  const objects = useStore((state) => state.objects);
 
   async function handleBack() {
     const canvas = document.querySelector("canvas");
     const image = canvas.toDataURL("image/jpeg");
     localStorage.setItem(`${sceneId}-preview`, image);
-
-    save();
-    const json = toJSON();
-    localStorage.setItem(`${sceneId}-scene`, json);
 
     router.push(`/home/scene/${sceneId}`);
   }
@@ -47,27 +42,25 @@ export default function Navbar() {
     const description = localStorage.getItem(`${sceneId}-description`);
     const image = localStorage.getItem(`${sceneId}-preview`);
 
-    const objects = Object.values(scene).map((obj) => obj.instance);
+    const world: World = {
+      name,
+      description,
+      image,
+      spawn: [0, 0, 0],
+      objects: {},
+    };
 
-    const spawn = getSpawn(scene);
+    Object.values(objects).forEach((obj) => {
+      world.objects[obj.instance.id] = obj.instance;
 
-    const world: World = { name, description, image, spawn, scene: objects };
+      if (obj.instance.type === ASSET_NAMES.Spawn) {
+        world.spawn = obj.instance.params[PARAM_NAMES.position];
+      }
+    });
 
-    //create tile
-    const stream = await loader.create(
-      world,
-      { schema: worldSchemaId },
-      { pin: true }
-    );
-    const streamId = stream.id.toString();
-
-    //add tile to worlds did record
-    const store = new DIDDataStore({ ceramic, model: worldsModel });
-    const oldWorlds = await store.get("worlds");
-    const newWorlds = oldWorlds
-      ? [...Object.values(oldWorlds), streamId]
-      : [streamId];
-    await store.set("worlds", newWorlds, { pin: true });
+    //upload to ceramic
+    const streamId = await newWorld(world, loader);
+    await addWorld(streamId, ceramic);
 
     router.push(`/home/world/${streamId}`);
   }
@@ -79,8 +72,6 @@ export default function Navbar() {
   function handleDownload() {
     const name = localStorage.getItem(`${sceneId}-name`);
     const fileName = name?.length > 0 ? name : "scene";
-
-    save();
     const json = toJSON();
     downloadJson(json, `${fileName}.json`);
   }
@@ -142,18 +133,6 @@ export default function Navbar() {
       </Grid>
     </Paper>
   );
-}
-
-function getSpawn(scene: EditorScene) {
-  const object = Object.values(scene).find(
-    (obj) => obj.instance.type === ASSET_NAMES.Spawn
-  );
-
-  if (!object) return;
-
-  const spawn = object.instance.params.position;
-  spawn[1] += 2;
-  return spawn;
 }
 
 function downloadJson(text, name) {

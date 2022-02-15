@@ -6,7 +6,7 @@ import { CeramicContext, useRoom, useWorld } from "ceramic";
 import { Player, RAYCASTER_SETTINGS, Room } from "3d";
 
 export default function App() {
-  const { id, authenticated, connect } = useContext(CeramicContext);
+  const { userId, authenticated, connect } = useContext(CeramicContext);
 
   useEffect(() => {
     if (!authenticated) connect();
@@ -29,7 +29,7 @@ export default function App() {
       <div className="crosshair" />
 
       <Canvas raycaster={RAYCASTER_SETTINGS}>
-        <Room roomId={roomId} userId={id}>
+        <Room roomId={roomId} userId={userId}>
           <Player spawn={world.spawn} />
         </Room>
       </Canvas>

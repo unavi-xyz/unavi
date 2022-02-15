@@ -1,11 +1,15 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, Stack, TextField } from "@mui/material";
-import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
 import { BasicModal } from "ui";
-import { ceramic, CeramicContext, merge, unpin, useWorld } from "ceramic";
-
-const model = require("ceramic/models/Worlds/model.json");
+import {
+  ceramic,
+  CeramicContext,
+  merge,
+  removeWorld,
+  unpin,
+  useWorld,
+} from "ceramic";
 
 interface Props {
   open: boolean;
@@ -16,7 +20,7 @@ export default function EditWorldModal({ open, handleClose }: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { id: userId } = useContext(CeramicContext);
+  const { userId } = useContext(CeramicContext);
 
   const { world } = useWorld(id);
 
@@ -39,14 +43,8 @@ export default function EditWorldModal({ open, handleClose }: Props) {
   }
 
   async function handleDelete() {
-    //unpin the tile
     await unpin(id);
-
-    //remove from user worlds
-    const store = new DIDDataStore({ ceramic, model });
-    const data = (await store.get("worlds", userId)) as string[];
-    const newWorlds = data.filter((worldId) => worldId !== id);
-    await store.set("worlds", newWorlds, { pin: true });
+    removeWorld(id, userId, ceramic);
 
     handleClose();
   }

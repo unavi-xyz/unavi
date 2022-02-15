@@ -12,7 +12,7 @@ export default function UserLayout({ children }) {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { id: userId } = useContext(CeramicContext);
+  const { userId } = useContext(CeramicContext);
 
   const [open, setOpen] = useState(false);
 

@@ -9,7 +9,7 @@ export function useHotkeys() {
   const setTool = useStore((state) => state.setTool);
   const deleteObject = useStore((state) => state.deleteObject);
   const addObject = useStore((state) => state.addObject);
-  const scene = useStore((state) => state.scene);
+  const objects = useStore((state) => state.objects);
 
   const copied = useRef<EditorObject<ASSET_NAMES>>();
   const holdingV = useRef(false);
@@ -41,7 +41,7 @@ export function useHotkeys() {
           break;
         case "v":
           if (e.ctrlKey && copied.current && !holdingV.current) {
-            const count = Object.values(scene).filter(
+            const count = Object.values(objects).filter(
               (item) => item.instance.type === copied.current.instance.type
             ).length;
             const limit = ASSETS[copied.current.instance.type].limit;
@@ -79,5 +79,5 @@ export function useHotkeys() {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
     };
-  }, [addObject, deleteObject, scene, selected, setSelected, setTool]);
+  }, [addObject, deleteObject, objects, selected, setSelected, setTool]);
 }

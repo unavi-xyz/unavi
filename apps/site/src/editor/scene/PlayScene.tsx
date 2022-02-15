@@ -1,27 +1,19 @@
-import { useState } from "react";
 import { Sky } from "@react-three/drei";
-import { ASSET_NAMES, Player, Objects, Ground } from "3d";
+import { Triplet } from "@react-three/cannon";
+import { Player, Objects, Ground, ASSET_NAMES, PARAM_NAMES } from "3d";
 
-import { EditorScene, useStore } from "../hooks/useStore";
-
-function getSpawn(scene: EditorScene) {
-  const object = Object.values(scene).find(
-    (obj) => obj.instance.type === ASSET_NAMES.Spawn
-  );
-
-  if (!object) return;
-
-  const spawn = object.instance.params.position;
-  spawn[1] += 2;
-  return spawn;
-}
+import { useStore } from "../hooks/useStore";
 
 export default function PlayScene() {
-  const scene = useStore((state) => state.scene);
+  const objects = useStore((state) => state.objects);
 
-  const objects = Object.values(scene).map((obj) => obj.instance);
+  const instances = Object.values(objects).map((obj) => obj.instance);
 
-  const [spawn] = useState(getSpawn(scene));
+  const params = instances.find(
+    (obj) => obj.type === ASSET_NAMES.Spawn
+  )?.params;
+
+  const spawn: Triplet = params ? params[PARAM_NAMES.position] : [0, 0, 0];
 
   return (
     <group>
@@ -31,7 +23,7 @@ export default function PlayScene() {
       <Ground />
 
       <Player spawn={spawn} />
-      <Objects objects={objects} />
+      <Objects objects={instances} />
     </group>
   );
 }

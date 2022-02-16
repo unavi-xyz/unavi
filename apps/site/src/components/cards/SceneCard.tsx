@@ -1,14 +1,8 @@
 import { useEffect, useState } from "react";
-import {
-  Card,
-  CardActionArea,
-  CardContent,
-  CardMedia,
-  Grid,
-  Typography,
-} from "@mui/material";
-import Link from "next/link";
+import { Typography } from "@mui/material";
 import { useIdenticon } from "ui";
+
+import BasicCard from "./BasicCard";
 
 interface Props {
   id: string;
@@ -28,21 +22,8 @@ export default function SceneCard({ id }: Props) {
   }, [id]);
 
   return (
-    <Grid item xs={12} sm={6}>
-      <Card variant="outlined" sx={{ borderRadius: 0 }}>
-        <Link href={`/home/scene/${id}`} passHref>
-          <CardActionArea>
-            <CardMedia
-              component="img"
-              height="140px"
-              image={preview ?? identicon}
-            />
-            <CardContent sx={{ p: 2, borderTop: "1px solid rgba(0,0,0,0.12)" }}>
-              <Typography>🚧 {name}</Typography>
-            </CardContent>
-          </CardActionArea>
-        </Link>
-      </Card>
-    </Grid>
+    <BasicCard href={`/home/scene/${id}`} image={preview ?? identicon}>
+      <Typography>🚧 {name}</Typography>
+    </BasicCard>
   );
 }

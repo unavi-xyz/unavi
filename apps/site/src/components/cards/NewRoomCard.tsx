@@ -31,9 +31,9 @@ export default function NewRoomCard({ worldId }: Props) {
   }
 
   return (
-    <Grid item xs={12} sm={6} md={4}>
+    <Grid item xs={12} sm={6}>
       <Tooltip title={loading ? "" : "New Room"}>
-        <Card variant="outlined" sx={{ borderRadius: 0, height: "199px" }}>
+        <Card variant="outlined" sx={{ borderRadius: 0, height: "200px" }}>
           <CardActionArea
             disabled={loading}
             onClick={handleClick}

@@ -15,6 +15,7 @@ import {
   ceramic,
   CeramicContext,
   removeStatus,
+  unpin,
   useProfile,
   useStatus,
 } from "ceramic";
@@ -35,6 +36,7 @@ export default function FeedItem({ streamId }: Props) {
 
   async function handleDelete() {
     setAnchorEl(null);
+    await unpin(streamId);
     await removeStatus(streamId, userId, ceramic);
     setDeleted(true);
   }

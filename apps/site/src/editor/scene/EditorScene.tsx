@@ -17,8 +17,10 @@ export default function EditorScene() {
     <group>
       <ambientLight intensity={0.1} />
       <directionalLight intensity={0.5} />
-      <Ground />
       <Sky />
+      <group onClick={(e) => e.stopPropagation()}>
+        <Ground />
+      </group>
 
       <OrbitControls makeDefault />
       <Gizmo />

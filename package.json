@@ -15,8 +15,7 @@
   },
   "pre-commit": [
     "format",
-    "lint",
-    "build"
+    "lint"
   ],
   "devDependencies": {
     "pre-commit": "^1.2.2",

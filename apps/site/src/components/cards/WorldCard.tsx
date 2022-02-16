@@ -5,6 +5,7 @@ import {
   CardContent,
   CardMedia,
   Grid,
+  Skeleton,
   Typography,
 } from "@mui/material";
 import Link from "next/link";
@@ -27,8 +28,6 @@ export default function WorldCard({ id }: Props) {
     else setName(id);
   }, [id, world]);
 
-  if (!world) return <></>;
-
   return (
     <Grid item xs={12} sm={6} md={4}>
       <Card variant="outlined" sx={{ borderRadius: 0 }}>
@@ -40,9 +39,13 @@ export default function WorldCard({ id }: Props) {
               image={world?.image ?? identicon}
             />
             <CardContent style={{ borderTop: "1px solid rgba(0,0,0,0.12)" }}>
-              <Typography style={{ wordBreak: "break-word" }}>
-                🌏 {name}
-              </Typography>
+              {name ? (
+                <Typography style={{ wordBreak: "break-word" }}>
+                  🌏 {name}
+                </Typography>
+              ) : (
+                <Skeleton variant="text" />
+              )}
             </CardContent>
           </CardActionArea>
         </Link>

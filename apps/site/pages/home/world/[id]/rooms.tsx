@@ -1,12 +1,9 @@
-import { useContext } from "react";
-import { Button } from "@mui/material";
+import { useContext, useState } from "react";
+import { LoadingButton } from "@mui/lab";
 import { useRouter } from "next/router";
-import { CeramicContext, Room, loader } from "ceramic";
+import { CeramicContext, Room, loader, newRoom } from "ceramic";
 
 import WorldLayout from "../../../../src/layouts/WorldLayout";
-
-const roomModel = require("ceramic/models/Room/model.json");
-const roomSchemaId = roomModel.schemas.Scene;
 
 export default function Rooms() {
   const router = useRouter();
@@ -14,19 +11,21 @@ export default function Rooms() {
 
   const { authenticated } = useContext(CeramicContext);
 
-  async function handleNewRoom() {
-    const room: Room = { worldStreamId: id };
+  const [loading, setLoading] = useState(false);
 
-    //create tile
-    const stream = await loader.create(room, { schema: roomSchemaId });
-    const streamId = stream.id.toString();
+  async function handleNewRoom() {
+    setLoading(true);
+
+    const room: Room = { worldStreamId: id };
+    const streamId = await newRoom(room, loader);
 
     const url = `/home/room/${streamId}`;
     router.push(url);
   }
 
   return (
-    <Button
+    <LoadingButton
+      loading={loading}
       variant="contained"
       color="secondary"
       onClick={handleNewRoom}
@@ -34,7 +33,7 @@ export default function Rooms() {
       fullWidth
     >
       Create Room
-    </Button>
+    </LoadingButton>
   );
 }
 

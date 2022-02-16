@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, Checkbox, Stack, TextField, Typography } from "@mui/material";
+import { LoadingButton } from "@mui/lab";
 import { useRouter } from "next/router";
 import { BasicModal } from "ui";
 import {
@@ -30,6 +31,7 @@ export default function EditRoomModal({ open, handleClose }: Props) {
 
   const [name, setName] = useState("");
   const [checked, setChecked] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!room) return;
@@ -43,6 +45,7 @@ export default function EditRoomModal({ open, handleClose }: Props) {
   }, [id, rooms]);
 
   async function handleSave() {
+    setLoading(true);
     if (checked) addRoom(id, ceramic);
     else removeRoom(id, userId, ceramic);
 
@@ -80,14 +83,15 @@ export default function EditRoomModal({ open, handleClose }: Props) {
           >
             Cancel
           </Button>
-          <Button
+          <LoadingButton
+            loading={loading}
             variant="contained"
             color="secondary"
             sx={{ width: "100%" }}
             onClick={handleSave}
           >
             Save
-          </Button>
+          </LoadingButton>
         </Stack>
       </Stack>
     </BasicModal>

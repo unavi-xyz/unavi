@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { createAvatar } from "@dicebear/avatars";
 import * as style from "@dicebear/avatars-identicon-sprites";
 
-export function useIdenticon(seed: string | null) {
+export function useIdenticon(seed: string | undefined) {
   const [profilePicture, setProfilePicture] = useState("");
 
   useEffect(() => {

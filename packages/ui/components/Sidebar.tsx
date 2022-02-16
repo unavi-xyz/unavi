@@ -6,6 +6,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { LoadingButton } from "@mui/lab";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import Link from "next/link";
 import { CeramicContext, useProfile } from "ceramic";
@@ -23,17 +24,14 @@ export function Sidebar({
   titleHref = "/",
   children,
 }: Props) {
-  const {
-    authenticated,
-    userId: id,
-    connect,
-    disconnect,
-  } = useContext(CeramicContext);
+  const { authenticated, userId, connect, disconnect } =
+    useContext(CeramicContext);
 
-  const identicon = useIdenticon(id);
-  const { profile, imageUrl } = useProfile(id);
+  const identicon = useIdenticon(userId);
+  const { profile, imageUrl } = useProfile(userId);
 
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   function handleToggle() {
     setOpen((prev) => !prev);
@@ -41,6 +39,12 @@ export function Sidebar({
 
   function handleClose() {
     setOpen(false);
+  }
+
+  async function handleConnect() {
+    setLoading(true);
+    await connect();
+    setLoading(false);
   }
 
   return (
@@ -118,7 +122,7 @@ export function Sidebar({
                         overflow: "hidden",
                       }}
                     >
-                      {id}
+                      {userId}
                     </Typography>
                   </Stack>
 
@@ -129,9 +133,10 @@ export function Sidebar({
           </Stack>
         </span>
       ) : (
-        <Button
+        <LoadingButton
+          loading={loading}
           variant="contained"
-          onClick={connect}
+          onClick={handleConnect}
           style={{
             fontSize: "1rem",
             margin: "1rem",
@@ -140,7 +145,7 @@ export function Sidebar({
           }}
         >
           Connect Wallet
-        </Button>
+        </LoadingButton>
       )}
     </Stack>
   );

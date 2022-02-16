@@ -1,5 +1,6 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { Button, Grid, Paper, Stack } from "@mui/material";
+import { LoadingButton } from "@mui/lab";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -29,6 +30,8 @@ export default function Navbar() {
   const setPlayMode = useStore((state) => state.setPlayMode);
   const objects = useStore((state) => state.objects);
 
+  const [loading, setLoading] = useState(false);
+
   async function handleBack() {
     const canvas = document.querySelector("canvas");
     const image = canvas.toDataURL("image/jpeg");
@@ -38,6 +41,8 @@ export default function Navbar() {
   }
 
   async function handlePublish() {
+    setLoading(true);
+
     const name = localStorage.getItem(`${sceneId}-name`);
     const description = localStorage.getItem(`${sceneId}-description`);
     const image = localStorage.getItem(`${sceneId}-preview`);
@@ -110,7 +115,8 @@ export default function Navbar() {
               </ColorIconButton>
             </Stack>
 
-            <Button
+            <LoadingButton
+              loading={loading}
               variant="contained"
               color="secondary"
               size="small"
@@ -127,7 +133,7 @@ export default function Navbar() {
               }}
             >
               Publish
-            </Button>
+            </LoadingButton>
           </Stack>
         </Grid>
       </Grid>

@@ -70,14 +70,12 @@ export const useStore = create((set: any, get: any) => ({
     set((state) => {
       const newObjects = { ...state.objects };
       newObjects[object.id] = object;
-      return { objects: newObjects };
+      return { objects: newObjects, selected: object };
     });
-
-    return true;
   },
 
   newObject: (type: ASSET_NAMES) => {
-    const obj: EditorObject<ASSET_NAMES> = new EditorObject(type, {
+    const obj = new EditorObject(type, {
       ...ASSETS[type].params,
     });
 

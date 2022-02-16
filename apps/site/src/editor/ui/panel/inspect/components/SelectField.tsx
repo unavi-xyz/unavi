@@ -13,6 +13,7 @@ interface Props {
   title: string;
   type: PARAM_NAMES;
   options: string[];
+  optionsText: string[];
   params: typeof ASSETS[ASSET_NAMES]["params"];
   setParams: Dispatch<SetStateAction<typeof ASSETS[ASSET_NAMES]["params"]>>;
 }
@@ -21,6 +22,7 @@ export default function SelectField({
   title,
   type,
   options,
+  optionsText,
   params,
   setParams,
 }: Props) {
@@ -45,10 +47,10 @@ export default function SelectField({
               value={params[type]}
               onChange={handleChange}
             >
-              {options.map((option) => {
+              {options.map((option, i) => {
                 return (
                   <MenuItem key={option} value={option}>
-                    {option}
+                    {optionsText[i]}
                   </MenuItem>
                 );
               })}

@@ -10,7 +10,7 @@ import { LoadingButton } from "@mui/lab";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import { CeramicContext, useProfile } from "ceramic";
 
-import { useIdenticon } from "../hooks/useIdenticon";
+import { useIdenticon } from "../../hooks/useIdenticon";
 
 export default function UserProfileButton() {
   const { authenticated, userId, connect, disconnect } =

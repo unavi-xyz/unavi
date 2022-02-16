@@ -13,7 +13,6 @@ This monorepo uses [Yarn](https://yarnpkg.com/) as a package manager. It include
 - `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components
 - `avatars`: [Three.js](https://github.com/pmndrs/react-three-fiber) IK avatar components
 - `ceramic`: helpers for interacting with [Ceramic](https://ceramic.network/)
-- `ui`: react ui components
 - `config`: `eslint` configurations
 - `tsconfig`: `tsconfig.json`s used throughout the monorepo
 

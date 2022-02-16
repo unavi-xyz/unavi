@@ -5,7 +5,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { useRouter } from "next/router";
-import { ColorIconButton } from "ui";
+import { ASSET_NAMES, PARAM_NAMES } from "3d";
 import {
   CeramicContext,
   ceramic,
@@ -18,7 +18,8 @@ import {
 import { useStore } from "../../hooks/useStore";
 import SceneName from "./SceneName";
 import Tools from "./Tools";
-import { ASSET_NAMES, PARAM_NAMES } from "3d";
+
+import ColorIconButton from "../../../components/ColorIconButton";
 
 export default function Navbar() {
   const router = useRouter();

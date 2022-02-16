@@ -1,6 +1,8 @@
 import { Box, Grid, Paper, useMediaQuery } from "@mui/material";
 import Head from "next/head";
-import { Sidebar, theme } from "ui";
+
+import { theme } from "../theme";
+import Sidebar from "../components/sidebar/Sidebar";
 
 export default function HomeLayout({ children }) {
   const md = useMediaQuery(theme.breakpoints.up("md"));

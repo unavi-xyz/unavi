@@ -10,11 +10,13 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { HomeNavbar, theme, useIdenticon } from "ui";
 import { CeramicContext, useProfile, useRoom, useWorld } from "ceramic";
 
+import { theme } from "../../../src/theme";
+import { useIdenticon } from "../../../src/hooks/useIdenticon";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import EditRoomModal from "../../../src/components/modals/EditRoomModal";
+import HomeNavbar from "../../../src/components/HomeNavbar";
 
 export default function Room() {
   const router = useRouter();

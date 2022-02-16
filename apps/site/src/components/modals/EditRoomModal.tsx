@@ -2,7 +2,6 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Checkbox, Stack, TextField, Typography } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 import { useRouter } from "next/router";
-import { BasicModal } from "ui";
 import {
   addRoom,
   ceramic,
@@ -13,6 +12,8 @@ import {
   useRooms,
   useWorld,
 } from "ceramic";
+
+import BasicModal from "./BasicModal";
 
 interface Props {
   open: boolean;

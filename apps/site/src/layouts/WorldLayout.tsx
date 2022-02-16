@@ -2,11 +2,12 @@ import { useContext, useEffect, useState } from "react";
 import { Box, Button, Divider, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { HomeNavbar, useIdenticon } from "ui";
 import { CeramicContext, useWorld, useProfile } from "ceramic";
 
 import HomeLayout from "./HomeLayout";
 import EditWorldModal from "../components/modals/EditWorldModal";
+import HomeNavbar from "../components/HomeNavbar";
+import { useIdenticon } from "../hooks/useIdenticon";
 
 export default function WorldLayout({ children }) {
   const router = useRouter();

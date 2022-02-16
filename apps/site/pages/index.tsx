@@ -1,11 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Grid, Button, Typography, Link as MuiLink } from "@mui/material";
+import {
+  Grid,
+  Button,
+  Typography,
+  Link as MuiLink,
+  useMediaQuery,
+} from "@mui/material";
 
-import { useWindowDimensions } from "ui";
 import { GITHUB_URL, DISCORD_URL } from "../src/constants";
+import { theme } from "../src/theme";
 import Navbar from "../src/components/Navbar";
-
 import awooga from "../public/images/awooga.jpg";
 
 export default function Landing() {
@@ -18,7 +23,7 @@ export default function Landing() {
 }
 
 function Body() {
-  const { isXs } = useWindowDimensions();
+  const xs = useMediaQuery(theme.breakpoints.up("xs"));
 
   return (
     <Grid container direction="column">
@@ -179,7 +184,7 @@ function Body() {
             style={{
               border: "solid grey 2px",
               lineHeight: "0px",
-              marginTop: isXs ? "32px" : "0px",
+              marginTop: xs ? "32px" : "0px",
             }}
           >
             <Image src={awooga} alt="anime girls" />

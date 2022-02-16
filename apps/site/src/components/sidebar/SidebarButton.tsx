@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { CeramicContext } from "ceramic";
 
-export function SidebarButton({
+export default function SidebarButton({
   emoji = "",
   text = "",
   href = "",

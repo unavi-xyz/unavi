@@ -31,7 +31,6 @@
     "react-split": "^2.0.14",
     "swr": "^1.1.2",
     "three": "^0.136.0",
-    "ui": "*",
     "zustand": "^3.6.9"
   },
   "devDependencies": {

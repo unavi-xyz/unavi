@@ -8,8 +8,10 @@ import {
   Tooltip,
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
-import { BasicModal, useIdenticon } from "ui";
 import { CeramicContext, ImageSources, useProfile } from "ceramic";
+
+import { useIdenticon } from "../../hooks/useIdenticon";
+import BasicModal from "./BasicModal";
 
 interface Props {
   open: boolean;

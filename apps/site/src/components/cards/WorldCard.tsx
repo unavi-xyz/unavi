@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Skeleton, Typography } from "@mui/material";
-import { useIdenticon } from "ui";
 import { useWorld } from "ceramic";
 
+import { useIdenticon } from "../../hooks/useIdenticon";
 import BasicCard from "./BasicCard";
 
 interface Props {

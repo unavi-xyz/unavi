@@ -4,10 +4,11 @@ import MenuIcon from "@mui/icons-material/Menu";
 import Link from "next/link";
 import { CeramicContext } from "ceramic";
 
-import { SidebarButton, theme } from "..";
+import { theme } from "../../theme";
+import SidebarButton from "./SidebarButton";
 import UserProfileButton from "./UserProfileButton";
 
-export function Sidebar() {
+export default function Sidebar() {
   const [openDrawer, setOpenDrawer] = useState(false);
 
   const md = useMediaQuery(theme.breakpoints.up("md"));

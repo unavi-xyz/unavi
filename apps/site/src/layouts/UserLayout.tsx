@@ -10,11 +10,13 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { HomeNavbar, theme, useIdenticon } from "ui";
 import { CeramicContext, useProfile } from "ceramic";
 
+import { theme } from "../theme";
+import { useIdenticon } from "../hooks/useIdenticon";
 import HomeLayout from "./HomeLayout";
 import EditProfileModal from "../components/modals/EditProfileModal";
+import HomeNavbar from "../components/HomeNavbar";
 
 export default function UserLayout({ children }) {
   const router = useRouter();

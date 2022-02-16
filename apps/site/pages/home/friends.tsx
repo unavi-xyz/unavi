@@ -1,6 +1,6 @@
 import { Grid } from "@mui/material";
-import { HomeNavbar } from "ui";
 
+import HomeNavbar from "../../src/components/HomeNavbar";
 import HomeLayout from "../../src/layouts/HomeLayout";
 
 export default function Friends() {

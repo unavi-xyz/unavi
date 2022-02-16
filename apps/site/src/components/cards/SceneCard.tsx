@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Typography } from "@mui/material";
-import { useIdenticon } from "ui";
 
+import { useIdenticon } from "../../hooks/useIdenticon";
 import BasicCard from "./BasicCard";
 
 interface Props {

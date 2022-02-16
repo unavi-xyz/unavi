@@ -12,7 +12,13 @@ interface Props {
   more?: undefined | (() => void);
 }
 
-export function HomeNavbar({ text = "", emoji = "", href, back, more }: Props) {
+export default function HomeNavbar({
+  text = "",
+  emoji = "",
+  href,
+  back,
+  more,
+}: Props) {
   const [prevPath, setPrevPath] = useState("/home");
 
   useEffect(() => {
@@ -21,7 +27,7 @@ export function HomeNavbar({ text = "", emoji = "", href, back, more }: Props) {
     );
     const value = history[history.length - 2] ?? "/home";
     setPrevPath(value);
-  });
+  }, []);
 
   function onBack() {
     const history: string[] = JSON.parse(

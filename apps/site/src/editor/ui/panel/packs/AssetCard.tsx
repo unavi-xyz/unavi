@@ -23,7 +23,7 @@ export default function AssetCard({ name }: Props) {
   const limit = ASSETS[name].limit;
 
   function handleClick() {
-    if (count < limit || limit < 0) newObject(name);
+    newObject(name);
   }
 
   useEffect(() => {

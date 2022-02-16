@@ -1,15 +1,9 @@
 import { useEffect, useState } from "react";
-import {
-  Card,
-  CardActionArea,
-  CardContent,
-  CardMedia,
-  Grid,
-  Typography,
-} from "@mui/material";
-import Link from "next/link";
-import { useIdenticon } from "ui";
+import { Skeleton, Typography } from "@mui/material";
 import { useWorld } from "ceramic";
+
+import { useIdenticon } from "../../hooks/useIdenticon";
+import BasicCard from "./BasicCard";
 
 interface Props {
   id: string;
@@ -27,26 +21,13 @@ export default function WorldCard({ id }: Props) {
     else setName(id);
   }, [id, world]);
 
-  if (!world) return <></>;
-
   return (
-    <Grid item xs={12} sm={6} md={4}>
-      <Card variant="outlined" sx={{ borderRadius: 0 }}>
-        <Link href={`/home/world/${id}`} passHref>
-          <CardActionArea>
-            <CardMedia
-              component="img"
-              height="140px"
-              image={world?.image ?? identicon}
-            />
-            <CardContent style={{ borderTop: "1px solid rgba(0,0,0,0.12)" }}>
-              <Typography style={{ wordBreak: "break-word" }}>
-                🌏 {name}
-              </Typography>
-            </CardContent>
-          </CardActionArea>
-        </Link>
-      </Card>
-    </Grid>
+    <BasicCard href={`/home/world/${id}`} image={world?.image ?? identicon}>
+      {name ? (
+        <Typography style={{ wordBreak: "break-word" }}>🌏 {name}</Typography>
+      ) : (
+        <Skeleton variant="text" />
+      )}
+    </BasicCard>
   );
 }

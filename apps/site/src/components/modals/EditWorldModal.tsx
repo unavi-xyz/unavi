@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, Stack, TextField } from "@mui/material";
+import { LoadingButton } from "@mui/lab";
 import { useRouter } from "next/router";
-import { BasicModal } from "ui";
 import {
   ceramic,
   CeramicContext,
@@ -10,6 +10,8 @@ import {
   unpin,
   useWorld,
 } from "ceramic";
+
+import BasicModal from "./BasicModal";
 
 interface Props {
   open: boolean;
@@ -26,6 +28,8 @@ export default function EditWorldModal({ open, handleClose }: Props) {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [loadingDelete, setLoadingDelete] = useState(false);
+  const [loadingSave, setLoadingSave] = useState(false);
 
   useEffect(() => {
     if (!world) return;
@@ -35,6 +39,8 @@ export default function EditWorldModal({ open, handleClose }: Props) {
   }, [world]);
 
   async function handleSave() {
+    setLoadingSave(true);
+
     const newContent = { name, description };
     await merge(id, newContent);
 
@@ -43,8 +49,10 @@ export default function EditWorldModal({ open, handleClose }: Props) {
   }
 
   async function handleDelete() {
+    setLoadingDelete(true);
     await unpin(id);
     removeWorld(id, userId, ceramic);
+    setLoadingDelete(false);
 
     handleClose();
   }
@@ -52,14 +60,15 @@ export default function EditWorldModal({ open, handleClose }: Props) {
   return (
     <BasicModal open={open} handleClose={handleClose} title="World Settings">
       <Stack spacing={3}>
-        <Button
+        <LoadingButton
+          loading={loadingDelete}
           variant="contained"
           color="primary"
           sx={{ width: "100%" }}
           onClick={handleDelete}
         >
           Delete World
-        </Button>
+        </LoadingButton>
 
         <TextField
           variant="standard"
@@ -84,14 +93,15 @@ export default function EditWorldModal({ open, handleClose }: Props) {
           >
             Cancel
           </Button>
-          <Button
+          <LoadingButton
+            loading={loadingSave}
             variant="contained"
             color="secondary"
             sx={{ width: "100%" }}
             onClick={handleSave}
           >
             Save
-          </Button>
+          </LoadingButton>
         </Stack>
       </Stack>
     </BasicModal>

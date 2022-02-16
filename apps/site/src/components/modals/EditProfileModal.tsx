@@ -7,8 +7,11 @@ import {
   TextField,
   Tooltip,
 } from "@mui/material";
-import { BasicModal, useIdenticon } from "ui";
+import { LoadingButton } from "@mui/lab";
 import { CeramicContext, ImageSources, useProfile } from "ceramic";
+
+import { useIdenticon } from "../../hooks/useIdenticon";
+import BasicModal from "./BasicModal";
 
 interface Props {
   open: boolean;
@@ -24,6 +27,7 @@ export default function EditProfileModal({ open, handleClose }: Props) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<File>();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setName(profile?.name);
@@ -31,6 +35,8 @@ export default function EditProfileModal({ open, handleClose }: Props) {
   }, [profile]);
 
   async function handleSave() {
+    setLoading(true);
+
     if (image) {
       //upload image to IPFS
       const body = new FormData();
@@ -128,14 +134,15 @@ export default function EditProfileModal({ open, handleClose }: Props) {
           >
             Cancel
           </Button>
-          <Button
+          <LoadingButton
+            loading={loading}
             variant="contained"
             color="secondary"
             sx={{ width: "100%" }}
             onClick={handleSave}
           >
             Save
-          </Button>
+          </LoadingButton>
         </Stack>
       </Stack>
     </BasicModal>

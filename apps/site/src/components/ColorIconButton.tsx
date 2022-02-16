@@ -8,7 +8,7 @@ interface Props {
   [x: string]: any;
 }
 
-export function ColorIconButton({
+export default function ColorIconButton({
   tooltip = "",
   dark = false,
   children,

@@ -131,6 +131,7 @@ export default function Inspect() {
                 title="Type"
                 type={PARAM_NAMES.physType}
                 options={["Static", "Dynamic"]}
+                optionsText={["Static", "Dynamic (local)"]}
                 params={uiParams}
                 setParams={setUiParams}
               />

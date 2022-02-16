@@ -1,6 +1,5 @@
-import { Triplet } from "@react-three/cannon";
 import create from "zustand";
-import { ASSETS, ASSET_NAMES, EditorObject, PARAM_NAMES } from "3d";
+import { ASSETS, ASSET_NAMES, EditorObject } from "3d";
 
 export enum TOOLS {
   translate = "translate",
@@ -62,15 +61,21 @@ export const useStore = create((set: any, get: any) => ({
   },
 
   addObject: (object: EditorObject<ASSET_NAMES>) => {
+    const count = Object.values(get().objects as EditorScene).filter(
+      (item) => item.instance.type === object.instance.type
+    ).length;
+    const limit = ASSETS[object.instance.type].limit;
+    if (count >= limit && limit >= 0) return false;
+
     set((state) => {
       const newObjects = { ...state.objects };
       newObjects[object.id] = object;
-      return { objects: newObjects };
+      return { objects: newObjects, selected: object };
     });
   },
 
   newObject: (type: ASSET_NAMES) => {
-    const obj: EditorObject<ASSET_NAMES> = new EditorObject(type, {
+    const obj = new EditorObject(type, {
       ...ASSETS[type].params,
     });
 

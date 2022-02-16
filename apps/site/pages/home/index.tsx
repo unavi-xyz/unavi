@@ -1,6 +1,6 @@
 import { Grid, Link, Stack, Typography } from "@mui/material";
-import { HomeNavbar } from "ui";
 
+import HomeNavbar from "../../src/components/HomeNavbar";
 import { DISCORD_URL } from "../../src/constants";
 import HomeLayout from "../../src/layouts/HomeLayout";
 

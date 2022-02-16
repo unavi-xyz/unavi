@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Button, Stack, TextField } from "@mui/material";
 import { useRouter } from "next/router";
-import { BasicModal } from "ui";
+
+import BasicModal from "./BasicModal";
 
 interface Props {
   id: string;

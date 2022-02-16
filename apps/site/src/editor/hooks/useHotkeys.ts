@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ASSETS, ASSET_NAMES, EditorObject, PARAM_NAMES } from "3d";
+import { ASSET_NAMES, EditorObject } from "3d";
 
 import { useStore, TOOLS } from "./useStore";
 
@@ -41,19 +41,10 @@ export function useHotkeys() {
           break;
         case "v":
           if (e.ctrlKey && copied.current && !holdingV.current) {
-            const count = Object.values(objects).filter(
-              (item) => item.instance.type === copied.current.instance.type
-            ).length;
-            const limit = ASSETS[copied.current.instance.type].limit;
-            if (count >= limit && limit >= 0) return;
-
             const obj = copied.current.clone();
-            obj.instance.params[PARAM_NAMES.position][0] += 0.2;
-            obj.instance.params[PARAM_NAMES.position][1] += 0.2;
-            obj.instance.params[PARAM_NAMES.position][2] += 0.2;
 
-            addObject(obj);
-            setSelected(obj);
+            const success = addObject(obj);
+            if (success) setSelected(obj);
           }
 
           holdingV.current = true;

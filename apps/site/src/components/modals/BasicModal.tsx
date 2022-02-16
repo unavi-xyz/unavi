@@ -8,7 +8,12 @@ interface Props {
   children: ReactChild | ReactChild[];
 }
 
-export function BasicModal({ open, handleClose, title = "", children }: Props) {
+export default function BasicModal({
+  open,
+  handleClose,
+  title = "",
+  children,
+}: Props) {
   return (
     <Modal open={open} onClose={handleClose}>
       <Box

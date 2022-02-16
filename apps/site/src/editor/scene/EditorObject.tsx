@@ -11,6 +11,7 @@ interface Props {
 
 export default function EditorObject({ id }: Props) {
   const setSelected = useStore((state) => state.setSelected);
+  const usingGizmo = useStore((state) => state.usingGizmo);
   const object = useStore((state) => state.objects[id]);
 
   const ref = useRef<Group>();
@@ -21,6 +22,7 @@ export default function EditorObject({ id }: Props) {
   }, [object]);
 
   function handleClick(e: ThreeEvent<MouseEvent>) {
+    if (usingGizmo) return;
     e.stopPropagation();
     setSelected(object);
   }

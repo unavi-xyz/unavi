@@ -4,9 +4,9 @@ import { ThemeProvider } from "@mui/material/styles";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { CeramicProvider } from "ceramic";
-import { theme } from "ui";
 
 import "../styles/globals.css";
+import { theme } from "../src/theme";
 
 export default function MyApp(props) {
   const { Component, pageProps } = props;

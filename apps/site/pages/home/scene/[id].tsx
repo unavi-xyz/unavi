@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { HomeNavbar, useIdenticon } from "ui";
 
+import { useIdenticon } from "../../../src/hooks/useIdenticon";
 import HomeLayout from "../../../src/layouts/HomeLayout";
 import EditSceneModal from "../../../src/components/modals/EditSceneModal";
+import HomeNavbar from "../../../src/components/HomeNavbar";
 
 export default function Scene() {
   const router = useRouter();

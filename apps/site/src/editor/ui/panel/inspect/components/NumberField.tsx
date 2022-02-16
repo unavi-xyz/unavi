@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Grid, TextField, Typography } from "@mui/material";
 import { ASSETS, ASSET_NAMES, PARAM_NAMES } from "3d";
 import { degToRad, radToDeg } from "three/src/math/MathUtils";
@@ -25,12 +25,19 @@ export default function NumberField({
   min,
 }: Props) {
   const single = typeof params[type] === "number";
-  const value: number[] = single ? [params[type]] : params[type];
 
-  const rounded = value.map((item) => {
-    const converted = variant === "radians" ? radToDeg(item) : item;
-    return Math.round(converted * 100) / 100;
-  });
+  const [displayed, setDisplayed] = useState<(string | number)[]>([]);
+
+  useEffect(() => {
+    const value: number[] = single ? [params[type]] : params[type];
+
+    const rounded = value.map((item) => {
+      const converted = variant === "radians" ? radToDeg(item) : item;
+      return Math.round(converted * 100) / 100;
+    });
+
+    setDisplayed(rounded);
+  }, [params, single, type, variant]);
 
   return (
     <Grid container direction="row" alignItems="center" columnSpacing={2}>
@@ -38,11 +45,19 @@ export default function NumberField({
         <Typography>{title}</Typography>
       </Grid>
 
-      {rounded.map((item, i) => {
+      {displayed.map((item, i) => {
         function handleChange(e) {
+          if (!e.target.value) {
+            setDisplayed((prev) => {
+              const newDisplayed = [...prev];
+              newDisplayed[i] = "";
+              return newDisplayed;
+            });
+            return;
+          }
+
           setParams((prev) => {
             const newParams = { ...prev };
-
             const converted =
               variant === "radians"
                 ? degToRad(Number(e.target.value))

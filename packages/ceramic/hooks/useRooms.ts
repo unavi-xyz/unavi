@@ -13,7 +13,8 @@ export function useRooms(did: string) {
     const data: string[] = Object.values(
       (await store.get("rooms", did)) as any
     );
-    return data;
+    const deduplicated = Array.from(new Set(data));
+    return deduplicated;
   }
 
   const { data } = useSWR(`rooms-${did}`, fetcher);

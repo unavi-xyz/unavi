@@ -1,22 +1,18 @@
 import { useEffect, useState } from "react";
-import {
-  Card,
-  CardActionArea,
-  CardContent,
-  CardMedia,
-  Grid,
-  Typography,
-} from "@mui/material";
-import Link from "next/link";
-import { useIdenticon } from "ui";
+import { Skeleton, Typography } from "@mui/material";
 import { useRoom, useWorld } from "ceramic";
+
+import { useIdenticon } from "../../hooks/useIdenticon";
+import BasicCard from "./BasicCard";
 
 interface Props {
   id: string;
+  worldFilter?: string;
 }
 
-export default function RoomCard({ id }: Props) {
+export default function RoomCard({ id, worldFilter }: Props) {
   const { room } = useRoom(id);
+
   const { world } = useWorld(room?.worldStreamId);
   const identicon = useIdenticon(id);
 
@@ -30,26 +26,15 @@ export default function RoomCard({ id }: Props) {
     else setName(id);
   }, [id, room, world]);
 
-  if (!room) return <></>;
+  if (worldFilter && room?.worldStreamId !== worldFilter) return null;
 
   return (
-    <Grid item xs={12} sm={6} md={4}>
-      <Card variant="outlined" sx={{ borderRadius: 0 }}>
-        <Link href={`/home/room/${id}`} passHref>
-          <CardActionArea>
-            <CardMedia
-              component="img"
-              height="140px"
-              image={world?.image ?? identicon}
-            />
-            <CardContent style={{ borderTop: "1px solid rgba(0,0,0,0.12)" }}>
-              <Typography style={{ wordBreak: "break-word" }}>
-                🚪 {name}
-              </Typography>
-            </CardContent>
-          </CardActionArea>
-        </Link>
-      </Card>
-    </Grid>
+    <BasicCard href={`/home/room/${id}`} image={world?.image ?? identicon}>
+      {name ? (
+        <Typography style={{ wordBreak: "break-word" }}>🚪 {name}</Typography>
+      ) : (
+        <Skeleton variant="text" />
+      )}
+    </BasicCard>
   );
 }

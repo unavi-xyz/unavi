@@ -12,7 +12,13 @@ interface Props {
   more?: undefined | (() => void);
 }
 
-export function HomeNavbar({ text = "", emoji = "", href, back, more }: Props) {
+export default function HomeNavbar({
+  text = "",
+  emoji = "",
+  href,
+  back,
+  more,
+}: Props) {
   const [prevPath, setPrevPath] = useState("/home");
 
   useEffect(() => {
@@ -21,7 +27,7 @@ export function HomeNavbar({ text = "", emoji = "", href, back, more }: Props) {
     );
     const value = history[history.length - 2] ?? "/home";
     setPrevPath(value);
-  });
+  }, []);
 
   function onBack() {
     const history: string[] = JSON.parse(
@@ -40,7 +46,7 @@ export function HomeNavbar({ text = "", emoji = "", href, back, more }: Props) {
         borderBottom: "1px solid rgba(0,0,0,.1)",
         paddingLeft: back || href ? 0.5 : 3,
         paddingRight: 1,
-        height: "50px",
+        minHeight: "50px",
       }}
     >
       {(back || href) && (
@@ -64,7 +70,7 @@ export function HomeNavbar({ text = "", emoji = "", href, back, more }: Props) {
 
       <Grid
         item
-        xs
+        xs={9}
         container
         justifyContent={back || href ? "center" : "flex-start"}
       >

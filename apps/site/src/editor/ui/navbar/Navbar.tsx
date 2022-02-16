@@ -1,10 +1,11 @@
-import { useContext } from "react";
-import { Button, Grid, Paper, Stack } from "@mui/material";
+import { useContext, useState } from "react";
+import { Grid, Paper, Stack } from "@mui/material";
+import { LoadingButton } from "@mui/lab";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { useRouter } from "next/router";
-import { ColorIconButton } from "ui";
+import { ASSET_NAMES, PARAM_NAMES } from "3d";
 import {
   CeramicContext,
   ceramic,
@@ -17,17 +18,20 @@ import {
 import { useStore } from "../../hooks/useStore";
 import SceneName from "./SceneName";
 import Tools from "./Tools";
-import { ASSET_NAMES, PARAM_NAMES } from "3d";
+
+import ColorIconButton from "../../../components/ColorIconButton";
 
 export default function Navbar() {
   const router = useRouter();
 
-  const { authenticated } = useContext(CeramicContext);
+  const { authenticated, connect } = useContext(CeramicContext);
 
   const sceneId = useStore((state) => state.sceneId);
   const toJSON = useStore((state) => state.toJSON);
   const setPlayMode = useStore((state) => state.setPlayMode);
   const objects = useStore((state) => state.objects);
+
+  const [loading, setLoading] = useState(false);
 
   async function handleBack() {
     const canvas = document.querySelector("canvas");
@@ -38,6 +42,14 @@ export default function Navbar() {
   }
 
   async function handlePublish() {
+    setLoading(true);
+
+    if (!authenticated) {
+      await connect();
+      setLoading(false);
+      return;
+    }
+
     const name = localStorage.getItem(`${sceneId}-name`);
     const description = localStorage.getItem(`${sceneId}-description`);
     const image = localStorage.getItem(`${sceneId}-preview`);
@@ -110,12 +122,12 @@ export default function Navbar() {
               </ColorIconButton>
             </Stack>
 
-            <Button
+            <LoadingButton
+              loading={loading}
               variant="contained"
               color="secondary"
               size="small"
               onClick={handlePublish}
-              disabled={!authenticated}
               sx={{
                 paddingLeft: 2,
                 paddingRight: 2,
@@ -126,8 +138,8 @@ export default function Navbar() {
                 marginRight: "2px",
               }}
             >
-              Publish
-            </Button>
+              {authenticated ? "Publish" : "Connect Wallet"}
+            </LoadingButton>
           </Stack>
         </Grid>
       </Grid>

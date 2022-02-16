@@ -11,10 +11,10 @@ import AddBoxOutlinedIcon from "@mui/icons-material/AddBoxOutlined";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import { useRouter } from "next/router";
 import { customAlphabet } from "nanoid";
-import { HomeNavbar } from "ui";
 
 import HomeLayout from "../../src/layouts/HomeLayout";
 import SceneCard from "../../src/components/cards/SceneCard";
+import HomeNavbar from "../../src/components/HomeNavbar";
 
 const nanoid = customAlphabet("1234567890", 16);
 

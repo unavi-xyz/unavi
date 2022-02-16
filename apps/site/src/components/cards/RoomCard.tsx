@@ -14,10 +14,12 @@ import { useRoom, useWorld } from "ceramic";
 
 interface Props {
   id: string;
+  worldFilter?: string;
 }
 
-export default function RoomCard({ id }: Props) {
+export default function RoomCard({ id, worldFilter }: Props) {
   const { room } = useRoom(id);
+
   const { world } = useWorld(room?.worldStreamId);
   const identicon = useIdenticon(id);
 
@@ -31,6 +33,8 @@ export default function RoomCard({ id }: Props) {
     else setName(id);
   }, [id, room, world]);
 
+  if (worldFilter && room?.worldStreamId !== worldFilter) return null;
+
   return (
     <Grid item xs={12} sm={6} md={4}>
       <Card variant="outlined" sx={{ borderRadius: 0 }}>
@@ -41,7 +45,11 @@ export default function RoomCard({ id }: Props) {
               height="140px"
               image={world?.image ?? identicon}
             />
-            <CardContent style={{ borderTop: "1px solid rgba(0,0,0,0.12)" }}>
+            <CardContent
+              style={{
+                borderTop: "1px solid rgba(0,0,0,0.12)",
+              }}
+            >
               {name ? (
                 <Typography style={{ wordBreak: "break-word" }}>
                   🚪 {name}

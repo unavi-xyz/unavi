@@ -1,9 +1,11 @@
-import { useContext, useState } from "react";
-import { LoadingButton } from "@mui/lab";
+import { useContext } from "react";
+import { Grid, Stack } from "@mui/material";
 import { useRouter } from "next/router";
-import { CeramicContext, Room, loader, newRoom } from "ceramic";
+import { CeramicContext, useWorld, useRooms } from "ceramic";
 
 import WorldLayout from "../../../../src/layouts/WorldLayout";
+import RoomCard from "../../../../src/components/cards/RoomCard";
+import NewRoomCard from "../../../../src/components/cards/NewRoomCard";
 
 export default function Rooms() {
   const router = useRouter();
@@ -11,29 +13,19 @@ export default function Rooms() {
 
   const { authenticated } = useContext(CeramicContext);
 
-  const [loading, setLoading] = useState(false);
-
-  async function handleNewRoom() {
-    setLoading(true);
-
-    const room: Room = { worldStreamId: id };
-    const streamId = await newRoom(room, loader);
-
-    const url = `/home/room/${streamId}`;
-    router.push(url);
-  }
+  const { controller } = useWorld(id);
+  const rooms = useRooms(controller);
 
   return (
-    <LoadingButton
-      loading={loading}
-      variant="contained"
-      color="secondary"
-      onClick={handleNewRoom}
-      disabled={!authenticated}
-      fullWidth
-    >
-      Create Room
-    </LoadingButton>
+    <Stack spacing={1}>
+      <Grid container spacing={2}>
+        {authenticated && <NewRoomCard worldId={id} />}
+
+        {rooms?.map((roomId) => {
+          return <RoomCard key={roomId} id={roomId} worldFilter={id} />;
+        })}
+      </Grid>
+    </Stack>
   );
 }
 

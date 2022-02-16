@@ -14,7 +14,11 @@ export default function RightPanel() {
       variant="outlined"
       style={{ width: "100%", padding: "1rem", border: 0 }}
     >
-      {selected ? <Inspect key={selected.id} /> : <Packs />}
+      {selected && <Inspect key={selected.id} />}
+
+      <div style={{ visibility: selected ? "hidden" : "visible" }}>
+        <Packs />
+      </div>
     </Paper>
   );
 }

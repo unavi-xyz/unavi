@@ -8,15 +8,15 @@ import {
 } from "@mui/material";
 import { ASSETS, ASSET_NAMES } from "3d";
 
-import { useScene } from "../../../state/useScene";
+import { useStore } from "../../../hooks/useStore";
 
 interface Props {
   name: ASSET_NAMES;
 }
 
 export default function AssetCard({ name }: Props) {
-  const scene = useScene((state) => state.scene);
-  const newObject = useScene((state) => state.newObject);
+  const objects = useStore((state) => state.objects);
+  const newObject = useStore((state) => state.newObject);
 
   const [count, setCount] = useState(0);
 
@@ -27,11 +27,12 @@ export default function AssetCard({ name }: Props) {
   }
 
   useEffect(() => {
-    const found = Object.values(scene).filter(
+    const found = Object.values(objects).filter(
       (item) => item.instance.type === name
     );
+
     setCount(found.length);
-  }, [name, scene]);
+  }, [name, objects]);
 
   return (
     <Grid item xs sx={{ minWidth: "120px" }}>

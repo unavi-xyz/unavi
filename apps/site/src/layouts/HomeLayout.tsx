@@ -5,7 +5,7 @@ import { Sidebar, SidebarButton } from "ui";
 import { CeramicContext } from "ceramic";
 
 export default function HomeLayout({ children }) {
-  const { id, authenticated } = useContext(CeramicContext);
+  const { userId, authenticated } = useContext(CeramicContext);
 
   return (
     <div>
@@ -24,7 +24,7 @@ export default function HomeLayout({ children }) {
             <SidebarButton
               emoji="💎"
               text="Profile"
-              href={`/home/user/${id}`}
+              href={`/home/user/${userId}`}
               disabled={!authenticated}
             />
             <SidebarButton emoji="🚧" text="Editor" href="/home/scenes" />

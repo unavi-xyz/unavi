@@ -16,10 +16,10 @@ interface Props {
 }
 
 export default function EditProfileModal({ open, handleClose }: Props) {
-  const { id } = useContext(CeramicContext);
+  const { userId } = useContext(CeramicContext);
 
-  const { profile, imageUrl, merge } = useProfile(id);
-  const identicon = useIdenticon(id);
+  const { profile, imageUrl, merge } = useProfile(userId);
+  const identicon = useIdenticon(userId);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");

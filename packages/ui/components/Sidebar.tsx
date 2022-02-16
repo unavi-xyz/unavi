@@ -23,7 +23,12 @@ export function Sidebar({
   titleHref = "/",
   children,
 }: Props) {
-  const { authenticated, id, connect, disconnect } = useContext(CeramicContext);
+  const {
+    authenticated,
+    userId: id,
+    connect,
+    disconnect,
+  } = useContext(CeramicContext);
 
   const identicon = useIdenticon(id);
   const { profile, imageUrl } = useProfile(id);

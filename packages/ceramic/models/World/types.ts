@@ -8,5 +8,7 @@ export interface World {
 
   spawn?: Triplet;
 
-  scene: SceneObject<ASSET_NAMES>[];
+  objects: {
+    [key: string]: SceneObject<ASSET_NAMES>;
+  };
 }

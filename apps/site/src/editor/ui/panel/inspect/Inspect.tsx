@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Stack, Typography } from "@mui/material";
 import { PARAM_NAMES } from "3d";
 
-import { useStore } from "../../../state/useStore";
+import { useStore } from "../../../hooks/useStore";
 
 import CheckField from "./components/CheckField";
 import ColorField from "./components/ColorField";
@@ -54,6 +54,7 @@ export default function Inspect() {
             type={PARAM_NAMES.rotation}
             params={uiParams}
             setParams={setUiParams}
+            variant="radians"
             step={1}
           />
         )}

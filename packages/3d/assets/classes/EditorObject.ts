@@ -11,7 +11,7 @@ export class EditorObject<T extends ASSET_NAMES> {
   ref: MutableRefObject<any> | undefined = undefined;
 
   constructor(type: ASSET_NAMES, params: typeof ASSETS[T]["params"]) {
-    this.instance = new SceneObject(type, params);
+    this.instance = new SceneObject<T>(type, params);
     this.id = this.instance.id;
   }
 
@@ -50,6 +50,6 @@ export class EditorObject<T extends ASSET_NAMES> {
   }
 
   clone() {
-    return new EditorObject(this.instance.type, this.instance.params);
+    return new EditorObject(this.instance.type, { ...this.instance.params });
   }
 }

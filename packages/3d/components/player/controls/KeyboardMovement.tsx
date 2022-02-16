@@ -2,7 +2,7 @@ import { useRef, useEffect, MutableRefObject } from "react";
 import { Vector3 } from "three";
 
 interface Props {
-  paused: boolean;
+  paused?: boolean;
   direction: MutableRefObject<Vector3>;
   jump: MutableRefObject<boolean>;
 }
@@ -20,7 +20,11 @@ interface Props {
  * @param props
  * @constructor
  */
-export default function KeyboardMovement({ paused, direction, jump }: Props) {
+export default function KeyboardMovement({
+  paused = false,
+  direction,
+  jump,
+}: Props) {
   const pressedKeys = useRef([false, false, false, false]);
 
   useEffect(() => {

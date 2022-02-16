@@ -30,11 +30,19 @@ export type PARAMS = {
 export class Asset<T> {
   type: ASSET_NAMES;
   params: T;
-  limit: number;
 
-  constructor(type: ASSET_NAMES, params: T, limit = -1) {
+  limit = -1;
+  hidden = false;
+
+  constructor(
+    type: ASSET_NAMES,
+    params: T,
+    settings?: Partial<{ limit: number; hidden: boolean }>
+  ) {
     this.type = type;
     this.params = params;
-    this.limit = limit;
+
+    if (settings?.limit) this.limit = settings.limit;
+    if (settings?.hidden) this.hidden = settings.hidden;
   }
 }

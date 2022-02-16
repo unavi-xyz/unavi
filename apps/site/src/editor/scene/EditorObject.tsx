@@ -3,8 +3,7 @@ import { ThreeEvent } from "@react-three/fiber";
 import { Group } from "three";
 import { InstancedObject } from "3d";
 
-import { useStore } from "../state/useStore";
-import { useScene } from "../state/useScene";
+import { useStore } from "../hooks/useStore";
 
 interface Props {
   id: string;
@@ -12,7 +11,7 @@ interface Props {
 
 export default function EditorObject({ id }: Props) {
   const setSelected = useStore((state) => state.setSelected);
-  const object = useScene((state) => state.scene[id]);
+  const object = useStore((state) => state.objects[id]);
 
   const ref = useRef<Group>();
 

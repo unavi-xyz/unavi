@@ -19,6 +19,6 @@ export const ASSETS = {
   [ASSET_NAMES.Spawn]: new Asset<typeof SpawnDefault>(
     ASSET_NAMES.Spawn,
     SpawnDefault,
-    1
+    { limit: 1, hidden: true }
   ),
 };

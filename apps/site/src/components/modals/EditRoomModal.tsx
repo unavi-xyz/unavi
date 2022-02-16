@@ -1,11 +1,17 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, Checkbox, Stack, TextField, Typography } from "@mui/material";
-import { DIDDataStore } from "@glazed/did-datastore";
 import { useRouter } from "next/router";
 import { BasicModal } from "ui";
-import { ceramic, CeramicContext, merge, useRoom, useRooms } from "ceramic";
-
-const model = require("ceramic/models/Rooms/model.json");
+import {
+  addRoom,
+  ceramic,
+  CeramicContext,
+  merge,
+  removeRoom,
+  useRoom,
+  useRooms,
+  useWorld,
+} from "ceramic";
 
 interface Props {
   open: boolean;
@@ -16,9 +22,10 @@ export default function EditRoomModal({ open, handleClose }: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { id: userId } = useContext(CeramicContext);
+  const { userId } = useContext(CeramicContext);
 
   const { room } = useRoom(id);
+  const { world } = useWorld(room?.worldStreamId);
   const rooms = useRooms(userId);
 
   const [name, setName] = useState("");
@@ -26,8 +33,8 @@ export default function EditRoomModal({ open, handleClose }: Props) {
 
   useEffect(() => {
     if (!room) return;
-    setName(room.name ?? "");
-  }, [room]);
+    setName(room.name ?? world?.name ?? "");
+  }, [room, world?.name]);
 
   useEffect(() => {
     if (!rooms) return;
@@ -36,19 +43,8 @@ export default function EditRoomModal({ open, handleClose }: Props) {
   }, [id, rooms]);
 
   async function handleSave() {
-    if (checked) {
-      //add tile to rooms did record
-      const store = new DIDDataStore({ ceramic, model });
-      const oldRooms = await store.get("rooms");
-      const newRooms = oldRooms ? [...Object.values(oldRooms), id] : [id];
-      await store.set("rooms", newRooms, { pin: true });
-    } else {
-      //remove tile from rooms
-      const store = new DIDDataStore({ ceramic, model });
-      const data = Object.values(await store.get("rooms", userId));
-      const newRooms = data.filter((roomId) => roomId !== id);
-      await store.set("rooms", newRooms, { pin: true });
-    }
+    if (checked) addRoom(id, ceramic);
+    else removeRoom(id, userId, ceramic);
 
     const newContent = { name };
     await merge(id, newContent, checked);

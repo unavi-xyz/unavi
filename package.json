@@ -13,7 +13,13 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
   },
+  "pre-commit": [
+    "format",
+    "lint",
+    "build"
+  ],
   "devDependencies": {
+    "pre-commit": "^1.2.2",
     "prettier": "^2.5.1",
     "turbo": "latest"
   },

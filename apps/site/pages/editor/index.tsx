@@ -7,7 +7,7 @@ import Head from "next/head";
 import Split from "react-split";
 import { RAYCASTER_SETTINGS } from "3d";
 
-import { useStore } from "../../src/editor/state/useStore";
+import { useStore } from "../../src/editor/hooks/useStore";
 import { useHotkeys } from "../../src/editor/hooks/useHotkeys";
 
 import Navbar from "../../src/editor/ui/navbar/Navbar";
@@ -17,7 +17,7 @@ import EditorScene from "../../src/editor/scene/EditorScene";
 
 export default function Editor() {
   const setSelected = useStore((state) => state.setSelected);
-  const setId = useStore((state) => state.setId);
+  const setSceneId = useStore((state) => state.setSceneId);
   const setPlayMode = useStore((state) => state.setPlayMode);
   const playMode = useStore((state) => state.playMode);
 
@@ -26,8 +26,9 @@ export default function Editor() {
   useEffect(() => {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
-    setId(urlParams.get("scene"));
-  }, [setId]);
+    const id = urlParams.get("scene");
+    setSceneId(id);
+  }, [setSceneId]);
 
   return (
     <div className="App" style={{ overflow: "hidden" }}>
@@ -37,6 +38,8 @@ export default function Editor() {
 
       {playMode ? (
         <span>
+          <div className="crosshair" />
+
           <Canvas raycaster={RAYCASTER_SETTINGS}>
             <Physics>
               <PlayScene />

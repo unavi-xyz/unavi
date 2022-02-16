@@ -13,9 +13,13 @@
     "image": {
       "type": "string"
     },
-    "scene": {
-      "type": "string"
+    "spawn": {
+      "type": "array",
+      "maxLength": 3
+    },
+    "objects": {
+      "type": "object"
     }
   },
-  "required": ["scene"]
+  "required": ["objects"]
 }

@@ -1,152 +1,73 @@
-import { ReactChild, useContext, useState } from "react";
-import {
-  Button,
-  ClickAwayListener,
-  Collapse,
-  Stack,
-  Typography,
-} from "@mui/material";
-import { LoadingButton } from "@mui/lab";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import { useContext, useState } from "react";
+import { Drawer, IconButton, Stack, useMediaQuery } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import Link from "next/link";
-import { CeramicContext, useProfile } from "ceramic";
+import { CeramicContext } from "ceramic";
 
-import { useIdenticon } from "../hooks/useIdenticon";
+import { SidebarButton, theme } from "..";
+import UserProfileButton from "./UserProfileButton";
 
-interface Props {
-  title?: string;
-  titleHref?: string;
-  children: ReactChild | ReactChild[];
-}
+export function Sidebar() {
+  const [openDrawer, setOpenDrawer] = useState(false);
 
-export function Sidebar({
-  title = "The Wired",
-  titleHref = "/",
-  children,
-}: Props) {
-  const { authenticated, userId, connect, disconnect } =
-    useContext(CeramicContext);
+  const md = useMediaQuery(theme.breakpoints.up("md"));
 
-  const identicon = useIdenticon(userId);
-  const { profile, imageUrl } = useProfile(userId);
+  if (!md) {
+    return (
+      <Stack alignItems="center" style={{ height: "100%" }}>
+        <IconButton onClick={() => setOpenDrawer(true)}>
+          <MenuIcon />
+        </IconButton>
 
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+        <Drawer
+          anchor="left"
+          open={openDrawer}
+          onClose={() => setOpenDrawer(false)}
+        >
+          <Stack justifyContent="space-between" style={{ height: "100%" }}>
+            <Stack spacing={1.5} sx={{ width: "240px", padding: 1 }}>
+              <Buttons />
+            </Stack>
 
-  function handleToggle() {
-    setOpen((prev) => !prev);
-  }
-
-  function handleClose() {
-    setOpen(false);
-  }
-
-  async function handleConnect() {
-    setLoading(true);
-    await connect();
-    setLoading(false);
+            <UserProfileButton />
+          </Stack>
+        </Drawer>
+      </Stack>
+    );
   }
 
   return (
     <Stack justifyContent="space-between" style={{ height: "100%" }}>
       <Stack spacing={1.5}>
-        <Link href={titleHref} passHref>
-          <h1>{title}</h1>
+        <Link href="/home" passHref>
+          <h1>The Wired</h1>
         </Link>
 
-        {children}
+        <Buttons />
       </Stack>
 
-      {authenticated ? (
-        <span>
-          <Collapse in={open}>
-            <Stack>
-              <Button
-                onClick={() => {
-                  handleClose();
-                  disconnect();
-                }}
-                style={{
-                  paddingLeft: "30%",
-                  justifyContent: "left",
-                  fontSize: "1rem",
-                  borderRadius: "0px",
-                }}
-              >
-                Log Out
-              </Button>
-            </Stack>
-          </Collapse>
-
-          <Stack>
-            <ClickAwayListener onClickAway={handleClose}>
-              <Button
-                onClick={handleToggle}
-                style={{ textTransform: "none", borderRadius: "0px" }}
-              >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  spacing={1}
-                  style={{ width: "100%", fontSize: "1rem", padding: ".2rem" }}
-                >
-                  <img
-                    src={imageUrl ?? identicon}
-                    alt="profile picture"
-                    style={{
-                      height: "3rem",
-                      width: "3rem",
-                      border: "1px solid black",
-                      objectFit: "cover",
-                    }}
-                  />
-
-                  <Stack alignItems="start">
-                    <Typography
-                      sx={{
-                        color: "black",
-                        maxWidth: "140px",
-                        textOverflow: "ellipsis",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {profile?.name}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "GrayText",
-                        maxWidth: "140px",
-                        textOverflow: "ellipsis",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {userId}
-                    </Typography>
-                  </Stack>
-
-                  <MoreHorizIcon />
-                </Stack>
-              </Button>
-            </ClickAwayListener>
-          </Stack>
-        </span>
-      ) : (
-        <LoadingButton
-          loading={loading}
-          variant="contained"
-          onClick={handleConnect}
-          style={{
-            fontSize: "1rem",
-            margin: "1rem",
-            marginBottom: "2rem",
-            borderRadius: 0,
-          }}
-        >
-          Connect Wallet
-        </LoadingButton>
-      )}
+      <UserProfileButton />
     </Stack>
+  );
+}
+
+function Buttons() {
+  const { authenticated, userId } = useContext(CeramicContext);
+
+  return (
+    <>
+      <SidebarButton emoji="🏠" text="Home" href="/home" />
+      <SidebarButton emoji="🌏" text="Worlds" href="/home/worlds" />
+      <SidebarButton emoji="🚪" text="Rooms" href="/home/rooms" />
+      <SidebarButton emoji="🤝" text="Friends" href="/home/friends" />
+      <SidebarButton emoji="💃" text="Avatars" href="/home/avatars" />
+      <SidebarButton
+        emoji="💎"
+        text="Profile"
+        href={`/home/user/${userId}`}
+        disabled={!authenticated}
+      />
+      <SidebarButton emoji="🚧" text="Editor" href="/home/scenes" />
+    </>
   );
 }

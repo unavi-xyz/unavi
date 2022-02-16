@@ -16,7 +16,7 @@ interface Props {
 
 export default function BasicCard({ href, image, children }: Props) {
   return (
-    <Grid item xs={12} sm={6}>
+    <Grid item xs={12} lg={6}>
       <Card variant="outlined" sx={{ borderRadius: 0, height: "200px" }}>
         <Link href={href} passHref>
           <CardActionArea>

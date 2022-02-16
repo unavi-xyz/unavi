@@ -40,7 +40,7 @@ export function HomeNavbar({ text = "", emoji = "", href, back, more }: Props) {
         borderBottom: "1px solid rgba(0,0,0,.1)",
         paddingLeft: back || href ? 0.5 : 3,
         paddingRight: 1,
-        height: "50px",
+        minHeight: "50px",
       }}
     >
       {(back || href) && (
@@ -64,7 +64,7 @@ export function HomeNavbar({ text = "", emoji = "", href, back, more }: Props) {
 
       <Grid
         item
-        xs
+        xs={9}
         container
         justifyContent={back || href ? "center" : "flex-start"}
       >

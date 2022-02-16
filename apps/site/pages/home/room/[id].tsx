@@ -1,8 +1,16 @@
 import { useContext, useEffect, useState } from "react";
-import { Box, Button, Divider, Grid, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Divider,
+  Grid,
+  Stack,
+  Typography,
+  useMediaQuery,
+} from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { HomeNavbar, useIdenticon } from "ui";
+import { HomeNavbar, theme, useIdenticon } from "ui";
 import { CeramicContext, useProfile, useRoom, useWorld } from "ceramic";
 
 import HomeLayout from "../../../src/layouts/HomeLayout";
@@ -11,6 +19,8 @@ import EditRoomModal from "../../../src/components/modals/EditRoomModal";
 export default function Room() {
   const router = useRouter();
   const id = router.query.id as string;
+
+  const md = useMediaQuery(theme.breakpoints.up("md"));
 
   const { authenticated, userId: userId } = useContext(CeramicContext);
 
@@ -91,18 +101,20 @@ export default function Room() {
           </Stack>
         </Grid>
 
-        <Grid item xs>
-          <Link href={`/app?room=${id}`} passHref>
-            <Button
-              variant="contained"
-              color="secondary"
-              disabled={!authenticated}
-              fullWidth
-            >
-              Join Room
-            </Button>
-          </Link>
-        </Grid>
+        {md && (
+          <Grid item xs>
+            <Link href={`/app?room=${id}`} passHref>
+              <Button
+                variant="contained"
+                color="secondary"
+                disabled={!authenticated}
+                fullWidth
+              >
+                Join Room
+              </Button>
+            </Link>
+          </Grid>
+        )}
       </Grid>
     </div>
   );

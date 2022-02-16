@@ -83,7 +83,7 @@ export default function UserLayout({ children }) {
 
       <Divider />
 
-      <Box sx={{ padding: 4 }}>{children}</Box>
+      <Box>{children}</Box>
     </HomeLayout>
   );
 }

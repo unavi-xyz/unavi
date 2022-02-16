@@ -1,0 +1,11 @@
+{
+  "title": "Status",
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "maxLength": 280
+    }
+  },
+  "required": ["text"]
+}

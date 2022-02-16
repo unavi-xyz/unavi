@@ -12,7 +12,7 @@ export default function Worlds() {
   const worlds = useWorlds(id);
 
   return (
-    <Stack>
+    <Stack sx={{ padding: 4 }}>
       <Grid container spacing={2}>
         {worlds?.map((id) => {
           return <WorldCard key={id} id={id} />;

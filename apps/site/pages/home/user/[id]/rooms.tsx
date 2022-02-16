@@ -12,7 +12,7 @@ export default function Rooms() {
   const rooms = useRooms(id);
 
   return (
-    <Stack>
+    <Stack sx={{ padding: 4 }}>
       <Grid container spacing={2}>
         {rooms?.map((id) => {
           return <RoomCard key={id} id={id} />;

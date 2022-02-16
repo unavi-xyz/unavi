@@ -1,5 +1,5 @@
 import { useContext, useState } from "react";
-import { Button, Grid, Paper, Stack } from "@mui/material";
+import { Grid, Paper, Stack } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -23,7 +23,7 @@ import { ASSET_NAMES, PARAM_NAMES } from "3d";
 export default function Navbar() {
   const router = useRouter();
 
-  const { authenticated } = useContext(CeramicContext);
+  const { authenticated, connect } = useContext(CeramicContext);
 
   const sceneId = useStore((state) => state.sceneId);
   const toJSON = useStore((state) => state.toJSON);
@@ -42,6 +42,12 @@ export default function Navbar() {
 
   async function handlePublish() {
     setLoading(true);
+
+    if (!authenticated) {
+      await connect();
+      setLoading(false);
+      return;
+    }
 
     const name = localStorage.getItem(`${sceneId}-name`);
     const description = localStorage.getItem(`${sceneId}-description`);
@@ -121,7 +127,6 @@ export default function Navbar() {
               color="secondary"
               size="small"
               onClick={handlePublish}
-              disabled={!authenticated}
               sx={{
                 paddingLeft: 2,
                 paddingRight: 2,
@@ -132,7 +137,7 @@ export default function Navbar() {
                 marginRight: "2px",
               }}
             >
-              Publish
+              {authenticated ? "Publish" : "Connect Wallet"}
             </LoadingButton>
           </Stack>
         </Grid>

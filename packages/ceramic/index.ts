@@ -2,6 +2,7 @@ export * from "./contexts/CeramicContext";
 
 export * from "./hooks/useProfile";
 export * from "./hooks/useFeed";
+export * from "./hooks/useFollowing";
 export * from "./hooks/useStatus";
 export * from "./hooks/useRoom";
 export * from "./hooks/useRooms";
@@ -10,6 +11,7 @@ export * from "./hooks/useWorlds";
 
 export * from "./models/BasicProfile/types";
 export * from "./models/Feed/helpers";
+export * from "./models/Following/helpers";
 export * from "./models/Room/types";
 export * from "./models/Room/helpers";
 export * from "./models/Rooms/helpers";

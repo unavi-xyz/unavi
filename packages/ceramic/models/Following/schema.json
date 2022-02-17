@@ -1,0 +1,7 @@
+{
+  "title": "Feed",
+  "type": "array",
+  "items": { "type": "string" },
+  "uniqueItems": true,
+  "default": []
+}

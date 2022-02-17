@@ -3,31 +3,31 @@ import {
   Box,
   Button,
   Divider,
-  Grid,
   Stack,
   Typography,
   useMediaQuery,
 } from "@mui/material";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { CeramicContext, useProfile } from "ceramic";
+import { CeramicContext, useFollowing, useProfile } from "ceramic";
 
 import { theme } from "../theme";
 import { useIdenticon } from "../hooks/useIdenticon";
 import HomeLayout from "./HomeLayout";
 import EditProfileModal from "../components/modals/EditProfileModal";
 import HomeNavbar from "../components/HomeNavbar";
+import FollowButton from "../components/FollowButton";
 
 export default function UserLayout({ children }) {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const md = useMediaQuery(theme.breakpoints.up("md"));
+  const { userId, authenticated } = useContext(CeramicContext);
 
+  const md = useMediaQuery(theme.breakpoints.up("md"));
   const identicon = useIdenticon(id);
   const { profile, imageUrl } = useProfile(id);
-
-  const { userId } = useContext(CeramicContext);
+  const following = useFollowing(id);
 
   const [open, setOpen] = useState(false);
 
@@ -39,21 +39,38 @@ export default function UserLayout({ children }) {
 
       <Stack spacing={2} sx={{ padding: 4 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="end">
-          <img
-            src={imageUrl ?? identicon}
-            alt="profile picture"
-            style={{
-              height: "20ch",
-              width: "20ch",
-              border: "4px solid black",
-              objectFit: "cover",
-            }}
-          />
+          <Stack direction="row" alignItems="end" spacing={4}>
+            <img
+              src={imageUrl ?? identicon}
+              alt="profile picture"
+              style={{
+                height: "20ch",
+                width: "20ch",
+                border: "4px solid black",
+                objectFit: "cover",
+              }}
+            />
 
-          {userId === id && md && (
+            <Link href={`/home/user/${id}/following`} passHref>
+              <Typography className="link">
+                <strong>
+                  {following ? Object.values(following).length : 0}
+                </strong>{" "}
+                Following
+              </Typography>
+            </Link>
+
+            <Typography className="link">
+              <strong>0</strong> Followers
+            </Typography>
+          </Stack>
+
+          {userId === id && userId ? (
             <Button variant="outlined" onClick={() => setOpen(true)}>
               Edit Profile
             </Button>
+          ) : (
+            <FollowButton id={id} />
           )}
         </Stack>
 

@@ -1,0 +1,55 @@
+import { Avatar, Divider, Skeleton, Stack, Typography } from "@mui/material";
+import Link from "next/link";
+import { useProfile } from "ceramic";
+
+import FollowButton from "./FollowButton";
+
+interface Props {
+  id: string;
+}
+
+export default function UserItem({ id }: Props) {
+  const { profile, imageUrl } = useProfile(id);
+
+  return (
+    <div>
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={2}
+        sx={{ padding: 2 }}
+      >
+        <Link href={`/home/user/${id}`} passHref>
+          <Avatar
+            className="clickable"
+            variant="rounded"
+            src={imageUrl}
+            sx={{ width: "3rem", height: "3rem" }}
+          />
+        </Link>
+
+        <Stack sx={{ width: "100%" }}>
+          {profile ? (
+            <Link href={`/home/user/${id}`} passHref>
+              <Typography className="link">{profile?.name}</Typography>
+            </Link>
+          ) : (
+            <Skeleton width="100px" />
+          )}
+
+          {profile ? (
+            <Typography>{profile.description}</Typography>
+          ) : (
+            <Skeleton />
+          )}
+        </Stack>
+
+        <Stack>
+          <FollowButton id={id} />
+        </Stack>
+      </Stack>
+
+      <Divider />
+    </div>
+  );
+}

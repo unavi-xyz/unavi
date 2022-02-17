@@ -55,14 +55,30 @@ export default function FeedItem({ streamId }: Props) {
           />
         </Link>
 
-        <Stack spacing={0} sx={{ width: "100%" }}>
-          {profile ? (
-            <Link href={`/home/user/${controller}`} passHref>
-              <Typography className="link">{profile?.name}</Typography>
-            </Link>
-          ) : (
-            <Skeleton width="100px" />
-          )}
+        <Stack sx={{ width: "100%" }}>
+          <Stack direction="row" alignItems="baseline" spacing={1}>
+            {profile ? (
+              <Link href={`/home/user/${controller}`} passHref>
+                <Typography className="link">{profile?.name}</Typography>
+              </Link>
+            ) : (
+              <Skeleton width="100px" />
+            )}
+
+            {status && profile && (
+              <Typography variant="caption" sx={{ color: "GrayText" }}>
+                •
+              </Typography>
+            )}
+
+            {status ? (
+              <Typography variant="caption" sx={{ color: "GrayText" }}>
+                {formatTime(status.time)}
+              </Typography>
+            ) : (
+              <Skeleton />
+            )}
+          </Stack>
 
           {status ? <Typography>{status.text}</Typography> : <Skeleton />}
         </Stack>
@@ -90,4 +106,20 @@ export default function FeedItem({ streamId }: Props) {
       <Divider />
     </div>
   );
+}
+
+function formatTime(time: number) {
+  const now = Date.now();
+  const diff = now - time;
+
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return `${seconds}s`;
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.floor(minutes % 60);
+  if (hours < 24) return `${hours}h`;
+
+  return new Date(time).toLocaleString();
 }

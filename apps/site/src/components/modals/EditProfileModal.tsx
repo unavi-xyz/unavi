@@ -30,8 +30,8 @@ export default function EditProfileModal({ open, handleClose }: Props) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setName(profile?.name);
-    setDescription(profile?.description);
+    setName(profile?.name ?? "");
+    setDescription(profile?.description ?? "");
   }, [profile]);
 
   async function handleSave() {
@@ -48,26 +48,26 @@ export default function EditProfileModal({ open, handleClose }: Props) {
 
       const { Hash } = await res.json();
 
-      const testt = new Image();
-      testt.src = URL.createObjectURL(image);
+      const img = new Image();
+      img.src = URL.createObjectURL(image);
 
-      testt.onload = async () => {
+      img.onload = async () => {
         //update basic profile
         const imageObject: ImageSources = {
           original: {
             src: "ipfs://" + Hash,
-            height: testt.height,
-            width: testt.width,
+            height: img.height,
+            width: img.width,
             mimeType: image.type,
             size: image.size,
           },
         };
 
-        await merge({ image: imageObject });
+        await merge({ name, description, image: imageObject });
       };
+    } else {
+      await merge({ name, description });
     }
-
-    await merge({ name, description });
 
     location.reload();
     handleClose();

@@ -58,7 +58,7 @@ export default function WorldLayout({ children }) {
         {controller && (
           <Stack direction="row" alignItems="center" spacing={1}>
             <Typography variant="h6">By</Typography>
-            <Link href={`/home/user/${controller}/worlds`} passHref>
+            <Link href={`/home/user/${controller}`} passHref>
               <Typography className="link" variant="h6">
                 {profile ? profile?.name ?? controller : ""}
               </Typography>

@@ -1,6 +1,7 @@
+import { useContext } from "react";
 import { Avatar, Divider, Skeleton, Stack, Typography } from "@mui/material";
 import Link from "next/link";
-import { useProfile } from "ceramic";
+import { CeramicContext, useProfile } from "ceramic";
 
 import FollowButton from "./FollowButton";
 
@@ -9,6 +10,8 @@ interface Props {
 }
 
 export default function UserItem({ id }: Props) {
+  const { userId } = useContext(CeramicContext);
+
   const { profile, imageUrl } = useProfile(id);
 
   return (
@@ -44,9 +47,7 @@ export default function UserItem({ id }: Props) {
           )}
         </Stack>
 
-        <Stack>
-          <FollowButton id={id} />
-        </Stack>
+        <Stack>{userId !== id && <FollowButton id={id} />} </Stack>
       </Stack>
 
       <Divider />

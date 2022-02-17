@@ -25,6 +25,7 @@ import { DISCORD_URL } from "../../src/constants";
 import { useIdenticon } from "../../src/hooks/useIdenticon";
 import HomeNavbar from "../../src/components/HomeNavbar";
 import HomeLayout from "../../src/layouts/HomeLayout";
+import Feed from "../../src/components/Feed";
 
 const CHARACTER_LIMIT = 280;
 
@@ -36,17 +37,20 @@ export default function Home() {
 
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [newPost, setNewPost] = useState(0);
 
   async function handlePost() {
     setLoading(true);
 
-    const status: Status = { text };
+    const time = Date.now();
+    const status: Status = { text, time };
     const streamId = await newStatus(status, loader);
 
     await addStatus(streamId, ceramic);
 
     setText("");
     setLoading(false);
+    setNewPost((prev) => prev + 1);
   }
 
   return (
@@ -106,6 +110,8 @@ export default function Home() {
           </Stack>
 
           <Divider />
+
+          <Feed key={newPost} />
         </div>
       ) : (
         <Grid item sx={{ padding: 4 }}>

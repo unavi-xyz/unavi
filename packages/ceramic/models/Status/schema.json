@@ -5,7 +5,8 @@
     "text": {
       "type": "string",
       "maxLength": 280
-    }
+    },
+    "time": "number"
   },
   "required": ["text"]
 }

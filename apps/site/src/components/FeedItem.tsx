@@ -71,12 +71,10 @@ export default function FeedItem({ streamId }: Props) {
               </Typography>
             )}
 
-            {status ? (
+            {status && (
               <Typography variant="caption" sx={{ color: "GrayText" }}>
                 {formatTime(status.time)}
               </Typography>
-            ) : (
-              <Skeleton />
             )}
           </Stack>
 
@@ -118,8 +116,11 @@ function formatTime(time: number) {
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
 
-  const hours = Math.floor(minutes % 60);
+  const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 31) return `${days}d`;
 
   return new Date(time).toLocaleString();
 }

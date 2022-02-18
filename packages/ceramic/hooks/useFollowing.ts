@@ -8,7 +8,9 @@ export function useFollowing(did: string | undefined) {
   async function fetcher() {
     if (!did) return;
     const store = new DIDDataStore({ ceramic: ceramicRead, model });
-    const data = (await store.get("following", did)) as string[];
+    const data = await store.get("following", did);
+
+    if (typeof data === "object") return Object.values(data);
     return data;
   }
 

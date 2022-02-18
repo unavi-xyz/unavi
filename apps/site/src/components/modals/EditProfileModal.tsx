@@ -64,13 +64,16 @@ export default function EditProfileModal({ open, handleClose }: Props) {
         };
 
         await merge({ name, description, image: imageObject });
+
+        location.reload();
+        handleClose();
       };
     } else {
       await merge({ name, description });
-    }
 
-    location.reload();
-    handleClose();
+      location.reload();
+      handleClose();
+    }
   }
 
   return (

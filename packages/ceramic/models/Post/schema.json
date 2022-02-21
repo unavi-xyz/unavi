@@ -1,12 +1,12 @@
 {
-  "title": "Status",
+  "title": "Post",
   "type": "object",
   "properties": {
     "text": {
       "type": "string",
       "maxLength": 280
     },
-    "time": "number"
+    "timestamp": "number"
   },
   "required": ["text"]
 }

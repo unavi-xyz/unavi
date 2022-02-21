@@ -1,7 +1,7 @@
 import { useFeed } from "ceramic";
 import { useRouter } from "next/router";
 
-import FeedItem from "../../../../src/components/FeedItem";
+import FeedItem from "../../../../src/components/timeline/FeedItem";
 import UserLayout from "../../../../src/layouts/UserLayout";
 
 export default function User() {

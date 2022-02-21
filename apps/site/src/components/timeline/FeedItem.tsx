@@ -14,11 +14,30 @@ import Link from "next/link";
 import {
   ceramic,
   CeramicContext,
-  removeStatus,
+  removeFeedItem,
   unpin,
   useProfile,
-  useStatus,
+  usePost,
 } from "ceramic";
+
+function formatTime(time: number) {
+  const now = Date.now();
+  const diff = now - time;
+
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return `${seconds}s`;
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 31) return `${days}d`;
+
+  return new Date(time).toLocaleString();
+}
 
 interface Props {
   streamId: string;
@@ -27,7 +46,7 @@ interface Props {
 export default function FeedItem({ streamId }: Props) {
   const { authenticated, userId } = useContext(CeramicContext);
 
-  const { status, controller } = useStatus(streamId);
+  const { post, controller } = usePost(streamId);
   const { profile, imageUrl } = useProfile(controller);
 
   const [deleted, setDeleted] = useState(false);
@@ -37,7 +56,7 @@ export default function FeedItem({ streamId }: Props) {
   async function handleDelete() {
     setAnchorEl(null);
     await unpin(streamId);
-    await removeStatus(streamId, userId, ceramic);
+    await removeFeedItem(streamId, userId, ceramic);
     setDeleted(true);
   }
 
@@ -65,20 +84,20 @@ export default function FeedItem({ streamId }: Props) {
               <Skeleton width="100px" />
             )}
 
-            {status && profile && (
+            {post && profile && (
               <Typography variant="caption" sx={{ color: "GrayText" }}>
                 •
               </Typography>
             )}
 
-            {status && (
+            {post && (
               <Typography variant="caption" sx={{ color: "GrayText" }}>
-                {formatTime(status.time)}
+                {formatTime(post.timestamp)}
               </Typography>
             )}
           </Stack>
 
-          {status ? <Typography>{status.text}</Typography> : <Skeleton />}
+          {post ? <Typography>{post.text}</Typography> : <Skeleton />}
         </Stack>
 
         {authenticated && userId === controller && (
@@ -104,23 +123,4 @@ export default function FeedItem({ streamId }: Props) {
       <Divider />
     </div>
   );
-}
-
-function formatTime(time: number) {
-  const now = Date.now();
-  const diff = now - time;
-
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return `${seconds}s`;
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 31) return `${days}d`;
-
-  return new Date(time).toLocaleString();
 }

@@ -1,57 +1,21 @@
-import { useContext, useState } from "react";
-import { LoadingButton } from "@mui/lab";
+import { useContext } from "react";
 import {
-  Avatar,
-  CircularProgress,
   Divider,
   Grid,
-  InputBase,
   Link as MuiLink,
   Stack,
   Typography,
 } from "@mui/material";
-import Link from "next/link";
-import {
-  addStatus,
-  ceramic,
-  CeramicContext,
-  loader,
-  newStatus,
-  Status,
-  useProfile,
-} from "ceramic";
+import { CeramicContext } from "ceramic";
 
 import { DISCORD_URL } from "../../src/constants";
-import { useIdenticon } from "../../src/hooks/useIdenticon";
 import HomeNavbar from "../../src/components/HomeNavbar";
 import HomeLayout from "../../src/layouts/HomeLayout";
-import Feed from "../../src/components/Feed";
-
-const CHARACTER_LIMIT = 280;
+import Timeline from "../../src/components/timeline/Timeline";
+import PostField from "../../src/components/timeline/PostField";
 
 export default function Home() {
-  const { authenticated, userId } = useContext(CeramicContext);
-
-  const { imageUrl } = useProfile(userId);
-  const identicon = useIdenticon(userId);
-
-  const [text, setText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [newPost, setNewPost] = useState(0);
-
-  async function handlePost() {
-    setLoading(true);
-
-    const time = Date.now();
-    const status: Status = { text, time };
-    const streamId = await newStatus(status, loader);
-
-    await addStatus(streamId, ceramic);
-
-    setText("");
-    setLoading(false);
-    setNewPost((prev) => prev + 1);
-  }
+  const { authenticated } = useContext(CeramicContext);
 
   return (
     <Grid container direction="column">
@@ -61,57 +25,9 @@ export default function Home() {
 
       {authenticated ? (
         <div>
-          <Stack spacing={1} sx={{ padding: 2 }}>
-            <Stack direction="row" spacing={2}>
-              <Link href={`/home/user/${userId}`} passHref>
-                <Avatar
-                  className="clickable"
-                  variant="rounded"
-                  src={imageUrl ?? identicon}
-                  sx={{ width: "3rem", height: "3rem" }}
-                />
-              </Link>
-
-              <InputBase
-                fullWidth
-                multiline
-                placeholder="What's happening?"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                inputProps={{ maxLength: CHARACTER_LIMIT }}
-              />
-            </Stack>
-
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="flex-end"
-              spacing={3}
-            >
-              <CircularProgress
-                variant="determinate"
-                size="1.4em"
-                color={
-                  text.length === CHARACTER_LIMIT ? "secondary" : "primary"
-                }
-                value={(text.length / CHARACTER_LIMIT) * 100}
-              />
-
-              <LoadingButton
-                loading={loading}
-                variant="contained"
-                disabled={text.length === 0}
-                onClick={handlePost}
-                sx={{ width: "100px" }}
-              >
-                Post
-              </LoadingButton>
-            </Stack>
-          </Stack>
-
+          <PostField />
           <Divider />
-
-          <Feed key={newPost} />
+          <Timeline />
         </div>
       ) : (
         <Grid item sx={{ padding: 4 }}>

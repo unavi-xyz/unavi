@@ -1,11 +1,11 @@
 import { TileLoader } from "@glazed/tile-loader";
-import { Status } from "./types";
+import { Post } from "./types";
 
 const model = require("./model.json");
 
-export async function newStatus(status: Status, loader: TileLoader) {
+export async function newPost(post: Post, loader: TileLoader) {
   const stream = await loader.create(
-    status,
+    post,
     { schema: model.schemas.World },
     { pin: true }
   );

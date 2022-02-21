@@ -1,0 +1,9 @@
+{
+  "definitions": {
+    "post": "kjzl6cwe1jw149ea1aprnqp3yvbztbucl6ts0dwd3pnefhe6yyl1452rzgfk3ha"
+  },
+  "schemas": {
+    "Post": "ceramic://k3y52l7qbv1fry8kxhu9tidzvum7jfgqkdyi5o1ckwm2y9f8yiq7wzut4jn74x98g"
+  },
+  "tiles": {}
+}

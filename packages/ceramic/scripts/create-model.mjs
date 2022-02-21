@@ -7,7 +7,7 @@ import { getResolver } from "key-did-resolver";
 import { randomBytes } from "@stablelib/random";
 
 //params
-const NAME = "Following";
+const NAME = "Post";
 
 //init
 const schema = await import(`../models/${NAME}/schema.json`);

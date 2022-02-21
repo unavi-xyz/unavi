@@ -16,5 +16,5 @@ export function useFollowing(did: string | undefined) {
 
   const { data } = useSWR(`following-${did}`, fetcher);
 
-  return data;
+  return data as string[];
 }

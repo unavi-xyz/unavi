@@ -3,14 +3,14 @@ import { DIDDataStore } from "@glazed/did-datastore";
 
 const model = require("./model.json");
 
-export async function addStatus(streamId: string, ceramic: CeramicClient) {
+export async function addFeedItem(streamId: string, ceramic: CeramicClient) {
   const store = new DIDDataStore({ ceramic, model });
   const oldFeed = await store.get("feed");
   const newFeed = oldFeed ? [streamId, ...Object.values(oldFeed)] : [streamId];
   await store.set("feed", newFeed, { pin: true });
 }
 
-export async function removeStatus(
+export async function removeFeedItem(
   streamId: string,
   userId: string,
   ceramic: CeramicClient

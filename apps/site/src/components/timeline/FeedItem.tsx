@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
 import {
   Avatar,
+  CircularProgress,
   Divider,
   IconButton,
   Menu,
@@ -19,6 +20,7 @@ import {
   useProfile,
   usePost,
 } from "ceramic";
+import { TrendingUpRounded } from "@mui/icons-material";
 
 function formatTime(time: number) {
   const now = Date.now();
@@ -49,15 +51,18 @@ export default function FeedItem({ streamId }: Props) {
   const { post, controller } = usePost(streamId);
   const { profile, imageUrl } = useProfile(controller);
 
+  const [loading, setLoading] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
   async function handleDelete() {
+    setLoading(true);
     setAnchorEl(null);
     await unpin(streamId);
     await removeFeedItem(streamId, userId, ceramic);
     setDeleted(true);
+    setLoading(false);
   }
 
   if (deleted) return null;
@@ -104,9 +109,14 @@ export default function FeedItem({ streamId }: Props) {
           <div>
             <IconButton
               size="small"
+              disabled={loading}
               onClick={(e) => setAnchorEl(e.currentTarget)}
             >
-              <MoreHorizIcon />
+              {loading ? (
+                <CircularProgress size="20px" color="info" />
+              ) : (
+                <MoreHorizIcon />
+              )}
             </IconButton>
 
             <Menu

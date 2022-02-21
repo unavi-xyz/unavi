@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import {
   Divider,
   Grid,
@@ -13,9 +13,12 @@ import HomeNavbar from "../../src/components/HomeNavbar";
 import HomeLayout from "../../src/layouts/HomeLayout";
 import Timeline from "../../src/components/timeline/Timeline";
 import PostField from "../../src/components/timeline/PostField";
+import FeedItem from "../../src/components/timeline/FeedItem";
 
 export default function Home() {
   const { authenticated } = useContext(CeramicContext);
+
+  const [newPosts, setNewPosts] = useState<string[]>([]);
 
   return (
     <Grid container direction="column">
@@ -25,8 +28,11 @@ export default function Home() {
 
       {authenticated ? (
         <div>
-          <PostField />
+          <PostField setNewPosts={setNewPosts} />
           <Divider />
+          {newPosts.map((streamId) => {
+            return <FeedItem key={streamId} streamId={streamId} />;
+          })}
           <Timeline />
         </div>
       ) : (

@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { Dispatch, SetStateAction, useContext, useState } from "react";
 import { LoadingButton } from "@mui/lab";
 import { Avatar, CircularProgress, InputBase, Stack } from "@mui/material";
 import Link from "next/link";
@@ -16,7 +16,11 @@ import { useIdenticon } from "../../hooks/useIdenticon";
 
 const CHARACTER_LIMIT = 280;
 
-export default function PostField() {
+interface Props {
+  setNewPosts: Dispatch<SetStateAction<string[]>>;
+}
+
+export default function PostField({ setNewPosts }: Props) {
   const { userId } = useContext(CeramicContext);
 
   const { imageUrl } = useProfile(userId);
@@ -36,6 +40,11 @@ export default function PostField() {
 
     setText("");
     setLoading(false);
+
+    setNewPosts((prev) => {
+      const newValue = [streamId, ...prev];
+      return newValue;
+    });
   }
 
   return (

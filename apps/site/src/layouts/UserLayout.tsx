@@ -22,7 +22,7 @@ export default function UserLayout({ children }) {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { userId, authenticated } = useContext(CeramicContext);
+  const { userId } = useContext(CeramicContext);
 
   const md = useMediaQuery(theme.breakpoints.up("md"));
   const identicon = useIdenticon(id);

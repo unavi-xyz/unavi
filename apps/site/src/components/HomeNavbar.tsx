@@ -25,7 +25,8 @@ export default function HomeNavbar({
     const history: string[] = JSON.parse(
       sessionStorage.getItem("pathHistory") ?? "[]"
     );
-    const value = history[history.length - 2] ?? "/home";
+    const value = history[history.length - 1] ?? "/home";
+
     setPrevPath(value);
   }, []);
 
@@ -51,16 +52,9 @@ export default function HomeNavbar({
     >
       {(back || href) && (
         <Grid item xs>
-          {back && (
-            <Link href={prevPath} passHref>
+          {(href || back) && (
+            <Link href={href ?? prevPath} passHref>
               <IconButton onClick={onBack}>
-                <ArrowBackIosNewIcon />
-              </IconButton>
-            </Link>
-          )}
-          {href && (
-            <Link href={href} passHref>
-              <IconButton>
                 <ArrowBackIosNewIcon />
               </IconButton>
             </Link>

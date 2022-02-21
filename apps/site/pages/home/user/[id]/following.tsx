@@ -14,7 +14,7 @@ export default function Following() {
 
   return (
     <div>
-      <HomeNavbar text={profile?.name} back />
+      <HomeNavbar text={profile?.name} href={`/home/user/${id}`} />
 
       {following &&
         Object.values(following).map((id) => {

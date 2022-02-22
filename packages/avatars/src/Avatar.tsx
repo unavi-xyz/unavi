@@ -95,7 +95,7 @@ export function Avatar({
 
   useFrame(({ clock }) => {
     if (!mixer) return;
-    const delta = Math.max(clock.getDelta(), 0.0001) * 60;
+    const delta = clock.getDelta() * 10;
     mixer.update(delta);
   });
 

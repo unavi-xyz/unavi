@@ -59,8 +59,19 @@ export default function Body({ position, rotation }: Props) {
     }
 
     const alphaRot = Math.min(deltaRot.current * (1000 / PUBLISH_INTERVAL), 1);
-    interpRot.current =
-      (currentRot.current - lastRot.current) * alphaRot + lastRot.current;
+
+    const diff = currentRot.current - lastRot.current;
+
+    interpRot.current = diff * alphaRot + lastRot.current;
+
+    if (Math.abs(diff) > Math.PI) {
+      if (diff > 0) {
+        interpRot.current =
+          (currentRot.current - 2 * Math.PI) * alphaRot + lastRot.current;
+      } else {
+        interpRot.current = currentRot.current * alphaRot + lastRot.current;
+      }
+    }
 
     group.current.rotation.y = interpRot.current;
 

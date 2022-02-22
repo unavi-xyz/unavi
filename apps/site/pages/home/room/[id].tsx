@@ -65,11 +65,7 @@ export default function Room() {
       />
 
       <Box sx={{ padding: 4 }}>
-        <Typography
-          variant="h4"
-          align="center"
-          style={{ wordBreak: "break-word" }}
-        >
+        <Typography variant="h4" style={{ wordBreak: "break-word" }}>
           {name}
         </Typography>
       </Box>

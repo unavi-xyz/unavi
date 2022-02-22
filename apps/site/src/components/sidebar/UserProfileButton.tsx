@@ -1,5 +1,6 @@
 import { useContext, useState } from "react";
 import {
+  Avatar,
   Button,
   ClickAwayListener,
   Collapse,
@@ -88,15 +89,10 @@ export default function UserProfileButton() {
               spacing={1}
               style={{ width: "100%", fontSize: "1rem", padding: ".2rem" }}
             >
-              <img
+              <Avatar
+                variant="rounded"
                 src={imageUrl ?? identicon}
-                alt="profile picture"
-                style={{
-                  height: "3rem",
-                  width: "3rem",
-                  border: "1px solid black",
-                  objectFit: "cover",
-                }}
+                sx={{ width: "3rem", height: "3rem" }}
               />
 
               <Stack alignItems="start">

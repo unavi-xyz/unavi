@@ -1,0 +1,9 @@
+{
+  "definitions": {
+    "feed": "kjzl6cwe1jw146xdv6hls5bdetrsiwgkpvuiqikbbu2w9l05ury100uw6h96451"
+  },
+  "schemas": {
+    "Feed": "ceramic://k3y52l7qbv1frxrkvsjimvvnsh5zmqo5igz2mvzesbngcpr9hs8vaf13yxms1ylmo"
+  },
+  "tiles": {}
+}

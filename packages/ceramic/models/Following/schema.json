@@ -1,0 +1,7 @@
+{
+  "title": "Following",
+  "type": "array",
+  "items": { "type": "string" },
+  "uniqueItems": true,
+  "default": []
+}

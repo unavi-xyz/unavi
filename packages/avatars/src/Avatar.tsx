@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useFBX } from "@react-three/drei";
 import { AnimationAction, AnimationMixer } from "three";
 
+import useFBX from "./hooks/useFBX";
 import useVRM from "./hooks/useVRM";
 import useMixamoAnimation from "./hooks/useMixamoAnimation";
 
@@ -95,7 +95,7 @@ export function Avatar({
 
   useFrame(({ clock }) => {
     if (!mixer) return;
-    const delta = Math.max(clock.getDelta(), 0.0001) * 60;
+    const delta = clock.getDelta() * 10;
     mixer.update(delta);
   });
 

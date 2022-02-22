@@ -1,4 +1,4 @@
-import { MutableRefObject, useRef, useState } from "react";
+import { MutableRefObject, Suspense, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Group, Vector3 } from "three";
 import { ANIMATIONS, Avatar } from "avatars";
@@ -12,6 +12,7 @@ interface Props {
 
 export default function Body({ position, rotation }: Props) {
   const group = useRef<Group>();
+  const lastMovement = useRef(0);
 
   const deltaRot = useRef(0);
   const lastRot = useRef(0);
@@ -22,8 +23,6 @@ export default function Body({ position, rotation }: Props) {
   const lastPos = useRef(new Vector3());
   const currentPos = useRef(new Vector3());
   const interpPos = useRef(new Vector3());
-
-  const lastMovement = useRef(0);
 
   const [animation, setAnimation] = useState<ANIMATIONS>(ANIMATIONS.idle);
 
@@ -59,8 +58,17 @@ export default function Body({ position, rotation }: Props) {
     }
 
     const alphaRot = Math.min(deltaRot.current * (1000 / PUBLISH_INTERVAL), 1);
-    interpRot.current =
-      (currentRot.current - lastRot.current) * alphaRot + lastRot.current;
+    const diff = currentRot.current - lastRot.current;
+    interpRot.current = diff * alphaRot + lastRot.current;
+
+    if (Math.abs(diff) > Math.PI) {
+      if (diff > 0) {
+        interpRot.current =
+          (currentRot.current - 2 * Math.PI) * alphaRot + lastRot.current;
+      } else {
+        interpRot.current = currentRot.current * alphaRot + lastRot.current;
+      }
+    }
 
     group.current.rotation.y = interpRot.current;
 

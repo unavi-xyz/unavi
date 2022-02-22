@@ -50,15 +50,20 @@ export default function WorldLayout({ children }) {
         }}
       />
 
-      <Stack alignItems="center" sx={{ padding: 4 }}>
+      <Stack sx={{ padding: 4 }}>
         <Typography variant="h4" style={{ wordBreak: "break-word" }}>
           {name}
         </Typography>
 
         {controller && (
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            style={{ paddingLeft: "2px" }}
+          >
             <Typography variant="h6">By</Typography>
-            <Link href={`/home/user/${controller}/worlds`} passHref>
+            <Link href={`/home/user/${controller}`} passHref>
               <Typography className="link" variant="h6">
                 {profile ? profile?.name ?? controller : ""}
               </Typography>

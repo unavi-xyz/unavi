@@ -28,7 +28,7 @@ export default function App() {
 
       <div className="crosshair" />
 
-      <Canvas raycaster={RAYCASTER_SETTINGS}>
+      <Canvas raycaster={RAYCASTER_SETTINGS} mode="concurrent">
         <Room roomId={roomId} userId={userId}>
           <Player spawn={world.spawn} />
         </Room>

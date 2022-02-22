@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useFBX } from "@react-three/drei";
 import { AnimationAction, AnimationMixer } from "three";
 
+import useFBX from "./hooks/useFBX";
 import useVRM from "./hooks/useVRM";
 import useMixamoAnimation from "./hooks/useMixamoAnimation";
 

@@ -14,5 +14,11 @@ export default function useVRM(url: string) {
     });
   }, [url]);
 
+  useEffect(() => {
+    return () => {
+      vrm?.dispose();
+    };
+  }, [vrm]);
+
   return vrm;
 }

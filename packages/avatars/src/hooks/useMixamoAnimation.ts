@@ -8,7 +8,7 @@ const HumanBone = { ...VRMSchema.HumanoidBoneName };
 
 //takes a fbx animation from mixamo and applies it to a vrm model
 export default function useMixamoAnimation(fbx?: Group, vrm?: VRM) {
-  useMixamoBone(fbx, "mixamorigHips", vrm, HumanBone.Hips);
+  const hips = useMixamoBone(fbx, "mixamorigHips", vrm, HumanBone.Hips);
   useMixamoBone(fbx, "mixamorigSpine1", vrm, HumanBone.Spine);
   useMixamoBone(fbx, "mixamorigSpine2", vrm, HumanBone.Chest);
   useMixamoBone(fbx, "mixamorigNeck", vrm, HumanBone.Neck);
@@ -29,8 +29,7 @@ export default function useMixamoAnimation(fbx?: Group, vrm?: VRM) {
   useMixamoBone(fbx, "mixamorigRightFoot", vrm, HumanBone.RightFoot);
 
   useFrame(() => {
-    if (!fbx) return;
-    const hips = fbx.getObjectByName("mixamorigHips");
-    hips?.position.set(-100, 100, 0);
+    if (!hips) return;
+    hips.position.set(-100, 100, 0);
   });
 }

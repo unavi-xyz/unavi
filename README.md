@@ -2,17 +2,14 @@
 
 ## What's inside?
 
-This monorepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includes the following apps/packages:
+This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includes the following apps/packages:
 
 ### Apps
 
-- `site`: a [Next.js](https://nextjs.org) app
+- `web`: a [Next.js](https://nextjs.org) app
 
 ### Packages
 
-- `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components
-- `avatars`: [Three.js](https://github.com/pmndrs/react-three-fiber) IK avatar components
-- `ceramic`: helpers for interacting with [Ceramic](https://ceramic.network/)
 - `config`: `eslint` configurations
 - `tsconfig`: `tsconfig.json`s used throughout the monorepo
 

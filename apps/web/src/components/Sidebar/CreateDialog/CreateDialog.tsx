@@ -14,7 +14,11 @@ export default function CreateDialog({ open, setOpen }: Props) {
   return (
     <Dialog open={open} setOpen={setOpen}>
       {type === "public" ? (
-        <CreateDialogInfo type={type} back={() => setType(undefined)} />
+        <CreateDialogInfo
+          type={type}
+          back={() => setType(undefined)}
+          close={() => setOpen(false)}
+        />
       ) : (
         <CreateDialogType setType={setType} />
       )}

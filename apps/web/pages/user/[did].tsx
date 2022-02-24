@@ -8,7 +8,7 @@ export default function User() {
   const { profile, imageUrl } = useProfile(did);
 
   return (
-    <div className="flex space-x-8">
+    <div className="flex space-x-8 p-12">
       <img
         className="inline-block h-36 w-36 rounded-full object-cover"
         src={imageUrl}

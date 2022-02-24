@@ -1,16 +1,22 @@
 import { ChangeEvent, useRef, useState } from "react";
 import { HiCamera } from "react-icons/hi";
 import { IoMdArrowBack } from "react-icons/io";
+import { useRouter } from "next/router";
+import { createSpace, joinSpace } from "ceramic";
 
 interface Props {
   type: string;
   back: () => void;
+  close: () => void;
 }
 
-export default function CreateDialogInfo({ type, back }: Props) {
+export default function CreateDialogInfo({ type, back, close }: Props) {
+  const router = useRouter();
+
   const name = useRef<HTMLInputElement>();
   const description = useRef<HTMLInputElement>();
 
+  const [imageFile, setImageFile] = useState<File>();
   const [image, setImage] = useState("");
 
   function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
@@ -25,10 +31,21 @@ export default function CreateDialogInfo({ type, back }: Props) {
       false
     );
 
-    if (file) reader.readAsDataURL(file);
+    setImageFile(file);
+    reader.readAsDataURL(file);
   }
 
-  function handleCreate() {}
+  async function handleCreate() {
+    const streamId = await createSpace(
+      name.current.value,
+      description.current.value,
+      imageFile
+    );
+    await joinSpace(streamId);
+
+    close();
+    router.push(`/space/${streamId}`);
+  }
 
   return (
     <div className="flex flex-col space-y-4">
@@ -71,7 +88,7 @@ export default function CreateDialogInfo({ type, back }: Props) {
                   <div
                     className="w-24 h-24 rounded-xl
                                hover:bg-neutral-300 bg-neutral-200 transition-all
-                                 text-2xl flex justify-center items-center"
+                                 text-2xl flex justify-center items-center duration-150"
                   >
                     <HiCamera />
                   </div>
@@ -94,7 +111,7 @@ export default function CreateDialogInfo({ type, back }: Props) {
         </div>
 
         <div className="flex flex-col space-y-3">
-          <label htmlFor="name" className="block text-2xl">
+          <label htmlFor="name" className="block text-xl">
             Name
           </label>
           <input
@@ -102,12 +119,12 @@ export default function CreateDialogInfo({ type, back }: Props) {
             id="name"
             type="text"
             placeholder="Name"
-            className="border text-xl py-2 px-3 rounded leading-tight"
+            className="border text-lg py-2 px-3 rounded leading-tight"
           />
         </div>
 
         <div className="flex flex-col space-y-3">
-          <label htmlFor="description" className="block text-2xl">
+          <label htmlFor="description" className="block text-xl">
             Description
           </label>
           <input
@@ -115,14 +132,14 @@ export default function CreateDialogInfo({ type, back }: Props) {
             id="description"
             type="text"
             placeholder="Description"
-            className="border text-xl py-2 px-3 rounded leading-tight"
+            className="border text-lg py-2 px-3 rounded leading-tight"
           />
         </div>
 
         <div
           onClick={handleCreate}
           className="text-2xl text-white py-2 bg-primary hover:bg-opacity-90
-                       hover:cursor-pointer rounded-xl flex justify-center transition-all"
+                     hover:cursor-pointer rounded-xl flex justify-center transition-all  duration-150"
         >
           Create
         </div>

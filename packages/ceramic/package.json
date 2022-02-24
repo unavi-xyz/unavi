@@ -23,6 +23,7 @@
     "@ceramicnetwork/3id-did-resolver": "^1.4.16",
     "@ceramicnetwork/http-client": "^1.5.7",
     "@glazed/did-datastore": "^0.2.3",
+    "@glazed/tile-loader": "^0.1.3",
     "dids": "^2.4.3",
     "jotai": "^1.6.0",
     "swr": "^1.2.2"

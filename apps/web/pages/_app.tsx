@@ -10,12 +10,11 @@ export default function App({ Component, pageProps }) {
       <Head>
         <title>The Wired</title>
         <meta name="viewport" content="initial-scale=1, width=device-width" />
-        <link rel="shortcut icon" href="/favicon.ico" />
       </Head>
 
       <CeramicProvider>
         <Sidebar />
-        <div className="ml-16 p-12">
+        <div className="ml-16 bg-neutral-100 h-screen">
           <Component {...pageProps} />
         </div>
       </CeramicProvider>

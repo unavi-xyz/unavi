@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useState } from "react";
 
-import Dialog from "../../Dialog";
+import Dialog from "../../Dialog/Dialog";
 import CreateDialogInfo from "./CreateDialogInfo";
 import CreateDialogType from "./CreateDialogType";
 

@@ -18,5 +18,5 @@ export default function SidebarButton({ icon, image, selected, dark }: Props) {
 
   if (image) return <img src={image} alt="" className={css} />;
 
-  return <div className={css}>{icon}</div>;
+  return <button className={css}>{icon}</button>;
 }

@@ -2,14 +2,14 @@ import { Dispatch, SetStateAction, useContext, useEffect } from "react";
 import { CeramicContext } from "ceramic";
 
 import MetamaskFox from "./MetamaskFox";
-import Dialog from "../../Dialog";
-import RichButton from "../../RichButton";
+import Dialog from "../../../Dialog/Dialog";
+import RichButton from "../../../RichButton";
 
 interface Props {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
-export default function LoginDialog({ open, setOpen }: Props) {
+export default function SignInDialog({ open, setOpen }: Props) {
   const { authenticated, connect } = useContext(CeramicContext);
 
   useEffect(() => {

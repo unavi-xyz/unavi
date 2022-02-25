@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { getImageUrl, useSpace } from "ceramic";
 
-import SidebarButton from "./SidebarButton";
+import SidebarButton from "../SidebarButton/SidebarButton";
 
 interface Props {
   streamId: string;

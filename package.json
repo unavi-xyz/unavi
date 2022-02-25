@@ -11,10 +11,13 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "ready": "yarn format && yarn lint && yarn test && yarn build"
   },
   "pre-commit": [
-    "lint"
+    "lint",
+    "test"
   ],
   "devDependencies": {
     "pre-commit": "^1.2.2",
@@ -31,6 +34,12 @@
           "dist/**",
           ".next/**"
         ]
+      },
+      "test": {
+        "dependsOn": [
+          "^build"
+        ],
+        "outputs": []
       },
       "lint": {
         "outputs": []

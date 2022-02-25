@@ -18,6 +18,14 @@ jobs:
         with:
           prettier_options: --write **/*.{js,jsx,ts,tsx,md,json}
 
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - run: yarn lint
+      - run: yarn test
+
   build:
     runs-on: ubuntu-latest
 
@@ -28,5 +36,4 @@ jobs:
           node-version: "14"
           cache: "yarn"
       - run: yarn install
-      - run: yarn lint
       - run: yarn build

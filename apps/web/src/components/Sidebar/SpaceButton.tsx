@@ -1,7 +1,9 @@
-import { getImageUrl, useSpace } from "ceramic";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { getImageUrl, useSpace } from "ceramic";
+
+import SidebarButton from "./SidebarButton";
 
 interface Props {
   streamId: string;
@@ -19,29 +21,16 @@ export default function SpaceButton({ streamId }: Props) {
     else setSelected(false);
   }, [router.query.id, streamId]);
 
-  const round = selected ? "rounded-xl" : "rounded-3xl";
-
   return (
-    <div>
-      <Link href={`/space/${streamId}`} passHref>
-        {space?.image ? (
-          <img
-            src={getImageUrl(space?.image)}
-            alt=""
-            className={`object-cover relative flex items-center justify-center h-12 w-12 my-2 
-                        mx-auto shadow-lg hover:cursor-pointer hover:rounded-xl transition-all
-                        ease-linear text-xl ${round}`}
-          />
-        ) : (
-          <div
-            className={`object-cover relative flex items-center justify-center h-12 w-12 my-2 
-                        mx-auto shadow-lg hover:cursor-pointer hover:rounded-xl transition-all
-                        ease-linear text-xl bg-slate-800 ${round}`}
-          >
-            {space?.name?.charAt(0)}
-          </div>
-        )}
-      </Link>
-    </div>
+    <Link href={`/space/${streamId}`} passHref>
+      <span>
+        <SidebarButton
+          icon={space?.name?.charAt(0)}
+          image={getImageUrl(space?.image)}
+          selected={selected}
+          dark
+        />
+      </span>
+    </Link>
   );
 }

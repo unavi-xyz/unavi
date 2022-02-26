@@ -24,31 +24,6 @@
     "prettier": "^2.5.1",
     "turbo": "latest"
   },
-  "turbo": {
-    "pipeline": {
-      "build": {
-        "dependsOn": [
-          "^build"
-        ],
-        "outputs": [
-          "dist/**",
-          ".next/**"
-        ]
-      },
-      "test": {
-        "dependsOn": [
-          "^build"
-        ],
-        "outputs": []
-      },
-      "lint": {
-        "outputs": []
-      },
-      "dev": {
-        "cache": false
-      }
-    }
-  },
   "engines": {
     "npm": ">=7.0.0",
     "node": ">=14.0.0"

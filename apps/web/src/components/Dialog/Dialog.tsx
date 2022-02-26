@@ -10,7 +10,8 @@ export default function Dialog({ open, setOpen, children }: Props) {
 
   return (
     <div
-      className="fixed top-0 left-0 z-10 bg-black bg-opacity-50 w-screen h-screen flex flex-col justify-center"
+      className="fixed top-0 left-0 z-10 bg-black bg-opacity-50 w-screen
+                 h-screen flex flex-col justify-center"
       onClick={() => setOpen(false)}
     >
       <dialog

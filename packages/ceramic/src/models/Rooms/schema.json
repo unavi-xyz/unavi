@@ -1,0 +1,6 @@
+{
+  "title": "Rooms",
+  "type": "array",
+  "items": { "type": "string" },
+  "uniqueItems": true
+}

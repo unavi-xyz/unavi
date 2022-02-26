@@ -1,8 +1,8 @@
 import { Dispatch, SetStateAction, useState } from "react";
 
 import Dialog from "../../Dialog/Dialog";
-import CreateDialogInfo from "./CreateDialogInfo";
-import CreateDialogType from "./CreateDialogType";
+import CreateDialogInfo from "./CreateSpaceDialogInfo";
+import CreateDialogType from "./CreateSpaceDialogType";
 
 interface Props {
   open: boolean;

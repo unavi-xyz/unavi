@@ -12,6 +12,8 @@ export default function ImageUpload({ setImageFile }: Props) {
     const file = e.target.files[0];
     const reader = new FileReader();
 
+    if (!file) return;
+
     reader.addEventListener(
       "load",
       () => {
@@ -25,40 +27,28 @@ export default function ImageUpload({ setImageFile }: Props) {
   }
 
   return (
-    <div className="flex items-center space-x-4">
+    <div className="flex items-center space-x-4 w-full h-full">
       {image ? (
         <>
-          <label htmlFor="image" className="hover:cursor-pointer">
+          <label htmlFor="image" className="hover:cursor-pointer h-full w-full">
             <img
               src={image}
               alt=""
-              className="w-24 h-24 object-cover rounded-xl"
+              className="object-cover rounded-xl h-full w-full"
             />
           </label>
-
-          <div
-            onClick={() => setImage(undefined)}
-            className="hover:cursor-pointer text-red-500"
-          >
-            <span>Delete</span>
-          </div>
         </>
       ) : (
         <>
-          <label htmlFor="image" className="hover:cursor-pointer">
-            <span className="flex items-center justify-center space-x-4">
+          <label htmlFor="image" className="hover:cursor-pointer w-full h-full">
+            <span className="flex items-center justify-center space-x-4 h-full">
               <div
-                className="w-24 h-24 rounded-xl
-                       hover:bg-neutral-300 bg-neutral-200 transition-all
-                         text-2xl flex justify-center items-center duration-150"
+                className="rounded-xl  hover:bg-neutral-300 bg-neutral-200 transition-all
+                           text-2xl flex justify-center items-center duration-150 w-full h-full"
               >
                 <HiCamera />
               </div>
             </span>
-          </label>
-
-          <label htmlFor="image" className="hover:cursor-pointer">
-            <span>Upload</span>
           </label>
         </>
       )}

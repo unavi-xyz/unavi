@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
 import { IoMdArrowBack } from "react-icons/io";
 import { useRouter } from "next/router";
-import { createSpace, joinSpace } from "ceramic";
+import { createSpace } from "ceramic";
 
-import ImageUpload from "./ImageUpload";
-import TextField from "./TextField/TextField";
+import ImageUpload from "../../ImageUpload";
+import TextField from "../../TextField/TextField";
+import Button from "../../Button";
 
 interface Props {
   type: string;
@@ -26,7 +27,6 @@ export default function CreateDialogInfo({ type, back, close }: Props) {
       description.current.value,
       imageFile
     );
-    await joinSpace(streamId);
 
     close();
     router.push(`/space/${streamId}`);
@@ -48,18 +48,14 @@ export default function CreateDialogInfo({ type, back, close }: Props) {
       </p>
 
       <form className="flex flex-col space-y-4">
-        <ImageUpload setImageFile={setImageFile} />
+        <div className="w-28 h-28">
+          <ImageUpload setImageFile={setImageFile} />
+        </div>
 
         <TextField inputRef={name} title="Name" />
         <TextField inputRef={description} title="Description" />
 
-        <span
-          onClick={handleCreate}
-          className="text-2xl text-white py-2 bg-primary hover:bg-opacity-90
-                     hover:cursor-pointer rounded-xl flex justify-center transition-all  duration-150"
-        >
-          Create
-        </span>
+        <Button text="Create" onClick={handleCreate} />
       </form>
     </div>
   );

@@ -8,7 +8,7 @@ interface Props {
 export default function TextField({ title, inputRef }: Props) {
   return (
     <div className="flex flex-col space-y-3">
-      <label htmlFor={title} className="block text-xl">
+      <label htmlFor={title} className="block text-xl pointer-events-none">
         {title}
       </label>
       <input

@@ -1,0 +1,20 @@
+{
+  "title": "Room",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 400
+    },
+    "image": {
+      "type": "string"
+    },
+    "scene": {
+      "type": "object"
+    }
+  }
+}

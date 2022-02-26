@@ -1,12 +1,15 @@
-import { MdAddBox, MdInfo } from "react-icons/md";
+import { MdInfo } from "react-icons/md";
 import { BsFillGearFill, BsFillPeopleFill } from "react-icons/bs";
 import { useRouter } from "next/router";
-import { useSpace } from "ceramic";
+import { useAuth, useSpace } from "ceramic";
+
+import CreateRoomButton from "../../components/CreateRoomButton/CreateRoomButton";
 
 export default function Space() {
   const router = useRouter();
   const id = router.query.id as string;
 
+  const { authenticated } = useAuth();
   const space = useSpace(id);
 
   return (
@@ -27,15 +30,13 @@ export default function Space() {
       <div className="max-w-4xl px-8 py-4 flex justify-between items-center">
         <p className="text-xl font-medium">Rooms</p>
 
-        <div
-          className="flex items-center space-x-2 font-medium hover:bg-neutral-200
-                     hover:cursor-pointer px-2 py-1 rounded transition-all duration-150"
-        >
-          <div className="text-lg">
-            <MdAddBox />
-          </div>
-          <p className="text-md">Create</p>
-        </div>
+        {authenticated && <CreateRoomButton spaceId={id} />}
+      </div>
+
+      <div>
+        {Object.values(space?.rooms ?? {}).map((id) => {
+          return <div key={id}>{id}</div>;
+        })}
       </div>
     </div>
   );

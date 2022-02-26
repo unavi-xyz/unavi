@@ -3,7 +3,7 @@ import { AiFillHome, AiFillAppstore, AiOutlinePlus } from "react-icons/ai";
 import Link from "next/link";
 import { useAuth, useSpaces } from "ceramic";
 
-import CreateDialog from "./CreateDialog/CreateDialog";
+import CreateDialog from "./CreateSpaceDialog/CreateSpaceDialog";
 import SpaceButton from "./SpaceButton/SpaceButton";
 import SidebarButton from "./SidebarButton/SidebarButton";
 import SignInButton from "./SignInButton/SignInButton";

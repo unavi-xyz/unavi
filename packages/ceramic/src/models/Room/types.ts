@@ -1,6 +1,6 @@
-export type Space = {
+export type Room = {
   name?: string;
   description?: string;
   image?: string;
-  rooms?: string[];
+  scene?: any;
 };

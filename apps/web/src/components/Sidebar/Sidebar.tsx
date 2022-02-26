@@ -19,11 +19,8 @@ export default function Sidebar() {
     <div>
       <CreateDialog open={openCreate} setOpen={setOpenCreate} />
 
-      <div
-        className="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col
-                   justify-between bg-primary text-white shadow"
-      >
-        <div className="flex flex-col">
+      <div className="h-screen flex flex-col justify-between bg-primary text-white shadow">
+        <div className="flex flex-col px-3">
           <Link href="/" passHref>
             <span>
               <SidebarButton tooltip="Home" dark icon={<AiFillHome />} />

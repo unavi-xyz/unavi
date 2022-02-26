@@ -7,11 +7,11 @@ interface Props {
   spaceId: string;
 }
 
-export default function CreateRoomButton({ spaceId }) {
+export default function CreateRoomButton({ spaceId }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div>
+    <div onClick={(e) => e.stopPropagation()}>
       <CreateRoomDialog spaceId={spaceId} open={open} setOpen={setOpen} />
 
       <button

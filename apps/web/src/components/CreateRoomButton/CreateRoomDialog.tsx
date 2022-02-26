@@ -41,7 +41,9 @@ export default function CreateRoomDialog({ spaceId, open, setOpen }: Props) {
         <TextField title="Name" inputRef={name} />
         <TextField title="Description" inputRef={description} />
 
-        <Button text="Create" onClick={handleCreate} />
+        <Button onClick={handleCreate}>
+          <span className="text-xl">Create</span>
+        </Button>
       </div>
     </Dialog>
   );

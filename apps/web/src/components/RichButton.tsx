@@ -8,8 +8,8 @@ export default function RichButton({
   return (
     <div
       {...rest}
-      className="flex space-x-2 p-1 shadow-md bg-slate-100 hover:bg-slate-200
-      hover:cursor-pointer rounded-lg h-24"
+      className="flex space-x-2 p-1 shadow-md bg-neutral-100 hover:bg-neutral-200
+                 hover:cursor-pointer rounded-lg h-24 transition-all duration-150"
     >
       {image}
 

@@ -55,7 +55,9 @@ export default function CreateDialogInfo({ type, back, close }: Props) {
         <TextField inputRef={name} title="Name" />
         <TextField inputRef={description} title="Description" />
 
-        <Button text="Create" onClick={handleCreate} />
+        <Button onClick={handleCreate}>
+          <span className="text-xl">Create</span>
+        </Button>
       </form>
     </div>
   );

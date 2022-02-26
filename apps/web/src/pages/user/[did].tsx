@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 import { useProfile, useRooms } from "ceramic";
+import RoomList from "../../components/RoomList/RoomList";
 
 export default function User() {
   const router = useRouter();
@@ -9,8 +10,8 @@ export default function User() {
   const rooms = useRooms(did);
 
   return (
-    <div>
-      <div className="flex space-x-8 p-12">
+    <div className="p-8">
+      <div className="flex space-x-8">
         <img
           className="inline-block h-36 w-36 rounded-full object-cover"
           src={imageUrl}
@@ -22,10 +23,11 @@ export default function User() {
         </div>
       </div>
 
-      <div>
-        {rooms?.map((id) => {
-          return <div key={id}>{id}</div>;
-        })}
+      <div className="pt-8 px-32 flex">
+        <div className="w-full"></div>
+        <div className="w-full">
+          <RoomList roomIds={rooms} basePath={`/user/${did}`} />
+        </div>
       </div>
     </div>
   );

@@ -24,27 +24,29 @@ it("should render icons", () => {
 it("should be a circle", () => {
   render(<SidebarButton />);
   const button = screen.getByRole("button");
-
   expect(button).toHaveClass("rounded-3xl");
 });
 
 it("should expand when selected", () => {
   render(<SidebarButton selected />);
   const button = screen.getByRole("button");
-
   expect(button).toHaveClass("rounded-xl");
 });
 
 it("should be light", () => {
   render(<SidebarButton />);
   const button = screen.getByRole("button");
-
   expect(button).toHaveClass("bg-white hover:bg-neutral-300 text-neutral-800");
 });
 
 it("should be dark", () => {
   render(<SidebarButton dark />);
   const button = screen.getByRole("button");
-
   expect(button).toHaveClass("bg-neutral-800 hover:bg-neutral-700 text-white");
+});
+
+it("should show tooltip", () => {
+  render(<SidebarButton tooltip="Hello!" />);
+  const tooltip = screen.getByText("Hello!");
+  expect(tooltip).toBeInTheDocument();
 });

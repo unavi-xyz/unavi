@@ -25,6 +25,7 @@ export default function SpaceButton({ streamId }: Props) {
     <Link href={`/space/${streamId}`} passHref>
       <span>
         <SidebarButton
+          tooltip={space?.name}
           icon={space?.name?.charAt(0)}
           image={space?.image}
           selected={selected}

@@ -26,12 +26,12 @@ export default function Sidebar() {
         <div className="flex flex-col">
           <Link href="/" passHref>
             <span>
-              <SidebarButton dark icon={<AiFillHome />} />
+              <SidebarButton tooltip="Home" dark icon={<AiFillHome />} />
             </span>
           </Link>
           <Link href="/" passHref>
             <span>
-              <SidebarButton dark icon={<AiFillAppstore />} />
+              <SidebarButton tooltip="Rooms" dark icon={<AiFillAppstore />} />
             </span>
           </Link>
 
@@ -43,7 +43,11 @@ export default function Sidebar() {
 
           {authenticated && (
             <div onClick={() => setOpenCreate(true)}>
-              <SidebarButton selected={openCreate} icon={<AiOutlinePlus />} />
+              <SidebarButton
+                tooltip="Create"
+                selected={openCreate}
+                icon={<AiOutlinePlus />}
+              />
             </div>
           )}
         </div>

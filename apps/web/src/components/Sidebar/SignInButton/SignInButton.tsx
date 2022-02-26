@@ -19,12 +19,12 @@ export default function SignInButton() {
       {authenticated ? (
         <Link href={`/user/${viewerId}`} passHref>
           <span>
-            <SidebarButton image={imageUrl} />
+            <SidebarButton tooltip="Your Profile" image={imageUrl} />
           </span>
         </Link>
       ) : (
         <div onClick={() => setOpen(true)}>
-          <SidebarButton dark icon={<VscDebugDisconnect />} />
+          <SidebarButton tooltip="Sign In" dark icon={<VscDebugDisconnect />} />
         </div>
       )}
     </div>

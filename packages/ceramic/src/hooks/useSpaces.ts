@@ -1,6 +1,6 @@
 import useSWR from "swr";
 import { DIDDataStore } from "@glazed/did-datastore";
-import { ceramic } from "../constants";
+import { ceramic } from "../client";
 
 const model = require("../models/Spaces/model.json");
 

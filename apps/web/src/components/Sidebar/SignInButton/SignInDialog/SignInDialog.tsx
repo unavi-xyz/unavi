@@ -1,5 +1,5 @@
-import { Dispatch, SetStateAction, useContext, useEffect } from "react";
-import { CeramicContext } from "ceramic";
+import { Dispatch, SetStateAction, useEffect } from "react";
+import { useAuth } from "ceramic";
 
 import MetamaskFox from "./MetamaskFox";
 import Dialog from "../../../Dialog/Dialog";
@@ -10,7 +10,7 @@ interface Props {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 export default function SignInDialog({ open, setOpen }: Props) {
-  const { authenticated, connect } = useContext(CeramicContext);
+  const { authenticated, connect } = useAuth();
 
   useEffect(() => {
     if (authenticated) setOpen(false);

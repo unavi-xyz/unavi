@@ -1,7 +1,7 @@
 import { DIDDataStore } from "@glazed/did-datastore";
 import useSWR from "swr";
 
-import { ceramic, ceramicRead } from "../constants";
+import { ceramic, ceramicRead } from "../client";
 import { BasicProfile } from "../models/BasicProfile/types";
 
 const model = require("../models/BasicProfile/model.json");

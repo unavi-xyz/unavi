@@ -1,15 +1,16 @@
-import { uploadImageToIpfs } from "../..";
-import { loader } from "../../constants";
 import { Space } from "./types";
+import { uploadImageToIpfs } from "../../ipfs";
+import { loader } from "../../client";
+import { joinSpace } from "../Spaces/helpers";
 
 const model = require("./model.json");
 
 export async function createSpace(
-  name: string,
-  description: string,
-  image: File
+  name?: string,
+  description?: string,
+  image?: File
 ) {
-  const hash = await uploadImageToIpfs(image);
+  const hash = image ? await uploadImageToIpfs(image) : undefined;
   const space: Space = { name, description, image: hash };
 
   const stream = await loader.create(
@@ -18,5 +19,8 @@ export async function createSpace(
     { pin: false }
   );
   const streamId = stream.id.toString();
+
+  await joinSpace(streamId);
+
   return streamId;
 }

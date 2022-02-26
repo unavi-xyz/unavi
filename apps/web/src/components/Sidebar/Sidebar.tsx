@@ -1,7 +1,7 @@
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { AiFillHome, AiFillAppstore, AiOutlinePlus } from "react-icons/ai";
 import Link from "next/link";
-import { CeramicContext, useSpaces } from "ceramic";
+import { useAuth, useSpaces } from "ceramic";
 
 import CreateDialog from "./CreateDialog/CreateDialog";
 import SpaceButton from "./SpaceButton/SpaceButton";
@@ -9,7 +9,7 @@ import SidebarButton from "./SidebarButton/SidebarButton";
 import SignInButton from "./SignInButton/SignInButton";
 
 export default function Sidebar() {
-  const { authenticated, viewerId } = useContext(CeramicContext);
+  const { authenticated, viewerId } = useAuth();
 
   const [openCreate, setOpenCreate] = useState(false);
 

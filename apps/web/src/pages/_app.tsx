@@ -1,5 +1,4 @@
 import Head from "next/head";
-import { CeramicProvider } from "ceramic";
 
 import "../../styles/globals.css";
 import Sidebar from "../components/Sidebar/Sidebar";
@@ -12,12 +11,10 @@ export default function App({ Component, pageProps }) {
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
-      <CeramicProvider>
-        <Sidebar />
-        <div className="ml-16 bg-neutral-100 h-screen">
-          <Component {...pageProps} />
-        </div>
-      </CeramicProvider>
+      <Sidebar />
+      <div className="ml-16 bg-neutral-100 h-screen">
+        <Component {...pageProps} />
+      </div>
     </div>
   );
 }

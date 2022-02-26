@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { getImageUrl, useSpace } from "ceramic";
+import { useSpace } from "ceramic";
 
 import SidebarButton from "../SidebarButton/SidebarButton";
 
@@ -26,7 +26,7 @@ export default function SpaceButton({ streamId }: Props) {
       <span>
         <SidebarButton
           icon={space?.name?.charAt(0)}
-          image={getImageUrl(space?.image)}
+          image={space?.image}
           selected={selected}
           dark
         />

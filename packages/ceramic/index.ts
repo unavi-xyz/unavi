@@ -1,10 +1,10 @@
-export * from "./components/CeramicContext";
-export * from "./hooks/useProfile";
-export * from "./hooks/useSpaces";
-export * from "./hooks/useSpace";
+export * from "./src/hooks/useAuth";
+export * from "./src/hooks/useProfile";
+export * from "./src/hooks/useSpaces";
+export * from "./src/hooks/useSpace";
 
-export * from "./models/Space/helpers";
-export * from "./models/Space/types";
-export * from "./models/Spaces/helpers";
+export * from "./src/models/Space/helpers";
+export * from "./src/models/Space/types";
+export * from "./src/models/Spaces/helpers";
 
-export * from "./ipfs";
+export * from "./src/ipfs";

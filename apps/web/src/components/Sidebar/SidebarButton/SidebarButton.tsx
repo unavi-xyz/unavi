@@ -1,3 +1,5 @@
+import Pressable from "../../Pressable";
+
 interface Props {
   icon?: any;
   image?: string;
@@ -16,7 +18,13 @@ export default function SidebarButton({ icon, image, selected, dark }: Props) {
               shadow-lg hover:cursor-pointer hover:rounded-xl transition-all
               ease-linear duration-150 text-xl ${colors} ${round}`;
 
-  if (image) return <img src={image} alt="" className={css} />;
-
-  return <button className={css}>{icon}</button>;
+  return (
+    <Pressable>
+      {image ? (
+        <img src={image} alt="" className={css} />
+      ) : (
+        <button className={css}>{icon}</button>
+      )}
+    </Pressable>
+  );
 }

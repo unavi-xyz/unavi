@@ -1,5 +1,7 @@
 import { useAuth, useRoom } from "ceramic";
+import Link from "next/link";
 import { useRouter } from "next/router";
+
 import Button from "../../../../components/Button";
 import SpaceLayout from "../../../../layouts/SpaceLayout";
 
@@ -24,9 +26,11 @@ export default function SpaceRoom() {
 
         {authenticated && (
           <div className="text-xl pt-2">
-            <Button>
-              <div className="px-2 py-1 text-lg">Join Room</div>
-            </Button>
+            <Link href={`/app?room=${roomId}`} passHref>
+              <Button>
+                <div className="px-2 py-1 text-lg">Join Room</div>
+              </Button>
+            </Link>
           </div>
         )}
       </div>

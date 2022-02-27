@@ -12,11 +12,15 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "3d": "*",
+    "@react-three/cannon": "^4.7.0",
+    "@react-three/fiber": "^7.0.26",
     "ceramic": "*",
     "next": "^12.0.7",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-icons": "^4.3.1"
+    "react-icons": "^4.3.1",
+    "three": "^0.138.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.11",

@@ -1,28 +1,29 @@
-import Link from "next/link";
-import { useRouter } from "next/router";
-
 import RoomCard from "./RoomCard";
 
 interface Props {
+  selectedRoomId?: string;
   roomIds: string[];
-  basePath: string;
+  onRoomClick?: (roomId: string) => void;
 }
 
-export default function RoomList({ roomIds, basePath }: Props) {
-  const router = useRouter();
-  const selectedId = router.query.room as string;
-
+export default function RoomList({
+  selectedRoomId,
+  roomIds,
+  onRoomClick,
+}: Props) {
   return (
     <div className="flex flex-col space-y-4">
       {roomIds?.map((roomId) => {
-        const selected = roomId === selectedId;
-
         return (
-          <Link key={roomId} href={`${basePath}/room/${roomId}`} passHref>
-            <span>
-              <RoomCard selected={selected} roomId={roomId} />
-            </span>
-          </Link>
+          <div
+            key={roomId}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onRoomClick) onRoomClick(roomId);
+            }}
+          >
+            <RoomCard selected={selectedRoomId === roomId} roomId={roomId} />
+          </div>
         );
       })}
     </div>

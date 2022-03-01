@@ -1,11 +1,21 @@
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/cannon";
+import { Sky } from "@react-three/drei";
 import { useRouter } from "next/router";
 import { Player } from "3d";
+import { useAuth } from "ceramic";
+
+import AppLayout from "../layouts/AppLayout";
 
 export default function App() {
   const router = useRouter();
   const roomId = router.query.room as string;
+
+  const { authenticated } = useAuth();
+
+  if (!authenticated) {
+    return <div></div>;
+  }
 
   return (
     <Canvas>
@@ -18,8 +28,12 @@ export default function App() {
           <meshStandardMaterial />
         </mesh>
 
+        <Sky />
+
         <Player />
       </Physics>
     </Canvas>
   );
 }
+
+App.Layout = AppLayout;

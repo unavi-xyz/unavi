@@ -1,27 +1,22 @@
 import { useState } from "react";
 import { VscDebugDisconnect } from "react-icons/vsc";
-import Link from "next/link";
 import { useAuth, useProfile } from "ceramic";
 
-import SidebarButton from "../SidebarButton/SidebarButton";
-import SignInDialog from "./SignInDialog/SignInDialog";
+import SignInDialog from "./SignInDialog";
+import SidebarButton from "../SidebarButton";
 
 export default function SignInButton() {
   const { authenticated, viewerId } = useAuth();
-  const { imageUrl } = useProfile(viewerId);
+  const { profile, imageUrl } = useProfile(viewerId);
 
   const [open, setOpen] = useState(false);
 
   return (
-    <div>
+    <div className="p-2">
       <SignInDialog open={open} setOpen={setOpen} />
 
       {authenticated ? (
-        <Link href={`/user/${viewerId}`} passHref>
-          <span>
-            <SidebarButton tooltip="Your Profile" image={imageUrl} />
-          </span>
-        </Link>
+        <SidebarButton tooltip={profile?.name} image={imageUrl} />
       ) : (
         <div onClick={() => setOpen(true)}>
           <SidebarButton tooltip="Sign In" dark icon={<VscDebugDisconnect />} />

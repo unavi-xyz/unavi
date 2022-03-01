@@ -16,13 +16,13 @@ export default function RoomCard({ roomId, selected }: Props) {
 
   return (
     <div
-      className={`flex space-x-8  rounded-xl p-4 hover:cursor-pointer
+      className={`flex space-x-8 rounded-xl p-4 hover:cursor-pointer
                   transition-all duration-150 h-40 shadow ${color}`}
     >
       <img
         src={room?.image}
         alt=""
-        className="w-56 h-full object-cover rounded-xl"
+        className="w-60 h-full object-cover rounded-lg"
       />
 
       <div className="flex flex-col pt-4">

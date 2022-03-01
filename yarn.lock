@@ -5137,7 +5137,7 @@ jest@^27.5.1:
 
 jotai@^1.6.0:
   version "1.6.0"
-  resolved "https://registry.npmjs.org/jotai/-/jotai-1.6.0.tgz"
+  resolved "https://registry.yarnpkg.com/jotai/-/jotai-1.6.0.tgz#81412756dab42fcb712530fba512e5e43bd0de15"
   integrity sha512-J/+aD9R1XDcNeY8drg/y/I47eUivQ13HGmLmA33w95SvJJLBStSF5WxYrmLgbuWcDC6MpRecF3g/GBchPJNcZg==
 
 js-sha256@^0.9.0:

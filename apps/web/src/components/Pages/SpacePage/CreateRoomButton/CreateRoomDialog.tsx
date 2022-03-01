@@ -1,10 +1,10 @@
 import { Dispatch, SetStateAction, useRef, useState } from "react";
 import { addRoomToSpace, createRoom } from "ceramic";
 
-import Button from "../Button";
-import Dialog from "../Dialog/Dialog";
-import ImageUpload from "../ImageUpload";
-import TextField from "../TextField/TextField";
+import Button from "../../../Button";
+import Dialog from "../../../Dialog/Dialog";
+import ImageUpload from "../../../ImageUpload";
+import TextField from "../../../TextField/TextField";
 
 interface Props {
   spaceId: string;

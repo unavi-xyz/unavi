@@ -3,9 +3,9 @@ import { IoMdArrowBack } from "react-icons/io";
 import { useRouter } from "next/router";
 import { createSpace } from "ceramic";
 
-import ImageUpload from "../../ImageUpload";
-import TextField from "../../TextField/TextField";
-import Button from "../../Button";
+import ImageUpload from "../../../ImageUpload";
+import TextField from "../../../TextField/TextField";
+import Button from "../../../Button";
 
 interface Props {
   type: string;

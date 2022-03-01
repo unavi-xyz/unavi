@@ -1,6 +1,8 @@
 import { useRouter } from "next/router";
 import { useProfile, useRooms } from "ceramic";
+
 import RoomList from "../../components/RoomList/RoomList";
+import SidebarLayout from "../../layouts/SidebarLayout";
 
 export default function User() {
   const router = useRouter();
@@ -26,9 +28,11 @@ export default function User() {
       <div className="pt-8 px-32 flex">
         <div className="w-full"></div>
         <div className="w-full">
-          <RoomList roomIds={rooms} basePath={`/user/${did}`} />
+          <RoomList roomIds={rooms} />
         </div>
       </div>
     </div>
   );
 }
+
+User.Layout = SidebarLayout;

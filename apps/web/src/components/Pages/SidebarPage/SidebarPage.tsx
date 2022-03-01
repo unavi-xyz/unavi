@@ -8,9 +8,10 @@ import SignInButton from "./SignInButon.tsx/SignInButton";
 
 interface Props {
   selectedSpaceId: string;
-  onSpaceClick: (streamId: string) => void;
-  onHomeClick: () => void;
-  onRoomsClick: () => void;
+  onSpaceClick?: (streamId: string) => void;
+  onHomeClick?: () => void;
+  onRoomsClick?: () => void;
+  onProfileClick?: () => void;
 }
 
 export default function SidebarPage({
@@ -18,6 +19,7 @@ export default function SidebarPage({
   onSpaceClick,
   onHomeClick,
   onRoomsClick,
+  onProfileClick,
 }: Props) {
   const { authenticated, viewerId } = useAuth();
   const spaces = useSpaces(viewerId);
@@ -51,7 +53,12 @@ export default function SidebarPage({
         {authenticated && <CreateButton />}
       </div>
 
-      <div className="bg-black bg-opacity-10">
+      <div
+        onClick={() => {
+          if (authenticated) onProfileClick();
+        }}
+        className="bg-black bg-opacity-10"
+      >
         <SignInButton />
       </div>
     </div>

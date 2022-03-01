@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { showMiddleAtom, showRightAtom } from "./sidebarState";
+import { roomIdAtom, spaceIdAtom } from "./sidebarState";
 
 import Left from "./Left/Left";
 import Middle from "./Middle/Middle";
@@ -10,8 +10,8 @@ interface Props {
 }
 
 export default function Sidebar({ visible }: Props) {
-  const [showMiddle] = useAtom(showMiddleAtom);
-  const [showRight] = useAtom(showRightAtom);
+  const [spaceId] = useAtom(spaceIdAtom);
+  const [roomId] = useAtom(roomIdAtom);
 
   return (
     <div className="z-30 fixed flex h-screen w-screen">
@@ -26,7 +26,7 @@ export default function Sidebar({ visible }: Props) {
       <div
         onClick={(e) => e.stopPropagation()}
         className="z-20 w-full max-w-[35%] transition-all duration-500"
-        style={{ marginLeft: visible || !showMiddle ? "-35%" : "" }}
+        style={{ marginLeft: visible || !spaceId ? "-35%" : "" }}
       >
         <Middle />
       </div>
@@ -34,7 +34,7 @@ export default function Sidebar({ visible }: Props) {
         onClick={(e) => e.stopPropagation()}
         className="z-10 w-full max-w-[35%] transition-all duration-500"
         style={{
-          marginLeft: visible || !showRight || !showMiddle ? "-35%" : "",
+          marginLeft: visible || !spaceId || !roomId ? "-35%" : "",
         }}
       >
         <Right />

@@ -1,4 +1,4 @@
-import Pressable from "../../Pressable";
+import Pressable from "../../base/Pressable";
 
 interface Props {
   icon?: any;

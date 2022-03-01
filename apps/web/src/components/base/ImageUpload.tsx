@@ -9,10 +9,10 @@ export default function ImageUpload({ setImageFile }: Props) {
   const [image, setImage] = useState("");
 
   function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
+    if (!e.target.files || !e.target.files[0]) return;
+
     const file = e.target.files[0];
     const reader = new FileReader();
-
-    if (!file) return;
 
     reader.addEventListener(
       "load",

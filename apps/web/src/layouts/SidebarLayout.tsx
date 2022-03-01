@@ -1,9 +1,12 @@
-import { useRouter } from "next/router";
 import { useState } from "react";
+import { useRouter } from "next/router";
+import { useAuth } from "ceramic";
+
 import SidebarPage from "../components/Pages/SidebarPage/SidebarPage";
 
 export default function SidebarLayout({ children }) {
   const router = useRouter();
+  const { viewerId } = useAuth();
 
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>();
 
@@ -16,9 +19,14 @@ export default function SidebarLayout({ children }) {
     setSelectedSpaceId(undefined);
     router.push("/");
   }
+
   function handleRoomsClick() {
     setSelectedSpaceId(undefined);
     router.push("/");
+  }
+
+  function handleProfileClick() {
+    router.push(`/user/${viewerId}`);
   }
 
   return (
@@ -29,6 +37,7 @@ export default function SidebarLayout({ children }) {
           onSpaceClick={handleSpaceClick}
           onHomeClick={handleHomeClick}
           onRoomsClick={handleRoomsClick}
+          onProfileClick={handleProfileClick}
         />
       </div>
 

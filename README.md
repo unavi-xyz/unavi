@@ -10,6 +10,8 @@ This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includ
 
 ### Packages
 
+- `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components
+- `ceramic`: helpers for interacting with [Ceramic](https://ceramic.network/)
 - `config`: `eslint` configurations
 - `tsconfig`: `tsconfig.json`s used throughout the monorepo
 

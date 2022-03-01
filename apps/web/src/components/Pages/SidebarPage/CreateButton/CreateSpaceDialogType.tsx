@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from "react";
 import { BiWorld } from "react-icons/bi";
 
-import RichButton from "../../../RichButton";
+import RichButton from "../../../base/RichButton";
 
 interface Props {
   setType: Dispatch<SetStateAction<string>>;

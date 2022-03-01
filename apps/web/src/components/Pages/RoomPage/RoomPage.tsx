@@ -1,6 +1,6 @@
 import { useAuth, useRoom } from "ceramic";
 
-import Button from "../../Button";
+import Button from "../../base/Button";
 
 interface Props {
   roomId: string;

@@ -1,29 +1,28 @@
 import { useState } from "react";
 import { useAtom } from "jotai";
 
-import { showMiddleAtom, spaceIdAtom } from "../sidebarState";
-
+import { roomIdAtom, spaceIdAtom } from "../sidebarState";
 import SidebarPage from "../../../Pages/SidebarPage/SidebarPage";
 
 export default function Left() {
-  const [, setShowMiddle] = useAtom(showMiddleAtom);
   const [, setSpaceId] = useAtom(spaceIdAtom);
+  const [, setRoomId] = useAtom(roomIdAtom);
 
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>();
 
   function handleSpaceClick(streamId: string) {
     setSpaceId(streamId);
     setSelectedSpaceId(streamId);
-    setShowMiddle(true);
+    setRoomId(undefined);
   }
 
   function handleHomeClick() {
-    setShowMiddle(false);
+    setSpaceId(undefined);
     setSelectedSpaceId(undefined);
   }
 
   function handleRoomsClick() {
-    setShowMiddle(false);
+    setSpaceId(undefined);
     setSelectedSpaceId(undefined);
   }
 

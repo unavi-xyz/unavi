@@ -3,7 +3,7 @@ import { BsFillGearFill, BsFillPeopleFill } from "react-icons/bs";
 import { useAuth, useSpace } from "ceramic";
 
 import CreateRoomButton from "./CreateRoomButton/CreateRoomButton";
-import RoomList from "../../RoomList/RoomList";
+import RoomList from "./RoomList/RoomList";
 
 interface Props {
   spaceId: string;

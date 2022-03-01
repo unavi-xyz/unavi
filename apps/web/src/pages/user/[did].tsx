@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useProfile, useRooms } from "ceramic";
 
-import RoomList from "../../components/RoomList/RoomList";
+import RoomList from "../../components/Pages/SpacePage/RoomList/RoomList";
 import SidebarLayout from "../../layouts/SidebarLayout";
 
 export default function User() {

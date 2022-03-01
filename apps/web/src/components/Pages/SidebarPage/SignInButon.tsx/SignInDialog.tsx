@@ -2,8 +2,8 @@ import { Dispatch, SetStateAction, useEffect } from "react";
 import { useAuth } from "ceramic";
 
 import MetamaskFox from "./MetamaskFox";
-import Dialog from "../../../Dialog/Dialog";
-import RichButton from "../../../RichButton";
+import Dialog from "../../../base/Dialog/Dialog";
+import RichButton from "../../../base/RichButton";
 
 interface Props {
   open: boolean;

@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function SpaceButton({ streamId, selected }: Props) {
-  const space = useSpace(streamId);
+  const { space } = useSpace(streamId);
 
   return (
     <SidebarButton

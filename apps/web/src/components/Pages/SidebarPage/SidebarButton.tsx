@@ -25,17 +25,15 @@ export default function SidebarButton({
   const bg = selected ? "bg-opacity-10" : "bg-opacity-0";
 
   return (
-    <Pressable>
-      <div
-        className={`flex items-center space-x-4 bg-white ${bg} rounded-2xl
+    <div
+      className={`flex items-center space-x-4 bg-white ${bg} rounded-2xl
                     hover:bg-opacity-10 p-2 transition-all duration-150 hover:cursor-pointer`}
-      >
-        <button className={css}>
-          {image ? <img src={image} alt="" className={css} /> : icon}
-        </button>
+    >
+      <button className={css}>
+        {image ? <img src={image} alt="" className={css} /> : icon}
+      </button>
 
-        <div className="">{tooltip}</div>
-      </div>
-    </Pressable>
+      <div className="">{tooltip}</div>
+    </div>
   );
 }

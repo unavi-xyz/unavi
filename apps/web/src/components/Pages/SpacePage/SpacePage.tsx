@@ -1,9 +1,10 @@
 import { MdInfo } from "react-icons/md";
-import { BsFillGearFill, BsFillPeopleFill } from "react-icons/bs";
 import { useAuth, useSpace } from "ceramic";
 
 import CreateRoomButton from "./CreateRoomButton/CreateRoomButton";
 import RoomList from "./RoomList/RoomList";
+import SaveButton from "./SaveButton";
+import NavbarButton from "./NavbarButton";
 
 interface Props {
   spaceId: string;
@@ -17,7 +18,7 @@ export default function SpacePage({
   onRoomClick,
 }: Props) {
   const { authenticated } = useAuth();
-  const space = useSpace(spaceId);
+  const { space } = useSpace(spaceId);
 
   return (
     <div className="w-full h-full bg-white">
@@ -28,9 +29,10 @@ export default function SpacePage({
         </div>
 
         <div className="flex space-x-4">
-          <NavbarButton icon={<MdInfo className="text-[1.4rem]" />} />
-          <NavbarButton icon={<BsFillPeopleFill />} />
-          <NavbarButton icon={<BsFillGearFill />} />
+          <SaveButton spaceId={spaceId} />
+          <NavbarButton>
+            <MdInfo className="text-[1.4rem]" />
+          </NavbarButton>
         </div>
       </div>
 
@@ -49,18 +51,6 @@ export default function SpacePage({
           />
         </div>
       </div>
-    </div>
-  );
-}
-
-function NavbarButton({ icon = <></> }) {
-  return (
-    <div
-      className="w-14 h-14 bg-neutral-100 rounded-lg hover:cursor-pointer
-               hover:bg-neutral-200 flex justify-center items-center text-xl
-                 transition-all duration-150 shadow"
-    >
-      {icon}
     </div>
   );
 }

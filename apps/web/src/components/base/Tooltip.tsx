@@ -2,19 +2,22 @@ import { ReactChild } from "react";
 
 interface Props {
   text?: string;
+  placement?: "left" | "right";
   children: ReactChild;
 }
 
-export default function Tooltip({ children, text }: Props) {
+export default function Tooltip({ text, placement = "left", children }: Props) {
+  const position = placement === "right" ? "left-full" : "right-full";
+
   return (
-    <div className="group flex items-center space-x-4">
+    <div className="group relative flex items-center justify-center">
       {children}
 
       {text && (
         <span
-          className="absolute w-auto p-2 m-2 min-w-max left-16 rounded-md shadow
+          className={`absolute p-2 mx-3 rounded-md ${position}
                    text-white bg-neutral-900 text-xs font-bold transition-all
-                     duration-150 scale-0 origin-left group-hover:scale-100"
+                     duration-150 scale-0 group-hover:scale-100`}
         >
           {text}
         </span>

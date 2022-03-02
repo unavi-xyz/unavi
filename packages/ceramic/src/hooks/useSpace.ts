@@ -9,15 +9,16 @@ export function useSpace(streamId: string) {
     if (!streamId) return;
     const doc = await loader.load(streamId);
     const space = doc.content as Space;
+    const controller = doc.controllers[0];
 
     if (space?.image) {
       space.image = getImageUrl(space.image);
     }
 
-    return space;
+    return { space, controller };
   }
 
   const { data } = useSWR(`space-${streamId}`, fetcher);
 
-  return data;
+  return { space: data?.space, controller: data?.controller };
 }

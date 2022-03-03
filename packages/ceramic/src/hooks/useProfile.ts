@@ -19,7 +19,7 @@ export function useProfile(did: string) {
 
     const imageHash = data?.image?.original.src.replace("ipfs://", "");
     const imageUrl = imageHash
-      ? `https://ipfs.infura.io:5001/api/v0/cat?arg=${imageHash}`
+      ? `https://ipfs.io/ipfs/${imageHash}`
       : undefined;
 
     return { profile: data, imageUrl };

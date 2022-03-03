@@ -1,7 +1,7 @@
 import { Space } from "./types";
 import { uploadImageToIpfs } from "../../ipfs";
 import { loader } from "../../client";
-import { joinSpace } from "../Spaces/helpers";
+import { joinSpace, leaveSpace } from "../Spaces/helpers";
 import { jsonArrayAdd, jsonArrayRemove } from "../../json";
 import { merge } from "../../tile";
 
@@ -15,12 +15,12 @@ export async function createSpace(
   const hash = image ? await uploadImageToIpfs(image) : undefined;
   const space: Space = { name, description, image: hash };
 
-  const stream = await loader.create(
+  const doc = await loader.create(
     space,
     { schema: model.schemas.Space },
     { pin: false }
   );
-  const streamId = stream.id.toString();
+  const streamId = doc.id.toString();
 
   await joinSpace(streamId);
 
@@ -31,13 +31,22 @@ export async function editSpace(
   streamId: string,
   name?: string,
   description?: string,
-  image?: File
+  imageFile?: File
 ) {
-  const hash = image ? await uploadImageToIpfs(image) : undefined;
-  const space: Space = { name, description, image: hash };
+  const image = imageFile ? await uploadImageToIpfs(imageFile) : undefined;
 
-  const stream = await loader.load(streamId);
-  await stream.update(space, {}, { pin: true });
+  const doc = await loader.load(streamId);
+  await doc.update(
+    { ...doc.content, name, description, image },
+    {},
+    { pin: true }
+  );
+}
+
+export async function deleteSpace(streamId: string) {
+  const doc = await loader.load(streamId);
+  await doc.update(doc.content, {}, { pin: false });
+  await leaveSpace(streamId);
 }
 
 export async function addRoomToSpace(spaceId: string, roomId: string) {

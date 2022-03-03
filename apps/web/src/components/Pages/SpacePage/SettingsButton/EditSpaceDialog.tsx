@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
-import { editSpace, useSpace } from "ceramic";
+import { useRouter } from "next/router";
+import { deleteSpace, editSpace, useSpace } from "ceramic";
 
 import Button from "../../../base/Button";
 import Dialog from "../../../base/Dialog/Dialog";
@@ -12,6 +13,7 @@ interface Props {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 export default function EditSpaceDialog({ spaceId, open, setOpen }: Props) {
+  const router = useRouter();
   const { space } = useSpace(spaceId);
 
   const name = useRef<HTMLInputElement>();
@@ -34,6 +36,12 @@ export default function EditSpaceDialog({ spaceId, open, setOpen }: Props) {
     );
 
     setOpen(false);
+  }
+
+  async function handleDelete() {
+    await deleteSpace(spaceId);
+    setOpen(false);
+    router.push("/");
   }
 
   return (
@@ -63,6 +71,10 @@ export default function EditSpaceDialog({ spaceId, open, setOpen }: Props) {
             <span className="text-xl">Save</span>
           </Button>
         </div>
+
+        <Button onClick={handleDelete} color="red">
+          <span className="text-xl">Delete Space</span>
+        </Button>
       </div>
     </Dialog>
   );

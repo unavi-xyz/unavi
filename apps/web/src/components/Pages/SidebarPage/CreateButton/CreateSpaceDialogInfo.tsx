@@ -27,7 +27,6 @@ export default function CreateDialogInfo({ type, back, close }: Props) {
       description.current.value,
       imageFile
     );
-
     close();
     router.push(`/space/${streamId}`);
   }

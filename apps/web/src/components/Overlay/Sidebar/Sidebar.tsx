@@ -14,7 +14,7 @@ export default function Sidebar({ visible }: Props) {
   const [roomId] = useAtom(roomIdAtom);
 
   return (
-    <div className="z-30 fixed flex h-screen w-screen">
+    <div className="z-10 fixed flex h-screen w-screen">
       <div
         onClick={(e) => e.stopPropagation()}
         className="z-30 w-full max-w-xs transition-all duration-500"

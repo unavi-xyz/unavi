@@ -1,17 +1,22 @@
 import { Dispatch, ReactChild, SetStateAction } from "react";
+import ReactDOM from "react-dom";
 
 interface Props {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
   children: ReactChild | ReactChild[];
 }
-export default function Dialog({ open, setOpen, children }: Props) {
+export default function Dialog({
+  open,
+  setOpen,
+  children,
+}: Props): JSX.Element {
   if (!open) return null;
 
-  return (
+  return ReactDOM.createPortal(
     <div
       className="fixed top-0 left-0 z-10 bg-black bg-opacity-50 w-screen
-                 h-screen flex flex-col justify-center"
+               h-screen flex flex-col justify-center"
       onClick={() => setOpen(false)}
     >
       <dialog
@@ -21,6 +26,7 @@ export default function Dialog({ open, setOpen, children }: Props) {
       >
         {children}
       </dialog>
-    </div>
+    </div>,
+    document.body
   );
 }

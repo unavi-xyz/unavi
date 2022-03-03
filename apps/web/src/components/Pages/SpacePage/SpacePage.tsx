@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { MdInfo } from "react-icons/md";
 import { useAuth, useSpace } from "ceramic";
 
 import CreateRoomButton from "./CreateRoomButton/CreateRoomButton";
 import RoomList from "./RoomList/RoomList";
 import SaveButton from "./SaveButton/SaveButton";
-import NavbarButton from "./NavbarButton";
 import SettingsButton from "./SettingsButton/SettingsButton";
+import InfoButton from "./InfoButton/InfoButton";
 
 interface Props {
   spaceId: string;
@@ -43,9 +42,7 @@ export default function SpacePage({
           ) : (
             <SaveButton spaceId={spaceId} />
           )}
-          <NavbarButton>
-            <MdInfo className="text-[1.4rem]" />
-          </NavbarButton>
+          <InfoButton spaceId={spaceId} />
         </div>
       </div>
 

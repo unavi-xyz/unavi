@@ -7,7 +7,7 @@ it("should change ref value when typing in field", () => {
   };
 
   render(<TextField title="test" inputRef={testRef} />);
-  const field = screen.getByPlaceholderText("test");
+  const field = screen.getByRole("textbox");
 
   fireEvent.change(field, { target: { value: "Hello!" } });
 

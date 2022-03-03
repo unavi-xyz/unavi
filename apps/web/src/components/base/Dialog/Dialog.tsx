@@ -16,13 +16,13 @@ export default function Dialog({
   return ReactDOM.createPortal(
     <div
       className="fixed top-0 left-0 z-10 bg-black bg-opacity-50 w-screen
-               h-screen flex flex-col justify-center"
+                 h-screen flex flex-col justify-center"
       onClick={() => setOpen(false)}
     >
       <dialog
         open
         onClick={(e) => e.stopPropagation()}
-        className="fade mx-auto w-full max-w-lg flex flex-col space-y-4 p-8 rounded-lg"
+        className="fade mx-auto w-full max-w-xl flex flex-col space-y-4 p-12 rounded-lg"
       >
         {children}
       </dialog>

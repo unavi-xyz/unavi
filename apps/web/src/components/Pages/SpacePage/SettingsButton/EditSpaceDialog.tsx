@@ -22,6 +22,10 @@ export default function EditSpaceDialog({ spaceId, open, setOpen }: Props) {
   const [imageFile, setImageFile] = useState<File>();
 
   useEffect(() => {
+    setImageFile(undefined);
+  }, [open]);
+
+  useEffect(() => {
     if (!name.current) return;
     name.current.value = space?.name;
     description.current.value = space?.description;

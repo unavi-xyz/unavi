@@ -16,7 +16,6 @@ export default function TextField({ title, inputRef, ...rest }: Props) {
         ref={inputRef}
         id={title}
         type="text"
-        placeholder={title}
         className="border text-lg py-2 px-3 rounded leading-tight"
         {...rest}
       />

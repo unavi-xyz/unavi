@@ -33,14 +33,14 @@ export async function editSpace(
   description?: string,
   imageFile?: File
 ) {
-  const image = imageFile ? await uploadImageToIpfs(imageFile) : undefined;
+  const hash = imageFile ? await uploadImageToIpfs(imageFile) : undefined;
 
   const doc = await loader.load(streamId);
-  await doc.update(
-    { ...doc.content, name, description, image },
-    {},
-    { pin: true }
-  );
+
+  const image = hash ?? doc.content?.image;
+  const space: Space = { name, description, image };
+
+  await doc.update(space, {}, { pin: true });
 }
 
 export async function deleteSpace(streamId: string) {

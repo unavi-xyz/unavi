@@ -3,10 +3,14 @@ import { HiCamera } from "react-icons/hi";
 
 interface Props {
   setImageFile: Dispatch<SetStateAction<File>>;
+  defaultValue?: string;
 }
 
-export default function ImageUpload({ setImageFile }: Props) {
-  const [image, setImage] = useState("");
+export default function ImageUpload({
+  setImageFile,
+  defaultValue = "",
+}: Props) {
+  const [image, setImage] = useState(defaultValue);
 
   function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
     if (!e.target.files || !e.target.files[0]) return;

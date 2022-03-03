@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 import { IoMdCheckmark } from "react-icons/io";
-import { BsFillGearFill } from "react-icons/bs";
 import { joinSpace, leaveSpace, useAuth, useSpace, useSpaces } from "ceramic";
 
-import Tooltip from "../../base/Tooltip";
-import NavbarButton from "./NavbarButton";
+import Tooltip from "../../../base/Tooltip";
+import NavbarButton from "../NavbarButton";
 
 interface Props {
   spaceId: string;
@@ -46,11 +45,7 @@ export default function SaveButton({ spaceId }: Props) {
 
   return (
     <div className="group">
-      {owner ? (
-        <NavbarButton>
-          <BsFillGearFill />
-        </NavbarButton>
-      ) : saved ? (
+      {saved ? (
         <Tooltip text="Saved">
           <NavbarButton onClick={handleRemove}>
             <IoMdCheckmark />

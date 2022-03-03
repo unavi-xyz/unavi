@@ -1,10 +1,12 @@
+import { useEffect, useState } from "react";
 import { MdInfo } from "react-icons/md";
 import { useAuth, useSpace } from "ceramic";
 
 import CreateRoomButton from "./CreateRoomButton/CreateRoomButton";
 import RoomList from "./RoomList/RoomList";
-import SaveButton from "./SaveButton";
+import SaveButton from "./SaveButton/SaveButton";
 import NavbarButton from "./NavbarButton";
+import SettingsButton from "./SettingsButton/SettingsButton";
 
 interface Props {
   spaceId: string;
@@ -17,8 +19,15 @@ export default function SpacePage({
   selectedRoomId,
   onRoomClick,
 }: Props) {
-  const { authenticated } = useAuth();
-  const { space } = useSpace(spaceId);
+  const { authenticated, viewerId } = useAuth();
+  const { space, controller } = useSpace(spaceId);
+
+  const [owner, setOwner] = useState(false);
+
+  useEffect(() => {
+    if (controller === viewerId) setOwner(true);
+    else setOwner(false);
+  }, [controller, viewerId]);
 
   return (
     <div className="w-full h-full bg-white">
@@ -29,7 +38,11 @@ export default function SpacePage({
         </div>
 
         <div className="flex space-x-4">
-          <SaveButton spaceId={spaceId} />
+          {owner ? (
+            <SettingsButton spaceId={spaceId} />
+          ) : (
+            <SaveButton spaceId={spaceId} />
+          )}
           <NavbarButton>
             <MdInfo className="text-[1.4rem]" />
           </NavbarButton>

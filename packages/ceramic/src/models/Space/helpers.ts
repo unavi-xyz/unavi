@@ -27,6 +27,19 @@ export async function createSpace(
   return streamId;
 }
 
+export async function editSpace(
+  streamId: string,
+  name?: string,
+  description?: string,
+  image?: File
+) {
+  const hash = image ? await uploadImageToIpfs(image) : undefined;
+  const space: Space = { name, description, image: hash };
+
+  const stream = await loader.load(streamId);
+  await stream.update(space, {}, { pin: true });
+}
+
 export async function addRoomToSpace(spaceId: string, roomId: string) {
   const doc = await loader.load(spaceId);
 

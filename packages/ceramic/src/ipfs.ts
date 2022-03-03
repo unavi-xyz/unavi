@@ -11,6 +11,6 @@ export async function uploadImageToIpfs(image: File) {
 
 export function getImageUrl(hash: string) {
   const stripped = hash.replace("ipfs://", "");
-  const imageUrl = `https://ipfs.infura.io:5001/api/v0/cat?arg=${stripped}`;
+  const imageUrl = `https://ipfs.io/ipfs/${stripped}`;
   return imageUrl;
 }

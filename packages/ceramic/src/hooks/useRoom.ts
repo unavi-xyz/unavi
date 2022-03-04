@@ -14,10 +14,10 @@ export function useRoom(streamId: string) {
       room.image = getImageUrl(room.image);
     }
 
-    return room;
+    return { room, controller: doc.controllers[0] };
   }
 
   const { data } = useSWR(`room-${streamId}`, fetcher);
 
-  return data;
+  return { room: data?.room, controller: data?.controller };
 }

@@ -4,7 +4,7 @@ import { IoMdCheckmark } from "react-icons/io";
 import { joinSpace, leaveSpace, useAuth, useSpace, useSpaces } from "ceramic";
 
 import Tooltip from "../../../base/Tooltip";
-import NavbarButton from "../NavbarButton";
+import IconButton from "../../../base/IconButton";
 
 interface Props {
   spaceId: string;
@@ -47,15 +47,15 @@ export default function SaveButton({ spaceId }: Props) {
     <div className="group">
       {saved ? (
         <Tooltip text="Saved">
-          <NavbarButton onClick={handleRemove}>
+          <IconButton onClick={handleRemove}>
             <IoMdCheckmark />
-          </NavbarButton>
+          </IconButton>
         </Tooltip>
       ) : (
         <Tooltip text="Save">
-          <NavbarButton onClick={handleSave}>
+          <IconButton onClick={handleSave}>
             <AiOutlinePlus />
-          </NavbarButton>
+          </IconButton>
         </Tooltip>
       )}
     </div>

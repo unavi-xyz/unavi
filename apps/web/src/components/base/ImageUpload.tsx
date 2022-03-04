@@ -34,11 +34,14 @@ export default function ImageUpload({
     <div className="flex items-center space-x-4 w-full h-full">
       {image ? (
         <>
-          <label htmlFor="image" className="hover:cursor-pointer h-full w-full">
+          <label
+            htmlFor="image"
+            className="hover:cursor-pointer h-full w-full bg-black rounded-xl"
+          >
             <img
               src={image}
               alt=""
-              className="object-cover rounded-xl h-full w-full"
+              className="object-cover rounded-xl h-full w-full hover:opacity-80 transition-all duration-150"
             />
           </label>
         </>

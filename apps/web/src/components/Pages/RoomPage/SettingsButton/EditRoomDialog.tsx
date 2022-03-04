@@ -1,6 +1,5 @@
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/router";
-import { deleteSpace, editSpace, useSpace } from "ceramic";
+import { deleteRoom, editRoom, removeRoomFromSpace, useRoom } from "ceramic";
 
 import Button from "../../../base/Button";
 import Dialog from "../../../base/Dialog/Dialog";
@@ -9,12 +8,17 @@ import TextField from "../../../base/TextField/TextField";
 
 interface Props {
   spaceId: string;
+  roomId: string;
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
-export default function EditSpaceDialog({ spaceId, open, setOpen }: Props) {
-  const router = useRouter();
-  const { space } = useSpace(spaceId);
+export default function EditRoomDialog({
+  spaceId,
+  roomId,
+  open,
+  setOpen,
+}: Props) {
+  const { room } = useRoom(roomId);
 
   const name = useRef<HTMLInputElement>();
   const description = useRef<HTMLInputElement>();
@@ -26,39 +30,35 @@ export default function EditSpaceDialog({ spaceId, open, setOpen }: Props) {
   }, [open]);
 
   async function handleCreate() {
-    await editSpace(
-      spaceId,
+    await editRoom(
+      roomId,
       name.current.value,
       description.current.value,
       imageFile
     );
-
     setOpen(false);
   }
 
   async function handleDelete() {
-    await deleteSpace(spaceId);
+    await deleteRoom(roomId);
+    await removeRoomFromSpace(spaceId, roomId);
     setOpen(false);
-    router.push("/");
   }
 
   return (
     <Dialog open={open} setOpen={setOpen}>
       <div className="flex flex-col space-y-4">
-        <h1 className="text-3xl flex justify-center">Edit space</h1>
+        <h1 className="text-3xl flex justify-center">Edit room</h1>
 
-        <div className="w-28 h-28">
-          <ImageUpload
-            setImageFile={setImageFile}
-            defaultValue={space?.image}
-          />
+        <div className="h-48">
+          <ImageUpload setImageFile={setImageFile} defaultValue={room?.image} />
         </div>
 
-        <TextField title="Name" inputRef={name} defaultValue={space?.name} />
+        <TextField title="Name" inputRef={name} defaultValue={room?.name} />
         <TextField
           title="Description"
           inputRef={description}
-          defaultValue={space?.description}
+          defaultValue={room?.description}
         />
 
         <div className="flex space-x-2">
@@ -71,7 +71,7 @@ export default function EditSpaceDialog({ spaceId, open, setOpen }: Props) {
         </div>
 
         <Button onClick={handleDelete} color="red">
-          <span className="text-xl">Delete Space</span>
+          <span className="text-xl">Delete Room</span>
         </Button>
       </div>
     </Dialog>

@@ -6,7 +6,7 @@ interface Props {
 }
 
 export default function RoomCard({ roomId, selected }: Props) {
-  const room = useRoom(roomId);
+  const { room } = useRoom(roomId);
 
   const color = selected
     ? "bg-neutral-800 hover:bg-neutral-700 text-white"
@@ -17,7 +17,7 @@ export default function RoomCard({ roomId, selected }: Props) {
   return (
     <div
       className={`flex space-x-8 rounded-xl p-4 hover:cursor-pointer
-                  transition-all duration-150 h-40 shadow ${color}`}
+                  transition-all duration-100 h-40 ${color}`}
     >
       <img
         src={room?.image}

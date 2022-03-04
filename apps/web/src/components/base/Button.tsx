@@ -20,7 +20,7 @@ export default function Button({
 
   return (
     <div
-      className={`text-white py-2 px-4 hover:bg-opacity-90 shadow-md w-full ${css}
+      className={`text-white py-2 px-4 hover:bg-opacity-90 w-full ${css}
                   hover:cursor-pointer rounded-xl flex justify-center transition-all duration-150`}
       {...rest}
     >

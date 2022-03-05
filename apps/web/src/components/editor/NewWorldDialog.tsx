@@ -1,5 +1,12 @@
 import { Dispatch, SetStateAction, useRef } from "react";
+import { useRouter } from "next/router";
+import { customAlphabet } from "nanoid";
+
 import { Button, Dialog, TextField } from "../base";
+import { createLocalWorld } from "./localWorlds/helpers";
+import { LocalWorld } from "./localWorlds/types";
+
+const nanoid = customAlphabet("0123456789", 12);
 
 interface Props {
   open: boolean;
@@ -7,9 +14,23 @@ interface Props {
 }
 
 export function NewWorldDialog({ open, setOpen }: Props) {
-  const name = useRef<HTMLInputElement>();
+  const router = useRouter();
 
-  function handleCreate() {}
+  const name = useRef<HTMLInputElement>();
+  const description = useRef<HTMLInputElement>();
+
+  async function handleCreate() {
+    const id = nanoid();
+    const world: LocalWorld = {
+      id,
+      name: name.current.value,
+      description: description.current.value,
+    };
+
+    await createLocalWorld(world);
+
+    router.push(`/editor/${id}/edit`);
+  }
 
   return (
     <Dialog open={open} setOpen={setOpen}>
@@ -18,7 +39,7 @@ export function NewWorldDialog({ open, setOpen }: Props) {
 
         <div className="space-y-4">
           <TextField title="Name" inputRef={name} defaultValue="New world" />
-          <TextField title="Description" inputRef={name} />
+          <TextField title="Description" inputRef={description} />
         </div>
 
         <Button onClick={handleCreate}>

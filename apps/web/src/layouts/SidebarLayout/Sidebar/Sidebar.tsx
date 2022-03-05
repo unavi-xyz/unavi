@@ -1,0 +1,74 @@
+import { AiOutlineHome } from "react-icons/ai";
+import { BiWorld } from "react-icons/bi";
+import { BsFillPersonFill } from "react-icons/bs";
+import { FaPencilRuler } from "react-icons/fa";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import Image from "next/image";
+import { useAuth } from "ceramic";
+
+import SidebarButton, { Colors } from "./SidebarButton";
+import SignInButton from "./SignInButton/SignInButton";
+
+export function Sidebar() {
+  const router = useRouter();
+  const { authenticated, viewerId } = useAuth();
+
+  return (
+    <div className="p-8 space-y-3 bg-white h-full">
+      <div className="flex justify-center py-4">
+        <Image width={100} height={100} src={"/images/plug.png"} alt="plug" />
+      </div>
+
+      <Link href="/" passHref>
+        <div>
+          <SidebarButton
+            icon={<AiOutlineHome />}
+            text="Home"
+            color={Colors.sky}
+            selected={router.asPath === "/"}
+          />
+        </div>
+      </Link>
+
+      <Link href="/worlds" passHref>
+        <div>
+          <SidebarButton
+            icon={<BiWorld />}
+            color={Colors.indigo}
+            text="Worlds"
+            selected={router.asPath === "/worlds"}
+          />
+        </div>
+      </Link>
+
+      <Link href="/editor" passHref>
+        <div>
+          <SidebarButton
+            icon={<FaPencilRuler className="text-sm" />}
+            color={Colors.amber}
+            text="Editor"
+            selected={router.asPath === "/editor"}
+          />
+        </div>
+      </Link>
+
+      <hr />
+
+      {authenticated ? (
+        <Link href={`/user/${viewerId}`} passHref>
+          <div>
+            <SidebarButton
+              icon={<BsFillPersonFill />}
+              color={Colors.purple}
+              text="Profile"
+              selected={router.asPath === `/user/${viewerId}`}
+            />
+          </div>
+        </Link>
+      ) : (
+        <SignInButton />
+      )}
+    </div>
+  );
+}

@@ -1,7 +1,13 @@
 import { Dispatch, SetStateAction, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
-import { editRoom, removeRoomFromProfile, unpinTile, useRoom } from "ceramic";
+import {
+  editRoom,
+  removeRoomFromProfile,
+  unpinTile,
+  useIpfsFile,
+  useRoom,
+} from "ceramic";
 
 import { Button, Dialog, ImageUpload, TextField } from "./base";
 
@@ -21,6 +27,7 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
 
   const queryClient = useQueryClient();
   const { room } = useRoom(id);
+  const image = useIpfsFile(room?.image);
 
   async function handleSave() {
     await editRoom(
@@ -45,7 +52,7 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
         <h1 className="text-3xl flex justify-center">Settings</h1>
 
         <div className="h-32">
-          <ImageUpload setImageFile={setImageFile} defaultValue={room?.image} />
+          <ImageUpload setImageFile={setImageFile} defaultValue={image} />
         </div>
 
         <div className="space-y-4">

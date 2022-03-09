@@ -54,13 +54,14 @@ export function SceneSettingsDialog({ id, open, setOpen }: Props) {
           />
         </div>
 
-        <Button onClick={handleSave}>
-          <div>Save</div>
-        </Button>
-
-        <Button color="red" onClick={handleDelete}>
-          <div>Delete</div>
-        </Button>
+        <div className="space-y-2">
+          <Button onClick={handleSave}>
+            <div>Save</div>
+          </Button>
+          <Button color="red" onClick={handleDelete}>
+            <div>Delete</div>
+          </Button>
+        </div>
       </div>
     </Dialog>
   );

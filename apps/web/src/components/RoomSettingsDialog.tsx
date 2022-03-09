@@ -1,9 +1,9 @@
-import { Dispatch, SetStateAction, useRef } from "react";
+import { Dispatch, SetStateAction, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
-import { mergeTile, removeRoomFromProfile, unpinTile, useRoom } from "ceramic";
+import { editRoom, removeRoomFromProfile, unpinTile, useRoom } from "ceramic";
 
-import { Button, Dialog, TextField } from "./base";
+import { Button, Dialog, ImageUpload, TextField } from "./base";
 
 interface Props {
   id: string;
@@ -17,14 +17,17 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
   const name = useRef<HTMLInputElement>();
   const description = useRef<HTMLInputElement>();
 
+  const [imageFile, setImageFile] = useState<File>();
+
   const queryClient = useQueryClient();
   const { room } = useRoom(id);
 
   async function handleSave() {
-    await mergeTile(
+    await editRoom(
       id,
-      { name: name.current.value, description: description.current.value },
-      true
+      name.current.value,
+      description.current.value,
+      imageFile
     );
     queryClient.invalidateQueries(`room-${id}`);
     setOpen(false);
@@ -41,6 +44,10 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
       <div className="space-y-6">
         <h1 className="text-3xl flex justify-center">Settings</h1>
 
+        <div className="h-32">
+          <ImageUpload setImageFile={setImageFile} defaultValue={room?.image} />
+        </div>
+
         <div className="space-y-4">
           <TextField title="Name" inputRef={name} defaultValue={room?.name} />
           <TextField
@@ -50,13 +57,14 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
           />
         </div>
 
-        <Button onClick={handleSave}>
-          <div>Save</div>
-        </Button>
-
-        <Button color="red" onClick={handleDelete}>
-          <div>Delete</div>
-        </Button>
+        <div className="space-y-2">
+          <Button onClick={handleSave}>
+            <div>Save</div>
+          </Button>
+          <Button color="red" onClick={handleDelete}>
+            <div>Delete</div>
+          </Button>
+        </div>
       </div>
     </Dialog>
   );

@@ -18,39 +18,49 @@ export default function Id() {
   }
 
   return (
-    <div className="p-16 space-y-4">
-      <div className="flex items-center space-x-12">
+    <div className="p-16 space-y-4 max-w-6xl">
+      <div className="flex items-center justify-between">
         <Link href="/editor" passHref>
-          <div className="text-xl hover:cursor-pointer p-2 rounded-full">
+          <div className="w-1/3 text-xl hover:cursor-pointer p-2 rounded-full">
             <MdArrowBackIosNew />
           </div>
         </Link>
 
-        <div className="text-3xl">{world?.name ?? id}</div>
+        <div className="w-1/3 text-3xl flex justify-center">
+          {world?.name ?? id}
+        </div>
 
-        <div className="flex items-center h-min bg-neutral-200 rounded">
-          <Link href={`/editor/${id}/edit`} passHref>
-            <div
-              className="py-1.5 px-4 rounded-l hover:shadow hover:cursor-pointer
+        <div className="w-1/3 flex justify-end">
+          <div className="flex items-center h-min bg-neutral-200 rounded max-w-min">
+            <Link href={`/editor/${id}/edit`} passHref>
+              <div
+                className="py-1.5 px-4 rounded-l hover:shadow hover:cursor-pointer
                        hover:bg-amber-300 text-xl"
+              >
+                <FaHammer />
+              </div>
+            </Link>
+            <div
+              className="py-1.5 px-4 hover:shadow hover:cursor-pointer
+                     hover:bg-amber-300 text-xl"
             >
-              <FaHammer />
+              <IoMdSettings />
             </div>
-          </Link>
-          <div
-            className="py-1.5 px-4 hover:shadow hover:cursor-pointer
+            <div
+              className="py-1.5 px-4 rounded-r hover:shadow hover:cursor-pointer
                      hover:bg-amber-300 text-xl"
-          >
-            <IoMdSettings />
-          </div>
-          <div
-            className="py-1.5 px-4 rounded-r hover:shadow hover:cursor-pointer
-                     hover:bg-amber-300 text-xl"
-          >
-            <MdCloudUpload />
+            >
+              <MdCloudUpload />
+            </div>
           </div>
         </div>
       </div>
+
+      {world?.image && (
+        <div className="w-full ring-neutral-400 ring-1">
+          <img src={world?.image} alt="scene preview" />
+        </div>
+      )}
     </div>
   );
 }

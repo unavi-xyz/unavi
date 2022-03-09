@@ -13,7 +13,7 @@ interface Props {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-export function NewWorldDialog({ open, setOpen }: Props) {
+export function NewSceneDialog({ open, setOpen }: Props) {
   const router = useRouter();
 
   const name = useRef<HTMLInputElement>();
@@ -36,10 +36,10 @@ export function NewWorldDialog({ open, setOpen }: Props) {
   return (
     <Dialog open={open} setOpen={setOpen}>
       <div className="space-y-6">
-        <h1 className="text-3xl flex justify-center">Create a World</h1>
+        <h1 className="text-3xl flex justify-center">Create a Scene</h1>
 
         <div className="space-y-4">
-          <TextField title="Name" inputRef={name} defaultValue="New world" />
+          <TextField title="Name" inputRef={name} defaultValue="New scene" />
           <TextField title="Description" inputRef={description} />
         </div>
 

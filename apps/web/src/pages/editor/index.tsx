@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AiOutlinePlus, AiOutlineUpload } from "react-icons/ai";
-import LocalWorldCard from "../../components/editor/LocalWorldCard";
+import SceneCard from "../../components/editor/SceneCard";
 import { getLocalWorldIds } from "../../helpers/localWorlds/db";
 
-import { NewWorldDialog } from "../../components/editor/NewWorldDialog";
+import { NewSceneDialog } from "../../components/editor/NewSceneDialog";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
 
 export default function Editor() {
@@ -26,12 +26,12 @@ export default function Editor() {
 
   return (
     <div className="p-16 space-y-4">
-      <NewWorldDialog open={openNew} setOpen={setOpenNew} />
+      <NewSceneDialog open={openNew} setOpen={setOpenNew} />
 
       <div className="text-3xl">Editor</div>
 
       <div className="flex items-center space-x-6">
-        <div className="text-xl">Local Worlds</div>
+        <div className="text-xl">Scenes</div>
 
         <div className="flex h-min items-center bg-neutral-200 rounded">
           <div
@@ -56,8 +56,8 @@ export default function Editor() {
               {localWorlds.map((id) => {
                 return (
                   <Link key={id} href={`/editor/${id}`} passHref>
-                    <div>
-                      <LocalWorldCard id={id} />
+                    <div className="p-1">
+                      <SceneCard id={id} />
                     </div>
                   </Link>
                 );
@@ -65,7 +65,7 @@ export default function Editor() {
             </div>
           ) : (
             <p className="text-neutral-600">
-              It looks like you don{"'"}t have any worlds.{" "}
+              It looks like you don{"'"}t have any scenes.{" "}
               <span
                 onClick={handleNew}
                 className="text-amber-600 underline hover:decoration-2 hover:cursor-pointer"

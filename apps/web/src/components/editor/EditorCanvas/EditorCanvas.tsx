@@ -15,6 +15,7 @@ export default function EditorCanvas() {
 
   return (
     <Canvas
+      gl={{ preserveDrawingBuffer: true }}
       onPointerMissed={() => {
         setSelected(null);
       }}

@@ -1,4 +1,4 @@
-import { useProfile, useRooms } from "ceramic";
+import { useIpfsFile, useProfile, useRooms } from "ceramic";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
@@ -10,14 +10,15 @@ export default function User() {
   const router = useRouter();
   const did = router.query.did as string;
 
-  const { profile, imageUrl } = useProfile(did);
+  const { profile } = useProfile(did);
+  const image = useIpfsFile(profile?.image?.original.src);
   const rooms = useRooms(did);
 
   return (
     <div className="p-16">
       <div className="flex items-center space-x-8">
         <div className="w-32 h-32">
-          <ProfilePicture src={imageUrl} />
+          <ProfilePicture src={image} />
         </div>
 
         <div>

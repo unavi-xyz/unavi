@@ -1,4 +1,7 @@
+export * from "./src/components/IpfsProvider";
+
 export * from "./src/hooks/useAuth";
+export * from "./src/hooks/useIpfsFile";
 export * from "./src/hooks/useProfile";
 export * from "./src/hooks/useRooms";
 export * from "./src/hooks/useRoom";

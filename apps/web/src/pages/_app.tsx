@@ -1,3 +1,4 @@
+import { IpfsProvider } from "ceramic";
 import Head from "next/head";
 import { QueryClient, QueryClientProvider } from "react-query";
 
@@ -17,9 +18,11 @@ export default function App({ Component, pageProps }) {
 
       <div className="w-full bg-neutral-100 h-screen">
         <QueryClientProvider client={queryClient}>
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
+          <IpfsProvider>
+            <Layout>
+              <Component {...pageProps} />
+            </Layout>
+          </IpfsProvider>
         </QueryClientProvider>
       </div>
     </div>

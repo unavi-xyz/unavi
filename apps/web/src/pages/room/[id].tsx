@@ -2,7 +2,7 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth, useRoom } from "ceramic";
+import { useAuth, useIpfsFile, useRoom } from "ceramic";
 
 import { Button } from "../../components/base";
 import { RoomSettingsDialog } from "../../components/RoomSettingsDialog";
@@ -14,6 +14,7 @@ export default function Room() {
 
   const { viewerId } = useAuth();
   const { room, controller } = useRoom(id);
+  const image = useIpfsFile(room?.image);
 
   const [openSettings, setOpenSettings] = useState(false);
 
@@ -41,9 +42,7 @@ export default function Room() {
         )}
       </div>
 
-      {room?.image && (
-        <img src={room?.image} alt="room image" className="rounded" />
-      )}
+      {image && <img src={image} alt="room image" className="rounded" />}
 
       <div>{room?.description}</div>
 

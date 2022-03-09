@@ -8,3 +8,4 @@ export * from "./src/models/Room/types";
 export * from "./src/models/Rooms/helpers";
 
 export * from "./src/ipfs";
+export * from "./src/tile";

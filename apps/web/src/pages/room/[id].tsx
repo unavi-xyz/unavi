@@ -1,21 +1,44 @@
-import { useRoom } from "ceramic";
-import Link from "next/link";
+import { useState } from "react";
+import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
+import Link from "next/link";
+import { useAuth, useRoom } from "ceramic";
 
 import { Button } from "../../components/base";
+import { RoomSettingsDialog } from "../../components/RoomSettingsDialog";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
 
 export default function Room() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { room } = useRoom(id);
+  const { viewerId } = useAuth();
+  const { room, controller } = useRoom(id);
+
+  const [openSettings, setOpenSettings] = useState(false);
+
+  const isOwner = viewerId === controller;
 
   return (
-    <div className="p-8 space-y-4">
-      <div>
+    <div className="p-8 space-y-4 max-w-6xl">
+      <RoomSettingsDialog
+        id={id}
+        open={openSettings}
+        setOpen={setOpenSettings}
+      />
+
+      <div className="flex items-center justify-between">
         <div className="text-3xl">{room?.name}</div>
-        <div className="text-lg text-neutral-500">{id}</div>
+
+        {isOwner && (
+          <div
+            onClick={() => setOpenSettings(true)}
+            className="py-1.5 px-4 hover:shadow hover:cursor-pointer
+                   hover:bg-indigo-400 text-xl rounded"
+          >
+            <IoMdSettings />
+          </div>
+        )}
       </div>
 
       {room?.image && (

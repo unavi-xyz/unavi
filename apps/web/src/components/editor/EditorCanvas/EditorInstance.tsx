@@ -11,10 +11,11 @@ interface Props {
 }
 
 export default function EditorInstance({ instance }: Props) {
+  const params = instance.params;
+
   const ref = useRef<Group>();
 
   const [, setSelected] = useAtom(selectedAtom);
-
   const [usingGizmo] = useAtom(usingGizmoAtom);
 
   function handleClick(e: ThreeEvent<MouseEvent>) {
@@ -25,11 +26,11 @@ export default function EditorInstance({ instance }: Props) {
 
   return (
     <group
-      position={new Vector3().fromArray(instance.params.position)}
-      rotation={new Euler().fromArray(instance.params.rotation)}
-      scale={new Vector3().fromArray(instance.params.scale)}
       ref={ref}
       onClick={handleClick}
+      position={params?.position && new Vector3().fromArray(params.position)}
+      rotation={params?.rotation && new Euler().fromArray(params.rotation)}
+      scale={params?.scale && new Vector3().fromArray(params.scale)}
     >
       <InstancedAsset instance={instance} />
     </group>

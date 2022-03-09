@@ -2,7 +2,7 @@ import { Sky } from "@react-three/drei";
 
 import { Scene } from "./types";
 import { Ground } from "../Ground/Ground";
-import { InstancedAsset } from "./InstancedAsset";
+import AppInstance from "./AppInstance";
 
 interface Props {
   scene: Scene;
@@ -18,7 +18,7 @@ export function World({ scene }: Props) {
 
       {scene &&
         Object.values(scene).map((instance) => {
-          return <InstancedAsset key={instance.id} instance={instance} />;
+          return <AppInstance key={instance.id} instance={instance} />;
         })}
     </group>
   );

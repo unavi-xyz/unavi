@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery } from "react-query";
 
 import { Room } from "../models/Room/types";
 import { loader } from "../client";
@@ -17,7 +17,7 @@ export function useRoom(streamId: string) {
     return { room, controller: doc.controllers[0] };
   }
 
-  const { data } = useSWR(`room-${streamId}`, fetcher);
+  const { data } = useQuery(`room-${streamId}`, fetcher);
 
   return { room: data?.room, controller: data?.controller };
 }

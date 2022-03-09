@@ -1,6 +1,9 @@
 import Head from "next/head";
+import { QueryClient, QueryClientProvider } from "react-query";
 
 import "../../styles/globals.css";
+
+const queryClient = new QueryClient();
 
 export default function App({ Component, pageProps }) {
   const Layout = Component.Layout ?? EmptyLayout;
@@ -13,9 +16,11 @@ export default function App({ Component, pageProps }) {
       </Head>
 
       <div className="w-full bg-neutral-100 h-screen">
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
+        <QueryClientProvider client={queryClient}>
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+        </QueryClientProvider>
       </div>
     </div>
   );

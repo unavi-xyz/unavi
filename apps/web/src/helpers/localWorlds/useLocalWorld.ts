@@ -1,18 +1,13 @@
-import { useEffect, useState } from "react";
-
+import { useQuery } from "react-query";
 import { getLocalWorld } from "./db";
-import { LocalWorld } from "./types";
 
-export default function useLocalWorld(id: string, refresh?: any) {
-  const [world, setWorld] = useState<LocalWorld>();
+export default function useLocalWorld(id: string) {
+  async function fetcher() {
+    const world = await getLocalWorld(id);
+    return world;
+  }
 
-  useEffect(() => {
-    getLocalWorld(id)
-      .then((res) => {
-        setWorld(res);
-      })
-      .catch(() => {});
-  }, [id, refresh]);
+  const { data } = useQuery(`local-world-${id}`, fetcher);
 
-  return world;
+  return data;
 }

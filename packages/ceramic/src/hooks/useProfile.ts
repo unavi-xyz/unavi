@@ -1,5 +1,5 @@
 import { DIDDataStore } from "@glazed/did-datastore";
-import useSWR from "swr";
+import { useQuery } from "react-query";
 
 import { ceramic, ceramicRead } from "../client";
 import { BasicProfile } from "../models/BasicProfile/types";
@@ -25,7 +25,7 @@ export function useProfile(did: string) {
     return { profile: data, imageUrl };
   }
 
-  const { data } = useSWR(`basicProfile-${did}`, fetcher);
+  const { data } = useQuery(`basicProfile-${did}`, fetcher);
 
   return { profile: data?.profile, imageUrl: data?.imageUrl, merge };
 }

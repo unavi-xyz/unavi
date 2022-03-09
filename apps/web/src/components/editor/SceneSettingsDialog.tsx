@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction, useRef } from "react";
 import { useRouter } from "next/router";
+import { useQueryClient } from "react-query";
 
 import { Button, Dialog, TextField } from "../base";
 import {
@@ -20,13 +21,16 @@ export function SceneSettingsDialog({ id, open, setOpen }: Props) {
   const name = useRef<HTMLInputElement>();
   const description = useRef<HTMLInputElement>();
 
-  const world = useLocalWorld(id, open);
+  const queryClient = useQueryClient();
+  const world = useLocalWorld(id);
 
   async function handleSave() {
     await mergeLocalWorld(id, {
       name: name.current.value,
       description: description.current.value,
     });
+
+    queryClient.invalidateQueries(`local-world-${id}`);
 
     setOpen(false);
   }

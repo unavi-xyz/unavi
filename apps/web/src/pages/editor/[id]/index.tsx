@@ -17,7 +17,7 @@ export default function Id() {
   const [openSettings, setOpenSettings] = useState(false);
 
   const { authenticated, connect } = useAuth();
-  const world = useLocalWorld(id, openSettings);
+  const world = useLocalWorld(id);
 
   async function handlePublish() {
     if (!authenticated) {

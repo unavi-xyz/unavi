@@ -16,7 +16,7 @@ export default function App({ Component, pageProps }) {
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
-      <div className="w-full bg-neutral-100 h-screen">
+      <div className="w-full bg-neutral-100 h-screen overflow-hidden">
         <QueryClientProvider client={queryClient}>
           <IpfsProvider>
             <Layout>

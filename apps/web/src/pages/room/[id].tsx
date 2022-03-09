@@ -35,7 +35,7 @@ export default function Room() {
           <div
             onClick={() => setOpenSettings(true)}
             className="py-1.5 px-4 hover:shadow hover:cursor-pointer
-                   hover:bg-indigo-400 text-xl rounded"
+                     hover:bg-indigo-400 text-xl rounded"
           >
             <IoMdSettings />
           </div>

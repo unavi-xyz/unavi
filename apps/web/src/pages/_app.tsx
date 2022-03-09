@@ -12,7 +12,7 @@ export default function App({ Component, pageProps }) {
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
-      <div className="w-full bg-neutral-100 h-screen overflow-hidden">
+      <div className="w-full bg-neutral-100 h-screen">
         <Layout>
           <Component {...pageProps} />
         </Layout>

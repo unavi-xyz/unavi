@@ -6,12 +6,17 @@ import { Player } from "3d";
 import { useAuth } from "ceramic";
 
 import AppLayout from "../layouts/AppLayout";
+import { useEffect } from "react";
 
 export default function App() {
   const router = useRouter();
   const roomId = router.query.room as string;
 
-  const { authenticated } = useAuth();
+  const { authenticated, connect } = useAuth();
+
+  useEffect(() => {
+    if (!authenticated) connect();
+  }, [authenticated, connect]);
 
   if (!authenticated) {
     return <div></div>;

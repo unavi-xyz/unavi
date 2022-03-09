@@ -40,13 +40,13 @@ export function Sidebar() {
         </div>
       </Link>
 
-      <Link href="/worlds" passHref>
+      <Link href="/rooms" passHref>
         <div>
           <SidebarButton
             icon={<BiWorld />}
             color={Colors.indigo}
-            text="Worlds"
-            selected={router.asPath === "/worlds"}
+            text="Rooms"
+            selected={router.asPath === "/rooms"}
           />
         </div>
       </Link>

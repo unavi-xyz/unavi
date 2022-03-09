@@ -52,11 +52,11 @@ export default function Editor() {
       <div className="overflow-auto">
         {localWorlds &&
           (localWorlds.length > 0 ? (
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 px-1 py-8">
               {localWorlds.map((id) => {
                 return (
                   <Link key={id} href={`/editor/${id}`} passHref>
-                    <div className="p-1">
+                    <div>
                       <SceneCard id={id} />
                     </div>
                   </Link>

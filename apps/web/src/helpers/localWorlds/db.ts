@@ -18,6 +18,11 @@ export async function createLocalWorld(world: LocalWorld) {
   await db.add("local-worlds", world);
 }
 
+export async function deleteLocalWorld(id: string) {
+  const db = await getDb();
+  await db.delete("local-worlds", id);
+}
+
 export async function getLocalWorld(id: string) {
   const db = await getDb();
   return (await db.get("local-worlds", id)) as LocalWorld;

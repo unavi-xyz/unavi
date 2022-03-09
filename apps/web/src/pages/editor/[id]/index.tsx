@@ -6,12 +6,16 @@ import { useRouter } from "next/router";
 import useLocalWorld from "../../../helpers/localWorlds/useLocalWorld";
 import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
 import Link from "next/link";
+import { useState } from "react";
+import { SceneSettingsDialog } from "../../../components/editor/SceneSettingsDialog";
 
 export default function Id() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const world = useLocalWorld(id);
+  const [openSettings, setOpenSettings] = useState(false);
+
+  const world = useLocalWorld(id, openSettings);
 
   if (!world) {
     return <div className="p-16">World not found.</div>;
@@ -19,6 +23,12 @@ export default function Id() {
 
   return (
     <div className="p-16 space-y-4 max-w-6xl">
+      <SceneSettingsDialog
+        id={id}
+        open={openSettings}
+        setOpen={setOpenSettings}
+      />
+
       <div className="flex items-center justify-between">
         <Link href="/editor" passHref>
           <div className="w-1/3 text-xl hover:cursor-pointer p-2 rounded-full">
@@ -41,6 +51,7 @@ export default function Id() {
               </div>
             </Link>
             <div
+              onClick={() => setOpenSettings(true)}
               className="py-1.5 px-4 hover:shadow hover:cursor-pointer
                      hover:bg-amber-300 text-xl"
             >

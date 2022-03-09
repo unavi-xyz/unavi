@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { getLocalWorld } from "./db";
 import { LocalWorld } from "./types";
 
-export default function useLocalWorld(id: string) {
+export default function useLocalWorld(id: string, refresh?: any) {
   const [world, setWorld] = useState<LocalWorld>();
 
   useEffect(() => {
@@ -12,7 +12,7 @@ export default function useLocalWorld(id: string) {
         setWorld(res);
       })
       .catch(() => {});
-  }, [id]);
+  }, [id, refresh]);
 
   return world;
 }

@@ -3,7 +3,7 @@ import { IoMdSettings } from "react-icons/io";
 import { MdCloudUpload, MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
 
-import useLocalWorld from "../../../components/editor/localWorlds/useLocalWorld";
+import useLocalWorld from "../../../helpers/localWorlds/useLocalWorld";
 import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
 import Link from "next/link";
 

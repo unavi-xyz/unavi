@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AiOutlinePlus, AiOutlineUpload } from "react-icons/ai";
 import LocalWorldCard from "../../components/editor/LocalWorldCard";
-import { getLocalWorldIds } from "../../components/editor/localWorlds/helpers";
+import { getLocalWorldIds } from "../../helpers/localWorlds/db";
 
 import { NewWorldDialog } from "../../components/editor/NewWorldDialog";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";

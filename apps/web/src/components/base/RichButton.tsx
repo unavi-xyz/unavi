@@ -20,8 +20,10 @@ export function RichButton({
       )}
 
       <div className="flex flex-col justify-center space-y-1">
-        <h3 className="text-lg">{title}</h3>
-        <p className="text-neutral-500 text-sm">{description}</p>
+        {title && <h3 className="text-lg">{title}</h3>}{" "}
+        {description && (
+          <p className="text-neutral-500 text-sm">{description}</p>
+        )}{" "}
       </div>
     </div>
   );

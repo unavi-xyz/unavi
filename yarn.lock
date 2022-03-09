@@ -1728,6 +1728,28 @@
     utility-types "^3.10.0"
     zustand "^3.5.13"
 
+"@react-three/drei@^8.13.1":
+  version "8.13.1"
+  resolved "https://registry.yarnpkg.com/@react-three/drei/-/drei-8.13.1.tgz#6b18b06252ac0ae2c7cce2d808b1e44e601ca71f"
+  integrity sha512-uziirIaGB6dDwnYeDSBVbiy8ACHvCNmnae5IBk4MBIRPtSFfQmlRFhRZrzYGf4xc0JGbSqQVqWf+cvrr7jMj1w==
+  dependencies:
+    "@babel/runtime" "^7.11.2"
+    "@react-spring/three" "^9.3.1"
+    "@use-gesture/react" "^10.2.0"
+    detect-gpu "^3.1.28"
+    glsl-noise "^0.0.0"
+    lodash.omit "^4.5.0"
+    lodash.pick "^4.4.0"
+    react-composer "^5.0.2"
+    react-merge-refs "^1.1.0"
+    stats.js "^0.17.0"
+    suspend-react "^0.0.8"
+    three-mesh-bvh "^0.5.4"
+    three-stdlib "^2.8.7"
+    troika-three-text "^0.45.0"
+    utility-types "^3.10.0"
+    zustand "^3.5.13"
+
 "@react-three/fiber@^7.0.26":
   version "7.0.26"
   resolved "https://registry.yarnpkg.com/@react-three/fiber/-/fiber-7.0.26.tgz#36ec19fa7bff00738a7dd368d37d81fed912dd52"
@@ -2095,10 +2117,10 @@
   dependencies:
     "@testing-library/react" "*"
 
-"@types/three@^0.137.0":
-  version "0.137.0"
-  resolved "https://registry.yarnpkg.com/@types/three/-/three-0.137.0.tgz#6047e0658262b4de7c464a40288f9071ddd9a6d5"
-  integrity sha512-Xc5EAlfYmgrCLI/VlSVqiRJAtzhWF0Rw2jSq48nqJy+Hcb5sfDOXyfZn1+RNcHyi9l8CeCAXCZygO8IyeOJVEA==
+"@types/three@^0.138.0":
+  version "0.138.0"
+  resolved "https://registry.yarnpkg.com/@types/three/-/three-0.138.0.tgz#ec9f1d1fd8dffea2e0572f9d815ff5a35cf4dc6b"
+  integrity sha512-D8AoV7h2kbCfrv/DcebHOFh1WDwyus3HdooBkAwcBikXArdqnsQ38PQ85JCunnvun160oA9jz53GszF3zch3tg==
 
 "@types/yargs-parser@*":
   version "20.2.1"
@@ -5589,20 +5611,15 @@ nanoid@^2.1.0:
   resolved "https://registry.npmjs.org/nanoid/-/nanoid-2.1.11.tgz"
   integrity sha512-s/snB+WGm6uwi0WjsZdaVcuf3KJXlfGl2LcxgwkEwJF0D/BWzVWAZW/XY4bFaiR7s0Jk3FPvlnepg1H1b1UwlA==
 
-nanoid@^3.1.21, nanoid@^3.2.0:
+nanoid@^3.1.21, nanoid@^3.2.0, nanoid@^3.3.1:
   version "3.3.1"
-  resolved "https://registry.npmjs.org/nanoid/-/nanoid-3.3.1.tgz"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.3.1.tgz#6347a18cac88af88f58af0b3594b723d5e99bb35"
   integrity sha512-n6Vs/3KGyxPQd6uO0eH4Bv0ojGSUvuLlIHtC3Y0kEO23YRge8H9x1GCzLn28YX0H66pMkxuaeESFq4tKISKwdw==
 
 nanoid@^3.1.23:
   version "3.1.30"
   resolved "https://registry.npmjs.org/nanoid/-/nanoid-3.1.30.tgz"
   integrity sha512-zJpuPDwOv8D2zq2WRoMe1HsfZthVewpel9CAvTfc/2mBD1uUT/agc5f7GHGWXlYkFvi1mVxe4IjvP2HNrop7nQ==
-
-nanoid@^3.3.1:
-  version "3.3.1"
-  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.3.1.tgz#6347a18cac88af88f58af0b3594b723d5e99bb35"
-  integrity sha512-n6Vs/3KGyxPQd6uO0eH4Bv0ojGSUvuLlIHtC3Y0kEO23YRge8H9x1GCzLn28YX0H66pMkxuaeESFq4tKISKwdw==
 
 natural-compare@^1.4.0:
   version "1.4.0"

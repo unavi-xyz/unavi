@@ -1,4 +1,6 @@
 import { openDB } from "idb";
+import { Scene } from "3d";
+
 import { LocalWorld } from "./types";
 
 async function getDb() {
@@ -26,4 +28,11 @@ export async function getLocalWorld(id: string) {
 export async function getLocalWorldIds() {
   const db = await getDb();
   return (await db.getAllKeys("local-worlds")) as string[];
+}
+
+export async function setLocalWorldScene(id: string, scene: Scene) {
+  const db = await getDb();
+  const world = (await db.get("local-worlds", id)) as LocalWorld;
+  world.scene = scene;
+  await db.put("local-worlds", world);
 }

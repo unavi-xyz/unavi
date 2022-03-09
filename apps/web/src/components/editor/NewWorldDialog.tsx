@@ -3,8 +3,8 @@ import { useRouter } from "next/router";
 import { customAlphabet } from "nanoid";
 
 import { Button, Dialog, TextField } from "../base";
-import { createLocalWorld } from "./localWorlds/helpers";
-import { LocalWorld } from "./localWorlds/types";
+import { createLocalWorld } from "../../helpers/localWorlds/db";
+import { LocalWorld } from "../../helpers/localWorlds/types";
 
 const nanoid = customAlphabet("0123456789", 12);
 
@@ -25,6 +25,7 @@ export function NewWorldDialog({ open, setOpen }: Props) {
       id,
       name: name.current.value,
       description: description.current.value,
+      scene: {},
     };
 
     await createLocalWorld(world);

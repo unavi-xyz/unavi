@@ -18,7 +18,14 @@ export function Sidebar() {
     <div className="p-8 space-y-3 bg-white h-full">
       <div className="flex justify-center py-4">
         <Link href="/" passHref>
-          <Image width={100} height={100} src={"/images/plug.png"} alt="plug" />
+          <span>
+            <Image
+              width={100}
+              height={100}
+              src={"/images/plug.png"}
+              alt="plug"
+            />
+          </span>
         </Link>
       </div>
 

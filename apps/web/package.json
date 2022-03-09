@@ -12,6 +12,7 @@
   "dependencies": {
     "3d": "*",
     "@react-three/cannon": "^4.7.0",
+    "@react-three/drei": "^8.13.1",
     "@react-three/fiber": "^7.0.26",
     "ceramic": "*",
     "idb": "^7.0.0",

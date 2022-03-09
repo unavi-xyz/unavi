@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getLocalWorld } from "./helpers";
+import { getLocalWorld } from "./db";
 import { LocalWorld } from "./types";
 
 export default function useLocalWorld(id: string) {

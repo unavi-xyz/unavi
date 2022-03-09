@@ -18,7 +18,7 @@ export default function User() {
     <div className="p-16">
       <div className="flex items-center space-x-8">
         <div className="w-32 h-32">
-          <ProfilePicture src={image} />
+          {image && <ProfilePicture src={image} />}
         </div>
 
         <div>

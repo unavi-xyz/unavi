@@ -6,9 +6,9 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { createRoom, useAuth } from "ceramic";
 
-import useLocalWorld from "../../../helpers/localWorlds/useLocalWorld";
-import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
+import { useLocalWorld } from "../../../helpers/localWorlds/useLocalWorld";
 import { SceneSettingsDialog } from "../../../components/editor/SceneSettingsDialog";
+import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
 
 export default function Id() {
   const router = useRouter();

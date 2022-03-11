@@ -2,7 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-.bg-blur-filter {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+.crosshair {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  mix-blend-mode: difference;
+}
+
+.crosshair::before {
+  content: "";
+  display: block;
+  height: 11px;
+  border-left: 1px solid #fff;
+  margin-bottom: -6px;
+}
+
+.crosshair::after {
+  content: "";
+  display: block;
+  width: 11px;
+  border-top: 1px solid #fff;
+  margin-left: -5px;
 }

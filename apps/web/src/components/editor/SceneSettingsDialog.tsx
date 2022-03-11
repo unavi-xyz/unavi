@@ -7,7 +7,7 @@ import {
   deleteLocalWorld,
   mergeLocalWorld,
 } from "../../helpers/localWorlds/db";
-import useLocalWorld from "../../helpers/localWorlds/useLocalWorld";
+import { useLocalWorld } from "../../helpers/localWorlds/useLocalWorld";
 
 interface Props {
   id: string;

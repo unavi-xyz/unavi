@@ -1,7 +1,7 @@
 import { useQuery } from "react-query";
 import { getLocalWorld } from "./db";
 
-export default function useLocalWorld(id: string) {
+export function useLocalWorld(id: string) {
   async function fetcher() {
     const world = await getLocalWorld(id);
     return world;

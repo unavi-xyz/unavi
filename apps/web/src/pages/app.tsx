@@ -23,12 +23,16 @@ export default function App() {
   }
 
   return (
-    <Canvas>
-      <Physics>
-        <World scene={room.scene} />
-        <Player />
-      </Physics>
-    </Canvas>
+    <div className="h-full">
+      <div className="crosshair" />
+
+      <Canvas>
+        <Physics>
+          <World scene={room.scene} />
+          <Player />
+        </Physics>
+      </Canvas>
+    </div>
   );
 }
 

@@ -4,7 +4,7 @@ import { useAtom } from "jotai";
 import { getLocalWorld, mergeLocalWorld } from "../../localWorlds/db";
 import { sceneAtom, worldIdAtom } from "../state";
 
-export default function useAutosave() {
+export function useAutosave() {
   const [worldId] = useAtom(worldIdAtom);
   const [scene, setScene] = useAtom(sceneAtom);
 

@@ -36,3 +36,5 @@ export const saveSelectedAtom = atom(
     set(selectedAtom, newSelected);
   }
 );
+
+export const previewModeAtom = atom(false);

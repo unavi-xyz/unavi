@@ -1,4 +1,4 @@
-import useLocalWorld from "../../helpers/localWorlds/useLocalWorld";
+import { useLocalWorld } from "../../helpers/localWorlds/useLocalWorld";
 import Card from "../base/Card";
 
 interface Props {

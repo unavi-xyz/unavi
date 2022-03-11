@@ -1,9 +1,13 @@
-import { MdArrowBackIosNew } from "react-icons/md";
+import { IoMdEye } from "react-icons/io";
+import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
 import { useRouter } from "next/router";
+import { useAtom } from "jotai";
 
-import useLocalWorld from "../../../helpers/localWorlds/useLocalWorld";
-import MiddleButtons from "./MiddleButtons";
 import { mergeLocalWorld } from "../../../helpers/localWorlds/db";
+import { previewModeAtom } from "../../../helpers/editor/state";
+import { useLocalWorld } from "../../../helpers/localWorlds/useLocalWorld";
+
+import MiddleButtons from "./MiddleButtons";
 
 interface Props {
   id: string;
@@ -11,6 +15,8 @@ interface Props {
 
 export default function Navbar({ id }: Props) {
   const router = useRouter();
+
+  const [, setPreviewMode] = useAtom(previewModeAtom);
 
   const world = useLocalWorld(id);
 
@@ -21,6 +27,10 @@ export default function Navbar({ id }: Props) {
     await mergeLocalWorld(id, { image });
 
     router.push(`/editor/${id}`);
+  }
+
+  function handlePreview() {
+    setPreviewMode(true);
   }
 
   return (
@@ -40,7 +50,21 @@ export default function Navbar({ id }: Props) {
         <MiddleButtons />
       </div>
 
-      <div className="w-1/3"></div>
+      <div className="w-1/3 flex justify-end space-x-2">
+        <div
+          onClick={handlePreview}
+          className="w-10 h-10 rounded-md flex items-center justify-center
+                     hover:cursor-pointer"
+        >
+          <IoMdEye className="text-2xl" />
+        </div>
+        <div
+          className="w-10 h-10 rounded-md flex items-center justify-center
+                     hover:cursor-pointer"
+        >
+          <MdDownload className="text-2xl" />
+        </div>
+      </div>
     </div>
   );
 }

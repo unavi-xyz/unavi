@@ -22,7 +22,7 @@ export default function Card({ text, image }: Props) {
       {text && (
         <div
           className="absolute bottom-0 px-3 py-2 text-lg rounded-b-md w-full bg-white
-                   bg-opacity-60 bg-blur-filter"
+                     bg-opacity-60 backdrop-blur"
         >
           {text}
         </div>

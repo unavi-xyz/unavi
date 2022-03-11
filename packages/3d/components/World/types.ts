@@ -1,5 +1,8 @@
 import { Triplet } from "@react-three/cannon";
 
+import { boxDefaultParams } from "./assets/Box";
+import { sphereDefaultParams } from "./assets/Sphere";
+
 export type Params = {
   position: Triplet;
   rotation: Triplet;
@@ -19,10 +22,21 @@ export type Asset = {
 
 export type Instance = {
   id: string;
-  asset: AssetName;
+  name: AssetName;
   params: Partial<Params>;
 };
 
 export type Scene = {
   [key: string]: Instance;
+};
+
+export const ASSETS = {
+  Box: {
+    name: AssetName.Box,
+    params: boxDefaultParams,
+  } as Asset,
+  Sphere: {
+    name: AssetName.Sphere,
+    params: sphereDefaultParams,
+  } as Asset,
 };

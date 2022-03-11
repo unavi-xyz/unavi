@@ -25,7 +25,7 @@ export default function Inspect() {
   return (
     <div className="space-y-6">
       <div className="text-3xl flex justify-center">
-        {selected.instance.asset}
+        {selected.instance.name}
       </div>
 
       <div className="space-y-1">

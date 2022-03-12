@@ -1,6 +1,7 @@
 import { useAtom } from "jotai";
 
 import { selectedAtom } from "../../../../helpers/editor/state";
+import NumberField from "./fields/NumberField";
 import TripletField from "./fields/TripletField";
 
 export default function Inspect() {
@@ -41,11 +42,28 @@ export default function Inspect() {
           value={params.rotation}
           onChange={getHandleChange("rotation")}
         />
-        <TripletField
-          title="Scale"
-          value={params.scale}
-          onChange={getHandleChange("scale")}
-        />
+
+        {params?.scale && (
+          <TripletField
+            title="Scale"
+            value={params.scale}
+            onChange={getHandleChange("scale")}
+          />
+        )}
+
+        {params?.radius && (
+          <div className="py-4 space-y-1">
+            <div className="text-xl text-neutral-500 mb-2">Geometry</div>
+
+            {params?.radius && (
+              <NumberField
+                title="Radius"
+                value={params?.radius}
+                onChange={getHandleChange("radius")}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -7,7 +7,11 @@ import { useAtom } from "jotai";
 import Navbar from "../../../components/editor/Navbar/Navbar";
 import EditorSidebar from "../../../components/editor/EditorSidebar/EditorSidebar";
 import EditorCanvas from "../../../components/editor/EditorCanvas/EditorCanvas";
-import { previewModeAtom, worldIdAtom } from "../../../helpers/editor/state";
+import {
+  previewModeAtom,
+  selectedAtom,
+  worldIdAtom,
+} from "../../../helpers/editor/state";
 import PreviewCanvas from "../../../components/editor/EditorCanvas/PreviewCanvas";
 
 export default function Id() {
@@ -15,11 +19,13 @@ export default function Id() {
   const id = router.query.id as string;
 
   const [, setWorldId] = useAtom(worldIdAtom);
+  const [, setSelected] = useAtom(selectedAtom);
   const [previewMode, setPreviewMode] = useAtom(previewModeAtom);
 
   useEffect(() => {
     setWorldId(id);
-  }, [id, setWorldId]);
+    setSelected(null);
+  }, [id, setSelected, setWorldId]);
 
   function handleClose() {
     setPreviewMode(false);

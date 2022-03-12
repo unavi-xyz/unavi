@@ -2,7 +2,7 @@ import { ChangeEvent } from "react";
 import { Triplet } from "@react-three/cannon";
 import { degToRad, radToDeg } from "three/src/math/MathUtils";
 
-import NumberField from "./NumberField";
+import NumberInput from "./NumberInput";
 
 function round(value: number) {
   return Math.round(value * 1000) / 1000;
@@ -42,23 +42,29 @@ export default function TripletField({
   }
 
   return (
-    <div className="flex items-center space-x-8">
-      <div className="w-1/2">{title}</div>
+    <div className="flex items-center w-full">
+      <div className="w-1/4">{title}</div>
 
-      <div className="flex space-x-2">
-        <NumberField
+      <div className="w-1/4">
+        <NumberInput
           title="x"
           step={step}
           value={getValue(0)}
           onChange={getHandleChange(0)}
         />
-        <NumberField
+      </div>
+
+      <div className="w-1/4">
+        <NumberInput
           title="y"
           step={step}
           value={getValue(1)}
           onChange={getHandleChange(1)}
         />
-        <NumberField
+      </div>
+
+      <div className="w-1/4">
+        <NumberInput
           title="z"
           step={step}
           value={getValue(2)}

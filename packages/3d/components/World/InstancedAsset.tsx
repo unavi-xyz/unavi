@@ -12,9 +12,9 @@ export function InstancedAsset({ instance }: Props) {
 
   switch (name) {
     case AssetName.Box:
-      return <Box params={params} />;
+      return <Box params={params as any} />;
     case AssetName.Sphere:
-      return <Sphere params={params} />;
+      return <Sphere params={params as any} />;
     default:
       return <group></group>;
   }

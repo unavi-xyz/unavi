@@ -7,6 +7,7 @@ export type Params = {
   position: Triplet;
   rotation: Triplet;
   scale: Triplet;
+  radius: number;
 };
 
 export enum AssetName {

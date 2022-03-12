@@ -1,5 +1,4 @@
-import { Triplet } from "@react-three/cannon";
-import { Params } from "../types";
+import { Triplet, useBox } from "@react-three/cannon";
 
 export const boxDefaultParams = {
   position: [0, 0, 0] as Triplet,
@@ -8,13 +7,22 @@ export const boxDefaultParams = {
 };
 
 interface Props {
-  params: Partial<Params>;
+  params: typeof boxDefaultParams;
 }
 
 export function Box({ params }: Props) {
+  const args: Triplet = params.scale;
+
+  const [ref] = useBox(() => ({
+    args,
+    position: params.position,
+    rotation: params.rotation,
+    type: "Static",
+  }));
+
   return (
-    <mesh>
-      <boxGeometry args={[1, 1, 1]} />
+    <mesh ref={ref}>
+      <boxBufferGeometry args={args} />
       <meshStandardMaterial />
     </mesh>
   );

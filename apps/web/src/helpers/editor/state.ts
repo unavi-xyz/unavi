@@ -19,8 +19,7 @@ export const selectedAtom = atom(null as Selected);
 export const saveSelectedAtom = atom(
   (get) => get(selectedAtom),
   (get, set) => {
-    const newSelected = { ...get(selectedAtom) };
-    const { instance, ref } = newSelected;
+    const { instance, ref } = get(selectedAtom);
 
     const position = ref.current.getWorldPosition(tempVector3).toArray();
     instance.params.position = position;
@@ -30,8 +29,7 @@ export const saveSelectedAtom = atom(
     const rotation = tempVector3.setFromEuler(rotationEuler).toArray();
     instance.params.rotation = rotation;
 
-    const scale = ref.current.getWorldScale(tempVector3).toArray();
-    instance.params.scale = scale;
+    const newSelected: Selected = { instance, ref };
 
     set(selectedAtom, newSelected);
   }

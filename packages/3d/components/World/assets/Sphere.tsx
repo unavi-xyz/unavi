@@ -1,20 +1,28 @@
-import { Triplet } from "@react-three/cannon";
-import { Params } from "../types";
+import { SphereArgs, Triplet, useSphere } from "@react-three/cannon";
 
 export const sphereDefaultParams = {
   position: [0, 0, 0] as Triplet,
   rotation: [0, 0, 0] as Triplet,
-  scale: [1, 1, 1] as Triplet,
+  radius: 0.5,
 };
 
 interface Props {
-  params: Partial<Params>;
+  params: typeof sphereDefaultParams;
 }
 
 export function Sphere({ params }: Props) {
+  const args: SphereArgs = [params.radius];
+
+  const [ref] = useSphere(() => ({
+    args,
+    position: params.position,
+    rotation: params.rotation,
+    type: "Static",
+  }));
+
   return (
-    <mesh>
-      <sphereGeometry args={[0.5, 16, 16]} />
+    <mesh ref={ref}>
+      <sphereGeometry args={args} />
       <meshStandardMaterial />
     </mesh>
   );

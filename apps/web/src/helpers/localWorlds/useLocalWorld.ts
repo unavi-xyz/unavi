@@ -3,6 +3,7 @@ import { getLocalWorld } from "./db";
 
 export function useLocalWorld(id: string) {
   async function fetcher() {
+    if (!id) return;
     const world = await getLocalWorld(id);
     return world;
   }

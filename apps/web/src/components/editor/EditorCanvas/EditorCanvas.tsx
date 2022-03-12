@@ -7,6 +7,7 @@ import { useAutosave } from "../../../helpers/editor/hooks/useAutosave";
 
 import { EditorWorld } from "./EditorWorld";
 import Gizmo from "./Gizmo";
+import { Physics } from "@react-three/cannon";
 
 export default function EditorCanvas() {
   const [, setSelected] = useAtom(selectedAtom);
@@ -20,10 +21,12 @@ export default function EditorCanvas() {
         setSelected(null);
       }}
     >
-      <OrbitControls makeDefault />
-      <Gizmo />
+      <Physics>
+        <OrbitControls makeDefault />
+        <Gizmo />
 
-      <EditorWorld />
+        <EditorWorld />
+      </Physics>
     </Canvas>
   );
 }

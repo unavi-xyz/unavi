@@ -1,13 +1,14 @@
+import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuth, useIpfsFile, useProfile, useRooms } from "ceramic";
 
 import { ProfilePicture } from "../../components/base";
+import { ProfileSettingsDialog } from "../../components/ProfileSettingsDialog";
 import RoomCard from "../../components/RoomCard";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
-import { useState } from "react";
-import { ProfileSettingsDialog } from "../../components/ProfileSettingsDialog";
+import ProfileAvatar from "../../components/ProfileAvatar";
 
 export default function User() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function User() {
   const isUser = viewerId === did;
 
   return (
-    <div className="p-16">
+    <div className="p-16 h-full">
       <ProfileSettingsDialog
         id={did}
         open={openSettings}
@@ -51,7 +52,11 @@ export default function User() {
         )}
       </div>
 
-      <div className="w-full flex justify-end">
+      <div className="w-full flex justify-between">
+        <div className="w-full">
+          <ProfileAvatar />
+        </div>
+
         <div className="w-full max-w-2xl space-y-4 p-4 overflow-auto h-[1000px]">
           {rooms?.map((streamId) => {
             return (

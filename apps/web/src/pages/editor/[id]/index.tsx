@@ -8,6 +8,7 @@ import { createRoom, useAuth } from "ceramic";
 import { useLocalWorld } from "../../../helpers/localWorlds/useLocalWorld";
 import { SceneSettingsDialog } from "../../../components/editor/SceneSettingsDialog";
 import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
+import { IconButton } from "../../../components/base";
 
 export default function Id() {
   const router = useRouter();
@@ -50,21 +51,13 @@ export default function Id() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <div
-            onClick={handlePublish}
-            className="h-12 w-12 hover:cursor-pointer flex items-center
-          justify-center hover:bg-neutral-200 text-2xl rounded-xl"
-          >
+          <IconButton onClick={handlePublish}>
             <MdCloudUpload />
-          </div>
+          </IconButton>
 
-          <div
-            onClick={() => setOpenSettings(true)}
-            className="h-12 w-12 hover:cursor-pointer flex items-center mr-4
-          justify-center hover:bg-neutral-200 text-2xl rounded-xl"
-          >
+          <IconButton onClick={() => setOpenSettings(true)}>
             <IoMdSettings />
-          </div>
+          </IconButton>
 
           <SceneSettingsDialog
             id={id}

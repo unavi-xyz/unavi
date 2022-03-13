@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuth, useIpfsFile, useProfile, useRooms } from "ceramic";
 
-import { ProfilePicture } from "../../components/base";
+import { IconButton, ProfilePicture } from "../../components/base";
 import { ProfileSettingsDialog } from "../../components/ProfileSettingsDialog";
 import RoomCard from "../../components/RoomCard";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
@@ -39,12 +39,10 @@ export default function User() {
 
         {isUser && (
           <>
-            <div
-              onClick={() => setOpenSettings(true)}
-              className="h-12 w-12 hover:cursor-pointer flex items-center mr-8
-                         justify-center hover:bg-neutral-200 text-2xl rounded-xl"
-            >
-              <IoMdSettings />
+            <div className="mr-8">
+              <IconButton onClick={() => setOpenSettings(true)}>
+                <IoMdSettings />
+              </IconButton>
             </div>
 
             <ProfileSettingsDialog

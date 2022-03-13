@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuth, useIpfsFile, useProfile, useRoom } from "ceramic";
 
+import { IconButton } from "../../components/base";
 import { RoomSettingsDialog } from "../../components/RoomSettingsDialog";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
 
@@ -37,13 +38,9 @@ export default function Room() {
 
         {isOwner && (
           <>
-            <div
-              onClick={() => setOpenSettings(true)}
-              className="h-12 w-12 hover:cursor-pointer flex items-center
-          justify-center hover:bg-neutral-200 text-2xl rounded-xl"
-            >
+            <IconButton onClick={() => setOpenSettings(true)}>
               <IoMdSettings />
-            </div>
+            </IconButton>
 
             <RoomSettingsDialog
               id={id}

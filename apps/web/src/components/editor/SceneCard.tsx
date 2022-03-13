@@ -9,7 +9,7 @@ export default function SceneCard({ id }: Props) {
   const world = useLocalWorld(id);
 
   return (
-    <div className="w-full h-40 hover:-translate-y-1">
+    <div className="w-full h-40">
       <Card text={world?.name} image={world?.image} />
     </div>
   );

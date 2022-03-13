@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 import Link from "next/link";
 
+import { IconButton } from "../../components/base";
 import { getLocalWorldIds } from "../../helpers/localWorlds/db";
 import { NewSceneDialog } from "../../components/editor/NewSceneDialog";
 import SceneCard from "../../components/editor/SceneCard";
@@ -30,13 +31,9 @@ export default function Editor() {
         <div className="text-2xl">Scenes</div>
 
         <div className="flex items-center space-x-4">
-          <div
-            onClick={handleNew}
-            className="h-12 w-12 hover:cursor-pointer flex items-center transition-all
-                       justify-center hover:bg-neutral-200 text-2xl rounded-xl"
-          >
+          <IconButton onClick={handleNew}>
             <AiOutlinePlus />
-          </div>
+          </IconButton>
         </div>
       </div>
 

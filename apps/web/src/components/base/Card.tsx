@@ -7,7 +7,7 @@ export default function Card({ text, image }: Props) {
   return (
     <div
       className="relative w-full h-full rounded-lg hover:cursor-pointer
-                 flex flex-col hover:shadow-md"
+                 flex flex-col"
     >
       <div className="h-full">
         {image && (

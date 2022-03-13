@@ -9,7 +9,7 @@ export default function PreviewCanvas() {
   const [scene] = useAtom(sceneAtom);
 
   return (
-    <Canvas>
+    <Canvas mode="concurrent">
       <Physics>
         <World scene={scene} />
         <Player />

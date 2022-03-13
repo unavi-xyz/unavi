@@ -7,9 +7,10 @@ import { Raycaster, Vector3 } from "three";
 import { useKeyboardMovement } from "./useKeyboardMovement";
 import { useSpringVelocity } from "./useSpringVelocity";
 
-const PLAYER_HEIGHT = 1.6;
+const PLAYER_HEIGHT = 1.5;
 
 const PLAYER_SPEED = 5;
+const JUMP_STRENGTH = 5;
 const HEIGHT_OFFSET = new Vector3(0, PLAYER_HEIGHT / 2, 0);
 
 interface Props {
@@ -58,7 +59,7 @@ export function Player({ spawn = new Vector3(0, 2, 0) }: Props) {
     //jump
     if (jump.current && grounded.current) {
       grounded.current = false;
-      velocity.current.y = 6;
+      velocity.current.y = JUMP_STRENGTH;
     }
 
     updateVelocity(camera, velocity.current);

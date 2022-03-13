@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Triplet } from "@react-three/cannon";
 import { Group, MathUtils, Vector3 } from "three";
+import { Avatar } from "3d";
 
 import { PUBLISH_INTERVAL } from "../../helpers/multiplayer/constants";
 import { MultiplayerContext } from "./MultiplayerContext";
@@ -15,6 +16,8 @@ interface Props {
 export default function OtherPlayer({ did }: Props) {
   const { ydoc } = useContext(MultiplayerContext);
 
+  const walkWeight = useRef(0);
+  const jumpWeight = useRef(0);
   const deltaTotal = useRef(0);
   const ref = useRef<Group>();
   const tempVector3 = useRef(new Vector3());
@@ -43,6 +46,14 @@ export default function OtherPlayer({ did }: Props) {
   useFrame((_, delta) => {
     deltaTotal.current += delta;
     const alpha = Math.min(deltaTotal.current * (1000 / PUBLISH_INTERVAL), 1);
+
+    //animations
+    const velocity = tempVector3.current
+      .subVectors(real.current.position, ref.current.position)
+      .divideScalar(delta);
+
+    walkWeight.current = Math.abs(velocity.x) + Math.abs(velocity.z);
+    jumpWeight.current = Math.abs(velocity.y);
 
     //position interp
     tempVector3.current.lerpVectors(
@@ -81,10 +92,12 @@ export default function OtherPlayer({ did }: Props) {
 
   return (
     <group ref={ref}>
-      <mesh>
-        <boxBufferGeometry args={[0.5, 0.5, 0.5]} />
-        <meshStandardMaterial />
-      </mesh>
+      <Avatar
+        src="/models/Latifa.vrm"
+        animationsSrc="/models/animations.fbx"
+        walkWeight={walkWeight}
+        jumpWeight={jumpWeight}
+      />
     </group>
   );
 }

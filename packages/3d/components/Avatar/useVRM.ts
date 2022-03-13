@@ -1,18 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { VRM } from "@pixiv/three-vrm";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { useGLTF } from "@react-three/drei";
 
 export function useVRM(src: string) {
-  const loader = useRef(new GLTFLoader());
+  const gltf = useGLTF(src);
+
   const [vrm, setVrm] = useState<VRM>();
 
   useEffect(() => {
-    if (!src || vrm) return;
-    loader.current.loadAsync(src).then(async (gltf) => {
-      const vrm = await VRM.from(gltf);
-      setVrm(vrm);
+    if (!gltf) return;
+
+    VRM.from(gltf).then((res) => {
+      setVrm(res);
     });
-  }, [src]);
+  }, [gltf]);
 
   useEffect(() => {
     return () => {

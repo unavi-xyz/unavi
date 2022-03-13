@@ -30,6 +30,7 @@ export default function Multiplayer({ roomId }: Props) {
   useEffect(() => {
     const interval = setInterval(() => {
       const position: Triplet = camera.position.toArray();
+      position[1] -= 1.5;
 
       const dir = camera.getWorldDirection(tempVector3.current);
       const sign = Math.sign(dir.x);

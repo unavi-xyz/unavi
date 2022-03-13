@@ -26,7 +26,7 @@ export default function App() {
     <div className="h-full">
       <div className="crosshair" />
 
-      <Canvas>
+      <Canvas mode="concurrent">
         <MultiplayerProvider>
           <Physics>
             <World scene={room.scene} />

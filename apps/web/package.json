@@ -23,7 +23,9 @@
     "react-dom": "^17.0.2",
     "react-icons": "^4.3.1",
     "react-query": "^3.34.16",
-    "three": "^0.138.0"
+    "three": "^0.138.0",
+    "y-webrtc": "^10.2.2",
+    "yjs": "^13.5.28"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.11",

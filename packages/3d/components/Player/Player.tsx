@@ -1,8 +1,8 @@
-import { MutableRefObject, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Triplet, useSphere } from "@react-three/cannon";
 import { PointerLockControls } from "@react-three/drei";
-import { Group, Raycaster, Vector3 } from "three";
+import { Raycaster, Vector3 } from "three";
 
 import { useKeyboardMovement } from "./useKeyboardMovement";
 import { useSpringVelocity } from "./useSpringVelocity";

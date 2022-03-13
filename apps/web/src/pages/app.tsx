@@ -6,6 +6,8 @@ import { Player, World } from "3d";
 import { useAuth, useRoom } from "ceramic";
 
 import AppLayout from "../layouts/AppLayout";
+import Multiplayer from "../components/app/Multiplayer";
+import MultiplayerProvider from "../components/app/MultiplayerContext";
 
 export default function App() {
   const router = useRouter();
@@ -18,19 +20,20 @@ export default function App() {
     if (!authenticated) connect();
   }, [authenticated, connect]);
 
-  if (!authenticated) {
-    return <div></div>;
-  }
+  if (!authenticated) return null;
 
   return (
     <div className="h-full">
       <div className="crosshair" />
 
       <Canvas>
-        <Physics>
-          <World scene={room.scene} />
-          <Player />
-        </Physics>
+        <MultiplayerProvider>
+          <Physics>
+            <World scene={room.scene} />
+            <Multiplayer roomId={roomId} />
+            <Player />
+          </Physics>
+        </MultiplayerProvider>
       </Canvas>
     </div>
   );

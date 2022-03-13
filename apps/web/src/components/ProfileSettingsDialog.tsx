@@ -79,7 +79,7 @@ export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
             defaultValue={profile?.name}
           />
           <TextField
-            title="Description"
+            title="Bio"
             inputRef={descriptionRef}
             defaultValue={profile?.description}
           />

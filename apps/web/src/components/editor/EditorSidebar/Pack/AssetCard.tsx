@@ -19,8 +19,7 @@ export default function AssetCard({ asset }: Props) {
   return (
     <div
       onClick={handleClick}
-      className="bg-neutral-100 hover:bg-neutral-200 p-4 rounded hover:cursor-pointer
-                 ring-1 ring-neutral-400"
+      className="bg-neutral-100 hover:bg-neutral-200 p-4 rounded hover:cursor-pointer"
     >
       {asset.name}
     </div>

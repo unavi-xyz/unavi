@@ -24,49 +24,69 @@ export default function User() {
   const isUser = viewerId === did;
 
   return (
-    <div className="p-16 h-full">
-      <ProfileSettingsDialog
-        id={did}
-        open={openSettings}
-        setOpen={setOpenSettings}
-      />
+    <div className="w-full h-full flex flex-col">
+      <div className="flex items-center justify-between bg-white rounded-3xl shadow p-8">
+        <div className="flex items-center space-x-8">
+          <div className="w-28 h-28">
+            {image && <ProfilePicture src={image} />}
+          </div>
 
-      <div className="flex items-center space-x-8">
-        <div className="w-32 h-32">
-          {image && <ProfilePicture src={image} />}
-        </div>
-
-        <div>
-          <div className="text-3xl">{profile?.name}</div>
-          <div className="text-neutral-400">{did}</div>
+          <div>
+            <div className="text-3xl">{profile?.name}</div>
+            <div className="text-neutral-400 break-all">{did}</div>
+          </div>
         </div>
 
         {isUser && (
-          <div
-            onClick={() => setOpenSettings(true)}
-            className="py-1.5 px-4 hover:shadow hover:cursor-pointer
-                     hover:bg-purple-400 text-xl rounded"
-          >
-            <IoMdSettings />
-          </div>
+          <>
+            <div
+              onClick={() => setOpenSettings(true)}
+              className="h-12 w-12 hover:cursor-pointer flex items-center mr-8
+                         justify-center hover:bg-neutral-200 text-2xl rounded-xl"
+            >
+              <IoMdSettings />
+            </div>
+
+            <ProfileSettingsDialog
+              id={did}
+              open={openSettings}
+              setOpen={setOpenSettings}
+            />
+          </>
         )}
       </div>
 
-      <div className="w-full flex justify-between">
-        <div className="w-full">
+      <div className="w-full h-full flex space-x-4 pt-4">
+        <div className="w-1/2 bg-white rounded-3xl shadow">
           <ProfileAvatar />
         </div>
 
-        <div className="w-full max-w-2xl space-y-4 p-4 overflow-auto h-[1000px]">
-          {rooms?.map((streamId) => {
-            return (
-              <Link key={streamId} href={`/room/${streamId}`} passHref>
-                <div className="hover:cursor-pointer hover:-translate-x-2 transition-all duration-100">
-                  <RoomCard streamId={streamId} />
-                </div>
-              </Link>
-            );
-          })}
+        <div className="w-1/2 flex flex-col space-y-4">
+          <div className="h-1/3 bg-white rounded-3xl shadow p-8 flex flex-col">
+            <div className="text-2xl font-medium flex justify-center pb-8">
+              About
+            </div>
+
+            <div className="h-full">{profile?.description}</div>
+          </div>
+
+          <div className="h-2/3 bg-white rounded-3xl shadow flex flex-col">
+            <div className="text-2xl font-medium flex justify-center px-8 pt-8">
+              Rooms
+            </div>
+
+            <div className="space-y-4 h-full overflow-auto p-8">
+              {rooms?.map((streamId) => {
+                return (
+                  <Link key={streamId} href={`/room/${streamId}`} passHref>
+                    <div>
+                      <RoomCard streamId={streamId} />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>

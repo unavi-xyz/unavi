@@ -2,9 +2,8 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth, useIpfsFile, useRoom } from "ceramic";
+import { useAuth, useIpfsFile, useProfile, useRoom } from "ceramic";
 
-import { Button } from "../../components/base";
 import { RoomSettingsDialog } from "../../components/RoomSettingsDialog";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
 
@@ -14,6 +13,7 @@ export default function Room() {
 
   const { viewerId } = useAuth();
   const { room, controller } = useRoom(id);
+  const { profile } = useProfile(controller);
   const image = useIpfsFile(room?.image);
 
   const [openSettings, setOpenSettings] = useState(false);
@@ -21,36 +21,71 @@ export default function Room() {
   const isOwner = viewerId === controller;
 
   return (
-    <div className="p-8 space-y-4 max-w-6xl">
-      <RoomSettingsDialog
-        id={id}
-        open={openSettings}
-        setOpen={setOpenSettings}
-      />
-
-      <div className="flex items-center justify-between">
-        <div className="text-3xl">{room?.name}</div>
+    <div className="flex flex-col space-y-4 h-2/3">
+      <div className="bg-white rounded-3xl shadow p-8 flex items-center justify-between">
+        <div>
+          <div className="text-2xl">{room?.name}</div>
+          <div className="text-lg text-neutral-500">
+            by{" "}
+            <Link href={`/user/${controller}`} passHref>
+              <span className="hover:cursor-pointer hover:underline">
+                {profile?.name ?? controller}
+              </span>
+            </Link>
+          </div>
+        </div>
 
         {isOwner && (
-          <div
-            onClick={() => setOpenSettings(true)}
-            className="py-1.5 px-4 hover:shadow hover:cursor-pointer
-                     hover:bg-indigo-400 text-xl rounded"
-          >
-            <IoMdSettings />
-          </div>
+          <>
+            <div
+              onClick={() => setOpenSettings(true)}
+              className="h-12 w-12 hover:cursor-pointer flex items-center
+          justify-center hover:bg-neutral-200 text-2xl rounded-xl"
+            >
+              <IoMdSettings />
+            </div>
+
+            <RoomSettingsDialog
+              id={id}
+              open={openSettings}
+              setOpen={setOpenSettings}
+            />
+          </>
         )}
       </div>
 
-      {image && <img src={image} alt="room image" className="rounded" />}
-
-      <div>{room?.description}</div>
-
-      <Link href={`/app?room=${id}`} passHref>
-        <div className="max-w-xs">
-          <Button>Join Room</Button>
+      <div className="flex h-full space-x-4">
+        <div className="w-3/5 bg-white rounded-3xl shadow">
+          {image && (
+            <img
+              src={image}
+              alt="room image"
+              className="w-full h-full rounded-3xl object-cover"
+            />
+          )}
         </div>
-      </Link>
+
+        <div className="w-2/5 flex flex-col space-y-4">
+          <div className="h-full bg-white rounded-3xl shadow p-8 flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="text-2xl flex justify-center">About</div>
+              <div className="text-lg">{room?.description}</div>
+            </div>
+
+            <div className="h-16">
+              <Link href={`/app?room=${id}`} passHref>
+                <div
+                  className="h-full text-md rounded-full bg-black text-white shadow
+                             hover:cursor-pointer hover:bg-opacity-90 transition-all
+                             flex items-center justify-center"
+                >
+                  Join Room
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

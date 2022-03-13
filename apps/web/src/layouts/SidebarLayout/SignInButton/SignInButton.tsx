@@ -15,7 +15,7 @@ export default function SignInButton() {
         <SidebarButton
           icon={<VscDebugDisconnect />}
           text="Sign In"
-          color={Colors.purple}
+          color={Colors.red}
         />
       </div>
     </div>

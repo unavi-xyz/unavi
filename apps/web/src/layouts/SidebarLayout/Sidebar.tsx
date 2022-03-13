@@ -46,7 +46,7 @@ export default function Sidebar() {
           <div>
             <SidebarButton
               icon={<BiWorld />}
-              color={Colors.indigo}
+              color={Colors.lime}
               text="Rooms"
               selected={router.asPath === "/rooms"}
             />
@@ -71,7 +71,7 @@ export default function Sidebar() {
             <div>
               <SidebarButton
                 icon={<BsFillPersonFill />}
-                color={Colors.purple}
+                color={Colors.red}
                 text="Profile"
                 selected={router.asPath === `/user/${viewerId}`}
               />

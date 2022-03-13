@@ -10,7 +10,7 @@ export default function PackButton({ name, icon, ...rest }: Props) {
   return (
     <div
       {...rest}
-      className="group flex w-full space-x-2 p-1 ring-1 ring-neutral-400 bg-neutral-100
+      className="group flex w-full space-x-2 p-1 bg-neutral-100
                hover:bg-neutral-200 hover:cursor-pointer rounded-lg h-20"
     >
       <div className="flex items-center text-4xl px-4 text-neutral-500">

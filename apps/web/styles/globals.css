@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  font-family: "DM Sans", sans-serif;
+}
+
 .crosshair {
   position: fixed;
   top: 50%;

@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AiOutlinePlus, AiOutlineUpload } from "react-icons/ai";
-import SceneCard from "../../components/editor/SceneCard";
-import { getLocalWorldIds } from "../../helpers/localWorlds/db";
+import { AiOutlinePlus } from "react-icons/ai";
+import Link from "next/link";
 
+import { getLocalWorldIds } from "../../helpers/localWorlds/db";
 import { NewSceneDialog } from "../../components/editor/NewSceneDialog";
+import SceneCard from "../../components/editor/SceneCard";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
 
 export default function Editor() {
@@ -22,53 +22,46 @@ export default function Editor() {
     setOpenNew(true);
   }
 
-  function handleImport() {}
-
   return (
-    <div className="p-16 space-y-4">
+    <div className="space-y-4 h-full w-full flex flex-col">
       <NewSceneDialog open={openNew} setOpen={setOpenNew} />
 
-      <div className="text-3xl">Editor</div>
+      <div className="bg-white rounded-3xl shadow p-8 flex items-center justify-between">
+        <div className="text-2xl">Scenes</div>
 
-      <div className="flex items-center space-x-6">
-        <div className="text-xl">Scenes</div>
-
-        <div className="flex h-min items-center bg-neutral-200 rounded">
+        <div className="flex items-center space-x-4">
           <div
             onClick={handleNew}
-            className="py-1 px-3 rounded-l hover:shadow hover:cursor-pointer hover:bg-amber-300 text-xl"
+            className="h-12 w-12 hover:cursor-pointer flex items-center transition-all
+                       justify-center hover:bg-neutral-200 text-2xl rounded-xl"
           >
             <AiOutlinePlus />
-          </div>
-          <div
-            onClick={handleImport}
-            className="py-1 px-3 rounded-r hover:shadow hover:cursor-pointer hover:bg-amber-300 text-xl"
-          >
-            <AiOutlineUpload />
           </div>
         </div>
       </div>
 
-      <div className="overflow-auto">
+      <div className="h-full overflow-auto bg-white rounded-3xl shadow p-8">
         {localWorlds &&
           (localWorlds.length > 0 ? (
-            <div className="flex space-x-2 px-1 py-8">
+            <div className="grid grid-flow-row xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3">
               {localWorlds.map((id) => {
                 return (
-                  <Link key={id} href={`/editor/${id}`} passHref>
-                    <div>
-                      <SceneCard id={id} />
-                    </div>
-                  </Link>
+                  <div key={id} className="p-2">
+                    <Link href={`/editor/${id}`} passHref>
+                      <div>
+                        <SceneCard id={id} />
+                      </div>
+                    </Link>
+                  </div>
                 );
               })}
             </div>
           ) : (
-            <p className="text-neutral-600">
+            <p className="text-neutral-500 text-lg">
               It looks like you don{"'"}t have any scenes.{" "}
               <span
                 onClick={handleNew}
-                className="text-amber-600 underline hover:decoration-2 hover:cursor-pointer"
+                className="text-amber-500 underline hover:decoration-2 hover:cursor-pointer"
               >
                 Click here
               </span>{" "}

@@ -72,9 +72,8 @@ export default function Room() {
             <div className="h-16">
               <Link href={`/app?room=${id}`} passHref>
                 <div
-                  className="h-full text-md rounded-full bg-black text-white shadow
-                             hover:cursor-pointer hover:bg-opacity-90 transition-all
-                             flex items-center justify-center"
+                  className="h-full text-md rounded-full bg-black text-white justify-center
+                             hover:cursor-pointer transition-all flex items-center"
                 >
                   Join Room
                 </div>

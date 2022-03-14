@@ -16,7 +16,7 @@ export function TextField({ title, inputRef, ...rest }: Props) {
         ref={inputRef}
         id={title}
         type="text"
-        className="border text-lg py-2 px-3 rounded leading-tight"
+        className="border p-2 rounded leading-tight"
         {...rest}
       />
     </div>

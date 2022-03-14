@@ -17,15 +17,19 @@ interface Props {
 
 export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
   const nameRef = useRef<HTMLInputElement>();
-  const descriptionRef = useRef<HTMLInputElement>();
+  const descriptionRef = useRef<HTMLTextAreaElement>();
 
   const [imageFile, setImageFile] = useState<File>();
+  const [loading, setLoading] = useState(false);
 
   const queryClient = useQueryClient();
   const { profile, merge } = useProfile(id);
   const image = useIpfsFile(profile?.image?.original.src);
 
   async function handleSave() {
+    if (loading) return;
+    setLoading(true);
+
     const name = nameRef.current.value;
     const description = descriptionRef.current.value;
 
@@ -61,6 +65,7 @@ export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
 
     queryClient.invalidateQueries(`basicProfile-${id}`);
     setOpen(false);
+    setLoading(false);
   }
 
   return (
@@ -78,15 +83,21 @@ export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
             inputRef={nameRef}
             defaultValue={profile?.name}
           />
-          <TextField
-            title="Bio"
-            inputRef={descriptionRef}
-            defaultValue={profile?.description}
-          />
+
+          <div className="flex flex-col space-y-3">
+            <label className="block text-lg pointer-events-none">Bio</label>
+            <textarea
+              ref={descriptionRef}
+              defaultValue={profile?.description}
+              maxLength={420}
+              rows={8}
+              className="w-full border p-2 leading-tight rounded"
+            />
+          </div>
         </div>
 
-        <Button onClick={handleSave}>
-          <div>Save</div>
+        <Button loading={loading} onClick={handleSave}>
+          Save
         </Button>
       </div>
     </Dialog>

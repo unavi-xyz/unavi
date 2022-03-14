@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuth, useIpfsFile, useProfile, useRooms } from "ceramic";
 
-import { IconButton, ProfilePicture } from "../../components/base";
+import { IconButton } from "../../components/base";
 import { ProfileSettingsDialog } from "../../components/ProfileSettingsDialog";
 import RoomCard from "../../components/RoomCard";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
@@ -28,7 +28,13 @@ export default function User() {
       <div className="flex items-center justify-between bg-white rounded-3xl shadow p-8">
         <div className="flex items-center space-x-8">
           <div className="w-28 h-28">
-            {image && <ProfilePicture src={image} />}
+            {image && (
+              <img
+                src={image}
+                alt="profile picture"
+                className="object-cover rounded-full w-full h-full"
+              />
+            )}
           </div>
 
           <div>
@@ -65,7 +71,9 @@ export default function User() {
               About
             </div>
 
-            <div className="h-full">{profile?.description}</div>
+            <div className="h-full whitespace-pre-wrap overflow-auto">
+              {profile?.description}
+            </div>
           </div>
 
           <div className="h-2/3 bg-white rounded-3xl shadow flex flex-col">

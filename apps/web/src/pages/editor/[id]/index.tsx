@@ -88,9 +88,8 @@ export default function Id() {
             <div className="h-16">
               <Link href={`/editor/${id}/edit`} passHref>
                 <div
-                  className="h-full text-md rounded-full bg-black text-white shadow
-                           hover:cursor-pointer hover:bg-opacity-80 hover:shadow-md transition-all
-                           flex items-center justify-center"
+                  className="h-full text-md rounded-full bg-black text-white justify-center
+                             hover:cursor-pointer transition-all flex items-center"
                 >
                   Edit Scene
                 </div>

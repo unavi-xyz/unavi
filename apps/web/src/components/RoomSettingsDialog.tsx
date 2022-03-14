@@ -24,25 +24,36 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
   const description = useRef<HTMLInputElement>();
 
   const [imageFile, setImageFile] = useState<File>();
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [loadingsDelete, setLoadingsDelete] = useState(false);
 
   const queryClient = useQueryClient();
   const { room } = useRoom(id);
   const image = useIpfsFile(room?.image);
 
   async function handleSave() {
+    if (loadingSave) return;
+    setLoadingSave(true);
+
     await editRoom(
       id,
       name.current.value,
       description.current.value,
       imageFile
     );
+
     queryClient.invalidateQueries(`room-${id}`);
     setOpen(false);
+    setLoadingSave(false);
   }
 
   async function handleDelete() {
+    if (loadingsDelete) return;
+    setLoadingsDelete(true);
+
     await unpinTile(id);
     await removeRoomFromProfile(id);
+
     router.push("/");
   }
 
@@ -65,11 +76,11 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
         </div>
 
         <div className="space-y-2">
-          <Button onClick={handleSave}>
-            <div>Save</div>
+          <Button loading={loadingSave} onClick={handleSave}>
+            Save
           </Button>
-          <Button color="red" onClick={handleDelete}>
-            <div>Delete</div>
+          <Button loading={loadingsDelete} color="red" onClick={handleDelete}>
+            Delete
           </Button>
         </div>
       </div>

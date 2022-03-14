@@ -15,7 +15,7 @@
     "@dicebear/avatars-identicon-sprites": "^4.10.2",
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
-    "@mui/icons-material": "^5.2.4",
+    "@mui/icons-material": "^5.5.1",
     "@mui/lab": "^5.0.0-alpha.69",
     "@mui/material": "^5.2.4",
     "@mui/styles": "^5.2.3",

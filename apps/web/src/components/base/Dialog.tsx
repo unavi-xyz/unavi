@@ -18,7 +18,7 @@ export function Dialog({ open, setOpen, children }: Props): JSX.Element {
       <dialog
         open
         onMouseDown={(e) => e.stopPropagation()}
-        className="fade mx-auto w-full max-w-xl flex flex-col space-y-4 p-12 rounded-lg"
+        className="rounded-2xl p-12 fade mx-auto w-full max-w-xl flex flex-col space-y-4"
       >
         {children}
       </dialog>

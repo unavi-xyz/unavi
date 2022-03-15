@@ -23,7 +23,7 @@ export default function Room() {
 
   return (
     <div className="flex flex-col space-y-4 h-2/3">
-      <div className="bg-white rounded-3xl shadow p-8 flex items-center justify-between">
+      <div className="card flex items-center justify-between">
         <div>
           <div className="text-2xl">{room?.name}</div>
           <div className="text-lg text-neutral-500">
@@ -52,7 +52,7 @@ export default function Room() {
       </div>
 
       <div className="flex h-full space-x-4">
-        <div className="w-3/5 bg-white rounded-3xl shadow">
+        <div className="w-3/5 card">
           {image && (
             <img
               src={image}
@@ -63,7 +63,7 @@ export default function Room() {
         </div>
 
         <div className="w-2/5 flex flex-col space-y-4">
-          <div className="h-full bg-white rounded-3xl shadow p-8 flex flex-col justify-between">
+          <div className="h-full card flex flex-col justify-between">
             <div className="space-y-4">
               <div className="text-2xl flex justify-center">About</div>
               <div className="text-lg">{room?.description}</div>

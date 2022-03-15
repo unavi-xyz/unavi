@@ -27,7 +27,7 @@ export default function Editor() {
     <div className="space-y-4 h-full w-full flex flex-col">
       <NewSceneDialog open={openNew} setOpen={setOpenNew} />
 
-      <div className="bg-white rounded-3xl shadow p-8 flex items-center justify-between">
+      <div className="card flex items-center justify-between">
         <div className="text-2xl">Scenes</div>
 
         <div className="flex items-center space-x-4">
@@ -37,7 +37,7 @@ export default function Editor() {
         </div>
       </div>
 
-      <div className="h-full overflow-auto bg-white rounded-3xl shadow p-8">
+      <div className="h-full overflow-auto card">
         {localWorlds &&
           (localWorlds.length > 0 ? (
             <div className="grid grid-flow-row xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3">

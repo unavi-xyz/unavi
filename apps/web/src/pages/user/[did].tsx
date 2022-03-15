@@ -24,8 +24,8 @@ export default function User() {
   const isUser = viewerId === did;
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex items-center justify-between bg-white rounded-3xl shadow p-8">
+    <div className="w-full h-full space-y-4 flex flex-col">
+      <div className="card flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <div className="w-28 h-28">
             {image && (
@@ -60,37 +60,41 @@ export default function User() {
         )}
       </div>
 
-      <div className="w-full h-full flex space-x-4 pt-4">
-        <div className="w-1/2 bg-white rounded-3xl shadow">
+      <div className="basis-full grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-3xl shadow-sm">
           <ProfileAvatar />
         </div>
 
-        <div className="w-1/2 flex flex-col space-y-4">
-          <div className="h-1/3 bg-white rounded-3xl shadow p-8 flex flex-col">
-            <div className="text-2xl font-medium flex justify-center pb-8">
+        <div className="grid grid-rows-3 gap-4">
+          <div className="card flex flex-col space-y-4">
+            <div className="text-2xl font-medium flex justify-center">
               About
             </div>
 
-            <div className="h-full whitespace-pre-wrap overflow-auto">
-              {profile?.description}
+            <div className="relative h-full overflow-auto">
+              <div className="absolute top-0 left-0 px-2 whitespace-pre-wrap">
+                {profile?.description}
+              </div>
             </div>
           </div>
 
-          <div className="h-2/3 bg-white rounded-3xl shadow flex flex-col">
-            <div className="text-2xl font-medium flex justify-center px-8 pt-8">
+          <div className="card row-span-2 flex flex-col space-y-4">
+            <div className="text-2xl font-medium flex justify-center">
               Rooms
             </div>
 
-            <div className="space-y-4 h-full overflow-auto p-8">
-              {rooms?.map((streamId) => {
-                return (
-                  <Link key={streamId} href={`/room/${streamId}`} passHref>
-                    <div>
-                      <RoomCard streamId={streamId} />
-                    </div>
-                  </Link>
-                );
-              })}
+            <div className="relative h-full overflow-auto">
+              <div className="absolute w-full top-0 left-0 px-2 space-y-4">
+                {rooms?.map((streamId) => {
+                  return (
+                    <Link key={streamId} href={`/room/${streamId}`} passHref>
+                      <div>
+                        <RoomCard streamId={streamId} />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

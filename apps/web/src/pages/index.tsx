@@ -3,11 +3,11 @@ import SidebarLayout from "../layouts/SidebarLayout/SidebarLayout";
 export default function Index() {
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-3xl shadow p-8">
+      <div className="card">
         <div className="text-2xl">Home</div>
       </div>
 
-      <div className="space-y-2 bg-white rounded-3xl shadow p-8">
+      <div className="space-y-2 card">
         <div className="text-2xl">Welcome!</div>
         <div className="text-lg text-neutral-500">
           The platform is currently in heavy development. If you run into any

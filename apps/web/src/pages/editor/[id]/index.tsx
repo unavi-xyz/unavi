@@ -39,7 +39,7 @@ export default function Id() {
 
   return (
     <div className="space-y-4 h-2/3 flex flex-col">
-      <div className="bg-white rounded-3xl shadow p-8 flex items-center justify-between">
+      <div className="card flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <Link href="/editor" passHref>
             <div className="text-xl hover:cursor-pointer p-2 rounded-full">
@@ -68,7 +68,7 @@ export default function Id() {
       </div>
 
       <div className="h-full w-full flex space-x-4">
-        <div className="w-3/5 h-full bg-white rounded-3xl shadow">
+        <div className="w-3/5 h-full card">
           {world?.image && (
             <img
               src={world?.image}
@@ -79,7 +79,7 @@ export default function Id() {
         </div>
 
         <div className="w-2/5 flex flex-col space-y-4">
-          <div className="h-full bg-white rounded-3xl shadow p-8 flex flex-col justify-between">
+          <div className="h-full card flex flex-col justify-between">
             <div className="space-y-4">
               <div className="text-2xl flex justify-center">About</div>
               <div className="text-xl">{world?.description}</div>

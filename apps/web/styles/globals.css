@@ -6,6 +6,10 @@ html {
   font-family: "DM Sans", sans-serif;
 }
 
+.card {
+  @apply bg-white rounded-3xl shadow-sm p-8;
+}
+
 .crosshair {
   position: fixed;
   top: 50%;

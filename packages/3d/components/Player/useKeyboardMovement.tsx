@@ -20,7 +20,7 @@ interface Props {
  * @param props
  * @constructor
  */
-export default function useKeyboardMovement({
+export function useKeyboardMovement({
   paused = false,
   direction,
   jump,

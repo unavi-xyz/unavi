@@ -41,5 +41,3 @@ const model = await manager.toPublished();
 
 // Write published model to JSON file
 await writeFile(`src/models/${NAME}/model.json`, JSON.stringify(model));
-
-console.log(model);

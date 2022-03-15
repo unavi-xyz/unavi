@@ -1,4 +1,4 @@
-export default function RichButton({
+export function RichButton({
   image = <></>,
   icon = <></>,
   title = "",
@@ -8,7 +8,7 @@ export default function RichButton({
   return (
     <div
       {...rest}
-      className="flex space-x-2 p-1 shadow-md bg-neutral-100 hover:bg-neutral-200
+      className="flex w-full space-x-2 p-1 bg-neutral-100 hover:bg-neutral-200
                  hover:cursor-pointer rounded-lg h-24 transition-all duration-150"
     >
       {image}
@@ -20,8 +20,10 @@ export default function RichButton({
       )}
 
       <div className="flex flex-col justify-center space-y-1">
-        <h3 className="text-xl">{title}</h3>
-        <p className="text-neutral-500">{description}</p>
+        {title && <h3 className="text-lg">{title}</h3>}
+        {description && (
+          <p className="text-neutral-500 text-sm">{description}</p>
+        )}
       </div>
     </div>
   );

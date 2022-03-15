@@ -1,3 +1,18 @@
+import { IPFS } from "ipfs-core";
+
+export async function loadImage(ipfs: IPFS, cid: string) {
+  const res = ipfs.cat(cid);
+
+  const files: Uint8Array[] = [];
+  for await (const file of res) {
+    files.push(file);
+  }
+
+  const blob = new Blob(files);
+  const url = URL.createObjectURL(blob);
+  return url;
+}
+
 export async function uploadImageToIpfs(image: File) {
   const body = new FormData();
   body.append("path", image, image.name);
@@ -7,10 +22,4 @@ export async function uploadImageToIpfs(image: File) {
   });
   const { Hash } = await res.json();
   return `ipfs://${Hash}`;
-}
-
-export function getImageUrl(hash: string) {
-  const stripped = hash.replace("ipfs://", "");
-  const imageUrl = `https://ipfs.io/ipfs/${stripped}`;
-  return imageUrl;
 }

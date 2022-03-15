@@ -7,21 +7,26 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "lint": "next lint"
   },
   "dependencies": {
     "3d": "*",
     "@react-three/cannon": "^4.7.0",
+    "@react-three/drei": "^8.13.1",
     "@react-three/fiber": "^7.0.26",
     "ceramic": "*",
+    "idb": "^7.0.0",
     "jotai": "^1.6.0",
+    "nanoid": "^3.3.1",
     "next": "^12.0.7",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-icons": "^4.3.1",
-    "three": "^0.138.0"
+    "react-query": "^3.34.16",
+    "three": "^0.138.0",
+    "y-webrtc": "^10.2.2",
+    "yjs": "^13.5.28",
+    "zustand": "^3.7.1"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.11",

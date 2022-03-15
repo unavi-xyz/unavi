@@ -1,30 +1,35 @@
 import { ReactChild } from "react";
+import { ImSpinner2 } from "react-icons/im";
 
 interface Props {
-  color?: "primary" | "gray" | "red";
+  color?: "black" | "gray" | "red";
+  loading?: boolean;
   children: ReactChild;
-  [ley: string]: any;
+  [key: string]: any;
 }
 
-export default function Button({
-  color = "primary",
+export function Button({
+  color = "black",
+  loading = false,
   children,
   ...rest
 }: Props) {
-  const css =
-    color === "primary"
-      ? "bg-primary"
+  const colorCss =
+    color === "black"
+      ? "bg-black"
       : color === "gray"
       ? "bg-neutral-500"
       : "bg-red-500";
 
+  const loadingCss = loading ? "bg-opacity-40" : "hover:cursor-pointer";
+
   return (
     <div
-      className={`text-white py-2 px-4 hover:bg-opacity-90 w-full ${css}
-                  hover:cursor-pointer rounded-xl flex justify-center transition-all duration-150`}
+      className={`text-white h-10 px-4 w-full  rounded-xl ${colorCss} ${loadingCss}
+                  flex items-center justify-center transition-all duration-150`}
       {...rest}
     >
-      {children}
+      {loading ? <ImSpinner2 className="animate-spin" /> : children}
     </div>
   );
 }

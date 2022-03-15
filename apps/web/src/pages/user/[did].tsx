@@ -1,34 +1,102 @@
+import { useState } from "react";
+import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
-import { useProfile, useRooms } from "ceramic";
+import Link from "next/link";
+import { useAuth, useIpfsFile, useProfile, useRooms } from "ceramic";
 
-import RoomList from "../../components/Pages/SpacePage/RoomList/RoomList";
-import SidebarLayout from "../../layouts/SidebarLayout";
+import { IconButton } from "../../components/base";
+import { ProfileSettingsDialog } from "../../components/ProfileSettingsDialog";
+import RoomCard from "../../components/RoomCard";
+import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
+import ProfileAvatar from "../../components/ProfileAvatar";
 
 export default function User() {
   const router = useRouter();
   const did = router.query.did as string;
 
-  const { profile, imageUrl } = useProfile(did);
+  const { viewerId } = useAuth();
+  const { profile } = useProfile(did);
+  const image = useIpfsFile(profile?.image?.original.src);
   const rooms = useRooms(did);
 
+  const [openSettings, setOpenSettings] = useState(false);
+
+  const isUser = viewerId === did;
+
   return (
-    <div className="p-8">
-      <div className="flex space-x-8">
-        <img
-          className="inline-block h-36 w-36 rounded-full object-cover"
-          src={imageUrl}
-          alt="profile picture"
-        />
-        <div className="flex flex-col space-y-1 justify-center">
-          <p className="text-4xl"> {profile?.name}</p>
-          <p className="text-lg text-neutral-500">{did}</p>
+    <div className="w-full h-full space-y-4 flex flex-col">
+      <div className="card flex items-center justify-between">
+        <div className="flex items-center space-x-8">
+          <div className="w-28 h-28 flex-shrink-0">
+            {image && (
+              <img
+                src={image}
+                alt="profile picture"
+                className="object-cover rounded-full w-full h-full"
+              />
+            )}
+          </div>
+
+          <div>
+            <div className="text-3xl">{profile?.name}</div>
+            <div className="text-neutral-400 break-all">{did}</div>
+          </div>
         </div>
+
+        {isUser && (
+          <>
+            <div className="md:mr-8">
+              <IconButton onClick={() => setOpenSettings(true)}>
+                <IoMdSettings />
+              </IconButton>
+            </div>
+
+            <ProfileSettingsDialog
+              id={did}
+              open={openSettings}
+              setOpen={setOpenSettings}
+            />
+          </>
+        )}
       </div>
 
-      <div className="pt-8 px-32 flex">
-        <div className="w-full"></div>
-        <div className="w-full">
-          <RoomList roomIds={rooms} />
+      <div className="basis-full grid md:grid-cols-2 gap-4 pb-4 md:pb-0">
+        <div className="card-borderless h-96 md:h-full">
+          <ProfileAvatar />
+        </div>
+
+        <div className="grid md:grid-rows-3 gap-4">
+          <div className="card flex flex-col space-y-4">
+            <div className="text-2xl font-medium flex justify-center">
+              About
+            </div>
+
+            <div className="relative overflow-auto h-96 md:h-full">
+              <div className="absolute top-0 left-0 px-2 whitespace-pre-wrap">
+                {profile?.description}
+              </div>
+            </div>
+          </div>
+
+          <div className="card row-span-2 flex flex-col space-y-4">
+            <div className="text-2xl font-medium flex justify-center">
+              Rooms
+            </div>
+
+            <div className="relative overflow-auto h-96 md:h-full">
+              <div className="absolute w-full top-0 left-0 px-2 space-y-4">
+                {rooms?.map((streamId) => {
+                  return (
+                    <Link key={streamId} href={`/room/${streamId}`} passHref>
+                      <div>
+                        <RoomCard streamId={streamId} />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

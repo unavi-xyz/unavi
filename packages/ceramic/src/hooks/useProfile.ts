@@ -1,8 +1,8 @@
 import { DIDDataStore } from "@glazed/did-datastore";
-import useSWR from "swr";
+import { useQuery } from "react-query";
 
-import { ceramic, ceramicRead } from "../client";
 import { BasicProfile } from "../models/BasicProfile/types";
+import { ceramic, ceramicRead } from "../client";
 
 const model = require("../models/BasicProfile/model.json");
 
@@ -15,17 +15,11 @@ export function useProfile(did: string) {
   async function fetcher() {
     if (!did) return;
     const store = new DIDDataStore({ ceramic: ceramicRead, model });
-    const data = (await store.get("basicProfile", did)) as BasicProfile;
-
-    const imageHash = data?.image?.original.src.replace("ipfs://", "");
-    const imageUrl = imageHash
-      ? `https://ipfs.io/ipfs/${imageHash}`
-      : undefined;
-
-    return { profile: data, imageUrl };
+    const profile = (await store.get("basicProfile", did)) as BasicProfile;
+    return profile;
   }
 
-  const { data } = useSWR(`basicProfile-${did}`, fetcher);
+  const { data } = useQuery(`basicProfile-${did}`, fetcher);
 
-  return { profile: data?.profile, imageUrl: data?.imageUrl, merge };
+  return { profile: data, merge };
 }

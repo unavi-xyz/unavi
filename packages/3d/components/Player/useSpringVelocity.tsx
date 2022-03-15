@@ -19,13 +19,9 @@ export function useSpringVelocity(bodyApi: Api[1], speed: number) {
     dummy.y = velocity.y;
 
     // keep y velocity intact and update velocity
-    if (!false) {
-      bodyApi.velocity.set(dummy.x, dummy.y, dummy.z);
-    } else {
-      const newX = MathUtils.lerp(velocity.x, dummy.x, 0.25);
-      const newZ = MathUtils.lerp(velocity.z, dummy.z, 0.25);
-      bodyApi.velocity.set(newX, dummy.y, newZ);
-    }
+    const newX = MathUtils.lerp(velocity.x, dummy.x, 0.25);
+    const newZ = MathUtils.lerp(velocity.z, dummy.z, 0.25);
+    bodyApi.velocity.set(newX, dummy.y, newZ);
   }
 
   return {

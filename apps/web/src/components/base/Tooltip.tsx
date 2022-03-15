@@ -6,7 +6,7 @@ interface Props {
   children: ReactChild;
 }
 
-export default function Tooltip({ text, placement = "left", children }: Props) {
+export function Tooltip({ text, placement = "left", children }: Props) {
   const position = placement === "right" ? "left-full" : "right-full";
 
   return (

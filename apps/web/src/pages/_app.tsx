@@ -1,6 +1,10 @@
+import { IpfsProvider } from "ceramic";
 import Head from "next/head";
+import { QueryClient, QueryClientProvider } from "react-query";
 
 import "../../styles/globals.css";
+
+const queryClient = new QueryClient();
 
 export default function App({ Component, pageProps }) {
   const Layout = Component.Layout ?? EmptyLayout;
@@ -12,10 +16,14 @@ export default function App({ Component, pageProps }) {
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
-      <div className="w-full bg-neutral-100 h-screen overflow-hidden">
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
+      <div className="w-full h-screen">
+        <QueryClientProvider client={queryClient}>
+          <IpfsProvider>
+            <Layout>
+              <Component {...pageProps} />
+            </Layout>
+          </IpfsProvider>
+        </QueryClientProvider>
       </div>
     </div>
   );

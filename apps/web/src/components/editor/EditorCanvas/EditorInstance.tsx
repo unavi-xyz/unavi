@@ -29,7 +29,7 @@ export default function EditorInstance({ id }: Props) {
     modifiedParams.rotation[1] = params.rotation[1] - initialParams.rotation[1];
     modifiedParams.rotation[2] = params.rotation[2] - initialParams.rotation[2];
 
-    modifiedParams.scale = [1, 1, 1];
+    if (initialParams?.scale) modifiedParams.scale = [1, 1, 1];
 
     return modifiedParams;
   }, [initialParams, params]);
@@ -48,7 +48,8 @@ export default function EditorInstance({ id }: Props) {
     if (!ref.current) return;
     ref.current.position.set(...params.position);
     ref.current.rotation.set(...params.rotation);
-    ref.current.scale.set(...params.scale);
+
+    if (params?.scale) ref.current.scale.set(...params.scale);
   }, [params]);
 
   return (
@@ -57,7 +58,7 @@ export default function EditorInstance({ id }: Props) {
       onClick={handleClick}
       position={params.position}
       rotation={params.rotation}
-      scale={params.scale}
+      scale={params?.scale}
     >
       <InstancedAsset name={instance.name} params={usedParams} />
     </group>

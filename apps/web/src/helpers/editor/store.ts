@@ -13,7 +13,7 @@ type StoreState = {
   setSelected: (value: Selected) => void;
   saveSelected: () => void;
 
-  updateInstanceParams: (id: string, params: Partial<Params>) => void;
+  updateInstanceParams: (id: string, changes: Partial<Params>) => void;
   newInstance: (name: AssetName, initialParams?: Partial<Params>) => void;
   deleteInstance: (id: string) => void;
 };
@@ -27,6 +27,7 @@ export const useStore = create<StoreState>(
     setSelected: (value: Selected) => set({ selected: value }),
     saveSelected: () => {
       const { id, ref } = get().selected;
+      const params = get().scene[id].params;
 
       const position = ref.current.getWorldPosition(new Vector3()).toArray();
 
@@ -34,14 +35,18 @@ export const useStore = create<StoreState>(
       const rotationEuler = new Euler().setFromQuaternion(rotationQuat);
       const rotation = new Vector3().setFromEuler(rotationEuler).toArray();
 
-      const scale = ref.current.getWorldScale(new Vector3()).toArray();
+      const changes: typeof params = { position, rotation };
 
-      get().updateInstanceParams(id, { position, rotation, scale });
+      if (Boolean(params?.scale)) {
+        changes.scale = ref.current.getWorldScale(new Vector3()).toArray();
+      }
+
+      get().updateInstanceParams(id, changes);
     },
 
-    updateInstanceParams: (id: string, value: Partial<Params>) => {
+    updateInstanceParams: (id: string, changes: Partial<Params>) => {
       const params = get().scene[id].params;
-      const newParams = { ...params, ...value };
+      const newParams = { ...params, ...changes };
 
       const scene = get().scene;
       scene[id].params = newParams;

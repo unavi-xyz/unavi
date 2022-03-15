@@ -29,11 +29,4 @@ jobs:
           cache: "yarn"
       - run: yarn install
       - run: yarn build
-
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-      - run: yarn lint
       - run: yarn test

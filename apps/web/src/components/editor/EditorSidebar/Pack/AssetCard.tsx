@@ -1,19 +1,15 @@
 import { Asset } from "3d";
-import { useAtom } from "jotai";
-
-import { newInstance } from "../../../../helpers/editor/helpers";
-import { sceneAtom } from "../../../../helpers/editor/state";
+import { useStore } from "../../../../helpers/editor/store";
 
 interface Props {
   asset: Asset;
 }
 
 export default function AssetCard({ asset }: Props) {
-  const [scene, setScene] = useAtom(sceneAtom);
+  const newInstance = useStore((state) => state.newInstance);
 
   function handleClick() {
-    const newScene = newInstance(asset.name, scene);
-    setScene(newScene);
+    newInstance(asset.name);
   }
 
   return (

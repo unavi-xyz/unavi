@@ -1,12 +1,11 @@
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/cannon";
-import { useAtom } from "jotai";
 import { Player, World } from "3d";
 
-import { sceneAtom } from "../../../helpers/editor/state";
+import { useStore } from "../../../helpers/editor/store";
 
 export default function PreviewCanvas() {
-  const [scene] = useAtom(sceneAtom);
+  const scene = useStore((state) => state.scene);
 
   return (
     <Canvas mode="concurrent">

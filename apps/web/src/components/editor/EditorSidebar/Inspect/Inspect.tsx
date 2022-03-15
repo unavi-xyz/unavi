@@ -1,33 +1,27 @@
-import { useAtom } from "jotai";
+import { useStore } from "../../../../helpers/editor/store";
 
-import { selectedAtom } from "../../../../helpers/editor/state";
 import NumberField from "./fields/NumberField";
 import TripletField from "./fields/TripletField";
 
 export default function Inspect() {
-  const [selected, setSelected] = useAtom(selectedAtom);
-
-  const params = selected.instance.params;
+  const selected = useStore((state) => state.selected);
+  const name = useStore((state) => state.scene[selected?.id]?.name);
+  const params = useStore((state) => state.scene[selected?.id]?.params);
 
   function handleChange(value: any, key: string) {
-    setSelected((prev) => {
-      const newValue = { ...prev };
-      newValue.instance.params[key] = value;
-      return newValue;
-    });
+    const changes = { [key]: value };
+    useStore.getState().updateInstanceParams(selected.id, changes);
   }
 
   function getHandleChange(key: string) {
     return (value: any) => handleChange(value, key);
   }
 
-  if (!selected) return null;
+  if (!selected || !params) return null;
 
   return (
     <div className="space-y-6">
-      <div className="text-3xl flex justify-center">
-        {selected.instance.name}
-      </div>
+      <div className="text-3xl flex justify-center">{name}</div>
 
       <div className="space-y-1">
         <TripletField

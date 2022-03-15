@@ -11,7 +11,7 @@ export default function SceneCard({ id }: Props) {
     <div className="w-full h-40">
       <div
         className="relative w-full h-full rounded-xl hover:cursor-pointer
-                 flex flex-col"
+                   flex flex-col"
       >
         <div className="h-full">
           {world?.image && (
@@ -24,7 +24,7 @@ export default function SceneCard({ id }: Props) {
         </div>
 
         {world?.name && (
-          <div className="absolute bottom-0 px-3 py-2 text-lg rounded-b-xl w-full bg-neutral-100">
+          <div className="absolute -mb-px bottom-0 px-3 py-2 text-lg rounded-b-xl w-full bg-neutral-100">
             {world.name}
           </div>
         )}

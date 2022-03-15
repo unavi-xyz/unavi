@@ -18,7 +18,13 @@ export function World({ scene }: Props) {
 
       {scene &&
         Object.values(scene).map((instance) => {
-          return <InstancedAsset key={instance.id} instance={instance} />;
+          return (
+            <InstancedAsset
+              key={instance.id}
+              name={instance.name}
+              params={instance.params}
+            />
+          );
         })}
     </group>
   );

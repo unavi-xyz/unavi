@@ -2,30 +2,34 @@ import { useEffect } from "react";
 import { IoMdClose } from "react-icons/io";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 
+import { previewModeAtom, worldIdAtom } from "../../../helpers/editor/state";
 import Navbar from "../../../components/editor/Navbar/Navbar";
 import EditorSidebar from "../../../components/editor/EditorSidebar/EditorSidebar";
 import EditorCanvas from "../../../components/editor/EditorCanvas/EditorCanvas";
-import {
-  previewModeAtom,
-  selectedAtom,
-  worldIdAtom,
-} from "../../../helpers/editor/state";
 import PreviewCanvas from "../../../components/editor/EditorCanvas/PreviewCanvas";
+import { useStore } from "../../../helpers/editor/store";
 
 export default function Id() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const [, setWorldId] = useAtom(worldIdAtom);
-  const [, setSelected] = useAtom(selectedAtom);
+  const setScene = useStore((state) => state.setScene);
+  const setSelected = useStore((state) => state.setSelected);
+
+  const setWorldId = useSetAtom(worldIdAtom);
   const [previewMode, setPreviewMode] = useAtom(previewModeAtom);
 
   useEffect(() => {
     setWorldId(id);
-    setSelected(null);
-  }, [id, setSelected, setWorldId]);
+
+    return () => {
+      setScene({});
+      setSelected(null);
+      setWorldId(null);
+    };
+  }, [id, setScene, setSelected, setWorldId]);
 
   function handleClose() {
     setPreviewMode(false);

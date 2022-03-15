@@ -1,6 +1,6 @@
 import { MutableRefObject } from "react";
 import { Group } from "three";
-import { Asset, Instance, ASSETS } from "3d";
+import { Asset, ASSETS } from "3d";
 
 export enum Tool {
   translate = "translate",
@@ -9,7 +9,7 @@ export enum Tool {
 }
 
 export type Selected = {
-  instance: Instance;
+  id: string;
   ref: MutableRefObject<Group>;
 };
 

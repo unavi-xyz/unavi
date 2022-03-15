@@ -1,26 +1,27 @@
 import { useEffect, useState } from "react";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { TransformControls } from "@react-three/drei";
 
-import {
-  saveSelectedAtom,
-  toolAtom,
-  usingGizmoAtom,
-} from "../../../helpers/editor/state";
+import { toolAtom, usingGizmoAtom } from "../../../helpers/editor/state";
 import { Tool } from "../../../helpers/editor/types";
+import { useStore } from "../../../helpers/editor/store";
 
 export default function Gizmo() {
+  const selected = useStore((state) => state.selected);
+  const saveSelected = useStore((state) => state.saveSelected);
+
   const [tool] = useAtom(toolAtom);
-  const [selected, saveSelected] = useAtom(saveSelectedAtom);
-  const [, setUsingGizmo] = useAtom(usingGizmoAtom);
+  const setUsingGizmo = useSetAtom(usingGizmoAtom);
 
   const [enabled, setEnabled] = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (selected) {
+      const params = useStore.getState().scene[selected.id].params;
+
       if (tool === Tool.scale) {
-        const hasScale = Boolean(selected.instance.params?.scale);
+        const hasScale = Boolean(params?.scale);
         setEnabled(hasScale);
         setVisible(true);
       } else {

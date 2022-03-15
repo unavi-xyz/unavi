@@ -1,11 +1,12 @@
 import { IoMdEye } from "react-icons/io";
 import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
 import { useRouter } from "next/router";
-import { useAtom } from "jotai";
+import { useSetAtom } from "jotai";
 
 import { mergeLocalWorld } from "../../../helpers/localWorlds/db";
 import { previewModeAtom } from "../../../helpers/editor/state";
 import { useLocalWorld } from "../../../helpers/localWorlds/useLocalWorld";
+import { useStore } from "../../../helpers/editor/store";
 
 import MiddleButtons from "./MiddleButtons";
 
@@ -15,10 +16,9 @@ interface Props {
 
 export default function Navbar({ id }: Props) {
   const router = useRouter();
-
-  const [, setPreviewMode] = useAtom(previewModeAtom);
-
   const world = useLocalWorld(id);
+
+  const setPreviewMode = useSetAtom(previewModeAtom);
 
   async function handleBack() {
     const canvas = document.querySelector("canvas");
@@ -30,6 +30,7 @@ export default function Navbar({ id }: Props) {
   }
 
   function handlePreview() {
+    useStore.getState().setSelected(null);
     setPreviewMode(true);
   }
 

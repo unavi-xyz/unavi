@@ -7,7 +7,7 @@ interface Props {
   size?: number;
 }
 
-export function Ground({ size = 10 }: Props) {
+export function Ground({ size = 16 }: Props) {
   const args: Triplet = [size + 0.00001, THICKNESS, size + 0.00001];
 
   const [ref] = useBox(() => ({

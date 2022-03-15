@@ -1,48 +1,65 @@
-import { useRef, useState } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { ThreeEvent } from "@react-three/fiber";
 import { Group } from "three";
 import { useAtom } from "jotai";
-import { Instance, InstancedAsset } from "3d";
+import { InstancedAsset } from "3d";
 
-import { selectedAtom, usingGizmoAtom } from "../../../helpers/editor/state";
+import { usingGizmoAtom } from "../../../helpers/editor/state";
+import { useStore } from "../../../helpers/editor/store";
 
 interface Props {
-  instance: Instance;
+  id: string;
 }
 
-export default function EditorInstance({ instance }: Props) {
-  const params = instance.params;
+export default function EditorInstance({ id }: Props) {
+  const instance = useStore((state) => state.scene[id]);
+  const params = useStore((state) => state.scene[id].params);
+
+  const setSelected = useStore((state) => state.setSelected);
+
+  const [initialParams] = useState(params);
+  const usedParams = useMemo(() => {
+    const modifiedParams: typeof params = JSON.parse(JSON.stringify(params));
+
+    modifiedParams.position[0] = params.position[0] - initialParams.position[0];
+    modifiedParams.position[1] = params.position[1] - initialParams.position[1];
+    modifiedParams.position[2] = params.position[2] - initialParams.position[2];
+
+    modifiedParams.rotation[0] = params.rotation[0] - initialParams.rotation[0];
+    modifiedParams.rotation[1] = params.rotation[1] - initialParams.rotation[1];
+    modifiedParams.rotation[2] = params.rotation[2] - initialParams.rotation[2];
+
+    modifiedParams.scale = [1, 1, 1];
+
+    return modifiedParams;
+  }, [initialParams, params]);
 
   const ref = useRef<Group>();
 
-  const [, setSelected] = useAtom(selectedAtom);
   const [usingGizmo] = useAtom(usingGizmoAtom);
-
-  const [original, setOriginal] = useState(JSON.parse(JSON.stringify(params)));
-  const [key, setKey] = useState(0);
 
   function handleClick(e: ThreeEvent<MouseEvent>) {
     if (usingGizmo) return;
     e.stopPropagation();
-    setSelected({ instance, ref });
+    setSelected({ id: instance.id, ref });
   }
 
-  //you cant change a cannon object's args after being created,
-  //so use this monstrosity to force the component to re-mount if they change
-  if (JSON.stringify(params) !== JSON.stringify(original)) {
-    setKey(Math.random());
-    setOriginal(JSON.parse(JSON.stringify(params)));
-  }
-
-  //set the position in this parent component, rather than the asset
-  //this is so we can use TransformControls on this group
-  //its kinda cringe 😣, but allows us to keep editor code out of each Asset
-  const usedInstance: Instance = JSON.parse(JSON.stringify(instance));
-  usedInstance.params.position = [0, 0, 0];
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.position.set(...params.position);
+    ref.current.rotation.set(...params.rotation);
+    ref.current.scale.set(...params.scale);
+  }, [params]);
 
   return (
-    <group key={key} ref={ref} onClick={handleClick} position={params.position}>
-      <InstancedAsset instance={usedInstance} />
+    <group
+      ref={ref}
+      onClick={handleClick}
+      position={params.position}
+      rotation={params.rotation}
+      scale={params.scale}
+    >
+      <InstancedAsset name={instance.name} params={usedParams} />
     </group>
   );
 }

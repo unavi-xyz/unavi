@@ -2,28 +2,36 @@ import { useEffect } from "react";
 import { useAtom } from "jotai";
 
 import { getLocalWorld, mergeLocalWorld } from "../../localWorlds/db";
-import { sceneAtom, worldIdAtom } from "../state";
+import { worldIdAtom } from "../state";
+import { useStore } from "../store";
 
 export function useAutosave() {
-  const [worldId] = useAtom(worldIdAtom);
-  const [scene, setScene] = useAtom(sceneAtom);
+  const setScene = useStore((state) => state.setScene);
+  const setSelected = useStore((state) => state.setSelected);
+
+  const [worldId, setWorldId] = useAtom(worldIdAtom);
 
   useEffect(() => {
     //initial load
     if (!worldId) return;
+
     getLocalWorld(worldId).then((res) => {
       setScene(res?.scene);
     });
-  }, [setScene, worldId]);
+  }, [setScene, setSelected, setWorldId, worldId]);
 
   useEffect(() => {
+    if (!worldId) return;
+
     //save on an interval
     const interval = setInterval(() => {
+      const scene = useStore.getState().scene;
+
       mergeLocalWorld(worldId, { scene });
-    }, 10000);
+    }, 5000);
 
     return () => {
       clearInterval(interval);
     };
-  }, [worldId, scene]);
+  }, [worldId]);
 }

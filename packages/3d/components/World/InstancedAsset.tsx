@@ -1,21 +1,20 @@
-import { AssetName, Instance } from "./types";
+import { AssetName } from "./types";
 
 import { Box } from "./assets/Box";
 import { Sphere } from "./assets/Sphere";
 
 interface Props {
-  instance: Instance;
+  name: AssetName;
+  params: any;
 }
 
-export function InstancedAsset({ instance }: Props) {
-  const { name, params } = instance;
-
+export function InstancedAsset({ name, params }: Props) {
   switch (name) {
     case AssetName.Box:
-      return <Box params={params as any} />;
+      return <Box params={params} />;
     case AssetName.Sphere:
-      return <Sphere params={params as any} />;
+      return <Sphere params={params} />;
     default:
-      return <group></group>;
+      return null;
   }
 }

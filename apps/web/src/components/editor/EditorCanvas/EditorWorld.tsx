@@ -1,21 +1,19 @@
 import { useEffect } from "react";
 import { ThreeEvent, useThree } from "@react-three/fiber";
 import { Sky } from "@react-three/drei";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { Ground } from "3d";
 
-import {
-  sceneAtom,
-  selectedAtom,
-  usingGizmoAtom,
-} from "../../../helpers/editor/state";
+import { usingGizmoAtom } from "../../../helpers/editor/state";
+import { useStore } from "../../../helpers/editor/store";
 
 import EditorInstance from "./EditorInstance";
 
 export function EditorWorld() {
-  const [scene] = useAtom(sceneAtom);
+  const scene = useStore((state) => state.scene);
+  const setSelected = useStore((state) => state.setSelected);
+
   const [usingGizmo] = useAtom(usingGizmoAtom);
-  const [, setSelected] = useAtom(selectedAtom);
 
   function handleVoidClick(e: ThreeEvent<MouseEvent>) {
     if (usingGizmo) return;
@@ -40,8 +38,8 @@ export function EditorWorld() {
       </group>
 
       {scene &&
-        Object.values(scene).map((instance) => {
-          return <EditorInstance key={instance.id} instance={instance} />;
+        Object.keys(scene).map((id) => {
+          return <EditorInstance key={id} id={id} />;
         })}
     </group>
   );

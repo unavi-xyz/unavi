@@ -1,13 +1,13 @@
-import { useAtom } from "jotai";
 import { useState } from "react";
-import { selectedAtom } from "../../../helpers/editor/state";
+
+import { useStore } from "../../../helpers/editor/store";
 
 import Inspect from "./Inspect/Inspect";
 import Pack from "./Pack/Pack";
 import AssetPacks from "./AssetPacks/AssetPacks";
 
 export default function EditorSidebar() {
-  const [selected] = useAtom(selectedAtom);
+  const selected = useStore((state) => state.selected);
 
   const [pack, setPack] = useState<string>();
 

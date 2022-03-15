@@ -1,17 +1,9 @@
-export * from "./assets/classes/Asset";
-export * from "./assets/classes/EditorObject";
-export * from "./assets/classes/SceneObject";
-export * from "./assets/InstancedObject";
-export * from "./assets/assets";
-export * from "./assets/packs";
+import "@react-three/fiber"; //stops type warnings
 
-export * from "./components/multiplayer/Multiplayer";
-export * from "./components/objects/Objects";
-export * from "./components/player/Player";
-export * from "./components/room/Room";
-export * from "./components/world/World";
-export * from "./components/world/Ground";
-
-export * from "./contexts/MultiplayerContext";
-
-export * from "./constants";
+export * from "./components/Avatar/Avatar";
+export * from "./components/Player/Player";
+export * from "./components/Ground/Ground";
+export * from "./components/World/World";
+export * from "./components/World/InstancedAsset";
+export * from "./components/World/types";
+export * from "./components/World/assets/Box";

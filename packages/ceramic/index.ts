@@ -1,25 +1,15 @@
-export * from "./contexts/CeramicContext";
+export * from "./src/components/IpfsProvider";
 
-export * from "./hooks/useProfile";
-export * from "./hooks/useFeed";
-export * from "./hooks/useFollowing";
-export * from "./hooks/usePost";
-export * from "./hooks/useRoom";
-export * from "./hooks/useRooms";
-export * from "./hooks/useTimeline";
-export * from "./hooks/useWorld";
-export * from "./hooks/useWorlds";
+export * from "./src/hooks/useAuth";
+export * from "./src/hooks/useIpfsFile";
+export * from "./src/hooks/useProfile";
+export * from "./src/hooks/useRooms";
+export * from "./src/hooks/useRoom";
 
-export * from "./models/BasicProfile/types";
-export * from "./models/Feed/helpers";
-export * from "./models/Following/helpers";
-export * from "./models/Room/types";
-export * from "./models/Room/helpers";
-export * from "./models/Rooms/helpers";
-export * from "./models/Post/types";
-export * from "./models/Post/helpers";
-export * from "./models/World/types";
-export * from "./models/World/helpers";
-export * from "./models/Worlds/helpers";
+export * from "./src/models/BasicProfile/types";
+export * from "./src/models/Room/helpers";
+export * from "./src/models/Room/types";
+export * from "./src/models/Rooms/helpers";
 
-export * from "./helpers";
+export * from "./src/ipfs";
+export * from "./src/tile";

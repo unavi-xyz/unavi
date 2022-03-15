@@ -1,9 +1,0 @@
-{
-  "definitions": {
-    "room": "kjzl6cwe1jw146e099atyhdrpeqk1zmx6j31taojixf7j3rh1hmyknw3xzm97f6"
-  },
-  "schemas": {
-    "Room": "ceramic://k3y52l7qbv1frye4mtt29dv9gh53dxw4h27dt2bfhvycfasoo9m685i8o4hp2an0g"
-  },
-  "tiles": {}
-}

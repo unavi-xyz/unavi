@@ -7,10 +7,10 @@ import { getResolver } from "key-did-resolver";
 import { randomBytes } from "@stablelib/random";
 
 //params
-const NAME = "Post";
+const NAME = "Rooms";
 
 //init
-const schema = await import(`../models/${NAME}/schema.json`);
+const schema = await import(`../src/models/${NAME}/schema.json`);
 
 const DEF_NAME = NAME[0].toLowerCase() + NAME.substring(1);
 
@@ -40,6 +40,4 @@ await manager.createDefinition(DEF_NAME, {
 const model = await manager.toPublished();
 
 // Write published model to JSON file
-await writeFile(`models/${NAME}/model.json`, JSON.stringify(model));
-
-console.log(model);
+await writeFile(`src/models/${NAME}/model.json`, JSON.stringify(model));

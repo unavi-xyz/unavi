@@ -1,7 +1,0 @@
-{
-  "title": "Worlds",
-  "type": "array",
-  "items": { "type": "string" },
-  "uniqueItems": true,
-  "default": []
-}

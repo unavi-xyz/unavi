@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction, useEffect } from "react";
 import { useAuth } from "ceramic";
 
-import { Dialog, RichButton } from "../../../components/base";
+import { Dialog, RichButton } from "../../../../components/base";
 import MetamaskFox from "./MetamaskFox";
 
 interface Props {

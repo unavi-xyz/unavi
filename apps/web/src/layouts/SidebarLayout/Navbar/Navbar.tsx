@@ -1,9 +1,9 @@
-import { useAuth } from "ceramic";
-import Link from "next/link";
-import { useRouter } from "next/router";
 import { useState } from "react";
-import SignInDialog from "../Sidebar/SignInButton/SignInDialog";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import { useAuth } from "ceramic";
 
+import SignInDialog from "../Sidebar/SignInButton/SignInDialog";
 import NavbarButton from "./NavbarButton";
 
 export default function Navbar() {

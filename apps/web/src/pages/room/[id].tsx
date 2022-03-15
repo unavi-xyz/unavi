@@ -22,7 +22,7 @@ export default function Room() {
   const isOwner = viewerId === controller;
 
   return (
-    <div className="flex flex-col space-y-4 h-2/3">
+    <div className="flex flex-col space-y-4 h-full">
       <div className="card flex items-center justify-between">
         <div>
           <div className="text-2xl">{room?.name}</div>
@@ -51,8 +51,8 @@ export default function Room() {
         )}
       </div>
 
-      <div className="flex h-full space-x-4">
-        <div className="w-3/5 card">
+      <div className="h-full md:h-1/2 md:grid md:grid-cols-3 md:gap-4 space-y-4 md:space-y-0">
+        <div className="w-full col-span-2 h-64 md:h-full card-borderless">
           {image && (
             <img
               src={image}
@@ -62,28 +62,31 @@ export default function Room() {
           )}
         </div>
 
-        <div className="w-2/5 flex flex-col space-y-4">
-          <div className="h-full card flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="text-2xl flex justify-center">About</div>
-              <div className="text-lg">{room?.description}</div>
-            </div>
+        <div className="card flex flex-col space-y-4">
+          <div className="text-2xl font-medium flex justify-center">About</div>
 
-            <div className="h-16">
-              <Link href={`/app?room=${id}`} passHref>
-                <div
-                  className="h-full text-md rounded-full bg-black text-white justify-center
-                             hover:cursor-pointer transition-all flex items-center"
-                >
-                  Join Room
-                </div>
-              </Link>
+          <div className="relative overflow-auto h-36 md:h-full">
+            <div className="absolute top-0 left-0 px-2 whitespace-pre-wrap">
+              {room?.description}
             </div>
+          </div>
+
+          <div className="h-16">
+            <Link href={`/app?room=${id}`} passHref>
+              <div
+                className="h-full text-md rounded-full bg-black text-white justify-center
+                             hover:cursor-pointer transition-all flex items-center"
+              >
+                Join Room
+              </div>
+            </Link>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+//TODO: room description textarea
 
 Room.Layout = SidebarLayout;

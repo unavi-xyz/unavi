@@ -1,13 +1,16 @@
-import Sidebar from "./Sidebar";
+import { useIsMobile } from "../../helpers/useWindowDimensions";
+
+import Navbar from "./Navbar/Navbar";
+import Sidebar from "./Sidebar/Sidebar";
 
 export default function SidebarLayout({ children }) {
-  return (
-    <div className="flex h-full bg-neutral-100">
-      <div className="w-64">
-        <Sidebar />
-      </div>
+  const isMobile = useIsMobile();
 
-      <div className="w-full h-full flex justify-center overflow-hidden p-16">
+  return (
+    <div className="sm:flex sm:flex-row h-full">
+      {isMobile ? <Navbar /> : <Sidebar />}
+
+      <div className="w-full h-full flex justify-center p-4 sm:p-16">
         <div className="w-full h-full max-w-screen-2xl">{children}</div>
       </div>
     </div>

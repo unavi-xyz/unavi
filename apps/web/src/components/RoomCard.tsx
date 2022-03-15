@@ -13,7 +13,7 @@ export default function RoomCard({ streamId }: Props) {
   return (
     <div className="h-36">
       <div className="w-full h-full rounded-2xl hover:cursor-pointer flex bg-neutral-100">
-        <div className="w-1/2 p-3">
+        <div className="w-full md:w-1/2 p-3">
           {image && (
             <img
               src={image}

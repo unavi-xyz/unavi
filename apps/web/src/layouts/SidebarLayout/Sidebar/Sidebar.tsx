@@ -16,7 +16,7 @@ export default function Sidebar() {
   const { authenticated, viewerId } = useAuth();
 
   return (
-    <div className="p-8 bg-white h-full flex flex-col justify-between">
+    <div className="p-8 bg-white w-64 h-full flex flex-col justify-between">
       <div className="space-y-3">
         <div className="flex justify-center py-4">
           <Link href="/" passHref>

@@ -27,10 +27,10 @@ export default function Editor() {
     <div className="space-y-4 h-full w-full flex flex-col">
       <NewSceneDialog open={openNew} setOpen={setOpenNew} />
 
-      <div className="card flex items-center justify-between">
+      <div className="card flex items-center justify-between ">
         <div className="text-2xl">Scenes</div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 h-8">
           <IconButton onClick={handleNew}>
             <AiOutlinePlus />
           </IconButton>

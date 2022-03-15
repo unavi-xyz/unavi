@@ -20,8 +20,8 @@ interface Props {
 export function RoomSettingsDialog({ id, open, setOpen }: Props) {
   const router = useRouter();
 
-  const name = useRef<HTMLInputElement>();
-  const description = useRef<HTMLInputElement>();
+  const nameRef = useRef<HTMLInputElement>();
+  const descriptionRef = useRef<HTMLTextAreaElement>();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loadingSave, setLoadingSave] = useState(false);
@@ -37,8 +37,8 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
 
     await editRoom(
       id,
-      name.current.value,
-      description.current.value,
+      nameRef.current.value,
+      descriptionRef.current.value,
       imageFile
     );
 
@@ -67,12 +67,24 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
         </div>
 
         <div className="space-y-4">
-          <TextField title="Name" inputRef={name} defaultValue={room?.name} />
           <TextField
-            title="Description"
-            inputRef={description}
-            defaultValue={room?.description}
+            title="Name"
+            inputRef={nameRef}
+            defaultValue={room?.name}
           />
+
+          <div className="flex flex-col space-y-3">
+            <label className="block text-lg pointer-events-none">
+              Description
+            </label>
+            <textarea
+              ref={descriptionRef}
+              defaultValue={room?.description}
+              maxLength={420}
+              rows={8}
+              className="w-full border p-2 leading-tight rounded"
+            />
+          </div>
         </div>
 
         <div className="space-y-2">

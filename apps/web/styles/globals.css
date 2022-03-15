@@ -4,10 +4,15 @@
 
 html {
   font-family: "DM Sans", sans-serif;
+  @apply bg-neutral-100;
 }
 
 .card {
   @apply bg-white rounded-3xl shadow-sm p-8;
+}
+
+.card-borderless {
+  @apply bg-white rounded-3xl shadow-sm;
 }
 
 .crosshair {

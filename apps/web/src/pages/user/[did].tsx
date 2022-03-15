@@ -27,7 +27,7 @@ export default function User() {
     <div className="w-full h-full space-y-4 flex flex-col">
       <div className="card flex items-center justify-between">
         <div className="flex items-center space-x-8">
-          <div className="w-28 h-28">
+          <div className="w-28 h-28 flex-shrink-0">
             {image && (
               <img
                 src={image}
@@ -45,7 +45,7 @@ export default function User() {
 
         {isUser && (
           <>
-            <div className="mr-8">
+            <div className="md:mr-8">
               <IconButton onClick={() => setOpenSettings(true)}>
                 <IoMdSettings />
               </IconButton>
@@ -60,18 +60,18 @@ export default function User() {
         )}
       </div>
 
-      <div className="basis-full grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-3xl shadow-sm">
+      <div className="basis-full grid md:grid-cols-2 gap-4 pb-4 md:pb-0">
+        <div className="card-borderless h-96 md:h-full">
           <ProfileAvatar />
         </div>
 
-        <div className="grid grid-rows-3 gap-4">
+        <div className="grid md:grid-rows-3 gap-4">
           <div className="card flex flex-col space-y-4">
             <div className="text-2xl font-medium flex justify-center">
               About
             </div>
 
-            <div className="relative h-full overflow-auto">
+            <div className="relative overflow-auto h-96 md:h-full">
               <div className="absolute top-0 left-0 px-2 whitespace-pre-wrap">
                 {profile?.description}
               </div>
@@ -83,7 +83,7 @@ export default function User() {
               Rooms
             </div>
 
-            <div className="relative h-full overflow-auto">
+            <div className="relative overflow-auto h-96 md:h-full">
               <div className="absolute w-full top-0 left-0 px-2 space-y-4">
                 {rooms?.map((streamId) => {
                   return (

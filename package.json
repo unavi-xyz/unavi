@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "wired",
   "version": "0.0.0",
   "private": true,
   "license": "GPL-3.0-or-later",
@@ -21,7 +21,7 @@
   },
   "engines": {
     "npm": ">=7.0.0",
-    "node": ">=14.0.0"
+    "node": ">=16.0.0"
   },
   "packageManager": "yarn@1.22.17"
 }

@@ -10,6 +10,12 @@ import { SceneSettingsDialog } from "../../../components/editor/SceneSettingsDia
 import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
 import { IconButton } from "../../../components/base";
 
+async function dataUrlToFile(dataUrl: string) {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  return new File([blob], "preview");
+}
+
 export default function Id() {
   const router = useRouter();
   const id = router.query.id as string;
@@ -24,12 +30,14 @@ export default function Id() {
       await connect();
     }
 
+    const image = world?.image ? await dataUrlToFile(world.image) : undefined;
     const streamId = await createRoom(
       world.name,
       world.description,
-      undefined,
+      image,
       world.scene
     );
+
     router.push(`/room/${streamId}`);
   }
 
@@ -40,7 +48,7 @@ export default function Id() {
   return (
     <div className="space-y-4 h-2/3 flex flex-col">
       <div className="card flex items-center justify-between">
-        <div className="flex items-center space-x-8">
+        <div className="flex items-center space-x-8 h-8">
           <Link href="/editor" passHref>
             <div className="text-xl hover:cursor-pointer p-2 rounded-full">
               <MdArrowBackIosNew />
@@ -50,7 +58,7 @@ export default function Id() {
           <div className="text-2xl">{world?.name ?? id}</div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 h-8">
           <IconButton onClick={handlePublish}>
             <MdCloudUpload />
           </IconButton>
@@ -67,34 +75,35 @@ export default function Id() {
         </div>
       </div>
 
-      <div className="h-full w-full flex space-x-4">
-        <div className="w-3/5 h-full card">
+      <div className="h-full md:h-1/2 md:grid md:grid-cols-3 md:gap-4 space-y-4 md:space-y-0">
+        <div className="w-full col-span-2 h-64 md:h-full card-borderless">
           {world?.image && (
             <img
-              src={world?.image}
-              alt="scene preview"
-              className="w-full h-full rounded-3xl"
+              src={world.image}
+              alt="scene image"
+              className="w-full h-full rounded-3xl object-cover"
             />
           )}
         </div>
 
-        <div className="w-2/5 flex flex-col space-y-4">
-          <div className="h-full card flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="text-2xl flex justify-center">About</div>
-              <div className="text-xl">{world?.description}</div>
-            </div>
+        <div className="card flex flex-col space-y-4">
+          <div className="text-2xl font-medium flex justify-center">About</div>
 
-            <div className="h-16">
-              <Link href={`/editor/${id}/edit`} passHref>
-                <div
-                  className="h-full text-md rounded-full bg-black text-white justify-center
-                             hover:cursor-pointer transition-all flex items-center"
-                >
-                  Edit Scene
-                </div>
-              </Link>
+          <div className="relative overflow-auto h-36 md:h-full">
+            <div className="absolute top-0 left-0 px-2 whitespace-pre-wrap">
+              {world?.description}
             </div>
+          </div>
+
+          <div className="h-16">
+            <Link href={`/editor/${id}/edit`} passHref>
+              <div
+                className="h-full text-md rounded-full bg-black text-white justify-center
+                             hover:cursor-pointer transition-all flex items-center"
+              >
+                Edit Scene
+              </div>
+            </Link>
           </div>
         </div>
       </div>

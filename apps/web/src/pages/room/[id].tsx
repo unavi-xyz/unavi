@@ -52,7 +52,7 @@ export default function Room() {
       </div>
 
       <div className="h-full md:h-1/2 md:grid md:grid-cols-3 md:gap-4 space-y-4 md:space-y-0">
-        <div className="w-full col-span-2 h-64 md:h-full card-borderless">
+        <div className="w-full col-span-2 h-64 md:h-[800px] card-borderless">
           {image && (
             <img
               src={image}
@@ -86,7 +86,5 @@ export default function Room() {
     </div>
   );
 }
-
-//TODO: room description textarea
 
 Room.Layout = SidebarLayout;

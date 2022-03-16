@@ -46,7 +46,7 @@ export default function Id() {
   }
 
   return (
-    <div className="space-y-4 h-2/3 flex flex-col">
+    <div className="flex flex-col space-y-4 h-full">
       <div className="card flex items-center justify-between">
         <div className="flex items-center space-x-8 h-8">
           <Link href="/editor" passHref>
@@ -76,7 +76,7 @@ export default function Id() {
       </div>
 
       <div className="h-full md:h-1/2 md:grid md:grid-cols-3 md:gap-4 space-y-4 md:space-y-0">
-        <div className="w-full col-span-2 h-64 md:h-full card-borderless">
+        <div className="w-full col-span-2 h-64 md:h-full max-h-[800px] card-borderless">
           {world?.image && (
             <img
               src={world.image}

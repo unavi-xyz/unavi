@@ -18,16 +18,16 @@ interface Props {
 export function SceneSettingsDialog({ id, open, setOpen }: Props) {
   const router = useRouter();
 
-  const name = useRef<HTMLInputElement>();
-  const description = useRef<HTMLInputElement>();
+  const nameRef = useRef<HTMLInputElement>();
+  const descriptionRef = useRef<HTMLTextAreaElement>();
 
   const queryClient = useQueryClient();
   const world = useLocalWorld(id);
 
   async function handleSave() {
     await mergeLocalWorld(id, {
-      name: name.current.value,
-      description: description.current.value,
+      name: nameRef.current.value,
+      description: descriptionRef.current.value,
     });
 
     queryClient.invalidateQueries(`local-world-${id}`);
@@ -46,12 +46,24 @@ export function SceneSettingsDialog({ id, open, setOpen }: Props) {
         <h1 className="text-3xl flex justify-center">Settings</h1>
 
         <div className="space-y-4">
-          <TextField title="Name" inputRef={name} defaultValue={world?.name} />
           <TextField
-            title="Description"
-            inputRef={description}
-            defaultValue={world?.description}
+            title="Name"
+            inputRef={nameRef}
+            defaultValue={world?.name}
           />
+
+          <div className="flex flex-col space-y-3">
+            <label className="block text-lg pointer-events-none">
+              Description
+            </label>
+            <textarea
+              ref={descriptionRef}
+              defaultValue={world?.description}
+              maxLength={420}
+              rows={8}
+              className="w-full border p-2 leading-tight rounded"
+            />
+          </div>
         </div>
 
         <div className="space-y-2">

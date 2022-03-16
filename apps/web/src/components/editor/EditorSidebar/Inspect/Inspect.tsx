@@ -1,7 +1,8 @@
 import { useStore } from "../../../../helpers/editor/store";
 
-import NumberField from "./fields/NumberField";
 import TripletField from "./fields/TripletField";
+import NumberField from "./fields/NumberField";
+import ImageField from "./fields/ImageField";
 
 export default function Inspect() {
   const selected = useStore((state) => state.selected);
@@ -24,6 +25,8 @@ export default function Inspect() {
       <div className="text-3xl flex justify-center">{name}</div>
 
       <div className="space-y-1">
+        <div className="text-xl text-neutral-500 mb-2">Transform</div>
+
         <TripletField
           title="Position"
           value={params.position}
@@ -58,6 +61,16 @@ export default function Inspect() {
             )}
           </div>
         )}
+
+        <div className="py-4 space-y-1">
+          <div className="text-xl text-neutral-500 mb-2">Material</div>
+
+          <ImageField
+            title="Texture"
+            value={params?.texture}
+            onChange={getHandleChange("texture")}
+          />
+        </div>
       </div>
     </div>
   );

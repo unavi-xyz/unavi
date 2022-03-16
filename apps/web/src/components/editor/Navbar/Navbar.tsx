@@ -1,5 +1,5 @@
 import { IoMdEye } from "react-icons/io";
-import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
+import { MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
 import { useSetAtom } from "jotai";
 
@@ -58,12 +58,6 @@ export default function Navbar({ id }: Props) {
                      hover:cursor-pointer"
         >
           <IoMdEye className="text-2xl" />
-        </div>
-        <div
-          className="w-10 h-10 rounded-md flex items-center justify-center
-                     hover:cursor-pointer"
-        >
-          <MdDownload className="text-2xl" />
         </div>
       </div>
     </div>

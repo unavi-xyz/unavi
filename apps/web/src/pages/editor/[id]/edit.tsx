@@ -56,7 +56,7 @@ export default function Id() {
           </div>
         </div>
       ) : (
-        <div className="h-full">
+        <div className="h-full overflow-hidden">
           <Navbar id={id} />
 
           <div className="h-full bg-neutral-200 flex">

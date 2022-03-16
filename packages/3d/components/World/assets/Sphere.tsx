@@ -1,4 +1,5 @@
 import { SphereArgs, Triplet, useSphere } from "@react-three/cannon";
+import { Material } from "../Material";
 
 export const sphereDefaultParams = {
   position: [0, 0, 0] as Triplet,
@@ -23,7 +24,7 @@ export function Sphere({ params }: Props) {
   return (
     <mesh ref={ref}>
       <sphereGeometry args={args} />
-      <meshStandardMaterial />
+      <Material params={params} />
     </mesh>
   );
 }

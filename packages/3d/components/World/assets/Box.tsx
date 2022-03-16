@@ -1,4 +1,5 @@
 import { Triplet, useBox } from "@react-three/cannon";
+import { Material } from "../Material";
 
 export const boxDefaultParams = {
   position: [0, 0, 0] as Triplet,
@@ -23,7 +24,7 @@ export function Box({ params }: Props) {
   return (
     <mesh ref={ref}>
       <boxBufferGeometry args={args} />
-      <meshStandardMaterial />
+      <Material params={params} />
     </mesh>
   );
 }

@@ -18,7 +18,7 @@ export default function NumberField({
   value,
   onChange,
 }: Props) {
-  function handleChange(e: ChangeEvent<HTMLInputElement>, i: number) {
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const rounded = round(Number(e.target.value));
     onChange(rounded);
   }

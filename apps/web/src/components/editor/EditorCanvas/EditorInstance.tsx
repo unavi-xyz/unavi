@@ -4,8 +4,8 @@ import { Group } from "three";
 import { useAtom } from "jotai";
 import { InstancedAsset } from "3d";
 
-import { usingGizmoAtom } from "../../../helpers/editor/state";
-import { useStore } from "../../../helpers/editor/store";
+import { usingGizmoAtom } from "../helpers/state";
+import { useStore } from "../helpers/store";
 
 interface Props {
   id: string;
@@ -15,6 +15,7 @@ export default function EditorInstance({ id }: Props) {
   const ref = useRef<Group>();
 
   const textures = useStore((state) => state.scene.textures);
+  const models = useStore((state) => state.scene.models);
   const instance = useStore((state) => state.scene.instances[id]);
   const params = useStore((state) => state.scene.instances[id].params);
 
@@ -62,6 +63,7 @@ export default function EditorInstance({ id }: Props) {
         name={instance.name}
         params={usedParams}
         textures={textures}
+        models={models}
       />
     </group>
   );

@@ -1,8 +1,9 @@
 import { Dispatch, SetStateAction } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 
-import { PACKS } from "../../../../helpers/editor/types";
+import { PACKS } from "../../helpers/types";
 import AssetCard from "./AssetCard";
+import GLTFCard from "./GLTFCard";
 
 interface Props {
   pack: string;
@@ -31,6 +32,8 @@ export default function Assets({ pack, setPack }: Props) {
         {assets.map((asset) => {
           return <AssetCard key={asset.name} asset={asset} />;
         })}
+
+        {pack === "Basic" && <GLTFCard />}
       </div>
     </div>
   );

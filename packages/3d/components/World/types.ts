@@ -1,6 +1,7 @@
 import { Triplet } from "@react-three/cannon";
 
 import { boxDefaultParams } from "./assets/Box";
+import { gltfDefaultParams } from "./assets/GLTF";
 import { sphereDefaultParams } from "./assets/Sphere";
 
 export type Params = {
@@ -9,11 +10,13 @@ export type Params = {
   scale: Triplet;
   radius: number;
   texture: string;
+  model: string;
 };
 
 export enum AssetName {
   Box = "Box",
   Sphere = "Sphere",
+  GLTF = "GLTF",
 }
 
 export type Asset = {
@@ -33,12 +36,20 @@ export type Texture = {
   value: string;
 };
 
+export type Model = {
+  name: string;
+  value: string;
+};
+
 export type Scene = {
   instances: {
     [key: string]: Instance;
   };
   textures: {
     [key: string]: Texture;
+  };
+  models: {
+    [key: string]: Model;
   };
 };
 
@@ -50,5 +61,9 @@ export const ASSETS = {
   Sphere: {
     name: AssetName.Sphere,
     params: sphereDefaultParams,
+  } as Asset,
+  GLTF: {
+    name: AssetName.GLTF,
+    params: gltfDefaultParams,
   } as Asset,
 };

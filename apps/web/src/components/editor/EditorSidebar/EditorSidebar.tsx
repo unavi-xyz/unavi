@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { useStore } from "../../../helpers/editor/store";
+import { useStore } from "../helpers/store";
 
 import Inspect from "./Inspect/Inspect";
 import Assets from "./Assets/Assets";

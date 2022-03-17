@@ -3,10 +3,10 @@ import { IoMdSettings } from "react-icons/io";
 import { MdCloudUpload, MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { createRoom, uploadImageToIpfs, useAuth } from "ceramic";
+import { createRoom, uploadFileToIpfs, useAuth } from "ceramic";
 
 import { dataUrlToFile } from "../../../helpers/files";
-import { useLocalScene } from "../../../helpers/localScenes/useLocalScene";
+import { useLocalScene } from "../../../components/editor/scene/localScenes/useLocalScene";
 
 import { IconButton } from "../../../components/base";
 import SceneSettingsDialog from "../../../components/editor/scene/SceneSettingsDialog";
@@ -29,13 +29,26 @@ export default function Id() {
     Promise.all(
       Object.values(sceneCopy.textures).map(async ({ value, name }) => {
         const file = await dataUrlToFile(value, name);
-        await uploadImageToIpfs(file);
+        await uploadFileToIpfs(file);
       })
     );
 
     //remove textures from scene
     Object.keys(sceneCopy.textures).forEach((key) => {
       sceneCopy.textures[key] = null;
+    });
+
+    //upload models
+    Promise.all(
+      Object.values(sceneCopy.models).map(async ({ value, name }) => {
+        const file = await dataUrlToFile(value, name);
+        await uploadFileToIpfs(file);
+      })
+    );
+
+    //remove models from scene
+    Object.keys(sceneCopy.models).forEach((key) => {
+      sceneCopy.models[key] = null;
     });
 
     //upload preview image

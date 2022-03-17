@@ -4,8 +4,8 @@ import { Sky } from "@react-three/drei";
 import { useAtom } from "jotai";
 import { Ground } from "3d";
 
-import { usingGizmoAtom } from "../../../helpers/editor/state";
-import { useStore } from "../../../helpers/editor/store";
+import { usingGizmoAtom } from "../helpers/state";
+import { useStore } from "../helpers/store";
 
 import EditorInstance from "./EditorInstance";
 

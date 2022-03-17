@@ -1,4 +1,4 @@
-import { useStore } from "../../../../helpers/editor/store";
+import { useStore } from "../../helpers/store";
 
 export function handleChange(value: any, key: string) {
   const changes = { [key]: value };

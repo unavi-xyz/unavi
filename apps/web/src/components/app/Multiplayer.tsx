@@ -4,7 +4,7 @@ import { Triplet } from "@react-three/cannon";
 import { Vector3 } from "three";
 import { useAuth } from "ceramic";
 
-import { PUBLISH_INTERVAL } from "../../helpers/multiplayer/constants";
+import { PUBLISH_INTERVAL } from "../../helpers/constants";
 import { MultiplayerContext } from "./MultiplayerContext";
 import OtherPlayer from "./OtherPlayer";
 

@@ -1,5 +1,5 @@
 import { Asset } from "3d";
-import { useStore } from "../../../../helpers/editor/store";
+import { useStore } from "../../helpers/store";
 
 interface Props {
   asset: Asset;

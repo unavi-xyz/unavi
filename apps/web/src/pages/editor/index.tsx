@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 import Link from "next/link";
 
-import { useLocalSceneIds } from "../../helpers/localScenes/useLocalSceneIds";
+import { useLocalSceneIds } from "../../components/editor/scene/localScenes/useLocalSceneIds";
 import { IconButton } from "../../components/base";
 import NewSceneDialog from "../../components/editor/scene/NewSceneDialog";
 import SceneCard from "../../components/editor/scene/SceneCard";

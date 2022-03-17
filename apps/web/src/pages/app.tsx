@@ -17,7 +17,7 @@ export default function App() {
   const { room } = useRoom(roomId);
   const { authenticated, connect } = useAuth();
 
-  const textures = useSceneLoader(room?.scene);
+  const { textures, models } = useSceneLoader(room?.scene);
 
   useEffect(() => {
     if (!authenticated) connect();
@@ -32,7 +32,7 @@ export default function App() {
       <Canvas mode="concurrent">
         <MultiplayerProvider>
           <Physics>
-            <World scene={room.scene} textures={textures} />
+            <World scene={room.scene} textures={textures} models={models} />
             <Multiplayer roomId={roomId} />
             <Player />
           </Physics>

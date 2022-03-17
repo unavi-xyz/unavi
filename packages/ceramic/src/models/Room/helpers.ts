@@ -1,7 +1,7 @@
 import { Scene } from "3d";
 
 import { Room } from "./types";
-import { uploadImageToIpfs } from "../../ipfs";
+import { uploadFileToIpfs } from "../../ipfs";
 import { loader } from "../../client";
 import { addRoomToProfile, removeRoomFromProfile } from "../Rooms/helpers";
 
@@ -13,7 +13,7 @@ export async function createRoom(
   image?: File,
   scene?: Scene
 ) {
-  const hash = image ? await uploadImageToIpfs(image) : undefined;
+  const hash = image ? await uploadFileToIpfs(image) : undefined;
   const room: Room = { name, description, image: hash, scene };
   const stream = await loader.create(
     room,
@@ -37,7 +37,7 @@ export async function editRoom(
   description?: string,
   imageFile?: File
 ) {
-  const hash = imageFile ? await uploadImageToIpfs(imageFile) : undefined;
+  const hash = imageFile ? await uploadFileToIpfs(imageFile) : undefined;
   const doc = await loader.load(streamId);
   const image = hash ?? doc.content?.image;
   const room: Room = { name, description, image };

@@ -1,4 +1,4 @@
-import { useLocalScene } from "../../../helpers/localScenes/useLocalScene";
+import { useLocalScene } from "./localScenes/useLocalScene";
 
 interface Props {
   id: string;

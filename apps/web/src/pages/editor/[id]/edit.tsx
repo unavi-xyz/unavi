@@ -4,12 +4,15 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAtom, useSetAtom } from "jotai";
 
-import { previewModeAtom, worldIdAtom } from "../../../helpers/editor/state";
+import {
+  previewModeAtom,
+  worldIdAtom,
+} from "../../../components/editor/helpers/state";
 import Navbar from "../../../components/editor/Navbar/Navbar";
 import EditorSidebar from "../../../components/editor/EditorSidebar/EditorSidebar";
 import EditorCanvas from "../../../components/editor/EditorCanvas/EditorCanvas";
 import PreviewCanvas from "../../../components/editor/EditorCanvas/PreviewCanvas";
-import { useStore } from "../../../helpers/editor/store";
+import { useStore } from "../../../components/editor/helpers/store";
 
 export default function Edit() {
   const router = useRouter();
@@ -25,7 +28,7 @@ export default function Edit() {
     setWorldId(id);
 
     return () => {
-      setScene({ instances: {}, textures: {} });
+      setScene(null);
       setSelected(null);
       setWorldId(null);
     };

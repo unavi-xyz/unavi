@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useAtom, useSetAtom } from "jotai";
 import { TransformControls } from "@react-three/drei";
 
-import { toolAtom, usingGizmoAtom } from "../../../helpers/editor/state";
-import { Tool } from "../../../helpers/editor/types";
-import { useStore } from "../../../helpers/editor/store";
+import { toolAtom, usingGizmoAtom } from "../helpers/state";
+import { Tool } from "../helpers/types";
+import { useStore } from "../helpers/store";
 
 export default function Gizmo() {
   const selected = useStore((state) => state.selected);

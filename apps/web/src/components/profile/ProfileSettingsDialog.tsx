@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction, useRef, useState } from "react";
 import { useQueryClient } from "react-query";
 import {
-  uploadImageToIpfs,
+  uploadFileToIpfs,
   useIpfsFile,
   useProfile,
   ImageSources,
@@ -34,7 +34,7 @@ export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
     const description = descriptionRef.current.value;
 
     if (imageFile) {
-      const cid = await uploadImageToIpfs(imageFile);
+      const cid = await uploadFileToIpfs(imageFile);
 
       const imageElement = new Image();
       imageElement.src = URL.createObjectURL(imageFile);

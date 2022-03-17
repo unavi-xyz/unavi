@@ -7,6 +7,8 @@ import {
 
 import { Params, Texture } from "./types";
 
+const loader = new TextureLoader();
+
 interface Props {
   params: Partial<Params>;
   textures: { [key: string]: Texture };
@@ -18,15 +20,13 @@ export function Material({ params, textures }: Props) {
   const [texture, setTexture] = useState<ThreeTexture>();
 
   useEffect(() => {
-    if (params?.texture) {
-      const texture = textures[params.texture];
-      if (!texture) return;
+    if (!params?.texture || !textures) return;
+    const texture = textures[params.texture];
+    if (!texture) return;
 
-      const loader = new TextureLoader();
-      loader.loadAsync(texture.value).then((res) => {
-        setTexture(res);
-      });
-    }
+    loader.loadAsync(texture.value).then((res) => {
+      setTexture(res);
+    });
   }, [params, textures]);
 
   useEffect(() => {

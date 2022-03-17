@@ -1,4 +1,4 @@
-import { useStore } from "../../../../../helpers/editor/store";
+import { useStore } from "../../../helpers/store";
 import { getHandleChange } from "../helpers";
 
 import TripletField from "../inputs/TripletField";

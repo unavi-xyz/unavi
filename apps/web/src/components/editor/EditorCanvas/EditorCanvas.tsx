@@ -2,9 +2,9 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { Physics } from "@react-three/cannon";
 
-import { useStore } from "../../../helpers/editor/store";
-import { useAutosave } from "../../../helpers/editor/hooks/useAutosave";
-import { useHotkeys } from "../../../helpers/editor/hooks/useHotkeys";
+import { useStore } from "../helpers/store";
+import { useAutosave } from "../helpers/useAutosave";
+import { useHotkeys } from "../helpers/useHotkeys";
 
 import { EditorWorld } from "./EditorWorld";
 import Gizmo from "./Gizmo";

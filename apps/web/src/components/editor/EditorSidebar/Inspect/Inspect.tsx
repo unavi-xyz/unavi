@@ -1,4 +1,4 @@
-import { useStore } from "../../../../helpers/editor/store";
+import { useStore } from "../../helpers/store";
 
 import Transform from "./modules/Transform";
 import Geometry from "./modules/Geometry";
@@ -8,7 +8,7 @@ export default function Inspect() {
   const selected = useStore((state) => state.selected);
   const instance = useStore((state) => state.scene.instances[selected?.id]);
 
-  if (!instance.params) return null;
+  if (!instance) return null;
 
   return (
     <div className="space-y-6">

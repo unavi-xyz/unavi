@@ -4,7 +4,7 @@ import { Triplet } from "@react-three/cannon";
 import { Group, MathUtils, Vector3 } from "three";
 import { Avatar } from "3d";
 
-import { PUBLISH_INTERVAL } from "../../helpers/multiplayer/constants";
+import { PUBLISH_INTERVAL } from "../../helpers/constants";
 import { MultiplayerContext } from "./MultiplayerContext";
 
 type Location = { position: Triplet; rotation: number };

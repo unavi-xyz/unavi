@@ -2,8 +2,8 @@ import { IoIosMove } from "react-icons/io";
 import { BsArrowRepeat, BsArrowsAngleExpand } from "react-icons/bs";
 import { useAtom } from "jotai";
 
-import { Tool } from "../../../helpers/editor/types";
-import { toolAtom } from "../../../helpers/editor/state";
+import { Tool } from "../helpers/types";
+import { toolAtom } from "../helpers/state";
 
 export default function MiddleButtons() {
   const [tool, setTool] = useAtom(toolAtom);

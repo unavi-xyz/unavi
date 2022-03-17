@@ -2,11 +2,8 @@ import { Dispatch, SetStateAction, useRef } from "react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
 
-import {
-  deleteLocalScene,
-  mergeLocalScene,
-} from "../../../helpers/localScenes/db";
-import { useLocalScene } from "../../../helpers/localScenes/useLocalScene";
+import { deleteLocalScene, mergeLocalScene } from "./localScenes/db";
+import { useLocalScene } from "./localScenes/useLocalScene";
 import { Button, Dialog, TextField } from "../../base";
 
 interface Props {

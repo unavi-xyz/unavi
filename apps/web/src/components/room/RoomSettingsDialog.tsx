@@ -35,12 +35,10 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
     if (loadingSave) return;
     setLoadingSave(true);
 
-    await editRoom(
-      id,
-      nameRef.current.value,
-      descriptionRef.current.value,
-      imageFile
-    );
+    const name = nameRef.current.value;
+    const description = descriptionRef.current.value;
+
+    await editRoom(id, name, description, imageFile);
 
     queryClient.invalidateQueries(`room-${id}`);
     setOpen(false);

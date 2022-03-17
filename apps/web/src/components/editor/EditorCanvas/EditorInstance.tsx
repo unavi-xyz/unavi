@@ -12,11 +12,11 @@ interface Props {
 }
 
 export default function EditorInstance({ id }: Props) {
-  const instance = useStore((state) => state.scene.instances[id]);
-  const textures = useStore((state) => state.scene.textures);
-  const params = useStore((state) => state.scene.instances[id].params);
+  const ref = useRef<Group>();
 
-  const setSelected = useStore((state) => state.setSelected);
+  const textures = useStore((state) => state.scene.textures);
+  const instance = useStore((state) => state.scene.instances[id]);
+  const params = useStore((state) => state.scene.instances[id].params);
 
   const [initialParams] = useState(params);
   const usedParams = useMemo(() => {
@@ -35,23 +35,20 @@ export default function EditorInstance({ id }: Props) {
     return modifiedParams;
   }, [initialParams, params]);
 
-  const ref = useRef<Group>();
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.position.set(...params.position);
+    ref.current.rotation.set(...params.rotation);
+    if (params?.scale) ref.current.scale.set(...params.scale);
+  }, [params]);
 
   const [usingGizmo] = useAtom(usingGizmoAtom);
 
   function handleClick(e: ThreeEvent<MouseEvent>) {
     if (usingGizmo) return;
     e.stopPropagation();
-    setSelected({ id: instance.id, ref });
+    useStore.getState().setSelected({ id: instance.id, ref });
   }
-
-  useEffect(() => {
-    if (!ref.current) return;
-    ref.current.position.set(...params.position);
-    ref.current.rotation.set(...params.rotation);
-
-    if (params?.scale) ref.current.scale.set(...params.scale);
-  }, [params]);
 
   return (
     <group

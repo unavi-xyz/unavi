@@ -1,30 +1,25 @@
 import { useEffect } from "react";
 import { useAtom } from "jotai";
 
-import { getLocalWorld, mergeLocalWorld } from "../../localWorlds/db";
 import { worldIdAtom } from "../state";
 import { useStore } from "../store";
+import { mergeLocalScene } from "../../localScenes/db";
+import { useLocalScene } from "../../localScenes/useLocalScene";
 
 export function useAutosave() {
-  const setScene = useStore((state) => state.setScene);
-  const setSelected = useStore((state) => state.setSelected);
+  const [id] = useAtom(worldIdAtom);
 
-  const [worldId, setWorldId] = useAtom(worldIdAtom);
+  const localScene = useLocalScene(id);
 
   useEffect(() => {
     //initial load
-    if (!worldId) return;
-
-    getLocalWorld(worldId).then((res) => {
-      setScene(res?.scene);
-    });
-  }, [setScene, setSelected, setWorldId, worldId]);
+    useStore.getState().setScene(localScene?.scene);
+  }, [localScene]);
 
   useEffect(() => {
-    if (!worldId) return;
+    if (!id) return;
 
-    //save on an interval
-    const interval = setInterval(() => {
+    function save() {
       const scene = useStore.getState().scene;
 
       //prune unused textures
@@ -40,13 +35,14 @@ export function useAutosave() {
         newTextures[id] = scene.textures[id];
       });
 
-      const savedScene = { ...scene, textures: newTextures };
+      const newScene = { ...scene, textures: newTextures };
+      mergeLocalScene(id, { scene: newScene });
+    }
 
-      mergeLocalWorld(worldId, { scene: savedScene });
-    }, 5000);
-
+    //save on an interval
+    const interval = setInterval(save, 5000);
     return () => {
       clearInterval(interval);
     };
-  }, [worldId]);
+  }, [id]);
 }

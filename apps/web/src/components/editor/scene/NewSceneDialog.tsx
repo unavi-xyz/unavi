@@ -3,8 +3,7 @@ import { useRouter } from "next/router";
 import { customAlphabet } from "nanoid";
 
 import { Button, Dialog, TextField } from "../../base";
-import { createLocalWorld } from "../../../helpers/localWorlds/db";
-import { LocalWorld } from "../../../helpers/localWorlds/types";
+import { createLocalScene } from "../../../helpers/localScenes/db";
 
 const nanoid = customAlphabet("0123456789", 12);
 
@@ -13,22 +12,24 @@ interface Props {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-export function NewSceneDialog({ open, setOpen }: Props) {
+export default function NewSceneDialog({ open, setOpen }: Props) {
   const router = useRouter();
 
-  const name = useRef<HTMLInputElement>();
-  const description = useRef<HTMLInputElement>();
+  const nameRef = useRef<HTMLInputElement>();
+  const descriptionRef = useRef<HTMLInputElement>();
 
   async function handleCreate() {
     const id = nanoid();
-    const world: LocalWorld = {
-      id,
-      name: name.current.value,
-      description: description.current.value,
-      scene: { instances: {}, textures: {} },
-    };
+    const name = nameRef.current.value;
+    const description = descriptionRef.current.value;
+    const scene = { instances: {}, textures: {} };
 
-    await createLocalWorld(world);
+    await createLocalScene({
+      id,
+      name,
+      description,
+      scene,
+    });
 
     router.push(`/editor/${id}/edit`);
   }
@@ -39,13 +40,11 @@ export function NewSceneDialog({ open, setOpen }: Props) {
         <h1 className="text-3xl flex justify-center">Create a Scene</h1>
 
         <div className="space-y-4">
-          <TextField title="Name" inputRef={name} defaultValue="New scene" />
-          <TextField title="Description" inputRef={description} />
+          <TextField title="Name" inputRef={nameRef} defaultValue="New scene" />
+          <TextField title="Description" inputRef={descriptionRef} />
         </div>
 
-        <Button onClick={handleCreate}>
-          <div>Create</div>
-        </Button>
+        <Button onClick={handleCreate}>Create</Button>
       </div>
     </Dialog>
   );

@@ -11,17 +11,15 @@ import EditorInstance from "./EditorInstance";
 
 export function EditorWorld() {
   const scene = useStore((state) => state.scene);
-  const setSelected = useStore((state) => state.setSelected);
-
   const [usingGizmo] = useAtom(usingGizmoAtom);
+
+  const { camera } = useThree();
 
   function handleVoidClick(e: ThreeEvent<MouseEvent>) {
     if (usingGizmo) return;
     e.stopPropagation();
-    setSelected(null);
+    useStore.getState().setSelected(null);
   }
-
-  const { camera } = useThree();
 
   useEffect(() => {
     camera.position.set(6, 6, 6);

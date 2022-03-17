@@ -6,11 +6,6 @@ import { useStore } from "../store";
 import { Tool } from "../types";
 
 export function useHotkeys() {
-  const newInstance = useStore((state) => state.newInstance);
-  const deleteInstance = useStore((state) => state.deleteInstance);
-  const setSelected = useStore((state) => state.setSelected);
-  const saveSelected = useStore((state) => state.saveSelected);
-
   const setTool = useSetAtom(toolAtom);
 
   const copied = useRef<string>();
@@ -18,13 +13,14 @@ export function useHotkeys() {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      const selected = useStore.getState().selected;
+      const state = useStore.getState();
+      const selected = state.selected;
 
       switch (e.key) {
         case "Delete":
           if (selected) {
-            deleteInstance(selected?.id);
-            setSelected(null);
+            state.deleteInstance(selected?.id);
+            state.setSelected(null);
           }
           break;
 
@@ -45,12 +41,13 @@ export function useHotkeys() {
           break;
         case "v":
           if (e.ctrlKey && copied.current && !holdingV.current) {
-            if (selected) saveSelected();
+            if (selected) state.saveSelected();
 
-            const instance =
-              useStore.getState().scene.instances[copied.current];
+            const instance = state.scene.instances[copied.current];
 
-            newInstance(instance.name, { ...instance.params });
+            useStore
+              .getState()
+              .newInstance(instance.name, { ...instance.params });
           }
 
           holdingV.current = true;
@@ -72,10 +69,9 @@ export function useHotkeys() {
 
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("keyup", handleKeyUp);
-
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
     };
-  }, [deleteInstance, newInstance, saveSelected, setSelected, setTool]);
+  }, [setTool]);
 }

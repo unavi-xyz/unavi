@@ -1,6 +1,6 @@
 import { Scene } from "3d";
 
-export type LocalWorld = {
+export type LocalScene = {
   id: string;
   name?: string;
   description?: string;

@@ -4,10 +4,7 @@ import { Euler, Quaternion, Vector3 } from "three";
 import { AssetName, ASSETS, Params, Scene } from "3d";
 
 import { Selected } from "./types";
-import {
-  readFile,
-  readFileAsDataUrl,
-} from "../../components/editor/EditorSidebar/Inspect/helpers";
+import { readFileAsArrayBuffer, readFileAsDataUrl } from "../files";
 
 const Hash = require("ipfs-only-hash");
 
@@ -80,7 +77,7 @@ export const useStore = create<StoreState>(
     },
 
     async newTexture(file: File) {
-      const array = new Uint8Array(await readFile(file));
+      const array = new Uint8Array(await readFileAsArrayBuffer(file));
       const cid = await Hash.of(array);
 
       const value = await readFileAsDataUrl(file);

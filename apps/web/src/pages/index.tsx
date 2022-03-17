@@ -7,7 +7,7 @@ export default function Index() {
         <div className="text-2xl">Home</div>
       </div>
 
-      <div className="space-y-2 card">
+      <div className="card space-y-2">
         <div className="text-2xl">Welcome!</div>
         <div className="text-lg text-neutral-500">
           The platform is currently in heavy development. If you run into any

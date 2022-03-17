@@ -6,16 +6,13 @@ import Material from "./modules/Material";
 
 export default function Inspect() {
   const selected = useStore((state) => state.selected);
-  const name = useStore((state) => state.scene.instances[selected?.id]?.name);
-  const params = useStore(
-    (state) => state.scene.instances[selected?.id]?.params
-  );
+  const instance = useStore((state) => state.scene.instances[selected?.id]);
 
-  if (!params) return null;
+  if (!instance.params) return null;
 
   return (
     <div className="space-y-6">
-      <div className="text-3xl flex justify-center">{name}</div>
+      <div className="text-3xl flex justify-center">{instance.name}</div>
 
       <div className="space-y-4">
         <Transform />

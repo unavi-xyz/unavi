@@ -10,18 +10,18 @@ import { EditorWorld } from "./EditorWorld";
 import Gizmo from "./Gizmo";
 
 export default function EditorCanvas() {
-  const setSelected = useStore((state) => state.setSelected);
-
   useAutosave();
   useHotkeys();
+
+  function handlePointerMiss() {
+    useStore.getState().setSelected(null);
+  }
 
   return (
     <Canvas
       mode="concurrent"
       gl={{ preserveDrawingBuffer: true }}
-      onPointerMissed={() => {
-        setSelected(null);
-      }}
+      onPointerMissed={handlePointerMiss}
     >
       <Physics>
         <OrbitControls makeDefault />

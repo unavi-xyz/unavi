@@ -6,10 +6,8 @@ interface Props {
 }
 
 export default function AssetCard({ asset }: Props) {
-  const newInstance = useStore((state) => state.newInstance);
-
   function handleClick() {
-    newInstance(asset.name);
+    useStore.getState().newInstance(asset.name);
   }
 
   return (

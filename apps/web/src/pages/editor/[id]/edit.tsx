@@ -11,9 +11,9 @@ import EditorCanvas from "../../../components/editor/EditorCanvas/EditorCanvas";
 import PreviewCanvas from "../../../components/editor/EditorCanvas/PreviewCanvas";
 import { useStore } from "../../../helpers/editor/store";
 
-export default function Id() {
+export default function Edit() {
   const router = useRouter();
-  const id = router.query.id as string;
+  const id = String(router.query.id);
 
   const setScene = useStore((state) => state.setScene);
   const setSelected = useStore((state) => state.setSelected);
@@ -31,10 +31,6 @@ export default function Id() {
     };
   }, [id, setScene, setSelected, setWorldId]);
 
-  function handleClose() {
-    setPreviewMode(false);
-  }
-
   return (
     <>
       <Head>
@@ -48,7 +44,7 @@ export default function Id() {
           <div className="crosshair" />
 
           <div
-            onClick={handleClose}
+            onClick={() => setPreviewMode(false)}
             className="absolute top-6 right-6 hover:cursor-pointer bg-black rounded-full p-1.5
                        bg-opacity-30 hover:bg-opacity-40 backdrop-blur-sm"
           >

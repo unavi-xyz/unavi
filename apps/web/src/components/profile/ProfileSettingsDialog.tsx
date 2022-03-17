@@ -19,12 +19,12 @@ export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
   const nameRef = useRef<HTMLInputElement>();
   const descriptionRef = useRef<HTMLTextAreaElement>();
 
-  const [imageFile, setImageFile] = useState<File>();
-  const [loading, setLoading] = useState(false);
-
-  const queryClient = useQueryClient();
   const { profile, merge } = useProfile(id);
   const image = useIpfsFile(profile?.image?.original.src);
+  const queryClient = useQueryClient();
+
+  const [imageFile, setImageFile] = useState<File>();
+  const [loading, setLoading] = useState(false);
 
   async function handleSave() {
     if (loading) return;
@@ -36,15 +36,15 @@ export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
     if (imageFile) {
       const cid = await uploadImageToIpfs(imageFile);
 
-      const img = new Image();
-      img.src = URL.createObjectURL(imageFile);
+      const imageElement = new Image();
+      imageElement.src = URL.createObjectURL(imageFile);
 
-      img.onload = async () => {
+      imageElement.onload = async () => {
         const imageObject: ImageSources = {
           original: {
             src: cid,
-            height: img.height,
-            width: img.width,
+            height: imageElement.height,
+            width: imageElement.width,
             mimeType: imageFile.type,
             size: imageFile.size,
           },

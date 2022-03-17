@@ -1,55 +1,47 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 import Link from "next/link";
 
+import { useLocalSceneIds } from "../../helpers/localScenes/useLocalSceneIds";
 import { IconButton } from "../../components/base";
-import { getLocalWorldIds } from "../../helpers/localWorlds/db";
-import { NewSceneDialog } from "../../components/editor/scene/NewSceneDialog";
-import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
+import NewSceneDialog from "../../components/editor/scene/NewSceneDialog";
 import SceneCard from "../../components/editor/scene/SceneCard";
+import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
 
 export default function Editor() {
   const [openNew, setOpenNew] = useState(false);
 
-  const [localWorlds, setLocalWorlds] = useState<string[]>();
-
-  useEffect(() => {
-    getLocalWorldIds().then((res) => {
-      setLocalWorlds(res);
-    });
-  }, []);
+  const localScenesIds = useLocalSceneIds();
 
   function handleNew() {
     setOpenNew(true);
   }
 
   return (
-    <div className="space-y-4 h-full w-full flex flex-col">
+    <>
       <NewSceneDialog open={openNew} setOpen={setOpenNew} />
 
-      <div className="card flex items-center justify-between ">
-        <div className="text-2xl">Scenes</div>
+      <div className="space-y-4 h-full w-full flex flex-col">
+        <div className="card flex items-center justify-between ">
+          <div className="text-2xl">Scenes</div>
 
-        <div className="flex items-center space-x-4 h-8">
-          <IconButton onClick={handleNew}>
-            <AiOutlinePlus />
-          </IconButton>
+          <div className="flex items-center space-x-4 h-8">
+            <IconButton onClick={handleNew}>
+              <AiOutlinePlus />
+            </IconButton>
+          </div>
         </div>
-      </div>
 
-      <div className="h-full overflow-auto card">
-        {localWorlds &&
-          (localWorlds.length > 0 ? (
-            <div className="grid grid-flow-row xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3">
-              {localWorlds.map((id) => {
+        <div className="h-full overflow-auto card">
+          {localScenesIds?.length > 0 ? (
+            <div className="grid grid-flow-row gap-2 xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3">
+              {localScenesIds.map((id) => {
                 return (
-                  <div key={id} className="p-2">
-                    <Link href={`/editor/${id}`} passHref>
-                      <div>
-                        <SceneCard id={id} />
-                      </div>
-                    </Link>
-                  </div>
+                  <Link key={id} href={`/editor/${id}`} passHref>
+                    <div>
+                      <SceneCard id={id} />
+                    </div>
+                  </Link>
                 );
               })}
             </div>
@@ -64,9 +56,10 @@ export default function Editor() {
               </span>{" "}
               to get started.
             </p>
-          ))}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

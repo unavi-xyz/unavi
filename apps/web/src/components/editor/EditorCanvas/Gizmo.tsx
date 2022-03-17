@@ -8,41 +8,44 @@ import { useStore } from "../../../helpers/editor/store";
 
 export default function Gizmo() {
   const selected = useStore((state) => state.selected);
-  const saveSelected = useStore((state) => state.saveSelected);
 
-  const [tool] = useAtom(toolAtom);
   const setUsingGizmo = useSetAtom(usingGizmoAtom);
+  const [tool] = useAtom(toolAtom);
 
   const [enabled, setEnabled] = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (selected) {
-      const params = useStore.getState().scene.instances[selected.id].params;
-
-      if (tool === Tool.scale) {
-        const hasScale = Boolean(params?.scale);
-        setEnabled(hasScale);
-        setVisible(true);
-      } else {
-        setEnabled(true);
-        setVisible(true);
-      }
-    } else {
+    if (!selected) {
       setEnabled(false);
       setVisible(false);
+      return;
+    }
+
+    setVisible(true);
+
+    if (tool === Tool.scale) {
+      const params = useStore.getState().scene.instances[selected.id].params;
+      const hasScale = params.hasOwnProperty("scale");
+      setEnabled(hasScale);
+    } else {
+      setEnabled(true);
     }
   }, [selected, tool]);
 
+  function handleMouseDown() {
+    setUsingGizmo(true);
+  }
+
+  function handleMouseUp() {
+    useStore.getState().saveSelected();
+    setUsingGizmo(false);
+  }
+
   return (
     <TransformControls
-      onMouseDown={() => {
-        setUsingGizmo(true);
-      }}
-      onMouseUp={() => {
-        saveSelected();
-        setUsingGizmo(false);
-      }}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
       object={selected?.ref?.current}
       showX={visible}
       showY={visible}

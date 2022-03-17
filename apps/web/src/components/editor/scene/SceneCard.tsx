@@ -1,11 +1,11 @@
-import { useLocalWorld } from "../../../helpers/localWorlds/useLocalWorld";
+import { useLocalScene } from "../../../helpers/localScenes/useLocalScene";
 
 interface Props {
   id: string;
 }
 
 export default function SceneCard({ id }: Props) {
-  const world = useLocalWorld(id);
+  const localScene = useLocalScene(id);
 
   return (
     <div className="w-full h-40">
@@ -14,18 +14,18 @@ export default function SceneCard({ id }: Props) {
                    flex flex-col"
       >
         <div className="h-full">
-          {world?.image && (
+          {localScene?.image && (
             <img
-              src={world.image}
+              src={localScene.image}
               alt="scene image"
               className="w-full h-full object-cover rounded-xl opacity-100"
             />
           )}
         </div>
 
-        {world?.name && (
+        {localScene?.name && (
           <div className="absolute -mb-px bottom-0 px-3 py-2 text-lg rounded-b-xl w-full bg-neutral-100">
-            {world.name}
+            {localScene.name}
           </div>
         )}
       </div>

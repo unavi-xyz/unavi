@@ -3,9 +3,9 @@ import { MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
 import { useSetAtom } from "jotai";
 
-import { mergeLocalWorld } from "../../../helpers/localWorlds/db";
+import { mergeLocalScene } from "../../../helpers/localScenes/db";
 import { previewModeAtom } from "../../../helpers/editor/state";
-import { useLocalWorld } from "../../../helpers/localWorlds/useLocalWorld";
+import { useLocalScene } from "../../../helpers/localScenes/useLocalScene";
 import { useStore } from "../../../helpers/editor/store";
 
 import MiddleButtons from "./MiddleButtons";
@@ -16,16 +16,14 @@ interface Props {
 
 export default function Navbar({ id }: Props) {
   const router = useRouter();
-  const world = useLocalWorld(id);
+  const localScene = useLocalScene(id);
 
   const setPreviewMode = useSetAtom(previewModeAtom);
 
   async function handleBack() {
     const canvas = document.querySelector("canvas");
     const image = canvas.toDataURL("image/jpeg", 0.5);
-
-    await mergeLocalWorld(id, { image });
-
+    await mergeLocalScene(id, { image });
     router.push(`/editor/${id}`);
   }
 
@@ -44,7 +42,7 @@ export default function Navbar({ id }: Props) {
           <MdArrowBackIosNew />
         </div>
 
-        <div className="text-lg">{world?.name ?? id}</div>
+        <div className="text-lg">{localScene?.name ?? id}</div>
       </div>
 
       <div className="w-1/3 flex justify-center text-2xl">

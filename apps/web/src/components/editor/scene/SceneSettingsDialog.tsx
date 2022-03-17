@@ -2,12 +2,12 @@ import { Dispatch, SetStateAction, useRef } from "react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
 
-import { Button, Dialog, TextField } from "../../base";
 import {
-  deleteLocalWorld,
-  mergeLocalWorld,
-} from "../../../helpers/localWorlds/db";
-import { useLocalWorld } from "../../../helpers/localWorlds/useLocalWorld";
+  deleteLocalScene,
+  mergeLocalScene,
+} from "../../../helpers/localScenes/db";
+import { useLocalScene } from "../../../helpers/localScenes/useLocalScene";
+import { Button, Dialog, TextField } from "../../base";
 
 interface Props {
   id: string;
@@ -15,28 +15,29 @@ interface Props {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-export function SceneSettingsDialog({ id, open, setOpen }: Props) {
-  const router = useRouter();
-
+export default function SceneSettingsDialog({ id, open, setOpen }: Props) {
   const nameRef = useRef<HTMLInputElement>();
   const descriptionRef = useRef<HTMLTextAreaElement>();
 
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const world = useLocalWorld(id);
+  const localScene = useLocalScene(id);
 
   async function handleSave() {
-    await mergeLocalWorld(id, {
-      name: nameRef.current.value,
-      description: descriptionRef.current.value,
+    const name = nameRef.current.value;
+    const description = descriptionRef.current.value;
+
+    await mergeLocalScene(id, {
+      name,
+      description,
     });
 
-    queryClient.invalidateQueries(`local-world-${id}`);
-
+    queryClient.invalidateQueries(`local-scene-${id}`);
     setOpen(false);
   }
 
   async function handleDelete() {
-    await deleteLocalWorld(id);
+    await deleteLocalScene(id);
     router.push("/editor");
   }
 
@@ -49,7 +50,7 @@ export function SceneSettingsDialog({ id, open, setOpen }: Props) {
           <TextField
             title="Name"
             inputRef={nameRef}
-            defaultValue={world?.name}
+            defaultValue={localScene?.name}
           />
 
           <div className="flex flex-col space-y-3">
@@ -58,7 +59,7 @@ export function SceneSettingsDialog({ id, open, setOpen }: Props) {
             </label>
             <textarea
               ref={descriptionRef}
-              defaultValue={world?.description}
+              defaultValue={localScene?.description}
               maxLength={420}
               rows={8}
               className="w-full border p-2 leading-tight rounded"
@@ -67,11 +68,9 @@ export function SceneSettingsDialog({ id, open, setOpen }: Props) {
         </div>
 
         <div className="space-y-2">
-          <Button onClick={handleSave}>
-            <div>Save</div>
-          </Button>
-          <Button color="red" onClick={handleDelete}>
-            <div>Delete</div>
+          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleDelete} color="red">
+            Delete
           </Button>
         </div>
       </div>

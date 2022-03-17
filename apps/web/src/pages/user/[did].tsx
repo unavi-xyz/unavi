@@ -12,7 +12,7 @@ import ProfileAvatar from "../../components/profile/ProfileAvatar";
 
 export default function User() {
   const router = useRouter();
-  const did = String(router.query.did);
+  const did = router.query.did as string;
 
   const { viewerId } = useAuth();
   const { profile } = useProfile(did);

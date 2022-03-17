@@ -12,7 +12,6 @@ export function useSceneLoader(scene: Scene) {
 
     Object.keys(scene.textures).forEach(async (cid) => {
       const value = await loadImage(ipfs, cid);
-      console.log("👩‍👦‍👦", cid);
       setTextures((prev) => {
         prev[cid] = { value, name: "" };
         return { ...prev };

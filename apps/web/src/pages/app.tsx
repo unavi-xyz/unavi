@@ -12,7 +12,7 @@ import { useSceneLoader } from "../components/app/useSceneLoader";
 
 export default function App() {
   const router = useRouter();
-  const roomId = String(router.query.room);
+  const roomId = router.query.room as string;
 
   const { room } = useRoom(roomId);
   const { authenticated, connect } = useAuth();

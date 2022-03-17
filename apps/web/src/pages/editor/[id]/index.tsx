@@ -14,7 +14,7 @@ import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
 
 export default function Id() {
   const router = useRouter();
-  const id = String(router.query.id);
+  const id = router.query.id as string;
 
   const { authenticated, connect } = useAuth();
   const localScene = useLocalScene(id);

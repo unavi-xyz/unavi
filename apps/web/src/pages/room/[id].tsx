@@ -10,7 +10,7 @@ import { RoomSettingsDialog } from "../../components/room/RoomSettingsDialog";
 
 export default function Room() {
   const router = useRouter();
-  const id = String(router.query.id);
+  const id = router.query.id as string;
 
   const { viewerId } = useAuth();
   const { room, controller } = useRoom(id);

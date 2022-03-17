@@ -13,7 +13,7 @@ import { useStore } from "../../../helpers/editor/store";
 
 export default function Edit() {
   const router = useRouter();
-  const id = String(router.query.id);
+  const id = router.query.id as string;
 
   const setScene = useStore((state) => state.setScene);
   const setSelected = useStore((state) => state.setSelected);

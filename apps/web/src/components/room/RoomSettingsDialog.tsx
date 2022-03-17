@@ -52,7 +52,7 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
     await unpinTile(id);
     await removeRoomFromProfile(id);
 
-    router.push("/");
+    router.back();
   }
 
   return (

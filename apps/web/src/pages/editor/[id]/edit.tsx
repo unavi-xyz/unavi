@@ -25,7 +25,7 @@ export default function Id() {
     setWorldId(id);
 
     return () => {
-      setScene({});
+      setScene({ instances: {}, textures: {} });
       setSelected(null);
       setWorldId(null);
     };

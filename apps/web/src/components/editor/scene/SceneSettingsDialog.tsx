@@ -2,12 +2,12 @@ import { Dispatch, SetStateAction, useRef } from "react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
 
-import { Button, Dialog, TextField } from "../base";
+import { Button, Dialog, TextField } from "../../base";
 import {
   deleteLocalWorld,
   mergeLocalWorld,
-} from "../../helpers/localWorlds/db";
-import { useLocalWorld } from "../../helpers/localWorlds/useLocalWorld";
+} from "../../../helpers/localWorlds/db";
+import { useLocalWorld } from "../../../helpers/localWorlds/useLocalWorld";
 
 interface Props {
   id: string;

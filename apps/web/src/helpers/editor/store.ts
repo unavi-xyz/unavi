@@ -4,6 +4,12 @@ import { Euler, Quaternion, Vector3 } from "three";
 import { AssetName, ASSETS, Params, Scene } from "3d";
 
 import { Selected } from "./types";
+import {
+  readFile,
+  readFileAsDataUrl,
+} from "../../components/editor/EditorSidebar/Inspect/helpers";
+
+const Hash = require("ipfs-only-hash");
 
 type StoreState = {
   scene: Scene;
@@ -16,18 +22,20 @@ type StoreState = {
   updateInstanceParams: (id: string, changes: Partial<Params>) => void;
   newInstance: (name: AssetName, initialParams?: Partial<Params>) => void;
   deleteInstance: (id: string) => void;
+
+  newTexture: (file: File) => Promise<string>;
 };
 
 export const useStore = create<StoreState>(
   (set: SetState<StoreState>, get: GetState<StoreState>) => ({
-    scene: {},
+    scene: { instances: {}, textures: {} },
     setScene: (value: Scene) => set({ scene: value }),
 
     selected: null,
     setSelected: (value: Selected) => set({ selected: value }),
     saveSelected: () => {
       const { id, ref } = get().selected;
-      const params = get().scene[id].params;
+      const params = get().scene.instances[id].params;
 
       const position = ref.current.getWorldPosition(new Vector3()).toArray();
 
@@ -45,11 +53,11 @@ export const useStore = create<StoreState>(
     },
 
     updateInstanceParams: (id: string, changes: Partial<Params>) => {
-      const params = get().scene[id].params;
+      const params = get().scene.instances[id].params;
       const newParams = { ...params, ...changes };
 
       const scene = get().scene;
-      scene[id].params = newParams;
+      scene.instances[id].params = newParams;
 
       set({ scene });
     },
@@ -59,16 +67,30 @@ export const useStore = create<StoreState>(
       const params = initialParams ?? { ...ASSETS[name].params };
 
       const newScene = { ...get().scene };
-      newScene[id] = { id, name, params };
+      newScene.instances[id] = { id, name, params };
 
-      get().setScene(newScene);
+      set({ scene: newScene });
     },
 
     deleteInstance(id: string) {
       const newScene = { ...get().scene };
-      delete newScene[id];
+      delete newScene.instances[id];
 
-      get().setScene(newScene);
+      set({ scene: newScene });
+    },
+
+    async newTexture(file: File) {
+      const array = new Uint8Array(await readFile(file));
+      const cid = await Hash.of(array);
+
+      const value = await readFileAsDataUrl(file);
+
+      const newScene = { ...get().scene };
+      newScene.textures[cid] = { value, name: file.name };
+
+      set({ scene: newScene });
+
+      return cid;
     },
   })
 );

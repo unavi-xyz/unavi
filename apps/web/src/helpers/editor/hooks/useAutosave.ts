@@ -27,7 +27,22 @@ export function useAutosave() {
     const interval = setInterval(() => {
       const scene = useStore.getState().scene;
 
-      mergeLocalWorld(worldId, { scene });
+      //prune unused textures
+      const usedTextures = Object.values(scene.instances).map(
+        (instance) => instance.params?.texture
+      );
+      const filtered = Object.keys(scene.textures).filter((id) =>
+        usedTextures.includes(id)
+      );
+
+      const newTextures = {};
+      filtered.forEach((id) => {
+        newTextures[id] = scene.textures[id];
+      });
+
+      const savedScene = { ...scene, textures: newTextures };
+
+      mergeLocalWorld(worldId, { scene: savedScene });
     }, 5000);
 
     return () => {

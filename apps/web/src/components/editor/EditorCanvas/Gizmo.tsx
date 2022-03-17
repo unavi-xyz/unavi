@@ -18,7 +18,7 @@ export default function Gizmo() {
 
   useEffect(() => {
     if (selected) {
-      const params = useStore.getState().scene[selected.id].params;
+      const params = useStore.getState().scene.instances[selected.id].params;
 
       if (tool === Tool.scale) {
         const hasScale = Boolean(params?.scale);

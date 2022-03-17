@@ -8,7 +8,7 @@ interface Props {
   setPack: Dispatch<SetStateAction<string>>;
 }
 
-export default function AssetPacks({ setPack }: Props) {
+export default function Packs({ setPack }: Props) {
   return (
     <div className="space-y-6">
       <div className="text-3xl">Asset Packs</div>

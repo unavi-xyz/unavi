@@ -28,8 +28,18 @@ export type Instance = {
   params: Partial<Params>;
 };
 
+export type Texture = {
+  name: string;
+  value: string;
+};
+
 export type Scene = {
-  [key: string]: Instance;
+  instances: {
+    [key: string]: Instance;
+  };
+  textures: {
+    [key: string]: Texture;
+  };
 };
 
 export const ASSETS = {

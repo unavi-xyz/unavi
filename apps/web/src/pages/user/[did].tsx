@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useAuth, useIpfsFile, useProfile, useRooms } from "ceramic";
 
 import { IconButton } from "../../components/base";
-import { ProfileSettingsDialog } from "../../components/ProfileSettingsDialog";
-import RoomCard from "../../components/RoomCard";
+import { ProfileSettingsDialog } from "../../components/profile/ProfileSettingsDialog";
+import RoomCard from "../../components/room/RoomCard";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
-import ProfileAvatar from "../../components/ProfileAvatar";
+import ProfileAvatar from "../../components/profile/ProfileAvatar";
 
 export default function User() {
   const router = useRouter();

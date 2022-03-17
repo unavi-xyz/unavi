@@ -1,5 +1,6 @@
 import { SphereArgs, Triplet, useSphere } from "@react-three/cannon";
 import { Material } from "../Material";
+import { Texture } from "../types";
 
 export const sphereDefaultParams = {
   position: [0, 0, 0] as Triplet,
@@ -9,9 +10,10 @@ export const sphereDefaultParams = {
 
 interface Props {
   params: typeof sphereDefaultParams;
+  textures: { [key: string]: Texture };
 }
 
-export function Sphere({ params }: Props) {
+export function Sphere({ params, textures }: Props) {
   const args: SphereArgs = [params.radius];
 
   const [ref] = useSphere(() => ({
@@ -24,7 +26,7 @@ export function Sphere({ params }: Props) {
   return (
     <mesh ref={ref}>
       <sphereGeometry args={args} />
-      <Material params={params} />
+      <Material params={params} textures={textures} />
     </mesh>
   );
 }

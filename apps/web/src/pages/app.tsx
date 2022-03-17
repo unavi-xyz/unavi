@@ -8,6 +8,7 @@ import { useAuth, useRoom } from "ceramic";
 import AppLayout from "../layouts/AppLayout";
 import Multiplayer from "../components/app/Multiplayer";
 import MultiplayerProvider from "../components/app/MultiplayerContext";
+import { useSceneLoader } from "../components/app/useSceneLoader";
 
 export default function App() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function App() {
 
   const { room } = useRoom(roomId);
   const { authenticated, connect } = useAuth();
+
+  const textures = useSceneLoader(room?.scene);
 
   useEffect(() => {
     if (!authenticated) connect();
@@ -29,7 +32,7 @@ export default function App() {
       <Canvas mode="concurrent">
         <MultiplayerProvider>
           <Physics>
-            <World scene={room.scene} />
+            <World scene={room.scene} textures={textures} />
             <Multiplayer roomId={roomId} />
             <Player />
           </Physics>

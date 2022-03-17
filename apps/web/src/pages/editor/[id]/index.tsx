@@ -3,17 +3,18 @@ import { IoMdSettings } from "react-icons/io";
 import { MdCloudUpload, MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { createRoom, useAuth } from "ceramic";
+import { createRoom, uploadImageToIpfs, useAuth } from "ceramic";
+import { Scene } from "3d";
 
 import { useLocalWorld } from "../../../helpers/localWorlds/useLocalWorld";
-import { SceneSettingsDialog } from "../../../components/editor/SceneSettingsDialog";
-import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
 import { IconButton } from "../../../components/base";
+import { SceneSettingsDialog } from "../../../components/editor/scene/SceneSettingsDialog";
+import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
 
-async function dataUrlToFile(dataUrl: string) {
+async function dataUrlToFile(dataUrl: string, name: string) {
   const res = await fetch(dataUrl);
   const blob = await res.blob();
-  return new File([blob], "preview");
+  return new File([blob], name);
 }
 
 export default function Id() {
@@ -30,12 +31,30 @@ export default function Id() {
       await connect();
     }
 
-    const image = world?.image ? await dataUrlToFile(world.image) : undefined;
+    const sceneCopy: Scene = { ...world.scene };
+
+    //upload textures
+    Promise.all(
+      Object.values(sceneCopy.textures).map(async ({ value, name }) => {
+        const file = await dataUrlToFile(value, name);
+        await uploadImageToIpfs(file);
+      })
+    );
+
+    Object.keys(sceneCopy.textures).forEach((key) => {
+      sceneCopy.textures[key] = null;
+    });
+
+    //upload preview image
+    const image = world?.image
+      ? await dataUrlToFile(world.image, "preview")
+      : undefined;
+
     const streamId = await createRoom(
       world.name,
       world.description,
       image,
-      world.scene
+      sceneCopy
     );
 
     router.push(`/room/${streamId}`);

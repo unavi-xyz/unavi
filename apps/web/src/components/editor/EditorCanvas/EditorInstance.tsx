@@ -12,8 +12,9 @@ interface Props {
 }
 
 export default function EditorInstance({ id }: Props) {
-  const instance = useStore((state) => state.scene[id]);
-  const params = useStore((state) => state.scene[id].params);
+  const instance = useStore((state) => state.scene.instances[id]);
+  const textures = useStore((state) => state.scene.textures);
+  const params = useStore((state) => state.scene.instances[id].params);
 
   const setSelected = useStore((state) => state.setSelected);
 
@@ -60,7 +61,11 @@ export default function EditorInstance({ id }: Props) {
       rotation={params.rotation}
       scale={params?.scale}
     >
-      <InstancedAsset name={instance.name} params={usedParams} />
+      <InstancedAsset
+        name={instance.name}
+        params={usedParams}
+        textures={textures}
+      />
     </group>
   );
 }

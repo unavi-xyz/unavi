@@ -4,9 +4,9 @@ import Link from "next/link";
 
 import { IconButton } from "../../components/base";
 import { getLocalWorldIds } from "../../helpers/localWorlds/db";
-import { NewSceneDialog } from "../../components/editor/NewSceneDialog";
-import SceneCard from "../../components/editor/SceneCard";
+import { NewSceneDialog } from "../../components/editor/scene/NewSceneDialog";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
+import SceneCard from "../../components/editor/scene/SceneCard";
 
 export default function Editor() {
   const [openNew, setOpenNew] = useState(false);

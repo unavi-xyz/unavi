@@ -3,8 +3,8 @@ import { useState } from "react";
 import { useStore } from "../../../helpers/editor/store";
 
 import Inspect from "./Inspect/Inspect";
-import Pack from "./Pack/Pack";
-import AssetPacks from "./AssetPacks/AssetPacks";
+import Assets from "./Assets/Assets";
+import Packs from "./Packs/Packs";
 
 export default function EditorSidebar() {
   const selected = useStore((state) => state.selected);
@@ -16,9 +16,9 @@ export default function EditorSidebar() {
       {selected ? (
         <Inspect />
       ) : pack ? (
-        <Pack pack={pack} setPack={setPack} />
+        <Assets pack={pack} setPack={setPack} />
       ) : (
-        <AssetPacks setPack={setPack} />
+        <Packs setPack={setPack} />
       )}
     </div>
   );

@@ -1,25 +1,33 @@
 import { useEffect, useRef, useState } from "react";
-import { MeshStandardMaterial, Texture, TextureLoader } from "three";
+import {
+  MeshStandardMaterial,
+  Texture as ThreeTexture,
+  TextureLoader,
+} from "three";
 
-import { Params } from "./types";
+import { Params, Texture } from "./types";
 
 interface Props {
   params: Partial<Params>;
+  textures: { [key: string]: Texture };
 }
 
-export function Material({ params }: Props) {
+export function Material({ params, textures }: Props) {
   const ref = useRef<MeshStandardMaterial>();
 
-  const [texture, setTexture] = useState<Texture>();
+  const [texture, setTexture] = useState<ThreeTexture>();
 
   useEffect(() => {
     if (params?.texture) {
+      const texture = textures[params.texture];
+      if (!texture) return;
+
       const loader = new TextureLoader();
-      loader.loadAsync(params?.texture).then((res) => {
+      loader.loadAsync(texture.value).then((res) => {
         setTexture(res);
       });
     }
-  }, [params]);
+  }, [params, textures]);
 
   useEffect(() => {
     if (ref.current) ref.current.needsUpdate = true;

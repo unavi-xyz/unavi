@@ -47,7 +47,8 @@ export function useHotkeys() {
           if (e.ctrlKey && copied.current && !holdingV.current) {
             if (selected) saveSelected();
 
-            const instance = useStore.getState().scene[copied.current];
+            const instance =
+              useStore.getState().scene.instances[copied.current];
 
             newInstance(instance.name, { ...instance.params });
           }

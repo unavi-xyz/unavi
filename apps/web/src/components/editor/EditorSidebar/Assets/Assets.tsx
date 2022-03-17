@@ -9,7 +9,7 @@ interface Props {
   setPack: Dispatch<SetStateAction<string>>;
 }
 
-export default function Pack({ pack, setPack }: Props) {
+export default function Assets({ pack, setPack }: Props) {
   const assets = PACKS[pack];
 
   return (

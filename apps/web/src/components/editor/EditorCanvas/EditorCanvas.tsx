@@ -8,7 +8,6 @@ import { useHotkeys } from "../../../helpers/editor/hooks/useHotkeys";
 
 import { EditorWorld } from "./EditorWorld";
 import Gizmo from "./Gizmo";
-import { useEffect } from "react";
 
 export default function EditorCanvas() {
   const setSelected = useStore((state) => state.setSelected);

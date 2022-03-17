@@ -2,9 +2,9 @@ import { Dispatch, SetStateAction, useRef } from "react";
 import { useRouter } from "next/router";
 import { customAlphabet } from "nanoid";
 
-import { Button, Dialog, TextField } from "../base";
-import { createLocalWorld } from "../../helpers/localWorlds/db";
-import { LocalWorld } from "../../helpers/localWorlds/types";
+import { Button, Dialog, TextField } from "../../base";
+import { createLocalWorld } from "../../../helpers/localWorlds/db";
+import { LocalWorld } from "../../../helpers/localWorlds/types";
 
 const nanoid = customAlphabet("0123456789", 12);
 
@@ -25,7 +25,7 @@ export function NewSceneDialog({ open, setOpen }: Props) {
       id,
       name: name.current.value,
       description: description.current.value,
-      scene: {},
+      scene: { instances: {}, textures: {} },
     };
 
     await createLocalWorld(world);

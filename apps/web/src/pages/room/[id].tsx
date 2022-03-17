@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useAuth, useIpfsFile, useProfile, useRoom } from "ceramic";
 
 import { IconButton } from "../../components/base";
-import { RoomSettingsDialog } from "../../components/RoomSettingsDialog";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
+import { RoomSettingsDialog } from "../../components/room/RoomSettingsDialog";
 
 export default function Room() {
   const router = useRouter();

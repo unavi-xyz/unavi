@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { ThreeEvent, useThree } from "@react-three/fiber";
 import { Sky } from "@react-three/drei";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 import { Ground } from "3d";
 
 import { usingGizmoAtom } from "../../../helpers/editor/state";
@@ -37,8 +37,8 @@ export function EditorWorld() {
         <Ground />
       </group>
 
-      {scene &&
-        Object.keys(scene).map((id) => {
+      {scene?.instances &&
+        Object.keys(scene.instances).map((id) => {
           return <EditorInstance key={id} id={id} />;
         })}
     </group>

@@ -7,7 +7,7 @@ import {
   ImageSources,
 } from "ceramic";
 
-import { Button, Dialog, ImageUpload, TextField } from "./base";
+import { Button, Dialog, ImageUpload, TextField } from "../base";
 
 interface Props {
   id: string;

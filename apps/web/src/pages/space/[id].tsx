@@ -2,20 +2,20 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth, useIpfsFile, useProfile, useRoom } from "ceramic";
+import { useAuth, useIpfsFile, useProfile, useSpace } from "ceramic";
 
 import { IconButton } from "../../components/base";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
-import { RoomSettingsDialog } from "../../components/room/RoomSettingsDialog";
+import { SpaceSettingsDialog } from "../../components/space/SpaceSettingsDialog";
 
-export default function Room() {
+export default function Space() {
   const router = useRouter();
   const id = router.query.id as string;
 
   const { viewerId } = useAuth();
-  const { room, controller } = useRoom(id);
+  const { space, controller } = useSpace(id);
   const { profile } = useProfile(controller);
-  const image = useIpfsFile(room?.image);
+  const image = useIpfsFile(space?.image);
 
   const [openSettings, setOpenSettings] = useState(false);
 
@@ -25,7 +25,7 @@ export default function Room() {
     <div className="flex flex-col space-y-4 h-full">
       <div className="card flex items-center justify-between">
         <div>
-          <div className="text-2xl">{room?.name}</div>
+          <div className="text-2xl">{space?.name}</div>
           <div className="text-lg text-neutral-500">
             by{" "}
             <Link href={`/user/${controller}`} passHref>
@@ -42,7 +42,7 @@ export default function Room() {
               <IoMdSettings />
             </IconButton>
 
-            <RoomSettingsDialog
+            <SpaceSettingsDialog
               id={id}
               open={openSettings}
               setOpen={setOpenSettings}
@@ -56,7 +56,7 @@ export default function Room() {
           {image && (
             <img
               src={image}
-              alt="room image"
+              alt="space image"
               className="w-full h-full rounded-3xl object-cover"
             />
           )}
@@ -67,17 +67,17 @@ export default function Room() {
 
           <div className="relative overflow-auto h-36 md:h-full">
             <div className="absolute top-0 left-0 px-2 whitespace-pre-wrap">
-              {room?.description}
+              {space?.description}
             </div>
           </div>
 
           <div className="h-16">
-            <Link href={`/app?room=${id}`} passHref>
+            <Link href={`/app?space=${id}`} passHref>
               <div
                 className="h-full text-md rounded-full bg-black text-white justify-center
                              hover:cursor-pointer transition-all flex items-center"
               >
-                Join Room
+                Enter Space
               </div>
             </Link>
           </div>
@@ -87,4 +87,4 @@ export default function Room() {
   );
 }
 
-Room.Layout = SidebarLayout;
+Space.Layout = SidebarLayout;

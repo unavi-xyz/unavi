@@ -9,23 +9,23 @@ import { MultiplayerContext } from "./MultiplayerContext";
 import OtherPlayer from "./OtherPlayer";
 
 interface Props {
-  roomId: string;
+  spaceId: string;
 }
 
-export default function Multiplayer({ roomId }: Props) {
+export default function Multiplayer({ spaceId }: Props) {
   const tempVector3 = useRef(new Vector3());
 
   const [players, setPlayers] = useState<string[]>([]);
 
   const { authenticated, viewerId } = useAuth();
-  const { joinRoom, publishLocation, ydoc } = useContext(MultiplayerContext);
+  const { joinSpace, publishLocation, ydoc } = useContext(MultiplayerContext);
 
   const { camera } = useThree();
 
   useEffect(() => {
-    if (!authenticated || !roomId) return;
-    joinRoom(roomId);
-  }, [authenticated, joinRoom, roomId]);
+    if (!authenticated || !spaceId) return;
+    joinSpace(spaceId);
+  }, [authenticated, joinSpace, spaceId]);
 
   useEffect(() => {
     const interval = setInterval(() => {

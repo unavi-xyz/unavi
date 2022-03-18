@@ -3,7 +3,7 @@ import { IoMdSettings } from "react-icons/io";
 import { MdCloudUpload, MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { createRoom, uploadFileToIpfs, useAuth } from "ceramic";
+import { createSpace, uploadFileToIpfs, useAuth } from "ceramic";
 
 import { dataUrlToFile } from "../../../helpers/files";
 import { useLocalScene } from "../../../components/editor/scene/localScenes/useLocalScene";
@@ -56,15 +56,15 @@ export default function Id() {
       ? await dataUrlToFile(localScene.image, "preview")
       : undefined;
 
-    //create the room
-    const streamId = await createRoom(
+    //create the space
+    const streamId = await createSpace(
       localScene.name,
       localScene.description,
       image,
       sceneCopy
     );
 
-    router.push(`/room/${streamId}`);
+    router.push(`/space/${streamId}`);
   }
 
   if (!localScene) {

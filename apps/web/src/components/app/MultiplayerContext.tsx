@@ -11,7 +11,7 @@ const SIGNALING_SERVERS = [
 ];
 
 const defaultValue = {
-  joinRoom: (roomId: string) => {},
+  joinSpace: (spaceId: string) => {},
   publishLocation: (position: Triplet, rotation: number) => {},
   ydoc: new Doc(),
 };
@@ -20,14 +20,14 @@ export const MultiplayerContext = createContext(defaultValue);
 
 export default function MultiplayerProvider({ children }) {
   const [ydoc, setYdoc] = useState(new Doc());
-  const [roomName, setRoomName] = useState("");
+  const [spaceName, setSpaceName] = useState("");
 
   const { viewerId } = useAuth();
 
   useEffect(() => {
     const doc = new Doc();
 
-    new WebrtcProvider(roomName, doc, {
+    new WebrtcProvider(spaceName, doc, {
       signaling: SIGNALING_SERVERS,
     } as any);
 
@@ -40,11 +40,11 @@ export default function MultiplayerProvider({ children }) {
     return () => {
       doc?.destroy();
     };
-  }, [roomName, setYdoc]);
+  }, [spaceName, setYdoc]);
 
-  function joinRoom(roomId: string) {
-    if (roomId === roomName) return;
-    setRoomName(roomId);
+  function joinSpace(spaceId: string) {
+    if (spaceId === spaceName) return;
+    setSpaceName(spaceId);
   }
 
   function publishLocation(position: Triplet, rotation: number) {
@@ -55,7 +55,7 @@ export default function MultiplayerProvider({ children }) {
   }
 
   return (
-    <MultiplayerContext.Provider value={{ joinRoom, publishLocation, ydoc }}>
+    <MultiplayerContext.Provider value={{ joinSpace, publishLocation, ydoc }}>
       {children}
     </MultiplayerContext.Provider>
   );

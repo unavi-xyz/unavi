@@ -42,13 +42,13 @@ export default function Sidebar() {
           </div>
         </Link>
 
-        <Link href="/rooms" passHref>
+        <Link href="/spaces" passHref>
           <div>
             <SidebarButton
               icon={<BiWorld />}
               color={Colors.lime}
-              text="Rooms"
-              selected={router.asPath === "/rooms"}
+              text="Spaces"
+              selected={router.asPath === "/spaces"}
             />
           </div>
         </Link>

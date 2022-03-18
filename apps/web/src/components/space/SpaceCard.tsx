@@ -1,14 +1,14 @@
-import { useIpfsFile, useRoom } from "ceramic";
+import { useIpfsFile, useSpace } from "ceramic";
 
 interface Props {
   streamId: string;
 }
 
-export default function RoomCard({ streamId }: Props) {
-  const { room } = useRoom(streamId);
-  const image = useIpfsFile(room?.image);
+export default function SpaceCard({ streamId }: Props) {
+  const { space } = useSpace(streamId);
+  const image = useIpfsFile(space?.image);
 
-  if (!room) return null;
+  if (!space) return null;
 
   return (
     <div className="h-36">
@@ -17,15 +17,15 @@ export default function RoomCard({ streamId }: Props) {
           {image && (
             <img
               src={image}
-              alt="room image"
+              alt="space image"
               className="w-full h-full object-cover rounded-xl"
             />
           )}
         </div>
 
         <div className="w-full h-full px-6 flex flex-col justify-center">
-          <div className="text-xl font-medium w-full">{room?.name}</div>
-          <div className="text-neutral-500 w-full">{room?.description}</div>
+          <div className="text-xl font-medium w-full">{space?.name}</div>
+          <div className="text-neutral-500 w-full">{space?.description}</div>
         </div>
       </div>
     </div>

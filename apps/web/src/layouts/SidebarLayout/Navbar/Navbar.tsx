@@ -23,9 +23,12 @@ export default function Navbar() {
           </div>
         </Link>
 
-        <Link href="/rooms" passHref>
+        <Link href="/spaces" passHref>
           <div>
-            <NavbarButton text="Rooms" selected={router.asPath === "/rooms"} />
+            <NavbarButton
+              text="Spaces"
+              selected={router.asPath === "/spaces"}
+            />
           </div>
         </Link>
 

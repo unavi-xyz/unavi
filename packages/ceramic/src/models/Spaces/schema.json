@@ -1,5 +1,5 @@
 {
-  "title": "Rooms",
+  "title": "Spaces",
   "type": "array",
   "items": { "type": "string" },
   "uniqueItems": true

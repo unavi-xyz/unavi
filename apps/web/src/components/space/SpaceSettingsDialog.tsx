@@ -2,11 +2,11 @@ import { Dispatch, SetStateAction, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
 import {
-  editRoom,
-  removeRoomFromProfile,
+  editSpace,
+  removeSpaceFromProfile,
   unpinTile,
   useIpfsFile,
-  useRoom,
+  useSpace,
 } from "ceramic";
 
 import { Button, Dialog, ImageUpload, TextField } from "../base";
@@ -17,7 +17,7 @@ interface Props {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-export function RoomSettingsDialog({ id, open, setOpen }: Props) {
+export function SpaceSettingsDialog({ id, open, setOpen }: Props) {
   const router = useRouter();
 
   const nameRef = useRef<HTMLInputElement>();
@@ -28,8 +28,8 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
   const [loadingsDelete, setLoadingsDelete] = useState(false);
 
   const queryClient = useQueryClient();
-  const { room } = useRoom(id);
-  const image = useIpfsFile(room?.image);
+  const { space } = useSpace(id);
+  const image = useIpfsFile(space?.image);
 
   async function handleSave() {
     if (loadingSave) return;
@@ -38,9 +38,9 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
     const name = nameRef.current.value;
     const description = descriptionRef.current.value;
 
-    await editRoom(id, name, description, imageFile);
+    await editSpace(id, name, description, imageFile);
 
-    queryClient.invalidateQueries(`room-${id}`);
+    queryClient.invalidateQueries(`space-${id}`);
     setOpen(false);
     setLoadingSave(false);
   }
@@ -50,7 +50,7 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
     setLoadingsDelete(true);
 
     await unpinTile(id);
-    await removeRoomFromProfile(id);
+    await removeSpaceFromProfile(id);
 
     router.back();
   }
@@ -68,7 +68,7 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
           <TextField
             title="Name"
             inputRef={nameRef}
-            defaultValue={room?.name}
+            defaultValue={space?.name}
           />
 
           <div className="flex flex-col space-y-3">
@@ -77,7 +77,7 @@ export function RoomSettingsDialog({ id, open, setOpen }: Props) {
             </label>
             <textarea
               ref={descriptionRef}
-              defaultValue={room?.description}
+              defaultValue={space?.description}
               maxLength={420}
               rows={8}
               className="w-full border p-2 leading-tight rounded"

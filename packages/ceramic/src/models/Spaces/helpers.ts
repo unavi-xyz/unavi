@@ -2,10 +2,10 @@ import { addToArray, removeFromArray } from "../../didstore";
 
 const model = require("./model.json");
 
-export async function addRoomToProfile(streamId: string) {
+export async function addSpaceToProfile(streamId: string) {
   await addToArray(model, streamId);
 }
 
-export async function removeRoomFromProfile(streamId: string) {
+export async function removeSpaceFromProfile(streamId: string) {
   await removeFromArray(model, streamId);
 }

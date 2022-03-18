@@ -1,37 +1,37 @@
 import { Scene } from "3d";
 
-import { Room } from "./types";
+import { Space } from "./types";
 import { uploadFileToIpfs } from "../../ipfs";
 import { loader } from "../../client";
-import { addRoomToProfile, removeRoomFromProfile } from "../Rooms/helpers";
+import { addSpaceToProfile, removeSpaceFromProfile } from "../Spaces/helpers";
 
 const model = require("./model.json");
 
-export async function createRoom(
+export async function createSpace(
   name?: string,
   description?: string,
   image?: File,
   scene?: Scene
 ) {
   const hash = image ? await uploadFileToIpfs(image) : undefined;
-  const room: Room = { name, description, image: hash, scene };
+  const space: Space = { name, description, image: hash, scene };
   const stream = await loader.create(
-    room,
+    space,
     { schema: model.schemas.Space },
     { pin: false }
   );
   const streamId = stream.id.toString();
-  await addRoomToProfile(streamId);
+  await addSpaceToProfile(streamId);
   return streamId;
 }
 
-export async function deleteRoom(streamId: string) {
+export async function deleteSpace(streamId: string) {
   const doc = await loader.load(streamId);
   await doc.update(doc.content, {}, { pin: false });
-  await removeRoomFromProfile(streamId);
+  await removeSpaceFromProfile(streamId);
 }
 
-export async function editRoom(
+export async function editSpace(
   streamId: string,
   name?: string,
   description?: string,
@@ -40,6 +40,6 @@ export async function editRoom(
   const hash = imageFile ? await uploadFileToIpfs(imageFile) : undefined;
   const doc = await loader.load(streamId);
   const image = hash ?? doc.content?.image;
-  const room: Room = { name, description, image };
-  await doc.update(room, {}, { pin: true });
+  const space: Space = { name, description, image };
+  await doc.update(space, {}, { pin: true });
 }

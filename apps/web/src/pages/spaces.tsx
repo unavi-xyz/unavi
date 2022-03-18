@@ -1,13 +1,13 @@
 import SidebarLayout from "../layouts/SidebarLayout/SidebarLayout";
 
-export default function Rooms() {
+export default function Spaces() {
   return (
     <div className="space-y-4">
       <div className="card">
-        <div className="text-2xl">Rooms</div>
+        <div className="text-2xl">Spaces</div>
       </div>
     </div>
   );
 }
 
-Rooms.Layout = SidebarLayout;
+Spaces.Layout = SidebarLayout;

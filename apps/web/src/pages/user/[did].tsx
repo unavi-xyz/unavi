@@ -2,11 +2,11 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth, useIpfsFile, useProfile, useRooms } from "ceramic";
+import { useAuth, useIpfsFile, useProfile, useUserSpaces } from "ceramic";
 
 import { IconButton } from "../../components/base";
 import { ProfileSettingsDialog } from "../../components/profile/ProfileSettingsDialog";
-import RoomCard from "../../components/room/RoomCard";
+import SpaceCard from "../../components/space/SpaceCard";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
 import ProfileAvatar from "../../components/profile/ProfileAvatar";
 
@@ -17,7 +17,7 @@ export default function User() {
   const { viewerId } = useAuth();
   const { profile } = useProfile(did);
   const image = useIpfsFile(profile?.image?.original.src);
-  const rooms = useRooms(did);
+  const spaces = useUserSpaces(did);
 
   const [openSettings, setOpenSettings] = useState(false);
 
@@ -80,16 +80,16 @@ export default function User() {
 
           <div className="card row-span-2 flex flex-col space-y-4">
             <div className="text-2xl font-medium flex justify-center">
-              Rooms
+              Spaces
             </div>
 
             <div className="relative overflow-auto h-96 md:h-full">
               <div className="absolute w-full top-0 left-0 px-2 space-y-4">
-                {rooms?.map((streamId) => {
+                {spaces?.map((streamId) => {
                   return (
-                    <Link key={streamId} href={`/room/${streamId}`} passHref>
+                    <Link key={streamId} href={`/space/${streamId}`} passHref>
                       <div>
-                        <RoomCard streamId={streamId} />
+                        <SpaceCard streamId={streamId} />
                       </div>
                     </Link>
                   );

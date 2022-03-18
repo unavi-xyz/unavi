@@ -42,7 +42,7 @@ export const useStore = create<StoreState>(
 
       const rotationQuat = ref.current.getWorldQuaternion(new Quaternion());
       const rotationEuler = new Euler().setFromQuaternion(rotationQuat);
-      const rotation = new Vector3().setFromEuler(rotationEuler).toArray();
+      const rotation = rotationEuler.toVector3().toArray();
 
       const changes: typeof params = { position, rotation };
 

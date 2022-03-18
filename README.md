@@ -6,7 +6,7 @@ This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includ
 
 ### Apps
 
-- `web`: a [Next.js](https://nextjs.org) app
+- `client`: a [Next.js](https://nextjs.org) app
 
 ### Packages
 

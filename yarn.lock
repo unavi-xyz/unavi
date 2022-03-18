@@ -1266,10 +1266,10 @@
   dependencies:
     "@glazed/tile-loader" "^0.1.0"
 
-"@glazed/devtools@^0.1.5":
-  version "0.1.5"
-  resolved "https://registry.npmjs.org/@glazed/devtools/-/devtools-0.1.5.tgz"
-  integrity sha512-3EjQjEomzIAgPmy39DfcFnkGgVOGTHg/zhaEtgEzVe3jZzw1KqX7oAHeFcqPvizYaDiVvAB9EOgM8TxVevfanQ==
+"@glazed/devtools@^0.1.6":
+  version "0.1.6"
+  resolved "https://registry.yarnpkg.com/@glazed/devtools/-/devtools-0.1.6.tgz#a7710dc113401e524942cd592bd9b9b7548aa4e9"
+  integrity sha512-9hiRmsviZbx/iDgkA6kn/rLj7FjZybNY1s5bXXM/vmepThe3gXF++qkKkDTpXyEUN0MlAH34PcHtcyDhHc+f/A==
   dependencies:
     "@ceramicnetwork/common" "^1.8.0"
     "@ceramicnetwork/stream-tile" "^1.5.0"

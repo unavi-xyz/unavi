@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "3d": "*",
-    "@glazed/devtools": "^0.1.5",
+    "@glazed/devtools": "^0.1.6",
     "@stablelib/random": "^1.0.1",
     "@types/react": "17.0.37",
     "@types/react-dom": "^17",

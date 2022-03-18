@@ -1,6 +1,6 @@
 import { IPFS } from "ipfs-core";
 
-export async function loadImage(ipfs: IPFS, cid: string) {
+export async function loadFromIpfs(ipfs: IPFS, cid: string) {
   const res = ipfs.cat(cid);
 
   const files: Uint8Array[] = [];
@@ -13,9 +13,9 @@ export async function loadImage(ipfs: IPFS, cid: string) {
   return url;
 }
 
-export async function uploadImageToIpfs(image: File) {
+export async function uploadFileToIpfs(file: File) {
   const body = new FormData();
-  body.append("path", image, image.name);
+  body.append("path", file, file.name);
   const res = await fetch(`https://ipfs.infura.io:5001/api/v0/add`, {
     method: "POST",
     body,

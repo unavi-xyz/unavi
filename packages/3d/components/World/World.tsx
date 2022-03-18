@@ -1,14 +1,16 @@
 import { Sky } from "@react-three/drei";
 
-import { Scene } from "./types";
-import { Ground } from "../Ground/Ground";
+import { Model, Scene, Texture } from "./types";
 import { InstancedAsset } from "./InstancedAsset";
+import { Ground } from "../Ground/Ground";
 
 interface Props {
   scene: Scene;
+  textures?: { [key: string]: Texture };
+  models?: { [key: string]: Model };
 }
 
-export function World({ scene }: Props) {
+export function World({ scene, textures, models }: Props) {
   return (
     <group>
       <directionalLight intensity={0.7} position={[1, 2, 5]} />
@@ -17,12 +19,14 @@ export function World({ scene }: Props) {
       <Ground />
 
       {scene &&
-        Object.values(scene).map((instance) => {
+        Object.values(scene.instances).map((instance) => {
           return (
             <InstancedAsset
               key={instance.id}
               name={instance.name}
               params={instance.params}
+              textures={textures ?? scene.textures}
+              models={models ?? scene.models}
             />
           );
         })}

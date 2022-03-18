@@ -1,4 +1,6 @@
 import { Triplet, useBox } from "@react-three/cannon";
+import { Material } from "../Material";
+import { Texture } from "../types";
 
 export const boxDefaultParams = {
   position: [0, 0, 0] as Triplet,
@@ -8,9 +10,10 @@ export const boxDefaultParams = {
 
 interface Props {
   params: typeof boxDefaultParams;
+  textures: { [key: string]: Texture };
 }
 
-export function Box({ params }: Props) {
+export function Box({ params, textures }: Props) {
   const args: Triplet = params.scale;
 
   const [ref] = useBox(() => ({
@@ -23,7 +26,7 @@ export function Box({ params }: Props) {
   return (
     <mesh ref={ref}>
       <boxBufferGeometry args={args} />
-      <meshStandardMaterial />
+      <Material params={params} textures={textures} />
     </mesh>
   );
 }

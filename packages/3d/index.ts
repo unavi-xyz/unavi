@@ -6,4 +6,3 @@ export * from "./components/Ground/Ground";
 export * from "./components/World/World";
 export * from "./components/World/InstancedAsset";
 export * from "./components/World/types";
-export * from "./components/World/assets/Box";

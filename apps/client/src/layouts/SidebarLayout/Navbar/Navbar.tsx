@@ -23,11 +23,11 @@ export default function Navbar() {
           </div>
         </Link>
 
-        <Link href="/spaces" passHref>
+        <Link href="/editor" passHref>
           <div>
             <NavbarButton
-              text="Spaces"
-              selected={router.asPath === "/spaces"}
+              text="Editor"
+              selected={router.asPath === "/editor"}
             />
           </div>
         </Link>
@@ -43,10 +43,7 @@ export default function Navbar() {
           </Link>
         ) : (
           <div onClick={() => setOpen(true)}>
-            <NavbarButton
-              text="Sign In"
-              selected={router.asPath === "/editor"}
-            />
+            <NavbarButton text="Sign In" />
           </div>
         )}
       </div>

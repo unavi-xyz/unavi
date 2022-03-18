@@ -1,5 +1,4 @@
 import { AiOutlineHome } from "react-icons/ai";
-import { BiWorld } from "react-icons/bi";
 import { BsFillPersonFill } from "react-icons/bs";
 import { FaPencilRuler } from "react-icons/fa";
 import { useRouter } from "next/router";
@@ -38,17 +37,6 @@ export default function Sidebar() {
               text="Home"
               color={Colors.sky}
               selected={router.asPath === "/"}
-            />
-          </div>
-        </Link>
-
-        <Link href="/spaces" passHref>
-          <div>
-            <SidebarButton
-              icon={<BiWorld />}
-              color={Colors.lime}
-              text="Spaces"
-              selected={router.asPath === "/spaces"}
             />
           </div>
         </Link>

@@ -21,7 +21,7 @@ export default function Editor() {
     <>
       <NewSceneDialog open={openNew} setOpen={setOpenNew} />
 
-      <div className="space-y-4 h-full w-full flex flex-col">
+      <div className="space-y-4 w-full flex flex-col">
         <div className="card flex items-center justify-between ">
           <div className="text-2xl">Scenes</div>
 

@@ -4,5 +4,9 @@ interface Props {
 }
 
 export default function NavbarButton({ text, selected }: Props) {
-  return <div className={`${selected && "font-bold"} text-lg`}>{text}</div>;
+  return (
+    <div className={`${selected && "font-bold"} text-lg hover:cursor-pointer`}>
+      {text}
+    </div>
+  );
 }

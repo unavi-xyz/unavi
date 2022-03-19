@@ -1,13 +1,16 @@
 import { useStore } from "../../../helpers/store";
-import { getHandleChange } from "../helpers";
+import { getHandleChange, useSections } from "../helpers";
 
 import TripletField from "../inputs/TripletField";
 
 export default function Transform() {
   const selected = useStore((state) => state.selected);
+  const name = useStore((state) => state.scene.instances[selected?.id]?.name);
   const params = useStore(
     (state) => state.scene.instances[selected?.id]?.params
   );
+
+  const sections = useSections(name);
 
   if (!params) return null;
 
@@ -29,7 +32,7 @@ export default function Transform() {
         onChange={getHandleChange("rotation")}
       />
 
-      {params?.scale && (
+      {sections.includes("scale") && (
         <TripletField
           title="Scale"
           value={params.scale}

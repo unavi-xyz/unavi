@@ -27,7 +27,7 @@ export function useAutosave() {
 
       //prune unused textures
       const usedTextures = Object.values(scene.instances).map(
-        (instance) => instance.params?.texture
+        (instance) => instance.params?.material?.texture
       );
       const filteredTextures = Object.keys(scene.textures).filter((id) =>
         usedTextures.includes(id)

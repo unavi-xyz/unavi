@@ -1,16 +1,18 @@
 import { Triplet } from "@react-three/cannon";
 
-import { boxDefaultParams } from "./assets/Box";
-import { gltfDefaultParams } from "./assets/GLTF";
-import { sphereDefaultParams } from "./assets/Sphere";
+export type Material = {
+  color: string;
+  opacity: number;
+  texture: string | undefined;
+};
 
 export type Params = {
   position: Triplet;
   rotation: Triplet;
   scale: Triplet;
   radius: number;
-  texture: string;
-  model: string | null;
+  model: string | undefined;
+  material: Material;
 };
 
 export enum AssetName {
@@ -51,19 +53,4 @@ export type Scene = {
   models: {
     [key: string]: Model;
   };
-};
-
-export const ASSETS = {
-  Box: {
-    name: AssetName.Box,
-    params: boxDefaultParams,
-  } as Asset,
-  Sphere: {
-    name: AssetName.Sphere,
-    params: sphereDefaultParams,
-  } as Asset,
-  GLTF: {
-    name: AssetName.GLTF,
-    params: gltfDefaultParams,
-  } as Asset,
 };

@@ -14,7 +14,7 @@ export const gltfDefaultParams = {
   position: [0, 0, 0] as Triplet,
   rotation: [0, 0, 0] as Triplet,
   scale: [1, 1, 1] as Triplet,
-  model: null,
+  model: undefined,
 };
 
 interface Props {

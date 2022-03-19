@@ -20,13 +20,19 @@ export default function GLTFCard() {
     <div className="h-32">
       <label htmlFor="gltf-input">
         <div
-          className="bg-neutral-100 hover:bg-neutral-200 p-4 h-full
-                     rounded-xl hover:cursor-pointer flex flex-col justify-between"
+          className="relative border hover:bg-neutral-100 p-4 h-full
+                     rounded-2xl hover:cursor-pointer flex flex-col justify-between"
         >
           <div className="text-2xl flex items-center justify-center h-full">
             <MdUploadFile />
           </div>
-          GLTF Model
+
+          <div
+            className="absolute left-0 bottom-0 w-full pb-4
+                       flex items-center justify-center"
+          >
+            GLTF Model
+          </div>
         </div>
       </label>
 

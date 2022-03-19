@@ -19,8 +19,7 @@ export default function AssetCard({ asset }: Props) {
   return (
     <div
       onClick={handleClick}
-      className="bg-neutral-100 hover:bg-neutral-200 rounded-xl
-                     hover:cursor-pointer h-full w-full"
+      className="border hover:bg-neutral-100 rounded-2xl hover:cursor-pointer h-full w-full"
     >
       <Canvas className="rounded-xl">
         <Physics>

@@ -14,7 +14,7 @@ interface Props {
   textures: { [key: string]: Texture };
 }
 
-export function Material({ params, textures }: Props) {
+export default function Material({ params, textures }: Props) {
   const ref = useRef<MeshStandardMaterial>();
 
   const [texture, setTexture] = useState<ThreeTexture>();

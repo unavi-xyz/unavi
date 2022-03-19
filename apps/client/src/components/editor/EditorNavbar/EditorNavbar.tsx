@@ -14,7 +14,7 @@ interface Props {
   id: string;
 }
 
-export default function Navbar({ id }: Props) {
+export default function EditorNavbar({ id }: Props) {
   const router = useRouter();
   const localScene = useLocalScene(id);
 

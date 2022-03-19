@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Triplet } from "@react-three/cannon";
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 
 import { Model } from "../types";
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 
 const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();

@@ -1,6 +1,7 @@
 import { Triplet, useBox } from "@react-three/cannon";
-import { Material } from "../Material";
+
 import { Texture } from "../types";
+import Material from "../Material";
 
 export const boxDefaultParams = {
   position: [0, 0, 0] as Triplet,

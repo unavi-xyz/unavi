@@ -10,7 +10,7 @@ export type Params = {
   scale: Triplet;
   radius: number;
   texture: string;
-  model: string;
+  model: string | null;
 };
 
 export enum AssetName {

@@ -13,13 +13,15 @@ export default function EditorSidebar() {
 
   return (
     <div className="bg-white w-full h-full p-6 border-l-[1px] border-neutral-200">
-      {selected ? (
-        <Inspect />
-      ) : pack ? (
-        <Assets pack={pack} setPack={setPack} />
-      ) : (
-        <Packs setPack={setPack} />
-      )}
+      {selected && <Inspect />}
+
+      <div style={{ visibility: selected ? "hidden" : "visible" }}>
+        {pack ? (
+          <Assets pack={pack} setPack={setPack} />
+        ) : (
+          <Packs setPack={setPack} />
+        )}
+      </div>
     </div>
   );
 }

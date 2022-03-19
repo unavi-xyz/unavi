@@ -12,7 +12,9 @@ export default function Inspect() {
 
   return (
     <div className="space-y-6">
-      <div className="text-3xl flex justify-center">{instance.name}</div>
+      <div className="text-2xl flex items-center justify-center h-9">
+        {instance.name}
+      </div>
 
       <div className="space-y-4">
         <Transform />

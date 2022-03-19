@@ -8,7 +8,7 @@ import {
   previewModeAtom,
   worldIdAtom,
 } from "../../../components/editor/helpers/state";
-import Navbar from "../../../components/editor/Navbar/Navbar";
+import EditorNavbar from "../../../components/editor/EditorNavbar/EditorNavbar";
 import EditorSidebar from "../../../components/editor/EditorSidebar/EditorSidebar";
 import EditorCanvas from "../../../components/editor/EditorCanvas/EditorCanvas";
 import PreviewCanvas from "../../../components/editor/EditorCanvas/PreviewCanvas";
@@ -56,7 +56,7 @@ export default function Edit() {
         </div>
       ) : (
         <div className="h-full overflow-hidden">
-          <Navbar id={id} />
+          <EditorNavbar id={id} />
 
           <div className="h-full bg-neutral-200 flex">
             <EditorCanvas />

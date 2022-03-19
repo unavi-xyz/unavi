@@ -1,6 +1,7 @@
 import { SphereArgs, Triplet, useSphere } from "@react-three/cannon";
-import { Material } from "../Material";
+
 import { Texture } from "../types";
+import Material from "../Material";
 
 export const sphereDefaultParams = {
   position: [0, 0, 0] as Triplet,

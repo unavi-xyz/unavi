@@ -1,5 +1,11 @@
-import { Asset } from "3d";
+import { useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Physics } from "@react-three/cannon";
+import { Group, PointLight, Raycaster } from "three";
+import { Asset, InstancedAsset } from "3d";
+
 import { useStore } from "../../helpers/store";
+import { Tooltip } from "../../../base";
 
 interface Props {
   asset: Asset;
@@ -13,9 +19,46 @@ export default function AssetCard({ asset }: Props) {
   return (
     <div
       onClick={handleClick}
-      className="bg-neutral-100 hover:bg-neutral-200 p-4 rounded hover:cursor-pointer"
+      className="bg-neutral-100 hover:bg-neutral-200 rounded-xl
+                     hover:cursor-pointer h-full w-full"
     >
-      {asset.name}
+      <Canvas className="rounded-xl">
+        <Physics>
+          <CameraMover>
+            <InstancedAsset
+              name={asset.name}
+              params={asset.params}
+              textures={{}}
+              models={{}}
+            />
+          </CameraMover>
+
+          <ambientLight intensity={0.3} color="#f615ba" />
+        </Physics>
+      </Canvas>
     </div>
+  );
+}
+
+function CameraMover({ children }) {
+  const raycasterRef = useRef<Raycaster>();
+  const lightRef = useRef<PointLight>();
+  const childRef = useRef<Group>();
+
+  const { camera } = useThree();
+
+  useFrame((_, delta) => {
+    camera.position.set(0, 0.4, 1.5);
+    camera.getWorldPosition(lightRef.current.position);
+    camera.lookAt(0, 0, 0);
+    childRef.current.rotateY(delta / 2);
+  });
+
+  return (
+    <group>
+      <raycaster ref={raycasterRef} />
+      <pointLight ref={lightRef} intensity={1} color="#26d4ef" />
+      <group ref={childRef}>{children}</group>
+    </group>
   );
 }

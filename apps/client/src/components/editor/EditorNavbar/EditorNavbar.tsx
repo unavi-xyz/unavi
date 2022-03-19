@@ -3,9 +3,9 @@ import { MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
 import { useSetAtom } from "jotai";
 
-import { mergeLocalScene } from "../scene/localScenes/db";
+import { mergeLocalScene } from "../../scene/localScenes/db";
 import { previewModeAtom } from "../helpers/state";
-import { useLocalScene } from "../scene/localScenes/useLocalScene";
+import { useLocalScene } from "../../scene/localScenes/useLocalScene";
 import { useStore } from "../helpers/store";
 
 import MiddleButtons from "./MiddleButtons";

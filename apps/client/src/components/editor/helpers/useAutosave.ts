@@ -4,8 +4,8 @@ import { Scene } from "3d";
 
 import { worldIdAtom } from "./state";
 import { useStore } from "./store";
-import { mergeLocalScene } from "../scene/localScenes/db";
-import { useLocalScene } from "../scene/localScenes/useLocalScene";
+import { mergeLocalScene } from "../../scene/localScenes/db";
+import { useLocalScene } from "../../scene/localScenes/useLocalScene";
 
 const defaultScene: Scene = { instances: {}, models: {}, textures: {} };
 

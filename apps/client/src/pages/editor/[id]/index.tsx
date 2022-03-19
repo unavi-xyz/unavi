@@ -6,10 +6,10 @@ import Link from "next/link";
 import { createSpace, uploadFileToIpfs, useAuth } from "ceramic";
 
 import { dataUrlToFile } from "../../../helpers/files";
-import { useLocalScene } from "../../../components/editor/scene/localScenes/useLocalScene";
+import { useLocalScene } from "../../../components/scene/localScenes/useLocalScene";
 
 import { IconButton } from "../../../components/base";
-import SceneSettingsDialog from "../../../components/editor/scene/SceneSettingsDialog";
+import SceneSettingsDialog from "../../../components/scene/SceneSettingsDialog";
 import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
 
 export default function Id() {

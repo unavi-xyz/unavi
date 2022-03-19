@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { MdCloudUpload, MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { createSpace, uploadFileToIpfs, useAuth } from "ceramic";
+import { createSpace, IpfsContext, uploadFileToIpfs, useAuth } from "ceramic";
 
 import { dataUrlToFile } from "../../../helpers/files";
 import { useLocalScene } from "../../../components/scene/localScenes/useLocalScene";
@@ -15,6 +15,8 @@ import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
 export default function Id() {
   const router = useRouter();
   const id = router.query.id as string;
+
+  const { ipfs } = useContext(IpfsContext);
 
   const { authenticated, connect } = useAuth();
   const localScene = useLocalScene(id);
@@ -29,7 +31,7 @@ export default function Id() {
     Promise.all(
       Object.values(sceneCopy.textures).map(async ({ value, name }) => {
         const file = await dataUrlToFile(value, name);
-        await uploadFileToIpfs(file);
+        await uploadFileToIpfs(ipfs, file);
       })
     );
 
@@ -42,7 +44,7 @@ export default function Id() {
     Promise.all(
       Object.values(sceneCopy.models).map(async ({ value, name }) => {
         const file = await dataUrlToFile(value, name);
-        await uploadFileToIpfs(file);
+        await uploadFileToIpfs(ipfs, file);
       })
     );
 
@@ -58,6 +60,7 @@ export default function Id() {
 
     //create the space
     const streamId = await createSpace(
+      ipfs,
       localScene.name,
       localScene.description,
       image,

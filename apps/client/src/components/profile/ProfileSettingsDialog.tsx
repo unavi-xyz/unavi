@@ -1,10 +1,11 @@
-import { Dispatch, SetStateAction, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useContext, useRef, useState } from "react";
 import { useQueryClient } from "react-query";
 import {
   uploadFileToIpfs,
   useIpfsFile,
   useProfile,
   ImageSources,
+  IpfsContext,
 } from "ceramic";
 
 import { Button, Dialog, ImageUpload, TextField } from "../base";
@@ -18,6 +19,8 @@ interface Props {
 export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
   const nameRef = useRef<HTMLInputElement>();
   const descriptionRef = useRef<HTMLTextAreaElement>();
+
+  const { ipfs } = useContext(IpfsContext);
 
   const { profile, merge } = useProfile(id);
   const image = useIpfsFile(profile?.image?.original.src);
@@ -34,7 +37,7 @@ export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
     const description = descriptionRef.current.value;
 
     if (imageFile) {
-      const cid = await uploadFileToIpfs(imageFile);
+      const cid = await uploadFileToIpfs(ipfs, imageFile);
 
       const imageElement = new Image();
       imageElement.src = URL.createObjectURL(imageFile);

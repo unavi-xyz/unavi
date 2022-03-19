@@ -1,7 +1,10 @@
 import React, { ReactChild, useEffect, useState } from "react";
 import { IPFS, create } from "ipfs-core";
+import { create as createHttp } from "ipfs-http-client";
 
-const Bootstrap = [
+const useHttp = true;
+
+const peers = [
   "/dnsaddr/ipfs.infura.io/tcp/5001/https",
   "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
   "/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
@@ -22,13 +25,19 @@ export function IpfsProvider({ children }: Props) {
   useEffect(() => {
     if (ipfs) return;
 
-    create({
-      config: { Bootstrap },
-    })
-      .then((res) => {
-        setIpfs(res);
+    if (useHttp) {
+      //@ts-ignore
+      const res = createHttp("https://ipfs.infura.io:5001");
+      setIpfs(res);
+    } else {
+      create({
+        config: { Bootstrap: peers },
       })
-      .catch(() => {});
+        .then((res) => {
+          setIpfs(res);
+        })
+        .catch(() => {});
+    }
   }, []);
 
   return (

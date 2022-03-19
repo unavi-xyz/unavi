@@ -84,10 +84,7 @@ export default function User() {
             </div>
 
             <div className="relative overflow-auto h-96 md:h-full">
-              <div
-                className="absolute h-full w-full top-0 left-0 px-4 pb-4
-                           space-x-8 flex pr-2"
-              >
+              <div className="absolute h-full w-full top-0 left-0 px-4 pb-4 space-x-8 flex">
                 {spaces?.map((streamId) => {
                   return (
                     <Link key={streamId} href={`/space/${streamId}`} passHref>
@@ -98,7 +95,7 @@ export default function User() {
                   );
                 })}
 
-                <div className="pr-2"></div>
+                <div className="pr-2" />
               </div>
             </div>
           </div>

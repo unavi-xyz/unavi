@@ -25,7 +25,7 @@ export default function SidebarButton({
     >
       <div
         className={`w-7 h-7 flex items-center justify-center bg-neutral-200 rounded-md
-                    group-hover:shadow ${color} ${
+         ${color} ${
           selected
             ? color === Colors.sky
               ? "bg-sky-400"

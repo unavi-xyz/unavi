@@ -1,8 +1,9 @@
-import { Dispatch, SetStateAction, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useContext, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
 import {
   editSpace,
+  IpfsContext,
   removeSpaceFromProfile,
   unpinTile,
   useIpfsFile,
@@ -23,6 +24,8 @@ export function SpaceSettingsDialog({ id, open, setOpen }: Props) {
   const nameRef = useRef<HTMLInputElement>();
   const descriptionRef = useRef<HTMLTextAreaElement>();
 
+  const { ipfs } = useContext(IpfsContext);
+
   const [imageFile, setImageFile] = useState<File>();
   const [loadingSave, setLoadingSave] = useState(false);
   const [loadingsDelete, setLoadingsDelete] = useState(false);
@@ -38,7 +41,7 @@ export function SpaceSettingsDialog({ id, open, setOpen }: Props) {
     const name = nameRef.current.value;
     const description = descriptionRef.current.value;
 
-    await editSpace(id, name, description, imageFile);
+    await editSpace(ipfs, id, name, description, imageFile);
 
     queryClient.invalidateQueries(`space-${id}`);
     setOpen(false);

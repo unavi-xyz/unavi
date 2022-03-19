@@ -1,3 +1,4 @@
+import { IPFS } from "ipfs-core";
 import { Scene } from "3d";
 
 import { Space } from "./types";
@@ -8,17 +9,19 @@ import { addSpaceToProfile, removeSpaceFromProfile } from "../Spaces/helpers";
 const model = require("./model.json");
 
 export async function createSpace(
+  ipfs: IPFS,
   name?: string,
   description?: string,
   image?: File,
   scene?: Scene
 ) {
-  const hash = image ? await uploadFileToIpfs(image) : undefined;
+  const hash = image ? await uploadFileToIpfs(ipfs, image) : undefined;
+
   const space: Space = { name, description, image: hash, scene };
   const stream = await loader.create(
     space,
     { schema: model.schemas.Space },
-    { pin: false }
+    { pin: true }
   );
   const streamId = stream.id.toString();
   await addSpaceToProfile(streamId);
@@ -32,12 +35,13 @@ export async function deleteSpace(streamId: string) {
 }
 
 export async function editSpace(
+  ipfs: IPFS,
   streamId: string,
   name?: string,
   description?: string,
   imageFile?: File
 ) {
-  const hash = imageFile ? await uploadFileToIpfs(imageFile) : undefined;
+  const hash = imageFile ? await uploadFileToIpfs(ipfs, imageFile) : undefined;
   const doc = await loader.load(streamId);
   const image = hash ?? doc.content?.image;
   const space: Space = { name, description, image };

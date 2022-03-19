@@ -16,6 +16,7 @@
     "@react-three/fiber": "^7.0.26",
     "ceramic": "*",
     "idb": "^7.0.0",
+    "ipfs-http-client": "^56.0.1",
     "ipfs-only-hash": "^4.0.0",
     "jotai": "^1.6.0",
     "nanoid": "^3.3.1",

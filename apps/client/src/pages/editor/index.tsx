@@ -34,11 +34,11 @@ export default function Editor() {
 
         <div className="h-full overflow-auto card">
           {localScenesIds?.length > 0 ? (
-            <div className="grid grid-flow-row gap-2 xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3">
+            <div className="grid grid-flow-row gap-8 lg:grid-cols-3 md:grid-cols-2">
               {localScenesIds.map((id) => {
                 return (
                   <Link key={id} href={`/editor/${id}`} passHref>
-                    <div>
+                    <div className="h-80">
                       <SceneCard id={id} />
                     </div>
                   </Link>

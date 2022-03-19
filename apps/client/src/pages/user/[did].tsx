@@ -84,16 +84,21 @@ export default function User() {
             </div>
 
             <div className="relative overflow-auto h-96 md:h-full">
-              <div className="absolute w-full top-0 left-0 px-2 space-y-4">
+              <div
+                className="absolute h-full w-full top-0 left-0 px-4 pb-4
+                           space-x-8 flex pr-2"
+              >
                 {spaces?.map((streamId) => {
                   return (
                     <Link key={streamId} href={`/space/${streamId}`} passHref>
-                      <div>
+                      <div className="flex-shrink-0 float-left w-96 h-full">
                         <SpaceCard streamId={streamId} />
                       </div>
                     </Link>
                   );
                 })}
+
+                <div className="pr-2"></div>
               </div>
             </div>
           </div>

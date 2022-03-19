@@ -8,11 +8,11 @@ html {
 }
 
 .card {
-  @apply bg-white rounded-3xl shadow-sm p-8;
+  @apply bg-white rounded-3xl p-8;
 }
 
 .card-borderless {
-  @apply bg-white rounded-3xl shadow-sm;
+  @apply bg-white rounded-3xl;
 }
 
 .crosshair {

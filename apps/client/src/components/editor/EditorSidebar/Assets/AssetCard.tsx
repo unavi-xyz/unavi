@@ -19,9 +19,10 @@ export default function AssetCard({ asset }: Props) {
   return (
     <div
       onClick={handleClick}
-      className="border hover:bg-neutral-100 rounded-2xl hover:cursor-pointer h-full w-full"
+      className="group hover:shadow-lg transition-all duration-300
+                 rounded-2xl hover:cursor-pointer h-full w-full"
     >
-      <Canvas className="rounded-xl">
+      <Canvas className="rounded-xl group-hover:scale-110 transition-all duration-500 ease-in-out">
         <Physics>
           <CameraMover>
             <InstancedAsset

@@ -9,6 +9,7 @@ import { useLocalScene } from "../../scene/localScenes/useLocalScene";
 import { useStore } from "../helpers/store";
 
 import MiddleButtons from "./MiddleButtons";
+import { Tooltip } from "../../base";
 
 interface Props {
   id: string;
@@ -33,7 +34,10 @@ export default function EditorNavbar({ id }: Props) {
   }
 
   return (
-    <div className="w-screen h-12 bg-white flex items-center justify-between px-2 border-b-[1px] border-neutral-200">
+    <div
+      className="w-screen h-12 bg-white flex items-center justify-between px-2
+                    border-b-[1px] border-neutral-200"
+    >
       <div className="flex items-center space-x-2 w-1/3">
         <div
           onClick={handleBack}
@@ -49,14 +53,16 @@ export default function EditorNavbar({ id }: Props) {
         <MiddleButtons />
       </div>
 
-      <div className="w-1/3 flex justify-end space-x-2">
-        <div
-          onClick={handlePreview}
-          className="w-10 h-10 rounded-md flex items-center justify-center
-                     hover:cursor-pointer"
-        >
-          <IoMdEye className="text-2xl" />
-        </div>
+      <div className="w-1/3 flex justify-end space-x-2 pr-2">
+        <Tooltip text="Preview" placement="bottom">
+          <div
+            onClick={handlePreview}
+            className="w-10 h-10 rounded-md flex items-center justify-center
+          hover:cursor-pointer"
+          >
+            <IoMdEye className="text-2xl" />
+          </div>
+        </Tooltip>
       </div>
     </div>
   );

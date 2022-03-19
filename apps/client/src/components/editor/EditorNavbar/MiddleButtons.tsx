@@ -4,30 +4,37 @@ import { useAtom } from "jotai";
 
 import { Tool } from "../helpers/types";
 import { toolAtom } from "../helpers/state";
+import { Tooltip } from "../../base";
 
 export default function MiddleButtons() {
   const [tool, setTool] = useAtom(toolAtom);
 
   return (
     <div className="flex items-center space-x-2">
-      <MiddleButton
-        selected={tool === Tool.translate}
-        onClick={() => setTool(Tool.translate)}
-      >
-        <IoIosMove />
-      </MiddleButton>
-      <MiddleButton
-        selected={tool === Tool.rotate}
-        onClick={() => setTool(Tool.rotate)}
-      >
-        <BsArrowRepeat />
-      </MiddleButton>
-      <MiddleButton
-        selected={tool === Tool.scale}
-        onClick={() => setTool(Tool.scale)}
-      >
-        <BsArrowsAngleExpand className="text-[1.4rem]" />
-      </MiddleButton>
+      <Tooltip text="Translate (W)" placement="bottom">
+        <MiddleButton
+          selected={tool === Tool.translate}
+          onClick={() => setTool(Tool.translate)}
+        >
+          <IoIosMove />
+        </MiddleButton>
+      </Tooltip>
+      <Tooltip text="Rotate (E)" placement="bottom">
+        <MiddleButton
+          selected={tool === Tool.rotate}
+          onClick={() => setTool(Tool.rotate)}
+        >
+          <BsArrowRepeat />
+        </MiddleButton>
+      </Tooltip>
+      <Tooltip text="Scale (R)" placement="bottom">
+        <MiddleButton
+          selected={tool === Tool.scale}
+          onClick={() => setTool(Tool.scale)}
+        >
+          <BsArrowsAngleExpand className="text-[1.4rem]" />
+        </MiddleButton>
+      </Tooltip>
     </div>
   );
 }

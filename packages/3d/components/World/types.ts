@@ -1,9 +1,18 @@
 import { Triplet } from "@react-three/cannon";
 
 export type Material = {
+  type: "physical" | "toon";
   color: string;
+  emissive: string;
+  sheenColor: string;
   opacity: number;
+  reflectivity: number;
+  metalness: number;
+  roughness: number;
+  clearcoat: number;
+  sheen: number;
   texture: string | undefined;
+  flatShading: boolean;
 };
 
 export type Params = {

@@ -1,26 +1,26 @@
 import { useRef } from "react";
 
 interface Props {
-  title?: string;
+  id: string;
   value?: string;
   [key: string]: any;
 }
 
-export default function ColorInput({ title, value, ...rest }: Props) {
+export default function ColorInput({ id, value, ...rest }: Props) {
   const ref = useRef<HTMLInputElement>();
 
   return (
     <div className="flex space-x-1 w-full pr-2">
-      <div className="text-neutral-500 w-2">{title}</div>
+      <div className="text-neutral-500 w-2"></div>
 
       <label
-        htmlFor="colorInput"
+        htmlFor={id}
         className="w-full h-6 rounded-full border relative hover:cursor-pointer"
         style={{ backgroundColor: value }}
       >
         <input
           ref={ref}
-          id="colorInput"
+          id={id}
           type="color"
           className="invisible absolute"
           defaultValue={value}

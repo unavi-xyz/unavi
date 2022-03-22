@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useStore } from "../helpers/store";
 
 import Inspect from "./Inspect/Inspect";
-import Assets from "./Assets/Assets";
+import Objects from "./Objects/Objects";
 import Packs from "./Packs/Packs";
 
 export default function EditorSidebar() {
@@ -16,7 +16,7 @@ export default function EditorSidebar() {
       {selected ? (
         <Inspect />
       ) : pack ? (
-        <Assets pack={pack} setPack={setPack} />
+        <Objects pack={pack} setPack={setPack} />
       ) : (
         <Packs setPack={setPack} />
       )}

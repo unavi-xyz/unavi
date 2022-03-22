@@ -13,7 +13,7 @@ export default function Inspect() {
   return (
     <div className="space-y-6">
       <div className="text-2xl flex items-center justify-center h-9">
-        {instance.name}
+        {instance.type}
       </div>
 
       <div className="space-y-4">

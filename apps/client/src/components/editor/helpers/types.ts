@@ -1,6 +1,6 @@
 import { MutableRefObject } from "react";
 import { Group } from "three";
-import { Asset, ASSETS } from "3d";
+import { SceneObjectType } from "3d";
 
 export enum Tool {
   translate = "translate",
@@ -13,7 +13,6 @@ export type Selected = {
   ref: MutableRefObject<Group>;
 };
 
-export const PACKS: { [key: string]: Asset[] } = {
-  Basic: [ASSETS.Box, ASSETS.Sphere],
-  Game: [],
+export const PACKS: { [key: string]: SceneObjectType[] } = {
+  Basic: ["Box", "Sphere"],
 };

@@ -11,7 +11,7 @@ export default function Packs({ setPack }: Props) {
   return (
     <div className="space-y-6">
       <div className="text-2xl h-9 flex items-center justify-center">
-        Asset Packs
+        Object Packs
       </div>
       <div className="space-y-4">
         <PackButton

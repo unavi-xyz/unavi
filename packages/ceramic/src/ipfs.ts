@@ -9,8 +9,9 @@ export async function loadFromIpfs(ipfs: IPFS, cid: string) {
   }
 
   const blob = new Blob(files);
-  const url = URL.createObjectURL(blob);
-  return url;
+  const file = new File([blob], "");
+  // const url = URL.createObjectURL(blob);
+  return file;
 }
 
 export async function uploadFileToIpfs(ipfs: IPFS, file: File) {

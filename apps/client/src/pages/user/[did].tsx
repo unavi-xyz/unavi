@@ -2,7 +2,7 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth, useIpfsFile, useProfile, useUserSpaces } from "ceramic";
+import { useAuth, useIpfsImage, useProfile, useUserSpaces } from "ceramic";
 
 import { IconButton } from "../../components/base";
 import { ProfileSettingsDialog } from "../../components/profile/ProfileSettingsDialog";
@@ -16,7 +16,7 @@ export default function User() {
 
   const { viewerId } = useAuth();
   const { profile } = useProfile(did);
-  const image = useIpfsFile(profile?.image?.original.src);
+  const image = useIpfsImage(profile?.image?.original.src);
   const spaces = useUserSpaces(did);
 
   const [openSettings, setOpenSettings] = useState(false);

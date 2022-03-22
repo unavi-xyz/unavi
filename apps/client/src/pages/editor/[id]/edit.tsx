@@ -2,37 +2,30 @@ import { useEffect } from "react";
 import { IoMdClose } from "react-icons/io";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { useAtom, useSetAtom } from "jotai";
 
 import {
-  previewModeAtom,
-  worldIdAtom,
-} from "../../../components/editor/helpers/state";
+  editorManager,
+  useStore,
+} from "../../../components/editor/helpers/store";
+
 import EditorNavbar from "../../../components/editor/EditorNavbar/EditorNavbar";
 import EditorSidebar from "../../../components/editor/EditorSidebar/EditorSidebar";
 import EditorCanvas from "../../../components/editor/EditorCanvas/EditorCanvas";
 import PreviewCanvas from "../../../components/editor/EditorCanvas/PreviewCanvas";
-import { useStore } from "../../../components/editor/helpers/store";
 
 export default function Edit() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const setScene = useStore((state) => state.setScene);
-  const setSelected = useStore((state) => state.setSelected);
-
-  const setWorldId = useSetAtom(worldIdAtom);
-  const [previewMode, setPreviewMode] = useAtom(previewModeAtom);
+  const previewMode = useStore((state) => state.previewMode);
 
   useEffect(() => {
-    setWorldId(id);
+    editorManager.setSceneId(id);
 
     return () => {
-      setScene(null);
-      setSelected(null);
-      setWorldId(null);
+      editorManager.setSceneId(undefined);
     };
-  }, [id, setScene, setSelected, setWorldId]);
+  }, [id]);
 
   return (
     <>
@@ -47,7 +40,7 @@ export default function Edit() {
           <div className="crosshair" />
 
           <div
-            onClick={() => setPreviewMode(false)}
+            onClick={() => editorManager.setPreviewMode(false)}
             className="absolute top-6 right-6 hover:cursor-pointer bg-black rounded-full p-1.5
                        bg-opacity-30 hover:bg-opacity-40 backdrop-blur-sm"
           >

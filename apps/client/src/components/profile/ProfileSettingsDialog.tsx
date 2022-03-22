@@ -2,10 +2,10 @@ import { Dispatch, SetStateAction, useContext, useRef, useState } from "react";
 import { useQueryClient } from "react-query";
 import {
   uploadFileToIpfs,
-  useIpfsFile,
   useProfile,
   ImageSources,
   IpfsContext,
+  useIpfsImage,
 } from "ceramic";
 
 import { Button, Dialog, ImageUpload, TextField } from "../base";
@@ -23,7 +23,7 @@ export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
   const { ipfs } = useContext(IpfsContext);
 
   const { profile, merge } = useProfile(id);
-  const image = useIpfsFile(profile?.image?.original.src);
+  const image = useIpfsImage(profile?.image?.original.src);
   const queryClient = useQueryClient();
 
   const [imageFile, setImageFile] = useState<File>();

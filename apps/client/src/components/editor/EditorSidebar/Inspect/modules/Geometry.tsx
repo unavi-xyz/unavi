@@ -1,27 +1,25 @@
 import { useStore } from "../../../helpers/store";
-import { getHandleChange, useSections } from "../helpers";
+import { getHandleChange } from "../helpers";
 
 import NumberField from "../inputs/NumberField";
 
 export default function Geometry() {
   const selected = useStore((state) => state.selected);
-  const name = useStore((state) => state.scene.instances[selected?.id]?.name);
-  const params = useStore(
-    (state) => state.scene.instances[selected?.id]?.params
+  const type = useStore((state) => state.scene.instances[selected?.id]?.type);
+  const properties = useStore(
+    (state) => state.scene.instances[selected?.id]?.properties
   );
 
-  const sections = useSections(name);
-
-  if (!params || !sections.includes("radius")) return null;
+  if (!properties || !("radius" in properties)) return null;
 
   return (
     <div className="space-y-1">
       <div className="text-xl text-neutral-500 mb-2">Geometry</div>
 
-      {sections.includes("radius") && (
+      {"radius" in properties && (
         <NumberField
           title="Radius"
-          value={params.radius}
+          value={properties.radius}
           onChange={getHandleChange("radius")}
         />
       )}

@@ -8,13 +8,21 @@
     },
     "description": {
       "type": "string",
-      "maxLength": 400
+      "maxLength": 420
     },
     "image": {
       "type": "string"
     },
     "scene": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "instances": {
+          "type": "object"
+        },
+        "assets": {
+          "type": "object"
+        }
+      }
     }
   }
 }

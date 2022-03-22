@@ -6,7 +6,8 @@ import {
   IpfsContext,
   removeSpaceFromProfile,
   unpinTile,
-  useIpfsFile,
+  useAuth,
+  useIpfsImage,
   useSpace,
 } from "ceramic";
 
@@ -31,8 +32,9 @@ export function SpaceSettingsDialog({ id, open, setOpen }: Props) {
   const [loadingsDelete, setLoadingsDelete] = useState(false);
 
   const queryClient = useQueryClient();
+  const { viewerId } = useAuth();
   const { space } = useSpace(id);
-  const image = useIpfsFile(space?.image);
+  const image = useIpfsImage(space?.image);
 
   async function handleSave() {
     if (loadingSave) return;
@@ -55,6 +57,7 @@ export function SpaceSettingsDialog({ id, open, setOpen }: Props) {
     await unpinTile(id);
     await removeSpaceFromProfile(id);
 
+    queryClient.invalidateQueries(`user-spaces-${viewerId}`);
     router.back();
   }
 

@@ -1,12 +1,10 @@
 import { IoMdEye } from "react-icons/io";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
-import { useSetAtom } from "jotai";
 
 import { mergeLocalScene } from "../../scene/localScenes/db";
-import { previewModeAtom } from "../helpers/state";
 import { useLocalScene } from "../../scene/localScenes/useLocalScene";
-import { useStore } from "../helpers/store";
+import { editorManager } from "../helpers/store";
 
 import MiddleButtons from "./MiddleButtons";
 import { Tooltip } from "../../base";
@@ -19,8 +17,6 @@ export default function EditorNavbar({ id }: Props) {
   const router = useRouter();
   const localScene = useLocalScene(id);
 
-  const setPreviewMode = useSetAtom(previewModeAtom);
-
   async function handleBack() {
     const canvas = document.querySelector("canvas");
     const image = canvas.toDataURL("image/jpeg", 0.5);
@@ -29,8 +25,8 @@ export default function EditorNavbar({ id }: Props) {
   }
 
   function handlePreview() {
-    useStore.getState().setSelected(null);
-    setPreviewMode(true);
+    editorManager.setSelected(undefined);
+    editorManager.setPreviewMode(true);
   }
 
   return (

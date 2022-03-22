@@ -1,13 +1,9 @@
 import { useEffect, useRef } from "react";
-import { useSetAtom } from "jotai";
 
-import { toolAtom } from "./state";
-import { useStore } from "./store";
+import { editorManager, sceneManager, useStore } from "./store";
 import { Tool } from "./types";
 
 export function useHotkeys() {
-  const setTool = useSetAtom(toolAtom);
-
   const copied = useRef<string>();
   const holdingV = useRef(false);
 
@@ -19,19 +15,19 @@ export function useHotkeys() {
       switch (e.key) {
         case "Delete":
           if (selected) {
-            state.deleteInstance(selected?.id);
-            state.setSelected(null);
+            sceneManager.deleteInstance(selected?.id);
+            editorManager.setSelected(undefined);
           }
           break;
 
         case "w":
-          setTool(Tool.translate);
+          editorManager.setTool(Tool.translate);
           break;
         case "e":
-          setTool(Tool.rotate);
+          editorManager.setTool(Tool.rotate);
           break;
         case "r":
-          setTool(Tool.scale);
+          editorManager.setTool(Tool.scale);
           break;
 
         case "c":
@@ -41,13 +37,10 @@ export function useHotkeys() {
           break;
         case "v":
           if (e.ctrlKey && copied.current && !holdingV.current) {
-            if (selected) state.saveSelected();
-
             const instance = state.scene.instances[copied.current];
 
-            useStore
-              .getState()
-              .newInstance(instance.name, { ...instance.params });
+            const id = sceneManager.newInstance(instance.type);
+            sceneManager.editInstance(id, instance.properties);
           }
 
           holdingV.current = true;
@@ -73,5 +66,5 @@ export function useHotkeys() {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
     };
-  }, [setTool]);
+  }, []);
 }

@@ -4,20 +4,7 @@ export async function dataUrlToFile(dataUrl: string, name: string) {
   return new File([blob], name);
 }
 
-export function readFileAsArrayBuffer(file: File) {
-  return new Promise<ArrayBuffer>((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.addEventListener("loadend", (e) =>
-      resolve(e.target.result as ArrayBuffer)
-    );
-    reader.addEventListener("error", reject);
-
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-export function readFileAsDataUrl(file: File) {
+export function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
 

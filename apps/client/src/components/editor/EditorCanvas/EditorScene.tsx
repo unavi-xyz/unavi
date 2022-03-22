@@ -1,24 +1,22 @@
 import { useEffect } from "react";
 import { ThreeEvent, useThree } from "@react-three/fiber";
 import { Sky } from "@react-three/drei";
-import { useAtom } from "jotai";
-import { Ground } from "3d";
+import { Ground, SceneContext } from "3d";
 
-import { usingGizmoAtom } from "../helpers/state";
-import { useStore } from "../helpers/store";
-
+import { editorManager, useStore } from "../helpers/store";
 import EditorInstance from "./EditorInstance";
 
-export function EditorWorld() {
+export default function EditorScene() {
   const scene = useStore((state) => state.scene);
-  const [usingGizmo] = useAtom(usingGizmoAtom);
+  const assets = useStore((state) => state.scene.assets);
 
   const { camera } = useThree();
 
   function handleVoidClick(e: ThreeEvent<MouseEvent>) {
-    if (usingGizmo) return;
+    if (useStore.getState().usingGizmo) return;
     e.stopPropagation();
-    useStore.getState().setSelected(null);
+
+    editorManager.setSelected(undefined);
   }
 
   useEffect(() => {
@@ -30,15 +28,17 @@ export function EditorWorld() {
       <directionalLight intensity={0.7} position={[1, 2, 5]} />
       <ambientLight intensity={0.1} />
 
-      <group onClick={handleVoidClick}>
+      <group onPointerUp={handleVoidClick}>
         <Sky inclination={1} />
         <Ground />
       </group>
 
-      {scene?.instances &&
-        Object.keys(scene.instances).map((id) => {
-          return <EditorInstance key={id} id={id} />;
-        })}
+      <SceneContext.Provider value={{ assets }}>
+        {scene &&
+          Object.keys(scene.instances).map((id) => {
+            return <EditorInstance key={id} id={id} />;
+          })}
+      </SceneContext.Provider>
     </group>
   );
 }

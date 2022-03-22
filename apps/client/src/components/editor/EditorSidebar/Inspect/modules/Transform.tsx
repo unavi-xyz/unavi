@@ -1,18 +1,15 @@
 import { useStore } from "../../../helpers/store";
-import { getHandleChange, useSections } from "../helpers";
+import { getHandleChange } from "../helpers";
 
 import TripletField from "../inputs/TripletField";
 
 export default function Transform() {
   const selected = useStore((state) => state.selected);
-  const name = useStore((state) => state.scene.instances[selected?.id]?.name);
-  const params = useStore(
-    (state) => state.scene.instances[selected?.id]?.params
+  const properties = useStore(
+    (state) => state.scene.instances[selected?.id]?.properties
   );
 
-  const sections = useSections(name);
-
-  if (!params) return null;
+  if (!properties) return null;
 
   return (
     <div className="space-y-1">
@@ -20,7 +17,7 @@ export default function Transform() {
 
       <TripletField
         title="Position"
-        value={params.position}
+        value={properties.position}
         onChange={getHandleChange("position")}
       />
 
@@ -28,14 +25,14 @@ export default function Transform() {
         title="Rotation"
         radians
         step={1}
-        value={params.rotation}
+        value={properties.rotation}
         onChange={getHandleChange("rotation")}
       />
 
-      {sections.includes("scale") && (
+      {"scale" in properties && (
         <TripletField
           title="Scale"
-          value={params.scale}
+          value={properties.scale}
           onChange={getHandleChange("scale")}
         />
       )}

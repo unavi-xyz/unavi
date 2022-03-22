@@ -1,8 +1,9 @@
 import { useStore } from "../../helpers/store";
 
-import Transform from "./modules/Transform";
-import Geometry from "./modules/Geometry";
-import Material from "./modules/Material";
+import TransformModule from "./modules/TransformModule";
+import GeometryModule from "./modules/GeometryModule";
+import MaterialModule from "./modules/MaterialModule/MaterialModule";
+import GLTFInspect from "./modules/GLTF";
 
 export default function Inspect() {
   const selected = useStore((state) => state.selected);
@@ -16,10 +17,11 @@ export default function Inspect() {
         {instance.type}
       </div>
 
-      <div className="space-y-4">
-        <Transform />
-        <Geometry />
-        <Material />
+      <div className="border-t">
+        <TransformModule />
+        <GeometryModule />
+        <MaterialModule />
+        {/* <GLTFInspect /> */}
       </div>
     </div>
   );

@@ -1,44 +1,48 @@
 import { ChangeEvent } from "react";
 import { IoMdClose } from "react-icons/io";
-import { Material as Material3d } from "3d";
+import { Material, Material as Material3d } from "3d";
 
-import { sceneManager, useStore } from "../../../helpers/store";
-import { handleChange } from "../helpers";
+import { sceneManager, useStore } from "../../../../helpers/store";
 
-import { Select } from "../../../../base";
-import ImageInput from "../inputs/ImageInput";
-import ColorInput from "../inputs/ColorInput";
-import NumberField from "../inputs/NumberField";
-import CheckboxInput from "../inputs/CheckboxInput";
+import { Select } from "../../../../../base";
+import ImageInput from "../../inputs/ImageInput";
+import ColorInput from "../../inputs/ColorInput";
+import NumberField from "../../inputs/NumberField";
+import CheckboxInput from "../../inputs/CheckboxInput";
 
-export default function Material() {
+export default function EditMaterial() {
   const selected = useStore((state) => state.selected);
   const properties = useStore(
     (state) => state.scene.instances[selected?.id]?.properties
   );
   const assets = useStore((state) => state.scene.assets);
+  const materials = useStore((state) => state.scene.materials);
 
   if (!properties || !("material" in properties)) return null;
 
-  const texture = assets[properties.material?.texture];
+  const material = materials[properties.material];
+  const texture = assets[material?.texture];
+
+  if (!material) return null;
+
+  function updateMaterial(changes: Partial<Material>) {
+    if (!("material" in properties)) return;
+    sceneManager.editMaterial(properties.material, changes);
+  }
 
   async function handleTextureChange(e: ChangeEvent<HTMLInputElement>) {
-    if (!("material" in properties)) return;
     const file = e.target.files[0];
     e.target.value = null;
 
     const id = await sceneManager.newAsset(file);
-    const newMaterial = { ...properties.material, texture: id };
-    handleChange(newMaterial, "material");
+    updateMaterial({ texture: id });
   }
 
   function editMaterial<T extends keyof Material3d>(
     key: T,
     value: Material3d[T]
   ) {
-    if (!("material" in properties)) return;
-    const newMaterial = { ...properties.material, [key]: value };
-    handleChange(newMaterial, "material");
+    updateMaterial({ [key]: value });
   }
 
   function getEditMaterial(key: keyof Material3d) {
@@ -47,66 +51,53 @@ export default function Material() {
   }
 
   function handleDeleteTexture() {
-    if (!("material" in properties)) return;
-    sceneManager.deleteAsset(properties.material.texture);
+    sceneManager.deleteAsset(material.texture);
   }
 
   function handleColorChange(e: ChangeEvent<HTMLInputElement>) {
     const color = e.target.value;
-    if (!("material" in properties)) return;
-    const newMaterial = { ...properties.material, color };
-    handleChange(newMaterial, "material");
+    updateMaterial({ color });
   }
 
   function handleEmissiveChange(e: ChangeEvent<HTMLInputElement>) {
     const emissive = e.target.value;
-    if (!("material" in properties)) return;
-    const newMaterial = { ...properties.material, emissive };
-    handleChange(newMaterial, "material");
+    updateMaterial({ emissive });
   }
 
   function handleSheenColorChange(e: ChangeEvent<HTMLInputElement>) {
     const sheenColor = e.target.value;
-    if (!("material" in properties)) return;
-    const newMaterial = { ...properties.material, sheenColor };
-    handleChange(newMaterial, "material");
+    updateMaterial({ sheenColor });
   }
 
   function handleTypeChange(e: ChangeEvent<HTMLInputElement>) {
-    const type = e.target.value;
-    if (!("material" in properties)) return;
-    const newMaterial = { ...properties.material, type };
-    handleChange(newMaterial, "material");
+    const type = e.target.value as any;
+    updateMaterial({ type });
   }
 
   function handleFlatShadingChange(e: ChangeEvent<HTMLInputElement>) {
     const flatShading = e.target.checked;
-    if (!("material" in properties)) return;
-    const newMaterial = { ...properties.material, flatShading };
-    handleChange(newMaterial, "material");
+    updateMaterial({ flatShading });
   }
 
   return (
     <div className="space-y-1">
-      <div className="text-xl text-neutral-500 mb-2">Material</div>
-
       <div className="flex items-center w-full">
         <div className="w-1/4">Type</div>
 
         <div className="w-1/2">
           <Select
-            value={properties.material.type}
+            value={material.type}
             options={["physical", "toon"]}
             onChange={handleTypeChange}
           />
         </div>
       </div>
 
-      {properties.material.type === "physical" && (
+      {material.type === "physical" && (
         <>
           <NumberField
             title="Reflectivity"
-            value={properties.material.reflectivity}
+            value={material.reflectivity}
             step={0.1}
             min={0}
             max={1}
@@ -115,7 +106,7 @@ export default function Material() {
 
           <NumberField
             title="Roughness"
-            value={properties.material.roughness}
+            value={material.roughness}
             step={0.1}
             min={0}
             max={1}
@@ -124,7 +115,7 @@ export default function Material() {
 
           <NumberField
             title="Metalness"
-            value={properties.material.metalness}
+            value={material.metalness}
             step={0.1}
             min={0}
             max={1}
@@ -133,7 +124,7 @@ export default function Material() {
 
           <NumberField
             title="Clearcoat"
-            value={properties.material.clearcoat}
+            value={material.clearcoat}
             step={0.1}
             min={0}
             max={1}
@@ -142,7 +133,7 @@ export default function Material() {
 
           <NumberField
             title="Sheen"
-            value={properties.material.sheen}
+            value={material.sheen}
             step={0.1}
             min={0}
             max={1}
@@ -155,7 +146,7 @@ export default function Material() {
             <div className="w-1/4">
               <ColorInput
                 id="sheen"
-                value={properties.material.sheenColor}
+                value={material.sheenColor}
                 onChange={handleSheenColorChange}
               />
             </div>
@@ -166,13 +157,22 @@ export default function Material() {
 
             <div className="w-1/4">
               <CheckboxInput
-                checked={properties?.material.flatShading}
+                checked={material.flatShading}
                 onChange={handleFlatShadingChange}
               />
             </div>
           </div>
         </>
       )}
+
+      <NumberField
+        title="Opacity"
+        value={material?.opacity ?? 1}
+        step={0.1}
+        min={0}
+        max={1}
+        onChange={getEditMaterial("opacity")}
+      />
 
       <div className="flex items-center w-full">
         <div className="w-1/4">Texture</div>
@@ -199,7 +199,7 @@ export default function Material() {
         <div className="w-1/4">
           <ColorInput
             id="color"
-            value={properties.material?.color}
+            value={material?.color}
             onChange={handleColorChange}
           />
         </div>
@@ -211,20 +211,11 @@ export default function Material() {
         <div className="w-1/4">
           <ColorInput
             id="emissive"
-            value={properties.material.emissive}
+            value={material.emissive}
             onChange={handleEmissiveChange}
           />
         </div>
       </div>
-
-      <NumberField
-        title="Opacity"
-        value={properties.material?.opacity ?? 1}
-        step={0.1}
-        min={0}
-        max={1}
-        onChange={getEditMaterial("opacity")}
-      />
     </div>
   );
 }

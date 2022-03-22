@@ -32,7 +32,7 @@ export default function GLTFCard() {
       <input
         id="gltf-input"
         type="file"
-        accept=".gltf"
+        accept=".gltf,.glb"
         onChange={handleChange}
         className="hidden"
       />

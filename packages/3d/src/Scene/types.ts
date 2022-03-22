@@ -15,10 +15,11 @@ export type Properties = {
   scale: Triplet;
   radius: number;
   src: string | undefined;
-  material: Material;
+  material: string | undefined;
 };
 
 export type Material = {
+  id: string;
   type: "physical" | "toon";
   color: string;
   emissive: string;
@@ -36,10 +37,11 @@ export type Material = {
 export type Scene = {
   instances: { [key: string]: Instance<SceneObjectType> };
   assets: { [key: string]: File };
+  materials: { [key: string]: Material };
 };
 
-//used when converting the scene to JSON format
-export type StringScene = {
+export type JsonScene = {
   instances: Scene["instances"];
+  materials: Scene["materials"];
   assets: { [key: string]: string };
 };

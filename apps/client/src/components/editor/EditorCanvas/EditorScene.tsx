@@ -7,8 +7,9 @@ import { editorManager, useStore } from "../helpers/store";
 import EditorInstance from "./EditorInstance";
 
 export default function EditorScene() {
-  const scene = useStore((state) => state.scene);
+  const instances = useStore((state) => state.scene.instances);
   const assets = useStore((state) => state.scene.assets);
+  const materials = useStore((state) => state.scene.materials);
 
   const { camera } = useThree();
 
@@ -33,9 +34,9 @@ export default function EditorScene() {
         <Ground />
       </group>
 
-      <SceneContext.Provider value={{ assets }}>
-        {scene &&
-          Object.keys(scene.instances).map((id) => {
+      <SceneContext.Provider value={{ assets, materials }}>
+        {instances &&
+          Object.keys(instances).map((id) => {
             return <EditorInstance key={id} id={id} />;
           })}
       </SceneContext.Provider>

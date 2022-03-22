@@ -17,7 +17,9 @@ export function InstancedScene({ scene }: Props) {
       <Sky inclination={1} />
       <Ground />
 
-      <SceneContext.Provider value={{ assets: scene.assets }}>
+      <SceneContext.Provider
+        value={{ assets: scene.assets, materials: scene.materials }}
+      >
         {scene &&
           Object.values(scene.instances).map((instance) => {
             return <InstancedObject key={instance.id} instance={instance} />;

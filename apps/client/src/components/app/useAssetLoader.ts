@@ -1,8 +1,8 @@
 import { useState, useContext, useEffect } from "react";
 import { IpfsContext, loadFromIpfs } from "ceramic";
-import { Scene, StringScene } from "3d";
+import { Scene, JsonScene } from "3d";
 
-export function useAssetLoader(stringScene: StringScene) {
+export function useAssetLoader(stringScene: JsonScene) {
   const { ipfs } = useContext(IpfsContext);
 
   const [scene, setScene] = useState<Scene>();
@@ -10,7 +10,7 @@ export function useAssetLoader(stringScene: StringScene) {
   useEffect(() => {
     if (!ipfs || !stringScene) return;
 
-    setScene({ instances: stringScene.instances, assets: {} });
+    setScene({ ...stringScene, assets: {} });
 
     //load assets
     Object.keys(stringScene.assets).forEach(async (cid) => {

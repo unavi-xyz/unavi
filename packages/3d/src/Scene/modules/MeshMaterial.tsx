@@ -5,14 +5,15 @@ import {
   Texture as ThreeTexture,
   TextureLoader,
 } from "three";
-import { fileToDataUrl } from "../helpers";
-import { SceneContext } from "../SceneContext";
 
+import { fileToDataUrl } from "../helpers";
 import { Material } from "../types";
+import { SceneContext } from "../SceneContext";
 
 const loader = new TextureLoader();
 
 export const defaultMaterial: Material = {
+  id: "",
   type: "physical",
   color: "#ffffff",
   emissive: "#000000",
@@ -28,17 +29,23 @@ export const defaultMaterial: Material = {
 };
 
 interface Props {
-  material: Material;
+  material: string | undefined;
 }
 
-export function MeshMaterial({ material }: Props) {
+export function MeshMaterial({ material: id }: Props) {
   const physicalRef = useRef<MeshPhysicalMaterial>();
   const toonRef = useRef<MeshToonMaterial>();
 
-  const { assets } = useContext(SceneContext);
+  const { assets, materials } = useContext(SceneContext);
+  const [material, setMaterial] = useState<Material>();
   const [texture, setTexture] = useState<ThreeTexture>();
 
   const isToon = material?.type === "toon";
+
+  useEffect(() => {
+    if (id && materials) setMaterial(materials[id]);
+    else setMaterial(undefined);
+  }, [materials, id]);
 
   useEffect(() => {
     if (!material?.texture) {
@@ -70,7 +77,7 @@ export function MeshMaterial({ material }: Props) {
     if (physicalRef.current) physicalRef.current.needsUpdate = true;
   }, [material?.flatShading]);
 
-  if (!material) return null;
+  if (!material || !id) return <meshBasicMaterial />;
 
   if (isToon) {
     return (

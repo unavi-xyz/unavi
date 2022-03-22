@@ -1,5 +1,5 @@
 import { IPFS } from "ipfs-core";
-import { Scene, StringScene } from "3d";
+import { Scene, JsonScene } from "3d";
 
 import { Space } from "./types";
 import { uploadFileToIpfs } from "../../ipfs";
@@ -13,7 +13,7 @@ export async function createSpace(
   name?: string,
   description?: string,
   image?: File,
-  scene?: StringScene
+  scene?: JsonScene
 ) {
   const hash = image ? await uploadFileToIpfs(ipfs, image) : undefined;
   const space: Space = { name, description, image: hash, scene };

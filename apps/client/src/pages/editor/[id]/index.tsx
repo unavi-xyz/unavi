@@ -5,7 +5,7 @@ import { useQueryClient } from "react-query";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { createSpace, IpfsContext, uploadFileToIpfs, useAuth } from "ceramic";
-import { StringScene } from "3d";
+import { JsonScene } from "3d";
 
 import { dataUrlToFile } from "../../../helpers/files";
 import { useLocalScene } from "../../../components/scene/localScenes/useLocalScene";
@@ -49,8 +49,8 @@ export default function Id() {
       : undefined;
 
     //create the space
-    const scene: StringScene = {
-      instances: localScene.scene.instances,
+    const scene: JsonScene = {
+      ...localScene.scene,
       assets,
     };
 

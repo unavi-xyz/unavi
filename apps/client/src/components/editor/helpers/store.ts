@@ -5,7 +5,7 @@ import { EditorManager, EditorStore } from "./EditorManager";
 import { Tool } from "./types";
 
 export const useStore = create<EditorStore>(() => ({
-  scene: { instances: {}, assets: {} },
+  scene: { instances: {}, assets: {}, materials: {} },
   selected: undefined,
   tool: Tool.translate,
   sceneId: undefined,

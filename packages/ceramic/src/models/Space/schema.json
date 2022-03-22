@@ -14,15 +14,7 @@
       "type": "string"
     },
     "scene": {
-      "type": "object",
-      "properties": {
-        "instances": {
-          "type": "object"
-        },
-        "assets": {
-          "type": "object"
-        }
-      }
+      "type": "object"
     }
   }
 }

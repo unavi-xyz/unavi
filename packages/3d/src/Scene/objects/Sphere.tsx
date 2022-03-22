@@ -1,7 +1,7 @@
 import { SphereArgs, useSphere } from "@react-three/cannon";
 
 import { Properties } from "../types";
-import { defaultMaterial, MeshMaterial } from "../modules/MeshMaterial";
+import { MeshMaterial } from "../modules/MeshMaterial";
 
 export type ISphere = Pick<
   Properties,
@@ -12,7 +12,7 @@ export const sphereDefaultProperties: ISphere = {
   position: [0, 0, 0],
   rotation: [0, 0, 0],
   radius: 0.5,
-  material: defaultMaterial,
+  material: undefined,
 };
 
 export function Sphere({ properties = sphereDefaultProperties }) {

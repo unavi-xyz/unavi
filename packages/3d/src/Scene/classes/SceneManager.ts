@@ -2,8 +2,15 @@ import { UseBoundStore, StoreApi } from "zustand";
 import { nanoid } from "nanoid";
 
 import { SceneObjects } from "../constants";
-import { Instance, Properties, Scene, SceneObjectType } from "../types";
+import {
+  Instance,
+  Material,
+  Properties,
+  Scene,
+  SceneObjectType,
+} from "../types";
 import { fileToArrayBuffer } from "../helpers";
+import { defaultMaterial } from "../modules/MeshMaterial";
 
 const Hash = require("ipfs-only-hash");
 
@@ -26,8 +33,10 @@ export class SceneManager {
     const properties = SceneObjects[type].properties;
     const instance: Instance<typeof type> = { id, type, properties };
 
-    const scene = { ...this.useStore.getState().scene };
-    scene.instances[id] = instance;
+    const scene = this.useStore.getState().scene;
+    const newInstances = { ...scene.instances };
+    newInstances[id] = instance;
+    scene.instances = newInstances;
 
     this.useStore.setState({ scene });
     return id;
@@ -75,11 +84,9 @@ export class SceneManager {
     //delete unused assets
     const scene = this.useStore.getState().scene;
 
-    const usedTextures = Object.values(scene.instances).map(
-      ({ properties }) => {
-        if ("material" in properties) return properties.material?.texture;
-      }
-    );
+    const usedTextures = Object.values(scene.materials).map((material) => {
+      return material?.texture;
+    });
 
     const usedSrc = Object.values(scene.instances).map(({ properties }) => {
       if ("src" in properties) return properties.src;
@@ -94,6 +101,47 @@ export class SceneManager {
       newAssets[id] = scene.assets[id];
     });
     scene.assets = newAssets;
+  }
+
+  newMaterial() {
+    const id = nanoid();
+    const material = { ...defaultMaterial, id };
+
+    const scene = this.useStore.getState().scene;
+    const newMaterials = { ...scene.materials };
+    newMaterials[id] = material;
+
+    scene.materials = newMaterials;
+    this.useStore.setState({ scene });
+
+    return id;
+  }
+
+  deleteMaterial(id: string) {
+    //remove from all scene objects
+    const scene = this.useStore.getState().scene;
+    Object.values(scene.instances).forEach((object) => {
+      if ("material" in object.properties) {
+        if (object.properties.material === id) {
+          object.properties.material = undefined;
+        }
+      }
+    });
+
+    //delete
+    const newMaterials = { ...scene.materials };
+    delete newMaterials[id];
+    scene.materials = newMaterials;
+
+    this.useStore.setState({ scene });
+  }
+
+  editMaterial(id: string, changes: Partial<Material>) {
+    const scene = this.useStore.getState().scene;
+    const newMaterials = { ...scene.materials };
+    const newMaterial = { ...newMaterials[id], ...changes };
+    newMaterials[id] = newMaterial;
+    scene.materials = newMaterials;
 
     this.useStore.setState({ scene });
   }

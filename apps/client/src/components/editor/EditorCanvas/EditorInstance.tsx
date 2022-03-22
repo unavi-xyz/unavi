@@ -13,11 +13,12 @@ export default function EditorInstance({ id }: Props) {
   const ref = useRef<Group>();
 
   const instance = useStore((state) => state.scene.instances[id]);
-  const properties = useStore((state) => state.scene.instances[id].properties);
+  const properties = useStore((state) => state.scene.instances[id]?.properties);
 
   const [initial] = useState(properties);
 
   const usedInstance = useMemo(() => {
+    if (!properties) return null;
     const modified: typeof properties = JSON.parse(JSON.stringify(properties));
 
     modified.position[0] = properties.position[0] - initial.position[0];
@@ -48,6 +49,8 @@ export default function EditorInstance({ id }: Props) {
     const selected = { id: instance.id, ref };
     editorManager.setSelected(selected);
   }
+
+  if (!usedInstance) return null;
 
   return (
     <group

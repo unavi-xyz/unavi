@@ -42,7 +42,7 @@ export default function EditorInstance({ id }: Props) {
     if ("scale" in properties) ref.current.scale.set(...properties.scale);
   }, [properties]);
 
-  function handleClick(e: ThreeEvent<MouseEvent>) {
+  function handlePointerUp(e: ThreeEvent<MouseEvent>) {
     if (useStore.getState().usingGizmo) return;
     e.stopPropagation();
 
@@ -55,7 +55,7 @@ export default function EditorInstance({ id }: Props) {
   return (
     <group
       ref={ref}
-      onClick={handleClick}
+      onPointerUp={handlePointerUp}
       position={properties.position}
       rotation={properties.rotation}
       scale={"scale" in properties ? properties.scale : undefined}

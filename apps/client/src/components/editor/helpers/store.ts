@@ -11,6 +11,7 @@ export const useStore = create<EditorStore>(() => ({
   sceneId: undefined,
   usingGizmo: false,
   previewMode: false,
+  debugMode: true,
 }));
 
 export const sceneManager = new SceneManager(useStore);

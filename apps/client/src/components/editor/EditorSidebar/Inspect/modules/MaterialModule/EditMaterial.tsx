@@ -111,9 +111,9 @@ export default function EditMaterial({ id }: Props) {
 
             <div className="w-1/4">
               <ColorInput
-                id="sheen"
+                id="sheenColor"
                 value={material.sheenColor}
-                onChange={getEditMaterial("sheen")}
+                onChange={getEditMaterial("sheenColor")}
               />
             </div>
           </div>

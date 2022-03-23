@@ -19,7 +19,7 @@ export default function CheckboxInput({ checked, onChange }: Props) {
       <input
         type="checkbox"
         checked={checked}
-        className="border outline-none pl-2 rounded-full w-full"
+        className="border outline-none pl-2 rounded-full"
         onChange={handleChange}
       />
     </div>

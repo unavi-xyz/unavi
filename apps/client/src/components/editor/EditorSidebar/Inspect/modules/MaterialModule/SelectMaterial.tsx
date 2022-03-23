@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useRef } from "react";
+import { Dispatch, MouseEvent, SetStateAction, useRef } from "react";
 import { IoMdTrash } from "react-icons/io";
 
 import { sceneManager, useStore } from "../../../../helpers/store";
@@ -45,7 +45,8 @@ function MaterialButton({
     setOpen(false);
   }
 
-  function handleDelete() {
+  function handleDelete(e: MouseEvent) {
+    e.stopPropagation();
     sceneManager.deleteMaterial(id);
   }
 

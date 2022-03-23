@@ -1,12 +1,9 @@
 import { Triplet, useBox } from "@react-three/cannon";
 
 import { MeshMaterial } from "../modules/MeshMaterial";
-import { Properties } from "../types";
+import { CoreProperties, Properties } from "../types";
 
-export type IBox = Pick<
-  Properties,
-  "position" | "rotation" | "scale" | "material"
->;
+export type IBox = CoreProperties & Pick<Properties, "scale" | "material">;
 
 export const boxDefaultProperties: IBox = {
   position: [0, 0, 0],

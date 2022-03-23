@@ -1,4 +1,4 @@
-import { Properties } from "./types";
+import { CoreProperties, Properties } from "./types";
 
 import { Box, boxDefaultProperties } from "./objects/Box";
 import { Sphere, sphereDefaultProperties } from "./objects/Sphere";
@@ -7,7 +7,7 @@ import { gltfDefaultProperties, GLTFModel } from "./objects/GLTF";
 type GenericSceneObject = {
   [key: string]: {
     limit?: number;
-    properties: Partial<Properties>;
+    properties: CoreProperties & Partial<Properties>;
     component: JSX.Element;
   };
 };

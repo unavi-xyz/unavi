@@ -5,14 +5,14 @@ import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 
 import { SceneContext } from "../SceneContext";
 import { fileToDataUrl } from "../helpers";
-import { Properties } from "../types";
+import { CoreProperties, Properties } from "../types";
 
 const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/");
 loader.setDRACOLoader(dracoLoader);
 
-export type IGLTF = Pick<Properties, "position" | "rotation" | "scale" | "src">;
+export type IGLTF = CoreProperties & Pick<Properties, "scale" | "src">;
 
 export const gltfDefaultProperties: IGLTF = {
   position: [0, 0, 0],

@@ -10,6 +10,7 @@ export default function EditorScene() {
   const instances = useStore((state) => state.scene.instances);
   const assets = useStore((state) => state.scene.assets);
   const materials = useStore((state) => state.scene.materials);
+  const debugMode = useStore((state) => state.debugMode);
 
   const { camera } = useThree();
 
@@ -34,7 +35,7 @@ export default function EditorScene() {
         <Ground />
       </group>
 
-      <SceneContext.Provider value={{ assets, materials }}>
+      <SceneContext.Provider value={{ assets, materials, debug: debugMode }}>
         {instances &&
           Object.keys(instances).map((id) => {
             return <EditorInstance key={id} id={id} />;

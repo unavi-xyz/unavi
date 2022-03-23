@@ -37,7 +37,7 @@ export function MeshMaterial({ material: id }: Props) {
   const physicalRef = useRef<MeshPhysicalMaterial>();
   const toonRef = useRef<MeshToonMaterial>();
 
-  const { assets, materials } = useContext(SceneContext);
+  const { assets, materials, debug } = useContext(SceneContext);
   const [material, setMaterial] = useState<Material>();
   const [texture, setTexture] = useState<ThreeTexture>();
 
@@ -79,6 +79,8 @@ export function MeshMaterial({ material: id }: Props) {
   }, [material?.flatShading]);
 
   if (!material || !id) return <meshBasicMaterial />;
+
+  if (debug && material.opacity === 0) return <meshBasicMaterial wireframe />;
 
   if (isToon) {
     return (

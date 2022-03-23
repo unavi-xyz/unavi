@@ -1,12 +1,9 @@
 import { SphereArgs, useSphere } from "@react-three/cannon";
 
-import { Properties } from "../types";
+import { CoreProperties, Properties } from "../types";
 import { MeshMaterial } from "../modules/MeshMaterial";
 
-export type ISphere = Pick<
-  Properties,
-  "position" | "rotation" | "radius" | "material"
->;
+export type ISphere = CoreProperties & Pick<Properties, "radius" | "material">;
 
 export const sphereDefaultProperties: ISphere = {
   position: [0, 0, 0],

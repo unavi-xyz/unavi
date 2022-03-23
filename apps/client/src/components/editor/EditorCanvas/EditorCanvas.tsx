@@ -1,8 +1,8 @@
 import { Canvas } from "@react-three/fiber";
-import { Physics } from "@react-three/cannon";
+import { Debug, Physics } from "@react-three/cannon";
 import { OrbitControls } from "@react-three/drei";
 
-import { editorManager } from "../helpers/store";
+import { editorManager, useStore } from "../helpers/store";
 import { useAutosave } from "../helpers/useAutosave";
 import { useHotkeys } from "../helpers/useHotkeys";
 

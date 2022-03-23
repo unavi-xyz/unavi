@@ -18,7 +18,11 @@ export function InstancedScene({ scene }: Props) {
       <Ground />
 
       <SceneContext.Provider
-        value={{ assets: scene.assets, materials: scene.materials }}
+        value={{
+          assets: scene.assets,
+          materials: scene.materials,
+          debug: false,
+        }}
       >
         {scene &&
           Object.values(scene.instances).map((instance) => {

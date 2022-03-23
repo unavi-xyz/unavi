@@ -9,14 +9,17 @@ export type Instance<T extends SceneObjectType> = {
   properties: typeof SceneObjects[T]["properties"];
 };
 
-export type Properties = {
+export interface CoreProperties {
   position: Triplet;
   rotation: Triplet;
+}
+
+export interface Properties extends CoreProperties {
   scale: Triplet;
   radius: number;
   src: string | undefined;
   material: string | undefined;
-};
+}
 
 export type Material = {
   id: string;

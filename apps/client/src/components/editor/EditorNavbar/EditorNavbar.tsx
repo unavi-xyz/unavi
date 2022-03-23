@@ -1,10 +1,11 @@
 import { IoMdEye } from "react-icons/io";
 import { MdArrowBackIosNew } from "react-icons/md";
+import { HiOutlineCubeTransparent, HiOutlineCube } from "react-icons/hi";
 import { useRouter } from "next/router";
 
 import { mergeLocalScene } from "../../scene/localScenes/db";
 import { useLocalScene } from "../../scene/localScenes/useLocalScene";
-import { editorManager } from "../helpers/store";
+import { editorManager, useStore } from "../helpers/store";
 
 import MiddleButtons from "./MiddleButtons";
 import { Tooltip } from "../../base";
@@ -17,11 +18,17 @@ export default function EditorNavbar({ id }: Props) {
   const router = useRouter();
   const localScene = useLocalScene(id);
 
+  const debugMode = useStore((state) => state.debugMode);
+
   async function handleBack() {
     const canvas = document.querySelector("canvas");
     const image = canvas.toDataURL("image/jpeg", 0.5);
     await mergeLocalScene(id, { image });
     router.push(`/editor/${id}`);
+  }
+
+  function toggleDebug() {
+    editorManager.setDebugMode(!debugMode);
   }
 
   function handlePreview() {
@@ -50,6 +57,23 @@ export default function EditorNavbar({ id }: Props) {
       </div>
 
       <div className="w-1/3 flex justify-end space-x-2 pr-2">
+        <Tooltip
+          text={debugMode ? "Disable Debug" : "Enable Debug"}
+          placement="bottom"
+        >
+          <div
+            onClick={toggleDebug}
+            className="w-10 h-10 rounded-md flex items-center justify-center
+                       hover:cursor-pointer"
+          >
+            {debugMode ? (
+              <HiOutlineCubeTransparent className="text-xl" />
+            ) : (
+              <HiOutlineCube className="text-xl" />
+            )}
+          </div>
+        </Tooltip>
+
         <Tooltip text="Preview" placement="bottom">
           <div
             onClick={handlePreview}

@@ -11,6 +11,7 @@ export interface EditorStore extends SceneStore {
   sceneId: string;
   usingGizmo: boolean;
   previewMode: boolean;
+  debugMode: boolean;
 }
 
 type useStoreType = UseBoundStore<EditorStore, StoreApi<EditorStore>>;
@@ -40,6 +41,10 @@ export class EditorManager {
 
   setSceneId(sceneId: string) {
     this.useStore.setState({ sceneId });
+  }
+
+  setDebugMode(debugMode: boolean) {
+    this.useStore.setState({ debugMode });
   }
 
   saveSelected() {

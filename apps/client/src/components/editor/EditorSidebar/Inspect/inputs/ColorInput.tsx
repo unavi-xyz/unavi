@@ -1,13 +1,18 @@
-import { useRef } from "react";
+import { ChangeEvent, useRef } from "react";
 
 interface Props {
   id: string;
   value?: string;
+  onChange?: (value: string) => void;
   [key: string]: any;
 }
 
-export default function ColorInput({ id, value, ...rest }: Props) {
+export default function ColorInput({ id, value, onChange }: Props) {
   const ref = useRef<HTMLInputElement>();
+
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
+    onChange(e.target.value);
+  }
 
   return (
     <div className="flex space-x-1 w-full pr-2">
@@ -24,7 +29,7 @@ export default function ColorInput({ id, value, ...rest }: Props) {
           type="color"
           className="invisible absolute"
           defaultValue={value}
-          {...rest}
+          onChange={handleChange}
         />
       </label>
     </div>

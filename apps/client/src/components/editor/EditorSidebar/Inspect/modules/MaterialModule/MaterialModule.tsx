@@ -75,7 +75,7 @@ export default function MaterialModule() {
           <SelectMaterial open={openSelect} setOpen={setOpenSelect} />
         </div>
 
-        <EditMaterial />
+        <EditMaterial id={properties.material} />
       </div>
     </Module>
   );

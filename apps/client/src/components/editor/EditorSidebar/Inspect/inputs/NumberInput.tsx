@@ -12,7 +12,7 @@ export default function NumberInput({ title, value, ...rest }: Props) {
       <input
         type="number"
         value={value}
-        className="border outline-none pl-2 rounded-full w-full"
+        className="border outline-none pl-3 rounded-full w-full"
         {...rest}
       />
     </div>

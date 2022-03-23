@@ -10,73 +10,39 @@ import ColorInput from "../../inputs/ColorInput";
 import NumberField from "../../inputs/NumberField";
 import CheckboxInput from "../../inputs/CheckboxInput";
 
-export default function EditMaterial() {
-  const selected = useStore((state) => state.selected);
-  const properties = useStore(
-    (state) => state.scene.instances[selected?.id]?.properties
-  );
+interface Props {
+  id: string;
+}
+
+export default function EditMaterial({ id }: Props) {
   const assets = useStore((state) => state.scene.assets);
   const materials = useStore((state) => state.scene.materials);
 
-  if (!properties || !("material" in properties)) return null;
+  if (!id) return null;
 
-  const material = materials[properties.material];
+  const material = materials[id];
   const texture = assets[material?.texture];
 
   if (!material) return null;
 
-  function updateMaterial(changes: Partial<Material>) {
-    if (!("material" in properties)) return;
-    sceneManager.editMaterial(properties.material, changes);
+  function editMaterial(changes: Partial<Material>) {
+    sceneManager.editMaterial(id, changes);
+  }
+
+  function getEditMaterial(key: keyof Material3d) {
+    return (value: Material3d[typeof key]) => editMaterial({ [key]: value });
   }
 
   async function handleTextureChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files[0];
     e.target.value = null;
 
-    const id = await sceneManager.newAsset(file);
-    updateMaterial({ texture: id });
-  }
-
-  function editMaterial<T extends keyof Material3d>(
-    key: T,
-    value: Material3d[T]
-  ) {
-    updateMaterial({ [key]: value });
-  }
-
-  function getEditMaterial(key: keyof Material3d) {
-    return (value: Material3d[typeof key]) =>
-      editMaterial<typeof key>(key, value);
+    const textureId = await sceneManager.newAsset(file);
+    editMaterial({ texture: textureId });
   }
 
   function handleDeleteTexture() {
     sceneManager.deleteAsset(material.texture);
-  }
-
-  function handleColorChange(e: ChangeEvent<HTMLInputElement>) {
-    const color = e.target.value;
-    updateMaterial({ color });
-  }
-
-  function handleEmissiveChange(e: ChangeEvent<HTMLInputElement>) {
-    const emissive = e.target.value;
-    updateMaterial({ emissive });
-  }
-
-  function handleSheenColorChange(e: ChangeEvent<HTMLInputElement>) {
-    const sheenColor = e.target.value;
-    updateMaterial({ sheenColor });
-  }
-
-  function handleTypeChange(e: ChangeEvent<HTMLInputElement>) {
-    const type = e.target.value as any;
-    updateMaterial({ type });
-  }
-
-  function handleFlatShadingChange(e: ChangeEvent<HTMLInputElement>) {
-    const flatShading = e.target.checked;
-    updateMaterial({ flatShading });
   }
 
   return (
@@ -88,7 +54,7 @@ export default function EditMaterial() {
           <Select
             value={material.type}
             options={["physical", "toon"]}
-            onChange={handleTypeChange}
+            onChange={getEditMaterial("type")}
           />
         </div>
       </div>
@@ -147,7 +113,7 @@ export default function EditMaterial() {
               <ColorInput
                 id="sheen"
                 value={material.sheenColor}
-                onChange={handleSheenColorChange}
+                onChange={getEditMaterial("sheen")}
               />
             </div>
           </div>
@@ -158,7 +124,7 @@ export default function EditMaterial() {
             <div className="w-1/4">
               <CheckboxInput
                 checked={material.flatShading}
-                onChange={handleFlatShadingChange}
+                onChange={getEditMaterial("flatShading")}
               />
             </div>
           </div>
@@ -200,7 +166,7 @@ export default function EditMaterial() {
           <ColorInput
             id="color"
             value={material?.color}
-            onChange={handleColorChange}
+            onChange={getEditMaterial("color")}
           />
         </div>
       </div>
@@ -212,7 +178,7 @@ export default function EditMaterial() {
           <ColorInput
             id="emissive"
             value={material.emissive}
-            onChange={handleEmissiveChange}
+            onChange={getEditMaterial("emissive")}
           />
         </div>
       </div>

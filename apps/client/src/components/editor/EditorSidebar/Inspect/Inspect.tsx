@@ -3,7 +3,6 @@ import { useStore } from "../../helpers/store";
 import TransformModule from "./modules/TransformModule";
 import GeometryModule from "./modules/GeometryModule";
 import MaterialModule from "./modules/MaterialModule/MaterialModule";
-import GLTFInspect from "./modules/GLTF";
 
 export default function Inspect() {
   const selected = useStore((state) => state.selected);
@@ -21,7 +20,6 @@ export default function Inspect() {
         <TransformModule />
         <GeometryModule />
         <MaterialModule />
-        {/* <GLTFInspect /> */}
       </div>
     </div>
   );

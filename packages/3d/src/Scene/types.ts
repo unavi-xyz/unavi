@@ -32,6 +32,7 @@ export type Material = {
   sheen: number;
   texture: string | undefined;
   flatShading: boolean;
+  wireframe: boolean;
 };
 
 export type Scene = {

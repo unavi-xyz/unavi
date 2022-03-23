@@ -26,6 +26,7 @@ export const defaultMaterial: Material = {
   sheen: 0,
   texture: undefined,
   flatShading: false,
+  wireframe: false,
 };
 
 interface Props {
@@ -88,6 +89,7 @@ export function MeshMaterial({ material: id }: Props) {
         emissive={material.emissive}
         opacity={material.opacity}
         transparent={material.opacity < 1}
+        wireframe={material.wireframe}
       />
     );
   }
@@ -108,6 +110,7 @@ export function MeshMaterial({ material: id }: Props) {
       sheenColor={material.sheenColor}
       transparent={material.opacity < 1}
       flatShading={material.flatShading}
+      wireframe={material.wireframe}
     />
   );
 }

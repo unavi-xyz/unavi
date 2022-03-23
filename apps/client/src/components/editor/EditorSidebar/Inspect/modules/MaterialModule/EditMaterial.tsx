@@ -131,6 +131,17 @@ export default function EditMaterial({ id }: Props) {
         </>
       )}
 
+      <div className="flex items-center w-full">
+        <div className="w-1/4">Wireframe</div>
+
+        <div className="w-1/4">
+          <CheckboxInput
+            checked={material.wireframe}
+            onChange={getEditMaterial("wireframe")}
+          />
+        </div>
+      </div>
+
       <NumberField
         title="Opacity"
         value={material?.opacity ?? 1}

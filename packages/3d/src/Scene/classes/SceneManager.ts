@@ -100,7 +100,12 @@ export class SceneManager {
     usedAssets.forEach((id) => {
       newAssets[id] = scene.assets[id];
     });
-    scene.assets = newAssets;
+
+    const difference = Object.keys(scene.assets).filter(
+      (key) => !usedAssets.includes(key)
+    );
+
+    if (difference.length > 0) scene.assets = newAssets;
   }
 
   newMaterial() {

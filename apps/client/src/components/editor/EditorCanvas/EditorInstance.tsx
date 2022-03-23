@@ -42,8 +42,8 @@ export default function EditorInstance({ id }: Props) {
     if ("scale" in properties) ref.current.scale.set(...properties.scale);
   }, [properties]);
 
-  function handlePointerUp(e: ThreeEvent<MouseEvent>) {
-    if (useStore.getState().usingGizmo) return;
+  function handlePointerUp(e: ThreeEvent<PointerEvent> & MouseEvent) {
+    if (e.button !== 0 || useStore.getState().usingGizmo) return;
     e.stopPropagation();
 
     const selected = { id: instance.id, ref };

@@ -14,16 +14,16 @@ export default function EditorScene() {
 
   const { camera } = useThree();
 
-  function handleVoidClick(e: ThreeEvent<MouseEvent>) {
-    if (useStore.getState().usingGizmo) return;
+  useEffect(() => {
+    camera.position.set(6, 6, 6);
+  }, [camera.position]);
+
+  function handleVoidClick(e: ThreeEvent<PointerEvent> & MouseEvent) {
+    if (e.button !== 0 || useStore.getState().usingGizmo) return;
     e.stopPropagation();
 
     editorManager.setSelected(undefined);
   }
-
-  useEffect(() => {
-    camera.position.set(6, 6, 6);
-  }, [camera.position]);
 
   return (
     <group>

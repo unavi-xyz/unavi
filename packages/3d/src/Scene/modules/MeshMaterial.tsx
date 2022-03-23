@@ -103,14 +103,13 @@ export function MeshMaterial({ material: id }: Props) {
       color={material.color}
       emissive={material.emissive}
       opacity={material.opacity}
-      transmission={Math.abs(1 - material.opacity)}
+      transparent={material.opacity < 1}
       reflectivity={material.reflectivity}
       metalness={material.metalness}
       roughness={material.roughness}
       clearcoat={material.clearcoat}
       sheen={material.sheen}
       sheenColor={material.sheenColor}
-      transparent={material.opacity < 1}
       flatShading={material.flatShading}
       wireframe={material.wireframe}
     />

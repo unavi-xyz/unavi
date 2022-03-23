@@ -30,6 +30,8 @@ export function GLTFModel({ properties = gltfDefaultProperties }) {
   const [gltf, setGltf] = useState<GLTF>();
 
   useEffect(() => {
+    if (gltf) return;
+
     if (!properties?.src) {
       setGltf(undefined);
       return;

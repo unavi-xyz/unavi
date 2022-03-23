@@ -24,7 +24,7 @@ export function useAutosave() {
     //save on an interval
     function save() {
       sceneManager.pruneAssets();
-      const scene = { ...useStore.getState().scene };
+      const scene = useStore.getState().scene;
       mergeLocalScene(sceneId, { scene });
     }
 

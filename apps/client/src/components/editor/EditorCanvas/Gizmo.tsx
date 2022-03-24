@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { TransformControls } from "@react-three/drei";
 
-import { Tool } from "../helpers/types";
 import { editorManager, useStore } from "../helpers/store";
 
 export default function Gizmo() {
@@ -20,7 +19,7 @@ export default function Gizmo() {
 
     setVisible(true);
 
-    if (tool === Tool.scale) {
+    if (tool === "scale") {
       const instance = useStore.getState().scene.instances[selected.id];
       const hasScale = "scale" in instance.properties;
       setEnabled(hasScale);

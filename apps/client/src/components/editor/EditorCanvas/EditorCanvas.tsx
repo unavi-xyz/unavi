@@ -1,10 +1,10 @@
 import { Canvas } from "@react-three/fiber";
-import { Debug, Physics } from "@react-three/cannon";
+import { Physics } from "@react-three/cannon";
 import { OrbitControls } from "@react-three/drei";
 
-import { editorManager, useStore } from "../helpers/store";
-import { useAutosave } from "../helpers/useAutosave";
-import { useHotkeys } from "../helpers/useHotkeys";
+import { editorManager } from "../helpers/store";
+import { useAutosave } from "../helpers/hooks/useAutosave";
+import { useHotkeys } from "../helpers/hooks/useHotkeys";
 
 import EditorScene from "./EditorScene";
 import Gizmo from "./Gizmo";

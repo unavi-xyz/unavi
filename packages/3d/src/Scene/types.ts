@@ -17,9 +17,15 @@ export interface CoreProperties {
 export interface Properties extends CoreProperties {
   scale: Triplet;
   radius: number;
+  heightmap: Heightmap;
   src: string | undefined;
   material: string | undefined;
 }
+
+export type Heightmap = {
+  data: number[][];
+  width: number;
+};
 
 export type Material = {
   id: string;

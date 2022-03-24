@@ -1,13 +1,12 @@
 import create from "zustand";
 import { SceneManager } from "3d";
 
-import { EditorManager, EditorStore } from "./EditorManager";
-import { Tool } from "./types";
+import { EditorManager, EditorStore } from "./classes/EditorManager";
 
 export const useStore = create<EditorStore>(() => ({
   scene: { instances: {}, assets: {}, materials: {} },
   selected: undefined,
-  tool: Tool.translate,
+  tool: "translate",
   sceneId: undefined,
   usingGizmo: false,
   previewMode: false,

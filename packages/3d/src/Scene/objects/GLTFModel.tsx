@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-
+import { Euler, Vector3 } from "three";
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 
@@ -22,11 +22,11 @@ export const gltfDefaultProperties: IGLTF = {
 };
 
 export function GLTFModel({ properties = gltfDefaultProperties }) {
+  const { assets } = useContext(SceneContext);
+
   const [position] = useState(properties.position);
   const [rotation] = useState(properties.rotation);
   const [scale] = useState(properties.scale);
-
-  const { assets } = useContext(SceneContext);
   const [gltf, setGltf] = useState<GLTF>();
 
   useEffect(() => {
@@ -52,8 +52,12 @@ export function GLTFModel({ properties = gltfDefaultProperties }) {
   if (!gltf) return null;
 
   return (
-    <group position={position} rotation={rotation} scale={scale}>
-      <primitive object={gltf.scene} />;
+    <group
+      position={new Vector3().fromArray(position)}
+      rotation={new Euler().fromArray(rotation)}
+      scale={new Vector3().fromArray(scale)}
+    >
+      <primitive object={gltf.scene} />
     </group>
   );
 }

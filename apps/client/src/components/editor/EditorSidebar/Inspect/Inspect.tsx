@@ -3,6 +3,7 @@ import { useStore } from "../../helpers/store";
 import TransformModule from "./modules/TransformModule";
 import GeometryModule from "./modules/GeometryModule";
 import MaterialModule from "./modules/MaterialModule/MaterialModule";
+import HeightmapModule from "./modules/HeightmapModule";
 
 export default function Inspect() {
   const selected = useStore((state) => state.selected);
@@ -20,6 +21,7 @@ export default function Inspect() {
         <TransformModule />
         <GeometryModule />
         <MaterialModule />
+        <HeightmapModule />
       </div>
     </div>
   );

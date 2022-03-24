@@ -2,7 +2,8 @@ import { CoreProperties, Properties } from "./types";
 
 import { Box, boxDefaultProperties } from "./objects/Box";
 import { Sphere, sphereDefaultProperties } from "./objects/Sphere";
-import { gltfDefaultProperties, GLTFModel } from "./objects/GLTF";
+import { gltfDefaultProperties, GLTFModel } from "./objects/GLTFModel";
+import { Heightmap } from "./objects/Heightmap";
 
 type GenericSceneObject = {
   [key: string]: {
@@ -28,5 +29,9 @@ export const SceneObjects = generify({
   GLTF: {
     properties: gltfDefaultProperties,
     component: <GLTFModel />,
+  },
+  Heightmap: {
+    properties: gltfDefaultProperties,
+    component: <Heightmap />,
   },
 });

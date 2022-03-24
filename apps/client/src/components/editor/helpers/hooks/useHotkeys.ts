@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
-import { editorManager, sceneManager, useStore } from "./store";
-import { Tool } from "./types";
+import { editorManager, sceneManager, useStore } from "../store";
+import { Tool } from "../types";
 
 export function useHotkeys() {
   const copied = useRef<string>();
@@ -21,13 +21,13 @@ export function useHotkeys() {
           break;
 
         case "w":
-          editorManager.setTool(Tool.translate);
+          editorManager.setTool("translate");
           break;
         case "e":
-          editorManager.setTool(Tool.rotate);
+          editorManager.setTool("rotate");
           break;
         case "r":
-          editorManager.setTool(Tool.scale);
+          editorManager.setTool("scale");
           break;
 
         case "c":

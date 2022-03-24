@@ -1,9 +1,9 @@
-import { Properties, SceneStore } from "3d";
-import { Euler, Quaternion, Vector3 } from "three";
+import { Heightmap, Properties, SceneStore } from "3d";
+import { Euler, Quaternion, Raycaster, Vector3 } from "three";
 import { UseBoundStore, StoreApi } from "zustand";
 
-import { sceneManager } from "./store";
-import { Selected, Tool } from "./types";
+import { sceneManager } from "../store";
+import { Selected, Tool } from "../types";
 
 export interface EditorStore extends SceneStore {
   selected: Selected;
@@ -45,6 +45,51 @@ export class EditorManager {
 
   setDebugMode(debugMode: boolean) {
     this.useStore.setState({ debugMode });
+  }
+
+  generateSelectedHeightmap(width: number, numRows: number) {
+    const selected = this.useStore.getState().selected;
+    const instance = this.useStore.getState().scene.instances[selected.id];
+    const originCopy = new Vector3();
+    const down = new Vector3(0, -1, 0);
+    const data: number[][] = [];
+
+    //shoot a downwards raycast along a grid over top of the instance
+    const maxHeight = 10000;
+
+    const origin = new Vector3(...instance.properties.position);
+    origin.y += maxHeight;
+
+    const raycaster = new Raycaster(origin.clone(), down, 1, maxHeight * 2);
+
+    for (let x = 0; x < numRows; x++) {
+      data[x] = [];
+
+      for (let z = 0; z < numRows; z++) {
+        originCopy.copy(origin);
+
+        originCopy.x += (x / numRows) * width - width / 2;
+        originCopy.z += (z / numRows) * width - width / 2;
+
+        raycaster.set(originCopy, down);
+
+        const intersections = raycaster.intersectObject(selected.ref.current);
+        if (intersections.length > 0) {
+          const distance = maxHeight - intersections[0].distance;
+          data[x][z] = distance;
+        } else {
+          data[x][z] = 0;
+        }
+      }
+
+      data[x].reverse();
+    }
+
+    const heightmap: Heightmap = { data, width };
+    const id = sceneManager.newInstance("Heightmap");
+    sceneManager.editInstance(id, { heightmap });
+
+    return id;
   }
 
   saveSelected() {

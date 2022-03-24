@@ -1,7 +1,6 @@
 import { IoIosMove } from "react-icons/io";
 import { BsArrowRepeat, BsArrowsAngleExpand } from "react-icons/bs";
 
-import { Tool } from "../helpers/types";
 import { Tooltip } from "../../base";
 import { editorManager, useStore } from "../helpers/store";
 
@@ -12,24 +11,24 @@ export default function MiddleButtons() {
     <div className="flex items-center space-x-2">
       <Tooltip text="Translate (W)" placement="bottom">
         <MiddleButton
-          selected={tool === Tool.translate}
-          onClick={() => editorManager.setTool(Tool.translate)}
+          selected={tool === "translate"}
+          onClick={() => editorManager.setTool("translate")}
         >
           <IoIosMove />
         </MiddleButton>
       </Tooltip>
       <Tooltip text="Rotate (E)" placement="bottom">
         <MiddleButton
-          selected={tool === Tool.rotate}
-          onClick={() => editorManager.setTool(Tool.rotate)}
+          selected={tool === "rotate"}
+          onClick={() => editorManager.setTool("rotate")}
         >
           <BsArrowRepeat />
         </MiddleButton>
       </Tooltip>
       <Tooltip text="Scale (R)" placement="bottom">
         <MiddleButton
-          selected={tool === Tool.scale}
-          onClick={() => editorManager.setTool(Tool.scale)}
+          selected={tool === "scale"}
+          onClick={() => editorManager.setTool("scale")}
         >
           <BsArrowsAngleExpand className="text-[1.4rem]" />
         </MiddleButton>

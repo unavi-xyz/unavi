@@ -2,11 +2,7 @@ import { MutableRefObject } from "react";
 import { Group } from "three";
 import { SceneObjectType } from "3d";
 
-export enum Tool {
-  translate = "translate",
-  rotate = "rotate",
-  scale = "scale",
-}
+export type Tool = "translate" | "rotate" | "scale";
 
 export type Selected = {
   id: string;

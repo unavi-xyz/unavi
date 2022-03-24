@@ -67,9 +67,9 @@ export default function EditorNavbar({ id }: Props) {
                        hover:cursor-pointer"
           >
             {debugMode ? (
-              <HiOutlineCubeTransparent className="text-xl" />
-            ) : (
               <HiOutlineCube className="text-xl" />
+            ) : (
+              <HiOutlineCubeTransparent className="text-xl" />
             )}
           </div>
         </Tooltip>

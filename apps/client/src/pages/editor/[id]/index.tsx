@@ -8,11 +8,11 @@ import { createSpace, IpfsContext, uploadFileToIpfs, useAuth } from "ceramic";
 import { JsonScene } from "3d";
 
 import { dataUrlToFile } from "../../../helpers/files";
-import { useLocalScene } from "../../../components/scene/localScenes/useLocalScene";
-
+import { useLocalScene } from "../../../helpers/localScenes/useLocalScene";
 import { IconButton } from "../../../components/base";
-import SceneSettingsDialog from "../../../components/scene/SceneSettingsDialog";
+
 import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
+import SceneSettingsDialog from "../../../components/home/scene/SceneSettingsDialog";
 
 export default function Id() {
   const router = useRouter();

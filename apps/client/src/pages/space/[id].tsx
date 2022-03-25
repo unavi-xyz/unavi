@@ -6,7 +6,7 @@ import { useAuth, useIpfsImage, useProfile, useSpace } from "ceramic";
 
 import { IconButton } from "../../components/base";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
-import { SpaceSettingsDialog } from "../../components/space/SpaceSettingsDialog";
+import { SpaceSettingsDialog } from "../../components/home/space/SpaceSettingsDialog";
 
 export default function Space() {
   const router = useRouter();

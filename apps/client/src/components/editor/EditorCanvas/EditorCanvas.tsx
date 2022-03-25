@@ -4,14 +4,14 @@ import { OrbitControls } from "@react-three/drei";
 
 import { editorManager } from "../helpers/store";
 import { useAutosave } from "../helpers/hooks/useAutosave";
-import { useHotkeys } from "../helpers/hooks/useHotkeys";
+import { useEditorHotkeys } from "../helpers/hooks/useEditorHotkeys";
 
 import EditorScene from "./EditorScene";
 import Gizmo from "./Gizmo";
 
 export default function EditorCanvas() {
   useAutosave();
-  useHotkeys();
+  useEditorHotkeys();
 
   function handlePointerMiss() {
     editorManager.setSelected(undefined);

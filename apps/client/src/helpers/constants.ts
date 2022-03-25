@@ -1,1 +1,3 @@
-export const PUBLISH_INTERVAL = 50;
+import { QueryClient } from "react-query";
+
+export const queryClient = new QueryClient();

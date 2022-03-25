@@ -1,7 +1,7 @@
 import { MutableRefObject } from "react";
 
 interface Props {
-  title: string;
+  title?: string;
   inputRef: MutableRefObject<HTMLInputElement>;
   [key: string]: any;
 }
@@ -16,7 +16,7 @@ export function TextField({ title, inputRef, ...rest }: Props) {
         ref={inputRef}
         id={title}
         type="text"
-        className="border p-2 rounded leading-tight"
+        className="border p-2 rounded leading-tight outline-none"
         {...rest}
       />
     </div>

@@ -2,14 +2,13 @@ import { useState, useContext, useEffect } from "react";
 import { IpfsContext, loadFromIpfs } from "ceramic";
 import { Scene, JsonScene } from "3d";
 
-export function useAssetLoader(stringScene: JsonScene) {
+export default function useAssetLoader(stringScene: JsonScene) {
   const { ipfs } = useContext(IpfsContext);
 
   const [scene, setScene] = useState<Scene>();
 
   useEffect(() => {
     if (!ipfs || !stringScene) return;
-
     setScene({ ...stringScene, assets: {} });
 
     //load assets

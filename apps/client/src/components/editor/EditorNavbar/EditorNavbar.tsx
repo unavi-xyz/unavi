@@ -3,8 +3,8 @@ import { MdArrowBackIosNew } from "react-icons/md";
 import { HiOutlineCubeTransparent, HiOutlineCube } from "react-icons/hi";
 import { useRouter } from "next/router";
 
-import { mergeLocalScene } from "../../scene/localScenes/db";
-import { useLocalScene } from "../../scene/localScenes/useLocalScene";
+import { mergeLocalScene } from "../../../helpers/localScenes/db";
+import { useLocalScene } from "../../../helpers/localScenes/useLocalScene";
 import { editorManager, useStore } from "../helpers/store";
 
 import MiddleButtons from "./MiddleButtons";

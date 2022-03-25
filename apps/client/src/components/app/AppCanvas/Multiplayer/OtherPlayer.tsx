@@ -1,20 +1,17 @@
 import { useContext, useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Triplet } from "@react-three/cannon";
 import { Group, MathUtils, Vector3 } from "three";
 import { Avatar } from "3d";
 
-import { PUBLISH_INTERVAL } from "../../helpers/constants";
-import { MultiplayerContext } from "./MultiplayerContext";
-
-type Location = { position: Triplet; rotation: number };
+import { PUBLISH_INTERVAL } from "./constants";
+import { MultiplayerContext } from "../../MultiplayerProvider";
 
 interface Props {
-  did: string;
+  id: string;
 }
 
-export default function OtherPlayer({ did }: Props) {
-  const { ydoc } = useContext(MultiplayerContext);
+export default function OtherPlayer({ id }: Props) {
+  const { ydoc, getLocations } = useContext(MultiplayerContext);
 
   const walkWeight = useRef(0);
   const jumpWeight = useRef(0);
@@ -26,8 +23,8 @@ export default function OtherPlayer({ did }: Props) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const locations = ydoc.getMap<Location>("locations");
-      const location = locations.get(did);
+      const locations = getLocations();
+      const location = locations[id];
 
       prev.current.position.copy(real.current.position);
       prev.current.rotation = real.current.rotation;
@@ -41,7 +38,7 @@ export default function OtherPlayer({ did }: Props) {
     return () => {
       clearInterval(interval);
     };
-  }, [did, ydoc]);
+  }, [getLocations, id]);
 
   useFrame((_, delta) => {
     deltaTotal.current += delta;

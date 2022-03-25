@@ -2,10 +2,10 @@ import { useState } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 import Link from "next/link";
 
-import { useLocalSceneIds } from "../../components/scene/localScenes/useLocalSceneIds";
+import { useLocalSceneIds } from "../../helpers/localScenes/useLocalSceneIds";
 import { IconButton } from "../../components/base";
-import NewSceneDialog from "../../components/scene/NewSceneDialog";
-import SceneCard from "../../components/scene/SceneCard";
+import NewSceneDialog from "../../components/home/scene/NewSceneDialog";
+import SceneCard from "../../components/home/scene/SceneCard";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
 
 export default function Editor() {

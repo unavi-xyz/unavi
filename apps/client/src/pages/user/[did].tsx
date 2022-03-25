@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useAuth, useIpfsImage, useProfile, useUserSpaces } from "ceramic";
 
 import { IconButton } from "../../components/base";
-import { ProfileSettingsDialog } from "../../components/profile/ProfileSettingsDialog";
-import SpaceCard from "../../components/space/SpaceCard";
+import { ProfileSettingsDialog } from "../../components/home/profile/ProfileSettingsDialog";
+
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
-import ProfileAvatar from "../../components/profile/ProfileAvatar";
+import ProfileAvatar from "../../components/home/profile/ProfileAvatar";
+import SpaceCard from "../../components/home/space/SpaceCard";
 
 export default function User() {
   const router = useRouter();

@@ -1,9 +1,7 @@
 import { useEffect, useRef } from "react";
-
 import { editorManager, sceneManager, useStore } from "../store";
-import { Tool } from "../types";
 
-export function useHotkeys() {
+export function useEditorHotkeys() {
   const copied = useRef<string>();
   const holdingV = useRef(false);
 

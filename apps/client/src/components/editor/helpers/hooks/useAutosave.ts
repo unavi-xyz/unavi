@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
+import { mergeLocalScene } from "../../../../helpers/localScenes/db";
+import { useLocalScene } from "../../../../helpers/localScenes/useLocalScene";
 import { sceneManager, useStore } from "../store";
-import { mergeLocalScene } from "../../../scene/localScenes/db";
-import { useLocalScene } from "../../../scene/localScenes/useLocalScene";
 
 export function useAutosave() {
   const sceneId = useStore((state) => state.sceneId);

@@ -3,8 +3,9 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuth } from "ceramic";
 
-import SignInDialog from "../Sidebar/SignInButton/SignInDialog";
+import SignInPage from "../Sidebar/SignInButton/SignInPage";
 import NavbarButton from "./NavbarButton";
+import { Dialog } from "../../../components/base";
 
 export default function Navbar() {
   const router = useRouter();
@@ -14,7 +15,9 @@ export default function Navbar() {
 
   return (
     <>
-      <SignInDialog open={open} setOpen={setOpen} />
+      <Dialog open={open} setOpen={setOpen}>
+        <SignInPage />
+      </Dialog>
 
       <div className="bg-white w-full h-14 flex items-center justify-between px-10">
         <Link href="/" passHref>
@@ -50,5 +53,3 @@ export default function Navbar() {
     </>
   );
 }
-
-function SignInButton() {}

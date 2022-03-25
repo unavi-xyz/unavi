@@ -1,23 +1,13 @@
-import { Dispatch, SetStateAction, useEffect } from "react";
 import { useAuth } from "ceramic";
 
-import { Dialog, RichButton } from "../../../../components/base";
+import { RichButton } from "../../../../components/base";
 import MetamaskFox from "./MetamaskFox";
 
-interface Props {
-  open: boolean;
-  setOpen: Dispatch<SetStateAction<boolean>>;
-}
-
-export default function SignInDialog({ open, setOpen }: Props) {
-  const { authenticated, connect } = useAuth();
-
-  useEffect(() => {
-    if (authenticated) setOpen(false);
-  }, [authenticated, setOpen]);
+export default function SignInPage() {
+  const { connect } = useAuth();
 
   return (
-    <Dialog open={open} setOpen={setOpen}>
+    <div className="space-y-8">
       <div className="flex flex-col items-center space-y-1">
         <h1 className="text-3xl flex justify-center">Sign in</h1>
         <p className="text-lg flex justify-center">
@@ -31,6 +21,6 @@ export default function SignInDialog({ open, setOpen }: Props) {
         image={<MetamaskFox width="100px" />}
         onClick={connect}
       />
-    </Dialog>
+    </div>
   );
 }

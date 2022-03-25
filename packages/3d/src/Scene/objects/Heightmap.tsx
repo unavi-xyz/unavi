@@ -1,16 +1,18 @@
-import { FC, useContext, useEffect, useRef } from "react";
+import { FC, useEffect, useRef } from "react";
 import { HeightfieldArgs, Triplet, useHeightfield } from "@react-three/cannon";
 import { BufferGeometry, Float32BufferAttribute } from "three";
 
 import { CoreProperties, Heightmap, Properties } from "../types";
-import { SceneContext } from "../SceneContext";
+import { MeshMaterial } from "../modules/MeshMaterial";
 
-export type IHeightmap = CoreProperties & Pick<Properties, "heightmap">;
+export type IHeightmap = CoreProperties &
+  Pick<Properties, "heightmap" | "material">;
 
 export const heightmapDefaultProperties: IHeightmap = {
   position: [0, 0, 0],
   rotation: [0, 0, 0],
   heightmap: { data: [], width: 1 },
+  material: undefined,
 };
 
 export function Heightmap({ properties = heightmapDefaultProperties }) {
@@ -36,16 +38,10 @@ export function Heightmap({ properties = heightmapDefaultProperties }) {
     rotation,
   }));
 
-  const { debug } = useContext(SceneContext);
-
   return (
     <mesh ref={ref}>
-      {debug ? (
-        <meshStandardMaterial flatShading />
-      ) : (
-        <meshBasicMaterial visible={false} />
-      )}
       <HeightmapGeometry heights={data} elementSize={elementSize} />
+      <MeshMaterial material={properties.material} />
     </mesh>
   );
 }

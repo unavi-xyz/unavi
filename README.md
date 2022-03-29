@@ -1,4 +1,12 @@
-# The Wired
+<div align="center">
+<img src="./apps/client/public/images/plug.png" />
+<h1>The Wired</h1>
+<p>A decentralized, open source, browser-based VR social paltform.</p>
+
+<img alt="Discord" src="https://img.shields.io/discord/918705784311939134?label=discord">
+<img alt="GitHub" src="https://img.shields.io/github/license/wired-xr/wired">
+<img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/TheWiredXR?style=social">
+</div>
 
 ## What's inside?
 

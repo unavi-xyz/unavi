@@ -7,7 +7,7 @@ export function useUserSpaces(did: string) {
   async function fetcher() {
     if (!did) return;
     const data = await getArrayStore(model, did);
-    return data;
+    return data.reverse();
   }
 
   const { data } = useQuery(`user-spaces-${did}`, fetcher);

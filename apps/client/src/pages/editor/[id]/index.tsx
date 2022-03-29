@@ -1,22 +1,27 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { MdCloudUpload, MdArrowBackIosNew } from "react-icons/md";
+import { useQueryClient } from "react-query";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { createSpace, uploadFileToIpfs, useAuth } from "ceramic";
+import { createSpace, IpfsContext, uploadFileToIpfs, useAuth } from "ceramic";
+import { JsonScene } from "3d";
 
 import { dataUrlToFile } from "../../../helpers/files";
-import { useLocalScene } from "../../../components/editor/scene/localScenes/useLocalScene";
-
+import { useLocalScene } from "../../../helpers/localScenes/useLocalScene";
 import { IconButton } from "../../../components/base";
-import SceneSettingsDialog from "../../../components/editor/scene/SceneSettingsDialog";
+
 import SidebarLayout from "../../../layouts/SidebarLayout/SidebarLayout";
+import SceneSettingsDialog from "../../../components/home/scene/SceneSettingsDialog";
 
 export default function Id() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { authenticated, connect } = useAuth();
+  const { ipfs } = useContext(IpfsContext);
+
+  const queryClient = useQueryClient();
+  const { authenticated, viewerId, connect } = useAuth();
   const localScene = useLocalScene(id);
 
   const [openSettings, setOpenSettings] = useState(false);
@@ -24,31 +29,18 @@ export default function Id() {
   async function handlePublish() {
     if (!authenticated) await connect();
 
-    //upload textures
-    const sceneCopy = { ...localScene.scene };
+    const assets = {};
+
+    //upload assets
     Promise.all(
-      Object.values(sceneCopy.textures).map(async ({ value, name }) => {
-        const file = await dataUrlToFile(value, name);
-        await uploadFileToIpfs(file);
+      Object.values(localScene.scene.assets).map(async (file) => {
+        await uploadFileToIpfs(ipfs, file);
       })
     );
 
-    //remove textures from scene
-    Object.keys(sceneCopy.textures).forEach((key) => {
-      sceneCopy.textures[key] = null;
-    });
-
-    //upload models
-    Promise.all(
-      Object.values(sceneCopy.models).map(async ({ value, name }) => {
-        const file = await dataUrlToFile(value, name);
-        await uploadFileToIpfs(file);
-      })
-    );
-
-    //remove models from scene
-    Object.keys(sceneCopy.models).forEach((key) => {
-      sceneCopy.models[key] = null;
+    //remove asset files
+    Object.keys(localScene.scene.assets).forEach((key) => {
+      assets[key] = "";
     });
 
     //upload preview image
@@ -57,13 +49,20 @@ export default function Id() {
       : undefined;
 
     //create the space
+    const scene: JsonScene = {
+      ...localScene.scene,
+      assets,
+    };
+
     const streamId = await createSpace(
+      ipfs,
       localScene.name,
       localScene.description,
       image,
-      sceneCopy
+      scene
     );
 
+    queryClient.invalidateQueries(`user-spaces-${viewerId}`);
     router.push(`/space/${streamId}`);
   }
 

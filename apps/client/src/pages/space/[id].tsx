@@ -2,11 +2,11 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth, useIpfsFile, useProfile, useSpace } from "ceramic";
+import { useAuth, useIpfsImage, useProfile, useSpace } from "ceramic";
 
 import { IconButton } from "../../components/base";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
-import { SpaceSettingsDialog } from "../../components/space/SpaceSettingsDialog";
+import { SpaceSettingsDialog } from "../../components/home/space/SpaceSettingsDialog";
 
 export default function Space() {
   const router = useRouter();
@@ -15,7 +15,7 @@ export default function Space() {
   const { viewerId } = useAuth();
   const { space, controller } = useSpace(id);
   const { profile } = useProfile(controller);
-  const image = useIpfsFile(space?.image);
+  const image = useIpfsImage(space?.image);
 
   const [openSettings, setOpenSettings] = useState(false);
 

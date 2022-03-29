@@ -2,13 +2,14 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth, useIpfsFile, useProfile, useUserSpaces } from "ceramic";
+import { useAuth, useIpfsImage, useProfile, useUserSpaces } from "ceramic";
 
 import { IconButton } from "../../components/base";
-import { ProfileSettingsDialog } from "../../components/profile/ProfileSettingsDialog";
-import SpaceCard from "../../components/space/SpaceCard";
+import { ProfileSettingsDialog } from "../../components/home/profile/ProfileSettingsDialog";
+
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
-import ProfileAvatar from "../../components/profile/ProfileAvatar";
+import ProfileAvatar from "../../components/home/profile/ProfileAvatar";
+import SpaceCard from "../../components/home/space/SpaceCard";
 
 export default function User() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function User() {
 
   const { viewerId } = useAuth();
   const { profile } = useProfile(did);
-  const image = useIpfsFile(profile?.image?.original.src);
+  const image = useIpfsImage(profile?.image?.original.src);
   const spaces = useUserSpaces(did);
 
   const [openSettings, setOpenSettings] = useState(false);
@@ -62,7 +63,7 @@ export default function User() {
 
       <div className="basis-full grid md:grid-cols-2 gap-4 pb-4 md:pb-0">
         <div className="card-borderless h-96 md:h-full">
-          <ProfileAvatar />
+          <ProfileAvatar avatarId={profile?.avatar} />
         </div>
 
         <div className="grid md:grid-rows-3 gap-4">
@@ -84,16 +85,18 @@ export default function User() {
             </div>
 
             <div className="relative overflow-auto h-96 md:h-full">
-              <div className="absolute w-full top-0 left-0 px-2 space-y-4">
+              <div className="absolute h-full w-full top-0 left-0 px-4 pb-4 space-x-8 flex">
                 {spaces?.map((streamId) => {
                   return (
                     <Link key={streamId} href={`/space/${streamId}`} passHref>
-                      <div>
+                      <div className="flex-shrink-0 float-left w-96 h-full">
                         <SpaceCard streamId={streamId} />
                       </div>
                     </Link>
                   );
                 })}
+
+                <div className="pr-2" />
               </div>
             </div>
           </div>

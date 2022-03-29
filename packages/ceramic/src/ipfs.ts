@@ -9,17 +9,12 @@ export async function loadFromIpfs(ipfs: IPFS, cid: string) {
   }
 
   const blob = new Blob(files);
-  const url = URL.createObjectURL(blob);
-  return url;
+  const file = new File([blob], "");
+  // const url = URL.createObjectURL(blob);
+  return file;
 }
 
-export async function uploadFileToIpfs(file: File) {
-  const body = new FormData();
-  body.append("path", file, file.name);
-  const res = await fetch(`https://ipfs.infura.io:5001/api/v0/add`, {
-    method: "POST",
-    body,
-  });
-  const { Hash } = await res.json();
-  return `ipfs://${Hash}`;
+export async function uploadFileToIpfs(ipfs: IPFS, file: File) {
+  const { cid } = await ipfs.add(file);
+  return `ipfs://${cid.toString()}`;
 }

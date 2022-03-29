@@ -1,10 +1,9 @@
 import { IpfsProvider } from "ceramic";
 import Head from "next/head";
-import { QueryClient, QueryClientProvider } from "react-query";
+import { QueryClientProvider } from "react-query";
 
+import { queryClient } from "../helpers/constants";
 import "../../styles/globals.css";
-
-const queryClient = new QueryClient();
 
 export default function App({ Component, pageProps }) {
   const Layout = Component.Layout ?? EmptyLayout;

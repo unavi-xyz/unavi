@@ -1,45 +1,18 @@
-import { useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
-import { Physics } from "@react-three/cannon";
-import { useRouter } from "next/router";
-import { Player, World } from "3d";
-import { useAuth, useSpace } from "ceramic";
+import { useAppHotkeys } from "../components/app/helpers/hooks/useAppHotkeys";
 
-import AppLayout from "../layouts/AppLayout";
-import Multiplayer from "../components/app/Multiplayer";
-import MultiplayerProvider from "../components/app/MultiplayerContext";
-import { useSceneLoader } from "../components/app/useSceneLoader";
+import AppCanvas from "../components/app/AppCanvas/AppCanvas";
+import AppOverlay from "../components/app/AppOverlay/AppOverlay";
+import MultiplayerProvider from "../components/app/MultiplayerProvider";
 
 export default function App() {
-  const router = useRouter();
-  const spaceId = router.query.space as string;
-
-  const { space } = useSpace(spaceId);
-  const { authenticated, connect } = useAuth();
-
-  const { textures, models } = useSceneLoader(space?.scene);
-
-  useEffect(() => {
-    if (!authenticated) connect();
-  }, [authenticated, connect]);
-
-  if (!authenticated) return null;
+  useAppHotkeys();
 
   return (
     <div className="h-full">
-      <div className="crosshair" />
-
-      <Canvas mode="concurrent">
-        <MultiplayerProvider>
-          <Physics>
-            <World scene={space.scene} textures={textures} models={models} />
-            <Multiplayer spaceId={spaceId} />
-            <Player />
-          </Physics>
-        </MultiplayerProvider>
-      </Canvas>
+      <MultiplayerProvider>
+        <AppCanvas />
+        <AppOverlay />
+      </MultiplayerProvider>
     </div>
   );
 }
-
-App.Layout = AppLayout;

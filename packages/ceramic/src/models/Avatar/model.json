@@ -1,0 +1,9 @@
+{
+  "definitions": {
+    "avatar": "kjzl6cwe1jw145wostjzudhazpanc9v1i6vuq97r0je48wm17w3cfswopy40sn5"
+  },
+  "schemas": {
+    "Avatar": "ceramic://k3y52l7qbv1fry2nsg10evz4lnehynl7hki034ugd4evytqgfz7wy3tqsamc0f01s"
+  },
+  "tiles": {}
+}

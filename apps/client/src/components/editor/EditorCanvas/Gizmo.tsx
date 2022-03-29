@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react";
-import { useAtom, useSetAtom } from "jotai";
 import { TransformControls } from "@react-three/drei";
 
-import { toolAtom, usingGizmoAtom } from "../helpers/state";
-import { Tool } from "../helpers/types";
-import { useStore } from "../helpers/store";
+import { editorManager, useStore } from "../helpers/store";
 
 export default function Gizmo() {
   const selected = useStore((state) => state.selected);
-
-  const setUsingGizmo = useSetAtom(usingGizmoAtom);
-  const [tool] = useAtom(toolAtom);
+  const tool = useStore((state) => state.tool);
 
   const [enabled, setEnabled] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -24,9 +19,9 @@ export default function Gizmo() {
 
     setVisible(true);
 
-    if (tool === Tool.scale) {
-      const params = useStore.getState().scene.instances[selected.id].params;
-      const hasScale = params.hasOwnProperty("scale");
+    if (tool === "scale") {
+      const instance = useStore.getState().scene.instances[selected.id];
+      const hasScale = "scale" in instance.properties;
       setEnabled(hasScale);
     } else {
       setEnabled(true);
@@ -34,12 +29,12 @@ export default function Gizmo() {
   }, [selected, tool]);
 
   function handleMouseDown() {
-    setUsingGizmo(true);
+    editorManager.setUsingGizmo(true);
   }
 
   function handleMouseUp() {
-    useStore.getState().saveSelected();
-    setUsingGizmo(false);
+    editorManager.saveSelected();
+    editorManager.setUsingGizmo(false);
   }
 
   return (

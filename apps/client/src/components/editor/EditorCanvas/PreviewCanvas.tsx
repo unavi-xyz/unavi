@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/cannon";
-import { Player, World } from "3d";
+import { InstancedScene, Player } from "3d";
 
 import { useStore } from "../helpers/store";
 
@@ -10,7 +10,7 @@ export default function PreviewCanvas() {
   return (
     <Canvas mode="concurrent">
       <Physics>
-        <World scene={scene} />
+        <InstancedScene scene={scene} />
         <Player />
       </Physics>
     </Canvas>

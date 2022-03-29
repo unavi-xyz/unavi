@@ -14,6 +14,7 @@ export interface BasicProfile {
   residenceCountry?: string;
   nationalities?: [string, ...string[]];
   affiliations?: string[];
+  avatar?: IPFSUrl;
   [k: string]: unknown;
 }
 export interface ImageSources {

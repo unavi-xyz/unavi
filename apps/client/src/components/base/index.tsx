@@ -5,3 +5,5 @@ export * from "./ImageUpload";
 export * from "./RichButton";
 export * from "./TextField";
 export * from "./Tooltip";
+export * from "./Card";
+export * from "./Select";

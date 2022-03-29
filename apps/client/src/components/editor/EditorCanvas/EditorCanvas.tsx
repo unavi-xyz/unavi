@@ -1,20 +1,20 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
 import { Physics } from "@react-three/cannon";
+import { OrbitControls } from "@react-three/drei";
 
-import { useStore } from "../helpers/store";
-import { useAutosave } from "../helpers/useAutosave";
-import { useHotkeys } from "../helpers/useHotkeys";
+import { editorManager } from "../helpers/store";
+import { useAutosave } from "../helpers/hooks/useAutosave";
+import { useEditorHotkeys } from "../helpers/hooks/useEditorHotkeys";
 
-import { EditorWorld } from "./EditorWorld";
+import EditorScene from "./EditorScene";
 import Gizmo from "./Gizmo";
 
 export default function EditorCanvas() {
   useAutosave();
-  useHotkeys();
+  useEditorHotkeys();
 
   function handlePointerMiss() {
-    useStore.getState().setSelected(null);
+    editorManager.setSelected(undefined);
   }
 
   return (
@@ -26,8 +26,7 @@ export default function EditorCanvas() {
       <Physics>
         <OrbitControls makeDefault />
         <Gizmo />
-
-        <EditorWorld />
+        <EditorScene />
       </Physics>
     </Canvas>
   );

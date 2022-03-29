@@ -7,7 +7,7 @@ export default function SidebarLayout({ children }) {
   const isMobile = useIsMobile();
 
   return (
-    <div className="sm:flex sm:flex-row h-full">
+    <div className="sm:flex sm:flex-row h-full overflow-hidden">
       {isMobile ? <Navbar /> : <Sidebar />}
 
       <div className="w-full h-full flex justify-center p-4 sm:p-16">

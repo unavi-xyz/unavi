@@ -13,14 +13,12 @@ export function useMixamoAnimation(fbx?: Group, vrm?: VRM) {
   useMixamoBone(fbx, "mixamorigSpine2", vrm, HumanBone.Chest);
   useMixamoBone(fbx, "mixamorigNeck", vrm, HumanBone.Neck);
   useMixamoBone(fbx, "mixamorigHead", vrm, HumanBone.Head);
-  useMixamoBone(fbx, "mixamorigLeftShoulder", vrm, HumanBone.LeftShoulder);
   useMixamoBone(fbx, "mixamorigLeftArm", vrm, HumanBone.LeftUpperArm);
-  useMixamoBone(fbx, "mixamorigLeftForeArm", vrm, HumanBone.LeftLowerLeg);
+  useMixamoBone(fbx, "mixamorigLeftForeArm", vrm, HumanBone.LeftLowerArm);
   useMixamoBone(fbx, "mixamorigLeftHand", vrm, HumanBone.LeftHand);
   useMixamoBone(fbx, "mixamorigLeftUpLeg", vrm, HumanBone.LeftUpperLeg);
   useMixamoBone(fbx, "mixamorigLeftLeg", vrm, HumanBone.LeftLowerLeg);
   useMixamoBone(fbx, "mixamorigLeftFoot", vrm, HumanBone.LeftFoot);
-  useMixamoBone(fbx, "mixamorigRightShoulder", vrm, HumanBone.RightShoulder);
   useMixamoBone(fbx, "mixamorigRightArm", vrm, HumanBone.RightUpperArm);
   useMixamoBone(fbx, "mixamorigRightForeArm", vrm, HumanBone.RightLowerArm);
   useMixamoBone(fbx, "mixamorigRightHand", vrm, HumanBone.RightHand);

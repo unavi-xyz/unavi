@@ -4,7 +4,7 @@ import { Scene, JsonScene } from "3d";
 import { Space } from "./types";
 import { uploadFileToIpfs } from "../../ipfs";
 import { loader } from "../../client";
-import { addSpaceToProfile, removeSpaceFromProfile } from "../Spaces/helpers";
+import { addToSpaces, removeFromSpaces } from "../Spaces/helpers";
 
 const model = require("./model.json");
 
@@ -25,7 +25,7 @@ export async function createSpace(
   );
 
   const streamId = stream.id.toString();
-  await addSpaceToProfile(streamId);
+  await addToSpaces(streamId);
 
   return streamId;
 }
@@ -33,7 +33,7 @@ export async function createSpace(
 export async function deleteSpace(streamId: string) {
   const doc = await loader.load(streamId);
   await doc.update(doc.content, {}, { pin: false });
-  await removeSpaceFromProfile(streamId);
+  await removeFromSpaces(streamId);
 }
 
 export async function editSpace(

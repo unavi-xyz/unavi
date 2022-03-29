@@ -1,15 +1,35 @@
-import React, { Suspense, useRef } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, OrbitControls } from "@react-three/drei";
 import { Vector3 } from "three";
+import { useAvatar, useIpfsFile } from "ceramic";
 
 const Avatar = React.lazy(() =>
   import("3d").then((module) => ({ default: module.Avatar }))
 );
 
-export default function ProfileAvatar() {
+interface Props {
+  avatarId?: string;
+}
+
+export default function ProfileAvatar({ avatarId }: Props) {
   const walkWeight = useRef(0);
   const jumpWeight = useRef(0);
+
+  const { avatar } = useAvatar(avatarId);
+  const vrmFile = useIpfsFile(avatar?.vrm);
+
+  const [vrmUrl, setVrmUrl] = useState<string>();
+
+  useEffect(() => {
+    if (!vrmFile) {
+      setVrmUrl(undefined);
+      return;
+    }
+
+    const url = URL.createObjectURL(vrmFile);
+    setVrmUrl(url);
+  }, [vrmFile]);
 
   return (
     <div className="w-full h-full">
@@ -28,17 +48,19 @@ export default function ProfileAvatar() {
         />
 
         <Suspense fallback={null}>
-          <Avatar
-            src="/models/Latifa.vrm"
-            animationsSrc="/models/animations.fbx"
-            walkWeight={walkWeight}
-            jumpWeight={jumpWeight}
-          />
+          {vrmUrl && (
+            <Avatar
+              src={vrmUrl}
+              animationsSrc="/models/animations.fbx"
+              walkWeight={walkWeight}
+              jumpWeight={jumpWeight}
+            />
+          )}
         </Suspense>
 
         <ContactShadows width={2} height={2} blur={8} />
 
-        <directionalLight />
+        <directionalLight intensity={0.9} position={new Vector3(10, 30, -20)} />
         <ambientLight intensity={0.1} />
       </Canvas>
     </div>

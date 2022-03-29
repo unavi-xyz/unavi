@@ -1,17 +1,37 @@
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Group, MathUtils, Vector3 } from "three";
 import { Avatar } from "3d";
 
 import { PUBLISH_INTERVAL } from "./constants";
 import { MultiplayerContext } from "../../MultiplayerProvider";
+import { useAvatar, useIpfsFile, useProfile } from "ceramic";
+
+const defaultAvatar =
+  "kjzl6cwe1jw1495s2wbkxyf0d7a4a5k82980jms3m1utm0yvmaev8s1dhmv20qv";
 
 interface Props {
   id: string;
 }
 
 export default function OtherPlayer({ id }: Props) {
-  const { ydoc, getLocations } = useContext(MultiplayerContext);
+  const { getLocations } = useContext(MultiplayerContext);
+
+  const { profile } = useProfile(id);
+  const { avatar } = useAvatar(profile?.avatar ?? defaultAvatar);
+  const vrmFile = useIpfsFile(avatar?.vrm);
+
+  const [vrmUrl, setVrmUrl] = useState<string>();
+
+  useEffect(() => {
+    if (!vrmFile) {
+      setVrmUrl(undefined);
+      return;
+    }
+
+    const url = URL.createObjectURL(vrmFile);
+    setVrmUrl(url);
+  }, [vrmFile]);
 
   const walkWeight = useRef(0);
   const jumpWeight = useRef(0);
@@ -89,12 +109,14 @@ export default function OtherPlayer({ id }: Props) {
 
   return (
     <group ref={ref}>
-      <Avatar
-        src="/models/Latifa.vrm"
-        animationsSrc="/models/animations.fbx"
-        walkWeight={walkWeight}
-        jumpWeight={jumpWeight}
-      />
+      {vrmUrl && (
+        <Avatar
+          src={vrmUrl}
+          animationsSrc="/models/animations.fbx"
+          walkWeight={walkWeight}
+          jumpWeight={jumpWeight}
+        />
+      )}
     </group>
   );
 }

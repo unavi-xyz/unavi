@@ -1,7 +1,7 @@
 import { AiOutlineHome } from "react-icons/ai";
 import { BsFillPersonFill } from "react-icons/bs";
 import { FaPencilRuler } from "react-icons/fa";
-import { useRouter } from "next/router";
+import { IoIosBody } from "react-icons/io";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "ceramic";
@@ -11,7 +11,6 @@ import SignInButton from "./SignInButton/SignInButton";
 import IPFSLoadingIndicator from "./IPFSLoadingIndictor";
 
 export default function Sidebar() {
-  const router = useRouter();
   const { authenticated, viewerId } = useAuth();
 
   return (
@@ -30,41 +29,36 @@ export default function Sidebar() {
           </Link>
         </div>
 
-        <Link href="/" passHref>
-          <div>
-            <SidebarButton
-              icon={<AiOutlineHome />}
-              text="Home"
-              color={Colors.sky}
-              selected={router.asPath === "/"}
-            />
-          </div>
-        </Link>
+        <SidebarButton
+          icon={<AiOutlineHome />}
+          text="Home"
+          color={Colors.sky}
+          href="/"
+        />
 
-        <Link href="/editor" passHref>
-          <div>
-            <SidebarButton
-              icon={<FaPencilRuler className="text-sm" />}
-              color={Colors.amber}
-              text="Editor"
-              selected={router.asPath === "/editor"}
-            />
-          </div>
-        </Link>
+        <SidebarButton
+          icon={<IoIosBody />}
+          text="Avatars"
+          color={Colors.lime}
+          href="/avatars"
+        />
+
+        <SidebarButton
+          icon={<FaPencilRuler className="text-sm" />}
+          color={Colors.amber}
+          text="Editor"
+          href="/editor"
+        />
 
         <hr />
 
         {authenticated ? (
-          <Link href={`/user/${viewerId}`} passHref>
-            <div>
-              <SidebarButton
-                icon={<BsFillPersonFill />}
-                color={Colors.red}
-                text="Profile"
-                selected={router.asPath === `/user/${viewerId}`}
-              />
-            </div>
-          </Link>
+          <SidebarButton
+            icon={<BsFillPersonFill />}
+            color={Colors.red}
+            text="Profile"
+            href={`/user/${viewerId}`}
+          />
         ) : (
           <SignInButton />
         )}

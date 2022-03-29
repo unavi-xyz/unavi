@@ -4,7 +4,7 @@ import { useQueryClient } from "react-query";
 import {
   editSpace,
   IpfsContext,
-  removeSpaceFromProfile,
+  removeFromSpaces,
   unpinTile,
   useAuth,
   useIpfsImage,
@@ -55,7 +55,7 @@ export function SpaceSettingsDialog({ id, open, setOpen }: Props) {
     setLoadingsDelete(true);
 
     await unpinTile(id);
-    await removeSpaceFromProfile(id);
+    await removeFromSpaces(id);
 
     queryClient.invalidateQueries(`user-spaces-${viewerId}`);
     router.back();

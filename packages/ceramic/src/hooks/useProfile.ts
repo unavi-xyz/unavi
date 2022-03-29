@@ -7,7 +7,7 @@ import { ceramic, ceramicRead } from "../client";
 const model = require("../models/BasicProfile/model.json");
 
 export function useProfile(did: string) {
-  async function merge(data: any) {
+  async function merge(data: Partial<BasicProfile>) {
     const store = new DIDDataStore({ ceramic, model });
     await store.merge("basicProfile", data, { pin: true });
   }

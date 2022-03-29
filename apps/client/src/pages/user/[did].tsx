@@ -63,7 +63,7 @@ export default function User() {
 
       <div className="basis-full grid md:grid-cols-2 gap-4 pb-4 md:pb-0">
         <div className="card-borderless h-96 md:h-full">
-          <ProfileAvatar />
+          <ProfileAvatar avatarId={profile?.avatar} />
         </div>
 
         <div className="grid md:grid-rows-3 gap-4">

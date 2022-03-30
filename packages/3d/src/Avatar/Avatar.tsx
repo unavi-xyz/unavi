@@ -13,14 +13,18 @@ type Animations = {
   jump: AnimationAction;
 };
 
+export type AnimationWeights = Record<
+  keyof Animations,
+  MutableRefObject<number>
+>;
+
 interface Props {
   src: string;
   animationsSrc: string;
-  walkWeight: MutableRefObject<number>;
-  jumpWeight: MutableRefObject<number>;
+  animationWeights: AnimationWeights;
 }
 
-export function Avatar({ src, animationsSrc, walkWeight, jumpWeight }: Props) {
+export function Avatar({ src, animationsSrc, animationWeights }: Props) {
   const vrm = useVRM(src);
   const fbx = useFBX(animationsSrc);
 
@@ -62,10 +66,10 @@ export function Avatar({ src, animationsSrc, walkWeight, jumpWeight }: Props) {
     mixer.update(delta);
 
     if (animations) {
-      animations.jump.weight = jumpWeight.current;
-
-      animations.walk.weight = walkWeight.current;
-      animations.idle.weight = 1 - walkWeight.current;
+      animations.jump.weight = animationWeights.jump.current;
+      animations.walk.weight = animationWeights.walk.current;
+      animations.run.weight = animationWeights.walk.current;
+      animations.idle.weight = animationWeights.idle.current;
     }
   });
 

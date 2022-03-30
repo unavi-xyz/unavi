@@ -4,7 +4,7 @@ import { useIpfsFile } from "./useIpfsFile";
 export function useIpfsImage(cid: string) {
   const [image, setImage] = useState<string>();
 
-  const file = useIpfsFile(cid);
+  const { file } = useIpfsFile(cid);
 
   useEffect(() => {
     if (file) fileToDataUrl(file).then(setImage);

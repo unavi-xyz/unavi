@@ -1,7 +1,10 @@
 import { KeyboardEvent, useContext, useEffect, useRef } from "react";
+import { nanoid } from "nanoid";
 
 import { appManager, useStore } from "../helpers/store";
-import { MultiplayerContext } from "../MultiplayerProvider";
+import { Message } from "../helpers/types";
+import { SocketContext } from "../SocketProvider";
+
 import ChatMessage from "./ChatMessage";
 
 export default function Chat() {
@@ -9,25 +12,24 @@ export default function Chat() {
 
   const messages = useStore((state) => state.messages);
 
-  const { publishMessage: sendChatMessage, getMessages } =
-    useContext(MultiplayerContext);
+  const { socket } = useContext(SocketContext);
 
   useEffect(() => {
     appManager.setChatInputRef(inputRef);
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(getMessages, 500);
-    return () => {
-      clearInterval(interval);
-    };
-  }, [getMessages]);
-
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       const target = e.target as HTMLInputElement;
       const text = target.value;
-      sendChatMessage(text);
+      const time = Date.now();
+      const message: Message = {
+        id: nanoid(),
+        username: socket.id,
+        text,
+        time,
+      };
+      appManager.publishMessage(message);
       target.value = "";
     }
   }
@@ -35,7 +37,7 @@ export default function Chat() {
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="p-8 max-w-xl space-y-4"
+      className="p-8 w-full max-w-xl space-y-4"
     >
       <div className="rounded-xl space-y-2">
         {messages.map((message) => {
@@ -50,7 +52,7 @@ export default function Chat() {
         maxLength={420}
         placeholder="Press T to chat"
         className="px-3 py-2 rounded outline-none w-full bg-neutral-500
-                     bg-opacity-20 backdrop-blur-xl focus:bg-white text-sm"
+                   bg-opacity-20 backdrop-blur-xl focus:bg-white text-sm"
       />
     </div>
   );

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Physics } from "@react-three/cannon";
 import { Canvas } from "@react-three/fiber";
 import { useContextBridge } from "@react-three/drei";
@@ -6,22 +7,20 @@ import { QueryClientProvider } from "react-query";
 import { IpfsContext } from "ceramic";
 import { Player } from "3d";
 
-import World from "./World";
 import { queryClient } from "../../../helpers/constants";
-import { MultiplayerContext } from "../MultiplayerProvider";
-import { useContext, useEffect } from "react";
+import { appManager } from "../helpers/store";
+import { SocketContext } from "../SocketProvider";
+import World from "./World";
 
 export default function AppCanvas() {
   const router = useRouter();
   const spaceId = router.query.space as string;
 
-  const { setRoomId } = useContext(MultiplayerContext);
-
-  const ContextBridge = useContextBridge(IpfsContext, MultiplayerContext);
+  const ContextBridge = useContextBridge(IpfsContext, SocketContext);
 
   useEffect(() => {
-    setRoomId(spaceId);
-  }, [setRoomId, spaceId]);
+    appManager.setSpaceId(spaceId);
+  }, [spaceId]);
 
   return (
     <Canvas mode="concurrent">

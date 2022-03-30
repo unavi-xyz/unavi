@@ -2,8 +2,9 @@ import { IpfsProvider } from "ceramic";
 import Head from "next/head";
 import { QueryClientProvider } from "react-query";
 
-import { queryClient } from "../helpers/constants";
 import "../../styles/globals.css";
+import SocketProvider from "../components/app/SocketProvider";
+import { queryClient } from "../helpers/constants";
 
 export default function App({ Component, pageProps }) {
   const Layout = Component.Layout ?? EmptyLayout;
@@ -18,9 +19,11 @@ export default function App({ Component, pageProps }) {
       <div className="w-full h-screen">
         <QueryClientProvider client={queryClient}>
           <IpfsProvider>
-            <Layout>
-              <Component {...pageProps} />
-            </Layout>
+            <SocketProvider>
+              <Layout>
+                <Component {...pageProps} />
+              </Layout>
+            </SocketProvider>
           </IpfsProvider>
         </QueryClientProvider>
       </div>

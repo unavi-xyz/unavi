@@ -1,64 +1,63 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import { useThree } from "@react-three/fiber";
-import { Triplet } from "@react-three/cannon";
-import { Vector3 } from "three";
+import { useContext, useEffect, useState } from "react";
 
-import { PUBLISH_INTERVAL } from "./constants";
-import { YLocation } from "../../helpers/types";
-import { MultiplayerContext } from "../../MultiplayerProvider";
+import { useStore } from "../../helpers/store";
+import { SocketContext } from "../../SocketProvider";
 
-import OtherPlayer from "./OtherPlayer";
+import usePublishPosition from "./hooks/usePublishPosition";
+import PlayerAnswer from "./PlayerAnswer";
+import PlayerOffer from "./PlayerOffer";
 
 export default function Multiplayer() {
-  const tempVector3 = useRef(new Vector3());
+  const spaceId = useStore((state) => state.spaceId);
 
-  const [players, setPlayers] = useState<string[]>([]);
+  const [offers, setOffers] = useState(new Set<string>());
+  const [answers, setAnswers] = useState<Record<string, RTCSessionDescription>>(
+    {}
+  );
 
-  const { publishLocation, ydoc, username, getLocations } =
-    useContext(MultiplayerContext);
+  const { socket } = useContext(SocketContext);
 
-  const { camera } = useThree();
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const position: Triplet = camera.position.toArray();
-      position[1] -= 1.5;
-
-      const dir = camera.getWorldDirection(tempVector3.current);
-      const sign = Math.sign(dir.x);
-      const angle = Math.PI - (Math.atan(dir.z / dir.x) - (Math.PI / 2) * sign);
-
-      const location: YLocation = { position, rotation: angle };
-      publishLocation(location);
-    }, PUBLISH_INTERVAL);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [camera, publishLocation]);
+  usePublishPosition();
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const locations = getLocations();
+    if (!socket) return;
 
-      const newPlayer = Object.keys(locations).find((key) => {
-        if (players.includes(key) || key === username) return false;
-        return true;
+    socket.emit("join", spaceId);
+
+    //add existing players
+    socket.emit("players", spaceId, setOffers);
+
+    //add player on offer recieve
+    socket.on("offer", (id, offer) => {
+      if (id === socket.id) return;
+      setAnswers((prev) => {
+        const clone = { ...prev };
+        clone[id] = offer;
+        return clone;
       });
+    });
 
-      if (newPlayer) setPlayers(Object.keys(locations));
-    }, 1000);
+    // //remove player on leave
+    // socket.on("leave", (id) => {
+    //   function handleLeave(prev: Set<string>) {
+    //     const clone = new Set(prev);
+    //     clone.delete(id);
+    //     return clone;
+    //   }
 
-    return () => {
-      clearInterval(interval);
-    };
-  }, [getLocations, players, username]);
+    //   setOffers(handleLeave);
+    //   setAnswers(handleLeave);
+    // });
+  }, [socket, spaceId]);
 
   return (
     <group>
-      {players.map((id) => {
-        if (id === username) return null;
-        return <OtherPlayer key={id} id={id} />;
+      {Array.from(offers).map((id) => {
+        return <PlayerOffer key={id} id={id} />;
+      })}
+
+      {Object.entries(answers).map(([id, offer]) => {
+        return <PlayerAnswer key={id} id={id} offer={offer} />;
       })}
     </group>
   );

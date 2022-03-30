@@ -13,6 +13,7 @@ export default function World({ spaceId }: Props) {
   const scene = useAssetLoader(space?.scene);
 
   if (!scene) return null;
+
   return (
     <group>
       <InstancedScene scene={scene} />

@@ -12,10 +12,11 @@ export function useIpfsFile(cid: string) {
   async function fetcher() {
     if (!stripped || !ipfs) return;
     const file = await loadFromIpfs(ipfs, stripped);
-    return file;
+    const url = URL.createObjectURL(file);
+    return { file, url };
   }
 
   const { data } = useQuery(`${ipfs && "ipfs"}-${stripped}`, fetcher);
 
-  return data;
+  return { file: data?.file, url: data?.url };
 }

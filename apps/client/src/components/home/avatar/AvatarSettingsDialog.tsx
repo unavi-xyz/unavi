@@ -3,14 +3,12 @@ import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
 import {
   editAvatar,
-  editSpace,
   IpfsContext,
   removeFromAvatars,
   unpinTile,
   useAuth,
   useAvatar,
-  useIpfsImage,
-  useSpace,
+  useIpfsFile,
 } from "ceramic";
 
 import { Button, Dialog, ImageUpload, TextField } from "../../base";
@@ -37,7 +35,7 @@ export function AvatarSettingsDialog({ id, open, setOpen }: Props) {
   const queryClient = useQueryClient();
   const { viewerId } = useAuth();
   const { avatar } = useAvatar(id);
-  const image = useIpfsImage(avatar?.image);
+  const { url } = useIpfsFile(avatar?.image);
 
   async function handleSave() {
     if (loadingSave) return;
@@ -72,7 +70,7 @@ export function AvatarSettingsDialog({ id, open, setOpen }: Props) {
         <h1 className="text-3xl flex justify-center">Settings</h1>
 
         <div className="h-32">
-          <ImageUpload setImageFile={setImageFile} defaultValue={image} />
+          <ImageUpload setImageFile={setImageFile} defaultValue={url} />
         </div>
 
         <div className="space-y-4">

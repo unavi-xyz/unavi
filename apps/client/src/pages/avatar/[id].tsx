@@ -2,7 +2,7 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth, useIpfsImage, useProfile, useAvatar } from "ceramic";
+import { useAuth, useProfile, useAvatar, useIpfsFile } from "ceramic";
 import { useQueryClient } from "react-query";
 
 import { IconButton } from "../../components/base";
@@ -18,7 +18,7 @@ export default function Avatar() {
   const { avatar, controller } = useAvatar(id);
   const { profile } = useProfile(controller);
   const { profile: userProfile, merge } = useProfile(viewerId);
-  const image = useIpfsImage(avatar?.image);
+  const { url } = useIpfsFile(avatar?.image);
 
   const [openSettings, setOpenSettings] = useState(false);
 
@@ -63,9 +63,9 @@ export default function Avatar() {
 
       <div className="h-full md:h-1/2 md:grid md:grid-cols-3 md:gap-4 space-y-4 md:space-y-0">
         <div className="w-full col-span-2 h-64 md:h-[800px] card-borderless">
-          {image && (
+          {url && (
             <img
-              src={image}
+              src={url}
               alt="space image"
               className="w-full h-full rounded-3xl object-cover"
             />

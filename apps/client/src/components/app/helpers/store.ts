@@ -9,6 +9,7 @@ export interface AppStore {
   messages: Message[];
   muted: boolean;
   spaceId: string;
+  isPointerLocked: boolean;
 }
 
 export const useStore = create<AppStore>(() => ({
@@ -16,6 +17,7 @@ export const useStore = create<AppStore>(() => ({
   messages: [],
   muted: true,
   spaceId: undefined,
+  isPointerLocked: false,
 }));
 
 export const appManager = new AppManager(useStore);

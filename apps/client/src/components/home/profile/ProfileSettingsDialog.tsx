@@ -5,7 +5,7 @@ import {
   useProfile,
   ImageSources,
   IpfsContext,
-  useIpfsImage,
+  useIpfsFile,
 } from "ceramic";
 
 import { Button, Dialog, ImageUpload, TextField } from "../../base";
@@ -23,7 +23,7 @@ export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
   const { ipfs } = useContext(IpfsContext);
 
   const { profile, merge } = useProfile(id);
-  const image = useIpfsImage(profile?.image?.original.src);
+  const { url } = useIpfsFile(profile?.image?.original.src);
   const queryClient = useQueryClient();
 
   const [imageFile, setImageFile] = useState<File>();
@@ -77,7 +77,7 @@ export function ProfileSettingsDialog({ id, open, setOpen }: Props) {
         <h1 className="text-3xl flex justify-center">Edit Profile</h1>
 
         <div className="h-32 w-32">
-          <ImageUpload setImageFile={setImageFile} defaultValue={image} />
+          <ImageUpload setImageFile={setImageFile} defaultValue={url} />
         </div>
 
         <div className="space-y-4">

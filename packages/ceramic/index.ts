@@ -2,7 +2,6 @@ export * from "./src/components/IpfsProvider";
 
 export * from "./src/hooks/useAuth";
 export * from "./src/hooks/useIpfsFile";
-export * from "./src/hooks/useIpfsImage";
 export * from "./src/hooks/useProfile";
 export * from "./src/hooks/useUserSpaces";
 export * from "./src/hooks/useUserAvatars";

@@ -38,3 +38,13 @@ html {
   border-top: 1px solid #fff;
   margin-left: -5px;
 }
+
+.bg-position-move {
+  background-size: 200%;
+  background-position: left;
+  transition: background-position 300ms;
+}
+
+.bg-position-move:hover {
+  background-position: right;
+}

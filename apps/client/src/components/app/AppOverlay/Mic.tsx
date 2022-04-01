@@ -17,10 +17,10 @@ export default function Mic() {
   }
 
   return (
-    <div className="flex justify-center p-8">
+    <div className="flex w-full justify-center p-8">
       <div
         onClick={handleClick}
-        className="rounded-xl p-4 bg-white cursor-pointer hover:bg-neutral-200 transition-all"
+        className="rounded-xl p-4 bg-white cursor-pointer hover:bg-neutral-200 transition-all z-10"
       >
         {muted ? (
           <BsMicMuteFill className="text-lg text-red-600" />

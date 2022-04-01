@@ -1,11 +1,13 @@
 import { useContext, useEffect, useState } from "react";
+import { useAuth } from "ceramic";
 
-import { useStore } from "../../helpers/store";
+import { appManager, useStore } from "../../helpers/store";
 import { SocketContext } from "../../SocketProvider";
 
 import usePublishPosition from "./hooks/usePublishPosition";
 import PlayerAnswer from "./PlayerAnswer";
 import PlayerOffer from "./PlayerOffer";
+import { Identity } from "../../helpers/types";
 
 export default function Multiplayer() {
   const spaceId = useStore((state) => state.spaceId);
@@ -17,6 +19,7 @@ export default function Multiplayer() {
 
   const { socket } = useContext(SocketContext);
 
+  const { authenticated, viewerId } = useAuth();
   usePublishPosition();
 
   useEffect(() => {
@@ -37,18 +40,26 @@ export default function Multiplayer() {
       });
     });
 
-    // //remove player on leave
-    // socket.on("leave", (id) => {
-    //   function handleLeave(prev: Set<string>) {
-    //     const clone = new Set(prev);
-    //     clone.delete(id);
-    //     return clone;
-    //   }
-
-    //   setOffers(handleLeave);
-    //   setAnswers(handleLeave);
-    // });
+    //remove player on leave
+    socket.on("leave", (id) => {
+      setOffers((prev) => {
+        const clone = new Set<string>();
+        prev.forEach((item) => clone.add(item));
+        clone.delete(id);
+        return clone;
+      });
+      setAnswers((prev) => {
+        const clone = { ...prev };
+        delete clone[id];
+        return clone;
+      });
+    });
   }, [socket, spaceId]);
+
+  useEffect(() => {
+    const identity: Identity = { isGuest: !authenticated, did: viewerId };
+    appManager.setIdentity(identity);
+  }, [authenticated, viewerId]);
 
   return (
     <group>

@@ -34,7 +34,7 @@ export default function useInterpolation(
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!transform.current) return;
+      if (!transform.current?.position || !transform.current?.rotation) return;
 
       prev.current.position.copy(real.current.position);
       prev.current.rotation = real.current.rotation;

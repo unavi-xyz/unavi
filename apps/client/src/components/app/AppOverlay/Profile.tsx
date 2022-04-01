@@ -6,7 +6,7 @@ import SignInPage from "../../../layouts/SidebarLayout/Sidebar/SignInButton/Sign
 import { Dialog } from "../../base";
 
 export default function Profile() {
-  const { viewerId, authenticated, connect } = useAuth();
+  const { viewerId, authenticated } = useAuth();
   const { profile } = useProfile(viewerId);
   const { url } = useIpfsFile(profile?.image?.original.src);
 

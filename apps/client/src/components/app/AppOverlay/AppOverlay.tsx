@@ -33,11 +33,11 @@ export default function AppOverlay() {
       </div>
 
       <div className="absolute w-full h-full top-0 left-0 flex items-end">
-        <div className="w-full">
-          <Chat />
-        </div>
-        <div className="w-full">{!isPointerLocked && <Mic />}</div>
-        <div className="w-full"></div>
+        <Chat />
+      </div>
+
+      <div className="absolute w-full h-full top-0 left-0 flex items-end">
+        <Mic />
       </div>
     </div>
   );

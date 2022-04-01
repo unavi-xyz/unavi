@@ -2,15 +2,18 @@ import { UseBoundStore, StoreApi } from "zustand";
 
 import { Transform } from "../../AppCanvas/Multiplayer/helpers/types";
 import { AppStore } from "../store";
-import { Message } from "../types";
+import { Identity, Message } from "../types";
 
 type useStoreType = UseBoundStore<AppStore, StoreApi<AppStore>>;
 
 export class AppManager {
   useStore: useStoreType;
 
+  identity: Identity;
+
   transformChannels = new Set<RTCDataChannel>();
   messageChannels = new Set<RTCDataChannel>();
+  identityChannels = new Set<RTCDataChannel>();
 
   constructor(useStore: useStoreType) {
     this.useStore = useStore;
@@ -26,6 +29,27 @@ export class AppManager {
 
   setChatInputRef(chatInputRef: AppStore["chatInputRef"]) {
     this.useStore.setState({ chatInputRef });
+  }
+
+  setIdentity(identity: Identity) {
+    this.identity = identity;
+    this.publishIdentity();
+  }
+
+  publishIdentity() {
+    this.transformChannels.forEach((channel) => {
+      if (channel.readyState === "open")
+        channel.send(JSON.stringify(this.identity));
+      else channel.onopen = () => channel.send(JSON.stringify(this.identity));
+    });
+  }
+
+  addIdentityChannel(channel: RTCDataChannel) {
+    this.identityChannels.add(channel);
+
+    if (channel.readyState === "open")
+      channel.send(JSON.stringify(this.identity));
+    else channel.onopen = () => channel.send(JSON.stringify(this.identity));
   }
 
   publishTransform(transform: Transform) {
@@ -54,7 +78,7 @@ export class AppManager {
   }
 
   addMessage(message: Message) {
-    const newMessages = [...this.useStore.getState().messages, message];
+    const newMessages = [message, ...this.useStore.getState().messages];
     this.useStore.setState({ messages: newMessages });
   }
 }

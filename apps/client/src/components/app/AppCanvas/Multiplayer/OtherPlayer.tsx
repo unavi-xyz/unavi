@@ -4,6 +4,8 @@ import { useAvatar, useIpfsFile, useProfile } from "ceramic";
 import { Avatar } from "3d";
 
 import { Transform } from "./helpers/types";
+import { Identity } from "../../helpers/types";
+
 import useInterpolation from "./hooks/useInterpolation";
 
 const defaultAvatar =
@@ -11,14 +13,15 @@ const defaultAvatar =
 
 interface Props {
   id: string;
+  identity?: Identity;
   transformRef: MutableRefObject<Transform>;
 }
 
-export default function OtherPlayer({ id, transformRef }: Props) {
+export default function OtherPlayer({ id, identity, transformRef }: Props) {
   const groupRef = useRef<Group>();
 
-  // const { profile } = useProfile(id);
-  const { avatar } = useAvatar(defaultAvatar);
+  const { profile } = useProfile(identity?.did);
+  const { avatar } = useAvatar(profile?.avatar ?? defaultAvatar);
   const { url } = useIpfsFile(avatar?.vrm);
   const animationWeights = useInterpolation(groupRef, transformRef);
 

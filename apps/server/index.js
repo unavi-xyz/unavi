@@ -14,16 +14,26 @@ io.on("connection", (socket) => {
     callback(Array.from(clone));
   });
 
-  socket.on("offer", (player, offer) => {
-    io.to(player).emit("offer", socket.id, offer);
+  socket.on("offer", (target, offer) => {
+    // //require the sender to share a room with the target
+    // const senderRooms = Array.from(socket.rooms);
+    // const targetRooms = new Set(io.sockets.sockets.get(target)?.rooms);
+    // targetRooms.delete(target);
+
+    // const intersection = Array.from(targetRooms).filter((value) =>
+    //   senderRooms.includes(value)
+    // );
+    // if (intersection.length === 0) return;
+
+    io.to(target).emit("offer", socket.id, offer);
   });
 
-  socket.on("answer", (player, answer) => {
-    io.to(player).emit("answer", socket.id, answer);
+  socket.on("answer", (target, answer) => {
+    io.to(target).emit("answer", socket.id, answer);
   });
 
-  socket.on("iceCandidate", (player, iceCandidate) => {
-    io.to(player).emit("iceCandidate", socket.id, iceCandidate);
+  socket.on("iceCandidate", (target, iceCandidate) => {
+    io.to(target).emit("iceCandidate", socket.id, iceCandidate);
   });
 
   socket.on("join", (room) => {

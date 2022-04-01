@@ -29,19 +29,23 @@ export default function Chat() {
         text,
         time,
       };
+
+      if (text === "") return;
+
       appManager.publishMessage(message);
       target.value = "";
     }
   }
 
   return (
-    <div
-      onClick={(e) => e.stopPropagation()}
-      className="p-8 w-full max-w-xl space-y-4"
-    >
-      <div className="rounded-xl space-y-2">
+    <div className="p-8 w-full space-y-4">
+      <div className="w-1/3 overflow-y-hidden flex flex-col-reverse">
         {messages.map((message) => {
-          return <ChatMessage key={message.id} message={message} />;
+          return (
+            <div key={message.id}>
+              <ChatMessage message={message} />
+            </div>
+          );
         })}
       </div>
 
@@ -51,7 +55,8 @@ export default function Chat() {
         type="text"
         maxLength={420}
         placeholder="Press T to chat"
-        className="px-3 py-2 rounded outline-none w-full bg-neutral-500
+        onClick={(e) => e.stopPropagation()}
+        className="px-3 py-2 rounded outline-none w-full max-w-xl bg-neutral-500
                    bg-opacity-20 backdrop-blur-xl focus:bg-white text-sm"
       />
     </div>

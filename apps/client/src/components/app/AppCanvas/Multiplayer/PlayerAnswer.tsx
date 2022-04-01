@@ -1,6 +1,7 @@
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 
 import { Transform } from "./helpers/types";
+import { Identity } from "../../helpers/types";
 import { appManager } from "../../helpers/store";
 import { SocketContext } from "../../SocketProvider";
 
@@ -15,6 +16,8 @@ export default function PlayerAnswer({ id, offer }: Props) {
   const transformRef = useRef<Transform>();
 
   const { socket } = useContext(SocketContext);
+
+  const [identity, setIdentity] = useState<Identity>();
 
   useEffect(() => {
     if (!socket) return;
@@ -33,6 +36,12 @@ export default function PlayerAnswer({ id, offer }: Props) {
             appManager.addMessage(JSON.parse(e.data));
           };
           appManager.addMessageChannel(e.channel);
+          break;
+        case "identity":
+          e.channel.onmessage = (e) => {
+            setIdentity(JSON.parse(e.data));
+          };
+          appManager.addIdentityChannel(e.channel);
           break;
       }
     };
@@ -53,5 +62,7 @@ export default function PlayerAnswer({ id, offer }: Props) {
     });
   }, [id, offer, socket]);
 
-  return <OtherPlayer id={id} transformRef={transformRef} />;
+  return (
+    <OtherPlayer id={id} identity={identity} transformRef={transformRef} />
+  );
 }

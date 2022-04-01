@@ -4,3 +4,8 @@ export type Message = {
   text: string;
   time: number;
 };
+
+export type Identity = {
+  isGuest: boolean;
+  did: string;
+};

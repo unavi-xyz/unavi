@@ -6,12 +6,10 @@ export function useAppHotkeys() {
     function handleKeyDown(e: KeyboardEvent) {
       switch (e.key) {
         case "t":
-          if (document.pointerLockElement) {
-            const inputRef = useStore.getState().chatInputRef;
-            inputRef.current.focus();
-            e.preventDefault();
-            document.exitPointerLock();
-          }
+          const inputRef = useStore.getState().chatInputRef;
+          inputRef.current.focus();
+          e.preventDefault();
+          document.exitPointerLock();
         default:
           break;
       }

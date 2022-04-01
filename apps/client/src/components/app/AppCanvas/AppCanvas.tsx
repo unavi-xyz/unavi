@@ -8,9 +8,11 @@ import { IpfsContext } from "ceramic";
 import { Player } from "3d";
 
 import { queryClient } from "../../../helpers/constants";
-import { appManager } from "../helpers/store";
+import { appManager, useStore } from "../helpers/store";
 import { SocketContext } from "../SocketProvider";
+
 import World from "./World";
+import Multiplayer from "./Multiplayer/Multiplayer";
 
 export default function AppCanvas() {
   const router = useRouter();
@@ -19,7 +21,7 @@ export default function AppCanvas() {
   const ContextBridge = useContextBridge(IpfsContext, SocketContext);
 
   useEffect(() => {
-    appManager.setSpaceId(spaceId);
+    useStore.setState({ spaceId });
   }, [spaceId]);
 
   return (
@@ -28,6 +30,7 @@ export default function AppCanvas() {
         <ContextBridge>
           <Physics>
             <Player />
+            <Multiplayer />
             <World spaceId={spaceId} />
           </Physics>
         </ContextBridge>

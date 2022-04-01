@@ -1,24 +1,24 @@
-import { MutableRefObject, useRef } from "react";
+import { useRef } from "react";
 import { Group } from "three";
 import { useAvatar, useIpfsFile, useProfile } from "ceramic";
 import { Avatar } from "3d";
 
-import { Transform } from "./helpers/types";
-import { Identity } from "../../helpers/types";
-
+import { PlayerChannels } from "../../helpers/types";
 import useInterpolation from "./hooks/useInterpolation";
+import useDataChannels from "./hooks/useDataChannels";
 
 const defaultAvatar =
   "kjzl6cwe1jw1495s2wbkxyf0d7a4a5k82980jms3m1utm0yvmaev8s1dhmv20qv";
 
 interface Props {
   id: string;
-  identity?: Identity;
-  transformRef: MutableRefObject<Transform>;
+  channels: PlayerChannels;
 }
 
-export default function OtherPlayer({ id, identity, transformRef }: Props) {
+export default function OtherPlayer({ id, channels }: Props) {
   const groupRef = useRef<Group>();
+
+  const { transformRef, identity } = useDataChannels(id, channels);
 
   const { profile } = useProfile(identity?.did);
   const { avatar } = useAvatar(profile?.avatar ?? defaultAvatar);

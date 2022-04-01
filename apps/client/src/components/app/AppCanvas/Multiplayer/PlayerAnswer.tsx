@@ -1,10 +1,10 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
-import { Transform } from "./helpers/types";
-import { Identity } from "../../helpers/types";
+import { channelNames, Channels, PlayerChannels } from "../../helpers/types";
 import { appManager } from "../../helpers/store";
 import { SocketContext } from "../../SocketProvider";
 
+import useExchangeIce from "./hooks/useExchangeIce";
 import OtherPlayer from "./OtherPlayer";
 
 interface Props {
@@ -13,56 +13,41 @@ interface Props {
 }
 
 export default function PlayerAnswer({ id, offer }: Props) {
-  const transformRef = useRef<Transform>();
+  const [connection] = useState(new RTCPeerConnection());
+  const [channels, setChannels] = useState<PlayerChannels>({});
 
   const { socket } = useContext(SocketContext);
 
-  const [identity, setIdentity] = useState<Identity>();
+  useExchangeIce(socket, connection, id);
 
   useEffect(() => {
     if (!socket) return;
-    const connection = new RTCPeerConnection();
 
-    connection.ondatachannel = (e) => {
-      switch (e.channel.label) {
-        case "transform":
-          e.channel.onmessage = (e) => {
-            transformRef.current = JSON.parse(e.data);
-          };
-          appManager.addTransformChannel(e.channel);
-          break;
-        case "message":
-          e.channel.onmessage = (e) => {
-            appManager.addMessage(JSON.parse(e.data));
-          };
-          appManager.addMessageChannel(e.channel);
-          break;
-        case "identity":
-          e.channel.onmessage = (e) => {
-            setIdentity(JSON.parse(e.data));
-          };
-          appManager.addIdentityChannel(e.channel);
-          break;
-      }
-    };
-
-    connection.onicecandidate = (e) => {
-      socket.emit("iceCandidate", id, e.candidate);
-    };
-
-    socket.on("iceCandidate", (player, iceCandidate) => {
-      if (player !== id) return;
-      connection.addIceCandidate(iceCandidate);
-    });
-
+    //create answer
     connection.setRemoteDescription(offer).then(async () => {
       const answer = await connection.createAnswer();
       connection.setLocalDescription(answer);
       socket.emit("answer", id, answer);
     });
-  }, [id, offer, socket]);
 
-  return (
-    <OtherPlayer id={id} identity={identity} transformRef={transformRef} />
-  );
+    //listen for channels
+    function onDataChannel(e: RTCDataChannelEvent) {
+      const label = e.channel.label as keyof Channels;
+      if (channelNames.includes(label)) {
+        appManager.addChannel(label, e.channel);
+        setChannels((prev) => {
+          const clone = { ...prev };
+          clone[label] = e.channel;
+          return clone;
+        });
+      }
+    }
+
+    connection.addEventListener("datachannel", onDataChannel);
+    return () => {
+      connection.removeEventListener("datachannel", onDataChannel);
+    };
+  }, [connection, id, offer, socket]);
+
+  return <OtherPlayer id={id} channels={channels} />;
 }

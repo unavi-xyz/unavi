@@ -1,7 +1,7 @@
 import { MouseEvent, useContext } from "react";
 import { BsMicFill, BsMicMuteFill } from "react-icons/bs";
 
-import { appManager, useStore } from "../helpers/store";
+import { useStore } from "../helpers/store";
 import { SocketContext } from "../SocketProvider";
 
 export default function Mic() {
@@ -13,7 +13,7 @@ export default function Mic() {
     getUserMedia();
 
     e.stopPropagation();
-    appManager.setMuted(!muted);
+    useStore.setState({ muted: !muted });
   }
 
   return (

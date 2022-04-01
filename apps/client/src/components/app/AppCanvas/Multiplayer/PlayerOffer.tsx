@@ -1,10 +1,10 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
-import { Transform } from "./helpers/types";
-import { Identity } from "../../helpers/types";
+import { channelNames, PlayerChannels } from "../../helpers/types";
 import { appManager } from "../../helpers/store";
 import { SocketContext } from "../../SocketProvider";
 
+import useExchangeIce from "./hooks/useExchangeIce";
 import OtherPlayer from "./OtherPlayer";
 
 interface Props {
@@ -12,60 +12,42 @@ interface Props {
 }
 
 export default function PlayerOffer({ id }: Props) {
-  const transformRef = useRef<Transform>();
+  const [connection] = useState(new RTCPeerConnection());
+  const [channels, setChannels] = useState<PlayerChannels>({});
 
   const { socket } = useContext(SocketContext);
 
-  const [identity, setIdentity] = useState<Identity>();
+  useExchangeIce(socket, connection, id);
 
   useEffect(() => {
     if (!socket) return;
-    const connection = new RTCPeerConnection();
 
-    const messageChannel = connection.createDataChannel("message");
-    messageChannel.onmessage = (e) => {
-      appManager.addMessage(JSON.parse(e.data));
-    };
-    appManager.addMessageChannel(messageChannel);
-
-    const transformChannel = connection.createDataChannel("transform");
-    transformChannel.onmessage = (e) => {
-      transformRef.current = JSON.parse(e.data);
-    };
-    appManager.addTransformChannel(transformChannel);
-
-    const identityChannel = connection.createDataChannel("identity");
-    identityChannel.onmessage = (e) => {
-      setIdentity(JSON.parse(e.data));
-    };
-    appManager.addIdentityChannel(identityChannel);
-
-    connection.onicecandidate = (e) => {
-      socket.emit("iceCandidate", id, e.candidate);
-    };
-
-    socket.on("iceCandidate", (player, iceCandidate) => {
-      if (player !== id) return;
-      connection.addIceCandidate(iceCandidate);
+    //create channels
+    const newChannels: PlayerChannels = {};
+    channelNames.map((name) => {
+      const channel = connection.createDataChannel(name);
+      appManager.addChannel(name, channel);
+      newChannels[name] = channel;
     });
+    setChannels(newChannels);
 
+    //create offer
     connection.createOffer().then((offer) => {
       connection.setLocalDescription(offer);
       socket.emit("offer", id, offer);
     });
 
-    socket.on("answer", (player, answer) => {
+    //listen for answer
+    function onAnswer(player: string, answer: RTCSessionDescription) {
       if (player !== id) return;
-      if (!connection.remoteDescription) {
-        connection.setRemoteDescription(answer);
-        return;
-      }
+      connection.setRemoteDescription(answer);
+    }
 
-      connection.addIceCandidate(answer);
-    });
-  }, [id, socket]);
+    socket.on("answer", onAnswer);
+    return () => {
+      socket.off("answer", onAnswer);
+    };
+  }, [connection, id, socket]);
 
-  return (
-    <OtherPlayer id={id} identity={identity} transformRef={transformRef} />
-  );
+  return <OtherPlayer id={id} channels={channels} />;
 }

@@ -3,7 +3,6 @@ import Head from "next/head";
 import { QueryClientProvider } from "react-query";
 
 import "../../styles/globals.css";
-import SocketProvider from "../components/app/SocketProvider";
 import { queryClient } from "../helpers/constants";
 
 export default function App({ Component, pageProps }) {
@@ -19,11 +18,9 @@ export default function App({ Component, pageProps }) {
       <div className="w-full h-screen">
         <QueryClientProvider client={queryClient}>
           <IpfsProvider>
-            <SocketProvider>
-              <Layout>
-                <Component {...pageProps} />
-              </Layout>
-            </SocketProvider>
+            <Layout>
+              <Component {...pageProps} />
+            </Layout>
           </IpfsProvider>
         </QueryClientProvider>
       </div>

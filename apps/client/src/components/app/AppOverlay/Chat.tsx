@@ -1,38 +1,29 @@
 import { KeyboardEvent, useContext, useEffect, useRef } from "react";
-import { nanoid } from "nanoid";
 
 import { appManager, useStore } from "../helpers/store";
-import { Message } from "../helpers/types";
 import { SocketContext } from "../SocketProvider";
 
 import ChatMessage from "./ChatMessage";
 
 export default function Chat() {
-  const inputRef = useRef<HTMLInputElement>();
+  const chatInputRef = useRef<HTMLInputElement>();
 
   const messages = useStore((state) => state.messages);
 
   const { socket } = useContext(SocketContext);
 
   useEffect(() => {
-    appManager.setChatInputRef(inputRef);
+    useStore.setState({ chatInputRef });
   }, []);
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       const target = e.target as HTMLInputElement;
       const text = target.value;
-      const time = Date.now();
-      const message: Message = {
-        id: nanoid(),
-        username: socket.id,
-        text,
-        time,
-      };
 
       if (text === "") return;
 
-      appManager.publishMessage(message);
+      appManager.publishAll("message", text);
       target.value = "";
     }
   }
@@ -41,16 +32,12 @@ export default function Chat() {
     <div className="p-8 w-full space-y-4">
       <div className="w-1/3 overflow-y-hidden flex flex-col-reverse">
         {messages.map((message) => {
-          return (
-            <div key={message.id}>
-              <ChatMessage message={message} />
-            </div>
-          );
+          return <ChatMessage key={message.id} message={message} />;
         })}
       </div>
 
       <input
-        ref={inputRef}
+        ref={chatInputRef}
         onKeyDown={handleKeyDown}
         type="text"
         maxLength={420}

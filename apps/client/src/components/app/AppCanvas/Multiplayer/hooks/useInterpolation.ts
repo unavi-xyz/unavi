@@ -4,7 +4,7 @@ import { MutableRefObject, useEffect, useRef } from "react";
 import { MathUtils, Object3D, Vector3 } from "three";
 
 import { PUBLISH_INTERVAL } from "../helpers/constants";
-import { Transform } from "../helpers/types";
+import { Transform } from "../../../helpers/types";
 
 type VectorTransform = {
   position: Vector3;

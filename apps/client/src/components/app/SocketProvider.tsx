@@ -21,6 +21,11 @@ export default function SocketProvider({ children }) {
   useEffect(() => {
     const newSocket = io(url);
     setSocket(newSocket);
+
+    return () => {
+      newSocket.disconnect();
+      setSocket(undefined);
+    };
   }, []);
 
   async function getUserMedia() {

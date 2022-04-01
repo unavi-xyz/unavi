@@ -4,8 +4,8 @@ import { useThree } from "@react-three/fiber";
 import { Vector3 } from "three";
 
 import { appManager } from "../../../helpers/store";
+import { Transform } from "../../../helpers/types";
 import { PUBLISH_INTERVAL } from "../helpers/constants";
-import { Transform } from "../helpers/types";
 
 export default function usePublishPosition() {
   const tempVector3 = useRef(new Vector3());
@@ -22,7 +22,7 @@ export default function usePublishPosition() {
       const angle = Math.PI - (Math.atan(dir.z / dir.x) - (Math.PI / 2) * sign);
 
       const transform: Transform = { position, rotation: angle };
-      appManager.publishTransform(transform);
+      appManager.publishAll("transform", transform);
     }, PUBLISH_INTERVAL);
 
     return () => {

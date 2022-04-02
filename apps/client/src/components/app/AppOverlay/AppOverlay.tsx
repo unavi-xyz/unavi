@@ -23,7 +23,7 @@ export default function AppOverlay() {
   }, []);
 
   return (
-    <div className="">
+    <div>
       <div className="crosshair" />
 
       <div

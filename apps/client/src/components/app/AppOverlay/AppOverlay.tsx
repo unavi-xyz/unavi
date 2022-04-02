@@ -2,13 +2,11 @@ import { useEffect } from "react";
 
 import { useStore } from "../helpers/store";
 
-import Profile from "./Profile";
 import Chat from "./Chat";
 import Mic from "./Mic";
+import SidePanel from "./SidePanel/SidePanel";
 
 export default function AppOverlay() {
-  const isPointerLocked = useStore((state) => state.isPointerLocked);
-
   useEffect(() => {
     function onPointerLockChange() {
       if (document.pointerLockElement) {
@@ -25,11 +23,13 @@ export default function AppOverlay() {
   }, []);
 
   return (
-    <div>
+    <div className="">
       <div className="crosshair" />
 
-      <div className="absolute w-full h-full top-0 left-0 flex justify-end">
-        {!isPointerLocked && <Profile />}
+      <div
+        className={`absolute w-full h-full top-0 left-0 flex justify-end overflow-hidden`}
+      >
+        <SidePanel />
       </div>
 
       <div className="absolute w-full h-full top-0 left-0 flex items-end">

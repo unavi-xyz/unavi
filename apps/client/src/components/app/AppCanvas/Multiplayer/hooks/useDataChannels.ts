@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useProfile } from "ceramic";
 
 import { createMessage } from "../../../helpers/message";
-import { appManager } from "../../../helpers/store";
+import { appManager, useStore } from "../../../helpers/store";
 import { Identity, PlayerChannels, Transform } from "../../../helpers/types";
 
 export default function useDataChannels(id: string, channels: PlayerChannels) {
@@ -18,7 +18,7 @@ export default function useDataChannels(id: string, channels: PlayerChannels) {
 
     function onMessage(e: MessageEvent<string>) {
       const message = createMessage(JSON.parse(e.data));
-      message.username = profile?.name ?? id;
+      message.username = profile?.name ?? `Guest-${id.substring(0, 6)}`;
       appManager.addMessage(message);
     }
 
@@ -39,6 +39,22 @@ export default function useDataChannels(id: string, channels: PlayerChannels) {
       channels.identity.removeEventListener("message", onIdentity);
     };
   }, [channels, id, profile]);
+
+  useEffect(() => {
+    //add to players list
+    const players = useStore.getState().players;
+    const newPlayers = { ...players };
+    newPlayers[id] = identity;
+    useStore.setState({ players: newPlayers });
+
+    return () => {
+      //remove from players list
+      const players = useStore.getState().players;
+      const newPlayers = { ...players };
+      delete newPlayers[id];
+      useStore.setState({ players: newPlayers });
+    };
+  }, [id, identity]);
 
   return { transformRef, identity };
 }

@@ -46,6 +46,7 @@ export default function PlayerOffer({ id }: Props) {
     socket.on("answer", onAnswer);
     return () => {
       socket.off("answer", onAnswer);
+      connection.close();
     };
   }, [connection, id, socket]);
 

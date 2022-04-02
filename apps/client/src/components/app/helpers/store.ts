@@ -2,7 +2,7 @@ import { MutableRefObject } from "react";
 import create from "zustand";
 
 import { AppManager } from "./classes/AppManager";
-import { Message } from "./types";
+import { Identity, Message } from "./types";
 
 export interface AppStore {
   chatInputRef: MutableRefObject<HTMLInputElement> | undefined;
@@ -10,6 +10,8 @@ export interface AppStore {
   muted: boolean;
   spaceId: string;
   isPointerLocked: boolean;
+  players: { [id: string]: Identity };
+  identity: Identity;
 }
 
 export const useStore = create<AppStore>(() => ({
@@ -18,6 +20,8 @@ export const useStore = create<AppStore>(() => ({
   muted: true,
   spaceId: undefined,
   isPointerLocked: false,
+  players: {},
+  identity: undefined,
 }));
 
 export const appManager = new AppManager(useStore);

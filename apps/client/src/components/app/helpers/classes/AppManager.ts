@@ -10,7 +10,6 @@ type StoredChannels = Record<keyof Channels, RTCDataChannel[]>;
 export class AppManager {
   useStore: useStoreType;
 
-  identity: Identity;
   channels: StoredChannels = { identity: [], message: [], transform: [] };
 
   constructor(useStore: useStoreType) {
@@ -41,17 +40,13 @@ export class AppManager {
     this.channels[type].push(channel);
 
     if (type === "identity") {
-      this.publish(channel, this.identity);
+      const identity = this.useStore.getState().identity;
+      this.publish(channel, identity);
     }
   }
 
   addMessage(message: Message) {
     const newMessages = [message, ...this.useStore.getState().messages];
     this.useStore.setState({ messages: newMessages });
-  }
-
-  setIdentity(identity: Identity) {
-    this.identity = identity;
-    this.publishAll("identity", identity);
   }
 }

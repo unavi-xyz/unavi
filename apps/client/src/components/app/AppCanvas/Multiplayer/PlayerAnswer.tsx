@@ -46,6 +46,7 @@ export default function PlayerAnswer({ id, offer }: Props) {
     connection.addEventListener("datachannel", onDataChannel);
     return () => {
       connection.removeEventListener("datachannel", onDataChannel);
+      connection.close();
     };
   }, [connection, id, offer, socket]);
 

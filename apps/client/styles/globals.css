@@ -42,7 +42,7 @@ html {
 .bg-position-move {
   background-size: 200%;
   background-position: left;
-  transition: background-position 300ms;
+  transition: background-position 50ms;
 }
 
 .bg-position-move:hover {

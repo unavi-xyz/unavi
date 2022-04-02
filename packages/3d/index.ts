@@ -2,7 +2,6 @@ import "@react-three/fiber"; //stops type warnings
 
 export * from "./src/Avatar/Avatar";
 export * from "./src/Player/Player";
-export * from "./src/Ground/Ground";
 export * from "./src/Scene/InstancedScene";
 export * from "./src/Scene/InstancedObject";
 export * from "./src/Scene/types";

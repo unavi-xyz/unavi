@@ -8,7 +8,7 @@ import { IpfsContext } from "ceramic";
 import { Player } from "3d";
 
 import { queryClient } from "../../../helpers/constants";
-import { appManager, useStore } from "../helpers/store";
+import { useStore } from "../helpers/store";
 import { SocketContext } from "../SocketProvider";
 
 import World from "./World";

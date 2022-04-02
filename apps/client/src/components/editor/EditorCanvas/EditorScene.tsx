@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { ThreeEvent, useThree } from "@react-three/fiber";
 import { Sky } from "@react-three/drei";
-import { Ground, SceneContext } from "3d";
+import { SceneContext } from "3d";
 
 import { editorManager, useStore } from "../helpers/store";
 import EditorInstance from "./EditorInstance";
+import { Ground } from "../../app/AppCanvas/Ground";
 
 export default function EditorScene() {
   const instances = useStore((state) => state.scene.instances);

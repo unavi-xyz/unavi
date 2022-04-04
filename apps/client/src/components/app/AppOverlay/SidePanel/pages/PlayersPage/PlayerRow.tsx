@@ -30,9 +30,7 @@ export default function PlayerRow({ id, viewerId, identity }: Props) {
     <div key={id} className="flex space-x-1">
       <div
         onClick={handleNameClick}
-        className={
-          !identity.isGuest ? "hover:underline underline-2 cursor-pointer" : ""
-        }
+        className={!identity.isGuest ? "hover:underline cursor-pointer" : ""}
       >
         {username}
       </div>

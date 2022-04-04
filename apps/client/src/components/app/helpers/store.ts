@@ -12,6 +12,7 @@ export interface AppStore {
   isPointerLocked: boolean;
   players: { [id: string]: Identity };
   identity: Identity;
+  connections: RTCPeerConnection[];
 }
 
 export const useStore = create<AppStore>(() => ({
@@ -22,6 +23,7 @@ export const useStore = create<AppStore>(() => ({
   isPointerLocked: false,
   players: {},
   identity: undefined,
+  connections: [],
 }));
 
 export const appManager = new AppManager(useStore);

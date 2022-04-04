@@ -5,12 +5,10 @@ const url = "ws://localhost:8080";
 
 interface ISocketContext {
   socket: Socket;
-  getUserMedia: () => void;
 }
 
 const defaultValue: ISocketContext = {
   socket: undefined,
-  getUserMedia: undefined,
 };
 
 export const SocketContext = createContext(defaultValue);
@@ -28,18 +26,8 @@ export default function SocketProvider({ children }) {
     };
   }, []);
 
-  async function getUserMedia() {
-    // const localStream = await navigator.mediaDevices.getUserMedia({
-    //   audio: true,
-    //   video: false,
-    // });
-    // localStream.getTracks().forEach((track) => {
-    //   localConnection.addTrack(track);
-    // });
-  }
-
   return (
-    <SocketContext.Provider value={{ socket, getUserMedia }}>
+    <SocketContext.Provider value={{ socket }}>
       {children}
     </SocketContext.Provider>
   );

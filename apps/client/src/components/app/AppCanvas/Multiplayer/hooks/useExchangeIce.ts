@@ -9,23 +9,21 @@ export default function useExchangeIce(
   useEffect(() => {
     if (!socket || !connection || !targetId) return;
 
-    function onCreateIceCandidate(e: RTCPeerConnectionIceEvent) {
+    function onCreateIce(e: RTCPeerConnectionIceEvent) {
+      if (!e.candidate) return;
       socket.emit("iceCandidate", targetId, e.candidate);
     }
 
-    function onRecieveIceCandidate(
-      player: string,
-      iceCandidate: RTCIceCandidate
-    ) {
+    function onRecieveIce(player: string, iceCandidate: RTCIceCandidate) {
       if (player !== targetId) return;
       connection.addIceCandidate(iceCandidate);
     }
 
-    connection.addEventListener("icecandidate", onCreateIceCandidate);
-    socket.on("iceCandidate", onRecieveIceCandidate);
+    connection.addEventListener("icecandidate", onCreateIce);
+    socket.on("iceCandidate", onRecieveIce);
     return () => {
-      connection.removeEventListener("icecandidate", onCreateIceCandidate);
-      socket.off("iceCandidate", onRecieveIceCandidate);
+      connection.removeEventListener("icecandidate", onCreateIce);
+      socket.off("iceCandidate", onRecieveIce);
     };
   }, [connection, targetId, socket]);
 }

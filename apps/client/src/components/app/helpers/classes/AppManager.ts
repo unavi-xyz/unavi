@@ -2,13 +2,14 @@ import { UseBoundStore, StoreApi } from "zustand";
 import { createMessage } from "../message";
 
 import { AppStore } from "../store";
-import { Channels, Identity, Message } from "../types";
+import { Channels, Message } from "../types";
 
 type useStoreType = UseBoundStore<AppStore, StoreApi<AppStore>>;
 type StoredChannels = Record<keyof Channels, RTCDataChannel[]>;
 
 export class AppManager {
   useStore: useStoreType;
+  track: MediaStreamTrack;
 
   channels: StoredChannels = { identity: [], message: [], transform: [] };
 
@@ -48,5 +49,20 @@ export class AppManager {
   addMessage(message: Message) {
     const newMessages = [message, ...this.useStore.getState().messages];
     this.useStore.setState({ messages: newMessages });
+  }
+
+  async getUserMedia() {
+    const localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: false,
+    });
+    const track = localStream.getAudioTracks()[0];
+    this.track = track;
+
+    this.useStore.getState().connections.forEach((connection) => {
+      connection.addTrack(track);
+    });
+
+    return track;
   }
 }

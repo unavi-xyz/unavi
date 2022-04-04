@@ -34,9 +34,9 @@ export default function SpacePage() {
           <div>By</div>
           <div
             onClick={handleAuthorClick}
-            className="hover:underline decoration-2 cursor-pointer"
+            className="hover:underline cursor-pointer"
           >
-            {profile?.name ?? controller}
+            {profile?.name ?? controller?.substring(0, 10)}
           </div>
         </div>
       </div>

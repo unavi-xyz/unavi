@@ -1,7 +1,10 @@
 import { createContext, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
-const url = "ws://localhost:8080";
+const url =
+  process.env.NODE_ENV === "development"
+    ? "ws://localhost:8080"
+    : "ws://signaling.thewired.space";
 
 interface ISocketContext {
   socket: Socket;

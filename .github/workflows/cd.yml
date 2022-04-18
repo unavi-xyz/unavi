@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  deployment:
-    runs-on: signaling
+  deployment-server:
+    runs-on: server
 
     steps:
       - uses: actions/checkout@v2
@@ -16,6 +16,4 @@ jobs:
           node-version: "16"
           cache: "yarn"
       - run: yarn install
-
-      - name: Restart server application
-        run: pm2 restart
+      - run: pm2 restart server

@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useRef, useState } from "react";
+import React, { Suspense, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, OrbitControls } from "@react-three/drei";
 import { Vector3 } from "three";
@@ -42,7 +42,6 @@ export default function ProfileAvatar({ avatarId }: Props) {
           dampingFactor={0.05}
           maxPolarAngle={Math.PI / 1.9}
         />
-
         <Suspense fallback={null}>
           {url && (
             <Avatar
@@ -52,11 +51,11 @@ export default function ProfileAvatar({ avatarId }: Props) {
             />
           )}
         </Suspense>
-
         <ContactShadows width={2} height={2} blur={8} />
 
         <directionalLight intensity={0.9} position={new Vector3(10, 30, -20)} />
-        <ambientLight intensity={0.1} />
+        <directionalLight intensity={0.3} position={new Vector3(-10, 5, 10)} />
+        <ambientLight intensity={0.2} />
       </Canvas>
     </div>
   );

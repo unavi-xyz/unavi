@@ -14,6 +14,5 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: "16"
-          cache: "yarn"
       - run: yarn install
       - run: pm2 restart server

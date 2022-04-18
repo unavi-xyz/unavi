@@ -1,120 +1,62 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import { useFrame } from "@react-three/fiber";
-import { Group, MathUtils, Vector3 } from "three";
+import { useEffect, useRef } from "react";
+import { AudioListener, Group, PositionalAudio } from "three";
+import { useThree } from "@react-three/fiber";
+import { useAvatar, useIpfsFile, useProfile } from "ceramic";
 import { Avatar } from "3d";
 
-import { PUBLISH_INTERVAL } from "./constants";
-import { MultiplayerContext } from "../../MultiplayerProvider";
-import { useAvatar, useIpfsFile, useProfile } from "ceramic";
+import { PlayerChannels } from "../../helpers/types";
+import { DEFAULT_AVATAR } from "./helpers/constants";
 
-const defaultAvatar =
-  "kjzl6cwe1jw1495s2wbkxyf0d7a4a5k82980jms3m1utm0yvmaev8s1dhmv20qv";
+import useInterpolation from "./hooks/useInterpolation";
+import useDataChannels from "./hooks/useDataChannels";
 
 interface Props {
   id: string;
+  channels: PlayerChannels;
+  track: MediaStreamTrack;
 }
 
-export default function OtherPlayer({ id }: Props) {
-  const { getLocations } = useContext(MultiplayerContext);
+export default function OtherPlayer({ id, channels, track }: Props) {
+  const groupRef = useRef<Group>();
 
-  const { profile } = useProfile(id);
-  const { avatar } = useAvatar(profile?.avatar ?? defaultAvatar);
-  const vrmFile = useIpfsFile(avatar?.vrm);
+  const { transformRef, identity } = useDataChannels(id, channels);
 
-  const [vrmUrl, setVrmUrl] = useState<string>();
+  const { profile } = useProfile(identity?.did);
+  const { avatar } = useAvatar(profile?.avatar ?? DEFAULT_AVATAR);
+  const { url } = useIpfsFile(avatar?.vrm);
+  const animationWeights = useInterpolation(groupRef, transformRef);
 
-  useEffect(() => {
-    if (!vrmFile) {
-      setVrmUrl(undefined);
-      return;
-    }
-
-    const url = URL.createObjectURL(vrmFile);
-    setVrmUrl(url);
-  }, [vrmFile]);
-
-  const walkWeight = useRef(0);
-  const jumpWeight = useRef(0);
-  const deltaTotal = useRef(0);
-  const ref = useRef<Group>();
-  const tempVector3 = useRef(new Vector3());
-  const prev = useRef({ position: new Vector3(), rotation: 0 });
-  const real = useRef({ position: new Vector3(), rotation: 0 });
+  const { camera } = useThree();
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const locations = getLocations();
-      const location = locations[id];
+    if (!track) return;
 
-      prev.current.position.copy(real.current.position);
-      prev.current.rotation = real.current.rotation;
+    function startAudio() {
+      const listener = new AudioListener();
+      const positional = new PositionalAudio(listener);
 
-      real.current.position.fromArray(location.position);
-      real.current.rotation = location.rotation;
+      camera.add(listener);
+      groupRef.current.add(positional);
 
-      deltaTotal.current = 0;
-    }, PUBLISH_INTERVAL);
+      const stream = new MediaStream();
+      stream.addTrack(track);
 
-    return () => {
-      clearInterval(interval);
-    };
-  }, [getLocations, id]);
+      const el = document.createElement("audio");
+      el.srcObject = stream;
 
-  useFrame((_, delta) => {
-    deltaTotal.current += delta;
-    const alpha = Math.min(deltaTotal.current * (1000 / PUBLISH_INTERVAL), 1);
-
-    //animations
-    const velocity = tempVector3.current
-      .subVectors(real.current.position, ref.current.position)
-      .divideScalar(delta);
-
-    walkWeight.current = Math.abs(velocity.x) + Math.abs(velocity.z);
-    jumpWeight.current = Math.abs(velocity.y);
-
-    //position interp
-    tempVector3.current.lerpVectors(
-      prev.current.position,
-      real.current.position,
-      alpha
-    );
-    ref.current.position.copy(tempVector3.current);
-
-    //rotation interp
-    function normalize(angle: number) {
-      while (angle < 0) {
-        angle += 2 * Math.PI;
-      }
-      while (angle >= 2 * Math.PI) {
-        angle -= 2 * Math.PI;
-      }
-      return angle;
+      positional.setMediaStreamSource(el.srcObject);
     }
 
-    const start = prev.current.rotation;
-    let end = real.current.rotation;
-
-    const forward = start - end;
-    const backward = end - start;
-
-    if (normalize(forward) < normalize(backward)) {
-      if (end > start) end -= 2 * Math.PI;
-    } else {
-      if (end < start) end += 2 * Math.PI;
-    }
-
-    const rot = MathUtils.lerp(start, end, alpha);
-    ref.current.rotation.y = rot;
-  });
+    document.addEventListener("click", startAudio, { once: true });
+  }, [camera, track]);
 
   return (
-    <group ref={ref}>
-      {vrmUrl && (
+    <group ref={groupRef}>
+      {url && (
         <Avatar
-          src={vrmUrl}
+          src={url}
           animationsSrc="/models/animations.fbx"
-          walkWeight={walkWeight}
-          jumpWeight={jumpWeight}
+          animationWeights={animationWeights}
         />
       )}
     </group>

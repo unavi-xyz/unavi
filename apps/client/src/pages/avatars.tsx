@@ -9,6 +9,7 @@ import NewAvatarDialog from "../components/home/avatar/NewAvatarDialog";
 import SidebarLayout from "../layouts/SidebarLayout/SidebarLayout";
 
 const defaultAvatars = [
+  "kjzl6cwe1jw14azuvrnaq0usgs5cfcyrc0qtqkvp782paeg838o2sp06b1yxwio",
   "kjzl6cwe1jw147ynxh5eor6f7yqvr1fzahsow74034df5i7iq6jvlc7xh3rv01v",
   "kjzl6cwe1jw145etkya62bigdwx2jllly50h5qrysg9cxw2lzqu66cbgx6m162m",
   "kjzl6cwe1jw1495s2wbkxyf0d7a4a5k82980jms3m1utm0yvmaev8s1dhmv20qv",

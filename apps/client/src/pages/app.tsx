@@ -2,17 +2,17 @@ import { useAppHotkeys } from "../components/app/helpers/hooks/useAppHotkeys";
 
 import AppCanvas from "../components/app/AppCanvas/AppCanvas";
 import AppOverlay from "../components/app/AppOverlay/AppOverlay";
-import MultiplayerProvider from "../components/app/MultiplayerProvider";
+import SocketProvider from "../components/app/SocketProvider";
 
 export default function App() {
   useAppHotkeys();
 
   return (
     <div className="h-full">
-      <MultiplayerProvider>
+      <SocketProvider>
         <AppCanvas />
         <AppOverlay />
-      </MultiplayerProvider>
+      </SocketProvider>
     </div>
   );
 }

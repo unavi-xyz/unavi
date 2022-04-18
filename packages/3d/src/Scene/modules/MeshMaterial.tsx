@@ -78,7 +78,7 @@ export function MeshMaterial({ material: id }: Props) {
     if (physicalRef.current) physicalRef.current.needsUpdate = true;
   }, [material?.flatShading]);
 
-  if (!material || !id) return <meshBasicMaterial />;
+  if (!material || !id) return <meshPhongMaterial />;
 
   if (debug && material.opacity === 0) return <meshBasicMaterial wireframe />;
 

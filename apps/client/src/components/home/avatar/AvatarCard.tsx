@@ -1,4 +1,4 @@
-import { useAvatar, useIpfsImage } from "ceramic";
+import { useAvatar, useIpfsFile } from "ceramic";
 import { Card } from "../../base";
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
 
 export default function AvatarCard({ id }: Props) {
   const { avatar } = useAvatar(id);
-  const image = useIpfsImage(avatar?.image);
+  const { url } = useIpfsFile(avatar?.image);
 
-  return <Card text={avatar?.name} image={image} />;
+  return <Card text={avatar?.name} image={url} />;
 }

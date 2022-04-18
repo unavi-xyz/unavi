@@ -14,7 +14,8 @@ This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includ
 
 ### Apps
 
-- `client`: a [Next.js](https://nextjs.org) app
+- `client`: a [Next.js](https://nextjs.org) app.
+- `server`: a nodejs signaling server.
 
 ### Packages
 

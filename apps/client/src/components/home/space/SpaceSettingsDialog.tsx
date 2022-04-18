@@ -7,7 +7,7 @@ import {
   removeFromSpaces,
   unpinTile,
   useAuth,
-  useIpfsImage,
+  useIpfsFile,
   useSpace,
 } from "ceramic";
 
@@ -34,7 +34,7 @@ export function SpaceSettingsDialog({ id, open, setOpen }: Props) {
   const queryClient = useQueryClient();
   const { viewerId } = useAuth();
   const { space } = useSpace(id);
-  const image = useIpfsImage(space?.image);
+  const { url } = useIpfsFile(space?.image);
 
   async function handleSave() {
     if (loadingSave) return;
@@ -67,7 +67,7 @@ export function SpaceSettingsDialog({ id, open, setOpen }: Props) {
         <h1 className="text-3xl flex justify-center">Settings</h1>
 
         <div className="h-32">
-          <ImageUpload setImageFile={setImageFile} defaultValue={image} />
+          <ImageUpload setImageFile={setImageFile} defaultValue={url} />
         </div>
 
         <div className="space-y-4">

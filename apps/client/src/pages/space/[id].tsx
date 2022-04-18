@@ -2,7 +2,7 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth, useIpfsImage, useProfile, useSpace } from "ceramic";
+import { useAuth, useIpfsFile, useProfile, useSpace } from "ceramic";
 
 import { IconButton } from "../../components/base";
 import SidebarLayout from "../../layouts/SidebarLayout/SidebarLayout";
@@ -15,7 +15,7 @@ export default function Space() {
   const { viewerId } = useAuth();
   const { space, controller } = useSpace(id);
   const { profile } = useProfile(controller);
-  const image = useIpfsImage(space?.image);
+  const { url } = useIpfsFile(space?.image);
 
   const [openSettings, setOpenSettings] = useState(false);
 
@@ -53,9 +53,9 @@ export default function Space() {
 
       <div className="h-full md:h-1/2 md:grid md:grid-cols-3 md:gap-4 space-y-4 md:space-y-0">
         <div className="w-full col-span-2 h-64 md:h-[800px] card-borderless">
-          {image && (
+          {url && (
             <img
-              src={image}
+              src={url}
               alt="space image"
               className="w-full h-full rounded-3xl object-cover"
             />

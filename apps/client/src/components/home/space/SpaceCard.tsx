@@ -1,4 +1,4 @@
-import { useIpfsImage, useSpace } from "ceramic";
+import { useIpfsFile, useSpace } from "ceramic";
 import { Card } from "../../base";
 
 interface Props {
@@ -7,9 +7,9 @@ interface Props {
 
 export default function SpaceCard({ streamId }: Props) {
   const { space } = useSpace(streamId);
-  const image = useIpfsImage(space?.image);
+  const { url } = useIpfsFile(space?.image);
 
   if (!space) return null;
 
-  return <Card image={image} text={space?.name} />;
+  return <Card image={url} text={space?.name} />;
 }

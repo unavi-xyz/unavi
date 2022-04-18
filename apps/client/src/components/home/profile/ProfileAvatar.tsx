@@ -1,8 +1,9 @@
-import React, { Suspense, useEffect, useRef, useState } from "react";
+import React, { Suspense, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, OrbitControls } from "@react-three/drei";
 import { Vector3 } from "three";
 import { useAvatar, useIpfsFile } from "ceramic";
+import { AnimationWeights } from "3d";
 
 const Avatar = React.lazy(() =>
   import("3d").then((module) => ({ default: module.Avatar }))
@@ -13,23 +14,18 @@ interface Props {
 }
 
 export default function ProfileAvatar({ avatarId }: Props) {
-  const walkWeight = useRef(0);
-  const jumpWeight = useRef(0);
+  const oneRef = useRef(1);
+  const zeroRef = useRef(0);
+
+  const animationWeights: AnimationWeights = {
+    idle: oneRef,
+    walk: zeroRef,
+    run: zeroRef,
+    jump: zeroRef,
+  };
 
   const { avatar } = useAvatar(avatarId);
-  const vrmFile = useIpfsFile(avatar?.vrm);
-
-  const [vrmUrl, setVrmUrl] = useState<string>();
-
-  useEffect(() => {
-    if (!vrmFile) {
-      setVrmUrl(undefined);
-      return;
-    }
-
-    const url = URL.createObjectURL(vrmFile);
-    setVrmUrl(url);
-  }, [vrmFile]);
+  const { url } = useIpfsFile(avatar?.vrm);
 
   return (
     <div className="w-full h-full">
@@ -46,22 +42,20 @@ export default function ProfileAvatar({ avatarId }: Props) {
           dampingFactor={0.05}
           maxPolarAngle={Math.PI / 1.9}
         />
-
         <Suspense fallback={null}>
-          {vrmUrl && (
+          {url && (
             <Avatar
-              src={vrmUrl}
+              src={url}
               animationsSrc="/models/animations.fbx"
-              walkWeight={walkWeight}
-              jumpWeight={jumpWeight}
+              animationWeights={animationWeights}
             />
           )}
         </Suspense>
-
         <ContactShadows width={2} height={2} blur={8} />
 
         <directionalLight intensity={0.9} position={new Vector3(10, 30, -20)} />
-        <ambientLight intensity={0.1} />
+        <directionalLight intensity={0.3} position={new Vector3(-10, 5, 10)} />
+        <ambientLight intensity={0.2} />
       </Canvas>
     </div>
   );

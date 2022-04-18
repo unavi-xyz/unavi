@@ -13,8 +13,8 @@ export function Tooltip({ text, placement = "left", children }: Props) {
       : placement === "bottom"
       ? "mt-14 top-0"
       : placement === "left"
-      ? "mr-14 right-0 top-1.5"
-      : "ml-14 left-0 top-1.5";
+      ? "mr-14 right-0 translate-y-1/3"
+      : "ml-14 left-0 translate-y-1/3";
 
   return (
     <div className="group relative flex flex-col items-center">

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth, useIpfsImage, useProfile, useUserSpaces } from "ceramic";
+import { useAuth, useIpfsFile, useProfile, useUserSpaces } from "ceramic";
 
 import { IconButton } from "../../components/base";
 import { ProfileSettingsDialog } from "../../components/home/profile/ProfileSettingsDialog";
@@ -17,7 +17,7 @@ export default function User() {
 
   const { viewerId } = useAuth();
   const { profile } = useProfile(did);
-  const image = useIpfsImage(profile?.image?.original.src);
+  const { url } = useIpfsFile(profile?.image?.original.src);
   const spaces = useUserSpaces(did);
 
   const [openSettings, setOpenSettings] = useState(false);
@@ -29,9 +29,9 @@ export default function User() {
       <div className="card flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <div className="w-28 h-28 flex-shrink-0">
-            {image && (
+            {url && (
               <img
-                src={image}
+                src={url}
                 alt="profile picture"
                 className="object-cover rounded-full w-full h-full"
               />

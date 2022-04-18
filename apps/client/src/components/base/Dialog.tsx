@@ -11,8 +11,8 @@ export function Dialog({ open, setOpen, children }: Props): JSX.Element {
 
   return ReactDOM.createPortal(
     <div
-      className="fixed top-0 left-0 z-10 bg-black bg-opacity-50 w-screen
-                 h-screen flex flex-col justify-center"
+      className="fixed top-0 left-0 bg-black bg-opacity-50 w-screen
+                 h-screen flex flex-col justify-center z-50"
       onMouseDown={() => setOpen(false)}
     >
       <dialog

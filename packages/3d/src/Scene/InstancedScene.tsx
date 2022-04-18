@@ -2,7 +2,6 @@ import { Sky } from "@react-three/drei";
 
 import { Scene } from "./types";
 import { InstancedObject } from "./InstancedObject";
-import { Ground } from "../Ground/Ground";
 import { SceneContext } from "./SceneContext";
 
 interface Props {
@@ -15,7 +14,6 @@ export function InstancedScene({ scene }: Props) {
       <directionalLight intensity={0.7} position={[1, 2, 5]} />
       <ambientLight intensity={0.1} />
       <Sky inclination={1} />
-      <Ground />
 
       <SceneContext.Provider
         value={{

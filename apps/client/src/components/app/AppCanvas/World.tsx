@@ -2,7 +2,7 @@ import { useSpace } from "ceramic";
 import { InstancedScene } from "3d";
 
 import useAssetLoader from "./hooks/useAssetLoader";
-import Multiplayer from "./Multiplayer/Multiplayer";
+import { Ground } from "./Ground";
 
 interface Props {
   spaceId: string;
@@ -13,10 +13,11 @@ export default function World({ spaceId }: Props) {
   const scene = useAssetLoader(space?.scene);
 
   if (!scene) return null;
+
   return (
     <group>
-      <InstancedScene scene={scene} />
-      <Multiplayer />
+      <InstancedScene scene={scene} />;
+      <Ground />
     </group>
   );
 }

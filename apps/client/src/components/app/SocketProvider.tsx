@@ -3,8 +3,8 @@ import { io, Socket } from "socket.io-client";
 
 const url =
   process.env.NODE_ENV === "development"
-    ? "ws://localhost:8080"
-    : "ws://signaling.thewired.space";
+    ? "localhost:8080"
+    : "https://signaling.thewired.space";
 
 interface ISocketContext {
   socket: Socket;

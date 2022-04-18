@@ -15,4 +15,4 @@ jobs:
         with:
           node-version: "16"
       - run: yarn install
-      - run: pm2 restart server
+      - run: pm2 restart all

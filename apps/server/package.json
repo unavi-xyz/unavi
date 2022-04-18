@@ -4,7 +4,7 @@
   "license": "GPL-3.0-or-later",
   "private": true,
   "scripts": {
-    "dev": "nodemon ."
+    "dev": "nodemon app/index.js"
   },
   "dependencies": {
     "express": "^4.17.3",

@@ -1,8 +1,15 @@
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 
-const httpServer = createServer();
-const io = new Server(httpServer, {
+const express = require("express");
+const app = express();
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "/index.html"));
+});
+
+const server = createServer(app);
+const io = new Server(server, {
   cors: { origin: "*" },
 });
 
@@ -47,4 +54,4 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(8080);
+server.listen(8080, "localhost");

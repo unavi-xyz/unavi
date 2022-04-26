@@ -6,7 +6,7 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "devDependencies": {
-    "@types/react": "17.0.37",
+    "@types/react": "18.0.8",
     "@types/react-dom": "^17",
     "@types/three": "^0.137.0",
     "tsconfig": "*",

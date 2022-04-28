@@ -2641,6 +2641,79 @@ export type SetProfileMetadataMutation = {
   };
 };
 
+export type SetProfileImageMutationVariables = Exact<{
+  profileId: Scalars["ProfileId"];
+  url: Scalars["Url"];
+}>;
+
+export type SetProfileImageMutation = {
+  __typename?: "Mutation";
+  createSetProfileImageURITypedData: {
+    __typename?: "CreateSetProfileImageUriBroadcastItemResult";
+    typedData: {
+      __typename?: "CreateSetProfileImageUriEIP712TypedData";
+      domain: {
+        __typename?: "EIP712TypedDataDomain";
+        name: string;
+        chainId: any;
+        version: string;
+        verifyingContract: any;
+      };
+      types: {
+        __typename?: "CreateSetProfileImageUriEIP712TypedDataTypes";
+        SetProfileImageURIWithSig: Array<{
+          __typename?: "EIP712TypedDataField";
+          name: string;
+          type: string;
+        }>;
+      };
+      value: {
+        __typename?: "CreateSetProfileImageUriEIP712TypedDataValue";
+        nonce: any;
+        deadline: any;
+        imageURI: any;
+        profileId: any;
+      };
+    };
+  };
+};
+
+export type SetDefaultProfileMutationVariables = Exact<{
+  profileId: Scalars["ProfileId"];
+}>;
+
+export type SetDefaultProfileMutation = {
+  __typename?: "Mutation";
+  createSetDefaultProfileTypedData: {
+    __typename?: "SetDefaultProfileBroadcastItemResult";
+    typedData: {
+      __typename?: "SetDefaultProfileEIP712TypedData";
+      types: {
+        __typename?: "SetDefaultProfileEIP712TypedDataTypes";
+        SetDefaultProfileWithSig: Array<{
+          __typename?: "EIP712TypedDataField";
+          name: string;
+          type: string;
+        }>;
+      };
+      domain: {
+        __typename?: "EIP712TypedDataDomain";
+        name: string;
+        chainId: any;
+        version: string;
+        verifyingContract: any;
+      };
+      value: {
+        __typename?: "SetDefaultProfileEIP712TypedDataValue";
+        nonce: any;
+        deadline: any;
+        wallet: any;
+        profileId: any;
+      };
+    };
+  };
+};
+
 export const ProfileInfoFragmentDoc = gql`
   fragment ProfileInfo on Profile {
     id
@@ -3266,4 +3339,145 @@ export type SetProfileMetadataMutationResult =
 export type SetProfileMetadataMutationOptions = Apollo.BaseMutationOptions<
   SetProfileMetadataMutation,
   SetProfileMetadataMutationVariables
+>;
+export const SetProfileImageDocument = gql`
+  mutation SetProfileImage($profileId: ProfileId!, $url: Url!) {
+    createSetProfileImageURITypedData(
+      request: { profileId: $profileId, url: $url }
+    ) {
+      typedData {
+        domain {
+          name
+          chainId
+          version
+          verifyingContract
+        }
+        types {
+          SetProfileImageURIWithSig {
+            name
+            type
+          }
+        }
+        value {
+          nonce
+          deadline
+          imageURI
+          profileId
+        }
+      }
+    }
+  }
+`;
+export type SetProfileImageMutationFn = Apollo.MutationFunction<
+  SetProfileImageMutation,
+  SetProfileImageMutationVariables
+>;
+
+/**
+ * __useSetProfileImageMutation__
+ *
+ * To run a mutation, you first call `useSetProfileImageMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetProfileImageMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [setProfileImageMutation, { data, loading, error }] = useSetProfileImageMutation({
+ *   variables: {
+ *      profileId: // value for 'profileId'
+ *      url: // value for 'url'
+ *   },
+ * });
+ */
+export function useSetProfileImageMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    SetProfileImageMutation,
+    SetProfileImageMutationVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<
+    SetProfileImageMutation,
+    SetProfileImageMutationVariables
+  >(SetProfileImageDocument, options);
+}
+export type SetProfileImageMutationHookResult = ReturnType<
+  typeof useSetProfileImageMutation
+>;
+export type SetProfileImageMutationResult =
+  Apollo.MutationResult<SetProfileImageMutation>;
+export type SetProfileImageMutationOptions = Apollo.BaseMutationOptions<
+  SetProfileImageMutation,
+  SetProfileImageMutationVariables
+>;
+export const SetDefaultProfileDocument = gql`
+  mutation SetDefaultProfile($profileId: ProfileId!) {
+    createSetDefaultProfileTypedData(request: { profileId: $profileId }) {
+      typedData {
+        types {
+          SetDefaultProfileWithSig {
+            name
+            type
+          }
+        }
+        domain {
+          name
+          chainId
+          version
+          verifyingContract
+        }
+        value {
+          nonce
+          deadline
+          wallet
+          profileId
+        }
+      }
+    }
+  }
+`;
+export type SetDefaultProfileMutationFn = Apollo.MutationFunction<
+  SetDefaultProfileMutation,
+  SetDefaultProfileMutationVariables
+>;
+
+/**
+ * __useSetDefaultProfileMutation__
+ *
+ * To run a mutation, you first call `useSetDefaultProfileMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetDefaultProfileMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [setDefaultProfileMutation, { data, loading, error }] = useSetDefaultProfileMutation({
+ *   variables: {
+ *      profileId: // value for 'profileId'
+ *   },
+ * });
+ */
+export function useSetDefaultProfileMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    SetDefaultProfileMutation,
+    SetDefaultProfileMutationVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<
+    SetDefaultProfileMutation,
+    SetDefaultProfileMutationVariables
+  >(SetDefaultProfileDocument, options);
+}
+export type SetDefaultProfileMutationHookResult = ReturnType<
+  typeof useSetDefaultProfileMutation
+>;
+export type SetDefaultProfileMutationResult =
+  Apollo.MutationResult<SetDefaultProfileMutation>;
+export type SetDefaultProfileMutationOptions = Apollo.BaseMutationOptions<
+  SetDefaultProfileMutation,
+  SetDefaultProfileMutationVariables
 >;

@@ -11,7 +11,10 @@ const css = `
 .st9{fill:#763D16;stroke:#763D16;stroke-linecap:round;stroke-linejoin:round;}
 `;
 
-export default function MetamaskFox(props) {
+export default function MetamaskFox(props: {
+  width?: string;
+  height?: string;
+}) {
   return (
     <svg
       version="1.1"

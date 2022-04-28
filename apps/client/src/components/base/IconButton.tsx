@@ -1,4 +1,9 @@
-export function IconButton({ children, ...rest }) {
+interface Props {
+  children: React.ReactNode;
+  [key: string]: any;
+}
+
+export default function IconButton({ children, ...rest }: Props) {
   return (
     <div
       {...rest}

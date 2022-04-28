@@ -1,30 +1,46 @@
-import SidebarLayout from "../src/components/SidebarLayout/SidebarLayout";
+import { FaDiscord, FaTwitter, FaGithub } from "react-icons/fa";
+
+import NavbarLayout from "../src/components/layouts/NavbarLayout/NavbarLayout";
+import Chip from "../src/components/base/Chip";
 
 export default function Index() {
   return (
-    <div className="space-y-4">
-      <div className="card">
-        <div className="text-2xl">Home</div>
-      </div>
+    <div className="h-72 flex justify-center border-b bg-white">
+      <div className="max-w space-y-3 flex flex-col justify-center">
+        <div className="text-4xl font-black">Welcome to The Wired 👋</div>
+        <div className="text-lg text-gray-700">
+          The Wired is a decentralized, open source, VR social platform built in
+          the browser
+        </div>
 
-      <div className="card space-y-2">
-        <div className="text-2xl">Welcome!</div>
-        <div className="text-lg text-neutral-500">
-          The platform is currently in heavy development. If you run into any
-          issues, or have any ideas, please reach out to us on{" "}
+        <div className="flex space-x-4">
           <a
             href="https://discord.gg/VCsAEneUMn"
             target="_blank"
             rel="noreferrer"
-            className="text-sky-500 underline hover:decoration-2"
           >
-            Discord
+            <Chip icon={<FaDiscord />} text="Discord" hoverable />
           </a>
-          !
+
+          <a
+            href="https://twitter.com/TheWiredXR"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Chip icon={<FaTwitter />} text="Twitter" hoverable />
+          </a>
+
+          <a
+            href="https://github.com/wired-xr/wired"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Chip icon={<FaGithub />} text="GitHub" hoverable />
+          </a>
         </div>
       </div>
     </div>
   );
 }
 
-Index.Layout = SidebarLayout;
+Index.Layout = NavbarLayout;

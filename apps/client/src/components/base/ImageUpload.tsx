@@ -6,7 +6,10 @@ interface Props {
   defaultValue?: string;
 }
 
-export function ImageUpload({ setImageFile, defaultValue = "" }: Props) {
+export default function ImageUpload({
+  setImageFile,
+  defaultValue = "",
+}: Props) {
   const [image, setImage] = useState(defaultValue);
 
   function handleImageChange(e: ChangeEvent<HTMLInputElement>) {

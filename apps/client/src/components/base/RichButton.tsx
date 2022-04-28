@@ -1,4 +1,4 @@
-export function RichButton({
+export default function RichButton({
   image = <></>,
   icon = <></>,
   title = "",
@@ -8,8 +8,8 @@ export function RichButton({
   return (
     <div
       {...rest}
-      className="flex w-full space-x-2 p-1 bg-neutral-100 hover:bg-neutral-200
-                 hover:cursor-pointer rounded-lg h-24 transition-all duration-150"
+      className="flex w-full space-x-2 py-1 border hover:bg-neutral-100
+                 hover:cursor-pointer rounded-xl h-20 transition-all duration-150"
     >
       {image}
 

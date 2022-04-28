@@ -10,10 +10,11 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
+    "codegen": "turbo run codegen",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
-    "ready": "yarn format && yarn lint && yarn build && yarn test"
+    "ready": "yarn codegen && yarn format && yarn lint && yarn build && yarn test"
   },
   "devDependencies": {
     "prettier": "^2.5.1",

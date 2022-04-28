@@ -5,8 +5,15 @@ export default function Document() {
     <Html>
       <Head>
         <link rel="icon" href="/images/plug.png" />
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap"
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap"
           rel="stylesheet"
         />
       </Head>

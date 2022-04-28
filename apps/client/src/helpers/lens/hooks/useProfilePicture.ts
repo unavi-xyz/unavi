@@ -1,25 +1,15 @@
 import { useEffect, useState } from "react";
-import { pathToUrl } from "../../ipfs/fetch";
 
-type Picture =
-  | {
-      __typename?: "MediaSet";
-      original: { __typename?: "Media"; url: any; mimeType?: any | null };
-    }
-  | {
-      __typename?: "NftImage";
-      contractAddress: any;
-      tokenId: string;
-      uri: any;
-      verified: boolean;
-    }
-  | null;
+import { Profile } from "../../../generated/graphql";
+import { getIpfsUrl } from "../../ipfs/fetch";
 
-export default function useProfilePicture(picture: Picture) {
+export function useProfilePicture(profile: Profile | undefined) {
   const [url, setUrl] = useState<string>();
   const [type, setType] = useState<"media" | "nft">();
 
   useEffect(() => {
+    const picture = profile?.picture;
+
     if (!picture) {
       setUrl(undefined);
       return;
@@ -28,13 +18,14 @@ export default function useProfilePicture(picture: Picture) {
     if (picture.__typename === "MediaSet") {
       setType("media");
 
-      pathToUrl(picture.original.url).then((res) => {
+      getIpfsUrl(picture.original.url).then((res) => {
         setUrl(res);
       });
     } else {
-      setType("nft");
+      // setType("nft");
+      setUrl(undefined);
     }
-  }, [picture]);
+  }, [profile]);
 
   return { url, type };
 }

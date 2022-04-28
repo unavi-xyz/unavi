@@ -3,10 +3,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 
-import { IconButton } from "../src/components/base";
 import AvatarCard from "../src/home/avatar/AvatarCard";
 import NewAvatarDialog from "../src/home/avatar/NewAvatarDialog";
 import SidebarLayout from "../src/components/SidebarLayout/SidebarLayout";
+import IconButton from "../src/components/base/IconButton";
 
 const defaultAvatars = [
   "kjzl6cwe1jw14azuvrnaq0usgs5cfcyrc0qtqkvp782paeg838o2sp06b1yxwio",

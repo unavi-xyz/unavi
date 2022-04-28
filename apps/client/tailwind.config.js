@@ -7,6 +7,9 @@ module.exports = {
         primary: "#4cc9f0",
         secondary: "#f72585",
       },
+      backgroundImage: {
+        arrow: "url('/images/arrow.svg')",
+      },
     },
   },
   plugins: [],

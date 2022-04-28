@@ -1,41 +1,40 @@
-import { ChangeEvent } from "react";
-
 interface Props {
   options: string[];
+  inputAdornment?: string;
   title?: string;
   value?: string;
-  onChange?: (value: any) => void;
   [key: string]: any;
 }
 
-function capitalizeFirstLetter(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-export function Select({ options, title, value, onChange, ...rest }: Props) {
-  function handleChange(e: ChangeEvent<HTMLSelectElement>) {
-    const type = e.target.value as any;
-    onChange(type);
-  }
-
+export default function Select({
+  options,
+  inputAdornment,
+  title,
+  value,
+  ...rest
+}: Props) {
   return (
-    <div className="flex space-x-1 w-full pr-2">
-      <div className="text-neutral-500 w-2">{title}</div>
+    <div className="w-full space-y-2">
+      <div className="text-lg font-bold">{title}</div>
 
-      <select
-        {...rest}
-        value={value}
-        onChange={handleChange}
-        className="border outline-none px-2 rounded-full w-full"
-      >
-        {options.map((option) => {
-          return (
-            <option key={option} value={option}>
-              {capitalizeFirstLetter(option)}
-            </option>
-          );
-        })}
-      </select>
+      <div>
+        <select
+          value={value}
+          className={`border outline-none p-2 pl-4 pr-3 rounded-lg w-full cursor-pointer
+                    hover:bg-neutral-100 bg-arrow bg-no-repeat appearance-none
+                      bg-right bg-origin-content`}
+          {...rest}
+        >
+          {options.map((option) => {
+            return (
+              <option key={option} value={option}>
+                {inputAdornment}
+                {option}
+              </option>
+            );
+          })}
+        </select>
+      </div>
     </div>
   );
 }

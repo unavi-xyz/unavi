@@ -4,7 +4,7 @@ interface Props {
   subtext?: string;
 }
 
-export function Card({ image, text, subtext }: Props) {
+export default function Card({ image, text, subtext }: Props) {
   return (
     <div
       className="group p-3 pb-6 h-full w-full overflow-hidden rounded-3xl hover:cursor-pointer

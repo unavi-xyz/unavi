@@ -206,3 +206,59 @@ export const SET_PROFILE_METADATA = gql`
     }
   }
 `;
+
+export const SET_PROFILE_IMAGE = gql`
+  mutation SetProfileImage($profileId: ProfileId!, $url: Url!) {
+    createSetProfileImageURITypedData(
+      request: { profileId: $profileId, url: $url }
+    ) {
+      typedData {
+        domain {
+          name
+          chainId
+          version
+          verifyingContract
+        }
+        types {
+          SetProfileImageURIWithSig {
+            name
+            type
+          }
+        }
+        value {
+          nonce
+          deadline
+          imageURI
+          profileId
+        }
+      }
+    }
+  }
+`;
+
+export const SET_DEFAULT_PROFILE = gql`
+  mutation SetDefaultProfile($profileId: ProfileId!) {
+    createSetDefaultProfileTypedData(request: { profileId: $profileId }) {
+      typedData {
+        types {
+          SetDefaultProfileWithSig {
+            name
+            type
+          }
+        }
+        domain {
+          name
+          chainId
+          version
+          verifyingContract
+        }
+        value {
+          nonce
+          deadline
+          wallet
+          profileId
+        }
+      }
+    }
+  }
+`;

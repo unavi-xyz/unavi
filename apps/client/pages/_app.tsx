@@ -2,11 +2,13 @@ import { IpfsProvider } from "ceramic";
 import Head from "next/head";
 import { QueryClientProvider } from "react-query";
 
-import "../styles/globals.css";
 import { queryClient } from "../src/helpers/constants";
 
-export default function App({ Component, pageProps }) {
+import "../styles/globals.css";
+
+export default function App({ Component, pageProps }: any) {
   const Layout = Component.Layout ?? EmptyLayout;
+  const SecondLayout = Layout.Layout ?? EmptyLayout;
 
   return (
     <div>
@@ -18,9 +20,11 @@ export default function App({ Component, pageProps }) {
       <div className="w-full h-screen">
         <QueryClientProvider client={queryClient}>
           <IpfsProvider>
-            <Layout>
-              <Component {...pageProps} />
-            </Layout>
+            <SecondLayout>
+              <Layout>
+                <Component {...pageProps} />
+              </Layout>
+            </SecondLayout>
           </IpfsProvider>
         </QueryClientProvider>
       </div>
@@ -28,6 +32,6 @@ export default function App({ Component, pageProps }) {
   );
 }
 
-function EmptyLayout({ children }) {
+function EmptyLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

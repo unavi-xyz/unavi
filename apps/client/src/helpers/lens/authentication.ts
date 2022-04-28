@@ -1,8 +1,9 @@
 import { apolloClient } from "./apollo";
 import { AUTHENTICATE, GET_CHALLENGE, REFRESH_AUTHENTICATION } from "./queries";
+import { LOCAL_STORAGE } from "./constants";
 import { useLensStore } from "./store";
 import { useEthersStore } from "../ethers/store";
-import { LOCAL_STORAGE } from "./constants";
+import { disconnectWallet } from "../ethers/connection";
 
 import {
   AuthenticateMutation,
@@ -14,22 +15,36 @@ import {
 } from "../../generated/graphql";
 
 async function setAccessToken(accessToken: string) {
-  localStorage.setItem(LOCAL_STORAGE.ACCESS_TOKEN, accessToken);
+  const address = useEthersStore.getState().address;
   const ThirtyMinutesFromNow = new Date(new Date().getTime() + 30 * 60 * 1000);
+
+  localStorage.setItem(`${address}${LOCAL_STORAGE.ACCESS_TOKEN}`, accessToken);
   localStorage.setItem(
-    LOCAL_STORAGE.ACCESS_EXPIRE,
+    `${address}${LOCAL_STORAGE.ACCESS_EXPIRE}`,
     ThirtyMinutesFromNow.toString()
   );
 }
 
 async function setRefreshToken(refreshToken: string) {
-  localStorage.setItem(LOCAL_STORAGE.REFRESH_TOKEN, refreshToken);
+  const address = useEthersStore.getState().address;
   const OneDayFromNow = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
-  localStorage.setItem(LOCAL_STORAGE.REFRESH_EXPIRE, OneDayFromNow.toString());
+
+  localStorage.setItem(
+    `${address}${LOCAL_STORAGE.REFRESH_TOKEN}`,
+    refreshToken
+  );
+  localStorage.setItem(
+    `${address}${LOCAL_STORAGE.REFRESH_EXPIRE}`,
+    OneDayFromNow.toString()
+  );
 }
 
 export async function refreshAccessToken() {
-  const refreshToken = localStorage.getItem(LOCAL_STORAGE.REFRESH_TOKEN);
+  const address = useEthersStore.getState().address;
+  const refreshToken = localStorage.getItem(
+    `${address}${LOCAL_STORAGE.REFRESH_TOKEN}`
+  );
+
   if (refreshToken) {
     const { data } = await apolloClient.mutate<
       RefreshAuthenticationMutation,
@@ -40,8 +55,10 @@ export async function refreshAccessToken() {
     });
 
     //store tokens
-    setAccessToken(data.refresh.accessToken);
-    setRefreshToken(data.refresh.refreshToken);
+    if (data) {
+      setAccessToken(data.refresh.accessToken);
+      setRefreshToken(data.refresh.refreshToken);
+    }
   }
 }
 
@@ -58,9 +75,20 @@ async function generateChallenge(address: string) {
 }
 
 export async function authenticate() {
+  const address = useEthersStore.getState().address;
+  const signer = useEthersStore.getState().signer;
+
+  if (!address) throw new Error("No address");
+  if (!signer) throw new Error("No signer");
+
   //if access token is valid, return
-  const accessToken = localStorage.getItem(LOCAL_STORAGE.ACCESS_TOKEN);
-  const accessExpire = localStorage.getItem(LOCAL_STORAGE.ACCESS_EXPIRE);
+  const accessToken = localStorage.getItem(
+    `${address}${LOCAL_STORAGE.ACCESS_TOKEN}`
+  );
+  const accessExpire = localStorage.getItem(
+    `${address}${LOCAL_STORAGE.ACCESS_EXPIRE}`
+  );
+
   if (accessToken && accessExpire) {
     const now = new Date();
     const expire = new Date(accessExpire);
@@ -70,8 +98,13 @@ export async function authenticate() {
   }
 
   //if refresh token is valid, refresh access token
-  const refreshToken = localStorage.getItem(LOCAL_STORAGE.REFRESH_TOKEN);
-  const refreshExpire = localStorage.getItem(LOCAL_STORAGE.REFRESH_EXPIRE);
+  const refreshToken = localStorage.getItem(
+    `${address}${LOCAL_STORAGE.REFRESH_TOKEN}`
+  );
+  const refreshExpire = localStorage.getItem(
+    `${address}${LOCAL_STORAGE.REFRESH_EXPIRE}`
+  );
+
   if (refreshToken && refreshExpire) {
     const now = new Date();
     const expire = new Date(refreshExpire);
@@ -82,15 +115,12 @@ export async function authenticate() {
   }
 
   //if no valid token, generate challenge
-  const signer = useEthersStore.getState().signer;
-  const address = useEthersStore.getState().address;
-
   const challenge = await generateChallenge(address);
 
   //sign challenge
   const signature = await signer.signMessage(challenge);
 
-  //authenticate with server
+  //authenticate with api
   const { data } = await apolloClient.mutate<
     AuthenticateMutation,
     AuthenticateMutationVariables
@@ -99,9 +129,16 @@ export async function authenticate() {
     variables: { address, signature },
   });
 
+  if (!data) throw new Error("No data returned from authentication");
+
   //store tokens
   setAccessToken(data.authenticate.accessToken);
   setRefreshToken(data.authenticate.refreshToken);
 
   useLensStore.setState({ authenticated: true });
+}
+
+export function logout() {
+  useLensStore.setState({ authenticated: false, handle: undefined });
+  disconnectWallet();
 }

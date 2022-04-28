@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 html {
-  font-family: "DM Sans", sans-serif;
+  font-family: "Lato", sans-serif;
   @apply bg-neutral-100;
 }
 
-.card {
-  @apply bg-white rounded-3xl p-8;
+.max-w {
+  @apply max-w-6xl w-full;
 }
 
-.card-borderless {
-  @apply bg-white rounded-3xl;
+.gradient-text {
+  @apply font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-secondary;
 }
 
 .crosshair {

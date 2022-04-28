@@ -6,7 +6,7 @@ interface Props {
   children: ReactChild;
 }
 
-export function Tooltip({ text, placement = "left", children }: Props) {
+export default function Tooltip({ text, placement = "left", children }: Props) {
   const margin =
     placement === "top"
       ? "mb-14 bottom-0"

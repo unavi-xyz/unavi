@@ -25,7 +25,9 @@ export async function pollUntilIndexed(txHash: string) {
         }
 
         if (response.metadataStatus.status === "METADATA_VALIDATION_FAILED") {
-          throw new Error(response.metadataStatus.reason);
+          throw new Error(
+            response.metadataStatus.reason ?? response.metadataStatus.status
+          );
         }
       } else {
         if (response.indexed) {

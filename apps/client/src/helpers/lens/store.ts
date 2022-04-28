@@ -2,7 +2,7 @@ import create from "zustand";
 
 export interface LensStore {
   authenticated: boolean;
-  handle: undefined | string;
+  handle: string | undefined;
 }
 
 export const useLensStore = create<LensStore>(() => ({

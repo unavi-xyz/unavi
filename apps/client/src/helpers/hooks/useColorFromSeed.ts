@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 
-function getBrightColorFromSeed(seed: string): string {
+function getPastelColorFromSeed(seed: string): string {
   const hash = seed.split("").reduce((a, b) => {
     a = (a << 5) - a + b.charCodeAt(0);
     return a & a;
   }, 0);
-  return `hsl(${hash % 360}, 100%, 50%)`;
+  return `hsl(${hash % 360}, 80%, 70%)`;
 }
 
-export function useColorFromSeed(seed: string) {
+export function useColorFromSeed(seed: string | undefined) {
   const [color, setColor] = useState<string>();
 
   useEffect(() => {
@@ -17,7 +17,7 @@ export function useColorFromSeed(seed: string) {
       return;
     }
 
-    setColor(getBrightColorFromSeed(seed));
+    setColor(getPastelColorFromSeed(seed));
   }, [seed]);
 
   return color;

@@ -1,23 +1,16 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@apollo/client";
 
 import { apolloClient } from "../apollo";
 import { GET_PROFILE_BY_HANDLE } from "../queries";
+
 import {
   GetProfileByHandleQuery,
   GetProfileByHandleQueryVariables,
 } from "../../../generated/graphql";
 
-export function useValidateHandle(handle: string) {
+export function useValidateHandle(handle: string | undefined) {
   const [valid, setValid] = useState(false);
-
-  const { data, loading } = useQuery<
-    GetProfileByHandleQuery,
-    GetProfileByHandleQueryVariables
-  >(GET_PROFILE_BY_HANDLE, {
-    client: apolloClient,
-    variables: { handle },
-  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!handle || handle.length === 0) {
@@ -25,13 +18,27 @@ export function useValidateHandle(handle: string) {
       return;
     }
 
-    if (!data || data.profiles.items.length === 0) {
-      setValid(true);
-      return;
-    }
+    setLoading(true);
 
-    setValid(false);
-  }, [handle, data]);
+    apolloClient
+      .query<GetProfileByHandleQuery, GetProfileByHandleQueryVariables>({
+        query: GET_PROFILE_BY_HANDLE,
+        variables: {
+          handle,
+        },
+      })
+      .then(({ data }) => {
+        //if no profiles have that handle, it is valid
+        if (data.profiles.items.length === 0) setValid(true);
+        else setValid(false);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setValid(false);
+        setLoading(false);
+      });
+  }, [handle]);
 
   return { valid, loading };
 }

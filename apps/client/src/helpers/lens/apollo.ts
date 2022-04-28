@@ -4,18 +4,26 @@ import {
   HttpLink,
   InMemoryCache,
 } from "@apollo/client";
+
+import { useEthersStore } from "../ethers/store";
 import { LOCAL_STORAGE } from "./constants";
 
 const httpLink = new HttpLink({ uri: "https://api-mumbai.lens.dev/" });
 
 const authLink = new ApolloLink((operation, forward) => {
-  const accessToken = localStorage.getItem(LOCAL_STORAGE.ACCESS_TOKEN);
+  const address = useEthersStore.getState().address;
 
-  operation.setContext({
-    headers: {
-      "x-access-token": accessToken ? `Bearer ${accessToken}` : "",
-    },
-  });
+  if (address) {
+    const accessToken = localStorage.getItem(
+      `${address}${LOCAL_STORAGE.ACCESS_TOKEN}`
+    );
+
+    operation.setContext({
+      headers: {
+        "x-access-token": accessToken ? `Bearer ${accessToken}` : "",
+      },
+    });
+  }
 
   return forward(operation);
 });

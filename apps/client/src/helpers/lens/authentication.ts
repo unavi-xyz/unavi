@@ -16,12 +16,14 @@ import {
 
 async function setAccessToken(accessToken: string) {
   const address = useEthersStore.getState().address;
-  const ThirtyMinutesFromNow = new Date(new Date().getTime() + 30 * 60 * 1000);
+  const TwentyNineMinutesFromNow = new Date(
+    new Date().getTime() + 29 * 60 * 1000
+  );
 
   localStorage.setItem(`${address}${LOCAL_STORAGE.ACCESS_TOKEN}`, accessToken);
   localStorage.setItem(
     `${address}${LOCAL_STORAGE.ACCESS_EXPIRE}`,
-    ThirtyMinutesFromNow.toString()
+    TwentyNineMinutesFromNow.toString()
   );
 }
 

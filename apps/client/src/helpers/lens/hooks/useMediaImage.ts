@@ -3,29 +3,30 @@ import { useEffect, useState } from "react";
 import { Profile } from "../../../generated/graphql";
 import { getIpfsUrl } from "../../ipfs/fetch";
 
-export function useProfilePicture(profile: Profile | undefined) {
+export function useMediaImage(image: Profile["picture"] | undefined) {
   const [url, setUrl] = useState<string>();
   const [type, setType] = useState<"media" | "nft">();
 
   useEffect(() => {
-    const picture = profile?.picture;
-
-    if (!picture) {
+    if (!image) {
       setUrl(undefined);
       return;
     }
 
-    if (picture.__typename === "MediaSet") {
+    if (image.__typename === "MediaSet") {
       setType("media");
 
-      getIpfsUrl(picture.original.url).then((res) => {
+      getIpfsUrl(image.original.url).then((res) => {
         setUrl(res);
       });
-    } else {
-      // setType("nft");
-      setUrl(undefined);
+    } else if (image.__typename === "NftImage") {
+      setType("nft");
+
+      getIpfsUrl(image.uri).then((res) => {
+        setUrl(res);
+      });
     }
-  }, [profile]);
+  }, [image]);
 
   return { url, type };
 }

@@ -4,6 +4,7 @@ import {
   MdOutlineWarningAmber,
 } from "react-icons/md";
 import Link from "next/link";
+import Head from "next/head";
 import { useRouter } from "next/router";
 
 import { useLensStore } from "../../../helpers/lens/store";
@@ -27,6 +28,10 @@ export default function SettingsLayout({ children }: Props) {
 
   return (
     <div className="flex justify-center">
+      <Head>
+        <title>Settings · The Wired</title>
+      </Head>
+
       <div className="max-w mx-8 mt-8 flex">
         <div className="max-w-md w-full p-8 space-y-4">
           <Link href={`/user/${handle}`} passHref>

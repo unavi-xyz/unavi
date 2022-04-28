@@ -1,5 +1,4 @@
-import { useProfilePicture } from "../../helpers/lens/hooks/useProfilePicture";
-
+import { useMediaImage } from "../../helpers/lens/hooks/useMediaImage";
 import { Profile } from "../../generated/graphql";
 
 interface Props {
@@ -8,7 +7,7 @@ interface Props {
 }
 
 export default function ProfilePicture({ profile, circle }: Props) {
-  const { url } = useProfilePicture(profile);
+  const { url } = useMediaImage(profile?.picture);
 
   const circleClass = circle ? "rounded-full" : "rounded-xl";
   const identicon = `https://avatar.tobi.sh/${profile?.ownedBy}_${profile?.handle}.png`;

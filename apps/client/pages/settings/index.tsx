@@ -7,7 +7,8 @@ import { AttributeData, ProfileMetadata } from "../../src/helpers/lens/types";
 import { useEthersStore } from "../../src/helpers/ethers/store";
 import { updateMetadata } from "../../src/helpers/lens/updateMetadata";
 import { updateProfilePicture } from "../../src/helpers/lens/updateProfilePicture";
-import { useProfilePicture } from "../../src/helpers/lens/hooks/useProfilePicture";
+import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
+import { uploadFileToIpfs } from "../../src/helpers/ipfs/fetch";
 
 import TextField from "../../src/components/base/TextField";
 import TextArea from "../../src/components/base/TextArea";
@@ -22,22 +23,33 @@ export default function Settings() {
   const twitterRef = useRef<HTMLInputElement>(null);
   const bioRef = useRef<HTMLTextAreaElement>(null);
 
-  const [imageFile, setImageFile] = useState<File>();
-  const [imageUrl, setImageUrl] = useState<string>();
+  const [pfpFile, setPfpFile] = useState<File>();
+  const [pfpUrl, setPfpUrl] = useState<string>();
+  const [coverFile, setCoverFile] = useState<File>();
+  const [coverUrl, setCoverUrl] = useState<string>();
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingProfilePicture, setLoadingProfilePicture] = useState(false);
 
   const handle = useLensStore((state) => state.handle);
   const profile = useProfileByHandle(handle);
-  const { url } = useProfilePicture(profile);
+  const { url: pfpMediaUrl } = useMediaImage(profile?.picture);
+  const { url: coverMediaUrl } = useMediaImage(profile?.coverPicture);
 
   useEffect(() => {
-    setImageUrl(url);
-  }, [url]);
+    setPfpUrl(pfpMediaUrl);
+  }, [pfpMediaUrl]);
 
   useEffect(() => {
-    if (imageFile) setImageUrl(URL.createObjectURL(imageFile));
-  }, [imageFile]);
+    setCoverUrl(coverMediaUrl);
+  }, [coverMediaUrl]);
+
+  useEffect(() => {
+    if (pfpFile) setPfpUrl(URL.createObjectURL(pfpFile));
+  }, [pfpFile]);
+
+  useEffect(() => {
+    if (coverFile) setCoverUrl(URL.createObjectURL(coverFile));
+  }, [coverFile]);
 
   async function handleProfileSave() {
     const signer = useEthersStore.getState().signer;
@@ -45,34 +57,43 @@ export default function Settings() {
 
     setLoadingProfile(true);
 
-    //create metadata
-    const attributes: ProfileMetadata["attributes"] =
-      profile?.attributes?.map((attribute) => {
-        const data: AttributeData = {
-          key: attribute.key,
-          value: attribute.value,
-          traitType: attribute.traitType ?? undefined,
-          displayType: (attribute.displayType as any) ?? undefined,
-        };
-        return data;
-      }) ?? [];
-
-    const metadata: ProfileMetadata = {
-      version: "1.0.0",
-      metadata_id: nanoid(),
-      name: nameRef.current?.value ?? "",
-      bio: bioRef.current?.value ?? "",
-      location: locationRef.current?.value ?? "",
-      cover_picture: "",
-      social: [
-        { key: "website", value: websiteRef.current?.value ?? "" },
-        { key: "twitter", value: twitterRef.current?.value ?? "" },
-      ],
-      attributes,
-    };
-
-    //upload metadata
     try {
+      //upload cover to ipfs
+      const cover_picture: ProfileMetadata["cover_picture"] = coverFile
+        ? await uploadFileToIpfs(coverFile)
+        : profile.coverPicture?.__typename === "MediaSet"
+        ? profile.coverPicture.original.url
+        : profile.coverPicture?.__typename === "NftImage"
+        ? profile.coverPicture.uri
+        : null;
+
+      //create metadata
+      const attributes: ProfileMetadata["attributes"] =
+        profile?.attributes?.map((attribute) => {
+          const data: AttributeData = {
+            key: attribute.key,
+            value: attribute.value,
+            traitType: attribute.traitType ?? undefined,
+            displayType: (attribute.displayType as any) ?? undefined,
+          };
+          return data;
+        }) ?? [];
+
+      const metadata: ProfileMetadata = {
+        version: "1.0.0",
+        metadata_id: nanoid(),
+        name: nameRef.current?.value ?? "",
+        bio: bioRef.current?.value ?? "",
+        location: locationRef.current?.value ?? "",
+        cover_picture,
+        social: [
+          { key: "website", value: websiteRef.current?.value ?? "" },
+          { key: "twitter", value: twitterRef.current?.value ?? "" },
+        ],
+        attributes,
+      };
+
+      //upload metadata
       await updateMetadata(profile, metadata);
     } catch (e) {
       console.error(e);
@@ -83,13 +104,13 @@ export default function Settings() {
   }
 
   async function handleProfilePictureSave() {
-    if (!imageFile || !profile) return;
+    if (!pfpFile || !profile) return;
 
     setLoadingProfilePicture(true);
 
     try {
       //update profile picture
-      await updateProfilePicture(profile, imageFile);
+      await updateProfilePicture(profile, pfpFile);
     } catch (e) {
       console.error(e);
       setLoadingProfilePicture(false);
@@ -136,6 +157,29 @@ export default function Settings() {
             title="Bio"
             defaultValue={profile?.bio}
           />
+
+          <div className="space-y-4">
+            <div className="text-lg font-bold">Cover</div>
+
+            {coverUrl && (
+              <div className="w-full h-40">
+                <img
+                  src={coverUrl}
+                  alt="cover picture preview"
+                  className="object-cover rounded-xl h-full w-full border bg-neutral-100"
+                />
+              </div>
+            )}
+
+            <FileUpload
+              title="Cover Picture"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setCoverFile(file);
+              }}
+            />
+          </div>
         </div>
 
         <Button onClick={handleProfileSave} loading={loadingProfile}>
@@ -146,18 +190,18 @@ export default function Settings() {
       <div className="space-y-8 bg-white rounded-2xl border p-8">
         <div className="font-bold text-xl">Profile Picture</div>
 
-        {imageUrl && (
+        {pfpUrl && (
           <div className="flex space-x-8">
             <div className="w-40 h-40">
               <img
-                src={imageUrl}
+                src={pfpUrl}
                 alt="profile picture preview square"
                 className="object-cover rounded-xl h-full w-full border bg-neutral-100"
               />
             </div>
             <div className="w-40 h-40">
               <img
-                src={imageUrl}
+                src={pfpUrl}
                 alt="profile picture preview circle"
                 className="object-cover rounded-full h-full w-full border bg-neutral-100"
               />
@@ -171,7 +215,7 @@ export default function Settings() {
             accept="image/*"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) setImageFile(file);
+              if (file) setPfpFile(file);
             }}
           />
         </div>
@@ -179,7 +223,7 @@ export default function Settings() {
         <Button
           onClick={handleProfilePictureSave}
           loading={loadingProfilePicture}
-          disabled={!imageFile}
+          disabled={!pfpFile}
         >
           Save
         </Button>

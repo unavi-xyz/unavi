@@ -25,6 +25,20 @@ const PROFILE_INFO = gql`
         }
       }
     }
+    coverPicture {
+      ... on NftImage {
+        contractAddress
+        tokenId
+        uri
+        verified
+      }
+      ... on MediaSet {
+        original {
+          url
+          mimeType
+        }
+      }
+    }
   }
 `;
 

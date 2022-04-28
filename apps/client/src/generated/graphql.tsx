@@ -2366,6 +2366,19 @@ export type ProfileInfoFragment = {
         verified: boolean;
       }
     | null;
+  coverPicture?:
+    | {
+        __typename?: "MediaSet";
+        original: { __typename?: "Media"; url: any; mimeType?: any | null };
+      }
+    | {
+        __typename?: "NftImage";
+        contractAddress: any;
+        tokenId: string;
+        uri: any;
+        verified: boolean;
+      }
+    | null;
 };
 
 export type GetProfilesByAddressQueryVariables = Exact<{
@@ -2388,6 +2401,19 @@ export type GetProfilesByAddressQuery = {
       ownedBy: any;
       metadata?: any | null;
       picture?:
+        | {
+            __typename?: "MediaSet";
+            original: { __typename?: "Media"; url: any; mimeType?: any | null };
+          }
+        | {
+            __typename?: "NftImage";
+            contractAddress: any;
+            tokenId: string;
+            uri: any;
+            verified: boolean;
+          }
+        | null;
+      coverPicture?:
         | {
             __typename?: "MediaSet";
             original: { __typename?: "Media"; url: any; mimeType?: any | null };
@@ -2434,6 +2460,19 @@ export type GetDefaultProfileQuery = {
           verified: boolean;
         }
       | null;
+    coverPicture?:
+      | {
+          __typename?: "MediaSet";
+          original: { __typename?: "Media"; url: any; mimeType?: any | null };
+        }
+      | {
+          __typename?: "NftImage";
+          contractAddress: any;
+          tokenId: string;
+          uri: any;
+          verified: boolean;
+        }
+      | null;
   } | null;
 };
 
@@ -2457,6 +2496,19 @@ export type GetProfileByHandleQuery = {
       ownedBy: any;
       metadata?: any | null;
       picture?:
+        | {
+            __typename?: "MediaSet";
+            original: { __typename?: "Media"; url: any; mimeType?: any | null };
+          }
+        | {
+            __typename?: "NftImage";
+            contractAddress: any;
+            tokenId: string;
+            uri: any;
+            verified: boolean;
+          }
+        | null;
+      coverPicture?:
         | {
             __typename?: "MediaSet";
             original: { __typename?: "Media"; url: any; mimeType?: any | null };
@@ -2726,6 +2778,20 @@ export const ProfileInfoFragmentDoc = gql`
     ownedBy
     metadata
     picture {
+      ... on NftImage {
+        contractAddress
+        tokenId
+        uri
+        verified
+      }
+      ... on MediaSet {
+        original {
+          url
+          mimeType
+        }
+      }
+    }
+    coverPicture {
       ... on NftImage {
         contractAddress
         tokenId

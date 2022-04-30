@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 import Link from "next/link";
 
-import { useLocalSceneIds } from "../../src/helpers/indexeddb/localScenes/useLocalSceneIds";
+import { useLocalSpaces } from "../../src/helpers/indexeddb/localSpaces/useLocalSpaces";
 import { IconButton } from "../../src/components/base";
 import SceneCard from "../../src/home/scene/SceneCard";
 import NewSceneDialog from "../../src/home/scene/NewSceneDialog";
@@ -12,7 +12,7 @@ import SidebarLayout from "../../src/components/SidebarLayout/SidebarLayout";
 export default function Editor() {
   const [openNew, setOpenNew] = useState(false);
 
-  const localScenesIds = useLocalSceneIds();
+  const localScenesIds = useLocalSpaces();
 
   function handleNew() {
     setOpenNew(true);

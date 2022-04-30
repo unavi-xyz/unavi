@@ -1,13 +1,13 @@
 import { useEffect } from "react";
-import { mergeLocalScene } from "../../../helpers/indexeddb/localScenes/db";
-import { useLocalScene } from "../../../helpers/indexeddb/localScenes/useLocalScene";
+import { mergeLocalSpace } from "../../../helpers/indexeddb/localSpaces/db";
+import { useLocalSpace } from "../../../helpers/indexeddb/localSpaces/useLocalScene";
 
 import { sceneManager, useStore } from "../store";
 
 export function useAutosave() {
   const sceneId = useStore((state) => state.sceneId);
 
-  const localScene = useLocalScene(sceneId);
+  const localScene = useLocalSpace(sceneId);
 
   useEffect(() => {
     //initial load
@@ -25,7 +25,7 @@ export function useAutosave() {
     function save() {
       sceneManager.pruneAssets();
       const scene = useStore.getState().scene;
-      mergeLocalScene(sceneId, { scene });
+      mergeLocalSpace(sceneId, { scene });
     }
 
     const interval = setInterval(save, 5000);

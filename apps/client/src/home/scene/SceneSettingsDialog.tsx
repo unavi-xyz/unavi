@@ -2,12 +2,12 @@ import { Dispatch, SetStateAction, useRef } from "react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
 
-import { useLocalScene } from "../../helpers/indexeddb/localScenes/useLocalScene";
+import { useLocalSpace } from "../../helpers/indexeddb/localSpaces/useLocalScene";
 import { Button, Dialog, TextField } from "../../components/base";
 import {
-  deleteLocalScene,
-  mergeLocalScene,
-} from "../../helpers/indexeddb/localScenes/db";
+  deleteLocalSpace,
+  mergeLocalSpace,
+} from "../../helpers/indexeddb/localSpaces/db";
 
 interface Props {
   id: string;
@@ -21,13 +21,13 @@ export default function SceneSettingsDialog({ id, open, setOpen }: Props) {
 
   const router = useRouter();
   const queryClient = useQueryClient();
-  const localScene = useLocalScene(id);
+  const localScene = useLocalSpace(id);
 
   async function handleSave() {
     const name = nameRef.current.value;
     const description = descriptionRef.current.value;
 
-    await mergeLocalScene(id, {
+    await mergeLocalSpace(id, {
       name,
       description,
     });
@@ -37,7 +37,7 @@ export default function SceneSettingsDialog({ id, open, setOpen }: Props) {
   }
 
   async function handleDelete() {
-    await deleteLocalScene(id);
+    await deleteLocalSpace(id);
     router.push("/editor");
   }
 

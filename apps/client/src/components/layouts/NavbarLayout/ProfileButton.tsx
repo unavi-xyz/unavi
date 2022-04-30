@@ -1,28 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
+import DropdownMenu from "../../base/DropdownMenu";
 import ProfileMenu from "./ProfileMenu";
 
 export default function ProfileButton() {
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    //if the user clicks outside of the profile menu, close it
-    function handleClickOutside(event: MouseEvent) {
-      if (open) setOpen(false);
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [open]);
-
   return (
     <div className="flex items-center space-x-2">
       <div className="relative">
         <div
-          onMouseDown={(e) => {
+          onClick={(e) => {
             e.stopPropagation();
             setOpen((prev) => !prev);
           }}
@@ -31,11 +20,14 @@ export default function ProfileButton() {
           <ViewerProfilePicture circle />
         </div>
 
-        <div
-          onMouseDown={(e) => e.stopPropagation()}
-          className="absolute mt-1 right-0"
-        >
-          <ProfileMenu open={open} />
+        <div className="mt-1">
+          <DropdownMenu
+            placement="right"
+            open={open}
+            onClose={() => setOpen(false)}
+          >
+            <ProfileMenu />
+          </DropdownMenu>
         </div>
       </div>
     </div>

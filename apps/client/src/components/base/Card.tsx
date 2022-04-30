@@ -14,7 +14,7 @@ export default function Card({ image, text, subtext }: Props) {
         {image && (
           <img
             src={image}
-            alt="scene image"
+            alt="card image"
             className="w-full h-full object-cover group-hover:scale-110
                        transition-all duration-700 ease-in-out"
           />

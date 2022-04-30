@@ -32,7 +32,7 @@ export default function SettingsLayout({ children }: Props) {
         <title>Settings · The Wired</title>
       </Head>
 
-      <div className="max-w mx-8 mt-8 flex">
+      <div className="max-w mx-8 my-8 flex">
         <div className="max-w-md w-full p-8 space-y-4">
           <Link href={`/user/${handle}`} passHref>
             <div className="flex space-x-4 cursor-pointer">

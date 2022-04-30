@@ -45,13 +45,13 @@ export default function User() {
       />
 
       <div className="flex justify-center">
-        <div className="max-w mx-8">
-          <div className="w-64 space-y-8">
+        <div className="max-w mx-8 flex space-x-12">
+          <div className="w-64 flex-shrink-0 space-y-6">
             <div className="h-32">
               <div className="relative w-full">
                 <div
-                  className="absolute bottom-0 transform translate-y-1/2
-                             h-64 w-64 rounded-xl ring-8 ring-neutral-100"
+                  className="absolute -bottom-32 transform
+                             rounded-xl ring-8 ring-neutral-100"
                 >
                   <ProfilePicture profile={profile} />
                 </div>
@@ -129,6 +129,22 @@ export default function User() {
                 </ProfileRow>
               )}
             </div>
+          </div>
+
+          <div className="w-full p-4 space-y-4">
+            <div className="flex items-center justify-center w-full space-x-4">
+              <div className="font-bold bg-neutral-200 rounded-lg px-3 py-1 cursor-pointer">
+                Spaces
+              </div>
+              <div className="font-bold hover:bg-neutral-200 rounded-lg px-3 py-1 cursor-pointer">
+                Mirrors
+              </div>
+              <div className="font-bold hover:bg-neutral-200 rounded-lg px-3 py-1 cursor-pointer">
+                Avatars
+              </div>
+            </div>
+
+            <div className="h-24 bg-white rounded-xl border"></div>
           </div>
         </div>
       </div>

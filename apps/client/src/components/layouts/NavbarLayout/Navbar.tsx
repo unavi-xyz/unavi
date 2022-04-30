@@ -24,7 +24,7 @@ export default function Navbar() {
         <div className="w-full flex items-center justify-center space-x-6">
           <NavbarTextButton text="Home" href="/" />
           <NavbarTextButton text="Explore" href="/explore" />
-          <NavbarTextButton text="Studio" href="/studio" />
+          <NavbarTextButton text="Create" href="/create" />
         </div>
 
         <div className="w-full flex items-center justify-end">

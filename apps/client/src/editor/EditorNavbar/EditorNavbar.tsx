@@ -7,8 +7,8 @@ import { editorManager, useStore } from "../helpers/store";
 
 import MiddleButtons from "./MiddleButtons";
 import { Tooltip } from "../../components/base";
-import { useLocalScene } from "../../helpers/indexeddb/localScenes/useLocalScene";
-import { mergeLocalScene } from "../../helpers/indexeddb/localScenes/db";
+import { useLocalSpace } from "../../helpers/indexeddb/localSpaces/useLocalScene";
+import { mergeLocalSpace } from "../../helpers/indexeddb/localSpaces/db";
 
 interface Props {
   id: string;
@@ -16,14 +16,14 @@ interface Props {
 
 export default function EditorNavbar({ id }: Props) {
   const router = useRouter();
-  const localScene = useLocalScene(id);
+  const localScene = useLocalSpace(id);
 
   const debugMode = useStore((state) => state.debugMode);
 
   async function handleBack() {
     const canvas = document.querySelector("canvas");
     const image = canvas.toDataURL("image/jpeg", 0.5);
-    await mergeLocalScene(id, { image });
+    await mergeLocalSpace(id, { image });
     router.push(`/editor/${id}`);
   }
 

@@ -1,9 +1,7 @@
-import { ReactChild } from "react";
-
 interface Props {
   text?: string;
   placement?: "left" | "right" | "bottom" | "top";
-  children: ReactChild;
+  children: React.ReactChild;
 }
 
 export default function Tooltip({ text, placement = "left", children }: Props) {
@@ -25,8 +23,8 @@ export default function Tooltip({ text, placement = "left", children }: Props) {
           className={`absolute flex flex-col items-center min-w-max ${margin}`}
         >
           <span
-            className="relative z-10 p-2 text-xs leading-none rounded w-full
-                     text-white whitespace-no-wrap bg-black shadow-lg
+            className="relative z-10 px-3 py-2 text-xs leading-none rounded-lg w-full
+                     text-white whitespace-no-wrap bg-black shadow-lg font-bold
                        scale-0 group-hover:scale-100 transition-all duration-300"
           >
             {text}

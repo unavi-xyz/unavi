@@ -1,31 +1,19 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { customAlphabet } from "nanoid";
 
-import { LocalSpace } from "../../src/helpers/indexeddb/localSpaces/types";
-import { createLocalSpace } from "../../src/helpers/indexeddb/localSpaces/db";
-import { useLocalSpaces } from "../../src/helpers/indexeddb/localSpaces/useLocalSpaces";
+import { createNewLocalSpace } from "../../src/helpers/indexedDB/localSpaces/helpers";
+import { useLocalSpaces } from "../../src/helpers/indexedDB/localSpaces/hooks/useLocalSpaces";
 
 import LocalSpaceCard from "../../src/components/ui/LocalSpaceCard";
 import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
-
-const nanoid = customAlphabet("0123456789", 12);
 
 export default function Create() {
   const router = useRouter();
   const localSpaces = useLocalSpaces();
 
   async function handleNewSpace() {
-    const localSpace: LocalSpace = {
-      id: nanoid(),
-      name: "My Space",
-      description: "",
-      scene: {} as any,
-    };
-
-    await createLocalSpace(localSpace);
-
-    router.push(`/create/${localSpace.id}`);
+    const { id } = await createNewLocalSpace();
+    router.push(`/create/${id}`);
   }
 
   return (
@@ -48,7 +36,7 @@ export default function Create() {
             <div
               onClick={handleNewSpace}
               className="h-96 rounded-3xl border border-dashed flex items-center justify-center
-                         hover:shadow-lg transition-all cursor-pointer duration-500
+                         hover:shadow-lg transition-all cursor-pointer duration-300
                          border-neutral-300"
             >
               <div className="text-neutral-500 flex flex-col items-center justify-center">

@@ -2,12 +2,12 @@ import { Dispatch, SetStateAction, useRef } from "react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
 
-import { useLocalSpace } from "../../helpers/indexeddb/localSpaces/useLocalScene";
+import { useLocalSpace } from "../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
 import { Button, Dialog, TextField } from "../../components/base";
 import {
   deleteLocalSpace,
-  mergeLocalSpace,
-} from "../../helpers/indexeddb/localSpaces/db";
+  updateLocalSpace,
+} from "../../helpers/indexedDB/localSpaces/helpers";
 
 interface Props {
   id: string;
@@ -27,7 +27,7 @@ export default function SceneSettingsDialog({ id, open, setOpen }: Props) {
     const name = nameRef.current.value;
     const description = descriptionRef.current.value;
 
-    await mergeLocalSpace(id, {
+    await updateLocalSpace(id, {
       name,
       description,
     });

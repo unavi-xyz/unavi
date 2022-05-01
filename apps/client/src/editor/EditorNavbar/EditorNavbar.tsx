@@ -7,8 +7,8 @@ import { editorManager, useStore } from "../helpers/store";
 
 import MiddleButtons from "./MiddleButtons";
 import { Tooltip } from "../../components/base";
-import { useLocalSpace } from "../../helpers/indexeddb/localSpaces/useLocalScene";
-import { mergeLocalSpace } from "../../helpers/indexeddb/localSpaces/db";
+import { useLocalSpace } from "../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
+import { updateLocalSpace } from "../../helpers/indexedDB/localSpaces/helpers";
 
 interface Props {
   id: string;
@@ -23,7 +23,7 @@ export default function EditorNavbar({ id }: Props) {
   async function handleBack() {
     const canvas = document.querySelector("canvas");
     const image = canvas.toDataURL("image/jpeg", 0.5);
-    await mergeLocalSpace(id, { image });
+    await updateLocalSpace(id, { image });
     router.push(`/editor/${id}`);
   }
 

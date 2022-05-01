@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { LocalSpace } from "../../helpers/indexeddb/localSpaces/types";
+import { LocalSpace } from "../../helpers/indexedDB/localSpaces/types";
 import Card from "../base/Card";
 
 interface Props {

@@ -3,7 +3,10 @@ import { useRouter } from "next/router";
 import { customAlphabet } from "nanoid";
 
 import { Button, Dialog, TextField } from "../../components/base";
-import { createLocalSpace } from "../../helpers/indexeddb/localSpaces/db";
+import {
+  createLocalSpace,
+  createNewLocalSpace,
+} from "../../helpers/indexedDB/localSpaces/helpers";
 
 const nanoid = customAlphabet("0123456789", 12);
 
@@ -24,7 +27,7 @@ export default function NewSceneDialog({ open, setOpen }: Props) {
     const description = descriptionRef.current.value;
     const scene = null;
 
-    await createLocalSpace({
+    await createNewLocalSpace({
       id,
       name,
       description,

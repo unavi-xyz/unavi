@@ -2,7 +2,7 @@ import { TreeObject } from "../types";
 import { ObjectComponent } from "./ObjectComponent";
 
 interface Props {
-  object: TreeObject<any>;
+  object: TreeObject;
 }
 
 export function InstancedObject({ object }: Props) {

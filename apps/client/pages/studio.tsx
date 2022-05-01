@@ -2,11 +2,11 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 
-import { getLocalSpace } from "../src/helpers/indexeddb/localSpaces/db";
 import { useStudioStore } from "../src/helpers/studio/store";
+import { useAutosave } from "../src/helpers/studio/hooks/useAutosave";
 
 import StudioNavbar from "../src/components/studio/StudioNavbar/StudioNavbar";
-import StudioCanvas from "../src/components/studio/StudioCanvas";
+import StudioCanvas from "../src/components/studio/StudioCanvas/StudioCanvas";
 import InspectMenu from "../src/components/studio/InspectMenu";
 import TreeMenu from "../src/components/studio/TreeMenu/TreeMenu";
 
@@ -14,17 +14,10 @@ export default function Studio() {
   const router = useRouter();
   const id = router.query.id as string;
 
+  useAutosave();
+
   useEffect(() => {
-    if (!id) return;
-
-    async function createScene() {
-      const localSpace = await getLocalSpace(id);
-      if (!localSpace) throw new Error("Space not found");
-
-      useStudioStore.setState({ id: localSpace.id, name: localSpace.name });
-    }
-
-    createScene().catch(console.error);
+    useStudioStore.setState({ id });
   }, [id]);
 
   return (

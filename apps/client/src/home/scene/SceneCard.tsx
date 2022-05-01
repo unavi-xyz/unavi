@@ -1,5 +1,5 @@
 import { Card } from "../../components/base";
-import { useLocalSpace } from "../../helpers/indexeddb/localSpaces/useLocalScene";
+import { useLocalSpace } from "../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
 
 interface Props {
   id: string;

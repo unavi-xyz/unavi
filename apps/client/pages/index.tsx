@@ -6,11 +6,11 @@ import Chip from "../src/components/base/Chip";
 export default function Index() {
   return (
     <div className="h-72 flex justify-center border-b bg-white">
-      <div className="max-w space-y-3 flex flex-col justify-center">
+      <div className="max-w px-8 space-y-3 flex flex-col justify-center">
         <div className="text-4xl font-black">Welcome to The Wired 👋</div>
-        <div className="text-lg text-gray-700">
-          The Wired is a decentralized, open source, VR social platform built in
-          the browser
+        <div className="text-lg text-gray-600">
+          The Wired is a decentralized, open source, browser-based, VR social
+          platform
         </div>
 
         <div className="flex space-x-4">

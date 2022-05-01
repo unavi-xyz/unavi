@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { getLocalSpace } from "./db";
-import { LocalSpace } from "./types";
+import { getLocalSpace } from "../helpers";
+import { LocalSpace } from "../types";
 
 export function useLocalSpace(id: string | undefined) {
   const [localSpace, setLocalSpace] = useState<LocalSpace>();

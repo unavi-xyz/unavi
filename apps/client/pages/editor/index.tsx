@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 import Link from "next/link";
 
-import { useLocalSpaces } from "../../src/helpers/indexeddb/localSpaces/useLocalSpaces";
+import { useLocalSpaces } from "../../src/helpers/indexedDB/localSpaces/useLocalSpaces";
 import { IconButton } from "../../src/components/base";
 import SceneCard from "../../src/home/scene/SceneCard";
 import NewSceneDialog from "../../src/home/scene/NewSceneDialog";

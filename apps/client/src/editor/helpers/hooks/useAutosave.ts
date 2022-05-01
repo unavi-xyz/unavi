@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { mergeLocalSpace } from "../../../helpers/indexeddb/localSpaces/db";
-import { useLocalSpace } from "../../../helpers/indexeddb/localSpaces/useLocalScene";
+import { updateLocalSpace } from "../../../helpers/indexedDB/localSpaces/helpers";
+import { useLocalSpace } from "../../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
 
 import { sceneManager, useStore } from "../store";
 
@@ -25,7 +25,7 @@ export function useAutosave() {
     function save() {
       sceneManager.pruneAssets();
       const scene = useStore.getState().scene;
-      mergeLocalSpace(sceneId, { scene });
+      updateLocalSpace(sceneId, { scene });
     }
 
     const interval = setInterval(save, 5000);

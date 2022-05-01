@@ -8,7 +8,7 @@ import { createSpace, IpfsContext, uploadFileToIpfs, useAuth } from "ceramic";
 import { JsonScene } from "3d";
 
 import { dataUrlToFile } from "../../../src/helpers/files";
-import { useLocalSpace } from "../../../src/helpers/indexeddb/localSpaces/useLocalScene";
+import { useLocalSpace } from "../../../src/helpers/indexedDB/localSpaces/hooks/useLocalScene";
 import { IconButton } from "../../../src/components/base";
 
 import SidebarLayout from "../../../src/components/SidebarLayout/SidebarLayout";

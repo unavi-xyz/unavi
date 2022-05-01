@@ -1,9 +1,8 @@
 import { useStudioStore } from "../../../helpers/studio/store";
-
 import TreeMenuItem from "./TreeMenuItem";
 
 export default function TreeMenu() {
-  const children = useStudioStore((state) => state.tree.children);
+  const children = useStudioStore((state) => state.scene.tree.children);
 
   return (
     <div

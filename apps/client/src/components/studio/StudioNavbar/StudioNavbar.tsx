@@ -2,7 +2,7 @@ import { MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
 import Link from "next/link";
 
-import { useLocalSpace } from "../../../helpers/indexeddb/localSpaces/useLocalScene";
+import { useLocalSpace } from "../../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
 
 import ObjectButton from "./ObjectButton";
 

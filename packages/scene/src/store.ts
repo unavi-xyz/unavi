@@ -2,9 +2,10 @@ import { GetState, SetState } from "zustand";
 import { nanoid } from "nanoid";
 import produce from "immer";
 
-import { TreeObject } from "./types";
+import { PrimitiveTreeObject, Scene, TreeObject } from "./types";
 import { findObjectById } from "./helpers";
 import { Primitive, PRIMITIVES } from "./primitives";
+import { DEFAULT_SCENE } from "./constants";
 
 export type StoreSlice<T extends object, E extends object = T> = (
   set: SetState<E extends T ? E : E & T>,
@@ -15,48 +16,50 @@ export interface ISceneSlice {
   id: string;
   name: string;
 
-  tree: TreeObject<Primitive>;
+  scene: Scene;
 
   addPrimitive: (primitive: Primitive, parentId?: string) => void;
+  updateObject: (id: string, object: Partial<TreeObject["params"]>) => void;
 }
 
-export const createSceneSlice: StoreSlice<ISceneSlice> = (set) => ({
+export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
   id: "",
   name: "",
 
-  tree: {
-    id: "root",
-    name: "root",
-    parent: undefined,
-    children: [],
-    primitive: "Group",
-    params: undefined as never,
-  },
+  scene: DEFAULT_SCENE,
 
-  addPrimitive: (primitive: Primitive, parentId = undefined) => {
+  addPrimitive(primitive: Primitive, parentId = undefined) {
     set(
       produce((draft: ISceneSlice) => {
-        const object: TreeObject<typeof primitive> = {
+        const object: PrimitiveTreeObject<typeof primitive> = {
+          type: "Primitive",
+
           id: nanoid(),
           name: primitive,
-          parent: undefined,
+
           children: [],
+
           primitive,
           params: PRIMITIVES[primitive].default,
         };
 
         if (!parentId) {
-          draft.tree.children.push(object);
+          draft.scene.tree.children.push(object);
           return;
         }
 
         //find parent
-        const found = findObjectById(draft.tree, parentId);
+        const found = findObjectById(draft.scene.tree, parentId);
+        if (found) found.children.push(object);
+      })
+    );
+  },
 
-        if (found) {
-          object.parent = found;
-          found.children.push(object);
-        }
+  updateObject(id: string, params: Partial<TreeObject["params"]>) {
+    set(
+      produce((draft: ISceneSlice) => {
+        const found = findObjectById(draft.scene.tree, id);
+        if (found) Object.assign(found.params, params);
       })
     );
   },

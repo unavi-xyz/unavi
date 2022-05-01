@@ -14,11 +14,18 @@ export default function Navbar() {
     <div className="bg-white w-full h-full flex justify-center border-b">
       <div className="max-w mx-8 flex items-center justify-between">
         <div className="w-full">
-          <Link href="/" passHref>
-            <div className="cursor-pointer">
-              <Image width={32} height={32} src="/images/plug.png" alt="plug" />
-            </div>
-          </Link>
+          <div className="w-fit">
+            <Link href="/" passHref>
+              <div className="cursor-pointer">
+                <Image
+                  width={32}
+                  height={32}
+                  src="/images/plug.png"
+                  alt="plug"
+                />
+              </div>
+            </Link>
+          </div>
         </div>
 
         <div className="w-full flex items-center justify-center space-x-6">

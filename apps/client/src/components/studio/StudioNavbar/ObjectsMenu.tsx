@@ -1,4 +1,4 @@
-import { PRIMITIVES } from "scene";
+import { Primitive, PRIMITIVES } from "scene";
 import { useStudioStore } from "../../../helpers/studio/store";
 
 export default function ObjectsMenu() {
@@ -11,7 +11,10 @@ export default function ObjectsMenu() {
         {Object.keys(PRIMITIVES).map((primitive) => (
           <button
             key={primitive}
-            onClick={() => addPrimitive(primitive, selected?.id)}
+            onClick={() => {
+              const object = addPrimitive(primitive as Primitive, selected?.id);
+              useStudioStore.setState({ selected: object });
+            }}
             className="w-full flex cursor-pointer hover:bg-neutral-100 rounded-md px-3 py-1"
           >
             {primitive}

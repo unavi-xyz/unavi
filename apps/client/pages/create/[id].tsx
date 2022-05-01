@@ -21,27 +21,41 @@ export default function Id() {
     );
 
   return (
-    <div className="flex justify-center my-8">
+    <>
       <Head>
         <title>{localSpace.name} · The Wired</title>
       </Head>
 
-      <div className="max-w flex space-x-8 h-[500px]">
-        <div className="w-full bg-neutral-200 rounded-3xl"></div>
-        <div className="w-full flex flex-col justify-between">
-          <div className="font-black text-2xl flex justify-center">
-            {localSpace.name}
-          </div>
-          <div></div>
-
-          <Link href={`/studio?id=${localSpace.id}`} passHref>
-            <div>
-              <Button outline>Open Studio</Button>
+      <div className="mx-8 h-full">
+        <div className="max-w mx-auto py-8 w-full h-full">
+          <div className="flex space-x-8 h-full">
+            <div className="bg-neutral-200 rounded-3xl aspect-mobile">
+              {localSpace.image && (
+                <img
+                  src={localSpace.image}
+                  alt={localSpace.name}
+                  className="object-cover rounded-3xl h-full"
+                />
+              )}
             </div>
-          </Link>
+
+            <div className="w-full min-w-fit flex flex-col space-y-8">
+              <div className="font-black text-3xl flex justify-center">
+                {localSpace.name}
+              </div>
+              {localSpace.description.length > 0 && (
+                <div>{localSpace.description}</div>
+              )}
+              <Link href={`/studio?id=${localSpace.id}`} passHref>
+                <div>
+                  <Button outline>Open Studio</Button>
+                </div>
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

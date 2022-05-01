@@ -22,7 +22,7 @@ export default function Create() {
         <title>Create · The Wired</title>
       </Head>
 
-      <div className="flex justify-center py-8">
+      <div className="flex justify-center py-8 mx-8">
         <div className="max-w space-y-8">
           <div className="flex flex-col items-center justify-center space-x-8">
             <div className="font-black text-3xl">Create</div>
@@ -35,9 +35,9 @@ export default function Create() {
 
             <div
               onClick={handleNewSpace}
-              className="h-96 rounded-3xl border border-dashed flex items-center justify-center
+              className="rounded-3xl border border-dashed flex items-center justify-center
                          hover:shadow-lg transition-all cursor-pointer duration-300
-                         border-neutral-300"
+                         border-neutral-300 aspect-mobile"
             >
               <div className="text-neutral-500 flex flex-col items-center justify-center">
                 <div className="text-3xl">+</div>

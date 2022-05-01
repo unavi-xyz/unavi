@@ -10,7 +10,7 @@ export default function NavbarLayout({ children }: Props) {
       <div className="w-full h-14 fixed">
         <Navbar />
       </div>
-      <div className="w-full h-full mt-14">{children}</div>
+      <div className="w-full h-full pt-14">{children}</div>
     </div>
   );
 }

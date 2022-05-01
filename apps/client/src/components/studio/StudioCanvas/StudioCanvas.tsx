@@ -11,7 +11,7 @@ export default function StudioCanvas() {
   const tree = useStudioStore((state) => state.scene.tree);
 
   return (
-    <Canvas>
+    <Canvas gl={{ preserveDrawingBuffer: true }}>
       <ambientLight intensity={0.2} />
       <directionalLight intensity={1} position={[-1, 1.5, -2]} />
 

@@ -10,6 +10,9 @@ module.exports = {
       backgroundImage: {
         arrow: "url('/images/arrow.svg')",
       },
+      aspectRatio: {
+        mobile: "9/16",
+      },
     },
   },
   plugins: [],

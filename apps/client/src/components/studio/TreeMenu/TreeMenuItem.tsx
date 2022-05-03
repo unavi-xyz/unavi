@@ -116,7 +116,7 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
   const hasChildren = object.children.length > 0;
   const isSelected = selectedId === object.id;
   const bgClass = isSelected || isOver ? "bg-neutral-100" : "";
-  const paddingClass = isRoot ? "" : "pl-4";
+  const paddingClass = isRoot ? "" : "ml-4";
   const opacityClass = isDragging ? "opacity-0" : "";
   const highlightAboveClass = isOverAbove ? "bg-neutral-200" : "";
   const highlightBelowClass = isOverBelow ? "bg-neutral-200" : "";

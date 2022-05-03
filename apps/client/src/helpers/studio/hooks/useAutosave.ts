@@ -8,6 +8,7 @@ import {
 
 export function useAutosave() {
   const id = useStudioStore((state) => state.id);
+  const scene = useStudioStore((state) => state.scene);
 
   // load initial space
   useEffect(() => {
@@ -27,11 +28,7 @@ export function useAutosave() {
 
   // autosave on an interval
   useEffect(() => {
-    const interval = setInterval(() => {
-      const scene = useStudioStore.getState().scene;
-      updateLocalSpace(id, { scene });
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [id]);
+    if (!id) return;
+    updateLocalSpace(id, { scene });
+  }, [id, scene]);
 }

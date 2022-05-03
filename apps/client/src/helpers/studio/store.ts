@@ -9,7 +9,7 @@ import { Tool } from "./types";
 export interface IStudioStore extends ISceneSlice {
   tool: Tool;
   usingGizmo: boolean;
-  selected: TreeObject | undefined;
+  selectedId: string | undefined;
   treeRefs: { [id: string]: MutableRefObject<Group | undefined> };
 
   setRef: (id: string, ref: MutableRefObject<Group | undefined>) => void;
@@ -18,9 +18,9 @@ export interface IStudioStore extends ISceneSlice {
 
 export const useStudioStore = create<IStudioStore>(
   (set: SetState<IStudioStore>, get: GetState<IStudioStore>) => ({
-    tool: "Translate",
+    tool: "translate",
     usingGizmo: false,
-    selected: undefined,
+    selectedId: undefined,
 
     treeRefs: {},
 

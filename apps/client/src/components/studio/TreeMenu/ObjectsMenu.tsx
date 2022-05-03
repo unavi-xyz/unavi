@@ -2,7 +2,7 @@ import { Primitive, PRIMITIVES } from "scene";
 import { useStudioStore } from "../../../helpers/studio/store";
 
 export default function ObjectsMenu() {
-  const selected = useStudioStore((state) => state.selected);
+  const selectedId = useStudioStore((state) => state.selectedId);
   const addPrimitive = useStudioStore((state) => state.addPrimitive);
 
   return (
@@ -12,8 +12,8 @@ export default function ObjectsMenu() {
           <button
             key={primitive}
             onClick={() => {
-              const object = addPrimitive(primitive as Primitive, selected?.id);
-              useStudioStore.setState({ selected: object });
+              const object = addPrimitive(primitive as Primitive, selectedId);
+              useStudioStore.setState({ selectedId: object.id });
             }}
             className="w-full flex cursor-pointer hover:bg-neutral-100 rounded-md px-3 py-1"
           >

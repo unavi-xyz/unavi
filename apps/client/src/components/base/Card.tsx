@@ -7,7 +7,7 @@ interface Props {
 export default function Card({ image, text, subtext }: Props) {
   return (
     <div
-      className="p-3 pb-6 aspect-mobile w-full h-full overflow-hidden rounded-3xl hover:cursor-pointer
+      className="group p-3 pb-6 aspect-mobile w-full h-full overflow-hidden rounded-3xl hover:cursor-pointer
                  flex flex-col space-y-4 hover:shadow-lg transition-all duration-300"
     >
       <div className="h-full overflow-hidden rounded-2xl bg-neutral-100">

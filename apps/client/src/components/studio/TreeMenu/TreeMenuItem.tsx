@@ -10,11 +10,11 @@ interface Props {
 }
 
 export default function TreeMenuItem({ object }: Props) {
-  const selected = useStudioStore((state) => state.selected);
+  const selectedId = useStudioStore((state) => state.selectedId);
   const [open, setOpen] = useState(true);
 
   const hasChildren = object.children.length > 0;
-  const isSelected = selected?.id === object.id;
+  const isSelected = selectedId === object.id;
   const selectedClass = isSelected ? "bg-neutral-100" : "";
 
   return (
@@ -22,7 +22,7 @@ export default function TreeMenuItem({ object }: Props) {
       <div
         onClick={(e) => {
           e.stopPropagation();
-          useStudioStore.setState({ selected: object });
+          useStudioStore.setState({ selectedId: object.id });
         }}
         className={`font-bold hover:bg-neutral-100 rounded-md px-2 cursor-pointer
                    flex items-center ${selectedClass}`}

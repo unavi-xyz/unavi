@@ -1,9 +1,12 @@
-import produce from "immer";
 import { useEffect, useRef, useState } from "react";
+import { Group, Vector3 } from "three";
+import produce from "immer";
+
 import { ObjectComponent, TreeObject } from "scene";
-import { Group } from "three";
 
 import { useStudioStore } from "../../../helpers/studio/store";
+
+const tempVec3 = new Vector3();
 
 interface Props {
   object: TreeObject;
@@ -25,7 +28,7 @@ export default function StudioInstancedObject({ object }: Props) {
   //strip position and rotation from the object
   //we add them to the group at this level
   //so that we can use the group as a reference for Gizmo
-  //? could this be moved into ObjectComponent?
+  //? should this be moved into ObjectComponent?
   useEffect(() => {
     if (!ref.current || !object?.params) {
       setUsedObject(object);
@@ -34,8 +37,10 @@ export default function StudioInstancedObject({ object }: Props) {
       return;
     }
 
-    ref.current.position.set(...object.params.position);
-    ref.current.rotation.set(...object.params.rotation);
+    ref.current.position.fromArray(object.params.position);
+    ref.current.rotation.setFromVector3(
+      tempVec3.fromArray(object.params.rotation)
+    );
 
     const newObject = produce(object, (draft) => {
       if (draft.params) {
@@ -52,7 +57,7 @@ export default function StudioInstancedObject({ object }: Props) {
       ref={ref}
       onClick={(e) => {
         e.stopPropagation();
-        useStudioStore.setState({ selected: object });
+        useStudioStore.setState({ selectedId: object.id });
       }}
     >
       {usedObject && (

@@ -1,13 +1,14 @@
 import { Triplet } from "@react-three/cannon";
 import { TransformControls } from "@react-three/drei";
+import { useAtomValue } from "jotai";
 
+import { selectedAtom, selectedRefAtom } from "../../../helpers/studio/atoms";
 import { useStudioStore } from "../../../helpers/studio/store";
 
 export default function Gizmo() {
-  const selected = useStudioStore((state) => state.selected);
-  const selectedRef = useStudioStore((state) =>
-    selected?.id ? state.treeRefs[selected.id] : null
-  );
+  const selected = useAtomValue(selectedAtom);
+  const selectedRef = useAtomValue(selectedRefAtom);
+  const tool = useStudioStore((state) => state.tool);
 
   const visible = Boolean(selected) && Boolean(selectedRef);
 
@@ -38,6 +39,7 @@ export default function Gizmo() {
   return (
     <TransformControls
       object={selectedRef?.current}
+      mode={tool}
       showX={visible}
       showY={visible}
       showZ={visible}

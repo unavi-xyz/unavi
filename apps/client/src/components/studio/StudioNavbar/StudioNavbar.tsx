@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { useRouter } from "next/router";
+import { VscMove, VscSync } from "react-icons/vsc";
+import { CgArrowsExpandUpRight } from "react-icons/cg";
 
 import { useLocalSpace } from "../../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
-
-import ObjectButton from "./ObjectButton";
 import { updateLocalSpace } from "../../../helpers/indexedDB/localSpaces/helpers";
+
+import ToolButton from "./ToolButton";
 
 export default function StudioNavbar() {
   const router = useRouter();
@@ -39,7 +41,15 @@ export default function StudioNavbar() {
       </div>
 
       <div className="w-full h-full flex justify-center items-center space-x-2 p-2">
-        <ObjectButton />
+        <ToolButton tool="translate">
+          <VscMove />
+        </ToolButton>
+        <ToolButton tool="rotate">
+          <VscSync />
+        </ToolButton>
+        <ToolButton tool="scale">
+          <CgArrowsExpandUpRight />
+        </ToolButton>
       </div>
 
       <div className="w-full"></div>

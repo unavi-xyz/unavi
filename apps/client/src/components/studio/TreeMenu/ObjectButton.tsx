@@ -15,7 +15,7 @@ export default function ObjectButton() {
           setOpen((prev) => !prev);
         }}
         className="aspect-square h-full flex items-center justify-center
-                   rounded-lg hover:bg-neutral-100"
+        rounded-lg hover:bg-neutral-100"
       >
         <HiOutlineCube className="text-2xl" />
       </button>

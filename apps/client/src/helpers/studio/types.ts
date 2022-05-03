@@ -1,1 +1,1 @@
-export type Tool = "Translate" | "Rotate" | "Scale";
+export type Tool = "translate" | "rotate" | "scale";

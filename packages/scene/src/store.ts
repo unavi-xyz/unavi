@@ -60,11 +60,13 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
   },
 
   updateObject(id: string, params: Partial<TreeObject["params"]>) {
-    set(
-      produce((draft: ISceneSlice) => {
-        const found = findObjectById(draft.scene.tree, id);
-        if (found) Object.assign(found.params, params);
-      })
-    );
+    const scene = produce(get().scene, (draft: ISceneSlice["scene"]) => {
+      const found = findObjectById(draft.tree, id);
+      if (found) {
+        Object.assign(found.params, params);
+      }
+    });
+
+    set({ scene });
   },
 });

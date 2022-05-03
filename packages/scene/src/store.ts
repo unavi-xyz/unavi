@@ -24,7 +24,7 @@ export interface ISceneSlice {
   ) => PrimitiveTreeObject;
   updateObject: (id: string, object: Partial<TreeObject>) => void;
   removeObject: (id: string) => void;
-  moveObject: (id: string, parentId: string) => void;
+  moveObject: (id: string, parentId: string, index?: number) => void;
 }
 
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
@@ -85,10 +85,27 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
     set({ scene });
   },
 
-  moveObject(id: string, parentId: string) {
+  moveObject(id: string, parentId: string, index: number = -1) {
     const scene = produce(get().scene, (draft) => {
       const object = findObjectById(draft.tree, id);
       if (!object) return;
+
+      const isInParent = object.parentId === parentId;
+
+      //if already in parent, move to index
+      if (isInParent) {
+        const parent = findObjectById(draft.tree, parentId);
+        if (!parent) return;
+        const currentIndex = parent.children.indexOf(object);
+
+        parent.children = parent.children.filter((child) => child.id !== id);
+
+        if (index === -1) parent.children.push(object);
+        else if (currentIndex < index)
+          parent.children.splice(index - 1, 0, object);
+        else parent.children.splice(index, 0, object);
+        return;
+      }
 
       if (object?.parentId) {
         //remove from old parent
@@ -106,7 +123,10 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
 
       //add to new parent
       object.parentId = parentId;
-      parent.children.push(object);
+
+      //add to parent children
+      if (index === -1) parent.children.push(object);
+      else parent.children.splice(index, 0, object);
     });
 
     set({ scene });

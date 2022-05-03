@@ -43,7 +43,7 @@ export default function Transform() {
 
     const oldScale = selected.scale;
     const scale: typeof oldScale = [...oldScale];
-    scale[index] = degToRad(round(Number(value)));
+    scale[index] = round(Number(value));
 
     updateObject(selected?.id, { scale });
   }

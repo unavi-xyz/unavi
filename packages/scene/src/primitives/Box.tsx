@@ -1,28 +1,18 @@
 import { Triplet, useBox } from "@react-three/cannon";
 
-export type IBox = {
-  position: Triplet;
-  rotation: Triplet;
-  scale: Triplet;
-};
+export type IBox = {};
 
-export const boxDefaultParams: IBox = {
-  position: [0, 0, 0],
-  rotation: [0, 0, 0],
-  scale: [1, 1, 1],
-};
+export const boxDefaultParams: IBox = {};
 
 interface Props {
   params?: IBox;
 }
 
 export default function Box({ params = boxDefaultParams }: Props) {
-  const args = params.scale;
+  const args: Triplet = [1, 1, 1];
 
   const [ref] = useBox(() => ({
     args,
-    position: params.position,
-    rotation: params.rotation,
     type: "Static",
   }));
 

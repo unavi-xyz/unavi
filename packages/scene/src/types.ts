@@ -9,17 +9,14 @@ export type BaseTreeObject<T extends TreeObjectTypes> = {
   id: string;
   name?: string;
 
+  position: Triplet;
+  rotation: Triplet;
+  scale: Triplet;
+
   children: TreeObject[];
 };
 
-export type IGroup = {
-  position: Triplet;
-  rotation: Triplet;
-};
-
-export interface GroupTreeObject extends BaseTreeObject<"Group"> {
-  params: IGroup;
-}
+export interface GroupTreeObject extends BaseTreeObject<"Group"> {}
 
 export interface PrimitiveTreeObject<T extends Primitive = Primitive>
   extends BaseTreeObject<"Primitive"> {

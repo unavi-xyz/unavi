@@ -22,7 +22,7 @@ export interface ISceneSlice {
     primitive: Primitive,
     parentId?: string
   ) => PrimitiveTreeObject;
-  updateObject: (id: string, object: Partial<TreeObject["params"]>) => void;
+  updateObject: (id: string, object: Partial<TreeObject>) => void;
 }
 
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
@@ -37,6 +37,11 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
 
       id: nanoid(),
       name: primitive,
+
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
+
       children: [],
 
       primitive,
@@ -59,12 +64,10 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
     return object;
   },
 
-  updateObject(id: string, params: Partial<TreeObject["params"]>) {
+  updateObject(id: string, changes: Partial<TreeObject>) {
     const scene = produce(get().scene, (draft: ISceneSlice["scene"]) => {
       const found = findObjectById(draft.tree, id);
-      if (found) {
-        Object.assign(found.params, params);
-      }
+      if (found) Object.assign(found, changes);
     });
 
     set({ scene });

@@ -6,25 +6,28 @@ const DEFAULT_BOX: PrimitiveTreeObject<"Box"> = {
 
   id: nanoid(),
   name: "Box",
-  children: [],
+
+  position: [0, 0, 0],
+  rotation: [0, 0, 0],
+  scale: [1, 1, 1],
 
   primitive: "Box",
-  params: {
-    position: [0, 0, 0],
-    rotation: [0, 0, 0],
-    scale: [1, 1, 1],
-  },
+  params: {},
+
+  children: [],
 };
 
 export const DEFAULT_SCENE: Scene = {
   tree: {
     type: "Group",
+
     id: "root",
     name: "root",
+
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    scale: [1, 1, 1],
+
     children: [DEFAULT_BOX],
-    params: {
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-    },
   },
 };

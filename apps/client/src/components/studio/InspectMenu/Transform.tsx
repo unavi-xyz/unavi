@@ -16,13 +16,12 @@ export default function Transform() {
   const selected = useAtomValue(selectedAtom);
   const updateObject = useStudioStore((state) => state.updateObject);
 
-  if (!selected?.params?.position) return null;
+  if (!selected) return null;
 
   function handlePositionChange(value: string, index: number) {
-    if (!selected?.params?.position) return;
-    if (isNaN(Number(value)) || value === "") return;
+    if (isNaN(Number(value)) || value === "" || !selected) return;
 
-    const oldPosition = selected.params.position;
+    const oldPosition = selected.position;
     const position: typeof oldPosition = [...oldPosition];
     position[index] = round(Number(value));
 
@@ -30,10 +29,9 @@ export default function Transform() {
   }
 
   function handleRotationChange(value: string, index: number) {
-    if (!selected?.params?.rotation) return;
-    if (isNaN(Number(value)) || value === "") return;
+    if (isNaN(Number(value)) || value === "" || !selected) return;
 
-    const oldRotation = selected.params.rotation;
+    const oldRotation = selected.rotation;
     const rotation: typeof oldRotation = [...oldRotation];
     rotation[index] = degToRad(round(Number(value)));
 
@@ -41,12 +39,13 @@ export default function Transform() {
   }
 
   function handleScaleChange(value: string, index: number) {
-    // if (!selected?.params?.scale) return;
-    // if (isNaN(Number(value)) || value === "") return;
-    // const oldScale = selected.params.scale;
-    // const scale: typeof oldScale = [...oldScale];
-    // scale[index] = degToRad(round(Number(value)));
-    // updateObject(selected?.id, { scale });
+    if (isNaN(Number(value)) || value === "" || !selected) return;
+
+    const oldScale = selected.scale;
+    const scale: typeof oldScale = [...oldScale];
+    scale[index] = degToRad(round(Number(value)));
+
+    updateObject(selected?.id, { scale });
   }
 
   return (
@@ -54,7 +53,7 @@ export default function Transform() {
       <div className="flex items-center">
         <div className="w-2/3">Position</div>
         <div className="flex items-center space-x-2">
-          {selected.params.position.map((value, i) => (
+          {selected.position.map((value, i) => (
             <div key={i} className="flex items-center space-x-1">
               <div>{XYZ[i]}</div>
               <NumberInput
@@ -69,7 +68,7 @@ export default function Transform() {
       <div className="flex items-center">
         <div className="w-2/3">Rotation</div>
         <div className="flex items-center space-x-2">
-          {selected.params.rotation.map((value, i) => (
+          {selected.rotation.map((value, i) => (
             <div key={i} className="flex items-center space-x-1">
               <div>{XYZ[i]}</div>
               <NumberInput
@@ -82,9 +81,9 @@ export default function Transform() {
       </div>
 
       <div className="flex items-center">
-        {/* <div className="w-2/3">Scale</div>
+        <div className="w-2/3">Scale</div>
         <div className="flex items-center space-x-2">
-          {selected.params.scale.map((value, i) => (
+          {selected.scale.map((value, i) => (
             <div key={i} className="flex items-center space-x-1">
               <div>{XYZ[i]}</div>
               <NumberInput
@@ -93,7 +92,7 @@ export default function Transform() {
               />
             </div>
           ))}
-        </div> */}
+        </div>
       </div>
     </div>
   );

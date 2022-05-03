@@ -2,8 +2,9 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 
-import { useStudioStore } from "../src/helpers/studio/store";
 import { useAutosave } from "../src/helpers/studio/hooks/useAutosave";
+import { useHotkeys } from "../src/helpers/studio/hooks/useHotkeys";
+import { useStudioStore } from "../src/helpers/studio/store";
 
 import StudioNavbar from "../src/components/studio/StudioNavbar/StudioNavbar";
 import StudioCanvas from "../src/components/studio/StudioCanvas/StudioCanvas";
@@ -15,6 +16,7 @@ export default function Studio() {
   const id = router.query.id as string;
 
   useAutosave();
+  useHotkeys();
 
   useEffect(() => {
     useStudioStore.setState({ id });

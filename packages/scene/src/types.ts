@@ -13,6 +13,7 @@ export type BaseTreeObject<T extends TreeObjectTypes> = {
   rotation: Triplet;
   scale: Triplet;
 
+  parentId: string | null;
   children: TreeObject[];
 };
 

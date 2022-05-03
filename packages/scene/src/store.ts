@@ -23,6 +23,7 @@ export interface ISceneSlice {
     parentId?: string
   ) => PrimitiveTreeObject;
   updateObject: (id: string, object: Partial<TreeObject>) => void;
+  removeObject: (id: string) => void;
 }
 
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
@@ -31,7 +32,7 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
 
   scene: DEFAULT_SCENE,
 
-  addPrimitive(primitive: Primitive, parentId = undefined) {
+  addPrimitive(primitive: Primitive, parentId = "root") {
     const object: PrimitiveTreeObject<typeof primitive> = {
       type: "Primitive",
 
@@ -42,6 +43,7 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
       rotation: [0, 0, 0],
       scale: [1, 1, 1],
 
+      parentId,
       children: [],
 
       primitive,
@@ -49,14 +51,8 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
     };
 
     const scene = produce(get().scene, (draft: ISceneSlice["scene"]) => {
-      if (!parentId) {
-        draft.tree.children.push(object);
-        return;
-      }
-
-      //find parent
-      const found = findObjectById(draft.tree, parentId);
-      if (found) found.children.push(object);
+      const parent = findObjectById(draft.tree, parentId);
+      if (parent) parent.children.push(object);
     });
 
     set({ scene });
@@ -68,6 +64,21 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
     const scene = produce(get().scene, (draft: ISceneSlice["scene"]) => {
       const found = findObjectById(draft.tree, id);
       if (found) Object.assign(found, changes);
+    });
+
+    set({ scene });
+  },
+
+  removeObject(id: string) {
+    const scene = produce(get().scene, (draft: ISceneSlice["scene"]) => {
+      const object = findObjectById(draft.tree, id);
+      if (!object?.parentId) return;
+      const parent = findObjectById(draft.tree, object.parentId);
+      if (!parent) return;
+
+      //remove from parent
+      const index = parent.children.indexOf(object);
+      if (index !== -1) parent.children.splice(index, 1);
     });
 
     set({ scene });

@@ -14,6 +14,7 @@ const DEFAULT_BOX: PrimitiveTreeObject<"Box"> = {
   primitive: "Box",
   params: {},
 
+  parentId: "root",
   children: [],
 };
 
@@ -28,6 +29,7 @@ export const DEFAULT_SCENE: Scene = {
     rotation: [0, 0, 0],
     scale: [1, 1, 1],
 
+    parentId: null,
     children: [DEFAULT_BOX],
   },
 };

@@ -136,15 +136,17 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
 
       <div
         ref={ref}
-        onClick={(e) => {
-          e.stopPropagation();
+        onMouseDown={() => {
           if (isRoot) useStudioStore.setState({ selectedId: undefined });
         }}
         className={`h-full ${paddingClass}`}
       >
         {!isRoot && (
           <div
-            onClick={() => useStudioStore.setState({ selectedId: object.id })}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              useStudioStore.setState({ selectedId: object.id });
+            }}
             className={`font-bold hover:bg-neutral-100 rounded-md px-2 cursor-pointer
                         flex items-center h-8 ${bgClass} ${opacityClass}`}
           >

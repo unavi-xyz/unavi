@@ -24,6 +24,7 @@ export interface ISceneSlice {
   ) => PrimitiveTreeObject;
   updateObject: (id: string, object: Partial<TreeObject>) => void;
   removeObject: (id: string) => void;
+  moveObject: (id: string, parentId: string) => void;
 }
 
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
@@ -50,7 +51,7 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
       params: PRIMITIVES[primitive].default,
     };
 
-    const scene = produce(get().scene, (draft: ISceneSlice["scene"]) => {
+    const scene = produce(get().scene, (draft) => {
       const parent = findObjectById(draft.tree, parentId);
       if (parent) parent.children.push(object);
     });
@@ -61,7 +62,7 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
   },
 
   updateObject(id: string, changes: Partial<TreeObject>) {
-    const scene = produce(get().scene, (draft: ISceneSlice["scene"]) => {
+    const scene = produce(get().scene, (draft) => {
       const found = findObjectById(draft.tree, id);
       if (found) Object.assign(found, changes);
     });
@@ -70,7 +71,7 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
   },
 
   removeObject(id: string) {
-    const scene = produce(get().scene, (draft: ISceneSlice["scene"]) => {
+    const scene = produce(get().scene, (draft) => {
       const object = findObjectById(draft.tree, id);
       if (!object?.parentId) return;
       const parent = findObjectById(draft.tree, object.parentId);
@@ -79,6 +80,33 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
       //remove from parent
       const index = parent.children.indexOf(object);
       if (index !== -1) parent.children.splice(index, 1);
+    });
+
+    set({ scene });
+  },
+
+  moveObject(id: string, parentId: string) {
+    const scene = produce(get().scene, (draft) => {
+      const object = findObjectById(draft.tree, id);
+      if (!object) return;
+
+      if (object?.parentId) {
+        //remove from old parent
+        const oldParent = findObjectById(draft.tree, object.parentId);
+        if (oldParent) {
+          oldParent.children = oldParent.children.filter(
+            (child) => child.id !== id
+          );
+        }
+      }
+
+      //get new parent
+      const parent = findObjectById(draft.tree, parentId);
+      if (!parent) return;
+
+      //add to new parent
+      object.parentId = parentId;
+      parent.children.push(object);
     });
 
     set({ scene });

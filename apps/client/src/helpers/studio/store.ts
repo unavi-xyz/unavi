@@ -10,6 +10,8 @@ export interface IStudioStore extends ISceneSlice {
   tool: Tool;
   usingGizmo: boolean;
   selectedId: string | undefined;
+
+  openTreeObjects: Set<string>;
   treeRefs: { [id: string]: MutableRefObject<Group | null> };
 
   setRef: (id: string, ref: MutableRefObject<Group | null>) => void;
@@ -22,6 +24,7 @@ export const useStudioStore = create<IStudioStore>(
     usingGizmo: false,
     selectedId: undefined,
 
+    openTreeObjects: new Set(),
     treeRefs: {},
 
     setRef(id: string, ref: MutableRefObject<Group | null>) {

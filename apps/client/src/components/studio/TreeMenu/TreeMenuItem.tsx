@@ -130,7 +130,7 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
       {!isRoot && (
         <div
           ref={dropAbove}
-          className={`h-1.5 ml-4 rounded-full ${highlightAboveClass} ${paddingClass}`}
+          className={`h-2 ml-4 rounded-full ${highlightAboveClass} ${paddingClass}`}
         />
       )}
 
@@ -140,7 +140,7 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
           e.stopPropagation();
           if (isRoot) useStudioStore.setState({ selectedId: undefined });
         }}
-        className={`space-y-1 h-full ${paddingClass}`}
+        className={`h-full ${paddingClass}`}
       >
         {!isRoot && (
           <div
@@ -160,16 +160,16 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
           </div>
         )}
 
-        <div>
-          {open &&
-            object.children.map((child, i) => {
+        {open && (
+          <div>
+            {object.children.map((child, i) => {
               if (i === object.children.length - 1 && !isRoot) {
                 return (
-                  <div key={child.id}>
+                  <div key={child.id} className="h-full">
                     <TreeMenuItem object={child} />
                     <div
                       ref={dropBelow}
-                      className={`h-1.5 ml-4 rounded-full ${highlightBelowClass} ${paddingClass}`}
+                      className={`h-2 ml-4 rounded-full ${highlightBelowClass} ${paddingClass}`}
                     />
                   </div>
                 );
@@ -177,7 +177,8 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
 
               return <TreeMenuItem key={child.id} object={child} />;
             })}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

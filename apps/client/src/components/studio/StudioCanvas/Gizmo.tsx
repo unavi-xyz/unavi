@@ -21,8 +21,9 @@ export default function Gizmo() {
 
     if (!selected || !selectedRef?.current) return;
 
-    //get the position and rotation
+    //get the transform
     const position = selectedRef.current.position.toArray();
+    const scale = selectedRef.current.scale.toArray();
     const rotationArray = selectedRef.current.rotation.toArray();
     const rotation: Triplet = [
       rotationArray[0],
@@ -33,12 +34,12 @@ export default function Gizmo() {
     //update the object state
     useStudioStore
       .getState()
-      .updateObject(selected?.id, { position, rotation });
+      .updateObject(selected?.id, { position, rotation, scale });
   }
 
   return (
     <TransformControls
-      object={selectedRef?.current}
+      object={selectedRef?.current ?? undefined}
       mode={tool}
       showX={visible}
       showY={visible}

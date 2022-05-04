@@ -7,7 +7,7 @@ export function useHotkeys() {
       switch (e.key) {
         case "Delete":
           const selectedId = useStudioStore.getState().selectedId;
-          if (selectedId) useStudioStore.getState().removeObject(selectedId);
+          if (selectedId) useStudioStore.getState().removeEntity(selectedId);
           useStudioStore.setState({ selectedId: undefined });
           break;
         case "w":

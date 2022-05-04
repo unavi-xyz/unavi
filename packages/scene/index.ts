@@ -1,11 +1,12 @@
-import "@react-three/fiber";
-
 export * from "./src/components/InstancedScene";
-export * from "./src/components/InstancedObject";
-export * from "./src/components/ObjectComponent";
+export * from "./src/components/InstancedEntity";
+export * from "./src/components/EntityComponent";
+export * from "./src/components/Player";
 
-export * from "./src/primitives";
+export * from "./src/Module/Module";
+export * from "./src/Module/components";
+
+export * from "./src/constants";
+export * from "./src/helpers";
 export * from "./src/store";
 export * from "./src/types";
-export * from "./src/helpers";
-export * from "./src/constants";

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { HiOutlineCube } from "react-icons/hi";
 
 import DropdownMenu from "../../base/DropdownMenu";
+import IconButton from "../../base/IconButton";
 import ObjectsMenu from "./ObjectsMenu";
 
 export default function ObjectButton() {
@@ -9,16 +10,14 @@ export default function ObjectButton() {
 
   return (
     <div className="h-full">
-      <button
+      <IconButton
         onClick={(e) => {
           e.stopPropagation();
           setOpen((prev) => !prev);
         }}
-        className="aspect-square h-full flex items-center justify-center
-        rounded-lg hover:bg-neutral-100"
       >
         <HiOutlineCube className="text-2xl" />
-      </button>
+      </IconButton>
 
       <div className="mt-1">
         <DropdownMenu open={open} onClose={() => setOpen(false)}>

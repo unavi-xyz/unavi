@@ -6,18 +6,10 @@ Built on top of `react-three-fiber`.
 
 ## Scene
 
-A scene is a collection of primitive 3d objects.
+A scene is a 3d environment.
 
-These primitives are things like:
-
-- Box
-- Sphere
-- Image
-- Lighting
-- etc
-
-Scenes have built in physics.
+Scenes support physics.
 
 Scenes support scripting.
 
-Scenes can be saved to a JSON object.
+Scenes are stored as a JSON object.

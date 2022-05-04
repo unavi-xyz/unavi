@@ -18,6 +18,10 @@ export default function InspectMenu() {
       <div>
         <Transform />
       </div>
+
+      <div>
+        <div></div>
+      </div>
     </div>
   );
 }

@@ -1,32 +1,61 @@
 import { Triplet } from "@react-three/cannon";
-import { Primitive, PRIMITIVES } from "./primitives";
+import { ComponentProps } from "react";
 
-export type TreeObjectTypes = "Group" | "Primitive";
+import {
+  ColliderType,
+  COLLIDER_COMPONENTS,
+  MeshType,
+  MESH_COMPONENTS,
+  ModuleType,
+} from "./Module/components";
 
-export type BaseTreeObject<T extends TreeObjectTypes> = {
-  type: T;
+//WELCOME TO THE MIND PALACE
+//WHERE WE PROGRAM THINGS THAT DONT EXIST
 
-  id: string;
-  name?: string;
-
+//data
+export type Transform = {
   position: Triplet;
   rotation: Triplet;
   scale: Triplet;
-
-  parentId: string | null;
-  children: TreeObject[];
 };
 
-export interface GroupTreeObject extends BaseTreeObject<"Group"> {}
-
-export interface PrimitiveTreeObject<T extends Primitive = Primitive>
-  extends BaseTreeObject<"Primitive"> {
-  primitive: T;
-  params: Parameters<typeof PRIMITIVES[T]["Component"]>[0]["params"];
+//module
+export interface BaseModule<T extends ModuleType = ModuleType> {
+  id: string;
+  type: T;
+  variation: string;
+  props: {};
 }
 
-export type TreeObject = GroupTreeObject | PrimitiveTreeObject;
+export interface IMeshModule<V extends MeshType = MeshType>
+  extends BaseModule<"Mesh"> {
+  variation: V;
 
+  props: ComponentProps<typeof MESH_COMPONENTS[V]>;
+}
+
+export interface IColliderModule<V extends ColliderType = ColliderType>
+  extends BaseModule<"Collider"> {
+  variation: V;
+
+  props: ComponentProps<typeof COLLIDER_COMPONENTS[V]>;
+}
+
+export type IModule = IMeshModule | IColliderModule;
+
+//entity
+export type Entity = {
+  id: string;
+  name?: string;
+
+  transform: Transform;
+  modules: IModule[];
+
+  parentId: string | null;
+  children: Entity[];
+};
+
+//scene
 export type Scene = {
-  tree: TreeObject;
+  tree: Entity;
 };

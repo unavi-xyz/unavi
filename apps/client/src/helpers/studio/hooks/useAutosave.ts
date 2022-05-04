@@ -24,6 +24,12 @@ export function useAutosave() {
         });
       })
       .catch(console.error);
+
+    return () => {
+      useStudioStore.setState({
+        name: undefined,
+      });
+    };
   }, [id]);
 
   // autosave on an interval

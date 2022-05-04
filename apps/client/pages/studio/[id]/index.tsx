@@ -4,14 +4,14 @@ import Head from "next/head";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
-import { useAutosave } from "../src/helpers/studio/hooks/useAutosave";
-import { useHotkeys } from "../src/helpers/studio/hooks/useHotkeys";
-import { useStudioStore } from "../src/helpers/studio/store";
+import { useAutosave } from "../../../src/helpers/studio/hooks/useAutosave";
+import { useHotkeys } from "../../../src/helpers/studio/hooks/useStudioHotkeys";
+import { useStudioStore } from "../../../src/helpers/studio/store";
 
-import StudioNavbar from "../src/components/studio/StudioNavbar/StudioNavbar";
-import StudioCanvas from "../src/components/studio/StudioCanvas/StudioCanvas";
-import InspectMenu from "../src/components/studio/InspectMenu/InspectMenu";
-import TreeMenu from "../src/components/studio/TreeMenu/TreeMenu";
+import StudioNavbar from "../../../src/components/studio/StudioNavbar/StudioNavbar";
+import StudioCanvas from "../../../src/components/studio/StudioCanvas/StudioCanvas";
+import InspectMenu from "../../../src/components/studio/InspectMenu/InspectMenu";
+import TreeMenu from "../../../src/components/studio/TreeMenu/TreeMenu";
 
 export default function Studio() {
   const router = useRouter();
@@ -24,7 +24,7 @@ export default function Studio() {
     useStudioStore.setState({ id });
 
     return () => {
-      useStudioStore.setState({ id: "" });
+      useStudioStore.setState({ id: undefined });
     };
   }, [id]);
 

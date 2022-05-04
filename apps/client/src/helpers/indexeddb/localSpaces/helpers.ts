@@ -1,8 +1,8 @@
 import { customAlphabet } from "nanoid";
-import { DEFAULT_SCENE } from "scene";
 
 import { getLocalSpaceDb, LOCAL_SPACES } from "./db";
 import { LocalSpace } from "./types";
+import { STARTING_SCENE } from "./constants";
 
 const nanoid = customAlphabet("0123456789", 12);
 
@@ -29,8 +29,8 @@ export async function createNewLocalSpace(options: Partial<LocalSpace> = {}) {
     id: nanoid(),
     name: "My Space",
     description: "",
-    image: "",
-    scene: DEFAULT_SCENE,
+    image: "/images/defaultSpaceImage.jpg",
+    scene: STARTING_SCENE,
     ...options,
   };
 

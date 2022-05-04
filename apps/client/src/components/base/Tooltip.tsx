@@ -20,10 +20,10 @@ export default function Tooltip({ text, placement = "top", children }: Props) {
 
       {text && (
         <div
-          className={`absolute z-10 flex flex-col items-center min-w-max ${margin}`}
+          className={`absolute z-20 flex flex-col items-center min-w-max ${margin}`}
         >
           <span
-            className="relative z-10 px-3 py-2 text-xs leading-none rounded-lg w-full
+            className="relative px-3 py-2 text-xs leading-none rounded-lg w-full
                      text-white whitespace-no-wrap bg-black shadow-lg font-bold
                        scale-0 group-hover:scale-100 transition-all duration-300"
           >

@@ -1,10 +1,8 @@
 import { GetState, SetState } from "zustand";
-import { nanoid } from "nanoid";
 import produce from "immer";
 
-import { PrimitiveTreeObject, Scene, TreeObject } from "./types";
-import { findObjectById } from "./helpers";
-import { Primitive, PRIMITIVES } from "./primitives";
+import { Scene, Entity } from "./types";
+import { findEntityById } from "./helpers";
 import { DEFAULT_SCENE } from "./constants";
 
 export type StoreSlice<T extends object, E extends object = T> = (
@@ -13,103 +11,79 @@ export type StoreSlice<T extends object, E extends object = T> = (
 ) => T;
 
 export interface ISceneSlice {
-  id: string;
-  name: string;
-
   scene: Scene;
 
-  addPrimitive: (
-    primitive: Primitive,
-    parentId?: string
-  ) => PrimitiveTreeObject;
-  updateObject: (id: string, object: Partial<TreeObject>) => void;
-  removeObject: (id: string) => void;
-  moveObject: (id: string, parentId: string, index?: number) => void;
+  addEntity: (entity: Entity, parentId?: string) => void;
+  updateEntity: (id: string, changes: Partial<Entity>) => void;
+  removeEntity: (id: string) => void;
+  moveEntity: (id: string, parentId: string, index?: number) => void;
 }
 
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
-  id: "",
-  name: "",
-
   scene: DEFAULT_SCENE,
 
-  addPrimitive(primitive: Primitive, parentId = "root") {
-    const object: PrimitiveTreeObject<typeof primitive> = {
-      type: "Primitive",
+  addEntity(entity: Entity) {
+    const { scene, updateEntity } = get();
 
-      id: nanoid(),
-      name: primitive,
+    if (!entity.parentId) entity.parentId = "root";
 
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1],
+    const parent = findEntityById(scene.tree, entity.parentId);
+    if (!parent) return;
 
-      parentId,
-      children: [],
-
-      primitive,
-      params: PRIMITIVES[primitive].default,
-    };
-
-    const scene = produce(get().scene, (draft) => {
-      const parent = findObjectById(draft.tree, parentId);
-      if (parent) parent.children.push(object);
-    });
-
-    set({ scene });
-
-    return object;
+    updateEntity(parent.id, { children: [...parent.children, entity] });
   },
 
-  updateObject(id: string, changes: Partial<TreeObject>) {
+  updateEntity(id: string, changes: Partial<Entity>) {
     const scene = produce(get().scene, (draft) => {
-      const found = findObjectById(draft.tree, id);
+      const found = findEntityById(draft.tree, id);
       if (found) Object.assign(found, changes);
     });
 
     set({ scene });
   },
 
-  removeObject(id: string) {
+  removeEntity(id: string) {
     const scene = produce(get().scene, (draft) => {
-      const object = findObjectById(draft.tree, id);
-      if (!object?.parentId) return;
-      const parent = findObjectById(draft.tree, object.parentId);
+      const entity = findEntityById(draft.tree, id);
+      if (!entity?.parentId) return;
+
+      const parent = findEntityById(draft.tree, entity.parentId);
       if (!parent) return;
 
       //remove from parent
-      const index = parent.children.indexOf(object);
+      const index = parent.children.indexOf(entity);
       if (index !== -1) parent.children.splice(index, 1);
     });
 
     set({ scene });
   },
 
-  moveObject(id: string, parentId: string, index: number = -1) {
+  moveEntity(id: string, parentId: string, index: number = -1) {
     const scene = produce(get().scene, (draft) => {
-      const object = findObjectById(draft.tree, id);
-      if (!object) return;
+      const entity = findEntityById(draft.tree, id);
+      if (!entity) return;
 
-      const isInParent = object.parentId === parentId;
+      const isInParent = entity.parentId === parentId;
 
       //if already in parent, move to index
       if (isInParent) {
-        const parent = findObjectById(draft.tree, parentId);
+        console.log("🧥");
+        const parent = findEntityById(draft.tree, parentId);
         if (!parent) return;
-        const currentIndex = parent.children.indexOf(object);
+        const currentIndex = parent.children.indexOf(entity);
 
         parent.children = parent.children.filter((child) => child.id !== id);
 
-        if (index === -1) parent.children.push(object);
+        if (index === -1) parent.children.push(entity);
         else if (currentIndex < index)
-          parent.children.splice(index - 1, 0, object);
-        else parent.children.splice(index, 0, object);
+          parent.children.splice(index - 1, 0, entity);
+        else parent.children.splice(index, 0, entity);
         return;
       }
 
-      if (object?.parentId) {
+      if (entity?.parentId) {
         //remove from old parent
-        const oldParent = findObjectById(draft.tree, object.parentId);
+        const oldParent = findEntityById(draft.tree, entity.parentId);
         if (oldParent) {
           oldParent.children = oldParent.children.filter(
             (child) => child.id !== id
@@ -118,15 +92,15 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
       }
 
       //get new parent
-      const parent = findObjectById(draft.tree, parentId);
+      const parent = findEntityById(draft.tree, parentId);
       if (!parent) return;
 
       //add to new parent
-      object.parentId = parentId;
+      entity.parentId = parentId;
 
       //add to parent children
-      if (index === -1) parent.children.push(object);
-      else parent.children.splice(index, 0, object);
+      if (index === -1) parent.children.push(entity);
+      else parent.children.splice(index, 0, entity);
     });
 
     set({ scene });

@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import { atomWithStore } from "jotai/zustand";
 
-import { findObjectById } from "scene";
+import { findEntityById } from "scene";
 
 import { useStudioStore } from "./store";
 
@@ -12,7 +12,7 @@ export const selectedAtom = atom((get) => {
   const id = get(studioStoreAtom).selectedId;
   if (!id) return undefined;
 
-  const object = findObjectById(tree, id);
+  const object = findEntityById(tree, id);
   return object;
 });
 

@@ -1,13 +1,16 @@
 import { useEffect } from "react";
-import { MdArrowBackIosNew } from "react-icons/md";
+import { MdArrowBackIosNew, MdPreview } from "react-icons/md";
 import { useRouter } from "next/router";
 import { VscMove, VscSync } from "react-icons/vsc";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
+import Link from "next/link";
 
 import { useLocalSpace } from "../../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
 import { updateLocalSpace } from "../../../helpers/indexedDB/localSpaces/helpers";
 
+import Tooltip from "../../base/Tooltip";
 import ToolButton from "./ToolButton";
+import IconButton from "../../base/IconButton";
 
 export default function StudioNavbar() {
   const router = useRouter();
@@ -52,7 +55,17 @@ export default function StudioNavbar() {
         </ToolButton>
       </div>
 
-      <div className="w-full"></div>
+      <div className="w-full h-full flex justify-end items-center p-2">
+        <Tooltip text="Preview" placement="bottom">
+          <Link href={`/studio/${id}/preview`} passHref>
+            <div className="h-full">
+              <IconButton>
+                <MdPreview />
+              </IconButton>
+            </div>
+          </Link>
+        </Tooltip>
+      </div>
     </div>
   );
 }

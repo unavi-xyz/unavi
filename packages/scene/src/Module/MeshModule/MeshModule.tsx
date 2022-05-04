@@ -1,0 +1,11 @@
+import { IModule } from "../../types";
+import { MESH_COMPONENTS } from "../components";
+
+interface Props {
+  module: IModule;
+}
+
+export default function MeshModule({ module }: Props) {
+  const Component = MESH_COMPONENTS[module.variation];
+  return <Component {...(module.props as any)} />;
+}

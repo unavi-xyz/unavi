@@ -1,7 +1,7 @@
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { useState } from "react";
 import { useEffect, useRef } from "react";
-import ReactDOM from "react-dom";
+import { createPortal } from "react-dom";
 
 const closeDialogAtom = atom(false);
 
@@ -52,7 +52,7 @@ export default function Dialog({
 
   if (!visible) return <></>;
 
-  return ReactDOM.createPortal(
+  return createPortal(
     <div
       ref={backdropRef}
       onMouseDown={onClose}

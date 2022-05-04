@@ -1,33 +1,23 @@
-import { PrimitiveTreeObject, Scene } from "scene";
+import { DEFAULT_TRANSFORM, Entity, IMeshModule, Scene } from "scene";
 import { nanoid } from "nanoid";
 
-const BOX: PrimitiveTreeObject<"Box"> = {
-  type: "Primitive",
+import { ENTITY_PRESETS } from "../../studio/presets";
 
-  id: nanoid(),
-  name: "Box",
+const BOX: Entity = ENTITY_PRESETS["Box"];
 
-  position: [0, 0, 0],
-  rotation: [0, 0, 0],
-  scale: [1, 1, 1],
-
-  primitive: "Box",
-  params: {},
-
-  parentId: "root",
-  children: [],
-};
+BOX.id = nanoid();
+BOX.parentId = "root";
+BOX.modules.forEach((module) => {
+  module.id = nanoid();
+});
 
 export const STARTING_SCENE: Scene = {
   tree: {
-    type: "Group",
-
     id: "root",
     name: "root",
 
-    position: [0, 0, 0],
-    rotation: [0, 0, 0],
-    scale: [1, 1, 1],
+    transform: DEFAULT_TRANSFORM,
+    modules: [],
 
     parentId: null,
     children: [BOX],

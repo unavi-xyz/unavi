@@ -12,10 +12,6 @@ export default function Gizmo() {
 
   const visible = Boolean(selected) && Boolean(selectedRef);
 
-  function handleMouseDown() {
-    useStudioStore.setState({ usingGizmo: true });
-  }
-
   function handleMouseUp() {
     useStudioStore.setState({ usingGizmo: false });
 
@@ -31,10 +27,10 @@ export default function Gizmo() {
       rotationArray[2],
     ];
 
+    const transform = { position, rotation, scale };
+
     //update the object state
-    useStudioStore
-      .getState()
-      .updateObject(selected?.id, { position, rotation, scale });
+    useStudioStore.getState().updateEntity(selected?.id, { transform });
   }
 
   return (
@@ -45,7 +41,7 @@ export default function Gizmo() {
       showY={visible}
       showZ={visible}
       enabled={visible}
-      onMouseDown={handleMouseDown}
+      onMouseDown={() => useStudioStore.setState({ usingGizmo: true })}
       onMouseUp={handleMouseUp}
     />
   );

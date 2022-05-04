@@ -46,7 +46,7 @@ export default function Id() {
               {localSpace.description.length > 0 && (
                 <div>{localSpace.description}</div>
               )}
-              <Link href={`/studio?id=${localSpace.id}`} passHref>
+              <Link href={`/studio/${localSpace.id}`} passHref>
                 <div>
                   <Button outline>Open Studio</Button>
                 </div>

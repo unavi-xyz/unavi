@@ -1,38 +1,40 @@
 import { useEffect, useRef } from "react";
 import { Group } from "three";
 
-import { ObjectComponent, TreeObject } from "scene";
+import { Entity, EntityComponent } from "scene";
 
 import { useStudioStore } from "../../../helpers/studio/store";
 
 interface Props {
-  object: TreeObject;
+  entity: Entity;
 }
 
-export default function StudioInstancedObject({ object }: Props) {
+export default function StudioInstancedEntity({ entity }: Props) {
   const ref = useRef<Group>(null);
 
   const setRef = useStudioStore((state) => state.setRef);
   const removeRef = useStudioStore((state) => state.removeRef);
 
   useEffect(() => {
-    setRef(object.id, ref);
-    return () => removeRef(object.id);
-  }, [object, removeRef, setRef]);
+    setRef(entity.id, ref);
+    return () => removeRef(entity.id);
+  }, [entity, removeRef, setRef]);
 
   return (
     <group
-      onClick={(e) => {
+      onPointerUp={(e: any) => {
+        if (e.button !== 0) return;
+        if (useStudioStore.getState().usingGizmo) return;
         e.stopPropagation();
-        useStudioStore.setState({ selectedId: object.id });
+        useStudioStore.setState({ selectedId: entity.id });
       }}
     >
-      {object && (
-        <ObjectComponent ref={ref} object={object}>
-          {object.children.map((child) => (
-            <StudioInstancedObject key={child.id} object={child} />
+      {entity && (
+        <EntityComponent ref={ref as any} entity={entity}>
+          {entity.children.map((child) => (
+            <StudioInstancedEntity key={child.id} entity={child} />
           ))}
-        </ObjectComponent>
+        </EntityComponent>
       )}
     </group>
   );

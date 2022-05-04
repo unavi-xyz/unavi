@@ -1,13 +1,10 @@
-import { TreeObject } from "./types";
+import { Entity } from "./types";
 
-export function findObjectById(
-  object: TreeObject,
-  id: string
-): TreeObject | undefined {
-  if (object.id === id) return object;
+export function findEntityById(entity: Entity, id: string): Entity | undefined {
+  if (entity.id === id) return entity;
 
-  for (const child of object.children) {
-    const found = findObjectById(child, id);
+  for (const child of entity.children) {
+    const found = findEntityById(child, id);
     if (found) return found;
   }
 

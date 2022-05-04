@@ -16,7 +16,8 @@ export default function NumberInput({ updatedValue, ...rest }: Props) {
   return (
     <input
       ref={ref}
-      className="border outline-none pl-3 rounded-md w-full bg-neutral-100 focus:border-black"
+      className="border outline-none pl-3 rounded-md w-full focus:border-black
+               bg-neutral-50 shadow-inner"
       onFocus={(e) => e.currentTarget.select()}
       {...rest}
     />

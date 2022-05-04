@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
-
-import { findObjectById, TreeObject } from "scene";
+import { Entity, findEntityById } from "scene";
 
 import { useStudioStore } from "../../../helpers/studio/store";
 import { DND_TYPES } from "../../../helpers/studio/types";
@@ -12,109 +11,109 @@ type DragItem = {
 };
 
 interface Props {
-  object: TreeObject;
+  entity: Entity;
   isRoot?: boolean;
 }
 
-export default function TreeMenuItem({ object, isRoot = false }: Props) {
+export default function TreeMenuItem({ entity, isRoot = false }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
   const tree = useStudioStore((state) => state.scene.tree);
   const selectedId = useStudioStore((state) => state.selectedId);
-  const moveObject = useStudioStore((state) => state.moveObject);
+  const moveEntity = useStudioStore((state) => state.moveEntity);
 
   const [open, setOpen] = useState(true);
 
   const [{ isDragging }, drag] = useDrag(
     () => ({
-      type: DND_TYPES.TreeObject,
-      item: { id: object.id },
+      type: DND_TYPES.Entity,
+      item: { id: entity.id },
       collect: (monitor) => ({
         isDragging: monitor.isDragging(),
       }),
     }),
-    [object]
+    [entity]
   );
 
   const [{ isOver }, drop] = useDrop(
     () => ({
-      accept: DND_TYPES.TreeObject,
+      accept: DND_TYPES.Entity,
       drop({ id: droppedId }: DragItem, monitor) {
-        if (droppedId !== object.id) {
+        if (droppedId !== entity.id) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
-          const dropped = findObjectById(tree, droppedId);
+          const dropped = findEntityById(tree, droppedId);
           if (!dropped) return;
 
           //add as child
-          moveObject(droppedId, object.id);
+          moveEntity(droppedId, entity.id);
         }
       },
       collect: (monitor) => ({
         isOver: monitor.isOver(),
       }),
     }),
-    [object, tree, moveObject]
+    [entity, tree, moveEntity]
   );
 
   const [{ isOver: isOverAbove }, dropAbove] = useDrop(
     () => ({
-      accept: DND_TYPES.TreeObject,
+      accept: DND_TYPES.Entity,
       drop({ id: droppedId }: DragItem, monitor) {
-        if (droppedId !== object.id) {
+        if (droppedId !== entity.id) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
-          const dropped = findObjectById(tree, droppedId);
+          const dropped = findEntityById(tree, droppedId);
           if (!dropped) return;
 
-          if (!object.parentId) return;
+          if (!entity.parentId) return;
 
           //add as sibling
-          const parent = findObjectById(tree, object.parentId);
+          const parent = findEntityById(tree, entity.parentId);
           if (!parent) return;
 
-          const index = parent.children.indexOf(object);
-          moveObject(droppedId, parent.id, index);
+          const index = parent.children.indexOf(entity);
+          moveEntity(droppedId, parent.id, index);
         }
       },
       collect: (monitor) => ({
         isOver: monitor.isOver(),
       }),
     }),
-    [object, tree, moveObject]
+    [entity, tree, moveEntity]
   );
 
   const [{ isOver: isOverBelow }, dropBelow] = useDrop(
     () => ({
-      accept: DND_TYPES.TreeObject,
+      accept: DND_TYPES.Entity,
       drop({ id: droppedId }: DragItem, monitor) {
-        if (droppedId !== object.id) {
+        if (droppedId !== entity.id) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
-          const dropped = findObjectById(tree, droppedId);
+          const dropped = findEntityById(tree, droppedId);
           if (!dropped) return;
 
-          if (!object.parentId) return;
+          if (!entity.parentId) return;
 
           //add as sibling
-          const parent = findObjectById(tree, object.parentId);
+          const parent = findEntityById(tree, entity.parentId);
           if (!parent) return;
 
-          moveObject(droppedId, object.id);
+          moveEntity(droppedId, entity.id);
         }
       },
       collect: (monitor) => ({
         isOver: monitor.isOver(),
       }),
     }),
-    [object, tree, moveObject]
+    [entity, tree, moveEntity]
   );
 
-  const hasChildren = object.children.length > 0;
-  const isSelected = selectedId === object.id;
+  const hasChildren = entity.children.length > 0;
+  const isSelected = selectedId === entity.id;
   const bgClass = isSelected || isOver ? "bg-neutral-100" : "";
   const paddingClass = isRoot ? "" : "ml-4";
   const opacityClass = isDragging ? "opacity-0" : "";
@@ -145,7 +144,7 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
           <div
             onMouseDown={(e) => {
               e.stopPropagation();
-              useStudioStore.setState({ selectedId: object.id });
+              useStudioStore.setState({ selectedId: entity.id });
             }}
             className={`font-bold hover:bg-neutral-100 rounded-md px-2 cursor-pointer
                         flex items-center h-8 ${bgClass} ${opacityClass}`}
@@ -158,17 +157,17 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
                 (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
             </div>
 
-            <div>{object.name}</div>
+            <div>{entity.name}</div>
           </div>
         )}
 
         {open && (
           <div>
-            {object.children.map((child, i) => {
-              if (i === object.children.length - 1 && !isRoot) {
+            {entity.children.map((child, i) => {
+              if (i === entity.children.length - 1 && !isRoot) {
                 return (
                   <div key={child.id} className="h-full">
-                    <TreeMenuItem object={child} />
+                    <TreeMenuItem entity={child} />
                     <div
                       ref={dropBelow}
                       className={`h-2 ml-4 rounded-full ${highlightBelowClass} ${paddingClass}`}
@@ -177,7 +176,7 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
                 );
               }
 
-              return <TreeMenuItem key={child.id} object={child} />;
+              return <TreeMenuItem key={child.id} entity={child} />;
             })}
           </div>
         )}

@@ -7,10 +7,10 @@ interface Props {
 export default function Card({ image, text, subtext }: Props) {
   return (
     <div
-      className="group p-3 pb-6 aspect-mobile w-full h-full overflow-hidden rounded-3xl hover:cursor-pointer
-                 flex flex-col space-y-4 hover:shadow-lg transition-all duration-300"
+      className="group p-2.5 aspect-card w-full h-full overflow-hidden rounded-3xl hover:cursor-pointer
+                 flex flex-col hover:shadow-lg transition-all duration-300 bg-white border"
     >
-      <div className="h-full overflow-hidden rounded-2xl bg-neutral-100">
+      <div className="h-full overflow-hidden rounded-2xl bg-neutral-200">
         {image && (
           <img
             src={image}
@@ -21,7 +21,7 @@ export default function Card({ image, text, subtext }: Props) {
         )}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 py-3">
         {text && <div className="px-1 text-xl overflow-hidden">{text}</div>}
         {subtext && (
           <div className="px-1 text-lg  overflow-hidden text-neutral-500">

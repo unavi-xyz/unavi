@@ -146,7 +146,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
               e.stopPropagation();
               useStudioStore.setState({ selectedId: entity.id });
             }}
-            className={`font-bold hover:bg-neutral-100 rounded-md px-2 cursor-pointer
+            className={`font-bold hover:bg-neutral-100 rounded-md px-2
                         flex items-center h-8 ${bgClass} ${opacityClass}`}
           >
             <div

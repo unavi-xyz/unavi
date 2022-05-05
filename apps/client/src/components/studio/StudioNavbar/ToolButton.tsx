@@ -19,13 +19,15 @@ export default function ToolButton({ tool, children }: Props) {
   const selected = useStudioStore((state) => state.tool === tool);
 
   return (
-    <Tooltip text={TOOL_TOOLTIPS[tool]} placement="bottom">
-      <IconButton
-        selected={selected}
-        onClick={() => useStudioStore.setState({ tool })}
-      >
-        {children}
-      </IconButton>
-    </Tooltip>
+    <div className="h-full">
+      <Tooltip text={TOOL_TOOLTIPS[tool]} placement="bottom">
+        <IconButton
+          selected={selected}
+          onClick={() => useStudioStore.setState({ tool })}
+        >
+          {children}
+        </IconButton>
+      </Tooltip>
+    </div>
   );
 }

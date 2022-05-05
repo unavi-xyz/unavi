@@ -2,7 +2,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 
 import { createNewLocalSpace } from "../../src/helpers/indexedDB/localSpaces/helpers";
-import { useLocalSpaces } from "../../src/helpers/indexedDB/localSpaces/hooks/useLocalSpaces";
+import { useLocalSpaces } from "../../src/helpers/indexeddb/localSpaces/hooks/useLocalSpaces";
 
 import LocalSpaceCard from "../../src/components/ui/LocalSpaceCard";
 import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
@@ -28,7 +28,7 @@ export default function Create() {
             <div className="font-black text-3xl">Create</div>
           </div>
 
-          <div className="bg-white w-full rounded-3xl border grid grid-cols-4 gap-4 p-8">
+          <div className="w-full grid grid-cols-3 gap-4">
             {localSpaces.map((localSpace) => (
               <LocalSpaceCard key={localSpace.id} localSpace={localSpace} />
             ))}
@@ -37,7 +37,7 @@ export default function Create() {
               onClick={handleNewSpace}
               className="rounded-3xl border border-dashed flex items-center justify-center
                          hover:shadow-lg transition-all cursor-pointer duration-300
-                         border-neutral-300 aspect-mobile"
+                         border-neutral-300 aspect-card"
             >
               <div className="text-neutral-500 flex flex-col items-center justify-center">
                 <div className="text-3xl">+</div>

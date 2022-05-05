@@ -10,7 +10,7 @@ interface Props {
 export default function LocalSpaceCard({ localSpace }: Props) {
   return (
     <Link href={`/create/${localSpace.id}`} passHref>
-      <div className="aspect-mobile">
+      <div className="aspect-card">
         <Card text={localSpace.name} image={localSpace.image} />
       </div>
     </Link>

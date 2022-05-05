@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 interface Props {
   href: string;
@@ -9,12 +10,24 @@ interface Props {
 export default function NavbarTextButton({ href, text }: Props) {
   const router = useRouter();
 
-  const bgColor = router.pathname === href ? "bg-neutral-200" : "e";
+  const [selected, setSelected] = useState(false);
+
+  useEffect(() => {
+    if (href === "/") {
+      setSelected(router.pathname === "/");
+      return;
+    }
+
+    setSelected(router.pathname.startsWith(href));
+  }, [router, href]);
+
+  const bgColor = selected ? "bg-neutral-200" : "";
 
   return (
     <Link href={href} passHref>
       <button
-        className={`cursor-pointer hover:bg-neutral-200 rounded-md px-2 py-1 text-sm font-bold ${bgColor}`}
+        className={`hover:bg-neutral-200 rounded-md px-2 py-1 text-sm font-bold
+                      transition-all duration-100 ${bgColor}`}
       >
         {text}
       </button>

@@ -15,7 +15,7 @@ export default function ObjectsMenu() {
               const entity = addPreset(primitive, selectedId);
               useStudioStore.setState({ selectedId: entity.id });
             }}
-            className="w-full flex cursor-pointer hover:bg-neutral-100 rounded-md px-3 py-1"
+            className="w-full flex hover:bg-neutral-100 rounded-md px-3 py-1 cursor-default"
           >
             {primitive}
           </button>

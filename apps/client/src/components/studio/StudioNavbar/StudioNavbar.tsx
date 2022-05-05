@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { MdArrowBackIosNew, MdPreview } from "react-icons/md";
+import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 import { useRouter } from "next/router";
 import { VscMove, VscSync } from "react-icons/vsc";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
@@ -11,6 +11,8 @@ import { updateLocalSpace } from "../../../helpers/indexedDB/localSpaces/helpers
 import Tooltip from "../../base/Tooltip";
 import ToolButton from "./ToolButton";
 import IconButton from "../../base/IconButton";
+import { BiMove } from "react-icons/bi";
+import Button from "../../base/Button";
 
 export default function StudioNavbar() {
   const router = useRouter();
@@ -34,7 +36,7 @@ export default function StudioNavbar() {
   }
 
   return (
-    <div className="flex justify-between items-center h-full px-4">
+    <div className="flex justify-between items-center h-full px-4 py-2">
       <div className="w-full flex items-center space-x-4 text-lg">
         <div onClick={handleBack} className="cursor-pointer">
           <MdArrowBackIosNew />
@@ -43,28 +45,34 @@ export default function StudioNavbar() {
         <div>{localSpace?.name}</div>
       </div>
 
-      <div className="w-full h-full flex justify-center items-center space-x-2 p-2">
+      <div className="w-full h-full flex justify-center items-center space-x-2">
         <ToolButton tool="translate">
-          <VscMove />
+          <BiMove />
         </ToolButton>
         <ToolButton tool="rotate">
-          <VscSync />
+          <MdSync />
         </ToolButton>
         <ToolButton tool="scale">
           <CgArrowsExpandUpRight />
         </ToolButton>
       </div>
 
-      <div className="w-full h-full flex justify-end items-center p-2">
-        <Tooltip text="Preview" placement="bottom">
-          <Link href={`/studio/${id}/preview`} passHref>
-            <div className="h-full">
-              <IconButton>
-                <MdPreview />
-              </IconButton>
-            </div>
-          </Link>
-        </Tooltip>
+      <div className="w-full h-full flex justify-end items-center space-x-4">
+        <div className="h-full">
+          <Tooltip text="Preview" placement="bottom">
+            <Link href={`/studio/${id}/preview`} passHref>
+              <div className="h-full">
+                <IconButton>
+                  <MdPreview />
+                </IconButton>
+              </div>
+            </Link>
+          </Tooltip>
+        </div>
+
+        <div className="text-sm">
+          <Button>Publish</Button>
+        </div>
       </div>
     </div>
   );

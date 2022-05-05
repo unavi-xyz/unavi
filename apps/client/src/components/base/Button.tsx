@@ -5,6 +5,7 @@ interface Props {
   loading?: boolean;
   disabled?: boolean;
   outline?: boolean;
+  fullWidth?: boolean;
   children: React.ReactNode;
   [key: string]: any;
 }
@@ -14,6 +15,7 @@ export default function Button({
   loading = false,
   disabled = false,
   outline = false,
+  fullWidth = false,
   children,
   ...rest
 }: Props) {
@@ -54,9 +56,11 @@ export default function Button({
       : "hover:bg-red-100"
     : null;
 
+  const widthClass = fullWidth ? "w-full" : "";
+
   return (
     <div
-      className={`h-10 px-4 w-full rounded-full flex items-center justify-center
+      className={`px-6 h-8 rounded-full flex items-center justify-center ${widthClass}
                   transition-all duration-150 font-bold ${textColorClass} ${hoverColorClass}
                   ${bgColorClass} ${cursorClass} ${outlineClass} ${ringColorClass}`}
       {...rest}

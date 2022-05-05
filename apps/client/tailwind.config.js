@@ -11,7 +11,7 @@ module.exports = {
         arrow: "url('/images/arrow.svg')",
       },
       aspectRatio: {
-        mobile: "3/5",
+        card: "3/5",
       },
     },
   },

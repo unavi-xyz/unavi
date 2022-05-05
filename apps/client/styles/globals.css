@@ -8,7 +8,7 @@ html {
 }
 
 .max-w {
-  @apply max-w-6xl w-full;
+  @apply max-w-3xl w-full;
 }
 
 .gradient-text {

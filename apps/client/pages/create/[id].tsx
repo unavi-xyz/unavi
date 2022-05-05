@@ -27,31 +27,29 @@ export default function Id() {
       </Head>
 
       <div className="mx-8 h-full">
-        <div className="max-w mx-auto py-8 w-full h-full">
-          <div className="flex space-x-8 h-full">
-            <div className="bg-neutral-200 rounded-3xl aspect-mobile">
-              {localSpace.image && (
-                <img
-                  src={localSpace.image}
-                  alt={localSpace.name}
-                  className="object-cover rounded-3xl h-full"
-                />
-              )}
-            </div>
+        <div className="max-w mx-auto py-8 w-full h-full space-y-8">
+          <div className="bg-neutral-200 rounded-3xl h-72">
+            {localSpace.image && (
+              <img
+                src={localSpace.image}
+                alt={localSpace.name}
+                className="object-cover rounded-3xl w-full h-full"
+              />
+            )}
+          </div>
 
-            <div className="w-full min-w-fit flex flex-col space-y-8">
-              <div className="font-black text-3xl flex justify-center">
-                {localSpace.name}
-              </div>
-              {localSpace.description.length > 0 && (
-                <div>{localSpace.description}</div>
-              )}
-              <Link href={`/studio/${localSpace.id}`} passHref>
-                <div>
-                  <Button outline>Open Studio</Button>
-                </div>
-              </Link>
+          <div className="w-full min-w-fit flex flex-col space-y-8 bg-neutral-100">
+            <div className="font-black text-3xl flex justify-center">
+              {localSpace.name}
             </div>
+            {localSpace.description.length > 0 && (
+              <div>{localSpace.description}</div>
+            )}
+            <Link href={`/studio/${localSpace.id}`} passHref>
+              <div>
+                <Button outline>Open Studio</Button>
+              </div>
+            </Link>
           </div>
         </div>
       </div>

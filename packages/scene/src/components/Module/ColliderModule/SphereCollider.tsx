@@ -8,10 +8,17 @@ interface Props {
   transform: Transform;
 }
 
-export default function SphereCollider({ args, transform }: Props) {
+export default function SphereCollider({ args: radius, transform }: Props) {
+  const largestScale = transform.scale.reduce((acc, value) =>
+    Math.max(acc, value)
+  );
+  const args: [number] = [radius[0] * largestScale];
+
   const [ref, api] = useSphere(() => ({
     args: args,
     type: "Static",
+    position: transform.position,
+    rotation: transform.rotation,
   }));
 
   useEffect(() => {

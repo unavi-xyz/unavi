@@ -8,10 +8,18 @@ interface Props {
   transform: Transform;
 }
 
-export default function BoxCollider({ args, transform }: Props) {
+export default function BoxCollider({ args: size, transform }: Props) {
+  const args: Triplet = [
+    size[0] * transform.scale[0],
+    size[1] * transform.scale[1],
+    size[2] * transform.scale[2],
+  ];
+
   const [ref, api] = useBox(() => ({
-    args: args,
+    args,
     type: "Static",
+    position: transform.position,
+    rotation: transform.rotation,
   }));
 
   useEffect(() => {

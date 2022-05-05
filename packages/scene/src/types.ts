@@ -7,7 +7,7 @@ import {
   MeshType,
   MESH_COMPONENTS,
   ModuleType,
-} from "./Module/components";
+} from "./modules";
 
 //WELCOME TO THE MIND PALACE
 //WHERE WE PROGRAM THINGS THAT DONT EXIST

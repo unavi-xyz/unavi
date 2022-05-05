@@ -1,15 +1,15 @@
 import { useEffect } from "react";
-import { useSphere } from "@react-three/cannon";
+import { Triplet, useBox } from "@react-three/cannon";
 
-import { Transform } from "../../types";
+import { Transform } from "../../../types";
 
 interface Props {
-  args: [number];
+  args: Triplet;
   transform: Transform;
 }
 
-export default function SphereCollider({ args, transform }: Props) {
-  const [ref, api] = useSphere(() => ({
+export default function BoxCollider({ args, transform }: Props) {
+  const [ref, api] = useBox(() => ({
     args: args,
     type: "Static",
   }));

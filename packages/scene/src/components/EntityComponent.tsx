@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Group, Vector3 } from "three";
 
-import Module from "../Module/Module";
+import Module from "./Module/Module";
 import { Entity } from "../types";
 
 const tempVec3 = new Vector3();
@@ -37,7 +37,7 @@ export const EntityComponent = React.forwardRef<Group, Props>(
       <group ref={handleRef as any}>
         <group>
           {entity.modules.map((module) => (
-            <Module key={module.id} module={module} />
+            <Module key={module.id} module={module} entity={entity} />
           ))}
         </group>
 

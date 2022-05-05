@@ -1,15 +1,11 @@
-import MeshModule from "./MeshModule/MeshModule";
-import ColliderModule from "./ColliderModule/ColliderModule";
+import MeshModule from "./components/Module/MeshModule/MeshModule";
+import ColliderModule from "./components/Module/ColliderModule/ColliderModule";
 
-import BoxCollider from "./ColliderModule/BoxCollider";
-import SphereCollider from "./ColliderModule/SphereCollider";
+import BoxCollider from "./components/Module/ColliderModule/BoxCollider";
+import SphereCollider from "./components/Module/ColliderModule/SphereCollider";
 
-import BoxMesh from "./MeshModule/BoxMesh";
-import SphereMesh from "./MeshModule/SphereMesh";
-
-export type ComponentDefinition = {
-  [key: string]: JSX.Element;
-};
+import BoxMesh from "./components/Module/MeshModule/BoxMesh";
+import SphereMesh from "./components/Module/MeshModule/SphereMesh";
 
 //module
 export const MODULE_COMPONENTS = {

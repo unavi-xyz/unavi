@@ -6,20 +6,21 @@ import { InstancedEntity } from "./InstancedEntity";
 
 interface Props {
   scene: Scene;
+  children?: React.ReactNode;
 }
 
-export function InstancedScene({ scene }: Props) {
+export function InstancedScene({ scene, children }: Props) {
   return (
-    <group>
+    <Physics>
       <ambientLight intensity={0.2} />
       <directionalLight intensity={1} position={[-1, 1.5, -2]} />
       <Sky />
 
-      <Physics>
-        <Debug>
-          <InstancedEntity entity={scene.tree} />
-        </Debug>
-      </Physics>
-    </group>
+      <Debug>
+        <InstancedEntity entity={scene.tree} />
+      </Debug>
+
+      <group>{children}</group>
+    </Physics>
   );
 }

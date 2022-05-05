@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { MdClose } from "react-icons/md";
 import { InstancedScene } from "scene";
+
 import { useLocalSpace } from "../../../src/helpers/indexedDB/localSpaces/hooks/useLocalScene";
+
+import Player from "../../../src/components/app/Player";
 
 export default function Preview() {
   const router = useRouter();
@@ -22,11 +25,15 @@ export default function Preview() {
       </Head>
 
       <Canvas className="w-full h-full">
-        <InstancedScene scene={space.scene} />
-        <OrbitControls />
+        <InstancedScene scene={space.scene}>
+          <Player />
+        </InstancedScene>
       </Canvas>
 
-      <div className="fixed top-0 right-0 p-6 text-2xl">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="fixed top-0 right-0 p-6 text-2xl"
+      >
         <Link href={`/studio/${id}`} passHref>
           <div
             className="cursor-pointer p-2 rounded-full bg-black

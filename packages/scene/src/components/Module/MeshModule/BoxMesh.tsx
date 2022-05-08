@@ -1,15 +1,13 @@
-export type IBox = {};
-
-export const boxDefaultParams: IBox = {};
-
-interface Props {
-  params?: IBox;
+export interface IBoxMesh {
+  width: number;
+  height: number;
+  depth: number;
 }
 
-export default function BoxMesh({ params = boxDefaultParams }: Props) {
+export default function BoxMesh({ width, height, depth }: IBoxMesh) {
   return (
     <mesh>
-      <boxBufferGeometry />
+      <boxBufferGeometry args={[width, height, depth]} />
       <meshStandardMaterial color="red" />
     </mesh>
   );

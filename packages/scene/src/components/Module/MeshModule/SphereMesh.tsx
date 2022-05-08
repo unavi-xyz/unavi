@@ -1,15 +1,11 @@
-export type ISphere = {};
-
-export const sphereDefaultParams: ISphere = {};
-
-interface Props {
-  params?: ISphere;
+interface ISphereMesh {
+  radius: number;
 }
 
-export default function SphereMesh({ params = sphereDefaultParams }: Props) {
+export default function SphereMesh({ radius }: ISphereMesh) {
   return (
     <mesh>
-      <sphereBufferGeometry />
+      <sphereBufferGeometry args={[radius]} />
       <meshStandardMaterial color="red" />
     </mesh>
   );

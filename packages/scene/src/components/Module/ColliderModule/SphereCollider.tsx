@@ -4,15 +4,15 @@ import { useSphere } from "@react-three/cannon";
 import { Transform } from "../../../types";
 
 interface Props {
-  args: [number];
+  radius: number;
   transform: Transform;
 }
 
-export default function SphereCollider({ args: radius, transform }: Props) {
+export default function SphereCollider({ radius, transform }: Props) {
   const largestScale = transform.scale.reduce((acc, value) =>
     Math.max(acc, value)
   );
-  const args: [number] = [radius[0] * largestScale];
+  const args: [number] = [radius * largestScale];
 
   const [ref, api] = useSphere(() => ({
     args: args,

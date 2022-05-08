@@ -5,7 +5,7 @@ import { OrbitControls, Sky } from "@react-three/drei";
 
 import { useStudioStore } from "../../../helpers/studio/store";
 
-import StudioInstancedEntity from "./StudioInstancedObject";
+import StudioInstancedEntity from "./StudioInstancedEntity";
 import Gizmo from "./Gizmo";
 
 export default function StudioCanvas() {

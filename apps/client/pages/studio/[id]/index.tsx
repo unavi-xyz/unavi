@@ -40,15 +40,15 @@ export default function Studio() {
         </div>
 
         <div className="flex h-full">
-          <div className="fixed left-0 bg-white border-r h-full w-[300px] z-10">
+          <div className="fixed left-0 bg-white border-r h-full w-[250px] z-10">
             <TreeMenu />
           </div>
 
-          <div className="bg-neutral-100 w-full pl-[300px] pr-[400px]">
+          <div className="bg-neutral-100 w-full pl-[250px] pr-[350px]">
             <StudioCanvas />
           </div>
 
-          <div className="fixed right-0 bg-white border-l h-full w-[400px] z-10">
+          <div className="fixed right-0 bg-white border-l h-full w-[350px] z-10">
             <InspectMenu />
           </div>
         </div>

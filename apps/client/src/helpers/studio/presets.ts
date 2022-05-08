@@ -4,28 +4,34 @@ const BOX_MESH: IMeshModule<"Box"> = {
   id: "",
   type: "Mesh",
   variation: "Box",
-  props: {},
+  props: {
+    width: 1,
+    height: 1,
+    depth: 1,
+  },
 };
 
 const BOX_COLLIDER: IColliderModule<"Box"> = {
   id: "",
   type: "Collider",
   variation: "Box",
-  props: { args: [1, 1, 1], transform: DEFAULT_TRANSFORM },
+  props: { width: 1, height: 1, depth: 1, transform: DEFAULT_TRANSFORM },
 };
 
 const SPHERE_MESH: IMeshModule<"Sphere"> = {
   id: "",
   type: "Mesh",
   variation: "Sphere",
-  props: {},
+  props: {
+    radius: 0.5,
+  },
 };
 
 const SPHERE_COLLIDER: IColliderModule<"Sphere"> = {
   id: "",
   type: "Collider",
   variation: "Sphere",
-  props: { args: [1], transform: DEFAULT_TRANSFORM },
+  props: { radius: 0.5, transform: DEFAULT_TRANSFORM },
 };
 
 export const ENTITY_PRESETS: { [key: string]: Entity } = {

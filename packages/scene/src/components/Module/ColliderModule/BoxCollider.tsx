@@ -4,15 +4,22 @@ import { Triplet, useBox } from "@react-three/cannon";
 import { Transform } from "../../../types";
 
 interface Props {
-  args: Triplet;
+  width: number;
+  height: number;
+  depth: number;
   transform: Transform;
 }
 
-export default function BoxCollider({ args: size, transform }: Props) {
+export default function BoxCollider({
+  width,
+  height,
+  depth,
+  transform,
+}: Props) {
   const args: Triplet = [
-    size[0] * transform.scale[0],
-    size[1] * transform.scale[1],
-    size[2] * transform.scale[2],
+    width * transform.scale[0],
+    height * transform.scale[1],
+    depth * transform.scale[2],
   ];
 
   const [ref, api] = useBox(() => ({

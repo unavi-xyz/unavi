@@ -1,7 +1,6 @@
-import { atom, useAtomValue, useSetAtom } from "jotai";
-import { useState } from "react";
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { atom, useAtomValue, useSetAtom } from "jotai";
 
 const closeDialogAtom = atom(false);
 
@@ -11,11 +10,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-export default function Dialog({
-  open,
-  onClose,
-  children,
-}: Props): JSX.Element {
+export default function Dialog({ open, onClose, children }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -24,19 +19,22 @@ export default function Dialog({
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setVisible(false), 200);
+    //add a delay before unmounting the menu so we can show animations
+    const timeout = setTimeout(() => setVisible(open), 200);
 
+    //dont add the delay on open
     if (open) {
       setVisible(true);
       clearTimeout(timeout);
     }
 
+    //open / close animation
     if (open) {
       setTimeout(() => {
         dialogRef.current?.classList.remove("scale-75");
         dialogRef.current?.classList.remove("opacity-0");
         backdropRef.current?.classList.remove("opacity-0");
-      });
+      }, 10);
     } else {
       dialogRef.current?.classList.add("opacity-0");
       dialogRef.current?.classList.add("scale-75");
@@ -50,7 +48,7 @@ export default function Dialog({
     if (closeDialog) onClose();
   }, [closeDialog, onClose]);
 
-  if (!visible) return <></>;
+  if (!visible) return null;
 
   return createPortal(
     <div

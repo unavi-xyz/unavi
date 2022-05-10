@@ -59,7 +59,7 @@ export default function DropdownMenu({
       <div
         ref={menuRef}
         className={`absolute z-10 w-48 bg-white border rounded-lg ${placementClass}
-                    transition-all duration-150 ease-in-out scale-75`}
+                    transition-all duration-150 ease-in-out scale-75 opacity-0`}
       >
         {visible && children}
       </div>

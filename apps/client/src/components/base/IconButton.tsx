@@ -6,12 +6,14 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export default function IconButton({ children, selected, ...rest }: Props) {
-  const selectedClass = selected ? "bg-neutral-100" : "";
+  const selectedClass = selected
+    ? "bg-primaryContainer text-onPrimaryContainer"
+    : "hover:bg-surfaceVariant text-onSurfaceVariant";
 
   return (
     <button
       className={`h-full aspect-square rounded-lg flex justify-center items-center cursor-default
-                hover:bg-neutral-100 text-2xl transition-all duration-100 ${selectedClass}`}
+                  text-2xl transition ${selectedClass}`}
       {...rest}
     >
       {children}

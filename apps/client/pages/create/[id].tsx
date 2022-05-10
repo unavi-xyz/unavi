@@ -28,7 +28,7 @@ export default function Id() {
 
       <div className="mx-8 h-full">
         <div className="max-w mx-auto py-8 w-full h-full space-y-8">
-          <div className="bg-neutral-200 rounded-3xl h-72">
+          <div className="rounded-3xl h-72 ">
             {localSpace.image && (
               <img
                 src={localSpace.image}
@@ -38,7 +38,7 @@ export default function Id() {
             )}
           </div>
 
-          <div className="w-full min-w-fit flex flex-col space-y-8 bg-neutral-100">
+          <div className="w-full min-w-fit flex flex-col space-y-8">
             <div className="font-black text-3xl flex justify-center">
               {localSpace.name}
             </div>
@@ -47,7 +47,9 @@ export default function Id() {
             )}
             <Link href={`/studio/${localSpace.id}`} passHref>
               <div>
-                <Button outline>Open Studio</Button>
+                <Button variant="outlined" fullWidth>
+                  Open Studio
+                </Button>
               </div>
             </Link>
           </div>

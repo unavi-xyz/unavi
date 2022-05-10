@@ -8,6 +8,7 @@ export function useMediaImage(image: Profile["picture"] | undefined) {
   const [type, setType] = useState<"media" | "nft">();
 
   useEffect(() => {
+    console.log("🥼", image);
     if (!image) {
       setUrl(undefined);
       return;

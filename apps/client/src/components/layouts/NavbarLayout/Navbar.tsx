@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -10,8 +11,16 @@ import ProfileButton from "./ProfileButton";
 export default function Navbar() {
   const handle = useLensStore((state) => state.handle);
 
+  const [showProfileButton, setShowProfileButton] = useState(Boolean(handle));
+
+  useEffect(() => {
+    //wait for dialog close animation
+    if (handle) setTimeout(() => setShowProfileButton(true), 200);
+    else setShowProfileButton(false);
+  }, [handle]);
+
   return (
-    <div className="bg-white w-full h-full flex justify-center border-b">
+    <div className="w-full h-full flex justify-center bg-surface">
       <div className="max-w mx-8 flex items-center justify-between">
         <div className="w-full">
           <div className="w-fit">
@@ -35,7 +44,7 @@ export default function Navbar() {
         </div>
 
         <div className="w-full flex items-center justify-end">
-          {handle ? <ProfileButton /> : <LoginButton />}
+          {showProfileButton ? <ProfileButton /> : <LoginButton />}
         </div>
       </div>
     </div>

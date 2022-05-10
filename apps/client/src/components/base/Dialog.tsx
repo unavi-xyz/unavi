@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { createPortal } from "react-dom";
-import { atom, useAtomValue, useSetAtom } from "jotai";
 
-const closeDialogAtom = atom(false);
+const DialogContext = React.createContext({ close: () => {} });
 
 interface Props {
   open: boolean;
@@ -12,9 +11,7 @@ interface Props {
 
 export default function Dialog({ open, onClose, children }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const backdropRef = useRef<HTMLDivElement>(null);
-
-  const closeDialog = useAtomValue(closeDialogAtom);
+  const scrimRef = useRef<HTMLDivElement>(null);
 
   const [visible, setVisible] = useState(false);
 
@@ -33,26 +30,22 @@ export default function Dialog({ open, onClose, children }: Props) {
       setTimeout(() => {
         dialogRef.current?.classList.remove("scale-75");
         dialogRef.current?.classList.remove("opacity-0");
-        backdropRef.current?.classList.remove("opacity-0");
+        scrimRef.current?.classList.remove("opacity-0");
       }, 10);
     } else {
       dialogRef.current?.classList.add("opacity-0");
       dialogRef.current?.classList.add("scale-75");
-      backdropRef.current?.classList.add("opacity-0");
+      scrimRef.current?.classList.add("opacity-0");
     }
 
     return () => clearTimeout(timeout);
   }, [open]);
 
-  useEffect(() => {
-    if (closeDialog) onClose();
-  }, [closeDialog, onClose]);
-
   if (!visible) return null;
 
   return createPortal(
     <div
-      ref={backdropRef}
+      ref={scrimRef}
       onMouseDown={onClose}
       className="fixed top-0 left-0 bg-black bg-opacity-50 w-screen
                  h-screen flex flex-col justify-center z-50 opacity-0
@@ -62,10 +55,13 @@ export default function Dialog({ open, onClose, children }: Props) {
         ref={dialogRef}
         open
         onMouseDown={(e) => e.stopPropagation()}
-        className="rounded-2xl p-12 fade mx-auto w-full max-w-xl flex flex-col space-y-4
-                   transition-all duration-200 ease-in-out scale-75 opacity-0"
+        className="rounded-3xl p-12 mx-auto w-full max-w-xl flex flex-col space-y-4
+                   transition duration-200 ease-in-out scale-75 opacity-0 bg-surface
+                   text-onSurface"
       >
-        {children}
+        <DialogContext.Provider value={{ close: onClose }}>
+          {children}
+        </DialogContext.Provider>
       </dialog>
     </div>,
     document.body
@@ -73,11 +69,6 @@ export default function Dialog({ open, onClose, children }: Props) {
 }
 
 export function useCloseDialog() {
-  const setOpenDialog = useSetAtom(closeDialogAtom);
-
-  function close() {
-    setOpenDialog(false);
-  }
-
+  const { close } = useContext(DialogContext);
   return close;
 }

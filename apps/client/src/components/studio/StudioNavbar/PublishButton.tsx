@@ -13,7 +13,9 @@ export default function PublishButton() {
         <PublishPage />
       </Dialog>
 
-      <Button onClick={() => setOpen(true)}>Publish</Button>
+      <Button variant="filled" onClick={() => setOpen(true)}>
+        Publish
+      </Button>
     </>
   );
 }

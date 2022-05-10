@@ -29,7 +29,7 @@ export default function SidePanel() {
 
   return (
     <div
-      className={`z-20 flex transition-all ${
+      className={`z-20 flex transition ${
         isPointerLocked
           ? "translate-x-[600px]"
           : open

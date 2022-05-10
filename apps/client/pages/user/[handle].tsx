@@ -1,18 +1,18 @@
 import { FaHashtag, FaTwitter } from "react-icons/fa";
 import { MdOutlineLocationOn } from "react-icons/md";
+import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
-import { useRouter } from "next/router";
 
 import { useLensStore } from "../../src/helpers/lens/store";
 import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
-import { useColorFromSeed } from "../../src/helpers/hooks/useColorFromSeed";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
+import { useProfileSpaces } from "../../src/helpers/lens/hooks/useProfileSpaces";
 
 import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
 import ProfilePicture from "../../src/components/lens/ProfilePicture";
 import Button from "../../src/components/base/Button";
-import { useProfileSpaces } from "../../src/helpers/lens/hooks/useProfileSpaces";
+import SpaceCard from "../../src/components/ui/SpaceCard";
 
 export default function User() {
   const router = useRouter();
@@ -20,12 +20,9 @@ export default function User() {
 
   const viewerHandle = useLensStore((state) => state.handle);
   const profile = useProfileByHandle(handle);
-  const color = useColorFromSeed(profile?.handle);
   const { url: coverUrl } = useMediaImage(profile?.coverPicture);
 
   const spaces = useProfileSpaces(profile?.id);
-
-  console.log("👺", spaces);
 
   if (!profile) return null;
 
@@ -44,9 +41,8 @@ export default function User() {
       <div
         style={{
           backgroundImage: coverUrl ? `url(${coverUrl})` : undefined,
-          backgroundColor: color,
         }}
-        className="w-full h-80 bg-cover bg-center"
+        className="w-full h-80 bg-cover bg-center bg-secondary"
       />
 
       <div className="flex justify-center">
@@ -56,7 +52,7 @@ export default function User() {
               <div className="relative w-full">
                 <div
                   className="absolute -bottom-32 transform
-                             rounded-xl ring-8 ring-neutral-100"
+                             rounded-xl ring-8 ring-background"
                 >
                   <ProfilePicture profile={profile} />
                 </div>
@@ -64,33 +60,23 @@ export default function User() {
             </div>
 
             <div className="space-y-2">
-              <div className="text-2xl font-black">
+              <div className="text-2xl font-black break-all">
                 {profile?.name ?? handle}
               </div>
-              <div className="gradient-text text-lg w-min">@{handle}</div>
-            </div>
-
-            <div className="flex justify-between">
-              <div className="flex space-x-2 text-lg">
-                <div className="font-black">0</div>
-                <div className="font-bold text-neutral-500">Following</div>
-              </div>
-
-              <div className="flex space-x-2 text-lg">
-                <div className="font-black">0</div>
-                <div className="font-bold text-neutral-500">Followers</div>
+              <div className="gradient-text text-lg break-all font-bold">
+                @{handle}
               </div>
             </div>
 
             <div>
-              {handle === viewerHandle ? (
+              {handle === viewerHandle && (
                 <Link href="/settings" passHref>
                   <div>
-                    <Button outline>Edit Profile</Button>
+                    <Button variant="outlined" fullWidth>
+                      Edit Profile
+                    </Button>
                   </div>
                 </Link>
-              ) : (
-                <Button outline>Follow</Button>
               )}
             </div>
 
@@ -113,6 +99,7 @@ export default function User() {
                     href={`https://twitter.com/${profile.twitter}`}
                     target="_blank"
                     rel="noreferrer"
+                    className="hover:underline"
                   >
                     {profile.twitter}
                   </a>
@@ -128,7 +115,12 @@ export default function User() {
                     />
                   }
                 >
-                  <a href={profile.website} target="_blank" rel="noreferrer">
+                  <a
+                    href={profile.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:underline"
+                  >
                     {profile.website}
                   </a>
                 </ProfileRow>
@@ -143,7 +135,17 @@ export default function User() {
               </div>
             </div>
 
-            <div className="h-24 bg-white rounded-xl border"></div>
+            <div className="space-y-2">
+              {spaces?.map((space) => (
+                <div key={space.id}>
+                  <Link href={`/space/${space.id}`} passHref>
+                    <div>
+                      <SpaceCard space={space} />
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

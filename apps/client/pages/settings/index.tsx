@@ -53,7 +53,7 @@ export default function Settings() {
 
   async function handleProfileSave() {
     const signer = useEthersStore.getState().signer;
-    if (!signer || !profile) return;
+    if (!signer || !profile || loadingProfile) return;
 
     setLoadingProfile(true);
 
@@ -104,7 +104,7 @@ export default function Settings() {
   }
 
   async function handleProfilePictureSave() {
-    if (!pfpFile || !profile) return;
+    if (!pfpFile || !profile || loadingProfilePicture) return;
 
     setLoadingProfilePicture(true);
 
@@ -123,13 +123,11 @@ export default function Settings() {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-8 bg-white rounded-2xl border p-8">
+      <div className="p-8 space-y-8 rounded-3xl bg-secondaryContainer text-onSecondaryContainer">
         <div className="text-lg space-y-4">
-          <div className="flex items-center space-x-4 text-neutral-500">
+          <div className="flex items-center space-x-4">
             <div className="font-bold">Profile ID:</div>
-            <div className="bg-neutral-100 px-2 py-1 rounded-xl border">
-              {profile.id}
-            </div>
+            <div>{profile.id}</div>
           </div>
 
           <TextField
@@ -182,51 +180,62 @@ export default function Settings() {
           </div>
         </div>
 
-        <Button onClick={handleProfileSave} loading={loadingProfile}>
-          Save
-        </Button>
+        <div className="w-full flex justify-end">
+          <Button
+            variant="filled"
+            onClick={handleProfileSave}
+            loading={loadingProfile}
+          >
+            Save
+          </Button>
+        </div>
       </div>
 
-      <div className="space-y-8 bg-white rounded-2xl border p-8">
-        <div className="font-bold text-xl">Profile Picture</div>
+      <div className="p-8 space-y-8 rounded-3xl bg-secondaryContainer text-onSecondaryContainer text-lg">
+        <div className="space-y-4">
+          <div className="font-bold">Profile Picture</div>
 
-        {pfpUrl && (
-          <div className="flex space-x-8">
-            <div className="w-40 h-40">
-              <img
-                src={pfpUrl}
-                alt="profile picture preview square"
-                className="object-cover rounded-xl h-full w-full border bg-neutral-100"
-              />
+          {pfpUrl && (
+            <div className="flex space-x-8">
+              <div className="w-40 h-40">
+                <img
+                  src={pfpUrl}
+                  alt="profile picture preview square"
+                  className="object-cover rounded-xl h-full w-full border bg-neutral-100"
+                />
+              </div>
+              <div className="w-40 h-40">
+                <img
+                  src={pfpUrl}
+                  alt="profile picture preview circle"
+                  className="object-cover rounded-full h-full w-full border bg-neutral-100"
+                />
+              </div>
             </div>
-            <div className="w-40 h-40">
-              <img
-                src={pfpUrl}
-                alt="profile picture preview circle"
-                className="object-cover rounded-full h-full w-full border bg-neutral-100"
-              />
-            </div>
+          )}
+
+          <div>
+            <FileUpload
+              title="Profile Picture"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setPfpFile(file);
+              }}
+            />
           </div>
-        )}
-
-        <div>
-          <FileUpload
-            title="Profile Picture"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) setPfpFile(file);
-            }}
-          />
         </div>
 
-        <Button
-          onClick={handleProfilePictureSave}
-          loading={loadingProfilePicture}
-          disabled={!pfpFile}
-        >
-          Save
-        </Button>
+        <div className="w-full flex justify-end">
+          <Button
+            variant="filled"
+            onClick={handleProfilePictureSave}
+            loading={loadingProfilePicture}
+            disabled={!pfpFile}
+          >
+            Save
+          </Button>
+        </div>
       </div>
     </div>
   );

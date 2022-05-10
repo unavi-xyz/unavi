@@ -24,10 +24,10 @@ export default function ObjectCard({ type }: Props) {
   return (
     <div
       onClick={handleClick}
-      className="group hover:shadow-lg transition-all duration-300
+      className="group hover:shadow-lg transition duration-300
                  rounded-2xl hover:cursor-pointer h-full w-full"
     >
-      <Canvas className="rounded-xl group-hover:scale-110 transition-all duration-500 ease-in-out">
+      <Canvas className="rounded-xl group-hover:scale-110 transition duration-500 ease-in-out">
         <Physics>
           <CameraMover>
             <InstancedObject instance={instance} />

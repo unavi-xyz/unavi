@@ -18,7 +18,7 @@ export default function GLTFCard() {
     <div className="h-32">
       <label htmlFor="gltf-input">
         <div
-          className="p-4 h-full rounded-2xl space-y-1 hover:shadow-lg transition-all duration-300
+          className="p-4 h-full rounded-2xl space-y-1 hover:shadow-lg transition duration-300
                      hover:cursor-pointer flex flex-col items-center justify-center"
         >
           <div className="text-2xl">

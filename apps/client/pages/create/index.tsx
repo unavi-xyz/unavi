@@ -28,22 +28,22 @@ export default function Create() {
             <div className="font-black text-3xl">Create</div>
           </div>
 
-          <div className="w-full grid grid-cols-3 gap-4 bg-white border rounded-3xl p-4">
-            {localSpaces.map((localSpace) => (
-              <LocalSpaceCard key={localSpace.id} localSpace={localSpace} />
-            ))}
-
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
             <div
               onClick={handleNewSpace}
-              className="rounded-3xl border border-dashed flex items-center justify-center
-                         hover:shadow-lg transition-all cursor-pointer duration-300
-                         border-neutral-300 aspect-card"
+              className="rounded-3xl flex items-center justify-center cursor-pointer
+                         aspect-card transition hover:ring-2 hover:ring-outline
+                         bg-secondaryContainer text-onSecondaryContainer"
             >
-              <div className="text-neutral-500 flex flex-col items-center justify-center">
+              <div className="flex flex-col items-center justify-center">
                 <div className="text-3xl">+</div>
                 <div className="text-lg">New Space</div>
               </div>
             </div>
+
+            {localSpaces.map((localSpace) => (
+              <LocalSpaceCard key={localSpace.id} localSpace={localSpace} />
+            ))}
           </div>
         </div>
       </div>

@@ -1,71 +1,87 @@
 import Spinner from "./Spinner";
 
-interface Props {
-  color?: "black" | "gray" | "red";
+export type ButtonVariant =
+  | "elevated"
+  | "filled"
+  | "tonal"
+  | "outlined"
+  | "text";
+
+interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  color?: "Primary" | "Tertiary";
   loading?: boolean;
   disabled?: boolean;
-  outline?: boolean;
   fullWidth?: boolean;
+  squared?: boolean;
   children: React.ReactNode;
-  [key: string]: any;
 }
 
 export default function Button({
-  color = "black",
+  variant = "text",
+  color = "Primary",
   loading = false,
   disabled = false,
-  outline = false,
   fullWidth = false,
+  squared = false,
   children,
   ...rest
 }: Props) {
-  const cursorClass =
-    disabled || loading ? "cursor-not-allowed" : "cursor-pointer";
-  const outlineClass = outline ? "ring-1" : "";
+  const textClass =
+    variant === "text"
+      ? color === "Primary"
+        ? "text-primary hover:bg-primaryContainer"
+        : "text-tertiary hover:bg-tertiaryContainer"
+      : "";
+  const outlineClass =
+    variant === "outlined"
+      ? color === "Primary"
+        ? "ring-1 ring-outline text-onPrimaryContainer hover:bg-primaryContainer"
+        : "ring-1 ring-outline text-onTertiaryContainer hover:bg-tertiaryContainer"
+      : null;
+  const tonalClass =
+    variant === "tonal"
+      ? color === "Primary"
+        ? "bg-primaryContainer text-onPrimaryContainer"
+        : "bg-tertiaryContainer text-onTertiaryContainer"
+      : null;
+  const filledClass =
+    variant === "filled"
+      ? color === "Primary"
+        ? "bg-primary text-onPrimary"
+        : "bg-tertiary text-onTertiary"
+      : null;
+  const elevatedClass =
+    variant === "elevated"
+      ? color === "Primary"
+        ? "shadow-dark bg-surface text-primary hover:bg-surfaceVariant/50"
+        : "shadow-dark bg-surface text-tertiary hover:bg-surfaceVariant/50"
+      : null;
 
-  const ringColorClass =
-    color === "black"
-      ? "ring-black"
-      : color === "gray"
-      ? "ring-neutral-500"
-      : "ring-red-500";
+  const disabledClass =
+    loading || disabled
+      ? "opacity-50 cursor-not-allowed"
+      : variant === "tonal" || variant === "filled"
+      ? "hover:shadow-dark"
+      : null;
 
-  const bgColorClass = outline
-    ? "bg-transparent"
-    : disabled || loading
-    ? "bg-neutral-500"
-    : color === "black"
-    ? "bg-black"
-    : color === "gray"
-    ? "bg-neutral-500"
-    : "bg-red-500";
-
-  const textColorClass = outline
-    ? color === "black"
-      ? "text-black"
-      : color === "gray"
-      ? "text-neutral-500"
-      : "text-red-500"
-    : "text-white";
-
-  const hoverColorClass = outline
-    ? color === "black"
-      ? "hover:bg-neutral-200"
-      : color === "gray"
-      ? "hover:bg-neutral-200"
-      : "hover:bg-red-100"
-    : null;
-
-  const widthClass = fullWidth ? "w-full" : "";
+  const loadingClass = loading ? "opacity-0" : null;
+  const fullWidthClass = fullWidth ? "w-full" : null;
+  const squaredClass = squared ? "rounded-xl" : "rounded-full";
 
   return (
-    <div
-      className={`px-6 h-9 rounded-full flex items-center justify-center ${widthClass}
-                  transition-all duration-150 font-bold ${textColorClass} ${hoverColorClass}
-                  ${bgColorClass} ${cursorClass} ${outlineClass} ${ringColorClass}`}
+    <button
+      className={`relative flex items-center justify-center transition font-bold
+                  px-5 py-1.5 ${disabledClass} ${fullWidthClass} ${squaredClass}
+                  ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
       {...rest}
     >
-      {loading ? <Spinner /> : children}
-    </div>
+      <div className={`w-full ${loadingClass}`}>{children}</div>
+      {loading && (
+        <div className="absolute">
+          <Spinner />
+        </div>
+      )}
+    </button>
   );
 }

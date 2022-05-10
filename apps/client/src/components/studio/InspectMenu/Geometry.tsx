@@ -18,7 +18,7 @@ export default function Geometry() {
 
   const meshModule = selected?.modules.find((item) => item.type === "Mesh");
 
-  if (!meshModule) return;
+  if (!meshModule) return null;
 
   function handleChange(key: string, value: string) {
     if (!selected) return;

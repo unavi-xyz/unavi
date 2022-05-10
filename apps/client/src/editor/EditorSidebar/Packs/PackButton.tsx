@@ -10,7 +10,7 @@ export default function PackButton({ name, ...rest }: Props) {
     <div
       {...rest}
       className="flex items-center justify-between px-8 border h-20 text-xl
-               hover:bg-neutral-100 hover:cursor-pointer rounded-full transition-all"
+               hover:bg-neutral-100 hover:cursor-pointer rounded-full transition"
     >
       {name}
       <MdArrowForwardIos />

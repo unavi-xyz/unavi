@@ -12,7 +12,6 @@ import { updateLocalSpace } from "../../../helpers/indexedDB/LocalSpace/helpers"
 import Tooltip from "../../base/Tooltip";
 import ToolButton from "./ToolButton";
 import IconButton from "../../base/IconButton";
-import Button from "../../base/Button";
 import LoginButton from "../../layouts/NavbarLayout/LoginButton";
 import PublishButton from "./PublishButton";
 

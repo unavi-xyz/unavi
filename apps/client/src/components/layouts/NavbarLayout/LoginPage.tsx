@@ -19,7 +19,6 @@ import {
 
 import MetamaskFox from "./MetamaskFox";
 import CreateProfilePage from "./CreateProfilePage";
-import RichButton from "../../base/RichButton";
 
 export default function LoginPage() {
   const address = useEthersStore((state) => state.address);
@@ -59,6 +58,7 @@ export default function LoginPage() {
               const handle = profilesRes.data?.profiles.items[0].handle;
               useLensStore.setState({ handle });
             }
+            console.log("closing...");
             close();
           })
           .catch((err) => {
@@ -81,12 +81,21 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <RichButton
-        title="Metamask"
-        description="A browser extension"
-        image={<MetamaskFox width="100px" />}
+      <button
         onClick={connectWallet}
-      />
+        className="px-4 py-2 w-full flex items-center space-x-4
+                   hover:ring-1 hover:ring-outline transition rounded-xl
+                 bg-surfaceVariant text-onSurfaceVariant"
+      >
+        <div>
+          <MetamaskFox height="80px" />
+        </div>
+
+        <div className="w-full">
+          <div className="flex font-bold">Metamask</div>
+          <div className="flex">A browser extension</div>
+        </div>
+      </button>
     </div>
   );
 }

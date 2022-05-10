@@ -13,6 +13,8 @@ import ProfileMenuButton from "./ProfileMenuButton";
 export default function ProfileMenu() {
   const handle = useLensStore((state) => state.handle);
 
+  if (!handle) return null;
+
   return (
     <div className="py-2 space-y-2">
       <div className="px-2">

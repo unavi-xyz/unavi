@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
 
 interface Props {
   href: string;
@@ -21,13 +21,15 @@ export default function NavbarTextButton({ href, text }: Props) {
     setSelected(router.pathname.startsWith(href));
   }, [router, href]);
 
-  const bgColor = selected ? "bg-neutral-200" : "";
+  const selectedClass = selected
+    ? "bg-primaryContainer text-onPrimaryContainer"
+    : "hover:bg-surfaceVariant";
 
   return (
     <Link href={href} passHref>
       <button
-        className={`hover:bg-neutral-200 rounded-md px-2 py-1 text-sm font-bold
-                      transition-all duration-100 ${bgColor}`}
+        className={`px-3 py-1 rounded-lg text-onBackground font-bold
+                    transition  ${selectedClass}`}
       >
         {text}
       </button>

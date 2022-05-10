@@ -20,9 +20,9 @@ export default function Select({
       <div>
         <select
           value={value}
-          className={`border outline-none p-2 pl-4 pr-3 rounded-lg w-full cursor-pointer
-                    hover:bg-neutral-100 bg-arrow bg-no-repeat appearance-none
-                      bg-right bg-origin-content`}
+          className={`outline-none p-2 pl-4 pr-3 rounded-lg w-full transition
+                    hover:bg-opacity-70 bg-arrow bg-no-repeat appearance-none
+                      bg-right bg-origin-content bg-surface text-onSurface`}
           {...rest}
         >
           {options.map((option) => {

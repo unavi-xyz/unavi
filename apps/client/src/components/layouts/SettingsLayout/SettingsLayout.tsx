@@ -33,20 +33,18 @@ export default function SettingsLayout({ children }: Props) {
       </Head>
 
       <div className="max-w mx-8 my-8 flex">
-        <div className="max-w-md w-full p-8 space-y-4">
-          <Link href={`/user/${handle}`} passHref>
-            <div className="flex space-x-4 cursor-pointer">
-              <div className="w-14 h-14 rounded-full border">
-                <ViewerProfilePicture circle />
-              </div>
-              <div>
-                <div className="font-bold text-lg">
-                  {profile?.name ?? handle}
-                </div>
-                <div className="gradient-text w-min">@{handle}</div>
-              </div>
+        <div className="pt-8 pr-8 space-y-4 w-full max-w-xs">
+          <div className="flex space-x-4">
+            <div className="w-20 flex flex-col justify-center">
+              <ViewerProfilePicture circle />
             </div>
-          </Link>
+            <div className="flex flex-col justify-center">
+              <div className="font-black text-lg break-all">
+                {profile?.name ?? handle}
+              </div>
+              <div className="gradient-text break-all font-bold">@{handle}</div>
+            </div>
+          </div>
 
           <Link href="/settings" passHref>
             <div>
@@ -70,16 +68,14 @@ export default function SettingsLayout({ children }: Props) {
             </div>
           </Link>
 
-          <Link href="/settings/delete" passHref>
-            <div className="text-red-500">
-              <SettingsButton
-                icon={<MdOutlineWarningAmber />}
-                selected={router.asPath === "/settings/delete"}
-              >
-                Danger Zone
-              </SettingsButton>
-            </div>
-          </Link>
+          {/* <Link href="/settings/delete" passHref>
+            <SettingsButton
+              icon={<MdOutlineWarningAmber />}
+              selected={router.asPath === "/settings/delete"}
+            >
+              Danger Zone
+            </SettingsButton>
+          </Link> */}
         </div>
 
         <div className="w-full">{children}</div>

@@ -114,11 +114,14 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
 
   const hasChildren = entity.children.length > 0;
   const isSelected = selectedId === entity.id;
-  const bgClass = isSelected || isOver ? "bg-neutral-100" : "";
+  const bgClass =
+    isSelected || isOver
+      ? "bg-primaryContainer text-onPrimaryContainer"
+      : "hover:bg-surfaceVariant hover:text-onSurfaceVariant";
   const paddingClass = isRoot ? "" : "ml-4";
   const opacityClass = isDragging ? "opacity-0" : "";
-  const highlightAboveClass = isOverAbove ? "bg-neutral-200" : "";
-  const highlightBelowClass = isOverBelow ? "bg-neutral-200" : "";
+  const highlightAboveClass = isOverAbove ? "bg-secondaryContainer" : "";
+  const highlightBelowClass = isOverBelow ? "bg-secondaryContainer" : "";
 
   drop(ref);
 
@@ -146,8 +149,8 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
               e.stopPropagation();
               useStudioStore.setState({ selectedId: entity.id });
             }}
-            className={`font-bold hover:bg-neutral-100 rounded-md px-2
-                        flex items-center h-8 ${bgClass} ${opacityClass}`}
+            className={`font-bold rounded-md px-2 transition flex items-center
+                        h-8 ${bgClass} ${opacityClass}`}
           >
             <div
               onClick={() => setOpen((prev) => !prev)}

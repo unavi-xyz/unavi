@@ -52,7 +52,7 @@ export default function PublishPage() {
   const image = imageFile ? URL.createObjectURL(imageFile) : localSpace?.image;
 
   async function handleSubmit() {
-    if (!signer || !handle || !profile || !localSpace) return;
+    if (!signer || !handle || !profile || !localSpace || loading) return;
 
     setLoading(true);
 
@@ -139,33 +139,8 @@ export default function PublishPage() {
         <p className="text-lg flex justify-center">Mint a new space NFT</p>
       </div>
 
-      <div className="flex space-x-4 items-end">
-        <div className="w-full space-y-4">
-          <div className="w-full space-y-1">
-            <div className="text-lg font-bold">Image</div>
-            <FileUpload
-              title="Cover Picture"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) setImageFile(file);
-              }}
-            />
-          </div>
-
-          <TextField
-            inputRef={nameRef}
-            title="Name"
-            defaultValue={localSpace?.name}
-          />
-          <TextArea
-            textAreaRef={descriptionRef}
-            title="Description"
-            defaultValue={localSpace?.description}
-          />
-        </div>
-
-        <div className="aspect-card w-1/2 rounded-2xl bg-neutral-200 border">
+      <div className="w-full space-y-4">
+        <div className="aspect-card rounded-2xl">
           {image && (
             <img
               src={image}
@@ -174,11 +149,37 @@ export default function PublishPage() {
             />
           )}
         </div>
+
+        <div className="w-full space-y-1">
+          <div className="text-lg font-bold">Image</div>
+          <FileUpload
+            title="Cover Picture"
+            accept="image/*"
+            color="SurfaceVariant"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) setImageFile(file);
+            }}
+          />
+        </div>
+
+        <TextField
+          inputRef={nameRef}
+          title="Name"
+          defaultValue={localSpace?.name}
+        />
+        <TextArea
+          textAreaRef={descriptionRef}
+          title="Description"
+          defaultValue={localSpace?.description}
+        />
       </div>
 
-      <Button onClick={handleSubmit} loading={loading}>
-        Submit
-      </Button>
+      <div className="flex justify-end w-full">
+        <Button variant="filled" onClick={handleSubmit} loading={loading}>
+          Submit
+        </Button>
+      </div>
     </div>
   );
 }

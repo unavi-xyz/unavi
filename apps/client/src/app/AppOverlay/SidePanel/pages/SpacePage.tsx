@@ -55,7 +55,7 @@ export default function SpacePage() {
         <Link href={`/app?space=${spaceId}`} passHref>
           <div
             className="h-14 text-md rounded-full bg-black text-white justify-center
-          hover:cursor-pointer transition-all flex items-center"
+          hover:cursor-pointer transition flex items-center"
           >
             Enter Space
           </div>

@@ -53,10 +53,13 @@ export default function Account() {
   }
 
   return (
-    <div className="space-y-8 bg-white rounded-2xl border p-8">
+    <div
+      className="space-y-8 bg-secondaryContainer text-onSecondaryContainer
+                 rounded-3xl border p-8 text-lg"
+    >
       <div className="space-y-2">
-        <div className="font-bold text-xl">Set default profile</div>
-        <div className="text-neutral-500">
+        <div className="font-bold text-xl">Default Profile</div>
+        <div>
           Setting a default profile will help people discover who you are. You
           can change your default profile at any time.
         </div>
@@ -73,9 +76,16 @@ export default function Account() {
         />
       </div>
 
-      <Button onClick={handleSave} loading={loading} disabled={disabled}>
-        Save
-      </Button>
+      <div className="w-full flex justify-end">
+        <Button
+          variant="filled"
+          onClick={handleSave}
+          loading={loading}
+          disabled={disabled}
+        >
+          Save
+        </Button>
+      </div>
     </div>
   );
 }

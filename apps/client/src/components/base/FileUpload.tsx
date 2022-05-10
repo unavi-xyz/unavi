@@ -3,6 +3,7 @@ import { ChangeEvent, useState } from "react";
 interface Props {
   title?: string;
   accept?: string;
+  color?: "Surface" | "SurfaceVariant";
   inputRef?: React.MutableRefObject<HTMLInputElement>;
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   [key: string]: any;
@@ -11,6 +12,7 @@ interface Props {
 export default function FileUpload({
   title,
   accept,
+  color = "Surface",
   inputRef,
   onChange,
   ...rest
@@ -24,16 +26,19 @@ export default function FileUpload({
     if (file) setFile(file);
   }
 
+  const colorClass =
+    color === "Surface"
+      ? "bg-surface text-onSurface"
+      : "bg-surfaceVariant text-onSurfaceVariant";
+
   return (
     <div className="flex flex-col space-y-1">
-      <label htmlFor={title} className="block">
-        <div className="group flex items-center border rounded-lg cursor-pointer">
-          <div
-            className="bg-neutral-100 px-3 py-2 rounded-l-lg border-r
-                       group-hover:bg-neutral-200 transition-all"
-          >
-            Choose File
-          </div>
+      <label
+        htmlFor={title}
+        className={`group block rounded-lg hover:bg-opacity-70 transition ${colorClass}`}
+      >
+        <div className="flex items-center">
+          <div className="px-3 py-2 rounded-l-lg">Choose File</div>
           <div className="px-3 py-2">{file ? file.name : "No file chosen"}</div>
         </div>
       </label>

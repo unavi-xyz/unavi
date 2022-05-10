@@ -13,7 +13,9 @@ export default function LoginButton() {
         <LoginPage />
       </Dialog>
 
-      <Button onClick={() => setOpen(true)}>Login</Button>
+      <Button variant="filled" onClick={() => setOpen(true)}>
+        Login
+      </Button>
     </>
   );
 }

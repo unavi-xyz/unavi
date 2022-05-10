@@ -5,8 +5,8 @@ import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHan
 import { useLensStore } from "../../src/helpers/lens/store";
 import { AttributeData, ProfileMetadata } from "../../src/helpers/lens/types";
 import { useEthersStore } from "../../src/helpers/ethers/store";
-import { updateMetadata } from "../../src/helpers/lens/updateMetadata";
-import { updateProfilePicture } from "../../src/helpers/lens/updateProfilePicture";
+import { updateMetadata } from "../../src/helpers/lens/actions/updateMetadata";
+import { updateProfilePicture } from "../../src/helpers/lens/actions/updateProfilePicture";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
 import { uploadFileToIpfs } from "../../src/helpers/ipfs/fetch";
 

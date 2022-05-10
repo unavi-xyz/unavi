@@ -12,6 +12,7 @@ import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
 import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
 import ProfilePicture from "../../src/components/lens/ProfilePicture";
 import Button from "../../src/components/base/Button";
+import { useProfileSpaces } from "../../src/helpers/lens/hooks/useProfileSpaces";
 
 export default function User() {
   const router = useRouter();
@@ -21,6 +22,10 @@ export default function User() {
   const profile = useProfileByHandle(handle);
   const color = useColorFromSeed(profile?.handle);
   const { url: coverUrl } = useMediaImage(profile?.coverPicture);
+
+  const spaces = useProfileSpaces(profile?.id);
+
+  console.log("👺", spaces);
 
   if (!profile) return null;
 
@@ -133,14 +138,8 @@ export default function User() {
 
           <div className="w-full p-4 space-y-4">
             <div className="flex items-center justify-center w-full space-x-4">
-              <div className="font-bold bg-neutral-200 rounded-lg px-3 py-1 cursor-pointer">
+              <div className="font-bold rounded-lg px-3 py-1 text-lg">
                 Spaces
-              </div>
-              <div className="font-bold hover:bg-neutral-200 rounded-lg px-3 py-1 cursor-pointer">
-                Mirrors
-              </div>
-              <div className="font-bold hover:bg-neutral-200 rounded-lg px-3 py-1 cursor-pointer">
-                Avatars
               </div>
             </div>
 

@@ -1,14 +1,14 @@
 import { utils } from "ethers";
 
-import { LensPeriphery__factory } from "../../../contracts";
-import { useEthersStore } from "../ethers/store";
-import { uploadStringToIpfs } from "../ipfs/fetch";
-import { apolloClient } from "./apollo";
-import { LENS_PERIPHERY_ADDRESS } from "./contracts";
+import { LensPeriphery__factory } from "../../../../contracts";
+import { useEthersStore } from "../../ethers/store";
+import { uploadStringToIpfs } from "../../ipfs/fetch";
+import { apolloClient } from "../apollo";
+import { LENS_PERIPHERY_ADDRESS } from "../contracts";
 import { pollUntilIndexed } from "./pollUntilIndexed";
-import { GET_PROFILE_BY_HANDLE, SET_PROFILE_METADATA } from "./queries";
-import { useLensStore } from "./store";
-import { ProfileMetadata } from "./types";
+import { GET_PROFILE_BY_HANDLE, SET_PROFILE_METADATA } from "../queries";
+import { useLensStore } from "../store";
+import { ProfileMetadata } from "../types";
 
 import {
   GetProfileByHandleQuery,
@@ -16,8 +16,8 @@ import {
   Profile,
   SetProfileMetadataMutation,
   SetProfileMetadataMutationVariables,
-} from "../../generated/graphql";
-import { authenticate } from "./authentication";
+} from "../../../generated/graphql";
+import { authenticate } from "../authentication";
 
 function removeTypename(obj: any) {
   if (obj.__typename) delete obj.__typename;

@@ -276,3 +276,156 @@ export const SET_DEFAULT_PROFILE = gql`
     }
   }
 `;
+
+export const CREATE_POST_TYPED_DATA = gql`
+  mutation CreatePostTypedData($profileId: ProfileId!, $contentURI: Url!) {
+    createPostTypedData(
+      request: {
+        profileId: $profileId
+        contentURI: $contentURI
+        collectModule: { freeCollectModule: { followerOnly: false } }
+        referenceModule: { followerOnlyReferenceModule: false }
+      }
+    ) {
+      id
+      expiresAt
+      typedData {
+        types {
+          PostWithSig {
+            name
+            type
+          }
+        }
+        domain {
+          name
+          chainId
+          version
+          verifyingContract
+        }
+        value {
+          nonce
+          deadline
+          profileId
+          contentURI
+          collectModule
+          collectModuleData
+          referenceModule
+          referenceModuleData
+        }
+      }
+    }
+  }
+`;
+
+export const GET_PUBLICATIONS = gql`
+  query GetPublications($profileId: ProfileId!) {
+    publications(
+      request: { profileId: $profileId, publicationTypes: [POST], limit: 10 }
+    ) {
+      items {
+        __typename
+        ... on Post {
+          ...PostFields
+        }
+      }
+      pageInfo {
+        prev
+        next
+        totalCount
+      }
+    }
+  }
+
+  fragment MediaFields on Media {
+    url
+    mimeType
+  }
+
+  fragment ProfileFields on Profile {
+    id
+    name
+    bio
+    attributes {
+      displayType
+      traitType
+      key
+      value
+    }
+    metadata
+    isDefault
+    handle
+    picture {
+      ... on NftImage {
+        contractAddress
+        tokenId
+        uri
+        verified
+      }
+      ... on MediaSet {
+        original {
+          ...MediaFields
+        }
+      }
+    }
+    coverPicture {
+      ... on NftImage {
+        contractAddress
+        tokenId
+        uri
+        verified
+      }
+      ... on MediaSet {
+        original {
+          ...MediaFields
+        }
+      }
+    }
+    ownedBy
+    stats {
+      totalFollowers
+      totalFollowing
+      totalPosts
+      totalComments
+      totalMirrors
+      totalPublications
+      totalCollects
+    }
+  }
+
+  fragment PublicationStatsFields on PublicationStats {
+    totalAmountOfMirrors
+    totalAmountOfCollects
+    totalAmountOfComments
+  }
+
+  fragment MetadataOutputFields on MetadataOutput {
+    name
+    description
+    content
+    media {
+      original {
+        ...MediaFields
+      }
+    }
+    attributes {
+      displayType
+      traitType
+      value
+    }
+  }
+
+  fragment PostFields on Post {
+    id
+    profile {
+      ...ProfileFields
+    }
+    stats {
+      ...PublicationStatsFields
+    }
+    metadata {
+      ...MetadataOutputFields
+    }
+    createdAt
+    appId
+  }
+`;

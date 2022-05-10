@@ -1,20 +1,20 @@
 import { utils } from "ethers";
 
-import { apolloClient } from "./apollo";
-import { authenticate } from "./authentication";
-import { GET_DEFAULT_PROFILE, SET_DEFAULT_PROFILE } from "./queries";
-import { useEthersStore } from "../ethers/store";
-import { LENS_HUB_ADDRESS } from "./contracts";
+import { apolloClient } from "../apollo";
+import { authenticate } from "../authentication";
+import { GET_DEFAULT_PROFILE, SET_DEFAULT_PROFILE } from "../queries";
+import { useEthersStore } from "../../ethers/store";
+import { LENS_HUB_ADDRESS } from "../contracts";
 import { pollUntilIndexed } from "./pollUntilIndexed";
 
-import { LensHub__factory } from "../../../contracts";
+import { LensHub__factory } from "../../../../contracts";
 import {
   GetDefaultProfileQuery,
   GetDefaultProfileQueryVariables,
   Profile,
   SetDefaultProfileMutation,
   SetDefaultProfileMutationVariables,
-} from "../../generated/graphql";
+} from "../../../generated/graphql";
 
 function removeTypename(obj: any) {
   if (obj.__typename) delete obj.__typename;

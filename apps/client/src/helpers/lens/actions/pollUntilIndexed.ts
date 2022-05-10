@@ -1,9 +1,9 @@
-import { apolloClient } from "./apollo";
-import { HAS_TX_HASH_BEEN_INDEXED } from "./queries";
+import { apolloClient } from "../apollo";
+import { HAS_TX_HASH_BEEN_INDEXED } from "../queries";
 import {
   HasTxHashBeenIndexedQuery,
   HasTxHashBeenIndexedQueryVariables,
-} from "../../generated/graphql";
+} from "../../../generated/graphql";
 
 export async function pollUntilIndexed(txHash: string) {
   //poll query until transaction is indexed

@@ -60,7 +60,7 @@ export default function Button({
 
   return (
     <div
-      className={`px-6 h-8 rounded-full flex items-center justify-center ${widthClass}
+      className={`px-6 h-9 rounded-full flex items-center justify-center ${widthClass}
                   transition-all duration-150 font-bold ${textColorClass} ${hoverColorClass}
                   ${bgColorClass} ${cursorClass} ${outlineClass} ${ringColorClass}`}
       {...rest}

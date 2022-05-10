@@ -11,7 +11,7 @@ import { authenticate } from "../../helpers/lens/authentication";
 import { ProfileMetadata } from "../../helpers/lens/types";
 import { useLensStore } from "../../helpers/lens/store";
 import { apolloClient } from "../../helpers/lens/apollo";
-import { pollUntilIndexed } from "../../helpers/lens/pollUntilIndexed";
+import { pollUntilIndexed } from "../../helpers/lens/actions/pollUntilIndexed";
 import { LENS_PERIPHERY_ADDRESS } from "../../helpers/lens/contracts";
 import { LensPeriphery__factory } from "../../../contracts";
 import {

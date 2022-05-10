@@ -3,7 +3,7 @@ import { ChangeEvent, useEffect, useState } from "react";
 import { useEthersStore } from "../../src/helpers/ethers/store";
 import { useProfilesByAddress } from "../../src/helpers/lens/hooks/useProfilesByAddress";
 import { useDefaultProfileByAddress } from "../../src/helpers/lens/hooks/useDefaultProfileByAddress";
-import { updateDefaultProfile } from "../../src/helpers/lens/updateDefaultProfile";
+import { updateDefaultProfile } from "../../src/helpers/lens/actions/updateDefaultProfile";
 
 import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
 import Select from "../../src/components/base/Select";

@@ -6,7 +6,7 @@ import { Button, Dialog, TextField } from "../../components/base";
 import {
   createLocalSpace,
   createNewLocalSpace,
-} from "../../helpers/indexedDB/localSpaces/helpers";
+} from "../../helpers/indexedDB/LocalSpace/helpers";
 
 const nanoid = customAlphabet("0123456789", 12);
 

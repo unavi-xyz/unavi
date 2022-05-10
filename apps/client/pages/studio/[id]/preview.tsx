@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import { MdClose } from "react-icons/md";
 import { InstancedScene } from "scene";
 
-import { useLocalSpace } from "../../../src/helpers/indexedDB/localSpaces/hooks/useLocalScene";
+import { useLocalSpace } from "../../../src/helpers/indexedDB/LocalSpace/hooks/useLocalScene";
 
 import Player from "../../../src/components/app/Player";
 

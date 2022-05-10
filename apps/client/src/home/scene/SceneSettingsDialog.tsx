@@ -2,12 +2,12 @@ import { Dispatch, SetStateAction, useRef } from "react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
 
-import { useLocalSpace } from "../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
+import { useLocalSpace } from "../../helpers/indexedDB/LocalSpace/hooks/useLocalScene";
 import { Button, Dialog, TextField } from "../../components/base";
 import {
   deleteLocalSpace,
   updateLocalSpace,
-} from "../../helpers/indexedDB/localSpaces/helpers";
+} from "../../helpers/indexedDB/LocalSpace/helpers";
 
 interface Props {
   id: string;

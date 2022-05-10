@@ -4,7 +4,7 @@ import { useStudioStore } from "../store";
 import {
   getLocalSpace,
   updateLocalSpace,
-} from "../../indexedDB/localSpaces/helpers";
+} from "../../indexedDB/LocalSpace/helpers";
 
 export function useAutosave() {
   const id = useStudioStore((state) => state.id);

@@ -1,8 +1,8 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { createNewLocalSpace } from "../../src/helpers/indexedDB/localSpaces/helpers";
-import { useLocalSpaces } from "../../src/helpers/indexeddb/localSpaces/hooks/useLocalSpaces";
+import { createNewLocalSpace } from "../../src/helpers/indexedDB/LocalSpace/helpers";
+import { useLocalSpaces } from "../../src/helpers/indexedDB/LocalSpace/hooks/useLocalSpaces";
 
 import LocalSpaceCard from "../../src/components/ui/LocalSpaceCard";
 import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";

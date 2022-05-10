@@ -7,8 +7,8 @@ import { editorManager, useStore } from "../helpers/store";
 
 import MiddleButtons from "./MiddleButtons";
 import { Tooltip } from "../../components/base";
-import { useLocalSpace } from "../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
-import { updateLocalSpace } from "../../helpers/indexedDB/localSpaces/helpers";
+import { useLocalSpace } from "../../helpers/indexedDB/LocalSpace/hooks/useLocalScene";
+import { updateLocalSpace } from "../../helpers/indexedDB/LocalSpace/helpers";
 
 interface Props {
   id: string;

@@ -6,8 +6,8 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 
 import { useLensStore } from "../../../helpers/lens/store";
-import { useLocalSpace } from "../../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
-import { updateLocalSpace } from "../../../helpers/indexedDB/localSpaces/helpers";
+import { useLocalSpace } from "../../../helpers/indexedDB/LocalSpace/hooks/useLocalScene";
+import { updateLocalSpace } from "../../../helpers/indexedDB/LocalSpace/helpers";
 
 import Tooltip from "../../base/Tooltip";
 import ToolButton from "./ToolButton";

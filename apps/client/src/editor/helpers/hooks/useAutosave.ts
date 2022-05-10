@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { updateLocalSpace } from "../../../helpers/indexedDB/localSpaces/helpers";
-import { useLocalSpace } from "../../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
+import { updateLocalSpace } from "../../../helpers/indexedDB/LocalSpace/helpers";
+import { useLocalSpace } from "../../../helpers/indexedDB/LocalSpace/hooks/useLocalScene";
 
 import { sceneManager, useStore } from "../store";
 

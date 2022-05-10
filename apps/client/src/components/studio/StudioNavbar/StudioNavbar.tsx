@@ -1,23 +1,26 @@
 import { useEffect } from "react";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
-import { useRouter } from "next/router";
-import { VscMove, VscSync } from "react-icons/vsc";
+import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
+import { useRouter } from "next/router";
 import Link from "next/link";
 
+import { useLensStore } from "../../../helpers/lens/store";
 import { useLocalSpace } from "../../../helpers/indexedDB/localSpaces/hooks/useLocalScene";
 import { updateLocalSpace } from "../../../helpers/indexedDB/localSpaces/helpers";
 
 import Tooltip from "../../base/Tooltip";
 import ToolButton from "./ToolButton";
 import IconButton from "../../base/IconButton";
-import { BiMove } from "react-icons/bi";
 import Button from "../../base/Button";
+import LoginButton from "../../layouts/NavbarLayout/LoginButton";
+import PublishButton from "./PublishButton";
 
 export default function StudioNavbar() {
   const router = useRouter();
   const id = router.query.id as string;
 
+  const handle = useLensStore((state) => state.handle);
   const localSpace = useLocalSpace(id);
 
   useEffect(() => {
@@ -71,7 +74,7 @@ export default function StudioNavbar() {
         </div>
 
         <div className="text-sm">
-          <Button>Publish</Button>
+          {handle ? <PublishButton /> : <LoginButton />}
         </div>
       </div>
     </div>

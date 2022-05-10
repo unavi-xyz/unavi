@@ -28,7 +28,7 @@ export default function Create() {
             <div className="font-black text-3xl">Create</div>
           </div>
 
-          <div className="w-full grid grid-cols-3 gap-4">
+          <div className="w-full grid grid-cols-3 gap-4 bg-white border rounded-3xl p-4">
             {localSpaces.map((localSpace) => (
               <LocalSpaceCard key={localSpace.id} localSpace={localSpace} />
             ))}

@@ -1,4 +1,4 @@
-import { Debug, Physics } from "@react-three/cannon";
+import { Physics } from "@react-three/cannon";
 import { Sky } from "@react-three/drei";
 
 import { Scene } from "../types";
@@ -16,9 +16,7 @@ export function InstancedScene({ scene, children }: Props) {
       <directionalLight intensity={1} position={[-1, 1.5, -2]} />
       <Sky />
 
-      <Debug>
-        <InstancedEntity entity={scene.tree} />
-      </Debug>
+      <InstancedEntity entity={scene.tree} />
 
       <group>{children}</group>
     </Physics>

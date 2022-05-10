@@ -4213,6 +4213,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@typechain/ethers-v5@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "@typechain/ethers-v5@npm:10.0.0"
+  dependencies:
+    lodash: ^4.17.15
+    ts-essentials: ^7.0.1
+  peerDependencies:
+    "@ethersproject/abi": ^5.0.0
+    "@ethersproject/bytes": ^5.0.0
+    "@ethersproject/providers": ^5.0.0
+    ethers: ^5.1.3
+    typechain: ^8.0.0
+    typescript: ">=4.3.0"
+  checksum: f89a442829398d00e6c10c4cdebb16af3195cfbf6b0c062f24503ee1befc01c121a6d46edfd7b54aaf00c81b2e845730d2b556ecbaa6e15f360456f42fedb44d
+  languageName: node
+  linkType: hard
+
 "@types/aria-query@npm:^4.2.0":
   version: 4.2.2
   resolution: "@types/aria-query@npm:4.2.2"
@@ -6704,6 +6721,7 @@ __metadata:
     "@react-three/fiber": ^8.0.13
     "@testing-library/jest-dom": ^5.16.2
     "@testing-library/react": ^12.1.3
+    "@typechain/ethers-v5": ^10.0.0
     "@types/graphql": ^14.5.0
     "@types/jest": ^27.4.1
     "@types/react": ^18.0.8

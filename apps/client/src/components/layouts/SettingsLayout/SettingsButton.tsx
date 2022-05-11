@@ -11,7 +11,7 @@ export default function SettingsButton({ icon, selected, children }: Props) {
 
   return (
     <div
-      className={`flex items-center cursor-pointer rounded-lg w-full
+      className={`flex items-center cursor-pointer rounded-lg w-full transition
                   py-2 px-4 space-x-4 font-bold text-lg ${selectedClass}`}
     >
       {icon && <div className="text-xl">{icon}</div>}

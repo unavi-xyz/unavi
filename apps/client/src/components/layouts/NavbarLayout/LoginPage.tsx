@@ -58,7 +58,6 @@ export default function LoginPage() {
               const handle = profilesRes.data?.profiles.items[0].handle;
               useLensStore.setState({ handle });
             }
-            console.log("closing...");
             close();
           })
           .catch((err) => {

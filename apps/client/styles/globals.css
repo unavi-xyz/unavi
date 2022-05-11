@@ -12,7 +12,7 @@ html {
 }
 
 .gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-tertiary;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-rose-500;
 }
 
 .crosshair {

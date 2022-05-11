@@ -67,7 +67,6 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
 
       //if already in parent, move to index
       if (isInParent) {
-        console.log("🧥");
         const parent = findEntityById(draft.tree, parentId);
         if (!parent) return;
         const currentIndex = parent.children.indexOf(entity);

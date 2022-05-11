@@ -63,7 +63,7 @@ export default function User() {
               <div className="text-2xl font-black break-all">
                 {profile?.name ?? handle}
               </div>
-              <div className="gradient-text text-lg break-all font-bold">
+              <div className="gradient-text text-lg break-all font-bold w-fit">
                 @{handle}
               </div>
             </div>

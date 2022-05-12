@@ -1,29 +1,22 @@
 import { useRef, useState } from "react";
 import { utils } from "ethers";
-import { useRouter } from "next/router";
 import { nanoid } from "nanoid";
 
-import { Metadata, SpaceContent } from "../../../helpers/lens/types";
+import { authenticate } from "../../../helpers/lens/authentication";
 import { useEthersStore } from "../../../helpers/ethers/store";
 import { useLocalSpace } from "../../../helpers/indexedDB/LocalSpace/hooks/useLocalScene";
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
 import { useLensStore } from "../../../helpers/lens/store";
 import { useStudioStore } from "../../../helpers/studio/store";
+import { useCreatePostTypedDataMutation } from "../../../generated/graphql";
 import { LensHub__factory } from "../../../../contracts";
-import { apolloClient } from "../../../helpers/lens/apollo";
-import { authenticate } from "../../../helpers/lens/authentication";
-import { CREATE_POST_TYPED_DATA } from "../../../helpers/lens/queries";
-import { pollUntilIndexed } from "../../../helpers/lens/actions/pollUntilIndexed";
-import { LENS_HUB_ADDRESS } from "../../../helpers/lens/contracts";
+import { LENS_HUB_ADDRESS, WIRED_APPID } from "../../../helpers/lens/constants";
+import { pollUntilIndexed } from "../../../helpers/lens/utils";
+
 import {
   uploadFileToIpfs,
   uploadStringToIpfs,
 } from "../../../helpers/ipfs/fetch";
-
-import {
-  CreatePostTypedDataMutation,
-  CreatePostTypedDataMutationVariables,
-} from "../../../generated/graphql";
 
 import Button from "../../base/Button";
 import FileUpload from "../../base/FileUpload";
@@ -39,7 +32,6 @@ export default function PublishPage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
-  const router = useRouter();
   const id = useStudioStore((state) => state.id);
   const localSpace = useLocalSpace(id);
   const signer = useEthersStore((state) => state.signer);
@@ -51,46 +43,46 @@ export default function PublishPage() {
 
   const image = imageFile ? URL.createObjectURL(imageFile) : localSpace?.image;
 
+  const [, createPostTypedData] = useCreatePostTypedDataMutation();
+
   async function handleSubmit() {
     if (!signer || !handle || !profile || !localSpace || loading) return;
 
     setLoading(true);
 
-    //upload data to IPFS
-    const imageURI = imageFile
-      ? await uploadFileToIpfs(imageFile)
-      : await uploadStringToIpfs(localSpace.image);
-
-    const metadata: Metadata = {
-      version: "1.0.0",
-      metadata_id: nanoid(),
-      description: descriptionRef.current?.value,
-      content: JSON.stringify(localSpace.scene),
-      external_url: "thewired.space",
-      name: nameRef.current?.value ?? "",
-      attributes: [],
-      image: imageURI,
-      imageMimeType: undefined,
-      media: [],
-      animation_url: undefined,
-      appId: "wired",
-    };
-
-    const contentURI = await uploadStringToIpfs(JSON.stringify(metadata));
-
     try {
       //authenticate
       await authenticate();
 
+      //upload data to IPFS
+      const imageURI = imageFile
+        ? await uploadFileToIpfs(imageFile)
+        : await uploadStringToIpfs(localSpace.image);
+
+      const metadata = {
+        version: "1.0.0",
+        metadata_id: nanoid(),
+        description: descriptionRef.current?.value,
+        content: JSON.stringify(localSpace.scene),
+        external_url: "thewired.space",
+        name: nameRef.current?.value ?? "",
+        attributes: [],
+        image: imageURI,
+        imageMimeType: undefined,
+        media: [],
+        animation_url: undefined,
+        appId: WIRED_APPID,
+      };
+
+      const contentURI = await uploadStringToIpfs(JSON.stringify(metadata));
+
       //get typed data
-      const { data } = await apolloClient.mutate<
-        CreatePostTypedDataMutation,
-        CreatePostTypedDataMutationVariables
-      >({
-        mutation: CREATE_POST_TYPED_DATA,
-        variables: { profileId: profile.id, contentURI },
+      const { data, error } = await createPostTypedData({
+        profileId: profile.id,
+        contentURI,
       });
 
+      if (error) throw new Error(error.message);
       if (!data) throw new Error("No data returned from set image");
 
       const typedData = data.createPostTypedData.typedData;
@@ -109,9 +101,9 @@ export default function PublishPage() {
         profileId: typedData.value.profileId,
         contentURI: typedData.value.contentURI,
         collectModule: typedData.value.collectModule,
-        collectModuleData: typedData.value.collectModuleData,
+        collectModuleData: typedData.value.collectModuleInitData,
         referenceModule: typedData.value.referenceModule,
-        referenceModuleData: typedData.value.referenceModuleData,
+        referenceModuleData: typedData.value.referenceModuleInitData,
         sig: {
           v,
           r,

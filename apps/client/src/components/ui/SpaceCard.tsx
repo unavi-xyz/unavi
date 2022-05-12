@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function SpaceCard({ space }: Props) {
-  const { url } = useMediaImage(space.metadata.media[0]);
+  const url = useMediaImage(space.metadata.media[0]);
 
   return <Card text={space?.metadata?.name ?? ""} image={url} />;
 }

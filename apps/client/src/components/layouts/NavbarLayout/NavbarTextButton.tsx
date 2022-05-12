@@ -22,7 +22,7 @@ export default function NavbarTextButton({ href, text }: Props) {
   }, [router, href]);
 
   const selectedClass = selected
-    ? "bg-primaryContainer text-onPrimaryContainer"
+    ? "bg-secondaryContainer text-onSecondaryContainer"
     : "hover:bg-surfaceVariant";
 
   return (

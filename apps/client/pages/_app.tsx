@@ -1,9 +1,7 @@
-import { IpfsProvider } from "ceramic";
 import Head from "next/head";
-import { QueryClientProvider } from "react-query";
+import { Provider } from "urql";
 
-import { queryClient } from "../src/helpers/constants";
-
+import { lensClient } from "../src/helpers/lens/client";
 import "../styles/globals.css";
 
 export default function App({ Component, pageProps }: any) {
@@ -18,15 +16,13 @@ export default function App({ Component, pageProps }: any) {
       </Head>
 
       <div className="w-full h-screen">
-        <QueryClientProvider client={queryClient}>
-          <IpfsProvider>
-            <SecondLayout>
-              <Layout>
-                <Component {...pageProps} />
-              </Layout>
-            </SecondLayout>
-          </IpfsProvider>
-        </QueryClientProvider>
+        <Provider value={lensClient}>
+          <SecondLayout>
+            <Layout>
+              <Component {...pageProps} />
+            </Layout>
+          </SecondLayout>
+        </Provider>
       </div>
     </div>
   );

@@ -5,9 +5,9 @@ import Link from "next/link";
 import Head from "next/head";
 
 import { useLensStore } from "../../src/helpers/lens/store";
-import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
-import { useProfileSpaces } from "../../src/helpers/lens/hooks/useProfileSpaces";
+import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
+import { useSpacesByProfile } from "../../src/helpers/lens/hooks/useSpacesByProfile";
 
 import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
 import ProfilePicture from "../../src/components/lens/ProfilePicture";
@@ -18,11 +18,10 @@ export default function User() {
   const router = useRouter();
   const handle = router.query.handle as string;
 
-  const viewerHandle = useLensStore((state) => state.handle);
   const profile = useProfileByHandle(handle);
-  const { url: coverUrl } = useMediaImage(profile?.coverPicture);
-
-  const spaces = useProfileSpaces(profile?.id);
+  const coverUrl = useMediaImage(profile?.coverPicture);
+  const viewerHandle = useLensStore((state) => state.handle);
+  const spaces = useSpacesByProfile(profile?.id);
 
   if (!profile) return null;
 
@@ -87,7 +86,7 @@ export default function User() {
                 {profile.id}
               </ProfileRow>
 
-              {profile?.location && (
+              {/* {profile?.location && (
                 <ProfileRow icon={<MdOutlineLocationOn />}>
                   {profile?.location}
                 </ProfileRow>
@@ -124,7 +123,7 @@ export default function User() {
                     {profile.website}
                   </a>
                 </ProfileRow>
-              )}
+              )} */}
             </div>
           </div>
 

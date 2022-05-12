@@ -1,12 +1,9 @@
 overwrite: true
 schema: "https://api-mumbai.lens.dev"
-documents: "src/**/queries.ts"
+documents: "src/graphql/**/*.graphql"
 generates:
   src/generated/graphql.tsx:
     plugins:
       - "typescript"
       - "typescript-operations"
-      - "typescript-react-apollo"
-  ./graphql.schema.json:
-    plugins:
-      - "introspection"
+      - "typescript-urql"

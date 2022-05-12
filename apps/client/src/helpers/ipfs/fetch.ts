@@ -61,3 +61,15 @@ export async function uploadStringToIpfs(str: string) {
 
   return `ipfs://${hash}`;
 }
+
+export async function uploadToIpfs(item: any) {
+  const ipfs = useIpfsStore.getState().ipfs;
+
+  const { cid } = await ipfs.add(item);
+  const hash = cid.toString();
+
+  //set cache
+  cache[hash] = item;
+
+  return `ipfs://${hash}`;
+}

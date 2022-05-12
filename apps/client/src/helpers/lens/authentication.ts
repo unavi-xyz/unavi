@@ -1,17 +1,18 @@
-import { apolloClient } from "./apollo";
-import { AUTHENTICATE, GET_CHALLENGE, REFRESH_AUTHENTICATION } from "./queries";
 import { LOCAL_STORAGE } from "./constants";
 import { useLensStore } from "./store";
 import { useEthersStore } from "../ethers/store";
 import { disconnectWallet } from "../ethers/connection";
-
+import { lensClient } from "./client";
 import {
+  AuthenticateDocument,
   AuthenticateMutation,
   AuthenticateMutationVariables,
+  GetChallengeDocument,
   GetChallengeQuery,
   GetChallengeQueryVariables,
-  RefreshAuthenticationMutation,
-  RefreshAuthenticationMutationVariables,
+  RefreshDocument,
+  RefreshMutation,
+  RefreshMutationVariables,
 } from "../../generated/graphql";
 
 async function setAccessToken(accessToken: string) {
@@ -48,30 +49,31 @@ export async function refreshAccessToken() {
   );
 
   if (refreshToken) {
-    const { data } = await apolloClient.mutate<
-      RefreshAuthenticationMutation,
-      RefreshAuthenticationMutationVariables
-    >({
-      mutation: REFRESH_AUTHENTICATION,
-      variables: { refreshToken },
-    });
+    const { data, error } = await lensClient
+      .mutation<RefreshMutation, RefreshMutationVariables>(RefreshDocument, {
+        refreshToken,
+      })
+      .toPromise();
+
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error("No refresh tokens recieved");
 
     //store tokens
-    if (data) {
-      setAccessToken(data.refresh.accessToken);
-      setRefreshToken(data.refresh.refreshToken);
-    }
+    setAccessToken(data.refresh.accessToken);
+    setRefreshToken(data.refresh.refreshToken);
   }
 }
 
 async function generateChallenge(address: string) {
-  const { data } = await apolloClient.query<
-    GetChallengeQuery,
-    GetChallengeQueryVariables
-  >({
-    query: GET_CHALLENGE,
-    variables: { address },
-  });
+  const { data, error } = await lensClient
+    .query<GetChallengeQuery, GetChallengeQueryVariables>(
+      GetChallengeDocument,
+      { address }
+    )
+    .toPromise();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("No challenge recieved");
 
   return data.challenge.text;
 }
@@ -116,22 +118,22 @@ export async function authenticate() {
     }
   }
 
-  //if no valid token, generate challenge
+  //if no valid token, generate a challenge
   const challenge = await generateChallenge(address);
 
   //sign challenge
   const signature = await signer.signMessage(challenge);
 
   //authenticate with api
-  const { data } = await apolloClient.mutate<
-    AuthenticateMutation,
-    AuthenticateMutationVariables
-  >({
-    mutation: AUTHENTICATE,
-    variables: { address, signature },
-  });
+  const { data, error } = await lensClient
+    .mutation<AuthenticateMutation, AuthenticateMutationVariables>(
+      AuthenticateDocument,
+      { address, signature }
+    )
+    .toPromise();
 
-  if (!data) throw new Error("No data returned from authentication");
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Authentication failed");
 
   //store tokens
   setAccessToken(data.authenticate.accessToken);

@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function ProfilePicture({ profile, circle }: Props) {
-  const { url } = useMediaImage(profile?.picture);
+  const url = useMediaImage(profile?.picture);
 
   const circleClass = circle ? "rounded-full" : "rounded-xl";
   const identicon = `https://avatar.tobi.sh/${profile?.ownedBy}_${profile?.handle}.png`;
@@ -16,7 +16,7 @@ export default function ProfilePicture({ profile, circle }: Props) {
     <img
       src={url ?? identicon}
       alt="profile picture"
-      className={`object-cover aspect-square w-screen bg-secondaryContainer ${circleClass}`}
+      className={`object-cover w-screen aspect-square ${circleClass}`}
     />
   );
 }

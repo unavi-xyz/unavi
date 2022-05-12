@@ -1,4 +1,4 @@
-import { useProfileByHandle } from "../../helpers/lens/hooks/useProfileByHandle";
+import { useGetProfileByHandleQuery } from "../../generated/graphql";
 import { useLensStore } from "../../helpers/lens/store";
 
 import ProfilePicture from "./ProfilePicture";
@@ -9,9 +9,11 @@ interface Props {
 
 export default function ViewerProfilePicture({ circle }: Props) {
   const handle = useLensStore((state) => state.handle);
-  const profile = useProfileByHandle(handle);
 
-  if (!profile) return null;
+  const [{ data }] = useGetProfileByHandleQuery({
+    variables: { handle },
+    pause: !handle,
+  });
 
-  return <ProfilePicture circle={circle} profile={profile} />;
+  return <ProfilePicture circle={circle} profile={data?.profiles.items[0]} />;
 }

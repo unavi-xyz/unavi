@@ -1,9 +1,4 @@
-const withTM = require("next-transpile-modules")([
-  "three",
-  "3d",
-  "ceramic",
-  "scene",
-]);
+const withTM = require("next-transpile-modules")(["three", "scene"]);
 
 module.exports = withTM({
   reactStrictMode: true,

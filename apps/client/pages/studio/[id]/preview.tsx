@@ -1,9 +1,8 @@
-import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
+import { MdClose } from "react-icons/md";
+import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
-import { useRouter } from "next/router";
-import { MdClose } from "react-icons/md";
 import { InstancedScene } from "scene";
 
 import { useLocalSpace } from "../../../src/helpers/indexedDB/LocalSpace/hooks/useLocalScene";

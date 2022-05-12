@@ -1,14 +1,27 @@
 import { useEffect, useRef, useState } from "react";
+import { utils } from "ethers";
 import { nanoid } from "nanoid";
 
-import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
+import { authenticate } from "../../src/helpers/lens/authentication";
+import { pollUntilIndexed, removeTypename } from "../../src/helpers/lens/utils";
 import { useLensStore } from "../../src/helpers/lens/store";
-import { AttributeData, ProfileMetadata } from "../../src/helpers/lens/types";
 import { useEthersStore } from "../../src/helpers/ethers/store";
-import { updateMetadata } from "../../src/helpers/lens/actions/updateMetadata";
-import { updateProfilePicture } from "../../src/helpers/lens/actions/updateProfilePicture";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
-import { uploadFileToIpfs } from "../../src/helpers/ipfs/fetch";
+import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
+import { AttributeData, ProfileMetadata } from "../../src/helpers/lens/types";
+import { LensHub__factory, LensPeriphery__factory } from "../../contracts";
+import {
+  uploadFileToIpfs,
+  uploadStringToIpfs,
+} from "../../src/helpers/ipfs/fetch";
+import {
+  LENS_HUB_ADDRESS,
+  LENS_PERIPHERY_ADDRESS,
+} from "../../src/helpers/lens/constants";
+import {
+  useCreateSetPfpTypedDataMutation,
+  useCreateSetProfileMetadataTypedDataMutation,
+} from "../../src/generated/graphql";
 
 import TextField from "../../src/components/base/TextField";
 import TextArea from "../../src/components/base/TextArea";
@@ -32,8 +45,12 @@ export default function Settings() {
 
   const handle = useLensStore((state) => state.handle);
   const profile = useProfileByHandle(handle);
-  const { url: pfpMediaUrl } = useMediaImage(profile?.picture);
-  const { url: coverMediaUrl } = useMediaImage(profile?.coverPicture);
+  const pfpMediaUrl = useMediaImage(profile?.picture);
+  const coverMediaUrl = useMediaImage(profile?.coverPicture);
+
+  const [, createPfpTypedData] = useCreateSetPfpTypedDataMutation();
+  const [, createMetadataTypedData] =
+    useCreateSetProfileMetadataTypedDataMutation();
 
   useEffect(() => {
     setPfpUrl(pfpMediaUrl);
@@ -54,21 +71,23 @@ export default function Settings() {
   async function handleProfileSave() {
     const signer = useEthersStore.getState().signer;
     if (!signer || !profile || loadingProfile) return;
-
     setLoadingProfile(true);
 
     try {
+      //authenticate
+      await authenticate();
+
       //upload cover to ipfs
-      const cover_picture: ProfileMetadata["cover_picture"] = coverFile
+      const cover_picture: string = coverFile
         ? await uploadFileToIpfs(coverFile)
         : profile.coverPicture?.__typename === "MediaSet"
         ? profile.coverPicture.original.url
         : profile.coverPicture?.__typename === "NftImage"
         ? profile.coverPicture.uri
-        : null;
+        : undefined;
 
       //create metadata
-      const attributes: ProfileMetadata["attributes"] =
+      const attributes =
         profile?.attributes?.map((attribute) => {
           const data: AttributeData = {
             key: attribute.key,
@@ -79,43 +98,130 @@ export default function Settings() {
           return data;
         }) ?? [];
 
+      //TODO add location, website, twitter to attributes
+
       const metadata: ProfileMetadata = {
         version: "1.0.0",
         metadata_id: nanoid(),
-        name: nameRef.current?.value ?? "",
-        bio: bioRef.current?.value ?? "",
-        location: locationRef.current?.value ?? "",
-        cover_picture,
-        social: [
-          { key: "website", value: websiteRef.current?.value ?? "" },
-          { key: "twitter", value: twitterRef.current?.value ?? "" },
-        ],
-        attributes,
+        name: nameRef.current?.value ?? undefined,
+        bio: bioRef.current?.value ?? undefined,
+        cover_picture: undefined,
+        attributes: [],
       };
 
-      //upload metadata
-      await updateMetadata(profile, metadata);
-    } catch (e) {
-      console.error(e);
+      //upload metdata to ipfs
+      const url = await uploadStringToIpfs(JSON.stringify(metadata));
+
+      //create typed data
+      const { data, error } = await createMetadataTypedData({
+        profileId: profile.id,
+        metadata: url,
+      });
+
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("No typed data returned");
+
+      const typedData = data.createSetProfileMetadataTypedData.typedData;
+
+      //sign typed data
+      const signature = await signer._signTypedData(
+        removeTypename(typedData.domain),
+        removeTypename(typedData.types),
+        removeTypename(typedData.value)
+      );
+      const { v, r, s } = utils.splitSignature(signature);
+
+      //send transaction
+      const contract = LensPeriphery__factory.connect(
+        LENS_PERIPHERY_ADDRESS,
+        signer
+      );
+      const tx = await contract.setProfileMetadataURIWithSig({
+        user: await signer.getAddress(),
+        profileId: typedData.value.profileId,
+        metadata: typedData.value.metadata,
+        sig: {
+          v,
+          r,
+          s,
+          deadline: typedData.value.deadline,
+        },
+      });
+
+      //wait for transaction
+      await tx.wait();
+
+      //wait for indexing
+      await pollUntilIndexed(tx.hash);
+
+      //TODO update cache
+
+      setLoadingProfile(false);
+    } catch (err) {
+      console.error(err);
       setLoadingProfile(false);
     }
-
     setLoadingProfile(false);
   }
 
   async function handleProfilePictureSave() {
-    if (!pfpFile || !profile || loadingProfilePicture) return;
+    const signer = useEthersStore.getState().signer;
+    if (!signer || !pfpFile || !profile || loadingProfilePicture) return;
 
     setLoadingProfilePicture(true);
 
     try {
-      //update profile picture
-      await updateProfilePicture(profile, pfpFile);
-    } catch (e) {
-      console.error(e);
+      //authenticate
+      await authenticate();
+
+      //upload image to ipfs
+      const url = await uploadFileToIpfs(pfpFile);
+
+      //create typed data
+      const { data, error } = await createPfpTypedData({
+        profileId: profile.id,
+        url,
+      });
+
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("No typed data returned");
+
+      const typedData = data.createSetProfileImageURITypedData.typedData;
+
+      //sign typed data
+      const signature = await signer._signTypedData(
+        removeTypename(typedData.domain),
+        removeTypename(typedData.types),
+        removeTypename(typedData.value)
+      );
+      const { v, r, s } = utils.splitSignature(signature);
+
+      //send transaction
+      const contract = LensHub__factory.connect(LENS_HUB_ADDRESS, signer);
+      const tx = await contract.setProfileImageURIWithSig({
+        profileId: typedData.value.profileId,
+        imageURI: typedData.value.imageURI,
+        sig: {
+          v,
+          r,
+          s,
+          deadline: typedData.value.deadline,
+        },
+      });
+
+      //wait for transaction
+      await tx.wait();
+
+      //wait for indexing
+      await pollUntilIndexed(tx.hash);
+
+      //TODO update cache
+
+      setLoadingProfilePicture(false);
+    } catch (err) {
+      console.error(err);
       setLoadingProfilePicture(false);
     }
-
     setLoadingProfilePicture(false);
   }
 
@@ -133,27 +239,17 @@ export default function Settings() {
           <TextField
             inputRef={nameRef}
             title="Name"
-            defaultValue={profile?.name}
+            defaultValue={profile?.name ?? ""}
           />
-          <TextField
-            inputRef={locationRef}
-            title="Location"
-            defaultValue={profile?.location}
-          />
-          <TextField
-            inputRef={websiteRef}
-            title="Website"
-            defaultValue={profile?.website}
-          />
-          <TextField
-            inputRef={twitterRef}
-            title="Twitter"
-            defaultValue={profile?.twitter}
-          />
+
+          <TextField inputRef={locationRef} title="Location" />
+          <TextField inputRef={websiteRef} title="Website" />
+          <TextField inputRef={twitterRef} title="Twitter" />
+
           <TextArea
             textAreaRef={bioRef}
             title="Bio"
-            defaultValue={profile?.bio}
+            defaultValue={profile?.bio ?? ""}
           />
 
           <div className="space-y-4">
@@ -191,8 +287,8 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="p-8 space-y-8 rounded-3xl bg-secondaryContainer text-onSecondaryContainer text-lg">
-        <div className="space-y-4">
+      <div className="p-8 space-y-8 rounded-3xl bg-secondaryContainer text-onSecondaryContainer">
+        <div className="space-y-4 text-lg">
           <div className="font-bold">Profile Picture</div>
 
           {pfpUrl && (

@@ -2,8 +2,6 @@ import { ChangeEvent, useEffect, useState } from "react";
 
 import { useEthersStore } from "../../src/helpers/ethers/store";
 import { useProfilesByAddress } from "../../src/helpers/lens/hooks/useProfilesByAddress";
-import { useDefaultProfileByAddress } from "../../src/helpers/lens/hooks/useDefaultProfileByAddress";
-import { updateDefaultProfile } from "../../src/helpers/lens/actions/updateDefaultProfile";
 
 import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
 import Select from "../../src/components/base/Select";
@@ -12,19 +10,18 @@ import Button from "../../src/components/base/Button";
 export default function Account() {
   const address = useEthersStore((state) => state.address);
   const profiles = useProfilesByAddress(address);
-  const defaultProfile = useDefaultProfileByAddress(address);
+  const defaultProfile = profiles?.find((profile) => profile.isDefault);
 
   const [options, setOptions] = useState<string[]>([]);
   const [selected, setSelected] = useState<string>();
-
   const [loading, setLoading] = useState(false);
 
   const disabled =
     selected?.slice(1) === defaultProfile?.handle && Boolean(selected);
 
   useEffect(() => {
-    const handles = profiles.map((profile) => `@${profile.handle}`);
-    setOptions(handles);
+    // const handles = profiles.map((profile) => `@${profile.handle}`);
+    // setOptions(handles);
   }, [profiles]);
 
   useEffect(() => {
@@ -32,7 +29,7 @@ export default function Account() {
   }, [defaultProfile]);
 
   async function handleSave() {
-    if (disabled || loading || !selected) return;
+    if (disabled || loading || !selected || !profiles) return;
 
     const handle = selected.slice(1);
 
@@ -43,7 +40,7 @@ export default function Account() {
 
     //update the default profile
     try {
-      await updateDefaultProfile(profile);
+      // await updateDefaultProfile(profile);
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -60,7 +57,7 @@ export default function Account() {
       <div className="space-y-2">
         <div className="font-bold text-xl">Default Profile</div>
         <div>
-          Setting a default profile will help people discover who you are. You
+          Selecting a default profile will help people discover who you are. You
           can change your default profile at any time.
         </div>
       </div>

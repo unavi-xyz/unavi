@@ -1,37 +1,11 @@
-import { useEffect, useState } from "react";
-
-import { apolloClient } from "../apollo";
-import { GET_PROFILES_BY_ADDRESS } from "../queries";
-
-import {
-  GetProfilesByAddressQuery,
-  GetProfilesByAddressQueryVariables,
-  Profile,
-} from "../../../generated/graphql";
+import { useGetProfilesByAddressQuery } from "../../../generated/graphql";
 
 export function useProfilesByAddress(address: string | undefined) {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [{ data }] = useGetProfilesByAddressQuery({
+    variables: { address },
+    pause: !address,
+  });
 
-  useEffect(() => {
-    if (!address) {
-      setProfiles([]);
-      return;
-    }
-
-    apolloClient
-      .query<GetProfilesByAddressQuery, GetProfilesByAddressQueryVariables>({
-        query: GET_PROFILES_BY_ADDRESS,
-        variables: { address },
-      })
-      .then((result) => {
-        const profiles = result.data.profiles.items as Profile[];
-        setProfiles(profiles);
-      })
-      .catch((err) => {
-        console.error(err);
-        setProfiles([]);
-      });
-  }, [address]);
-
+  const profiles = data?.profiles.items;
   return profiles;
 }

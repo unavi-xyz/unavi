@@ -1,11 +1,10 @@
 import { ChangeEvent, RefObject } from "react";
 
-interface Props {
+interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   title?: string;
   frontAdornment?: string;
   inputRef?: RefObject<HTMLInputElement>;
   onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
-  [key: string]: any;
 }
 
 export default function TextField({

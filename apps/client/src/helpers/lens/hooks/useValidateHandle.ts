@@ -1,44 +1,42 @@
 import { useEffect, useState } from "react";
+import { useGetProfileByHandleQuery } from "../../../generated/graphql";
 
-import { apolloClient } from "../apollo";
-import { GET_PROFILE_BY_HANDLE } from "../queries";
-
-import {
-  GetProfileByHandleQuery,
-  GetProfileByHandleQueryVariables,
-} from "../../../generated/graphql";
-
-export function useValidateHandle(handle: string | undefined) {
+export function useValidateHandle(handle: string) {
   const [valid, setValid] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const [{ data, error: queryError, fetching }] = useGetProfileByHandleQuery({
+    variables: { handle },
+    pause: handle.length < 10,
+  });
 
   useEffect(() => {
-    if (!handle || handle.length === 0) {
+    //min of 5 characters, we are including the .test here so its 10
+    if (handle.length < 10) {
+      setValid(false);
+    }
+  }, [handle]);
+
+  useEffect(() => {
+    if (queryError) setError(queryError.message);
+  }, [queryError]);
+
+  useEffect(() => {
+    if (!data) {
       setValid(false);
       return;
     }
 
-    setLoading(true);
+    if (data.profiles.items.length === 0) {
+      //there is no profile with that handle
+      setValid(true);
+      setError(undefined);
+      return;
+    }
 
-    apolloClient
-      .query<GetProfileByHandleQuery, GetProfileByHandleQueryVariables>({
-        query: GET_PROFILE_BY_HANDLE,
-        variables: {
-          handle,
-        },
-      })
-      .then(({ data }) => {
-        //if no profiles have that handle, it is valid
-        if (data.profiles.items.length === 0) setValid(true);
-        else setValid(false);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setValid(false);
-        setLoading(false);
-      });
-  }, [handle]);
+    setValid(false);
+    setError("That handle is already taken");
+  }, [data]);
 
-  return { valid, loading };
+  return { valid, error, fetching };
 }

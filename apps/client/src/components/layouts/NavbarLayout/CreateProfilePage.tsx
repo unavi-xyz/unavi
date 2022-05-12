@@ -1,58 +1,74 @@
 import { useEffect, useState } from "react";
 
-import { useLensStore } from "../../../helpers/lens/store";
-import { apolloClient } from "../../../helpers/lens/apollo";
 import { authenticate } from "../../../helpers/lens/authentication";
+import { lensClient } from "../../../helpers/lens/client";
+import { useLensStore } from "../../../helpers/lens/store";
 import { useValidateHandle } from "../../../helpers/lens/hooks/useValidateHandle";
-import { CREATE_PROFILE } from "../../../helpers/lens/queries";
-
 import {
+  CreateProfileDocument,
   CreateProfileMutation,
   CreateProfileMutationVariables,
 } from "../../../generated/graphql";
 
 import TextField from "../../base/TextField";
 import Button from "../../base/Button";
+import ErrorBox from "../../base/ErrorBox";
 
 export default function CreateProfilePage() {
-  const [handle, setHandle] = useState<string>();
-  const [formHandle, setFormHandle] = useState<string>();
+  const [handle, setHandle] = useState<string>("");
+  const [formHandle, setFormHandle] = useState<string>("");
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [error, setError] = useState<string>();
 
-  const { valid, loading } = useValidateHandle(handle);
+  const { valid, error: validateError, fetching } = useValidateHandle(handle);
+
+  const loading = fetching || formHandle !== handle || loadingSubmit;
+  const disabled = loading || !valid;
+
+  useEffect(() => {
+    if (validateError) setError(validateError);
+  }, [validateError]);
 
   useEffect(() => {
     //debounce handle input
     const timeout = setTimeout(() => {
-      setHandle(formHandle);
+      setHandle(`${formHandle}.test`);
+
+      if (formHandle.length < 5 && formHandle.length > 0) {
+        setError("Handle must be at least 5 characters");
+        return;
+      }
+
+      setError(undefined);
     }, 750);
 
-    return () => {
-      clearTimeout(timeout);
-    };
+    return () => clearTimeout(timeout);
   }, [formHandle]);
 
   async function handleSubmit() {
-    if (!valid || loadingSubmit) return;
+    if (!disabled || loading) return;
     setLoadingSubmit(true);
 
-    //create the profile
     try {
       await authenticate();
 
-      await apolloClient.mutate<
-        CreateProfileMutation,
-        CreateProfileMutationVariables
-      >({
-        mutation: CREATE_PROFILE,
-        variables: {
-          handle,
-        },
-      });
+      //create the profile
+      const { error } = await lensClient
+        .mutation<CreateProfileMutation, CreateProfileMutationVariables>(
+          CreateProfileDocument,
+          { handle }
+        )
+        .toPromise();
+
+      if (error) throw new Error(error.message);
 
       //log the user in
       useLensStore.setState({ handle });
-    } catch {}
+    } catch (err) {
+      console.error(err);
+      setError(err as any);
+      setLoadingSubmit(false);
+    }
 
     setLoadingSubmit(false);
   }
@@ -69,22 +85,27 @@ export default function CreateProfilePage() {
           title="Username"
           frontAdornment="@"
           maxLength={31}
-          onChange={(e) => setFormHandle(e.target.value)}
+          value={formHandle}
+          onChange={(e) => {
+            if (e.target.value.match("^[a-zA-Z0-9_.]*$")) {
+              setFormHandle(e.target.value.toLowerCase());
+              return;
+            }
+          }}
         />
 
-        <Button
-          disabled={!valid || loading || formHandle !== handle || loadingSubmit}
-          loading={loading || formHandle !== handle || loadingSubmit}
-          onClick={handleSubmit}
-        >
-          Submit
-        </Button>
-
-        <div className="flex justify-center text-red-500 font-bold">
-          {!valid && !loading && formHandle === handle && (
-            <p>Error: Invalid handle</p>
-          )}
+        <div className="flex justify-end w-full">
+          <Button
+            variant="filled"
+            disabled={disabled}
+            loading={loading}
+            onClick={handleSubmit}
+          >
+            Submit
+          </Button>
         </div>
+
+        <ErrorBox error={error} />
       </div>
     </div>
   );

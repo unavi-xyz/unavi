@@ -4,8 +4,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
 import { Raycaster, Vector3 } from "three";
 
-import { useKeyboardMovement } from "./useKeyboardMovement";
-import { useSpringVelocity } from "./useSpringVelocity";
+import { useKeyboardMovement } from "../../helpers/app/hooks/useKeyboardMovement";
+import { useSpringVelocity } from "../../helpers/app/hooks/useSpringVelocity";
 
 const PLAYER_HEIGHT = 1.6;
 const PLAYER_SPEED = 5;

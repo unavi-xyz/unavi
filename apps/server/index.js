@@ -7,6 +7,20 @@ const io = new Server(httpServer, {
 });
 
 io.on("connection", (socket) => {
+  //join a room
+  socket.on("join", (room) => {
+    socket.join(room);
+  });
+
+  //leave all rooms on disconnect
+  socket.on("disconnecting", () => {
+    const rooms = Array.from(socket.rooms);
+    //the first room is just your own id
+    rooms.shift();
+    io.to(rooms).emit("leave", socket.id);
+  });
+
+  //get all players in a room
   socket.on("players", (room, callback) => {
     const clients = io.sockets.adapter.rooms.get(room);
     const clone = new Set(clients);
@@ -14,36 +28,19 @@ io.on("connection", (socket) => {
     callback(Array.from(clone));
   });
 
+  //send a webrtc offer to a player
   socket.on("offer", (target, offer) => {
-    // //require the sender to share a room with the target
-    // const senderRooms = Array.from(socket.rooms);
-    // const targetRooms = new Set(io.sockets.sockets.get(target)?.rooms);
-    // targetRooms.delete(target);
-
-    // const intersection = Array.from(targetRooms).filter((value) =>
-    //   senderRooms.includes(value)
-    // );
-    // if (intersection.length === 0) return;
-
     io.to(target).emit("offer", socket.id, offer);
   });
 
+  //accept a recieved webrtc offer
   socket.on("answer", (target, answer) => {
     io.to(target).emit("answer", socket.id, answer);
   });
 
+  //send a webrtc ice candidate to a player
   socket.on("iceCandidate", (target, iceCandidate) => {
     io.to(target).emit("iceCandidate", socket.id, iceCandidate);
-  });
-
-  socket.on("join", (room) => {
-    socket.join(room);
-  });
-
-  socket.on("disconnecting", () => {
-    const rooms = Array.from(socket.rooms);
-    rooms.shift();
-    io.to(rooms).emit("leave", socket.id);
   });
 });
 

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { utils } from "ethers";
 import { nanoid } from "nanoid";
+import { useRouter } from "next/router";
 
 import { authenticate } from "../../../helpers/lens/authentication";
 import { useEthersStore } from "../../../helpers/ethers/store";
@@ -10,9 +11,9 @@ import { useLensStore } from "../../../helpers/lens/store";
 import { useStudioStore } from "../../../helpers/studio/store";
 import { useCreatePostTypedDataMutation } from "../../../generated/graphql";
 import { LensHub__factory } from "../../../../contracts";
-import { LENS_HUB_ADDRESS, WIRED_APPID } from "../../../helpers/lens/constants";
+import { LENS_HUB_ADDRESS } from "../../../helpers/lens/constants";
 import { pollUntilIndexed } from "../../../helpers/lens/utils";
-
+import { AppId, Metadata, MetadataVersions } from "../../../helpers/lens/types";
 import {
   uploadFileToIpfs,
   uploadStringToIpfs,
@@ -37,13 +38,13 @@ export default function PublishPage() {
   const signer = useEthersStore((state) => state.signer);
   const handle = useLensStore((state) => state.handle);
   const profile = useProfileByHandle(handle);
+  const router = useRouter();
+  const [, createPostTypedData] = useCreatePostTypedDataMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
 
   const image = imageFile ? URL.createObjectURL(imageFile) : localSpace?.image;
-
-  const [, createPostTypedData] = useCreatePostTypedDataMutation();
 
   async function handleSubmit() {
     if (!signer || !handle || !profile || !localSpace || loading) return;
@@ -59,19 +60,19 @@ export default function PublishPage() {
         ? await uploadFileToIpfs(imageFile)
         : await uploadStringToIpfs(localSpace.image);
 
-      const metadata = {
-        version: "1.0.0",
+      const metadata: Metadata = {
+        version: MetadataVersions.one,
         metadata_id: nanoid(),
+        name: nameRef.current?.value ?? "",
         description: descriptionRef.current?.value,
         content: JSON.stringify(localSpace.scene),
-        external_url: "thewired.space",
-        name: nameRef.current?.value ?? "",
-        attributes: [],
         image: imageURI,
-        imageMimeType: undefined,
-        media: [],
+        imageMimeType: "image/jpeg",
+        attributes: [],
         animation_url: undefined,
-        appId: WIRED_APPID,
+        external_url: "https://thewired.space",
+        media: [{ item: imageURI, type: "image/jpeg" }],
+        appId: AppId.space,
       };
 
       const contentURI = await uploadStringToIpfs(JSON.stringify(metadata));
@@ -118,6 +119,7 @@ export default function PublishPage() {
       //wait for indexing
       await pollUntilIndexed(tx.hash);
 
+      router.push(`/user/${handle}`);
       setLoading(false);
     } catch {
       setLoading(false);

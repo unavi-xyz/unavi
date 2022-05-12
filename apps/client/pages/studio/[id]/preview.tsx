@@ -23,6 +23,8 @@ export default function Preview() {
         <title>{space.name ?? space.id} · The Wired </title>
       </Head>
 
+      <div className="crosshair" />
+
       <Canvas className="w-full h-full">
         <InstancedScene scene={space.scene}>
           <Player />

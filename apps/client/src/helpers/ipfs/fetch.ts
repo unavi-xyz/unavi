@@ -16,7 +16,7 @@ export async function loadFromIpfs(hash: string) {
   }
 
   const blob = new Blob(files);
-  const url = URL.createObjectURL(blob);
+  const url = await blob.text();
 
   //set cache
   cache[hash] = url;

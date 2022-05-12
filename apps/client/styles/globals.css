@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* tailwindcss */
 html {
   font-family: "Lato", sans-serif;
   @apply bg-background text-onBackground;
@@ -15,6 +16,7 @@ html {
   @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-rose-500;
 }
 
+/* crosshair */
 .crosshair {
   position: fixed;
   top: 50%;
@@ -39,6 +41,7 @@ html {
   margin-left: -5px;
 }
 
+/* react-dnd */
 .bg-position-move {
   background-size: 200%;
   background-position: left;

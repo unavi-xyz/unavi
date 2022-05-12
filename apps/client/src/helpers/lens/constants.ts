@@ -1,5 +1,3 @@
-export const WIRED_APPID = "wired";
-
 export const API_URL = "https://api-mumbai.lens.dev/";
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";

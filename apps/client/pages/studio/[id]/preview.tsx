@@ -3,7 +3,8 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { MdClose } from "react-icons/md";
-import { InstancedScene } from "scene";
+
+import { InstancedScene } from "@wired-xr/scene";
 
 import Player from "../../../src/components/app/Player";
 import { useLocalSpace } from "../../../src/helpers/indexedDB/LocalSpace/hooks/useLocalScene";

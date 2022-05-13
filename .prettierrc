@@ -1,5 +1,5 @@
 {
-  "importOrder": ["<THIRD_PARTY_MODULES>", "^[./]"],
+  "importOrder": ["<THIRD_PARTY_MODULES>", "^@wired-xr/(.*)$", "^[./]"],
   "importOrderSeparation": true,
   "importOrderSortSpecifiers": true,
   "importOrderGroupNamespaceSpecifiers": true

@@ -1,5 +1,5 @@
 {
-  "name": "scene",
+  "name": "@wired-xr/scene",
   "version": "0.0.0",
   "license": "GPL-3.0-or-later",
   "private": true,

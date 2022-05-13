@@ -1,4 +1,4 @@
-const withTM = require("next-transpile-modules")(["three", "scene"]);
+const withTM = require("next-transpile-modules")(["three", "@wired-xr/scene"]);
 
 module.exports = withTM({
   reactStrictMode: true,

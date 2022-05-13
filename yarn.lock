@@ -4438,6 +4438,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@wired-xr/scene@*, @wired-xr/scene@workspace:packages/scene":
+  version: 0.0.0-use.local
+  resolution: "@wired-xr/scene@workspace:packages/scene"
+  dependencies:
+    "@pixiv/three-vrm": ^0.6.10
+    "@react-three/cannon": ^6.3.0
+    "@react-three/drei": ^9.6.2
+    "@react-three/fiber": ^8.0.13
+    "@types/react": 18.0.8
+    "@types/react-dom": ^18.0.3
+    "@types/three": ^0.140.0
+    immer: ^9.0.12
+    nanoid: ^3.3.1
+    three: ^0.140.0
+    tsconfig: "*"
+    typescript: ^4.6.4
+    zustand: ^3.7.1
+  languageName: unknown
+  linkType: soft
+
 "abab@npm:^2.0.3, abab@npm:^2.0.5":
   version: 2.0.6
   resolution: "abab@npm:2.0.6"
@@ -5949,6 +5969,7 @@ __metadata:
     "@types/react-dom": ^18.0.3
     "@types/testing-library__jest-dom": ^5.14.2
     "@types/testing-library__react": ^10.2.0
+    "@wired-xr/scene": "*"
     autoprefixer: ^10.4.2
     config: "*"
     eslint: ^8.14.0
@@ -5969,7 +5990,6 @@ __metadata:
     react-dnd-html5-backend: ^16.0.1
     react-dom: ^18.1.0
     react-icons: ^4.3.1
-    scene: "*"
     socket.io-client: ^4.4.1
     suspend-react: ^0.0.8
     tailwindcss: ^3.0.23
@@ -14356,26 +14376,6 @@ __metadata:
   checksum: 5636b55cf15f7cf0baa73f2797bf992bdcf75d1b39d82c0aa4608555c774368f6ac321cb641fd5f3d3ceb87805122cd47540da6a7b5960fe0dbdb8f8c263f000
   languageName: node
   linkType: hard
-
-"scene@*, scene@workspace:packages/scene":
-  version: 0.0.0-use.local
-  resolution: "scene@workspace:packages/scene"
-  dependencies:
-    "@pixiv/three-vrm": ^0.6.10
-    "@react-three/cannon": ^6.3.0
-    "@react-three/drei": ^9.6.2
-    "@react-three/fiber": ^8.0.13
-    "@types/react": 18.0.8
-    "@types/react-dom": ^18.0.3
-    "@types/three": ^0.140.0
-    immer: ^9.0.12
-    nanoid: ^3.3.1
-    three: ^0.140.0
-    tsconfig: "*"
-    typescript: ^4.6.4
-    zustand: ^3.7.1
-  languageName: unknown
-  linkType: soft
 
 "scheduler@npm:^0.21.0":
   version: 0.21.0

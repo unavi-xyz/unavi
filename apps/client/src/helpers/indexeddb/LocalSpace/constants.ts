@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
-import { DEFAULT_TRANSFORM, Entity, Scene } from "scene";
+
+import { DEFAULT_TRANSFORM, Entity, Scene } from "@wired-xr/scene";
 
 import { ENTITY_PRESETS } from "../../studio/presets";
 

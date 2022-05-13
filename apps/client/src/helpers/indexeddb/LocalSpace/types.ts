@@ -1,4 +1,4 @@
-import { Scene } from "scene";
+import { Scene } from "@wired-xr/scene";
 
 export type LocalSpace = {
   id: string;

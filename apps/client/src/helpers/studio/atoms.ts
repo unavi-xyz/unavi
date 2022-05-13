@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 import { atomWithStore } from "jotai/zustand";
-import { findEntityById } from "scene";
+
+import { findEntityById } from "@wired-xr/scene";
 
 import { useStudioStore } from "./store";
 

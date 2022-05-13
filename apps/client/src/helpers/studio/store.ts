@@ -1,8 +1,9 @@
 import { nanoid } from "nanoid";
 import { MutableRefObject } from "react";
-import { Entity, ISceneSlice, createSceneSlice } from "scene";
 import { Group } from "three";
 import create from "zustand";
+
+import { Entity, ISceneSlice, createSceneSlice } from "@wired-xr/scene";
 
 import { ENTITY_PRESETS } from "./presets";
 import { Tool } from "./types";

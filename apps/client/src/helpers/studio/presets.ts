@@ -1,4 +1,9 @@
-import { DEFAULT_TRANSFORM, Entity, IColliderModule, IMeshModule } from "scene";
+import {
+  DEFAULT_TRANSFORM,
+  Entity,
+  IColliderModule,
+  IMeshModule,
+} from "@wired-xr/scene";
 
 const BOX_MESH: IMeshModule<"Box"> = {
   id: "",

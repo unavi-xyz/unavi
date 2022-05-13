@@ -1,7 +1,8 @@
 import { Canvas } from "@react-three/fiber";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { InstancedScene } from "scene";
+
+import { InstancedScene } from "@wired-xr/scene";
 
 import MultiplayerManager from "../../src/components/app/MultiplayerManager";
 import Player from "../../src/components/app/Player";

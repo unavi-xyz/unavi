@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Entity, EntityComponent } from "scene";
 import { Group } from "three";
+
+import { Entity, EntityComponent } from "@wired-xr/scene";
 
 import { useStudioStore } from "../../../helpers/studio/store";
 

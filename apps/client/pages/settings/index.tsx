@@ -1,33 +1,32 @@
-import { useEffect, useRef, useState } from "react";
 import { utils } from "ethers";
 import { nanoid } from "nanoid";
+import { useEffect, useRef, useState } from "react";
 
-import { authenticate } from "../../src/helpers/lens/authentication";
-import { pollUntilIndexed, removeTypename } from "../../src/helpers/lens/utils";
-import { useLensStore } from "../../src/helpers/lens/store";
-import { useEthersStore } from "../../src/helpers/ethers/store";
-import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
-import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
-import { AttributeData, ProfileMetadata } from "../../src/helpers/lens/types";
 import { LensHub__factory, LensPeriphery__factory } from "../../contracts";
-import {
-  uploadFileToIpfs,
-  uploadStringToIpfs,
-} from "../../src/helpers/ipfs/fetch";
-import {
-  LENS_HUB_ADDRESS,
-  LENS_PERIPHERY_ADDRESS,
-} from "../../src/helpers/lens/constants";
+import Button from "../../src/components/base/Button";
+import FileUpload from "../../src/components/base/FileUpload";
+import TextArea from "../../src/components/base/TextArea";
+import TextField from "../../src/components/base/TextField";
+import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
 import {
   useCreateSetPfpTypedDataMutation,
   useCreateSetProfileMetadataTypedDataMutation,
 } from "../../src/generated/graphql";
-
-import TextField from "../../src/components/base/TextField";
-import TextArea from "../../src/components/base/TextArea";
-import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
-import Button from "../../src/components/base/Button";
-import FileUpload from "../../src/components/base/FileUpload";
+import { useEthersStore } from "../../src/helpers/ethers/store";
+import {
+  uploadFileToIpfs,
+  uploadStringToIpfs,
+} from "../../src/helpers/ipfs/fetch";
+import { authenticate } from "../../src/helpers/lens/authentication";
+import {
+  LENS_HUB_ADDRESS,
+  LENS_PERIPHERY_ADDRESS,
+} from "../../src/helpers/lens/constants";
+import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
+import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
+import { useLensStore } from "../../src/helpers/lens/store";
+import { AttributeData, ProfileMetadata } from "../../src/helpers/lens/types";
+import { pollUntilIndexed, removeTypename } from "../../src/helpers/lens/utils";
 
 export default function Settings() {
   const nameRef = useRef<HTMLInputElement>(null);

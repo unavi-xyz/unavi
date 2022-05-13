@@ -1,18 +1,16 @@
-import { FaHashtag, FaTwitter } from "react-icons/fa";
-import { MdOutlineLocationOn } from "react-icons/md";
-import { useRouter } from "next/router";
-import Link from "next/link";
 import Head from "next/head";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { FaHashtag } from "react-icons/fa";
 
-import { useLensStore } from "../../src/helpers/lens/store";
+import Button from "../../src/components/base/Button";
+import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
+import ProfilePicture from "../../src/components/lens/ProfilePicture";
+import SpaceCard from "../../src/components/ui/SpaceCard";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
 import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
 import { useSpacesByProfile } from "../../src/helpers/lens/hooks/useSpacesByProfile";
-
-import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
-import ProfilePicture from "../../src/components/lens/ProfilePicture";
-import Button from "../../src/components/base/Button";
-import SpaceCard from "../../src/components/ui/SpaceCard";
+import { useLensStore } from "../../src/helpers/lens/store";
 
 export default function User() {
   const router = useRouter();

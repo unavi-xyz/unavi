@@ -1,19 +1,18 @@
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect } from "react";
-import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
-import { useRouter } from "next/router";
-import Link from "next/link";
+import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
-import { useLensStore } from "../../../helpers/lens/store";
-import { useLocalSpace } from "../../../helpers/indexedDB/LocalSpace/hooks/useLocalScene";
 import { updateLocalSpace } from "../../../helpers/indexedDB/LocalSpace/helpers";
-
-import Tooltip from "../../base/Tooltip";
-import ToolButton from "./ToolButton";
+import { useLocalSpace } from "../../../helpers/indexedDB/LocalSpace/hooks/useLocalScene";
+import { useLensStore } from "../../../helpers/lens/store";
 import IconButton from "../../base/IconButton";
+import Tooltip from "../../base/Tooltip";
 import LoginButton from "../../layouts/NavbarLayout/LoginButton";
 import PublishButton from "./PublishButton";
+import ToolButton from "./ToolButton";
 
 export default function StudioNavbar() {
   const router = useRouter();

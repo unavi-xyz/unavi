@@ -1,6 +1,5 @@
-import { useWebrtcConnections } from "../../helpers/app/hooks/useWebrtcConnections";
 import { usePublishLocation } from "../../helpers/app/hooks/usePublishLocation";
-
+import { useWebrtcConnections } from "../../helpers/app/hooks/useWebrtcConnections";
 import PlayerAnswer from "./PlayerAnswer";
 import PlayerOffer from "./PlayerOffer";
 

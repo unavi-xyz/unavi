@@ -1,7 +1,7 @@
-import { FaDiscord, FaTwitter, FaGithub } from "react-icons/fa";
+import { FaDiscord, FaGithub, FaTwitter } from "react-icons/fa";
 
-import { DISCORD_URL, GITHUB_URL, TWITTER_URL } from "../src/helpers/constants";
 import NavbarLayout from "../src/components/layouts/NavbarLayout/NavbarLayout";
+import { DISCORD_URL, GITHUB_URL, TWITTER_URL } from "../src/helpers/constants";
 
 export default function Index() {
   return (

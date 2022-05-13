@@ -1,7 +1,7 @@
 import { Group } from "three";
 
-import { Entity, IModule, Transform } from "../../types";
 import { MODULE_COMPONENTS } from "../../modules";
+import { Entity, IModule } from "../../types";
 
 interface Props {
   module: IModule;

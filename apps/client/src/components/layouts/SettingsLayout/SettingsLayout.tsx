@@ -1,18 +1,16 @@
-import {
-  MdOutlinePersonOutline,
-  MdOutlineAccountBalanceWallet,
-  MdOutlineWarningAmber,
-} from "react-icons/md";
-import Link from "next/link";
 import Head from "next/head";
+import Link from "next/link";
 import { useRouter } from "next/router";
+import {
+  MdOutlineAccountBalanceWallet,
+  MdOutlinePersonOutline,
+} from "react-icons/md";
 
-import { useLensStore } from "../../../helpers/lens/store";
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
-
+import { useLensStore } from "../../../helpers/lens/store";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
-import SettingsButton from "./SettingsButton";
 import NavbarLayout from "../NavbarLayout/NavbarLayout";
+import SettingsButton from "./SettingsButton";
 
 interface Props {
   children: React.ReactNode;

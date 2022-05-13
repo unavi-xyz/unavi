@@ -1,8 +1,3 @@
-import { LOCAL_STORAGE } from "./constants";
-import { useLensStore } from "./store";
-import { useEthersStore } from "../ethers/store";
-import { disconnectWallet } from "../ethers/connection";
-import { lensClient } from "./client";
 import {
   AuthenticateDocument,
   AuthenticateMutation,
@@ -14,6 +9,11 @@ import {
   RefreshMutation,
   RefreshMutationVariables,
 } from "../../generated/graphql";
+import { disconnectWallet } from "../ethers/connection";
+import { useEthersStore } from "../ethers/store";
+import { lensClient } from "./client";
+import { LOCAL_STORAGE } from "./constants";
+import { useLensStore } from "./store";
 
 async function setAccessToken(accessToken: string) {
   const address = useEthersStore.getState().address;

@@ -1,8 +1,7 @@
 import { useStudioStore } from "../../../helpers/studio/store";
 import { Tool } from "../../../helpers/studio/types";
-
-import Tooltip from "../../base/Tooltip";
 import IconButton from "../../base/IconButton";
+import Tooltip from "../../base/Tooltip";
 
 const TOOL_TOOLTIPS = {
   translate: "Translate (w)",

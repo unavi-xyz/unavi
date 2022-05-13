@@ -1,5 +1,5 @@
-import { IModule } from "../../../types";
 import { MESH_COMPONENTS } from "../../../modules";
+import { IModule } from "../../../types";
 
 interface Props {
   module: IModule;

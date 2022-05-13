@@ -2,11 +2,10 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
+import Button from "../../src/components/base/Button";
+import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
 import { usePublication } from "../../src/helpers/lens/hooks/usePublication";
-
-import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
-import Button from "../../src/components/base/Button";
 
 export default function Space() {
   const router = useRouter();

@@ -1,8 +1,8 @@
 import { customAlphabet } from "nanoid";
 
+import { LOCAL_SPACES_ID, STARTING_SCENE } from "./constants";
 import { getLocalSpaceDb } from "./db";
 import { LocalSpace } from "./types";
-import { LOCAL_SPACES_ID, STARTING_SCENE } from "./constants";
 
 const nanoid = customAlphabet("0123456789", 12);
 

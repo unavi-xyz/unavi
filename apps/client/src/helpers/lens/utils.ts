@@ -1,9 +1,9 @@
-import { lensClient } from "./client";
 import {
   HasTxHashBeenIndexedDocument,
   HasTxHashBeenIndexedQuery,
   HasTxHashBeenIndexedQueryVariables,
 } from "../../generated/graphql";
+import { lensClient } from "./client";
 
 export function removeTypename(obj: any) {
   if (obj.__typename) delete obj.__typename;

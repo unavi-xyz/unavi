@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 
-import { useStudioStore } from "../store";
 import {
   getLocalSpace,
   updateLocalSpace,
 } from "../../indexedDB/LocalSpace/helpers";
+import { useStudioStore } from "../store";
 
 export function useAutosave() {
   const id = useStudioStore((state) => state.id);

@@ -1,24 +1,23 @@
-import { useRef, useState } from "react";
 import { utils } from "ethers";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
+import { useRef, useState } from "react";
 
-import { authenticate } from "../../../helpers/lens/authentication";
+import { LensHub__factory } from "../../../../contracts";
+import { useCreatePostTypedDataMutation } from "../../../generated/graphql";
 import { useEthersStore } from "../../../helpers/ethers/store";
 import { useLocalSpace } from "../../../helpers/indexedDB/LocalSpace/hooks/useLocalScene";
-import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
-import { useLensStore } from "../../../helpers/lens/store";
-import { useStudioStore } from "../../../helpers/studio/store";
-import { useCreatePostTypedDataMutation } from "../../../generated/graphql";
-import { LensHub__factory } from "../../../../contracts";
-import { LENS_HUB_ADDRESS } from "../../../helpers/lens/constants";
-import { pollUntilIndexed } from "../../../helpers/lens/utils";
-import { AppId, Metadata, MetadataVersions } from "../../../helpers/lens/types";
 import {
   uploadFileToIpfs,
   uploadStringToIpfs,
 } from "../../../helpers/ipfs/fetch";
-
+import { authenticate } from "../../../helpers/lens/authentication";
+import { LENS_HUB_ADDRESS } from "../../../helpers/lens/constants";
+import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
+import { useLensStore } from "../../../helpers/lens/store";
+import { AppId, Metadata, MetadataVersions } from "../../../helpers/lens/types";
+import { pollUntilIndexed } from "../../../helpers/lens/utils";
+import { useStudioStore } from "../../../helpers/studio/store";
 import Button from "../../base/Button";
 import FileUpload from "../../base/FileUpload";
 import TextArea from "../../base/TextArea";

@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { useLensStore } from "../../../helpers/lens/store";
-
-import NavbarTextButton from "./NavbarTextButton";
 import LoginButton from "./LoginButton";
+import NavbarTextButton from "./NavbarTextButton";
 import ProfileButton from "./ProfileButton";
 
 export default function Navbar() {

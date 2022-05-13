@@ -2,10 +2,10 @@ import { Triplet } from "@react-three/cannon";
 import { ComponentProps } from "react";
 
 import {
-  ColliderType,
   COLLIDER_COMPONENTS,
-  MeshType,
+  ColliderType,
   MESH_COMPONENTS,
+  MeshType,
   ModuleType,
 } from "./modules";
 

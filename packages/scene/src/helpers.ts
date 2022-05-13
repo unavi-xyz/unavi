@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
-import { Entity, Transform } from "./types";
+
+import { Entity } from "./types";
 
 const tempVector3 = new Vector3();
 

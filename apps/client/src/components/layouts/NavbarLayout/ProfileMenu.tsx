@@ -1,13 +1,12 @@
+import Link from "next/link";
 import {
+  MdLogout,
   MdOutlinePersonOutline,
   MdOutlineSettings,
-  MdLogout,
 } from "react-icons/md";
-import Link from "next/link";
 
-import { useLensStore } from "../../../helpers/lens/store";
 import { logout } from "../../../helpers/lens/authentication";
-
+import { useLensStore } from "../../../helpers/lens/store";
 import ProfileMenuButton from "./ProfileMenuButton";
 
 export default function ProfileMenu() {

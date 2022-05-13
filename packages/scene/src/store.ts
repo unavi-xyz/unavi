@@ -1,9 +1,9 @@
-import { GetState, SetState } from "zustand";
 import produce from "immer";
+import { GetState, SetState } from "zustand";
 
-import { Scene, Entity } from "./types";
-import { findEntityById } from "./helpers";
 import { DEFAULT_SCENE } from "./constants";
+import { findEntityById } from "./helpers";
+import { Entity, Scene } from "./types";
 
 export type StoreSlice<T extends object, E extends object = T> = (
   set: SetState<E extends T ? E : E & T>,

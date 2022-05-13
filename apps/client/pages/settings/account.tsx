@@ -1,11 +1,10 @@
 import { ChangeEvent, useEffect, useState } from "react";
 
+import Button from "../../src/components/base/Button";
+import Select from "../../src/components/base/Select";
+import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
 import { useEthersStore } from "../../src/helpers/ethers/store";
 import { useProfilesByAddress } from "../../src/helpers/lens/hooks/useProfilesByAddress";
-
-import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
-import Select from "../../src/components/base/Select";
-import Button from "../../src/components/base/Button";
 
 export default function Account() {
   const address = useEthersStore((state) => state.address);

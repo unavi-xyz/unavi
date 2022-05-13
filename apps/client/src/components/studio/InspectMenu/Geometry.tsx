@@ -1,11 +1,10 @@
-import React from "react";
-import { useAtomValue } from "jotai";
 import produce from "immer";
+import { useAtomValue } from "jotai";
+import React from "react";
 import { findEntityById } from "scene";
 
 import { selectedAtom } from "../../../helpers/studio/atoms";
 import { useStudioStore } from "../../../helpers/studio/store";
-
 import NumberInput from "./NumberInput";
 
 function round(value: number, digits = 3) {

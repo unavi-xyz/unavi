@@ -1,6 +1,7 @@
 import produce from "immer";
 import { createContext, useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { Socket, io } from "socket.io-client";
+
 import { createMessage } from "../../helpers/app/message";
 import { useAppStore } from "../../helpers/app/store";
 import { Channels } from "../../helpers/app/types";

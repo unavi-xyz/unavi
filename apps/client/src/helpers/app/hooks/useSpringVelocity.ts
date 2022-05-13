@@ -1,5 +1,5 @@
-import { useMemo, useRef } from "react";
 import { Api } from "@react-three/cannon";
+import { useMemo, useRef } from "react";
 import { Camera, MathUtils, Vector3 } from "three";
 
 export function useSpringVelocity(bodyApi: Api<any>[1], speed: number) {

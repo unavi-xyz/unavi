@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import { Group, Vector3 } from "three";
 
+import { Entity } from "../types";
 import Module from "./Module/Module";
-import { Entity, Transform } from "../types";
 
 const tempVec3 = new Vector3();
 

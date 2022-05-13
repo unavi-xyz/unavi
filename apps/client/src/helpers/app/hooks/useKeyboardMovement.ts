@@ -1,4 +1,4 @@
-import { useRef, useEffect, MutableRefObject } from "react";
+import { MutableRefObject, useEffect, useRef } from "react";
 import { Vector3 } from "three";
 
 interface Props {

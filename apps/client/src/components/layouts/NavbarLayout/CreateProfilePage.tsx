@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
 
-import { authenticate } from "../../../helpers/lens/authentication";
-import { lensClient } from "../../../helpers/lens/client";
-import { useLensStore } from "../../../helpers/lens/store";
-import { useValidateHandle } from "../../../helpers/lens/hooks/useValidateHandle";
 import {
   CreateProfileDocument,
   CreateProfileMutation,
   CreateProfileMutationVariables,
 } from "../../../generated/graphql";
-
-import TextField from "../../base/TextField";
+import { authenticate } from "../../../helpers/lens/authentication";
+import { lensClient } from "../../../helpers/lens/client";
+import { useValidateHandle } from "../../../helpers/lens/hooks/useValidateHandle";
+import { useLensStore } from "../../../helpers/lens/store";
 import Button from "../../base/Button";
 import ErrorBox from "../../base/ErrorBox";
+import TextField from "../../base/TextField";
 
 export default function CreateProfilePage() {
   const [handle, setHandle] = useState<string>("");

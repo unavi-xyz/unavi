@@ -1,11 +1,11 @@
-import { MutableRefObject } from "react";
-import { Group } from "three";
-import create, { SetState, GetState } from "zustand";
 import { nanoid } from "nanoid";
-import { createSceneSlice, Entity, ISceneSlice } from "scene";
+import { MutableRefObject } from "react";
+import { Entity, ISceneSlice, createSceneSlice } from "scene";
+import { Group } from "three";
+import create from "zustand";
 
-import { Tool } from "./types";
 import { ENTITY_PRESETS } from "./presets";
+import { Tool } from "./types";
 
 export interface IStudioStore extends ISceneSlice {
   id: string | undefined;

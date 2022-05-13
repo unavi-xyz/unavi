@@ -1,12 +1,11 @@
 import { useContext, useEffect, useState } from "react";
+
 import { useExchangeIce } from "../../helpers/app/hooks/useExchangeIce";
-import { useAppStore } from "../../helpers/app/store";
 import {
-  channelNames,
   Channels,
   PlayerChannels,
+  channelNames,
 } from "../../helpers/app/types";
-
 import OtherPlayer from "./OtherPlayer";
 import { SpaceContext } from "./SpaceProvider";
 

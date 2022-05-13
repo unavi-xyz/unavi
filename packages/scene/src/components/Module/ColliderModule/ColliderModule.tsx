@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Euler, Group, Quaternion, Vector3 } from "three";
 
-import { Entity, IModule, Transform } from "../../../types";
-import { COLLIDER_COMPONENTS } from "../../../modules";
 import { DEFAULT_TRANSFORM } from "../../../constants";
+import { COLLIDER_COMPONENTS } from "../../../modules";
+import { Entity, IModule } from "../../../types";
 
 const tempVector3 = new Vector3();
 const tempQuaternion = new Quaternion();

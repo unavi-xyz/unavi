@@ -1,10 +1,10 @@
-import { useEffect, useRef } from "react";
 import { useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
 import { AudioListener, Group, PositionalAudio } from "three";
 
-import { PlayerChannels } from "../../helpers/app/types";
 import useDataChannels from "../../helpers/app/hooks/useDataChannels";
 import useInterpolation from "../../helpers/app/hooks/useInterpolation";
+import { PlayerChannels } from "../../helpers/app/types";
 
 interface Props {
   id: string;

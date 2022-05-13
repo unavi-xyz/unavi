@@ -3,7 +3,6 @@ import { degToRad, radToDeg } from "three/src/math/MathUtils";
 
 import { selectedAtom } from "../../../helpers/studio/atoms";
 import { useStudioStore } from "../../../helpers/studio/store";
-
 import NumberInput from "./NumberInput";
 
 function round(value: number, digits = 3) {

@@ -1,10 +1,9 @@
 import { useContext, useEffect, useState } from "react";
 
 import { useExchangeIce } from "../../helpers/app/hooks/useExchangeIce";
-import { channelNames, PlayerChannels } from "../../helpers/app/types";
-import { SpaceContext } from "./SpaceProvider";
-
+import { PlayerChannels, channelNames } from "../../helpers/app/types";
 import OtherPlayer from "./OtherPlayer";
+import { SpaceContext } from "./SpaceProvider";
 
 interface Props {
   id: string;

@@ -1,11 +1,11 @@
-import { useContext, useEffect, useRef } from "react";
 import { Triplet } from "@react-three/cannon";
 import { useThree } from "@react-three/fiber";
+import { useContext, useEffect, useRef } from "react";
 import { Vector3 } from "three";
 
+import { SpaceContext } from "../../../components/app/SpaceProvider";
 import { PUBLISH_INTERVAL } from "../constants";
 import { Location } from "../types";
-import { SpaceContext } from "../../../components/app/SpaceProvider";
 
 export function usePublishLocation() {
   const tempVector3 = useRef(new Vector3());

@@ -1,17 +1,16 @@
-import { useEffect } from "react";
-import { useRouter } from "next/router";
 import Head from "next/head";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
+import InspectMenu from "../../../src/components/studio/InspectMenu/InspectMenu";
+import StudioCanvas from "../../../src/components/studio/StudioCanvas/StudioCanvas";
+import StudioNavbar from "../../../src/components/studio/StudioNavbar/StudioNavbar";
+import TreeMenu from "../../../src/components/studio/TreeMenu/TreeMenu";
 import { useAutosave } from "../../../src/helpers/studio/hooks/useAutosave";
 import { useHotkeys } from "../../../src/helpers/studio/hooks/useStudioHotkeys";
 import { useStudioStore } from "../../../src/helpers/studio/store";
-
-import StudioNavbar from "../../../src/components/studio/StudioNavbar/StudioNavbar";
-import StudioCanvas from "../../../src/components/studio/StudioCanvas/StudioCanvas";
-import InspectMenu from "../../../src/components/studio/InspectMenu/InspectMenu";
-import TreeMenu from "../../../src/components/studio/TreeMenu/TreeMenu";
 
 export default function Studio() {
   const router = useRouter();

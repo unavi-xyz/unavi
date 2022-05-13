@@ -1,5 +1,5 @@
-import { DEFAULT_TRANSFORM, Entity, Scene } from "scene";
 import { nanoid } from "nanoid";
+import { DEFAULT_TRANSFORM, Entity, Scene } from "scene";
 
 import { ENTITY_PRESETS } from "../../studio/presets";
 

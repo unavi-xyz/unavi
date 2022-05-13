@@ -1,4 +1,5 @@
 import Head from "next/head";
+
 import NavbarLayout from "../src/components/layouts/NavbarLayout/NavbarLayout";
 
 export default function Explore() {

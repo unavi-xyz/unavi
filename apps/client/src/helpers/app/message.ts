@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+
 import { Message } from "./types";
 
 export function createMessage(text: string, username: string) {

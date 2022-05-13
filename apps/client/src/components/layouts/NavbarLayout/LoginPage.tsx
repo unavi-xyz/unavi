@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 
+import { useGetProfilesByAddressQuery } from "../../../generated/graphql";
 import { connectWallet } from "../../../helpers/ethers/connection";
 import { useEthersStore } from "../../../helpers/ethers/store";
 import { useLensStore } from "../../../helpers/lens/store";
-import { useCloseDialog } from "../../base/Dialog";
-import { useGetProfilesByAddressQuery } from "../../../generated/graphql";
-
-import MetamaskFox from "./MetamaskFox";
-import CreateProfilePage from "./CreateProfilePage";
 import Button from "../../base/Button";
+import { useCloseDialog } from "../../base/Dialog";
+import CreateProfilePage from "./CreateProfilePage";
+import MetamaskFox from "./MetamaskFox";
 
 export default function LoginPage() {
   const address = useEthersStore((state) => state.address);

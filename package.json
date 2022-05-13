@@ -13,10 +13,10 @@
     "codegen": "turbo run codegen",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
-    "ready": "yarn codegen && yarn format && yarn lint && yarn build && yarn test"
+    "format": "prettier --write . --ignore-path .gitignore"
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^3.2.0",
     "prettier": "^2.5.1",
     "turbo": "latest"
   },

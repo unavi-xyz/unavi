@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import { useSphere } from "@react-three/cannon";
+import { useEffect } from "react";
 
 import { Transform } from "../../../types";
 

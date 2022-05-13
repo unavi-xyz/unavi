@@ -1,6 +1,5 @@
 import { useGetProfileByHandleQuery } from "../../generated/graphql";
 import { useLensStore } from "../../helpers/lens/store";
-
 import ProfilePicture from "./ProfilePicture";
 
 interface Props {

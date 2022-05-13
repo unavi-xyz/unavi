@@ -1,13 +1,12 @@
 import { Canvas } from "@react-three/fiber";
-import { useRouter } from "next/router";
 import Head from "next/head";
+import { useRouter } from "next/router";
 import { InstancedScene } from "scene";
 
-import { usePublication } from "../../src/helpers/lens/hooks/usePublication";
-
-import Player from "../../src/components/app/Player";
 import MultiplayerManager from "../../src/components/app/MultiplayerManager";
+import Player from "../../src/components/app/Player";
 import SpaceProvider from "../../src/components/app/SpaceProvider";
+import { usePublication } from "../../src/helpers/lens/hooks/usePublication";
 
 export default function App() {
   const router = useRouter();

@@ -1,6 +1,5 @@
 import { Post } from "../../generated/graphql";
 import { useMediaImage } from "../../helpers/lens/hooks/useMediaImage";
-
 import Card from "../base/Card";
 
 interface Props {

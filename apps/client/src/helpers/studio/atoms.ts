@@ -1,6 +1,5 @@
 import { atom } from "jotai";
 import { atomWithStore } from "jotai/zustand";
-
 import { findEntityById } from "scene";
 
 import { useStudioStore } from "./store";

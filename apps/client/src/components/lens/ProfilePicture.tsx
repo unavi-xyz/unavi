@@ -1,5 +1,5 @@
-import { useMediaImage } from "../../helpers/lens/hooks/useMediaImage";
 import { Profile } from "../../generated/graphql";
+import { useMediaImage } from "../../helpers/lens/hooks/useMediaImage";
 
 interface Props {
   profile: Profile | undefined;

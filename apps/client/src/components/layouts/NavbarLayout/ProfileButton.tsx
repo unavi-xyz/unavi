@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
 import DropdownMenu from "../../base/DropdownMenu";
+import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
 import ProfileMenu from "./ProfileMenu";
 
 export default function ProfileButton() {

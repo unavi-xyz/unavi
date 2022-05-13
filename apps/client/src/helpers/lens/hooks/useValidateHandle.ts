@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import { useGetProfileByHandleQuery } from "../../../generated/graphql";
 
 export function useValidateHandle(handle: string) {

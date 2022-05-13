@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
 import { Triplet, useSphere } from "@react-three/cannon";
-import { useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
 import { Raycaster, Vector3 } from "three";
 
 import { useKeyboardMovement } from "../../helpers/app/hooks/useKeyboardMovement";

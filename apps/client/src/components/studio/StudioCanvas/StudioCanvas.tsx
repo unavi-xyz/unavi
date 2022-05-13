@@ -1,12 +1,11 @@
-import { useEffect } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
 import { Debug, Physics } from "@react-three/cannon";
 import { OrbitControls, Sky } from "@react-three/drei";
+import { Canvas, useThree } from "@react-three/fiber";
+import { useEffect } from "react";
 
 import { useStudioStore } from "../../../helpers/studio/store";
-
-import StudioInstancedEntity from "./StudioInstancedEntity";
 import Gizmo from "./Gizmo";
+import StudioInstancedEntity from "./StudioInstancedEntity";
 
 export default function StudioCanvas() {
   const tree = useStudioStore((state) => state.scene.tree);

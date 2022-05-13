@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { Entity, EntityComponent } from "scene";
 import { Group } from "three";
-
-import { DEFAULT_TRANSFORM, Entity, EntityComponent, Transform } from "scene";
 
 import { useStudioStore } from "../../../helpers/studio/store";
 

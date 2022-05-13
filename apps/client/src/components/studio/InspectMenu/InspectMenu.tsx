@@ -1,7 +1,6 @@
 import { useAtomValue } from "jotai";
 
 import { selectedAtom } from "../../../helpers/studio/atoms";
-
 import CollapseMenu from "../../base/CollapseMenu";
 import Geometry from "./Geometry";
 import Transform from "./Transform";

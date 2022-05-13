@@ -1,6 +1,6 @@
 import { useFrame } from "@react-three/fiber";
 import { MutableRefObject, RefObject, useEffect, useRef } from "react";
-import { MathUtils, Group, Vector3 } from "three";
+import { Group, MathUtils, Vector3 } from "three";
 
 import { PUBLISH_INTERVAL } from "../constants";
 import { Location } from "../types";

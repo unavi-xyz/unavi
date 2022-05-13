@@ -1,5 +1,4 @@
 import { useStudioStore } from "../../../helpers/studio/store";
-
 import ObjectButton from "./ObjectButton";
 import TreeMenuItem from "./TreeMenuItem";
 

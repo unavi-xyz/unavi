@@ -3765,6 +3765,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/glob@npm:^7.1.1":
+  version: 7.2.0
+  resolution: "@types/glob@npm:7.2.0"
+  dependencies:
+    "@types/minimatch": "*"
+    "@types/node": "*"
+  checksum: 6ae717fedfdfdad25f3d5a568323926c64f52ef35897bcac8aca8e19bc50c0bd84630bbd063e5d52078b2137d8e7d3c26eabebd1a2f03ff350fff8a91e79fc19
+  languageName: node
+  linkType: hard
+
 "@types/graceful-fs@npm:^4.1.2":
   version: 4.1.5
   resolution: "@types/graceful-fs@npm:4.1.5"
@@ -3864,7 +3874,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/minimatch@npm:^3.0.4":
+"@types/minimatch@npm:*, @types/minimatch@npm:^3.0.4":
   version: 3.0.5
   resolution: "@types/minimatch@npm:3.0.5"
   checksum: c41d136f67231c3131cf1d4ca0b06687f4a322918a3a5adddc87ce90ed9dbd175a3610adee36b106ae68c0b92c637c35e02b58c8a56c424f71d30993ea220b92
@@ -3914,6 +3924,13 @@ __metadata:
   version: 2.6.0
   resolution: "@types/prettier@npm:2.6.0"
   checksum: 946f1f82ce6f31664e023a5d65931c31b7d677b454f528f67dce851d72e7fcfe713076f4251b16c3646eecf1545f5f5b909b4962966341ed9ddf5b80113b3674
+  languageName: node
+  linkType: hard
+
+"@types/prettier@npm:^2.2.0":
+  version: 2.6.1
+  resolution: "@types/prettier@npm:2.6.1"
+  checksum: b25ec46d18129fa40c1a1f42feb7406e8f19901ba5261ba3c71600ad14996ae07b4f4b727a9b83da673948011e59d870fc519166f05b5d49e9ad39db1aea8c93
   languageName: node
   linkType: hard
 
@@ -4438,9 +4455,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@wired-xr/scene@*, @wired-xr/scene@workspace:packages/scene":
+"@wired-xr/avatar@*, @wired-xr/avatar@workspace:packages/avatar":
   version: 0.0.0-use.local
-  resolution: "@wired-xr/scene@workspace:packages/scene"
+  resolution: "@wired-xr/avatar@workspace:packages/avatar"
   dependencies:
     "@pixiv/three-vrm": ^0.6.10
     "@react-three/cannon": ^6.3.0
@@ -4449,12 +4466,46 @@ __metadata:
     "@types/react": 18.0.8
     "@types/react-dom": ^18.0.3
     "@types/three": ^0.140.0
+    "@wired-xr/tsconfig": "*"
     immer: ^9.0.12
     nanoid: ^3.3.1
     three: ^0.140.0
-    tsconfig: "*"
     typescript: ^4.6.4
     zustand: ^3.7.1
+  languageName: unknown
+  linkType: soft
+
+"@wired-xr/config@*, @wired-xr/config@workspace:packages/config":
+  version: 0.0.0-use.local
+  resolution: "@wired-xr/config@workspace:packages/config"
+  dependencies:
+    eslint-config-next: ^12.1.6
+    eslint-config-prettier: ^8.5.0
+  languageName: unknown
+  linkType: soft
+
+"@wired-xr/scene@*, @wired-xr/scene@workspace:packages/scene":
+  version: 0.0.0-use.local
+  resolution: "@wired-xr/scene@workspace:packages/scene"
+  dependencies:
+    "@react-three/cannon": ^6.3.0
+    "@react-three/drei": ^9.6.2
+    "@react-three/fiber": ^8.0.13
+    "@types/react": 18.0.8
+    "@types/react-dom": ^18.0.3
+    "@types/three": ^0.140.0
+    "@wired-xr/tsconfig": "*"
+    immer: ^9.0.12
+    nanoid: ^3.3.1
+    three: ^0.140.0
+    typescript: ^4.6.4
+    zustand: ^3.7.1
+  languageName: unknown
+  linkType: soft
+
+"@wired-xr/tsconfig@*, @wired-xr/tsconfig@workspace:packages/tsconfig":
+  version: 0.0.0-use.local
+  resolution: "@wired-xr/tsconfig@workspace:packages/tsconfig"
   languageName: unknown
   linkType: soft
 
@@ -5969,9 +6020,11 @@ __metadata:
     "@types/react-dom": ^18.0.3
     "@types/testing-library__jest-dom": ^5.14.2
     "@types/testing-library__react": ^10.2.0
+    "@wired-xr/avatar": "*"
+    "@wired-xr/config": "*"
     "@wired-xr/scene": "*"
+    "@wired-xr/tsconfig": "*"
     autoprefixer: ^10.4.2
-    config: "*"
     eslint: ^8.14.0
     ethers: ^5.6.4
     graphql: ^16.3.0
@@ -5995,7 +6048,6 @@ __metadata:
     tailwindcss: ^3.0.23
     three: ^0.140.0
     ts-jest: ^27.1.3
-    tsconfig: "*"
     typechain: ^8.0.0
     typescript: ^4.6.4
     urql: ^2.2.0
@@ -6182,15 +6234,6 @@ __metadata:
   checksum: 902a9f5d8967a3e2faf138d5cb784b9979bad2e6db5357c5b21c568df4ebe62bcb15108af1b2253744844eb964fc023fbd9afbbbb6ddd0bcc204c6fb5b7bf3af
   languageName: node
   linkType: hard
-
-"config@*, config@workspace:packages/config":
-  version: 0.0.0-use.local
-  resolution: "config@workspace:packages/config"
-  dependencies:
-    eslint-config-next: ^12.1.6
-    eslint-config-prettier: ^8.5.0
-  languageName: unknown
-  linkType: soft
 
 "configstore@npm:^5.0.1":
   version: 5.0.1
@@ -6756,7 +6799,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"detect-newline@npm:^3.0.0":
+"detect-newline@npm:3.1.0, detect-newline@npm:^3.0.0":
   version: 3.1.0
   resolution: "detect-newline@npm:3.1.0"
   checksum: ae6cd429c41ad01b164c59ea36f264a2c479598e61cba7c99da24175a7ab80ddf066420f2bec9a1c57a6bead411b4655ff15ad7d281c000a89791f48cbe939e7
@@ -7872,7 +7915,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-glob@npm:^3.2.11, fast-glob@npm:^3.2.9":
+"fast-glob@npm:^3.0.3, fast-glob@npm:^3.2.11, fast-glob@npm:^3.2.9":
   version: 3.2.11
   resolution: "fast-glob@npm:3.2.11"
   dependencies:
@@ -8303,6 +8346,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"git-hooks-list@npm:1.0.3":
+  version: 1.0.3
+  resolution: "git-hooks-list@npm:1.0.3"
+  checksum: a1dd03d39c1d727ba08a35dbdbdcc6e96de8c4170c942dc95bf787ca6e34998d39fb5295a00242b58a3d265de0b69a0686d0cf583baa6b7830f268542c4576b9
+  languageName: node
+  linkType: hard
+
 "glob-parent@npm:^5.1.2, glob-parent@npm:~5.1.2":
   version: 5.1.2
   resolution: "glob-parent@npm:5.1.2"
@@ -8385,6 +8435,22 @@ __metadata:
   dependencies:
     type-fest: ^0.20.2
   checksum: c55ea8fd3afecb72567bac41605577e19e68476993dfb0ca4c49b86075af5f0ae3f0f5502525f69010f7c5ea5db6a1c540a80a4f80ebdfb2f686d87b0f05d7e9
+  languageName: node
+  linkType: hard
+
+"globby@npm:10.0.0":
+  version: 10.0.0
+  resolution: "globby@npm:10.0.0"
+  dependencies:
+    "@types/glob": ^7.1.1
+    array-union: ^2.1.0
+    dir-glob: ^3.0.1
+    fast-glob: ^3.0.3
+    glob: ^7.1.3
+    ignore: ^5.1.1
+    merge2: ^1.2.3
+    slash: ^3.0.0
+  checksum: fbff58d2fcaedd9207901f6e3b5341ff885b6d499c3a095f7befde0fd03ec1ea634452a82f81e894e46f6a5d704da44b842ba93066f90dced52adf84d4b8d1cc
   languageName: node
   linkType: hard
 
@@ -8789,7 +8855,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ignore@npm:^5.2.0":
+"ignore@npm:^5.1.1, ignore@npm:^5.2.0":
   version: 5.2.0
   resolution: "ignore@npm:5.2.0"
   checksum: 6b1f926792d614f64c6c83da3a1f9c83f6196c2839aa41e1e32dd7b8d174cef2e329d75caabb62cb61ce9dc432f75e67d07d122a037312db7caa73166a1bdb77
@@ -9644,7 +9710,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-plain-obj@npm:^2.0.0, is-plain-obj@npm:^2.1.0":
+"is-plain-obj@npm:2.1.0, is-plain-obj@npm:^2.0.0, is-plain-obj@npm:^2.1.0":
   version: 2.1.0
   resolution: "is-plain-obj@npm:2.1.0"
   checksum: cec9100678b0a9fe0248a81743041ed990c2d4c99f893d935545cfbc42876cbe86d207f3b895700c690ad2fa520e568c44afc1605044b535a7820c1d40e38daa
@@ -11972,7 +12038,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"merge2@npm:^1.3.0, merge2@npm:^1.4.1":
+"merge2@npm:^1.2.3, merge2@npm:^1.3.0, merge2@npm:^1.4.1":
   version: 1.4.1
   resolution: "merge2@npm:1.4.1"
   checksum: 7268db63ed5169466540b6fb947aec313200bcf6d40c5ab722c22e242f651994619bcd85601602972d3c85bd2cc45a358a4c61937e9f11a061919a1da569b0c2
@@ -13414,6 +13480,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"prettier-plugin-sort-json@npm:^0.0.2":
+  version: 0.0.2
+  resolution: "prettier-plugin-sort-json@npm:0.0.2"
+  dependencies:
+    "@types/prettier": ^2.2.0
+  peerDependencies:
+    prettier: ^2.1.0
+  checksum: 2ea84af329044dc5c8a60d16187dc64b47d7728463b07f6a6da03f63418e59b230b36651b366c1c18d3142372c4321b329abe173b1128b8497d9ae2ae5dc5e98
+  languageName: node
+  linkType: hard
+
 "prettier@npm:^2.3.1, prettier@npm:^2.5.1":
   version: 2.6.2
   resolution: "prettier@npm:2.6.2"
@@ -14483,7 +14560,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "server@workspace:apps/server"
   dependencies:
-    config: "*"
+    "@wired-xr/config": "*"
     eslint: ^8.6.0
     nodemon: ^2.0.15
     socket.io: ^4.4.1
@@ -14683,6 +14760,29 @@ __metadata:
   dependencies:
     is-plain-obj: ^2.0.0
   checksum: 1535ffd5a789259fc55107d5c3cec09b3e47803a9407fcaae37e1b9e0b813762c47dfee35b6e71e20ca7a69798d0a4791b2058a07f6cab5ef17b2dae83cedbda
+  languageName: node
+  linkType: hard
+
+"sort-object-keys@npm:^1.1.3":
+  version: 1.1.3
+  resolution: "sort-object-keys@npm:1.1.3"
+  checksum: abea944d6722a1710a1aa6e4f9509da085d93d5fc0db23947cb411eedc7731f80022ce8fa68ed83a53dd2ac7441fcf72a3f38c09b3d9bbc4ff80546aa2e151ad
+  languageName: node
+  linkType: hard
+
+"sort-package-json@npm:^1.57.0":
+  version: 1.57.0
+  resolution: "sort-package-json@npm:1.57.0"
+  dependencies:
+    detect-indent: ^6.0.0
+    detect-newline: 3.1.0
+    git-hooks-list: 1.0.3
+    globby: 10.0.0
+    is-plain-obj: 2.1.0
+    sort-object-keys: ^1.1.3
+  bin:
+    sort-package-json: cli.js
+  checksum: 15758ba6b1033ae136863eabd4b8c8a28e79dd68b71327f6803c2ea740dc149dc9ad708b006d07ee9de56b6dc7cadb7c697801ad50c01348aa91022c6ff6e21d
   languageName: node
   linkType: hard
 
@@ -15596,12 +15696,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsconfig@*, tsconfig@workspace:packages/tsconfig":
-  version: 0.0.0-use.local
-  resolution: "tsconfig@workspace:packages/tsconfig"
-  languageName: unknown
-  linkType: soft
-
 "tslib@npm:^1.8.1, tslib@npm:^1.9.0":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
@@ -16427,6 +16521,8 @@ __metadata:
   dependencies:
     "@trivago/prettier-plugin-sort-imports": ^3.2.0
     prettier: ^2.5.1
+    prettier-plugin-sort-json: ^0.0.2
+    sort-package-json: ^1.57.0
     turbo: latest
   languageName: unknown
   linkType: soft

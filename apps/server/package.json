@@ -10,7 +10,7 @@
     "socket.io": "^4.4.1"
   },
   "devDependencies": {
-    "config": "*",
+    "@wired-xr/config": "*",
     "eslint": "^8.6.0",
     "nodemon": "^2.0.15"
   }

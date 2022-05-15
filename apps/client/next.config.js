@@ -9,6 +9,11 @@ module.exports = withTM({
         destination: "/create",
         permanent: true,
       },
+      {
+        source: "/app",
+        destination: "/",
+        permanent: false,
+      },
     ];
   },
 });

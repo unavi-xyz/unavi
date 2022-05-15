@@ -9,11 +9,10 @@
     "@types/react": "18.0.8",
     "@types/react-dom": "^18.0.3",
     "@types/three": "^0.140.0",
-    "tsconfig": "*",
+    "@wired-xr/tsconfig": "*",
     "typescript": "^4.6.4"
   },
   "dependencies": {
-    "@pixiv/three-vrm": "^0.6.10",
     "@react-three/cannon": "^6.3.0",
     "@react-three/drei": "^9.6.2",
     "@react-three/fiber": "^8.0.13",

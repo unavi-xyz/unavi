@@ -1,7 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Next.js",
-  "extends": "./base.json",
   "compilerOptions": {
     "target": "es2017",
     "lib": ["dom", "dom.iterable", "esnext"],
@@ -17,6 +15,8 @@
     "isolatedModules": true,
     "jsx": "preserve"
   },
-  "include": ["src", "next-env.d.ts"],
-  "exclude": ["node_modules"]
+  "display": "Next.js",
+  "exclude": ["node_modules"],
+  "extends": "./base.json",
+  "include": ["src", "next-env.d.ts"]
 }

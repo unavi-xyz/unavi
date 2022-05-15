@@ -62,7 +62,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/core@npm:^7.14.0":
+"@babel/core@npm:^7.14.0, @babel/core@npm:^7.17.10":
   version: 7.17.10
   resolution: "@babel/core@npm:7.17.10"
   dependencies:
@@ -382,7 +382,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/parser@npm:^7.13.0, @babel/parser@npm:^7.13.10, @babel/parser@npm:^7.14.0, @babel/parser@npm:^7.16.7, @babel/parser@npm:^7.16.8, @babel/parser@npm:^7.17.10":
+"@babel/parser@npm:^7.1.0, @babel/parser@npm:^7.13.0, @babel/parser@npm:^7.13.10, @babel/parser@npm:^7.14.0, @babel/parser@npm:^7.16.7, @babel/parser@npm:^7.16.8, @babel/parser@npm:^7.17.10":
   version: 7.17.10
   resolution: "@babel/parser@npm:7.17.10"
   bin:
@@ -1409,7 +1409,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/types@npm:^7.0.0, @babel/types@npm:^7.13.0, @babel/types@npm:^7.16.0, @babel/types@npm:^7.16.7, @babel/types@npm:^7.16.8, @babel/types@npm:^7.17.0, @babel/types@npm:^7.17.10, @babel/types@npm:^7.4.4, @babel/types@npm:^7.8.3":
+"@babel/types@npm:^7.0.0, @babel/types@npm:^7.13.0, @babel/types@npm:^7.16.0, @babel/types@npm:^7.16.7, @babel/types@npm:^7.16.8, @babel/types@npm:^7.17.0, @babel/types@npm:^7.17.10, @babel/types@npm:^7.3.0, @babel/types@npm:^7.4.4, @babel/types@npm:^7.8.3":
   version: 7.17.10
   resolution: "@babel/types@npm:7.17.10"
   dependencies:
@@ -1524,6 +1524,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ethersproject/abi@npm:^5.6.2":
+  version: 5.6.2
+  resolution: "@ethersproject/abi@npm:5.6.2"
+  dependencies:
+    "@ethersproject/address": ^5.6.0
+    "@ethersproject/bignumber": ^5.6.0
+    "@ethersproject/bytes": ^5.6.0
+    "@ethersproject/constants": ^5.6.0
+    "@ethersproject/hash": ^5.6.0
+    "@ethersproject/keccak256": ^5.6.0
+    "@ethersproject/logger": ^5.6.0
+    "@ethersproject/properties": ^5.6.0
+    "@ethersproject/strings": ^5.6.0
+  checksum: 3c45a31ec3204beaeab0f2d8e1661908df59f1249b4d445d2a7662fc9d4309b46a7b5d460f47bcd487e315d889b81c469b48484170b36fb18398dd1e34fb9d2b
+  languageName: node
+  linkType: hard
+
 "@ethersproject/abstract-provider@npm:5.6.0, @ethersproject/abstract-provider@npm:^5.6.0":
   version: 5.6.0
   resolution: "@ethersproject/abstract-provider@npm:5.6.0"
@@ -1595,7 +1612,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/bytes@npm:5.6.1, @ethersproject/bytes@npm:^5.6.0":
+"@ethersproject/bytes@npm:5.6.1, @ethersproject/bytes@npm:^5.6.0, @ethersproject/bytes@npm:^5.6.1":
   version: 5.6.1
   resolution: "@ethersproject/bytes@npm:5.6.1"
   dependencies:
@@ -1757,6 +1774,33 @@ __metadata:
     bech32: 1.1.4
     ws: 7.4.6
   checksum: f8b37d72068e845f447f922cceddda73508ad539bb035e3f094b6feb7de2a8c6dde87ecd7ee2ec00712e7135145f7e9a902f0b845a0cb604313caf7cb6b440a7
+  languageName: node
+  linkType: hard
+
+"@ethersproject/providers@npm:^5.6.6":
+  version: 5.6.6
+  resolution: "@ethersproject/providers@npm:5.6.6"
+  dependencies:
+    "@ethersproject/abstract-provider": ^5.6.0
+    "@ethersproject/abstract-signer": ^5.6.0
+    "@ethersproject/address": ^5.6.0
+    "@ethersproject/basex": ^5.6.0
+    "@ethersproject/bignumber": ^5.6.0
+    "@ethersproject/bytes": ^5.6.0
+    "@ethersproject/constants": ^5.6.0
+    "@ethersproject/hash": ^5.6.0
+    "@ethersproject/logger": ^5.6.0
+    "@ethersproject/networks": ^5.6.0
+    "@ethersproject/properties": ^5.6.0
+    "@ethersproject/random": ^5.6.0
+    "@ethersproject/rlp": ^5.6.0
+    "@ethersproject/sha2": ^5.6.0
+    "@ethersproject/strings": ^5.6.0
+    "@ethersproject/transactions": ^5.6.0
+    "@ethersproject/web": ^5.6.0
+    bech32: 1.1.4
+    ws: 7.4.6
+  checksum: 3eefa2f9da4e1520309e31587fe261a7f88cf9aaa007e7fe72efd8b21cf65ef02dd3458b35dde358e06e6336c263f12d1d16266720a0adcc3d18e72cb63f072c
   languageName: node
   linkType: hard
 
@@ -3248,6 +3292,47 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/babel__core@npm:^7":
+  version: 7.1.19
+  resolution: "@types/babel__core@npm:7.1.19"
+  dependencies:
+    "@babel/parser": ^7.1.0
+    "@babel/types": ^7.0.0
+    "@types/babel__generator": "*"
+    "@types/babel__template": "*"
+    "@types/babel__traverse": "*"
+  checksum: 8c9fa87a1c2224cbec251683a58bebb0d74c497118034166aaa0491a4e2627998a6621fc71f8a60ffd27d9c0c52097defedf7637adc6618d0331c15adb302338
+  languageName: node
+  linkType: hard
+
+"@types/babel__generator@npm:*":
+  version: 7.6.4
+  resolution: "@types/babel__generator@npm:7.6.4"
+  dependencies:
+    "@babel/types": ^7.0.0
+  checksum: 20effbbb5f8a3a0211e95959d06ae70c097fb6191011b73b38fe86deebefad8e09ee014605e0fd3cdaedc73d158be555866810e9166e1f09e4cfd880b874dcb0
+  languageName: node
+  linkType: hard
+
+"@types/babel__template@npm:*":
+  version: 7.4.1
+  resolution: "@types/babel__template@npm:7.4.1"
+  dependencies:
+    "@babel/parser": ^7.1.0
+    "@babel/types": ^7.0.0
+  checksum: 649fe8b42c2876be1fd28c6ed9b276f78152d5904ec290b6c861d9ef324206e0a5c242e8305c421ac52ecf6358fa7e32ab7a692f55370484825c1df29b1596ee
+  languageName: node
+  linkType: hard
+
+"@types/babel__traverse@npm:*":
+  version: 7.17.1
+  resolution: "@types/babel__traverse@npm:7.17.1"
+  dependencies:
+    "@babel/types": ^7.3.0
+  checksum: 8992d8c1eaaf1c793e9184b930767883446939d2744c40ea4e9591086e79b631189dc519931ed8864f1e016742a189703c217db59b800aca84870b865009d8b4
+  languageName: node
+  linkType: hard
+
 "@types/component-emitter@npm:^1.2.10":
   version: 1.2.11
   resolution: "@types/component-emitter@npm:1.2.11"
@@ -3462,6 +3547,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/three@npm:^0.137.0":
+  version: 0.137.0
+  resolution: "@types/three@npm:0.137.0"
+  checksum: 32674dd002b0f249b995167b52e0e4d21af314260339ab09cf6898ae7d1bf000442d1da76673a0fcb5f8164878ba62b61202a1e2175afe2d76de8119d9821e04
+  languageName: node
+  linkType: hard
+
 "@types/three@npm:^0.140.0":
   version: 0.140.0
   resolution: "@types/three@npm:0.140.0"
@@ -3590,13 +3682,73 @@ __metadata:
   dependencies:
     "@pixiv/three-vrm": ^0.6.10
     "@react-three/drei": ^9.6.2
-    "@react-three/fiber": ^8.0.13
     "@types/react": 18.0.8
     "@types/react-dom": ^18.0.3
-    "@types/three": ^0.140.0
+    "@types/three": ^0.137.0
     "@wired-xr/tsconfig": "*"
-    three: ^0.140.0
     typescript: ^4.6.4
+  peerDependencies:
+    "@react-three/fiber": ">=8.0"
+    react: ">=18.0"
+    react-dom: ">=18.0"
+    three: ">=0.137"
+  languageName: unknown
+  linkType: soft
+
+"@wired-xr/client@workspace:apps/client":
+  version: 0.0.0-use.local
+  resolution: "@wired-xr/client@workspace:apps/client"
+  dependencies:
+    "@babel/core": ^7.17.10
+    "@babel/preset-env": ^7.16.11
+    "@babel/preset-react": ^7.16.7
+    "@ethersproject/abi": ^5.6.2
+    "@ethersproject/bytes": ^5.6.1
+    "@ethersproject/providers": ^5.6.6
+    "@graphql-codegen/cli": 2.6.2
+    "@graphql-codegen/introspection": 2.1.1
+    "@graphql-codegen/typescript": 2.4.8
+    "@graphql-codegen/typescript-operations": 2.3.5
+    "@graphql-codegen/typescript-urql": ^3.5.10
+    "@react-three/cannon": ^6.3.0
+    "@react-three/drei": ^9.6.2
+    "@react-three/fiber": ^8.0.13
+    "@typechain/ethers-v5": ^10.0.0
+    "@types/babel__core": ^7
+    "@types/graphql": ^14.5.0
+    "@types/react": ^18.0.8
+    "@types/react-dnd": ^3.0.2
+    "@types/react-dom": ^18.0.3
+    "@wired-xr/avatar": "*"
+    "@wired-xr/config": "*"
+    "@wired-xr/scene": "*"
+    "@wired-xr/tsconfig": "*"
+    autoprefixer: ^10.4.2
+    eslint: ^8.14.0
+    ethers: ^5.6.4
+    graphql: ^16.3.0
+    graphql-tag: ^2.12.6
+    idb: ^7.0.0
+    immer: ^9.0.12
+    ipfs-core: ^0.14.3
+    ipfs-http-client: ^56.0.3
+    jotai: ^1.6.6
+    nanoid: ^3.3.1
+    next: ^12.0.7
+    next-transpile-modules: ^9.0.0
+    postcss: ^8.4.6
+    react: ^18.1.0
+    react-dnd: ^16.0.1
+    react-dnd-html5-backend: ^16.0.1
+    react-dom: ^18.1.0
+    react-icons: ^4.3.1
+    socket.io-client: ^4.4.1
+    tailwindcss: ^3.0.23
+    three: ^0.140.0
+    typechain: ^8.0.0
+    typescript: ^4.6.4
+    urql: ^2.2.0
+    zustand: ^3.7.1
   languageName: unknown
   linkType: soft
 
@@ -3613,18 +3765,32 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@wired-xr/scene@workspace:packages/scene"
   dependencies:
-    "@react-three/cannon": ^6.3.0
     "@react-three/drei": ^9.6.2
-    "@react-three/fiber": ^8.0.13
     "@types/react": 18.0.8
     "@types/react-dom": ^18.0.3
     "@types/three": ^0.140.0
     "@wired-xr/tsconfig": "*"
     immer: ^9.0.12
     nanoid: ^3.3.1
-    three: ^0.140.0
     typescript: ^4.6.4
     zustand: ^3.7.1
+  peerDependencies:
+    "@react-three/cannon": ">=6.0"
+    "@react-three/fiber": ">=8.0"
+    react: ">=18.0"
+    react-dom: ">=18.0"
+    three: ">=0.137"
+  languageName: unknown
+  linkType: soft
+
+"@wired-xr/server@workspace:apps/server":
+  version: 0.0.0-use.local
+  resolution: "@wired-xr/server@workspace:apps/server"
+  dependencies:
+    "@wired-xr/config": "*"
+    eslint: ^8.6.0
+    nodemon: ^2.0.15
+    socket.io: ^4.4.1
   languageName: unknown
   linkType: soft
 
@@ -4771,57 +4937,6 @@ __metadata:
   checksum: 4c94af3769367a70e11ed69aa6095f1c600c0ff510f3921ab4045af961820d57c0233acfa8b6396037391f31b4c397e1f614d234294f979ff61430a6c166c3f6
   languageName: node
   linkType: hard
-
-"client@workspace:apps/client":
-  version: 0.0.0-use.local
-  resolution: "client@workspace:apps/client"
-  dependencies:
-    "@babel/preset-env": ^7.16.11
-    "@babel/preset-react": ^7.16.7
-    "@graphql-codegen/cli": 2.6.2
-    "@graphql-codegen/introspection": 2.1.1
-    "@graphql-codegen/typescript": 2.4.8
-    "@graphql-codegen/typescript-operations": 2.3.5
-    "@graphql-codegen/typescript-urql": ^3.5.10
-    "@react-three/cannon": ^6.3.0
-    "@react-three/drei": ^9.6.2
-    "@react-three/fiber": ^8.0.13
-    "@typechain/ethers-v5": ^10.0.0
-    "@types/graphql": ^14.5.0
-    "@types/react": ^18.0.8
-    "@types/react-dnd": ^3.0.2
-    "@types/react-dom": ^18.0.3
-    "@wired-xr/avatar": "*"
-    "@wired-xr/config": "*"
-    "@wired-xr/scene": "*"
-    "@wired-xr/tsconfig": "*"
-    autoprefixer: ^10.4.2
-    eslint: ^8.14.0
-    ethers: ^5.6.4
-    graphql: ^16.3.0
-    idb: ^7.0.0
-    immer: ^9.0.12
-    ipfs-core: ^0.14.3
-    ipfs-http-client: ^56.0.3
-    jotai: ^1.6.6
-    nanoid: ^3.3.1
-    next: ^12.0.7
-    next-transpile-modules: ^9.0.0
-    postcss: ^8.4.6
-    react: ^18.1.0
-    react-dnd: ^16.0.1
-    react-dnd-html5-backend: ^16.0.1
-    react-dom: ^18.1.0
-    react-icons: ^4.3.1
-    socket.io-client: ^4.4.1
-    tailwindcss: ^3.0.23
-    three: ^0.140.0
-    typechain: ^8.0.0
-    typescript: ^4.6.4
-    urql: ^2.2.0
-    zustand: ^3.7.1
-  languageName: unknown
-  linkType: soft
 
 "cliui@npm:^6.0.0":
   version: 6.0.0
@@ -6823,7 +6938,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-tag@npm:^2.11.0":
+"graphql-tag@npm:^2.11.0, graphql-tag@npm:^2.12.6":
   version: 2.12.6
   resolution: "graphql-tag@npm:2.12.6"
   dependencies:
@@ -11707,17 +11822,6 @@ __metadata:
   checksum: 3cfe6c0143e649132365695706702d7f729f484fa7b25f43435876efe7af2478243eefb052bacbcce10babf9319fd6b5b6bc59b94c80a1c819bcbb40651465d5
   languageName: node
   linkType: hard
-
-"server@workspace:apps/server":
-  version: 0.0.0-use.local
-  resolution: "server@workspace:apps/server"
-  dependencies:
-    "@wired-xr/config": "*"
-    eslint: ^8.6.0
-    nodemon: ^2.0.15
-    socket.io: ^4.4.1
-  languageName: unknown
-  linkType: soft
 
 "set-blocking@npm:^2.0.0":
   version: 2.0.0

@@ -12,8 +12,7 @@
     "codegen": "turbo run codegen",
     "dev": "turbo run dev --parallel",
     "format": "prettier --write . --ignore-path .gitignore && npx sort-package-json",
-    "lint": "turbo run lint",
-    "test": "turbo run test"
+    "lint": "turbo run lint"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",

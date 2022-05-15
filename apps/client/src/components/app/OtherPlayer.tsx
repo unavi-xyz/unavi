@@ -2,9 +2,14 @@ import { useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { AudioListener, Group, PositionalAudio } from "three";
 
+import { Avatar } from "@wired-xr/avatar";
+
 import useDataChannels from "../../helpers/app/hooks/useDataChannels";
 import useInterpolation from "../../helpers/app/hooks/useInterpolation";
 import { PlayerChannels } from "../../helpers/app/types";
+
+const DEFAULT_AVATAR_URL = "/models/Default.vrm";
+const ANIMATIONS_URL = "/models/animations.fbx";
 
 interface Props {
   id: string;
@@ -50,17 +55,11 @@ export default function OtherPlayer({ id, channels, track }: Props) {
 
   return (
     <group ref={groupRef}>
-      {/* {url && (
-        <Avatar
-          src={url}
-          animationsSrc="/models/animations.fbx"
-          animationWeights={animationWeights}
-        />
-      )} */}
-
-      <mesh>
-        <boxBufferGeometry attach="geometry" args={[1, 1.6, 1]} />
-      </mesh>
+      <Avatar
+        src={DEFAULT_AVATAR_URL}
+        animationsSrc={ANIMATIONS_URL}
+        animationWeights={animationWeights}
+      />
     </group>
   );
 }

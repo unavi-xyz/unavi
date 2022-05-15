@@ -2,6 +2,8 @@ import { useFrame } from "@react-three/fiber";
 import { MutableRefObject, RefObject, useEffect, useRef } from "react";
 import { Group, MathUtils, Vector3 } from "three";
 
+import { AnimationWeights } from "@wired-xr/avatar";
+
 import { PUBLISH_INTERVAL } from "../constants";
 import { Location } from "../types";
 
@@ -98,12 +100,12 @@ export default function useInterpolation(
     ref.current.rotation.y = rot;
   });
 
-  // const weights: AnimationWeights = {
-  //   idle: idleRef,
-  //   walk: walkRef,
-  //   run: runRef,
-  //   jump: jumpRef,
-  // };
+  const weights: AnimationWeights = {
+    idle: idleRef,
+    walk: walkRef,
+    run: runRef,
+    jump: jumpRef,
+  };
 
-  // return weights;
+  return weights;
 }

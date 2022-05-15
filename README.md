@@ -19,8 +19,9 @@ This turborepo uses [Yarn](https://yarnpkg.com/) v3 as a package manager. It inc
 
 ### Packages
 
-- `scene`: a library for creating 3d scenes
+- `avatar`: a VRM avatar library
 - `config`: `eslint` configurations
+- `scene`: a library for creating 3d scenes in a standard format
 - `tsconfig`: `tsconfig.json`s used throughout the monorepo
 
 Each app/package is 100% [TypeScript](https://www.typescriptlang.org/).

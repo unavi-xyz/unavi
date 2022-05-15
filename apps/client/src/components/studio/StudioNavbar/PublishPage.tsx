@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import { LensHub__factory } from "../../../../contracts";
 import { useCreatePostTypedDataMutation } from "../../../generated/graphql";
 import { useEthersStore } from "../../../helpers/ethers/store";
-import { useLocalSpace } from "../../../helpers/indexedDB/LocalSpace/hooks/useLocalScene";
+import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalScene";
 import {
   uploadFileToIpfs,
   uploadStringToIpfs,

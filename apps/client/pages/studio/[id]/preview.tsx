@@ -7,7 +7,7 @@ import { MdClose } from "react-icons/md";
 import { InstancedScene } from "@wired-xr/scene";
 
 import Player from "../../../src/components/app/Player";
-import { useLocalSpace } from "../../../src/helpers/indexedDB/LocalSpace/hooks/useLocalScene";
+import { useLocalSpace } from "../../../src/helpers/indexeddb/LocalSpace/hooks/useLocalScene";
 
 export default function Preview() {
   const router = useRouter();

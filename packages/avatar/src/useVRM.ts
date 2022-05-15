@@ -10,7 +10,7 @@ export function useVRM(src: string) {
   useEffect(() => {
     if (!gltf) return;
 
-    VRM.from(gltf).then((res) => {
+    VRM.from(gltf as any).then((res) => {
       setVrm(res);
     });
   }, [gltf]);

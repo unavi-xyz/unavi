@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import {
   getLocalSpace,
   updateLocalSpace,
-} from "../../indexedDB/LocalSpace/helpers";
+} from "../../indexeddb/LocalSpace/helpers";
 import { useStudioStore } from "../store";
 
 export function useAutosave() {

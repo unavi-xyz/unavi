@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { LocalSpace } from "../../helpers/indexedDB/LocalSpace/types";
+import { LocalSpace } from "../../helpers/indexeddb/LocalSpace/types";
 import Card from "../base/Card";
 
 interface Props {

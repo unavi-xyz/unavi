@@ -25,7 +25,11 @@ import {
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
 import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
 import { useLensStore } from "../../src/helpers/lens/store";
-import { AttributeData, ProfileMetadata } from "../../src/helpers/lens/types";
+import {
+  AttributeData,
+  MetadataVersions,
+  ProfileMetadata,
+} from "../../src/helpers/lens/types";
 import { pollUntilIndexed, removeTypename } from "../../src/helpers/lens/utils";
 
 export default function Settings() {
@@ -100,7 +104,7 @@ export default function Settings() {
       //TODO add location, website, twitter to attributes
 
       const metadata: ProfileMetadata = {
-        version: "1.0.0",
+        version: MetadataVersions.one,
         metadata_id: nanoid(),
         name: nameRef.current?.value ?? undefined,
         bio: bioRef.current?.value ?? undefined,

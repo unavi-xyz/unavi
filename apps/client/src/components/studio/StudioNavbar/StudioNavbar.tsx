@@ -5,8 +5,8 @@ import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
-import { updateLocalSpace } from "../../../helpers/indexedDB/LocalSpace/helpers";
-import { useLocalSpace } from "../../../helpers/indexedDB/LocalSpace/hooks/useLocalScene";
+import { updateLocalSpace } from "../../../helpers/indexeddb/LocalSpace/helpers";
+import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalScene";
 import { useLensStore } from "../../../helpers/lens/store";
 import IconButton from "../../base/IconButton";
 import Tooltip from "../../base/Tooltip";

@@ -1,0 +1,14 @@
+query GetPublication($publicationId: InternalPublicationId!) {
+  publication(request: { publicationId: $publicationId }) {
+    __typename
+    ... on Post {
+      ...PostFields
+    }
+    ... on Comment {
+      ...CommentFields
+    }
+    ... on Mirror {
+      ...MirrorFields
+    }
+  }
+}

@@ -9,19 +9,28 @@
   ],
   "scripts": {
     "build": "turbo run build",
+    "codegen": "turbo run codegen",
     "dev": "turbo run dev --parallel",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
-    "ready": "yarn format && yarn lint && yarn build && yarn test"
+    "format": "prettier --write . --ignore-path .gitignore && npx sort-package-json",
+    "postinstall": "husky install",
+    "lint": "turbo run lint"
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown",
+    "package.json": "npx sort-package-json"
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^3.2.0",
+    "husky": "^8.0.1",
+    "lint-staged": "^12.4.1",
     "prettier": "^2.5.1",
+    "prettier-plugin-sort-json": "^0.0.2",
+    "sort-package-json": "^1.57.0",
     "turbo": "latest"
   },
+  "packageManager": "yarn@3.2.0",
   "engines": {
-    "npm": ">=7.0.0",
-    "node": ">=16.0.0"
-  },
-  "packageManager": "yarn@1.22.17"
+    "node": ">=16.0.0",
+    "npm": ">=7.0.0"
+  }
 }

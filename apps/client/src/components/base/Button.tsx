@@ -1,35 +1,87 @@
-import { ReactChild } from "react";
-import { ImSpinner2 } from "react-icons/im";
+import Spinner from "./Spinner";
 
-interface Props {
-  color?: "black" | "gray" | "red";
+export type ButtonVariant =
+  | "elevated"
+  | "filled"
+  | "tonal"
+  | "outlined"
+  | "text";
+
+interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  color?: "Primary" | "Tertiary";
   loading?: boolean;
-  children: ReactChild;
-  [key: string]: any;
+  disabled?: boolean;
+  fullWidth?: boolean;
+  squared?: boolean;
+  children: React.ReactNode;
 }
 
-export function Button({
-  color = "black",
+export default function Button({
+  variant = "text",
+  color = "Primary",
   loading = false,
+  disabled = false,
+  fullWidth = false,
+  squared = false,
   children,
   ...rest
 }: Props) {
-  const colorCss =
-    color === "black"
-      ? "bg-black"
-      : color === "gray"
-      ? "bg-neutral-500"
-      : "bg-red-500";
+  const textClass =
+    variant === "text"
+      ? color === "Primary"
+        ? "text-primary hover:bg-primaryContainer"
+        : "text-tertiary hover:bg-tertiaryContainer"
+      : "";
+  const outlineClass =
+    variant === "outlined"
+      ? color === "Primary"
+        ? "ring-1 ring-outline text-onPrimaryContainer hover:bg-primaryContainer"
+        : "ring-1 ring-outline text-onTertiaryContainer hover:bg-tertiaryContainer"
+      : null;
+  const tonalClass =
+    variant === "tonal"
+      ? color === "Primary"
+        ? "bg-primaryContainer text-onPrimaryContainer"
+        : "bg-tertiaryContainer text-onTertiaryContainer"
+      : null;
+  const filledClass =
+    variant === "filled"
+      ? color === "Primary"
+        ? "bg-primary text-onPrimary"
+        : "bg-tertiary text-onTertiary"
+      : null;
+  const elevatedClass =
+    variant === "elevated"
+      ? color === "Primary"
+        ? "shadow-dark bg-surface text-primary hover:bg-surfaceVariant/50"
+        : "shadow-dark bg-surface text-tertiary hover:bg-surfaceVariant/50"
+      : null;
 
-  const loadingCss = loading ? "bg-opacity-40" : "hover:cursor-pointer";
+  const disabledClass =
+    loading || disabled
+      ? "opacity-50 cursor-not-allowed"
+      : variant === "tonal" || variant === "filled"
+      ? "hover:shadow-dark"
+      : null;
+
+  const loadingClass = loading ? "opacity-0" : null;
+  const fullWidthClass = fullWidth ? "w-full" : null;
+  const squaredClass = squared ? "rounded-xl" : "rounded-full";
 
   return (
-    <div
-      className={`text-white h-10 px-4 w-full  rounded-xl ${colorCss} ${loadingCss}
-                  flex items-center justify-center transition-all duration-150`}
+    <button
+      className={`relative flex items-center justify-center transition font-bold
+                  px-5 py-1.5 ${disabledClass} ${fullWidthClass} ${squaredClass}
+                  ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
       {...rest}
     >
-      {loading ? <ImSpinner2 className="animate-spin" /> : children}
-    </div>
+      <div className={`w-full ${loadingClass}`}>{children}</div>
+      {loading && (
+        <div className="absolute">
+          <Spinner />
+        </div>
+      )}
+    </button>
   );
 }

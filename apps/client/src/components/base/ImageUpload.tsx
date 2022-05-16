@@ -6,7 +6,10 @@ interface Props {
   defaultValue?: string;
 }
 
-export function ImageUpload({ setImageFile, defaultValue = "" }: Props) {
+export default function ImageUpload({
+  setImageFile,
+  defaultValue = "",
+}: Props) {
   const [image, setImage] = useState(defaultValue);
 
   function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
@@ -38,7 +41,7 @@ export function ImageUpload({ setImageFile, defaultValue = "" }: Props) {
             <img
               src={image}
               alt=""
-              className="object-cover rounded-xl h-full w-full hover:opacity-80 transition-all duration-150"
+              className="object-cover rounded-xl h-full w-full hover:opacity-80 transition "
             />
           </label>
         </>
@@ -47,8 +50,8 @@ export function ImageUpload({ setImageFile, defaultValue = "" }: Props) {
           <label htmlFor="image" className="hover:cursor-pointer w-full h-full">
             <span className="flex items-center justify-center space-x-4 h-full">
               <div
-                className="rounded-xl  hover:bg-neutral-300 bg-neutral-200 transition-all
-                           text-2xl flex justify-center items-center duration-150 w-full h-full"
+                className="rounded-xl  hover:bg-neutral-300 bg-neutral-200 transition
+                           text-2xl flex justify-center items-center  w-full h-full"
               >
                 <HiCamera />
               </div>

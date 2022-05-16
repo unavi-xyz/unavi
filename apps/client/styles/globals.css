@@ -2,19 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* tailwindcss */
 html {
-  font-family: "DM Sans", sans-serif;
-  @apply bg-neutral-100;
+  font-family: "Lato", sans-serif;
+  @apply bg-background text-onBackground;
 }
 
-.card {
-  @apply bg-white rounded-3xl p-8;
+.max-w {
+  @apply max-w-4xl w-full;
 }
 
-.card-borderless {
-  @apply bg-white rounded-3xl;
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-rose-500;
 }
 
+/* crosshair */
 .crosshair {
   position: fixed;
   top: 50%;
@@ -39,6 +41,7 @@ html {
   margin-left: -5px;
 }
 
+/* react-dnd */
 .bg-position-move {
   background-size: 200%;
   background-position: left;

@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "@wired-xr/server",
   "version": "0.0.0",
   "license": "GPL-3.0-or-later",
   "private": true,
@@ -10,7 +10,7 @@
     "socket.io": "^4.4.1"
   },
   "devDependencies": {
-    "config": "*",
+    "@wired-xr/config": "*",
     "eslint": "^8.6.0",
     "nodemon": "^2.0.15"
   }

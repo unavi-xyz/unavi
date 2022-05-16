@@ -10,18 +10,18 @@
 
 ## What's inside?
 
-This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includes the following apps/packages:
+This turborepo uses [Yarn](https://yarnpkg.com/) v3 as a package manager. It includes the following apps/packages:
 
 ### Apps
 
-- `client`: a [Next.js](https://nextjs.org) app.
-- `server`: a nodejs signaling server.
+- `client`: a website used to access The Wired
+- `server`: a server for hosting spaces
 
 ### Packages
 
-- `3d`: [Three.js](https://github.com/pmndrs/react-three-fiber) components
-- `ceramic`: helpers for interacting with [Ceramic](https://ceramic.network/)
+- `avatar`: a VRM avatar library
 - `config`: `eslint` configurations
+- `scene`: a library for creating 3d scenes in a standard format
 - `tsconfig`: `tsconfig.json`s used throughout the monorepo
 
 Each app/package is 100% [TypeScript](https://www.typescriptlang.org/).

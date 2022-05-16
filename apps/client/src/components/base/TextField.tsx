@@ -1,24 +1,43 @@
-import { MutableRefObject } from "react";
+import { ChangeEvent, RefObject } from "react";
 
-interface Props {
+interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   title?: string;
-  inputRef: MutableRefObject<HTMLInputElement>;
-  [key: string]: any;
+  frontAdornment?: string;
+  inputRef?: RefObject<HTMLInputElement>;
+  onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function TextField({ title, inputRef, ...rest }: Props) {
+export default function TextField({
+  title,
+  frontAdornment,
+  inputRef,
+  onChange,
+  ...rest
+}: Props) {
   return (
-    <div className="flex flex-col space-y-3">
-      <label htmlFor={title} className="block text-lg pointer-events-none">
+    <div className="flex flex-col space-y-1">
+      <label
+        htmlFor={title}
+        className="block text-lg font-bold pointer-events-none"
+      >
         {title}
       </label>
-      <input
-        ref={inputRef}
-        id={title}
-        type="text"
-        className="border p-2 rounded leading-tight outline-none"
-        {...rest}
-      />
+
+      <div className="flex items-center border rounded-lg">
+        {frontAdornment && (
+          <span className="pl-2 text-secondary font-bold">
+            {frontAdornment}
+          </span>
+        )}
+        <input
+          ref={inputRef}
+          id={title}
+          type="text"
+          className="outline-none w-full h-full px-3 py-2 rounded-lg bg-surface text-onSurface"
+          onChange={onChange}
+          {...rest}
+        />
+      </div>
     </div>
   );
 }

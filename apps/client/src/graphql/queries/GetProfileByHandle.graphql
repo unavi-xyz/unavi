@@ -1,0 +1,64 @@
+query GetProfileByHandle($handle: Handle!) {
+  profiles(request: { handles: [$handle], limit: 1 }) {
+    items {
+      id
+      name
+      bio
+      metadata
+      isDefault
+      ownedBy
+      handle
+      stats {
+        totalFollowers
+        totalFollowing
+        totalPosts
+        totalComments
+        totalMirrors
+        totalPublications
+        totalCollects
+      }
+      picture {
+        ... on NftImage {
+          contractAddress
+          tokenId
+          uri
+          verified
+          chainId
+        }
+        ... on MediaSet {
+          original {
+            url
+            mimeType
+          }
+        }
+        __typename
+      }
+      coverPicture {
+        ... on NftImage {
+          contractAddress
+          tokenId
+          uri
+          verified
+          chainId
+        }
+        ... on MediaSet {
+          original {
+            url
+            mimeType
+          }
+        }
+        __typename
+      }
+      dispatcher {
+        address
+        canUseRelay
+      }
+      attributes {
+        displayType
+        traitType
+        key
+        value
+      }
+    }
+  }
+}

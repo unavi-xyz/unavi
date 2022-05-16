@@ -28,7 +28,7 @@
     "sort-package-json": "^1.57.0",
     "turbo": "latest"
   },
-  "packageManager": "yarn@3.2.0",
+  "packageManager": "yarn@1.22.17",
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=7.0.0"

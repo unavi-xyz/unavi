@@ -1,0 +1,28 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    name: "Publish Server Package"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+          cache: "yarn"
+      - run: yarn install
+      - run: yarn build:docker
+
+      - uses: docker/build-push-action@v1
+        with:
+          registry: ghcr.io
+          username: "wired-xr"
+          password: ${{ secrets.PAT }}
+          repository: wired-xr/server
+          tags: latest
+          dockerfile: ./apps/server/Dockerfile

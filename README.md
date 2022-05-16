@@ -19,7 +19,7 @@
 
 ## Development
 
-This turborepo uses [Yarn v3](https://yarnpkg.com/) as a package manager. It includes the following apps/packages:
+This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includes the following apps/packages:
 
 ### Apps
 

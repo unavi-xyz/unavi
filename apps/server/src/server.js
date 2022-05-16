@@ -7,6 +7,8 @@ const io = new Server(httpServer, {
 });
 
 io.on("connection", (socket) => {
+  console.log("✅ user connected:", socket.id);
+
   //join a room
   socket.on("join", (room) => {
     socket.join(room);
@@ -14,6 +16,7 @@ io.on("connection", (socket) => {
 
   //leave all rooms on disconnect
   socket.on("disconnecting", () => {
+    console.log("❌ user disconnected:", socket.id);
     const rooms = Array.from(socket.rooms);
     //the first room is just your own id
     rooms.shift();
@@ -44,4 +47,8 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(8080);
+const port = process.env.PORT || 8080;
+
+httpServer.listen(port, () => {
+  console.log(`server is running on port ${port}`);
+});

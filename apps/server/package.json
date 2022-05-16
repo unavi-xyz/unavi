@@ -4,7 +4,7 @@
   "private": true,
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "build": "cd ../../ && docker build . -f apps/server/Dockerfile -t wired-xr/server:latest --build-arg SCOPE=@wired-xr/server",
+    "build:docker": "cd ../../ && docker build . -f apps/server/Dockerfile -t wired-xr/server:latest --build-arg SCOPE=@wired-xr/server",
     "dev": "nodemon ./src/server.js",
     "start": "nodemon ./src/server.js"
   },

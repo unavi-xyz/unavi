@@ -8,7 +8,7 @@ Acts as a signaling server, connecting peers using websockets (socket.io), where
 
 Running your own server is as simple as running the docker image.
 
-### Install
+### Build
 
 Pull the image from the github container registry:
 
@@ -19,11 +19,11 @@ docker pull ghcr.io/wired-xr/server
 or build it yourself from this repo:
 
 ```bash
-yarn build
+yarn build:docker
 ```
 
 ### Run
 
 ```bash
-docker run -it -p 8080:8080 wired-xr/server
+docker run -it -p 8080:8080 ghcr.io/wired-xr/server
 ```

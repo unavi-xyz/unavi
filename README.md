@@ -16,6 +16,7 @@
 - Peer to peer voice and data channels over [WebRTC](https://webrtc.org/)
 - 3d rendering using [Threejs](https://github.com/mrdoob/three.js) / [React Three Fiber](https://github.com/pmndrs/react-three-fiber)
 - Physics using [Cannon ES](https://github.com/pmndrs/cannon-es) / [React Three Cannon](https://github.com/pmndrs/use-cannon/tree/master/packages/react-three-cannon#readme)
+- VRM Avatar support using [Three VRM](https://github.com/pixiv/three-vrm)
 
 ## Development
 

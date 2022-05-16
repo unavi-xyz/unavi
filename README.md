@@ -1,16 +1,18 @@
 <div align="center">
-<img src="./apps/client/public/images/plug.png" />
-<h1>The Wired</h1>
-<p>A decentralized, open source, browser-based VR social paltform.</p>
+  <p>
+    <img src="./assets/HeroRound.png" />
+  </p>
 
-<img alt="Discord" src="https://img.shields.io/discord/918705784311939134?label=discord">
-<img alt="GitHub" src="https://img.shields.io/github/license/wired-xr/wired">
-<img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/TheWiredXR?style=social">
+  <p>A decentralized, browser-based, VR social platform</p>
+
+  <img alt="Discord" src="https://img.shields.io/discord/918705784311939134?label=discord">
+  <img alt="GitHub" src="https://img.shields.io/github/license/wired-xr/wired">
+  <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/TheWiredXR?style=social">
 </div>
 
 ## What's inside?
 
-This turborepo uses [Yarn](https://yarnpkg.com/) v3 as a package manager. It includes the following apps/packages:
+This turborepo uses [Yarn v3](https://yarnpkg.com/) as a package manager. It includes the following apps/packages:
 
 ### Apps
 
@@ -20,11 +22,9 @@ This turborepo uses [Yarn](https://yarnpkg.com/) v3 as a package manager. It inc
 ### Packages
 
 - `avatar`: a VRM avatar library
-- `config`: `eslint` configurations
-- `scene`: a library for creating 3d scenes in a standard format
-- `tsconfig`: `tsconfig.json`s used throughout the monorepo
-
-Each app/package is 100% [TypeScript](https://www.typescriptlang.org/).
+- `config`: eslint configurations
+- `scene`: a library for creating 3d scenes in a standardized format
+- `tsconfig`: tsconfigs used throughout the monorepo
 
 ### Utilities
 
@@ -32,12 +32,20 @@ Each app/package is 100% [TypeScript](https://www.typescriptlang.org/).
 - [ESLint](https://eslint.org/) for code linting
 - [Prettier](https://prettier.io) for code formatting
 
+### Install
+
+To install all apps and packages, run the following command:
+
+```bash
+yarn install
+```
+
 ### Build
 
 To build all apps and packages, run the following command:
 
 ```bash
-yarn run build
+yarn build
 ```
 
 ### Develop
@@ -45,16 +53,5 @@ yarn run build
 To develop all apps and packages, run the following command:
 
 ```bash
-yarn run dev
+yarn dev
 ```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Pipelines](https://turborepo.org/docs/features/pipelines)
-- [Caching](https://turborepo.org/docs/features/caching)
-- [Remote Caching (Beta)](https://turborepo.org/docs/features/remote-caching)
-- [Scoped Tasks](https://turborepo.org/docs/features/scopes)
-- [Configuration Options](https://turborepo.org/docs/reference/configuration)
-- [CLI Usage](https://turborepo.org/docs/reference/command-line-reference)

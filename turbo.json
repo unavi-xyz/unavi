@@ -11,6 +11,7 @@
       "dependsOn": ["^build"]
     },
     "dev": {
+      "dependsOn": ["^build", "codegen"],
       "cache": false
     }
   }

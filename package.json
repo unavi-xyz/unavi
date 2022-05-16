@@ -12,10 +12,17 @@
     "codegen": "turbo run codegen",
     "dev": "turbo run dev --parallel",
     "format": "prettier --write . --ignore-path .gitignore && npx sort-package-json",
+    "postinstall": "husky install",
     "lint": "turbo run lint"
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown",
+    "package.json": "npx sort-package-json"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
+    "husky": "^8.0.1",
+    "lint-staged": "^12.4.1",
     "prettier": "^2.5.1",
     "prettier-plugin-sort-json": "^0.0.2",
     "sort-package-json": "^1.57.0",

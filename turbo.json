@@ -8,7 +8,7 @@
       "outputs": ["dist/**", ".next/**"]
     },
     "build:docker": {
-      "dependsOn": ["build"]
+      "dependsOn": ["^build", "codegen"]
     },
     "codegen": {
       "dependsOn": ["^build"]

@@ -1,17 +1,19 @@
 {
   "name": "@wired-xr/server",
   "version": "0.0.0",
-  "license": "GPL-3.0-or-later",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "scripts": {
-    "dev": "nodemon ."
+    "build": "cd ../../ && docker build . -f apps/server/Dockerfile -t wired-xr/server:latest --build-arg SCOPE=@wired-xr/server",
+    "dev": "nodemon ./src/server.js",
+    "start": "nodemon ./src/server.js"
   },
   "dependencies": {
+    "nodemon": "^2.0.15",
     "socket.io": "^4.4.1"
   },
   "devDependencies": {
     "@wired-xr/config": "*",
-    "eslint": "^8.6.0",
-    "nodemon": "^2.0.15"
+    "eslint": "^8.6.0"
   }
 }

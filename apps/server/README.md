@@ -16,7 +16,7 @@ To run your own server, first install [Docker](https://www.docker.com/get-starte
 
 Set your domain name and email in the `.env` file.
 
-Then start the image with
+Then start the server with
 
 ```bash
 docker compose --env-file .env up

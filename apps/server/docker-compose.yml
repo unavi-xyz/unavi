@@ -1,0 +1,62 @@
+version: "3"
+
+services:
+  nodejs:
+    build:
+      context: ../../
+      dockerfile: apps/server/nodejs/Dockerfile
+      args:
+        - SCOPE=@wired-xr/server
+    image: nodejs
+    container_name: nodejs
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  nginx:
+    build:
+      context: nginx
+      dockerfile: Dockerfile
+      args:
+        - HOSTNAME=${HOSTNAME}
+    image: nginx
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - web-root:/var/www/html
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    depends_on:
+      - nodejs
+    networks:
+      - app-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - web-root:/var/www/html
+    depends_on:
+      - nginx
+    command: >
+      certonly --webroot --webroot-path=/var/www/html --email ${EMAIL}
+      --agree-tos --no-eff-email -d ${HOSTNAME}
+
+volumes:
+  certbot-etc:
+    name: certbot-etc
+  certbot-var:
+    name: certbot-var
+  web-root:
+    name: web-root
+
+networks:
+  app-network:
+    driver: bridge

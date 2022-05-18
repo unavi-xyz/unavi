@@ -1,29 +1,29 @@
 # Server
 
-A nodejs server used to host spaces.
+A server used to host spaces.
 
-Acts as a signaling server, connecting peers using websockets (socket.io), where they can then communicate with each other directly using WebRTC.
+Acts as a signaling server, connecting peers using WebSockets, where they can then communicate with each other directly using WebRTC.
 
-## Docker
+## Tech Stack
 
-Running your own server is as simple as running the docker image.
+- WebSocket communication using a [Socket.io](https://github.com/socketio/socket.io) / [Nodejs](https://nodejs.org/en/) server
+- [Nginx](https://www.nginx.com/) reverse proxy
+- TLS certificate from [Let's Encrypt](https://letsencrypt.org/) using [Certbot](https://github.com/certbot/certbot)
 
-### Build
+## Running a Server
 
-Pull the image from the github container registry:
+To run your own server, first install [Docker](https://www.docker.com/get-started/).
+
+Set your domain name and email in the `.env` file.
+
+Then start the image with
 
 ```bash
-docker pull ghcr.io/wired-xr/server
+docker compose --env-file .env up
 ```
 
-or build it yourself from this repo:
+To shut it down, run
 
 ```bash
-yarn build:docker
-```
-
-### Run
-
-```bash
-docker run -it -p 8080:8080 ghcr.io/wired-xr/server
+docker compose down
 ```

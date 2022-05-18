@@ -9,7 +9,7 @@ import { Channels } from "../../helpers/app/types";
 const hostServer =
   process.env.NODE_ENV === "development"
     ? "localhost:8080"
-    : "wss://signaling.thewired.space:8080";
+    : "signaling.thewired.space:8080";
 
 type ChannelStore = Record<keyof Channels, RTCDataChannel[]>;
 

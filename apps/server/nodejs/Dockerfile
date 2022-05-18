@@ -1,7 +1,8 @@
 # turborepo combines everything into a single yarn lock file
 # this is good for development, but makes docker hard
 # we need to run turbo prune to remove all deps from other workspaces
-# i copy pasted this script from some blessed soul that knows how to use docker
+# i copy pasted most of this from some blessed soul that knows how to use docker
+
 FROM node:16-alpine AS base
 RUN apk update
 WORKDIR /app
@@ -35,6 +36,9 @@ RUN find . -name node_modules | xargs rm -rf
 FROM base AS runner
 COPY --from=prod-deps /app/ .
 COPY --from=builder /app/ .
+
+USER node
+COPY --chown=node:node . .
 
 ENV PORT=8080
 EXPOSE 8080

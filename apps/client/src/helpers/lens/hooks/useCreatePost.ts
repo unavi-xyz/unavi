@@ -47,9 +47,9 @@ export function useCreatePost(profileId: string) {
       profileId: typedData.value.profileId,
       contentURI: typedData.value.contentURI,
       collectModule: typedData.value.collectModule,
-      collectModuleData: typedData.value.collectModuleInitData,
+      collectModuleInitData: typedData.value.collectModuleInitData,
       referenceModule: typedData.value.referenceModule,
-      referenceModuleData: typedData.value.referenceModuleInitData,
+      referenceModuleInitData: typedData.value.referenceModuleInitData,
       sig: {
         v,
         r,

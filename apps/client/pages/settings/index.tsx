@@ -67,7 +67,7 @@ export default function Settings() {
       ? profile.coverPicture.original.url
       : profile.coverPicture?.__typename === "NftImage"
       ? profile.coverPicture.uri
-      : undefined;
+      : null;
 
     const attributes =
       profile.attributes?.map((attribute) => {
@@ -83,8 +83,8 @@ export default function Settings() {
     const metadata: ProfileMetadata = {
       version: MetadataVersions.one,
       metadata_id: nanoid(),
-      name: nameRef.current?.value ?? undefined,
-      bio: bioRef.current?.value ?? undefined,
+      name: nameRef.current?.value ?? null,
+      bio: bioRef.current?.value ?? null,
       cover_picture,
       attributes,
     };

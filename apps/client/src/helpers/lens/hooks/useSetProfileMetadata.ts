@@ -47,7 +47,6 @@ export function useSetProfileMetadata(profileId: string) {
       signer
     );
     const tx = await contract.setProfileMetadataURIWithSig({
-      user: await signer.getAddress(),
       profileId: typedData.value.profileId,
       metadata: typedData.value.metadata,
       sig: {

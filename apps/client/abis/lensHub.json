@@ -10,6 +10,7 @@
   { "inputs": [], "name": "CallerNotCollectNFT", "type": "error" },
   { "inputs": [], "name": "CallerNotFollowNFT", "type": "error" },
   { "inputs": [], "name": "CannotInitImplementation", "type": "error" },
+  { "inputs": [], "name": "EmergencyAdminCannotUnpause", "type": "error" },
   { "inputs": [], "name": "InitParamsInvalid", "type": "error" },
   { "inputs": [], "name": "Initialized", "type": "error" },
   { "inputs": [], "name": "NotGovernance", "type": "error" },
@@ -210,13 +211,18 @@
             "type": "uint256"
           },
           {
+            "internalType": "bytes",
+            "name": "referenceModuleData",
+            "type": "bytes"
+          },
+          {
             "internalType": "address",
             "name": "collectModule",
             "type": "address"
           },
           {
             "internalType": "bytes",
-            "name": "collectModuleData",
+            "name": "collectModuleInitData",
             "type": "bytes"
           },
           {
@@ -226,7 +232,7 @@
           },
           {
             "internalType": "bytes",
-            "name": "referenceModuleData",
+            "name": "referenceModuleInitData",
             "type": "bytes"
           }
         ],
@@ -257,13 +263,18 @@
             "type": "uint256"
           },
           {
+            "internalType": "bytes",
+            "name": "referenceModuleData",
+            "type": "bytes"
+          },
+          {
             "internalType": "address",
             "name": "collectModule",
             "type": "address"
           },
           {
             "internalType": "bytes",
-            "name": "collectModuleData",
+            "name": "collectModuleInitData",
             "type": "bytes"
           },
           {
@@ -273,7 +284,7 @@
           },
           {
             "internalType": "bytes",
-            "name": "referenceModuleData",
+            "name": "referenceModuleInitData",
             "type": "bytes"
           },
           {
@@ -316,7 +327,7 @@
           },
           {
             "internalType": "bytes",
-            "name": "followModuleData",
+            "name": "followModuleInitData",
             "type": "bytes"
           },
           { "internalType": "string", "name": "followNFTURI", "type": "string" }
@@ -459,6 +470,13 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getCollectNFTImpl",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       { "internalType": "uint256", "name": "profileId", "type": "uint256" },
       { "internalType": "uint256", "name": "pubId", "type": "uint256" }
@@ -498,6 +516,13 @@
       { "internalType": "uint256", "name": "profileId", "type": "uint256" }
     ],
     "name": "getFollowNFT",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getFollowNFTImpl",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
@@ -746,13 +771,18 @@
             "type": "uint256"
           },
           {
+            "internalType": "bytes",
+            "name": "referenceModuleData",
+            "type": "bytes"
+          },
+          {
             "internalType": "address",
             "name": "referenceModule",
             "type": "address"
           },
           {
             "internalType": "bytes",
-            "name": "referenceModuleData",
+            "name": "referenceModuleInitData",
             "type": "bytes"
           }
         ],
@@ -782,13 +812,18 @@
             "type": "uint256"
           },
           {
+            "internalType": "bytes",
+            "name": "referenceModuleData",
+            "type": "bytes"
+          },
+          {
             "internalType": "address",
             "name": "referenceModule",
             "type": "address"
           },
           {
             "internalType": "bytes",
-            "name": "referenceModuleData",
+            "name": "referenceModuleInitData",
             "type": "bytes"
           },
           {
@@ -889,7 +924,7 @@
           },
           {
             "internalType": "bytes",
-            "name": "collectModuleData",
+            "name": "collectModuleInitData",
             "type": "bytes"
           },
           {
@@ -899,7 +934,7 @@
           },
           {
             "internalType": "bytes",
-            "name": "referenceModuleData",
+            "name": "referenceModuleInitData",
             "type": "bytes"
           }
         ],
@@ -926,7 +961,7 @@
           },
           {
             "internalType": "bytes",
-            "name": "collectModuleData",
+            "name": "collectModuleInitData",
             "type": "bytes"
           },
           {
@@ -936,7 +971,7 @@
           },
           {
             "internalType": "bytes",
-            "name": "referenceModuleData",
+            "name": "referenceModuleInitData",
             "type": "bytes"
           },
           {
@@ -1102,7 +1137,11 @@
     "inputs": [
       { "internalType": "uint256", "name": "profileId", "type": "uint256" },
       { "internalType": "address", "name": "followModule", "type": "address" },
-      { "internalType": "bytes", "name": "followModuleData", "type": "bytes" }
+      {
+        "internalType": "bytes",
+        "name": "followModuleInitData",
+        "type": "bytes"
+      }
     ],
     "name": "setFollowModule",
     "outputs": [],
@@ -1121,7 +1160,7 @@
           },
           {
             "internalType": "bytes",
-            "name": "followModuleData",
+            "name": "followModuleInitData",
             "type": "bytes"
           },
           {

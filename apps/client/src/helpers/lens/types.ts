@@ -38,17 +38,17 @@ export interface ProfileMetadata {
   /**
    * The display name for the profile
    */
-  name?: string;
+  name: string | null;
 
   /**
    * The bio for the profile
    */
-  bio?: string;
+  bio: string | null;
 
   /**
    * Cover picture
    */
-  cover_picture?: Url;
+  cover_picture: string | null;
 
   /**
    * Any custom attributes can be added here to save state for a profile

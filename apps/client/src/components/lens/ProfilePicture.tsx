@@ -16,7 +16,7 @@ export default function ProfilePicture({ profile, circle }: Props) {
     <img
       src={url ?? identicon}
       alt="profile picture"
-      className={`object-cover w-screen aspect-square ${circleClass}`}
+      className={`object-cover w-screen aspect-square ${circleClass} bg-secondaryContainer`}
     />
   );
 }

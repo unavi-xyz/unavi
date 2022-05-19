@@ -23,7 +23,7 @@ export default function Create() {
 
       <div className="flex justify-center py-8 mx-8">
         <div className="max-w space-y-8">
-          <div className="flex flex-col items-center justify-center">
+          <div className="flex justify-center">
             <div className="font-black text-3xl">Create</div>
           </div>
 
@@ -31,8 +31,8 @@ export default function Create() {
             <div
               onClick={handleNewSpace}
               className="rounded-3xl flex items-center justify-center cursor-pointer
-                         aspect-card transition hover:ring-2 hover:ring-outline
-                         bg-secondaryContainer text-onSecondaryContainer"
+                         aspect-card transition border-outline border hover:border-2
+                         border-dashed hover:border-solid"
             >
               <div className="flex flex-col items-center justify-center">
                 <div className="text-3xl">+</div>

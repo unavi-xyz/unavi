@@ -27,30 +27,43 @@ export default function Id() {
 
       <div className="mx-8 h-full">
         <div className="max-w mx-auto py-8 w-full h-full space-y-8">
-          <div className="rounded-3xl h-72 ">
-            {localSpace.image && (
-              <img
-                src={localSpace.image}
-                alt={localSpace.name}
-                className="object-cover rounded-3xl w-full h-full"
-              />
-            )}
+          <div className="flex space-x-8">
+            <div className="w-full rounded-3xl aspect-card bg-secondaryContainer">
+              {localSpace?.image && (
+                <img
+                  src={localSpace.image}
+                  alt="space preview"
+                  className="object-cover rounded-3xl w-full h-full"
+                />
+              )}
+            </div>
+
+            <div className="w-2/3 min-w-fit flex flex-col justify-between space-y-8">
+              <div className="space-y-2">
+                <div className="font-black text-3xl flex justify-center">
+                  {localSpace.name}
+                </div>
+              </div>
+
+              <Link href={`/studio/${localSpace.id}`} passHref>
+                <div>
+                  <Button variant="filled" fullWidth>
+                    <div className="py-2">Open Studio</div>
+                  </Button>
+                </div>
+              </Link>
+            </div>
           </div>
 
-          <div className="w-full min-w-fit flex flex-col space-y-8">
-            <div className="font-black text-3xl flex justify-center">
-              {localSpace.name}
-            </div>
-            {localSpace.description.length > 0 && (
-              <div>{localSpace.description}</div>
-            )}
-            <Link href={`/studio/${localSpace.id}`} passHref>
+          <div>
+            {localSpace?.description && (
               <div>
-                <Button variant="outlined" fullWidth>
-                  Open Studio
-                </Button>
+                <div className="text-xl font-bold">About</div>
+                <div className="text-lg text-outline">
+                  {localSpace.description}
+                </div>
               </div>
-            </Link>
+            )}
           </div>
         </div>
       </div>

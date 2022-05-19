@@ -8,10 +8,9 @@ export default function Card({ image, text, subtext }: Props) {
   return (
     <div
       className="group p-4 aspect-card w-full h-full overflow-hidden rounded-3xl hover:cursor-pointer
-                 flex flex-col transition hover:ring-2 hover:ring-outline
-               bg-secondaryContainer text-onSecondaryContainer"
+                 flex flex-col hover:ring-2 hover:ring-outline"
     >
-      <div className="h-full overflow-hidden rounded-2xl">
+      <div className="h-full overflow-hidden rounded-2xl bg-secondaryContainer">
         {image && (
           <img
             src={image}

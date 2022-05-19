@@ -39,7 +39,7 @@ export default function User() {
         style={{
           backgroundImage: coverUrl ? `url(${coverUrl})` : undefined,
         }}
-        className="w-full h-80 bg-cover bg-center bg-secondary"
+        className="w-full h-80 bg-cover bg-center bg-tertiaryContainer"
       />
 
       <div className="flex justify-center">
@@ -127,7 +127,7 @@ export default function User() {
 
           <div className="w-full p-4 space-y-4">
             <div className="flex items-center justify-center w-full space-x-4">
-              <div className="font-bold rounded-lg px-3 py-1 text-lg">
+              <div className="text-xl font-bold rounded-lg px-3 py-1">
                 Spaces
               </div>
             </div>

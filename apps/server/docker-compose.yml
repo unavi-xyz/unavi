@@ -10,8 +10,6 @@ services:
     image: nodejs
     container_name: nodejs
     restart: unless-stopped
-    ports:
-      - "8080:8080"
     networks:
       - app-network
 
@@ -28,9 +26,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - web-root:/var/www/html
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
+      - web-root:/var/www/html
     depends_on:
       - nodejs
     networks:
@@ -47,15 +45,12 @@ services:
       - nginx
     command: >
       certonly --webroot --webroot-path=/var/www/html --email ${EMAIL}
-      --agree-tos --no-eff-email -d ${HOSTNAME}
+      --agree-tos --no-eff-email --force-renewal -d ${HOSTNAME}
 
 volumes:
   certbot-etc:
-    name: certbot-etc
   certbot-var:
-    name: certbot-var
   web-root:
-    name: web-root
 
 networks:
   app-network:

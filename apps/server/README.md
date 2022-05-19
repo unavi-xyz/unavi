@@ -16,14 +16,32 @@ To run your own server, first install [Docker](https://www.docker.com/get-starte
 
 Set your domain name and email in the `.env` file.
 
-Then start the server with
+Open `nginx/nginx.conf`
+
+Delete the second `server` block
+
+Run docker compose
 
 ```bash
 docker compose --env-file .env up
 ```
 
-To shut it down, run
+This should create the SSL certificate. After it has done that, shut it down with
 
 ```bash
 docker compose down
+```
+
+Purge docker
+
+```bash
+docker purge -a -f
+```
+
+Add the second server block back to `nginx/nginx.conf`.
+
+Finally, start the server with
+
+```bash
+docker compose --env-file .env up
 ```

@@ -1,36 +1,22 @@
-import { utils } from "ethers";
 import { nanoid } from "nanoid";
 import { useEffect, useRef, useState } from "react";
 
-import { LensHub__factory, LensPeriphery__factory } from "../../contracts";
 import Button from "../../src/components/base/Button";
 import FileUpload from "../../src/components/base/FileUpload";
 import TextArea from "../../src/components/base/TextArea";
 import TextField from "../../src/components/base/TextField";
 import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
-import {
-  useCreateSetPfpTypedDataMutation,
-  useCreateSetProfileMetadataTypedDataMutation,
-} from "../../src/generated/graphql";
-import { useEthersStore } from "../../src/helpers/ethers/store";
-import {
-  uploadFileToIpfs,
-  uploadStringToIpfs,
-} from "../../src/helpers/ipfs/fetch";
-import { authenticate } from "../../src/helpers/lens/authentication";
-import {
-  LENS_HUB_ADDRESS,
-  LENS_PERIPHERY_ADDRESS,
-} from "../../src/helpers/lens/constants";
+import { uploadFileToIpfs } from "../../src/helpers/ipfs/fetch";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
 import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
+import { useSetProfileMetadata } from "../../src/helpers/lens/hooks/useSetProfileMetadata";
+import { useSetProfilePicture } from "../../src/helpers/lens/hooks/useSetProfilePicture";
 import { useLensStore } from "../../src/helpers/lens/store";
 import {
   AttributeData,
   MetadataVersions,
   ProfileMetadata,
 } from "../../src/helpers/lens/types";
-import { pollUntilIndexed, removeTypename } from "../../src/helpers/lens/utils";
 
 export default function Settings() {
   const nameRef = useRef<HTMLInputElement>(null);
@@ -51,9 +37,8 @@ export default function Settings() {
   const pfpMediaUrl = useMediaImage(profile?.picture);
   const coverMediaUrl = useMediaImage(profile?.coverPicture);
 
-  const [, createPfpTypedData] = useCreateSetPfpTypedDataMutation();
-  const [, createMetadataTypedData] =
-    useCreateSetProfileMetadataTypedDataMutation();
+  const setProfileMetadata = useSetProfileMetadata(profile?.id);
+  const setProfilePicture = useSetProfilePicture(profile?.id);
 
   useEffect(() => {
     setPfpUrl(pfpMediaUrl);
@@ -72,159 +57,58 @@ export default function Settings() {
   }, [coverFile]);
 
   async function handleProfileSave() {
-    const signer = useEthersStore.getState().signer;
-    if (!signer || !profile || loadingProfile) return;
+    if (!profile || loadingProfile) return;
+
     setLoadingProfile(true);
 
+    const cover_picture: string = coverFile
+      ? await uploadFileToIpfs(coverFile)
+      : profile.coverPicture?.__typename === "MediaSet"
+      ? profile.coverPicture.original.url
+      : profile.coverPicture?.__typename === "NftImage"
+      ? profile.coverPicture.uri
+      : undefined;
+
+    const attributes =
+      profile.attributes?.map((attribute) => {
+        const data: AttributeData = {
+          key: attribute.key,
+          value: attribute.value,
+          traitType: attribute.traitType ?? undefined,
+          displayType: (attribute.displayType as any) ?? undefined,
+        };
+        return data;
+      }) ?? [];
+
+    const metadata: ProfileMetadata = {
+      version: MetadataVersions.one,
+      metadata_id: nanoid(),
+      name: nameRef.current?.value ?? undefined,
+      bio: bioRef.current?.value ?? undefined,
+      cover_picture,
+      attributes,
+    };
+
     try {
-      //authenticate
-      await authenticate();
-
-      //upload cover to ipfs
-      const cover_picture: string = coverFile
-        ? await uploadFileToIpfs(coverFile)
-        : profile.coverPicture?.__typename === "MediaSet"
-        ? profile.coverPicture.original.url
-        : profile.coverPicture?.__typename === "NftImage"
-        ? profile.coverPicture.uri
-        : undefined;
-
-      //create metadata
-      const attributes =
-        profile?.attributes?.map((attribute) => {
-          const data: AttributeData = {
-            key: attribute.key,
-            value: attribute.value,
-            traitType: attribute.traitType ?? undefined,
-            displayType: (attribute.displayType as any) ?? undefined,
-          };
-          return data;
-        }) ?? [];
-
-      //TODO add location, website, twitter to attributes
-
-      const metadata: ProfileMetadata = {
-        version: MetadataVersions.one,
-        metadata_id: nanoid(),
-        name: nameRef.current?.value ?? undefined,
-        bio: bioRef.current?.value ?? undefined,
-        cover_picture: undefined,
-        attributes: [],
-      };
-
-      //upload metdata to ipfs
-      const url = await uploadStringToIpfs(JSON.stringify(metadata));
-
-      //create typed data
-      const { data, error } = await createMetadataTypedData({
-        profileId: profile.id,
-        metadata: url,
-      });
-
-      if (error) throw new Error(error.message);
-      if (!data) throw new Error("No typed data returned");
-
-      const typedData = data.createSetProfileMetadataTypedData.typedData;
-
-      //sign typed data
-      const signature = await signer._signTypedData(
-        removeTypename(typedData.domain),
-        removeTypename(typedData.types),
-        removeTypename(typedData.value)
-      );
-      const { v, r, s } = utils.splitSignature(signature);
-
-      //send transaction
-      const contract = LensPeriphery__factory.connect(
-        LENS_PERIPHERY_ADDRESS,
-        signer
-      );
-      const tx = await contract.setProfileMetadataURIWithSig({
-        user: await signer.getAddress(),
-        profileId: typedData.value.profileId,
-        metadata: typedData.value.metadata,
-        sig: {
-          v,
-          r,
-          s,
-          deadline: typedData.value.deadline,
-        },
-      });
-
-      //wait for transaction
-      await tx.wait();
-
-      //wait for indexing
-      await pollUntilIndexed(tx.hash);
-
-      //TODO update cache
-
-      setLoadingProfile(false);
+      await setProfileMetadata(metadata);
     } catch (err) {
       console.error(err);
-      setLoadingProfile(false);
     }
+
     setLoadingProfile(false);
   }
 
   async function handleProfilePictureSave() {
-    const signer = useEthersStore.getState().signer;
-    if (!signer || !pfpFile || !profile || loadingProfilePicture) return;
+    if (!pfpFile || loadingProfilePicture) return;
 
     setLoadingProfilePicture(true);
 
     try {
-      //authenticate
-      await authenticate();
-
-      //upload image to ipfs
-      const url = await uploadFileToIpfs(pfpFile);
-
-      //create typed data
-      const { data, error } = await createPfpTypedData({
-        profileId: profile.id,
-        url,
-      });
-
-      if (error) throw new Error(error.message);
-      if (!data) throw new Error("No typed data returned");
-
-      const typedData = data.createSetProfileImageURITypedData.typedData;
-
-      //sign typed data
-      const signature = await signer._signTypedData(
-        removeTypename(typedData.domain),
-        removeTypename(typedData.types),
-        removeTypename(typedData.value)
-      );
-      const { v, r, s } = utils.splitSignature(signature);
-
-      //send transaction
-      const contract = LensHub__factory.connect(LENS_HUB_ADDRESS, signer);
-      const tx = await contract.setProfileImageURIWithSig({
-        profileId: typedData.value.profileId,
-        imageURI: typedData.value.imageURI,
-        sig: {
-          v,
-          r,
-          s,
-          deadline: typedData.value.deadline,
-        },
-      });
-
-      //wait for transaction
-      await tx.wait();
-
-      //wait for indexing
-      await pollUntilIndexed(tx.hash);
-
-      //TODO update cache
-
-      setLoadingProfilePicture(false);
+      await setProfilePicture(pfpFile);
     } catch (err) {
       console.error(err);
-      setLoadingProfilePicture(false);
     }
+
     setLoadingProfilePicture(false);
   }
 

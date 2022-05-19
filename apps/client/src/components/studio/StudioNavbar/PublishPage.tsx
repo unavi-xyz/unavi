@@ -1,22 +1,13 @@
-import { utils } from "ethers";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useRef, useState } from "react";
 
-import { LensHub__factory } from "../../../../contracts";
-import { useCreatePostTypedDataMutation } from "../../../generated/graphql";
-import { useEthersStore } from "../../../helpers/ethers/store";
 import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalScene";
-import {
-  uploadFileToIpfs,
-  uploadStringToIpfs,
-} from "../../../helpers/ipfs/fetch";
-import { authenticate } from "../../../helpers/lens/authentication";
-import { LENS_HUB_ADDRESS } from "../../../helpers/lens/constants";
+import { uploadFileToIpfs } from "../../../helpers/ipfs/fetch";
+import { useCreatePost } from "../../../helpers/lens/hooks/useCreatePost";
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
 import { useLensStore } from "../../../helpers/lens/store";
 import { AppId, Metadata, MetadataVersions } from "../../../helpers/lens/types";
-import { pollUntilIndexed } from "../../../helpers/lens/utils";
 import { useStudioStore } from "../../../helpers/studio/store";
 import Button from "../../base/Button";
 import FileUpload from "../../base/FileUpload";
@@ -34,32 +25,27 @@ export default function PublishPage() {
 
   const id = useStudioStore((state) => state.id);
   const localSpace = useLocalSpace(id);
-  const signer = useEthersStore((state) => state.signer);
   const handle = useLensStore((state) => state.handle);
   const profile = useProfileByHandle(handle);
   const router = useRouter();
-  const [, createPostTypedData] = useCreatePostTypedDataMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
 
+  const createPost = useCreatePost(profile?.id);
+
   const image = imageFile ? URL.createObjectURL(imageFile) : localSpace?.image;
 
   async function handleSubmit() {
-    if (!signer || !handle || !profile || !localSpace || loading) return;
+    if (!profile || !localSpace || loading) return;
 
     setLoading(true);
 
     try {
-      //authenticate
-      await authenticate();
-
-      //upload data to IPFS
       const blob = await (await fetch(localSpace.image)).blob();
       const localImageFile = new File([blob], "space.jpg", {
         type: "image/jpeg",
       });
-
       const image = imageFile ?? localImageFile;
       const imageURI = await uploadFileToIpfs(image);
 
@@ -78,55 +64,14 @@ export default function PublishPage() {
         appId: AppId.space,
       };
 
-      const contentURI = await uploadStringToIpfs(JSON.stringify(metadata));
-
-      //get typed data
-      const { data, error } = await createPostTypedData({
-        profileId: profile.id,
-        contentURI,
-      });
-
-      if (error) throw new Error(error.message);
-      if (!data) throw new Error("No data returned from set image");
-
-      const typedData = data.createPostTypedData.typedData;
-
-      //sign typed data
-      const signature = await signer._signTypedData(
-        removeTypename(typedData.domain),
-        removeTypename(typedData.types),
-        removeTypename(typedData.value)
-      );
-      const { v, r, s } = utils.splitSignature(signature);
-
-      //send transaction
-      const contract = LensHub__factory.connect(LENS_HUB_ADDRESS, signer);
-      const tx = await contract.postWithSig({
-        profileId: typedData.value.profileId,
-        contentURI: typedData.value.contentURI,
-        collectModule: typedData.value.collectModule,
-        collectModuleData: typedData.value.collectModuleInitData,
-        referenceModule: typedData.value.referenceModule,
-        referenceModuleData: typedData.value.referenceModuleInitData,
-        sig: {
-          v,
-          r,
-          s,
-          deadline: typedData.value.deadline,
-        },
-      });
-
-      //wait for transaction
-      await tx.wait();
-
-      //wait for indexing
-      await pollUntilIndexed(tx.hash);
+      await createPost(metadata);
 
       router.push(`/user/${handle}`);
-      setLoading(false);
-    } catch {
-      setLoading(false);
+    } catch (err) {
+      console.error(err);
     }
+
+    setLoading(false);
   }
 
   return (

@@ -55,9 +55,13 @@ export default function PublishPage() {
       await authenticate();
 
       //upload data to IPFS
-      const imageURI = imageFile
-        ? await uploadFileToIpfs(imageFile)
-        : await uploadStringToIpfs(localSpace.image);
+      const blob = await (await fetch(localSpace.image)).blob();
+      const localImageFile = new File([blob], "space.jpg", {
+        type: "image/jpeg",
+      });
+
+      const image = imageFile ?? localImageFile;
+      const imageURI = await uploadFileToIpfs(image);
 
       const metadata: Metadata = {
         version: MetadataVersions.one,
@@ -66,11 +70,11 @@ export default function PublishPage() {
         description: descriptionRef.current?.value,
         content: JSON.stringify(localSpace.scene),
         image: imageURI,
-        imageMimeType: "image/jpeg",
+        imageMimeType: image.type,
         attributes: [],
         animation_url: undefined,
         external_url: "https://thewired.space",
-        media: [{ item: imageURI, type: "image/jpeg" }],
+        media: [{ item: imageURI, type: image.type }],
         appId: AppId.space,
       };
 

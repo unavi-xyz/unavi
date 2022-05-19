@@ -6,8 +6,8 @@ interface Props {
 
 export default function SettingsButton({ icon, selected, children }: Props) {
   const selectedClass = selected
-    ? "bg-secondaryContainer text-onSecondaryContainer"
-    : "hover:bg-surfaceVariant text-onSurfaceVariant";
+    ? "bg-primaryContainer text-onPrimaryContainer"
+    : "hover:bg-surfaceVariant";
 
   return (
     <div

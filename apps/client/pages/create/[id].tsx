@@ -12,12 +12,7 @@ export default function Id() {
 
   const localSpace = useLocalSpace(id);
 
-  if (!localSpace)
-    return (
-      <div className="flex justify-center mt-8 text-xl">
-        Local space not found.
-      </div>
-    );
+  if (!localSpace) return null;
 
   return (
     <>
@@ -47,14 +42,13 @@ export default function Id() {
 
               <Link href={`/studio/${localSpace.id}`} passHref>
                 <div>
-                  <Button variant="filled" fullWidth>
+                  <Button variant="tonal" fullWidth>
                     <div className="py-2">Open Studio</div>
                   </Button>
                 </div>
               </Link>
             </div>
           </div>
-
           <div>
             {localSpace?.description && (
               <div>

@@ -50,7 +50,7 @@ export default function Account() {
 
   return (
     <div
-      className="space-y-8 bg-secondaryContainer text-onSecondaryContainer
+      className="space-y-8 bg-primaryContainer text-onPrimaryContainer
                  rounded-3xl border p-8 text-lg"
     >
       <div className="space-y-2">

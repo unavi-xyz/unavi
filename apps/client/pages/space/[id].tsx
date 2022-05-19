@@ -40,7 +40,7 @@ export default function Space() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="text-outline font-bold flex space-x-1">
+                  <div className="font-bold flex space-x-1">
                     <div>By</div>
                     <Link href={`/user/${publication?.profile.handle}`}>
                       <div className="hover:underline cursor-pointer">
@@ -53,7 +53,7 @@ export default function Space() {
 
               <Link href={`/app/${id}`} passHref>
                 <div>
-                  <Button variant="filled" fullWidth>
+                  <Button variant="tonal" fullWidth>
                     <div className="py-2">Join Space</div>
                   </Button>
                 </div>

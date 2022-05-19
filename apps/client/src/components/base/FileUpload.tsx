@@ -27,15 +27,14 @@ export default function FileUpload({
   }
 
   const colorClass =
-    color === "Surface"
-      ? "bg-surface text-onSurface"
-      : "bg-surfaceVariant text-onSurfaceVariant";
+    color === "Surface" ? "bg-surface text-onSurface" : "bg-surfaceVariant";
 
   return (
     <div className="flex flex-col space-y-1">
       <label
         htmlFor={title}
-        className={`group block rounded-lg hover:bg-opacity-70 transition ${colorClass}`}
+        className={`group block cursor-pointer rounded-md transition
+                    hover:bg-opacity-60 active:bg-opacity-40 ${colorClass}`}
       >
         <div className="flex items-center">
           <div className="px-3 py-2 rounded-l-lg">Choose File</div>

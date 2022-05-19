@@ -13,7 +13,7 @@ export default function PublishButton() {
         <PublishPage />
       </Dialog>
 
-      <Button variant="filled" onClick={() => setOpen(true)}>
+      <Button variant="tonal" onClick={() => setOpen(true)}>
         Publish
       </Button>
     </>

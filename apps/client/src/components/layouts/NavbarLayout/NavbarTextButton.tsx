@@ -22,14 +22,13 @@ export default function NavbarTextButton({ href, text }: Props) {
   }, [router, href]);
 
   const selectedClass = selected
-    ? "bg-secondaryContainer text-onSecondaryContainer"
+    ? "bg-primaryContainer text-onPrimaryContainer"
     : "hover:bg-surfaceVariant";
 
   return (
     <Link href={href} passHref>
       <button
-        className={`px-3 py-1 rounded-lg text-onBackground font-bold
-                    transition  ${selectedClass}`}
+        className={`px-3 py-1 rounded-lg font-bold transition ${selectedClass}`}
       >
         {text}
       </button>

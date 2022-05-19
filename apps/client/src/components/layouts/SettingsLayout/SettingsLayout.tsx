@@ -65,15 +65,6 @@ export default function SettingsLayout({ children }: Props) {
               </SettingsButton>
             </div>
           </Link>
-
-          {/* <Link href="/settings/delete" passHref>
-            <SettingsButton
-              icon={<MdOutlineWarningAmber />}
-              selected={router.asPath === "/settings/delete"}
-            >
-              Danger Zone
-            </SettingsButton>
-          </Link> */}
         </div>
 
         <div className="w-full">{children}</div>

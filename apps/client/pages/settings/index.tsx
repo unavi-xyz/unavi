@@ -116,7 +116,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-8">
-      <div className="p-8 space-y-8 rounded-3xl bg-secondaryContainer text-onSecondaryContainer">
+      <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
         <div className="text-lg space-y-4">
           <div className="flex items-center space-x-4">
             <div className="font-bold">Profile ID:</div>
@@ -174,7 +174,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="p-8 space-y-8 rounded-3xl bg-secondaryContainer text-onSecondaryContainer">
+      <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
         <div className="space-y-4 text-lg">
           <div className="font-bold">Profile Picture</div>
 

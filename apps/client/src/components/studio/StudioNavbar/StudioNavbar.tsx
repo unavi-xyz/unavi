@@ -39,7 +39,10 @@ export default function StudioNavbar() {
   return (
     <div className="flex justify-between items-center h-full px-4 py-2">
       <div className="w-full flex items-center space-x-4 text-lg">
-        <div onClick={handleBack} className="cursor-pointer">
+        <div
+          onClick={handleBack}
+          className="cursor-pointer transition text-outline hover:text-inherit p-1"
+        >
           <MdArrowBackIosNew />
         </div>
 

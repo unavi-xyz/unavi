@@ -33,7 +33,7 @@ export default function TextArea({
         <textarea
           ref={textAreaRef}
           id={title}
-          className="outline-none w-full h-full px-3 py-2 rounded-lg bg-surface text-onSurface"
+          className="outline-none w-full h-full px-3 py-2 rounded-md bg-surface text-onSurface"
           onChange={onChange}
           {...rest}
         />

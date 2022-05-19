@@ -33,7 +33,7 @@ export default function TextField({
           ref={inputRef}
           id={title}
           type="text"
-          className="outline-none w-full h-full px-3 py-2 rounded-lg bg-surface text-onSurface"
+          className="outline-none w-full h-full px-3 py-2 rounded-md bg-surface text-onSurface"
           onChange={onChange}
           {...rest}
         />

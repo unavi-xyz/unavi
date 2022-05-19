@@ -125,25 +125,27 @@ export default function User() {
             </div>
           </div>
 
-          <div className="w-full p-4 space-y-4">
-            <div className="flex items-center justify-center w-full space-x-4">
-              <div className="text-xl font-bold rounded-lg px-3 py-1">
-                Spaces
+          {spaces && spaces.length > 1 && (
+            <div className="w-full p-4 space-y-4">
+              <div className="flex items-center justify-center w-full space-x-4">
+                <div className="text-xl font-bold rounded-lg px-3 py-1">
+                  Spaces
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {spaces?.map((space) => (
+                  <div key={space.id}>
+                    <Link href={`/space/${space.id}`} passHref>
+                      <div>
+                        <SpaceCard space={space} />
+                      </div>
+                    </Link>
+                  </div>
+                ))}
               </div>
             </div>
-
-            <div className="space-y-2">
-              {spaces?.map((space) => (
-                <div key={space.id}>
-                  <Link href={`/space/${space.id}`} passHref>
-                    <div>
-                      <SpaceCard space={space} />
-                    </div>
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

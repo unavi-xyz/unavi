@@ -1,37 +1,31 @@
 import { utils } from "ethers";
 
 import { LensHub__factory } from "../../../../contracts";
-import { useCreatePostTypedDataMutation } from "../../../generated/graphql";
+import { useCreateSetDefaultProfileTypedDataMutation } from "../../../generated/graphql";
 import { useEthersStore } from "../../ethers/store";
-import { uploadStringToIpfs } from "../../ipfs/fetch";
 import { authenticate } from "../authentication";
 import { LENS_HUB_ADDRESS } from "../constants";
-import { Metadata } from "../types";
 import { pollUntilIndexed, removeTypename } from "../utils";
 
-export function useCreatePost(profileId: string) {
-  const [, createTypedData] = useCreatePostTypedDataMutation();
+export function useSetDefaultProfile() {
+  const [, createTypedData] = useCreateSetDefaultProfileTypedDataMutation();
 
-  async function createPost(metadata: Metadata) {
+  async function setDefaultProfile(profileId: string) {
     const signer = useEthersStore.getState().signer;
     if (!signer) throw new Error("No signer");
 
     //authenticate
     await authenticate();
 
-    //upload metdata to ipfs
-    const contentURI = await uploadStringToIpfs(JSON.stringify(metadata));
-
     //get typed data
     const { data, error } = await createTypedData({
       profileId,
-      contentURI,
     });
 
     if (error) throw new Error(error.message);
     if (!data) throw new Error("No data returned from set image");
 
-    const typedData = data.createPostTypedData.typedData;
+    const typedData = data.createSetDefaultProfileTypedData.typedData;
 
     //sign typed data
     const signature = await signer._signTypedData(
@@ -43,13 +37,9 @@ export function useCreatePost(profileId: string) {
 
     //send transaction
     const contract = LensHub__factory.connect(LENS_HUB_ADDRESS, signer);
-    const tx = await contract.postWithSig({
+    const tx = await contract.setDefaultProfileWithSig({
       profileId: typedData.value.profileId,
-      contentURI: typedData.value.contentURI,
-      collectModule: typedData.value.collectModule,
-      collectModuleData: typedData.value.collectModuleInitData,
-      referenceModule: typedData.value.referenceModule,
-      referenceModuleData: typedData.value.referenceModuleInitData,
+      wallet: typedData.value.wallet,
       sig: {
         v,
         r,
@@ -65,5 +55,5 @@ export function useCreatePost(profileId: string) {
     await pollUntilIndexed(tx.hash);
   }
 
-  return createPost;
+  return setDefaultProfile;
 }

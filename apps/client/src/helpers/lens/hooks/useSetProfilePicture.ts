@@ -9,7 +9,7 @@ import { LENS_HUB_ADDRESS } from "../constants";
 import { pollUntilIndexed, removeTypename } from "../utils";
 
 export function useSetProfilePicture(profileId: string) {
-  const [, createPfpTypedData] = useCreateSetPfpTypedDataMutation();
+  const [, createTypedData] = useCreateSetPfpTypedDataMutation();
 
   async function setProfilePicture(picture: File) {
     const signer = useEthersStore.getState().signer;
@@ -22,7 +22,7 @@ export function useSetProfilePicture(profileId: string) {
     const url = await uploadFileToIpfs(picture);
 
     //create typed data
-    const { data, error } = await createPfpTypedData({
+    const { data, error } = await createTypedData({
       profileId,
       url,
     });

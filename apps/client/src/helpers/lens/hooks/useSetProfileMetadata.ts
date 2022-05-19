@@ -10,8 +10,7 @@ import { ProfileMetadata } from "../types";
 import { pollUntilIndexed, removeTypename } from "../utils";
 
 export function useSetProfileMetadata(profileId: string) {
-  const [, createMetadataTypedData] =
-    useCreateSetProfileMetadataTypedDataMutation();
+  const [, createTypedData] = useCreateSetProfileMetadataTypedDataMutation();
 
   async function setProfileMetadata(metadata: ProfileMetadata) {
     const signer = useEthersStore.getState().signer;
@@ -24,7 +23,7 @@ export function useSetProfileMetadata(profileId: string) {
     const url = await uploadStringToIpfs(JSON.stringify(metadata));
 
     //create typed data
-    const { data, error } = await createMetadataTypedData({
+    const { data, error } = await createTypedData({
       profileId,
       metadata: url,
     });

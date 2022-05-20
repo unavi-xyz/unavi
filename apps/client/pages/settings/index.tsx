@@ -80,6 +80,34 @@ export default function Settings() {
         return data;
       }) ?? [];
 
+    function addAttribute(key: string, value: any) {
+      const newData = {
+        key,
+        value,
+      };
+
+      const currentIndex = attributes.findIndex(
+        (attribute) => attribute.key === key
+      );
+
+      if (value === undefined) {
+        if (currentIndex !== -1) {
+          //remove attribute
+          attributes.splice(currentIndex, 1);
+        }
+      } else if (currentIndex === -1) {
+        //add attribute
+        attributes.push(newData);
+      } else {
+        //update attribute
+        attributes[currentIndex] = newData;
+      }
+    }
+
+    addAttribute("twitter", twitterRef.current?.value);
+    addAttribute("location", locationRef.current?.value);
+    addAttribute("website", websiteRef.current?.value);
+
     const metadata: ProfileMetadata = {
       version: MetadataVersions.one,
       metadata_id: nanoid(),
@@ -114,6 +142,10 @@ export default function Settings() {
 
   if (!profile) return null;
 
+  const twitter = profile.attributes?.find((item) => item.key === "twitter");
+  const website = profile.attributes?.find((item) => item.key === "website");
+  const location = profile.attributes?.find((item) => item.key === "location");
+
   return (
     <div className="space-y-8">
       <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
@@ -129,9 +161,22 @@ export default function Settings() {
             defaultValue={profile?.name ?? ""}
           />
 
-          <TextField inputRef={locationRef} title="Location" />
-          <TextField inputRef={websiteRef} title="Website" />
-          <TextField inputRef={twitterRef} title="Twitter" />
+          <TextField
+            inputRef={locationRef}
+            title="Location"
+            defaultValue={location?.value}
+          />
+          <TextField
+            inputRef={websiteRef}
+            title="Website"
+            defaultValue={website?.value}
+          />
+          <TextField
+            inputRef={twitterRef}
+            title="Twitter"
+            frontAdornment="@"
+            defaultValue={twitter?.value}
+          />
 
           <TextArea
             textAreaRef={bioRef}

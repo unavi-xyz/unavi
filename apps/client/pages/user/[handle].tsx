@@ -1,7 +1,8 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FaHashtag } from "react-icons/fa";
+import { FaHashtag, FaTwitter } from "react-icons/fa";
+import { MdOutlineLocationOn } from "react-icons/md";
 
 import Button from "../../src/components/base/Button";
 import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
@@ -22,6 +23,10 @@ export default function User() {
   const spaces = useSpacesByProfile(profile?.id);
 
   if (!profile) return null;
+
+  const twitter = profile.attributes?.find((item) => item.key === "twitter");
+  const website = profile.attributes?.find((item) => item.key === "website");
+  const location = profile.attributes?.find((item) => item.key === "location");
 
   return (
     <div>
@@ -84,44 +89,44 @@ export default function User() {
                 {profile.id}
               </ProfileRow>
 
-              {/* {profile?.location && (
+              {location && (
                 <ProfileRow icon={<MdOutlineLocationOn />}>
-                  {profile?.location}
+                  {location.value}
                 </ProfileRow>
               )}
 
-              {profile?.twitter && (
+              {twitter && (
                 <ProfileRow icon={<FaTwitter className="text-sky-500" />}>
                   <a
-                    href={`https://twitter.com/${profile.twitter}`}
+                    href={`https://twitter.com/${twitter.value}`}
                     target="_blank"
                     rel="noreferrer"
                     className="hover:underline"
                   >
-                    {profile.twitter}
+                    {twitter.value}
                   </a>
                 </ProfileRow>
               )}
 
-              {profile?.website && (
+              {website && (
                 <ProfileRow
                   icon={
                     <img
-                      src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${profile.website}`}
+                      src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${website.value}`}
                       alt="website favicon"
                     />
                   }
                 >
                   <a
-                    href={profile.website}
+                    href={website.value}
                     target="_blank"
                     rel="noreferrer"
                     className="hover:underline"
                   >
-                    {profile.website}
+                    {website.value}
                   </a>
                 </ProfileRow>
-              )} */}
+              )}
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Button from "../../../src/components/base/Button";
 import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
@@ -14,6 +14,10 @@ export default function Settings() {
   const handle = useLensStore((state) => state.handle);
   const [loading, setLoading] = useState(false);
   const [, hidePublication] = useHidePublicationMutation();
+
+  useEffect(() => {
+    if (!handle && id) router.push(`/space/${id}`);
+  }, [handle, id, router]);
 
   async function handleDelete() {
     if (loading) return;

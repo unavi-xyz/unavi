@@ -23,17 +23,15 @@ export default function TextField({
         {title}
       </label>
 
-      <div className="flex items-center border rounded-lg">
+      <div className="flex items-center border rounded-lg bg-surface text-onSurface">
         {frontAdornment && (
-          <span className="pl-2 text-secondary font-bold">
-            {frontAdornment}
-          </span>
+          <span className="pl-3 text-outline font-bold">{frontAdornment}</span>
         )}
         <input
           ref={inputRef}
           id={title}
           type="text"
-          className="outline-none w-full h-full px-3 py-2 rounded-md bg-surface text-onSurface"
+          className="outline-none w-full h-full px-3 py-2 rounded-md"
           onChange={onChange}
           {...rest}
         />

@@ -42,7 +42,7 @@ export default function Id() {
 
               <Link href={`/studio/${localSpace.id}`} passHref>
                 <div>
-                  <Button variant="tonal" fullWidth>
+                  <Button variant="filled" fullWidth>
                     <div className="py-2">Open Studio</div>
                   </Button>
                 </div>

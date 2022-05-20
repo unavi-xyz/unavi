@@ -2,17 +2,26 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import Button from "../../src/components/base/Button";
-import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
-import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
-import { usePublication } from "../../src/helpers/lens/hooks/usePublication";
+import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
+import { usePublication } from "../../../helpers/lens/hooks/usePublication";
+import { useLensStore } from "../../../helpers/lens/store";
+import Button from "../../base/Button";
+import NavbarLayout from "../NavbarLayout/NavbarLayout";
+import SpaceTab from "./SpaceTab";
 
-export default function Space() {
+interface Props {
+  children: React.ReactNode;
+}
+
+export default function SpaceLayout({ children }: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
+  const handle = useLensStore((state) => state.handle);
   const publication = usePublication(id);
   const image = useMediaImage(publication?.metadata.media[0]);
+
+  const isAuthor = handle && handle === publication?.profile.handle;
 
   return (
     <>
@@ -53,7 +62,7 @@ export default function Space() {
 
               <Link href={`/app/${id}`} passHref>
                 <div>
-                  <Button variant="tonal" fullWidth>
+                  <Button variant="filled" fullWidth>
                     <div className="py-2">Join Space</div>
                   </Button>
                 </div>
@@ -61,15 +70,16 @@ export default function Space() {
             </div>
           </div>
 
-          <div>
-            {publication?.metadata.description.length > 0 && (
-              <div>
-                <div className="text-xl font-bold">About</div>
-                <div className="text-lg text-outline">
-                  {publication?.metadata.description}
-                </div>
-              </div>
-            )}
+          <div className="space-y-4">
+            <div className="flex space-x-4">
+              <SpaceTab href={`/space/${id}`} text="About" />
+
+              {isAuthor && (
+                <SpaceTab href={`/space/${id}/settings`} text="Settings" />
+              )}
+            </div>
+
+            <div>{children}</div>
           </div>
         </div>
       </div>
@@ -77,4 +87,4 @@ export default function Space() {
   );
 }
 
-Space.Layout = NavbarLayout;
+SpaceLayout.Layout = NavbarLayout;

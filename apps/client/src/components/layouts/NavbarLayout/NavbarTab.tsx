@@ -7,18 +7,17 @@ interface Props {
   text: string;
 }
 
-export default function NavbarTextButton({ href, text }: Props) {
+export default function NavbarTab({ href, text }: Props) {
   const router = useRouter();
-
   const [selected, setSelected] = useState(false);
 
   useEffect(() => {
     if (href === "/") {
-      setSelected(router.pathname === "/");
+      setSelected(router.asPath === "/");
       return;
     }
 
-    setSelected(router.pathname.startsWith(href));
+    setSelected(router.asPath.startsWith(href));
   }, [router, href]);
 
   const selectedClass = selected

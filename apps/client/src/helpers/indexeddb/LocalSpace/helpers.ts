@@ -29,7 +29,6 @@ export async function createNewLocalSpace(options: Partial<LocalSpace> = {}) {
     id: nanoid(),
     name: "My Scene",
     description: "",
-    image: "/images/defaultSpaceImage.jpg",
     scene: STARTING_SCENE,
     ...options,
   };

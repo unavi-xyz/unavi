@@ -6,7 +6,7 @@ import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
 import { updateLocalSpace } from "../../../helpers/indexeddb/LocalSpace/helpers";
-import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalScene";
+import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalSpace";
 import { useLensStore } from "../../../helpers/lens/store";
 import IconButton from "../../base/IconButton";
 import Tooltip from "../../base/Tooltip";
@@ -28,9 +28,14 @@ export default function StudioNavbar() {
   async function handleBack() {
     //take a screenshot of the scene before navigating
     const canvas = document.querySelector("canvas");
-    if (canvas) {
-      const image = canvas.toDataURL("image/jpeg");
-      await updateLocalSpace(id, { image });
+    if (canvas && !localSpace?.image) {
+      const data = canvas.toDataURL("image/jpeg");
+      const blob = await (await fetch(data)).blob();
+      const generatedImage = new File([blob], "space.jpg", {
+        type: "image/jpeg",
+      });
+
+      await updateLocalSpace(id, { generatedImage });
     }
 
     router.push(`/create/${id}`);

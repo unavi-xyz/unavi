@@ -147,7 +147,7 @@ export default function Settings() {
                 <img
                   src={coverUrl}
                   alt="cover picture preview"
-                  className="object-cover rounded-xl h-full w-full border bg-neutral-100"
+                  className="object-cover rounded-xl h-full w-full border"
                 />
               </div>
             )}

@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useRef, useState } from "react";
 
-import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalScene";
+import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalSpace";
 import { uploadFileToIpfs } from "../../../helpers/ipfs/fetch";
 import { useCreatePost } from "../../../helpers/lens/hooks/useCreatePost";
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
@@ -13,11 +13,6 @@ import Button from "../../base/Button";
 import FileUpload from "../../base/FileUpload";
 import TextArea from "../../base/TextArea";
 import TextField from "../../base/TextField";
-
-function removeTypename(obj: any) {
-  if (obj.__typename) delete obj.__typename;
-  return obj;
-}
 
 export default function PublishPage() {
   const nameRef = useRef<HTMLInputElement>(null);
@@ -34,7 +29,7 @@ export default function PublishPage() {
 
   const createPost = useCreatePost(profile?.id);
 
-  const image = imageFile ? URL.createObjectURL(imageFile) : localSpace?.image;
+  const image = imageFile ?? localSpace?.image ?? localSpace?.generatedImage;
 
   async function handleSubmit() {
     if (!profile || !localSpace || loading) return;
@@ -42,18 +37,17 @@ export default function PublishPage() {
     setLoading(true);
 
     try {
-      const blob = await (await fetch(localSpace.image)).blob();
-      const localImageFile = new File([blob], "space.jpg", {
-        type: "image/jpeg",
-      });
-      const image = imageFile ?? localImageFile;
+      const image =
+        imageFile ?? localSpace?.image ?? localSpace?.generatedImage;
+      if (!image) throw new Error("No image");
+
       const imageURI = await uploadFileToIpfs(image);
 
       const metadata: Metadata = {
         version: MetadataVersions.one,
         metadata_id: nanoid(),
         name: nameRef.current?.value ?? "",
-        description: descriptionRef.current?.value,
+        description: descriptionRef.current?.value ?? "",
         content: JSON.stringify(localSpace.scene),
         image: imageURI,
         imageMimeType: image.type,
@@ -85,7 +79,7 @@ export default function PublishPage() {
         <div className="aspect-card rounded-2xl">
           {image && (
             <img
-              src={image}
+              src={URL.createObjectURL(image)}
               alt="space image"
               className="w-full h-full object-cover rounded-2xl"
             />

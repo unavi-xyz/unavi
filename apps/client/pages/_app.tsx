@@ -15,10 +15,7 @@ export default function App({ Component, pageProps }: any) {
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
-      <div
-        className="w-full h-screen"
-        style={{ paddingLeft: "calc(100vw - 100%)" }}
-      >
+      <div className="w-full h-screen">
         <Provider value={lensClient}>
           <SecondLayout>
             <Layout>

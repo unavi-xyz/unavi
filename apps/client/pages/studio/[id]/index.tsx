@@ -28,30 +28,32 @@ export default function Studio() {
   }, [id]);
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="h-full overflow-hidden">
-        <Head>
-          <title>Studio · The Wired</title>
-        </Head>
+    <>
+      <Head>
+        <title>Studio · The Wired</title>
+      </Head>
 
-        <div className="border-b w-full h-14 z-10">
-          <StudioNavbar />
+      <DndProvider backend={HTML5Backend}>
+        <div className="h-full overflow-hidden">
+          <div className="border-b w-full h-14 z-10">
+            <StudioNavbar />
+          </div>
+
+          <div className="flex h-full">
+            <div className="fixed left-0 border-r h-full w-[250px] z-10">
+              <TreeMenu />
+            </div>
+
+            <div className="w-full pl-[250px] pr-[400px]">
+              <StudioCanvas />
+            </div>
+
+            <div className="fixed right-0 border-l h-full w-[400px] z-10">
+              <InspectMenu />
+            </div>
+          </div>
         </div>
-
-        <div className="flex h-full">
-          <div className="fixed left-0 border-r h-full w-[250px] z-10">
-            <TreeMenu />
-          </div>
-
-          <div className="w-full pl-[250px] pr-[400px]">
-            <StudioCanvas />
-          </div>
-
-          <div className="fixed right-0 border-l h-full w-[400px] z-10">
-            <InspectMenu />
-          </div>
-        </div>
-      </div>
-    </DndProvider>
+      </DndProvider>
+    </>
   );
 }

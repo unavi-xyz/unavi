@@ -20,7 +20,7 @@ export default function Create() {
   return (
     <div>
       <Head>
-        <title>Create · The Wired</title>
+        <title>Create / The Wired</title>
       </Head>
 
       <div className="flex justify-center py-8 mx-8">

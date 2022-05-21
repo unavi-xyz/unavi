@@ -30,7 +30,7 @@ export default function App() {
       <div className="h-full">
         <Head>
           <title>
-            {publication.metadata.name ?? publication.id} · The Wired
+            {publication.metadata.name ?? publication.id} / The Wired
           </title>
         </Head>
 

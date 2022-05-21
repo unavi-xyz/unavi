@@ -6,7 +6,7 @@ export default function Explore() {
   return (
     <div>
       <Head>
-        <title>Explore · The Wired</title>
+        <title>Explore / The Wired</title>
       </Head>
 
       <div className="flex justify-center py-8 mx-8">

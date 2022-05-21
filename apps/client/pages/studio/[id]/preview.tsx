@@ -20,7 +20,7 @@ export default function Preview() {
   return (
     <div className="h-full">
       <Head>
-        <title>{space.name ?? space.id} · The Wired </title>
+        <title>{space.name ?? space.id} / The Wired </title>
       </Head>
 
       <div className="crosshair" />

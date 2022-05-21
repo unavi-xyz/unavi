@@ -30,7 +30,7 @@ export default function Studio() {
   return (
     <>
       <Head>
-        <title>Studio · The Wired</title>
+        <title>Studio / The Wired</title>
       </Head>
 
       <DndProvider backend={HTML5Backend}>

@@ -24,7 +24,7 @@ export default function LocalSpaceLayout({ children }: Props) {
   return (
     <>
       <Head>
-        <title>{localSpace.name ?? id} · The Wired</title>
+        <title>{localSpace.name ?? id} / The Wired</title>
       </Head>
 
       <div className="mx-8 h-full">

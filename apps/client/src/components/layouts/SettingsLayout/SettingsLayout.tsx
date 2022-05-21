@@ -27,7 +27,7 @@ export default function SettingsLayout({ children }: Props) {
   return (
     <div className="flex justify-center">
       <Head>
-        <title>Settings · The Wired</title>
+        <title>Settings / The Wired</title>
       </Head>
 
       <div className="max-w mx-8 my-8 flex">

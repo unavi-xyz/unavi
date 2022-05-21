@@ -1,32 +1,33 @@
 import { NextPageContext } from "next";
 
-import { getSpaceLayout } from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
-import { usePublication } from "../../../src/helpers/lens/hooks/usePublication";
+import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
+import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
+import {
+  SpaceLayoutProps,
+  getSpaceLayoutProps,
+} from "../../../src/components/layouts/SpaceLayout/getSpaceLayoutProps";
 
-interface Props {
-  id: string;
-}
+export async function getServerSideProps({ res, query }: NextPageContext) {
+  res?.setHeader("Cache-Control", "s-maxage=120");
 
-export async function getServerSideProps(ctx: NextPageContext) {
-  const id = ctx.query.id as string;
-  const props: Props = { id };
+  const props = await getSpaceLayoutProps(query.id as string);
 
   return {
     props,
   };
 }
 
-export default function Space({ id }: Props) {
-  const publication = usePublication(id);
-
+export default function Space(props: SpaceLayoutProps) {
   return (
-    <div className="space-y-2">
-      <div className="text-2xl font-bold">Description</div>
-      <div className="text-lg text-outline">
-        {publication?.metadata.description}
+    <SpaceLayout {...props}>
+      <div className="space-y-2">
+        <div className="text-2xl font-bold">Description</div>
+        <div className="text-lg text-outline">
+          {props.publication?.metadata.description}
+        </div>
       </div>
-    </div>
+    </SpaceLayout>
   );
 }
 
-Space.getLayout = getSpaceLayout;
+Space.getLayout = getNavbarLayout;

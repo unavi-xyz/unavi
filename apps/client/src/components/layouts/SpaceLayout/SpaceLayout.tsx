@@ -2,43 +2,38 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import {
-  getMediaImageSSR,
-  useMediaImage,
-} from "../../../helpers/lens/hooks/useMediaImage";
-import { usePublication } from "../../../helpers/lens/hooks/usePublication";
+import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
 import { useLensStore } from "../../../helpers/lens/store";
 import Button from "../../base/Button";
-import { getNavbarLayout } from "../NavbarLayout/NavbarLayout";
 import SpaceTab from "./SpaceTab";
+import { SpaceLayoutProps } from "./getSpaceLayoutProps";
 
-interface Props {
+interface Props extends SpaceLayoutProps {
   children: React.ReactNode;
 }
 
-export default function SpaceLayout({ children }: Props) {
+export default function SpaceLayout({
+  children,
+  metadata,
+  publication,
+}: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const handle = useLensStore((state) => state.handle);
-  const publication = usePublication(id);
   const media = publication?.metadata.media[0];
   const image = useMediaImage(media);
 
+  const handle = useLensStore((state) => state.handle);
   const isAuthor = handle && handle === publication?.profile.handle;
-  const title = publication?.metadata.name ?? id;
 
   return (
     <>
       <Head>
-        <title>{title} · The Wired</title>
-        <meta name="description" content={publication?.metadata.description} />
-        <meta property="og:title" content={title} />
-        <meta
-          property="og:description"
-          content={publication?.metadata.description}
-        />
-        <meta property="og:image" content={getMediaImageSSR(media)} />
+        <title>{metadata.title} · The Wired</title>
+        <meta name="description" content={metadata.description} />
+        <meta property="og:title" content={metadata.title} />
+        <meta property="og:description" content={metadata.description} />
+        <meta property="og:image" content={metadata.image} />
       </Head>
 
       <div className="mx-8 h-full">
@@ -97,8 +92,4 @@ export default function SpaceLayout({ children }: Props) {
       </div>
     </>
   );
-}
-
-export function getSpaceLayout(children: React.ReactNode) {
-  return getNavbarLayout(<SpaceLayout>{children}</SpaceLayout>);
 }

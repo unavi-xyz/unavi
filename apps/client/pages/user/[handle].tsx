@@ -41,8 +41,10 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
     .toPromise();
 
   const profile = data?.profiles.items[0];
+  const title = profile?.name ? `${profile?.name} (@${handle})` : `@${handle}`;
+
   const metadata: PageMetadata = {
-    title: `${`${profile?.name} (@${handle})` ?? `@${handle}`}`,
+    title,
     description: profile?.bio ?? "",
     image: getMediaImageSSR(profile?.picture) ?? "",
   };

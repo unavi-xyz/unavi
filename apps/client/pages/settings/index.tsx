@@ -17,6 +17,7 @@ import {
   MetadataVersions,
   ProfileMetadata,
 } from "../../src/helpers/lens/types";
+import { crop } from "../../src/helpers/utils/crop";
 
 export default function Settings() {
   const nameRef = useRef<HTMLInputElement>(null);
@@ -25,6 +26,7 @@ export default function Settings() {
   const twitterRef = useRef<HTMLInputElement>(null);
   const bioRef = useRef<HTMLTextAreaElement>(null);
 
+  const [pfpRawFile, setPfpRawFile] = useState<File>();
   const [pfpFile, setPfpFile] = useState<File>();
   const [pfpUrl, setPfpUrl] = useState<string>();
   const [coverFile, setCoverFile] = useState<File>();
@@ -49,7 +51,16 @@ export default function Settings() {
   }, [coverMediaUrl]);
 
   useEffect(() => {
-    if (pfpFile) setPfpUrl(URL.createObjectURL(pfpFile));
+    if (!pfpRawFile) return;
+
+    crop(URL.createObjectURL(pfpRawFile), 1).then((res) => {
+      setPfpFile(res);
+    });
+  }, [pfpRawFile]);
+
+  useEffect(() => {
+    if (!pfpFile) return;
+    setPfpUrl(URL.createObjectURL(pfpFile));
   }, [pfpFile]);
 
   useEffect(() => {
@@ -248,7 +259,7 @@ export default function Settings() {
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) setPfpFile(file);
+                if (file) setPfpRawFile(file);
               }}
             />
           </div>

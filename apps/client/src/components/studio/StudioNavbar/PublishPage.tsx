@@ -9,6 +9,7 @@ import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHand
 import { useLensStore } from "../../../helpers/lens/store";
 import { AppId, Metadata, MetadataVersions } from "../../../helpers/lens/types";
 import { useStudioStore } from "../../../helpers/studio/store";
+import { crop } from "../../../helpers/utils/crop";
 import Button from "../../base/Button";
 import FileUpload from "../../base/FileUpload";
 import TextArea from "../../base/TextArea";
@@ -32,16 +33,13 @@ export default function PublishPage() {
   const image = imageFile ?? localSpace?.image ?? localSpace?.generatedImage;
 
   async function handleSubmit() {
-    if (!profile || !localSpace || loading) return;
+    if (!profile || !localSpace || loading || !image) return;
 
     setLoading(true);
 
     try {
-      const image =
-        imageFile ?? localSpace?.image ?? localSpace?.generatedImage;
-      if (!image) throw new Error("No image");
-
-      const imageURI = await uploadFileToIpfs(image);
+      const cropped = await crop(URL.createObjectURL(image), 5 / 3);
+      const imageURI = await uploadFileToIpfs(cropped);
 
       const metadata: Metadata = {
         version: MetadataVersions.one,

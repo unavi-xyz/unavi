@@ -90,7 +90,7 @@ export default function User({ metadata, profile }: Props) {
           content={profile.name ?? handle}
         />
 
-        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={metadata.title} />
         <meta name="twitter:description" content={metadata.description} />
         <meta name="twitter:image" content={metadata.image} />

@@ -1,45 +1,106 @@
+import { NextPageContext } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FaHashtag } from "react-icons/fa";
+import { FaHashtag, FaTwitter } from "react-icons/fa";
+import { MdOutlineLocationOn } from "react-icons/md";
 
 import Button from "../../src/components/base/Button";
-import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
+import { getNavbarLayout } from "../../src/components/layouts/NavbarLayout/NavbarLayout";
 import ProfilePicture from "../../src/components/lens/ProfilePicture";
 import SpaceCard from "../../src/components/ui/SpaceCard";
-import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
-import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
+import {
+  GetProfileByHandleDocument,
+  GetProfileByHandleQuery,
+  GetProfileByHandleQueryVariables,
+} from "../../src/generated/graphql";
+import { lensClient } from "../../src/helpers/lens/client";
+import {
+  getMediaImageSSR,
+  useMediaImage,
+} from "../../src/helpers/lens/hooks/useMediaImage";
 import { useSpacesByProfile } from "../../src/helpers/lens/hooks/useSpacesByProfile";
 import { useLensStore } from "../../src/helpers/lens/store";
+import { PageMetadata } from "../../src/helpers/types";
 
-export default function User() {
+interface Props {
+  metadata: PageMetadata;
+  profile: GetProfileByHandleQuery["profiles"]["items"][0] | undefined;
+}
+
+export async function getServerSideProps({ res, query }: NextPageContext) {
+  res?.setHeader("Cache-Control", "s-maxage=120");
+
+  const handle = query.handle as string;
+
+  const { data } = await lensClient
+    .query<GetProfileByHandleQuery, GetProfileByHandleQueryVariables>(
+      GetProfileByHandleDocument,
+      { handle }
+    )
+    .toPromise();
+
+  const profile = data?.profiles.items[0];
+  const metadata: PageMetadata = {
+    title: `${`${profile?.name} @${handle}` ?? `@${handle}`} / The Wired`,
+    description: profile?.bio ?? "",
+    image: getMediaImageSSR(profile?.picture) ?? "",
+  };
+
+  const props: Props = { metadata, profile };
+
+  return {
+    props,
+  };
+}
+
+export default function User({ metadata, profile }: Props) {
   const router = useRouter();
   const handle = router.query.handle as string;
 
-  const profile = useProfileByHandle(handle);
   const coverUrl = useMediaImage(profile?.coverPicture);
   const viewerHandle = useLensStore((state) => state.handle);
   const spaces = useSpacesByProfile(profile?.id);
 
   if (!profile) return null;
 
+  const twitter = profile.attributes?.find((item) => item.key === "twitter");
+  const website = profile.attributes?.find((item) => item.key === "website");
+  const location = profile.attributes?.find((item) => item.key === "location");
+
   return (
     <div>
       <Head>
-        {profile?.name ? (
-          <title>
-            {profile.name} (@{profile.handle}) · The Wired
-          </title>
-        ) : (
-          <title>@{profile.handle} · The Wired</title>
-        )}
+        <title>{metadata.title}</title>
+        <meta name="description" content={metadata.description} />
+
+        <meta itemProp="name" content={metadata.title} />
+        <meta itemProp="description" content={metadata.description} />
+        <meta itemProp="image" content={metadata.image} />
+
+        <meta property="og:title" content={metadata.title} />
+        <meta property="og:description" content={metadata.description} />
+        <meta property="og:image" content={metadata.image} />
+        <meta property="og:image:width" content={"256px"} />
+        <meta property="og:image:height" content={"256px"} />
+        <meta property="og:type" content="profile" />
+        <meta property="og:profile:username" content={handle} />
+        <meta
+          property="og:profile:first_name"
+          content={profile.name ?? handle}
+        />
+
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={metadata.title} />
+        <meta name="twitter:description" content={metadata.description} />
+        <meta name="twitter:image" content={metadata.image} />
       </Head>
 
       <div
         style={{
           backgroundImage: coverUrl ? `url(${coverUrl})` : undefined,
         }}
-        className="w-full h-80 bg-cover bg-center bg-secondary"
+        className="w-full h-80 bg-cover bg-center bg-tertiaryContainer"
       />
 
       <div className="flex justify-center">
@@ -84,73 +145,75 @@ export default function User() {
                 {profile.id}
               </ProfileRow>
 
-              {/* {profile?.location && (
+              {location && (
                 <ProfileRow icon={<MdOutlineLocationOn />}>
-                  {profile?.location}
+                  {location.value}
                 </ProfileRow>
               )}
 
-              {profile?.twitter && (
+              {twitter && (
                 <ProfileRow icon={<FaTwitter className="text-sky-500" />}>
                   <a
-                    href={`https://twitter.com/${profile.twitter}`}
+                    href={`https://twitter.com/${twitter.value}`}
                     target="_blank"
                     rel="noreferrer"
                     className="hover:underline"
                   >
-                    {profile.twitter}
+                    {twitter.value}
                   </a>
                 </ProfileRow>
               )}
 
-              {profile?.website && (
+              {website && (
                 <ProfileRow
                   icon={
                     <img
-                      src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${profile.website}`}
+                      src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${website.value}`}
                       alt="website favicon"
                     />
                   }
                 >
                   <a
-                    href={profile.website}
+                    href={website.value}
                     target="_blank"
                     rel="noreferrer"
                     className="hover:underline"
                   >
-                    {profile.website}
+                    {website.value}
                   </a>
                 </ProfileRow>
-              )} */}
+              )}
             </div>
           </div>
 
-          <div className="w-full p-4 space-y-4">
-            <div className="flex items-center justify-center w-full space-x-4">
-              <div className="font-bold rounded-lg px-3 py-1 text-lg">
-                Spaces
+          {spaces && spaces.length > 1 && (
+            <div className="w-full p-4 space-y-4">
+              <div className="flex items-center justify-center w-full space-x-4">
+                <div className="text-xl font-bold rounded-lg px-3 py-1">
+                  Spaces
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {spaces?.map((space) => (
+                  <div key={space.id}>
+                    <Link href={`/space/${space.id}`} passHref>
+                      <div>
+                        <SpaceCard space={space} />
+                      </div>
+                    </Link>
+                  </div>
+                ))}
               </div>
             </div>
-
-            <div className="space-y-2">
-              {spaces?.map((space) => (
-                <div key={space.id}>
-                  <Link href={`/space/${space.id}`} passHref>
-                    <div>
-                      <SpaceCard space={space} />
-                    </div>
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-User.Layout = NavbarLayout;
+User.getLayout = getNavbarLayout;
 
 function ProfileRow({
   icon,

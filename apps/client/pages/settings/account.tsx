@@ -2,9 +2,10 @@ import { ChangeEvent, useEffect, useState } from "react";
 
 import Button from "../../src/components/base/Button";
 import Select from "../../src/components/base/Select";
-import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
+import { getSettingsLayout } from "../../src/components/layouts/SettingsLayout/SettingsLayout";
 import { useEthersStore } from "../../src/helpers/ethers/store";
 import { useProfilesByAddress } from "../../src/helpers/lens/hooks/useProfilesByAddress";
+import { useSetDefaultProfile } from "../../src/helpers/lens/hooks/useSetDefaultProfile";
 
 export default function Account() {
   const address = useEthersStore((state) => state.address);
@@ -15,12 +16,14 @@ export default function Account() {
   const [selected, setSelected] = useState<string>();
   const [loading, setLoading] = useState(false);
 
+  const setDefaultProfile = useSetDefaultProfile();
+
   const disabled =
     selected?.slice(1) === defaultProfile?.handle && Boolean(selected);
 
   useEffect(() => {
-    // const handles = profiles.map((profile) => `@${profile.handle}`);
-    // setOptions(handles);
+    const handles = profiles?.map((profile) => `@${profile.handle}`) ?? [];
+    setOptions(handles);
   }, [profiles]);
 
   useEffect(() => {
@@ -31,18 +34,15 @@ export default function Account() {
     if (disabled || loading || !selected || !profiles) return;
 
     const handle = selected.slice(1);
-
-    setLoading(true);
-
     const profile = profiles.find((profile) => profile.handle === handle);
     if (!profile) return;
 
-    //update the default profile
+    setLoading(true);
+
     try {
-      // await updateDefaultProfile(profile);
+      await setDefaultProfile(profile.id);
     } catch (err) {
       console.error(err);
-      setLoading(false);
     }
 
     setLoading(false);
@@ -50,7 +50,7 @@ export default function Account() {
 
   return (
     <div
-      className="space-y-8 bg-secondaryContainer text-onSecondaryContainer
+      className="space-y-8 bg-primaryContainer text-onPrimaryContainer
                  rounded-3xl border p-8 text-lg"
     >
       <div className="space-y-2">
@@ -60,6 +60,13 @@ export default function Account() {
           can change your default profile at any time.
         </div>
       </div>
+
+      {defaultProfile && (
+        <div className="flex space-x-1">
+          <div>Current default profile:</div>
+          <div>@{defaultProfile.handle}</div>
+        </div>
+      )}
 
       <div>
         <Select
@@ -86,4 +93,4 @@ export default function Account() {
   );
 }
 
-Account.Layout = SettingsLayout;
+Account.getLayout = getSettingsLayout;

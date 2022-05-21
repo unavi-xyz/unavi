@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { useLensStore } from "../../../helpers/lens/store";
 import LoginButton from "./LoginButton";
-import NavbarTextButton from "./NavbarTextButton";
+import NavbarTab from "./NavbarTab";
 import ProfileButton from "./ProfileButton";
 
 export default function Navbar() {
@@ -38,9 +38,9 @@ export default function Navbar() {
         </div>
 
         <div className="w-full flex items-center justify-center space-x-6">
-          <NavbarTextButton text="Home" href="/" />
-          <NavbarTextButton text="Explore" href="/explore" />
-          <NavbarTextButton text="Create" href="/create" />
+          <NavbarTab text="Home" href="/" />
+          <NavbarTab text="Explore" href="/explore" />
+          <NavbarTab text="Create" href="/create" />
         </div>
 
         <div className="w-full flex items-center justify-end">

@@ -55,7 +55,7 @@ export default function LoginPage() {
       </div>
 
       <Button
-        variant="outlined"
+        variant="text"
         fullWidth
         squared
         loading={fetching}
@@ -68,8 +68,8 @@ export default function LoginPage() {
           </div>
 
           <div className="w-full">
-            <div className="flex font-bold">Metamask</div>
-            <div className="flex">A browser extension</div>
+            <div className="flex">Metamask</div>
+            <div className="flex font-normal">A browser extension</div>
           </div>
         </div>
       </Button>

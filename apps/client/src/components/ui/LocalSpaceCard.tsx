@@ -8,10 +8,13 @@ interface Props {
 }
 
 export default function LocalSpaceCard({ localSpace }: Props) {
+  const image = localSpace.image ?? localSpace.generatedImage;
+  const imageUrl = image ? URL.createObjectURL(image) : undefined;
+
   return (
     <Link href={`/create/${localSpace.id}`} passHref>
       <div className="aspect-card">
-        <Card text={localSpace.name} image={localSpace.image} />
+        <Card text={localSpace.name} image={imageUrl} />
       </div>
     </Link>
   );

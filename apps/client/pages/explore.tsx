@@ -1,12 +1,12 @@
 import Head from "next/head";
 
-import NavbarLayout from "../src/components/layouts/NavbarLayout/NavbarLayout";
+import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
 
 export default function Explore() {
   return (
     <div>
       <Head>
-        <title>Explore · The Wired</title>
+        <title>Explore / The Wired</title>
       </Head>
 
       <div className="flex justify-center py-8 mx-8">
@@ -20,4 +20,4 @@ export default function Explore() {
   );
 }
 
-Explore.Layout = NavbarLayout;
+Explore.getLayout = getNavbarLayout;

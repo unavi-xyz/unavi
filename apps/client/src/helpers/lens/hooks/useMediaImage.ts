@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { ProfileMedia } from "../../../generated/graphql";
-import { getIpfsUrl } from "../../ipfs/fetch";
+import { getIpfsUrl, getIpfsUrlSSR } from "../../ipfs/fetch";
 
 export function useMediaImage(picture: ProfileMedia | null | undefined) {
   const [url, setUrl] = useState<string>();
@@ -24,4 +24,18 @@ export function useMediaImage(picture: ProfileMedia | null | undefined) {
   }, [picture]);
 
   return url;
+}
+
+export function getMediaImageSSR(picture: ProfileMedia | null | undefined) {
+  if (!picture) {
+    return undefined;
+  }
+
+  if (picture.__typename === "MediaSet") {
+    return getIpfsUrlSSR(picture.original.url);
+  }
+
+  if (picture.__typename === "NftImage") {
+    return getIpfsUrlSSR(picture.uri);
+  }
 }

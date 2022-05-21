@@ -27,9 +27,8 @@ export async function createLocalSpace(space: LocalSpace) {
 export async function createNewLocalSpace(options: Partial<LocalSpace> = {}) {
   const space: LocalSpace = {
     id: nanoid(),
-    name: "My Space",
+    name: "My Scene",
     description: "",
-    image: "/images/defaultSpaceImage.jpg",
     scene: STARTING_SCENE,
     ...options,
   };

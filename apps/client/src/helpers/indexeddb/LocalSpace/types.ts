@@ -4,7 +4,8 @@ export type LocalSpace = {
   id: string;
   name: string;
   description: string;
-  image: string;
+  image?: File;
+  generatedImage?: File;
 
   scene: Scene;
 };

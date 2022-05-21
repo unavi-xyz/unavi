@@ -8,7 +8,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 export default function IconButton({ children, selected, ...rest }: Props) {
   const selectedClass = selected
     ? "bg-primaryContainer text-onPrimaryContainer"
-    : "hover:bg-surfaceVariant text-onSurfaceVariant";
+    : "hover:bg-surfaceVariant";
 
   return (
     <button

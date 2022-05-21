@@ -16,7 +16,7 @@ export async function loadFromIpfs(hash: string) {
   }
 
   const blob = new Blob(files);
-  const url = await blob.text();
+  const url = URL.createObjectURL(blob);
 
   //set cache
   cache[hash] = url;
@@ -29,6 +29,18 @@ export async function getIpfsUrl(path: string) {
   if (path.startsWith("ipfs://")) {
     const hash = path.replace("ipfs://", "");
     const url = await loadFromIpfs(hash);
+    return url;
+  }
+
+  //otherwise, assume it's an http url
+  return path;
+}
+
+export function getIpfsUrlSSR(path: string) {
+  //if path is an ipfs hash, load it
+  if (path.startsWith("ipfs://")) {
+    const hash = path.replace("ipfs://", "");
+    const url = `https://ipfs.infura.io/ipfs/${hash}`;
     return url;
   }
 

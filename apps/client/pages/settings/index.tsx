@@ -1,36 +1,23 @@
-import { utils } from "ethers";
 import { nanoid } from "nanoid";
 import { useEffect, useRef, useState } from "react";
 
-import { LensHub__factory, LensPeriphery__factory } from "../../contracts";
 import Button from "../../src/components/base/Button";
 import FileUpload from "../../src/components/base/FileUpload";
 import TextArea from "../../src/components/base/TextArea";
 import TextField from "../../src/components/base/TextField";
-import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
-import {
-  useCreateSetPfpTypedDataMutation,
-  useCreateSetProfileMetadataTypedDataMutation,
-} from "../../src/generated/graphql";
-import { useEthersStore } from "../../src/helpers/ethers/store";
-import {
-  uploadFileToIpfs,
-  uploadStringToIpfs,
-} from "../../src/helpers/ipfs/fetch";
-import { authenticate } from "../../src/helpers/lens/authentication";
-import {
-  LENS_HUB_ADDRESS,
-  LENS_PERIPHERY_ADDRESS,
-} from "../../src/helpers/lens/constants";
+import { getSettingsLayout } from "../../src/components/layouts/SettingsLayout/SettingsLayout";
+import { uploadFileToIpfs } from "../../src/helpers/ipfs/fetch";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
 import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
+import { useSetProfileMetadata } from "../../src/helpers/lens/hooks/useSetProfileMetadata";
+import { useSetProfilePicture } from "../../src/helpers/lens/hooks/useSetProfilePicture";
 import { useLensStore } from "../../src/helpers/lens/store";
 import {
   AttributeData,
   MetadataVersions,
   ProfileMetadata,
 } from "../../src/helpers/lens/types";
-import { pollUntilIndexed, removeTypename } from "../../src/helpers/lens/utils";
+import { crop } from "../../src/helpers/utils/crop";
 
 export default function Settings() {
   const nameRef = useRef<HTMLInputElement>(null);
@@ -39,6 +26,7 @@ export default function Settings() {
   const twitterRef = useRef<HTMLInputElement>(null);
   const bioRef = useRef<HTMLTextAreaElement>(null);
 
+  const [pfpRawFile, setPfpRawFile] = useState<File>();
   const [pfpFile, setPfpFile] = useState<File>();
   const [pfpUrl, setPfpUrl] = useState<string>();
   const [coverFile, setCoverFile] = useState<File>();
@@ -51,9 +39,8 @@ export default function Settings() {
   const pfpMediaUrl = useMediaImage(profile?.picture);
   const coverMediaUrl = useMediaImage(profile?.coverPicture);
 
-  const [, createPfpTypedData] = useCreateSetPfpTypedDataMutation();
-  const [, createMetadataTypedData] =
-    useCreateSetProfileMetadataTypedDataMutation();
+  const setProfileMetadata = useSetProfileMetadata(profile?.id);
+  const setProfilePicture = useSetProfilePicture(profile?.id);
 
   useEffect(() => {
     setPfpUrl(pfpMediaUrl);
@@ -64,7 +51,16 @@ export default function Settings() {
   }, [coverMediaUrl]);
 
   useEffect(() => {
-    if (pfpFile) setPfpUrl(URL.createObjectURL(pfpFile));
+    if (!pfpRawFile) return;
+
+    crop(URL.createObjectURL(pfpRawFile), 1).then((res) => {
+      setPfpFile(res);
+    });
+  }, [pfpRawFile]);
+
+  useEffect(() => {
+    if (!pfpFile) return;
+    setPfpUrl(URL.createObjectURL(pfpFile));
   }, [pfpFile]);
 
   useEffect(() => {
@@ -72,167 +68,98 @@ export default function Settings() {
   }, [coverFile]);
 
   async function handleProfileSave() {
-    const signer = useEthersStore.getState().signer;
-    if (!signer || !profile || loadingProfile) return;
+    if (!profile || loadingProfile) return;
+
     setLoadingProfile(true);
 
-    try {
-      //authenticate
-      await authenticate();
+    const cover_picture: string = coverFile
+      ? await uploadFileToIpfs(coverFile)
+      : profile.coverPicture?.__typename === "MediaSet"
+      ? profile.coverPicture.original.url
+      : profile.coverPicture?.__typename === "NftImage"
+      ? profile.coverPicture.uri
+      : null;
 
-      //upload cover to ipfs
-      const cover_picture: string = coverFile
-        ? await uploadFileToIpfs(coverFile)
-        : profile.coverPicture?.__typename === "MediaSet"
-        ? profile.coverPicture.original.url
-        : profile.coverPicture?.__typename === "NftImage"
-        ? profile.coverPicture.uri
-        : undefined;
+    const attributes =
+      profile.attributes?.map((attribute) => {
+        const data: AttributeData = {
+          key: attribute.key,
+          value: attribute.value,
+          traitType: attribute.traitType ?? undefined,
+          displayType: (attribute.displayType as any) ?? undefined,
+        };
+        return data;
+      }) ?? [];
 
-      //create metadata
-      const attributes =
-        profile?.attributes?.map((attribute) => {
-          const data: AttributeData = {
-            key: attribute.key,
-            value: attribute.value,
-            traitType: attribute.traitType ?? undefined,
-            displayType: (attribute.displayType as any) ?? undefined,
-          };
-          return data;
-        }) ?? [];
-
-      //TODO add location, website, twitter to attributes
-
-      const metadata: ProfileMetadata = {
-        version: MetadataVersions.one,
-        metadata_id: nanoid(),
-        name: nameRef.current?.value ?? undefined,
-        bio: bioRef.current?.value ?? undefined,
-        cover_picture: undefined,
-        attributes: [],
+    function addAttribute(key: string, value: any) {
+      const newData = {
+        key,
+        value,
       };
 
-      //upload metdata to ipfs
-      const url = await uploadStringToIpfs(JSON.stringify(metadata));
-
-      //create typed data
-      const { data, error } = await createMetadataTypedData({
-        profileId: profile.id,
-        metadata: url,
-      });
-
-      if (error) throw new Error(error.message);
-      if (!data) throw new Error("No typed data returned");
-
-      const typedData = data.createSetProfileMetadataTypedData.typedData;
-
-      //sign typed data
-      const signature = await signer._signTypedData(
-        removeTypename(typedData.domain),
-        removeTypename(typedData.types),
-        removeTypename(typedData.value)
+      const currentIndex = attributes.findIndex(
+        (attribute) => attribute.key === key
       );
-      const { v, r, s } = utils.splitSignature(signature);
 
-      //send transaction
-      const contract = LensPeriphery__factory.connect(
-        LENS_PERIPHERY_ADDRESS,
-        signer
-      );
-      const tx = await contract.setProfileMetadataURIWithSig({
-        user: await signer.getAddress(),
-        profileId: typedData.value.profileId,
-        metadata: typedData.value.metadata,
-        sig: {
-          v,
-          r,
-          s,
-          deadline: typedData.value.deadline,
-        },
-      });
+      if (value === undefined) {
+        if (currentIndex !== -1) {
+          //remove attribute
+          attributes.splice(currentIndex, 1);
+        }
+      } else if (currentIndex === -1) {
+        //add attribute
+        attributes.push(newData);
+      } else {
+        //update attribute
+        attributes[currentIndex] = newData;
+      }
+    }
 
-      //wait for transaction
-      await tx.wait();
+    addAttribute("twitter", twitterRef.current?.value);
+    addAttribute("location", locationRef.current?.value);
+    addAttribute("website", websiteRef.current?.value);
 
-      //wait for indexing
-      await pollUntilIndexed(tx.hash);
+    const metadata: ProfileMetadata = {
+      version: MetadataVersions.one,
+      metadata_id: nanoid(),
+      name: nameRef.current?.value ?? null,
+      bio: bioRef.current?.value ?? null,
+      cover_picture,
+      attributes,
+    };
 
-      //TODO update cache
-
-      setLoadingProfile(false);
+    try {
+      await setProfileMetadata(metadata);
     } catch (err) {
       console.error(err);
-      setLoadingProfile(false);
     }
+
     setLoadingProfile(false);
   }
 
   async function handleProfilePictureSave() {
-    const signer = useEthersStore.getState().signer;
-    if (!signer || !pfpFile || !profile || loadingProfilePicture) return;
+    if (!pfpFile || loadingProfilePicture) return;
 
     setLoadingProfilePicture(true);
 
     try {
-      //authenticate
-      await authenticate();
-
-      //upload image to ipfs
-      const url = await uploadFileToIpfs(pfpFile);
-
-      //create typed data
-      const { data, error } = await createPfpTypedData({
-        profileId: profile.id,
-        url,
-      });
-
-      if (error) throw new Error(error.message);
-      if (!data) throw new Error("No typed data returned");
-
-      const typedData = data.createSetProfileImageURITypedData.typedData;
-
-      //sign typed data
-      const signature = await signer._signTypedData(
-        removeTypename(typedData.domain),
-        removeTypename(typedData.types),
-        removeTypename(typedData.value)
-      );
-      const { v, r, s } = utils.splitSignature(signature);
-
-      //send transaction
-      const contract = LensHub__factory.connect(LENS_HUB_ADDRESS, signer);
-      const tx = await contract.setProfileImageURIWithSig({
-        profileId: typedData.value.profileId,
-        imageURI: typedData.value.imageURI,
-        sig: {
-          v,
-          r,
-          s,
-          deadline: typedData.value.deadline,
-        },
-      });
-
-      //wait for transaction
-      await tx.wait();
-
-      //wait for indexing
-      await pollUntilIndexed(tx.hash);
-
-      //TODO update cache
-
-      setLoadingProfilePicture(false);
+      await setProfilePicture(pfpFile);
     } catch (err) {
       console.error(err);
-      setLoadingProfilePicture(false);
     }
+
     setLoadingProfilePicture(false);
   }
 
   if (!profile) return null;
 
+  const twitter = profile.attributes?.find((item) => item.key === "twitter");
+  const website = profile.attributes?.find((item) => item.key === "website");
+  const location = profile.attributes?.find((item) => item.key === "location");
+
   return (
     <div className="space-y-8">
-      <div className="p-8 space-y-8 rounded-3xl bg-secondaryContainer text-onSecondaryContainer">
+      <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
         <div className="text-lg space-y-4">
           <div className="flex items-center space-x-4">
             <div className="font-bold">Profile ID:</div>
@@ -245,9 +172,22 @@ export default function Settings() {
             defaultValue={profile?.name ?? ""}
           />
 
-          <TextField inputRef={locationRef} title="Location" />
-          <TextField inputRef={websiteRef} title="Website" />
-          <TextField inputRef={twitterRef} title="Twitter" />
+          <TextField
+            inputRef={locationRef}
+            title="Location"
+            defaultValue={location?.value}
+          />
+          <TextField
+            inputRef={websiteRef}
+            title="Website"
+            defaultValue={website?.value}
+          />
+          <TextField
+            inputRef={twitterRef}
+            title="Twitter"
+            frontAdornment="@"
+            defaultValue={twitter?.value}
+          />
 
           <TextArea
             textAreaRef={bioRef}
@@ -263,7 +203,7 @@ export default function Settings() {
                 <img
                   src={coverUrl}
                   alt="cover picture preview"
-                  className="object-cover rounded-xl h-full w-full border bg-neutral-100"
+                  className="object-cover rounded-xl h-full w-full border"
                 />
               </div>
             )}
@@ -290,7 +230,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="p-8 space-y-8 rounded-3xl bg-secondaryContainer text-onSecondaryContainer">
+      <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
         <div className="space-y-4 text-lg">
           <div className="font-bold">Profile Picture</div>
 
@@ -319,7 +259,7 @@ export default function Settings() {
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) setPfpFile(file);
+                if (file) setPfpRawFile(file);
               }}
             />
           </div>
@@ -340,4 +280,4 @@ export default function Settings() {
   );
 }
 
-Settings.Layout = SettingsLayout;
+Settings.getLayout = getSettingsLayout;

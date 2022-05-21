@@ -4,7 +4,7 @@ import { getLocalSpaces } from "../helpers";
 import { LocalSpace } from "../types";
 
 export function useLocalSpaces() {
-  const [localSpaces, setLocalSpaces] = useState<LocalSpace[]>([]);
+  const [localSpaces, setLocalSpaces] = useState<LocalSpace[]>();
 
   useEffect(() => {
     getLocalSpaces()

@@ -9,7 +9,7 @@ import {
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
 import { useLensStore } from "../../../helpers/lens/store";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
-import NavbarLayout from "../NavbarLayout/NavbarLayout";
+import NavbarLayout, { getNavbarLayout } from "../NavbarLayout/NavbarLayout";
 import SettingsButton from "./SettingsButton";
 
 interface Props {
@@ -27,7 +27,7 @@ export default function SettingsLayout({ children }: Props) {
   return (
     <div className="flex justify-center">
       <Head>
-        <title>Settings · The Wired</title>
+        <title>Settings / The Wired</title>
       </Head>
 
       <div className="max-w mx-8 my-8 flex">
@@ -65,15 +65,6 @@ export default function SettingsLayout({ children }: Props) {
               </SettingsButton>
             </div>
           </Link>
-
-          {/* <Link href="/settings/delete" passHref>
-            <SettingsButton
-              icon={<MdOutlineWarningAmber />}
-              selected={router.asPath === "/settings/delete"}
-            >
-              Danger Zone
-            </SettingsButton>
-          </Link> */}
         </div>
 
         <div className="w-full">{children}</div>
@@ -82,4 +73,6 @@ export default function SettingsLayout({ children }: Props) {
   );
 }
 
-SettingsLayout.Layout = NavbarLayout;
+export function getSettingsLayout(children: React.ReactNode) {
+  return getNavbarLayout(<SettingsLayout>{children}</SettingsLayout>);
+}

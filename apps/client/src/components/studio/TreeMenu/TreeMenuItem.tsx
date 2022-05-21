@@ -118,7 +118,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
   const bgClass =
     isSelected || isOver
       ? "bg-primaryContainer text-onPrimaryContainer"
-      : "hover:bg-surfaceVariant hover:text-onSurfaceVariant";
+      : "hover:bg-surfaceVariant";
   const paddingClass = isRoot ? "" : "ml-4";
   const opacityClass = isDragging ? "opacity-0" : "";
   const highlightAboveClass = isOverAbove ? "bg-secondaryContainer" : "";

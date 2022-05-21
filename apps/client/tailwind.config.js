@@ -44,7 +44,8 @@ module.exports = {
         card: "5/3",
       },
       boxShadow: {
-        dark: "0 1px 5px 0 rgb(0 0 0 / 0.4)",
+        tonal: "0 1px 3px 0 rgb(0 0 0 / 0.3)",
+        filled: "0 1px 3px 0 rgb(0 0 0 / 0.5)",
       },
     },
   },

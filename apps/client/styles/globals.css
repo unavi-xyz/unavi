@@ -6,10 +6,11 @@
 html {
   font-family: "Lato", sans-serif;
   @apply bg-background text-onBackground;
+  overflow-y: scroll;
 }
 
 .max-w {
-  @apply max-w-4xl w-full;
+  @apply max-w-5xl w-full;
 }
 
 .gradient-text {

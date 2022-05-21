@@ -1,32 +1,19 @@
-import { utils } from "ethers";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useRef, useState } from "react";
 
-import { LensHub__factory } from "../../../../contracts";
-import { useCreatePostTypedDataMutation } from "../../../generated/graphql";
-import { useEthersStore } from "../../../helpers/ethers/store";
-import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalScene";
-import {
-  uploadFileToIpfs,
-  uploadStringToIpfs,
-} from "../../../helpers/ipfs/fetch";
-import { authenticate } from "../../../helpers/lens/authentication";
-import { LENS_HUB_ADDRESS } from "../../../helpers/lens/constants";
+import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalSpace";
+import { uploadFileToIpfs } from "../../../helpers/ipfs/fetch";
+import { useCreatePost } from "../../../helpers/lens/hooks/useCreatePost";
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
 import { useLensStore } from "../../../helpers/lens/store";
 import { AppId, Metadata, MetadataVersions } from "../../../helpers/lens/types";
-import { pollUntilIndexed } from "../../../helpers/lens/utils";
 import { useStudioStore } from "../../../helpers/studio/store";
+import { crop } from "../../../helpers/utils/crop";
 import Button from "../../base/Button";
 import FileUpload from "../../base/FileUpload";
 import TextArea from "../../base/TextArea";
 import TextField from "../../base/TextField";
-
-function removeTypename(obj: any) {
-  if (obj.__typename) delete obj.__typename;
-  return obj;
-}
 
 export default function PublishPage() {
   const nameRef = useRef<HTMLInputElement>(null);
@@ -34,95 +21,49 @@ export default function PublishPage() {
 
   const id = useStudioStore((state) => state.id);
   const localSpace = useLocalSpace(id);
-  const signer = useEthersStore((state) => state.signer);
   const handle = useLensStore((state) => state.handle);
   const profile = useProfileByHandle(handle);
   const router = useRouter();
-  const [, createPostTypedData] = useCreatePostTypedDataMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
 
-  const image = imageFile ? URL.createObjectURL(imageFile) : localSpace?.image;
+  const createPost = useCreatePost(profile?.id);
+
+  const image = imageFile ?? localSpace?.image ?? localSpace?.generatedImage;
 
   async function handleSubmit() {
-    if (!signer || !handle || !profile || !localSpace || loading) return;
+    if (!profile || !localSpace || loading || !image) return;
 
     setLoading(true);
 
     try {
-      //authenticate
-      await authenticate();
-
-      //upload data to IPFS
-      const imageURI = imageFile
-        ? await uploadFileToIpfs(imageFile)
-        : await uploadStringToIpfs(localSpace.image);
+      const cropped = await crop(URL.createObjectURL(image), 5 / 3);
+      const imageURI = await uploadFileToIpfs(cropped);
 
       const metadata: Metadata = {
         version: MetadataVersions.one,
         metadata_id: nanoid(),
         name: nameRef.current?.value ?? "",
-        description: descriptionRef.current?.value,
+        description: descriptionRef.current?.value ?? "",
         content: JSON.stringify(localSpace.scene),
         image: imageURI,
-        imageMimeType: "image/jpeg",
+        imageMimeType: image.type,
         attributes: [],
         animation_url: undefined,
         external_url: "https://thewired.space",
-        media: [{ item: imageURI, type: "image/jpeg" }],
+        media: [{ item: imageURI, type: image.type }],
         appId: AppId.space,
       };
 
-      const contentURI = await uploadStringToIpfs(JSON.stringify(metadata));
-
-      //get typed data
-      const { data, error } = await createPostTypedData({
-        profileId: profile.id,
-        contentURI,
-      });
-
-      if (error) throw new Error(error.message);
-      if (!data) throw new Error("No data returned from set image");
-
-      const typedData = data.createPostTypedData.typedData;
-
-      //sign typed data
-      const signature = await signer._signTypedData(
-        removeTypename(typedData.domain),
-        removeTypename(typedData.types),
-        removeTypename(typedData.value)
-      );
-      const { v, r, s } = utils.splitSignature(signature);
-
-      //send transaction
-      const contract = LensHub__factory.connect(LENS_HUB_ADDRESS, signer);
-      const tx = await contract.postWithSig({
-        profileId: typedData.value.profileId,
-        contentURI: typedData.value.contentURI,
-        collectModule: typedData.value.collectModule,
-        collectModuleData: typedData.value.collectModuleInitData,
-        referenceModule: typedData.value.referenceModule,
-        referenceModuleData: typedData.value.referenceModuleInitData,
-        sig: {
-          v,
-          r,
-          s,
-          deadline: typedData.value.deadline,
-        },
-      });
-
-      //wait for transaction
-      await tx.wait();
-
-      //wait for indexing
-      await pollUntilIndexed(tx.hash);
+      await createPost(metadata);
 
       router.push(`/user/${handle}`);
-      setLoading(false);
-    } catch {
-      setLoading(false);
+    } catch (err) {
+      console.error(err);
     }
+
+    setLoading(false);
   }
 
   return (
@@ -136,7 +77,7 @@ export default function PublishPage() {
         <div className="aspect-card rounded-2xl">
           {image && (
             <img
-              src={image}
+              src={URL.createObjectURL(image)}
               alt="space image"
               className="w-full h-full object-cover rounded-2xl"
             />

@@ -26,8 +26,6 @@ export default function ProfileMenu() {
         </Link>
       </div>
 
-      <hr />
-
       <div className="px-2 space-y-2">
         <Link href={`/user/${handle}`} passHref>
           <div>

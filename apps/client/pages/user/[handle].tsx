@@ -73,9 +73,27 @@ export default function User({ metadata, profile }: Props) {
       <Head>
         <title>{metadata.title} · The Wired</title>
         <meta name="description" content={metadata.description} />
+
+        <meta itemProp="name" content={metadata.title} />
+        <meta itemProp="description" content={metadata.description} />
+        <meta itemProp="image" content={metadata.image} />
+
         <meta property="og:title" content={metadata.title} />
         <meta property="og:description" content={metadata.description} />
         <meta property="og:image" content={metadata.image} />
+        <meta property="og:image:width" content={"256px"} />
+        <meta property="og:image:height" content={"256px"} />
+        <meta property="og:type" content="profile" />
+        <meta property="og:profile:username" content={handle} />
+        <meta
+          property="og:profile:first_name"
+          content={profile.name ?? handle}
+        />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metadata.title} />
+        <meta name="twitter:description" content={metadata.description} />
+        <meta name="twitter:image" content={metadata.image} />
       </Head>
 
       <div

@@ -1,3 +1,4 @@
+import { NextPageContext } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -5,24 +6,58 @@ import { FaHashtag, FaTwitter } from "react-icons/fa";
 import { MdOutlineLocationOn } from "react-icons/md";
 
 import Button from "../../src/components/base/Button";
-import NavbarLayout, {
-  getNavbarLayout,
-} from "../../src/components/layouts/NavbarLayout/NavbarLayout";
+import { getNavbarLayout } from "../../src/components/layouts/NavbarLayout/NavbarLayout";
 import ProfilePicture from "../../src/components/lens/ProfilePicture";
 import SpaceCard from "../../src/components/ui/SpaceCard";
+import {
+  GetProfileByHandleDocument,
+  GetProfileByHandleQuery,
+  GetProfileByHandleQueryVariables,
+} from "../../src/generated/graphql";
+import { lensClient } from "../../src/helpers/lens/client";
 import {
   getMediaImageSSR,
   useMediaImage,
 } from "../../src/helpers/lens/hooks/useMediaImage";
-import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
 import { useSpacesByProfile } from "../../src/helpers/lens/hooks/useSpacesByProfile";
 import { useLensStore } from "../../src/helpers/lens/store";
+import { PageMetadata } from "../../src/helpers/types";
 
-export default function User() {
+interface Props {
+  metadata: PageMetadata;
+  profile: GetProfileByHandleQuery["profiles"]["items"][0] | undefined;
+}
+
+export async function getServerSideProps({ res, query }: NextPageContext) {
+  res?.setHeader("Cache-Control", "s-maxage=120");
+
+  const handle = query.handle as string;
+
+  const { data } = await lensClient
+    .query<GetProfileByHandleQuery, GetProfileByHandleQueryVariables>(
+      GetProfileByHandleDocument,
+      { handle }
+    )
+    .toPromise();
+
+  const profile = data?.profiles.items[0];
+  const metadata: PageMetadata = {
+    title: profile?.name ?? `@${handle}`,
+    description: profile?.bio ?? "",
+    image: getMediaImageSSR(profile?.picture) ?? "",
+  };
+
+  const props: Props = { metadata, profile };
+
+  return {
+    props,
+  };
+}
+
+export default function User({ metadata, profile }: Props) {
   const router = useRouter();
   const handle = router.query.handle as string;
 
-  const profile = useProfileByHandle(handle);
   const coverUrl = useMediaImage(profile?.coverPicture);
   const viewerHandle = useLensStore((state) => state.handle);
   const spaces = useSpacesByProfile(profile?.id);
@@ -33,16 +68,14 @@ export default function User() {
   const website = profile.attributes?.find((item) => item.key === "website");
   const location = profile.attributes?.find((item) => item.key === "location");
 
-  const title = profile.name ?? `@${handle}`;
-
   return (
     <div>
       <Head>
-        <title>{title} · The Wired</title>
-        <meta name="description" content={profile?.bio ?? ""} />
-        <meta property="og:title" content={title} />
-        <meta property="og:description" content={profile?.bio ?? ""} />
-        <meta property="og:image" content={getMediaImageSSR(profile.picture)} />
+        <title>{metadata.title} · The Wired</title>
+        <meta name="description" content={metadata.description} />
+        <meta property="og:title" content={metadata.title} />
+        <meta property="og:description" content={metadata.description} />
+        <meta property="og:image" content={metadata.image} />
       </Head>
 
       <div

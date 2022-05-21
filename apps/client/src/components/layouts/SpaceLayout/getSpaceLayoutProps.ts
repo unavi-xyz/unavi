@@ -22,7 +22,7 @@ export async function getSpaceLayoutProps(id: string) {
 
   const publication = data?.publication;
   const metadata: PageMetadata = {
-    title: `${publication?.metadata.name ?? id} / The Wired`,
+    title: `${publication?.metadata.name ?? id}`,
     description: publication?.metadata.description ?? "",
     image: getMediaImageSSR(publication?.metadata.media[0]) ?? "",
   };

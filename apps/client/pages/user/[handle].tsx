@@ -42,7 +42,7 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
 
   const profile = data?.profiles.items[0];
   const metadata: PageMetadata = {
-    title: `${`${profile?.name} @${handle}` ?? `@${handle}`} / The Wired`,
+    title: `${`${profile?.name} (@${handle})` ?? `@${handle}`}`,
     description: profile?.bio ?? "",
     image: getMediaImageSSR(profile?.picture) ?? "",
   };
@@ -71,7 +71,7 @@ export default function User({ metadata, profile }: Props) {
   return (
     <div>
       <Head>
-        <title>{metadata.title}</title>
+        <title>{metadata.title} / The Wired</title>
         <meta name="description" content={metadata.description} />
 
         <meta itemProp="name" content={metadata.title} />

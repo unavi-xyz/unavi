@@ -29,7 +29,7 @@ export default function SpaceLayout({
   return (
     <>
       <Head>
-        <title>{metadata.title}</title>
+        <title>{metadata.title} / The Wired</title>
         <meta name="description" content={metadata.description} />
 
         <meta itemProp="name" content={metadata.title} />

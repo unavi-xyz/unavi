@@ -36,6 +36,18 @@ export async function getIpfsUrl(path: string) {
   return path;
 }
 
+export function getIpfsUrlSSR(path: string) {
+  //if path is an ipfs hash, load it
+  if (path.startsWith("ipfs://")) {
+    const hash = path.replace("ipfs://", "");
+    const url = `https://ipfs.infura.io/ipfs/${hash}`;
+    return url;
+  }
+
+  //otherwise, assume it's an http url
+  return path;
+}
+
 export async function uploadFileToIpfs(file: File) {
   const ipfs = useIpfsStore.getState().ipfs;
 

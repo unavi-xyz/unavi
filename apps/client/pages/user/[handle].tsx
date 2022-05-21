@@ -10,7 +10,10 @@ import NavbarLayout, {
 } from "../../src/components/layouts/NavbarLayout/NavbarLayout";
 import ProfilePicture from "../../src/components/lens/ProfilePicture";
 import SpaceCard from "../../src/components/ui/SpaceCard";
-import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
+import {
+  getMediaImageSSR,
+  useMediaImage,
+} from "../../src/helpers/lens/hooks/useMediaImage";
 import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
 import { useSpacesByProfile } from "../../src/helpers/lens/hooks/useSpacesByProfile";
 import { useLensStore } from "../../src/helpers/lens/store";
@@ -30,16 +33,16 @@ export default function User() {
   const website = profile.attributes?.find((item) => item.key === "website");
   const location = profile.attributes?.find((item) => item.key === "location");
 
+  const title = profile.name ?? `@${handle}`;
+
   return (
     <div>
       <Head>
-        {profile?.name ? (
-          <title>
-            {profile.name} (@{profile.handle}) · The Wired
-          </title>
-        ) : (
-          <title>@{profile.handle} · The Wired</title>
-        )}
+        <title>{title} · The Wired</title>
+        <meta name="description" content={profile?.bio ?? ""} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={profile?.bio ?? ""} />
+        <meta property="og:image" content={getMediaImageSSR(profile.picture)} />
       </Head>
 
       <div

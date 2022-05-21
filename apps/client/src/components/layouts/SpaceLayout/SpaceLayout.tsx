@@ -1,9 +1,11 @@
-import { NextPageContext } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
+import {
+  getMediaImageSSR,
+  useMediaImage,
+} from "../../../helpers/lens/hooks/useMediaImage";
 import { usePublication } from "../../../helpers/lens/hooks/usePublication";
 import { useLensStore } from "../../../helpers/lens/store";
 import Button from "../../base/Button";
@@ -20,14 +22,23 @@ export default function SpaceLayout({ children }: Props) {
 
   const handle = useLensStore((state) => state.handle);
   const publication = usePublication(id);
-  const image = useMediaImage(publication?.metadata.media[0]);
+  const media = publication?.metadata.media[0];
+  const image = useMediaImage(media);
 
   const isAuthor = handle && handle === publication?.profile.handle;
+  const title = publication?.metadata.name ?? id;
 
   return (
     <>
       <Head>
-        <title>{publication?.metadata.name ?? id} · The Wired</title>
+        <title>{title} · The Wired</title>
+        <meta name="description" content={publication?.metadata.description} />
+        <meta property="og:title" content={title} />
+        <meta
+          property="og:description"
+          content={publication?.metadata.description}
+        />
+        <meta property="og:image" content={getMediaImageSSR(media)} />
       </Head>
 
       <div className="mx-8 h-full">

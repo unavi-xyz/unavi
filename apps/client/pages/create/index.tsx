@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { MdOutlineAdd } from "react-icons/md";
 
 import Button from "../../src/components/base/Button";
-import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
+import { getNavbarLayout } from "../../src/components/layouts/NavbarLayout/NavbarLayout";
 import LocalSpaceCard from "../../src/components/ui/LocalSpaceCard";
 import { createNewLocalSpace } from "../../src/helpers/indexeddb/LocalSpace/helpers";
 import { useLocalSpaces } from "../../src/helpers/indexeddb/LocalSpace/hooks/useLocalSpaces";
@@ -66,4 +66,4 @@ export default function Create() {
   );
 }
 
-Create.Layout = NavbarLayout;
+Create.getLayout = getNavbarLayout;

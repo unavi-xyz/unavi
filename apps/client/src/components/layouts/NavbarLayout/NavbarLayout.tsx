@@ -14,3 +14,7 @@ export default function NavbarLayout({ children }: Props) {
     </div>
   );
 }
+
+export function getNavbarLayout(children: React.ReactNode) {
+  return <NavbarLayout>{children}</NavbarLayout>;
+}

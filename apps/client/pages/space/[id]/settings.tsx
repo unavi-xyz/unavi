@@ -2,7 +2,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import Button from "../../../src/components/base/Button";
-import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
+import { getSpaceLayout } from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
 import { useHidePublicationMutation } from "../../../src/generated/graphql";
 import { authenticate } from "../../../src/helpers/lens/authentication";
 import { useLensStore } from "../../../src/helpers/lens/store";
@@ -60,4 +60,4 @@ export default function Settings() {
   );
 }
 
-Settings.Layout = SpaceLayout;
+Settings.getLayout = getSpaceLayout;

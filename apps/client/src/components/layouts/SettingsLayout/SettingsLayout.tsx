@@ -9,7 +9,7 @@ import {
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
 import { useLensStore } from "../../../helpers/lens/store";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
-import NavbarLayout from "../NavbarLayout/NavbarLayout";
+import NavbarLayout, { getNavbarLayout } from "../NavbarLayout/NavbarLayout";
 import SettingsButton from "./SettingsButton";
 
 interface Props {
@@ -73,4 +73,6 @@ export default function SettingsLayout({ children }: Props) {
   );
 }
 
-SettingsLayout.Layout = NavbarLayout;
+export function getSettingsLayout(children: React.ReactNode) {
+  return getNavbarLayout(<SettingsLayout>{children}</SettingsLayout>);
+}

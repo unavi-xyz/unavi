@@ -1,13 +1,22 @@
-import Head from "next/head";
-import { useRouter } from "next/router";
+import { NextPageContext } from "next";
 
-import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
+import { getSpaceLayout } from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
 import { usePublication } from "../../../src/helpers/lens/hooks/usePublication";
 
-export default function Space() {
-  const router = useRouter();
-  const id = router.query.id as string;
+interface Props {
+  id: string;
+}
 
+export async function getServerSideProps(ctx: NextPageContext) {
+  const id = ctx.query.id as string;
+  const props: Props = { id };
+
+  return {
+    props,
+  };
+}
+
+export default function Space({ id }: Props) {
   const publication = usePublication(id);
 
   return (
@@ -20,4 +29,4 @@ export default function Space() {
   );
 }
 
-Space.Layout = SpaceLayout;
+Space.getLayout = getSpaceLayout;

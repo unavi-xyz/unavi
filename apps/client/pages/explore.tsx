@@ -1,6 +1,6 @@
 import Head from "next/head";
 
-import NavbarLayout from "../src/components/layouts/NavbarLayout/NavbarLayout";
+import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
 
 export default function Explore() {
   return (
@@ -20,4 +20,4 @@ export default function Explore() {
   );
 }
 
-Explore.Layout = NavbarLayout;
+Explore.getLayout = getNavbarLayout;

@@ -5,7 +5,9 @@ import { FaHashtag, FaTwitter } from "react-icons/fa";
 import { MdOutlineLocationOn } from "react-icons/md";
 
 import Button from "../../src/components/base/Button";
-import NavbarLayout from "../../src/components/layouts/NavbarLayout/NavbarLayout";
+import NavbarLayout, {
+  getNavbarLayout,
+} from "../../src/components/layouts/NavbarLayout/NavbarLayout";
 import ProfilePicture from "../../src/components/lens/ProfilePicture";
 import SpaceCard from "../../src/components/ui/SpaceCard";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
@@ -157,7 +159,7 @@ export default function User() {
   );
 }
 
-User.Layout = NavbarLayout;
+User.getLayout = getNavbarLayout;
 
 function ProfileRow({
   icon,

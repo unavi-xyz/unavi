@@ -1,3 +1,4 @@
+import { NextPageContext } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -6,7 +7,7 @@ import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
 import { usePublication } from "../../../helpers/lens/hooks/usePublication";
 import { useLensStore } from "../../../helpers/lens/store";
 import Button from "../../base/Button";
-import NavbarLayout from "../NavbarLayout/NavbarLayout";
+import { getNavbarLayout } from "../NavbarLayout/NavbarLayout";
 import SpaceTab from "./SpaceTab";
 
 interface Props {
@@ -87,4 +88,6 @@ export default function SpaceLayout({ children }: Props) {
   );
 }
 
-SpaceLayout.Layout = NavbarLayout;
+export function getSpaceLayout(children: React.ReactNode) {
+  return getNavbarLayout(<SpaceLayout>{children}</SpaceLayout>);
+}

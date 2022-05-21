@@ -1,4 +1,4 @@
-import NavbarLayout from "../src/components/layouts/NavbarLayout/NavbarLayout";
+import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
 
 export default function Index() {
   return (
@@ -24,4 +24,4 @@ export default function Index() {
   );
 }
 
-Index.Layout = NavbarLayout;
+Index.getLayout = getNavbarLayout;

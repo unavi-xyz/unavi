@@ -5,7 +5,7 @@ import Button from "../../src/components/base/Button";
 import FileUpload from "../../src/components/base/FileUpload";
 import TextArea from "../../src/components/base/TextArea";
 import TextField from "../../src/components/base/TextField";
-import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
+import { getSettingsLayout } from "../../src/components/layouts/SettingsLayout/SettingsLayout";
 import { uploadFileToIpfs } from "../../src/helpers/ipfs/fetch";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
 import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
@@ -269,4 +269,4 @@ export default function Settings() {
   );
 }
 
-Settings.Layout = SettingsLayout;
+Settings.getLayout = getSettingsLayout;

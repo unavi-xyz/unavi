@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 
 import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalSpace";
 import Button from "../../base/Button";
-import NavbarLayout from "../NavbarLayout/NavbarLayout";
+import { getNavbarLayout } from "../NavbarLayout/NavbarLayout";
 import SpaceTab from "../SpaceLayout/SpaceTab";
 
 interface Props {
@@ -71,4 +71,6 @@ export default function LocalSpaceLayout({ children }: Props) {
   );
 }
 
-LocalSpaceLayout.Layout = NavbarLayout;
+export function getLocalSpaceLayout(children: React.ReactNode) {
+  return getNavbarLayout(<LocalSpaceLayout>{children}</LocalSpaceLayout>);
+}

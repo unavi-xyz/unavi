@@ -2,7 +2,7 @@ import { ChangeEvent, useEffect, useState } from "react";
 
 import Button from "../../src/components/base/Button";
 import Select from "../../src/components/base/Select";
-import SettingsLayout from "../../src/components/layouts/SettingsLayout/SettingsLayout";
+import { getSettingsLayout } from "../../src/components/layouts/SettingsLayout/SettingsLayout";
 import { useEthersStore } from "../../src/helpers/ethers/store";
 import { useProfilesByAddress } from "../../src/helpers/lens/hooks/useProfilesByAddress";
 import { useSetDefaultProfile } from "../../src/helpers/lens/hooks/useSetDefaultProfile";
@@ -93,4 +93,4 @@ export default function Account() {
   );
 }
 
-Account.Layout = SettingsLayout;
+Account.getLayout = getSettingsLayout;

@@ -5,7 +5,7 @@ import Button from "../../../src/components/base/Button";
 import FileUpload from "../../../src/components/base/FileUpload";
 import TextArea from "../../../src/components/base/TextArea";
 import TextField from "../../../src/components/base/TextField";
-import LocalSpaceLayout from "../../../src/components/layouts/LocalSpaceLayout/LocalSpaceLayout";
+import { getLocalSpaceLayout } from "../../../src/components/layouts/LocalSpaceLayout/LocalSpaceLayout";
 import {
   deleteLocalSpace,
   updateLocalSpace,
@@ -126,4 +126,4 @@ export default function Settings() {
   );
 }
 
-Settings.Layout = LocalSpaceLayout;
+Settings.getLayout = getLocalSpaceLayout;

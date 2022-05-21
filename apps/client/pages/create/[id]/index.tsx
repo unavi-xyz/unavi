@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 
-import LocalSpaceLayout from "../../../src/components/layouts/LocalSpaceLayout/LocalSpaceLayout";
+import { getLocalSpaceLayout } from "../../../src/components/layouts/LocalSpaceLayout/LocalSpaceLayout";
 import { useLocalSpace } from "../../../src/helpers/indexeddb/LocalSpace/hooks/useLocalSpace";
 
 export default function Id() {
@@ -19,4 +19,4 @@ export default function Id() {
   );
 }
 
-Id.Layout = LocalSpaceLayout;
+Id.getLayout = getLocalSpaceLayout;

@@ -6,7 +6,6 @@
 html {
   font-family: "Lato", sans-serif;
   @apply bg-background text-onBackground;
-  overflow-y: scroll;
 }
 
 .max-w {

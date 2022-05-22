@@ -1,12 +1,16 @@
 import { useAtomValue } from "jotai";
 
 import { selectedAtom } from "../../../helpers/studio/atoms";
+import { useStudioStore } from "../../../helpers/studio/store";
 import CollapseMenu from "../../base/CollapseMenu";
 import Geometry from "./Geometry";
 import Transform from "./Transform";
 
 export default function InspectMenu() {
   const selected = useAtomValue(selectedAtom);
+  const closedInspectMenus = useStudioStore(
+    (state) => state.closedInspectMenus
+  );
 
   if (!selected) return null;
 
@@ -16,11 +20,23 @@ export default function InspectMenu() {
         {selected.name}
       </div>
 
-      <CollapseMenu title="Transform">
+      <CollapseMenu
+        open={!closedInspectMenus.includes("Transform")}
+        toggle={() =>
+          useStudioStore.getState().toggleClosedInspectMenu("Transform")
+        }
+        title="Transform"
+      >
         <Transform />
       </CollapseMenu>
 
-      <CollapseMenu title="Geometry">
+      <CollapseMenu
+        open={!closedInspectMenus.includes("Geometry")}
+        toggle={() =>
+          useStudioStore.getState().toggleClosedInspectMenu("Geometry")
+        }
+        title="Geometry"
+      >
         <Geometry />
       </CollapseMenu>
     </div>

@@ -6,6 +6,7 @@ import { findEntityById } from "@wired-xr/scene";
 
 import { selectedAtom } from "../../../helpers/studio/atoms";
 import { useStudioStore } from "../../../helpers/studio/store";
+import { capitalize } from "../../../helpers/utils/capitalize";
 import NumberInput from "./NumberInput";
 
 function round(value: number, digits = 3) {
@@ -46,7 +47,7 @@ export default function Geometry() {
         {Object.entries(meshModule.props).map(([key, value], i) => {
           return (
             <div key={key} className="flex items-center space-x-2">
-              <div>{key}</div>
+              <div>{capitalize(key)}</div>
               <NumberInput
                 updatedValue={String(round(value))}
                 onChange={(e) => handleChange(key, e.currentTarget.value)}

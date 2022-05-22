@@ -3,11 +3,13 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
+import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
 import { updateLocalSpace } from "../../../helpers/indexeddb/LocalSpace/helpers";
 import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalSpace";
 import { useLensStore } from "../../../helpers/lens/store";
+import { useStudioStore } from "../../../helpers/studio/store";
 import IconButton from "../../base/IconButton";
 import Tooltip from "../../base/Tooltip";
 import LoginButton from "../../layouts/NavbarLayout/LoginButton";
@@ -19,6 +21,7 @@ export default function StudioNavbar() {
   const id = router.query.id as string;
 
   const handle = useLensStore((state) => state.handle);
+  const debug = useStudioStore((state) => state.debug);
   const localSpace = useLocalSpace(id);
 
   useEffect(() => {
@@ -67,6 +70,20 @@ export default function StudioNavbar() {
       </div>
 
       <div className="w-full h-full flex justify-end items-center space-x-4">
+        <div className="h-full">
+          <Tooltip
+            text={`${debug ? "Disable" : "Enable"} Debug`}
+            placement="bottom"
+          >
+            <IconButton
+              selected={debug}
+              onClick={() => useStudioStore.setState({ debug: !debug })}
+            >
+              <HiCubeTransparent />
+            </IconButton>
+          </Tooltip>
+        </div>
+
         <div className="h-full">
           <Tooltip text="Preview" placement="bottom">
             <Link href={`/studio/${id}/preview`} passHref>

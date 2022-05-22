@@ -44,6 +44,10 @@ export default function StudioNavbar() {
     router.push(`/create/${id}`);
   }
 
+  function handleToggleDebug() {
+    useStudioStore.setState({ debug: !debug, selectedId: undefined });
+  }
+
   return (
     <div className="flex justify-between items-center h-full px-4 py-2">
       <div className="w-full flex items-center space-x-4 text-lg">
@@ -75,10 +79,7 @@ export default function StudioNavbar() {
             text={`${debug ? "Disable" : "Enable"} Debug`}
             placement="bottom"
           >
-            <IconButton
-              selected={debug}
-              onClick={() => useStudioStore.setState({ debug: !debug })}
-            >
+            <IconButton selected={debug} onClick={handleToggleDebug}>
               <HiCubeTransparent />
             </IconButton>
           </Tooltip>

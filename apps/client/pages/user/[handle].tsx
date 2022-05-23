@@ -8,7 +8,7 @@ import { MdOutlineLocationOn } from "react-icons/md";
 import Button from "../../src/components/base/Button";
 import { getNavbarLayout } from "../../src/components/layouts/NavbarLayout/NavbarLayout";
 import ProfilePicture from "../../src/components/lens/ProfilePicture";
-import SpaceCard from "../../src/components/ui/SpaceCard";
+import SpaceCard from "../../src/components/lens/SpaceCard";
 import {
   GetProfileByHandleDocument,
   GetProfileByHandleQuery,

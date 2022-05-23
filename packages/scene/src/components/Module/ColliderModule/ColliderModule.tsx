@@ -36,15 +36,28 @@ export default function ColliderModule({ module, entity, entityRef }: Props) {
         .toArray();
       const scale = entityRef.current.getWorldScale(tempVector3).toArray();
 
-      setAbsoluteTransform({
-        position,
-        rotation,
-        scale,
-      });
+      // 🙃
+      if (
+        position[0] !== absoluteTransform.position[0] ||
+        position[1] !== absoluteTransform.position[1] ||
+        position[2] !== absoluteTransform.position[2] ||
+        rotation[0] !== absoluteTransform.rotation[0] ||
+        rotation[1] !== absoluteTransform.rotation[1] ||
+        rotation[2] !== absoluteTransform.rotation[2] ||
+        scale[0] !== absoluteTransform.scale[0] ||
+        scale[1] !== absoluteTransform.scale[1] ||
+        scale[2] !== absoluteTransform.scale[2]
+      ) {
+        setAbsoluteTransform({
+          position,
+          rotation,
+          scale,
+        });
+      }
     }, 100);
 
     return () => clearInterval(interval);
-  }, [entity, entityRef]);
+  }, [entity, entityRef, absoluteTransform]);
 
   //cannon physics objects cant change args once created
   //remount the component every time they change

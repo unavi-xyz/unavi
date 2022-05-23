@@ -31,6 +31,7 @@ export interface IMeshModule<V extends MeshType = MeshType>
   extends BaseModule<"Mesh"> {
   variation: V;
 
+  materialId?: string;
   props: ComponentProps<typeof MESH_COMPONENTS[V]>;
 }
 
@@ -55,7 +56,20 @@ export type Entity = {
   children: Entity[];
 };
 
+//material
+export type Material = {
+  id: string;
+  name: string;
+
+  color: string;
+};
+
+export type Materials = {
+  [key: string]: Material;
+};
+
 //scene
 export type Scene = {
   tree: Entity;
+  materials: Materials;
 };

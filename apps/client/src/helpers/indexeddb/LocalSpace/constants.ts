@@ -25,4 +25,6 @@ export const STARTING_SCENE: Scene = {
     parentId: null,
     children: [BOX],
   },
+
+  materials: {},
 };

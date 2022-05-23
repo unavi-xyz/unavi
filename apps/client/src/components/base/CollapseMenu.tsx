@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
 interface Props {
@@ -14,7 +13,7 @@ export default function CollapseMenu({ title, open, toggle, children }: Props) {
       <button
         onClick={toggle}
         className="cursor-default text-bold flex items-center space-x-2
-                   rounded-md w-full px-2 py-0.5 transition
+                   rounded-md w-full px-2 transition
                    hover:bg-secondaryContainer"
       >
         {open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />}
@@ -22,7 +21,7 @@ export default function CollapseMenu({ title, open, toggle, children }: Props) {
         <div>{title}</div>
       </button>
 
-      {open && <div className="pt-2">{children}</div>}
+      {open && <div className="pt-1">{children}</div>}
     </div>
   );
 }

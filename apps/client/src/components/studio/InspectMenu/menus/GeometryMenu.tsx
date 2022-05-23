@@ -4,16 +4,13 @@ import React from "react";
 
 import { findEntityById } from "@wired-xr/scene";
 
-import { selectedAtom } from "../../../helpers/studio/atoms";
-import { useStudioStore } from "../../../helpers/studio/store";
-import { capitalize } from "../../../helpers/utils/capitalize";
-import NumberInput from "./NumberInput";
+import { selectedAtom } from "../../../../helpers/studio/atoms";
+import { useStudioStore } from "../../../../helpers/studio/store";
+import { capitalize } from "../../../../helpers/utils/capitalize";
+import { round } from "../../../../helpers/utils/round";
+import NumberInput from "../NumberInput";
 
-function round(value: number, digits = 3) {
-  return Math.round(value * 10 ** digits) / 10 ** digits;
-}
-
-export default function Geometry() {
+export default function GeometryMenu() {
   const selected = useAtomValue(selectedAtom);
   const scene = useStudioStore((state) => state.scene);
 
@@ -43,19 +40,19 @@ export default function Geometry() {
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center space-x-2">
-        {Object.entries(meshModule.props).map(([key, value], i) => {
-          return (
-            <div key={key} className="flex items-center space-x-2">
-              <div>{capitalize(key)}</div>
+      {Object.entries(meshModule.props).map(([key, value], i) => {
+        return (
+          <div key={key} className="flex items-center space-x-2">
+            <div className="w-20">{capitalize(key)}</div>
+            <div className="w-20">
               <NumberInput
                 updatedValue={String(round(value))}
                 onChange={(e) => handleChange(key, e.currentTarget.value)}
               />
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

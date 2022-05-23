@@ -17,4 +17,6 @@ export const DEFAULT_SCENE: Scene = {
     parentId: null,
     children: [],
   },
+
+  materials: {},
 };

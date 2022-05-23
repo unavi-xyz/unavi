@@ -1,12 +1,15 @@
-interface ISphereMesh {
+import Material from "./Material";
+import { IMeshModuleComponent } from "./types";
+
+interface ISphereMesh extends IMeshModuleComponent {
   radius: number;
 }
 
-export default function SphereMesh({ radius }: ISphereMesh) {
+export default function SphereMesh({ radius, materialId }: ISphereMesh) {
   return (
     <mesh>
       <sphereBufferGeometry args={[radius]} />
-      <meshStandardMaterial color="red" />
+      <Material materialId={materialId} />
     </mesh>
   );
 }

@@ -3,7 +3,7 @@ import { GetState, SetState } from "zustand";
 
 import { DEFAULT_SCENE } from "./constants";
 import { findEntityById } from "./helpers";
-import { Entity, Scene } from "./types";
+import { Entity, Material, Scene } from "./types";
 
 export type StoreSlice<T extends object, E extends object = T> = (
   set: SetState<E extends T ? E : E & T>,
@@ -17,6 +17,11 @@ export interface ISceneSlice {
   updateEntity: (id: string, changes: Partial<Entity>) => void;
   removeEntity: (id: string) => void;
   moveEntity: (id: string, parentId: string, index?: number) => void;
+  setMaterial: (id: string, materialId: string | undefined) => void;
+
+  addMaterial: (material: Material) => void;
+  updateMaterial: (id: string, changes: Partial<Material>) => void;
+  removeMaterial: (id: string) => void;
 }
 
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
@@ -100,6 +105,49 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
       //add to parent children
       if (index === -1) parent.children.push(entity);
       else parent.children.splice(index, 0, entity);
+    });
+
+    set({ scene });
+  },
+
+  setMaterial(id: string, materialId: string | undefined) {
+    const scene = produce(get().scene, (draft) => {
+      const entity = findEntityById(draft.tree, id);
+      if (!entity) return;
+
+      entity.modules.forEach((module) => {
+        if (module.type === "Mesh") {
+          module.materialId = materialId;
+        }
+      });
+    });
+
+    set({ scene });
+  },
+
+  addMaterial(material: Material) {
+    const scene = produce(get().scene, (draft) => {
+      if (!draft.materials) draft.materials = {};
+      draft.materials[material.id] = material;
+    });
+
+    set({ scene });
+  },
+
+  updateMaterial(id: string, changes: Partial<Material>) {
+    const scene = produce(get().scene, (draft) => {
+      const material = draft.materials[id];
+      if (!material) return;
+
+      Object.assign(material, changes);
+    });
+
+    set({ scene });
+  },
+
+  removeMaterial(id: string) {
+    const scene = produce(get().scene, (draft) => {
+      delete draft.materials[id];
     });
 
     set({ scene });

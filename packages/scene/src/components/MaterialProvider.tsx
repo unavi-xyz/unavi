@@ -28,8 +28,7 @@ export function MaterialProvider({
 }
 
 export function useMaterial(id: string | undefined) {
-  if (!id) return;
-
   const { materials } = useContext(MaterialContext);
+  if (!id) return;
   return materials[id];
 }

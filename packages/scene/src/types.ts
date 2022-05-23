@@ -62,6 +62,11 @@ export type Material = {
   name: string;
 
   color: string;
+  emissive: string;
+  opacity: number;
+  roughness: number;
+  metalness: number;
+  flatShading: boolean;
 };
 
 export type Materials = {

@@ -8,11 +8,14 @@ import { IMeshModule, Material } from "@wired-xr/scene";
 
 import { selectedAtom } from "../../../../helpers/studio/atoms";
 import { useStudioStore } from "../../../../helpers/studio/store";
+import { round } from "../../../../helpers/utils/round";
 import ColorInput from "../../../base/ColorInput";
 import DropdownMenu from "../../../base/DropdownMenu";
+import NumberInput from "../NumberInput";
 
 export default function MaterialMenu() {
   const colorRef = useRef<HTMLInputElement>(null);
+  const emissiveRef = useRef<HTMLInputElement>(null);
 
   const selected = useAtomValue(selectedAtom);
 
@@ -28,15 +31,19 @@ export default function MaterialMenu() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (colorRef.current?.value === material?.color || !material) return;
+      if (!material) return;
 
       useStudioStore.getState().updateMaterial(material.id, {
         color: colorRef.current?.value,
+        emissive: emissiveRef.current?.value,
       });
     }, 25);
 
     if (material && colorRef.current) {
       colorRef.current.value = material.color;
+    }
+    if (material && emissiveRef.current) {
+      emissiveRef.current.value = material.emissive;
     }
 
     return () => clearInterval(interval);
@@ -52,6 +59,11 @@ export default function MaterialMenu() {
       id,
       name: `New Material ${id.slice(0, 4)}`,
       color: "#ffffff",
+      emissive: "#000000",
+      opacity: 1,
+      roughness: 1,
+      metalness: 0,
+      flatShading: false,
     };
 
     useStudioStore.getState().addMaterial(newMaterial);
@@ -63,9 +75,38 @@ export default function MaterialMenu() {
     useStudioStore.getState().setMaterial(selected.id, undefined);
   }
 
+  function handleOpacityChange(value: string) {
+    if (isNaN(Number(value)) || value === "" || !selected) return;
+    const rounded = Math.min(Math.max(round(Number(value)), 0), 1);
+    useStudioStore.getState().updateMaterial(material.id, { opacity: rounded });
+  }
+
+  function handleRoughnessChange(value: string) {
+    if (isNaN(Number(value)) || value === "" || !selected) return;
+    const rounded = Math.min(Math.max(round(Number(value)), 0), 1);
+    useStudioStore
+      .getState()
+      .updateMaterial(material.id, { roughness: rounded });
+  }
+
+  function handleMetalnessChange(value: string) {
+    if (isNaN(Number(value)) || value === "" || !selected) return;
+    const rounded = Math.min(Math.max(round(Number(value)), 0), 1);
+    useStudioStore
+      .getState()
+      .updateMaterial(material.id, { metalness: rounded });
+  }
+
+  function handleFlatShadingChange(value: boolean) {
+    if (!selected) return;
+    useStudioStore
+      .getState()
+      .updateMaterial(material.id, { flatShading: value });
+  }
+
   return (
     <div className="space-y-1">
-      <div className="flex space-x-1">
+      <div className="flex space-x-1 py-1">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -126,7 +167,7 @@ export default function MaterialMenu() {
                     setOpen(false);
                   }}
                   className="group w-full rounded hover:bg-primaryContainer transition px-3
-                           cursor-default flex items-center justify-between"
+                             cursor-default flex items-center justify-between"
                 >
                   {value.name}
                   <IoMdTrash
@@ -148,10 +189,66 @@ export default function MaterialMenu() {
           )}
         </div>
       </DropdownMenu>
+
       {material && (
-        <div key={materialId} className="flex">
-          <div className="w-20">Color</div>
-          <ColorInput inputRef={colorRef} />
+        <div key={material.id} className="space-y-1">
+          <div className="flex">
+            <div className="w-28">Color</div>
+            <ColorInput inputRef={colorRef} />
+          </div>
+
+          <div className="flex">
+            <div className="w-28">Emissive</div>
+            <ColorInput inputRef={emissiveRef} />
+          </div>
+
+          <div className="flex">
+            <div className="w-28">Opacity</div>
+            <div>
+              <NumberInput
+                updatedValue={String(round(material.opacity))}
+                onChange={(e) => handleOpacityChange(e.currentTarget.value)}
+                max={1}
+                min={0}
+              />
+            </div>
+          </div>
+          <div className="flex">
+            <div className="w-28">Roughness</div>
+            <div>
+              <NumberInput
+                updatedValue={String(round(material.roughness))}
+                onChange={(e) => handleRoughnessChange(e.currentTarget.value)}
+                max={1}
+                min={0}
+              />
+            </div>
+          </div>
+
+          <div className="flex">
+            <div className="w-28">Metalness</div>
+            <div>
+              <NumberInput
+                updatedValue={String(round(material.metalness))}
+                onChange={(e) => handleMetalnessChange(e.currentTarget.value)}
+                max={1}
+                min={0}
+              />
+            </div>
+          </div>
+
+          <div className="flex">
+            <div className="w-28">Flat Shading</div>
+            <div>
+              <input
+                type="checkbox"
+                checked={material.flatShading}
+                onChange={(e) =>
+                  handleFlatShadingChange(e.currentTarget.checked)
+                }
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

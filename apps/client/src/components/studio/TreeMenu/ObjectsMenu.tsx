@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 import { ENTITY_PRESETS } from "../../../helpers/studio/presets";
 import { useStudioStore } from "../../../helpers/studio/store";
 
@@ -20,12 +18,6 @@ export default function ObjectsMenu() {
             className="w-full flex hover:bg-primaryContainer hover:text-onPrimaryContainer
                        rounded-md px-4 py-1 transition items-center space-x-2"
           >
-            <Image
-              src={`/images/shapes/${primitive}.svg`}
-              alt={primitive}
-              width={20}
-              height={20}
-            />
             <div>{primitive}</div>
           </button>
         ))}

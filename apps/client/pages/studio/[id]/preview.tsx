@@ -37,7 +37,7 @@ export default function Preview() {
       >
         <Link href={`/studio/${id}`} passHref>
           <div
-            className="cursor-pointer p-2 rounded-full bg-primaryContainer text-onPrimaryContainer
+            className="cursor-pointer p-2 rounded-full bg-surface text-onSurface
                        backdrop-blur bg-opacity-50 hover:bg-opacity-90 transition active:bg-opacity-75"
           >
             <MdClose />

@@ -28,7 +28,7 @@ export default function MaterialMenu() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (colorRef.current?.value === material?.color) return;
+      if (colorRef.current?.value === material?.color || !material) return;
 
       useStudioStore.getState().updateMaterial(material.id, {
         color: colorRef.current?.value,
@@ -51,7 +51,7 @@ export default function MaterialMenu() {
     const newMaterial: Material = {
       id,
       name: `New Material ${id.slice(0, 4)}`,
-      color: "#ffaa99",
+      color: "#ffffff",
     };
 
     useStudioStore.getState().addMaterial(newMaterial);
@@ -148,11 +148,12 @@ export default function MaterialMenu() {
           )}
         </div>
       </DropdownMenu>
-
-      <div key={materialId} className="flex">
-        <div className="w-20">Color</div>
-        <ColorInput inputRef={colorRef} />
-      </div>
+      {material && (
+        <div key={materialId} className="flex">
+          <div className="w-20">Color</div>
+          <ColorInput inputRef={colorRef} />
+        </div>
+      )}
     </div>
   );
 }

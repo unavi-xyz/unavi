@@ -5,11 +5,11 @@ const DialogContext = React.createContext({ close: () => {} });
 
 interface Props {
   open: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   children: React.ReactNode;
 }
 
-export default function Dialog({ open, onClose, children }: Props) {
+export default function Dialog({ open, onClose = () => {}, children }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
 

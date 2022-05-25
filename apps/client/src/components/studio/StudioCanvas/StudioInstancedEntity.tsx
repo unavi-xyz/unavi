@@ -1,5 +1,5 @@
 import { ThreeEvent } from "@react-three/fiber";
-import { Ref, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Group } from "three";
 
 import { Entity, EntityComponent } from "@wired-xr/scene";
@@ -30,9 +30,9 @@ export default function StudioInstancedEntity({ entity }: Props) {
   }
 
   return (
-    <group onPointerUp={handlePointerUp}>
+    <group ref={ref} onPointerUp={handlePointerUp}>
       {entity && (
-        <EntityComponent ref={ref as any} entity={entity}>
+        <EntityComponent groupRef={ref as any} entity={entity}>
           {entity.children.map((child) => (
             <StudioInstancedEntity key={child.id} entity={child} />
           ))}

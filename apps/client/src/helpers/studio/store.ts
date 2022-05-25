@@ -10,10 +10,11 @@ import { ENTITY_PRESETS } from "./presets";
 import { Tool } from "./types";
 
 export interface IStudioStore extends ISceneSlice {
-  id: string | undefined;
-  name: string | undefined;
+  rootHandle: FileSystemDirectoryHandle | undefined;
+
   preview: boolean;
   debug: boolean;
+
   tool: Tool;
   usingGizmo: boolean;
   selectedId: string | undefined;
@@ -29,10 +30,11 @@ export interface IStudioStore extends ISceneSlice {
 }
 
 export const useStudioStore = create<IStudioStore>((set, get) => ({
-  id: undefined,
-  name: undefined,
+  rootHandle: undefined,
+
   preview: false,
   debug: false,
+
   tool: "translate",
   usingGizmo: false,
   selectedId: undefined,

@@ -1,48 +1,18 @@
 import Link from "next/link";
-import { useRouter } from "next/router";
-import { useEffect } from "react";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
-import { updateLocalSpace } from "../../../helpers/indexeddb/LocalSpace/helpers";
-import { useLocalSpace } from "../../../helpers/indexeddb/LocalSpace/hooks/useLocalSpace";
-import { useLensStore } from "../../../helpers/lens/store";
+import { useProject } from "../../../helpers/studio/hooks/useProject";
 import { useStudioStore } from "../../../helpers/studio/store";
 import IconButton from "../../base/IconButton";
 import Tooltip from "../../base/Tooltip";
-import LoginButton from "../../layouts/NavbarLayout/LoginButton";
-import PublishButton from "./PublishButton";
 import ToolButton from "./ToolButton";
 
 export default function StudioNavbar() {
-  const router = useRouter();
-  const id = router.query.id as string;
-
-  const handle = useLensStore((state) => state.handle);
   const debug = useStudioStore((state) => state.debug);
-  const localSpace = useLocalSpace(id);
-
-  useEffect(() => {
-    if (id) router.prefetch(`/create/${id}`);
-  }, [id, router]);
-
-  async function handleBack() {
-    //take a screenshot of the scene before navigating
-    const canvas = document.querySelector("canvas");
-    if (canvas && !localSpace?.image) {
-      const data = canvas.toDataURL("image/jpeg");
-      const blob = await (await fetch(data)).blob();
-      const generatedImage = new File([blob], "space.jpg", {
-        type: "image/jpeg",
-      });
-
-      await updateLocalSpace(id, { generatedImage });
-    }
-
-    router.push(`/create/${id}`);
-  }
+  const project = useProject();
 
   function handleToggleDebug() {
     useStudioStore.setState({ debug: !debug, selectedId: undefined });
@@ -51,14 +21,13 @@ export default function StudioNavbar() {
   return (
     <div className="flex justify-between items-center h-full px-4 py-2">
       <div className="w-full flex items-center space-x-4 text-lg">
-        <div
-          onClick={handleBack}
-          className="cursor-pointer transition text-outline hover:text-inherit p-1"
-        >
-          <MdArrowBackIosNew />
-        </div>
+        <Link href="/create">
+          <div className="cursor-pointer transition text-outline hover:text-inherit p-1">
+            <MdArrowBackIosNew />
+          </div>
+        </Link>
 
-        <div>{localSpace?.name}</div>
+        <div>{project?.name}</div>
       </div>
 
       <div className="w-full h-full flex justify-center items-center space-x-2">
@@ -87,7 +56,7 @@ export default function StudioNavbar() {
 
         <div className="h-full">
           <Tooltip text="Preview" placement="bottom">
-            <Link href={`/studio/${id}/preview`} passHref>
+            <Link href="/studio/preview" passHref>
               <div className="h-full">
                 <IconButton>
                   <MdPreview />
@@ -95,10 +64,6 @@ export default function StudioNavbar() {
               </div>
             </Link>
           </Tooltip>
-        </div>
-
-        <div className="text-sm">
-          {handle ? <PublishButton /> : <LoginButton />}
         </div>
       </div>
     </div>

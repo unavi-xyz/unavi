@@ -9,11 +9,6 @@ module.exports = withTM({
   async redirects() {
     return [
       {
-        source: "/studio",
-        destination: "/create",
-        permanent: true,
-      },
-      {
         source: "/app",
         destination: "/",
         permanent: false,

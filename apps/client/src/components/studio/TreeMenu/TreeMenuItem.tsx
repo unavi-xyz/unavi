@@ -150,7 +150,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
               e.stopPropagation();
               useStudioStore.setState({ selectedId: entity.id });
             }}
-            className={`font-bold rounded-md px-2 transition flex items-center
+            className={`font-bold rounded-md px-2 transition-colors flex items-center
                         h-8 ${bgClass} ${opacityClass}`}
           >
             <div

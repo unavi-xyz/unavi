@@ -1,40 +1,24 @@
 import { useEffect } from "react";
 
-import {
-  getLocalSpace,
-  updateLocalSpace,
-} from "../../indexeddb/LocalSpace/helpers";
+import { writeScene } from "../filesystem";
 import { useStudioStore } from "../store";
+import { useProject } from "./useProject";
 
 export function useAutosave() {
-  const id = useStudioStore((state) => state.id);
   const scene = useStudioStore((state) => state.scene);
+  const project = useProject();
 
-  // load initial space
+  //load initial space
   useEffect(() => {
-    if (!id) return;
+    if (!project) return;
+    useStudioStore.setState({ scene: project.scene });
+  }, [project]);
 
-    getLocalSpace(id)
-      .then((localSpace) => {
-        if (!localSpace) return;
-
-        useStudioStore.setState({
-          name: localSpace.name,
-          scene: localSpace.scene,
-        });
-      })
-      .catch(console.error);
-
-    return () => {
-      useStudioStore.setState({
-        name: undefined,
-      });
-    };
-  }, [id]);
-
-  // autosave on an interval
+  //autosave on scene change
   useEffect(() => {
-    if (!id) return;
-    updateLocalSpace(id, { scene });
-  }, [id, scene]);
+    if (!project) return;
+    writeScene(scene).catch((err) => {
+      console.error(err);
+    });
+  }, [project, scene]);
 }

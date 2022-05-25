@@ -8,6 +8,7 @@ import { selectedAtom } from "../../../../helpers/studio/atoms";
 import { useStudioStore } from "../../../../helpers/studio/store";
 import { capitalize } from "../../../../helpers/utils/capitalize";
 import { round } from "../../../../helpers/utils/round";
+import { separateCapitals } from "../../../../helpers/utils/separateCapitals";
 import NumberInput from "../NumberInput";
 
 export default function GeometryMenu() {
@@ -43,8 +44,8 @@ export default function GeometryMenu() {
       {Object.entries(meshModule.props).map(([key, value], i) => {
         return (
           <div key={key} className="flex items-center space-x-2">
-            <div className="w-20">{capitalize(key)}</div>
-            <div className="w-20">
+            <div className="w-32">{separateCapitals(capitalize(key))}</div>
+            <div className="w-32">
               <NumberInput
                 updatedValue={String(round(value))}
                 onChange={(e) => handleChange(key, e.currentTarget.value)}

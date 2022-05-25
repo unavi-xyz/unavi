@@ -7,9 +7,10 @@ export default function TreeMenu() {
 
   return (
     <div className="h-full">
-      <div className="py-2 h-14 flex items-center justify-center border-b">
+      <div className="py-2 h-14 flex items-center justify-center">
         <ObjectButton />
       </div>
+
       <div className="py-4 pr-4 w-full h-full">
         <TreeMenuItem entity={tree} isRoot />
       </div>

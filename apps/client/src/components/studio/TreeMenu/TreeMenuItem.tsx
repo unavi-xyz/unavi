@@ -155,7 +155,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
           >
             <div
               onClick={() => setOpen((prev) => !prev)}
-              className="w-5 text-neutral-500 hover:text-neutral-400"
+              className="w-5 text-outline hover:text-inherit transition"
             >
               {hasChildren &&
                 (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}

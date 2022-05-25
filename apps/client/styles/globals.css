@@ -51,3 +51,19 @@ html {
 .bg-position-move:hover {
   background-position: right;
 }
+
+/* react-split */
+.gutter {
+  @apply hover:bg-primaryContainer active:bg-primaryContainer delay-300 transition;
+}
+
+.gutter.gutter-vertical {
+  cursor: row-resize;
+  @apply border-t;
+}
+
+.gutter.gutter-horizontal {
+  float: left;
+  height: calc(100%);
+  cursor: col-resize;
+}

@@ -1,7 +1,7 @@
 import produce from "immer";
 import { GetState, SetState } from "zustand";
 
-import { DEFAULT_SCENE } from "./constants";
+import { EMPTY_SCENE } from "./constants";
 import { findEntityById } from "./helpers";
 import { Entity, Material, Scene } from "./types";
 
@@ -25,7 +25,7 @@ export interface ISceneSlice {
 }
 
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
-  scene: DEFAULT_SCENE,
+  scene: EMPTY_SCENE,
 
   addEntity(entity: Entity) {
     const { scene, updateEntity } = get();

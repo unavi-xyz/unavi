@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MdAdd, MdOutlineFolderOpen } from "react-icons/md";
 
-import { PROJECT_FILE_NAME } from "../../../helpers/studio/filesystem";
+import { PROJECT_FILE_NAME } from "../../../helpers/studio/constants";
 import { useStudioStore } from "../../../helpers/studio/store";
 import Button from "../../base/Button";
 import NewProjectsPage from "./NewProjectPage";

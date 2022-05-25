@@ -1,9 +1,8 @@
 import { Scene } from "@wired-xr/scene";
 
+import { PROJECT_FILE_NAME } from "./constants";
 import { useStudioStore } from "./store";
 import { Project } from "./types";
-
-export const PROJECT_FILE_NAME = "project.json";
 
 export async function readProject() {
   const root = useStudioStore.getState().rootHandle;

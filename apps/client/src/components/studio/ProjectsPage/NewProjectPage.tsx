@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
 import { MdArrowBackIosNew, MdOutlineFolderOpen } from "react-icons/md";
 
-import { DEFAULT_SCENE } from "@wired-xr/scene";
-
-import { PROJECT_FILE_NAME } from "../../../helpers/studio/filesystem";
+import {
+  PROJECT_FILE_NAME,
+  STARTING_SCENE,
+} from "../../../helpers/studio/constants";
 import { useStudioStore } from "../../../helpers/studio/store";
 import { Project } from "../../../helpers/studio/types";
 import Button from "../../base/Button";
@@ -43,7 +44,7 @@ export default function NewProjectsPage({ onBack }: Props) {
       const project: Project = {
         name,
         description: "",
-        scene: DEFAULT_SCENE,
+        scene: STARTING_SCENE,
       };
 
       const writableStream = await fileHandle.createWritable();

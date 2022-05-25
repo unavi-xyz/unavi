@@ -119,7 +119,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
     isSelected || isOver
       ? "bg-primaryContainer text-onPrimaryContainer"
       : "hover:bg-surfaceVariant";
-  const paddingClass = isRoot ? "" : "ml-4";
+  const marginClass = isRoot ? "" : "ml-4";
   const opacityClass = isDragging ? "opacity-0" : "";
   const highlightAboveClass = isOverAbove ? "bg-secondaryContainer" : "";
   const highlightBelowClass = isOverBelow ? "bg-secondaryContainer" : "";
@@ -133,7 +133,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
       {!isRoot && (
         <div
           ref={dropAbove}
-          className={`h-2 ml-4 rounded-full ${highlightAboveClass} ${paddingClass}`}
+          className={`h-1 ml-4 rounded-full ${highlightAboveClass} ${marginClass}`}
         />
       )}
 
@@ -142,7 +142,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
         onMouseDown={() => {
           if (isRoot) useStudioStore.setState({ selectedId: undefined });
         }}
-        className={`h-full ${paddingClass}`}
+        className={`h-full ${marginClass}`}
       >
         {!isRoot && (
           <div
@@ -174,7 +174,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
                     <TreeMenuItem entity={child} />
                     <div
                       ref={dropBelow}
-                      className={`h-2 ml-4 rounded-full ${highlightBelowClass} ${paddingClass}`}
+                      className={`h-1 ml-4 rounded-full ${highlightBelowClass} ${marginClass}`}
                     />
                   </div>
                 );

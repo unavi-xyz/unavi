@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { useEffect, useState } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
@@ -17,6 +18,12 @@ import { useStudioStore } from "../../src/helpers/studio/store";
 export default function Studio() {
   const rootHandle = useStudioStore((state) => state.rootHandle);
 
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(!Boolean(rootHandle));
+  }, [rootHandle]);
+
   useAutosave();
   useHotkeys();
 
@@ -26,7 +33,7 @@ export default function Studio() {
         <title>Studio / The Wired</title>
       </Head>
 
-      <Dialog open={!Boolean(rootHandle)}>
+      <Dialog open={open} onClose={() => setOpen(false)}>
         <ProjectsPage />
       </Dialog>
 

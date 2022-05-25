@@ -53,10 +53,6 @@ html {
 }
 
 /* react-split */
-.gutter {
-  @apply hover:bg-primaryContainer active:bg-primaryContainer delay-300 transition;
-}
-
 .gutter.gutter-vertical {
   cursor: row-resize;
   @apply border-t;

@@ -12,11 +12,13 @@ export default function CollapseMenu({ title, open, toggle, children }: Props) {
     <div>
       <button
         onClick={toggle}
-        className="cursor-default text-bold flex items-center space-x-2
-                   rounded-md w-full px-2 transition
+        className="group cursor-default text-bold flex items-center
+                   rounded-md w-full px-2 transition space-x-2
                    hover:bg-secondaryContainer"
       >
-        {open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />}
+        <div className="text-outline group-hover:text-inherit transition">
+          {open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />}
+        </div>
 
         <div>{title}</div>
       </button>

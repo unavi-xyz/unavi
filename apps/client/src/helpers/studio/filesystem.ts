@@ -33,3 +33,20 @@ export async function writeScene(scene: Scene) {
   await writableStream.write(JSON.stringify(newProject));
   await writableStream.close();
 }
+
+export async function readDirectoryContents(
+  directoryHandle: FileSystemDirectoryHandle
+) {
+  const files: FileSystemFileHandle[] = [];
+  const directories: FileSystemDirectoryHandle[] = [];
+
+  for await (const handle of directoryHandle.values()) {
+    if (handle.kind === "file") {
+      files.push(handle);
+    } else {
+      directories.push(handle);
+    }
+  }
+
+  return { files, directories };
+}

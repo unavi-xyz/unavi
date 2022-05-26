@@ -18,7 +18,10 @@ export default function ProjectsPage() {
       await directoryHandle.getFileHandle(PROJECT_FILE_NAME);
 
       //open project
-      useStudioStore.setState({ rootHandle: directoryHandle });
+      useStudioStore.setState({
+        rootHandle: directoryHandle,
+        selectedDirectory: directoryHandle,
+      });
     } catch (err) {
       console.error(err);
     }

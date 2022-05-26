@@ -52,7 +52,10 @@ export default function NewProjectsPage({ onBack }: Props) {
       await writableStream.close();
 
       //open project
-      useStudioStore.setState({ rootHandle: directory });
+      useStudioStore.setState({
+        rootHandle: directory,
+        selectedDirectory: directory,
+      });
     } catch (err) {
       console.error(err);
     }

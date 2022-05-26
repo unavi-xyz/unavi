@@ -33,7 +33,7 @@ export default function Studio() {
         <title>Studio / The Wired</title>
       </Head>
 
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      <Dialog open={open}>
         <ProjectsPage />
       </Dialog>
 
@@ -53,7 +53,7 @@ export default function Studio() {
           >
             <div className="h-full">
               <Split
-                sizes={[10, 75, 15]}
+                sizes={[15, 70, 15]}
                 minSize={200}
                 direction="horizontal"
                 expandToMin

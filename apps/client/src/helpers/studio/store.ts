@@ -11,6 +11,7 @@ import { Tool } from "./types";
 
 export interface IStudioStore extends ISceneSlice {
   rootHandle: FileSystemDirectoryHandle | undefined;
+  selectedDirectory: FileSystemDirectoryHandle | undefined;
 
   preview: boolean;
   debug: boolean;
@@ -31,6 +32,7 @@ export interface IStudioStore extends ISceneSlice {
 
 export const useStudioStore = create<IStudioStore>((set, get) => ({
   rootHandle: undefined,
+  selectedDirectory: undefined,
 
   preview: false,
   debug: false,

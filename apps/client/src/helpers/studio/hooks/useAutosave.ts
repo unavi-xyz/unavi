@@ -17,8 +17,17 @@ export function useAutosave() {
   //autosave on scene change
   useEffect(() => {
     if (!project) return;
-    writeScene(scene).catch((err) => {
-      console.error(err);
-    });
+
+    //this is a hack to prevent the autosave from triggering on the initial project load
+    //debounce autosave
+    const timeout = setTimeout(() => {
+      writeScene(scene).catch((err) => {
+        console.error(err);
+      });
+    }, 250);
+
+    return () => {
+      clearTimeout(timeout);
+    };
   }, [project, scene]);
 }

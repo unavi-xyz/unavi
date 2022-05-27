@@ -307,7 +307,18 @@ export default function MaterialMenu() {
 
           <div className="flex">
             <div className="w-28">Texture</div>
-            <div onClick={handleTextureClick} className="border px-6 rounded" />
+            <div className="border w-12 h-6 rounded">
+              <img
+                onClick={handleTextureClick}
+                src={
+                  material.textureId
+                    ? assets[material.textureId].data
+                    : undefined
+                }
+                alt="texture"
+                className="w-full h-full object-cover rounded"
+              />
+            </div>
           </div>
         </div>
       )}

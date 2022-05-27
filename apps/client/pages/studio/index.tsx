@@ -53,7 +53,7 @@ export default function Studio() {
           >
             <div className="h-full">
               <Split
-                sizes={[15, 70, 15]}
+                sizes={[15, 65, 20]}
                 minSize={200}
                 direction="horizontal"
                 expandToMin

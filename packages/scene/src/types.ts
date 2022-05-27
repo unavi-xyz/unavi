@@ -67,14 +67,29 @@ export type Material = {
   roughness: number;
   metalness: number;
   flatShading: boolean;
+  textureId?: string;
 };
 
 export type Materials = {
   [key: string]: Material;
 };
 
+//asset
+export type AssetType = "image" | "model";
+
+export type Asset = {
+  type: AssetType;
+  uri: string;
+  data?: string;
+};
+
+export type Assets = {
+  [key: string]: Asset;
+};
+
 //scene
 export type Scene = {
   tree: Entity;
   materials: Materials;
+  assets: Assets;
 };

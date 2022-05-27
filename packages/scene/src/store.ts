@@ -1,9 +1,10 @@
 import produce from "immer";
+import { nanoid } from "nanoid";
 import { GetState, SetState } from "zustand";
 
 import { EMPTY_SCENE } from "./constants";
 import { findEntityById } from "./helpers";
-import { Entity, Material, Scene } from "./types";
+import { Asset, Entity, Material, Scene } from "./types";
 
 export type StoreSlice<T extends object, E extends object = T> = (
   set: SetState<E extends T ? E : E & T>,
@@ -22,6 +23,10 @@ export interface ISceneSlice {
   addMaterial: (material: Material) => void;
   updateMaterial: (id: string, changes: Partial<Material>) => void;
   removeMaterial: (id: string) => void;
+
+  addAsset: (asset: Asset) => string;
+  updateAsset: (id: string, changes: Partial<Asset>) => void;
+  removeAsset: (id: string) => void;
 }
 
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
@@ -148,6 +153,38 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
   removeMaterial(id: string) {
     const scene = produce(get().scene, (draft) => {
       delete draft.materials[id];
+    });
+
+    set({ scene });
+  },
+
+  addAsset(asset: Asset) {
+    const id = nanoid();
+
+    const scene = produce(get().scene, (draft) => {
+      if (!draft.assets) draft.assets = {};
+      draft.assets[id] = asset;
+    });
+
+    set({ scene });
+
+    return id;
+  },
+
+  updateAsset(id: string, changes: Partial<Asset>) {
+    const scene = produce(get().scene, (draft) => {
+      const asset = draft.assets[id];
+      if (!asset) return;
+
+      Object.assign(asset, changes);
+    });
+
+    set({ scene });
+  },
+
+  removeAsset(id: string) {
+    const scene = produce(get().scene, (draft) => {
+      delete draft.assets[id];
     });
 
     set({ scene });

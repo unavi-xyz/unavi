@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { IoMdTrash } from "react-icons/io";
 import { MdClose, MdOutlineAdd, MdOutlineFolderOpen } from "react-icons/md";
 
-import { IMeshModule, Material } from "@wired-xr/scene";
+import { Asset, IMeshModule, Material } from "@wired-xr/scene";
 
 import { selectedAtom } from "../../../../helpers/studio/atoms";
+import { findFilePathByName } from "../../../../helpers/studio/filesystem";
 import { useStudioStore } from "../../../../helpers/studio/store";
 import { round } from "../../../../helpers/utils/round";
 import ColorInput from "../../../base/ColorInput";
@@ -26,6 +27,7 @@ export default function MaterialMenu() {
   const materialId = meshModule?.materialId ?? "";
   const material = useStudioStore((state) => state.scene.materials[materialId]);
   const materials = useStudioStore((state) => state.scene.materials);
+  const assets = useStudioStore((state) => state.scene.assets);
 
   const [open, setOpen] = useState(false);
 
@@ -64,6 +66,7 @@ export default function MaterialMenu() {
       roughness: 1,
       metalness: 0,
       flatShading: false,
+      textureId: undefined,
     };
 
     useStudioStore.getState().addMaterial(newMaterial);
@@ -102,6 +105,58 @@ export default function MaterialMenu() {
     useStudioStore
       .getState()
       .updateMaterial(material.id, { flatShading: value });
+  }
+
+  async function handleTextureClick() {
+    try {
+      const [fileHandle] = await window.showOpenFilePicker({
+        types: [
+          {
+            accept: { "image/*": [".png", ".jpg", ".jpeg", ".gif"] },
+          },
+        ],
+      });
+
+      const rootHandle = useStudioStore.getState().rootHandle;
+      if (!rootHandle) return;
+
+      //we only get the name of the selected file, not the path
+      //find the path to the file
+      //TODO compare file data to find the right one, multiple files could have same name
+      const path = await findFilePathByName(rootHandle, fileHandle.name);
+
+      if (path) {
+        //if the asset already exists, we can just use it
+        const found = Object.entries(assets).find(([id, asset]) => {
+          return asset.uri === path;
+        });
+
+        if (found) {
+          //set the texture
+          useStudioStore
+            .getState()
+            .updateMaterial(material.id, { textureId: found[0] });
+        } else {
+          //create the image asset
+          const file = await fileHandle.getFile();
+
+          const asset: Asset = {
+            type: "image",
+            uri: path,
+            data: URL.createObjectURL(file),
+          };
+
+          const textureId = useStudioStore.getState().addAsset(asset);
+
+          //set the texture
+          useStudioStore.getState().updateMaterial(material.id, { textureId });
+        }
+      } else {
+        //TODO copy the file to the project directory if it doesn't exist
+      }
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   return (
@@ -248,6 +303,11 @@ export default function MaterialMenu() {
                 }
               />
             </div>
+          </div>
+
+          <div className="flex">
+            <div className="w-28">Texture</div>
+            <div onClick={handleTextureClick} className="border px-6 rounded" />
           </div>
         </div>
       )}

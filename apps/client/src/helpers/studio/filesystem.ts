@@ -50,3 +50,34 @@ export async function readDirectoryContents(
 
   return { files, directories };
 }
+
+export async function findFilePathByName(
+  directoryHandle: FileSystemDirectoryHandle,
+  name: string
+): Promise<string | undefined> {
+  for await (const handle of directoryHandle.values()) {
+    if (handle.kind === "file" && handle.name === name) {
+      return `/${name}`;
+    }
+  }
+
+  //file was not found, search children
+  for await (const handle of directoryHandle.values()) {
+    if (handle.kind === "directory") {
+      const foundPath = await findFilePathByName(handle, name);
+      if (foundPath) return `/${foundPath}`;
+    }
+  }
+}
+
+export async function readFileByPath(path: string) {
+  const root = useStudioStore.getState().rootHandle;
+  if (!root) return;
+
+  const splitPath = path.split("/").filter((p) => p !== "");
+
+  const handle = await root.getFileHandle(splitPath[0]);
+  const file = await handle.getFile();
+
+  return file;
+}

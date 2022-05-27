@@ -1,6 +1,11 @@
+import { useRef } from "react";
 import { useEffect } from "react";
 import { useState } from "react";
+import { MeshStandardMaterial } from "three";
+import { Texture } from "three";
+import { TextureLoader } from "three";
 
+import { useAsset } from "../../AssetProvider";
 import { useMaterial } from "../../MaterialProvider";
 
 interface Props {
@@ -8,19 +13,29 @@ interface Props {
 }
 
 export default function Material({ materialId }: Props) {
-  const [key, setKey] = useState(0);
+  const ref = useRef<MeshStandardMaterial>();
 
   const material = useMaterial(materialId);
+  const textureAsset = useAsset(material?.textureId);
+
+  const [texture, setTexture] = useState<Texture>();
 
   const transparent = Boolean((material?.opacity ?? 1) < 1);
 
   useEffect(() => {
-    setKey((prev) => prev + 1);
-  }, [material]);
+    if (ref.current) ref.current.needsUpdate = true;
+  }, [material, texture]);
+
+  useEffect(() => {
+    if (textureAsset?.data) {
+      const loaded = new TextureLoader().load(textureAsset.data);
+      setTexture(loaded);
+    }
+  }, [textureAsset]);
 
   return (
     <meshStandardMaterial
-      key={key}
+      ref={ref as any}
       color={material?.color ?? "#ffffff"}
       emissive={material?.emissive}
       roughness={material?.roughness}
@@ -28,6 +43,7 @@ export default function Material({ materialId }: Props) {
       opacity={material?.opacity}
       transparent={transparent}
       flatShading={material?.flatShading}
+      map={texture as any}
     />
   );
 }

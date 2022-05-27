@@ -27,4 +27,5 @@ export const STARTING_SCENE: Scene = {
   },
 
   materials: {},
+  assets: {},
 };

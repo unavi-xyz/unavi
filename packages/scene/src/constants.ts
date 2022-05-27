@@ -19,4 +19,5 @@ export const EMPTY_SCENE: Scene = {
   },
 
   materials: {},
+  assets: {},
 };

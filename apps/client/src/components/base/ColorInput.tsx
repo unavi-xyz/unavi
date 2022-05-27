@@ -14,7 +14,7 @@ export default function ColorInput({ inputRef, defaultValue, ...rest }: Props) {
 
   return (
     <label className="relative">
-      <div ref={displayRef} className="h-full px-6 border rounded-full" />
+      <div ref={displayRef} className="h-full px-6 border rounded" />
       <input
         ref={inputRef}
         onChange={(e) => {

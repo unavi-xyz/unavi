@@ -36,7 +36,7 @@ export default function FileBrowser() {
       if (directoryDiff.length > 0) setDirectoryHandles(directories);
     }
 
-    const interval = setInterval(readEntries, 2000);
+    const interval = setInterval(readEntries, 500);
 
     return () => clearInterval(interval);
   }, [directoryHandles, filesHandles, rootHandle, selectedDirectory]);

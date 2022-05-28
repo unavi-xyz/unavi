@@ -55,9 +55,11 @@ export async function findFilePathByName(
   directoryHandle: FileSystemDirectoryHandle,
   name: string
 ): Promise<string | undefined> {
+  const dirName = await directoryHandle.name;
+
   for await (const handle of directoryHandle.values()) {
     if (handle.kind === "file" && handle.name === name) {
-      return `/${name}`;
+      return `${dirName}/${name}`;
     }
   }
 
@@ -65,19 +67,32 @@ export async function findFilePathByName(
   for await (const handle of directoryHandle.values()) {
     if (handle.kind === "directory") {
       const foundPath = await findFilePathByName(handle, name);
-      if (foundPath) return `/${foundPath}`;
+      if (foundPath) return `${dirName}/${foundPath}`;
     }
   }
 }
 
-export async function readFileByPath(path: string) {
-  const root = useStudioStore.getState().rootHandle;
-  if (!root) return;
+export async function readFileByPath(
+  path: string,
+  directoryHandle: FileSystemDirectoryHandle
+): Promise<File | undefined> {
+  try {
+    const splitPath = path
+      .split("/")
+      .filter((p) => p !== "")
+      .splice(1);
 
-  const splitPath = path.split("/").filter((p) => p !== "");
+    if (splitPath.length === 1) {
+      const handle = await directoryHandle.getFileHandle(splitPath[0]);
+      const file = await handle.getFile();
+      return file;
+    }
 
-  const handle = await root.getFileHandle(splitPath[0]);
-  const file = await handle.getFile();
-
-  return file;
+    const handle = await directoryHandle.getDirectoryHandle(splitPath[0]);
+    const newPath = splitPath.join("/");
+    return await readFileByPath(newPath, handle);
+  } catch (err) {
+    console.error(err);
+    return;
+  }
 }

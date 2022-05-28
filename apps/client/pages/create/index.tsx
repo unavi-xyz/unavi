@@ -19,7 +19,7 @@ export default function Create() {
           <div className="space-y-2">
             <Link href="/studio">
               <div>
-                <Button variant="text" fullWidth squared>
+                <Button variant="tonal" fullWidth squared>
                   <div className="p-2 flex items-center justify-between text-lg">
                     <div>
                       <div className="flex">Studio</div>
@@ -34,7 +34,7 @@ export default function Create() {
               </div>
             </Link>
 
-            <Button variant="text" fullWidth squared>
+            <Button variant="tonal" fullWidth squared>
               <div className="p-2 flex items-center justify-between text-lg">
                 <div>
                   <div className="flex">Publish</div>

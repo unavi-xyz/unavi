@@ -30,7 +30,7 @@ export default function DirectoryRow({ handle }: Props) {
       if (directoryDiff.length > 0) setChildrenDirectories(directories);
     }
 
-    const interval = setInterval(readEntries, 2000);
+    const interval = setInterval(readEntries, 1000);
 
     return () => clearInterval(interval);
   }, [childrenDirectories, handle]);

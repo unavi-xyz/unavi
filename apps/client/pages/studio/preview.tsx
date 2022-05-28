@@ -34,20 +34,27 @@ export default function Preview() {
         return;
       }
 
-      const newProject = await produce(project, async (draft) => {
-        //fetch assets
-        await Promise.all(
-          Object.entries(draft.scene.assets).map(async ([id, asset]) => {
-            const file = await readFileByPath(asset.uri);
-            if (!file) return;
+      try {
+        const newProject = await produce(project, async (draft) => {
+          //fetch assets
+          await Promise.all(
+            Object.entries(draft.scene.assets).map(async ([id, asset]) => {
+              const root = useStudioStore.getState().rootHandle;
+              if (!root) return;
+              const file = await readFileByPath(asset.uri, root);
+              if (!file) return;
 
-            const url = URL.createObjectURL(file);
-            draft.scene.assets[id].data = url;
-          })
-        );
-      });
+              const url = URL.createObjectURL(file);
+              draft.scene.assets[id].data = url;
+            })
+          );
+        });
 
-      setLoadedProject(newProject);
+        setLoadedProject(newProject);
+      } catch (err) {
+        console.error(err);
+        setLoadedProject(undefined);
+      }
     }
 
     loadProject();

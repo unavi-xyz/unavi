@@ -18,7 +18,9 @@ export function useAutosave() {
 
     //fetch assets
     Object.entries(project.scene.assets).forEach(async ([id, asset]) => {
-      const file = await readFileByPath(asset.uri);
+      const root = useStudioStore.getState().rootHandle;
+      if (!root) return;
+      const file = await readFileByPath(asset.uri, root);
       if (!file) return;
 
       const url = URL.createObjectURL(file);

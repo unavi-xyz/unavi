@@ -6,7 +6,6 @@
 html {
   font-family: "Lato", sans-serif;
   @apply bg-background text-onBackground;
-  overflow-y: scroll;
 }
 
 .max-w {
@@ -51,4 +50,16 @@ html {
 
 .bg-position-move:hover {
   background-position: right;
+}
+
+/* react-split */
+.gutter.gutter-vertical {
+  cursor: row-resize;
+  @apply border-t;
+}
+
+.gutter.gutter-horizontal {
+  float: left;
+  height: calc(100%);
+  cursor: col-resize;
 }

@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import {
@@ -14,6 +15,8 @@ import ErrorBox from "../../base/ErrorBox";
 import TextField from "../../base/TextField";
 
 export default function CreateProfilePage() {
+  const router = useRouter();
+
   const [handle, setHandle] = useState<string>("");
   const [formHandle, setFormHandle] = useState<string>("");
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -22,7 +25,7 @@ export default function CreateProfilePage() {
   const { valid, error: validateError, fetching } = useValidateHandle(handle);
 
   const loading = fetching || formHandle !== handle || loadingSubmit;
-  const disabled = loading || !valid;
+  const disabled = !valid || handle === ".test";
 
   useEffect(() => {
     if (validateError) setError(validateError);
@@ -31,7 +34,7 @@ export default function CreateProfilePage() {
   useEffect(() => {
     //debounce handle input
     const timeout = setTimeout(() => {
-      setHandle(`${formHandle}.test`);
+      setHandle(`${formHandle}`);
 
       if (formHandle.length < 5 && formHandle.length > 0) {
         setError("Handle must be at least 5 characters");
@@ -45,7 +48,7 @@ export default function CreateProfilePage() {
   }, [formHandle]);
 
   async function handleSubmit() {
-    if (!disabled || loading) return;
+    if (disabled || loading) return;
     setLoadingSubmit(true);
 
     try {
@@ -61,8 +64,13 @@ export default function CreateProfilePage() {
 
       if (error) throw new Error(error.message);
 
+      const realHandle = `${handle}.test`;
+
       //log the user in
-      useLensStore.setState({ handle });
+      useLensStore.setState({ handle: realHandle });
+
+      //redirect to the profile page
+      router.push(`/user/${realHandle}`);
     } catch (err) {
       console.error(err);
       setError(err as any);
@@ -81,7 +89,7 @@ export default function CreateProfilePage() {
 
       <div className="space-y-4">
         <TextField
-          title="Username"
+          title="Handle"
           frontAdornment="@"
           maxLength={31}
           value={formHandle}

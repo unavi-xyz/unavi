@@ -2,7 +2,9 @@ import { Physics } from "@react-three/cannon";
 import { Sky } from "@react-three/drei";
 
 import { Scene } from "../types";
+import { AssetProvider } from "./AssetProvider";
 import { InstancedEntity } from "./InstancedEntity";
+import { MaterialProvider } from "./MaterialProvider";
 
 interface Props {
   scene: Scene;
@@ -16,7 +18,11 @@ export function InstancedScene({ scene, children }: Props) {
       <directionalLight intensity={1} position={[-1, 1.5, -2]} />
       <Sky />
 
-      <InstancedEntity entity={scene.tree} />
+      <AssetProvider assets={scene.assets}>
+        <MaterialProvider materials={scene.materials}>
+          <InstancedEntity entity={scene.tree} />
+        </MaterialProvider>
+      </AssetProvider>
 
       <group>{children}</group>
     </Physics>

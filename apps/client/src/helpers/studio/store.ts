@@ -1,3 +1,4 @@
+import produce from "immer";
 import { nanoid } from "nanoid";
 import { MutableRefObject } from "react";
 import { Group } from "three";
@@ -9,16 +10,20 @@ import { ENTITY_PRESETS } from "./presets";
 import { Tool } from "./types";
 
 export interface IStudioStore extends ISceneSlice {
-  id: string | undefined;
-  name: string | undefined;
+  rootHandle: FileSystemDirectoryHandle | undefined;
+  selectedDirectory: FileSystemDirectoryHandle | undefined;
+
   preview: boolean;
+  debug: boolean;
+
   tool: Tool;
   usingGizmo: boolean;
   selectedId: string | undefined;
 
-  openTreeObjects: Set<string>;
-  treeRefs: { [id: string]: MutableRefObject<Group | null> };
+  closedInspectMenus: string[];
+  toggleClosedInspectMenu: (name: string) => void;
 
+  treeRefs: { [id: string]: MutableRefObject<Group | null> };
   setRef: (id: string, ref: MutableRefObject<Group | null>) => void;
   removeRef: (id: string) => void;
 
@@ -26,15 +31,31 @@ export interface IStudioStore extends ISceneSlice {
 }
 
 export const useStudioStore = create<IStudioStore>((set, get) => ({
-  id: undefined,
-  name: undefined,
+  rootHandle: undefined,
+  selectedDirectory: undefined,
+
   preview: false,
+  debug: false,
+
   tool: "translate",
   usingGizmo: false,
   selectedId: undefined,
-
-  openTreeObjects: new Set(),
   treeRefs: {},
+
+  closedInspectMenus: [],
+
+  toggleClosedInspectMenu(name: string) {
+    set(
+      produce(get(), (draft) => {
+        const index = draft.closedInspectMenus.indexOf(name);
+        if (index > -1) {
+          draft.closedInspectMenus.splice(index, 1);
+        } else {
+          draft.closedInspectMenus.push(name);
+        }
+      })
+    );
+  },
 
   setRef(id: string, ref: MutableRefObject<Group | null>) {
     set({ treeRefs: { ...get().treeRefs, [id]: ref } });

@@ -38,7 +38,9 @@ export default function FileUpload({
       >
         <div className="flex items-center">
           <div className="px-3 py-2 rounded-l-lg">Choose File</div>
-          <div className="px-3 py-2">{file ? file.name : "No file chosen"}</div>
+          <div className="px-3 py-2 break-all">
+            {file ? file.name : "No file chosen"}
+          </div>
         </div>
       </label>
 

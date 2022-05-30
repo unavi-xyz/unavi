@@ -1,40 +1,66 @@
+import produce from "immer";
 import { useEffect } from "react";
 
-import {
-  getLocalSpace,
-  updateLocalSpace,
-} from "../../indexeddb/LocalSpace/helpers";
+import { readFileByPath, writeScene } from "../filesystem";
 import { useStudioStore } from "../store";
+import { useProject } from "./useProject";
 
 export function useAutosave() {
-  const id = useStudioStore((state) => state.id);
   const scene = useStudioStore((state) => state.scene);
+  const project = useProject();
 
-  // load initial space
+  //load initial space
   useEffect(() => {
-    if (!id) return;
+    if (!project) return;
 
-    getLocalSpace(id)
-      .then((localSpace) => {
-        if (!localSpace) return;
+    //set scene
+    useStudioStore.setState({ scene: project.scene });
 
-        useStudioStore.setState({
-          name: localSpace.name,
-          scene: localSpace.scene,
+    //fetch assets
+    Object.entries(project.scene.assets).forEach(async ([id, asset]) => {
+      const root = useStudioStore.getState().rootHandle;
+      if (!root) return;
+      const file = await readFileByPath(asset.uri, root);
+      if (!file) return;
+
+      const url = URL.createObjectURL(file);
+      useStudioStore.getState().updateAsset(id, { data: url });
+    });
+  }, [project]);
+
+  //autosave on scene change
+  useEffect(() => {
+    if (!project) return;
+
+    //this is a hack to prevent the autosave from triggering on the initial project load
+    //debounce autosave
+    const timeout = setTimeout(() => {
+      //remove unnecessary data from scene
+      const savedScene = produce(scene, (draft) => {
+        //get unused assets
+        const usedAssetIds = new Set();
+        Object.values(draft.materials).forEach((material) => {
+          if (material.textureId) usedAssetIds.add(material.textureId);
         });
-      })
-      .catch(console.error);
+
+        //remove usnused assets
+        Object.keys(draft.assets).forEach((id) => {
+          if (!usedAssetIds.has(id)) delete draft.assets[id];
+        });
+
+        //remove asset data
+        Object.entries(draft.assets).forEach(([id, asset]) => {
+          delete asset.data;
+        });
+      });
+
+      writeScene(savedScene).catch((err) => {
+        console.error(err);
+      });
+    }, 250);
 
     return () => {
-      useStudioStore.setState({
-        name: undefined,
-      });
+      clearTimeout(timeout);
     };
-  }, [id]);
-
-  // autosave on an interval
-  useEffect(() => {
-    if (!id) return;
-    updateLocalSpace(id, { scene });
-  }, [id, scene]);
+  }, [project, scene]);
 }

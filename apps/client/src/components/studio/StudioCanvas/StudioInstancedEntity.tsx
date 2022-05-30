@@ -1,3 +1,4 @@
+import { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { Group } from "three";
 
@@ -20,17 +21,18 @@ export default function StudioInstancedEntity({ entity }: Props) {
     return () => removeRef(entity.id);
   }, [entity, removeRef, setRef]);
 
+  function handlePointerUp(e: ThreeEvent<PointerEvent>) {
+    // @ts-ignore
+    if (e.button !== 0) return;
+    if (useStudioStore.getState().usingGizmo) return;
+    e.stopPropagation();
+    useStudioStore.setState({ selectedId: entity.id });
+  }
+
   return (
-    <group
-      onPointerUp={(e: any) => {
-        if (e.button !== 0) return;
-        if (useStudioStore.getState().usingGizmo) return;
-        e.stopPropagation();
-        useStudioStore.setState({ selectedId: entity.id });
-      }}
-    >
+    <group ref={ref} onPointerUp={handlePointerUp}>
       {entity && (
-        <EntityComponent ref={ref as any} entity={entity}>
+        <EntityComponent groupRef={ref as any} entity={entity}>
           {entity.children.map((child) => (
             <StudioInstancedEntity key={child.id} entity={child} />
           ))}

@@ -1,17 +1,14 @@
 import { useAtomValue } from "jotai";
 import { degToRad, radToDeg } from "three/src/math/MathUtils";
 
-import { selectedAtom } from "../../../helpers/studio/atoms";
-import { useStudioStore } from "../../../helpers/studio/store";
-import NumberInput from "./NumberInput";
-
-function round(value: number, digits = 3) {
-  return Math.round(value * 10 ** digits) / 10 ** digits;
-}
+import { selectedAtom } from "../../../../helpers/studio/atoms";
+import { useStudioStore } from "../../../../helpers/studio/store";
+import { round } from "../../../../helpers/utils/round";
+import NumberInput from "../NumberInput";
 
 const XYZ = ["X", "Y", "Z"];
 
-export default function Transform() {
+export default function TransformMenu() {
   const selected = useAtomValue(selectedAtom);
   const updateEntity = useStudioStore((state) => state.updateEntity);
 

@@ -29,6 +29,8 @@ const SPHERE_MESH: IMeshModule<"Sphere"> = {
   variation: "Sphere",
   props: {
     radius: 0.5,
+    heightSegments: 16,
+    widthSegments: 16,
   },
 };
 

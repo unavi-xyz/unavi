@@ -1,19 +1,20 @@
 {
   "name": "@wired-xr/client",
   "version": "0.0.0",
-  "license": "GPL-3.0-or-later",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "scripts": {
-    "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start",
+    "codegen": "graphql-codegen --config codegen.yml && typechain --target ethers-v5 --out-dir contracts '**/abis/*.json'",
+    "dev": "next dev -p 3000",
     "lint": "next lint",
-    "codegen": "graphql-codegen --config codegen.yml && typechain --target ethers-v5 --out-dir contracts '**/abis/*.json'"
+    "start": "next start"
   },
   "dependencies": {
     "@react-three/cannon": "^6.3.0",
     "@react-three/drei": "^9.6.2",
     "@react-three/fiber": "^8.0.13",
+    "@types/wicg-file-system-access": "^2020.9.5",
     "@wired-xr/avatar": "*",
     "@wired-xr/scene": "*",
     "ethers": "^5.6.4",
@@ -30,6 +31,7 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.1.0",
     "react-icons": "^4.3.1",
+    "react-split": "^2.0.14",
     "socket.io-client": "^4.4.1",
     "three": "^0.140.0",
     "urql": "^2.2.0",

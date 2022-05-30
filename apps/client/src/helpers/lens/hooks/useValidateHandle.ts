@@ -8,12 +8,11 @@ export function useValidateHandle(handle: string) {
 
   const [{ data, error: queryError, fetching }] = useGetProfileByHandleQuery({
     variables: { handle },
-    pause: handle.length < 10,
+    pause: handle.length < 5,
   });
 
   useEffect(() => {
-    //min of 5 characters, we are including the .test here so its 10
-    if (handle.length < 10) {
+    if (handle.length < 5) {
       setValid(false);
     }
   }, [handle]);

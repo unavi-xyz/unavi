@@ -9,7 +9,7 @@ export default function ObjectButton() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="h-full">
+    <div className="h-full aspect-square">
       <IconButton
         onClick={(e) => {
           e.stopPropagation();

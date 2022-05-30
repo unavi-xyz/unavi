@@ -16,9 +16,9 @@ export default function ObjectsMenu() {
               useStudioStore.setState({ selectedId: entity.id });
             }}
             className="w-full flex hover:bg-primaryContainer hover:text-onPrimaryContainer
-                       rounded-md px-3 py-1 transition"
+                       rounded-md px-4 py-1 transition items-center space-x-2"
           >
-            {primitive}
+            <div>{primitive}</div>
           </button>
         ))}
       </div>

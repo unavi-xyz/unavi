@@ -11,5 +11,5 @@ interface Props {
 
 export default function Module(props: Props) {
   const Component = MODULE_COMPONENTS[props.module.type];
-  return <Component {...props} />;
+  return <Component {...(props as any)} />;
 }

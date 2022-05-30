@@ -6,7 +6,7 @@ export const DEFAULT_TRANSFORM: Transform = {
   scale: [1, 1, 1],
 };
 
-export const DEFAULT_SCENE: Scene = {
+export const EMPTY_SCENE: Scene = {
   tree: {
     id: "root",
     name: "root",
@@ -17,4 +17,7 @@ export const DEFAULT_SCENE: Scene = {
     parentId: null,
     children: [],
   },
+
+  materials: {},
+  assets: {},
 };

@@ -119,7 +119,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
     isSelected || isOver
       ? "bg-primaryContainer text-onPrimaryContainer"
       : "hover:bg-surfaceVariant";
-  const paddingClass = isRoot ? "" : "ml-4";
+  const marginClass = isRoot ? "" : "ml-4";
   const opacityClass = isDragging ? "opacity-0" : "";
   const highlightAboveClass = isOverAbove ? "bg-secondaryContainer" : "";
   const highlightBelowClass = isOverBelow ? "bg-secondaryContainer" : "";
@@ -133,7 +133,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
       {!isRoot && (
         <div
           ref={dropAbove}
-          className={`h-2 ml-4 rounded-full ${highlightAboveClass} ${paddingClass}`}
+          className={`h-1 ml-4 rounded-full ${highlightAboveClass} ${marginClass}`}
         />
       )}
 
@@ -142,7 +142,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
         onMouseDown={() => {
           if (isRoot) useStudioStore.setState({ selectedId: undefined });
         }}
-        className={`h-full ${paddingClass}`}
+        className={`h-full ${marginClass}`}
       >
         {!isRoot && (
           <div
@@ -150,12 +150,12 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
               e.stopPropagation();
               useStudioStore.setState({ selectedId: entity.id });
             }}
-            className={`font-bold rounded-md px-2 transition flex items-center
+            className={`font-bold rounded-md px-2 transition-colors flex items-center
                         h-8 ${bgClass} ${opacityClass}`}
           >
             <div
               onClick={() => setOpen((prev) => !prev)}
-              className="w-5 text-neutral-500 hover:text-neutral-400"
+              className="w-5 text-outline hover:text-inherit transition"
             >
               {hasChildren &&
                 (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
@@ -174,7 +174,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
                     <TreeMenuItem entity={child} />
                     <div
                       ref={dropBelow}
-                      className={`h-2 ml-4 rounded-full ${highlightBelowClass} ${paddingClass}`}
+                      className={`h-1 ml-4 rounded-full ${highlightBelowClass} ${marginClass}`}
                     />
                   </div>
                 );

@@ -2,9 +2,9 @@ import { nanoid } from "nanoid";
 
 import { DEFAULT_TRANSFORM, Entity, Scene } from "@wired-xr/scene";
 
-import { ENTITY_PRESETS } from "../../studio/presets";
+import { ENTITY_PRESETS } from "./presets";
 
-export const LOCAL_SPACES_ID = "wired/local-spaces";
+export const PROJECT_FILE_NAME = "project.json";
 
 const BOX: Entity = ENTITY_PRESETS["Box"];
 
@@ -25,4 +25,7 @@ export const STARTING_SCENE: Scene = {
     parentId: null,
     children: [BOX],
   },
+
+  materials: {},
+  assets: {},
 };

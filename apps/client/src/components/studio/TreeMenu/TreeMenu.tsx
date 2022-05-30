@@ -6,11 +6,12 @@ export default function TreeMenu() {
   const tree = useStudioStore((state) => state.scene.tree);
 
   return (
-    <div className="h-full">
-      <div className="py-2 h-14 flex items-center justify-center border-b">
+    <div className="h-full flex flex-col">
+      <div className="py-2 h-14 flex items-center justify-center">
         <ObjectButton />
       </div>
-      <div className="py-4 pr-4 w-full h-full">
+
+      <div className="py-2 pr-4 w-full h-full">
         <TreeMenuItem entity={tree} isRoot />
       </div>
     </div>

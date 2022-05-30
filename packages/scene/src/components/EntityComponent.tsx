@@ -7,47 +7,41 @@ import Module from "./Module/Module";
 const tempVec3 = new Vector3();
 
 interface Props {
+  groupRef?: React.RefObject<Group>;
   entity: Entity;
   children: React.ReactNode;
 }
 
-export const EntityComponent = React.forwardRef<Group, Props>(
-  ({ entity, children }, ref) => {
-    const localRef = useRef<Group | null>(null);
+export function EntityComponent({
+  groupRef = React.createRef(),
+  entity,
+  children,
+}: Props) {
+  //set the transform whenever it changes
+  useEffect(() => {
+    if (!groupRef.current) return;
 
-    //set the transform whenever it changes
-    useEffect(() => {
-      if (!localRef.current) return;
-
-      localRef.current.position.fromArray(entity.transform.position);
-      localRef.current.scale.fromArray(entity.transform.scale);
-      localRef.current.rotation.setFromVector3(
-        tempVec3.fromArray(entity.transform.rotation)
-      );
-    }, [entity]);
-
-    function handleRef(node: Group | null) {
-      localRef.current = node;
-
-      if (typeof ref === "function") ref(localRef.current);
-      else if (ref) ref.current = node;
-    }
-
-    return (
-      <group ref={handleRef as any}>
-        <group>
-          {entity.modules.map((module) => (
-            <Module
-              key={module.id}
-              module={module}
-              entity={entity}
-              entityRef={localRef}
-            />
-          ))}
-        </group>
-
-        {children}
-      </group>
+    groupRef.current.position.fromArray(entity.transform.position);
+    groupRef.current.scale.fromArray(entity.transform.scale);
+    groupRef.current.rotation.setFromVector3(
+      tempVec3.fromArray(entity.transform.rotation)
     );
-  }
-);
+  }, [entity]);
+
+  return (
+    <group ref={groupRef as any}>
+      <group>
+        {entity.modules.map((module) => (
+          <Module
+            key={module.id}
+            module={module}
+            entity={entity}
+            entityRef={groupRef}
+          />
+        ))}
+      </group>
+
+      {children}
+    </group>
+  );
+}

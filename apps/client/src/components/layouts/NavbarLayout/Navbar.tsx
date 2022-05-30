@@ -20,7 +20,7 @@ export default function Navbar() {
 
   return (
     <div className="w-full h-full flex justify-center bg-surface">
-      <div className="max-w mx-8 flex items-center justify-between">
+      <div className="max-w mx-4 flex items-center justify-between">
         <div className="w-full">
           <div className="w-fit">
             <Link href="/" passHref>
@@ -37,7 +37,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        <div className="w-full flex items-center justify-center space-x-6">
+        <div className="w-full flex items-center justify-center space-x-2 md:space-x-6">
           <NavbarTab text="Home" href="/" />
           <NavbarTab text="Explore" href="/explore" />
           <NavbarTab text="Create" href="/create" />

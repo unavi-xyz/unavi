@@ -106,9 +106,9 @@ export default function User({ metadata, profile }: Props) {
       />
 
       <div className="flex justify-center">
-        <div className="max-w mx-8 flex space-x-12">
-          <div className="w-64 flex-shrink-0 space-y-6">
-            <div className="h-32">
+        <div className="max-w mx-4 pb-4 flex flex-col md:flex-row">
+          <div className="md:w-64 flex-shrink-0 space-y-6">
+            <div className="h-32 w-64">
               <div className="relative w-full">
                 <div
                   className="absolute -bottom-32 transform
@@ -189,7 +189,7 @@ export default function User({ metadata, profile }: Props) {
           </div>
 
           {spaces && spaces.length > 1 && (
-            <div className="w-full p-4 space-y-4">
+            <div className="w-full space-y-4 md:ml-12 pt-4">
               <div className="flex items-center justify-center w-full space-x-4">
                 <div className="text-xl font-bold rounded-lg px-3 py-1">
                   Spaces

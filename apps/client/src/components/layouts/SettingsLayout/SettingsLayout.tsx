@@ -30,8 +30,8 @@ export default function SettingsLayout({ children }: Props) {
         <title>Settings / The Wired</title>
       </Head>
 
-      <div className="max-w mx-8 my-8 flex">
-        <div className="pt-8 pr-8 space-y-4 w-full max-w-xs">
+      <div className="max-w mx-4 mb-4 flex flex-col md:flex-row">
+        <div className="pt-8 md:pr-8 space-y-4 w-full md:max-w-xs">
           <div className="flex space-x-4">
             <div className="w-20 flex flex-col justify-center">
               <ViewerProfilePicture circle />
@@ -67,7 +67,7 @@ export default function SettingsLayout({ children }: Props) {
           </Link>
         </div>
 
-        <div className="w-full">{children}</div>
+        <div className="w-full pt-4">{children}</div>
       </div>
     </div>
   );

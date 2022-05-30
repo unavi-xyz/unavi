@@ -2,13 +2,15 @@ import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLa
 
 export default function Index() {
   return (
-    <div className="flex justify-center py-8 mx-8">
+    <div className="flex justify-center py-8 mx-4">
       <div className="max-w space-y-8">
         <div
           className="flex flex-col justify-center items-center h-72 rounded-3xl
                    bg-primaryContainer text-onPrimaryContainer"
         >
-          <div className="text-4xl font-black">Welcome to The Wired 👋</div>
+          <div className="text-4xl font-black text-center">
+            Welcome to The Wired 👋
+          </div>
         </div>
 
         <div className="h-full flex space-x-8">

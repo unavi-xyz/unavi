@@ -236,14 +236,14 @@ export default function Settings() {
 
           {pfpUrl && (
             <div className="flex space-x-8">
-              <div className="w-40 h-40">
+              <div className="w-full aspect-square">
                 <img
                   src={pfpUrl}
                   alt="profile picture preview square"
                   className="object-cover rounded-xl h-full w-full border bg-neutral-100"
                 />
               </div>
-              <div className="w-40 h-40">
+              <div className="w-full aspect-square">
                 <img
                   src={pfpUrl}
                   alt="profile picture preview circle"

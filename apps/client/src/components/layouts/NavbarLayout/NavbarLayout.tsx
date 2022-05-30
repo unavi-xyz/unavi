@@ -7,7 +7,7 @@ interface Props {
 export default function NavbarLayout({ children }: Props) {
   return (
     <div className="flex flex-col items-center h-full overflow-y-scroll">
-      <div className="w-full h-14 fixed z-50">
+      <div className="fixed w-full h-14 z-30 md:pr-2">
         <Navbar />
       </div>
       <div className="w-full h-full pt-14">{children}</div>

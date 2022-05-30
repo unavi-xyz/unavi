@@ -46,7 +46,7 @@ export default function DirectoryRow({ handle }: Props) {
   }
 
   const hasChildren = childrenDirectories.length > 0;
-  const isSelected = selectedDirectory === handle;
+  const isSelected = selectedDirectory?.name === handle.name;
   const selectedClass = isSelected
     ? "bg-surfaceVariant"
     : "hover:bg-surfaceVariant";

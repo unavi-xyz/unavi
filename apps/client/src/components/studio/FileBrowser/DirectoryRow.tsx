@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 import { VscFolder, VscFolderOpened } from "react-icons/vsc";
 
-import { readDirectoryContents } from "../../../helpers/studio/filesystem";
+import {
+  compareDirectoryArrays,
+  readDirectoryContents,
+} from "../../../helpers/studio/filesystem";
 import { useStudioStore } from "../../../helpers/studio/store";
 
 interface Props {
@@ -23,14 +26,17 @@ export default function DirectoryRow({ handle }: Props) {
 
       const { directories } = await readDirectoryContents(handle);
 
-      const directoryDiff = directories
-        .filter((x) => !childrenDirectories.includes(x))
-        .concat(childrenDirectories.filter((x) => !directories.includes(x)));
+      const directoryDiff = compareDirectoryArrays(
+        childrenDirectories,
+        directories
+      );
 
       if (directoryDiff.length > 0) setChildrenDirectories(directories);
     }
 
-    const interval = setInterval(readEntries, 1000);
+    readEntries();
+
+    const interval = setInterval(readEntries, 2000);
 
     return () => clearInterval(interval);
   }, [childrenDirectories, handle]);

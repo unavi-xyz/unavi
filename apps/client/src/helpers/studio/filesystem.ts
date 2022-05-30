@@ -96,3 +96,37 @@ export async function readFileByPath(
     return;
   }
 }
+
+export function compareFileArrays(
+  a: FileSystemFileHandle[],
+  b: FileSystemFileHandle[]
+) {
+  const difference = a
+    .filter((aHandle) => {
+      return !b.some((bHandle) => bHandle.name === aHandle.name);
+    })
+    .concat(
+      b.filter((bHandle) => {
+        return !a.some((aHandle) => aHandle.name === bHandle.name);
+      })
+    );
+
+  return difference;
+}
+
+export function compareDirectoryArrays(
+  a: FileSystemDirectoryHandle[],
+  b: FileSystemDirectoryHandle[]
+) {
+  const difference = a
+    .filter((aHandle) => {
+      return !b.some((bHandle) => bHandle.name === aHandle.name);
+    })
+    .concat(
+      b.filter((bHandle) => {
+        return !a.some((aHandle) => aHandle.name === bHandle.name);
+      })
+    );
+
+  return difference;
+}

@@ -14,7 +14,7 @@ export default function DirectoryIcon({ handle }: Props) {
         <VscFolder />
       </div>
 
-      <div>{handle.name}</div>
+      <div className="break-all text-sm">{handle.name}</div>
     </div>
   );
 }

@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 
-import { readDirectoryContents } from "../../../helpers/studio/filesystem";
+import {
+  compareDirectoryArrays,
+  compareFileArrays,
+  readDirectoryContents,
+} from "../../../helpers/studio/filesystem";
 import { useStudioStore } from "../../../helpers/studio/store";
 import DirectoryIcon from "./DirectoryIcon";
 import DirectoryRow from "./DirectoryRow";
@@ -24,19 +28,19 @@ export default function FileBrowser() {
         directoryHandle
       );
 
-      const fileDiff = files
-        .filter((x) => !filesHandles.includes(x))
-        .concat(filesHandles.filter((x) => !files.includes(x)));
-
-      const directoryDiff = directories
-        .filter((x) => !directoryHandles.includes(x))
-        .concat(directoryHandles.filter((x) => !directories.includes(x)));
+      const fileDiff = compareFileArrays(filesHandles, files);
+      const directoryDiff = compareDirectoryArrays(
+        directoryHandles,
+        directories
+      );
 
       if (fileDiff.length > 0) setFilesHandles(files);
       if (directoryDiff.length > 0) setDirectoryHandles(directories);
     }
 
-    const interval = setInterval(readEntries, 500);
+    readEntries();
+
+    const interval = setInterval(readEntries, 2000);
 
     return () => clearInterval(interval);
   }, [directoryHandles, filesHandles, rootHandle, selectedDirectory]);

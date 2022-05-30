@@ -33,7 +33,7 @@ export default function FileIcon({ handle }: Props) {
         )}
       </div>
 
-      <div>{handle.name}</div>
+      <div className="break-all text-sm">{handle.name}</div>
     </div>
   );
 }

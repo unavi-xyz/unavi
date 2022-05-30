@@ -4,13 +4,17 @@ import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
+import { useLensStore } from "../../../helpers/lens/store";
 import { useProject } from "../../../helpers/studio/hooks/useProject";
 import { useStudioStore } from "../../../helpers/studio/store";
 import IconButton from "../../base/IconButton";
 import Tooltip from "../../base/Tooltip";
+import LoginButton from "../../layouts/NavbarLayout/LoginButton";
+import PublishButton from "./PublishButton";
 import ToolButton from "./ToolButton";
 
 export default function StudioNavbar() {
+  const handle = useLensStore((state) => state.handle);
   const debug = useStudioStore((state) => state.debug);
   const project = useProject();
 
@@ -65,6 +69,8 @@ export default function StudioNavbar() {
             </Link>
           </Tooltip>
         </div>
+
+        {handle ? <PublishButton /> : <LoginButton />}
       </div>
     </div>
   );

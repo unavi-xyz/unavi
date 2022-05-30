@@ -2,8 +2,8 @@ import Head from "next/head";
 import Link from "next/link";
 import { MdArrowBackIosNew } from "react-icons/md";
 
-import Button from "../../src/components/base/Button";
-import { getNavbarLayout } from "../../src/components/layouts/NavbarLayout/NavbarLayout";
+import Button from "../src/components/base/Button";
+import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
 
 export default function Create() {
   return (
@@ -33,17 +33,6 @@ export default function Create() {
                 </Button>
               </div>
             </Link>
-
-            <Button variant="tonal" fullWidth squared>
-              <div className="p-2 flex items-center justify-between text-lg">
-                <div>
-                  <div className="flex">Publish</div>
-                  <div className="flex font-normal">Mint a new space NFT</div>
-                </div>
-
-                <MdArrowBackIosNew className="rotate-180" />
-              </div>
-            </Button>
           </div>
         </div>
       </div>

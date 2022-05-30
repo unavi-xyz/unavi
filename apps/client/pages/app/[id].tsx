@@ -12,6 +12,7 @@ import SpaceProvider, {
   SpaceContext,
 } from "../../src/components/app/SpaceProvider";
 import { useAppHotkeys } from "../../src/helpers/app/hooks/useAppHotkeys";
+import { useLoadAssets } from "../../src/helpers/app/hooks/useLoadAssets";
 import { usePublication } from "../../src/helpers/lens/hooks/usePublication";
 
 export default function App() {
@@ -19,11 +20,11 @@ export default function App() {
   const id = router.query.id as string;
 
   const publication = usePublication(id);
-  const scene = publication?.metadata.content;
+  const loadedScene = useLoadAssets(publication?.metadata.content);
 
   useAppHotkeys();
 
-  if (!scene) return null;
+  if (!loadedScene || !publication) return null;
 
   return (
     <SpaceProvider spaceId={id}>
@@ -39,7 +40,7 @@ export default function App() {
         <Chat />
 
         <Bridge>
-          <InstancedScene scene={JSON.parse(scene)}>
+          <InstancedScene scene={loadedScene}>
             <Player />
             <MultiplayerManager spaceId={id} />
           </InstancedScene>

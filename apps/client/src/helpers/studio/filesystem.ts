@@ -30,7 +30,7 @@ export async function writeScene(scene: Scene) {
 
   const handle = await root.getFileHandle(PROJECT_FILE_NAME);
   const writableStream = await handle.createWritable();
-  await writableStream.write(JSON.stringify(newProject));
+  await writableStream.write(JSON.stringify(newProject, null, 2));
   await writableStream.close();
 }
 

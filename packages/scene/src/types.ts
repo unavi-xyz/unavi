@@ -1,66 +1,46 @@
 import { Triplet } from "@react-three/cannon";
 import { ComponentProps } from "react";
 
-import {
-  COLLIDER_COMPONENTS,
-  ColliderType,
-  MESH_COMPONENTS,
-  MeshType,
-  ModuleType,
-} from "./modules";
+import { Box } from "./components/entities/Box";
+import { Group } from "./components/entities/Group";
+import { Sphere } from "./components/entities/Sphere";
 
 //WELCOME TO THE MIND PALACE
 //WHERE WE PROGRAM THINGS THAT DONT EXIST
 
-//data
+//transform
 export type Transform = {
   position: Triplet;
   rotation: Triplet;
   scale: Triplet;
 };
 
-//module
-export interface BaseModule<T extends ModuleType = ModuleType> {
-  id: string;
-  type: T;
-  variation: string;
-  props: {};
-}
-
-export interface IMeshModule<V extends MeshType = MeshType>
-  extends BaseModule<"Mesh"> {
-  variation: V;
-
-  materialId?: string;
-  props: ComponentProps<typeof MESH_COMPONENTS[V]>;
-}
-
-export interface IColliderModule<V extends ColliderType = ColliderType>
-  extends BaseModule<"Collider"> {
-  variation: V;
-
-  props: ComponentProps<typeof COLLIDER_COMPONENTS[V]>;
-}
-
-export type IModule = IMeshModule | IColliderModule;
-
 //entity
-export type Entity = {
+export const ENTITY_COMPONENTS = {
+  Group: Group,
+  Box: Box,
+  Sphere: Sphere,
+};
+
+export type EntityType = keyof typeof ENTITY_COMPONENTS;
+
+export type Entity<T extends EntityType = EntityType> = {
+  type: T;
+
   id: string;
   name?: string;
 
-  transform: Transform;
-  modules: IModule[];
-
   parentId: string | null;
   children: Entity[];
+
+  transform: Transform;
+  props: ComponentProps<typeof ENTITY_COMPONENTS[T]>;
 };
 
-//material
-export type Material = {
-  id: string;
-  name: string;
+//assets
+export type Image = string;
 
+export type Material = {
   color: string;
   emissive: string;
   opacity: number;
@@ -70,17 +50,17 @@ export type Material = {
   textureId?: string;
 };
 
-export type Materials = {
-  [key: string]: Material;
+export type ASSET_TYPES = {
+  image: Image;
+  material: Material;
 };
 
-//asset
-export type AssetType = "image" | "model";
+export type AssetType = keyof ASSET_TYPES;
 
-export type Asset = {
-  type: AssetType;
+export type Asset<T extends AssetType = AssetType> = {
+  type: T;
   uri: string;
-  data?: string;
+  data?: ASSET_TYPES[T];
 };
 
 export type Assets = {
@@ -90,6 +70,5 @@ export type Assets = {
 //scene
 export type Scene = {
   tree: Entity;
-  materials: Materials;
   assets: Assets;
 };

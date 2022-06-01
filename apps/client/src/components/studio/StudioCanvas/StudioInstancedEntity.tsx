@@ -13,31 +13,28 @@ interface Props {
 export default function StudioInstancedEntity({ entity }: Props) {
   const ref = useRef<Group>(null);
 
-  const setRef = useStudioStore((state) => state.setRef);
-  const removeRef = useStudioStore((state) => state.removeRef);
-
   useEffect(() => {
-    setRef(entity.id, ref);
-    return () => removeRef(entity.id);
-  }, [entity, removeRef, setRef]);
+    useStudioStore.getState().setRef(entity.id, ref);
+    return () => useStudioStore.getState().removeRef(entity.id);
+  }, [entity]);
 
   function handlePointerUp(e: ThreeEvent<PointerEvent>) {
     // @ts-ignore
     if (e.button !== 0) return;
     if (useStudioStore.getState().usingGizmo) return;
+
+    //select the entity when clicked
     e.stopPropagation();
     useStudioStore.setState({ selectedId: entity.id });
   }
 
   return (
     <group ref={ref} onPointerUp={handlePointerUp}>
-      {entity && (
-        <EntityComponent groupRef={ref as any} entity={entity}>
-          {entity.children.map((child) => (
-            <StudioInstancedEntity key={child.id} entity={child} />
-          ))}
-        </EntityComponent>
-      )}
+      <EntityComponent groupRef={ref} entity={entity}>
+        {entity.children.map((child) => (
+          <StudioInstancedEntity key={child.id} entity={child} />
+        ))}
+      </EntityComponent>
     </group>
   );
 }

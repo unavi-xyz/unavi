@@ -1,12 +1,15 @@
-export * from "./src/components/EntityComponent";
-export * from "./src/components/InstancedEntity";
-export * from "./src/components/InstancedScene";
-export * from "./src/components/Module/Module";
-export * from "./src/components/MaterialProvider";
-export * from "./src/components/AssetProvider";
+import "@react-three/fiber";
+
+export * from "./src/components/entities/Box";
+export * from "./src/components/entities/Group";
+export * from "./src/components/entities/Sphere";
+
+export * from "./src/components/scene/AssetProvider";
+export * from "./src/components/scene/EntityComponent";
+export * from "./src/components/scene/InstancedEntity";
+export * from "./src/components/scene/InstancedScene";
 
 export * from "./src/constants";
-export * from "./src/helpers";
-export * from "./src/modules";
 export * from "./src/store";
 export * from "./src/types";
+export * from "./src/utils";

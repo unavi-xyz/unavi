@@ -3,7 +3,7 @@ import { OrbitControls, Sky } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 
-import { AssetProvider, MaterialProvider } from "@wired-xr/scene";
+import { AssetProvider } from "@wired-xr/scene";
 
 import { useStudioStore } from "../../../helpers/studio/store";
 import Gizmo from "./Gizmo";
@@ -13,7 +13,6 @@ import ToggleDebug from "./ToggleDebug";
 export default function StudioCanvas() {
   const debug = useStudioStore((state) => state.debug);
   const assets = useStudioStore((state) => state.scene.assets);
-  const materials = useStudioStore((state) => state.scene.materials);
   const tree = useStudioStore((state) => state.scene.tree);
 
   return (
@@ -40,9 +39,7 @@ export default function StudioCanvas() {
             </group>
 
             <AssetProvider assets={assets}>
-              <MaterialProvider materials={materials}>
-                <StudioInstancedEntity entity={tree} />
-              </MaterialProvider>
+              <StudioInstancedEntity entity={tree} />
             </AssetProvider>
           </group>
         </ToggleDebug>

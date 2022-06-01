@@ -10,22 +10,21 @@ const BOX: Entity = ENTITY_PRESETS["Box"];
 
 BOX.id = nanoid();
 BOX.parentId = "root";
-BOX.modules.forEach((item) => {
-  item.id = nanoid();
-});
 
 export const STARTING_SCENE: Scene = {
   tree: {
+    type: "Group",
+
     id: "root",
     name: "root",
 
     transform: DEFAULT_TRANSFORM,
-    modules: [],
 
     parentId: null,
     children: [BOX],
+
+    props: {},
   },
 
-  materials: {},
   assets: {},
 };

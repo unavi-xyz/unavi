@@ -30,7 +30,9 @@ export default function Gizmo() {
     const transform = { position, rotation, scale };
 
     //update the object state
-    useStudioStore.getState().updateEntity(selected?.id, { transform });
+    useStudioStore.getState().updateEntity(selected?.id, (draft) => {
+      draft.transform = transform;
+    });
   }
 
   return (

@@ -1,19 +1,19 @@
 import { useAtomValue } from "jotai";
 
 import { selectedAtom } from "../../../helpers/studio/atoms";
-import { useStudioStore } from "../../../helpers/studio/store";
-import CollapseMenu from "../../base/CollapseMenu";
-import GeometryMenu from "./menus/GeometryMenu";
-import MaterialMenu from "./menus/MaterialMenu";
-import TransformMenu from "./menus/TransformMenu";
+import EntityMenu from "./EntityMenu/EntityMenu";
+import MaterialMenu from "./MaterialMenu/MaterialMenu";
+import MenuBlock from "./MenuBlock";
+import TransformMenu from "./TransformMenu";
+
+const MATERIAL_TYPES = ["Box", "Sphere"];
 
 export default function InspectMenu() {
   const selected = useAtomValue(selectedAtom);
-  const closedInspectMenus = useStudioStore(
-    (state) => state.closedInspectMenus
-  );
 
   if (!selected) return null;
+
+  const hasMaterial = MATERIAL_TYPES.includes(selected.type);
 
   return (
     <div className="p-4 space-y-8 w-full">
@@ -21,35 +21,19 @@ export default function InspectMenu() {
         {selected.name}
       </div>
 
-      <CollapseMenu
-        open={!closedInspectMenus.includes("Transform")}
-        toggle={() =>
-          useStudioStore.getState().toggleClosedInspectMenu("Transform")
-        }
-        title="Transform"
-      >
+      <MenuBlock menuId="Transform">
         <TransformMenu />
-      </CollapseMenu>
+      </MenuBlock>
 
-      <CollapseMenu
-        open={!closedInspectMenus.includes("Geometry")}
-        toggle={() =>
-          useStudioStore.getState().toggleClosedInspectMenu("Geometry")
-        }
-        title="Geometry"
-      >
-        <GeometryMenu />
-      </CollapseMenu>
+      <MenuBlock menuId="Entity" title={selected.type}>
+        <EntityMenu />
+      </MenuBlock>
 
-      <CollapseMenu
-        open={!closedInspectMenus.includes("Material")}
-        toggle={() =>
-          useStudioStore.getState().toggleClosedInspectMenu("Material")
-        }
-        title="Material"
-      >
-        <MaterialMenu />
-      </CollapseMenu>
+      {hasMaterial && (
+        <MenuBlock menuId="Material">
+          <MaterialMenu />
+        </MenuBlock>
+      )}
     </div>
   );
 }

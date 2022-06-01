@@ -1,4 +1,4 @@
-import { Entity } from "../types";
+import { Entity } from "../../types";
 import { EntityComponent } from "./EntityComponent";
 
 interface Props {

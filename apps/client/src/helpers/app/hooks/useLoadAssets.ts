@@ -20,7 +20,14 @@ export function useLoadAssets(sceneString: string) {
               if (asset.uri.startsWith("ipfs://")) {
                 const hash = asset.uri.replace("ipfs://", "");
                 const data = await loadFromIpfs(hash);
-                draft.assets[key].data = data;
+
+                if (asset.type === "image") {
+                  draft.assets[key].data = data;
+                } else if (asset.type === "material") {
+                  const res = await fetch(data);
+                  const json = await res.json();
+                  draft.assets[key].data = json;
+                }
               }
             })
           );

@@ -1,3 +1,4 @@
+import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import Head from "next/head";
@@ -40,10 +41,12 @@ export default function App() {
         <Chat />
 
         <Bridge>
-          <InstancedScene scene={loadedScene}>
+          <Physics>
+            <InstancedScene scene={loadedScene} />
+
             <Player />
             <MultiplayerManager spaceId={id} />
-          </InstancedScene>
+          </Physics>
         </Bridge>
       </div>
     </SpaceProvider>

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Group } from "three";
 
 import { useGlobalTransform } from "../../../hooks/useGlobalTransform";
+import { SphereCollider } from "./SphereCollider";
 import { SphereMesh } from "./SphereMesh";
-import { SphereCollider } from "./Spherecollider";
 
 export interface SphereProps {
   radius?: number;

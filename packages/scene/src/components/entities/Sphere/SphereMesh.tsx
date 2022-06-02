@@ -17,7 +17,7 @@ export function SphereMesh({
   const material = useMaterial(materialId);
 
   return (
-    <mesh>
+    <mesh castShadow receiveShadow>
       <sphereBufferGeometry args={[radius, widthSegments, heightSegments]} />
       <Material {...material} />
     </mesh>

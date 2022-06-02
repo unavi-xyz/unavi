@@ -21,7 +21,7 @@ export function CylinderMesh({
   const material = useMaterial(materialId);
 
   return (
-    <mesh>
+    <mesh castShadow receiveShadow>
       <cylinderBufferGeometry
         args={[radiusTop, radiusBottom, height, radialSegments, 1, openEnded]}
       />

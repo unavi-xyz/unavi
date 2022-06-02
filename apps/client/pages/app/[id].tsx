@@ -40,23 +40,23 @@ export default function App() {
 
         <Chat />
 
-        <Bridge>
+        <CanvasBridge>
           <Physics>
             <InstancedScene scene={loadedScene} />
 
             <Player />
             <MultiplayerManager spaceId={id} />
           </Physics>
-        </Bridge>
+        </CanvasBridge>
       </div>
     </SpaceProvider>
   );
 }
 
-function Bridge({ children }: { children: React.ReactNode }) {
+function CanvasBridge({ children }: { children: React.ReactNode }) {
   const ContextBridge = useContextBridge(SpaceContext);
   return (
-    <Canvas>
+    <Canvas shadows>
       <ContextBridge>{children}</ContextBridge>
     </Canvas>
   );

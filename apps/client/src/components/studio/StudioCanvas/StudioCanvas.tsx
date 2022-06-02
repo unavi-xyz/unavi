@@ -17,7 +17,7 @@ export default function StudioCanvas() {
   const tree = useStudioStore((state) => state.scene.tree);
 
   return (
-    <Canvas gl={{ preserveDrawingBuffer: true }}>
+    <Canvas gl={{ preserveDrawingBuffer: true }} shadows>
       <group>
         {grid && <gridHelper args={[1000, 1000, 0x666666, 0x999999]} />}
 

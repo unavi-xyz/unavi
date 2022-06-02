@@ -80,7 +80,7 @@ export default function Preview() {
 
       <div className="crosshair" />
 
-      <Canvas className="w-full h-full">
+      <Canvas shadows className="w-full h-full">
         <Physics>
           <InstancedScene scene={loadedProject.scene} />
 

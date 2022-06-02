@@ -7,5 +7,5 @@ export function DirectionalLight({
   color = "#ffffff",
   intensity = 1,
 }: DirectionalLightProps) {
-  return <directionalLight args={[color, intensity]} />;
+  return <directionalLight castShadow args={[color, intensity]} />;
 }

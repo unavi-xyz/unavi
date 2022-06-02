@@ -11,5 +11,5 @@ export function PointLight({
   distance = 0,
   decay = 1,
 }: PointLightProps) {
-  return <pointLight args={[color, intensity, distance, decay]} />;
+  return <pointLight castShadow args={[color, intensity, distance, decay]} />;
 }

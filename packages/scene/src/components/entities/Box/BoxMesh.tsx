@@ -12,7 +12,7 @@ export function BoxMesh({ width, height, depth, materialId }: BoxMeshProps) {
   const material = useMaterial(materialId);
 
   return (
-    <mesh>
+    <mesh castShadow receiveShadow>
       <boxBufferGeometry args={[width, height, depth]} />
       <Material {...material} />
     </mesh>

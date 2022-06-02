@@ -21,7 +21,11 @@ export default function DirectoryIcon({ handle }: Props) {
         <VscFolder />
       </div>
 
-      <div className="break-all text-sm">{handle.name}</div>
+      <div className="w-24 flex justify-center text-sm group-hover:break-all">
+        <div className="text-ellipsis overflow-clip whitespace-nowrap group-hover:whitespace-normal">
+          {handle.name}
+        </div>
+      </div>
     </div>
   );
 }

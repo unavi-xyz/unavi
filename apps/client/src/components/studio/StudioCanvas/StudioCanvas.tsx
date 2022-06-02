@@ -19,9 +19,6 @@ export default function StudioCanvas() {
   return (
     <Canvas gl={{ preserveDrawingBuffer: true }}>
       <group>
-        <ambientLight intensity={0.2} />
-        <directionalLight intensity={1} position={[-1, 1.5, -2]} />
-
         {grid && <gridHelper args={[1000, 1000, 0x666666, 0x999999]} />}
 
         <CameraMover />

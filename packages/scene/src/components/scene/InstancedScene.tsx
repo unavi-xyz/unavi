@@ -12,10 +12,7 @@ export function InstancedScene({ scene }: Props) {
   return (
     <AssetProvider assets={scene.assets}>
       <InstancedEntity entity={scene.tree} />
-
       <Sky />
-      <ambientLight intensity={0.2} />
-      <directionalLight intensity={1} position={[-1, 1.5, -2]} />
     </AssetProvider>
   );
 }

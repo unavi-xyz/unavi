@@ -6,10 +6,13 @@ import { ALL_PRESETS } from "./presets";
 
 export const PROJECT_FILE_NAME = "project.json";
 
-const BOX: Entity = ALL_PRESETS["Box"];
+const box = ALL_PRESETS["Box"];
+box.id = nanoid();
+box.parentId = "root";
 
-BOX.id = nanoid();
-BOX.parentId = "root";
+const ambientLight = ALL_PRESETS["AmbientLight"];
+ambientLight.id = nanoid();
+ambientLight.parentId = "root";
 
 export const STARTING_SCENE: Scene = {
   tree: {
@@ -21,7 +24,7 @@ export const STARTING_SCENE: Scene = {
     transform: DEFAULT_TRANSFORM,
 
     parentId: null,
-    children: [BOX],
+    children: [box, ambientLight],
 
     props: {},
   },

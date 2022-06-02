@@ -10,12 +10,7 @@ export default function LightsButton() {
 
   return (
     <div className="h-full aspect-square">
-      <IconButton
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((prev) => !prev);
-        }}
-      >
+      <IconButton onClick={() => setOpen((prev) => !prev)}>
         <MdOutlineLightMode className="text-2xl" />
       </IconButton>
 

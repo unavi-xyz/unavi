@@ -11,10 +11,7 @@ export default function ProfileButton() {
     <div className="flex items-center space-x-2">
       <div className="relative">
         <div
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen((prev) => !prev);
-          }}
+          onClick={() => setOpen((prev) => !prev)}
           className="w-9 h-9 rounded-full border cursor-pointer"
         >
           <ViewerProfilePicture circle />

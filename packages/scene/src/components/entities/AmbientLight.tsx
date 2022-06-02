@@ -1,13 +1,11 @@
-export interface AmbientProps {
+export interface AmbientLightProps {
   color?: string;
   intensity?: number;
-  distance?: number;
-  decay?: number;
 }
 
 export function AmbientLight({
   color = "#ffffff",
   intensity = 1,
-}: AmbientProps) {
+}: AmbientLightProps) {
   return <ambientLight args={[color, intensity]} />;
 }

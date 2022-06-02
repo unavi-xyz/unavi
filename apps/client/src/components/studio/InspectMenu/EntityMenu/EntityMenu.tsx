@@ -12,6 +12,7 @@ import CylinderMenu from "./CylinderMenu";
 import ModelMenu from "./ModelMenu";
 import PointLightMenu from "./PointLightMenu";
 import SphereMenu from "./SphereMenu";
+import SpotLightMenu from "./SpotLightMenu";
 
 export default function EntityMenu() {
   const selected = useAtomValue(selectedAtom);
@@ -60,6 +61,10 @@ export default function EntityMenu() {
           selected={selected as any}
           handleChange={handleChange}
         />
+      );
+    case "SpotLight":
+      return (
+        <SpotLightMenu selected={selected as any} handleChange={handleChange} />
       );
     default:
       return null;

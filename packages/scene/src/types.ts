@@ -9,6 +9,7 @@ import { Group } from "./components/entities/Group";
 import { Model } from "./components/entities/Model/Model";
 import { PointLight } from "./components/entities/PointLight";
 import { Sphere } from "./components/entities/Sphere/Sphere";
+import { SpotLight } from "./components/entities/SpotLight";
 
 //WELCOME TO THE MIND PALACE
 //WHERE WE PROGRAM THINGS THAT DONT EXIST
@@ -31,6 +32,7 @@ export const ENTITY_COMPONENTS = {
   PointLight: PointLight,
   AmbientLight: AmbientLight,
   DirectionalLight: DirectionalLight,
+  SpotLight: SpotLight,
 };
 
 export type EntityType = keyof typeof ENTITY_COMPONENTS;

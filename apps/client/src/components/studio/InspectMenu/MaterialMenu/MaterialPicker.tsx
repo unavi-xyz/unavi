@@ -52,6 +52,7 @@ export default function MaterialPicker({ selected }: Props) {
       metalness: 0,
       flatShading: false,
       textureId: undefined,
+      side: "Front",
     };
 
     try {

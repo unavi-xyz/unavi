@@ -8,10 +8,10 @@ Rendered using `react-three-fiber`.
 
 A scene is a 3d environment, stored in a standardized JSON format.
 
-Scenes roughly follow an Entity-Component System structure, and will have support for scripting.
+Scenes are made up of primitive objects, such as "Box" and "Sphere".
 
-## WIP
+The idea is that you can safely load any untrusted scene into your app. The scene only describes itself at a high level through primitive objects. It is up to the client to turn the scene JSON into actual 3d objects. This allows the client to limit what the scene can do.
 
-The idea is that you can load any untrusted scene into your app without risk of crashing or privacy risks. Scene code will run in a web worker, and limit how many objects are loaded into the canvas to prevent spam / crashing.
+For example, maybe the client limits how many objects can be spawned in to prevent crashing. Or maybe the client only loads assets that are hosted over IPFS, to prevent the potential tracking of people who load the scene.
 
-Still figuring it out.
+Currently only static scenes are supported, but there are plans for dynamic physics as well as scripting.

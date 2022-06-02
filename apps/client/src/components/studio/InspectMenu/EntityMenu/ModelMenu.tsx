@@ -1,9 +1,9 @@
-import { MdOutlineFolderOpen } from "react-icons/md";
+import { MdClose, MdOutlineFolderOpen } from "react-icons/md";
 
 import { Entity } from "@wired-xr/scene";
 
+import { useAssetName } from "../../../../helpers/studio/hooks/useAssetName";
 import { useStudioStore } from "../../../../helpers/studio/store";
-import MenuRow from "../MenuRow";
 
 interface Props {
   selected: Entity<"Model">;
@@ -11,6 +11,10 @@ interface Props {
 }
 
 export default function ModelMenu({ selected, handleChange }: Props) {
+  //@ts-ignore
+  const modelId = selected.props?.modelId;
+  const modelName = useAssetName(modelId);
+
   async function handleSelectFile() {
     if (!selected?.id) return;
 
@@ -40,17 +44,41 @@ export default function ModelMenu({ selected, handleChange }: Props) {
     }
   }
 
+  async function handleRemoveModel() {
+    handleChange("modelId", undefined);
+  }
+
   return (
-    <MenuRow title="File">
-      <div className="flex space-x-2 py-1">
+    <div className="flex space-x-2 py-1">
+      <button
+        onClick={handleSelectFile}
+        className="px-4 py-1 border rounded flex items-center justify-center transition
+             hover:bg-surfaceVariant cursor-default"
+      >
+        <MdOutlineFolderOpen />
+      </button>
+
+      {modelId ? (
+        <div className="w-full flex relative">
+          <div>{modelName}</div>
+          <div className="absolute right-2 h-full">
+            <button
+              onClick={handleRemoveModel}
+              className="h-full cursor-default text-outline hover:text-inherit transition p-1"
+            >
+              <MdClose className="h-full" />
+            </button>
+          </div>
+        </div>
+      ) : (
         <button
           onClick={handleSelectFile}
-          className="px-4 py-1 border rounded flex items-center justify-center transition
-                   hover:bg-surfaceVariant cursor-default"
+          className="w-full flex items-center justify-center border rounded space-x-1
+                 cursor-default transition hover:bg-surfaceVariant"
         >
-          <MdOutlineFolderOpen />
+          <div>Select GLTF Model</div>
         </button>
-      </div>
-    </MenuRow>
+      )}
+    </div>
   );
 }

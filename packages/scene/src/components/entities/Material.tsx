@@ -1,5 +1,11 @@
 import { useEffect, useRef } from "react";
-import { MeshStandardMaterial, Texture } from "three";
+import {
+  BackSide,
+  DoubleSide,
+  FrontSide,
+  MeshStandardMaterial,
+  Texture,
+} from "three";
 
 export interface MaterialProps {
   color?: string;
@@ -8,6 +14,7 @@ export interface MaterialProps {
   roughness?: number;
   opacity?: number;
   flatShading?: boolean;
+  side?: "Front" | "Back" | "Double";
   map?: Texture;
 }
 
@@ -18,6 +25,7 @@ export function Material({
   roughness = 0.5,
   opacity = 1,
   flatShading = false,
+  side = "Front",
   map,
 }: MaterialProps) {
   const ref = useRef<MeshStandardMaterial>(null);
@@ -39,6 +47,9 @@ export function Material({
       transparent={transparent}
       flatShading={flatShading}
       map={map}
+      side={
+        side === "Front" ? FrontSide : side === "Back" ? BackSide : DoubleSide
+      }
     />
   );
 }

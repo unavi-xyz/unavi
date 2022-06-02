@@ -50,6 +50,7 @@ export interface IMaterial {
   roughness: number;
   metalness: number;
   flatShading: boolean;
+  side: "Front" | "Back" | "Double";
   textureId?: string;
 }
 

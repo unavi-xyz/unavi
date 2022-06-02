@@ -1,5 +1,5 @@
 import { WritableDraft } from "immer/dist/internal";
-import { useRef } from "react";
+import { ChangeEvent, useRef } from "react";
 import { MdClose } from "react-icons/md";
 
 import { Entity, IMaterial } from "@wired-xr/scene";
@@ -12,6 +12,7 @@ import {
 import { useStudioStore } from "../../../../helpers/studio/store";
 import { round } from "../../../../helpers/utils/round";
 import ColorInput from "../../../base/ColorInput";
+import Select from "../../../base/Select";
 import MenuRow from "../MenuRow";
 import NumberInput from "../NumberInput";
 
@@ -187,6 +188,19 @@ export default function MaterialProperties({ selected }: Props) {
               draft.flatShading = !e.target.checked;
             });
           }}
+        />
+      </MenuRow>
+
+      <MenuRow title="Side">
+        <Select
+          defaultValue={material.side}
+          options={["Front", "Back", "Double"]}
+          thin
+          onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+            updateMaterial((draft) => {
+              draft.side = e.target.value as IMaterial["side"];
+            })
+          }
         />
       </MenuRow>
 

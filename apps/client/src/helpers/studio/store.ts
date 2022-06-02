@@ -9,8 +9,8 @@ import {
   Asset,
   AssetType,
   Entity,
+  IMaterial,
   ISceneSlice,
-  Material,
   createSceneSlice,
   findEntityById,
 } from "@wired-xr/scene";
@@ -49,7 +49,7 @@ export interface IStudioStore extends ISceneSlice {
 
   updateMaterialFile: (
     assetId: string,
-    callback: (draft: WritableDraft<Material>) => void
+    callback: (draft: WritableDraft<IMaterial>) => void
   ) => Promise<void>;
 
   getAssetFileName: (assetId: string) => Promise<string | undefined>;
@@ -144,7 +144,7 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
 
   async updateMaterialFile(
     assetId: string,
-    callback: (draft: WritableDraft<Material>) => void
+    callback: (draft: WritableDraft<IMaterial>) => void
   ) {
     //get asset
     const asset = get().scene.assets[assetId];
@@ -162,7 +162,7 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
     if (!file) throw new Error("Failed to read file");
 
     const text = await file.text();
-    const json = JSON.parse(text) as Material;
+    const json = JSON.parse(text) as IMaterial;
 
     //update json
     const newJson = produce(json, callback);
@@ -213,7 +213,7 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
       const file = await fileHandle.getFile();
       if (!file) throw new Error("Failed to read file");
 
-      if (asset.type === "image") {
+      if (asset.type === "image" || asset.type === "model") {
         const url = URL.createObjectURL(file);
         asset.data = url;
       } else if (asset.type === "material") {

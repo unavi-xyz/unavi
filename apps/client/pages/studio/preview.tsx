@@ -48,7 +48,7 @@ export default function Preview() {
               const file = await fileHandle.getFile();
               if (!file) throw new Error("Failed to read file");
 
-              if (asset.type === "image") {
+              if (asset.type === "image" || asset.type === "model") {
                 const url = URL.createObjectURL(file);
                 draft.scene.assets[id].data = url;
               } else if (asset.type === "material") {

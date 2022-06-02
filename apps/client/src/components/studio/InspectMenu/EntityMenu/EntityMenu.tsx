@@ -7,14 +7,15 @@ import { findEntityById } from "@wired-xr/scene";
 import { selectedAtom } from "../../../../helpers/studio/atoms";
 import { useStudioStore } from "../../../../helpers/studio/store";
 import BoxMenu from "./BoxMenu";
+import ModelMenu from "./ModelMenu";
 import SphereMenu from "./SphereMenu";
 
 export default function EntityMenu() {
   const selected = useAtomValue(selectedAtom);
-  const scene = useStudioStore((state) => state.scene);
 
   function handleChange(key: string, value: any) {
     if (!selected) return;
+    const scene = useStudioStore.getState().scene;
 
     const newScene = produce(scene, (draft) => {
       const found = findEntityById(draft.tree, selected.id);
@@ -27,16 +28,18 @@ export default function EntityMenu() {
     useStudioStore.setState({ scene: newScene });
   }
 
-  if (!selected) return null;
-
-  if (selected.type === "Box") {
-    return <BoxMenu selected={selected as any} handleChange={handleChange} />;
+  switch (selected?.type) {
+    case "Box":
+      return <BoxMenu selected={selected as any} handleChange={handleChange} />;
+    case "Sphere":
+      return (
+        <SphereMenu selected={selected as any} handleChange={handleChange} />
+      );
+    case "Model":
+      return (
+        <ModelMenu selected={selected as any} handleChange={handleChange} />
+      );
+    default:
+      return null;
   }
-
-  if (selected.type === "Sphere")
-    return (
-      <SphereMenu selected={selected as any} handleChange={handleChange} />
-    );
-
-  return null;
 }

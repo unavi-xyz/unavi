@@ -21,7 +21,7 @@ export function useLoadAssets(sceneString: string) {
                 const hash = asset.uri.replace("ipfs://", "");
                 const data = await loadFromIpfs(hash);
 
-                if (asset.type === "image") {
+                if (asset.type === "image" || asset.type === "model") {
                   draft.assets[key].data = data;
                 } else if (asset.type === "material") {
                   const res = await fetch(data);

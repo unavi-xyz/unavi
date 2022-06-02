@@ -2,7 +2,7 @@ import { WritableDraft } from "immer/dist/internal";
 import { useRef } from "react";
 import { MdClose } from "react-icons/md";
 
-import { Entity, Material } from "@wired-xr/scene";
+import { Entity, IMaterial } from "@wired-xr/scene";
 
 import {
   useAsset,
@@ -31,15 +31,21 @@ export default function MaterialProperties({ selected }: Props) {
   const debounceRef = useRef<any>(null);
 
   function updateMaterial(
-    callback: (draft: WritableDraft<Material>) => void,
+    callback: (draft: WritableDraft<IMaterial>) => void,
     delay = 0
   ) {
     const debounce = setTimeout(async () => {
-      //update material
-      await useStudioStore.getState().updateMaterialFile(materialId, callback);
+      try {
+        //update material
+        await useStudioStore
+          .getState()
+          .updateMaterialFile(materialId, callback);
 
-      //load material
-      await useStudioStore.getState().loadAsset(materialId, true);
+        //load material
+        await useStudioStore.getState().loadAsset(materialId, true);
+      } catch (error) {
+        console.error(error);
+      }
     }, delay);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);

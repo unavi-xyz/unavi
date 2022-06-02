@@ -27,4 +27,17 @@ export const ENTITY_PRESETS: { [key: string]: Entity } = {
 
     props: {},
   },
+  Model: {
+    type: "Model",
+
+    id: "",
+    name: "Model",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
 };

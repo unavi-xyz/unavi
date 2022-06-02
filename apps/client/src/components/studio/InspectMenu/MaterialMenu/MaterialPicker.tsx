@@ -1,6 +1,6 @@
 import { MdClose, MdOutlineAdd, MdOutlineFolderOpen } from "react-icons/md";
 
-import { Entity, Material } from "@wired-xr/scene";
+import { Entity, IMaterial } from "@wired-xr/scene";
 
 import { useAssetName } from "../../../../helpers/studio/hooks/useAssetName";
 import { useStudioStore } from "../../../../helpers/studio/store";
@@ -44,7 +44,7 @@ export default function MaterialPicker({ selected }: Props) {
   async function handleNewMaterial() {
     if (!selected?.id) return;
 
-    const newMaterial: Material = {
+    const newMaterial: IMaterial = {
       color: "#ffffff",
       emissive: "#000000",
       opacity: 1,

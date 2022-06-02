@@ -3,6 +3,7 @@ import { ComponentProps } from "react";
 
 import { Box } from "./components/entities/Box/Box";
 import { Group } from "./components/entities/Group";
+import { Model } from "./components/entities/Model/Model";
 import { Sphere } from "./components/entities/Sphere/Sphere";
 
 //WELCOME TO THE MIND PALACE
@@ -20,11 +21,12 @@ export const ENTITY_COMPONENTS = {
   Group: Group,
   Box: Box,
   Sphere: Sphere,
+  Model: Model,
 };
 
 export type EntityType = keyof typeof ENTITY_COMPONENTS;
 
-export type Entity<T extends EntityType = EntityType> = {
+export interface Entity<T extends EntityType = EntityType> {
   type: T;
 
   id: string;
@@ -35,12 +37,11 @@ export type Entity<T extends EntityType = EntityType> = {
 
   transform: Transform;
   props: ComponentProps<typeof ENTITY_COMPONENTS[T]>;
-};
+}
 
 //assets
-export type Image = string;
 
-export type Material = {
+export interface IMaterial {
   color: string;
   emissive: string;
   opacity: number;
@@ -48,27 +49,28 @@ export type Material = {
   metalness: number;
   flatShading: boolean;
   textureId?: string;
-};
+}
 
-export type ASSET_TYPES = {
-  image: Image;
-  material: Material;
-};
+export interface ASSET_TYPES {
+  image: string;
+  material: IMaterial;
+  model: string;
+}
 
 export type AssetType = keyof ASSET_TYPES;
 
-export type Asset<T extends AssetType = AssetType> = {
+export interface Asset<T extends AssetType = AssetType> {
   type: T;
   uri: string;
   data?: ASSET_TYPES[T];
-};
+}
 
-export type Assets = {
+export interface Assets {
   [key: string]: Asset;
-};
+}
 
 //scene
-export type Scene = {
+export interface Scene {
   tree: Entity;
   assets: Assets;
-};
+}

@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import { traverseTree } from "@wired-xr/scene";
 
-import { writeScene } from "../filesystem";
+import { getFileByPath, writeScene } from "../filesystem";
 import { useStudioStore } from "../store";
 import { useProject } from "./useProject";
 
@@ -28,27 +28,55 @@ export function useAutosave() {
     const timeout = setTimeout(() => {
       //load new assets
       Object.keys(project.scene.assets).forEach(async (id) => {
-        await useStudioStore.getState().loadAsset(id);
+        try {
+          await useStudioStore.getState().loadAsset(id);
+        } catch (e) {
+          console.error(e);
+        }
       });
 
       //remove unnecessary data from scene
       const savedScene = produce(scene, (draft) => {
-        //get all used materials
-        const usedMaterials = new Set<string>();
+        //get used assets
+        const usedAssets = new Set<string>();
         traverseTree(draft.tree, (entity) => {
           //@ts-ignore
           const materialId = entity.props?.materialId;
-          if (materialId) usedMaterials.add(materialId);
+          //@ts-ignore
+          const modelId = entity.props?.modelId;
+
+          if (materialId) usedAssets.add(materialId);
+          if (modelId) usedAssets.add(modelId);
         });
 
+        //get used textures
+        const usedTextures = new Set<string>();
         Object.entries(draft.assets).forEach(([id, asset]) => {
-          //remove unused materials
-          if (asset.type === "material" && !usedMaterials.has(id)) {
-            delete draft.assets[id];
-            return;
+          if (asset.type === "material") {
+            //@ts-ignore
+            const textureId = asset.data?.textureId;
+            if (textureId) usedTextures.add(textureId);
+          }
+        });
+
+        //remove data that is not used
+        Object.entries(draft.assets).forEach(([id, asset]) => {
+          //remove asset if not used
+          if (asset.type === "material" || asset.type === "model") {
+            if (!usedAssets.has(id)) {
+              delete draft.assets[id];
+              return;
+            }
           }
 
-          //remove asset data
+          if (asset.type === "image") {
+            if (!usedTextures.has(id)) {
+              delete draft.assets[id];
+              return;
+            }
+          }
+
+          //else just remove data
           if (asset.data) delete draft.assets[id].data;
         });
       });

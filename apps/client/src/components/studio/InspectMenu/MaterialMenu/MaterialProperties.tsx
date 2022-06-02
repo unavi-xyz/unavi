@@ -1,5 +1,6 @@
 import { WritableDraft } from "immer/dist/internal";
 import { useRef } from "react";
+import { MdClose } from "react-icons/md";
 
 import { Entity, Material } from "@wired-xr/scene";
 
@@ -120,6 +121,12 @@ export default function MaterialProperties({ selected }: Props) {
     }
   }
 
+  async function handleRemoveTexture() {
+    updateMaterial((draft) => {
+      draft.textureId = undefined;
+    });
+  }
+
   if (!material) return null;
 
   return (
@@ -178,13 +185,26 @@ export default function MaterialProperties({ selected }: Props) {
       </MenuRow>
 
       <MenuRow title="Texture">
-        <div onClick={handleTextureClick} className="border w-12 h-6 rounded">
-          {textureAsset?.data && (
-            <img
-              src={textureAsset.data}
-              alt="texture preview"
-              className="w-full h-full object-cover rounded"
-            />
+        <div className="w-full flex relative">
+          <div onClick={handleTextureClick} className="border w-12 h-6 rounded">
+            {textureAsset?.data && (
+              <img
+                src={textureAsset.data}
+                alt="texture preview"
+                className="w-full h-full object-cover rounded"
+              />
+            )}
+          </div>
+
+          {material?.textureId && (
+            <div className="absolute right-2 h-full">
+              <button
+                onClick={handleRemoveTexture}
+                className="h-full cursor-default text-outline hover:text-inherit transition p-1"
+              >
+                <MdClose className="h-full" />
+              </button>
+            </div>
           )}
         </div>
       </MenuRow>

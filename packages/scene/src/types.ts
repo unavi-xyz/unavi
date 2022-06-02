@@ -1,9 +1,9 @@
 import { Triplet } from "@react-three/cannon";
 import { ComponentProps } from "react";
 
-import { Box } from "./components/entities/Box";
+import { Box } from "./components/entities/Box/Box";
 import { Group } from "./components/entities/Group";
-import { Sphere } from "./components/entities/Sphere";
+import { Sphere } from "./components/entities/Sphere/Sphere";
 
 //WELCOME TO THE MIND PALACE
 //WHERE WE PROGRAM THINGS THAT DONT EXIST

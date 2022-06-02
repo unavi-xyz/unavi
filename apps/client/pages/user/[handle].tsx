@@ -196,7 +196,7 @@ export default function User({ metadata, profile }: Props) {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="grid md:grid-cols-2 gap-2">
                 {spaces?.map((space) => (
                   <div key={space.id}>
                     <Link href={`/space/${space.id}`} passHref>

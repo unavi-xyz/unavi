@@ -1,8 +1,8 @@
 import "@react-three/fiber";
 
-export * from "./src/components/entities/Box";
+export * from "./src/components/entities/Box/Box";
 export * from "./src/components/entities/Group";
-export * from "./src/components/entities/Sphere";
+export * from "./src/components/entities/Sphere/Sphere";
 
 export * from "./src/components/scene/AssetProvider";
 export * from "./src/components/scene/EntityComponent";

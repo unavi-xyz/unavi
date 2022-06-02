@@ -32,7 +32,9 @@ export function useGlobalTransform(ref: RefObject<Object3D>) {
       if (!isEqual) setTransform(newTransform);
     }
 
+    //update immediately
     const timeout = setTimeout(updateTransform, 0);
+    //update on a timer
     const interval = setInterval(updateTransform, 500);
 
     return () => {

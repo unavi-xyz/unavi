@@ -1,95 +1,91 @@
 import { Triplet } from "@react-three/cannon";
 import { ComponentProps } from "react";
 
-import {
-  COLLIDER_COMPONENTS,
-  ColliderType,
-  MESH_COMPONENTS,
-  MeshType,
-  ModuleType,
-} from "./modules";
+import { AmbientLight } from "./components/entities/AmbientLight";
+import { Box } from "./components/entities/Box/Box";
+import { Cylinder } from "./components/entities/Cylinder/Cylinder";
+import { DirectionalLight } from "./components/entities/DirectionalLight";
+import { Group } from "./components/entities/Group";
+import { Model } from "./components/entities/Model/Model";
+import { PointLight } from "./components/entities/PointLight";
+import { Sphere } from "./components/entities/Sphere/Sphere";
+import { SpotLight } from "./components/entities/SpotLight";
+import { Text } from "./components/entities/Text";
 
 //WELCOME TO THE MIND PALACE
 //WHERE WE PROGRAM THINGS THAT DONT EXIST
 
-//data
+//transform
 export type Transform = {
   position: Triplet;
   rotation: Triplet;
   scale: Triplet;
 };
 
-//module
-export interface BaseModule<T extends ModuleType = ModuleType> {
-  id: string;
-  type: T;
-  variation: string;
-  props: {};
-}
-
-export interface IMeshModule<V extends MeshType = MeshType>
-  extends BaseModule<"Mesh"> {
-  variation: V;
-
-  materialId?: string;
-  props: ComponentProps<typeof MESH_COMPONENTS[V]>;
-}
-
-export interface IColliderModule<V extends ColliderType = ColliderType>
-  extends BaseModule<"Collider"> {
-  variation: V;
-
-  props: ComponentProps<typeof COLLIDER_COMPONENTS[V]>;
-}
-
-export type IModule = IMeshModule | IColliderModule;
-
 //entity
-export type Entity = {
+export const ENTITY_COMPONENTS = {
+  Group: Group,
+  Box: Box,
+  Sphere: Sphere,
+  Cylinder: Cylinder,
+  Model: Model,
+
+  PointLight: PointLight,
+  AmbientLight: AmbientLight,
+  DirectionalLight: DirectionalLight,
+  SpotLight: SpotLight,
+
+  Text: Text,
+};
+
+export type EntityType = keyof typeof ENTITY_COMPONENTS;
+
+export interface Entity<T extends EntityType = EntityType> {
+  type: T;
+
   id: string;
   name?: string;
 
-  transform: Transform;
-  modules: IModule[];
-
   parentId: string | null;
   children: Entity[];
-};
 
-//material
-export type Material = {
-  id: string;
-  name: string;
+  transform: Transform;
+  props: ComponentProps<typeof ENTITY_COMPONENTS[T]>;
+}
 
+//assets
+
+export interface IMaterial {
   color: string;
   emissive: string;
   opacity: number;
   roughness: number;
   metalness: number;
   flatShading: boolean;
+  side: "Front" | "Back" | "Double";
   textureId?: string;
-};
+}
 
-export type Materials = {
-  [key: string]: Material;
-};
+export interface ASSET_TYPES {
+  image: string;
+  material: IMaterial;
+  model: string;
+}
 
-//asset
-export type AssetType = "image" | "model";
+export type AssetType = keyof ASSET_TYPES;
 
-export type Asset = {
-  type: AssetType;
+export interface Asset<T extends AssetType = AssetType> {
+  type: T;
   uri: string;
-  data?: string;
-};
+  data?: ASSET_TYPES[T];
+}
 
-export type Assets = {
+export interface Assets {
   [key: string]: Asset;
-};
+}
 
 //scene
-export type Scene = {
+export interface Scene {
   tree: Entity;
-  materials: Materials;
   assets: Assets;
-};
+}

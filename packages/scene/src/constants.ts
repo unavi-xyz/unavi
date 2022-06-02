@@ -8,16 +8,17 @@ export const DEFAULT_TRANSFORM: Transform = {
 
 export const EMPTY_SCENE: Scene = {
   tree: {
+    type: "Group",
+
     id: "root",
     name: "root",
 
-    transform: DEFAULT_TRANSFORM,
-    modules: [],
-
     parentId: null,
     children: [],
+
+    transform: DEFAULT_TRANSFORM,
+    props: {},
   },
 
-  materials: {},
   assets: {},
 };

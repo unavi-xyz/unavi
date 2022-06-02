@@ -15,13 +15,14 @@ export default function Card({ image, text, subtext }: Props) {
           <img
             src={image}
             alt="card image"
+            draggable={false}
             className="w-full h-full object-cover group-hover:scale-110
                        transition duration-500 ease-in-out"
           />
         )}
       </div>
 
-      <div className="space-y-2 py-3">
+      <div className="space-y-2 pt-2">
         {text && <div className="px-1 text-xl overflow-hidden">{text}</div>}
         {subtext && (
           <div className="px-1 text-lg overflow-hidden">{subtext}</div>

@@ -1,3 +1,4 @@
+import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import Head from "next/head";
@@ -39,21 +40,23 @@ export default function App() {
 
         <Chat />
 
-        <Bridge>
-          <InstancedScene scene={loadedScene}>
+        <CanvasBridge>
+          <Physics>
+            <InstancedScene scene={loadedScene} />
+
             <Player />
             <MultiplayerManager spaceId={id} />
-          </InstancedScene>
-        </Bridge>
+          </Physics>
+        </CanvasBridge>
       </div>
     </SpaceProvider>
   );
 }
 
-function Bridge({ children }: { children: React.ReactNode }) {
+function CanvasBridge({ children }: { children: React.ReactNode }) {
   const ContextBridge = useContextBridge(SpaceContext);
   return (
-    <Canvas>
+    <Canvas shadows>
       <ContextBridge>{children}</ContextBridge>
     </Canvas>
   );

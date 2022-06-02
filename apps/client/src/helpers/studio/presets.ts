@@ -1,65 +1,143 @@
-import {
-  DEFAULT_TRANSFORM,
-  Entity,
-  IColliderModule,
-  IMeshModule,
-} from "@wired-xr/scene";
+import { DEFAULT_TRANSFORM, Entity } from "@wired-xr/scene";
 
-const BOX_MESH: IMeshModule<"Box"> = {
-  id: "",
-  type: "Mesh",
-  variation: "Box",
-  props: {
-    width: 1,
-    height: 1,
-    depth: 1,
-  },
-};
-
-const BOX_COLLIDER: IColliderModule<"Box"> = {
-  id: "",
-  type: "Collider",
-  variation: "Box",
-  props: { width: 1, height: 1, depth: 1, transform: DEFAULT_TRANSFORM },
-};
-
-const SPHERE_MESH: IMeshModule<"Sphere"> = {
-  id: "",
-  type: "Mesh",
-  variation: "Sphere",
-  props: {
-    radius: 0.5,
-    heightSegments: 16,
-    widthSegments: 16,
-  },
-};
-
-const SPHERE_COLLIDER: IColliderModule<"Sphere"> = {
-  id: "",
-  type: "Collider",
-  variation: "Sphere",
-  props: { radius: 0.5, transform: DEFAULT_TRANSFORM },
-};
-
-export const ENTITY_PRESETS: { [key: string]: Entity } = {
+export const ALL_PRESETS: {
+  [key: string]: Entity;
+} = {
   Box: {
+    type: "Box",
+
     id: "",
     name: "Box",
 
     transform: DEFAULT_TRANSFORM,
-    modules: [BOX_MESH, BOX_COLLIDER],
 
     parentId: null,
     children: [],
+
+    props: {},
   },
   Sphere: {
+    type: "Sphere",
+
     id: "",
     name: "Sphere",
 
     transform: DEFAULT_TRANSFORM,
-    modules: [SPHERE_MESH, SPHERE_COLLIDER],
 
     parentId: null,
     children: [],
+
+    props: {},
   },
+  Cylinder: {
+    type: "Cylinder",
+
+    id: "",
+    name: "Cylinder",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
+  Model: {
+    type: "Model",
+
+    id: "",
+    name: "Model",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
+  PointLight: {
+    type: "PointLight",
+
+    id: "",
+    name: "Point Light",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
+  AmbientLight: {
+    type: "AmbientLight",
+
+    id: "",
+    name: "Ambient Light",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
+  DirectionalLight: {
+    type: "DirectionalLight",
+
+    id: "",
+    name: "Directional Light",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
+  SpotLight: {
+    type: "SpotLight",
+
+    id: "",
+    name: "Spot Light",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
+  Text: {
+    type: "Text",
+
+    id: "",
+    name: "Text",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
+};
+
+export type Preset = keyof typeof ALL_PRESETS;
+
+export const OBJECT_PRESETS: { [key: string]: Preset } = {
+  Box: "Box",
+  Sphere: "Sphere",
+  Cylinder: "Cylinder",
+  Model: "Model",
+};
+
+export const LIGHTS_PRESETS: { [key: string]: Preset } = {
+  ["Point Light"]: "PointLight",
+  ["Ambient Light"]: "AmbientLight",
+  ["Directional Light"]: "DirectionalLight",
+  ["Spot Light"]: "SpotLight",
+};
+
+export const SPECIALS_PRESETS: { [key: string]: Preset } = {
+  Text: "Text",
 };

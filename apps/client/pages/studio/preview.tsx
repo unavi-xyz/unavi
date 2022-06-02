@@ -1,3 +1,4 @@
+import { Physics } from "@react-three/cannon";
 import { Canvas } from "@react-three/fiber";
 import produce from "immer";
 import Head from "next/head";
@@ -9,7 +10,7 @@ import { MdClose } from "react-icons/md";
 import { InstancedScene } from "@wired-xr/scene";
 
 import Player from "../../src/components/app/Player";
-import { readFileByPath } from "../../src/helpers/studio/filesystem";
+import { getFileByPath } from "../../src/helpers/studio/filesystem";
 import { useProject } from "../../src/helpers/studio/hooks/useProject";
 import { useStudioStore } from "../../src/helpers/studio/store";
 import { Project } from "../../src/helpers/studio/types";
@@ -36,16 +37,25 @@ export default function Preview() {
 
       try {
         const newProject = await produce(project, async (draft) => {
-          //fetch assets
+          //load assets
           await Promise.all(
             Object.entries(draft.scene.assets).map(async ([id, asset]) => {
+              //get file
               const root = useStudioStore.getState().rootHandle;
-              if (!root) return;
-              const file = await readFileByPath(asset.uri, root);
-              if (!file) return;
+              if (!root) throw new Error("No root directory");
+              const fileHandle = await getFileByPath(asset.uri, root);
+              if (!fileHandle) throw new Error("File not found");
+              const file = await fileHandle.getFile();
+              if (!file) throw new Error("Failed to read file");
 
-              const url = URL.createObjectURL(file);
-              draft.scene.assets[id].data = url;
+              if (asset.type === "image" || asset.type === "model") {
+                const url = URL.createObjectURL(file);
+                draft.scene.assets[id].data = url;
+              } else if (asset.type === "material") {
+                const text = await file.text();
+                const json = JSON.parse(text);
+                draft.scene.assets[id].data = json;
+              }
             })
           );
         });
@@ -70,10 +80,12 @@ export default function Preview() {
 
       <div className="crosshair" />
 
-      <Canvas className="w-full h-full">
-        <InstancedScene scene={loadedProject.scene}>
+      <Canvas shadows className="w-full h-full">
+        <Physics>
+          <InstancedScene scene={loadedProject.scene} />
+
           <Player />
-        </InstancedScene>
+        </Physics>
       </Canvas>
 
       <div

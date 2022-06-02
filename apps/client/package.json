@@ -33,7 +33,7 @@
     "react-icons": "^4.3.1",
     "react-split": "^2.0.14",
     "socket.io-client": "^4.4.1",
-    "three": "^0.140.0",
+    "three": "^0.137.0",
     "urql": "^2.2.0",
     "zustand": "^3.7.1"
   },

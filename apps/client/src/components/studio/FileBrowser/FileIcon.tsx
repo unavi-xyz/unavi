@@ -1,13 +1,17 @@
 import {
+  VscCircleLargeOutline,
   VscFile,
   VscFileBinary,
   VscFileCode,
-  VscFileMedia,
 } from "react-icons/vsc";
+
+import FileImageIcon from "./FileImageIcon";
 
 const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
 const codeExtensions = ["js", "ts"];
 const modelExtensions = ["gltf", "glb", "fbx", "obj"];
+const materialExtension = ["material"];
+const hiddenExtensions = ["crswap"];
 
 interface Props {
   handle: FileSystemFileHandle;
@@ -15,25 +19,34 @@ interface Props {
 
 export default function FileIcon({ handle }: Props) {
   const fileExtension = handle.name.split(".").pop() ?? "";
+  const fileName = handle.name.split(".").slice(0, -1).join(".");
+
+  if (hiddenExtensions.includes(fileExtension)) return null;
 
   return (
     <div
-      className="aspect-square h-28 p-4 rounded-xl hover:ring-1 hover:ring-outline
+      className="group aspect-square h-28 p-4 rounded-xl
                  flex flex-col items-center justify-between cursor-default select-none"
     >
-      <div className="text-5xl">
+      <div>
         {imageExtensions.includes(fileExtension) ? (
-          <VscFileMedia />
+          <FileImageIcon handle={handle} />
         ) : codeExtensions.includes(fileExtension) ? (
-          <VscFileCode />
+          <VscFileCode className="text-5xl" />
         ) : modelExtensions.includes(fileExtension) ? (
-          <VscFileBinary />
+          <VscFileBinary className="text-5xl" />
+        ) : materialExtension.includes(fileExtension) ? (
+          <VscCircleLargeOutline className="text-5xl" />
         ) : (
-          <VscFile />
+          <VscFile className="text-5xl" />
         )}
       </div>
 
-      <div className="break-all text-sm">{handle.name}</div>
+      <div className="w-24 flex justify-center text-sm font-bold group-hover:break-all">
+        <div className="text-ellipsis overflow-clip whitespace-nowrap group-hover:whitespace-normal">
+          {fileName}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { useStudioStore } from "../../../helpers/studio/store";
-import ObjectButton from "./ObjectButton";
+import LightsButton from "./LightsButton";
+import ObjectsButton from "./ObjectsButton";
+import SpecialsButton from "./SpecialsButton";
 import TreeMenuItem from "./TreeMenuItem";
 
 export default function TreeMenu() {
@@ -7,11 +9,13 @@ export default function TreeMenu() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="py-2 h-14 flex items-center justify-center">
-        <ObjectButton />
+      <div className="py-2 h-14 flex items-center justify-center space-x-2">
+        <ObjectsButton />
+        <LightsButton />
+        <SpecialsButton />
       </div>
 
-      <div className="py-2 pr-4 w-full h-full">
+      <div className="pt-2 pr-4 w-full h-full overflow-y-auto">
         <TreeMenuItem entity={tree} isRoot />
       </div>
     </div>

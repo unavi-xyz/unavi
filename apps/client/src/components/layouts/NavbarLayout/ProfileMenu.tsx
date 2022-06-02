@@ -17,13 +17,9 @@ export default function ProfileMenu() {
   return (
     <div className="py-2 space-y-2">
       <div className="px-2">
-        <Link href={`/user/${handle}`} passHref>
-          <div>
-            <ProfileMenuButton>
-              <div className="gradient-text">@{handle}</div>
-            </ProfileMenuButton>
-          </div>
-        </Link>
+        <div className="gradient-text px-2 font-bold cursor-default select-none">
+          @{handle}
+        </div>
       </div>
 
       <div className="px-2 space-y-2">

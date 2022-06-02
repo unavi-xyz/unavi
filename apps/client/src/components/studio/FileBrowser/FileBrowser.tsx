@@ -50,9 +50,7 @@ export default function FileBrowser() {
   return (
     <div className="flex h-full">
       <div className="w-64 p-4">
-        <div>
-          <DirectoryRow handle={rootHandle} />
-        </div>
+        <DirectoryRow handle={rootHandle} defaultExpanded />
       </div>
 
       <div className="flex flex-wrap space-x-2 p-4">

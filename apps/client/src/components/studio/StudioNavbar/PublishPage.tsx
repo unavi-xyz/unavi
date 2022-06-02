@@ -8,7 +8,7 @@ import { useCreatePost } from "../../../helpers/lens/hooks/useCreatePost";
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
 import { useLensStore } from "../../../helpers/lens/store";
 import { AppId, Metadata, MetadataVersions } from "../../../helpers/lens/types";
-import { readFileByPath } from "../../../helpers/studio/filesystem";
+import { getFileByPath } from "../../../helpers/studio/filesystem";
 import { useProject } from "../../../helpers/studio/hooks/useProject";
 import { useStudioStore } from "../../../helpers/studio/store";
 import { crop } from "../../../helpers/utils/crop";
@@ -47,7 +47,9 @@ export default function PublishPage() {
       const finalScene = await produce(project.scene, async (draft) => {
         await Promise.all(
           Object.entries(draft.assets).map(async ([key, asset]) => {
-            const file = await readFileByPath(asset.uri, rootHandle);
+            const fileHandle = await getFileByPath(asset.uri, rootHandle);
+            if (!fileHandle) return;
+            const file = await fileHandle.getFile();
             if (!file) return;
 
             const uri = await uploadFileToIpfs(file);

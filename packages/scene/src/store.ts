@@ -1,10 +1,11 @@
 import produce from "immer";
+import { WritableDraft } from "immer/dist/internal";
 import { nanoid } from "nanoid";
 import { GetState, SetState } from "zustand";
 
 import { EMPTY_SCENE } from "./constants";
-import { findEntityById } from "./helpers";
-import { Asset, Entity, Material, Scene } from "./types";
+import { Asset, Entity, Scene } from "./types";
+import { findEntityById } from "./utils";
 
 export type StoreSlice<T extends object, E extends object = T> = (
   set: SetState<E extends T ? E : E & T>,
@@ -15,18 +16,20 @@ export interface ISceneSlice {
   scene: Scene;
 
   addEntity: (entity: Entity, parentId?: string) => void;
-  updateEntity: (id: string, changes: Partial<Entity>) => void;
   removeEntity: (id: string) => void;
   moveEntity: (id: string, parentId: string, index?: number) => void;
-  setMaterial: (id: string, materialId: string | undefined) => void;
-
-  addMaterial: (material: Material) => void;
-  updateMaterial: (id: string, changes: Partial<Material>) => void;
-  removeMaterial: (id: string) => void;
 
   addAsset: (asset: Asset) => string;
-  updateAsset: (id: string, changes: Partial<Asset>) => void;
   removeAsset: (id: string) => void;
+
+  updateEntity: (
+    id: string,
+    callback: (draft: WritableDraft<Entity>) => void
+  ) => void;
+  updateAsset: (
+    id: string,
+    callback: (draft: WritableDraft<Asset>) => void
+  ) => void;
 }
 
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
@@ -40,16 +43,9 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
     const parent = findEntityById(scene.tree, entity.parentId);
     if (!parent) return;
 
-    updateEntity(parent.id, { children: [...parent.children, entity] });
-  },
-
-  updateEntity(id: string, changes: Partial<Entity>) {
-    const scene = produce(get().scene, (draft) => {
-      const found = findEntityById(draft.tree, id);
-      if (found) Object.assign(found, changes);
+    updateEntity(parent.id, (draft) => {
+      draft.children.push(entity);
     });
-
-    set({ scene });
   },
 
   removeEntity(id: string) {
@@ -115,49 +111,6 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
     set({ scene });
   },
 
-  setMaterial(id: string, materialId: string | undefined) {
-    const scene = produce(get().scene, (draft) => {
-      const entity = findEntityById(draft.tree, id);
-      if (!entity) return;
-
-      entity.modules.forEach((module) => {
-        if (module.type === "Mesh") {
-          module.materialId = materialId;
-        }
-      });
-    });
-
-    set({ scene });
-  },
-
-  addMaterial(material: Material) {
-    const scene = produce(get().scene, (draft) => {
-      if (!draft.materials) draft.materials = {};
-      draft.materials[material.id] = material;
-    });
-
-    set({ scene });
-  },
-
-  updateMaterial(id: string, changes: Partial<Material>) {
-    const scene = produce(get().scene, (draft) => {
-      const material = draft.materials[id];
-      if (!material) return;
-
-      Object.assign(material, changes);
-    });
-
-    set({ scene });
-  },
-
-  removeMaterial(id: string) {
-    const scene = produce(get().scene, (draft) => {
-      delete draft.materials[id];
-    });
-
-    set({ scene });
-  },
-
   addAsset(asset: Asset) {
     const id = nanoid();
 
@@ -171,20 +124,27 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
     return id;
   },
 
-  updateAsset(id: string, changes: Partial<Asset>) {
+  removeAsset(id: string) {
     const scene = produce(get().scene, (draft) => {
-      const asset = draft.assets[id];
-      if (!asset) return;
-
-      Object.assign(asset, changes);
+      delete draft.assets[id];
     });
 
     set({ scene });
   },
 
-  removeAsset(id: string) {
+  updateEntity(id: string, callback: (draft: WritableDraft<Entity>) => void) {
     const scene = produce(get().scene, (draft) => {
-      delete draft.assets[id];
+      const found = findEntityById(draft.tree, id);
+      if (found) callback(found);
+    });
+
+    set({ scene });
+  },
+
+  updateAsset(id: string, callback: (draft: WritableDraft<Asset>) => void) {
+    const scene = produce(get().scene, (draft) => {
+      const asset = draft.assets[id];
+      if (asset) callback(asset);
     });
 
     set({ scene });

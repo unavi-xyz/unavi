@@ -10,10 +10,14 @@ import { useStudioStore } from "../../../helpers/studio/store";
 
 interface Props {
   handle: FileSystemDirectoryHandle;
+  defaultExpanded?: boolean;
 }
 
-export default function DirectoryRow({ handle }: Props) {
-  const [open, setOpen] = useState(false);
+export default function DirectoryRow({
+  handle,
+  defaultExpanded = false,
+}: Props) {
+  const [open, setOpen] = useState(defaultExpanded);
   const [childrenDirectories, setChildrenDirectories] = useState<
     FileSystemDirectoryHandle[]
   >([]);

@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
 interface Props {
-  open: boolean;
-  onClose: () => void;
+  open?: boolean;
+  onClose?: () => void;
   placement?: "left" | "right";
   children: React.ReactNode;
 }
 
 export default function DropdownMenu({
-  open,
+  open = false,
   onClose,
   placement = "left",
   children,
@@ -41,14 +41,13 @@ export default function DropdownMenu({
 
   useEffect(() => {
     //if the user clicks outside of the dropdown, close it
-    //use stopProgation to prevent this from activating
-    function onClick(event: MouseEvent) {
-      if (open) onClose();
+    function onPointerUp() {
+      if (open && onClose) onClose();
     }
 
-    document.addEventListener("click", onClick);
+    document.addEventListener("pointerup", onPointerUp);
     return () => {
-      document.removeEventListener("click", onClick);
+      document.removeEventListener("pointerup", onPointerUp);
     };
   }, [onClose, open]);
 

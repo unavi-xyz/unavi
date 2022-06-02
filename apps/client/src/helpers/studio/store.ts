@@ -6,17 +6,15 @@ import { Group } from "three";
 import create from "zustand";
 
 import {
-  Asset,
   AssetType,
   Entity,
   IMaterial,
   ISceneSlice,
   createSceneSlice,
-  findEntityById,
 } from "@wired-xr/scene";
 
 import { findFilePath, getFileByPath } from "./filesystem";
-import { ENTITY_PRESETS } from "./presets";
+import { ALL_PRESETS, Preset } from "./presets";
 import { Tool } from "./types";
 
 export interface IStudioStore extends ISceneSlice {
@@ -55,8 +53,7 @@ export interface IStudioStore extends ISceneSlice {
 
   getAssetFileName: (assetId: string) => Promise<string | undefined>;
   loadAsset: (assetId: string, force?: boolean) => Promise<void>;
-
-  addPreset: (preset: string, parentId?: string) => Entity;
+  addPreset: (preset: Preset, parentId?: string) => Entity;
 }
 
 export const useStudioStore = create<IStudioStore>((set, get) => ({
@@ -97,8 +94,8 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
     set({ treeRefs: newTreeRefs });
   },
 
-  addPreset(preset: string, parentId = "root") {
-    const entity = { ...ENTITY_PRESETS[preset] };
+  addPreset(preset: Preset, parentId = "root") {
+    const entity = { ...ALL_PRESETS[preset] };
     entity.id = nanoid();
 
     get().addEntity(entity, parentId);

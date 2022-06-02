@@ -9,6 +9,7 @@ import { useStudioStore } from "../../../../helpers/studio/store";
 import BoxMenu from "./BoxMenu";
 import CylinderMenu from "./CylinderMenu";
 import ModelMenu from "./ModelMenu";
+import PointLightMenu from "./PointLightMenu";
 import SphereMenu from "./SphereMenu";
 
 export default function EntityMenu() {
@@ -43,6 +44,13 @@ export default function EntityMenu() {
     case "Model":
       return (
         <ModelMenu selected={selected as any} handleChange={handleChange} />
+      );
+    case "PointLight":
+      return (
+        <PointLightMenu
+          selected={selected as any}
+          handleChange={handleChange}
+        />
       );
     default:
       return null;

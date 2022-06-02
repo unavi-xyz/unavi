@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
@@ -22,7 +23,9 @@ export default function StudioNavbar() {
   const handle = useLensStore((state) => state.handle);
   const debug = useStudioStore((state) => state.debug);
   const grid = useStudioStore((state) => state.grid);
+
   const project = useProject();
+  const router = useRouter();
 
   function handleToggleDebug() {
     useStudioStore.setState({ debug: !debug, selectedId: undefined });
@@ -30,6 +33,10 @@ export default function StudioNavbar() {
 
   function handleToggleGrid() {
     useStudioStore.setState({ grid: !grid });
+  }
+
+  function handlePreview() {
+    router.push("/studio/preview");
   }
 
   return (
@@ -78,13 +85,11 @@ export default function StudioNavbar() {
 
         <div className="h-full aspect-square">
           <Tooltip text="Preview" placement="bottom">
-            <Link href="/studio/preview" passHref>
-              <div className="h-full">
-                <IconButton>
-                  <MdPreview />
-                </IconButton>
-              </div>
-            </Link>
+            <div className="h-full">
+              <IconButton onClick={handlePreview}>
+                <MdPreview />
+              </IconButton>
+            </div>
           </Tooltip>
         </div>
 

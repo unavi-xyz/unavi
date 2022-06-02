@@ -6,6 +6,7 @@ export * from "./src/components/entities/Cylinder/Cylinder";
 export * from "./src/components/entities/Model/Model";
 export * from "./src/components/entities/Model/GLTF";
 export * from "./src/components/entities/Group";
+export * from "./src/components/entities/PointLight";
 
 export * from "./src/components/scene/AssetProvider";
 export * from "./src/components/scene/EntityComponent";

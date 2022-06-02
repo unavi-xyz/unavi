@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { HiOutlineCube } from "react-icons/hi";
+import { MdOutlineLightMode } from "react-icons/md";
 
 import DropdownMenu from "../../base/DropdownMenu";
 import IconButton from "../../base/IconButton";
-import ObjectsMenu from "./ObjectsMenu";
+import LightsMenu from "./LightsMenu";
 
-export default function ObjectButton() {
+export default function LightsButton() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -16,12 +16,12 @@ export default function ObjectButton() {
           setOpen((prev) => !prev);
         }}
       >
-        <HiOutlineCube className="text-2xl" />
+        <MdOutlineLightMode className="text-2xl" />
       </IconButton>
 
       <div className="mt-1">
         <DropdownMenu open={open} onClose={() => setOpen(false)}>
-          <ObjectsMenu />
+          <LightsMenu />
         </DropdownMenu>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { Box } from "./components/entities/Box/Box";
 import { Cylinder } from "./components/entities/Cylinder/Cylinder";
 import { Group } from "./components/entities/Group";
 import { Model } from "./components/entities/Model/Model";
+import { PointLight } from "./components/entities/PointLight";
 import { Sphere } from "./components/entities/Sphere/Sphere";
 
 //WELCOME TO THE MIND PALACE
@@ -24,6 +25,8 @@ export const ENTITY_COMPONENTS = {
   Sphere: Sphere,
   Cylinder: Cylinder,
   Model: Model,
+
+  PointLight: PointLight,
 };
 
 export type EntityType = keyof typeof ENTITY_COMPONENTS;

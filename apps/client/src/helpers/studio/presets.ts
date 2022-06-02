@@ -1,6 +1,8 @@
 import { DEFAULT_TRANSFORM, Entity } from "@wired-xr/scene";
 
-export const ENTITY_PRESETS: { [key: string]: Entity } = {
+export const ALL_PRESETS: {
+  [key: string]: Entity;
+} = {
   Box: {
     type: "Box",
 
@@ -53,4 +55,30 @@ export const ENTITY_PRESETS: { [key: string]: Entity } = {
 
     props: {},
   },
+  PointLight: {
+    type: "PointLight",
+
+    id: "",
+    name: "Point Light",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
+};
+
+export type Preset = keyof typeof ALL_PRESETS;
+
+export const OBJECT_PRESETS: { [key: string]: Preset } = {
+  Box: "Box",
+  Sphere: "Sphere",
+  Cylinder: "Cylinder",
+  Model: "Model",
+};
+
+export const LIGHTS_PRESETS: { [key: string]: Preset } = {
+  ["Point Light"]: "PointLight",
 };

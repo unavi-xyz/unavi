@@ -54,6 +54,7 @@ export default function EntityMenu() {
         />
       );
     case "AmbientLight":
+    case "DirectionalLight":
       return (
         <AmbientLightMenu
           selected={selected as any}

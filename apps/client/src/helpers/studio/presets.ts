@@ -81,6 +81,19 @@ export const ALL_PRESETS: {
 
     props: {},
   },
+  DirectionalLight: {
+    type: "DirectionalLight",
+
+    id: "",
+    name: "Directional Light",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
 };
 
 export type Preset = keyof typeof ALL_PRESETS;
@@ -95,4 +108,5 @@ export const OBJECT_PRESETS: { [key: string]: Preset } = {
 export const LIGHTS_PRESETS: { [key: string]: Preset } = {
   ["Point Light"]: "PointLight",
   ["Ambient Light"]: "AmbientLight",
+  ["Directional Light"]: "DirectionalLight",
 };

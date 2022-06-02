@@ -4,6 +4,7 @@ import { ComponentProps } from "react";
 import { AmbientLight } from "./components/entities/AmbientLight";
 import { Box } from "./components/entities/Box/Box";
 import { Cylinder } from "./components/entities/Cylinder/Cylinder";
+import { DirectionalLight } from "./components/entities/DirectionalLight";
 import { Group } from "./components/entities/Group";
 import { Model } from "./components/entities/Model/Model";
 import { PointLight } from "./components/entities/PointLight";
@@ -29,6 +30,7 @@ export const ENTITY_COMPONENTS = {
 
   PointLight: PointLight,
   AmbientLight: AmbientLight,
+  DirectionalLight: DirectionalLight,
 };
 
 export type EntityType = keyof typeof ENTITY_COMPONENTS;

@@ -2,7 +2,12 @@ import Link from "next/link";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
-import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
+import {
+  MdArrowBackIosNew,
+  MdOutlineGridOn,
+  MdPreview,
+  MdSync,
+} from "react-icons/md";
 
 import { useLensStore } from "../../../helpers/lens/store";
 import { useProject } from "../../../helpers/studio/hooks/useProject";
@@ -16,10 +21,15 @@ import ToolButton from "./ToolButton";
 export default function StudioNavbar() {
   const handle = useLensStore((state) => state.handle);
   const debug = useStudioStore((state) => state.debug);
+  const grid = useStudioStore((state) => state.grid);
   const project = useProject();
 
   function handleToggleDebug() {
     useStudioStore.setState({ debug: !debug, selectedId: undefined });
+  }
+
+  function handleToggleGrid() {
+    useStudioStore.setState({ grid: !grid });
   }
 
   return (
@@ -48,8 +58,16 @@ export default function StudioNavbar() {
 
       <div className="w-full h-full flex justify-end items-center space-x-2">
         <div className="h-full aspect-square">
+          <Tooltip text={`${grid ? "Hide" : "Show"} Grid`} placement="bottom">
+            <IconButton selected={grid} onClick={handleToggleGrid}>
+              <MdOutlineGridOn />
+            </IconButton>
+          </Tooltip>
+        </div>
+
+        <div className="h-full aspect-square">
           <Tooltip
-            text={`${debug ? "Disable" : "Enable"} Debug`}
+            text={`${debug ? "Hide" : "Show"} Colliders`}
             placement="bottom"
           >
             <IconButton selected={debug} onClick={handleToggleDebug}>

@@ -12,6 +12,7 @@ import ToggleDebug from "./ToggleDebug";
 
 export default function StudioCanvas() {
   const debug = useStudioStore((state) => state.debug);
+  const grid = useStudioStore((state) => state.grid);
   const assets = useStudioStore((state) => state.scene.assets);
   const tree = useStudioStore((state) => state.scene.tree);
 
@@ -20,7 +21,8 @@ export default function StudioCanvas() {
       <group>
         <ambientLight intensity={0.2} />
         <directionalLight intensity={1} position={[-1, 1.5, -2]} />
-        <gridHelper args={[400, 400, 0x666666, 0x999999]} />
+
+        {grid && <gridHelper args={[1000, 1000, 0x666666, 0x999999]} />}
 
         <CameraMover />
         <OrbitControls makeDefault />

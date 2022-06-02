@@ -25,6 +25,7 @@ export interface IStudioStore extends ISceneSlice {
 
   preview: boolean;
   debug: boolean;
+  grid: boolean;
 
   tool: Tool;
   usingGizmo: boolean;
@@ -64,6 +65,7 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
 
   preview: false,
   debug: false,
+  grid: false,
 
   tool: "translate",
   usingGizmo: false,

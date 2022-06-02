@@ -13,6 +13,7 @@ export default function BoxMenu({ selected, handleChange }: Props) {
   const width = selected.props.width ?? 1;
   const height = selected.props.height ?? 1;
   const depth = selected.props.depth ?? 1;
+  const physics = selected.props.physics ?? true;
 
   return (
     <>
@@ -40,6 +41,16 @@ export default function BoxMenu({ selected, handleChange }: Props) {
           onChange={(e) =>
             handleChange("depth", round(Number(e.currentTarget.value)))
           }
+        />
+      </MenuRow>
+
+      <MenuRow title="Physics">
+        <input
+          type="checkbox"
+          checked={physics}
+          onChange={(e) => {
+            handleChange("physics", e.target.checked);
+          }}
         />
       </MenuRow>
     </>

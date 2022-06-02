@@ -15,6 +15,7 @@ export default function CylinderMenu({ selected, handleChange }: Props) {
   const height = selected.props.height ?? 1;
   const radialSegments = selected.props.radialSegments ?? 8;
   const openEnded = selected.props.openEnded ?? false;
+  const physics = selected.props.physics ?? true;
 
   return (
     <>
@@ -62,6 +63,16 @@ export default function CylinderMenu({ selected, handleChange }: Props) {
           type="checkbox"
           checked={openEnded}
           onChange={(e) => handleChange("openEnded", e.currentTarget.checked)}
+        />
+      </MenuRow>
+
+      <MenuRow title="Physics">
+        <input
+          type="checkbox"
+          checked={physics}
+          onChange={(e) => {
+            handleChange("physics", e.target.checked);
+          }}
         />
       </MenuRow>
     </>

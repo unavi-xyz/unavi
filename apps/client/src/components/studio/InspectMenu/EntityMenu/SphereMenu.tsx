@@ -13,6 +13,7 @@ export default function SphereMenu({ selected, handleChange }: Props) {
   const radius = selected.props.radius ?? 0.5;
   const widthSegments = selected.props.widthSegments ?? 16;
   const heightSegments = selected.props.heightSegments ?? 16;
+  const physics = selected.props.physics ?? true;
 
   return (
     <>
@@ -40,6 +41,16 @@ export default function SphereMenu({ selected, handleChange }: Props) {
           onChange={(e) =>
             handleChange("heightSegments", round(Number(e.currentTarget.value)))
           }
+        />
+      </MenuRow>
+
+      <MenuRow title="Physics">
+        <input
+          type="checkbox"
+          checked={physics}
+          onChange={(e) => {
+            handleChange("physics", e.target.checked);
+          }}
         />
       </MenuRow>
     </>

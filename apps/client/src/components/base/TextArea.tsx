@@ -16,7 +16,7 @@ export default function TextArea({
   ...rest
 }: Props) {
   return (
-    <div className="flex flex-col space-y-1">
+    <div className="w-full flex flex-col space-y-1">
       <label
         htmlFor={title}
         className="block text-lg font-bold pointer-events-none"

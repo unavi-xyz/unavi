@@ -107,6 +107,19 @@ export const ALL_PRESETS: {
 
     props: {},
   },
+  Text: {
+    type: "Text",
+
+    id: "",
+    name: "Text",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
 };
 
 export type Preset = keyof typeof ALL_PRESETS;
@@ -123,4 +136,8 @@ export const LIGHTS_PRESETS: { [key: string]: Preset } = {
   ["Ambient Light"]: "AmbientLight",
   ["Directional Light"]: "DirectionalLight",
   ["Spot Light"]: "SpotLight",
+};
+
+export const SPECIALS_PRESETS: { [key: string]: Preset } = {
+  Text: "Text",
 };

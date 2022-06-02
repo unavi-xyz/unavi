@@ -13,6 +13,7 @@ import ModelMenu from "./ModelMenu";
 import PointLightMenu from "./PointLightMenu";
 import SphereMenu from "./SphereMenu";
 import SpotLightMenu from "./SpotLightMenu";
+import TextMenu from "./TextMenu";
 
 export default function EntityMenu() {
   const selected = useAtomValue(selectedAtom);
@@ -65,6 +66,10 @@ export default function EntityMenu() {
     case "SpotLight":
       return (
         <SpotLightMenu selected={selected as any} handleChange={handleChange} />
+      );
+    case "Text":
+      return (
+        <TextMenu selected={selected as any} handleChange={handleChange} />
       );
     default:
       return null;

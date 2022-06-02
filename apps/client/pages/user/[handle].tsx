@@ -188,7 +188,7 @@ export default function User({ metadata, profile }: Props) {
             </div>
           </div>
 
-          {spaces && spaces.length > 1 && (
+          {spaces && spaces.length > 0 && (
             <div className="w-full space-y-4 md:ml-12 pt-4">
               <div className="flex items-center justify-center w-full space-x-4">
                 <div className="text-xl font-bold rounded-lg px-3 py-1">

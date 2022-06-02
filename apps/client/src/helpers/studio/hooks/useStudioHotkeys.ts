@@ -1,8 +1,10 @@
+import produce from "immer";
 import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
 
-import { findEntityById } from "@wired-xr/scene";
+import { findEntityById, traverseTree } from "@wired-xr/scene";
 
+import { deepClone } from "../../utils/deepClone";
 import { useStudioStore } from "../store";
 
 export function useHotkeys() {
@@ -43,7 +45,19 @@ export function useHotkeys() {
             const copiedEntity = findEntityById(scene.tree, copiedId);
             if (!copiedEntity) return;
 
-            const newEntity = { ...copiedEntity, id: nanoid() };
+            const newEntity = produce(copiedEntity, (draft) => {
+              traverseTree(draft, (entity) => {
+                const id = nanoid();
+                entity.id = id;
+
+                if (entity.children) {
+                  entity.children.forEach((child) => {
+                    child.parentId = id;
+                  });
+                }
+              });
+            });
+
             useStudioStore.getState().addEntity(newEntity);
             useStudioStore.setState({ selectedId: newEntity.id });
           }

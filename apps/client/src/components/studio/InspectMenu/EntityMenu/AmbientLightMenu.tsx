@@ -8,18 +8,16 @@ import MenuRow from "../MenuRow";
 import NumberInput from "../NumberInput";
 
 interface Props {
-  selected: Entity<"PointLight">;
+  selected: Entity<"AmbientLight">;
   handleChange: (key: string, value: any) => void;
 }
 
-export default function PointLightMenu({ selected, handleChange }: Props) {
+export default function AmbientLightMenu({ selected, handleChange }: Props) {
   const colorRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<any>(null);
 
   const color = selected.props.color ?? "#ffffff";
   const intensity = selected.props.intensity ?? 1;
-  const distance = selected.props.distance ?? 0;
-  const decay = selected.props.decay ?? 1;
 
   function onColorChange() {
     //if same color, do nothing
@@ -52,24 +50,6 @@ export default function PointLightMenu({ selected, handleChange }: Props) {
           updatedValue={String(round(intensity))}
           onChange={(e) =>
             handleChange("intensity", round(Number(e.currentTarget.value)))
-          }
-        />
-      </MenuRow>
-
-      <MenuRow title="Distance">
-        <NumberInput
-          updatedValue={String(round(distance))}
-          onChange={(e) =>
-            handleChange("distance", round(Number(e.currentTarget.value)))
-          }
-        />
-      </MenuRow>
-
-      <MenuRow title="Decay">
-        <NumberInput
-          updatedValue={String(round(decay))}
-          onChange={(e) =>
-            handleChange("decay", round(Number(e.currentTarget.value)))
           }
         />
       </MenuRow>

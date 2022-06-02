@@ -6,6 +6,7 @@ import { findEntityById } from "@wired-xr/scene";
 
 import { selectedAtom } from "../../../../helpers/studio/atoms";
 import { useStudioStore } from "../../../../helpers/studio/store";
+import AmbientLightMenu from "./AmbientLightMenu";
 import BoxMenu from "./BoxMenu";
 import CylinderMenu from "./CylinderMenu";
 import ModelMenu from "./ModelMenu";
@@ -48,6 +49,13 @@ export default function EntityMenu() {
     case "PointLight":
       return (
         <PointLightMenu
+          selected={selected as any}
+          handleChange={handleChange}
+        />
+      );
+    case "AmbientLight":
+      return (
+        <AmbientLightMenu
           selected={selected as any}
           handleChange={handleChange}
         />

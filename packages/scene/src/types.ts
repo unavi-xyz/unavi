@@ -1,6 +1,7 @@
 import { Triplet } from "@react-three/cannon";
 import { ComponentProps } from "react";
 
+import { AmbientLight } from "./components/entities/AmbientLight";
 import { Box } from "./components/entities/Box/Box";
 import { Cylinder } from "./components/entities/Cylinder/Cylinder";
 import { Group } from "./components/entities/Group";
@@ -27,6 +28,7 @@ export const ENTITY_COMPONENTS = {
   Model: Model,
 
   PointLight: PointLight,
+  AmbientLight: AmbientLight,
 };
 
 export type EntityType = keyof typeof ENTITY_COMPONENTS;

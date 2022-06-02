@@ -22,7 +22,7 @@ export default function StudioCanvas() {
           <group>
             <ambientLight intensity={0.2} />
             <directionalLight intensity={1} position={[-1, 1.5, -2]} />
-            <gridHelper args={[20, 20]} />
+            <gridHelper args={[400, 400, 0x666666, 0x999999]} />
 
             <CameraMover />
             <OrbitControls makeDefault />

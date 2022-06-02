@@ -11,7 +11,7 @@ export default function TreeMenu() {
         <ObjectButton />
       </div>
 
-      <div className="py-2 pr-4 w-full h-full">
+      <div className="pt-2 pr-4 w-full h-full overflow-y-auto">
         <TreeMenuItem entity={tree} isRoot />
       </div>
     </div>

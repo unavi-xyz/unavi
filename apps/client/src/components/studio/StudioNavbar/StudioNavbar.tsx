@@ -46,7 +46,7 @@ export default function StudioNavbar() {
         </ToolButton>
       </div>
 
-      <div className="w-full h-full flex justify-end items-center space-x-4">
+      <div className="w-full h-full flex justify-end items-center space-x-2">
         <div className="h-full aspect-square">
           <Tooltip
             text={`${debug ? "Disable" : "Enable"} Debug`}
@@ -70,7 +70,9 @@ export default function StudioNavbar() {
           </Tooltip>
         </div>
 
-        {handle ? <PublishButton /> : <LoginButton />}
+        <div className="pl-2">
+          {handle ? <PublishButton /> : <LoginButton />}
+        </div>
       </div>
     </div>
   );

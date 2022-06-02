@@ -150,8 +150,8 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
               e.stopPropagation();
               useStudioStore.setState({ selectedId: entity.id });
             }}
-            className={`font-bold rounded-md px-2 transition-colors flex items-center
-                        h-8 ${bgClass} ${opacityClass}`}
+            className={`font-bold rounded-md px-2 flex items-center
+                        h-6 ${bgClass} ${opacityClass}`}
           >
             <div
               onClick={() => setOpen((prev) => !prev)}
@@ -166,7 +166,7 @@ export default function TreeMenuItem({ entity, isRoot = false }: Props) {
         )}
 
         {open && (
-          <div>
+          <div className={`${opacityClass}`}>
             {entity.children.map((child, i) => {
               if (i === entity.children.length - 1 && !isRoot) {
                 return (

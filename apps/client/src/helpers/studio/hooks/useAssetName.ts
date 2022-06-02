@@ -15,7 +15,12 @@ export function useAssetName(assetId: string) {
       .getState()
       .getAssetFileName(assetId)
       .then((res) => {
-        setName(res);
+        if (res) {
+          const name = res.split(".").slice(0, -1).join(".");
+          setName(name);
+        } else {
+          setName(undefined);
+        }
       })
       .catch((err) => {
         console.error(err);

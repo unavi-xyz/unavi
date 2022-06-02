@@ -1,8 +1,13 @@
-import { useEffect } from "react";
+import { nanoid } from "nanoid";
+import { useEffect, useState } from "react";
+
+import { Entity, traverseTree } from "@wired-xr/scene";
 
 import { useStudioStore } from "../store";
 
 export function useHotkeys() {
+  const [copiedEntity, setCopiedEntity] = useState<Entity>();
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       switch (e.key) {
@@ -20,6 +25,30 @@ export function useHotkeys() {
         case "r":
           useStudioStore.setState({ tool: "scale" });
           break;
+        case "c":
+          if (e.ctrlKey) {
+            //copy
+            const selectedId = useStudioStore.getState().selectedId;
+            const scene = useStudioStore.getState().scene;
+            if (selectedId) {
+              traverseTree(scene.tree, (entity) => {
+                if (entity.id === selectedId) {
+                  setCopiedEntity(entity);
+                }
+              });
+            }
+          }
+          break;
+        case "v":
+          if (e.ctrlKey) {
+            //paste
+            if (copiedEntity) {
+              const newEntity = { ...copiedEntity, id: nanoid() };
+              useStudioStore.getState().addEntity(newEntity);
+              useStudioStore.setState({ selectedId: newEntity.id });
+            }
+          }
+          break;
       }
     }
 
@@ -31,5 +60,5 @@ export function useHotkeys() {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
     };
-  }, []);
+  }, [copiedEntity]);
 }

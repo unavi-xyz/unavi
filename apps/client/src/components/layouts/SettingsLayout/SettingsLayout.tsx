@@ -9,7 +9,7 @@ import {
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
 import { useLensStore } from "../../../helpers/lens/store";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
-import NavbarLayout, { getNavbarLayout } from "../NavbarLayout/NavbarLayout";
+import { getNavbarLayout } from "../NavbarLayout/NavbarLayout";
 import SettingsButton from "./SettingsButton";
 
 interface Props {

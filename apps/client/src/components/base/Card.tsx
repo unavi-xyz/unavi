@@ -15,6 +15,7 @@ export default function Card({ image, text, subtext }: Props) {
           <img
             src={image}
             alt="card image"
+            draggable={false}
             className="w-full h-full object-cover group-hover:scale-110
                        transition duration-500 ease-in-out"
           />

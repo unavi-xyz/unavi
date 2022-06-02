@@ -1,9 +1,6 @@
-import {
-  VscFile,
-  VscFileBinary,
-  VscFileCode,
-  VscFileMedia,
-} from "react-icons/vsc";
+import { VscFile, VscFileBinary, VscFileCode } from "react-icons/vsc";
+
+import FileImageIcon from "./FileImageIcon";
 
 const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
 const codeExtensions = ["js", "ts"];
@@ -22,22 +19,22 @@ export default function FileIcon({ handle }: Props) {
 
   return (
     <div
-      className="group aspect-square h-28 p-4 rounded-xl hover:ring-1 hover:ring-outline
+      className="group aspect-square h-28 p-4 rounded-xl
                  flex flex-col items-center justify-between cursor-default select-none"
     >
-      <div className="text-5xl">
+      <div>
         {imageExtensions.includes(fileExtension) ? (
-          <VscFileMedia />
+          <FileImageIcon handle={handle} />
         ) : codeExtensions.includes(fileExtension) ? (
-          <VscFileCode />
+          <VscFileCode className="text-5xl" />
         ) : modelExtensions.includes(fileExtension) ? (
-          <VscFileBinary />
+          <VscFileBinary className="text-5xl" />
         ) : (
-          <VscFile />
+          <VscFile className="text-5xl" />
         )}
       </div>
 
-      <div className="w-24 flex justify-center text-sm group-hover:break-all">
+      <div className="w-24 flex justify-center text-sm font-bold group-hover:break-all">
         <div className="text-ellipsis overflow-clip whitespace-nowrap group-hover:whitespace-normal">
           {fileName}
         </div>

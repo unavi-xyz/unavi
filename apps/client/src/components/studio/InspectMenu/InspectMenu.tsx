@@ -16,7 +16,7 @@ export default function InspectMenu() {
   const hasMaterial = MATERIAL_TYPES.includes(selected.type);
 
   return (
-    <div className="p-4 space-y-8 w-full">
+    <div key={selected.id} className="p-4 space-y-8 w-full">
       <div className="flex justify-center text-xl font-bold">
         {selected.name}
       </div>

@@ -5,6 +5,9 @@ import { Entity, Material } from "@wired-xr/scene";
 import { useAssetName } from "../../../../helpers/studio/hooks/useAssetName";
 import { useStudioStore } from "../../../../helpers/studio/store";
 
+const MATERIAL_MIME = "application/material";
+const MATERIAL_EXTENSION = ".material";
+
 interface Props {
   selected: Entity;
 }
@@ -24,7 +27,7 @@ export default function MaterialPicker({ selected }: Props) {
         types: [
           {
             accept: {
-              "application/json": [".json"],
+              [MATERIAL_MIME]: [MATERIAL_EXTENSION],
             },
           },
         ],
@@ -54,12 +57,12 @@ export default function MaterialPicker({ selected }: Props) {
     try {
       //create material file
       const fileHandle = await window.showSaveFilePicker({
-        suggestedName: "Material001",
+        suggestedName: "Material_001",
         excludeAcceptAllOption: true,
         types: [
           {
             accept: {
-              "application/json": [".json"],
+              [MATERIAL_MIME]: [MATERIAL_EXTENSION],
             },
           },
         ],

@@ -1,10 +1,16 @@
-import { VscFile, VscFileBinary, VscFileCode } from "react-icons/vsc";
+import {
+  VscCircleLargeOutline,
+  VscFile,
+  VscFileBinary,
+  VscFileCode,
+} from "react-icons/vsc";
 
 import FileImageIcon from "./FileImageIcon";
 
 const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
 const codeExtensions = ["js", "ts"];
 const modelExtensions = ["gltf", "glb", "fbx", "obj"];
+const materialExtension = ["material"];
 const hiddenExtensions = ["crswap"];
 
 interface Props {
@@ -29,6 +35,8 @@ export default function FileIcon({ handle }: Props) {
           <VscFileCode className="text-5xl" />
         ) : modelExtensions.includes(fileExtension) ? (
           <VscFileBinary className="text-5xl" />
+        ) : materialExtension.includes(fileExtension) ? (
+          <VscCircleLargeOutline className="text-5xl" />
         ) : (
           <VscFile className="text-5xl" />
         )}

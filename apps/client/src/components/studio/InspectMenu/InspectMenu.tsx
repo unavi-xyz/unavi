@@ -6,7 +6,7 @@ import MaterialMenu from "./MaterialMenu/MaterialMenu";
 import MenuBlock from "./MenuBlock";
 import TransformMenu from "./TransformMenu";
 
-const MATERIAL_TYPES = ["Box", "Sphere"];
+const MATERIAL_TYPES = ["Box", "Sphere", "Cylinder"];
 
 export default function InspectMenu() {
   const selected = useAtomValue(selectedAtom);

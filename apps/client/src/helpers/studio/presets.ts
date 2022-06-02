@@ -27,6 +27,19 @@ export const ENTITY_PRESETS: { [key: string]: Entity } = {
 
     props: {},
   },
+  Cylinder: {
+    type: "Cylinder",
+
+    id: "",
+    name: "Cylinder",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
   Model: {
     type: "Model",
 

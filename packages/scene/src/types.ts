@@ -2,6 +2,7 @@ import { Triplet } from "@react-three/cannon";
 import { ComponentProps } from "react";
 
 import { Box } from "./components/entities/Box/Box";
+import { Cylinder } from "./components/entities/Cylinder/Cylinder";
 import { Group } from "./components/entities/Group";
 import { Model } from "./components/entities/Model/Model";
 import { Sphere } from "./components/entities/Sphere/Sphere";
@@ -21,6 +22,7 @@ export const ENTITY_COMPONENTS = {
   Group: Group,
   Box: Box,
   Sphere: Sphere,
+  Cylinder: Cylinder,
   Model: Model,
 };
 

@@ -17,33 +17,33 @@ export default function StudioCanvas() {
 
   return (
     <Canvas gl={{ preserveDrawingBuffer: true }}>
-      <Physics>
-        <ToggleDebug enabled={debug}>
-          <group>
-            <ambientLight intensity={0.2} />
-            <directionalLight intensity={1} position={[-1, 1.5, -2]} />
-            <gridHelper args={[400, 400, 0x666666, 0x999999]} />
+      <group>
+        <ambientLight intensity={0.2} />
+        <directionalLight intensity={1} position={[-1, 1.5, -2]} />
+        <gridHelper args={[400, 400, 0x666666, 0x999999]} />
 
-            <CameraMover />
-            <OrbitControls makeDefault />
-            <Gizmo />
+        <CameraMover />
+        <OrbitControls makeDefault />
+        <Gizmo />
 
-            <group
-              onPointerUp={(e: any) => {
-                if (e.button !== 0) return;
-                if (useStudioStore.getState().usingGizmo) return;
-                useStudioStore.setState({ selectedId: undefined });
-              }}
-            >
-              <Sky />
-            </group>
+        <group
+          onPointerUp={(e: any) => {
+            if (e.button !== 0) return;
+            if (useStudioStore.getState().usingGizmo) return;
+            useStudioStore.setState({ selectedId: undefined });
+          }}
+        >
+          <Sky />
+        </group>
 
+        <Physics>
+          <ToggleDebug enabled={debug}>
             <AssetProvider assets={assets}>
               <StudioInstancedEntity entity={tree} />
             </AssetProvider>
-          </group>
-        </ToggleDebug>
-      </Physics>
+          </ToggleDebug>
+        </Physics>
+      </group>
     </Canvas>
   );
 }

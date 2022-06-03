@@ -86,150 +86,150 @@ export default function User({ metadata, profile, spaces }: Props) {
   const location = profile.attributes?.find((item) => item.key === "location");
 
   return (
-    <div>
+    <>
       <Head>
         <title>{metadata.title} / The Wired</title>
+
+        {/* meta tags */}
+        <meta name="name" content={metadata.title} />
         <meta name="description" content={metadata.description} />
+        <meta name="image" content={metadata.image} />
 
-        <meta itemProp="name" content={metadata.title} />
-        <meta itemProp="description" content={metadata.description} />
-        <meta itemProp="image" content={metadata.image} />
+        {/* open graph */}
+        <meta name="og:title" content={metadata.title} />
+        <meta name="og:description" content={metadata.description} />
+        <meta name="og:image" content={metadata.image} />
+        <meta name="og:image:width" content="256px" />
+        <meta name="og:image:height" content="256px" />
+        <meta name="og:type" content="profile" />
+        <meta name="og:profile:username" content={handle} />
+        <meta name="og:profile:first_name" content={profile.name ?? handle} />
 
-        <meta property="og:title" content={metadata.title} />
-        <meta property="og:description" content={metadata.description} />
-        <meta property="og:image" content={metadata.image} />
-        <meta property="og:image:width" content={"256px"} />
-        <meta property="og:image:height" content={"256px"} />
-        <meta property="og:type" content="profile" />
-        <meta property="og:profile:username" content={handle} />
-        <meta
-          property="og:profile:first_name"
-          content={profile.name ?? handle}
-        />
-
-        <meta name="twitter:card" content="summary" />
+        {/* twitter */}
         <meta name="twitter:title" content={metadata.title} />
         <meta name="twitter:description" content={metadata.description} />
         <meta name="twitter:image" content={metadata.image} />
       </Head>
 
-      <div className="w-full h-80 bg-tertiaryContainer">
-        {coverUrl && (
-          <img
-            src={coverUrl}
-            alt="cover"
-            className="w-full h-full object-cover"
-          />
-        )}
-      </div>
-
-      <div className="flex justify-center">
-        <div className="max-w mx-4 pb-4 flex flex-col md:flex-row">
-          <div className="md:w-64 flex-shrink-0 space-y-6">
-            <div className="h-32 w-64">
-              <div className="relative w-full">
-                <div
-                  className="absolute -bottom-32 transform
-                             rounded-xl ring-8 ring-background"
-                >
-                  <ProfilePicture profile={profile} />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-2xl font-black break-all">
-                {profile?.name ?? handle}
-              </div>
-              <div className="gradient-text text-lg break-all font-bold w-fit">
-                @{handle}
-              </div>
-            </div>
-
-            <div>
-              {handle === viewerHandle && (
-                <Link href="/settings" passHref>
-                  <div>
-                    <Button variant="outlined" fullWidth>
-                      Edit Profile
-                    </Button>
-                  </div>
-                </Link>
-              )}
-            </div>
-
-            <div className="font-bold">{profile?.bio}</div>
-
-            <div className="space-y-4">
-              <ProfileRow icon={<FaHashtag className="text-lg" />}>
-                {profile.id}
-              </ProfileRow>
-
-              {location && (
-                <ProfileRow icon={<MdOutlineLocationOn />}>
-                  {location.value}
-                </ProfileRow>
-              )}
-
-              {twitter && (
-                <ProfileRow icon={<FaTwitter className="text-sky-500" />}>
-                  <a
-                    href={`https://twitter.com/${twitter.value}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:underline"
-                  >
-                    {twitter.value}
-                  </a>
-                </ProfileRow>
-              )}
-
-              {website && (
-                <ProfileRow
-                  icon={
-                    <img
-                      src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${website.value}`}
-                      alt="website favicon"
-                    />
-                  }
-                >
-                  <a
-                    href={website.value}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:underline"
-                  >
-                    {website.value}
-                  </a>
-                </ProfileRow>
-              )}
-            </div>
-          </div>
-
-          {spaces && spaces.length > 0 && (
-            <div className="w-full space-y-4 md:ml-12 pt-4">
-              <div className="flex items-center justify-center w-full space-x-4">
-                <div className="text-xl font-bold rounded-lg px-3 py-1">
-                  Spaces
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-2">
-                {spaces?.map((space) => (
-                  <div key={space.id}>
-                    <Link href={`/space/${space.id}`} passHref>
-                      <div>
-                        <SpaceCard space={space} />
-                      </div>
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </div>
+      <div>
+        <div className="w-full h-80 bg-tertiaryContainer">
+          {coverUrl && (
+            <img
+              src={coverUrl}
+              alt="cover"
+              className="w-full h-full object-cover"
+            />
           )}
         </div>
+
+        <div className="flex justify-center">
+          <div className="max-w mx-4 pb-4 flex flex-col md:flex-row">
+            <div className="md:w-64 flex-shrink-0 space-y-6">
+              <div className="h-32 w-64">
+                <div className="relative w-full">
+                  <div
+                    className="absolute -bottom-32 transform
+                  rounded-xl ring-8 ring-background"
+                  >
+                    <ProfilePicture profile={profile} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-2xl font-black break-all">
+                  {profile?.name ?? handle}
+                </div>
+                <div className="gradient-text text-lg break-all font-bold w-fit">
+                  @{handle}
+                </div>
+              </div>
+
+              <div>
+                {handle === viewerHandle && (
+                  <Link href="/settings" passHref>
+                    <div>
+                      <Button variant="outlined" fullWidth>
+                        Edit Profile
+                      </Button>
+                    </div>
+                  </Link>
+                )}
+              </div>
+
+              <div className="font-bold">{profile?.bio}</div>
+
+              <div className="space-y-4">
+                <ProfileRow icon={<FaHashtag className="text-lg" />}>
+                  {profile.id}
+                </ProfileRow>
+
+                {location && (
+                  <ProfileRow icon={<MdOutlineLocationOn />}>
+                    {location.value}
+                  </ProfileRow>
+                )}
+
+                {twitter && (
+                  <ProfileRow icon={<FaTwitter className="text-sky-500" />}>
+                    <a
+                      href={`https://twitter.com/${twitter.value}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:underline"
+                    >
+                      {twitter.value}
+                    </a>
+                  </ProfileRow>
+                )}
+
+                {website && (
+                  <ProfileRow
+                    icon={
+                      <img
+                        src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${website.value}`}
+                        alt="website favicon"
+                      />
+                    }
+                  >
+                    <a
+                      href={website.value}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:underline"
+                    >
+                      {website.value}
+                    </a>
+                  </ProfileRow>
+                )}
+              </div>
+            </div>
+
+            {spaces && spaces.length > 0 && (
+              <div className="w-full space-y-4 md:ml-12 pt-4">
+                <div className="flex items-center justify-center w-full space-x-4">
+                  <div className="text-xl font-bold rounded-lg px-3 py-1">
+                    Spaces
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-2">
+                  {spaces?.map((space) => (
+                    <div key={space.id}>
+                      <Link href={`/space/${space.id}`} passHref>
+                        <div>
+                          <SpaceCard space={space} />
+                        </div>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

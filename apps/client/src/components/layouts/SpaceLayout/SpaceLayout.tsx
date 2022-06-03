@@ -30,18 +30,18 @@ export default function SpaceLayout({
     <>
       <Head>
         <title>{metadata.title} / The Wired</title>
+
+        {/* meta tags */}
+        <meta name="name" content={metadata.title} />
         <meta name="description" content={metadata.description} />
+        <meta name="image" content={metadata.image} />
 
-        <meta itemProp="name" content={metadata.title} />
-        <meta itemProp="description" content={metadata.description} />
-        <meta itemProp="image" content={metadata.image} />
+        {/* open graph */}
+        <meta name="og:title" content={metadata.title} />
+        <meta name="og:description" content={metadata.description} />
+        <meta name="og:image" content={metadata.image} />
 
-        <meta property="og:title" content={metadata.title} />
-        <meta property="og:description" content={metadata.description} />
-        <meta property="og:image" content={metadata.image} />
-        <meta property="og:image:width" content={"595.2px"} />
-        <meta property="og:image:height" content={"357.11px"} />
-
+        {/* twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={metadata.title} />
         <meta name="twitter:description" content={metadata.description} />

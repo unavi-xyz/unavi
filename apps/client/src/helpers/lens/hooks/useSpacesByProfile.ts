@@ -3,16 +3,14 @@ import { AppId } from "../types";
 
 export function useSpacesByProfile(profileId: string | undefined) {
   const [{ data }] = useGetPublicationsQuery({
-    variables: { profileId },
+    variables: {
+      profileId,
+      sources: [AppId.space],
+    },
     pause: !profileId,
   });
 
-  if (!data) return;
-
-  const spaces = data.publications.items.filter(
-    (item) => item.__typename === "Post" && item.appId === AppId.space
-  );
-
-  //for some reason, the type is not working here
+  const spaces = data?.publications.items;
+  if (!spaces) return;
   return spaces as Post[];
 }

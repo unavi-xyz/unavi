@@ -1,7 +1,7 @@
-query GetPublications($profileId: ProfileId!, $sources: [Sources!]) {
-  publications(
+query ExplorePublications($sources: [Sources!]) {
+  explorePublications(
     request: {
-      profileId: $profileId
+      sortCriteria: TOP_COMMENTED
       publicationTypes: [POST]
       limit: 10
       sources: $sources

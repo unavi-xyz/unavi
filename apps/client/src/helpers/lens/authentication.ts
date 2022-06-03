@@ -16,6 +16,8 @@ import { lensClient } from "./client";
 import { LOCAL_STORAGE } from "./constants";
 import { useLensStore } from "./store";
 
+export const PREV_HANDLE_KEY = "PREV_HANDLE_KEY";
+
 async function setAccessToken(accessToken: string) {
   const address = useEthersStore.getState().address;
   const TwentyNineMinutesFromNow = new Date(
@@ -147,4 +149,10 @@ export function logout() {
   sessionStorage.removeItem(AUTO_LOGIN_KEY);
   useLensStore.setState({ authenticated: false, handle: undefined });
   disconnectWallet();
+}
+
+export function switchProfile(handle: string) {
+  sessionStorage.setItem(AUTO_LOGIN_KEY, handle);
+  localStorage.setItem(PREV_HANDLE_KEY, handle);
+  useLensStore.setState({ handle });
 }

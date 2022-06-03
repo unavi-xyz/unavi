@@ -11,6 +11,7 @@ import {
 } from "../../generated/graphql";
 import { disconnectWallet } from "../ethers/connection";
 import { useEthersStore } from "../ethers/store";
+import { AUTO_LOGIN_KEY } from "../ethers/useAutoLogin";
 import { lensClient } from "./client";
 import { LOCAL_STORAGE } from "./constants";
 import { useLensStore } from "./store";
@@ -143,6 +144,7 @@ export async function authenticate() {
 }
 
 export function logout() {
+  sessionStorage.removeItem(AUTO_LOGIN_KEY);
   useLensStore.setState({ authenticated: false, handle: undefined });
   disconnectWallet();
 }

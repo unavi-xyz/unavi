@@ -1,4 +1,4 @@
-import { Physics } from "@react-three/cannon";
+import { Physics, Triplet } from "@react-three/cannon";
 import { Canvas } from "@react-three/fiber";
 import produce from "immer";
 import Head from "next/head";
@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
-import { InstancedScene } from "@wired-xr/scene";
+import { InstancedScene, traverseTree } from "@wired-xr/scene";
 
 import Player from "../../src/components/app/Player";
 import { getFileByPath } from "../../src/helpers/studio/filesystem";
@@ -21,6 +21,7 @@ export default function Preview() {
   const root = useStudioStore((state) => state.rootHandle);
 
   const [loadedProject, setLoadedProject] = useState<Project>();
+  const [spawn, setSpawn] = useState<Triplet>();
 
   useEffect(() => {
     if (!root) {
@@ -60,10 +61,19 @@ export default function Preview() {
           );
         });
 
+        //set spawn
+        const spawns: Triplet[] = [];
+        traverseTree(newProject.scene.tree, (entity) => {
+          if (entity.type === "Spawn") spawns.push(entity.transform.position);
+        });
+        if (spawns.length > 0) setSpawn(spawns[0]);
+
+        //load scene
         setLoadedProject(newProject);
       } catch (err) {
         console.error(err);
         setLoadedProject(undefined);
+        setSpawn(undefined);
       }
     }
 
@@ -84,7 +94,7 @@ export default function Preview() {
         <Physics>
           <InstancedScene scene={loadedProject.scene} />
 
-          <Player />
+          <Player spawn={spawn} />
         </Physics>
       </Canvas>
 

@@ -42,19 +42,7 @@ export const ALL_PRESETS: {
 
     props: {},
   },
-  Model: {
-    type: "Model",
 
-    id: "",
-    name: "Model",
-
-    transform: DEFAULT_TRANSFORM,
-
-    parentId: null,
-    children: [],
-
-    props: {},
-  },
   PointLight: {
     type: "PointLight",
 
@@ -107,11 +95,38 @@ export const ALL_PRESETS: {
 
     props: {},
   },
+
   Text: {
     type: "Text",
 
     id: "",
     name: "Text",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
+  Model: {
+    type: "Model",
+
+    id: "",
+    name: "Model",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
+  Spawn: {
+    type: "Spawn",
+
+    id: "",
+    name: "Spawn",
 
     transform: DEFAULT_TRANSFORM,
 
@@ -128,7 +143,6 @@ export const OBJECT_PRESETS: { [key: string]: Preset } = {
   Box: "Box",
   Sphere: "Sphere",
   Cylinder: "Cylinder",
-  Model: "Model",
 };
 
 export const LIGHTS_PRESETS: { [key: string]: Preset } = {
@@ -140,4 +154,6 @@ export const LIGHTS_PRESETS: { [key: string]: Preset } = {
 
 export const SPECIALS_PRESETS: { [key: string]: Preset } = {
   Text: "Text",
+  Model: "Model",
+  Spawn: "Spawn",
 };

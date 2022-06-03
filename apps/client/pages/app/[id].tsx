@@ -21,7 +21,7 @@ export default function App() {
   const id = router.query.id as string;
 
   const publication = usePublication(id);
-  const loadedScene = useLoadAssets(publication?.metadata.content);
+  const { loadedScene, spawn } = useLoadAssets(publication?.metadata.content);
 
   useAppHotkeys();
 
@@ -44,7 +44,7 @@ export default function App() {
           <Physics>
             <InstancedScene scene={loadedScene} />
 
-            <Player />
+            <Player spawn={spawn} />
             <MultiplayerManager spaceId={id} />
           </Physics>
         </CanvasBridge>

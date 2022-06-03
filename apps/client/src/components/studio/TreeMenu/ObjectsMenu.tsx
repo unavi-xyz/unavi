@@ -12,7 +12,7 @@ export default function ObjectsMenu() {
           key={name}
           onClick={() => {
             const entity = addPreset(preset, selectedId);
-            useStudioStore.setState({ selectedId: entity.id });
+            if (entity) useStudioStore.setState({ selectedId: entity.id });
           }}
           className="w-full flex hover:bg-primaryContainer hover:text-onPrimaryContainer
                      rounded-md px-4 py-1 transition items-center space-x-2"

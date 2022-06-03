@@ -55,7 +55,6 @@ export default function LoginPage() {
       </div>
 
       <Button
-        variant="text"
         fullWidth
         squared
         loading={fetching}

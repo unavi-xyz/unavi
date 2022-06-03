@@ -4,6 +4,7 @@ import { MdAdd, MdOutlineFolderOpen } from "react-icons/md";
 import { PROJECT_FILE_NAME } from "../../../helpers/studio/constants";
 import { useStudioStore } from "../../../helpers/studio/store";
 import Button from "../../base/Button";
+import BrowserErrorPage from "./BrowserErrorPage";
 import NewProjectsPage from "./NewProjectPage";
 
 export default function ProjectsPage() {
@@ -26,6 +27,9 @@ export default function ProjectsPage() {
       console.error(err);
     }
   }
+
+  //if file access API not supported
+  if (window && !window.showDirectoryPicker) return <BrowserErrorPage />;
 
   if (newProject)
     return <NewProjectsPage onBack={() => setNewProject(false)} />;

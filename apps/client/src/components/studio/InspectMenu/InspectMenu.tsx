@@ -7,6 +7,7 @@ import MenuBlock from "./MenuBlock";
 import TransformMenu from "./TransformMenu";
 
 const MATERIAL_TYPES = ["Box", "Sphere", "Cylinder"];
+const NO_ENTITY_MENU_TYPES = ["Group", "Spawn"];
 
 export default function InspectMenu() {
   const selected = useAtomValue(selectedAtom);
@@ -14,6 +15,7 @@ export default function InspectMenu() {
   if (!selected) return null;
 
   const hasMaterial = MATERIAL_TYPES.includes(selected.type);
+  const hasEntityMenu = !NO_ENTITY_MENU_TYPES.includes(selected.type);
 
   return (
     <div key={selected.id} className="p-4 space-y-8 w-full">
@@ -25,9 +27,11 @@ export default function InspectMenu() {
         <TransformMenu />
       </MenuBlock>
 
-      <MenuBlock menuId="Entity" title={selected.type}>
-        <EntityMenu />
-      </MenuBlock>
+      {hasEntityMenu && (
+        <MenuBlock menuId="Entity" title={selected.type}>
+          <EntityMenu />
+        </MenuBlock>
+      )}
 
       {hasMaterial && (
         <MenuBlock menuId="Material">

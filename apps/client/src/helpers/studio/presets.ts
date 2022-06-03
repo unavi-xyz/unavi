@@ -96,6 +96,19 @@ export const ALL_PRESETS: {
     props: {},
   },
 
+  Group: {
+    type: "Group",
+
+    id: "",
+    name: "Group",
+
+    transform: DEFAULT_TRANSFORM,
+
+    parentId: null,
+    children: [],
+
+    props: {},
+  },
   Text: {
     type: "Text",
 
@@ -153,6 +166,7 @@ export const LIGHTS_PRESETS: { [key: string]: Preset } = {
 };
 
 export const SPECIALS_PRESETS: { [key: string]: Preset } = {
+  Group: "Group",
   Text: "Text",
   Model: "Model",
   Spawn: "Spawn",

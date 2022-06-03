@@ -1,15 +1,48 @@
+import { NextPageContext } from "next";
 import Head from "next/head";
 import Link from "next/link";
 
 import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
 import SpaceCard from "../src/components/lens/SpaceCard";
-import { useExploreSpaces } from "../src/helpers/lens/hooks/useExploreSpaces";
+import {
+  ExplorePublicationsDocument,
+  ExplorePublicationsQuery,
+  ExplorePublicationsQueryVariables,
+  Post,
+} from "../src/generated/graphql";
+import { lensClient } from "../src/helpers/lens/client";
+import { AppId } from "../src/helpers/lens/types";
 
-export default function Explore() {
-  const spaces = useExploreSpaces();
+export async function getServerSideProps({ res }: NextPageContext) {
+  res?.setHeader("Cache-Control", "s-maxage=120");
 
+  const { data } = await lensClient
+    .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
+      ExplorePublicationsDocument,
+      {
+        sources: [AppId.space],
+      }
+    )
+    .toPromise();
+
+  if (!data) return { props: {} };
+
+  const spaces = data.explorePublications.items;
+
+  return {
+    props: {
+      spaces,
+    },
+  };
+}
+
+interface Props {
+  spaces: Post[] | undefined;
+}
+
+export default function Explore({ spaces }: Props) {
   return (
-    <div>
+    <>
       <Head>
         <title>Explore / The Wired</title>
       </Head>
@@ -31,7 +64,7 @@ export default function Explore() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

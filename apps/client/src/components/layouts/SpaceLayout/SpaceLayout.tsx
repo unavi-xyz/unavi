@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
 import { useLensStore } from "../../../helpers/lens/store";
 import Button from "../../base/Button";
+import MetaTags from "../../ui/MetaTags";
 import SpaceTab from "./SpaceTab";
 import { SpaceLayoutProps } from "./getSpaceLayoutProps";
 
@@ -28,25 +29,14 @@ export default function SpaceLayout({
 
   return (
     <>
-      <Head>
-        <title>{metadata.title} / The Wired</title>
-
-        {/* meta tags */}
-        <meta name="name" content={metadata.title} />
-        <meta name="description" content={metadata.description} />
-        <meta name="image" content={metadata.image} />
-
-        {/* open graph */}
-        <meta name="og:title" content={metadata.title} />
-        <meta name="og:description" content={metadata.description} />
-        <meta name="og:image" content={metadata.image} />
-
-        {/* twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={metadata.title} />
-        <meta name="twitter:description" content={metadata.description} />
-        <meta name="twitter:image" content={metadata.image} />
-      </Head>
+      <MetaTags
+        title={metadata.title}
+        description={metadata.description}
+        image={metadata.image}
+        imageWidth="595.2px"
+        imageHeight="357.11px"
+        card="summary_large_image"
+      />
 
       <div className="mx-4 h-full">
         <div className="max-w mx-auto py-8 w-full h-full space-y-8">

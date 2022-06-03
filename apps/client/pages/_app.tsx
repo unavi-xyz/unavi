@@ -15,6 +15,9 @@ export default function App({ Component, pageProps }: any) {
     <div>
       <Head>
         <title>The Wired</title>
+
+        <meta name="viewport" content="initial-scale=1, width=device-width" />
+        <meta name="theme-color" content="#fffbfe" />
       </Head>
 
       <div className="w-full h-screen">

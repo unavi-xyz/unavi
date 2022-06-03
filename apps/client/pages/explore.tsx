@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
 import SpaceCard from "../src/components/lens/SpaceCard";
+import MetaTags from "../src/components/ui/MetaTags";
 import {
   ExplorePublicationsDocument,
   ExplorePublicationsQuery,
@@ -43,9 +44,7 @@ interface Props {
 export default function Explore({ spaces }: Props) {
   return (
     <>
-      <Head>
-        <title>Explore / The Wired</title>
-      </Head>
+      <MetaTags title="Explore" />
 
       <div className="flex justify-center py-8 mx-4">
         <div className="max-w space-y-8">

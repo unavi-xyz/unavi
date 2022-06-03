@@ -4,13 +4,12 @@ import { MdArrowBackIosNew } from "react-icons/md";
 
 import Button from "../src/components/base/Button";
 import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
+import MetaTags from "../src/components/ui/MetaTags";
 
 export default function Create() {
   return (
-    <div>
-      <Head>
-        <title>Create / The Wired</title>
-      </Head>
+    <>
+      <MetaTags title="Create" />
 
       <div className="flex justify-center py-8 mx-4">
         <div className="max-w space-y-8">
@@ -36,7 +35,7 @@ export default function Create() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

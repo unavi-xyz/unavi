@@ -26,7 +26,7 @@ export async function getSpaceLayoutProps(id: string) {
     description:
       publication?.metadata.description ?? publication?.profile.handle
         ? `Space by @${publication?.profile.handle}`
-        : "",
+        : " ",
     image: getMediaImageSSR(publication?.metadata.media[0]) ?? "",
   };
 

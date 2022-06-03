@@ -11,6 +11,7 @@ import { InstancedScene, traverseTree } from "@wired-xr/scene";
 
 import Player from "../../src/components/app/Player";
 import ToggleDebug from "../../src/components/studio/StudioCanvas/ToggleDebug";
+import MetaTags from "../../src/components/ui/MetaTags";
 import { getFileByPath } from "../../src/helpers/studio/filesystem";
 import { useProject } from "../../src/helpers/studio/hooks/useProject";
 import { useStudioStore } from "../../src/helpers/studio/store";
@@ -82,39 +83,39 @@ export default function Preview() {
     loadProject();
   }, [project]);
 
-  if (!loadedProject) return null;
-
   return (
-    <div className="h-full">
-      <Head>
-        <title>{loadedProject.name} / The Wired </title>
-      </Head>
+    <>
+      <MetaTags title="Studio" />
 
-      <div className="crosshair" />
+      <div className="h-full">
+        <div className="crosshair" />
 
-      <Canvas shadows className="w-full h-full">
-        <Physics>
-          <ToggleDebug enabled={debug}>
-            <InstancedScene scene={loadedProject.scene} />
+        {loadedProject && (
+          <Canvas shadows className="w-full h-full">
+            <Physics>
+              <ToggleDebug enabled={debug}>
+                <InstancedScene scene={loadedProject.scene} />
 
-            <Player spawn={spawn} />
-          </ToggleDebug>
-        </Physics>
-      </Canvas>
+                <Player spawn={spawn} />
+              </ToggleDebug>
+            </Physics>
+          </Canvas>
+        )}
 
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="fixed top-0 right-0 p-6 text-2xl"
-      >
-        <Link href={"/studio"} passHref>
-          <div
-            className="cursor-pointer p-2 rounded-full bg-surface text-onSurface
-                       backdrop-blur bg-opacity-60 hover:bg-opacity-100 transition active:bg-opacity-90"
-          >
-            <MdClose />
-          </div>
-        </Link>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="fixed top-0 right-0 p-6 text-2xl"
+        >
+          <Link href={"/studio"} passHref>
+            <div
+              className="cursor-pointer p-2 rounded-full bg-surface text-onSurface
+            backdrop-blur bg-opacity-60 hover:bg-opacity-100 transition active:bg-opacity-90"
+            >
+              <MdClose />
+            </div>
+          </Link>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

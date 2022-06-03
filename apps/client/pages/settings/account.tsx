@@ -3,6 +3,7 @@ import { ChangeEvent, useEffect, useState } from "react";
 import Button from "../../src/components/base/Button";
 import Select from "../../src/components/base/Select";
 import { getSettingsLayout } from "../../src/components/layouts/SettingsLayout/SettingsLayout";
+import MetaTags from "../../src/components/ui/MetaTags";
 import { useEthersStore } from "../../src/helpers/ethers/store";
 import { useProfilesByAddress } from "../../src/helpers/lens/hooks/useProfilesByAddress";
 import { useSetDefaultProfile } from "../../src/helpers/lens/hooks/useSetDefaultProfile";
@@ -49,47 +50,51 @@ export default function Account() {
   }
 
   return (
-    <div
-      className="space-y-8 bg-primaryContainer text-onPrimaryContainer
-                 rounded-3xl border p-8 text-lg"
-    >
-      <div className="space-y-2">
-        <div className="font-bold text-xl">Default Profile</div>
+    <>
+      <MetaTags title="Account" />
+
+      <div
+        className="space-y-8 bg-primaryContainer text-onPrimaryContainer
+                   rounded-3xl border p-8 text-lg"
+      >
+        <div className="space-y-2">
+          <div className="font-bold text-xl">Default Profile</div>
+          <div>
+            Selecting a default profile will help people discover who you are.
+            You can change your default profile at any time.
+          </div>
+        </div>
+
+        {defaultProfile && (
+          <div className="flex space-x-1">
+            <div>Current default profile:</div>
+            <div>@{defaultProfile.handle}</div>
+          </div>
+        )}
+
         <div>
-          Selecting a default profile will help people discover who you are. You
-          can change your default profile at any time.
+          <Select
+            title="Select profile"
+            options={options}
+            value={selected}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              setSelected(e.target.value)
+            }
+          />
+        </div>
+
+        <div className="w-full flex justify-end">
+          <Button
+            variant="filled"
+            onClick={handleSave}
+            loading={loading}
+            disabled={disabled}
+          >
+            Save
+          </Button>
         </div>
       </div>
-
-      {defaultProfile && (
-        <div className="flex space-x-1">
-          <div>Current default profile:</div>
-          <div>@{defaultProfile.handle}</div>
-        </div>
-      )}
-
-      <div>
-        <Select
-          title="Select profile"
-          options={options}
-          value={selected}
-          onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-            setSelected(e.target.value)
-          }
-        />
-      </div>
-
-      <div className="w-full flex justify-end">
-        <Button
-          variant="filled"
-          onClick={handleSave}
-          loading={loading}
-          disabled={disabled}
-        >
-          Save
-        </Button>
-      </div>
-    </div>
+    </>
   );
 }
 

@@ -12,6 +12,7 @@ import Player from "../../src/components/app/Player";
 import SpaceProvider, {
   SpaceContext,
 } from "../../src/components/app/SpaceProvider";
+import MetaTags from "../../src/components/ui/MetaTags";
 import { useAppHotkeys } from "../../src/helpers/app/hooks/useAppHotkeys";
 import { useLoadAssets } from "../../src/helpers/app/hooks/useLoadAssets";
 import { usePublication } from "../../src/helpers/lens/hooks/usePublication";
@@ -25,31 +26,35 @@ export default function App() {
 
   useAppHotkeys();
 
-  if (!loadedScene || !publication) return null;
-
   return (
-    <SpaceProvider spaceId={id}>
-      <div className="h-full">
-        <Head>
-          <title>
-            {publication.metadata.name ?? publication.id} / The Wired
-          </title>
-        </Head>
+    <>
+      <MetaTags title={publication?.metadata.name ?? "App"} />
 
-        <div className="crosshair" />
+      {loadedScene && publication && (
+        <SpaceProvider spaceId={id}>
+          <div className="h-full">
+            <Head>
+              <title>
+                {publication.metadata.name ?? publication.id} / The Wired
+              </title>
+            </Head>
 
-        <Chat />
+            <div className="crosshair" />
 
-        <CanvasBridge>
-          <Physics>
-            <InstancedScene scene={loadedScene} />
+            <Chat />
 
-            <Player spawn={spawn} />
-            <MultiplayerManager spaceId={id} />
-          </Physics>
-        </CanvasBridge>
-      </div>
-    </SpaceProvider>
+            <CanvasBridge>
+              <Physics>
+                <InstancedScene scene={loadedScene} />
+
+                <Player spawn={spawn} />
+                <MultiplayerManager spaceId={id} />
+              </Physics>
+            </CanvasBridge>
+          </div>
+        </SpaceProvider>
+      )}
+    </>
   );
 }
 

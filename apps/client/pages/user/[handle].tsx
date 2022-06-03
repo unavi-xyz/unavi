@@ -13,56 +13,71 @@ import {
   GetProfileByHandleDocument,
   GetProfileByHandleQuery,
   GetProfileByHandleQueryVariables,
+  GetPublicationsDocument,
+  GetPublicationsQuery,
+  GetPublicationsQueryVariables,
+  Post,
 } from "../../src/generated/graphql";
 import { lensClient } from "../../src/helpers/lens/client";
 import {
   getMediaImageSSR,
   useMediaImage,
 } from "../../src/helpers/lens/hooks/useMediaImage";
-import { useSpacesByProfile } from "../../src/helpers/lens/hooks/useSpacesByProfile";
 import { useLensStore } from "../../src/helpers/lens/store";
+import { AppId } from "../../src/helpers/lens/types";
 import { PageMetadata } from "../../src/helpers/types";
-
-interface Props {
-  metadata: PageMetadata;
-  profile: GetProfileByHandleQuery["profiles"]["items"][0] | undefined;
-}
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
 
-  const handle = query.handle as string;
+  const handle = query.handle;
 
-  const { data } = await lensClient
+  const profileQuery = await lensClient
     .query<GetProfileByHandleQuery, GetProfileByHandleQueryVariables>(
       GetProfileByHandleDocument,
       { handle }
     )
     .toPromise();
 
-  const profile = data?.profiles.items[0];
+  const profile = profileQuery.data?.profiles.items[0];
   const title = profile?.name ? `${profile?.name} (@${handle})` : `@${handle}`;
-
   const metadata: PageMetadata = {
     title,
     description: profile?.bio ?? "",
     image: getMediaImageSSR(profile?.picture) ?? "",
   };
 
-  const props: Props = { metadata, profile };
+  if (!profile) return { props: { metadata } };
+
+  const spacesQuery = await lensClient
+    .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
+      GetPublicationsDocument,
+      {
+        profileId: profile.id,
+        sources: [AppId.space],
+      }
+    )
+    .toPromise();
+
+  const spaces = spacesQuery.data?.publications.items;
 
   return {
-    props,
+    props: { metadata, profile, spaces },
   };
 }
 
-export default function User({ metadata, profile }: Props) {
+interface Props {
+  metadata: PageMetadata;
+  profile?: GetProfileByHandleQuery["profiles"]["items"][0];
+  spaces?: Post[];
+}
+
+export default function User({ metadata, profile, spaces }: Props) {
   const router = useRouter();
   const handle = router.query.handle as string;
 
   const coverUrl = useMediaImage(profile?.coverPicture);
   const viewerHandle = useLensStore((state) => state.handle);
-  const spaces = useSpacesByProfile(profile?.id);
 
   if (!profile) return null;
 
@@ -98,12 +113,15 @@ export default function User({ metadata, profile }: Props) {
         <meta name="twitter:image" content={metadata.image} />
       </Head>
 
-      <div
-        style={{
-          backgroundImage: coverUrl ? `url(${coverUrl})` : undefined,
-        }}
-        className="w-full h-80 bg-cover bg-center bg-tertiaryContainer"
-      />
+      <div className="w-full h-80 bg-tertiaryContainer">
+        {coverUrl && (
+          <img
+            src={coverUrl}
+            alt="cover"
+            className="w-full h-full object-cover"
+          />
+        )}
+      </div>
 
       <div className="flex justify-center">
         <div className="max-w mx-4 pb-4 flex flex-col md:flex-row">

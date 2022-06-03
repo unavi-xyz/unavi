@@ -10,6 +10,7 @@ import { MdClose } from "react-icons/md";
 import { InstancedScene, traverseTree } from "@wired-xr/scene";
 
 import Player from "../../src/components/app/Player";
+import ToggleDebug from "../../src/components/studio/StudioCanvas/ToggleDebug";
 import { getFileByPath } from "../../src/helpers/studio/filesystem";
 import { useProject } from "../../src/helpers/studio/hooks/useProject";
 import { useStudioStore } from "../../src/helpers/studio/store";
@@ -19,6 +20,7 @@ export default function Preview() {
   const router = useRouter();
   const project = useProject();
   const root = useStudioStore((state) => state.rootHandle);
+  const debug = useStudioStore((state) => state.debug);
 
   const [loadedProject, setLoadedProject] = useState<Project>();
   const [spawn, setSpawn] = useState<Triplet>();
@@ -92,9 +94,11 @@ export default function Preview() {
 
       <Canvas shadows className="w-full h-full">
         <Physics>
-          <InstancedScene scene={loadedProject.scene} />
+          <ToggleDebug enabled={debug}>
+            <InstancedScene scene={loadedProject.scene} />
 
-          <Player spawn={spawn} />
+            <Player spawn={spawn} />
+          </ToggleDebug>
         </Physics>
       </Canvas>
 

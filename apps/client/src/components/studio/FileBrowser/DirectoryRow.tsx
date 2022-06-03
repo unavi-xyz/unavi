@@ -36,6 +36,7 @@ export default function DirectoryRow({
       );
 
       if (directoryDiff.length > 0) setChildrenDirectories(directories);
+      else setOpen(false);
     }
 
     readEntries();

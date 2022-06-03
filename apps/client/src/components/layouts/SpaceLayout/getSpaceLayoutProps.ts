@@ -23,7 +23,10 @@ export async function getSpaceLayoutProps(id: string) {
   const publication = data?.publication;
   const metadata: PageMetadata = {
     title: `${publication?.metadata.name ?? id}`,
-    description: publication?.metadata.description ?? "",
+    description:
+      publication?.metadata.description ?? publication?.profile.handle
+        ? `Space by @${publication?.profile.handle}`
+        : "",
     image: getMediaImageSSR(publication?.metadata.media[0]) ?? "",
   };
 

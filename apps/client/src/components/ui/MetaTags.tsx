@@ -39,11 +39,11 @@ export default function MetaTags({
       {imageHeight && <meta property="og:image:height" content={imageHeight} />}
 
       {/* twitter */}
-      <meta name="twitter:site" content="@TheWiredXR" />
+      <meta name="twitter:card" content={card} />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image:src" content={image} />
-      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:image" content={image} />
+      <meta name="twitter:site" content="@TheWiredXR" />
     </Head>
   );
 }

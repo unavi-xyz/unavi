@@ -22,11 +22,11 @@ export default function BrowserErrorPage() {
       </div>
 
       <Link href="/" passHref>
-        <div>
+        <a>
           <Button fullWidth variant="outlined">
             Return to Home
           </Button>
-        </div>
+        </a>
       </Link>
     </div>
   );

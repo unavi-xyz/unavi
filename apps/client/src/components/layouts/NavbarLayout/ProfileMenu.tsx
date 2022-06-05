@@ -32,24 +32,24 @@ export default function ProfileMenu() {
 
       <div className="px-2 space-y-1">
         <Link href={`/user/${handle}`} passHref>
-          <div>
+          <a className="block">
             <ProfileMenuButton icon={<MdOutlinePersonOutline />}>
               Your Profile
             </ProfileMenuButton>
-          </div>
+          </a>
         </Link>
 
         <Link href="/settings" passHref>
-          <div>
+          <a className="block">
             <ProfileMenuButton icon={<MdOutlineSettings />}>
               Settings
             </ProfileMenuButton>
-          </div>
+          </a>
         </Link>
 
-        <div onClick={logout}>
+        <button onClick={logout} className="w-full">
           <ProfileMenuButton icon={<MdLogout />}>Log Out</ProfileMenuButton>
-        </div>
+        </button>
       </div>
 
       {otherProfiles && otherProfiles.length > 0 && (
@@ -58,12 +58,12 @@ export default function ProfileMenu() {
 
           <div className="px-2 space-y-1 overflow-y-auto max-h-20">
             {otherProfiles.map((profile) => (
-              <ProfileMenuButton
+              <button
                 key={profile.id}
                 onClick={() => switchProfile(profile.handle)}
               >
-                @{profile.handle}
-              </ProfileMenuButton>
+                <ProfileMenuButton>@{profile.handle}</ProfileMenuButton>
+              </button>
             ))}
           </div>
         </>

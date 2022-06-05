@@ -17,7 +17,7 @@ export default function Create() {
 
           <div className="space-y-2">
             <Link href="/studio">
-              <div>
+              <a>
                 <Button variant="tonal" fullWidth squared>
                   <div className="p-2 flex items-center justify-between text-lg">
                     <div>
@@ -30,7 +30,7 @@ export default function Create() {
                     <MdArrowBackIosNew className="rotate-180" />
                   </div>
                 </Button>
-              </div>
+              </a>
             </Link>
           </div>
         </div>

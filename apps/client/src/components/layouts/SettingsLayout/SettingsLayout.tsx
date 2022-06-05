@@ -31,8 +31,8 @@ export default function SettingsLayout({ children }: Props) {
       </Head>
 
       <div className="max-w mx-4 mb-4 flex flex-col md:flex-row">
-        <div className="pt-8 md:pr-8 space-y-4 w-full md:max-w-xs">
-          <div className="flex space-x-4">
+        <div className="pt-8 md:pr-8 space-y-2 w-full md:max-w-xs">
+          <div className="flex space-x-4 pb-4">
             <div className="w-20 flex flex-col justify-center">
               <ViewerProfilePicture circle />
             </div>
@@ -45,25 +45,25 @@ export default function SettingsLayout({ children }: Props) {
           </div>
 
           <Link href="/settings" passHref>
-            <div>
+            <a className="block">
               <SettingsButton
                 icon={<MdOutlinePersonOutline />}
                 selected={router.asPath === "/settings"}
               >
                 Profile
               </SettingsButton>
-            </div>
+            </a>
           </Link>
 
           <Link href="/settings/account" passHref>
-            <div>
+            <a className="block">
               <SettingsButton
                 icon={<MdOutlineAccountBalanceWallet />}
                 selected={router.asPath === "/settings/account"}
               >
                 Account
               </SettingsButton>
-            </div>
+            </a>
           </Link>
         </div>
 

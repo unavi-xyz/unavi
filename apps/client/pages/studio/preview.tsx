@@ -107,12 +107,12 @@ export default function Preview() {
           className="fixed top-0 right-0 p-6 text-2xl"
         >
           <Link href={"/studio"} passHref>
-            <div
+            <a
               className="cursor-pointer p-2 rounded-full bg-surface text-onSurface
-            backdrop-blur bg-opacity-60 hover:bg-opacity-100 transition active:bg-opacity-90"
+                         backdrop-blur bg-opacity-60 hover:bg-opacity-100 transition active:bg-opacity-90"
             >
               <MdClose />
-            </div>
+            </a>
           </Link>
         </div>
       </div>

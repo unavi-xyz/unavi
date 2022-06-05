@@ -1,5 +1,4 @@
 import { NextPageContext } from "next";
-import Head from "next/head";
 import Link from "next/link";
 
 import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
@@ -54,10 +53,10 @@ export default function Explore({ spaces }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             {spaces?.map((space) => (
-              <Link key={space.id} href={`/space/${space.id}`}>
-                <div>
+              <Link key={space.id} href={`/space/${space.id}`} passHref>
+                <a>
                   <SpaceCard space={space} />
-                </div>
+                </a>
               </Link>
             ))}
           </div>

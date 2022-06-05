@@ -1,4 +1,3 @@
-import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
@@ -61,20 +60,20 @@ export default function SpaceLayout({
                   <div className="font-bold flex space-x-1 justify-center md:justify-start">
                     <div>By</div>
                     <Link href={`/user/${publication?.profile.handle}`}>
-                      <div className="hover:underline cursor-pointer">
+                      <a className="hover:underline cursor-pointer">
                         @{publication?.profile.handle}
-                      </div>
+                      </a>
                     </Link>
                   </div>
                 </div>
               </div>
 
               <Link href={`/app/${id}`} passHref>
-                <div>
+                <a>
                   <Button variant="filled" fullWidth>
                     <div className="py-2">Join Space</div>
                   </Button>
-                </div>
+                </a>
               </Link>
             </div>
           </div>

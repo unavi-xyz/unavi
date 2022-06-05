@@ -26,11 +26,11 @@ export default function SpaceTab({ href, text }: Props) {
 
   return (
     <Link href={href} passHref>
-      <button
+      <a
         className={`w-full md:w-min md:px-16 py-1 rounded-lg text-lg font-bold transition ${selectedClass}`}
       >
         {text}
-      </button>
+      </a>
     </Link>
   );
 }

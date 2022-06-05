@@ -43,9 +43,9 @@ export default function StudioNavbar() {
     <div className="flex justify-between items-center h-full px-4 py-2">
       <div className="w-full flex items-center space-x-4 text-lg">
         <Link href="/create">
-          <div className="cursor-pointer transition text-outline hover:text-inherit p-1">
+          <a className="cursor-pointer transition text-outline hover:text-inherit p-1">
             <MdArrowBackIosNew />
-          </div>
+          </a>
         </Link>
 
         <div>{project?.name}</div>

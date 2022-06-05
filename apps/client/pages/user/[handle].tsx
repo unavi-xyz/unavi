@@ -141,11 +141,11 @@ export default function User({ metadata, profile, spaces }: Props) {
                 <div>
                   {handle === viewerHandle && (
                     <Link href="/settings" passHref>
-                      <div>
+                      <a>
                         <Button variant="outlined" fullWidth>
                           Edit Profile
                         </Button>
-                      </div>
+                      </a>
                     </Link>
                   )}
                 </div>
@@ -210,9 +210,9 @@ export default function User({ metadata, profile, spaces }: Props) {
                     {spaces?.map((space) => (
                       <div key={space.id}>
                         <Link href={`/space/${space.id}`} passHref>
-                          <div>
+                          <a>
                             <SpaceCard space={space} />
-                          </div>
+                          </a>
                         </Link>
                       </div>
                     ))}

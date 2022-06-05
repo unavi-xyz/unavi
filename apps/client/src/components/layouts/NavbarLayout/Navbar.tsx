@@ -24,7 +24,7 @@ export default function Navbar() {
         <div className="w-full">
           <div className="w-fit">
             <Link href="/" passHref>
-              <div className="cursor-pointer">
+              <a className="cursor-pointer">
                 <Image
                   width={32}
                   height={32}
@@ -32,7 +32,7 @@ export default function Navbar() {
                   alt="logo"
                   priority
                 />
-              </div>
+              </a>
             </Link>
           </div>
         </div>

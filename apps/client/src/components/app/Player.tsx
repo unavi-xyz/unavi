@@ -8,8 +8,8 @@ import { useKeyboardMovement } from "../../helpers/app/hooks/useKeyboardMovement
 import { useSpringVelocity } from "../../helpers/app/hooks/useSpringVelocity";
 
 const PLAYER_HEIGHT = 1.6;
-const PLAYER_SPEED = 5;
-const JUMP_STRENGTH = 5;
+export const PLAYER_SPEED = 5;
+export const JUMP_STRENGTH = 5;
 
 interface Props {
   spawn?: Triplet;

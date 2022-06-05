@@ -4,8 +4,10 @@ import { AudioListener, Group, PositionalAudio } from "three";
 
 import { Avatar } from "@wired-xr/avatar";
 
+import { useAnimationWeights } from "../../helpers/app/hooks/useAnimationWeights";
+import { useApplyLocation } from "../../helpers/app/hooks/useApplyLocation";
 import useDataChannels from "../../helpers/app/hooks/useDataChannels";
-import useInterpolation from "../../helpers/app/hooks/useInterpolation";
+import { useInterpolateLocation } from "../../helpers/app/hooks/useInterpolateLocation";
 import { PlayerChannels } from "../../helpers/app/types";
 
 const DEFAULT_AVATAR_URL = "/models/Default.vrm";
@@ -22,7 +24,10 @@ export default function OtherPlayer({ id, channels, track }: Props) {
 
   const { camera } = useThree();
   const { locationRef } = useDataChannels(id, channels);
-  const animationWeights = useInterpolation(groupRef, locationRef);
+  const interpolatedLocation = useInterpolateLocation(locationRef);
+  const animationWeights = useAnimationWeights(groupRef, interpolatedLocation);
+
+  useApplyLocation(groupRef, interpolatedLocation);
 
   useEffect(() => {
     if (!track) return;

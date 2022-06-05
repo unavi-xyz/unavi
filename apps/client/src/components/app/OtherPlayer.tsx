@@ -13,21 +13,16 @@ const ANIMATIONS_URL = "/models/animations.fbx";
 
 interface Props {
   id: string;
-  channels: PlayerChannels;
-  track: MediaStreamTrack | undefined;
+  channels?: Partial<PlayerChannels>;
+  track?: MediaStreamTrack;
 }
 
 export default function OtherPlayer({ id, channels, track }: Props) {
   const groupRef = useRef<Group>(null);
 
-  const { locationRef, identity } = useDataChannels(id, channels);
-
-  // const { profile } = useProfile(identity?.did);
-  // const { avatar } = useAvatar(profile?.avatar ?? DEFAULT_AVATAR);
-  // const { url } = useIpfsFile(avatar?.vrm);
-  const animationWeights = useInterpolation(groupRef, locationRef);
-
   const { camera } = useThree();
+  const { locationRef } = useDataChannels(id, channels);
+  const animationWeights = useInterpolation(groupRef, locationRef);
 
   useEffect(() => {
     if (!track) return;

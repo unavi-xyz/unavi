@@ -6,11 +6,11 @@ import { useRouter } from "next/router";
 import { InstancedScene } from "@wired-xr/scene";
 
 import Chat from "../../src/components/app/Chat";
+import ConnectionProvider, {
+  ConnectionContext,
+} from "../../src/components/app/ConnectionProvider";
 import MultiplayerManager from "../../src/components/app/MultiplayerManager";
 import Player from "../../src/components/app/Player";
-import SpaceProvider, {
-  SpaceContext,
-} from "../../src/components/app/SpaceProvider";
 import MetaTags from "../../src/components/ui/MetaTags";
 import { useAppHotkeys } from "../../src/helpers/app/hooks/useAppHotkeys";
 import { useLoadAssets } from "../../src/helpers/app/hooks/useLoadAssets";
@@ -32,7 +32,7 @@ export default function App() {
       <MetaTags title={publication?.metadata.name ?? id ?? "App"} />
 
       {loadedScene && publication && (
-        <SpaceProvider spaceId={id}>
+        <ConnectionProvider>
           <div className="h-full">
             <div className="crosshair" />
 
@@ -47,14 +47,14 @@ export default function App() {
               </Physics>
             </CanvasBridge>
           </div>
-        </SpaceProvider>
+        </ConnectionProvider>
       )}
     </>
   );
 }
 
 function CanvasBridge({ children }: { children: React.ReactNode }) {
-  const ContextBridge = useContextBridge(SpaceContext);
+  const ContextBridge = useContextBridge(ConnectionContext);
   return (
     <Canvas shadows>
       <ContextBridge>{children}</ContextBridge>

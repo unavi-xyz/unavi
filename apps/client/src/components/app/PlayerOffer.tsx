@@ -2,8 +2,8 @@ import { useContext, useEffect, useState } from "react";
 
 import { useExchangeIce } from "../../helpers/app/hooks/useExchangeIce";
 import { PlayerChannels, channelNames } from "../../helpers/app/types";
+import { ConnectionContext } from "./ConnectionProvider";
 import OtherPlayer from "./OtherPlayer";
-import { SpaceContext } from "./SpaceProvider";
 
 interface Props {
   id: string;
@@ -21,7 +21,7 @@ export default function PlayerOffer({ id }: Props) {
     removeConnection,
     createAnswer,
     createOffer,
-  } = useContext(SpaceContext);
+  } = useContext(ConnectionContext);
 
   useEffect(() => {
     setConnection(new RTCPeerConnection());
@@ -31,52 +31,65 @@ export default function PlayerOffer({ id }: Props) {
     if (!socket || !connection) return;
     if (connection.signalingState === "closed") return;
 
-    //create channels
-    const newChannels: PlayerChannels = {
-      identity: connection.createDataChannel("identity"),
-      location: connection.createDataChannel("location"),
-      message: connection.createDataChannel("message"),
-    };
-    channelNames.forEach((name) => {
-      const channel = newChannels[name];
-      addChannel(name, channel);
-      newChannels[name] = channel;
-    });
-    setChannels(newChannels);
+    async function onAnswer(player: string, answer: RTCSessionDescription) {
+      try {
+        if (!connection) throw new Error("Connection is undefined");
+        if (player !== id) throw new Error("Wrong player");
 
-    function onAnswer(player: string, answer: RTCSessionDescription) {
-      if (player !== id || !connection) return;
-      connection.setRemoteDescription(answer).catch(() => {});
+        await connection.setRemoteDescription(answer);
+      } catch (e) {
+        console.error(e);
+      }
     }
 
-    function onOffer(player: string, offer: RTCSessionDescription) {
-      if (player !== id || !connection) return;
-      connection
-        .setRemoteDescription(offer)
-        .then(() => {
-          createAnswer(connection, id);
-        })
-        .catch(() => {});
+    async function onOffer(player: string, offer: RTCSessionDescription) {
+      try {
+        if (!connection) throw new Error("Connection is undefined");
+        if (player !== id) throw new Error("Wrong player");
+
+        await connection.setRemoteDescription(offer);
+        await createAnswer(connection, id);
+      } catch (e) {
+        console.error(e);
+      }
     }
 
     function onTrack(e: RTCTrackEvent) {
       setTrack(e.track);
     }
 
-    function onNegotiationNeeded() {
-      if (!connection) return;
-      createOffer(connection, id);
+    async function onNegotiationNeeded() {
+      try {
+        if (!connection) throw new Error("Connection is undefined");
+        await createOffer(connection, id);
+      } catch (e) {
+        console.error(e);
+      }
     }
 
-    // if (appManager.track) connection.addTrack(appManager.track);
-
-    addConnection(connection);
-
+    //handle events
     socket.on("answer", onAnswer);
     socket.on("offer", onOffer);
     connection.addEventListener("track", onTrack);
     connection.addEventListener("negotiationneeded", onNegotiationNeeded);
 
+    //create channels
+    const newChannels: PlayerChannels = {
+      identity: connection.createDataChannel("identity"),
+      location: connection.createDataChannel("location"),
+      message: connection.createDataChannel("message"),
+    };
+
+    channelNames.forEach((name) => {
+      const channel = newChannels[name];
+      addChannel(name, channel);
+      newChannels[name] = channel;
+    });
+
+    setChannels(newChannels);
+
+    //initiate connection
+    addConnection(connection);
     createOffer(connection, id);
 
     return () => {
@@ -94,5 +107,5 @@ export default function PlayerOffer({ id }: Props) {
 
   useExchangeIce(connection, id);
 
-  return <OtherPlayer id={id} channels={channels as any} track={track} />;
+  return <OtherPlayer id={id} channels={channels} track={track} />;
 }

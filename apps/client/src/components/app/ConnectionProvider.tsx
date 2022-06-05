@@ -19,7 +19,7 @@ const channelStore: ChannelStore = {
   message: [],
 };
 
-interface ISpaceContext {
+interface IConnectionContext {
   socket: Socket | undefined;
   channels: ChannelStore | undefined;
   connections: RTCPeerConnection[] | undefined;
@@ -31,7 +31,7 @@ interface ISpaceContext {
   publishAll: (type: keyof Channels, data: any) => void;
 }
 
-const defaultContext: ISpaceContext = {
+const defaultContext: IConnectionContext = {
   socket: undefined,
   channels: undefined,
   connections: undefined,
@@ -43,14 +43,13 @@ const defaultContext: ISpaceContext = {
   publishAll: () => {},
 };
 
-export const SpaceContext = createContext(defaultContext);
+export const ConnectionContext = createContext(defaultContext);
 
 interface Props {
-  spaceId: string;
   children: React.ReactNode;
 }
 
-export default function SpaceProvider({ spaceId, children }: Props) {
+export default function ConnectionProvider({ children }: Props) {
   const [socket, setSocket] = useState<Socket>();
   const [channels, setChannels] = useState<ChannelStore>(channelStore);
   const [connections, setConnections] = useState<RTCPeerConnection[]>([]);
@@ -128,7 +127,7 @@ export default function SpaceProvider({ spaceId, children }: Props) {
   }
 
   return (
-    <SpaceContext.Provider
+    <ConnectionContext.Provider
       value={{
         socket,
         channels,
@@ -142,6 +141,6 @@ export default function SpaceProvider({ spaceId, children }: Props) {
       }}
     >
       {children}
-    </SpaceContext.Provider>
+    </ConnectionContext.Provider>
   );
 }

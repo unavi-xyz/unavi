@@ -20,7 +20,9 @@ export default function useDataChannels(id: string, channels: PlayerChannels) {
       return;
 
     function onMessage(e: MessageEvent<string>) {
-      const name = `Guest-${id.substring(0, 6)}`;
+      const guestName = `Guest-${id.substring(0, 6)}`;
+      const handle = identity?.handle;
+      const name = handle ? `@${handle}` : guestName;
       const message = createMessage(JSON.parse(e.data), name);
       useAppStore.getState().addMessage(message);
     }
@@ -41,23 +43,25 @@ export default function useDataChannels(id: string, channels: PlayerChannels) {
       channels.location.removeEventListener("message", onLocation);
       channels.identity.removeEventListener("message", onIdentity);
     };
-  }, [channels, id]);
+  }, [channels, id, identity]);
 
-  // useEffect(() => {
-  //   //add to players list
-  //   const players = useStore.getState().players;
-  //   const newPlayers = { ...players };
-  //   newPlayers[id] = identity;
-  //   useStore.setState({ players: newPlayers });
+  useEffect(() => {
+    if (!identity) return;
 
-  //   return () => {
-  //     //remove from players list
-  //     const players = useStore.getState().players;
-  //     const newPlayers = { ...players };
-  //     delete newPlayers[id];
-  //     useStore.setState({ players: newPlayers });
-  //   };
-  // }, [id, identity]);
+    //add to players list
+    const players = useAppStore.getState().players;
+    const newPlayers = { ...players };
+    newPlayers[id] = identity;
+    useAppStore.setState({ players: newPlayers });
+
+    return () => {
+      //remove from players list
+      const players = useAppStore.getState().players;
+      const newPlayers = { ...players };
+      delete newPlayers[id];
+      useAppStore.setState({ players: newPlayers });
+    };
+  }, [id, identity]);
 
   return { locationRef, identity };
 }

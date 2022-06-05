@@ -1,7 +1,6 @@
 import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import Head from "next/head";
 import { useRouter } from "next/router";
 
 import { InstancedScene } from "@wired-xr/scene";
@@ -15,6 +14,7 @@ import SpaceProvider, {
 import MetaTags from "../../src/components/ui/MetaTags";
 import { useAppHotkeys } from "../../src/helpers/app/hooks/useAppHotkeys";
 import { useLoadAssets } from "../../src/helpers/app/hooks/useLoadAssets";
+import { useSetIdentity } from "../../src/helpers/app/hooks/useSetIdentity";
 import { usePublication } from "../../src/helpers/lens/hooks/usePublication";
 
 export default function App() {
@@ -25,20 +25,15 @@ export default function App() {
   const { loadedScene, spawn } = useLoadAssets(publication?.metadata.content);
 
   useAppHotkeys();
+  useSetIdentity();
 
   return (
     <>
-      <MetaTags title={publication?.metadata.name ?? "App"} />
+      <MetaTags title={publication?.metadata.name ?? id ?? "App"} />
 
       {loadedScene && publication && (
         <SpaceProvider spaceId={id}>
           <div className="h-full">
-            <Head>
-              <title>
-                {publication.metadata.name ?? publication.id} / The Wired
-              </title>
-            </Head>
-
             <div className="crosshair" />
 
             <Chat />

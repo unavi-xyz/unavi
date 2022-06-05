@@ -84,8 +84,8 @@ export default function SpaceProvider({ spaceId, children }: Props) {
         draft[type].push(channel);
 
         if (type === "identity") {
-          // const identity = useAppStore.getState().identity;
-          // publish(channel, identity);
+          const identity = useAppStore.getState().identity;
+          if (identity) publish(channel, identity);
         }
       })
     );

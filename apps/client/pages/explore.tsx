@@ -65,7 +65,7 @@ export default function Explore({ spaces, avatars }: Props) {
 
           <div className="space-y-2">
             <div className="font-bold text-2xl">Spaces</div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {spaces?.map((space) => (
                 <Link key={space.id} href={`/space/${space.id}`} passHref>
                   <a>
@@ -78,7 +78,7 @@ export default function Explore({ spaces, avatars }: Props) {
 
           <div className="space-y-2">
             <div className="font-bold text-2xl">Avatars</div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {avatars?.map((avatar) => (
                 <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
                   <a>

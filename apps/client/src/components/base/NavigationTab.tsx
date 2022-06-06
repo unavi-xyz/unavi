@@ -29,7 +29,7 @@ export default function NavigationTab({ href, text }: Props) {
       <a
         className={`w-full md:w-min md:px-16 py-1 rounded-lg text-lg font-bold transition ${selectedClass}`}
       >
-        {text}
+        <div className="flex justify-center">{text}</div>
       </a>
     </Link>
   );

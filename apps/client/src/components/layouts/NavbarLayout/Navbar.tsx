@@ -31,6 +31,7 @@ export default function Navbar() {
                   src="/images/plug.png"
                   alt="logo"
                   priority
+                  draggable={false}
                 />
               </a>
             </Link>

@@ -1,28 +1,24 @@
+import { Triplet } from "@react-three/cannon";
 import { OrbitControls, Sky } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 
 import { Avatar } from "@wired-xr/avatar";
 
-import { useIpfsUrl } from "../../../helpers/ipfs/useIpfsUrl";
 import { ANIMATIONS_URL } from "../../app/OtherPlayer";
-import Spinner from "../../base/Spinner";
 
 interface Props {
-  uri: string;
+  url: string;
+  background?: boolean;
+  cameraPosition?: Triplet;
 }
 
-export default function AvatarCanvas({ uri }: Props) {
+export default function AvatarCanvas({
+  url,
+  background = true,
+  cameraPosition = [0, 1.6, 1.6],
+}: Props) {
   const controlsRef = useRef<any>(null);
-
-  const url = useIpfsUrl(uri);
-
-  if (!url)
-    return (
-      <div className="flex justify-center items-center h-full rounded-3xl animate-pulse bg-surfaceVariant">
-        <Spinner />
-      </div>
-    );
 
   return (
     <Canvas
@@ -40,9 +36,7 @@ export default function AvatarCanvas({ uri }: Props) {
         shadow-mapSize-height={8192}
       />
 
-      <CameraMover />
-
-      <Sky inclination={0} />
+      <CameraMover pos={cameraPosition} />
       <OrbitControls
         ref={controlsRef}
         makeDefault
@@ -52,14 +46,19 @@ export default function AvatarCanvas({ uri }: Props) {
         target={[0, 1, 0]}
       />
 
-      <mesh
-        receiveShadow
-        rotation={[Math.PI / -2, 0, 0]}
-        position={[0, 0.01, 0]}
-      >
-        <planeBufferGeometry args={[100, 100]} />
-        <meshStandardMaterial color="#EADDFF" />
-      </mesh>
+      {background && (
+        <group>
+          <Sky inclination={0} />
+          <mesh
+            receiveShadow
+            rotation={[Math.PI / -2, 0, 0]}
+            position={[0, 0.01, 0]}
+          >
+            <planeBufferGeometry args={[100, 100]} />
+            <meshStandardMaterial color="#EADDFF" />
+          </mesh>
+        </group>
+      )}
 
       <group rotation={[0, Math.PI, 0]}>
         <Avatar
@@ -77,12 +76,12 @@ export default function AvatarCanvas({ uri }: Props) {
   );
 }
 
-function CameraMover() {
+function CameraMover({ pos }: { pos: Triplet }) {
   const { camera } = useThree();
 
   useEffect(() => {
-    camera.position.set(0, 1.6, 2);
-  }, [camera]);
+    camera.position.fromArray(pos);
+  }, [camera, pos]);
 
   return null;
 }

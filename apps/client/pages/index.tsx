@@ -13,10 +13,12 @@ export default function Index() {
       <div className="flex justify-center py-8 mx-4">
         <div className="max-w space-y-8">
           <div
-            className="flex flex-col justify-center items-center h-72 rounded-3xl
-                   bg-primaryContainer text-onPrimaryContainer space-y-4"
+            className="flex flex-col justify-center items-center h-72 rounded-3xl p-8
+                     bg-primaryContainer text-onPrimaryContainer space-y-4"
           >
-            <div className="text-4xl font-black">Welcome to The Wired 👋</div>
+            <div className="text-4xl font-black flex">
+              Welcome to The Wired 👋
+            </div>
 
             <div className="flex space-x-2">
               <a href={TWITTER_URL} target="_blank" rel="noreferrer">
@@ -46,7 +48,7 @@ export default function Index() {
               <a href={GITHUB_URL} target="_blank" rel="noreferrer">
                 <div
                   className="rounded-full hover:ring-1 hover:ring-onPrimaryContainer px-3 py-0.5
-                cursor-pointer select-none transition"
+                             cursor-pointer select-none transition"
                 >
                   <div className="flex items-center space-x-2">
                     <VscGithubInverted />

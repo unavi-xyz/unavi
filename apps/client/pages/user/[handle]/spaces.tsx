@@ -7,7 +7,6 @@ import {
   ProfileLayoutProps,
   getProfileLayoutProps,
 } from "../../../src/components/layouts/ProfileLayout/getProfileLayoutProps";
-import AvatarCard from "../../../src/components/lens/AvatarCard";
 import SpaceCard from "../../../src/components/lens/SpaceCard";
 import {
   GetPublicationsDocument,
@@ -26,62 +25,48 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
 
   if (!props.profile) return { props };
 
-  const publicationsQuery = await lensClient
+  const spacesQuery = await lensClient
     .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
       GetPublicationsDocument,
       {
         profileId: props.profile.id,
-        sources: [AppId.space, AppId.avatar],
+        sources: [AppId.space],
       }
     )
     .toPromise();
 
-  const publications = publicationsQuery.data?.publications.items;
+  const spaces = spacesQuery.data?.publications.items;
 
   return {
     props: {
       ...props,
-      publications,
+      spaces,
     },
   };
 }
 
 interface Props extends ProfileLayoutProps {
-  publications?: Post[];
+  spaces?: Post[];
 }
 
-export default function User({ publications, ...rest }: Props) {
+export default function Spaces({ spaces, ...rest }: Props) {
   return (
     <ProfileLayout {...rest}>
-      {publications && publications.length > 0 && (
-        <div className="flex flex-wrap">
-          {publications?.map((publication) => {
-            if (publication.appId === AppId.space) {
-              return (
-                <div key={publication.id} className="w-full">
-                  <Link href={`/space/${publication.id}`} passHref>
-                    <a>
-                      <SpaceCard space={publication} />
-                    </a>
-                  </Link>
-                </div>
-              );
-            } else if (publication.appId === AppId.avatar) {
-              return (
-                <div key={publication.id} className="w-full md:w-1/2">
-                  <Link href={`/avatar/${publication.id}`} passHref>
-                    <a>
-                      <AvatarCard avatar={publication} />
-                    </a>
-                  </Link>
-                </div>
-              );
-            }
-          })}
+      {spaces && spaces.length > 0 && (
+        <div className="grid md:grid-cols-2 gap-2">
+          {spaces?.map((space) => (
+            <div key={space.id}>
+              <Link href={`/space/${space.id}`} passHref>
+                <a>
+                  <SpaceCard space={space} />
+                </a>
+              </Link>
+            </div>
+          ))}
         </div>
       )}
     </ProfileLayout>
   );
 }
 
-User.getLayout = getNavbarLayout;
+Spaces.getLayout = getNavbarLayout;

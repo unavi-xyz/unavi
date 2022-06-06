@@ -10,6 +10,7 @@ import useDataChannels from "../../helpers/app/hooks/useDataChannels";
 import { useInterpolateLocation } from "../../helpers/app/hooks/useInterpolateLocation";
 import { PlayerChannels } from "../../helpers/app/types";
 import { useIpfsUrl } from "../../helpers/ipfs/useIpfsUrl";
+import { useAvatarUrlFromProfile } from "../../helpers/lens/hooks/useAvatarFromProfile";
 import { useProfileByHandle } from "../../helpers/lens/hooks/useProfileByHandle";
 import { usePublication } from "../../helpers/lens/hooks/usePublication";
 
@@ -28,16 +29,10 @@ export default function OtherPlayer({ id, channels, track }: Props) {
   const { camera } = useThree();
   const { locationRef, identity } = useDataChannels(id, channels);
   const profile = useProfileByHandle(identity?.handle);
+  const avatarUrl = useAvatarUrlFromProfile(profile);
   const interpolatedLocation = useInterpolateLocation(locationRef);
   const animationWeights = useAnimationWeights(groupRef, interpolatedLocation);
   useApplyLocation(groupRef, interpolatedLocation);
-
-  const avatarId = profile?.attributes?.find(
-    (item) => item.key === "avatar"
-  )?.value;
-  const avatar = usePublication(avatarId);
-  const avatarUri = avatar?.metadata.content;
-  const avatarUrl = useIpfsUrl(avatarUri);
 
   useEffect(() => {
     if (!track) return;

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
+import { useIpfsUrl } from "../../../helpers/ipfs/useIpfsUrl";
 import { PublicationProps } from "../../../helpers/lens/getPublicationProps";
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
 import { useSetProfileMetadata } from "../../../helpers/lens/hooks/useSetProfileMetadata";
@@ -14,6 +15,7 @@ import {
 } from "../../../helpers/lens/types";
 import Button from "../../base/Button";
 import NavigationTab from "../../base/NavigationTab";
+import Spinner from "../../base/Spinner";
 import MetaTags from "../../ui/MetaTags";
 import AvatarCanvas from "./AvatarCanvas";
 
@@ -31,6 +33,7 @@ export default function AvatarLayout({
 
   const handle = useLensStore((state) => state.handle);
   const profile = useProfileByHandle(handle);
+  const avatarUrl = useIpfsUrl(publication?.metadata.content);
   const setProfileMetadata = useSetProfileMetadata(profile?.id);
 
   const [loading, setLoading] = useState(false);
@@ -170,9 +173,13 @@ export default function AvatarLayout({
       <div className="mx-4 h-full">
         <div className="max-w mx-auto py-8 w-full h-full space-y-8">
           <div className="flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8">
-            <div className="w-1/2 rounded-3xl aspect-vertical bg-primaryContainer">
-              {publication && (
-                <AvatarCanvas uri={publication.metadata.content} />
+            <div className="w-full md:w-1/2 rounded-3xl aspect-vertical bg-primaryContainer mx-auto md:mx-0">
+              {avatarUrl ? (
+                <AvatarCanvas url={avatarUrl} />
+              ) : (
+                <div className="flex justify-center items-center h-full rounded-3xl animate-pulse bg-surfaceVariant">
+                  <Spinner />
+                </div>
               )}
             </div>
 

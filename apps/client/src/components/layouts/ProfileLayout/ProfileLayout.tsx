@@ -3,12 +3,15 @@ import Link from "next/link";
 import { FaHashtag, FaTwitter } from "react-icons/fa";
 import { MdOutlineLocationOn } from "react-icons/md";
 
+import { useAvatarUrlFromProfile } from "../../../helpers/lens/hooks/useAvatarFromProfile";
 import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
 import { useLensStore } from "../../../helpers/lens/store";
+import { DEFAULT_AVATAR_URL } from "../../app/OtherPlayer";
 import Button from "../../base/Button";
 import NavigationTab from "../../base/NavigationTab";
 import ProfilePicture from "../../lens/ProfilePicture";
 import MetaTags from "../../ui/MetaTags";
+import AvatarCanvas from "../AvatarLayout/AvatarCanvas";
 import AttributeRow from "./AttributeRow";
 import { ProfileLayoutProps } from "./getProfileLayoutProps";
 
@@ -24,6 +27,7 @@ export default function ProfileLayout({
 }: Props) {
   const coverUrl = useMediaImage(profile?.coverPicture);
   const viewerHandle = useLensStore((state) => state.handle);
+  const avatarUrl = useAvatarUrlFromProfile(profile);
 
   const twitter = profile?.attributes?.find((item) => item.key === "twitter");
   const website = profile?.attributes?.find((item) => item.key === "website");
@@ -48,112 +52,104 @@ export default function ProfileLayout({
         />
       </Head>
 
-      {profile && (
-        <div>
-          <div className="w-full h-80 bg-tertiaryContainer">
-            {coverUrl && (
-              <img
-                src={coverUrl}
-                alt="cover"
-                className="w-full h-full object-cover"
-              />
-            )}
-          </div>
+      <div className="w-full h-80 bg-tertiaryContainer">
+        {coverUrl && (
+          <img
+            src={coverUrl}
+            alt="cover"
+            className="w-full h-full object-cover"
+          />
+        )}
+      </div>
 
-          <div className="flex justify-center">
-            <div className="max-w mx-4 pb-4 flex flex-col md:flex-row">
-              <div className="md:w-64 flex-shrink-0 space-y-6">
-                <div className="h-32 w-64">
-                  <div className="relative w-full">
-                    <div
-                      className="absolute -bottom-32 transform
-                                 rounded-xl ring-8 ring-background"
-                    >
-                      <ProfilePicture profile={profile} />
-                    </div>
-                  </div>
+      {profile && (
+        <div className="max-w mx-auto">
+          <div className="w-full flex flex-col items-center md:items-start md:flex-row p-4">
+            <div className="w-full md:w-1/3 space-y-4">
+              <div className="aspect-vertical rounded-3xl bg-cover -mt-48 md:-mt-72 w-1/2 md:w-full mx-auto md:mx-0">
+                <AvatarCanvas
+                  url={avatarUrl ?? DEFAULT_AVATAR_URL}
+                  background={false}
+                />
+              </div>
+
+              <div className="p-2 flex items-center space-x-4">
+                <div className="w-1/3 rounded-full ring-background">
+                  <ProfilePicture profile={profile} circle />
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-2xl font-black break-all">
-                    {profile?.name ?? handle}
+                <div className="w-full">
+                  <div className="text-2xl font-black">
+                    {profile.name ?? handle}
                   </div>
-                  <div className="gradient-text text-lg break-all font-bold w-fit">
+                  <div className="text-lg font-bold gradient-text">
                     @{handle}
                   </div>
                 </div>
+              </div>
 
-                <div>
-                  {handle === viewerHandle && (
-                    <Link href="/settings" passHref>
-                      <a>
-                        <Button variant="outlined" fullWidth>
-                          Edit Profile
-                        </Button>
-                      </a>
-                    </Link>
-                  )}
-                </div>
+              <div className="p-2 font-bold">{profile?.bio}</div>
 
-                <div className="font-bold">{profile?.bio}</div>
+              <div>
+                {handle === viewerHandle && (
+                  <Link href="/settings" passHref>
+                    <a>
+                      <Button variant="outlined" fullWidth>
+                        Edit Profile
+                      </Button>
+                    </a>
+                  </Link>
+                )}
+              </div>
 
-                <div className="space-y-4">
-                  <AttributeRow icon={<FaHashtag className="text-lg" />}>
-                    {profile.id}
+              <div className="p-2 space-y-4">
+                <AttributeRow icon={<FaHashtag className="text-lg" />}>
+                  {profile.id}
+                </AttributeRow>
+
+                {location && (
+                  <AttributeRow icon={<MdOutlineLocationOn />}>
+                    {location.value}
                   </AttributeRow>
+                )}
 
-                  {location && (
-                    <AttributeRow icon={<MdOutlineLocationOn />}>
-                      {location.value}
-                    </AttributeRow>
-                  )}
-
-                  {twitter && (
-                    <AttributeRow icon={<FaTwitter className="text-sky-500" />}>
-                      <a
-                        href={`https://twitter.com/${twitter.value}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="hover:underline"
-                      >
-                        {twitter.value}
-                      </a>
-                    </AttributeRow>
-                  )}
-
-                  {website && (
-                    <AttributeRow
-                      icon={
-                        <img
-                          src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${website.value}`}
-                          alt="website favicon"
-                        />
-                      }
+                {twitter && (
+                  <AttributeRow icon={<FaTwitter className="text-sky-500" />}>
+                    <a
+                      href={`https://twitter.com/${twitter.value}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:underline"
                     >
-                      <a
-                        href={website.value}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="hover:underline"
-                      >
-                        {website.value}
-                      </a>
-                    </AttributeRow>
-                  )}
-                </div>
-              </div>
+                      {twitter.value}
+                    </a>
+                  </AttributeRow>
+                )}
 
-              <div className="w-full space-y-4 md:ml-12 pt-4">
-                <div className="flex items-center justify-center w-full space-x-4">
-                  <NavigationTab text="Spaces" href={`/user/${handle}`} />
-                  <NavigationTab
-                    text="Avatars"
-                    href={`/user/${handle}/avatars`}
-                  />
-                </div>
-
-                <div>{children}</div>
+                {website && (
+                  <AttributeRow
+                    icon={
+                      <img
+                        src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${website.value}`}
+                        alt="website favicon"
+                      />
+                    }
+                  >
+                    <a
+                      href={website.value}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:underline"
+                    >
+                      {website.value}
+                    </a>
+                  </AttributeRow>
+                )}
               </div>
+            </div>
+
+            <div className="md:p-4 pt-4 w-full space-y-4 md:ml-12">
+              <div>{children}</div>
             </div>
           </div>
         </div>

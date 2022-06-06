@@ -2,6 +2,7 @@ import { NextPageContext } from "next";
 import Link from "next/link";
 
 import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
+import AvatarCard from "../src/components/lens/AvatarCard";
 import SpaceCard from "../src/components/lens/SpaceCard";
 import MetaTags from "../src/components/ui/MetaTags";
 import {
@@ -16,7 +17,7 @@ import { AppId } from "../src/helpers/lens/types";
 export async function getServerSideProps({ res }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
 
-  const { data } = await lensClient
+  const spacesQuery = await lensClient
     .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
       ExplorePublicationsDocument,
       {
@@ -25,22 +26,33 @@ export async function getServerSideProps({ res }: NextPageContext) {
     )
     .toPromise();
 
-  if (!data) return { props: {} };
+  const spaces = spacesQuery.data?.explorePublications.items;
 
-  const spaces = data.explorePublications.items;
+  const avatarsQuery = await lensClient
+    .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
+      ExplorePublicationsDocument,
+      {
+        sources: [AppId.avatar],
+      }
+    )
+    .toPromise();
+
+  const avatars = avatarsQuery.data?.explorePublications.items;
 
   return {
     props: {
       spaces,
+      avatars,
     },
   };
 }
 
 interface Props {
   spaces: Post[] | undefined;
+  avatars: Post[] | undefined;
 }
 
-export default function Explore({ spaces }: Props) {
+export default function Explore({ spaces, avatars }: Props) {
   return (
     <>
       <MetaTags title="Explore" />
@@ -51,14 +63,30 @@ export default function Explore({ spaces }: Props) {
             <div className="font-black text-3xl">Explore</div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {spaces?.map((space) => (
-              <Link key={space.id} href={`/space/${space.id}`} passHref>
-                <a>
-                  <SpaceCard space={space} />
-                </a>
-              </Link>
-            ))}
+          <div className="space-y-2">
+            <div className="font-bold text-2xl">Spaces</div>
+            <div className="grid grid-cols-2 gap-4">
+              {spaces?.map((space) => (
+                <Link key={space.id} href={`/space/${space.id}`} passHref>
+                  <a>
+                    <SpaceCard space={space} />
+                  </a>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="font-bold text-2xl">Avatars</div>
+            <div className="grid grid-cols-4 gap-4">
+              {avatars?.map((avatar) => (
+                <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
+                  <a>
+                    <AvatarCard avatar={avatar} />
+                  </a>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </div>

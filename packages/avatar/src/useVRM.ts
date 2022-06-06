@@ -11,6 +11,12 @@ export function useVRM(src: string) {
     if (!gltf) return;
 
     VRM.from(gltf as any).then((res) => {
+      //enable shadows
+      res.scene.traverse((child) => {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      });
+
       setVrm(res);
     });
   }, [gltf]);

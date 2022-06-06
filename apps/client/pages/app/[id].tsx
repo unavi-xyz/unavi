@@ -2,6 +2,7 @@ import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useRouter } from "next/router";
+import { Context } from "urql";
 
 import { InstancedScene } from "@wired-xr/scene";
 
@@ -54,7 +55,7 @@ export default function App() {
 }
 
 function CanvasBridge({ children }: { children: React.ReactNode }) {
-  const ContextBridge = useContextBridge(ConnectionContext);
+  const ContextBridge = useContextBridge(ConnectionContext, Context);
   return (
     <Canvas shadows>
       <ContextBridge>{children}</ContextBridge>

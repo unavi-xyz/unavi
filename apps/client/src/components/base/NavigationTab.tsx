@@ -7,7 +7,7 @@ interface Props {
   text: string;
 }
 
-export default function SpaceTab({ href, text }: Props) {
+export default function NavigationTab({ href, text }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState(false);
 

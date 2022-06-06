@@ -1,7 +1,7 @@
 import { NextPageContext } from "next";
 
+import AvatarLayout from "../../../src/components/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
-import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
 import {
   PublicationProps,
   getPublicationProps,
@@ -17,17 +17,17 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
   };
 }
 
-export default function Space(props: PublicationProps) {
+export default function Avatar(props: PublicationProps) {
   return (
-    <SpaceLayout {...props}>
+    <AvatarLayout {...props}>
       <div className="space-y-2">
         <div className="text-2xl font-bold">Description</div>
         <div className="text-lg text-outline">
           {props.publication?.metadata.description}
         </div>
       </div>
-    </SpaceLayout>
+    </AvatarLayout>
   );
 }
 
-Space.getLayout = getNavbarLayout;
+Avatar.getLayout = getNavbarLayout;

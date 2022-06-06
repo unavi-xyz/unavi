@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 
+import { PublicationProps } from "../../../helpers/lens/getPublicationProps";
 import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
 import { useLensStore } from "../../../helpers/lens/store";
 import Button from "../../base/Button";
+import NavigationTab from "../../base/NavigationTab";
 import MetaTags from "../../ui/MetaTags";
-import SpaceTab from "./SpaceTab";
-import { SpaceLayoutProps } from "./getSpaceLayoutProps";
 
-interface Props extends SpaceLayoutProps {
+interface Props extends PublicationProps {
   children: React.ReactNode;
 }
 
@@ -80,10 +80,10 @@ export default function SpaceLayout({
 
           <div className="space-y-4 pb-4">
             <div className="flex space-x-4">
-              <SpaceTab href={`/space/${id}`} text="About" />
+              <NavigationTab href={`/space/${id}`} text="About" />
 
               {isAuthor && (
-                <SpaceTab href={`/space/${id}/settings`} text="Settings" />
+                <NavigationTab href={`/space/${id}/settings`} text="Settings" />
               )}
             </div>
 

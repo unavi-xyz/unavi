@@ -9,9 +9,12 @@ import { useApplyLocation } from "../../helpers/app/hooks/useApplyLocation";
 import useDataChannels from "../../helpers/app/hooks/useDataChannels";
 import { useInterpolateLocation } from "../../helpers/app/hooks/useInterpolateLocation";
 import { PlayerChannels } from "../../helpers/app/types";
+import { useIpfsUrl } from "../../helpers/ipfs/useIpfsUrl";
+import { useProfileByHandle } from "../../helpers/lens/hooks/useProfileByHandle";
+import { usePublication } from "../../helpers/lens/hooks/usePublication";
 
-const DEFAULT_AVATAR_URL = "/models/Default.vrm";
-const ANIMATIONS_URL = "/models/animations.fbx";
+export const DEFAULT_AVATAR_URL = "/models/Default.vrm";
+export const ANIMATIONS_URL = "/models/animations.fbx";
 
 interface Props {
   id: string;
@@ -23,11 +26,18 @@ export default function OtherPlayer({ id, channels, track }: Props) {
   const groupRef = useRef<Group>(null);
 
   const { camera } = useThree();
-  const { locationRef } = useDataChannels(id, channels);
+  const { locationRef, identity } = useDataChannels(id, channels);
+  const profile = useProfileByHandle(identity?.handle);
   const interpolatedLocation = useInterpolateLocation(locationRef);
   const animationWeights = useAnimationWeights(groupRef, interpolatedLocation);
-
   useApplyLocation(groupRef, interpolatedLocation);
+
+  const avatarId = profile?.attributes?.find(
+    (item) => item.key === "avatar"
+  )?.value;
+  const avatar = usePublication(avatarId);
+  const avatarUri = avatar?.metadata.content;
+  const avatarUrl = useIpfsUrl(avatarUri);
 
   useEffect(() => {
     if (!track) return;
@@ -56,7 +66,7 @@ export default function OtherPlayer({ id, channels, track }: Props) {
   return (
     <group ref={groupRef}>
       <Avatar
-        src={DEFAULT_AVATAR_URL}
+        src={avatarUrl ?? DEFAULT_AVATAR_URL}
         animationsSrc={ANIMATIONS_URL}
         animationWeights={animationWeights}
       />

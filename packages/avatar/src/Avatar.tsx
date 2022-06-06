@@ -58,6 +58,7 @@ export function Avatar({ src, animationsSrc, animationWeights }: Props) {
       run,
       jump,
     };
+
     setAnimations(obj);
   }, [fbx]);
 

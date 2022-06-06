@@ -3,8 +3,8 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import Button from "../../../src/components/base/Button";
+import AvatarLayout from "../../../src/components/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
-import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
 import { useHidePublicationMutation } from "../../../src/generated/graphql";
 import { authenticate } from "../../../src/helpers/lens/authentication";
 import {
@@ -54,14 +54,14 @@ export default function Settings(props: PublicationProps) {
   }
 
   return (
-    <SpaceLayout {...props}>
+    <AvatarLayout {...props}>
       <div className="bg-tertiaryContainer text-onTertiaryContainer rounded-2xl p-8 space-y-4">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">
-          Deleting a space does not remove it from the blockchain. It only hides
-          it from the indexer. Anyone can still find the space by using their
-          own indexer.
+          Deleting an avatar does not remove it from the blockchain. It only
+          hides it from the indexer. Anyone can still find the avatar by using
+          their own indexer.
         </div>
 
         <Button
@@ -71,10 +71,10 @@ export default function Settings(props: PublicationProps) {
           squared
           onClick={handleDelete}
         >
-          Delete Space
+          Delete Avatar
         </Button>
       </div>
-    </SpaceLayout>
+    </AvatarLayout>
   );
 }
 

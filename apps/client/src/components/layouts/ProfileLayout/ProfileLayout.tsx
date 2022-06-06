@@ -1,82 +1,27 @@
-import { NextPageContext } from "next";
 import Head from "next/head";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import { FaHashtag, FaTwitter } from "react-icons/fa";
 import { MdOutlineLocationOn } from "react-icons/md";
 
-import Button from "../../src/components/base/Button";
-import { getNavbarLayout } from "../../src/components/layouts/NavbarLayout/NavbarLayout";
-import ProfilePicture from "../../src/components/lens/ProfilePicture";
-import SpaceCard from "../../src/components/lens/SpaceCard";
-import MetaTags from "../../src/components/ui/MetaTags";
-import {
-  GetProfileByHandleDocument,
-  GetProfileByHandleQuery,
-  GetProfileByHandleQueryVariables,
-  GetPublicationsDocument,
-  GetPublicationsQuery,
-  GetPublicationsQueryVariables,
-  Post,
-} from "../../src/generated/graphql";
-import { lensClient } from "../../src/helpers/lens/client";
-import {
-  getMediaImageSSR,
-  useMediaImage,
-} from "../../src/helpers/lens/hooks/useMediaImage";
-import { useLensStore } from "../../src/helpers/lens/store";
-import { AppId } from "../../src/helpers/lens/types";
-import { PageMetadata } from "../../src/helpers/types";
+import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
+import { useLensStore } from "../../../helpers/lens/store";
+import Button from "../../base/Button";
+import NavigationTab from "../../base/NavigationTab";
+import ProfilePicture from "../../lens/ProfilePicture";
+import MetaTags from "../../ui/MetaTags";
+import AttributeRow from "./AttributeRow";
+import { ProfileLayoutProps } from "./getProfileLayoutProps";
 
-export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=120");
-
-  const handle = query.handle;
-
-  const profileQuery = await lensClient
-    .query<GetProfileByHandleQuery, GetProfileByHandleQueryVariables>(
-      GetProfileByHandleDocument,
-      { handle }
-    )
-    .toPromise();
-
-  const profile = profileQuery.data?.profiles.items[0];
-  const title = profile?.name ? `${profile?.name} (@${handle})` : `@${handle}`;
-  const metadata: PageMetadata = {
-    title,
-    description: profile?.bio ?? "",
-    image: getMediaImageSSR(profile?.picture) ?? "",
-  };
-
-  if (!profile) return { props: { metadata } };
-
-  const spacesQuery = await lensClient
-    .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
-      GetPublicationsDocument,
-      {
-        profileId: profile.id,
-        sources: [AppId.space],
-      }
-    )
-    .toPromise();
-
-  const spaces = spacesQuery.data?.publications.items;
-
-  return {
-    props: { metadata, profile, spaces },
-  };
+interface Props extends ProfileLayoutProps {
+  children: React.ReactNode;
 }
 
-interface Props {
-  metadata: PageMetadata;
-  profile?: GetProfileByHandleQuery["profiles"]["items"][0];
-  spaces?: Post[];
-}
-
-export default function User({ metadata, profile, spaces }: Props) {
-  const router = useRouter();
-  const handle = router.query.handle as string;
-
+export default function ProfileLayout({
+  children,
+  handle,
+  metadata,
+  profile,
+}: Props) {
   const coverUrl = useMediaImage(profile?.coverPicture);
   const viewerHandle = useLensStore((state) => state.handle);
 
@@ -122,7 +67,7 @@ export default function User({ metadata, profile, spaces }: Props) {
                   <div className="relative w-full">
                     <div
                       className="absolute -bottom-32 transform
-                  rounded-xl ring-8 ring-background"
+                                 rounded-xl ring-8 ring-background"
                     >
                       <ProfilePicture profile={profile} />
                     </div>
@@ -153,18 +98,18 @@ export default function User({ metadata, profile, spaces }: Props) {
                 <div className="font-bold">{profile?.bio}</div>
 
                 <div className="space-y-4">
-                  <ProfileRow icon={<FaHashtag className="text-lg" />}>
+                  <AttributeRow icon={<FaHashtag className="text-lg" />}>
                     {profile.id}
-                  </ProfileRow>
+                  </AttributeRow>
 
                   {location && (
-                    <ProfileRow icon={<MdOutlineLocationOn />}>
+                    <AttributeRow icon={<MdOutlineLocationOn />}>
                       {location.value}
-                    </ProfileRow>
+                    </AttributeRow>
                   )}
 
                   {twitter && (
-                    <ProfileRow icon={<FaTwitter className="text-sky-500" />}>
+                    <AttributeRow icon={<FaTwitter className="text-sky-500" />}>
                       <a
                         href={`https://twitter.com/${twitter.value}`}
                         target="_blank"
@@ -173,11 +118,11 @@ export default function User({ metadata, profile, spaces }: Props) {
                       >
                         {twitter.value}
                       </a>
-                    </ProfileRow>
+                    </AttributeRow>
                   )}
 
                   {website && (
-                    <ProfileRow
+                    <AttributeRow
                       icon={
                         <img
                           src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${website.value}`}
@@ -193,53 +138,26 @@ export default function User({ metadata, profile, spaces }: Props) {
                       >
                         {website.value}
                       </a>
-                    </ProfileRow>
+                    </AttributeRow>
                   )}
                 </div>
               </div>
 
-              {spaces && spaces.length > 0 && (
-                <div className="w-full space-y-4 md:ml-12 pt-4">
-                  <div className="flex items-center justify-center w-full space-x-4">
-                    <div className="text-xl font-bold rounded-lg px-3 py-1">
-                      Spaces
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-2">
-                    {spaces?.map((space) => (
-                      <div key={space.id}>
-                        <Link href={`/space/${space.id}`} passHref>
-                          <a>
-                            <SpaceCard space={space} />
-                          </a>
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
+              <div className="w-full space-y-4 md:ml-12 pt-4">
+                <div className="flex items-center justify-center w-full space-x-4">
+                  <NavigationTab text="Spaces" href={`/user/${handle}`} />
+                  <NavigationTab
+                    text="Avatars"
+                    href={`/user/${handle}/avatars`}
+                  />
                 </div>
-              )}
+
+                <div>{children}</div>
+              </div>
             </div>
           </div>
         </div>
       )}
     </>
-  );
-}
-
-User.getLayout = getNavbarLayout;
-
-function ProfileRow({
-  icon,
-  children,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center space-x-6">
-      <div className="text-xl w-6">{icon}</div>
-      <div className="font-bold">{children}</div>
-    </div>
   );
 }

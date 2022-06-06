@@ -4,6 +4,7 @@ type MimeType = string;
 
 export enum AppId {
   space = "wired/space",
+  avatar = "wired/avatar",
 }
 
 export enum MetadataVersions {

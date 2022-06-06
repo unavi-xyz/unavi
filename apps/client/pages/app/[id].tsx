@@ -1,7 +1,7 @@
 import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useRouter } from "next/router";
+import { NextPageContext } from "next";
 import { Context } from "urql";
 
 import { InstancedScene } from "@wired-xr/scene";
@@ -16,13 +16,30 @@ import MetaTags from "../../src/components/ui/MetaTags";
 import { useAppHotkeys } from "../../src/helpers/app/hooks/useAppHotkeys";
 import { useLoadAssets } from "../../src/helpers/app/hooks/useLoadAssets";
 import { useSetIdentity } from "../../src/helpers/app/hooks/useSetIdentity";
-import { usePublication } from "../../src/helpers/lens/hooks/usePublication";
+import {
+  PublicationProps,
+  getPublicationProps,
+} from "../../src/helpers/lens/getPublicationProps";
 
-export default function App() {
-  const router = useRouter();
-  const id = router.query.id as string;
+export async function getServerSideProps({ res, query }: NextPageContext) {
+  res?.setHeader("Cache-Control", "s-maxage=120");
 
-  const publication = usePublication(id);
+  const id = query.id as string;
+  const props = await getPublicationProps(id);
+
+  return {
+    props: {
+      ...props,
+      id,
+    },
+  };
+}
+
+interface Props extends PublicationProps {
+  id: string;
+}
+
+export default function App({ id, metadata, publication }: Props) {
   const { loadedScene, spawn } = useLoadAssets(publication?.metadata.content);
 
   useAppHotkeys();
@@ -30,7 +47,14 @@ export default function App() {
 
   return (
     <>
-      <MetaTags title={publication?.metadata.name ?? id ?? "App"} />
+      <MetaTags
+        title={metadata.title}
+        description={metadata.description}
+        image={metadata.image}
+        imageWidth="595.2px"
+        imageHeight="357.11px"
+        card="summary_large_image"
+      />
 
       {loadedScene && publication && (
         <ConnectionProvider>

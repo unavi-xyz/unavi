@@ -58,7 +58,7 @@ export default function User({ publications, ...rest }: Props) {
           {publications?.map((publication) => {
             if (publication.appId === AppId.space) {
               return (
-                <div key={publication.id} className="w-full">
+                <div key={publication.id} className="w-full p-1">
                   <Link href={`/space/${publication.id}`} passHref>
                     <a>
                       <SpaceCard space={publication} />
@@ -68,7 +68,7 @@ export default function User({ publications, ...rest }: Props) {
               );
             } else if (publication.appId === AppId.avatar) {
               return (
-                <div key={publication.id} className="w-full md:w-1/2">
+                <div key={publication.id} className="w-full md:w-1/2 p-1">
                   <Link href={`/avatar/${publication.id}`} passHref>
                     <a>
                       <AvatarCard avatar={publication} />

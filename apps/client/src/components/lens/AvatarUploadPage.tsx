@@ -12,6 +12,7 @@ import Button from "../base/Button";
 import FileUpload from "../base/FileUpload";
 import TextArea from "../base/TextArea";
 import TextField from "../base/TextField";
+import AvatarCanvas from "../layouts/AvatarLayout/AvatarCanvas";
 
 export default function AvatarUploadPage() {
   const nameRef = useRef<HTMLInputElement>(null);
@@ -115,6 +116,12 @@ export default function AvatarUploadPage() {
 
         <div className="space-y-4">
           <div className="text-lg font-bold">VRM File</div>
+
+          {vrmFile && (
+            <div className="h-48">
+              <AvatarCanvas url={URL.createObjectURL(vrmFile)} />
+            </div>
+          )}
 
           <FileUpload
             color="SurfaceVariant"

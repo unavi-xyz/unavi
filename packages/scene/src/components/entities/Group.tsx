@@ -1,3 +1,3 @@
 export function Group() {
-  return <group></group>;
+  return null;
 }

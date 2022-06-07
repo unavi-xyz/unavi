@@ -4,8 +4,10 @@ export default function Document() {
   return (
     <Html>
       <Head>
+        {/* favicon */}
         <link rel="icon" href="/images/plug.png" />
 
+        {/* fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -17,6 +19,7 @@ export default function Document() {
           rel="stylesheet"
         />
       </Head>
+
       <body>
         <Main />
         <NextScript />

@@ -1,12 +1,14 @@
+import { Triplet } from "@react-three/cannon";
 import produce from "immer";
 import { useEffect, useState } from "react";
 
-import { Scene } from "@wired-xr/scene";
+import { Scene, traverseTree } from "@wired-xr/scene";
 
 import { loadFromIpfs } from "../../ipfs/fetch";
 
 export function useLoadAssets(sceneString: string) {
   const [loadedScene, setLoadedScene] = useState<Scene>();
+  const [spawn, setSpawn] = useState<Triplet>();
 
   useEffect(() => {
     if (!sceneString) return;
@@ -14,6 +16,7 @@ export function useLoadAssets(sceneString: string) {
 
     async function loadScene() {
       try {
+        //load assets
         const newScene = await produce(scene, async (draft) => {
           await Promise.all(
             Object.entries(draft.assets).map(async ([key, asset]) => {
@@ -33,6 +36,14 @@ export function useLoadAssets(sceneString: string) {
           );
         });
 
+        //set spawn
+        const spawns: Triplet[] = [];
+        traverseTree(newScene.tree, (entity) => {
+          if (entity.type === "Spawn") spawns.push(entity.transform.position);
+        });
+        if (spawns.length > 0) setSpawn(spawns[0]);
+
+        //set scene
         setLoadedScene(newScene);
       } catch (error) {
         console.error(error);
@@ -43,5 +54,5 @@ export function useLoadAssets(sceneString: string) {
     loadScene();
   }, [sceneString]);
 
-  return loadedScene;
+  return { loadedScene, spawn };
 }

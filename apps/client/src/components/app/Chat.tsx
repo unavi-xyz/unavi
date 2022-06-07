@@ -2,14 +2,14 @@ import { KeyboardEvent, useContext, useEffect, useRef } from "react";
 
 import { useAppStore } from "../../helpers/app/store";
 import ChatMessage from "./ChatMessage";
-import { SpaceContext } from "./SpaceProvider";
+import { ConnectionContext } from "./ConnectionProvider";
 
 export default function Chat() {
   const chatInputRef = useRef<HTMLInputElement>(null);
   const focusedRef = useRef(false);
 
   const messages = useAppStore((state) => state.messages);
-  const { publishAll } = useContext(SpaceContext);
+  const { publishAll } = useContext(ConnectionContext);
 
   useEffect(() => {
     useAppStore.setState({ chatInputRef });

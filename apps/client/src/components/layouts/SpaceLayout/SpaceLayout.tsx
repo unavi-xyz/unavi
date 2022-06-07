@@ -1,14 +1,14 @@
-import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
+import { PublicationProps } from "../../../helpers/lens/getPublicationProps";
 import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
 import { useLensStore } from "../../../helpers/lens/store";
 import Button from "../../base/Button";
-import SpaceTab from "./SpaceTab";
-import { SpaceLayoutProps } from "./getSpaceLayoutProps";
+import NavigationTab from "../../base/NavigationTab";
+import MetaTags from "../../ui/MetaTags";
 
-interface Props extends SpaceLayoutProps {
+interface Props extends PublicationProps {
   children: React.ReactNode;
 }
 
@@ -28,25 +28,14 @@ export default function SpaceLayout({
 
   return (
     <>
-      <Head>
-        <title>{metadata.title} / The Wired</title>
-        <meta name="description" content={metadata.description} />
-
-        <meta itemProp="name" content={metadata.title} />
-        <meta itemProp="description" content={metadata.description} />
-        <meta itemProp="image" content={metadata.image} />
-
-        <meta property="og:title" content={metadata.title} />
-        <meta property="og:description" content={metadata.description} />
-        <meta property="og:image" content={metadata.image} />
-        <meta property="og:image:width" content={"595.2px"} />
-        <meta property="og:image:height" content={"357.11px"} />
-
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={metadata.title} />
-        <meta name="twitter:description" content={metadata.description} />
-        <meta name="twitter:image" content={metadata.image} />
-      </Head>
+      <MetaTags
+        title={metadata.title}
+        description={metadata.description}
+        image={metadata.image}
+        imageWidth="595.2px"
+        imageHeight="357.11px"
+        card="summary_large_image"
+      />
 
       <div className="mx-4 h-full">
         <div className="max-w mx-auto py-8 w-full h-full space-y-8">
@@ -71,30 +60,30 @@ export default function SpaceLayout({
                   <div className="font-bold flex space-x-1 justify-center md:justify-start">
                     <div>By</div>
                     <Link href={`/user/${publication?.profile.handle}`}>
-                      <div className="hover:underline cursor-pointer">
+                      <a className="hover:underline cursor-pointer">
                         @{publication?.profile.handle}
-                      </div>
+                      </a>
                     </Link>
                   </div>
                 </div>
               </div>
 
               <Link href={`/app/${id}`} passHref>
-                <div>
+                <a>
                   <Button variant="filled" fullWidth>
                     <div className="py-2">Join Space</div>
                   </Button>
-                </div>
+                </a>
               </Link>
             </div>
           </div>
 
           <div className="space-y-4 pb-4">
             <div className="flex space-x-4">
-              <SpaceTab href={`/space/${id}`} text="About" />
+              <NavigationTab href={`/space/${id}`} text="About" />
 
               {isAuthor && (
-                <SpaceTab href={`/space/${id}/settings`} text="Settings" />
+                <NavigationTab href={`/space/${id}/settings`} text="Settings" />
               )}
             </div>
 

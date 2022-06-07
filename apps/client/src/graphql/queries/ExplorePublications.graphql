@@ -1,0 +1,28 @@
+query ExplorePublications($sources: [Sources!]) {
+  explorePublications(
+    request: {
+      sortCriteria: TOP_COMMENTED
+      publicationTypes: [POST]
+      limit: 10
+      sources: $sources
+    }
+  ) {
+    items {
+      __typename
+      ... on Post {
+        ...PostFields
+      }
+      ... on Comment {
+        ...CommentFields
+      }
+      ... on Mirror {
+        ...MirrorFields
+      }
+    }
+    pageInfo {
+      prev
+      next
+      totalCount
+    }
+  }
+}

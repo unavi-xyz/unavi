@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 import { findEntityById, traverseTree } from "@wired-xr/scene";
 
-import { deepClone } from "../../utils/deepClone";
 import { useStudioStore } from "../store";
 
 export function useHotkeys() {

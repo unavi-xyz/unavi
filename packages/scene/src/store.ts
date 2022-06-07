@@ -5,7 +5,7 @@ import { GetState, SetState } from "zustand";
 
 import { EMPTY_SCENE } from "./constants";
 import { Asset, Entity, Scene } from "./types";
-import { findEntityById } from "./utils";
+import { findEntityById, traverseTree } from "./utils";
 
 export type StoreSlice<T extends object, E extends object = T> = (
   set: SetState<E extends T ? E : E & T>,

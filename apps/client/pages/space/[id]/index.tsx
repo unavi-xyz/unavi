@@ -3,21 +3,21 @@ import { NextPageContext } from "next";
 import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
 import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
 import {
-  SpaceLayoutProps,
-  getSpaceLayoutProps,
-} from "../../../src/components/layouts/SpaceLayout/getSpaceLayoutProps";
+  PublicationProps,
+  getPublicationProps,
+} from "../../../src/helpers/lens/getPublicationProps";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
 
-  const props = await getSpaceLayoutProps(query.id as string);
+  const props = await getPublicationProps(query.id as string);
 
   return {
     props,
   };
 }
 
-export default function Space(props: SpaceLayoutProps) {
+export default function Space(props: PublicationProps) {
   return (
     <SpaceLayout {...props}>
       <div className="space-y-2">

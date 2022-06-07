@@ -1,4 +1,4 @@
-import { Physics } from "@react-three/cannon";
+import { Physics, Triplet } from "@react-three/cannon";
 import { Canvas } from "@react-three/fiber";
 import produce from "immer";
 import Head from "next/head";
@@ -7,9 +7,11 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
-import { InstancedScene } from "@wired-xr/scene";
+import { InstancedScene, traverseTree } from "@wired-xr/scene";
 
 import Player from "../../src/components/app/Player";
+import ToggleDebug from "../../src/components/studio/StudioCanvas/ToggleDebug";
+import MetaTags from "../../src/components/ui/MetaTags";
 import { getFileByPath } from "../../src/helpers/studio/filesystem";
 import { useProject } from "../../src/helpers/studio/hooks/useProject";
 import { useStudioStore } from "../../src/helpers/studio/store";
@@ -19,8 +21,10 @@ export default function Preview() {
   const router = useRouter();
   const project = useProject();
   const root = useStudioStore((state) => state.rootHandle);
+  const debug = useStudioStore((state) => state.debug);
 
   const [loadedProject, setLoadedProject] = useState<Project>();
+  const [spawn, setSpawn] = useState<Triplet>();
 
   useEffect(() => {
     if (!root) {
@@ -60,47 +64,58 @@ export default function Preview() {
           );
         });
 
+        //set spawn
+        const spawns: Triplet[] = [];
+        traverseTree(newProject.scene.tree, (entity) => {
+          if (entity.type === "Spawn") spawns.push(entity.transform.position);
+        });
+        if (spawns.length > 0) setSpawn(spawns[0]);
+
+        //load scene
         setLoadedProject(newProject);
       } catch (err) {
         console.error(err);
         setLoadedProject(undefined);
+        setSpawn(undefined);
       }
     }
 
     loadProject();
   }, [project]);
 
-  if (!loadedProject) return null;
-
   return (
-    <div className="h-full">
-      <Head>
-        <title>{loadedProject.name} / The Wired </title>
-      </Head>
+    <>
+      <MetaTags title="Studio" />
 
-      <div className="crosshair" />
+      <div className="h-full">
+        <div className="crosshair" />
 
-      <Canvas shadows className="w-full h-full">
-        <Physics>
-          <InstancedScene scene={loadedProject.scene} />
+        {loadedProject && (
+          <Canvas shadows className="w-full h-full">
+            <Physics>
+              <ToggleDebug enabled={debug}>
+                <InstancedScene scene={loadedProject.scene} />
 
-          <Player />
-        </Physics>
-      </Canvas>
+                <Player spawn={spawn} />
+              </ToggleDebug>
+            </Physics>
+          </Canvas>
+        )}
 
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="fixed top-0 right-0 p-6 text-2xl"
-      >
-        <Link href={"/studio"} passHref>
-          <div
-            className="cursor-pointer p-2 rounded-full bg-surface text-onSurface
-                       backdrop-blur bg-opacity-60 hover:bg-opacity-100 transition active:bg-opacity-90"
-          >
-            <MdClose />
-          </div>
-        </Link>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="fixed top-0 right-0 p-6 text-2xl"
+        >
+          <Link href={"/studio"} passHref>
+            <a
+              className="cursor-pointer p-2 rounded-full bg-surface text-onSurface
+                         backdrop-blur bg-opacity-60 hover:bg-opacity-100 transition active:bg-opacity-90"
+            >
+              <MdClose />
+            </a>
+          </Link>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

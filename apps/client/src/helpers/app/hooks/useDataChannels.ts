@@ -4,11 +4,12 @@ import { createMessage } from "../message";
 import { useAppStore } from "../store";
 import { Identity, Location, PlayerChannels } from "../types";
 
-export default function useDataChannels(id: string, channels: PlayerChannels) {
+export default function useDataChannels(
+  id: string,
+  channels: Partial<PlayerChannels> | undefined
+) {
   const locationRef = useRef<Location>({ position: [0, 0, 0], rotation: 0 });
   const [identity, setIdentity] = useState<Identity>();
-
-  // const { profile } = useProfile(identity?.did);
 
   useEffect(() => {
     if (
@@ -20,7 +21,9 @@ export default function useDataChannels(id: string, channels: PlayerChannels) {
       return;
 
     function onMessage(e: MessageEvent<string>) {
-      const name = `Guest-${id.substring(0, 6)}`;
+      const guestName = `Guest-${id.substring(0, 6)}`;
+      const handle = identity?.handle;
+      const name = handle ? `@${handle}` : guestName;
       const message = createMessage(JSON.parse(e.data), name);
       useAppStore.getState().addMessage(message);
     }
@@ -33,31 +36,39 @@ export default function useDataChannels(id: string, channels: PlayerChannels) {
       setIdentity(JSON.parse(e.data));
     }
 
-    channels.message.addEventListener("message", onMessage);
-    channels.location.addEventListener("message", onLocation);
-    channels.identity.addEventListener("message", onIdentity);
+    if (channels.message)
+      channels.message.addEventListener("message", onMessage);
+    if (channels.location)
+      channels.location.addEventListener("message", onLocation);
+    if (channels.identity)
+      channels.identity.addEventListener("message", onIdentity);
     return () => {
-      channels.message.removeEventListener("message", onMessage);
-      channels.location.removeEventListener("message", onLocation);
-      channels.identity.removeEventListener("message", onIdentity);
+      if (channels.message)
+        channels.message.removeEventListener("message", onMessage);
+      if (channels.location)
+        channels.location.removeEventListener("message", onLocation);
+      if (channels.identity)
+        channels.identity.removeEventListener("message", onIdentity);
     };
-  }, [channels, id]);
+  }, [channels, id, identity]);
 
-  // useEffect(() => {
-  //   //add to players list
-  //   const players = useStore.getState().players;
-  //   const newPlayers = { ...players };
-  //   newPlayers[id] = identity;
-  //   useStore.setState({ players: newPlayers });
+  useEffect(() => {
+    if (!identity) return;
 
-  //   return () => {
-  //     //remove from players list
-  //     const players = useStore.getState().players;
-  //     const newPlayers = { ...players };
-  //     delete newPlayers[id];
-  //     useStore.setState({ players: newPlayers });
-  //   };
-  // }, [id, identity]);
+    //add to players list
+    const players = useAppStore.getState().players;
+    const newPlayers = { ...players };
+    newPlayers[id] = identity;
+    useAppStore.setState({ players: newPlayers });
+
+    return () => {
+      //remove from players list
+      const players = useAppStore.getState().players;
+      const newPlayers = { ...players };
+      delete newPlayers[id];
+      useAppStore.setState({ players: newPlayers });
+    };
+  }, [id, identity]);
 
   return { locationRef, identity };
 }

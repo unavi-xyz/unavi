@@ -8,6 +8,7 @@ import { DirectionalLight } from "./components/entities/DirectionalLight";
 import { Group } from "./components/entities/Group";
 import { Model } from "./components/entities/Model/Model";
 import { PointLight } from "./components/entities/PointLight";
+import { Spawn } from "./components/entities/Spawn";
 import { Sphere } from "./components/entities/Sphere/Sphere";
 import { SpotLight } from "./components/entities/SpotLight";
 import { Text } from "./components/entities/Text";
@@ -24,18 +25,19 @@ export type Transform = {
 
 //entity
 export const ENTITY_COMPONENTS = {
-  Group: Group,
   Box: Box,
   Sphere: Sphere,
   Cylinder: Cylinder,
-  Model: Model,
 
   PointLight: PointLight,
   AmbientLight: AmbientLight,
   DirectionalLight: DirectionalLight,
   SpotLight: SpotLight,
 
+  Group: Group,
   Text: Text,
+  Model: Model,
+  Spawn: Spawn,
 };
 
 export type EntityType = keyof typeof ENTITY_COMPONENTS;

@@ -1,60 +1,85 @@
 import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import Head from "next/head";
-import { useRouter } from "next/router";
+import { NextPageContext } from "next";
+import { Context } from "urql";
 
 import { InstancedScene } from "@wired-xr/scene";
 
 import Chat from "../../src/components/app/Chat";
+import ConnectionProvider, {
+  ConnectionContext,
+} from "../../src/components/app/ConnectionProvider";
 import MultiplayerManager from "../../src/components/app/MultiplayerManager";
 import Player from "../../src/components/app/Player";
-import SpaceProvider, {
-  SpaceContext,
-} from "../../src/components/app/SpaceProvider";
+import MetaTags from "../../src/components/ui/MetaTags";
 import { useAppHotkeys } from "../../src/helpers/app/hooks/useAppHotkeys";
 import { useLoadAssets } from "../../src/helpers/app/hooks/useLoadAssets";
-import { usePublication } from "../../src/helpers/lens/hooks/usePublication";
+import { useSetIdentity } from "../../src/helpers/app/hooks/useSetIdentity";
+import {
+  PublicationProps,
+  getPublicationProps,
+} from "../../src/helpers/lens/getPublicationProps";
 
-export default function App() {
-  const router = useRouter();
-  const id = router.query.id as string;
+export async function getServerSideProps({ res, query }: NextPageContext) {
+  res?.setHeader("Cache-Control", "s-maxage=120");
 
-  const publication = usePublication(id);
-  const loadedScene = useLoadAssets(publication?.metadata.content);
+  const id = query.id as string;
+  const props = await getPublicationProps(id);
+
+  return {
+    props: {
+      ...props,
+      id,
+    },
+  };
+}
+
+interface Props extends PublicationProps {
+  id: string;
+}
+
+export default function App({ id, metadata, publication }: Props) {
+  const { loadedScene, spawn } = useLoadAssets(publication?.metadata.content);
 
   useAppHotkeys();
-
-  if (!loadedScene || !publication) return null;
+  useSetIdentity();
 
   return (
-    <SpaceProvider spaceId={id}>
-      <div className="h-full">
-        <Head>
-          <title>
-            {publication.metadata.name ?? publication.id} / The Wired
-          </title>
-        </Head>
+    <>
+      <MetaTags
+        title={metadata.title}
+        description={metadata.description}
+        image={metadata.image}
+        imageWidth="595.2px"
+        imageHeight="357.11px"
+        card="summary_large_image"
+      />
 
-        <div className="crosshair" />
+      {loadedScene && publication && (
+        <ConnectionProvider>
+          <div className="h-full">
+            <div className="crosshair" />
 
-        <Chat />
+            <Chat />
 
-        <CanvasBridge>
-          <Physics>
-            <InstancedScene scene={loadedScene} />
+            <CanvasBridge>
+              <Physics>
+                <InstancedScene scene={loadedScene} />
 
-            <Player />
-            <MultiplayerManager spaceId={id} />
-          </Physics>
-        </CanvasBridge>
-      </div>
-    </SpaceProvider>
+                <Player spawn={spawn} />
+                <MultiplayerManager spaceId={id} />
+              </Physics>
+            </CanvasBridge>
+          </div>
+        </ConnectionProvider>
+      )}
+    </>
   );
 }
 
 function CanvasBridge({ children }: { children: React.ReactNode }) {
-  const ContextBridge = useContextBridge(SpaceContext);
+  const ContextBridge = useContextBridge(ConnectionContext, Context);
   return (
     <Canvas shadows>
       <ContextBridge>{children}</ContextBridge>

@@ -14,7 +14,7 @@ export default function ProfileButton() {
           onClick={() => setOpen((prev) => !prev)}
           className="w-9 h-9 rounded-full border cursor-pointer"
         >
-          <ViewerProfilePicture circle />
+          <ViewerProfilePicture circle draggable={false} />
         </div>
 
         <div className="mt-1">

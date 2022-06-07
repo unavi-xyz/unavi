@@ -11,6 +11,7 @@ import ProjectsPage from "../../src/components/studio/ProjectsPage/ProjectsPage"
 import StudioCanvas from "../../src/components/studio/StudioCanvas/StudioCanvas";
 import StudioNavbar from "../../src/components/studio/StudioNavbar/StudioNavbar";
 import TreeMenu from "../../src/components/studio/TreeMenu/TreeMenu";
+import MetaTags from "../../src/components/ui/MetaTags";
 import { useAutosave } from "../../src/helpers/studio/hooks/useAutosave";
 import { useHotkeys } from "../../src/helpers/studio/hooks/useStudioHotkeys";
 import { useStudioStore } from "../../src/helpers/studio/store";
@@ -29,9 +30,7 @@ export default function Studio() {
 
   return (
     <>
-      <Head>
-        <title>Studio / The Wired</title>
-      </Head>
+      <MetaTags title="Studio" />
 
       <Dialog open={open}>
         <ProjectsPage />

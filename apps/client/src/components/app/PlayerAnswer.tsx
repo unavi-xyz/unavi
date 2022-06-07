@@ -6,8 +6,8 @@ import {
   PlayerChannels,
   channelNames,
 } from "../../helpers/app/types";
+import { ConnectionContext } from "./ConnectionProvider";
 import OtherPlayer from "./OtherPlayer";
-import { SpaceContext } from "./SpaceProvider";
 
 interface Props {
   id: string;
@@ -26,7 +26,7 @@ export default function PlayerAnswer({ id, offer }: Props) {
     removeConnection,
     createAnswer,
     createOffer,
-  } = useContext(SpaceContext);
+  } = useContext(ConnectionContext);
 
   useExchangeIce(connection, id);
 
@@ -38,13 +38,12 @@ export default function PlayerAnswer({ id, offer }: Props) {
     if (!socket || !connection) return;
     if (connection.signalingState === "closed") return;
 
-    //create initial answer
-    connection
-      .setRemoteDescription(offer)
-      .then(() => {
-        createAnswer(connection, id);
-      })
-      .catch(() => {});
+    async function answer() {
+      if (!connection) throw new Error("Connection is undefined");
+
+      await connection.setRemoteDescription(offer);
+      await createAnswer(connection, id);
+    }
 
     function onDataChannel(e: RTCDataChannelEvent) {
       const label = e.channel.label as keyof Channels;
@@ -62,29 +61,37 @@ export default function PlayerAnswer({ id, offer }: Props) {
       setTrack(e.track);
     }
 
-    function onNegotiationNeeded() {
-      if (!connection) return;
-      createOffer(connection, id);
+    async function onNegotiationNeeded() {
+      try {
+        if (!connection) throw new Error("Connection is undefined");
+        await createOffer(connection, id);
+      } catch (e) {
+        console.error(e);
+      }
     }
 
-    // if (appManager.track) connection.addTrack(appManager.track);
+    async function onOffer(player: string, offer: RTCSessionDescription) {
+      try {
+        if (!connection) throw new Error("Connection is undefined");
+        if (player !== id) throw new Error("Wrong player");
 
-    addConnection(connection);
-
-    function onOffer(player: string, offer: RTCSessionDescription) {
-      if (player !== id || !connection) return;
-      connection
-        .setRemoteDescription(offer)
-        .then(() => {
-          createAnswer(connection, id);
-        })
-        .catch(() => {});
+        await connection.setRemoteDescription(offer);
+        await createAnswer(connection, id);
+      } catch (e) {
+        console.error(e);
+      }
     }
 
+    //handle events
     socket.on("offer", onOffer);
     connection.addEventListener("datachannel", onDataChannel);
     connection.addEventListener("track", onTrack);
     connection.addEventListener("negotiationneeded", onNegotiationNeeded);
+
+    //answer the offer
+    answer();
+    addConnection(connection);
+
     return () => {
       socket.off("offer", onOffer);
       connection.removeEventListener("datachannel", onDataChannel);
@@ -98,5 +105,5 @@ export default function PlayerAnswer({ id, offer }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connection, id, offer, socket]);
 
-  return <OtherPlayer id={id} channels={channels as any} track={track} />;
+  return <OtherPlayer id={id} channels={channels} track={track} />;
 }

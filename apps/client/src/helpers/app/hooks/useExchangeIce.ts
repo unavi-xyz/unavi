@@ -1,12 +1,12 @@
 import { useContext, useEffect } from "react";
 
-import { SpaceContext } from "../../../components/app/SpaceProvider";
+import { ConnectionContext } from "../../../components/app/ConnectionProvider";
 
 export function useExchangeIce(
   connection: RTCPeerConnection | undefined,
   targetId: string
 ) {
-  const { socket } = useContext(SpaceContext);
+  const { socket } = useContext(ConnectionContext);
 
   useEffect(() => {
     if (!socket || !connection || !targetId) return;

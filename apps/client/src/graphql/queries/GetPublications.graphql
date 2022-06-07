@@ -1,9 +1,10 @@
-query GetPublications($profileId: ProfileId!) {
+query GetPublications($profileId: ProfileId!, $sources: [Sources!]) {
   publications(
     request: {
       profileId: $profileId
-      publicationTypes: [POST, COMMENT, MIRROR]
+      publicationTypes: [POST]
       limit: 10
+      sources: $sources
     }
   ) {
     items {

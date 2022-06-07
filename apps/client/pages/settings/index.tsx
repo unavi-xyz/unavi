@@ -6,6 +6,7 @@ import FileUpload from "../../src/components/base/FileUpload";
 import TextArea from "../../src/components/base/TextArea";
 import TextField from "../../src/components/base/TextField";
 import { getSettingsLayout } from "../../src/components/layouts/SettingsLayout/SettingsLayout";
+import MetaTags from "../../src/components/ui/MetaTags";
 import { uploadFileToIpfs } from "../../src/helpers/ipfs/fetch";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
 import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
@@ -151,132 +152,136 @@ export default function Settings() {
     setLoadingProfilePicture(false);
   }
 
-  if (!profile) return null;
-
-  const twitter = profile.attributes?.find((item) => item.key === "twitter");
-  const website = profile.attributes?.find((item) => item.key === "website");
-  const location = profile.attributes?.find((item) => item.key === "location");
+  const twitter = profile?.attributes?.find((item) => item.key === "twitter");
+  const website = profile?.attributes?.find((item) => item.key === "website");
+  const location = profile?.attributes?.find((item) => item.key === "location");
 
   return (
-    <div className="space-y-8">
-      <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
-        <div className="text-lg space-y-4">
-          <div className="flex items-center space-x-4">
-            <div className="font-bold">Profile ID:</div>
-            <div>{profile.id}</div>
-          </div>
+    <>
+      <MetaTags title="Settings" />
 
-          <TextField
-            inputRef={nameRef}
-            title="Name"
-            defaultValue={profile?.name ?? ""}
-          />
-
-          <TextField
-            inputRef={locationRef}
-            title="Location"
-            defaultValue={location?.value}
-          />
-          <TextField
-            inputRef={websiteRef}
-            title="Website"
-            defaultValue={website?.value}
-          />
-          <TextField
-            inputRef={twitterRef}
-            title="Twitter"
-            frontAdornment="@"
-            defaultValue={twitter?.value}
-          />
-
-          <TextArea
-            textAreaRef={bioRef}
-            title="Bio"
-            defaultValue={profile?.bio ?? ""}
-          />
-
-          <div className="space-y-4">
-            <div className="text-lg font-bold">Cover</div>
-
-            {coverUrl && (
-              <div className="w-full h-40">
-                <img
-                  src={coverUrl}
-                  alt="cover picture preview"
-                  className="object-cover rounded-xl h-full w-full border"
-                />
+      {profile && (
+        <div className="space-y-8">
+          <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
+            <div className="text-lg space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="font-bold">Profile ID:</div>
+                <div>{profile.id}</div>
               </div>
-            )}
 
-            <FileUpload
-              title="Cover Picture"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) setCoverFile(file);
-              }}
-            />
-          </div>
-        </div>
+              <TextField
+                inputRef={nameRef}
+                title="Name"
+                defaultValue={profile?.name ?? ""}
+              />
 
-        <div className="w-full flex justify-end">
-          <Button
-            variant="filled"
-            onClick={handleProfileSave}
-            loading={loadingProfile}
-          >
-            Save
-          </Button>
-        </div>
-      </div>
+              <TextField
+                inputRef={locationRef}
+                title="Location"
+                defaultValue={location?.value}
+              />
+              <TextField
+                inputRef={websiteRef}
+                title="Website"
+                defaultValue={website?.value}
+              />
+              <TextField
+                inputRef={twitterRef}
+                title="Twitter"
+                frontAdornment="@"
+                defaultValue={twitter?.value}
+              />
 
-      <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
-        <div className="space-y-4 text-lg">
-          <div className="font-bold">Profile Picture</div>
+              <TextArea
+                textAreaRef={bioRef}
+                title="Bio"
+                defaultValue={profile?.bio ?? ""}
+              />
 
-          {pfpUrl && (
-            <div className="flex space-x-8">
-              <div className="w-full aspect-square">
-                <img
-                  src={pfpUrl}
-                  alt="profile picture preview square"
-                  className="object-cover rounded-xl h-full w-full border bg-neutral-100"
-                />
-              </div>
-              <div className="w-full aspect-square">
-                <img
-                  src={pfpUrl}
-                  alt="profile picture preview circle"
-                  className="object-cover rounded-full h-full w-full border bg-neutral-100"
+              <div className="space-y-4">
+                <div className="text-lg font-bold">Cover</div>
+
+                {coverUrl && (
+                  <div className="w-full h-40">
+                    <img
+                      src={coverUrl}
+                      alt="cover picture preview"
+                      className="object-cover rounded-xl h-full w-full border"
+                    />
+                  </div>
+                )}
+
+                <FileUpload
+                  title="Cover Picture"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setCoverFile(file);
+                  }}
                 />
               </div>
             </div>
-          )}
 
-          <div>
-            <FileUpload
-              title="Profile Picture"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) setPfpRawFile(file);
-              }}
-            />
+            <div className="w-full flex justify-end">
+              <Button
+                variant="filled"
+                onClick={handleProfileSave}
+                loading={loadingProfile}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+
+          <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
+            <div className="space-y-4 text-lg">
+              <div className="font-bold">Profile Picture</div>
+
+              {pfpUrl && (
+                <div className="flex space-x-8">
+                  <div className="w-full aspect-square">
+                    <img
+                      src={pfpUrl}
+                      alt="profile picture preview square"
+                      className="object-cover rounded-xl h-full w-full border bg-neutral-100"
+                    />
+                  </div>
+                  <div className="w-full aspect-square">
+                    <img
+                      src={pfpUrl}
+                      alt="profile picture preview circle"
+                      className="object-cover rounded-full h-full w-full border bg-neutral-100"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <FileUpload
+                  title="Profile Picture"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setPfpRawFile(file);
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="w-full flex justify-end">
+              <Button
+                variant="filled"
+                onClick={handleProfilePictureSave}
+                loading={loadingProfilePicture}
+                disabled={!pfpFile}
+              >
+                Save
+              </Button>
+            </div>
           </div>
         </div>
-
-        <div className="w-full flex justify-end">
-          <Button
-            variant="filled"
-            onClick={handleProfilePictureSave}
-            loading={loadingProfilePicture}
-            disabled={!pfpFile}
-          >
-            Save
-          </Button>
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 

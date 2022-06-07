@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 
-import { SpaceContext } from "../../../components/app/SpaceProvider";
+import { ConnectionContext } from "../../../components/app/ConnectionProvider";
 
 export function useWebrtcConnections(spaceId: string) {
   const [offers, setOffers] = useState(new Set<string>());
@@ -8,7 +8,7 @@ export function useWebrtcConnections(spaceId: string) {
     {}
   );
 
-  const { socket } = useContext(SpaceContext);
+  const { socket } = useContext(ConnectionContext);
 
   useEffect(() => {
     if (!socket) return;

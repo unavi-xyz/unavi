@@ -4,9 +4,14 @@ import { useMediaImage } from "../../helpers/lens/hooks/useMediaImage";
 interface Props {
   profile: Profile | undefined;
   circle?: boolean;
+  draggable?: boolean;
 }
 
-export default function ProfilePicture({ profile, circle }: Props) {
+export default function ProfilePicture({
+  profile,
+  circle,
+  draggable = true,
+}: Props) {
   const url = useMediaImage(profile?.picture);
 
   const circleClass = circle ? "rounded-full" : "rounded-xl";
@@ -15,8 +20,8 @@ export default function ProfilePicture({ profile, circle }: Props) {
   return (
     <img
       src={url ?? identicon}
+      draggable={draggable}
       alt="profile picture"
-      draggable={false}
       className={`object-cover w-screen aspect-square ${circleClass} bg-secondaryContainer`}
     />
   );

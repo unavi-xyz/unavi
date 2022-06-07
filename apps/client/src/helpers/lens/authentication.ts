@@ -11,9 +11,12 @@ import {
 } from "../../generated/graphql";
 import { disconnectWallet } from "../ethers/connection";
 import { useEthersStore } from "../ethers/store";
+import { AUTO_LOGIN_KEY } from "../ethers/useAutoLogin";
 import { lensClient } from "./client";
 import { LOCAL_STORAGE } from "./constants";
 import { useLensStore } from "./store";
+
+export const PREV_HANDLE_KEY = "PREV_HANDLE_KEY";
 
 async function setAccessToken(accessToken: string) {
   const address = useEthersStore.getState().address;
@@ -143,6 +146,13 @@ export async function authenticate() {
 }
 
 export function logout() {
+  sessionStorage.removeItem(AUTO_LOGIN_KEY);
   useLensStore.setState({ authenticated: false, handle: undefined });
   disconnectWallet();
+}
+
+export function switchProfile(handle: string) {
+  sessionStorage.setItem(AUTO_LOGIN_KEY, handle);
+  localStorage.setItem(PREV_HANDLE_KEY, handle);
+  useLensStore.setState({ handle });
 }

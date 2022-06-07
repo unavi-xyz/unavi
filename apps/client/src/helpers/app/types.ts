@@ -9,7 +9,7 @@ export type Message = {
 
 export type Identity = {
   isGuest: boolean;
-  did: string;
+  handle?: string;
 };
 
 export type Location = {

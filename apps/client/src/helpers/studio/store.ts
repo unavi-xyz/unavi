@@ -11,6 +11,7 @@ import {
   IMaterial,
   ISceneSlice,
   createSceneSlice,
+  traverseTree,
 } from "@wired-xr/scene";
 
 import { findFilePath, getFileByPath } from "./filesystem";
@@ -53,7 +54,7 @@ export interface IStudioStore extends ISceneSlice {
 
   getAssetFileName: (assetId: string) => Promise<string | undefined>;
   loadAsset: (assetId: string, force?: boolean) => Promise<void>;
-  addPreset: (preset: Preset, parentId?: string) => Entity;
+  addPreset: (preset: Preset, parentId?: string) => Entity | void;
 }
 
 export const useStudioStore = create<IStudioStore>((set, get) => ({
@@ -95,6 +96,22 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
   },
 
   addPreset(preset: Preset, parentId = "root") {
+    //if entity is spawn, see if there is a spawn already
+    if (preset === "Spawn") {
+      const spawns: Entity[] = [];
+      traverseTree(get().scene.tree, (entity) => {
+        if (entity.type === "Spawn") {
+          spawns.push(entity);
+        }
+      });
+
+      //if there is a spawn, select it and don't add a new one
+      if (spawns.length > 0) {
+        set({ selectedId: spawns[0].id });
+        return;
+      }
+    }
+
     const entity = { ...ALL_PRESETS[preset] };
     entity.id = nanoid();
 

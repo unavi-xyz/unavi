@@ -8,15 +8,17 @@ import { useKeyboardMovement } from "../../helpers/app/hooks/useKeyboardMovement
 import { useSpringVelocity } from "../../helpers/app/hooks/useSpringVelocity";
 
 const PLAYER_HEIGHT = 1.6;
-const PLAYER_SPEED = 5;
-const JUMP_STRENGTH = 5;
+export const PLAYER_SPEED = 5;
+export const JUMP_STRENGTH = 5;
 
-const spawn: Triplet = [0, 2, 0];
+interface Props {
+  spawn?: Triplet;
+}
 
-export default function Player() {
+export default function Player({ spawn = [0, 0, 0] }: Props) {
   const position = useRef([0, 0, 0]);
   const velocity = useRef(new Vector3());
-  const raycaster = useRef<Raycaster>();
+  const raycaster = useRef<Raycaster>(null);
   const jump = useRef(false);
   const grounded = useRef(false);
 
@@ -64,9 +66,9 @@ export default function Player() {
   });
 
   return (
-    <object3D ref={ref as any}>
+    <object3D ref={ref}>
       <raycaster
-        ref={raycaster as any}
+        ref={raycaster}
         near={PLAYER_HEIGHT - 0.01}
         far={PLAYER_HEIGHT + 0.1}
       />

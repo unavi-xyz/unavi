@@ -58,6 +58,7 @@ export default function PublishPage() {
         );
       });
 
+      //create metadata
       const metadata: Metadata = {
         version: MetadataVersions.one,
         metadata_id: nanoid(),
@@ -73,6 +74,7 @@ export default function PublishPage() {
         appId: AppId.space,
       };
 
+      //create post
       await createPost(metadata);
 
       router.push(`/user/${handle}`);
@@ -86,7 +88,7 @@ export default function PublishPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center space-y-1">
-        <h1 className="text-3xl flex justify-center">Publish</h1>
+        <h1 className="text-3xl flex justify-center">Publish Space</h1>
         <p className="text-lg flex justify-center">Mint a new space NFT</p>
       </div>
 

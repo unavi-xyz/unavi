@@ -3,7 +3,7 @@
     <img src="./assets/HeroRound.png" />
   </p>
 
-  <p>An open source, decentralized, VR social platform</p>
+  <p>An open, decentralized, VR social platform</p>
 
   <img alt="Discord" src="https://img.shields.io/discord/918705784311939134?label=discord">
   <img alt="GitHub" src="https://img.shields.io/github/license/wired-xr/wired">

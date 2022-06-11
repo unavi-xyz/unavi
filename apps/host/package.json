@@ -1,0 +1,9 @@
+{
+  "name": "@wired-xr/host",
+  "version": "0.0.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "dev": "docker up ./elixir -d"
+  }
+}

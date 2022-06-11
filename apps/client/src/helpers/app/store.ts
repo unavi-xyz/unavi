@@ -1,16 +1,16 @@
 import { RefObject, createRef } from "react";
 import create from "zustand";
 
-import { Identity, Message } from "./types";
+import { IChatMessage, PlayerIdentity } from "./types";
 
 export interface AppStore {
   chatInputRef: RefObject<HTMLInputElement>;
 
-  identity: Identity;
-  players: { [id: string]: Identity };
+  identity: PlayerIdentity;
+  players: { [id: string]: PlayerIdentity };
 
-  messages: Message[];
-  addMessage: (message: Message) => void;
+  messages: IChatMessage[];
+  addMessage: (message: IChatMessage) => void;
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -22,11 +22,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   players: {},
 
   messages: [],
-  addMessage: (message: Message) => {
-    const messages = get().messages;
+  addMessage: (message: IChatMessage) => {
+    const messages = [...get().messages];
 
     //remove the oldest message if the list is full
-    if (messages.length >= 100) {
+    if (messages.length >= 50) {
       messages.shift();
     }
 

@@ -7,11 +7,11 @@ import { Context } from "urql";
 import { InstancedScene } from "@wired-xr/scene";
 
 import Chat from "../../src/components/app/Chat";
-import ConnectionProvider, {
-  ConnectionContext,
-} from "../../src/components/app/ConnectionProvider";
-import MultiplayerManager from "../../src/components/app/MultiplayerManager";
 import Player from "../../src/components/app/Player";
+import PlayerManager from "../../src/components/app/PlayerManager";
+import SpaceProvider, {
+  SpaceContext,
+} from "../../src/components/app/SpaceProvider";
 import MetaTags from "../../src/components/ui/MetaTags";
 import { useAppHotkeys } from "../../src/helpers/app/hooks/useAppHotkeys";
 import { useLoadAssets } from "../../src/helpers/app/hooks/useLoadAssets";
@@ -57,7 +57,7 @@ export default function App({ id, metadata, publication }: Props) {
       />
 
       {loadedScene && publication && (
-        <ConnectionProvider>
+        <SpaceProvider spaceId={id}>
           <div className="h-full">
             <div className="crosshair" />
 
@@ -66,20 +66,20 @@ export default function App({ id, metadata, publication }: Props) {
             <CanvasBridge>
               <Physics>
                 <InstancedScene scene={loadedScene} />
+                <PlayerManager />
 
                 <Player spawn={spawn} />
-                <MultiplayerManager spaceId={id} />
               </Physics>
             </CanvasBridge>
           </div>
-        </ConnectionProvider>
+        </SpaceProvider>
       )}
     </>
   );
 }
 
 function CanvasBridge({ children }: { children: React.ReactNode }) {
-  const ContextBridge = useContextBridge(ConnectionContext, Context);
+  const ContextBridge = useContextBridge(SpaceContext, Context);
   return (
     <Canvas shadows>
       <ContextBridge>{children}</ContextBridge>

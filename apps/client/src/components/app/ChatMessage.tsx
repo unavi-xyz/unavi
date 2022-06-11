@@ -1,23 +1,23 @@
 import { useEffect, useState } from "react";
 
-import { Message } from "../../helpers/app/types";
+import { IChatMessage } from "../../helpers/app/types";
 
 const showDuration = 10000;
 
-function isFading(message: Message) {
-  return Date.now() - message.time > showDuration;
+function isFading(message: IChatMessage) {
+  return Date.now() - message.timestamp / 10000.0 > showDuration;
 }
 
-function isHidden(message: Message) {
-  return Date.now() - message.time > showDuration + 2000;
+function isHidden(message: IChatMessage) {
+  return Date.now() - message.timestamp / 10000.0 > showDuration + 2000;
 }
 
 interface Props {
-  message: Message;
+  message: IChatMessage;
 }
 
 export default function ChatMessage({ message }: Props) {
-  const { text, username } = message;
+  const { message: text, username } = message;
 
   const [hidden, setHidden] = useState(isHidden(message));
   const [fading, setFading] = useState(isFading(message));

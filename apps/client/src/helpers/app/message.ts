@@ -1,10 +1,15 @@
 import { nanoid } from "nanoid";
 
-import { Message } from "./types";
+import { IChatMessage } from "./types";
 
 export function createMessage(text: string, username: string) {
   const id = nanoid();
   const time = Date.now();
-  const message: Message = { id, time, text, username };
+  const message: IChatMessage = {
+    id,
+    timestamp: time,
+    message: text,
+    username,
+  };
   return message;
 }

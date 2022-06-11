@@ -1,15 +1,33 @@
 import { KeyboardEvent, useContext, useEffect, useRef } from "react";
 
 import { useAppStore } from "../../helpers/app/store";
+import { RecievedWebsocketMessage } from "../../helpers/host/types";
 import ChatMessage from "./ChatMessage";
-import { ConnectionContext } from "./ConnectionProvider";
+import { SpaceContext } from "./SpaceProvider";
 
 export default function Chat() {
   const chatInputRef = useRef<HTMLInputElement>(null);
   const focusedRef = useRef(false);
 
   const messages = useAppStore((state) => state.messages);
-  const { publishAll } = useContext(ConnectionContext);
+  const { socket, sendChatMessage } = useContext(SpaceContext);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    function onMessage(event: MessageEvent) {
+      const { type, data } = JSON.parse(event.data) as RecievedWebsocketMessage;
+
+      if (type === "chatmessage") {
+        useAppStore.getState().addMessage(data);
+      }
+    }
+
+    socket.addEventListener("message", onMessage);
+    return () => {
+      socket.removeEventListener("message", onMessage);
+    };
+  }, [socket]);
 
   useEffect(() => {
     useAppStore.setState({ chatInputRef });
@@ -18,20 +36,8 @@ export default function Chat() {
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (focusedRef.current !== true) return;
 
-    switch (e.key) {
-      case "w":
-      case "a":
-      case "s":
-      case "d":
-      case "t":
-      case "W":
-      case "A":
-      case "S":
-      case "D":
-      case "T":
-      case " ":
-        e.stopPropagation();
-    }
+    //disable controls when typing
+    e.stopPropagation();
 
     if (e.key === "Enter") {
       const target = e.target as HTMLInputElement;
@@ -39,7 +45,7 @@ export default function Chat() {
 
       if (text === "") return;
 
-      publishAll("message", text);
+      sendChatMessage(text);
       target.value = "";
     }
   }
@@ -63,7 +69,7 @@ export default function Chat() {
         onClick={(e) => e.stopPropagation()}
         className="px-3 py-2 rounded outline-none w-full max-w-lg bg-surfaceDark
                    bg-opacity-50 backdrop-blur-xl focus:bg-opacity-100 text-sm transition
-                   text-onSurfaceDark placeholder-onSurfaceDark placeholder-opacity-60"
+                 text-onSurfaceDark placeholder-onSurfaceDark placeholder-opacity-60"
       />
     </div>
   );

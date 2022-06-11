@@ -1,11 +1,10 @@
-import { IPFS } from "ipfs-core";
-import { create as createHttp } from "ipfs-http-client";
+import { IPFSHTTPClient, create as createHttp } from "ipfs-http-client";
 import create from "zustand";
 
 const IPFS_HTTP_ENDPOINT = "https://ipfs.infura.io:5001";
 
 export interface IpfsStore {
-  ipfs: IPFS;
+  ipfs: IPFSHTTPClient;
 }
 
 export const useIpfsStore = create<IpfsStore>(() => ({

@@ -3,15 +3,15 @@ import { useThree } from "@react-three/fiber";
 import { useContext, useEffect, useRef } from "react";
 import { Vector3 } from "three";
 
-import { ConnectionContext } from "../../../components/app/ConnectionProvider";
+import { SpaceContext } from "../../../components/app/SpaceProvider";
 import { PUBLISH_INTERVAL } from "../constants";
-import { Location } from "../types";
+import { PlayerLocation } from "../types";
 
 export function usePublishLocation() {
   const tempVector3 = useRef(new Vector3());
 
   const { camera } = useThree();
-  const { publishAll } = useContext(ConnectionContext);
+  const { sendLocation } = useContext(SpaceContext);
 
   useEffect(() => {
     //this is a hack
@@ -19,19 +19,22 @@ export function usePublishLocation() {
     camera.rotateOnAxis(new Vector3(0, 1, 0), 0.00000001);
 
     const interval = setInterval(() => {
-      //position
+      //get position
       const position: Triplet = camera.position.toArray();
       position[1] -= 1.5;
 
-      //rotation
+      //get rotation
       const dir = camera.getWorldDirection(tempVector3.current);
       const sign = Math.sign(dir.x);
       const angle = Math.PI - (Math.atan(dir.z / dir.x) - (Math.PI / 2) * sign);
 
-      const location: Location = { position, rotation: angle };
-      publishAll("location", location);
+      //publish to space
+      const location: PlayerLocation = { position, rotation: angle };
+      sendLocation(location);
     }, PUBLISH_INTERVAL);
 
-    return () => clearInterval(interval);
-  }, [camera, publishAll]);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [camera, sendLocation]);
 }

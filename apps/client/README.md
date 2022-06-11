@@ -1,4 +1,4 @@
-# Client
+# @wired-xr/client
 
 A nextjs website used to access The Wired
 

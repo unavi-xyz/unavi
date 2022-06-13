@@ -3,7 +3,7 @@
     <img src="./assets/HeroRound.png" />
   </p>
 
-  <p>An open, decentralized, VR social platform</p>
+  <p>A decentralized 3d social platform, built for the web</p>
 
   <img alt="Discord" src="https://img.shields.io/discord/918705784311939134?label=discord">
   <img alt="GitHub" src="https://img.shields.io/github/license/wired-xr/wired">
@@ -12,33 +12,27 @@
 
 ## Tech Stack
 
-- Decentralized backend using [Lens Protocol](https://lens.dev/) and [IPFS](https://ipfs.io/)
-- Peer to peer voice and data channels over [WebRTC](https://webrtc.org/)
+- Decentralized social graph using [Lens Protocol](https://lens.dev/)
+- Decentralized data storage using [IPFS](https://ipfs.io/)
+- Open backend, anyone can run their own [host](apps/host) server
 - 3d rendering using [Threejs](https://github.com/mrdoob/three.js) / [React Three Fiber](https://github.com/pmndrs/react-three-fiber)
 - Physics using [Cannon ES](https://github.com/pmndrs/cannon-es) / [React Three Cannon](https://github.com/pmndrs/use-cannon/tree/master/packages/react-three-cannon#readme)
 - VRM Avatar support using [Three VRM](https://github.com/pixiv/three-vrm)
 
 ## Development
 
-This turborepo uses [Yarn](https://yarnpkg.com/) as a package manager. It includes the following apps/packages:
+This turborepo uses Yarn as a package manager. It includes the following apps/packages:
 
 ### Apps
 
-- `client`: a website used to access The Wired
-- `server`: a server for hosting spaces
+- [client](apps/client): a website used to access The Wired
+- [host](apps/host): a server for hosting spaces
 
 ### Packages
 
-- `avatar`: a VRM avatar library
-- `config`: eslint configurations
-- `scene`: a library for creating 3d scenes in a standardized format
-- `tsconfig`: tsconfigs used throughout the monorepo
-
-### Utilities
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+- [avatar](packages/avatar): a VRM avatar library
+- [scene](packages/scene): a library for creating 3d scenes, stored in JSON format
+- [tsconfig](packages/tsconfig): internal TypeScript configuration files
 
 ### Install
 

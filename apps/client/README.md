@@ -1,6 +1,6 @@
 # @wired-xr/client
 
-A nextjs website used to access The Wired
+A [Next.js](https://nextjs.org/) website used to access The Wired.
 
 Contains the main threejs app, a space studio, and various pages for viewing spaces, profiles, etc.
 

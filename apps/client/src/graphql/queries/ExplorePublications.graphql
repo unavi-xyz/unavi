@@ -4,6 +4,7 @@ query ExplorePublications($sources: [Sources!]) {
       sortCriteria: TOP_COMMENTED
       publicationTypes: [POST]
       limit: 10
+      timestamp: 69
       sources: $sources
     }
   ) {

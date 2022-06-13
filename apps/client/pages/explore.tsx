@@ -64,7 +64,7 @@ export default function Explore({ spaces, avatars }: Props) {
           </div>
 
           <div className="space-y-2">
-            <div className="font-bold text-2xl">Recent Spaces</div>
+            <div className="font-bold text-2xl">Spaces</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {spaces.length === 0 ? (
                 <div className="text-outline">No spaces found</div>
@@ -81,7 +81,7 @@ export default function Explore({ spaces, avatars }: Props) {
           </div>
 
           <div className="space-y-2">
-            <div className="font-bold text-2xl">Recent Avatars</div>
+            <div className="font-bold text-2xl">Avatars</div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {avatars.length === 0 ? (
                 <div className="text-outline">No avatars found</div>

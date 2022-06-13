@@ -8,7 +8,12 @@ import {
 } from "../../helpers/host/types";
 import { useLensStore } from "../../helpers/lens/store";
 
-const hostServer = "host.thewired.space";
+const WS = process.env.NODE_ENV === "production" ? "wss" : "ws";
+
+const HOST_SERVER =
+  process.env.NODE_ENV === "production"
+    ? "host.thewired.space"
+    : "localhost:4000";
 
 export interface ISpaceContext {
   socket: WebSocket | undefined;
@@ -47,7 +52,7 @@ export default function SpaceProvider({ spaceId, children }: Props) {
       return;
     }
 
-    const newSocket = new WebSocket(`wss://${hostServer}/${spaceId}`);
+    const newSocket = new WebSocket(`${WS}://${HOST_SERVER}/${spaceId}`);
 
     newSocket.addEventListener("open", () => {
       console.log("Connected to host server");

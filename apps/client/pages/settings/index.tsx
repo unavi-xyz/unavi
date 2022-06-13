@@ -8,6 +8,7 @@ import TextField from "../../src/components/base/TextField";
 import { getSettingsLayout } from "../../src/components/layouts/SettingsLayout/SettingsLayout";
 import MetaTags from "../../src/components/ui/MetaTags";
 import { uploadFileToIpfs } from "../../src/helpers/ipfs/fetch";
+import { createProfileMetadata } from "../../src/helpers/lens/createProfileMetadata";
 import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
 import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
 import { useSetProfileMetadata } from "../../src/helpers/lens/hooks/useSetProfileMetadata";
@@ -22,10 +23,11 @@ import { crop } from "../../src/helpers/utils/crop";
 
 export default function Settings() {
   const nameRef = useRef<HTMLInputElement>(null);
+  const bioRef = useRef<HTMLTextAreaElement>(null);
   const locationRef = useRef<HTMLInputElement>(null);
   const websiteRef = useRef<HTMLInputElement>(null);
   const twitterRef = useRef<HTMLInputElement>(null);
-  const bioRef = useRef<HTMLTextAreaElement>(null);
+  const hostRef = useRef<HTMLInputElement>(null);
 
   const [pfpRawFile, setPfpRawFile] = useState<File>();
   const [pfpFile, setPfpFile] = useState<File>();
@@ -73,61 +75,20 @@ export default function Settings() {
 
     setLoadingProfile(true);
 
-    const cover_picture: string = coverFile
-      ? await uploadFileToIpfs(coverFile)
-      : profile.coverPicture?.__typename === "MediaSet"
-      ? profile.coverPicture.original.url
-      : profile.coverPicture?.__typename === "NftImage"
-      ? profile.coverPicture.uri
-      : null;
+    const { metadata, updateAttribute } = createProfileMetadata(profile);
 
-    const attributes =
-      profile.attributes?.map((attribute) => {
-        const data: AttributeData = {
-          key: attribute.key,
-          value: attribute.value,
-          traitType: attribute.traitType ?? undefined,
-          displayType: (attribute.displayType as any) ?? undefined,
-        };
-        return data;
-      }) ?? [];
-
-    function addAttribute(key: string, value: any) {
-      const newData = {
-        key,
-        value,
-      };
-
-      const currentIndex = attributes.findIndex(
-        (attribute) => attribute.key === key
-      );
-
-      if (value === undefined) {
-        if (currentIndex !== -1) {
-          //remove attribute
-          attributes.splice(currentIndex, 1);
-        }
-      } else if (currentIndex === -1) {
-        //add attribute
-        attributes.push(newData);
-      } else {
-        //update attribute
-        attributes[currentIndex] = newData;
-      }
+    if (coverFile) {
+      const uri = await uploadFileToIpfs(coverFile);
+      metadata.cover_picture = uri;
     }
 
-    addAttribute("twitter", twitterRef.current?.value);
-    addAttribute("location", locationRef.current?.value);
-    addAttribute("website", websiteRef.current?.value);
+    updateAttribute("location", locationRef.current?.value);
+    updateAttribute("website", websiteRef.current?.value);
+    updateAttribute("twitter", twitterRef.current?.value);
+    updateAttribute("host", hostRef.current?.value);
 
-    const metadata: ProfileMetadata = {
-      version: MetadataVersions.one,
-      metadata_id: nanoid(),
-      name: nameRef.current?.value ?? null,
-      bio: bioRef.current?.value ?? null,
-      cover_picture,
-      attributes,
-    };
+    metadata.name = nameRef.current?.value ?? null;
+    metadata.bio = bioRef.current?.value ?? null;
 
     try {
       await setProfileMetadata(metadata);
@@ -155,6 +116,7 @@ export default function Settings() {
   const twitter = profile?.attributes?.find((item) => item.key === "twitter");
   const website = profile?.attributes?.find((item) => item.key === "website");
   const location = profile?.attributes?.find((item) => item.key === "location");
+  const host = profile?.attributes?.find((item) => item.key === "host");
 
   return (
     <>
@@ -175,27 +137,29 @@ export default function Settings() {
                 defaultValue={profile?.name ?? ""}
               />
 
+              <TextArea
+                textAreaRef={bioRef}
+                title="Bio"
+                defaultValue={profile?.bio ?? ""}
+              />
+
               <TextField
                 inputRef={locationRef}
                 title="Location"
                 defaultValue={location?.value}
               />
+
               <TextField
                 inputRef={websiteRef}
                 title="Website"
                 defaultValue={website?.value}
               />
+
               <TextField
                 inputRef={twitterRef}
                 title="Twitter"
                 frontAdornment="@"
                 defaultValue={twitter?.value}
-              />
-
-              <TextArea
-                textAreaRef={bioRef}
-                title="Bio"
-                defaultValue={profile?.bio ?? ""}
               />
 
               <div className="space-y-4">
@@ -220,6 +184,13 @@ export default function Settings() {
                   }}
                 />
               </div>
+
+              <TextField
+                inputRef={hostRef}
+                title="Host Server"
+                help="Host server for your spaces. Can be ignored if you don't have any spaces."
+                defaultValue={host?.value}
+              />
             </div>
 
             <div className="w-full flex justify-end">

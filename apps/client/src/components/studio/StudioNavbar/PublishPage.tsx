@@ -1,4 +1,5 @@
 import produce from "immer";
+import { atom, useAtomValue } from "jotai";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useRef, useState } from "react";
@@ -16,6 +17,9 @@ import Button from "../../base/Button";
 import FileUpload from "../../base/FileUpload";
 import TextArea from "../../base/TextArea";
 import TextField from "../../base/TextField";
+import HostPage from "./HostPage";
+
+export const didSetHostAtom = atom(false);
 
 export default function PublishPage() {
   const project = useProject();
@@ -31,6 +35,8 @@ export default function PublishPage() {
   const profile = useProfileByHandle(handle);
   const createPost = useCreatePost(profile?.id);
 
+  const didSetHost = useAtomValue(didSetHostAtom);
+  const host = profile?.attributes?.find((item) => item.key === "host");
   const disableSubmit = !imageFile || !handle;
 
   async function handleSubmit() {
@@ -84,6 +90,8 @@ export default function PublishPage() {
 
     setLoading(false);
   }
+
+  if (profile && !host && !didSetHost) return <HostPage />;
 
   return (
     <div className="space-y-8">

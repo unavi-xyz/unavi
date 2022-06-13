@@ -1,5 +1,6 @@
 import { createContext, useCallback, useEffect, useState } from "react";
 
+import { Publication } from "../../generated/graphql";
 import { PlayerLocation } from "../../helpers/app/types";
 import {
   SentChatMessage,
@@ -8,12 +9,8 @@ import {
 } from "../../helpers/host/types";
 import { useLensStore } from "../../helpers/lens/store";
 
+const DEFAULT_HOST = "host.thewired.space";
 const WS = process.env.NODE_ENV === "production" ? "wss" : "ws";
-
-const HOST_SERVER =
-  process.env.NODE_ENV === "production"
-    ? "host.thewired.space"
-    : "localhost:4000";
 
 export interface ISpaceContext {
   socket: WebSocket | undefined;
@@ -28,11 +25,20 @@ export const SpaceContext = createContext<ISpaceContext>({
 });
 
 interface Props {
-  spaceId: string | undefined;
+  space: Publication;
   children: React.ReactNode;
 }
 
-export default function SpaceProvider({ spaceId, children }: Props) {
+export default function SpaceProvider({ space, children }: Props) {
+  //if development use localhost
+  //else get from space owner profile
+  //else use default host
+  const host =
+    process.env.NODE_ENV === "production"
+      ? space.profile.attributes?.find((item) => item.key === "host")?.value ??
+        DEFAULT_HOST
+      : "localhost:4000";
+
   const [socket, setSocket] = useState<WebSocket>();
 
   const handle = useLensStore((state) => state.handle);
@@ -47,12 +53,12 @@ export default function SpaceProvider({ spaceId, children }: Props) {
 
   //create the websocket connection
   useEffect(() => {
-    if (!spaceId) {
+    if (!space || !host) {
       setSocket(undefined);
       return;
     }
 
-    const newSocket = new WebSocket(`${WS}://${HOST_SERVER}/${spaceId}`);
+    const newSocket = new WebSocket(`${WS}://${host}/${space.id}`);
 
     newSocket.addEventListener("open", () => {
       console.log("Connected to host server");
@@ -67,7 +73,7 @@ export default function SpaceProvider({ spaceId, children }: Props) {
     return () => {
       newSocket.close();
     };
-  }, [spaceId]);
+  }, [space]);
 
   //send identity to host
   useEffect(() => {

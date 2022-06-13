@@ -1,8 +1,12 @@
 import { ChangeEvent, RefObject } from "react";
+import { MdOutlineHelpOutline } from "react-icons/md";
+
+import Tooltip from "./Tooltip";
 
 interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   title?: string;
   frontAdornment?: string;
+  help?: string;
   inputRef?: RefObject<HTMLInputElement>;
   onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
 }
@@ -10,18 +14,29 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
 export default function TextField({
   title,
   frontAdornment,
+  help,
   inputRef,
   onChange,
   ...rest
 }: Props) {
   return (
     <div className="flex flex-col space-y-1">
-      <label
-        htmlFor={title}
-        className="block text-lg font-bold pointer-events-none"
-      >
-        {title}
-      </label>
+      <div className="flex items-center space-x-1">
+        <label
+          htmlFor={title}
+          className="block text-lg font-bold pointer-events-none"
+        >
+          {title}
+        </label>
+
+        {help && (
+          <div>
+            <Tooltip text={help} placement="right">
+              <MdOutlineHelpOutline />
+            </Tooltip>
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center border rounded-lg bg-surface text-onSurface">
         {frontAdornment && (

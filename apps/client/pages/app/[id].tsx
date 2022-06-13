@@ -57,7 +57,7 @@ export default function App({ id, metadata, publication }: Props) {
       />
 
       {loadedScene && publication && (
-        <SpaceProvider spaceId={id}>
+        <SpaceProvider space={publication}>
           <div className="h-full">
             <div className="crosshair" />
 

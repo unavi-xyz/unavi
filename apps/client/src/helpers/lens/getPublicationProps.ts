@@ -2,6 +2,7 @@ import {
   GetPublicationDocument,
   GetPublicationQuery,
   GetPublicationQueryVariables,
+  Publication,
 } from "../../generated/graphql";
 import { PageMetadata } from "../types";
 import { lensClient } from "./client";
@@ -10,7 +11,7 @@ import { AppId } from "./types";
 
 export interface PublicationProps {
   metadata: PageMetadata;
-  publication: GetPublicationQuery["publication"] | undefined;
+  publication: Publication | undefined;
 }
 
 export async function getPublicationProps(id: string) {
@@ -21,7 +22,7 @@ export async function getPublicationProps(id: string) {
     )
     .toPromise();
 
-  const publication = data?.publication;
+  const publication = data?.publication as Publication | undefined;
 
   const title = `${publication?.metadata.name ?? id}`;
 
@@ -45,7 +46,7 @@ export async function getPublicationProps(id: string) {
     image,
   };
 
-  const props: PublicationProps = { metadata, publication: data?.publication };
+  const props: PublicationProps = { metadata, publication };
 
   return props;
 }

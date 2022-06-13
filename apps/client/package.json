@@ -49,7 +49,7 @@
     "@typechain/ethers-v5": "^10.0.0",
     "@types/babel__core": "^7",
     "@types/graphql": "^14.5.0",
-    "@types/react": "^18.0.8",
+    "@types/react": "^18.0.12",
     "@types/react-dnd": "^3.0.2",
     "@types/react-dom": "^18.0.3",
     "@types/wicg-file-system-access": "^2020.9.5",

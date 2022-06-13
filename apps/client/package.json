@@ -56,6 +56,8 @@
     "@wired-xr/tsconfig": "*",
     "autoprefixer": "^10.4.2",
     "eslint": "^8.14.0",
+    "eslint-config-next": "^12.1.6",
+    "eslint-config-prettier": "^8.5.0",
     "graphql-tag": "^2.12.6",
     "next-transpile-modules": "^9.0.0",
     "postcss": "^8.4.6",

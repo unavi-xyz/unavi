@@ -73,7 +73,7 @@ export default function SpaceProvider({ space, children }: Props) {
     return () => {
       newSocket.close();
     };
-  }, [space]);
+  }, [space, host]);
 
   //send identity to host
   useEffect(() => {

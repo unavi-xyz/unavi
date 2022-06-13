@@ -1,1 +1,1 @@
-export const PUBLISH_INTERVAL = 50;
+export const PUBLISH_INTERVAL = 100;

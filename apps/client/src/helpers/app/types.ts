@@ -1,26 +1,26 @@
 import { Triplet } from "@react-three/cannon";
 
-export type Message = {
+export type IChatMessage = {
   id: string;
   username: string;
-  text: string;
-  time: number;
+  message: string;
+  timestamp: number;
 };
 
-export type Identity = {
+export type PlayerIdentity = {
   isGuest: boolean;
   handle?: string;
 };
 
-export type Location = {
+export type PlayerLocation = {
   position: Triplet;
   rotation: number;
 };
 
 export type Channels = {
   message: string;
-  identity: Identity;
-  location: Location;
+  identity: PlayerIdentity;
+  location: PlayerLocation;
 };
 
 export const channelNames: Array<keyof Channels> = [

@@ -1,4 +1,7 @@
-import { useGetProfileByHandleQuery } from "../../../generated/graphql";
+import {
+  Profile,
+  useGetProfileByHandleQuery,
+} from "../../../generated/graphql";
 
 export function useProfileByHandle(handle: string | undefined) {
   const [{ data }] = useGetProfileByHandleQuery({
@@ -7,5 +10,5 @@ export function useProfileByHandle(handle: string | undefined) {
   });
 
   const profile = data?.profiles.items[0];
-  return profile;
+  return profile as Profile;
 }

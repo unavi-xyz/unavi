@@ -26,7 +26,7 @@ export async function getServerSideProps({ res }: NextPageContext) {
     )
     .toPromise();
 
-  const spaces = spacesQuery.data?.explorePublications.items;
+  const spaces = spacesQuery.data?.explorePublications.items ?? [];
 
   const avatarsQuery = await lensClient
     .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
@@ -37,7 +37,7 @@ export async function getServerSideProps({ res }: NextPageContext) {
     )
     .toPromise();
 
-  const avatars = avatarsQuery.data?.explorePublications.items;
+  const avatars = avatarsQuery.data?.explorePublications.items ?? [];
 
   return {
     props: {
@@ -48,8 +48,8 @@ export async function getServerSideProps({ res }: NextPageContext) {
 }
 
 interface Props {
-  spaces: Post[] | undefined;
-  avatars: Post[] | undefined;
+  spaces: Post[];
+  avatars: Post[];
 }
 
 export default function Explore({ spaces, avatars }: Props) {
@@ -64,28 +64,36 @@ export default function Explore({ spaces, avatars }: Props) {
           </div>
 
           <div className="space-y-2">
-            <div className="font-bold text-2xl">Spaces</div>
+            <div className="font-bold text-2xl">Recent Spaces</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {spaces?.map((space) => (
-                <Link key={space.id} href={`/space/${space.id}`} passHref>
-                  <a>
-                    <SpaceCard space={space} />
-                  </a>
-                </Link>
-              ))}
+              {spaces.length === 0 ? (
+                <div className="text-outline">No spaces found</div>
+              ) : (
+                spaces.map((space) => (
+                  <Link key={space.id} href={`/space/${space.id}`} passHref>
+                    <a>
+                      <SpaceCard space={space} />
+                    </a>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <div className="font-bold text-2xl">Avatars</div>
+            <div className="font-bold text-2xl">Recent Avatars</div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {avatars?.map((avatar) => (
-                <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
-                  <a>
-                    <AvatarCard avatar={avatar} />
-                  </a>
-                </Link>
-              ))}
+              {avatars.length === 0 ? (
+                <div className="text-outline">No avatars found</div>
+              ) : (
+                avatars.map((avatar) => (
+                  <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
+                    <a>
+                      <AvatarCard avatar={avatar} />
+                    </a>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
         </div>

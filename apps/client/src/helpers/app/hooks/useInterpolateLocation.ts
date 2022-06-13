@@ -3,7 +3,7 @@ import { RefObject, useEffect, useRef } from "react";
 import { MathUtils, Vector3 } from "three";
 
 import { PUBLISH_INTERVAL } from "../constants";
-import { Location } from "../types";
+import { PlayerLocation } from "../types";
 
 function normalizeAngle(angle: number) {
   while (angle < 0) {
@@ -22,7 +22,7 @@ export type VectorLocation = {
 
 //read location on an interval
 //interpoalte it between intervals
-export function useInterpolateLocation(locationRef: RefObject<Location>) {
+export function useInterpolateLocation(locationRef: RefObject<PlayerLocation>) {
   const deltaTotal = useRef(0);
 
   const prevRef = useRef<VectorLocation>({

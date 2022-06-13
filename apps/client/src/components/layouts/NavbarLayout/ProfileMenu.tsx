@@ -24,7 +24,10 @@ export default function ProfileMenu() {
 
   return (
     <div className="py-2 space-y-2">
-      <div className="gradient-text px-4 font-bold cursor-default select-none">
+      <div
+        className="gradient-text px-4 font-bold"
+        onPointerUp={(e) => e.stopPropagation()}
+      >
         @{handle}
       </div>
 
@@ -55,6 +58,13 @@ export default function ProfileMenu() {
       {otherProfiles && otherProfiles.length > 0 && (
         <>
           <hr />
+
+          <div
+            onPointerUp={(e) => e.stopPropagation()}
+            className="flex justify-center font-bold"
+          >
+            Switch Profiles
+          </div>
 
           <div className="px-2 space-y-1 overflow-y-auto max-h-20">
             {otherProfiles.map((profile) => (

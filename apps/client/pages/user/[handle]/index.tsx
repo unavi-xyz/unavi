@@ -16,6 +16,7 @@ import {
   Post,
 } from "../../../src/generated/graphql";
 import { lensClient } from "../../../src/helpers/lens/client";
+import { HIDDEN_MESSAGE } from "../../../src/helpers/lens/constants";
 import { AppId } from "../../../src/helpers/lens/types";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
@@ -57,6 +58,8 @@ export default function User({ publications, ...rest }: Props) {
         <div className="flex flex-wrap">
           {publications?.map((publication) => {
             if (publication.appId === AppId.space) {
+              if (publication.metadata.content === HIDDEN_MESSAGE) return null;
+
               return (
                 <div key={publication.id} className="w-full p-1">
                   <Link href={`/space/${publication.id}`} passHref>

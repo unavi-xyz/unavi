@@ -107,7 +107,11 @@ export default function ProfileLayout({
                   </Link>
                 ) : (
                   <div>
-                    <Button variant="filled" squared="small">
+                    <Button
+                      variant="filled"
+                      squared="small"
+                      disabled={!viewerHandle}
+                    >
                       <div className="flex justify-center items-center space-x-1 px-6">
                         <MdAdd />
                         <div>Follow</div>

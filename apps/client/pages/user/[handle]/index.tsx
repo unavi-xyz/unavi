@@ -76,6 +76,8 @@ export default function User({ publications, ...rest }: Props) {
                 </div>
               );
             } else if (publication.appId === AppId.avatar) {
+              if (publication.metadata.content === HIDDEN_MESSAGE) return null;
+
               return (
                 <div key={publication.id} className="w-full p-1">
                   <Link href={`/avatar/${publication.id}`} passHref>

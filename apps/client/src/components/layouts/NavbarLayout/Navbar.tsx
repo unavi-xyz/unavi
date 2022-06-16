@@ -41,7 +41,9 @@ export default function Navbar() {
         <div className="w-full flex items-center justify-center space-x-2 md:space-x-6">
           <NavbarTab text="Home" href="/" />
           <NavbarTab text="Explore" href="/explore" />
-          <NavbarTab text="Create" href="/create" />
+          <div className="hidden md:flex">
+            <NavbarTab text="Create" href="/create" />
+          </div>
         </div>
 
         <div className="w-full flex items-center justify-end">

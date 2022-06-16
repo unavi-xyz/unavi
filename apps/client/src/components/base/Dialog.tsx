@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function Dialog({ open, onClose = () => {}, children }: Props) {
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
 
   const [visible, setVisible] = useState(false);
@@ -55,7 +55,7 @@ export default function Dialog({ open, onClose = () => {}, children }: Props) {
         ref={dialogRef}
         open
         onMouseDown={(e) => e.stopPropagation()}
-        className="rounded-3xl p-12 mx-auto w-full max-w-xl flex flex-col space-y-4
+        className="rounded-3xl p-12 w-full max-w-xl flex flex-col space-y-4
                    transition duration-200 ease-in-out scale-75 opacity-0 bg-surface
                    text-onSurface"
       >

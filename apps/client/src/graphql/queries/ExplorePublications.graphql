@@ -1,10 +1,14 @@
-query ExplorePublications($sources: [Sources!]) {
+query ExplorePublications(
+  $sortCriteria: PublicationSortCriteria!
+  $sources: [Sources!]
+  $timestamp: TimestampScalar!
+) {
   explorePublications(
     request: {
-      sortCriteria: TOP_COMMENTED
+      sortCriteria: $sortCriteria
       publicationTypes: [POST]
       limit: 10
-      timestamp: 69
+      timestamp: $timestamp
       sources: $sources
     }
   ) {

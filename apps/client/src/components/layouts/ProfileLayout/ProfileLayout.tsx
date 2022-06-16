@@ -1,17 +1,14 @@
 import Head from "next/head";
 import Link from "next/link";
 import { FaHashtag, FaTwitter } from "react-icons/fa";
-import { MdOutlineLocationOn } from "react-icons/md";
+import { MdAdd, MdLink, MdOutlineLocationOn } from "react-icons/md";
 
 import { useAvatarUrlFromProfile } from "../../../helpers/lens/hooks/useAvatarFromProfile";
 import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
 import { useLensStore } from "../../../helpers/lens/store";
-import { DEFAULT_AVATAR_URL } from "../../app/OtherPlayer";
 import Button from "../../base/Button";
-import NavigationTab from "../../base/NavigationTab";
 import ProfilePicture from "../../lens/ProfilePicture";
 import MetaTags from "../../ui/MetaTags";
-import AvatarCanvas from "../AvatarLayout/AvatarCanvas";
 import AttributeRow from "./AttributeRow";
 import { ProfileLayoutProps } from "./getProfileLayoutProps";
 
@@ -52,89 +49,102 @@ export default function ProfileLayout({
         />
       </Head>
 
-      <div className="w-full h-80 bg-tertiaryContainer">
-        {coverUrl && (
-          <img
-            src={coverUrl}
-            alt="cover"
-            className="w-full h-full object-cover"
-          />
-        )}
-      </div>
-
-      {profile && (
+      {profile ? (
         <div className="max-w mx-auto">
-          <div className="w-full flex flex-col items-center md:items-start md:flex-row p-4">
-            <div className="w-full md:w-1/3 space-y-4">
-              <div className="aspect-vertical rounded-3xl bg-cover -mt-48 md:-mt-72 w-1/2 md:w-full mx-auto md:mx-0">
-                <AvatarCanvas
-                  url={avatarUrl ?? DEFAULT_AVATAR_URL}
-                  background={false}
-                />
+          <div className="w-full h-48 md:h-64 bg-tertiaryContainer md:rounded-3xl">
+            {coverUrl && (
+              <img
+                src={coverUrl}
+                alt="cover"
+                className="w-full h-full object-cover md:rounded-3xl"
+              />
+            )}
+          </div>
+
+          <div className="flex justify-center pb-4 px-4 md:px-0">
+            <div className="w-full flex flex-col items-center space-y-2">
+              <div className="w-32 rounded-full ring-background ring-4 -mt-16">
+                <ProfilePicture profile={profile} circle />
               </div>
 
-              <div className="p-2 flex items-center space-x-4">
-                <div className="w-1/3 rounded-full ring-background">
-                  <ProfilePicture profile={profile} circle />
+              <div className="flex flex-col items-center">
+                <div className="text-2xl font-black">{handle}</div>
+                {/* <div className="text-lg font-bold">{profile.name}</div> */}
+              </div>
+
+              <div className="w-full py-2 flex space-x-4 justify-center">
+                <div className="flex flex-col md:flex-row md:space-x-1 items-center">
+                  <div className="font-black text-lg">
+                    {profile.stats.totalFollowing}
+                  </div>
+                  <div className="text-outline leading-5 text-lg">
+                    Following
+                  </div>
                 </div>
 
-                <div className="w-full">
-                  <div className="text-2xl font-black">
-                    {profile.name ?? handle}
+                <div className="flex flex-col md:flex-row md:space-x-1 items-center">
+                  <div className="font-black text-lg">
+                    {profile.stats.totalFollowers}
                   </div>
-                  <div className="text-lg font-bold gradient-text">
-                    @{handle}
+                  <div className="text-outline leading-5 text-lg">
+                    Followers
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div className="p-2 font-bold">{profile?.bio}</div>
-
-              <div>
-                {handle === viewerHandle && (
+          <div className="w-full flex flex-col items-center md:items-start px-4 md:px-0">
+            <div className="w-full space-y-2 flex flex-col items-center">
+              <div className="w-full flex justify-center space-x-2">
+                {handle === viewerHandle ? (
                   <Link href="/settings" passHref>
                     <a>
-                      <Button variant="outlined" fullWidth>
-                        Edit Profile
+                      <Button variant="outlined" squared="small">
+                        <div className="px-6">Edit profile</div>
                       </Button>
                     </a>
                   </Link>
-                )}
-              </div>
-
-              <div className="p-2 space-y-4">
-                <AttributeRow icon={<FaHashtag className="text-lg" />}>
-                  {profile.id}
-                </AttributeRow>
-
-                {location && (
-                  <AttributeRow icon={<MdOutlineLocationOn />}>
-                    {location.value}
-                  </AttributeRow>
+                ) : (
+                  <div>
+                    <Button variant="filled" squared="small">
+                      <div className="flex justify-center items-center space-x-1 px-6">
+                        <MdAdd />
+                        <div>Follow</div>
+                      </div>
+                    </Button>
+                  </div>
                 )}
 
                 {twitter && (
-                  <AttributeRow icon={<FaTwitter className="text-sky-500" />}>
+                  <Button variant="outlined" squared="small">
                     <a
                       href={`https://twitter.com/${twitter.value}`}
                       target="_blank"
                       rel="noreferrer"
                       className="hover:underline"
                     >
-                      {twitter.value}
+                      <FaTwitter className="text-lg" />
                     </a>
+                  </Button>
+                )}
+              </div>
+
+              <div className="w-full pt-2">
+                <div className="text-sm md:text-base text-center">
+                  {profile.bio}
+                </div>
+              </div>
+
+              <div className="flex space-x-4 flex-wrap">
+                {location && (
+                  <AttributeRow icon={<MdOutlineLocationOn />}>
+                    {location.value}
                   </AttributeRow>
                 )}
 
                 {website && (
-                  <AttributeRow
-                    icon={
-                      <img
-                        src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${website.value}`}
-                        alt="website favicon"
-                      />
-                    }
-                  >
+                  <AttributeRow icon={<MdLink />}>
                     <a
                       href={website.value}
                       target="_blank"
@@ -148,11 +158,11 @@ export default function ProfileLayout({
               </div>
             </div>
 
-            <div className="md:p-4 pt-4 w-full space-y-4 md:ml-12">
-              <div>{children}</div>
-            </div>
+            <div className="w-full md:mt-4">{children}</div>
           </div>
         </div>
+      ) : (
+        <div className="flex justify-center text-lg pt-12">User not found.</div>
       )}
     </>
   );

@@ -13,7 +13,7 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
-  squared?: boolean;
+  squared?: "large" | "small" | undefined;
   children: React.ReactNode;
 }
 
@@ -23,7 +23,7 @@ export default function Button({
   loading = false,
   disabled = false,
   fullWidth = false,
-  squared = false,
+  squared,
   children,
   ...rest
 }: Props) {
@@ -73,7 +73,12 @@ export default function Button({
 
   const loadingClass = loading ? "opacity-0" : null;
   const fullWidthClass = fullWidth ? "w-full" : null;
-  const squaredClass = squared ? "rounded-xl" : "rounded-full";
+  const squaredClass =
+    squared === "small"
+      ? "rounded"
+      : squared === "large"
+      ? "rounded-xl"
+      : "rounded-full";
 
   return (
     <button

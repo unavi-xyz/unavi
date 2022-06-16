@@ -67,8 +67,8 @@ export default function Settings(props: PublicationProps) {
         <Button
           variant="filled"
           color="tertiary"
+          squared="large"
           loading={loading}
-          squared
           onClick={handleDelete}
         >
           Delete Avatar

@@ -9,6 +9,7 @@ import { useEthersStore } from "../../../helpers/ethers/store";
 import { logout, switchProfile } from "../../../helpers/lens/authentication";
 import { useProfilesByAddress } from "../../../helpers/lens/hooks/useProfilesByAddress";
 import { useLensStore } from "../../../helpers/lens/store";
+import { trimHandle } from "../../../helpers/lens/utils";
 import ProfileMenuButton from "./ProfileMenuButton";
 
 export default function ProfileMenu() {
@@ -17,7 +18,7 @@ export default function ProfileMenu() {
   const profiles = useProfilesByAddress(address);
 
   const otherProfiles = profiles?.filter(
-    (profile) => profile.handle !== handle
+    (profile) => trimHandle(profile.handle) !== handle
   );
 
   if (!handle) return null;
@@ -25,7 +26,7 @@ export default function ProfileMenu() {
   return (
     <div className="py-2 space-y-2">
       <div
-        className="gradient-text px-4 font-bold"
+        className="gradient-text px-6 font-bold"
         onPointerUp={(e) => e.stopPropagation()}
       >
         @{handle}
@@ -67,14 +68,19 @@ export default function ProfileMenu() {
           </div>
 
           <div className="px-2 space-y-1 overflow-y-auto max-h-20">
-            {otherProfiles.map((profile) => (
-              <button
-                key={profile.id}
-                onClick={() => switchProfile(profile.handle)}
-              >
-                <ProfileMenuButton>@{profile.handle}</ProfileMenuButton>
-              </button>
-            ))}
+            {otherProfiles.map((profile) => {
+              const profileHandle = trimHandle(profile.handle);
+
+              return (
+                <button
+                  key={profile.id}
+                  onClick={() => switchProfile(profileHandle)}
+                  className="w-full"
+                >
+                  <ProfileMenuButton>@{profileHandle}</ProfileMenuButton>
+                </button>
+              );
+            })}
           </div>
         </>
       )}

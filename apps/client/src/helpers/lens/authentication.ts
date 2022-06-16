@@ -152,7 +152,8 @@ export function logout() {
 }
 
 export function switchProfile(handle: string) {
+  const address = useEthersStore.getState().address;
   sessionStorage.setItem(AUTO_LOGIN_KEY, handle);
-  localStorage.setItem(PREV_HANDLE_KEY, handle);
+  localStorage.setItem(`${PREV_HANDLE_KEY}-${address}`, handle);
   useLensStore.setState({ handle });
 }

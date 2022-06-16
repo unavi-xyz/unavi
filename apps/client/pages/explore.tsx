@@ -1,6 +1,7 @@
 import { NextPageContext } from "next";
 import Link from "next/link";
 
+import Carousel from "../src/components/base/Carousel";
 import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
 import AvatarCard from "../src/components/lens/AvatarCard";
 import SpaceCard from "../src/components/lens/SpaceCard";
@@ -10,6 +11,7 @@ import {
   ExplorePublicationsQuery,
   ExplorePublicationsQueryVariables,
   Post,
+  PublicationSortCriteria,
 } from "../src/generated/graphql";
 import { lensClient } from "../src/helpers/lens/client";
 import { AppId } from "../src/helpers/lens/types";
@@ -17,42 +19,46 @@ import { AppId } from "../src/helpers/lens/types";
 export async function getServerSideProps({ res }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
 
-  const spacesQuery = await lensClient
+  const oneMonthAgo = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+
+  const hotSpacesQuery = await lensClient
     .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
       ExplorePublicationsDocument,
       {
         sources: [AppId.space],
+        sortCriteria: PublicationSortCriteria.TopCommented,
+        timestamp: oneMonthAgo,
       }
     )
     .toPromise();
+  const hotSpaces = hotSpacesQuery.data?.explorePublications.items ?? [];
 
-  const spaces = spacesQuery.data?.explorePublications.items ?? [];
-
-  const avatarsQuery = await lensClient
+  const hotAvatarsQuery = await lensClient
     .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
       ExplorePublicationsDocument,
       {
         sources: [AppId.avatar],
+        sortCriteria: PublicationSortCriteria.TopCommented,
+        timestamp: oneMonthAgo,
       }
     )
     .toPromise();
-
-  const avatars = avatarsQuery.data?.explorePublications.items ?? [];
+  const hotAvatars = hotAvatarsQuery.data?.explorePublications.items ?? [];
 
   return {
     props: {
-      spaces,
-      avatars,
+      hotSpaces,
+      hotAvatars,
     },
   };
 }
 
 interface Props {
-  spaces: Post[];
-  avatars: Post[];
+  hotSpaces: Post[];
+  hotAvatars: Post[];
 }
 
-export default function Explore({ spaces, avatars }: Props) {
+export default function Explore({ hotSpaces, hotAvatars }: Props) {
   return (
     <>
       <MetaTags title="Explore" />
@@ -63,39 +69,29 @@ export default function Explore({ spaces, avatars }: Props) {
             <div className="font-black text-3xl">Explore</div>
           </div>
 
-          <div className="space-y-2">
-            <div className="font-bold text-2xl">Spaces</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {spaces.length === 0 ? (
-                <div className="text-outline">No spaces found</div>
-              ) : (
-                spaces.map((space) => (
-                  <Link key={space.id} href={`/space/${space.id}`} passHref>
-                    <a>
-                      <SpaceCard space={space} />
-                    </a>
-                  </Link>
-                ))
-              )}
-            </div>
-          </div>
+          {hotSpaces.length > 0 && (
+            <Carousel title="🔥 Hot Spaces">
+              {hotSpaces.map((space) => (
+                <Link key={space.id} href={`/space/${space.id}`} passHref>
+                  <a className="h-64 flex-shrink-0">
+                    <SpaceCard space={space} />
+                  </a>
+                </Link>
+              ))}
+            </Carousel>
+          )}
 
-          <div className="space-y-2">
-            <div className="font-bold text-2xl">Avatars</div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {avatars.length === 0 ? (
-                <div className="text-outline">No avatars found</div>
-              ) : (
-                avatars.map((avatar) => (
-                  <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
-                    <a>
-                      <AvatarCard avatar={avatar} />
-                    </a>
-                  </Link>
-                ))
-              )}
-            </div>
-          </div>
+          {hotAvatars.length > 0 && (
+            <Carousel title="🔥 Hot Avatars">
+              {hotAvatars.map((avatar) => (
+                <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
+                  <a className="h-96 flex-shrink-0">
+                    <AvatarCard avatar={avatar} />
+                  </a>
+                </Link>
+              ))}
+            </Carousel>
+          )}
         </div>
       </div>
     </>

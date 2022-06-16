@@ -1,4 +1,5 @@
 import { useGetProfileByHandleQuery } from "../../generated/graphql";
+import { HANDLE_ENDING } from "../../helpers/lens/constants";
 import { useLensStore } from "../../helpers/lens/store";
 import ProfilePicture from "./ProfilePicture";
 
@@ -11,7 +12,7 @@ export default function ViewerProfilePicture({ circle, draggable }: Props) {
   const handle = useLensStore((state) => state.handle);
 
   const [{ data }] = useGetProfileByHandleQuery({
-    variables: { handle },
+    variables: { handle: handle?.concat(HANDLE_ENDING) },
     pause: !handle,
   });
 

@@ -25,7 +25,13 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
   const handle = query.handle as string;
   const props = await getProfileLayoutProps(handle);
 
-  if (!props.profile) return { props };
+  if (!props.profile)
+    return {
+      props: {
+        ...props,
+        profile: null,
+      },
+    };
 
   const publicationsQuery = await lensClient
     .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
@@ -55,13 +61,13 @@ export default function User({ publications, ...rest }: Props) {
   return (
     <ProfileLayout {...rest}>
       {publications && publications.length > 0 && (
-        <div className="flex flex-wrap">
+        <div className="grid grid-cols-1 md:grid-cols-4">
           {publications?.map((publication) => {
             if (publication.appId === AppId.space) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 
               return (
-                <div key={publication.id} className="w-full p-1">
+                <div key={publication.id} className="w-full md:col-span-2 p-1">
                   <Link href={`/space/${publication.id}`} passHref>
                     <a>
                       <SpaceCard space={publication} />
@@ -71,7 +77,7 @@ export default function User({ publications, ...rest }: Props) {
               );
             } else if (publication.appId === AppId.avatar) {
               return (
-                <div key={publication.id} className="w-full md:w-1/2 p-1">
+                <div key={publication.id} className="w-full p-1">
                   <Link href={`/avatar/${publication.id}`} passHref>
                     <a>
                       <AvatarCard avatar={publication} />

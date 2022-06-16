@@ -4,6 +4,7 @@ import {
   HasTxHashBeenIndexedQueryVariables,
 } from "../../generated/graphql";
 import { lensClient } from "./client";
+import { HANDLE_ENDING } from "./constants";
 
 export function removeTypename(obj: any) {
   if (obj.__typename) delete obj.__typename;
@@ -29,4 +30,9 @@ export async function pollUntilIndexed(txHash: string) {
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
+}
+
+export function trimHandle(handle: string) {
+  if (!handle) return handle;
+  return handle.substring(0, handle.length - HANDLE_ENDING.length);
 }

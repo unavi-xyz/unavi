@@ -61,7 +61,7 @@ export default function AvatarUploadPage() {
       //create post
       await createPost(metadata);
 
-      router.push(`/user/${handle}/avatars`);
+      router.push(`/user/${handle}`);
     } catch (error) {
       console.error(error);
     }
@@ -93,16 +93,6 @@ export default function AvatarUploadPage() {
         <div className="space-y-4">
           <div className="text-lg font-bold">Image</div>
 
-          {imageFile && (
-            <div className="w-1/3 aspect-vertical">
-              <img
-                src={URL.createObjectURL(imageFile)}
-                alt="cover picture preview"
-                className="object-cover rounded-xl h-full w-full border"
-              />
-            </div>
-          )}
-
           <FileUpload
             color="SurfaceVariant"
             title="Image"
@@ -117,12 +107,6 @@ export default function AvatarUploadPage() {
         <div className="space-y-4">
           <div className="text-lg font-bold">VRM File</div>
 
-          {vrmFile && (
-            <div className="h-48">
-              <AvatarCanvas url={URL.createObjectURL(vrmFile)} />
-            </div>
-          )}
-
           <FileUpload
             color="SurfaceVariant"
             title="VRM"
@@ -134,6 +118,24 @@ export default function AvatarUploadPage() {
           />
         </div>
       </div>
+
+      {(imageFile || vrmFile) && (
+        <div className="flex space-x-4">
+          <div className="w-full aspect-vertical">
+            {imageFile && (
+              <img
+                src={URL.createObjectURL(imageFile)}
+                alt="cover picture preview"
+                className="object-cover rounded-xl h-full w-full"
+              />
+            )}
+          </div>
+
+          <div className="w-full">
+            {vrmFile && <AvatarCanvas url={URL.createObjectURL(vrmFile)} />}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end">
         <Button

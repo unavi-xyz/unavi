@@ -1,4 +1,4 @@
-import { useIpfsStore } from "./store";
+import { IPFS_HTTP_ENDPOINT, useIpfsStore } from "./store";
 
 let cache: { [key: string]: string } = {};
 
@@ -40,7 +40,7 @@ export function getIpfsUrlSSR(path: string) {
   //if path is an ipfs hash, load it
   if (path.startsWith("ipfs://")) {
     const hash = path.replace("ipfs://", "");
-    const url = `https://ipfs.infura.io/ipfs/${hash}`;
+    const url = `${IPFS_HTTP_ENDPOINT}${hash}`;
     return url;
   }
 

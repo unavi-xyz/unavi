@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { PaginatedResultInfo } from "../../generated/graphql";
 
 interface Props {
-  pageSize?: number;
+  pageSize: number;
   initialPageInfo?: PaginatedResultInfo;
   initialCache?: any[];
   fetchNextPage: (pageInfo?: PaginatedResultInfo) => Promise<{
@@ -13,24 +13,17 @@ interface Props {
 }
 
 export function useQueryPagination({
-  pageSize = 2,
+  pageSize,
   initialPageInfo,
   initialCache = [],
   fetchNextPage,
 }: Props) {
-  const [window, setWindow] = useState<any[]>([]);
-
   const [page, setPage] = useState(0);
   const [cache, setCache] = useState<any[]>(initialCache);
   const [pageInfo, setPageInfo] = useState(initialPageInfo);
 
   const [disableBack, setDisableBack] = useState(false);
   const [disableNext, setDisableNext] = useState(false);
-
-  useEffect(() => {
-    const newWindow = cache.slice(page * pageSize, page * pageSize + pageSize);
-    setWindow(newWindow);
-  }, [cache, page, pageSize]);
 
   useEffect(() => {
     setDisableBack(page === 0);
@@ -48,28 +41,29 @@ export function useQueryPagination({
 
   async function next() {
     if (disableNext) return;
+    setPage((prev) => prev + 1);
 
-    //see if there are fetched items
+    //see if there are fetched items for 2 pages ahead
     const fetchedSpaces = cache.slice(
-      page * pageSize + pageSize,
-      page * pageSize + pageSize + pageSize
+      page * pageSize + pageSize + pageSize,
+      page * pageSize + pageSize + pageSize + pageSize
     );
 
-    if (fetchedSpaces.length > 0) {
-      setPage((prev) => prev + 1);
-      return;
-    }
+    const total = pageInfo?.totalCount ?? Number.MAX_SAFE_INTEGER;
+    const atEnd = page * pageSize + pageSize + pageSize >= total;
+
+    //if there are, do nothing
+    if (fetchedSpaces.length > 0 || atEnd) return;
 
     //if not, fetch more
-    const { items, info } = await fetchNextPage(pageInfo);
-
-    setCache((prev) => [...prev, ...items]);
-    setPageInfo(info);
-    setPage((prev) => prev + 1);
+    fetchNextPage(pageInfo).then(({ items, info }) => {
+      setCache((prev) => [...prev, ...items]);
+      setPageInfo(info);
+    });
   }
 
   return {
-    window,
+    pageSize,
     page,
     cache,
     disableBack,

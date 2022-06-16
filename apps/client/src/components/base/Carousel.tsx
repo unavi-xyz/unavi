@@ -29,7 +29,9 @@ export default function Carousel({
           </Button>
         </div>
 
-        <div className="w-full flex space-x-2">{children}</div>
+        <div className="w-full flex space-x-2 p-2 rounded-3xl overflow-x-hidden">
+          {children}
+        </div>
 
         <div className="flex items-center justify-center">
           <Button variant="tonal" icon disabled={!forward} onClick={onForward}>

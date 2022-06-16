@@ -26,7 +26,7 @@ export default function AvatarCanvas({
       camera={{
         position: [0, 3, 3],
       }}
-      className="rounded-3xl select-none"
+      className="rounded-xl select-none"
     >
       <ambientLight intensity={0.2} />
       <directionalLight

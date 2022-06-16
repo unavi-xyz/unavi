@@ -86,14 +86,19 @@ export async function getServerSideProps({ res }: NextPageContext) {
     next: JSON.stringify({ timestamp: oneMonthAgo }),
   };
 
-  const hotSpaces = await fetchHotSpaces(pageInfo);
-  const hotAvatars = await fetchHotAvatars(pageInfo);
+  //fetch the first page
+  const firstHotSpaces = await fetchHotSpaces(pageInfo);
+  const firstHotAvatars = await fetchHotAvatars(pageInfo);
+
+  //also fetch the next page
+  const secondPageSpaces = await fetchHotSpaces(firstHotSpaces.info);
+  const secondPageAvatars = await fetchHotAvatars(firstHotAvatars.info);
 
   const props: Props = {
-    initialHotSpaces: hotSpaces.items,
-    initialHotSpacesInfo: hotSpaces.info,
-    initialHotAvatars: hotAvatars.items,
-    initialHotAvatarsInfo: hotAvatars.info,
+    initialHotSpaces: [...firstHotSpaces.items, ...secondPageSpaces.items],
+    initialHotSpacesInfo: secondPageSpaces.info,
+    initialHotAvatars: [...firstHotAvatars.items, ...secondPageAvatars.items],
+    initialHotAvatarsInfo: secondPageAvatars.info,
   };
 
   return {
@@ -138,7 +143,7 @@ export default function Explore({
             <div className="font-black text-3xl">Explore</div>
           </div>
 
-          {hotSpaces.window.length > 0 && (
+          {hotSpaces.cache.length > 0 && (
             <Carousel
               title="🔥 Hot Spaces"
               back={!hotSpaces.disableBack}
@@ -146,9 +151,17 @@ export default function Explore({
               onBack={hotSpaces.back}
               onForward={hotSpaces.next}
             >
-              {hotSpaces.window.map((space) => (
+              {hotSpaces.cache.map((space, i) => (
                 <Link key={space.id} href={`/space/${space.id}`} passHref>
-                  <a className="w-1/3">
+                  <a
+                    className={"h-40 transition duration-500"}
+                    style={{
+                      zIndex: -i,
+                      transform: `translate(calc(-${
+                        hotSpaces.page * SPACE_LIMIT
+                      }00% + ${Math.min(hotSpaces.page, 1) * 5}%))`,
+                    }}
+                  >
                     <SpaceCard space={space} />
                   </a>
                 </Link>
@@ -156,7 +169,7 @@ export default function Explore({
             </Carousel>
           )}
 
-          {hotAvatars.window.length > 0 && (
+          {hotAvatars.cache.length > 0 && (
             <Carousel
               title="🔥 Hot Avatars"
               back={!hotAvatars.disableBack}
@@ -164,9 +177,16 @@ export default function Explore({
               onBack={hotAvatars.back}
               onForward={hotAvatars.next}
             >
-              {hotAvatars.window.map((avatar) => (
+              {hotAvatars.cache.map((avatar) => (
                 <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
-                  <a className="w-1/5">
+                  <a
+                    className={"h-72 transition duration-500"}
+                    style={{
+                      transform: `translate(calc(-${
+                        hotAvatars.page * AVATAR_LIMIT
+                      }00% + ${Math.min(hotAvatars.page, 1) * 5}%))`,
+                    }}
+                  >
                     <AvatarCard avatar={avatar} />
                   </a>
                 </Link>

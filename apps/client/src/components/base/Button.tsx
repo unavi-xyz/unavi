@@ -13,6 +13,7 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
+  icon?: boolean;
   squared?: "large" | "small" | undefined;
   children: React.ReactNode;
 }
@@ -23,6 +24,7 @@ export default function Button({
   loading = false,
   disabled = false,
   fullWidth = false,
+  icon = false,
   squared,
   children,
   ...rest
@@ -80,10 +82,12 @@ export default function Button({
       ? "rounded-xl"
       : "rounded-full";
 
+  const paddingClass = icon ? "p-2.5" : "px-4 py-1.5";
+
   return (
     <button
       className={`relative flex items-center justify-center transition font-bold
-                  px-4 py-1.5 ${disabledClass} ${fullWidthClass} ${squaredClass}
+                  ${paddingClass} ${disabledClass} ${fullWidthClass} ${squaredClass}
                   ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
       {...rest}
     >

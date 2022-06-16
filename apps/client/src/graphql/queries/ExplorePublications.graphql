@@ -1,17 +1,5 @@
-query ExplorePublications(
-  $sortCriteria: PublicationSortCriteria!
-  $sources: [Sources!]
-  $timestamp: TimestampScalar!
-) {
-  explorePublications(
-    request: {
-      sortCriteria: $sortCriteria
-      publicationTypes: [POST]
-      limit: 10
-      timestamp: $timestamp
-      sources: $sources
-    }
-  ) {
+query ExplorePublications($request: ExplorePublicationRequest!) {
+  explorePublications(request: $request) {
     items {
       __typename
       ... on Post {

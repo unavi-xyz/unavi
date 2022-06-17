@@ -156,7 +156,6 @@ export default function Explore({
                   <a
                     className={"h-40 transition duration-500"}
                     style={{
-                      zIndex: 9999 - i,
                       transform: `translate(calc(-${
                         hotSpaces.page * SPACE_LIMIT
                       }00% + ${Math.min(hotSpaces.page, 1) * 5}%))`,

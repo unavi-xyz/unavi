@@ -1,6 +1,5 @@
 import { FaBook, FaDiscord } from "react-icons/fa";
-import { MdMenuBook } from "react-icons/md";
-import { VscBook, VscGithubInverted, VscTwitter } from "react-icons/vsc";
+import { VscGithubInverted, VscTwitter } from "react-icons/vsc";
 
 import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../src/components/ui/MetaTags";

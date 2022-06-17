@@ -12,12 +12,12 @@
 
 ## Tech Stack
 
-- Decentralized social graph using [Lens Protocol](https://lens.dev/)
+- Decentralized identity / social graph using [Lens Protocol](https://lens.dev/)
 - Decentralized data storage using [IPFS](https://ipfs.io/)
 - Open backend, anyone can run their own [host](apps/host) server
 - 3d rendering using [Threejs](https://github.com/mrdoob/three.js) / [React Three Fiber](https://github.com/pmndrs/react-three-fiber)
 - Physics using [Cannon ES](https://github.com/pmndrs/cannon-es) / [React Three Cannon](https://github.com/pmndrs/use-cannon/tree/master/packages/react-three-cannon#readme)
-- VRM Avatar support using [Three VRM](https://github.com/pixiv/three-vrm)
+- VRM avatar support using [Three VRM](https://github.com/pixiv/three-vrm)
 
 ## Development
 

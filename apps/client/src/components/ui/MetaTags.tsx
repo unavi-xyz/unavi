@@ -13,8 +13,8 @@ export default function MetaTags({
   title = "The Wired",
   description = "An open, decentralized, VR social platform",
   image = "/images/logo.png",
-  imageWidth,
-  imageHeight,
+  imageWidth = "256px",
+  imageHeight = "256px",
   card = "summary",
 }: Props) {
   return (
@@ -25,7 +25,6 @@ export default function MetaTags({
         <title>{title} / The Wired</title>
       )}
 
-      {/* meta tags */}
       <meta name="name" content={title} />
       <meta name="description" content={description} />
       <meta name="image" content={image} />
@@ -44,6 +43,11 @@ export default function MetaTags({
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
       <meta name="twitter:site" content="@TheWiredXR" />
+
+      {/* apple */}
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      <meta name="apple-mobile-web-app-title" content={title} />
     </Head>
   );
 }

@@ -7,10 +7,14 @@ const isProduction = process.env.NODE_ENV === "production";
 
 export default function Document() {
   return (
-    <Html>
+    <Html lang="en">
       <Head>
-        {/* favicon */}
-        <link rel="icon" href="/images/plug.png" />
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* icons */}
+        <link rel="icon" href="/images/favicon.ico" />
+        <link rel="shortcut icon" href="/images/favicon.ico" />
+        <link rel="apple-touch-icon" href="/images/logo.png" />
 
         {/* fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

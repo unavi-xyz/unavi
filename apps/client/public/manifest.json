@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "background_color": "#fffbfe",
+  "categories": ["social", "games", "entertainment"],
+  "description": "A decentralized 3d social platform.",
+  "display": "fullscreen",
+  "icons": [
+    {
+      "src": "images/plug.png",
+      "type": "image/png",
+      "sizes": "160x160",
+      "purpose": "maskable"
+    },
+    {
+      "src": "images/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "images/logo.ico",
+      "sizes": "any"
+    }
+  ],
+  "name": "The Wired",
+  "scope": "/",
+  "short_name": "Wired",
+  "splash_pages": null,
+  "start_url": "/",
+  "theme_color": "#fffbfe"
+}

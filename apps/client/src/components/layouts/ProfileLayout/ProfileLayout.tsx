@@ -1,9 +1,8 @@
 import Head from "next/head";
 import Link from "next/link";
-import { FaHashtag, FaTwitter } from "react-icons/fa";
+import { FaTwitter } from "react-icons/fa";
 import { MdAdd, MdLink, MdOutlineLocationOn } from "react-icons/md";
 
-import { useAvatarUrlFromProfile } from "../../../helpers/lens/hooks/useAvatarFromProfile";
 import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
 import { useLensStore } from "../../../helpers/lens/store";
 import Button from "../../base/Button";
@@ -24,7 +23,6 @@ export default function ProfileLayout({
 }: Props) {
   const coverUrl = useMediaImage(profile?.coverPicture);
   const viewerHandle = useLensStore((state) => state.handle);
-  const avatarUrl = useAvatarUrlFromProfile(profile);
 
   const twitter = profile?.attributes?.find((item) => item.key === "twitter");
   const website = profile?.attributes?.find((item) => item.key === "website");

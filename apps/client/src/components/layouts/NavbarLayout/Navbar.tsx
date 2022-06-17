@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -20,25 +19,20 @@ export default function Navbar() {
 
   return (
     <div className="w-full h-full flex justify-center bg-surface">
-      <div className="max-w mx-4 flex items-center justify-between">
-        <div className="w-full">
-          <div className="w-fit">
-            <Link href="/" passHref>
-              <a className="cursor-pointer">
-                <Image
-                  width={32}
-                  height={32}
-                  src="/images/plug.png"
-                  alt="logo"
-                  priority
-                  draggable={false}
-                />
-              </a>
-            </Link>
-          </div>
+      <div className="max-w mx-4 grid grid-cols-3 h-12">
+        <div className="flex items-center">
+          <Link href="/" passHref>
+            <a className="cursor-pointer h-8">
+              <img
+                src="/images/plug.png"
+                alt="logo"
+                className="aspect-square h-full"
+              />
+            </a>
+          </Link>
         </div>
 
-        <div className="w-full flex items-center justify-center space-x-2 md:space-x-6">
+        <div className="flex items-center justify-center space-x-2 md:space-x-6">
           <NavbarTab text="Home" href="/" />
           <NavbarTab text="Explore" href="/explore" />
           <div className="hidden md:flex">
@@ -46,7 +40,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        <div className="w-full flex items-center justify-end">
+        <div className="flex items-center justify-end">
           {showProfileButton ? <ProfileButton /> : <LoginButton />}
         </div>
       </div>

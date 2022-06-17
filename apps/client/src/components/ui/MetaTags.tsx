@@ -12,7 +12,7 @@ interface Props {
 export default function MetaTags({
   title = "The Wired",
   description = "An open, decentralized, VR social platform",
-  image = "/images/logo.png",
+  image = "/images/Logo-Rounded.png",
   imageWidth = "256px",
   imageHeight = "256px",
   card = "summary",

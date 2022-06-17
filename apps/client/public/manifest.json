@@ -6,18 +6,18 @@
   "display": "fullscreen",
   "icons": [
     {
-      "src": "images/plug.png",
+      "src": "images/Logo-Maskable.png",
       "type": "image/png",
-      "sizes": "160x160",
+      "sizes": "512x512",
       "purpose": "maskable"
     },
     {
-      "src": "images/logo.png",
+      "src": "images/Logo-Circle.png",
       "type": "image/png",
       "sizes": "512x512"
     },
     {
-      "src": "images/logo.ico",
+      "src": "images/Logo-Circle.ico",
       "sizes": "any"
     }
   ],

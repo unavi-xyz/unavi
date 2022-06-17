@@ -14,7 +14,6 @@ import FileUpload from "../base/FileUpload";
 import TextArea from "../base/TextArea";
 import TextField from "../base/TextField";
 import AvatarCanvas from "../layouts/AvatarLayout/AvatarCanvas";
-import AvatarCard from "./AvatarCard";
 
 export default function AvatarUploadPage() {
   const descriptionRef = useRef<HTMLTextAreaElement>(null);

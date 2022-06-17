@@ -9,6 +9,9 @@ const withTM = require("next-transpile-modules")([
 module.exports = withPWA(
   withTM({
     reactStrictMode: true,
+    images: {
+      domains: ["ipfs.infura.io", "avatar.tobi.sh"],
+    },
     async redirects() {
       return [
         {

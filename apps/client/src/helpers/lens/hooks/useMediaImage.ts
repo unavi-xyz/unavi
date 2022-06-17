@@ -27,9 +27,7 @@ export function useMediaImage(picture: ProfileMedia | null | undefined) {
 }
 
 export function getMediaImageSSR(picture: ProfileMedia | null | undefined) {
-  if (!picture) {
-    return undefined;
-  }
+  if (!picture) return null;
 
   if (picture.__typename === "MediaSet") {
     return getIpfsUrlSSR(picture.original.url);
@@ -38,4 +36,6 @@ export function getMediaImageSSR(picture: ProfileMedia | null | undefined) {
   if (picture.__typename === "NftImage") {
     return getIpfsUrlSSR(picture.uri);
   }
+
+  return null;
 }

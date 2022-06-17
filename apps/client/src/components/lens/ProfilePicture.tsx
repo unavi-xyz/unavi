@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { Profile } from "../../generated/graphql";
 import { useMediaImage } from "../../helpers/lens/hooks/useMediaImage";
 
@@ -18,11 +20,13 @@ export default function ProfilePicture({
   const identicon = `https://avatar.tobi.sh/${profile?.ownedBy}_${profile?.handle}.png`;
 
   return (
-    <img
+    <Image
+      width="256px"
+      height="256px"
       src={url ?? identicon}
       draggable={draggable}
       alt="profile picture"
-      className={`object-cover w-screen aspect-square ${circleClass} bg-secondaryContainer`}
+      className={`${circleClass} bg-tertiaryContainer`}
     />
   );
 }

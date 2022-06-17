@@ -16,6 +16,7 @@ import {
   PublicationTypes,
 } from "../src/generated/graphql";
 import { lensClient } from "../src/helpers/lens/client";
+import { getMediaImageSSR } from "../src/helpers/lens/hooks/useMediaImage";
 import { AppId } from "../src/helpers/lens/types";
 import { useQueryPagination } from "../src/helpers/utils/useQueryPagination";
 
@@ -43,8 +44,15 @@ async function fetchHotSpaces(pageInfo?: PaginatedResultInfo) {
   const items = (explore?.items as Post[]) ?? [];
   const info = explore?.pageInfo as PaginatedResultInfo;
 
+  const fetchedIterms = items.map((item) => {
+    if (!item.metadata.media[0]) return item;
+    const newItem = { ...item };
+    newItem.metadata.image = getMediaImageSSR(item.metadata.media[0]);
+    return newItem;
+  });
+
   return {
-    items,
+    items: fetchedIterms,
     info,
   };
 }
@@ -70,8 +78,15 @@ async function fetchHotAvatars(pageInfo?: PaginatedResultInfo) {
   const items = (explore?.items as Post[]) ?? [];
   const info = explore?.pageInfo as PaginatedResultInfo;
 
+  const fetchedIterms = items.map((item) => {
+    if (!item.metadata.media[0]) return item;
+    const newItem = { ...item };
+    newItem.metadata.image = getMediaImageSSR(item.metadata.media[0]);
+    return newItem;
+  });
+
   return {
-    items,
+    items: fetchedIterms,
     info,
   };
 }
@@ -151,7 +166,7 @@ export default function Explore({
               onBack={hotSpaces.back}
               onForward={hotSpaces.next}
             >
-              {hotSpaces.cache.map((space, i) => (
+              {hotSpaces.cache.map((space) => (
                 <Link key={space.id} href={`/space/${space.id}`} passHref>
                   <a
                     className={"h-40 transition duration-500"}

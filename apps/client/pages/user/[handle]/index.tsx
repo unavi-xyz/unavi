@@ -17,6 +17,7 @@ import {
 } from "../../../src/generated/graphql";
 import { lensClient } from "../../../src/helpers/lens/client";
 import { HIDDEN_MESSAGE } from "../../../src/helpers/lens/constants";
+import { getMediaImageSSR } from "../../../src/helpers/lens/hooks/useMediaImage";
 import { AppId } from "../../../src/helpers/lens/types";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
@@ -43,7 +44,13 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
     )
     .toPromise();
 
-  const publications = publicationsQuery.data?.publications.items;
+  const publications = publicationsQuery.data?.publications.items.map(
+    (item) => {
+      const postItem = item as Post;
+      postItem.metadata.image = getMediaImageSSR(postItem.metadata.media[0]);
+      return postItem;
+    }
+  );
 
   return {
     props: {

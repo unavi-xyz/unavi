@@ -1,5 +1,4 @@
 import { Post } from "../../generated/graphql";
-import { useMediaImage } from "../../helpers/lens/hooks/useMediaImage";
 import Card from "../base/Card";
 
 interface Props {
@@ -7,12 +6,10 @@ interface Props {
 }
 
 export default function AvatarCard({ avatar }: Props) {
-  const image = useMediaImage(avatar.metadata.media[0]);
-
   return (
     <Card
       text={avatar.metadata.name ?? avatar.id}
-      image={image}
+      image={avatar.metadata.image}
       aspect="vertical"
     />
   );

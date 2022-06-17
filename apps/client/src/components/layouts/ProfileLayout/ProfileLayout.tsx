@@ -1,9 +1,9 @@
 import Head from "next/head";
+import Image from "next/image";
 import Link from "next/link";
 import { FaTwitter } from "react-icons/fa";
 import { MdAdd, MdLink, MdOutlineLocationOn } from "react-icons/md";
 
-import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
 import { useLensStore } from "../../../helpers/lens/store";
 import Button from "../../base/Button";
 import ProfilePicture from "../../lens/ProfilePicture";
@@ -20,8 +20,8 @@ export default function ProfileLayout({
   handle,
   metadata,
   profile,
+  coverImage,
 }: Props) {
-  const coverUrl = useMediaImage(profile?.coverPicture);
   const viewerHandle = useLensStore((state) => state.handle);
 
   const twitter = profile?.attributes?.find((item) => item.key === "twitter");
@@ -50,18 +50,22 @@ export default function ProfileLayout({
       {profile ? (
         <div className="max-w mx-auto">
           <div className="w-full h-48 md:h-64 bg-tertiaryContainer md:rounded-3xl">
-            {coverUrl && (
-              <img
-                src={coverUrl}
-                alt="cover"
-                className="w-full h-full object-cover md:rounded-3xl"
-              />
-            )}
+            <div className="relative object-cover w-full h-full">
+              {coverImage && (
+                <Image
+                  src={coverImage}
+                  priority
+                  layout="fill"
+                  alt="cover"
+                  className="w-full h-full object-cover md:rounded-3xl"
+                />
+              )}
+            </div>
           </div>
 
           <div className="flex justify-center pb-4 px-4 md:px-0">
             <div className="w-full flex flex-col items-center space-y-2">
-              <div className="w-32 rounded-full ring-background ring-4 -mt-16">
+              <div className="w-32 rounded-full -mt-16 flex z-10 ring-4 ring-background">
                 <ProfilePicture profile={profile} circle />
               </div>
 

@@ -12,9 +12,12 @@ export interface ProfileLayoutProps {
   handle: string;
   metadata: PageMetadata;
   profile: GetProfileByHandleQuery["profiles"]["items"][0] | undefined;
+  coverImage: string | null;
 }
 
-export async function getProfileLayoutProps(handle: string) {
+export async function getProfileLayoutProps(
+  handle: string
+): Promise<ProfileLayoutProps> {
   const profileQuery = await lensClient
     .query<GetProfileByHandleQuery, GetProfileByHandleQueryVariables>(
       GetProfileByHandleDocument,
@@ -30,5 +33,7 @@ export async function getProfileLayoutProps(handle: string) {
     image: getMediaImageSSR(profile?.picture) ?? "",
   };
 
-  return { handle, metadata, profile };
+  const coverImage = getMediaImageSSR(profile?.coverPicture);
+
+  return { handle, metadata, profile, coverImage };
 }

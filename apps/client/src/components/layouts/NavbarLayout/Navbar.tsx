@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -19,15 +20,11 @@ export default function Navbar() {
 
   return (
     <div className="w-full h-full flex justify-center bg-surface">
-      <div className="max-w mx-4 grid grid-cols-3 h-12">
+      <div className="max-w mx-4 grid grid-cols-3">
         <div className="flex items-center">
           <Link href="/" passHref>
-            <a className="cursor-pointer h-8">
-              <img
-                src="/images/plug.png"
-                alt="logo"
-                className="aspect-square h-full"
-              />
+            <a className="cursor-pointer relative h-full aspect-square scale-75">
+              <Image src="/images/plug.png" alt="logo" layout="fill" />
             </a>
           </Link>
         </div>

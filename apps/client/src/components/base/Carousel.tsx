@@ -29,7 +29,7 @@ export default function Carousel({
           </Button>
         </div>
 
-        <div className="w-full flex space-x-2 p-2 rounded-3xl overflow-x-hidden">
+        <div className="w-full flex space-x-2 p-2 rounded-xl overflow-x-hidden">
           {children}
         </div>
 

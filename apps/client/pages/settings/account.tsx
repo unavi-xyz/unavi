@@ -7,6 +7,7 @@ import MetaTags from "../../src/components/ui/MetaTags";
 import { useEthersStore } from "../../src/helpers/ethers/store";
 import { useProfilesByAddress } from "../../src/helpers/lens/hooks/useProfilesByAddress";
 import { useSetDefaultProfile } from "../../src/helpers/lens/hooks/useSetDefaultProfile";
+import { trimHandle } from "../../src/helpers/lens/utils";
 
 export default function Account() {
   const address = useEthersStore((state) => state.address);
@@ -23,19 +24,24 @@ export default function Account() {
     selected?.slice(1) === defaultProfile?.handle && Boolean(selected);
 
   useEffect(() => {
-    const handles = profiles?.map((profile) => `@${profile.handle}`) ?? [];
+    const handles =
+      profiles?.map((profile) => `@${trimHandle(profile.handle)}`) ?? [];
     setOptions(handles);
+    setSelected(handles[0]);
   }, [profiles]);
 
   useEffect(() => {
-    if (defaultProfile) setSelected(`@${defaultProfile.handle}`);
+    if (defaultProfile) setSelected(`@${trimHandle(defaultProfile.handle)}`);
   }, [defaultProfile]);
 
   async function handleSave() {
     if (disabled || loading || !selected || !profiles) return;
 
     const handle = selected.slice(1);
-    const profile = profiles.find((profile) => profile.handle === handle);
+    const profile = profiles.find(
+      (profile) => trimHandle(profile.handle) === handle
+    );
+
     if (!profile) return;
 
     setLoading(true);
@@ -68,7 +74,9 @@ export default function Account() {
         {defaultProfile && (
           <div className="flex space-x-1">
             <div>Current default profile:</div>
-            <div>@{defaultProfile.handle}</div>
+            <div className="font-bold">
+              @{trimHandle(defaultProfile.handle)}
+            </div>
           </div>
         )}
 

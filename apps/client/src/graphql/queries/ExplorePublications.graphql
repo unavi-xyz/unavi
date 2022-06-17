@@ -1,12 +1,5 @@
-query ExplorePublications($sources: [Sources!]) {
-  explorePublications(
-    request: {
-      sortCriteria: TOP_COMMENTED
-      publicationTypes: [POST]
-      limit: 10
-      sources: $sources
-    }
-  ) {
+query ExplorePublications($request: ExplorePublicationRequest!) {
+  explorePublications(request: $request) {
     items {
       __typename
       ... on Post {

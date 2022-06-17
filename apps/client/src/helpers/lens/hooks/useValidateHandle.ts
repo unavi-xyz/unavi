@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 
 import { useGetProfileByHandleQuery } from "../../../generated/graphql";
+import { HANDLE_ENDING } from "../constants";
 
 export function useValidateHandle(handle: string) {
   const [valid, setValid] = useState(false);
   const [error, setError] = useState<string>();
 
   const [{ data, error: queryError, fetching }] = useGetProfileByHandleQuery({
-    variables: { handle },
+    variables: { handle: handle.concat(HANDLE_ENDING) },
     pause: handle.length < 5,
   });
 

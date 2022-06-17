@@ -10,7 +10,7 @@ export default function Card({ image, text, subtext, aspect = "card" }: Props) {
 
   return (
     <div
-      className={`group p-4 w-full h-full overflow-hidden rounded-3xl hover:cursor-pointer
+      className={`group p-3 w-full h-full overflow-hidden rounded-3xl hover:cursor-pointer
                   flex flex-col hover:ring-2 hover:ring-outline ${aspectCss}`}
     >
       <div className="h-full overflow-hidden rounded-2xl bg-secondaryContainer">

@@ -1,11 +1,20 @@
 import { Head, Html, Main, NextScript } from "next/document";
+import Script from "next/script";
+
+import * as gtag from "../src/helpers/gtag";
+
+const isProduction = process.env.NODE_ENV === "production";
 
 export default function Document() {
   return (
-    <Html>
+    <Html lang="en">
       <Head>
-        {/* favicon */}
-        <link rel="icon" href="/images/plug.png" />
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* icons */}
+        <link rel="icon" href="/images/favicon.ico" />
+        <link rel="shortcut icon" href="/images/favicon.ico" />
+        <link rel="apple-touch-icon" href="/images/Logo-Circle.png" />
 
         {/* fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,6 +27,30 @@ export default function Document() {
           href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap"
           rel="stylesheet"
         />
+
+        {/* google analytics */}
+        {isProduction && (
+          <>
+            <Script
+              strategy="afterInteractive"
+              src={`https://www.googletagmanager.com/gtag/js?id=${gtag.GA_TRACKING_ID}`}
+            />
+            <Script
+              id="gtag-init"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${gtag.GA_TRACKING_ID}', {
+                    page_path: window.location.pathname,
+                  });
+                `,
+              }}
+            />
+          </>
+        )}
       </Head>
 
       <body>

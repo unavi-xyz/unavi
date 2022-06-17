@@ -1,6 +1,7 @@
 import { NextPageContext } from "next";
 import Link from "next/link";
 
+import Carousel from "../src/components/base/Carousel";
 import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
 import AvatarCard from "../src/components/lens/AvatarCard";
 import SpaceCard from "../src/components/lens/SpaceCard";
@@ -9,50 +10,129 @@ import {
   ExplorePublicationsDocument,
   ExplorePublicationsQuery,
   ExplorePublicationsQueryVariables,
+  PaginatedResultInfo,
   Post,
+  PublicationSortCriteria,
+  PublicationTypes,
 } from "../src/generated/graphql";
 import { lensClient } from "../src/helpers/lens/client";
 import { AppId } from "../src/helpers/lens/types";
+import { useQueryPagination } from "../src/helpers/utils/useQueryPagination";
+
+const SPACE_LIMIT = 3;
+const AVATAR_LIMIT = 5;
+
+async function fetchHotSpaces(pageInfo?: PaginatedResultInfo) {
+  const hotAvatarsQuery = await lensClient
+    .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
+      ExplorePublicationsDocument,
+      {
+        request: {
+          sources: [AppId.space],
+          sortCriteria: PublicationSortCriteria.TopCommented,
+          publicationTypes: [PublicationTypes.Post],
+          limit: SPACE_LIMIT,
+          cursor: pageInfo?.next,
+        },
+      }
+    )
+    .toPromise();
+
+  const explore = hotAvatarsQuery.data?.explorePublications;
+
+  const items = (explore?.items as Post[]) ?? [];
+  const info = explore?.pageInfo as PaginatedResultInfo;
+
+  return {
+    items,
+    info,
+  };
+}
+
+async function fetchHotAvatars(pageInfo?: PaginatedResultInfo) {
+  const hotAvatarsQuery = await lensClient
+    .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
+      ExplorePublicationsDocument,
+      {
+        request: {
+          sources: [AppId.avatar],
+          sortCriteria: PublicationSortCriteria.TopCommented,
+          publicationTypes: [PublicationTypes.Post],
+          limit: SPACE_LIMIT,
+          cursor: pageInfo?.next,
+        },
+      }
+    )
+    .toPromise();
+
+  const explore = hotAvatarsQuery.data?.explorePublications;
+
+  const items = (explore?.items as Post[]) ?? [];
+  const info = explore?.pageInfo as PaginatedResultInfo;
+
+  return {
+    items,
+    info,
+  };
+}
 
 export async function getServerSideProps({ res }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
 
-  const spacesQuery = await lensClient
-    .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
-      ExplorePublicationsDocument,
-      {
-        sources: [AppId.space],
-      }
-    )
-    .toPromise();
+  const oneMonthAgo = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
 
-  const spaces = spacesQuery.data?.explorePublications.items ?? [];
+  const pageInfo: PaginatedResultInfo = {
+    totalCount: -1,
+    next: JSON.stringify({ timestamp: oneMonthAgo }),
+  };
 
-  const avatarsQuery = await lensClient
-    .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
-      ExplorePublicationsDocument,
-      {
-        sources: [AppId.avatar],
-      }
-    )
-    .toPromise();
+  //fetch the first page
+  const firstHotSpaces = await fetchHotSpaces(pageInfo);
+  const firstHotAvatars = await fetchHotAvatars(pageInfo);
 
-  const avatars = avatarsQuery.data?.explorePublications.items ?? [];
+  //also fetch the next page
+  const secondPageSpaces = await fetchHotSpaces(firstHotSpaces.info);
+  const secondPageAvatars = await fetchHotAvatars(firstHotAvatars.info);
+
+  const props: Props = {
+    initialHotSpaces: [...firstHotSpaces.items, ...secondPageSpaces.items],
+    initialHotSpacesInfo: secondPageSpaces.info,
+    initialHotAvatars: [...firstHotAvatars.items, ...secondPageAvatars.items],
+    initialHotAvatarsInfo: secondPageAvatars.info,
+  };
 
   return {
-    props: {
-      spaces,
-      avatars,
-    },
+    props,
   };
 }
 
 interface Props {
-  spaces: Post[];
-  avatars: Post[];
+  initialHotSpaces: Post[];
+  initialHotSpacesInfo: PaginatedResultInfo;
+  initialHotAvatars: Post[];
+  initialHotAvatarsInfo: PaginatedResultInfo;
 }
 
-export default function Explore({ spaces, avatars }: Props) {
+export default function Explore({
+  initialHotSpaces,
+  initialHotSpacesInfo,
+  initialHotAvatars,
+  initialHotAvatarsInfo,
+}: Props) {
+  const hotSpaces = useQueryPagination({
+    pageSize: SPACE_LIMIT,
+    initialCache: initialHotSpaces,
+    initialPageInfo: initialHotSpacesInfo,
+    fetchNextPage: fetchHotSpaces,
+  });
+
+  const hotAvatars = useQueryPagination({
+    pageSize: AVATAR_LIMIT,
+    initialCache: initialHotAvatars,
+    initialPageInfo: initialHotAvatarsInfo,
+    fetchNextPage: fetchHotAvatars,
+  });
+
   return (
     <>
       <MetaTags title="Explore" />
@@ -63,39 +143,55 @@ export default function Explore({ spaces, avatars }: Props) {
             <div className="font-black text-3xl">Explore</div>
           </div>
 
-          <div className="space-y-2">
-            <div className="font-bold text-2xl">Recent Spaces</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {spaces.length === 0 ? (
-                <div className="text-outline">No spaces found</div>
-              ) : (
-                spaces.map((space) => (
-                  <Link key={space.id} href={`/space/${space.id}`} passHref>
-                    <a>
-                      <SpaceCard space={space} />
-                    </a>
-                  </Link>
-                ))
-              )}
-            </div>
-          </div>
+          {hotSpaces.cache.length > 0 && (
+            <Carousel
+              title="🔥 Hot Spaces"
+              back={!hotSpaces.disableBack}
+              forward={!hotSpaces.disableNext}
+              onBack={hotSpaces.back}
+              onForward={hotSpaces.next}
+            >
+              {hotSpaces.cache.map((space, i) => (
+                <Link key={space.id} href={`/space/${space.id}`} passHref>
+                  <a
+                    className={"h-40 transition duration-500"}
+                    style={{
+                      transform: `translate(calc(-${
+                        hotSpaces.page * SPACE_LIMIT
+                      }00% + ${Math.min(hotSpaces.page, 1) * 5}%))`,
+                    }}
+                  >
+                    <SpaceCard space={space} />
+                  </a>
+                </Link>
+              ))}
+            </Carousel>
+          )}
 
-          <div className="space-y-2">
-            <div className="font-bold text-2xl">Recent Avatars</div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {avatars.length === 0 ? (
-                <div className="text-outline">No avatars found</div>
-              ) : (
-                avatars.map((avatar) => (
-                  <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
-                    <a>
-                      <AvatarCard avatar={avatar} />
-                    </a>
-                  </Link>
-                ))
-              )}
-            </div>
-          </div>
+          {hotAvatars.cache.length > 0 && (
+            <Carousel
+              title="🔥 Hot Avatars"
+              back={!hotAvatars.disableBack}
+              forward={!hotAvatars.disableNext}
+              onBack={hotAvatars.back}
+              onForward={hotAvatars.next}
+            >
+              {hotAvatars.cache.map((avatar) => (
+                <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
+                  <a
+                    className={"h-72 transition duration-500"}
+                    style={{
+                      transform: `translate(calc(-${
+                        hotAvatars.page * AVATAR_LIMIT
+                      }00% + ${Math.min(hotAvatars.page, 1) * 5}%))`,
+                    }}
+                  >
+                    <AvatarCard avatar={avatar} />
+                  </a>
+                </Link>
+              ))}
+            </Carousel>
+          )}
         </div>
       </div>
     </>

@@ -26,7 +26,7 @@ export default function Create() {
           <div className="space-y-2">
             <Link href="/studio">
               <a>
-                <Button variant="tonal" fullWidth squared>
+                <Button variant="tonal" fullWidth squared="large">
                   <div className="p-2 flex items-center justify-between text-lg">
                     <div>
                       <div className="flex">Studio</div>
@@ -43,8 +43,8 @@ export default function Create() {
 
             <Button
               variant="tonal"
+              squared="large"
               fullWidth
-              squared
               onClick={() => setOpenAvatar(true)}
             >
               <div className="p-2 flex items-center justify-between text-lg">

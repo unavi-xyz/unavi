@@ -4,6 +4,7 @@ import {
   GetProfileByHandleQueryVariables,
 } from "../../../generated/graphql";
 import { lensClient } from "../../../helpers/lens/client";
+import { HANDLE_ENDING } from "../../../helpers/lens/constants";
 import { getMediaImageSSR } from "../../../helpers/lens/hooks/useMediaImage";
 import { PageMetadata } from "../../../helpers/types";
 
@@ -17,7 +18,7 @@ export async function getProfileLayoutProps(handle: string) {
   const profileQuery = await lensClient
     .query<GetProfileByHandleQuery, GetProfileByHandleQueryVariables>(
       GetProfileByHandleDocument,
-      { handle }
+      { handle: handle.concat(HANDLE_ENDING) }
     )
     .toPromise();
 

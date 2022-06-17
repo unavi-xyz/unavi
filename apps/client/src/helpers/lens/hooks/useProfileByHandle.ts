@@ -2,10 +2,11 @@ import {
   Profile,
   useGetProfileByHandleQuery,
 } from "../../../generated/graphql";
+import { HANDLE_ENDING } from "../constants";
 
 export function useProfileByHandle(handle: string | undefined) {
   const [{ data }] = useGetProfileByHandleQuery({
-    variables: { handle },
+    variables: { handle: handle?.concat(HANDLE_ENDING) },
     pause: !handle,
   });
 

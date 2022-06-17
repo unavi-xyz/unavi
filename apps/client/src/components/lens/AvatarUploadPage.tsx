@@ -9,15 +9,17 @@ import { useLensStore } from "../../helpers/lens/store";
 import { AppId, Metadata, MetadataVersions } from "../../helpers/lens/types";
 import { crop } from "../../helpers/utils/crop";
 import Button from "../base/Button";
+import Card from "../base/Card";
 import FileUpload from "../base/FileUpload";
 import TextArea from "../base/TextArea";
 import TextField from "../base/TextField";
 import AvatarCanvas from "../layouts/AvatarLayout/AvatarCanvas";
+import AvatarCard from "./AvatarCard";
 
 export default function AvatarUploadPage() {
-  const nameRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
+  const [name, setName] = useState<string>("My Avatar");
   const [imageFile, setImageFile] = useState<File>();
   const [vrmFile, setVrmFile] = useState<File>();
   const [loading, setLoading] = useState(false);
@@ -46,7 +48,7 @@ export default function AvatarUploadPage() {
       const metadata: Metadata = {
         version: MetadataVersions.one,
         metadata_id: nanoid(),
-        name: nameRef.current?.value ?? "",
+        name,
         description: descriptionRef.current?.value ?? "",
         content: vrmURI,
         image: imageURI,
@@ -61,7 +63,7 @@ export default function AvatarUploadPage() {
       //create post
       await createPost(metadata);
 
-      router.push(`/user/${handle}/avatars`);
+      router.push(`/user/${handle}`);
     } catch (error) {
       console.error(error);
     }
@@ -78,11 +80,12 @@ export default function AvatarUploadPage() {
 
       <div className="space-y-4">
         <TextField
-          inputRef={nameRef}
           autoComplete="off"
           title="Name"
-          defaultValue="My Avatar"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
+
         <TextArea
           textAreaRef={descriptionRef}
           autoComplete="off"
@@ -92,16 +95,6 @@ export default function AvatarUploadPage() {
 
         <div className="space-y-4">
           <div className="text-lg font-bold">Image</div>
-
-          {imageFile && (
-            <div className="w-1/3 aspect-vertical">
-              <img
-                src={URL.createObjectURL(imageFile)}
-                alt="cover picture preview"
-                className="object-cover rounded-xl h-full w-full border"
-              />
-            </div>
-          )}
 
           <FileUpload
             color="SurfaceVariant"
@@ -117,12 +110,6 @@ export default function AvatarUploadPage() {
         <div className="space-y-4">
           <div className="text-lg font-bold">VRM File</div>
 
-          {vrmFile && (
-            <div className="h-48">
-              <AvatarCanvas url={URL.createObjectURL(vrmFile)} />
-            </div>
-          )}
-
           <FileUpload
             color="SurfaceVariant"
             title="VRM"
@@ -134,6 +121,22 @@ export default function AvatarUploadPage() {
           />
         </div>
       </div>
+
+      {(imageFile || vrmFile) && (
+        <div className="flex space-x-4">
+          {imageFile && (
+            <Card
+              text={name}
+              image={URL.createObjectURL(imageFile)}
+              aspect="vertical"
+            />
+          )}
+
+          <div className="w-full">
+            {vrmFile && <AvatarCanvas url={URL.createObjectURL(vrmFile)} />}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end">
         <Button

@@ -25,7 +25,7 @@ export default function CreateProfilePage() {
   const { valid, error: validateError, fetching } = useValidateHandle(handle);
 
   const loading = fetching || formHandle !== handle || loadingSubmit;
-  const disabled = !valid || handle === ".test";
+  const disabled = !valid;
 
   useEffect(() => {
     if (validateError) setError(validateError);
@@ -34,7 +34,7 @@ export default function CreateProfilePage() {
   useEffect(() => {
     //debounce handle input
     const timeout = setTimeout(() => {
-      setHandle(`${formHandle}`);
+      setHandle(formHandle);
 
       if (formHandle.length < 5 && formHandle.length > 0) {
         setError("Handle must be at least 5 characters");
@@ -64,13 +64,11 @@ export default function CreateProfilePage() {
 
       if (error) throw new Error(error.message);
 
-      const realHandle = `${handle}.test`;
-
       //log the user in
-      useLensStore.setState({ handle: realHandle });
+      useLensStore.setState({ handle });
 
       //redirect to the profile page
-      router.push(`/user/${realHandle}`);
+      router.push(`/user/${handle}`);
     } catch (err) {
       console.error(err);
       setError(err as any);

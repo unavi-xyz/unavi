@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { PublicationProps } from "../../../helpers/lens/getPublicationProps";
 import { useMediaImage } from "../../../helpers/lens/hooks/useMediaImage";
 import { useLensStore } from "../../../helpers/lens/store";
+import { trimHandle } from "../../../helpers/lens/utils";
 import Button from "../../base/Button";
 import NavigationTab from "../../base/NavigationTab";
 import MetaTags from "../../ui/MetaTags";
@@ -24,7 +25,8 @@ export default function SpaceLayout({
   const image = useMediaImage(media);
 
   const handle = useLensStore((state) => state.handle);
-  const isAuthor = handle && handle === publication?.profile.handle;
+  const author = trimHandle(publication?.profile.handle);
+  const isAuthor = handle && handle === author;
 
   return (
     <>
@@ -59,9 +61,9 @@ export default function SpaceLayout({
                 <div className="space-y-2">
                   <div className="font-bold flex space-x-1 justify-center md:justify-start">
                     <div>By</div>
-                    <Link href={`/user/${publication?.profile.handle}`}>
+                    <Link href={`/user/${author}`}>
                       <a className="hover:underline cursor-pointer">
-                        @{publication?.profile.handle}
+                        @{author}
                       </a>
                     </Link>
                   </div>

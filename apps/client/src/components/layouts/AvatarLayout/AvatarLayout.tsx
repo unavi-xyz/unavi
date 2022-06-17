@@ -13,6 +13,7 @@ import {
   MetadataVersions,
   ProfileMetadata,
 } from "../../../helpers/lens/types";
+import { trimHandle } from "../../../helpers/lens/utils";
 import Button from "../../base/Button";
 import NavigationTab from "../../base/NavigationTab";
 import Spinner from "../../base/Spinner";
@@ -38,7 +39,8 @@ export default function AvatarLayout({
 
   const [loading, setLoading] = useState(false);
 
-  const isAuthor = handle && handle === publication?.profile.handle;
+  const author = trimHandle(publication?.profile.handle);
+  const isAuthor = handle && handle === author;
   const attribute = profile?.attributes?.find((item) => item.key === "avatar");
   const isEquipped = attribute?.value === id;
   const disableEquipButton = !handle;
@@ -192,9 +194,9 @@ export default function AvatarLayout({
                 <div className="space-y-2">
                   <div className="font-bold flex space-x-1 justify-center md:justify-start">
                     <div>By</div>
-                    <Link href={`/user/${publication?.profile.handle}`}>
+                    <Link href={`/user/${author}`}>
                       <a className="hover:underline cursor-pointer">
-                        @{publication?.profile.handle}
+                        @{author}
                       </a>
                     </Link>
                   </div>

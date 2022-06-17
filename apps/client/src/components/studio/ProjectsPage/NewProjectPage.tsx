@@ -91,7 +91,7 @@ export default function NewProjectsPage({ onBack }: Props) {
 
         <Button
           variant="tonal"
-          squared
+          squared="large"
           fullWidth
           onClick={handleSelectDirectory}
         >

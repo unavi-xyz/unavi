@@ -1,14 +1,18 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useState } from "react";
 import {
+  MdAdd,
   MdOutlineAccountBalanceWallet,
   MdOutlinePersonOutline,
 } from "react-icons/md";
 
 import { useProfileByHandle } from "../../../helpers/lens/hooks/useProfileByHandle";
 import { useLensStore } from "../../../helpers/lens/store";
+import Dialog from "../../base/Dialog";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
+import CreateProfilePage from "../NavbarLayout/CreateProfilePage";
 import { getNavbarLayout } from "../NavbarLayout/NavbarLayout";
 import SettingsButton from "./SettingsButton";
 
@@ -18,9 +22,10 @@ interface Props {
 
 export default function SettingsLayout({ children }: Props) {
   const router = useRouter();
-
   const handle = useLensStore((state) => state.handle);
   const profile = useProfileByHandle(handle);
+
+  const [open, setOpen] = useState(false);
 
   if (!handle) return null;
 
@@ -29,6 +34,10 @@ export default function SettingsLayout({ children }: Props) {
       <Head>
         <title>Settings / The Wired</title>
       </Head>
+
+      <Dialog open={open} onClose={() => setOpen(false)}>
+        <CreateProfilePage />
+      </Dialog>
 
       <div className="max-w mx-4 mb-4 flex flex-col md:flex-row">
         <div className="pt-8 md:pr-8 space-y-2 w-full md:max-w-xs">
@@ -65,6 +74,10 @@ export default function SettingsLayout({ children }: Props) {
               </SettingsButton>
             </a>
           </Link>
+
+          <SettingsButton icon={<MdAdd />} onClick={() => setOpen(true)}>
+            Create Profile
+          </SettingsButton>
         </div>
 
         <div className="w-full pt-4">{children}</div>

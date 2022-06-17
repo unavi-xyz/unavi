@@ -44,7 +44,12 @@ export default function ProjectsPage() {
       </div>
 
       <div className="flex justify-center space-x-4">
-        <Button variant="tonal" squared fullWidth onClick={handleOpenProject}>
+        <Button
+          variant="tonal"
+          squared="large"
+          fullWidth
+          onClick={handleOpenProject}
+        >
           <div className="flex items-center justify-center space-x-2 py-2">
             <MdOutlineFolderOpen className="text-lg" />
             <div>Open Project</div>
@@ -53,7 +58,7 @@ export default function ProjectsPage() {
 
         <Button
           variant="tonal"
-          squared
+          squared="large"
           fullWidth
           onClick={() => setNewProject(true)}
         >

@@ -3,7 +3,7 @@
     <img src="./assets/HeroRound.png" />
   </p>
 
-  <p>A decentralized 3d social platform, built for the web</p>
+  <p>An open and decentralized 3d social platform</p>
 
   <img alt="Discord" src="https://img.shields.io/discord/918705784311939134?label=discord">
   <img alt="GitHub" src="https://img.shields.io/github/license/wired-xr/wired">

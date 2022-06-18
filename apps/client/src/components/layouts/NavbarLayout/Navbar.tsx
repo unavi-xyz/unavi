@@ -23,7 +23,7 @@ export default function Navbar() {
       <div className="max-w mx-4 grid grid-cols-3">
         <div className="flex items-center">
           <Link href="/" passHref>
-            <a className="cursor-pointer relative h-full aspect-square scale-75">
+            <a className="cursor-pointer relative h-8 aspect-square">
               <Image src="/images/plug.png" alt="logo" layout="fill" />
             </a>
           </Link>

@@ -18,12 +18,10 @@ import {
 import { lensClient } from "../src/helpers/lens/client";
 import { getMediaImageSSR } from "../src/helpers/lens/hooks/useMediaImage";
 import { AppId } from "../src/helpers/lens/types";
+import { useIsMobile } from "../src/helpers/utils/useIsMobile";
 import { useQueryPagination } from "../src/helpers/utils/useQueryPagination";
 
-const SPACE_LIMIT = 3;
-const AVATAR_LIMIT = 5;
-
-async function fetchHotSpaces(pageInfo?: PaginatedResultInfo) {
+async function fetchHotSpaces(pageInfo?: PaginatedResultInfo, limit = 3) {
   const hotAvatarsQuery = await lensClient
     .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
       ExplorePublicationsDocument,
@@ -32,7 +30,7 @@ async function fetchHotSpaces(pageInfo?: PaginatedResultInfo) {
           sources: [AppId.space],
           sortCriteria: PublicationSortCriteria.TopCommented,
           publicationTypes: [PublicationTypes.Post],
-          limit: SPACE_LIMIT,
+          limit,
           cursor: pageInfo?.next,
         },
       }
@@ -57,7 +55,7 @@ async function fetchHotSpaces(pageInfo?: PaginatedResultInfo) {
   };
 }
 
-async function fetchHotAvatars(pageInfo?: PaginatedResultInfo) {
+async function fetchHotAvatars(pageInfo?: PaginatedResultInfo, limit = 5) {
   const hotAvatarsQuery = await lensClient
     .query<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>(
       ExplorePublicationsDocument,
@@ -66,7 +64,7 @@ async function fetchHotAvatars(pageInfo?: PaginatedResultInfo) {
           sources: [AppId.avatar],
           sortCriteria: PublicationSortCriteria.TopCommented,
           publicationTypes: [PublicationTypes.Post],
-          limit: SPACE_LIMIT,
+          limit,
           cursor: pageInfo?.next,
         },
       }
@@ -134,18 +132,22 @@ export default function Explore({
   initialHotAvatars,
   initialHotAvatarsInfo,
 }: Props) {
+  const isMobile = useIsMobile();
+  const spaceLimit = isMobile ? 1 : 3;
+  const avatarLimit = isMobile ? 1 : 5;
+
   const hotSpaces = useQueryPagination({
-    pageSize: SPACE_LIMIT,
+    pageSize: spaceLimit,
     initialCache: initialHotSpaces,
     initialPageInfo: initialHotSpacesInfo,
-    fetchNextPage: fetchHotSpaces,
+    fetchNextPage: (page) => fetchHotSpaces(page, spaceLimit),
   });
 
   const hotAvatars = useQueryPagination({
-    pageSize: AVATAR_LIMIT,
+    pageSize: avatarLimit,
     initialCache: initialHotAvatars,
     initialPageInfo: initialHotAvatarsInfo,
-    fetchNextPage: fetchHotAvatars,
+    fetchNextPage: (page) => fetchHotAvatars(page, avatarLimit),
   });
 
   return (
@@ -172,8 +174,8 @@ export default function Explore({
                     className={"h-40 transition duration-500"}
                     style={{
                       transform: `translate(calc(-${
-                        hotSpaces.page * SPACE_LIMIT
-                      }00% + ${Math.min(hotSpaces.page, 1) * 5}%))`,
+                        hotSpaces.page * spaceLimit
+                      }00% + ${Math.min(hotSpaces.page, 1) * spaceLimit}%))`,
                     }}
                   >
                     <SpaceCard space={space} />
@@ -197,8 +199,8 @@ export default function Explore({
                     className={"h-72 transition duration-500"}
                     style={{
                       transform: `translate(calc(-${
-                        hotAvatars.page * AVATAR_LIMIT
-                      }00% + ${Math.min(hotAvatars.page, 1) * 5}%))`,
+                        hotAvatars.page * avatarLimit
+                      }00% + ${Math.min(hotAvatars.page, 1) * avatarLimit}%))`,
                     }}
                   >
                     <AvatarCard avatar={avatar} />

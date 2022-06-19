@@ -32,11 +32,9 @@ export default function Index() {
         <div className="max-w mx-4 snap-mandatory snap-y">
           <div className="h-screen snap-center -mt-12 flex flex-col md:flex-row items-center">
             <div className="w-full h-full flex flex-col justify-center">
-              <div className="text-8xl font-black text-center md:text-left">
-                The Wired
-              </div>
+              <div className="text-8xl font-black">The Wired</div>
 
-              <div className="text-3xl text-center md:text-left pt-0.5">
+              <div className="text-3xl pt-0.5">
                 An open and decentralized 3d social platform.
               </div>
 

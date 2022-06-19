@@ -174,7 +174,7 @@ export default function Settings() {
                         layout="fill"
                         alt="cover picture preview"
                         objectFit="cover"
-                        className="rounded-xl h-full w-full border"
+                        className="rounded-xl h-full w-full"
                       />
                     </div>
                   </div>
@@ -221,7 +221,7 @@ export default function Settings() {
                       layout="fill"
                       alt="profile picture preview square"
                       objectFit="cover"
-                      className="rounded-xl h-full w-full border bg-neutral-100"
+                      className="rounded-xl h-full w-full"
                     />
                   </div>
 
@@ -231,7 +231,7 @@ export default function Settings() {
                       layout="fill"
                       alt="profile picture preview circle"
                       objectFit="cover"
-                      className="rounded-full h-full w-full border bg-neutral-100"
+                      className="rounded-full h-full w-full"
                     />
                   </div>
                 </div>

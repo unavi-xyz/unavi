@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/web-manifest-combined.json",
-  "background_color": "#fffbfe",
+  "background_color": "#ffffff",
   "categories": ["social", "games", "entertainment"],
   "description": "An open and decentralized 3d social platform",
   "display": "fullscreen",
@@ -26,5 +26,5 @@
   "short_name": "Wired",
   "splash_pages": null,
   "start_url": "/",
-  "theme_color": "#fffbfe"
+  "theme_color": "#ffffff"
 }

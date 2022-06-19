@@ -55,7 +55,7 @@ export default function Settings(props: PublicationProps) {
 
   return (
     <SpaceLayout {...props}>
-      <div className="bg-tertiaryContainer text-onTertiaryContainer rounded-2xl p-8 space-y-4">
+      <div className="bg-primaryContainer text-onPrimaryContainer rounded-2xl p-8 space-y-4">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">
@@ -66,7 +66,7 @@ export default function Settings(props: PublicationProps) {
 
         <Button
           variant="filled"
-          color="tertiary"
+          color="primary"
           squared="large"
           loading={loading}
           onClick={handleDelete}

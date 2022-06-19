@@ -26,7 +26,7 @@ export default function ProfilePicture({
       src={url ?? identicon}
       draggable={draggable}
       alt="profile picture"
-      className={`${circleClass} bg-tertiaryContainer`}
+      className={`${circleClass} bg-primaryContainer`}
     />
   );
 }

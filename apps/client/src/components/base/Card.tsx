@@ -16,7 +16,7 @@ export default function Card({ image, text, subtext, aspect = "card" }: Props) {
                   flex flex-col hover:ring-2 hover:ring-outline`}
     >
       <div
-        className={`h-full overflow-hidden rounded-xl ${aspectCss} bg-secondaryContainer`}
+        className={`h-full overflow-hidden rounded-xl ${aspectCss} bg-primaryContainer`}
       >
         <div className="relative w-full h-full">
           {image && (

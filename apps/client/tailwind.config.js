@@ -4,35 +4,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#6750A4",
-        primaryContainer: "#EADDFF",
-        onPrimary: "#FFFFFF",
-        onPrimaryContainer: "#21005E",
+        primary: "#fac213",
+        primaryContainer: "#fff0b5",
+        onPrimary: "#000000",
+        onPrimaryContainer: "#000000",
 
-        secondary: "#625B71",
-        secondaryContainer: "#E8DEF8",
-        onSecondary: "#FFFFFF",
-        onSecondaryContainer: "#1E192B",
+        surface: "#ffffff",
+        surfaceVariant: "#e7e7e7",
+        onSurface: "#000000",
+        onSurfaceVariant: "#000000",
 
-        tertiary: "#7D5260",
-        tertiaryContainer: "#FFD8E4",
-        onTertiary: "#FFFFFF",
-        onTertiaryContainer: "#370B1E",
+        surfaceDark: "#000000",
+        onSurfaceDark: "#ffffff",
 
-        surface: "#FFFBFE",
-        surfaceVariant: "#E7E0EC",
-        onSurface: "#1C1B1F",
-        onSurfaceVariant: "#49454E",
-
-        surfaceDark: "#1C1B1F",
-        onSurfaceDark: "#E6E1E5",
-
-        background: "#FFFBFE",
-        onBackground: "#1C1B1F",
+        background: "#ffffff",
+        onBackground: "#000000",
 
         error: "#B3261E",
         errorContainer: "#F9DEDC",
-        onError: "#FFFFFF",
+        onError: "#ffffff",
         onErrorContainer: "#370B1E",
 
         outline: "#79747E",
@@ -46,7 +36,7 @@ module.exports = {
       },
       boxShadow: {
         tonal: "0 1px 3px 0 rgb(0 0 0 / 0.3)",
-        filled: "0 1px 3px 0 rgb(0 0 0 / 0.5)",
+        filled: "0 1px 3px 0 rgb(0 0 0 / 0.3)",
       },
     },
   },

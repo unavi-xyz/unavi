@@ -49,7 +49,7 @@ export default function ProfileLayout({
 
       {profile ? (
         <div className="max-w mx-auto">
-          <div className="w-full h-48 md:h-64 bg-tertiaryContainer md:rounded-3xl">
+          <div className="w-full h-48 md:h-64 bg-primaryContainer md:rounded-3xl">
             <div className="relative object-cover w-full h-full">
               {coverImage && (
                 <Image

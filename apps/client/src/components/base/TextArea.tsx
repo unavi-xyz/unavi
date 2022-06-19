@@ -28,9 +28,7 @@ export default function TextArea({
 
       <div className="flex items-center border rounded-lg">
         {frontAdornment && (
-          <span className="pl-2 text-secondary font-bold">
-            {frontAdornment}
-          </span>
+          <span className="pl-2 text-primary font-bold">{frontAdornment}</span>
         )}
         <textarea
           ref={textAreaRef}

@@ -171,11 +171,13 @@ export default function Explore({
               {hotSpaces.cache.map((space) => (
                 <Link key={space.id} href={`/space/${space.id}`} passHref>
                   <a
-                    className={"h-40 transition duration-500"}
+                    className="h-40 transition duration-500"
                     style={{
                       transform: `translate(calc(-${
                         hotSpaces.page * spaceLimit
-                      }00% + ${Math.min(hotSpaces.page, 1) * spaceLimit}%))`,
+                      }00% + ${
+                        spaceLimit > 1 ? Math.min(hotSpaces.page, 1) * 15 : 0
+                      }%))`,
                     }}
                   >
                     <SpaceCard space={space} />
@@ -196,11 +198,13 @@ export default function Explore({
               {hotAvatars.cache.map((avatar) => (
                 <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
                   <a
-                    className={"h-72 transition duration-500"}
+                    className="h-64 transition duration-500"
                     style={{
                       transform: `translate(calc(-${
                         hotAvatars.page * avatarLimit
-                      }00% + ${Math.min(hotAvatars.page, 1) * avatarLimit}%))`,
+                      }00% + ${
+                        avatarLimit > 1 ? Math.min(hotAvatars.page, 1) * 15 : 0
+                      }%))`,
                     }}
                   >
                     <AvatarCard avatar={avatar} />

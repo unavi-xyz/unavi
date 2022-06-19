@@ -27,7 +27,7 @@ export default function SettingsLayout({ children }: Props) {
 
   const [open, setOpen] = useState(false);
 
-  if (!handle) return null;
+  if (!handle || !profile) return null;
 
   return (
     <div className="flex justify-center">

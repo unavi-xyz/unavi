@@ -15,7 +15,7 @@ defmodule Host.MixProject do
   def application do
     [
       mod: {Host.Application, []},
-      extra_applications: [:cowboy, :plug, :logger]
+      extra_applications: [:cowboy, :plug, :logger, :crypto]
     ]
   end
 

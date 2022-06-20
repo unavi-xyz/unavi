@@ -1,6 +1,6 @@
 import { IChatMessage, PlayerIdentity, PlayerLocation } from "../app/types";
 
-export type MessageType = "chatmessage" | "identity" | "location";
+export type MessageType = "chatmessage" | "identity" | "location" | "leave";
 
 export type WebsocketMessageBase<T extends MessageType, D> = {
   type: T;
@@ -29,8 +29,15 @@ export type RecievedLocation = WebsocketMessageBase<
     location: PlayerLocation;
   }
 >;
+export type RecievedLeaveMessage = WebsocketMessageBase<
+  "leave",
+  {
+    userid: string;
+  }
+>;
 
 export type RecievedWebsocketMessage =
   | RecievedChatMessage
   | RecievedIdentity
-  | RecievedLocation;
+  | RecievedLocation
+  | RecievedLeaveMessage;

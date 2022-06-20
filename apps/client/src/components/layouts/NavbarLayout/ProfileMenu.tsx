@@ -64,15 +64,13 @@ export default function ProfileMenu() {
             Switch Profiles
           </div>
 
-          <div className="px-2 space-y-1 overflow-y-auto max-h-20">
+          <div className="px-2 space-y-1 overflow-y-auto max-h-20 flex flex-col">
             {otherProfiles.map((profile) => {
               const profileHandle = trimHandle(profile.handle);
-
               return (
                 <button
                   key={profile.id}
                   onClick={() => switchProfile(profileHandle)}
-                  className="w-full"
                 >
                   <ProfileMenuButton>@{profileHandle}</ProfileMenuButton>
                 </button>

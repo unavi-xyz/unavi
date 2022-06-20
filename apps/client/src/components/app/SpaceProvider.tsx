@@ -9,7 +9,7 @@ import {
 } from "../../helpers/host/types";
 import { useLensStore } from "../../helpers/lens/store";
 
-const DEFAULT_HOST = "host.thewired.space";
+export const DEFAULT_HOST = "host.thewired.space";
 const WS = process.env.NODE_ENV === "production" ? "wss" : "ws";
 
 export interface ISpaceContext {

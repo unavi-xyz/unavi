@@ -14,6 +14,7 @@ import {
   GetPublicationsQuery,
   GetPublicationsQueryVariables,
   Post,
+  PublicationTypes,
 } from "../../../src/generated/graphql";
 import { lensClient } from "../../../src/helpers/lens/client";
 import { HIDDEN_MESSAGE } from "../../../src/helpers/lens/constants";
@@ -38,8 +39,11 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
     .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
       GetPublicationsDocument,
       {
-        profileId: props.profile.id,
-        sources: [AppId.space, AppId.avatar],
+        request: {
+          profileId: props.profile.id,
+          sources: [AppId.space, AppId.avatar],
+          publicationTypes: [PublicationTypes.Post],
+        },
       }
     )
     .toPromise();

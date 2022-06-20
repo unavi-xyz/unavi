@@ -62,7 +62,7 @@ export default function Button({
 
   const disabledClass =
     loading || disabled
-      ? "opacity-40 cursor-not-allowed"
+      ? "opacity-40 cursor-not-allowed bg-surfaceVariant"
       : variant === "text"
       ? "active:bg-opacity-75"
       : variant === "outlined"

@@ -22,12 +22,12 @@ export default function NavbarTab({ href, text }: Props) {
 
   const selectedClass = selected
     ? "bg-primaryContainer text-onPrimaryContainer"
-    : "hover:bg-surfaceVariant";
+    : "hover:bg-surfaceVariant hover:text-onSurfaceVariant";
 
   return (
     <Link href={href} passHref>
       <a
-        className={`px-3 py-1 rounded-lg font-bold transition ${selectedClass}`}
+        className={`px-3 py-1 rounded-md font-bold transition ${selectedClass}`}
       >
         {text}
       </a>

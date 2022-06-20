@@ -1,4 +1,4 @@
-import { ChangeEvent, RefObject } from "react";
+import { ChangeEvent, RefObject, useId } from "react";
 import { MdOutlineHelpOutline } from "react-icons/md";
 
 import Tooltip from "./Tooltip";
@@ -19,11 +19,13 @@ export default function TextField({
   onChange,
   ...rest
 }: Props) {
+  const id = useId();
+
   return (
     <div className="flex flex-col space-y-1">
       <div className="flex items-center space-x-1">
         <label
-          htmlFor={title}
+          htmlFor={id}
           className="block text-lg font-bold pointer-events-none"
         >
           {title}
@@ -44,7 +46,7 @@ export default function TextField({
         )}
         <input
           ref={inputRef}
-          id={title}
+          id={id}
           type="text"
           className="outline-none w-full h-full px-3 py-2 rounded-md"
           onChange={onChange}

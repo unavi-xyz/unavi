@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import Button from "../../src/components/base/Button";
@@ -167,11 +168,15 @@ export default function Settings() {
 
                 {coverUrl && (
                   <div className="w-full h-40">
-                    <img
-                      src={coverUrl}
-                      alt="cover picture preview"
-                      className="object-cover rounded-xl h-full w-full border"
-                    />
+                    <div className="relative object-cover w-full h-full">
+                      <Image
+                        src={coverUrl}
+                        layout="fill"
+                        alt="cover picture preview"
+                        objectFit="cover"
+                        className="rounded-xl h-full w-full"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -209,19 +214,24 @@ export default function Settings() {
               <div className="font-bold">Profile Picture</div>
 
               {pfpUrl && (
-                <div className="flex space-x-8">
-                  <div className="w-full aspect-square">
-                    <img
+                <div className="grid grid-cols-2 gap-x-16">
+                  <div className="relative w-full h-full aspect-square">
+                    <Image
                       src={pfpUrl}
+                      layout="fill"
                       alt="profile picture preview square"
-                      className="object-cover rounded-xl h-full w-full border bg-neutral-100"
+                      objectFit="cover"
+                      className="rounded-xl h-full w-full"
                     />
                   </div>
-                  <div className="w-full aspect-square">
-                    <img
+
+                  <div className="relative w-full h-full aspect-square">
+                    <Image
                       src={pfpUrl}
+                      layout="fill"
                       alt="profile picture preview circle"
-                      className="object-cover rounded-full h-full w-full border bg-neutral-100"
+                      objectFit="cover"
+                      className="rounded-full h-full w-full"
                     />
                   </div>
                 </div>

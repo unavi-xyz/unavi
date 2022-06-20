@@ -1,12 +1,5 @@
-query GetPublications($profileId: ProfileId!, $sources: [Sources!]) {
-  publications(
-    request: {
-      profileId: $profileId
-      publicationTypes: [POST]
-      limit: 10
-      sources: $sources
-    }
-  ) {
+query GetPublications($request: PublicationsQueryRequest!) {
+  publications(request: $request) {
     items {
       __typename
       ... on Post {

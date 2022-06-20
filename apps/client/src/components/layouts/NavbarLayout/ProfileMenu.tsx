@@ -25,10 +25,7 @@ export default function ProfileMenu() {
 
   return (
     <div className="py-2 space-y-2">
-      <div
-        className="gradient-text px-6 font-bold"
-        onPointerUp={(e) => e.stopPropagation()}
-      >
+      <div className="px-6 font-bold" onPointerUp={(e) => e.stopPropagation()}>
         @{handle}
       </div>
 

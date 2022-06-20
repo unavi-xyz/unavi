@@ -1,4 +1,4 @@
-import { ChangeEvent, RefObject } from "react";
+import { ChangeEvent, RefObject, useId } from "react";
 
 interface Props {
   title?: string;
@@ -15,10 +15,12 @@ export default function TextArea({
   frontAdornment,
   ...rest
 }: Props) {
+  const id = useId();
+
   return (
     <div className="w-full flex flex-col space-y-1">
       <label
-        htmlFor={title}
+        htmlFor={id}
         className="block text-lg font-bold pointer-events-none"
       >
         {title}
@@ -26,13 +28,11 @@ export default function TextArea({
 
       <div className="flex items-center border rounded-lg">
         {frontAdornment && (
-          <span className="pl-2 text-secondary font-bold">
-            {frontAdornment}
-          </span>
+          <span className="pl-2 text-primary font-bold">{frontAdornment}</span>
         )}
         <textarea
           ref={textAreaRef}
-          id={title}
+          id={id}
           className="outline-none w-full h-full px-3 py-2 rounded-md bg-surface text-onSurface"
           onChange={onChange}
           {...rest}

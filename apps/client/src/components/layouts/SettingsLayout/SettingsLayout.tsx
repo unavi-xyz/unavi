@@ -27,7 +27,7 @@ export default function SettingsLayout({ children }: Props) {
 
   const [open, setOpen] = useState(false);
 
-  if (!handle) return null;
+  if (!handle || !profile) return null;
 
   return (
     <div className="flex justify-center">
@@ -42,14 +42,12 @@ export default function SettingsLayout({ children }: Props) {
       <div className="max-w mx-4 mb-4 flex flex-col md:flex-row">
         <div className="pt-8 md:pr-8 space-y-2 w-full md:max-w-xs">
           <div className="flex space-x-4 pb-4">
-            <div className="w-20 flex flex-col justify-center">
+            <div className="w-20 flex flex-col justify-center p-1">
               <ViewerProfilePicture circle />
             </div>
             <div className="flex flex-col justify-center">
-              <div className="font-black text-lg break-all">
-                {profile?.name ?? handle}
-              </div>
-              <div className="gradient-text break-all font-bold">@{handle}</div>
+              <div className="font-black text-lg break-all ">@{handle}</div>
+              <div className="font-bold break-all">{profile.name}</div>
             </div>
           </div>
 

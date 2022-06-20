@@ -2,6 +2,7 @@ import {
   GetProfileByHandleDocument,
   GetProfileByHandleQuery,
   GetProfileByHandleQueryVariables,
+  Profile,
 } from "../../../generated/graphql";
 import { lensClient } from "../../../helpers/lens/client";
 import { HANDLE_ENDING } from "../../../helpers/lens/constants";
@@ -11,10 +12,13 @@ import { PageMetadata } from "../../../helpers/types";
 export interface ProfileLayoutProps {
   handle: string;
   metadata: PageMetadata;
-  profile: GetProfileByHandleQuery["profiles"]["items"][0] | undefined;
+  profile: Profile | undefined;
+  coverImage: string | null;
 }
 
-export async function getProfileLayoutProps(handle: string) {
+export async function getProfileLayoutProps(
+  handle: string
+): Promise<ProfileLayoutProps> {
   const profileQuery = await lensClient
     .query<GetProfileByHandleQuery, GetProfileByHandleQueryVariables>(
       GetProfileByHandleDocument,
@@ -22,7 +26,7 @@ export async function getProfileLayoutProps(handle: string) {
     )
     .toPromise();
 
-  const profile = profileQuery.data?.profiles.items[0];
+  const profile = profileQuery.data?.profiles.items[0] as Profile;
   const title = profile?.name ? `${profile?.name} (@${handle})` : `@${handle}`;
   const metadata: PageMetadata = {
     title,
@@ -30,5 +34,7 @@ export async function getProfileLayoutProps(handle: string) {
     image: getMediaImageSSR(profile?.picture) ?? "",
   };
 
-  return { handle, metadata, profile };
+  const coverImage = getMediaImageSSR(profile?.coverPicture);
+
+  return { handle, metadata, profile, coverImage };
 }

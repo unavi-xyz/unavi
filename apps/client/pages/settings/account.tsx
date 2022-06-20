@@ -61,7 +61,7 @@ export default function Account() {
 
       <div
         className="space-y-8 bg-primaryContainer text-onPrimaryContainer
-                   rounded-3xl border p-8 text-lg"
+                   rounded-3xl p-8 text-lg"
       >
         <div className="space-y-2">
           <div className="font-bold text-xl">Default Profile</div>
@@ -74,7 +74,7 @@ export default function Account() {
         {defaultProfile && (
           <div className="flex space-x-1">
             <div>Current default profile:</div>
-            <div className="font-bold">
+            <div className="font-black">
               @{trimHandle(defaultProfile.handle)}
             </div>
           </div>

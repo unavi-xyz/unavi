@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface Props {
   image?: string;
   text?: string;
@@ -10,19 +12,25 @@ export default function Card({ image, text, subtext, aspect = "card" }: Props) {
 
   return (
     <div
-      className={`group p-3 w-full h-full overflow-hidden rounded-3xl hover:cursor-pointer
-                  flex flex-col hover:ring-2 hover:ring-outline ${aspectCss}`}
+      className={`group p-3 w-full h-full overflow-hidden rounded-2xl hover:cursor-pointer
+                  flex flex-col hover:ring-2 hover:ring-outline`}
     >
-      <div className="h-full overflow-hidden rounded-2xl bg-secondaryContainer">
-        {image && (
-          <img
-            src={image}
-            alt="card image"
-            draggable={false}
-            className="w-full h-full object-cover group-hover:scale-110
-                       transition duration-500 ease-in-out"
-          />
-        )}
+      <div
+        className={`h-full overflow-hidden rounded-xl ${aspectCss} bg-primaryContainer`}
+      >
+        <div className="relative w-full h-full">
+          {image && (
+            <Image
+              src={image}
+              priority
+              draggable={false}
+              alt="card image"
+              layout="fill"
+              objectFit="cover"
+              className="group-hover:scale-110 transition duration-500 ease-in-out rounded-xl"
+            />
+          )}
+        </div>
       </div>
 
       <div className="space-y-2 pt-2">

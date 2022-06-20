@@ -63,6 +63,12 @@ export default function SpaceProvider({ space, children }: Props) {
     newSocket.addEventListener("open", () => {
       console.log("Connected to host server");
       setSocket(newSocket);
+
+      //create analytics event
+      //this is used to track the number of people who have connected to the space
+      //so we can show popular spaces on the explore page
+      //idk if this is a good way to do it but it works for now
+      fetch(`/api/space/${space.id}/add-view`);
     });
 
     newSocket.addEventListener("close", () => {

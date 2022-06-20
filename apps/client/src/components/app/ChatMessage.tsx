@@ -5,11 +5,11 @@ import { IChatMessage } from "../../helpers/app/types";
 const showDuration = 10000;
 
 function isFading(message: IChatMessage) {
-  return Date.now() - message.timestamp / 10000.0 > showDuration;
+  return Date.now() - message.timestamp / 1000000.0 > showDuration;
 }
 
 function isHidden(message: IChatMessage) {
-  return Date.now() - message.timestamp / 10000.0 > showDuration + 2000;
+  return Date.now() - message.timestamp / 1000000.0 > showDuration + 2000;
 }
 
 interface Props {

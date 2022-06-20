@@ -9,7 +9,7 @@ export type ButtonVariant =
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
-  color?: "primary" | "tertiary";
+  color?: "primary" | "primary";
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -33,7 +33,7 @@ export default function Button({
     variant === "text"
       ? color === "primary"
         ? "hover:bg-primaryContainer hover:text-onPrimaryContainer"
-        : "hover:bg-tertiaryContainer hover:text-onTertiaryContainer"
+        : "hover:bg-primaryContainer hover:text-onPrimaryContainer"
       : "";
 
   const outlineClass =
@@ -41,8 +41,8 @@ export default function Button({
       ? color === "primary"
         ? `ring-1 ring-outline hover:ring-onPrimaryContainer
            hover:text-onPrimaryContainer hover:bg-primaryContainer`
-        : `ring-1 ring-outline hover:ring-onTertiaryContainer
-           hover:text-onTertiaryContainer hover:bg-tertiaryContainer`
+        : `ring-1 ring-outline hover:ring-onPrimaryContainer
+           hover:text-onPrimaryContainer hover:bg-primaryContainer`
       : null;
 
   const tonalClass =
@@ -52,7 +52,7 @@ export default function Button({
     variant === "filled"
       ? color === "primary"
         ? "bg-primary text-onPrimary"
-        : "bg-tertiary text-onTertiary"
+        : "bg-primary text-onPrimary"
       : null;
 
   const elevatedClass =
@@ -62,7 +62,7 @@ export default function Button({
 
   const disabledClass =
     loading || disabled
-      ? "opacity-50 cursor-not-allowed"
+      ? "opacity-40 cursor-not-allowed bg-surfaceVariant"
       : variant === "text"
       ? "active:bg-opacity-75"
       : variant === "outlined"
@@ -82,7 +82,7 @@ export default function Button({
       ? "rounded-xl"
       : "rounded-full";
 
-  const paddingClass = icon ? "p-2.5" : "px-4 py-1.5";
+  const paddingClass = icon ? "p-2.5" : "px-5 py-1.5";
 
   return (
     <button

@@ -1,4 +1,4 @@
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useId, useState } from "react";
 
 interface Props {
   title?: string;
@@ -17,6 +17,8 @@ export default function FileUpload({
   onChange,
   ...rest
 }: Props) {
+  const id = useId();
+
   const [file, setFile] = useState<File>();
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
@@ -32,7 +34,7 @@ export default function FileUpload({
   return (
     <div className="flex flex-col space-y-1">
       <label
-        htmlFor={title}
+        htmlFor={id}
         className={`group block cursor-pointer rounded-md transition
                     hover:bg-opacity-60 active:bg-opacity-40 ${colorClass}`}
       >
@@ -47,7 +49,7 @@ export default function FileUpload({
       <div>
         <input
           ref={inputRef}
-          id={title}
+          id={id}
           type="file"
           accept={accept}
           className="hidden"

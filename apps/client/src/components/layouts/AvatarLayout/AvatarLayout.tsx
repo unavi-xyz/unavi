@@ -167,8 +167,6 @@ export default function AvatarLayout({
         title={metadata.title}
         description={metadata.description}
         image={metadata.image}
-        imageWidth="357.11px"
-        imageHeight="595.2px"
         card="summary_large_image"
       />
 

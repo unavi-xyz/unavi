@@ -1,11 +1,15 @@
 import Head from "next/head";
 
+//host url needs to be set in .env file for image meta tags to work
+const rawHost = process.env.HOST ?? "";
+
+//add http if not already there
+const host = rawHost.includes("http") ? rawHost : `https://${rawHost}`;
+
 interface Props {
   title?: string;
   description?: string;
   image?: string;
-  imageWidth?: string;
-  imageHeight?: string;
   card?: "summary" | "summary_large_image";
 }
 
@@ -13,10 +17,15 @@ export default function MetaTags({
   title = "The Wired",
   description = "An open and decentralized 3d social platform",
   image = "/images/Logo-Rounded.png",
-  imageWidth = "256px",
-  imageHeight = "256px",
   card = "summary",
 }: Props) {
+  const width = card === "summary_large_image" ? "1200" : "512";
+
+  //if image is an external url, fetch it through next
+  const localImage = image.startsWith("http")
+    ? `${host}/_next/image/?url=${image}&w=${width}&q=75`
+    : image;
+
   return (
     <Head>
       {title === "The Wired" ? (
@@ -27,21 +36,19 @@ export default function MetaTags({
 
       <meta name="name" content={title} />
       <meta name="description" content={description} />
-      <meta name="image" content={image} />
+      <meta name="image" content={localImage} />
 
       {/* open graph */}
       <meta property="og:site_name" content="The Wired" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
-      {imageWidth && <meta property="og:image:width" content={imageWidth} />}
-      {imageHeight && <meta property="og:image:height" content={imageHeight} />}
+      <meta property="og:image" content={localImage} />
 
       {/* twitter */}
       <meta name="twitter:card" content={card} />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
+      <meta name="twitter:image" content={localImage} />
       <meta name="twitter:site" content="@TheWiredXR" />
 
       {/* apple */}

@@ -35,8 +35,6 @@ export default function SpaceLayout({
         title={metadata.title}
         description={metadata.description}
         image={metadata.image}
-        imageWidth="595.2px"
-        imageHeight="357.11px"
         card="summary_large_image"
       />
 

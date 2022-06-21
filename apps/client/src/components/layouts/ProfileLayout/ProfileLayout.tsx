@@ -34,8 +34,6 @@ export default function ProfileLayout({
         title={metadata.title}
         description={metadata.description}
         image={metadata.image}
-        imageWidth="256px"
-        imageHeight="256px"
       />
 
       <Head>

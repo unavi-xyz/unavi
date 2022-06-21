@@ -10,6 +10,10 @@ import {
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=10");
 
+  const host = res?.req.headers.host;
+  const hostUrl = `https://${host}`;
+  console.log("👬", hostUrl);
+
   const props = await getSpaceLayoutProps(query.id as string);
 
   return {

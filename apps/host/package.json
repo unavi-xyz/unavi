@@ -4,10 +4,10 @@
   "private": true,
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "dev": "yarn docker:build && yarn docker:run",
+    "dev": "yarn docker:clean && yarn docker:build && yarn docker:run",
     "docker:build": "docker build -t wired-xr/host-elixir elixir",
-    "docker:clean": "docker rm host-elixir",
-    "docker:run": "yarn docker:stop && yarn docker:clean && docker run --name host-elixir -p 4000:4000 wired-xr/host-elixir",
+    "docker:clean": "docker rm -f -v host-elixir && docker rmi -f wired-xr/host-elixir",
+    "docker:run": "docker run --name host-elixir -p 4000:4000 wired-xr/host-elixir",
     "docker:stop": "docker stop host-elixir"
   }
 }

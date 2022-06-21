@@ -7,7 +7,7 @@ import { DEFAULT_HOST } from "../../app/SpaceProvider";
 const HTTP = process.env.NODE_ENV === "production" ? "https" : "http";
 
 export interface SpaceLayoutProps extends PublicationProps {
-  playerCount: number;
+  playerCount?: number;
   children: React.ReactNode;
 }
 
@@ -21,13 +21,20 @@ export async function getSpaceLayoutProps(id: string) {
         )?.value ?? DEFAULT_HOST
       : "localhost:4000";
 
-  const playerCountRes = await fetch(
-    `${HTTP}://${host}/space/${id}/player_count`
-  );
-  const playerCount = Number(await playerCountRes.text());
+  try {
+    const playerCountRes = await fetch(
+      `${HTTP}://${host}/space/${id}/player_count`
+    );
+    const playerCount = Number(await playerCountRes.text());
 
-  return {
-    ...publicationProps,
-    playerCount,
-  };
+    return {
+      ...publicationProps,
+      playerCount,
+    };
+  } catch {
+    return {
+      ...publicationProps,
+      playerCount: null,
+    };
+  }
 }

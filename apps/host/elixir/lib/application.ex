@@ -4,6 +4,9 @@ defmodule Host.Application do
   def start(_type, _args) do
     IO.puts("Host.Application.start")
 
+    # Create player count table
+    :ets.new(:player_count, [:named_table, :set, :public])
+
     children = [
       Plug.Cowboy.child_spec(
         scheme: :http,
@@ -27,7 +30,8 @@ defmodule Host.Application do
     [
       {:_,
        [
-         {:_, Host.SocketHandler, []}
+         {"/ws/:id", Host.SocketHandler, []},
+         {:_, Plug.Cowboy.Handler, {Host.Router, []}}
        ]}
     ]
   end

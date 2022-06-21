@@ -2,25 +2,27 @@ defmodule Host.SocketHandler do
   @behaviour :cowboy_websocket
 
   def init(request, _state) do
-    state = %{space_id: request.path, user_id: UUID.uuid4(), handle: nil}
+    state = %{space_id: request.bindings.id, user_id: UUID.uuid4(), handle: nil}
     {:cowboy_websocket, request, state}
   end
 
   # terminate if no activity for one minute
   @timeout 60000
 
-  # Called on WebSocket initialization
   def websocket_init(state) do
-    # Add the user to the space
+    IO.puts("Initializing connection with #{state.user_id}")
+
+    # Add user to the space
     Registry.Host
     |> Registry.register(state.space_id, {})
 
-    {:ok, state}
-  end
+    # Initialize player count if it doesn't exist
+    :ets.insert_new(:player_count, {state.space_id, 0})
 
-  # Handle ping
-  def websocket_handle({:text, "ping"}, req, state) do
-    {:reply, {:text, "pong"}, req, state}
+    # Increase player count
+    :ets.update_counter(:player_count, state.space_id, 1)
+
+    {:ok, state}
   end
 
   # Handle messages
@@ -104,6 +106,16 @@ defmodule Host.SocketHandler do
   # Called on WebSocket close
   def terminate(_reason, _req, state) do
     IO.puts("Terminating connection with #{state.user_id}")
+
+    # Decrease player count
+    :ets.update_counter(:player_count, state.space_id, -1)
+
+    # Delete space player count if there are no more players
+    [{_, count}] = :ets.lookup(:player_count, state.space_id)
+
+    if count == 0 do
+      :ets.delete(:player_count, state.space_id)
+    end
 
     # Send a leave message to the space
     leaveMessage = %{

@@ -2,23 +2,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { PublicationProps } from "../../../helpers/lens/getPublicationProps";
 import { useLensStore } from "../../../helpers/lens/store";
 import { trimHandle } from "../../../helpers/lens/utils";
 import { DEFAULT_HOST } from "../../app/SpaceProvider";
 import Button from "../../base/Button";
 import NavigationTab from "../../base/NavigationTab";
 import MetaTags from "../../ui/MetaTags";
-
-interface Props extends PublicationProps {
-  children: React.ReactNode;
-}
+import { SpaceLayoutProps } from "./getSpaceLayoutProps";
 
 export default function SpaceLayout({
   children,
+  playerCount,
   metadata,
   publication,
-}: Props) {
+}: SpaceLayoutProps) {
   const router = useRouter();
   const id = router.query.id as string;
 
@@ -27,8 +24,10 @@ export default function SpaceLayout({
   const isAuthor = handle && handle === author;
 
   const host =
-    publication?.profile.attributes?.find((item) => item.key === "host")
-      ?.value ?? DEFAULT_HOST;
+    process.env.NODE_ENV === "production"
+      ? publication?.profile.attributes?.find((item) => item.key === "host")
+          ?.value ?? DEFAULT_HOST
+      : "localhost:4000";
 
   return (
     <>
@@ -77,6 +76,14 @@ export default function SpaceLayout({
                   <div className="font-bold flex space-x-1 justify-center md:justify-start">
                     <div className="text-outline">At</div>
                     <div>{host}</div>
+                  </div>
+
+                  <div className="font-bold flex space-x-1 justify-center md:justify-start">
+                    <div className="text-outline">With</div>
+                    <div>{playerCount ?? "??"}</div>
+                    <div className="text-outline">
+                      connected player{playerCount === 1 ? null : "s"}
+                    </div>
                   </div>
                 </div>
               </div>

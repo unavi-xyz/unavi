@@ -15,17 +15,18 @@ defmodule Host.MixProject do
   def application do
     [
       mod: {Host.Application, []},
-      extra_applications: [:cowboy, :plug, :logger, :crypto]
+      extra_applications: [:cowboy, :plug, :logger]
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:corsica, "~> 1.0"},
       {:cowboy, "~> 2.9"},
+      {:jason, "~> 1.3"},
       {:plug, "~> 1.13"},
       {:plug_cowboy, "~> 2.0"},
-      {:jason, "~> 1.3"},
       {:uuid, "~> 1.1"}
     ]
   end

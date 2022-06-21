@@ -14,7 +14,7 @@ import { authenticate } from "../../../src/helpers/lens/authentication";
 import { useLensStore } from "../../../src/helpers/lens/store";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=120");
+  res?.setHeader("Cache-Control", "s-maxage=10");
 
   const props = await getSpaceLayoutProps(query.id as string);
 

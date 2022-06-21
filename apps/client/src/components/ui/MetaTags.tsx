@@ -19,7 +19,7 @@ export default function MetaTags({
   image = "/images/Logo-Rounded.png",
   card = "summary",
 }: Props) {
-  const width = card === "summary_large_image" ? "1200" : "512";
+  const width = card === "summary_large_image" ? "1200" : "256";
 
   //if image is an external url, fetch it through next
   const localImage = image.startsWith("http")

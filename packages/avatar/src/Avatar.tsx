@@ -1,5 +1,5 @@
 import { useFrame } from "@react-three/fiber";
-import { MutableRefObject, Suspense, useEffect, useState } from "react";
+import { MutableRefObject, Suspense, useEffect, useRef, useState } from "react";
 import { AnimationAction, AnimationMixer } from "three";
 
 import { useFBX } from "./useFBX";
@@ -33,6 +33,8 @@ export function Avatar({ src, animationsSrc, animationWeights }: Props) {
   const [animations, setAnimations] = useState<Animations>();
   const [mixer, setMixer] = useState<AnimationMixer>();
 
+  const jumpingState = useRef(false);
+
   useEffect(() => {
     if (!fbx) return;
 
@@ -50,7 +52,6 @@ export function Avatar({ src, animationsSrc, animationWeights }: Props) {
 
     idle.play();
     walk.play();
-    jump.play();
 
     const obj: Animations = {
       idle,
@@ -67,6 +68,22 @@ export function Avatar({ src, animationsSrc, animationWeights }: Props) {
     mixer.update(delta);
 
     if (animations) {
+      //start and stop jumping animation
+      if (
+        jumpingState.current === true &&
+        animationWeights.jump.current === 0
+      ) {
+        jumpingState.current = false;
+        animations.jump.stop();
+      } else if (
+        jumpingState.current === false &&
+        animationWeights.jump.current > 0
+      ) {
+        jumpingState.current = true;
+        animations.jump.play();
+      }
+
+      //apply weights to animations
       animations.jump.weight = animationWeights.jump.current;
       animations.walk.weight = animationWeights.walk.current;
       animations.run.weight = animationWeights.walk.current;

@@ -14,7 +14,6 @@ const handler: NextApiHandler = async (req, res) => {
   if (host !== refererHost) return res.status(403).json({ error: "Forbidden" });
 
   const viewEvent: SpaceViewEvent = {
-    timestamp: Date.now(),
     spaceId: req.query.id as string,
   };
 

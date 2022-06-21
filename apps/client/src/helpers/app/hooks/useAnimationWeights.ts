@@ -11,6 +11,8 @@ function normalizeWeight(weight: number) {
   return Math.min(Math.max(weight, 0), 1);
 }
 
+const JUMP_DURATION_SECONDS = 2;
+
 export function useAnimationWeights(
   targetRef: RefObject<Group>,
   locationRef: RefObject<VectorLocation>
@@ -24,6 +26,8 @@ export function useAnimationWeights(
   const runRef = useRef(0);
   const jumpRef = useRef(0);
 
+  const jumpProgressRef = useRef(0);
+
   useFrame((_, delta) => {
     if (!targetRef.current || !locationRef.current) return;
 
@@ -34,10 +38,22 @@ export function useAnimationWeights(
       .sub(prevPosition.current)
       .divideScalar(delta);
 
+    //update position
     prevPosition.current.copy(targetRef.current.position);
 
     //average out velocity
     averageVelocity.current.add(velocity.current).divideScalar(2);
+
+    //if positive y velocity, trigger jump
+    if (
+      averageVelocity.current.y > JUMP_STRENGTH / 2 &&
+      jumpProgressRef.current === 0
+    ) {
+      jumpProgressRef.current = JUMP_DURATION_SECONDS;
+    }
+
+    //update jump progress
+    jumpProgressRef.current = Math.max(jumpProgressRef.current - delta, 0);
 
     //set weights
     const x = Math.abs(averageVelocity.current.x) / PLAYER_SPEED;
@@ -45,7 +61,7 @@ export function useAnimationWeights(
     const z = Math.abs(averageVelocity.current.z) / PLAYER_SPEED;
 
     walkRef.current = normalizeWeight(x + z - y);
-    jumpRef.current = normalizeWeight(y * 2);
+    jumpRef.current = normalizeWeight(jumpProgressRef.current);
     idleRef.current = normalizeWeight(1 - walkRef.current - jumpRef.current);
   });
 

@@ -9,7 +9,7 @@ import {
 } from "../../helpers/host/types";
 import { useLensStore } from "../../helpers/lens/store";
 
-const DEFAULT_HOST = "host.thewired.space";
+export const DEFAULT_HOST = "host.thewired.space";
 const WS = process.env.NODE_ENV === "production" ? "wss" : "ws";
 
 export interface ISpaceContext {
@@ -25,17 +25,17 @@ export const SpaceContext = createContext<ISpaceContext>({
 });
 
 interface Props {
-  space: Publication;
+  space?: Publication;
   children: React.ReactNode;
 }
 
 export default function SpaceProvider({ space, children }: Props) {
-  //if development use localhost
-  //else get from space owner profile
+  //in development use localhost
+  //else get the host from space owner profile
   //else use default host
   const host =
     process.env.NODE_ENV === "production"
-      ? space.profile.attributes?.find((item) => item.key === "host")?.value ??
+      ? space?.profile.attributes?.find((item) => item.key === "host")?.value ??
         DEFAULT_HOST
       : "localhost:4000";
 
@@ -58,7 +58,7 @@ export default function SpaceProvider({ space, children }: Props) {
       return;
     }
 
-    const newSocket = new WebSocket(`${WS}://${host}/${space.id}`);
+    const newSocket = new WebSocket(`${WS}://${host}/ws/${space.id}`);
 
     newSocket.addEventListener("open", () => {
       console.log("Connected to host server");

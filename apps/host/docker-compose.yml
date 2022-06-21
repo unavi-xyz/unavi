@@ -10,7 +10,7 @@ services:
       - certbot-var:/var/www/certbot
       - certbot-etc:/etc/letsencrypt
     command: >
-      certonly --agree-tos --force-renewal --standalone -d ${HOSTNAME} --dry-run
+      certonly --agree-tos --force-renewal --standalone -d ${HOSTNAME}
 
   elixir:
     build:

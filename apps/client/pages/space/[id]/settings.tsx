@@ -5,25 +5,25 @@ import { useEffect, useState } from "react";
 import Button from "../../../src/components/base/Button";
 import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
 import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
+import {
+  SpaceLayoutProps,
+  getSpaceLayoutProps,
+} from "../../../src/components/layouts/SpaceLayout/getSpaceLayoutProps";
 import { useHidePublicationMutation } from "../../../src/generated/graphql";
 import { authenticate } from "../../../src/helpers/lens/authentication";
-import {
-  PublicationProps,
-  getPublicationProps,
-} from "../../../src/helpers/lens/getPublicationProps";
 import { useLensStore } from "../../../src/helpers/lens/store";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=120");
+  res?.setHeader("Cache-Control", "s-maxage=10");
 
-  const props = await getPublicationProps(query.id as string);
+  const props = await getSpaceLayoutProps(query.id as string);
 
   return {
     props,
   };
 }
 
-export default function Settings(props: PublicationProps) {
+export default function Settings(props: SpaceLayoutProps) {
   const router = useRouter();
   const id = router.query.id;
 

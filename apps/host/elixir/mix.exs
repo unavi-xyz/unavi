@@ -22,10 +22,11 @@ defmodule Host.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:corsica, "~> 1.0"},
       {:cowboy, "~> 2.9"},
+      {:jason, "~> 1.3"},
       {:plug, "~> 1.13"},
       {:plug_cowboy, "~> 2.0"},
-      {:jason, "~> 1.3"},
       {:uuid, "~> 1.1"}
     ]
   end

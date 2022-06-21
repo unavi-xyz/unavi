@@ -14,6 +14,7 @@ export interface ProfileLayoutProps {
   metadata: PageMetadata;
   profile: Profile | undefined;
   coverImage: string | null;
+  profileImage: string | null;
 }
 
 export async function getProfileLayoutProps(
@@ -35,6 +36,7 @@ export async function getProfileLayoutProps(
   };
 
   const coverImage = getMediaImageSSR(profile?.coverPicture);
+  const profileImage = getMediaImageSSR(profile?.picture);
 
-  return { handle, metadata, profile, coverImage };
+  return { handle, metadata, profile, coverImage, profileImage };
 }

@@ -21,6 +21,7 @@ export default function ProfileLayout({
   metadata,
   profile,
   coverImage,
+  profileImage,
 }: Props) {
   const viewerHandle = useLensStore((state) => state.handle);
 
@@ -34,8 +35,6 @@ export default function ProfileLayout({
         title={metadata.title}
         description={metadata.description}
         image={metadata.image}
-        imageWidth="256px"
-        imageHeight="256px"
       />
 
       <Head>
@@ -66,7 +65,7 @@ export default function ProfileLayout({
           <div className="flex justify-center pb-4 px-4 md:px-0">
             <div className="w-full flex flex-col items-center space-y-2">
               <div className="w-32 rounded-full -mt-16 flex z-10 ring-4 ring-background">
-                <ProfilePicture profile={profile} circle />
+                {profileImage && <ProfilePicture src={profileImage} circle />}
               </div>
 
               <div className="flex flex-col items-center">

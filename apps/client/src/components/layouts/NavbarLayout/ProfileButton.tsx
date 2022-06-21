@@ -1,11 +1,17 @@
 import { useState } from "react";
 
+import { useEthersStore } from "../../../helpers/ethers/store";
+import { useProfilesByAddress } from "../../../helpers/lens/hooks/useProfilesByAddress";
 import DropdownMenu from "../../base/DropdownMenu";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
 import ProfileMenu from "./ProfileMenu";
 
 export default function ProfileButton() {
   const [open, setOpen] = useState(false);
+
+  //this is a hack to fetch the profiles before the dropdown opens
+  const address = useEthersStore((state) => state.address);
+  useProfilesByAddress(address);
 
   return (
     <div className="flex items-center space-x-2">

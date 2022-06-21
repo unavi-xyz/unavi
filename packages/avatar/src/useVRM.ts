@@ -1,25 +1,38 @@
 import { VRM } from "@pixiv/three-vrm";
-import { useGLTF } from "@react-three/drei";
 import { useEffect, useState } from "react";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+
+const loader = new GLTFLoader();
 
 export function useVRM(src: string) {
-  const gltf = useGLTF(src);
-
   const [vrm, setVrm] = useState<VRM>();
 
   useEffect(() => {
-    if (!gltf) return;
+    if (!src) {
+      setVrm(undefined);
+      return;
+    }
 
-    VRM.from(gltf as any).then((res) => {
-      //enable shadows
-      res.scene.traverse((child) => {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      });
+    async function loadModel() {
+      try {
+        const gltf = await loader.loadAsync(src);
+        const newVrm = await VRM.from(gltf);
 
-      setVrm(res);
-    });
-  }, [gltf]);
+        //enable shadows
+        newVrm.scene.traverse((child) => {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        });
+
+        setVrm(newVrm);
+      } catch (e) {
+        console.error(e);
+        setVrm(undefined);
+      }
+    }
+
+    loadModel();
+  }, [src]);
 
   useEffect(() => {
     return () => {

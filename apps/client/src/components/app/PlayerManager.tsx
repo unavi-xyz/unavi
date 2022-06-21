@@ -26,6 +26,12 @@ export default function PlayerManager() {
           setPlayerIds(newSet);
         }
       }
+
+      if (type === "leave") {
+        const newSet = new Set(playerIds);
+        newSet.delete(data.userid);
+        setPlayerIds(newSet);
+      }
     }
 
     socket.addEventListener("message", onMessage);

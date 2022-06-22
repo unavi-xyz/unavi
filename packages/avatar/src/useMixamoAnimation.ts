@@ -1,10 +1,9 @@
-import { VRM, VRMSchema } from "@pixiv/three-vrm";
+import { VRM } from "@pixiv/three-vrm";
 import { useFrame } from "@react-three/fiber";
 import { Group } from "three";
 
+import { HumanBone } from "./types";
 import { useMixamoBone } from "./useMixamoBone";
-
-const HumanBone = { ...VRMSchema.HumanoidBoneName };
 
 //takes a fbx animation from mixamo and applies it to a vrm model
 export function useMixamoAnimation(fbx?: Group, vrm?: VRM) {

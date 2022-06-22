@@ -6,13 +6,13 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@pixiv/three-vrm": "^0.6.10",
+    "@pixiv/three-vrm": "^1.0.0-beta.16",
     "@react-three/drei": "^9.6.2"
   },
   "devDependencies": {
     "@types/react": "18.0.8",
     "@types/react-dom": "^18.0.3",
-    "@types/three": "^0.137.0",
+    "@types/three": "^0.140.0",
     "@wired-xr/tsconfig": "*",
     "typescript": "^4.6.4"
   },
@@ -20,6 +20,6 @@
     "@react-three/fiber": ">=8.0",
     "react": ">=18.0",
     "react-dom": ">=18.0",
-    "three": ">=0.137"
+    "three": ">=0.140.0"
   }
 }

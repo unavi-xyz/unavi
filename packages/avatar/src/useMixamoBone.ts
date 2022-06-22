@@ -1,13 +1,15 @@
-import { VRM, VRMSchema } from "@pixiv/three-vrm";
+import { VRM } from "@pixiv/three-vrm";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useState } from "react";
 import { Group, Object3D } from "three";
+
+import { HumanBone } from "./types";
 
 export function useMixamoBone(
   fbx: Group | undefined,
   fbxName: string,
   vrm: VRM | undefined,
-  vrmName: VRMSchema.HumanoidBoneName
+  vrmName: HumanBone
 ) {
   const [fbxBone, setFbxBone] = useState<Object3D>();
   const [vrmBone, setVrmBone] = useState<Object3D>();
@@ -22,8 +24,11 @@ export function useMixamoBone(
     const humanBones = vrm?.humanoid?.humanBones;
     if (!humanBones) return;
 
-    const bone = humanBones[vrmName][0].node;
-    setVrmBone(bone);
+    const bone = humanBones[vrmName];
+    if (!bone) return;
+
+    const node = bone.node;
+    setVrmBone(node);
   }, [vrm]);
 
   useFrame(() => {

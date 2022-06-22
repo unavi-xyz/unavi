@@ -22,9 +22,12 @@ export function useGlobalTransform(ref: RefObject<Object3D>) {
 
       const position = ref.current.getWorldPosition(tempVec3.current).toArray();
       const scale = ref.current.getWorldScale(tempVec3.current).toArray();
-      const rotation = tempEuler.current
-        .setFromQuaternion(ref.current.getWorldQuaternion(tempQuat.current))
-        .toVector3(tempVec3.current)
+      const rotation = tempVec3.current
+        .setFromEuler(
+          tempEuler.current.setFromQuaternion(
+            ref.current.getWorldQuaternion(tempQuat.current)
+          )
+        )
         .toArray();
 
       const newTransform = { position, rotation, scale };

@@ -11,7 +11,7 @@ function normalizeWeight(weight: number) {
   return Math.min(Math.max(weight, 0), 1);
 }
 
-const JUMP_DURATION_SECONDS = 2;
+const JUMP_DURATION_SECONDS = 1;
 
 export function useAnimationWeights(
   targetRef: RefObject<Group>,

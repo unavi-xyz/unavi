@@ -12,7 +12,6 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
 
   const host = res?.req.headers.host;
   const hostUrl = `https://${host}`;
-  console.log("👬", hostUrl);
 
   const props = await getSpaceLayoutProps(query.id as string);
 

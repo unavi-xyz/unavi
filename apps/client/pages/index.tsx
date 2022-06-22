@@ -52,7 +52,14 @@ export default function Index() {
 
                 <div className="w-full md:w-fit">
                   <Button variant="text" squared="small" fullWidth>
-                    <div className="px-1">Learn More</div>
+                    <a
+                      href={DOCS_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-1"
+                    >
+                      Learn More
+                    </a>
                   </Button>
                 </div>
               </div>
@@ -193,7 +200,14 @@ export default function Index() {
 
               <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
                 <Button variant="filled" squared="small">
-                  <div className="px-1">Learn More</div>
+                  <a
+                    href={DOCS_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-1"
+                  >
+                    Learn More
+                  </a>
                 </Button>
               </div>
             </div>

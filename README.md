@@ -26,6 +26,7 @@ This turborepo uses Yarn as a package manager. It includes the following apps/pa
 ### Apps
 
 - [client](apps/client): a website used to access The Wired
+- [docs](apps/docs): a documentation website
 - [host](apps/host): a server for hosting spaces
 
 ### Packages

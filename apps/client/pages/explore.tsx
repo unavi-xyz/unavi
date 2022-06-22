@@ -101,7 +101,7 @@ async function fetchHotSpaces() {
 
     return fetchedItems;
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return [];
   }
 }

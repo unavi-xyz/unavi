@@ -2,7 +2,7 @@ import { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { Group } from "three";
 
-import { Entity, EntityComponent } from "@wired-xr/scene";
+import { Entity, EntityComponent } from "@wired-xr/engine";
 
 import { useStudioStore } from "../../../helpers/studio/store";
 

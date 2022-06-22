@@ -1,6 +1,6 @@
 import { MdClose, MdOutlineFolderOpen } from "react-icons/md";
 
-import { Entity } from "@wired-xr/scene";
+import { Entity } from "@wired-xr/engine";
 
 import { useAssetName } from "../../../../helpers/studio/hooks/useAssetName";
 import { useStudioStore } from "../../../../helpers/studio/store";

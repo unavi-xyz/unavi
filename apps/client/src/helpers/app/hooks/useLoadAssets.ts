@@ -2,7 +2,7 @@ import { Triplet } from "@react-three/cannon";
 import produce from "immer";
 import { useEffect, useState } from "react";
 
-import { Scene, traverseTree } from "@wired-xr/scene";
+import { Scene, traverseTree } from "@wired-xr/engine";
 
 import { loadFromIpfs } from "../../ipfs/fetch";
 

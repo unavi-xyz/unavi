@@ -3,7 +3,7 @@ import { OrbitControls, Sky } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 
-import { AssetProvider } from "@wired-xr/scene";
+import { AssetProvider } from "@wired-xr/engine";
 
 import { useStudioStore } from "../../../helpers/studio/store";
 import Gizmo from "./Gizmo";

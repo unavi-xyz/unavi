@@ -1,7 +1,7 @@
 import produce from "immer";
 import { useEffect } from "react";
 
-import { traverseTree } from "@wired-xr/scene";
+import { traverseTree } from "@wired-xr/engine";
 
 import { getFileByPath, writeScene } from "../filesystem";
 import { useStudioStore } from "../store";

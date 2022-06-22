@@ -2,7 +2,7 @@ const withPWA = require("next-pwa");
 const runtimeCaching = require("next-pwa/cache");
 const withTM = require("next-transpile-modules")([
   "three",
-  "@wired-xr/scene",
+  "@wired-xr/engine",
   "@wired-xr/avatar",
 ]);
 

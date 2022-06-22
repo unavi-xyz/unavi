@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-import { Entity } from "@wired-xr/scene";
+import { Entity } from "@wired-xr/engine";
 
 import { round } from "../../../../helpers/utils/round";
 import ColorInput from "../../../base/ColorInput";

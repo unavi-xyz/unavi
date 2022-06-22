@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
-import { InstancedScene, traverseTree } from "@wired-xr/scene";
+import { InstancedScene, traverseTree } from "@wired-xr/engine";
 
 import Player from "../../src/components/app/Player";
 import ToggleDebug from "../../src/components/studio/StudioCanvas/ToggleDebug";

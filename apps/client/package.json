@@ -15,7 +15,7 @@
     "@react-three/drei": "^9.6.2",
     "@react-three/fiber": "^8.0.13",
     "@wired-xr/avatar": "*",
-    "@wired-xr/scene": "*",
+    "@wired-xr/engine": "*",
     "ethers": "^5.6.4",
     "faunadb": "^4.6.0",
     "graphql": "^16.3.0",

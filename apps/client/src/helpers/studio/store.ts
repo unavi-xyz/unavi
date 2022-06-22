@@ -12,7 +12,7 @@ import {
   ISceneSlice,
   createSceneSlice,
   traverseTree,
-} from "@wired-xr/scene";
+} from "@wired-xr/engine";
 
 import { findFilePath, getFileByPath } from "./filesystem";
 import { ALL_PRESETS, Preset } from "./presets";

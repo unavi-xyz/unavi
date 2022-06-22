@@ -2,7 +2,7 @@ import produce from "immer";
 import { useAtomValue } from "jotai";
 import React from "react";
 
-import { findEntityById } from "@wired-xr/scene";
+import { findEntityById } from "@wired-xr/engine";
 
 import { selectedAtom } from "../../../../helpers/studio/atoms";
 import { useStudioStore } from "../../../../helpers/studio/store";

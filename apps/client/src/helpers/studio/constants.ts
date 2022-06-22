@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 
-import { DEFAULT_TRANSFORM, Entity, Scene } from "@wired-xr/scene";
+import { DEFAULT_TRANSFORM, Entity, Scene } from "@wired-xr/engine";
 
 import { deepClone } from "../utils/deepClone";
 import { ALL_PRESETS } from "./presets";

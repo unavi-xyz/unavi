@@ -1,4 +1,4 @@
-import { Scene } from "@wired-xr/scene";
+import { Scene } from "@wired-xr/engine";
 
 import { PROJECT_FILE_NAME } from "./constants";
 import { useStudioStore } from "./store";

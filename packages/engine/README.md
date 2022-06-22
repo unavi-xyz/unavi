@@ -1,10 +1,12 @@
-# @wired-xr/scene
+# @wired-xr/engine
 
-A library for creating and loading 3d scenes. Scenes are stored as a JSON file.
+A 3d game engine for The Wired.
 
-Scenes are rendered using [Threejs](https://github.com/mrdoob/three.js) / [React Three Fiber](https://github.com/pmndrs/react-three-fiber).
+Uses [Threejs](https://github.com/mrdoob/three.js) / [React Three Fiber](https://github.com/pmndrs/react-three-fiber) for rendering.
 
 ## About
+
+### Scenes
 
 A scene is a 3d environment. Scenes are made up of primitive objects, such as `Box` and `Sphere`.
 

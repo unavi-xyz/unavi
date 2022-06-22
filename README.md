@@ -32,7 +32,7 @@ This turborepo uses Yarn as a package manager. It includes the following apps/pa
 ### Packages
 
 - [avatar](packages/avatar): a VRM avatar library
-- [scene](packages/scene): a library for creating 3d scenes, stored in JSON format
+- [engine](packages/engine): a 3d game engine for The Wired
 - [tsconfig](packages/tsconfig): internal TypeScript configuration files
 
 ### Install

@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { NextPageContext } from "next";
 import { Context } from "urql";
 
-import { InstancedScene } from "@wired-xr/scene";
+import { InstancedScene } from "@wired-xr/engine";
 
 import Chat from "../../src/components/app/Chat";
 import Player from "../../src/components/app/Player";

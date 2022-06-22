@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Asset, AssetType } from "@wired-xr/scene";
+import { Asset, AssetType } from "@wired-xr/engine";
 
 import { useStudioStore } from "../store";
 

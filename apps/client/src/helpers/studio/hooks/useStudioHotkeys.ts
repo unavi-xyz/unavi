@@ -2,7 +2,7 @@ import produce from "immer";
 import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
 
-import { findEntityById, traverseTree } from "@wired-xr/scene";
+import { findEntityById, traverseTree } from "@wired-xr/engine";
 
 import { useStudioStore } from "../store";
 

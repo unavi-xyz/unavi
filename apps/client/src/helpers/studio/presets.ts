@@ -1,4 +1,4 @@
-import { DEFAULT_TRANSFORM, Entity } from "@wired-xr/scene";
+import { DEFAULT_TRANSFORM, Entity } from "@wired-xr/engine";
 
 export const ALL_PRESETS: {
   [key: string]: Entity;

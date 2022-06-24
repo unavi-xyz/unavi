@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState } from "react";
 
-import { SentWebsocketMessage } from "./types";
+import { SentIdentity, SentWebsocketMessage } from "./types";
 
 export const NetworkingContext = createContext<{
   socket: WebSocket | undefined;
@@ -13,12 +13,14 @@ export const NetworkingContext = createContext<{
 interface NetworkingProviderProps {
   spaceId: string;
   host: string;
+  handle?: string;
   children: React.ReactNode;
 }
 
 export function NetworkingProvider({
   spaceId,
   host,
+  handle,
   children,
 }: NetworkingProviderProps) {
   const [socket, setSocket] = useState<WebSocket>();
@@ -52,6 +54,18 @@ export function NetworkingProvider({
       socket.send(JSON.stringify(message));
     }
   }
+
+  //set identity
+  useEffect(() => {
+    if (handle && socket) {
+      const message: SentIdentity = {
+        type: "identity",
+        data: handle,
+      };
+
+      sendMessage(message);
+    }
+  }, [handle, socket]);
 
   return (
     <NetworkingContext.Provider

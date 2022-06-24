@@ -20,6 +20,7 @@ import {
   PublicationProps,
   getPublicationProps,
 } from "../../src/lib/lens/getPublicationProps";
+import { useLensStore } from "../../src/lib/lens/store";
 import MetaTags from "../../src/ui/MetaTags";
 
 export const DEFAULT_HOST = "wss://host.thewired.space";
@@ -59,6 +60,8 @@ export default function App({ id, metadata, publication }: Props) {
   useAppHotkeys();
   useSetIdentity();
 
+  const handle = useLensStore((state) => state.handle);
+
   return (
     <>
       <MetaTags
@@ -72,7 +75,7 @@ export default function App({ id, metadata, publication }: Props) {
         <div className="h-full">
           <div className="crosshair" />
 
-          <NetworkingProvider spaceId={id} host={host}>
+          <NetworkingProvider spaceId={id} host={host} handle={handle}>
             <Chat />
 
             <CanvasBridge>

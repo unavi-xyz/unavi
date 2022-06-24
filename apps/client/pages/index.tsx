@@ -273,6 +273,8 @@ export default function Index() {
 
                 <a
                   href={DOCS_URL}
+                  target="_blank"
+                  rel="noreferrer"
                   className="transition hover:ring-1 hover:ring-outline rounded-full px-4 py-0.5"
                 >
                   <div className="flex items-center space-x-2">

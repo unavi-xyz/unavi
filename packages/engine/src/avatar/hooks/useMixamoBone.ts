@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useState } from "react";
 import { Group, Object3D } from "three";
 
-import { HumanBone } from "./types";
+import { HumanBone } from "../types";
 
 export function useMixamoBone(
   fbx: Group | undefined,

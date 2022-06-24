@@ -3,7 +3,7 @@ import { OrbitControls, Sky } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 
-import { Avatar } from "@wired-xr/avatar";
+import { Avatar } from "@wired-xr/engine";
 
 import { ANIMATIONS_URL } from "../../app/OtherPlayer";
 

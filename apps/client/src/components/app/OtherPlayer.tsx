@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { Group } from "three";
 
-import { Avatar } from "@wired-xr/avatar";
+import { Avatar } from "@wired-xr/engine";
 
 import { useAnimationWeights } from "../../helpers/app/hooks/useAnimationWeights";
 import { useApplyLocation } from "../../helpers/app/hooks/useApplyLocation";

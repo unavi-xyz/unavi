@@ -2,9 +2,9 @@ import { useFrame } from "@react-three/fiber";
 import { MutableRefObject, Suspense, useEffect, useRef, useState } from "react";
 import { AnimationAction, AnimationMixer } from "three";
 
-import { useFBX } from "./useFBX";
-import { useMixamoAnimation } from "./useMixamoAnimation";
-import { useVRM } from "./useVRM";
+import { useFBX } from "../hooks/useFBX";
+import { useMixamoAnimation } from "../hooks/useMixamoAnimation";
+import { useVRM } from "../hooks/useVRM";
 
 type Animations = {
   idle: AnimationAction;

@@ -13,9 +13,6 @@ import { Sphere } from "./components/entities/Sphere/Sphere";
 import { SpotLight } from "./components/entities/SpotLight";
 import { Text } from "./components/entities/Text";
 
-//WELCOME TO THE MIND PALACE
-//WHERE WE PROGRAM THINGS THAT DONT EXIST
-
 //transform
 export type Transform = {
   position: Triplet;
@@ -56,7 +53,6 @@ export interface Entity<T extends EntityType = EntityType> {
 }
 
 //assets
-
 export interface IMaterial {
   color: string;
   emissive: string;

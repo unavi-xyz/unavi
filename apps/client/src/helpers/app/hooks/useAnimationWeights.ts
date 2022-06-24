@@ -2,7 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { RefObject, useRef } from "react";
 import { Group, Vector3 } from "three";
 
-import { AnimationWeights } from "@wired-xr/avatar";
+import { AnimationWeights } from "@wired-xr/engine";
 
 import { JUMP_STRENGTH, PLAYER_SPEED } from "../../../components/app/Player";
 import { VectorLocation } from "./useInterpolateLocation";

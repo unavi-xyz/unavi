@@ -1,7 +1,6 @@
 import { Physics, Triplet } from "@react-three/cannon";
 import { Canvas } from "@react-three/fiber";
 import produce from "immer";
-import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";

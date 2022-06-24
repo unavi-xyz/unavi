@@ -2,7 +2,7 @@ import { VRM } from "@pixiv/three-vrm";
 import { useFrame } from "@react-three/fiber";
 import { Group } from "three";
 
-import { HumanBone } from "./types";
+import { HumanBone } from "../types";
 import { useMixamoBone } from "./useMixamoBone";
 
 //takes a fbx animation from mixamo and applies it to a vrm model

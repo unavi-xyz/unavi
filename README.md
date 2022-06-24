@@ -1,6 +1,6 @@
 <div align="center">
   <p>
-    <img src="./assets/HeroRound.png" />
+    <img src="./assets/Hero.png" />
   </p>
 
   <p>An open and decentralized 3d social platform</p>

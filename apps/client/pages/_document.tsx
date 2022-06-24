@@ -7,8 +7,8 @@ export default function Document() {
         <link rel="manifest" href="/manifest.json" />
 
         {/* icons */}
-        <link rel="icon" href="/images/favicon.ico" />
-        <link rel="shortcut icon" href="/images/favicon.ico" />
+        <link rel="icon" href="/images/Logo.png" />
+        <link rel="shortcut icon" href="/images/Logo.png" />
         <link rel="apple-touch-icon" href="/images/Logo-Circle.png" />
 
         {/* fonts */}

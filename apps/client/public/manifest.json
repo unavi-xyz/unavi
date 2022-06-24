@@ -6,7 +6,7 @@
   "display": "fullscreen",
   "icons": [
     {
-      "src": "images/Logo-Maskable.png",
+      "src": "images/Logo.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
@@ -17,7 +17,7 @@
       "sizes": "512x512"
     },
     {
-      "src": "images/Logo-Circle.ico",
+      "src": "images/Logo-Circle.png",
       "sizes": "any"
     }
   ],

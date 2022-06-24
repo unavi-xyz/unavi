@@ -1,11 +1,11 @@
 import { NextPageContext } from "next";
 
-import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
-import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
+import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
+import SpaceLayout from "../../../src/home/layouts/SpaceLayout/SpaceLayout";
 import {
   SpaceLayoutProps,
   getSpaceLayoutProps,
-} from "../../../src/components/layouts/SpaceLayout/getSpaceLayoutProps";
+} from "../../../src/home/layouts/SpaceLayout/getSpaceLayoutProps";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=10");

@@ -1,8 +1,8 @@
 import { Create } from "faunadb";
 import { NextApiHandler } from "next";
 
-import { client } from "../../../../src/helpers/faunadb/client";
-import { SpaceViewEvent } from "../../../../src/helpers/faunadb/types";
+import { client } from "../../../../src/lib/faunadb/client";
+import { SpaceViewEvent } from "../../../../src/lib/faunadb/types";
 
 const handler: NextApiHandler = async (req, res) => {
   const host = req.headers.host;

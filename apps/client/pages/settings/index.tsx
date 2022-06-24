@@ -2,25 +2,25 @@ import { nanoid } from "nanoid";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
-import Button from "../../src/components/base/Button";
-import FileUpload from "../../src/components/base/FileUpload";
-import TextArea from "../../src/components/base/TextArea";
-import TextField from "../../src/components/base/TextField";
-import { getSettingsLayout } from "../../src/components/layouts/SettingsLayout/SettingsLayout";
-import MetaTags from "../../src/components/ui/MetaTags";
-import { uploadFileToIpfs } from "../../src/helpers/ipfs/fetch";
-import { createProfileMetadata } from "../../src/helpers/lens/createProfileMetadata";
-import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
-import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
-import { useSetProfileMetadata } from "../../src/helpers/lens/hooks/useSetProfileMetadata";
-import { useSetProfilePicture } from "../../src/helpers/lens/hooks/useSetProfilePicture";
-import { useLensStore } from "../../src/helpers/lens/store";
+import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
+import { uploadFileToIpfs } from "../../src/lib/ipfs/fetch";
+import { createProfileMetadata } from "../../src/lib/lens/createProfileMetadata";
+import { useMediaImage } from "../../src/lib/lens/hooks/useMediaImage";
+import { useProfileByHandle } from "../../src/lib/lens/hooks/useProfileByHandle";
+import { useSetProfileMetadata } from "../../src/lib/lens/hooks/useSetProfileMetadata";
+import { useSetProfilePicture } from "../../src/lib/lens/hooks/useSetProfilePicture";
+import { useLensStore } from "../../src/lib/lens/store";
 import {
   AttributeData,
   MetadataVersions,
   ProfileMetadata,
-} from "../../src/helpers/lens/types";
-import { crop } from "../../src/helpers/utils/crop";
+} from "../../src/lib/lens/types";
+import MetaTags from "../../src/ui/MetaTags";
+import Button from "../../src/ui/base/Button";
+import FileUpload from "../../src/ui/base/FileUpload";
+import TextArea from "../../src/ui/base/TextArea";
+import TextField from "../../src/ui/base/TextField";
+import { crop } from "../../src/utils/crop";
 
 export default function Settings() {
   const nameRef = useRef<HTMLInputElement>(null);

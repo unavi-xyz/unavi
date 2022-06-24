@@ -14,11 +14,6 @@ import { NextPageContext } from "next";
 import Link from "next/link";
 import { useState } from "react";
 
-import Carousel from "../src/components/base/Carousel";
-import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
-import AvatarCard from "../src/components/lens/AvatarCard";
-import SpaceCard from "../src/components/lens/SpaceCard";
-import MetaTags from "../src/components/ui/MetaTags";
 import {
   ExplorePublicationsDocument,
   ExplorePublicationsQuery,
@@ -31,12 +26,17 @@ import {
   PublicationSortCriteria,
   PublicationTypes,
 } from "../src/generated/graphql";
-import { client } from "../src/helpers/faunadb/client";
-import { lensClient } from "../src/helpers/lens/client";
-import { getMediaImageSSR } from "../src/helpers/lens/hooks/useMediaImage";
-import { AppId } from "../src/helpers/lens/types";
-import { useIsMobile } from "../src/helpers/utils/useIsMobile";
-import { useQueryPagination } from "../src/helpers/utils/useQueryPagination";
+import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
+import AvatarCard from "../src/home/lens/AvatarCard";
+import SpaceCard from "../src/home/lens/SpaceCard";
+import { client } from "../src/lib/faunadb/client";
+import { lensClient } from "../src/lib/lens/client";
+import { getMediaImageSSR } from "../src/lib/lens/hooks/useMediaImage";
+import { AppId } from "../src/lib/lens/types";
+import MetaTags from "../src/ui/MetaTags";
+import Carousel from "../src/ui/base/Carousel";
+import { useIsMobile } from "../src/utils/useIsMobile";
+import { useQueryPagination } from "../src/utils/useQueryPagination";
 
 const HOT_SPACES_LIMIT = 6;
 

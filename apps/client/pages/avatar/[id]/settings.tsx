@@ -2,16 +2,16 @@ import { NextPageContext } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import Button from "../../../src/components/base/Button";
-import AvatarLayout from "../../../src/components/layouts/AvatarLayout/AvatarLayout";
-import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
 import { useHidePublicationMutation } from "../../../src/generated/graphql";
-import { authenticate } from "../../../src/helpers/lens/authentication";
+import AvatarLayout from "../../../src/home/layouts/AvatarLayout/AvatarLayout";
+import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
+import { authenticate } from "../../../src/lib/lens/authentication";
 import {
   PublicationProps,
   getPublicationProps,
-} from "../../../src/helpers/lens/getPublicationProps";
-import { useLensStore } from "../../../src/helpers/lens/store";
+} from "../../../src/lib/lens/getPublicationProps";
+import { useLensStore } from "../../../src/lib/lens/store";
+import Button from "../../../src/ui/base/Button";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");

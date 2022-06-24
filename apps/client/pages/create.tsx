@@ -2,11 +2,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 
-import Button from "../src/components/base/Button";
-import Dialog from "../src/components/base/Dialog";
-import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
-import AvatarUploadPage from "../src/components/lens/AvatarUploadPage";
-import MetaTags from "../src/components/ui/MetaTags";
+import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
+import AvatarUploadPage from "../src/home/lens/AvatarUploadPage";
+import MetaTags from "../src/ui/MetaTags";
+import Button from "../src/ui/base/Button";
+import Dialog from "../src/ui/base/Dialog";
 
 export default function Create() {
   const [openAvatar, setOpenAvatar] = useState(false);

@@ -8,12 +8,12 @@ import { MdClose } from "react-icons/md";
 
 import { Player, Scene, traverseTree } from "@wired-xr/engine";
 
-import ToggleDebug from "../../src/components/studio/StudioCanvas/ToggleDebug";
-import MetaTags from "../../src/components/ui/MetaTags";
-import { getFileByPath } from "../../src/helpers/studio/filesystem";
-import { useProject } from "../../src/helpers/studio/hooks/useProject";
-import { useStudioStore } from "../../src/helpers/studio/store";
-import { Project } from "../../src/helpers/studio/types";
+import ToggleDebug from "../../src/studio/components/StudioCanvas/ToggleDebug";
+import { getFileByPath } from "../../src/studio/filesystem";
+import { useProject } from "../../src/studio/hooks/useProject";
+import { useStudioStore } from "../../src/studio/store";
+import { Project } from "../../src/studio/types";
+import MetaTags from "../../src/ui/MetaTags";
 
 export default function Preview() {
   const router = useRouter();

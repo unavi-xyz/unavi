@@ -1,11 +1,11 @@
 import { NextPageContext } from "next";
 
-import AvatarLayout from "../../../src/components/layouts/AvatarLayout/AvatarLayout";
-import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
+import AvatarLayout from "../../../src/home/layouts/AvatarLayout/AvatarLayout";
+import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
 import {
   PublicationProps,
   getPublicationProps,
-} from "../../../src/helpers/lens/getPublicationProps";
+} from "../../../src/lib/lens/getPublicationProps";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");

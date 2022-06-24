@@ -12,15 +12,15 @@ import {
   Scene,
 } from "@wired-xr/engine";
 
-import Chat from "../../src/components/app/Chat";
-import MetaTags from "../../src/components/ui/MetaTags";
-import { useAppHotkeys } from "../../src/helpers/app/hooks/useAppHotkeys";
-import { useLoadAssets } from "../../src/helpers/app/hooks/useLoadAssets";
-import { useSetIdentity } from "../../src/helpers/app/hooks/useSetIdentity";
+import Chat from "../../src/app/Chat";
+import { useAppHotkeys } from "../../src/app/hooks/useAppHotkeys";
+import { useLoadAssets } from "../../src/app/hooks/useLoadAssets";
+import { useSetIdentity } from "../../src/app/hooks/useSetIdentity";
 import {
   PublicationProps,
   getPublicationProps,
-} from "../../src/helpers/lens/getPublicationProps";
+} from "../../src/lib/lens/getPublicationProps";
+import MetaTags from "../../src/ui/MetaTags";
 
 export const DEFAULT_HOST = "wss://host.thewired.space";
 

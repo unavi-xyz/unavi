@@ -5,17 +5,17 @@ import { FaBook, FaDiscord } from "react-icons/fa";
 import { MdArrowDownward } from "react-icons/md";
 import { VscGithubInverted, VscTwitter } from "react-icons/vsc";
 
-import Button from "../src/components/base/Button";
-import Dialog from "../src/components/base/Dialog";
-import LoginPage from "../src/components/layouts/NavbarLayout/LoginPage";
-import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
-import MetaTags from "../src/components/ui/MetaTags";
 import {
   DISCORD_URL,
   DOCS_URL,
   GITHUB_URL,
   TWITTER_URL,
-} from "../src/helpers/constants";
+} from "../src/constants";
+import LoginPage from "../src/home/layouts/NavbarLayout/LoginPage";
+import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
+import MetaTags from "../src/ui/MetaTags";
+import Button from "../src/ui/base/Button";
+import Dialog from "../src/ui/base/Dialog";
 
 export default function Index() {
   const [open, setOpen] = useState(false);

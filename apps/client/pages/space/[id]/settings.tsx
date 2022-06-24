@@ -2,16 +2,16 @@ import { NextPageContext } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import Button from "../../../src/components/base/Button";
-import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
-import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
+import { useHidePublicationMutation } from "../../../src/generated/graphql";
+import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
+import SpaceLayout from "../../../src/home/layouts/SpaceLayout/SpaceLayout";
 import {
   SpaceLayoutProps,
   getSpaceLayoutProps,
-} from "../../../src/components/layouts/SpaceLayout/getSpaceLayoutProps";
-import { useHidePublicationMutation } from "../../../src/generated/graphql";
-import { authenticate } from "../../../src/helpers/lens/authentication";
-import { useLensStore } from "../../../src/helpers/lens/store";
+} from "../../../src/home/layouts/SpaceLayout/getSpaceLayoutProps";
+import { authenticate } from "../../../src/lib/lens/authentication";
+import { useLensStore } from "../../../src/lib/lens/store";
+import Button from "../../../src/ui/base/Button";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=10");

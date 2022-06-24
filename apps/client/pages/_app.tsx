@@ -2,8 +2,8 @@ import Head from "next/head";
 import React from "react";
 import { Provider } from "urql";
 
-import { useAutoLogin } from "../src/helpers/ethers/useAutoLogin";
-import { lensClient } from "../src/helpers/lens/client";
+import { useAutoLogin } from "../src/lib/ethers/useAutoLogin";
+import { lensClient } from "../src/lib/lens/client";
 import "../styles/globals.css";
 
 export default function App({ Component, pageProps }: any) {

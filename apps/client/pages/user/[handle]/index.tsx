@@ -1,14 +1,6 @@
 import { NextPageContext } from "next";
 import Link from "next/link";
 
-import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
-import ProfileLayout from "../../../src/components/layouts/ProfileLayout/ProfileLayout";
-import {
-  ProfileLayoutProps,
-  getProfileLayoutProps,
-} from "../../../src/components/layouts/ProfileLayout/getProfileLayoutProps";
-import AvatarCard from "../../../src/components/lens/AvatarCard";
-import SpaceCard from "../../../src/components/lens/SpaceCard";
 import {
   GetPublicationsDocument,
   GetPublicationsQuery,
@@ -16,10 +8,18 @@ import {
   Post,
   PublicationTypes,
 } from "../../../src/generated/graphql";
-import { lensClient } from "../../../src/helpers/lens/client";
-import { HIDDEN_MESSAGE } from "../../../src/helpers/lens/constants";
-import { getMediaImageSSR } from "../../../src/helpers/lens/hooks/useMediaImage";
-import { AppId } from "../../../src/helpers/lens/types";
+import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
+import ProfileLayout from "../../../src/home/layouts/ProfileLayout/ProfileLayout";
+import {
+  ProfileLayoutProps,
+  getProfileLayoutProps,
+} from "../../../src/home/layouts/ProfileLayout/getProfileLayoutProps";
+import AvatarCard from "../../../src/home/lens/AvatarCard";
+import SpaceCard from "../../../src/home/lens/SpaceCard";
+import { lensClient } from "../../../src/lib/lens/client";
+import { HIDDEN_MESSAGE } from "../../../src/lib/lens/constants";
+import { getMediaImageSSR } from "../../../src/lib/lens/hooks/useMediaImage";
+import { AppId } from "../../../src/lib/lens/types";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");

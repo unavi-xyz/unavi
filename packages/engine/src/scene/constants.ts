@@ -1,4 +1,4 @@
-import { Scene, Transform } from "./types";
+import { IScene, Transform } from "./types";
 
 export const DEFAULT_TRANSFORM: Transform = {
   position: [0, 0, 0],
@@ -6,7 +6,7 @@ export const DEFAULT_TRANSFORM: Transform = {
   scale: [1, 1, 1],
 };
 
-export const EMPTY_SCENE: Scene = {
+export const EMPTY_SCENE: IScene = {
   tree: {
     type: "Group",
 

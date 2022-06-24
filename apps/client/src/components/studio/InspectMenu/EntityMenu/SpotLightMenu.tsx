@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-import { Entity } from "@wired-xr/engine";
+import { IEntity } from "@wired-xr/engine";
 
 import { round } from "../../../../helpers/utils/round";
 import ColorInput from "../../../base/ColorInput";
@@ -8,7 +8,7 @@ import MenuRow from "../MenuRow";
 import NumberInput from "../NumberInput";
 
 interface Props {
-  selected: Entity<"SpotLight">;
+  selected: IEntity<"SpotLight">;
   handleChange: (key: string, value: any) => void;
 }
 

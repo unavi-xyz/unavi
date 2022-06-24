@@ -1,11 +1,11 @@
-import { Entity } from "@wired-xr/engine";
+import { IEntity } from "@wired-xr/engine";
 
 import { round } from "../../../../helpers/utils/round";
 import MenuRow from "../MenuRow";
 import NumberInput from "../NumberInput";
 
 interface Props {
-  selected: Entity<"Box">;
+  selected: IEntity<"Box">;
   handleChange: (key: string, value: any) => void;
 }
 

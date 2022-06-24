@@ -5,8 +5,6 @@ import { useEffect, useRef } from "react";
 
 import { Avatar } from "@wired-xr/engine";
 
-import { ANIMATIONS_URL } from "../../app/OtherPlayer";
-
 interface Props {
   url: string;
   background?: boolean;
@@ -63,7 +61,7 @@ export default function AvatarCanvas({
       <group rotation={[0, Math.PI, 0]}>
         <Avatar
           src={url}
-          animationsSrc={ANIMATIONS_URL}
+          animationsSrc="/models/animations.fbx"
           animationWeights={{
             idle: { current: 1 },
             walk: { current: 0 },

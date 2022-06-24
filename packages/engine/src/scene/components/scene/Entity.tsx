@@ -1,15 +1,15 @@
-import { Entity } from "../../types";
+import { IEntity } from "../../types";
 import { EntityComponent } from "./EntityComponent";
 
 interface Props {
-  entity: Entity;
+  entity: IEntity;
 }
 
-export function InstancedEntity({ entity }: Props) {
+export function Entity({ entity }: Props) {
   return (
     <EntityComponent entity={entity}>
       {entity.children.map((child) => (
-        <InstancedEntity key={child.id} entity={child} />
+        <Entity key={child.id} entity={child} />
       ))}
     </EntityComponent>
   );

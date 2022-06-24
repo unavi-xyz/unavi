@@ -4,14 +4,15 @@ import { Canvas } from "@react-three/fiber";
 import { NextPageContext } from "next";
 import { Context } from "urql";
 
-import { InstancedScene } from "@wired-xr/engine";
+import {
+  NetworkingContext,
+  NetworkingProvider,
+  Player,
+  PlayerManager,
+  Scene,
+} from "@wired-xr/engine";
 
 import Chat from "../../src/components/app/Chat";
-import Player from "../../src/components/app/Player";
-import PlayerManager from "../../src/components/app/PlayerManager";
-import SpaceProvider, {
-  SpaceContext,
-} from "../../src/components/app/SpaceProvider";
 import MetaTags from "../../src/components/ui/MetaTags";
 import { useAppHotkeys } from "../../src/helpers/app/hooks/useAppHotkeys";
 import { useLoadAssets } from "../../src/helpers/app/hooks/useLoadAssets";
@@ -20,6 +21,8 @@ import {
   PublicationProps,
   getPublicationProps,
 } from "../../src/helpers/lens/getPublicationProps";
+
+export const DEFAULT_HOST = "wss://host.thewired.space";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
@@ -42,6 +45,17 @@ interface Props extends PublicationProps {
 export default function App({ id, metadata, publication }: Props) {
   const { loadedScene, spawn } = useLoadAssets(publication?.metadata.content);
 
+  const ownerHost = publication?.profile.attributes?.find(
+    (item) => item.key === "host"
+  )?.value;
+
+  const host =
+    process.env.NODE_ENV === "development"
+      ? "ws://localhost:4000"
+      : ownerHost
+      ? `wss://${ownerHost}`
+      : DEFAULT_HOST;
+
   useAppHotkeys();
   useSetIdentity();
 
@@ -54,30 +68,34 @@ export default function App({ id, metadata, publication }: Props) {
         card="summary_large_image"
       />
 
-      {loadedScene && publication && (
-        <SpaceProvider space={publication}>
-          <div className="h-full">
-            <div className="crosshair" />
+      {loadedScene && (
+        <div className="h-full">
+          <div className="crosshair" />
 
+          <NetworkingProvider spaceId={id} host={host}>
             <Chat />
 
             <CanvasBridge>
               <Physics>
-                <InstancedScene scene={loadedScene} />
-                <PlayerManager />
-
                 <Player spawn={spawn} />
+                <Scene scene={loadedScene} />
+
+                <PlayerManager
+                  animationsUrl="/models/animations.fbx"
+                  defaultAvatarUrl="/models/avatar.vrm"
+                />
               </Physics>
             </CanvasBridge>
-          </div>
-        </SpaceProvider>
+          </NetworkingProvider>
+        </div>
       )}
     </>
   );
 }
 
 function CanvasBridge({ children }: { children: React.ReactNode }) {
-  const ContextBridge = useContextBridge(SpaceContext, Context);
+  const ContextBridge = useContextBridge(NetworkingContext, Context);
+
   return (
     <Canvas shadows>
       <ContextBridge>{children}</ContextBridge>

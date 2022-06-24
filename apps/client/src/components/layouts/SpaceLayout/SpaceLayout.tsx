@@ -4,7 +4,6 @@ import { useRouter } from "next/router";
 
 import { useLensStore } from "../../../helpers/lens/store";
 import { trimHandle } from "../../../helpers/lens/utils";
-import { DEFAULT_HOST } from "../../app/SpaceProvider";
 import Button from "../../base/Button";
 import NavigationTab from "../../base/NavigationTab";
 import MetaTags from "../../ui/MetaTags";
@@ -12,9 +11,10 @@ import { SpaceLayoutProps } from "./getSpaceLayoutProps";
 
 export default function SpaceLayout({
   children,
-  playerCount,
   metadata,
   publication,
+  playerCount,
+  host,
 }: SpaceLayoutProps) {
   const router = useRouter();
   const id = router.query.id as string;
@@ -22,12 +22,6 @@ export default function SpaceLayout({
   const handle = useLensStore((state) => state.handle);
   const author = trimHandle(publication?.profile.handle);
   const isAuthor = handle && handle === author;
-
-  const host =
-    process.env.NODE_ENV === "production"
-      ? publication?.profile.attributes?.find((item) => item.key === "host")
-          ?.value ?? DEFAULT_HOST
-      : "localhost:4000";
 
   return (
     <>

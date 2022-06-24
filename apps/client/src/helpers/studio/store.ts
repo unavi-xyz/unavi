@@ -7,7 +7,7 @@ import create from "zustand";
 
 import {
   AssetType,
-  Entity,
+  IEntity,
   IMaterial,
   ISceneSlice,
   createSceneSlice,
@@ -54,7 +54,7 @@ export interface IStudioStore extends ISceneSlice {
 
   getAssetFileName: (assetId: string) => Promise<string | undefined>;
   loadAsset: (assetId: string, force?: boolean) => Promise<void>;
-  addPreset: (preset: Preset, parentId?: string) => Entity | void;
+  addPreset: (preset: Preset, parentId?: string) => IEntity | void;
 }
 
 export const useStudioStore = create<IStudioStore>((set, get) => ({
@@ -98,7 +98,7 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
   addPreset(preset: Preset, parentId = "root") {
     //if entity is spawn, see if there is a spawn already
     if (preset === "Spawn") {
-      const spawns: Entity[] = [];
+      const spawns: IEntity[] = [];
       traverseTree(get().scene.tree, (entity) => {
         if (entity.type === "Spawn") {
           spawns.push(entity);

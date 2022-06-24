@@ -4,8 +4,9 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { Raycaster, Vector3 } from "three";
 
-import { useKeyboardMovement } from "../../helpers/app/hooks/useKeyboardMovement";
-import { useSpringVelocity } from "../../helpers/app/hooks/useSpringVelocity";
+import { useKeyboardMovement } from "./useKeyboardMovement";
+import { usePublishLocation } from "./usePublishLocation";
+import { useSpringVelocity } from "./useSpringVelocity";
 
 const PLAYER_HEIGHT = 1.6;
 export const PLAYER_SPEED = 5;
@@ -15,7 +16,7 @@ interface Props {
   spawn?: Triplet;
 }
 
-export default function Player({ spawn = [0, 0, 0] }: Props) {
+export function Player({ spawn = [0, 0, 0] }: Props) {
   const position = useRef([0, 0, 0]);
   const velocity = useRef(new Vector3());
   const raycaster = useRef<Raycaster>(null);
@@ -64,6 +65,8 @@ export default function Player({ spawn = [0, 0, 0] }: Props) {
     //apply velocity
     updateVelocity(camera, velocity.current);
   });
+
+  usePublishLocation();
 
   return (
     <object3D ref={ref}>

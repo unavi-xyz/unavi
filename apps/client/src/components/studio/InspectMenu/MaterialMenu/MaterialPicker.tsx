@@ -1,6 +1,6 @@
 import { MdClose, MdOutlineAdd, MdOutlineFolderOpen } from "react-icons/md";
 
-import { Entity, IMaterial } from "@wired-xr/engine";
+import { IEntity, IMaterial } from "@wired-xr/engine";
 
 import { useAssetName } from "../../../../helpers/studio/hooks/useAssetName";
 import { useStudioStore } from "../../../../helpers/studio/store";
@@ -9,7 +9,7 @@ const MATERIAL_MIME = "application/material";
 const MATERIAL_EXTENSION = ".material";
 
 interface Props {
-  selected: Entity;
+  selected: IEntity;
 }
 
 export default function MaterialPicker({ selected }: Props) {

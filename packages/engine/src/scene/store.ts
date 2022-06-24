@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { GetState, SetState } from "zustand";
 
 import { EMPTY_SCENE } from "./constants";
-import { Asset, Entity, Scene } from "./types";
+import { Asset, IEntity, IScene } from "./types";
 import { findEntityById } from "./utils";
 
 export type StoreSlice<T extends object, E extends object = T> = (
@@ -13,9 +13,9 @@ export type StoreSlice<T extends object, E extends object = T> = (
 ) => T;
 
 export interface ISceneSlice {
-  scene: Scene;
+  scene: IScene;
 
-  addEntity: (entity: Entity, parentId?: string) => void;
+  addEntity: (entity: IEntity, parentId?: string) => void;
   removeEntity: (id: string) => void;
   moveEntity: (id: string, parentId: string, index?: number) => void;
 
@@ -24,7 +24,7 @@ export interface ISceneSlice {
 
   updateEntity: (
     id: string,
-    callback: (draft: WritableDraft<Entity>) => void
+    callback: (draft: WritableDraft<IEntity>) => void
   ) => void;
   updateAsset: (
     id: string,
@@ -35,7 +35,7 @@ export interface ISceneSlice {
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
   scene: EMPTY_SCENE,
 
-  addEntity(entity: Entity) {
+  addEntity(entity: IEntity) {
     const { scene, updateEntity } = get();
 
     if (!entity.parentId) entity.parentId = "root";
@@ -132,7 +132,7 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
     set({ scene });
   },
 
-  updateEntity(id: string, callback: (draft: WritableDraft<Entity>) => void) {
+  updateEntity(id: string, callback: (draft: WritableDraft<IEntity>) => void) {
     const scene = produce(get().scene, (draft) => {
       const found = findEntityById(draft.tree, id);
       if (found) callback(found);

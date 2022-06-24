@@ -1,17 +1,17 @@
 import { Sky } from "@react-three/drei";
 
-import { Scene } from "../../types";
+import { IScene } from "../../types";
 import { AssetProvider } from "./AssetProvider";
-import { InstancedEntity } from "./InstancedEntity";
+import { Entity } from "./Entity";
 
 interface Props {
-  scene: Scene;
+  scene: IScene;
 }
 
-export function InstancedScene({ scene }: Props) {
+export function Scene({ scene }: Props) {
   return (
     <AssetProvider assets={scene.assets}>
-      <InstancedEntity entity={scene.tree} />
+      <Entity entity={scene.tree} />
       <Sky />
     </AssetProvider>
   );

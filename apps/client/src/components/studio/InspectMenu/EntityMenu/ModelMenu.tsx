@@ -1,12 +1,12 @@
 import { MdClose, MdOutlineFolderOpen } from "react-icons/md";
 
-import { Entity } from "@wired-xr/engine";
+import { IEntity } from "@wired-xr/engine";
 
 import { useAssetName } from "../../../../helpers/studio/hooks/useAssetName";
 import { useStudioStore } from "../../../../helpers/studio/store";
 
 interface Props {
-  selected: Entity<"Model">;
+  selected: IEntity<"Model">;
   handleChange: (key: string, value: any) => void;
 }
 

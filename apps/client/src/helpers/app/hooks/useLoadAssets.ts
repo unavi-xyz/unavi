@@ -2,17 +2,17 @@ import { Triplet } from "@react-three/cannon";
 import produce from "immer";
 import { useEffect, useState } from "react";
 
-import { Scene, traverseTree } from "@wired-xr/engine";
+import { IScene, traverseTree } from "@wired-xr/engine";
 
 import { loadFromIpfs } from "../../ipfs/fetch";
 
 export function useLoadAssets(sceneString: string) {
-  const [loadedScene, setLoadedScene] = useState<Scene>();
+  const [loadedScene, setLoadedScene] = useState<IScene>();
   const [spawn, setSpawn] = useState<Triplet>();
 
   useEffect(() => {
     if (!sceneString) return;
-    const scene: Scene = JSON.parse(sceneString);
+    const scene: IScene = JSON.parse(sceneString);
 
     async function loadScene() {
       try {

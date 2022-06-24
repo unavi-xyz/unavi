@@ -1,16 +1,20 @@
 import { KeyboardEvent, useContext, useEffect, useRef } from "react";
 
+import {
+  NetworkingContext,
+  RecievedWebsocketMessage,
+  SentChatMessage,
+} from "@wired-xr/engine";
+
 import { useAppStore } from "../../helpers/app/store";
-import { RecievedWebsocketMessage } from "../../helpers/host/types";
 import ChatMessage from "./ChatMessage";
-import { SpaceContext } from "./SpaceProvider";
 
 export default function Chat() {
   const chatInputRef = useRef<HTMLInputElement>(null);
   const focusedRef = useRef(false);
 
   const messages = useAppStore((state) => state.messages);
-  const { socket, sendChatMessage } = useContext(SpaceContext);
+  const { socket, sendMessage } = useContext(NetworkingContext);
 
   useEffect(() => {
     if (!socket) return;
@@ -45,7 +49,13 @@ export default function Chat() {
 
       if (text === "") return;
 
-      sendChatMessage(text);
+      const message: SentChatMessage = {
+        type: "chatmessage",
+        data: text,
+      };
+
+      sendMessage(message);
+
       target.value = "";
     }
   }

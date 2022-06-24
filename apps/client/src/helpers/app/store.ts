@@ -1,7 +1,7 @@
 import { RefObject, createRef } from "react";
 import create from "zustand";
 
-import { IChatMessage, PlayerIdentity } from "./types";
+import { IChatMessage, PlayerIdentity } from "@wired-xr/engine";
 
 export interface AppStore {
   chatInputRef: RefObject<HTMLInputElement>;
@@ -25,7 +25,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   addMessage: (message: IChatMessage) => {
     const messages = [...get().messages];
 
-    //remove the oldest message if the list is full
+    //remove the oldest message if the list is too big
     if (messages.length >= 50) {
       messages.shift();
     }

@@ -3,15 +3,15 @@ import { useThree } from "@react-three/fiber";
 import { useContext, useEffect, useRef } from "react";
 import { Vector3 } from "three";
 
-import { SpaceContext } from "../../../components/app/SpaceProvider";
-import { PUBLISH_INTERVAL } from "../constants";
-import { PlayerLocation } from "../types";
+import { NetworkingContext } from "../networking";
+import { LOCATION_PUBLISH_INTERVAL_MS } from "../networking/constants";
+import { SentLocation } from "../networking/types";
 
 export function usePublishLocation() {
   const tempVector3 = useRef(new Vector3());
 
   const { camera } = useThree();
-  const { sendLocation } = useContext(SpaceContext);
+  const { sendMessage } = useContext(NetworkingContext);
 
   useEffect(() => {
     //this is a hack
@@ -29,12 +29,19 @@ export function usePublishLocation() {
       const angle = Math.PI - (Math.atan(dir.z / dir.x) - (Math.PI / 2) * sign);
 
       //publish to space
-      const location: PlayerLocation = { position, rotation: angle };
-      sendLocation(location);
-    }, PUBLISH_INTERVAL);
+      const message: SentLocation = {
+        type: "location",
+        data: {
+          position,
+          rotation: angle,
+        },
+      };
+
+      sendMessage(message);
+    }, LOCATION_PUBLISH_INTERVAL_MS);
 
     return () => {
       clearInterval(interval);
     };
-  }, [camera, sendLocation]);
+  }, [camera, sendMessage]);
 }

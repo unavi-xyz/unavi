@@ -2,7 +2,7 @@ import { WritableDraft } from "immer/dist/internal";
 import { ChangeEvent, useRef } from "react";
 import { MdClose } from "react-icons/md";
 
-import { Entity, IMaterial } from "@wired-xr/engine";
+import { IEntity, IMaterial } from "@wired-xr/engine";
 
 import {
   useAsset,
@@ -17,7 +17,7 @@ import MenuRow from "../MenuRow";
 import NumberInput from "../NumberInput";
 
 interface Props {
-  selected: Entity;
+  selected: IEntity;
 }
 
 export default function MaterialProperties({ selected }: Props) {

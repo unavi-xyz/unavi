@@ -2,12 +2,12 @@ import { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { Group } from "three";
 
-import { Entity, EntityComponent } from "@wired-xr/engine";
+import { EntityComponent, IEntity } from "@wired-xr/engine";
 
 import { useStudioStore } from "../../../helpers/studio/store";
 
 interface Props {
-  entity: Entity;
+  entity: IEntity;
 }
 
 export default function StudioInstancedEntity({ entity }: Props) {

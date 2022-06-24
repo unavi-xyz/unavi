@@ -2,8 +2,8 @@ import { useFrame } from "@react-three/fiber";
 import { RefObject, useEffect, useRef } from "react";
 import { MathUtils, Vector3 } from "three";
 
-import { PUBLISH_INTERVAL } from "../constants";
-import { PlayerLocation } from "../types";
+import { LOCATION_PUBLISH_INTERVAL_MS } from "../networking/constants";
+import { PlayerLocation } from "../networking/types";
 
 function normalizeAngle(angle: number) {
   while (angle < 0) {
@@ -50,7 +50,7 @@ export function useInterpolateLocation(locationRef: RefObject<PlayerLocation>) {
       targetRef.current.rotation = locationRef.current.rotation;
 
       deltaTotal.current = 0;
-    }, PUBLISH_INTERVAL);
+    }, LOCATION_PUBLISH_INTERVAL_MS);
 
     return () => {
       clearInterval(interval);
@@ -60,7 +60,10 @@ export function useInterpolateLocation(locationRef: RefObject<PlayerLocation>) {
   //interpoalte it between intervals
   useFrame((_, delta) => {
     deltaTotal.current += delta;
-    const alpha = Math.min(deltaTotal.current * (1000 / PUBLISH_INTERVAL), 1);
+    const alpha = Math.min(
+      deltaTotal.current * (1000 / LOCATION_PUBLISH_INTERVAL_MS),
+      1
+    );
 
     //interpolate position
     interpolatedRef.current.position.lerpVectors(

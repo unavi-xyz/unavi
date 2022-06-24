@@ -1,13 +1,14 @@
+import { DEFAULT_HOST } from "../../../../pages/app/[id]";
 import {
   PublicationProps,
   getPublicationProps,
 } from "../../../helpers/lens/getPublicationProps";
-import { DEFAULT_HOST } from "../../app/SpaceProvider";
 
 const HTTP = process.env.NODE_ENV === "production" ? "https" : "http";
 
 export interface SpaceLayoutProps extends PublicationProps {
   playerCount?: number;
+  host?: string;
   children: React.ReactNode;
 }
 
@@ -29,11 +30,13 @@ export async function getSpaceLayoutProps(id: string) {
 
     return {
       ...publicationProps,
+      host,
       playerCount,
     };
   } catch {
     return {
       ...publicationProps,
+      host,
       playerCount: null,
     };
   }

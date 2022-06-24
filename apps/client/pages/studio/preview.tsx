@@ -6,9 +6,8 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
-import { InstancedScene, traverseTree } from "@wired-xr/engine";
+import { Player, Scene, traverseTree } from "@wired-xr/engine";
 
-import Player from "../../src/components/app/Player";
 import ToggleDebug from "../../src/components/studio/StudioCanvas/ToggleDebug";
 import MetaTags from "../../src/components/ui/MetaTags";
 import { getFileByPath } from "../../src/helpers/studio/filesystem";
@@ -93,8 +92,7 @@ export default function Preview() {
           <Canvas shadows className="w-full h-full">
             <Physics>
               <ToggleDebug enabled={debug}>
-                <InstancedScene scene={loadedProject.scene} />
-
+                <Scene scene={loadedProject.scene} />
                 <Player spawn={spawn} />
               </ToggleDebug>
             </Physics>

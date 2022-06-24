@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
-import { Entity, findEntityById } from "@wired-xr/engine";
+import { IEntity, findEntityById } from "@wired-xr/engine";
 
 import { useStudioStore } from "../../../helpers/studio/store";
 import { DND_TYPES } from "../../../helpers/studio/types";
@@ -12,7 +12,7 @@ type DragItem = {
 };
 
 interface Props {
-  entity: Entity;
+  entity: IEntity;
   isRoot?: boolean;
 }
 

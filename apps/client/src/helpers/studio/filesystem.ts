@@ -1,4 +1,4 @@
-import { Scene } from "@wired-xr/engine";
+import { IScene } from "@wired-xr/engine";
 
 import { PROJECT_FILE_NAME } from "./constants";
 import { useStudioStore } from "./store";
@@ -16,7 +16,7 @@ export async function readProject() {
   return project;
 }
 
-export async function writeScene(scene: Scene) {
+export async function writeScene(scene: IScene) {
   const root = useStudioStore.getState().rootHandle;
   if (!root) return;
 

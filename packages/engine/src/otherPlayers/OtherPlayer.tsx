@@ -1,26 +1,26 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { Group } from "three";
 
-import { Avatar } from "@wired-xr/engine";
-
-import { useAnimationWeights } from "../../helpers/app/hooks/useAnimationWeights";
-import { useApplyLocation } from "../../helpers/app/hooks/useApplyLocation";
-import { useInterpolateLocation } from "../../helpers/app/hooks/useInterpolateLocation";
-import { PlayerLocation } from "../../helpers/app/types";
-import { RecievedWebsocketMessage } from "../../helpers/host/types";
-import { useAvatarUrlFromProfile } from "../../helpers/lens/hooks/useAvatarFromProfile";
-import { useProfileByHandle } from "../../helpers/lens/hooks/useProfileByHandle";
-import { SpaceContext } from "./SpaceProvider";
-
-export const DEFAULT_AVATAR_URL = "/models/Default.vrm";
-export const ANIMATIONS_URL = "/models/animations.fbx";
+import { Avatar } from "../avatar";
+import { NetworkingContext } from "../networking";
+import { PlayerLocation, RecievedWebsocketMessage } from "../networking/types";
+import { useAnimationWeights } from "./useAnimationWeights";
+import { useApplyLocation } from "./useApplyLocation";
+import { useInterpolateLocation } from "./useInterpolateLocation";
 
 interface Props {
   id: string;
   track?: MediaStreamTrack;
+  animationsUrl: string;
+  defaultAvatarUrl: string;
 }
 
-export default function OtherPlayer({ id, track }: Props) {
+export function OtherPlayer({
+  id,
+  track,
+  animationsUrl,
+  defaultAvatarUrl,
+}: Props) {
   const groupRef = useRef<Group>(null);
   const locationRef = useRef<PlayerLocation>({
     position: [0, 0, 0],
@@ -29,9 +29,10 @@ export default function OtherPlayer({ id, track }: Props) {
 
   const [handle, setHandle] = useState<string>();
 
-  const { socket } = useContext(SpaceContext);
-  const profile = useProfileByHandle(handle);
-  const avatarUrl = useAvatarUrlFromProfile(profile);
+  const { socket } = useContext(NetworkingContext);
+
+  // const profile = useProfileByHandle(handle);
+  // const avatarUrl = useAvatarUrlFromProfile(profile);
   const interpolatedLocation = useInterpolateLocation(locationRef);
   const animationWeights = useAnimationWeights(groupRef, interpolatedLocation);
 
@@ -90,8 +91,8 @@ export default function OtherPlayer({ id, track }: Props) {
   return (
     <group ref={groupRef}>
       <Avatar
-        src={avatarUrl ?? DEFAULT_AVATAR_URL}
-        animationsSrc={ANIMATIONS_URL}
+        src={defaultAvatarUrl}
+        animationsSrc={animationsUrl}
         animationWeights={animationWeights}
       />
     </group>

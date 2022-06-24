@@ -39,14 +39,14 @@ export const ENTITY_COMPONENTS = {
 
 export type EntityType = keyof typeof ENTITY_COMPONENTS;
 
-export interface Entity<T extends EntityType = EntityType> {
+export interface IEntity<T extends EntityType = EntityType> {
   type: T;
 
   id: string;
   name?: string;
 
   parentId: string | null;
-  children: Entity[];
+  children: IEntity[];
 
   transform: Transform;
   props: ComponentProps<typeof ENTITY_COMPONENTS[T]>;
@@ -83,7 +83,7 @@ export interface Assets {
 }
 
 //scene
-export interface Scene {
-  tree: Entity;
+export interface IScene {
+  tree: IEntity;
   assets: Assets;
 }

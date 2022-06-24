@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { IChatMessage } from "../../helpers/app/types";
+import { IChatMessage } from "@wired-xr/engine";
 
 const showDuration = 10000;
 

@@ -1,4 +1,4 @@
-import { Scene } from "@wired-xr/engine";
+import { IScene } from "@wired-xr/engine";
 
 export type Tool = "translate" | "rotate" | "scale";
 
@@ -10,5 +10,5 @@ export type Project = {
   name: string;
   description: string;
 
-  scene: Scene;
+  scene: IScene;
 };

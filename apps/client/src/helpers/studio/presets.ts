@@ -1,7 +1,7 @@
-import { DEFAULT_TRANSFORM, Entity } from "@wired-xr/engine";
+import { DEFAULT_TRANSFORM, IEntity } from "@wired-xr/engine";
 
 export const ALL_PRESETS: {
-  [key: string]: Entity;
+  [key: string]: IEntity;
 } = {
   Box: {
     type: "Box",

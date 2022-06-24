@@ -1,16 +1,18 @@
 import { useContext, useEffect, useState } from "react";
 
-import { usePublishLocation } from "../../helpers/app/hooks/usePublishLocation";
-import { RecievedWebsocketMessage } from "../../helpers/host/types";
-import OtherPlayer from "./OtherPlayer";
-import { SpaceContext } from "./SpaceProvider";
+import { NetworkingContext } from "../networking";
+import { RecievedWebsocketMessage } from "../networking/types";
+import { OtherPlayer } from "./OtherPlayer";
 
-export default function PlayerManager() {
+interface Props {
+  animationsUrl: string;
+  defaultAvatarUrl: string;
+}
+
+export function PlayerManager({ animationsUrl, defaultAvatarUrl }: Props) {
   const [playerIds, setPlayerIds] = useState(new Set<string>());
 
-  const { socket } = useContext(SpaceContext);
-
-  usePublishLocation();
+  const { socket } = useContext(NetworkingContext);
 
   useEffect(() => {
     if (!socket) return;
@@ -41,10 +43,17 @@ export default function PlayerManager() {
   }, [playerIds, socket]);
 
   return (
-    <group>
+    <>
       {Array.from(playerIds).map((playerId) => {
-        return <OtherPlayer key={playerId} id={playerId} />;
+        return (
+          <OtherPlayer
+            key={playerId}
+            id={playerId}
+            animationsUrl={animationsUrl}
+            defaultAvatarUrl={defaultAvatarUrl}
+          />
+        );
       })}
-    </group>
+    </>
   );
 }

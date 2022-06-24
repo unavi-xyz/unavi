@@ -1,13 +1,13 @@
 import { ReactNode, RefObject, createRef, useEffect } from "react";
 import { Group, Vector3 } from "three";
 
-import { ENTITY_COMPONENTS, Entity } from "../../types";
+import { ENTITY_COMPONENTS, IEntity } from "../../types";
 
 const tempVec3 = new Vector3();
 
 interface Props {
   groupRef?: RefObject<Group>;
-  entity: Entity;
+  entity: IEntity;
   children: ReactNode;
 }
 

@@ -42,7 +42,9 @@ export default function FileBrowser() {
 
     const interval = setInterval(readEntries, 2000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, [directoryHandles, filesHandles, rootHandle, selectedDirectory]);
 
   if (!rootHandle) return null;

@@ -32,7 +32,6 @@ This turborepo uses Yarn as a package manager. It includes the following apps/pa
 ### Packages
 
 - [engine](packages/engine): a 3d game engine
-- [tsconfig](packages/tsconfig): internal TypeScript configuration files
 
 ### Install
 
@@ -41,6 +40,8 @@ To install all apps and packages, run the following command:
 ```bash
 yarn install
 ```
+
+If you run into issues installing, it's probably mediasoup. Follow the steps on their [installation guide](https://mediasoup.org/documentation/v3/mediasoup/installation/) to get it to work. Mediasoup tends to be much easier to install on Linux, so if you're on Windows, consider using [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install).
 
 ### Build
 

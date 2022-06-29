@@ -1,6 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
     "composite": false,
     "declaration": true,
     "declarationMap": true,
@@ -16,5 +18,5 @@
     "strict": true
   },
   "display": "Default",
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "build", "dist"]
 }

@@ -44,7 +44,9 @@ export default function CreateProfilePage() {
       setError(undefined);
     }, 750);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+    };
   }, [formHandle]);
 
   async function handleSubmit() {

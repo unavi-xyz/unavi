@@ -15,7 +15,9 @@ export default function StudioInstancedEntity({ entity }: Props) {
 
   useEffect(() => {
     useStudioStore.getState().setRef(entity.id, ref);
-    return () => useStudioStore.getState().removeRef(entity.id);
+    return () => {
+      useStudioStore.getState().removeRef(entity.id);
+    };
   }, [entity]);
 
   function handlePointerUp(e: ThreeEvent<PointerEvent>) {

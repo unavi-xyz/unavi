@@ -43,7 +43,9 @@ export default function DirectoryRow({
 
     const interval = setInterval(readEntries, 2000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, [childrenDirectories, handle]);
 
   function handleClick() {

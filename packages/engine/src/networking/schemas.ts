@@ -63,30 +63,34 @@ const RtpParametersSchema = z.object({
         .optional(),
     })
   ),
-  headerExtensions: z.array(
-    z.object({
-      uri: z.string(),
-      id: z.number(),
-      encrypt: z.boolean().optional(),
-      parameters: z.any().optional(),
-    })
-  ),
-  encodings: z.array(
-    z.object({
-      ssrc: z.number().optional(),
-      rid: z.string().optional(),
-      codecPayloadType: z.number().optional(),
-      rtx: z
-        .object({
-          ssrc: z.number(),
-        })
-        .optional(),
-      dtx: z.boolean().optional(),
-      scalabilityMode: z.string().optional(),
-      scaleResolutionDownBy: z.number().optional(),
-      maxBitrate: z.number().optional(),
-    })
-  ),
+  headerExtensions: z
+    .array(
+      z.object({
+        uri: z.string(),
+        id: z.number(),
+        encrypt: z.boolean().optional(),
+        parameters: z.any().optional(),
+      })
+    )
+    .optional(),
+  encodings: z
+    .array(
+      z.object({
+        ssrc: z.number().optional(),
+        rid: z.string().optional(),
+        codecPayloadType: z.number().optional(),
+        rtx: z
+          .object({
+            ssrc: z.number(),
+          })
+          .optional(),
+        dtx: z.boolean().optional(),
+        scalabilityMode: z.string().optional(),
+        scaleResolutionDownBy: z.number().optional(),
+        maxBitrate: z.number().optional(),
+      })
+    )
+    .optional(),
   rtcp: z
     .object({
       cname: z.string().optional(),
@@ -105,6 +109,16 @@ export const JoinSpaceResponseSchema = z.object({
   success: z.boolean(),
 });
 export type JoinSpaceResponse = z.infer<typeof JoinSpaceResponseSchema>;
+
+//LeaveSpace
+export const LeaveSpaceDataSchema = z.object({
+  spaceId: z.string(),
+});
+export type LeaveSpaceData = z.infer<typeof LeaveSpaceDataSchema>;
+export const LeaveSpaceResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type LeaveSpaceResponse = z.infer<typeof LeaveSpaceResponseSchema>;
 
 //GetRouterRtpCapabilities
 export const GetRouterRtpCapabilitiesResponseSchema = z.object({
@@ -133,23 +147,14 @@ export const CreateTransportResponseSchema = z.object({
           port: z.number(),
           priority: z.number(),
           protocol: z.union([z.literal("udp"), z.literal("tcp")]),
-          type: z.union([
-            z.literal("host"),
-            z.literal("srflx"),
-            z.literal("prflx"),
-            z.literal("relay"),
-          ]),
-          tcpType: z
-            .union([z.literal("active"), z.literal("passive"), z.literal("so")])
-            .optional(),
+          type: z.literal("host"),
+          tcpType: z.literal("passive").optional(),
         })
       ),
       dtlsParameters: z.object({
-        role: z.union([
-          z.literal("auto"),
-          z.literal("client"),
-          z.literal("server"),
-        ]),
+        role: z
+          .union([z.literal("auto"), z.literal("client"), z.literal("server")])
+          .optional(),
         fingerprints: z.array(
           z.object({
             algorithm: z.string(),
@@ -184,8 +189,50 @@ export const NewConsumerDataSchema = z.object({
   ]),
   producerPaused: z.boolean(),
 });
+export type NewConsumerData = z.infer<typeof NewConsumerDataSchema>;
 
 //ConnectTransport
-export const ConnectTransportSchema = z.object({
+export const ConnectTransportDataSchema = z.object({
+  dtlsParameters: z.object({
+    role: z.union([
+      z.literal("auto"),
+      z.literal("client"),
+      z.literal("server"),
+    ]),
+    fingerprints: z.array(
+      z.object({
+        algorithm: z.string(),
+        value: z.string(),
+      })
+    ),
+  }),
+});
+export type ConnectTransportData = z.infer<typeof ConnectTransportDataSchema>;
+export const ConnectTransportResponseSchema = z.object({
   success: z.boolean(),
 });
+export type ConnectTransportResponse = z.infer<
+  typeof ConnectTransportResponseSchema
+>;
+
+//ProduceAudio
+export const ProduceAudioDataSchema = z.object({
+  kind: MediaTypeSchema,
+  rtpParameters: RtpParametersSchema,
+});
+export type ProduceAudioData = z.infer<typeof ProduceAudioDataSchema>;
+export const ProduceAudioResponseSchema = z.object({
+  success: z.boolean(),
+  id: z.string().optional(),
+});
+export type ProduceAudioResponse = z.infer<typeof ProduceAudioResponseSchema>;
+
+//ConsumeAudio
+export const ConsumeAudioDataSchema = z.object({
+  rtpCapabilities: RtpCapabilitiesSchema,
+});
+export type ConsumeAudioData = z.infer<typeof ConsumeAudioDataSchema>;
+export const ConsumeAudioResposneSchema = z.object({
+  success: z.boolean(),
+});
+export type ConsumeAudioResponse = z.infer<typeof ConsumeAudioResposneSchema>;

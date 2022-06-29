@@ -26,7 +26,7 @@ export async function getSpaceLayoutProps(id: string) {
     const playerCountRes = await fetch(
       `${HTTP}://${host}/space/${id}/player_count`
     );
-    const playerCount = Number(await playerCountRes.text());
+    const playerCount = await playerCountRes.json();
 
     return {
       ...publicationProps,

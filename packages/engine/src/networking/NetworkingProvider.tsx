@@ -3,15 +3,17 @@ import { createContext, useEffect, useState } from "react";
 import { Socket, io } from "socket.io-client";
 
 import {
-  ConnectTransportSchema,
+  ConnectTransportResponseSchema,
+  ConsumeAudioResposneSchema,
   CreateTransportResponseSchema,
   GetRouterRtpCapabilitiesResponseSchema,
-  JoinSpaceData,
   JoinSpaceResponseSchema,
   NewConsumerDataSchema,
   ProduceResponseSchema,
 } from "./schemas";
-import { SentIdentity, SentWebsocketMessage } from "./types";
+import { SentWebsocketMessage, SocketEvents } from "./types";
+
+type TypedSocket = Socket<SocketEvents, SocketEvents>;
 
 export const NetworkingContext = createContext<{
   socket: WebSocket | undefined;
@@ -34,7 +36,7 @@ export function NetworkingProvider({
   handle,
   children,
 }: NetworkingProviderProps) {
-  const [socket, setSocket] = useState<Socket>();
+  const [socket, setSocket] = useState<TypedSocket>();
   const [device, setDevice] = useState<Device>();
 
   //create the websocket connection
@@ -44,7 +46,7 @@ export function NetworkingProvider({
       return;
     }
 
-    const newSocket = io(host);
+    const newSocket: TypedSocket = io(host);
     setSocket(newSocket);
 
     //connect to websocket server
@@ -52,52 +54,55 @@ export function NetworkingProvider({
       console.info("✅ Connected to host server");
 
       //join the space
-      const data: JoinSpaceData = {
-        spaceId,
-      };
 
-      newSocket.emit("join_space", data, (res: any) => {
-        try {
-          const { success } = JoinSpaceResponseSchema.parse(res);
+      newSocket.emit(
+        "join_space",
+        {
+          spaceId,
+        },
+        (res) => {
+          try {
+            const { success } = JoinSpaceResponseSchema.parse(res);
 
-          if (!success) {
-            throw new Error("Failed to join space");
-          }
-          console.info("✅ Joined space");
-
-          //get router rtp capabilities
-          newSocket.emit("get_router_rtp_capabilities", async (res: any) => {
-            try {
-              const { success, routerRtpCapabilities } =
-                GetRouterRtpCapabilitiesResponseSchema.parse(res);
-
-              if (!success || !routerRtpCapabilities) {
-                throw new Error("Failed to get router rtp capabilities");
-              }
-              console.info("✅ Got router RTP capabilities");
-
-              //create mediasoup device
-              try {
-                const newDevice = new Device();
-                await newDevice.load({
-                  routerRtpCapabilities,
-                });
-                setDevice(newDevice);
-              } catch (error) {
-                console.info("❌ Error creating mediasoup device");
-                console.error(error);
-                setDevice(undefined);
-                return;
-              }
-            } catch (error) {
-              console.error(error);
+            if (!success) {
+              throw new Error("Failed to join space");
             }
-          });
-        } catch (error) {
-          console.error(error);
-          return;
+            console.info("✅ Joined space");
+
+            //get router rtp capabilities
+            newSocket.emit("get_router_rtp_capabilities", async (res) => {
+              try {
+                const { success, routerRtpCapabilities } =
+                  GetRouterRtpCapabilitiesResponseSchema.parse(res);
+
+                if (!success || !routerRtpCapabilities) {
+                  throw new Error("Failed to get router rtp capabilities");
+                }
+                console.info("✅ Got router RTP capabilities");
+
+                //create mediasoup device
+                try {
+                  const newDevice = new Device();
+                  await newDevice.load({
+                    routerRtpCapabilities,
+                  });
+                  setDevice(newDevice);
+                } catch (error) {
+                  console.info("❌ Error creating mediasoup device");
+                  console.error(error);
+                  setDevice(undefined);
+                  return;
+                }
+              } catch (error) {
+                console.error(error);
+              }
+            });
+          } catch (error) {
+            console.error(error);
+            return;
+          }
         }
-      });
+      );
     });
 
     newSocket.on("connect_error", () => {
@@ -118,7 +123,7 @@ export function NetworkingProvider({
 
     //👩‍🍳 PRODUCER
     //create producer transport
-    socket.emit("create_audio_producer_transport", async (res: any) => {
+    socket.emit("create_audio_producer_transport", async (res) => {
       try {
         const { success, params } = CreateTransportResponseSchema.parse(res);
 
@@ -135,9 +140,9 @@ export function NetworkingProvider({
           socket.emit(
             "connect_audio_producer_transport",
             { dtlsParameters },
-            (res: any) => {
+            (res) => {
               try {
-                const { success } = ConnectTransportSchema.parse(res);
+                const { success } = ConnectTransportResponseSchema.parse(res);
 
                 if (!success) {
                   throw new Error("Failed to connect producer transport");
@@ -180,11 +185,10 @@ export function NetworkingProvider({
           socket.emit(
             "produce_audio",
             {
-              transportId: transport.id,
               kind,
               rtpParameters,
             },
-            (res: any) => {
+            (res) => {
               try {
                 const { success, id } = ProduceResponseSchema.parse(res);
 
@@ -216,7 +220,7 @@ export function NetworkingProvider({
 
     //🍔 CONSUMER
     //create consumer transport
-    socket.emit("create_audio_consumer_transport", async (res: any) => {
+    socket.emit("create_audio_consumer_transport", async (res) => {
       try {
         const { success, params } = CreateTransportResponseSchema.parse(res);
 
@@ -233,9 +237,9 @@ export function NetworkingProvider({
           socket.emit(
             "connect_audio_consumer_transport",
             { dtlsParameters },
-            (res: any) => {
+            (res) => {
               try {
-                const { success } = ConnectTransportSchema.parse(res);
+                const { success } = ConnectTransportResponseSchema.parse(res);
 
                 if (!success) {
                   throw new Error("Failed to connect producer transport");
@@ -272,21 +276,34 @@ export function NetworkingProvider({
         });
 
         //start consuming
-        socket.emit("consume_audio", {
-          rtpCapabilities: device.rtpCapabilities,
-        });
+        socket.emit(
+          "consume_audio",
+          {
+            rtpCapabilities: device.rtpCapabilities,
+          },
+          (res) => {
+            try {
+              const { success } = ConsumeAudioResposneSchema.parse(res);
+              if (!success) {
+                throw new Error("Failed to consume audio");
+              }
+            } catch (error) {
+              console.error(error);
+            }
+          }
+        );
 
         //receive new consumers
-        socket.on("new_consumer", async (data: any) => {
+        socket.on("new_consumer", async (data) => {
           try {
-            const options = NewConsumerDataSchema.parse(data);
+            const { producerId, id, kind, rtpParameters } =
+              NewConsumerDataSchema.parse(data);
+
+            if (transport.closed) throw new Error("Transport closed");
 
             console.info("✨🍔 New consumer");
 
-            if (transport.closed) return;
-
             //start consuming
-            const { producerId, id, kind, rtpParameters } = options;
             const consumer = await transport.consume({
               producerId,
               id,

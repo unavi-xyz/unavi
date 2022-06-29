@@ -1,10 +1,18 @@
 import express from "express";
 import { createServer } from "http";
-import { RtpCapabilities } from "mediasoup/node/lib/RtpParameters";
 import { Server } from "socket.io";
+
+import {
+  ConnectTransportDataSchema,
+  ConsumeAudioDataSchema,
+  JoinSpaceDataSchema,
+  LeaveSpaceDataSchema,
+  ProduceAudioDataSchema,
+} from "@wired-xr/engine/src/networking/schemas";
 
 import { GameManager } from "./classes/GameManager";
 import { createMediasoupRouter, createWebRtcTransport } from "./mediasoup";
+import { TypedSocket } from "./types";
 
 const PORT = 4000;
 const HOST = "0.0.0.0";
@@ -32,13 +40,12 @@ async function start() {
   const manager = new GameManager(router);
 
   //handle socket connections
-  io.on("connection", (socket) => {
+  io.on("connection", (socket: TypedSocket) => {
     const player = manager.createPlayer(socket);
 
     socket.on("join_space", async (data, callback) => {
       try {
-        const spaceId = data.spaceId as string | undefined;
-        if (!spaceId) throw new Error("spaceId is required");
+        const { spaceId } = JoinSpaceDataSchema.parse(data);
 
         player.joinSpace(spaceId);
 
@@ -55,8 +62,7 @@ async function start() {
 
     socket.on("leave_space", async (data, callback) => {
       try {
-        const spaceId = data.spaceId as string | undefined;
-        if (!spaceId) throw new Error("spaceId is required");
+        const { spaceId } = LeaveSpaceDataSchema.parse(data);
 
         player.leaveSpace(spaceId);
 
@@ -114,11 +120,13 @@ async function start() {
 
     socket.on("connect_audio_producer_transport", async (data, callback) => {
       try {
+        const { dtlsParameters } = ConnectTransportDataSchema.parse(data);
+
         if (!player.audioProducer.transport)
           throw new Error("audioProducerTransport is required");
 
         await player.audioProducer.transport.connect({
-          dtlsParameters: data.dtlsParameters,
+          dtlsParameters,
         });
 
         callback({
@@ -154,9 +162,11 @@ async function start() {
 
     socket.on("produce_audio", async (data, callback) => {
       try {
+        const { kind, rtpParameters } = ProduceAudioDataSchema.parse(data);
+
         const id = await player.produceAudio({
-          kind: data.kind,
-          rtpParameters: data.rtpParameters,
+          kind,
+          rtpParameters,
         });
 
         callback({
@@ -171,13 +181,21 @@ async function start() {
       }
     });
 
-    socket.on("consume_audio", (data) => {
-      const rtpCapabilities = data.rtpCapabilities as
-        | RtpCapabilities
-        | undefined;
-      if (!rtpCapabilities) throw new Error("rtpCapabilities is required");
+    socket.on("consume_audio", (data, callback) => {
+      try {
+        const { rtpCapabilities } = ConsumeAudioDataSchema.parse(data);
 
-      player.rtpCapabilities = rtpCapabilities;
+        player.rtpCapabilities = rtpCapabilities;
+
+        callback({
+          success: true,
+        });
+      } catch (error) {
+        console.error(error);
+        callback({
+          success: false,
+        });
+      }
     });
 
     socket.on("disconnect", () => {

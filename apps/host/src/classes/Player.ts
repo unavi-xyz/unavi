@@ -1,7 +1,7 @@
 import { ProducerOptions } from "mediasoup/node/lib/Producer";
 import { RtpCapabilities } from "mediasoup/node/lib/RtpParameters";
-import { Socket } from "socket.io";
 
+import { TypedSocket } from "../types";
 import { ConsumerTransport } from "./ConsumerTransport";
 import { GameManager } from "./GameManager";
 import { ProducerTransport } from "./ProducerTransport";
@@ -15,10 +15,10 @@ export class Player {
 
   private _rtpCapabilities: RtpCapabilities | null = null;
 
-  private _socket: Socket;
+  private _socket: TypedSocket;
   private _manager: GameManager;
 
-  constructor(socket: Socket, manager: GameManager) {
+  constructor(socket: TypedSocket, manager: GameManager) {
     this._socket = socket;
     this._manager = manager;
 

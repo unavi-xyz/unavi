@@ -1,8 +1,8 @@
 ---
 sidebar_position: 4
+sidebar_label: 🔒 Logging In
+title: Logging In
 ---
-
-# 🔒 Logging In
 
 To log in to The Wired, you need a **wallet**. A wallet is a piece of software that manages a private key, and is used for authentication. You can use any wallet that supports **[Ethereum](https://ethereum.org/)**.
 

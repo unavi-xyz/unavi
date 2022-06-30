@@ -396,6 +396,17 @@ export function NetworkingProvider({
               sctpStreamParameters,
             });
 
+            consumer.on("close", () => {
+              console.info("🍔 Data consumer closed");
+
+              //remove from list
+              setDataConsumers(
+                produce((draft) => {
+                  delete draft[consumer.id];
+                })
+              );
+            });
+
             setDataConsumers(
               produce((draft) => {
                 draft[consumer.id] = consumer;

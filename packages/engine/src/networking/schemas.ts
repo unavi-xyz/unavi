@@ -284,3 +284,11 @@ export const NewDataConsumerDataSchema = z.object({
     .optional(),
 });
 export type NewDataConsumerData = z.infer<typeof NewDataConsumerDataSchema>;
+
+//Location
+export const LocationMessageSchema = z.object({
+  type: z.literal("location"),
+  position: z.number().array().length(3),
+  rotation: z.number(),
+});
+export type LocationMessage = z.infer<typeof LocationMessageSchema>;

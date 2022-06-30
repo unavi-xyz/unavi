@@ -124,14 +124,7 @@ export type RecievedChatMessage = WebsocketMessageBase<
   IChatMessage
 >;
 export type RecievedIdentity = WebsocketMessageBase<"identity", PlayerIdentity>;
-export type RecievedLocation = WebsocketMessageBase<
-  "location",
-  {
-    userid: string;
-    handle?: string;
-    location: PlayerLocation;
-  }
->;
+export type RecievedLocation = WebsocketMessageBase<"location", PlayerLocation>;
 export type RecievedLeaveMessage = WebsocketMessageBase<
   "leave",
   {

@@ -1,4 +1,7 @@
+import produce from "immer";
 import { Device } from "mediasoup-client";
+import { DataConsumer } from "mediasoup-client/lib/DataConsumer";
+import { DataProducer } from "mediasoup-client/lib/DataProducer";
 import { createContext, useEffect, useState } from "react";
 import { Socket, io } from "socket.io-client";
 
@@ -13,16 +16,20 @@ import {
   ProduceAudioResponseSchema,
   ProduceDataResponseSchema,
 } from "./schemas";
-import { SentWebsocketMessage, SocketEvents } from "./types";
+import { SocketEvents } from "./types";
 
 type TypedSocket = Socket<SocketEvents, SocketEvents>;
 
+type DataConsumers = {
+  [key: string]: DataConsumer;
+};
+
 export const NetworkingContext = createContext<{
-  socket: WebSocket | undefined;
-  sendMessage: (message: SentWebsocketMessage) => void;
+  dataProducer: DataProducer | undefined;
+  dataConsumers: DataConsumers;
 }>({
-  socket: undefined,
-  sendMessage: () => {},
+  dataProducer: undefined,
+  dataConsumers: {},
 });
 
 interface NetworkingProviderProps {
@@ -41,6 +48,9 @@ export function NetworkingProvider({
   const [socket, setSocket] = useState<TypedSocket>();
   const [device, setDevice] = useState<Device>();
 
+  const [dataProducer, setDataProducer] = useState<DataProducer>();
+  const [dataConsumers, setDataConsumers] = useState<DataConsumers>({});
+
   //create the websocket connection
   useEffect(() => {
     if (!spaceId || !host) {
@@ -56,7 +66,6 @@ export function NetworkingProvider({
       console.info("✅ Connected to host server");
 
       //join the space
-
       newSocket.emit(
         "join_space",
         {
@@ -241,12 +250,14 @@ export function NetworkingProvider({
         const audioProducer = await transport.produce({ track });
 
         //produce data
-        const dataProducer = await transport.produceData();
+        const newDataProducer = await transport.produceData();
 
-        dataProducer.on("open", () => {
-          setInterval(() => {
-            dataProducer.send("Hello World!!!");
-          }, 4000);
+        newDataProducer.on("open", () => {
+          setDataProducer(newDataProducer);
+        });
+
+        newDataProducer.on("close", () => {
+          setDataProducer(undefined);
         });
       } catch (error) {
         console.error(error);
@@ -383,9 +394,11 @@ export function NetworkingProvider({
               sctpStreamParameters,
             });
 
-            consumer.on("message", (data) => {
-              console.log("Got message:", data);
-            });
+            setDataConsumers(
+              produce((draft) => {
+                draft[consumer.id] = consumer;
+              })
+            );
           } catch (error) {
             console.error(error);
           }
@@ -399,8 +412,8 @@ export function NetworkingProvider({
   return (
     <NetworkingContext.Provider
       value={{
-        socket: undefined,
-        sendMessage: (message: SentWebsocketMessage) => {},
+        dataProducer,
+        dataConsumers,
       }}
     >
       {children}

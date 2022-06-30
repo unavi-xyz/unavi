@@ -1,9 +1,10 @@
+import { Triplet } from "@react-three/cannon";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Group } from "three";
 
 import { Avatar } from "../avatar";
-import { NetworkingContext } from "../networking";
-import { PlayerLocation, RecievedWebsocketMessage } from "../networking/types";
+import { LocationMessageSchema, NetworkingContext } from "../networking";
+import { PlayerLocation } from "../networking/types";
 import { useAnimationWeights } from "./useAnimationWeights";
 import { useApplyLocation } from "./useApplyLocation";
 import { useInterpolateLocation } from "./useInterpolateLocation";
@@ -29,7 +30,7 @@ export function OtherPlayer({
 
   const [handle, setHandle] = useState<string>();
 
-  const { socket } = useContext(NetworkingContext);
+  const { dataConsumers } = useContext(NetworkingContext);
 
   // const profile = useProfileByHandle(handle);
   // const avatarUrl = useAvatarUrlFromProfile(profile);
@@ -39,30 +40,30 @@ export function OtherPlayer({
   useApplyLocation(groupRef, interpolatedLocation);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!dataConsumers) return;
 
-    function onMessage(event: MessageEvent) {
-      const { type, data } = JSON.parse(event.data) as RecievedWebsocketMessage;
+    const consumer = dataConsumers[id];
+    if (!consumer) return;
 
-      if (type === "location") {
-        //check if this player
-        if (data.userid === id) {
-          //set handle
-          if (handle !== data.handle) {
-            setHandle(data.handle);
-          }
+    function onMessage(message: string) {
+      const json = JSON.parse(message);
 
-          //set location
-          locationRef.current = data.location;
-        }
-      }
+      try {
+        const location = LocationMessageSchema.parse(json);
+
+        //set location
+        locationRef.current = {
+          position: location.position as Triplet,
+          rotation: location.rotation,
+        };
+      } catch {}
     }
 
-    socket.addEventListener("message", onMessage);
+    consumer.on("message", onMessage);
     return () => {
-      socket.removeEventListener("message", onMessage);
+      consumer.on("message", onMessage);
     };
-  }, [socket, id, handle]);
+  }, [dataConsumers, id, handle]);
 
   // useEffect(() => {
   //   if (!track) return;

@@ -1,9 +1,6 @@
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
 import { Producer, ProducerOptions } from "mediasoup/node/lib/Producer";
-import {
-  SctpParameters,
-  SctpStreamParameters,
-} from "mediasoup/node/lib/SctpParameters";
+import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 
 import { Transport } from "./Transport";
 

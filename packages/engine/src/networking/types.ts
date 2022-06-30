@@ -4,15 +4,20 @@ import {
   ConnectTransportData,
   ConsumeAudioData,
   ConsumeAudioResponse,
+  ConsumeDataData,
+  ConsumeDataResponse,
   CreateTransportResponse,
   GetRouterRtpCapabilitiesResponse,
   JoinSpaceData,
   JoinSpaceResponse,
   LeaveSpaceData,
   LeaveSpaceResponse,
-  NewConsumerData,
+  NewAudioConsumerData,
+  NewDataConsumerData,
   ProduceAudioData,
   ProduceAudioResponse,
+  ProduceDataData,
+  ProduceDataResponse,
 } from "./schemas";
 
 export interface SocketEvents {
@@ -24,23 +29,26 @@ export interface SocketEvents {
     data: LeaveSpaceData,
     callback: (res: LeaveSpaceResponse) => void | Promise<void>
   ) => void | Promise<void>;
+
   get_router_rtp_capabilities: (
     callback: (res: GetRouterRtpCapabilitiesResponse) => void
   ) => void | Promise<void>;
-  create_audio_producer_transport: (
+
+  create_producer_transport: (
     callback: (res: CreateTransportResponse) => void
   ) => void | Promise<void>;
-  create_audio_consumer_transport: (
+  create_consumer_transport: (
     callback: (res: CreateTransportResponse) => void
   ) => void | Promise<void>;
-  connect_audio_producer_transport: (
+  connect_producer_transport: (
     data: ConnectTransportData,
     callback: (res: CreateTransportResponse) => void
   ) => void | Promise<void>;
-  connect_audio_consumer_transport: (
+  connect_consumer_transport: (
     data: ConnectTransportData,
     callback: (res: CreateTransportResponse) => void
   ) => void | Promise<void>;
+
   produce_audio: (
     data: ProduceAudioData,
     callback: (res: ProduceAudioResponse) => void
@@ -49,7 +57,18 @@ export interface SocketEvents {
     data: ConsumeAudioData,
     callback: (res: ConsumeAudioResponse) => void
   ) => void | Promise<void>;
-  new_consumer: (data: NewConsumerData) => void | Promise<void>;
+
+  produce_data: (
+    data: ProduceDataData,
+    callback: (res: ProduceDataResponse) => void
+  ) => void | Promise<void>;
+  consume_data: (
+    data: ConsumeDataData,
+    callback: (res: ConsumeDataResponse) => void
+  ) => void | Promise<void>;
+
+  new_audio_consumer: (data: NewAudioConsumerData) => void | Promise<void>;
+  new_data_consumer: (data: NewDataConsumerData) => void | Promise<void>;
 }
 
 //old

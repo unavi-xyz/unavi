@@ -8,8 +8,10 @@ import {
   CreateTransportResponseSchema,
   GetRouterRtpCapabilitiesResponseSchema,
   JoinSpaceResponseSchema,
-  NewConsumerDataSchema,
-  ProduceResponseSchema,
+  NewAudioConsumerDataSchema,
+  NewDataConsumerDataSchema,
+  ProduceAudioResponseSchema,
+  ProduceDataResponseSchema,
 } from "./schemas";
 import { SentWebsocketMessage, SocketEvents } from "./types";
 
@@ -78,7 +80,6 @@ export function NetworkingProvider({
                 if (!success || !routerRtpCapabilities) {
                   throw new Error("Failed to get router rtp capabilities");
                 }
-                console.info("✅ Got router RTP capabilities");
 
                 //create mediasoup device
                 try {
@@ -123,14 +124,13 @@ export function NetworkingProvider({
 
     //👩‍🍳 PRODUCER
     //create producer transport
-    socket.emit("create_audio_producer_transport", async (res) => {
+    socket.emit("create_producer_transport", async (res) => {
       try {
         const { success, params } = CreateTransportResponseSchema.parse(res);
 
         if (!success || !params) {
           throw new Error("Failed to create producer transport");
         }
-        console.info("✅ Created producer transport");
 
         //create local transport
         const transport = device.createSendTransport(params as any);
@@ -138,7 +138,7 @@ export function NetworkingProvider({
         //handle connect
         transport.on("connect", ({ dtlsParameters }, callback, errcallback) => {
           socket.emit(
-            "connect_audio_producer_transport",
+            "connect_producer_transport",
             { dtlsParameters },
             (res) => {
               try {
@@ -190,10 +190,36 @@ export function NetworkingProvider({
             },
             (res) => {
               try {
-                const { success, id } = ProduceResponseSchema.parse(res);
+                const { success, id } = ProduceAudioResponseSchema.parse(res);
 
                 if (!success || !id) {
-                  throw new Error("Failed to produce");
+                  throw new Error("Failed to produce audio");
+                }
+
+                callback({ id });
+              } catch (error) {
+                console.error(error);
+                errcallback();
+              }
+            }
+          );
+        });
+
+        //handle produce data
+        transport.on("producedata", (params, callback, errcallback) => {
+          const { sctpStreamParameters } = params;
+
+          socket.emit(
+            "produce_data",
+            {
+              sctpStreamParameters,
+            },
+            (res) => {
+              try {
+                const { success, id } = ProduceDataResponseSchema.parse(res);
+
+                if (!success || !id) {
+                  throw new Error("Failed to produce data");
                 }
 
                 callback({ id });
@@ -212,7 +238,16 @@ export function NetworkingProvider({
         const track = stream.getAudioTracks()[0];
 
         //produce audio track
-        await transport.produce({ track });
+        const audioProducer = await transport.produce({ track });
+
+        //produce data
+        const dataProducer = await transport.produceData();
+
+        dataProducer.on("open", () => {
+          setInterval(() => {
+            dataProducer.send("Hello World!!!");
+          }, 4000);
+        });
       } catch (error) {
         console.error(error);
       }
@@ -220,14 +255,13 @@ export function NetworkingProvider({
 
     //🍔 CONSUMER
     //create consumer transport
-    socket.emit("create_audio_consumer_transport", async (res) => {
+    socket.emit("create_consumer_transport", async (res) => {
       try {
         const { success, params } = CreateTransportResponseSchema.parse(res);
 
         if (!success || !params) {
           throw new Error("Failed to create consumer transport");
         }
-        console.info("✅ Created consumer transport");
 
         //create local transport
         const transport = device.createRecvTransport(params as any);
@@ -235,7 +269,7 @@ export function NetworkingProvider({
         //handle connect
         transport.on("connect", ({ dtlsParameters }, callback, errcallback) => {
           socket.emit(
-            "connect_audio_consumer_transport",
+            "connect_consumer_transport",
             { dtlsParameters },
             (res) => {
               try {
@@ -294,14 +328,14 @@ export function NetworkingProvider({
         );
 
         //receive new consumers
-        socket.on("new_consumer", async (data) => {
+        socket.on("new_audio_consumer", async (data) => {
           try {
             const { producerId, id, kind, rtpParameters } =
-              NewConsumerDataSchema.parse(data);
+              NewAudioConsumerDataSchema.parse(data);
 
             if (transport.closed) throw new Error("Transport closed");
 
-            console.info("✨🍔 New consumer");
+            console.info("✨🍔 New audio consumer");
 
             //start consuming
             const consumer = await transport.consume({
@@ -323,6 +357,35 @@ export function NetworkingProvider({
             }
 
             document.addEventListener("click", startAudio, { once: true });
+          } catch (error) {
+            console.error(error);
+          }
+        });
+
+        socket.on("new_data_consumer", async (data) => {
+          try {
+            const { dataProducerId, sctpStreamParameters, id } =
+              NewDataConsumerDataSchema.parse(data);
+
+            if (transport.closed) throw new Error("Transport closed");
+
+            if (!sctpStreamParameters)
+              throw new Error("No sctpStreamParameters");
+
+            if (!dataProducerId) throw new Error("No dataProducerId");
+
+            console.info("✨🍔 New data consumer");
+
+            //start consuming
+            const consumer = await transport.consumeData({
+              dataProducerId,
+              id,
+              sctpStreamParameters,
+            });
+
+            consumer.on("message", (data) => {
+              console.log("Got message:", data);
+            });
           } catch (error) {
             console.error(error);
           }

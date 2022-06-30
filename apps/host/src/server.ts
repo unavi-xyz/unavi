@@ -8,6 +8,7 @@ import {
   JoinSpaceDataSchema,
   LeaveSpaceDataSchema,
   ProduceAudioDataSchema,
+  ProduceDataDataSchema,
 } from "@wired-xr/engine/src/networking/schemas";
 
 import { GameManager } from "./classes/GameManager";
@@ -84,10 +85,10 @@ async function start() {
       });
     });
 
-    socket.on("create_audio_producer_transport", async (callback) => {
+    socket.on("create_producer_transport", async (callback) => {
       try {
         const { transport, params } = await createWebRtcTransport(router);
-        player.audioProducer.transport = transport;
+        player.producer.transport = transport;
 
         callback({
           success: true,
@@ -101,10 +102,10 @@ async function start() {
       }
     });
 
-    socket.on("create_audio_consumer_transport", async (callback) => {
+    socket.on("create_consumer_transport", async (callback) => {
       try {
         const { transport, params } = await createWebRtcTransport(router);
-        player.audioConsumer.transport = transport;
+        player.consumer.transport = transport;
 
         callback({
           success: true,
@@ -118,14 +119,14 @@ async function start() {
       }
     });
 
-    socket.on("connect_audio_producer_transport", async (data, callback) => {
+    socket.on("connect_producer_transport", async (data, callback) => {
       try {
         const { dtlsParameters } = ConnectTransportDataSchema.parse(data);
 
-        if (!player.audioProducer.transport)
+        if (!player.producer.transport)
           throw new Error("audioProducerTransport is required");
 
-        await player.audioProducer.transport.connect({
+        await player.producer.transport.connect({
           dtlsParameters,
         });
 
@@ -140,13 +141,15 @@ async function start() {
       }
     });
 
-    socket.on("connect_audio_consumer_transport", async (data, callback) => {
+    socket.on("connect_consumer_transport", async (data, callback) => {
       try {
-        if (!player.audioConsumer.transport)
+        const { dtlsParameters } = ConnectTransportDataSchema.parse(data);
+
+        if (!player.consumer.transport)
           throw new Error("audioConsumerTransport is required");
 
-        await player.audioConsumer.transport.connect({
-          dtlsParameters: data.dtlsParameters,
+        await player.consumer.transport.connect({
+          dtlsParameters,
         });
 
         callback({
@@ -189,6 +192,24 @@ async function start() {
 
         callback({
           success: true,
+        });
+      } catch (error) {
+        console.error(error);
+        callback({
+          success: false,
+        });
+      }
+    });
+
+    socket.on("produce_data", async (data, callback) => {
+      try {
+        const { sctpStreamParameters } = ProduceDataDataSchema.parse(data);
+
+        const id = await player.produceData(sctpStreamParameters);
+
+        callback({
+          success: true,
+          id,
         });
       } catch (error) {
         console.error(error);

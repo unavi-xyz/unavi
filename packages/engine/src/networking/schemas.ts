@@ -162,6 +162,14 @@ export const CreateTransportResponseSchema = z.object({
           })
         ),
       }),
+      sctpParameters: z
+        .object({
+          port: z.number(),
+          OS: z.number(),
+          MIS: z.number(),
+          maxMessageSize: z.number(),
+        })
+        .optional(),
     })
     .optional(),
 });
@@ -169,14 +177,8 @@ export type CreateTransportResponse = z.infer<
   typeof CreateTransportResponseSchema
 >;
 
-//Produce
-export const ProduceResponseSchema = z.object({
-  success: z.boolean(),
-  id: z.string().optional(),
-});
-
-//NewConsumer
-export const NewConsumerDataSchema = z.object({
+//NewAudioConsumer
+export const NewAudioConsumerDataSchema = z.object({
   producerId: z.string(),
   id: z.string(),
   kind: MediaTypeSchema,
@@ -189,7 +191,7 @@ export const NewConsumerDataSchema = z.object({
   ]),
   producerPaused: z.boolean(),
 });
-export type NewConsumerData = z.infer<typeof NewConsumerDataSchema>;
+export type NewAudioConsumerData = z.infer<typeof NewAudioConsumerDataSchema>;
 
 //ConnectTransport
 export const ConnectTransportDataSchema = z.object({
@@ -236,3 +238,49 @@ export const ConsumeAudioResposneSchema = z.object({
   success: z.boolean(),
 });
 export type ConsumeAudioResponse = z.infer<typeof ConsumeAudioResposneSchema>;
+
+//ProduceData
+export const ProduceDataDataSchema = z.object({
+  sctpStreamParameters: z.object({
+    streamId: z.number(),
+    ordered: z.boolean().optional(),
+    maxPacketLifeTime: z.number().optional(),
+    maxRetransmits: z.number().optional(),
+  }),
+});
+export type ProduceDataData = z.infer<typeof ProduceDataDataSchema>;
+export const ProduceDataResponseSchema = z.object({
+  success: z.boolean(),
+  id: z.string().optional(),
+});
+export type ProduceDataResponse = z.infer<typeof ProduceDataResponseSchema>;
+
+//ConsumeData
+export const ConsumeDataDataSchema = z.object({
+  sctpCapabilities: z.object({
+    numStreams: z.object({
+      OS: z.number(),
+      MIS: z.number(),
+    }),
+  }),
+});
+export type ConsumeDataData = z.infer<typeof ConsumeDataDataSchema>;
+export const ConsumeDataResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type ConsumeDataResponse = z.infer<typeof ConsumeDataResponseSchema>;
+
+//NewDataConsumer
+export const NewDataConsumerDataSchema = z.object({
+  dataProducerId: z.string(),
+  id: z.string(),
+  sctpStreamParameters: z
+    .object({
+      streamId: z.number(),
+      ordered: z.boolean().optional(),
+      maxPacketLifeTime: z.number().optional(),
+      maxRetransmits: z.number().optional(),
+    })
+    .optional(),
+});
+export type NewDataConsumerData = z.infer<typeof NewDataConsumerDataSchema>;

@@ -34,6 +34,8 @@ export async function createWebRtcTransport(router: Router) {
   const transport = await router.createWebRtcTransport({
     enableUdp: true,
     enableTcp: true,
+    enableSctp: true,
+    preferUdp: true,
     listenIps: [
       {
         ip: "0.0.0.0",
@@ -49,6 +51,7 @@ export async function createWebRtcTransport(router: Router) {
       iceParameters: transport.iceParameters,
       iceCandidates: transport.iceCandidates,
       dtlsParameters: transport.dtlsParameters,
+      sctpParameters: transport.sctpParameters,
     },
   };
 }

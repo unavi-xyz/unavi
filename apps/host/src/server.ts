@@ -40,6 +40,17 @@ async function start() {
   //global variables
   const manager = new GameManager(router);
 
+  //handle express requests
+  app.get("/space/:id/player_count", (req, res) => {
+    const id = req.params.id;
+
+    const space = manager.getSpace(id);
+    if (!space) res.send("0");
+
+    const playerCount = space.playercount;
+    res.send(`${playerCount}`);
+  });
+
   //handle socket connections
   io.on("connection", (socket: TypedSocket) => {
     const player = manager.createPlayer(socket);

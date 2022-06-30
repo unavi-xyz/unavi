@@ -8,6 +8,8 @@ import {
   ConsumeDataResponse,
   CreateTransportResponse,
   GetRouterRtpCapabilitiesResponse,
+  IdentityData,
+  IdentityResponse,
   JoinSpaceData,
   JoinSpaceResponse,
   LeaveSpaceData,
@@ -18,6 +20,9 @@ import {
   ProduceAudioResponse,
   ProduceDataData,
   ProduceDataResponse,
+  ReceiveChatMessageData,
+  SendChatMessageData,
+  SendChatMessageResponse,
 } from "./schemas";
 
 export interface SocketEvents {
@@ -69,16 +74,27 @@ export interface SocketEvents {
 
   new_audio_consumer: (data: NewAudioConsumerData) => void | Promise<void>;
   new_data_consumer: (data: NewDataConsumerData) => void | Promise<void>;
+
+  set_identity: (
+    data: IdentityData,
+    callback: (res: IdentityResponse) => void
+  ) => void | Promise<void>;
+  send_chat_message: (
+    data: SendChatMessageData,
+    callback: (res: SendChatMessageResponse) => void
+  ) => void | Promise<void>;
+  recieve_chat_message: (data: ReceiveChatMessageData) => void | Promise<void>;
 }
 
-//old
 export type IChatMessage = {
-  id: string;
-  username: string;
-  message: string;
+  messageId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
   timestamp: number;
 };
 
+//old
 export type PlayerIdentity = {
   isGuest: boolean;
   handle?: string;

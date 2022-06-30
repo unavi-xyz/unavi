@@ -2,73 +2,86 @@ import { KeyboardEvent, useContext, useEffect, useRef } from "react";
 
 import {
   NetworkingContext,
+  ReceiveChatMessageDataSchema,
   RecievedWebsocketMessage,
-  SentChatMessage,
+  SendChatMessageResponseSchema,
 } from "@wired-xr/engine";
 
 import { useAppStore } from "../app/store";
 import ChatMessage from "./ChatMessage";
+import { usePublishIdentity } from "./hooks/usePublishIdentity";
 
 export default function Chat() {
   const chatInputRef = useRef<HTMLInputElement>(null);
   const focusedRef = useRef(false);
 
   const messages = useAppStore((state) => state.messages);
-  // const { socket, sendMessage } = useContext(NetworkingContext);
+  const { socket } = useContext(NetworkingContext);
 
-  // useEffect(() => {
-  //   if (!socket) return;
+  usePublishIdentity();
 
-  //   function onMessage(event: MessageEvent) {
-  //     const { type, data } = JSON.parse(event.data) as RecievedWebsocketMessage;
+  useEffect(() => {
+    if (!socket) return;
 
-  //     if (type === "chatmessage") {
-  //       useAppStore.getState().addMessage(data);
-  //     }
-  //   }
+    function onMessage(event: MessageEvent) {
+      const { type, data } = JSON.parse(event.data) as RecievedWebsocketMessage;
 
-  //   socket.addEventListener("message", onMessage);
-  //   return () => {
-  //     socket.removeEventListener("message", onMessage);
-  //   };
-  // }, [socket]);
+      if (type === "chatmessage") {
+        useAppStore.getState().addMessage(data);
+      }
+    }
 
-  // useEffect(() => {
-  //   useAppStore.setState({ chatInputRef });
-  // }, []);
+    socket.on("recieve_chat_message", async (data) => {
+      try {
+        const message = ReceiveChatMessageDataSchema.parse(data);
 
-  // function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-  //   if (focusedRef.current !== true) return;
+        useAppStore.getState().addMessage(message);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }, [socket]);
 
-  //   //disable controls when typing
-  //   e.stopPropagation();
+  useEffect(() => {
+    useAppStore.setState({ chatInputRef });
+  }, []);
 
-  //   if (e.key === "Enter") {
-  //     const target = e.target as HTMLInputElement;
-  //     const text = target.value;
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (focusedRef.current !== true) return;
 
-  //     if (text === "") return;
+    //disable controls when typing
+    e.stopPropagation();
 
-  //     const message: SentChatMessage = {
-  //       type: "chatmessage",
-  //       data: text,
-  //     };
+    if (e.key === "Enter") {
+      const target = e.target as HTMLInputElement;
+      const text = target.value;
 
-  //     sendMessage(message);
+      if (text === "") return;
 
-  //     target.value = "";
-  //   }
-  // }
+      const message = text;
+
+      if (socket) {
+        socket.emit("send_chat_message", { message }, (res) => {
+          const { success } = SendChatMessageResponseSchema.parse(res);
+          if (!success) {
+            console.error("Failed to send chat message");
+          }
+        });
+      }
+
+      target.value = "";
+    }
+  }
 
   return (
     <div className="absolute bottom-0 p-8 w-full space-y-4 z-10">
       <div className="w-full max-w-lg overflow-y-hidden flex flex-col-reverse">
         {messages.map((message) => {
-          return <ChatMessage key={message.id} message={message} />;
+          return <ChatMessage key={message.messageId} message={message} />;
         })}
       </div>
 
-      {/* <input
+      <input
         ref={chatInputRef}
         onKeyDown={handleKeyDown}
         onFocus={() => (focusedRef.current = true)}
@@ -80,7 +93,7 @@ export default function Chat() {
         className="px-3 py-2 rounded outline-none w-full max-w-lg bg-surfaceDark
                    bg-opacity-50 backdrop-blur-xl focus:bg-opacity-100 text-sm transition
                  text-onSurfaceDark placeholder-onSurfaceDark placeholder-opacity-60"
-      /> */}
+      />
     </div>
   );
 }

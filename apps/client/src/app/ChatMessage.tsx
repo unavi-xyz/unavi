@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 
 import { IChatMessage } from "@wired-xr/engine";
 
-const showDuration = 10000;
+const showDurationMs = 10 * 1000;
 
 function isFading(message: IChatMessage) {
-  return Date.now() - message.timestamp / 1000000.0 > showDuration;
+  return Date.now() - message.timestamp > showDurationMs;
 }
 
 function isHidden(message: IChatMessage) {
-  return Date.now() - message.timestamp / 1000000.0 > showDuration + 2000;
+  return Date.now() - message.timestamp > showDurationMs + 2000;
 }
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function ChatMessage({ message }: Props) {
-  const { message: text, username } = message;
+  const { text, senderName } = message;
 
   const [hidden, setHidden] = useState(isHidden(message));
   const [fading, setFading] = useState(isFading(message));
@@ -55,7 +55,7 @@ export default function ChatMessage({ message }: Props) {
       className={`flex items-center space-x-2 my-1 py-2 px-2 bg-surface text-onSurface
                   w-min min-w-fit rounded-lg text-sm transition-all duration-700 ${exitCss}`}
     >
-      {username && <div className="break-normal">{username}:</div>}
+      <div className="break-normal">{senderName}:</div>
       <div className="break-words">{text}</div>
     </div>
   );

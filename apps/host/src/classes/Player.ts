@@ -1,6 +1,9 @@
 import { ProducerOptions } from "mediasoup/node/lib/Producer";
 import { RtpCapabilities } from "mediasoup/node/lib/RtpParameters";
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
+import { nanoid } from "nanoid";
+
+import { IChatMessage } from "@wired-xr/engine";
 
 import { TypedSocket } from "../types";
 import { ConsumerTransport } from "./ConsumerTransport";
@@ -8,6 +11,8 @@ import { GameManager } from "./GameManager";
 import { ProducerTransport } from "./ProducerTransport";
 
 export class Player {
+  public handle: string | null = null;
+
   public readonly id: string;
   public readonly joinedSpaces = new Set<string>();
 
@@ -46,6 +51,37 @@ export class Player {
     //close all transports
     this.producer.close();
     this.consumer.close();
+  }
+
+  public get identity() {
+    //if no handle is set, return a guest name
+    if (!this.handle) {
+      return `Guest ${this.id.slice(0, 5)}`;
+    }
+
+    return this.handle;
+  }
+
+  public sendChatMessage(text: string) {
+    const chatMessage: IChatMessage = {
+      messageId: nanoid(),
+      senderId: this.id,
+      senderName: this.identity,
+      text,
+      timestamp: Date.now(),
+    };
+
+    //send to each space
+    for (const spaceId of this.joinedSpaces) {
+      const space = this._manager.getSpace(spaceId);
+      if (!space) continue;
+
+      space.sendChatMessage(this.id, chatMessage);
+    }
+  }
+
+  public recieveChatMessage(chatMessage: IChatMessage) {
+    this._socket.emit("recieve_chat_message", chatMessage);
   }
 
   //audio

@@ -1,3 +1,5 @@
+import { IChatMessage } from "@wired-xr/engine";
+
 import { GameManager } from "./GameManager";
 import { Player } from "./Player";
 
@@ -33,6 +35,16 @@ export class Space {
     //if no players left, delete space
     if (this.playercount === 0) {
       this._manager.deleteSpace(this.id);
+    }
+  }
+
+  public sendChatMessage(playerId: string, message: IChatMessage) {
+    const player = this._players.get(playerId);
+    if (!player) return;
+
+    //send message to all players in the space
+    for (const player of this._players.values()) {
+      player.recieveChatMessage(message);
     }
   }
 

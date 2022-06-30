@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
@@ -10,11 +9,6 @@ import { useProfileByHandle } from "../../src/lib/lens/hooks/useProfileByHandle"
 import { useSetProfileMetadata } from "../../src/lib/lens/hooks/useSetProfileMetadata";
 import { useSetProfilePicture } from "../../src/lib/lens/hooks/useSetProfilePicture";
 import { useLensStore } from "../../src/lib/lens/store";
-import {
-  AttributeData,
-  MetadataVersions,
-  ProfileMetadata,
-} from "../../src/lib/lens/types";
 import MetaTags from "../../src/ui/MetaTags";
 import Button from "../../src/ui/base/Button";
 import FileUpload from "../../src/ui/base/FileUpload";

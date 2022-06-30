@@ -61,7 +61,7 @@ export function OtherPlayer({
 
     consumer.on("message", onMessage);
     return () => {
-      consumer.on("message", onMessage);
+      consumer.off("message", onMessage);
     };
   }, [dataConsumers, id, handle]);
 

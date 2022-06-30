@@ -285,6 +285,40 @@ export const NewDataConsumerDataSchema = z.object({
 });
 export type NewDataConsumerData = z.infer<typeof NewDataConsumerDataSchema>;
 
+//Identity
+export const IdentityDataSchema = z.object({
+  handle: z.union([z.string(), z.null()]),
+});
+export type IdentityData = z.infer<typeof IdentityDataSchema>;
+export const IdentityResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type IdentityResponse = z.infer<typeof IdentityResponseSchema>;
+
+//ChatMessage
+export const SendChatMessageDataSchema = z.object({
+  message: z.string(),
+});
+export type SendChatMessageData = z.infer<typeof SendChatMessageDataSchema>;
+export const SendChatMessageResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type SendChatMessageResponse = z.infer<
+  typeof SendChatMessageResponseSchema
+>;
+
+//RecieveChatMessage
+export const ReceiveChatMessageDataSchema = z.object({
+  messageId: z.string(),
+  senderId: z.string(),
+  senderName: z.string(),
+  text: z.string(),
+  timestamp: z.number(),
+});
+export type ReceiveChatMessageData = z.infer<
+  typeof ReceiveChatMessageDataSchema
+>;
+
 //Location
 export const LocationMessageSchema = z.object({
   type: z.literal("location"),

@@ -5,10 +5,12 @@ import { Server } from "socket.io";
 import {
   ConnectTransportDataSchema,
   ConsumeAudioDataSchema,
+  IdentityDataSchema,
   JoinSpaceDataSchema,
   LeaveSpaceDataSchema,
   ProduceAudioDataSchema,
   ProduceDataDataSchema,
+  SendChatMessageDataSchema,
 } from "@wired-xr/engine/src/networking/schemas";
 
 import { GameManager } from "./classes/GameManager";
@@ -77,6 +79,40 @@ async function start() {
         const { spaceId } = LeaveSpaceDataSchema.parse(data);
 
         player.leaveSpace(spaceId);
+
+        callback({
+          success: true,
+        });
+      } catch (error) {
+        console.error(error);
+        callback({
+          success: false,
+        });
+      }
+    });
+
+    socket.on("set_identity", async (data, callback) => {
+      try {
+        const { handle } = IdentityDataSchema.parse(data);
+
+        player.handle = handle;
+
+        callback({
+          success: true,
+        });
+      } catch (error) {
+        console.error(error);
+        callback({
+          success: false,
+        });
+      }
+    });
+
+    socket.on("send_chat_message", async (data, callback) => {
+      try {
+        const { message } = SendChatMessageDataSchema.parse(data);
+
+        player.sendChatMessage(message);
 
         callback({
           success: true,

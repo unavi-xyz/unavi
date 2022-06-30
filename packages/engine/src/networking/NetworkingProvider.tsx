@@ -25,9 +25,11 @@ type DataConsumers = {
 };
 
 export const NetworkingContext = createContext<{
+  socket: TypedSocket | undefined;
   dataProducer: DataProducer | undefined;
   dataConsumers: DataConsumers;
 }>({
+  socket: undefined,
   dataProducer: undefined,
   dataConsumers: {},
 });
@@ -412,6 +414,7 @@ export function NetworkingProvider({
   return (
     <NetworkingContext.Provider
       value={{
+        socket,
         dataProducer,
         dataConsumers,
       }}

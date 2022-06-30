@@ -62,7 +62,7 @@ export class Space {
     //tell all players in the space to consume this producer
     for (const player of this._players.values()) {
       if (player.id === playerId) return;
-      player.consumeAudio(producer.id);
+      player.consumeAudio(producer.id, player.id, this.id);
     }
   }
 
@@ -88,7 +88,7 @@ export class Space {
         return;
       }
 
-      player.consumeAudio(producer.id);
+      player.consumeAudio(producer.id, producerPlayerId, this.id);
     }
   }
 
@@ -109,7 +109,7 @@ export class Space {
     //tell all players in the space to consume this producer
     for (const player of this._players.values()) {
       if (player.id === playerId) return;
-      player.consumeData(dataProducer.id);
+      player.consumeData(dataProducer.id, player.id, this.id);
     }
   }
 
@@ -135,7 +135,7 @@ export class Space {
         return;
       }
 
-      player.consumeData(dataProducer.id);
+      player.consumeData(dataProducer.id, producerPlayerId, this.id);
     }
   }
 }

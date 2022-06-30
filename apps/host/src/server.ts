@@ -47,7 +47,10 @@ async function start() {
     const id = req.params.id;
 
     const space = manager.getSpace(id);
-    if (!space) res.send("0");
+    if (!space) {
+      res.send("0");
+      return;
+    }
 
     const playerCount = space.playercount;
     res.send(`${playerCount}`);

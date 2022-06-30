@@ -9,11 +9,11 @@ interface Props {
 }
 
 export function PlayerManager({ animationsUrl, defaultAvatarUrl }: Props) {
-  const { dataConsumers } = useContext(NetworkingContext);
+  const { otherPlayers } = useContext(NetworkingContext);
 
   return (
     <>
-      {Object.keys(dataConsumers).map((playerId) => {
+      {Object.keys(otherPlayers).map((playerId) => {
         return (
           <OtherPlayer
             key={playerId}

@@ -1,3 +1,5 @@
+import { Consumer } from "mediasoup/node/lib/Consumer";
+import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
 import { ProducerOptions } from "mediasoup/node/lib/Producer";
 import { RtpCapabilities } from "mediasoup/node/lib/RtpParameters";
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
@@ -19,6 +21,9 @@ export class Player {
   public readonly producer = new ProducerTransport();
   public readonly consumer = new ConsumerTransport();
 
+  private _consumers = new Map<string, Consumer[]>();
+  private _dataConsumers = new Map<string, DataConsumer[]>();
+
   private _rtpCapabilities: RtpCapabilities | null = null;
 
   private _socket: TypedSocket;
@@ -33,13 +38,31 @@ export class Player {
 
   //spaces
   public joinSpace(spaceId: string) {
-    this._manager.getSpace(spaceId).join(this);
+    this._manager.getOrCreateSpace(spaceId).join(this);
     this.joinedSpaces.add(spaceId);
   }
 
   public leaveSpace(spaceId: string) {
-    this._manager.getSpace(spaceId).leave(this.id);
+    this._manager.getOrCreateSpace(spaceId).leave(this.id);
     this.joinedSpaces.delete(spaceId);
+
+    //remove all consumers
+    const consumers = this._consumers.get(spaceId);
+    if (consumers) {
+      for (const consumer of consumers) {
+        consumer.close();
+      }
+    }
+    this._consumers.delete(spaceId);
+
+    //remove all data consumers
+    const dataConsumers = this._dataConsumers.get(spaceId);
+    if (dataConsumers) {
+      for (const dataConsumer of dataConsumers) {
+        dataConsumer.close();
+      }
+    }
+    this._dataConsumers.delete(spaceId);
   }
 
   public disconnect() {
@@ -73,7 +96,7 @@ export class Player {
 
     //send to each space
     for (const spaceId of this.joinedSpaces) {
-      const space = this._manager.getSpace(spaceId);
+      const space = this._manager.getOrCreateSpace(spaceId);
       if (!space) continue;
 
       space.sendChatMessage(this.id, chatMessage);
@@ -91,7 +114,7 @@ export class Player {
     //broadcast to spaces
     //you will create a new consumer for each audio producer
     for (const spaceId of this.joinedSpaces) {
-      this._manager.getSpace(spaceId).registerNewAudioConsumer(this.id);
+      this._manager.getOrCreateSpace(spaceId).registerNewAudioConsumer(this.id);
     }
   }
 
@@ -106,13 +129,17 @@ export class Player {
     //broadcast to spaces
     //each player will create a new consumer for this producer
     for (const spaceId of this.joinedSpaces) {
-      this._manager.getSpace(spaceId).registerNewAudioProducer(this.id);
+      this._manager.getOrCreateSpace(spaceId).registerNewAudioProducer(this.id);
     }
 
     return audioProducerId;
   }
 
-  public async consumeAudio(producerId: string) {
+  public async consumeAudio(
+    producerId: string,
+    playerId: string,
+    spaceId: string
+  ) {
     const rtpCapabilities = this._rtpCapabilities;
     if (!rtpCapabilities) return;
 
@@ -128,8 +155,17 @@ export class Player {
     });
     if (!consumer) return;
 
+    //add to list
+    const space = this._consumers.get(spaceId);
+    if (!space) {
+      this._consumers.set(spaceId, [consumer]);
+    } else {
+      space.push(consumer);
+    }
+
     //send consumer to the client
     this._socket.emit("new_audio_consumer", {
+      playerId,
       producerId,
       id: consumer.id,
       kind: consumer.kind,
@@ -147,20 +183,33 @@ export class Player {
     //broadcast to spaces
     //each player will create a new consumer for this producer
     for (const spaceId of this.joinedSpaces) {
-      this._manager.getSpace(spaceId).registerNewDataProducer(this.id);
+      this._manager.getOrCreateSpace(spaceId).registerNewDataProducer(this.id);
     }
 
     return dataProducerId;
   }
 
-  public async consumeData(dataProducerId: string) {
+  public async consumeData(
+    dataProducerId: string,
+    playerId: string,
+    spaceId: string
+  ) {
     const dataConsumer = await this.consumer.consumeData({
       dataProducerId,
     });
     if (!dataConsumer) return;
 
+    //add to list
+    const space = this._dataConsumers.get(spaceId);
+    if (!space) {
+      this._dataConsumers.set(spaceId, [dataConsumer]);
+    } else {
+      space.push(dataConsumer);
+    }
+
     //send consumer to the client
     this._socket.emit("new_data_consumer", {
+      playerId,
       dataProducerId,
       id: dataConsumer.id,
       sctpStreamParameters: dataConsumer.sctpStreamParameters,

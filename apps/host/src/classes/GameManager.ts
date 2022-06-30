@@ -18,7 +18,11 @@ export class GameManager {
   }
 
   public getSpace(spaceId: string) {
-    const space = this._spaces.get(spaceId);
+    return this._spaces.get(spaceId);
+  }
+
+  public getOrCreateSpace(spaceId: string) {
+    const space = this.getSpace(spaceId);
     if (space) return space;
 
     //create space if it doesn't exist

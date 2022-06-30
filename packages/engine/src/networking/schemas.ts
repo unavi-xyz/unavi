@@ -179,6 +179,7 @@ export type CreateTransportResponse = z.infer<
 
 //NewAudioConsumer
 export const NewAudioConsumerDataSchema = z.object({
+  playerId: z.string(),
   producerId: z.string(),
   id: z.string(),
   kind: MediaTypeSchema,
@@ -272,6 +273,7 @@ export type ConsumeDataResponse = z.infer<typeof ConsumeDataResponseSchema>;
 
 //NewDataConsumer
 export const NewDataConsumerDataSchema = z.object({
+  playerId: z.string(),
   dataProducerId: z.string(),
   id: z.string(),
   sctpStreamParameters: z

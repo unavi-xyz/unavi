@@ -1,5 +1,6 @@
 import produce from "immer";
 import { Device } from "mediasoup-client";
+import { Consumer } from "mediasoup-client/lib/Consumer";
 import { DataConsumer } from "mediasoup-client/lib/DataConsumer";
 import { DataProducer } from "mediasoup-client/lib/DataProducer";
 import { createContext, useEffect, useState } from "react";
@@ -20,18 +21,21 @@ import { SocketEvents } from "./types";
 
 type TypedSocket = Socket<SocketEvents, SocketEvents>;
 
-type DataConsumers = {
-  [key: string]: DataConsumer;
+type OtherPlayers = {
+  [key: string]: {
+    audioConsumer: Consumer | undefined;
+    dataConsumer: DataConsumer | undefined;
+  };
 };
 
 export const NetworkingContext = createContext<{
   socket: TypedSocket | undefined;
   dataProducer: DataProducer | undefined;
-  dataConsumers: DataConsumers;
+  otherPlayers: OtherPlayers;
 }>({
   socket: undefined,
   dataProducer: undefined,
-  dataConsumers: {},
+  otherPlayers: {},
 });
 
 interface NetworkingProviderProps {
@@ -51,7 +55,7 @@ export function NetworkingProvider({
   const [device, setDevice] = useState<Device>();
 
   const [dataProducer, setDataProducer] = useState<DataProducer>();
-  const [dataConsumers, setDataConsumers] = useState<DataConsumers>({});
+  const [otherPlayers, setOtherPlayers] = useState<OtherPlayers>({});
 
   //create the websocket connection
   useEffect(() => {
@@ -343,7 +347,7 @@ export function NetworkingProvider({
         //receive new consumers
         socket.on("new_audio_consumer", async (data) => {
           try {
-            const { producerId, id, kind, rtpParameters } =
+            const { playerId, producerId, id, kind, rtpParameters } =
               NewAudioConsumerDataSchema.parse(data);
 
             if (transport.closed) throw new Error("Transport closed");
@@ -358,18 +362,29 @@ export function NetworkingProvider({
               rtpParameters,
             });
 
-            const stream = new MediaStream();
-            stream.addTrack(consumer.track);
+            consumer.on("close", () => {
+              console.info("🍔 Audio consumer closed");
 
-            //play stream
-            function startAudio() {
-              const audio = document.createElement("audio");
-              document.body.appendChild(audio);
-              audio.srcObject = stream;
-              audio.play();
-            }
+              //remove from list
+              setOtherPlayers(
+                produce((draft) => {
+                  draft[playerId].audioConsumer = undefined;
+                })
+              );
+            });
 
-            document.addEventListener("click", startAudio, { once: true });
+            setOtherPlayers(
+              produce((draft) => {
+                if (!draft[playerId]) {
+                  draft[playerId] = {
+                    audioConsumer: undefined,
+                    dataConsumer: undefined,
+                  };
+                }
+
+                draft[playerId].audioConsumer = consumer;
+              })
+            );
           } catch (error) {
             console.error(error);
           }
@@ -377,7 +392,7 @@ export function NetworkingProvider({
 
         socket.on("new_data_consumer", async (data) => {
           try {
-            const { dataProducerId, sctpStreamParameters, id } =
+            const { playerId, dataProducerId, sctpStreamParameters, id } =
               NewDataConsumerDataSchema.parse(data);
 
             if (transport.closed) throw new Error("Transport closed");
@@ -400,16 +415,23 @@ export function NetworkingProvider({
               console.info("🍔 Data consumer closed");
 
               //remove from list
-              setDataConsumers(
+              setOtherPlayers(
                 produce((draft) => {
-                  delete draft[consumer.id];
+                  delete draft[playerId];
                 })
               );
             });
 
-            setDataConsumers(
+            setOtherPlayers(
               produce((draft) => {
-                draft[consumer.id] = consumer;
+                if (!draft[playerId]) {
+                  draft[playerId] = {
+                    audioConsumer: undefined,
+                    dataConsumer: undefined,
+                  };
+                }
+
+                draft[playerId].dataConsumer = consumer;
               })
             );
           } catch (error) {
@@ -427,7 +449,7 @@ export function NetworkingProvider({
       value={{
         socket,
         dataProducer,
-        dataConsumers,
+        otherPlayers,
       }}
     >
       {children}

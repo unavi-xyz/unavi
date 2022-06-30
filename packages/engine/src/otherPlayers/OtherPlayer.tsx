@@ -1,6 +1,7 @@
 import { Triplet } from "@react-three/cannon";
+import { useThree } from "@react-three/fiber";
 import { useContext, useEffect, useRef, useState } from "react";
-import { Group } from "three";
+import { AudioListener, Group, PositionalAudio } from "three";
 
 import { Avatar } from "../avatar";
 import { LocationMessageSchema, NetworkingContext } from "../networking";
@@ -11,38 +12,34 @@ import { useInterpolateLocation } from "./useInterpolateLocation";
 
 interface Props {
   id: string;
-  track?: MediaStreamTrack;
   animationsUrl: string;
   defaultAvatarUrl: string;
 }
 
-export function OtherPlayer({
-  id,
-  track,
-  animationsUrl,
-  defaultAvatarUrl,
-}: Props) {
+export function OtherPlayer({ id, animationsUrl, defaultAvatarUrl }: Props) {
   const groupRef = useRef<Group>(null);
   const locationRef = useRef<PlayerLocation>({
     position: [0, 0, 0],
     rotation: 0,
   });
 
-  const [handle, setHandle] = useState<string>();
+  // const [handle, setHandle] = useState<string>();
 
-  const { dataConsumers } = useContext(NetworkingContext);
+  const { otherPlayers } = useContext(NetworkingContext);
 
   // const profile = useProfileByHandle(handle);
   // const avatarUrl = useAvatarUrlFromProfile(profile);
   const interpolatedLocation = useInterpolateLocation(locationRef);
   const animationWeights = useAnimationWeights(groupRef, interpolatedLocation);
 
+  const { camera } = useThree();
+
   useApplyLocation(groupRef, interpolatedLocation);
 
   useEffect(() => {
-    if (!dataConsumers) return;
+    if (!otherPlayers) return;
 
-    const consumer = dataConsumers[id];
+    const consumer = otherPlayers[id].dataConsumer;
     if (!consumer) return;
 
     function onMessage(message: string) {
@@ -63,31 +60,32 @@ export function OtherPlayer({
     return () => {
       consumer.off("message", onMessage);
     };
-  }, [dataConsumers, id, handle]);
+  }, [otherPlayers, id]);
 
-  // useEffect(() => {
-  //   if (!track) return;
+  useEffect(() => {
+    if (!otherPlayers) return;
 
-  //   function startAudio() {
-  //     if (!track) return;
+    const consumer = otherPlayers[id].audioConsumer;
+    if (!consumer) return;
 
-  //     const listener = new AudioListener();
-  //     const positional = new PositionalAudio(listener);
+    const stream = new MediaStream();
+    stream.addTrack(consumer.track);
 
-  //     camera.add(listener);
-  //     groupRef.current?.add(positional);
+    function startAudio() {
+      const listener = new AudioListener();
+      const positional = new PositionalAudio(listener);
 
-  //     const stream = new MediaStream();
-  //     stream.addTrack(track);
+      camera.add(listener);
+      groupRef.current?.add(positional);
 
-  //     const el = document.createElement("audio");
-  //     el.srcObject = stream;
+      const audio = new Audio();
+      audio.srcObject = stream;
 
-  //     positional.setMediaStreamSource(el.srcObject);
-  //   }
+      positional.setMediaStreamSource(audio.srcObject);
+    }
 
-  //   document.addEventListener("click", startAudio, { once: true });
-  // }, [camera, track]);
+    document.addEventListener("click", startAudio, { once: true });
+  }, [camera, otherPlayers]);
 
   return (
     <group ref={groupRef}>

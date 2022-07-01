@@ -1,0 +1,41 @@
+{
+  "name": "@wired-xr/lens",
+  "version": "0.0.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "codegen": "graphql-codegen --config codegen.yml && typechain --target ethers-v5 --out-dir contracts '**/abis/*.json'"
+  },
+  "dependencies": {
+    "@wired-xr/ethers": "*",
+    "@wired-xr/ipfs": "*",
+    "graphql": "^16.3.0",
+    "urql": "^2.2.0"
+  },
+  "devDependencies": {
+    "@ethersproject/abi": "^5.6.2",
+    "@ethersproject/bytes": "^5.6.1",
+    "@ethersproject/providers": "^5.6.6",
+    "@graphql-codegen/cli": "2.6.2",
+    "@graphql-codegen/introspection": "2.1.1",
+    "@graphql-codegen/typescript": "2.4.8",
+    "@graphql-codegen/typescript-operations": "2.3.5",
+    "@graphql-codegen/typescript-urql": "^3.5.10",
+    "@typechain/ethers-v5": "^10.0.0",
+    "@types/graphql": "^14.5.0",
+    "@types/react": "18.0.8",
+    "@types/react-dom": "^18.0.3",
+    "@wired-xr/tsconfig": "*",
+    "eslint": "^8.14.0",
+    "eslint-config-prettier": "^8.5.0",
+    "typechain": "^8.0.0",
+    "typescript": "^4.7.4"
+  },
+  "peerDependencies": {
+    "react": ">=18.0",
+    "react-dom": ">=18.0"
+  }
+}

@@ -1,12 +1,17 @@
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 
-import { uploadFileToIpfs } from "../../lib/ipfs/fetch";
-import { useCreatePost } from "../../lib/lens/hooks/useCreatePost";
-import { useProfileByHandle } from "../../lib/lens/hooks/useProfileByHandle";
-import { useLensStore } from "../../lib/lens/store";
-import { AppId, Metadata, MetadataVersions } from "../../lib/lens/types";
+import { IpfsContext } from "@wired-xr/ipfs";
+import {
+  AppId,
+  LensContext,
+  Metadata,
+  MetadataVersions,
+  useCreatePost,
+} from "@wired-xr/lens";
+import { useProfileByHandle } from "@wired-xr/lens";
+
 import Button from "../../ui/base/Button";
 import Card from "../../ui/base/Card";
 import FileUpload from "../../ui/base/FileUpload";
@@ -23,8 +28,10 @@ export default function AvatarUploadPage() {
   const [vrmFile, setVrmFile] = useState<File>();
   const [loading, setLoading] = useState(false);
 
+  const { uploadFileToIpfs } = useContext(IpfsContext);
+  const { handle } = useContext(LensContext);
+
   const router = useRouter();
-  const handle = useLensStore((state) => state.handle);
   const profile = useProfileByHandle(handle);
   const createPost = useCreatePost(profile?.id);
 
@@ -39,6 +46,7 @@ export default function AvatarUploadPage() {
       //upload image to IPFS
       const cropped = await crop(URL.createObjectURL(imageFile), 3 / 5);
       const imageURI = await uploadFileToIpfs(cropped);
+      if (!imageURI) throw new Error("Failed to upload image");
 
       //upload vrm to IPFS
       const vrmURI = await uploadFileToIpfs(vrmFile);
@@ -56,7 +64,7 @@ export default function AvatarUploadPage() {
         animation_url: undefined,
         external_url: "https://thewired.space",
         media: [{ item: imageURI, type: imageFile.type }],
-        appId: AppId.avatar,
+        appId: AppId.Avatar,
       };
 
       //create post

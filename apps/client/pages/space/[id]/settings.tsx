@@ -1,16 +1,16 @@
 import { NextPageContext } from "next";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
-import { useHidePublicationMutation } from "../../../src/generated/graphql";
+import { LensContext } from "@wired-xr/lens";
+import { useHidePublicationMutation } from "@wired-xr/lens/generated/graphql";
+
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
 import SpaceLayout from "../../../src/home/layouts/SpaceLayout/SpaceLayout";
 import {
   SpaceLayoutProps,
   getSpaceLayoutProps,
 } from "../../../src/home/layouts/SpaceLayout/getSpaceLayoutProps";
-import { authenticate } from "../../../src/lib/lens/authentication";
-import { useLensStore } from "../../../src/lib/lens/store";
 import Button from "../../../src/ui/base/Button";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
@@ -27,9 +27,10 @@ export default function Settings(props: SpaceLayoutProps) {
   const router = useRouter();
   const id = router.query.id;
 
-  const handle = useLensStore((state) => state.handle);
   const [loading, setLoading] = useState(false);
   const [, hidePublication] = useHidePublicationMutation();
+
+  const { handle, authenticate } = useContext(LensContext);
 
   useEffect(() => {
     if (!handle && id) router.push(`/space/${id}`);
@@ -43,7 +44,9 @@ export default function Settings(props: SpaceLayoutProps) {
     try {
       await authenticate();
       await hidePublication({
-        publicationId: id,
+        request: {
+          publicationId: id,
+        },
       });
       router.push(`/user/${handle}`);
     } catch (err) {

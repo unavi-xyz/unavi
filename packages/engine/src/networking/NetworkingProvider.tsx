@@ -41,14 +41,12 @@ export const NetworkingContext = createContext<{
 interface NetworkingProviderProps {
   spaceId: string;
   host: string;
-  handle?: string;
   children: React.ReactNode;
 }
 
 export function NetworkingProvider({
   spaceId,
   host,
-  handle,
   children,
 }: NetworkingProviderProps) {
   const [socket, setSocket] = useState<TypedSocket>();

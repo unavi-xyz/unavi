@@ -1,12 +1,12 @@
+import { HANDLE_ENDING, getMediaImageSSR } from "@wired-xr/lens";
 import {
-  GetProfileByHandleDocument,
-  GetProfileByHandleQuery,
-  GetProfileByHandleQueryVariables,
+  GetProfileDocument,
+  GetProfileQuery,
+  GetProfileQueryVariables,
   Profile,
-} from "../../../generated/graphql";
+} from "@wired-xr/lens/generated/graphql";
+
 import { lensClient } from "../../../lib/lens/client";
-import { HANDLE_ENDING } from "../../../lib/lens/constants";
-import { getMediaImageSSR } from "../../../lib/lens/hooks/useMediaImage";
 import { PageMetadata } from "../../../types";
 
 export interface ProfileLayoutProps {
@@ -21,10 +21,11 @@ export async function getProfileLayoutProps(
   handle: string
 ): Promise<ProfileLayoutProps> {
   const profileQuery = await lensClient
-    .query<GetProfileByHandleQuery, GetProfileByHandleQueryVariables>(
-      GetProfileByHandleDocument,
-      { handle: handle.concat(HANDLE_ENDING) }
-    )
+    .query<GetProfileQuery, GetProfileQueryVariables>(GetProfileDocument, {
+      request: {
+        handles: [handle.concat(HANDLE_ENDING)],
+      },
+    })
     .toPromise();
 
   const profile = profileQuery.data?.profiles.items[0] as Profile;

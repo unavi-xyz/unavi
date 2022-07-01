@@ -3,6 +3,9 @@ import { useThree } from "@react-three/fiber";
 import { useContext, useEffect, useRef, useState } from "react";
 import { AudioListener, Group, PositionalAudio } from "three";
 
+import { useFetchData } from "@wired-xr/ipfs";
+import { useAvatarUrlFromProfile, useProfileByHandle } from "@wired-xr/lens";
+
 import { Avatar } from "../avatar";
 import { LocationMessageSchema, NetworkingContext } from "../networking";
 import { PlayerLocation } from "../networking/types";
@@ -23,12 +26,13 @@ export function OtherPlayer({ id, animationsUrl, defaultAvatarUrl }: Props) {
     rotation: 0,
   });
 
-  // const [handle, setHandle] = useState<string>();
+  const [handle, setHandle] = useState<string>("lainpilled");
 
   const { otherPlayers } = useContext(NetworkingContext);
 
-  // const profile = useProfileByHandle(handle);
-  // const avatarUrl = useAvatarUrlFromProfile(profile);
+  const profile = useProfileByHandle(handle);
+  const avatarUrl = useAvatarUrlFromProfile(profile);
+  const fetchedAvatar = useFetchData(avatarUrl);
   const interpolatedLocation = useInterpolateLocation(locationRef);
   const animationWeights = useAnimationWeights(groupRef, interpolatedLocation);
 
@@ -90,7 +94,7 @@ export function OtherPlayer({ id, animationsUrl, defaultAvatarUrl }: Props) {
   return (
     <group ref={groupRef}>
       <Avatar
-        src={defaultAvatarUrl}
+        src={fetchedAvatar ?? defaultAvatarUrl}
         animationsSrc={animationsUrl}
         animationWeights={animationWeights}
       />

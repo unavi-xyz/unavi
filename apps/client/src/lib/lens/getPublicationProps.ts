@@ -1,35 +1,35 @@
+import { AppId, getMediaImageSSR } from "@wired-xr/lens";
 import {
   GetPublicationDocument,
   GetPublicationQuery,
   GetPublicationQueryVariables,
   Publication,
-} from "../../generated/graphql";
+} from "@wired-xr/lens/generated/graphql";
+
 import { PageMetadata } from "../../types";
 import { lensClient } from "./client";
-import { getMediaImageSSR } from "./hooks/useMediaImage";
-import { AppId } from "./types";
 
 export interface PublicationProps {
   metadata: PageMetadata;
   publication: Publication | undefined;
 }
 
-export async function getPublicationProps(id: string) {
+export async function getPublicationProps(publicationId: string) {
   const { data } = await lensClient
     .query<GetPublicationQuery, GetPublicationQueryVariables>(
       GetPublicationDocument,
-      { publicationId: id }
+      { request: { publicationId } }
     )
     .toPromise();
 
   const publication = data?.publication as Publication | undefined;
 
-  const title = `${publication?.metadata.name ?? id}`;
+  const title = `${publication?.metadata.name ?? publicationId}`;
 
   const publicationType =
-    publication?.appId === AppId.space
+    publication?.appId === AppId.Space
       ? "Space"
-      : publication?.appId === AppId.avatar
+      : publication?.appId === AppId.Avatar
       ? "Avatar"
       : "";
 

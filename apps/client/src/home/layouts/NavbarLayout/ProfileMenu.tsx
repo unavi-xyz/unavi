@@ -1,20 +1,20 @@
 import Link from "next/link";
+import { useContext } from "react";
 import {
   MdLogout,
   MdOutlinePersonOutline,
   MdOutlineSettings,
 } from "react-icons/md";
 
-import { useEthersStore } from "../../../lib/ethers/store";
-import { logout, switchProfile } from "../../../lib/lens/authentication";
-import { useProfilesByAddress } from "../../../lib/lens/hooks/useProfilesByAddress";
-import { useLensStore } from "../../../lib/lens/store";
-import { trimHandle } from "../../../lib/lens/utils";
+import { EthersContext } from "@wired-xr/ethers";
+import { LensContext, trimHandle, useProfilesByAddress } from "@wired-xr/lens";
+
 import ProfileMenuButton from "./ProfileMenuButton";
 
 export default function ProfileMenu() {
-  const handle = useLensStore((state) => state.handle);
-  const address = useEthersStore((state) => state.address);
+  const { handle, logout, switchProfile } = useContext(LensContext);
+  const { address } = useContext(EthersContext);
+
   const profiles = useProfilesByAddress(address);
 
   const otherProfiles = profiles?.filter(

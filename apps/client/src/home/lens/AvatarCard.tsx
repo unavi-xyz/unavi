@@ -1,4 +1,5 @@
-import { Post } from "../../generated/graphql";
+import { Post } from "@wired-xr/lens/generated/graphql";
+
 import Card from "../../ui/base/Card";
 
 interface Props {

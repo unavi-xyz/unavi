@@ -1,15 +1,13 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
+import { LensContext, useValidateHandle } from "@wired-xr/lens";
 import {
   CreateProfileDocument,
   CreateProfileMutation,
   CreateProfileMutationVariables,
-} from "../../../generated/graphql";
-import { authenticate } from "../../../lib/lens/authentication";
-import { lensClient } from "../../../lib/lens/client";
-import { useValidateHandle } from "../../../lib/lens/hooks/useValidateHandle";
-import { useLensStore } from "../../../lib/lens/store";
+} from "@wired-xr/lens/generated/graphql";
+
 import Button from "../../../ui/base/Button";
 import ErrorBox from "../../../ui/base/ErrorBox";
 import TextField from "../../../ui/base/TextField";
@@ -23,6 +21,12 @@ export default function CreateProfilePage() {
   const [error, setError] = useState<string>();
 
   const { valid, error: validateError, fetching } = useValidateHandle(handle);
+
+  const {
+    setHandle: setLensHandle,
+    client,
+    authenticate,
+  } = useContext(LensContext);
 
   const loading = fetching || formHandle !== handle || loadingSubmit;
   const disabled = !valid;
@@ -47,7 +51,7 @@ export default function CreateProfilePage() {
     return () => {
       clearTimeout(timeout);
     };
-  }, [formHandle]);
+  }, [formHandle, setHandle]);
 
   async function handleSubmit() {
     if (disabled || loading) return;
@@ -57,17 +61,24 @@ export default function CreateProfilePage() {
       await authenticate();
 
       //create the profile
-      const { error } = await lensClient
+      const { error } = await client
         .mutation<CreateProfileMutation, CreateProfileMutationVariables>(
           CreateProfileDocument,
-          { handle }
+          {
+            request: {
+              handle,
+              followModule: null,
+              followNFTURI: null,
+              profilePictureUri: null,
+            },
+          }
         )
         .toPromise();
 
       if (error) throw new Error(error.message);
 
       //log the user in
-      useLensStore.setState({ handle });
+      setLensHandle(handle);
 
       //redirect to the profile page
       router.push(`/user/${handle}`);

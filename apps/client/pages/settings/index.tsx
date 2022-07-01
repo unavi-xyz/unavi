@@ -1,14 +1,17 @@
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+
+import { IpfsContext } from "@wired-xr/ipfs";
+import {
+  LensContext,
+  createProfileMetadata,
+  useMediaImage,
+  useProfileByHandle,
+  useSetProfileImage,
+  useSetProfileMetadata,
+} from "@wired-xr/lens";
 
 import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
-import { uploadFileToIpfs } from "../../src/lib/ipfs/fetch";
-import { createProfileMetadata } from "../../src/lib/lens/createProfileMetadata";
-import { useMediaImage } from "../../src/lib/lens/hooks/useMediaImage";
-import { useProfileByHandle } from "../../src/lib/lens/hooks/useProfileByHandle";
-import { useSetProfileMetadata } from "../../src/lib/lens/hooks/useSetProfileMetadata";
-import { useSetProfilePicture } from "../../src/lib/lens/hooks/useSetProfilePicture";
-import { useLensStore } from "../../src/lib/lens/store";
 import MetaTags from "../../src/ui/MetaTags";
 import Button from "../../src/ui/base/Button";
 import FileUpload from "../../src/ui/base/FileUpload";
@@ -32,13 +35,15 @@ export default function Settings() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingProfilePicture, setLoadingProfilePicture] = useState(false);
 
-  const handle = useLensStore((state) => state.handle);
+  const { uploadFileToIpfs } = useContext(IpfsContext);
+  const { handle } = useContext(LensContext);
+
   const profile = useProfileByHandle(handle);
   const pfpMediaUrl = useMediaImage(profile?.picture);
   const coverMediaUrl = useMediaImage(profile?.coverPicture);
 
   const setProfileMetadata = useSetProfileMetadata(profile?.id);
-  const setProfilePicture = useSetProfilePicture(profile?.id);
+  const setProfileImage = useSetProfileImage(profile?.id);
 
   useEffect(() => {
     setPfpUrl(pfpMediaUrl);
@@ -74,7 +79,7 @@ export default function Settings() {
 
     if (coverFile) {
       const uri = await uploadFileToIpfs(coverFile);
-      metadata.cover_picture = uri;
+      if (uri) metadata.cover_picture = uri;
     }
 
     updateAttribute("location", locationRef.current?.value);
@@ -100,7 +105,7 @@ export default function Settings() {
     setLoadingProfilePicture(true);
 
     try {
-      await setProfilePicture(pfpFile);
+      await setProfileImage(pfpFile);
     } catch (err) {
       console.error(err);
     }

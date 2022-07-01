@@ -1,0 +1,27 @@
+{
+  "name": "@wired-xr/ethers",
+  "version": "0.0.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "ethers": "^5.6.4"
+  },
+  "devDependencies": {
+    "@ethersproject/abi": "^5.6.2",
+    "@ethersproject/bytes": "^5.6.1",
+    "@ethersproject/providers": "^5.6.6",
+    "@types/react": "18.0.8",
+    "@types/react-dom": "^18.0.3",
+    "@wired-xr/tsconfig": "*",
+    "eslint": "^8.14.0",
+    "eslint-config-prettier": "^8.5.0",
+    "typescript": "^4.7.4"
+  },
+  "peerDependencies": {
+    "react": ">=18.0",
+    "react-dom": ">=18.0"
+  }
+}

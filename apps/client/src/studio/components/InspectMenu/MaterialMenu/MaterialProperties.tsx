@@ -8,11 +8,7 @@ import { useStudioStore } from "../../../../studio/store";
 import ColorInput from "../../../../ui/base/ColorInput";
 import Select from "../../../../ui/base/Select";
 import { round } from "../../../../utils/round";
-import {
-  useAsset,
-  useImageAsset,
-  useMaterialAsset,
-} from "../../../hooks/useAsset";
+import { useImageAsset, useMaterialAsset } from "../../../hooks/useAsset";
 import MenuRow from "../MenuRow";
 import NumberInput from "../NumberInput";
 

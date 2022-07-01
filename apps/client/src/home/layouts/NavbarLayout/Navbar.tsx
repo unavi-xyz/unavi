@@ -1,14 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
-import { useLensStore } from "../../../lib/lens/store";
+import { LensContext } from "@wired-xr/lens";
+
 import LoginButton from "./LoginButton";
 import NavbarTab from "./NavbarTab";
 import ProfileButton from "./ProfileButton";
 
 export default function Navbar() {
-  const handle = useLensStore((state) => state.handle);
+  const { handle } = useContext(LensContext);
 
   const [showProfileButton, setShowProfileButton] = useState(Boolean(handle));
 

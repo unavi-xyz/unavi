@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useContext } from "react";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
@@ -10,8 +11,9 @@ import {
   MdSync,
 } from "react-icons/md";
 
+import { LensContext } from "@wired-xr/lens";
+
 import LoginButton from "../../../home/layouts/NavbarLayout/LoginButton";
-import { useLensStore } from "../../../lib/lens/store";
 import { useStudioStore } from "../../../studio/store";
 import IconButton from "../../../ui/base/IconButton";
 import Tooltip from "../../../ui/base/Tooltip";
@@ -20,7 +22,8 @@ import PublishButton from "./PublishButton";
 import ToolButton from "./ToolButton";
 
 export default function StudioNavbar() {
-  const handle = useLensStore((state) => state.handle);
+  const { handle } = useContext(LensContext);
+
   const debug = useStudioStore((state) => state.debug);
   const grid = useStudioStore((state) => state.grid);
 

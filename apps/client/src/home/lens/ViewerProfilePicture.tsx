@@ -1,7 +1,8 @@
-import { useGetProfileByHandleQuery } from "../../generated/graphql";
-import { HANDLE_ENDING } from "../../lib/lens/constants";
-import { useMediaImage } from "../../lib/lens/hooks/useMediaImage";
-import { useLensStore } from "../../lib/lens/store";
+import { useContext } from "react";
+
+import { HANDLE_ENDING, LensContext, useMediaImage } from "@wired-xr/lens";
+import { useGetProfileQuery } from "@wired-xr/lens/generated/graphql";
+
 import ProfilePicture from "./ProfilePicture";
 
 interface Props {
@@ -10,10 +11,10 @@ interface Props {
 }
 
 export default function ViewerProfilePicture({ circle, draggable }: Props) {
-  const handle = useLensStore((state) => state.handle);
+  const { handle } = useContext(LensContext);
 
-  const [{ data }] = useGetProfileByHandleQuery({
-    variables: { handle: handle?.concat(HANDLE_ENDING) },
+  const [{ data }] = useGetProfileQuery({
+    variables: { request: { handles: [handle?.concat(HANDLE_ENDING)] } },
     pause: !handle,
   });
 

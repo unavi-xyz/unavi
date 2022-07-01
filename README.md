@@ -32,6 +32,9 @@ This turborepo uses Yarn as a package manager. It includes the following apps/pa
 ### Packages
 
 - [engine](packages/engine): a 3d game engine
+- [ethers](packages/ethers): helpers for interacting with Ethers
+- [ipfs](packages/ipfs): helpers for interacting with IPFS
+- [lens](packages/lens): helpers for interacting with Lens
 
 ### Install
 

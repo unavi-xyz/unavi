@@ -1,14 +1,15 @@
 import { Triplet } from "@react-three/cannon";
 import produce from "immer";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
 import { IScene, traverseTree } from "@wired-xr/engine";
-
-import { loadFromIpfs } from "../../lib/ipfs/fetch";
+import { IpfsContext } from "@wired-xr/ipfs";
 
 export function useLoadAssets(sceneString: string) {
   const [loadedScene, setLoadedScene] = useState<IScene>();
   const [spawn, setSpawn] = useState<Triplet>();
+
+  const { loadFromIpfs } = useContext(IpfsContext);
 
   useEffect(() => {
     if (!sceneString) return;
@@ -22,12 +23,13 @@ export function useLoadAssets(sceneString: string) {
             Object.entries(draft.assets).map(async ([key, asset]) => {
               if (asset.uri.startsWith("ipfs://")) {
                 const hash = asset.uri.replace("ipfs://", "");
-                const data = await loadFromIpfs(hash);
+                const url = await loadFromIpfs(hash);
+                if (!url) return;
 
                 if (asset.type === "image" || asset.type === "model") {
-                  draft.assets[key].data = data;
+                  draft.assets[key].data = url;
                 } else if (asset.type === "material") {
-                  const res = await fetch(data);
+                  const res = await fetch(url);
                   const json = await res.json();
                   draft.assets[key].data = json;
                 }
@@ -52,7 +54,7 @@ export function useLoadAssets(sceneString: string) {
     }
 
     loadScene();
-  }, [sceneString]);
+  }, [sceneString, loadFromIpfs]);
 
   return { loadedScene, spawn };
 }

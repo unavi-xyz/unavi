@@ -1,19 +1,20 @@
 import { nanoid } from "nanoid";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useContext, useState } from "react";
 
-import { useIpfsUrl } from "../../../lib/ipfs/useIpfsUrl";
-import { PublicationProps } from "../../../lib/lens/getPublicationProps";
-import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
-import { useSetProfileMetadata } from "../../../lib/lens/hooks/useSetProfileMetadata";
-import { useLensStore } from "../../../lib/lens/store";
+import { useFetchData } from "@wired-xr/ipfs";
 import {
   AttributeData,
+  LensContext,
   MetadataVersions,
   ProfileMetadata,
-} from "../../../lib/lens/types";
-import { trimHandle } from "../../../lib/lens/utils";
+  trimHandle,
+  useSetProfileMetadata,
+} from "@wired-xr/lens";
+import { useProfileByHandle } from "@wired-xr/lens";
+
+import { PublicationProps } from "../../../lib/lens/getPublicationProps";
 import MetaTags from "../../../ui/MetaTags";
 import Button from "../../../ui/base/Button";
 import NavigationTab from "../../../ui/base/NavigationTab";
@@ -32,9 +33,9 @@ export default function AvatarLayout({
   const router = useRouter();
   const id = router.query.id as string;
 
-  const handle = useLensStore((state) => state.handle);
+  const { handle } = useContext(LensContext);
   const profile = useProfileByHandle(handle);
-  const avatarUrl = useIpfsUrl(publication?.metadata.content);
+  const avatarUrl = useFetchData(publication?.metadata.content);
   const setProfileMetadata = useSetProfileMetadata(profile?.id);
 
   const [loading, setLoading] = useState(false);

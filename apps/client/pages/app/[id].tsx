@@ -1,12 +1,8 @@
-import { Physics } from "@react-three/cannon";
-import { useContextBridge } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
 import { NextPageContext } from "next";
 import { useEffect } from "react";
-import { Context } from "urql";
 
 import {
-  NetworkingContext,
+  EngineCanvas,
   NetworkingProvider,
   Player,
   PlayerManager,
@@ -21,7 +17,6 @@ import {
   PublicationProps,
   getPublicationProps,
 } from "../../src/lib/lens/getPublicationProps";
-import { useLensStore } from "../../src/lib/lens/store";
 import MetaTags from "../../src/ui/MetaTags";
 
 export const DEFAULT_HOST = "wss://host.thewired.space";
@@ -61,8 +56,6 @@ export default function App({ id, metadata, publication }: Props) {
   useAppHotkeys();
   useSetIdentity();
 
-  const handle = useLensStore((state) => state.handle);
-
   useEffect(() => {
     //send an analytics event when the user joins the room
     //so we can show popular spaces on the explore page
@@ -85,33 +78,21 @@ export default function App({ id, metadata, publication }: Props) {
         <div className="h-full">
           <div className="crosshair" />
 
-          <NetworkingProvider spaceId={id} host={host} handle={handle}>
+          <NetworkingProvider spaceId={id} host={host}>
             <Chat />
 
-            <CanvasBridge>
-              <Physics>
-                <Player spawn={spawn} />
-                <Scene scene={loadedScene} />
+            <EngineCanvas>
+              <Player spawn={spawn} />
+              <Scene scene={loadedScene} />
 
-                <PlayerManager
-                  animationsUrl="/models/animations.fbx"
-                  defaultAvatarUrl="/models/avatar.vrm"
-                />
-              </Physics>
-            </CanvasBridge>
+              <PlayerManager
+                animationsUrl="/models/animations.fbx"
+                defaultAvatarUrl="/models/avatar.vrm"
+              />
+            </EngineCanvas>
           </NetworkingProvider>
         </div>
       )}
     </>
-  );
-}
-
-function CanvasBridge({ children }: { children: React.ReactNode }) {
-  const ContextBridge = useContextBridge(NetworkingContext, Context);
-
-  return (
-    <Canvas shadows>
-      <ContextBridge>{children}</ContextBridge>
-    </Canvas>
   );
 }

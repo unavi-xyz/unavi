@@ -1,6 +1,12 @@
 const withPWA = require("next-pwa");
 const runtimeCaching = require("next-pwa/cache");
-const withTM = require("next-transpile-modules")(["three", "@wired-xr/engine"]);
+const withTM = require("next-transpile-modules")([
+  "three",
+  "@wired-xr/engine",
+  "@wired-xr/ethers",
+  "@wired-xr/ipfs",
+  "@wired-xr/lens",
+]);
 
 module.exports = withPWA(
   withTM({

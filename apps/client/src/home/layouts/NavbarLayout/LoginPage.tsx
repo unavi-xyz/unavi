@@ -1,24 +1,27 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
-import { useGetProfilesByAddressQuery } from "../../../generated/graphql";
-import { connectWallet } from "../../../lib/ethers/connection";
-import { useEthersStore } from "../../../lib/ethers/store";
-import { PREV_HANDLE_KEY } from "../../../lib/lens/authentication";
-import { useLensStore } from "../../../lib/lens/store";
-import { trimHandle } from "../../../lib/lens/utils";
+import { EthersContext } from "@wired-xr/ethers";
+import { LensContext, LocalStorage, trimHandle } from "@wired-xr/lens";
+import { useGetProfilesQuery } from "@wired-xr/lens/generated/graphql";
+
 import Button from "../../../ui/base/Button";
 import { useCloseDialog } from "../../../ui/base/Dialog";
 import CreateProfilePage from "./CreateProfilePage";
 import MetamaskFox from "./MetamaskFox";
 
 export default function LoginPage() {
-  const address = useEthersStore((state) => state.address);
+  const { setHandle } = useContext(LensContext);
+  const { address, connectWallet } = useContext(EthersContext);
   const close = useCloseDialog();
 
   const [showCreatePage, setShowCreatePage] = useState(false);
 
-  const [{ fetching, data }] = useGetProfilesByAddressQuery({
-    variables: { address },
+  const [{ fetching, data }] = useGetProfilesQuery({
+    variables: {
+      request: {
+        ownedBy: [address],
+      },
+    },
     pause: !address,
   });
 
@@ -32,7 +35,9 @@ export default function LoginPage() {
     }
 
     //get previously selected profile
-    const prevHandle = localStorage.getItem(`${PREV_HANDLE_KEY}-${address}`);
+    const prevHandle = localStorage.getItem(
+      `${LocalStorage.PreviousHandle}${address}`
+    );
 
     //if no previous profile, get default profile
     const defaultProfile = data.profiles.items.find(
@@ -45,9 +50,9 @@ export default function LoginPage() {
       trimHandle(data.profiles.items[0].handle);
 
     //save the handle, the user is now logged in
-    useLensStore.setState({ handle });
+    setHandle(handle);
     close();
-  }, [data, close, address]);
+  }, [data, close, address, setHandle]);
 
   if (showCreatePage) return <CreateProfilePage />;
 

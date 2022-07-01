@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 
-import { useLensStore } from "../../lib/lens/store";
+import { LensContext } from "@wired-xr/lens";
+
 import { useAppStore } from "../store";
 
 export function useSetIdentity() {
-  const handle = useLensStore((state) => state.handle);
+  const { handle } = useContext(LensContext);
 
   useEffect(() => {
     if (handle) {

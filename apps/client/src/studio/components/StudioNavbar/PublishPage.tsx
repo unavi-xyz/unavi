@@ -2,13 +2,18 @@ import produce from "immer";
 import { atom, useAtomValue } from "jotai";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 
-import { uploadFileToIpfs } from "../../../lib/ipfs/fetch";
-import { useCreatePost } from "../../../lib/lens/hooks/useCreatePost";
-import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
-import { useLensStore } from "../../../lib/lens/store";
-import { AppId, Metadata, MetadataVersions } from "../../../lib/lens/types";
+import { IpfsContext } from "@wired-xr/ipfs";
+import {
+  AppId,
+  LensContext,
+  Metadata,
+  MetadataVersions,
+  useCreatePost,
+} from "@wired-xr/lens";
+import { useProfileByHandle } from "@wired-xr/lens";
+
 import { getFileByPath } from "../../../studio/filesystem";
 import { useStudioStore } from "../../../studio/store";
 import Button from "../../../ui/base/Button";
@@ -26,7 +31,9 @@ export default function PublishPage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
-  const handle = useLensStore((state) => state.handle);
+  const { uploadFileToIpfs } = useContext(IpfsContext);
+  const { handle } = useContext(LensContext);
+
   const rootHandle = useStudioStore((state) => state.rootHandle);
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
@@ -48,6 +55,7 @@ export default function PublishPage() {
       //upload image to IPFS
       const cropped = await crop(URL.createObjectURL(imageFile), 5 / 3);
       const imageURI = await uploadFileToIpfs(cropped);
+      if (!imageURI) throw new Error("Failed to upload image");
 
       //upload scene assets to IPFS
       const finalScene = await produce(project.scene, async (draft) => {
@@ -59,6 +67,7 @@ export default function PublishPage() {
             if (!file) return;
 
             const uri = await uploadFileToIpfs(file);
+            if (!uri) throw new Error("Failed to upload file");
             draft.assets[key].uri = uri;
           })
         );
@@ -77,7 +86,7 @@ export default function PublishPage() {
         animation_url: undefined,
         external_url: "https://thewired.space",
         media: [{ item: imageURI, type: imageFile.type }],
-        appId: AppId.space,
+        appId: AppId.Space,
       };
 
       //create post

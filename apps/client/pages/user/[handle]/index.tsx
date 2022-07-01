@@ -1,13 +1,15 @@
 import { NextPageContext } from "next";
 import Link from "next/link";
 
+import { AppId, HIDDEN_MESSAGE, getMediaImageSSR } from "@wired-xr/lens";
 import {
   GetPublicationsDocument,
   GetPublicationsQuery,
   GetPublicationsQueryVariables,
   Post,
   PublicationTypes,
-} from "../../../src/generated/graphql";
+} from "@wired-xr/lens/generated/graphql";
+
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
 import ProfileLayout from "../../../src/home/layouts/ProfileLayout/ProfileLayout";
 import {
@@ -17,9 +19,6 @@ import {
 import AvatarCard from "../../../src/home/lens/AvatarCard";
 import SpaceCard from "../../../src/home/lens/SpaceCard";
 import { lensClient } from "../../../src/lib/lens/client";
-import { HIDDEN_MESSAGE } from "../../../src/lib/lens/constants";
-import { getMediaImageSSR } from "../../../src/lib/lens/hooks/useMediaImage";
-import { AppId } from "../../../src/lib/lens/types";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
@@ -41,7 +40,7 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
       {
         request: {
           profileId: props.profile.id,
-          sources: [AppId.space, AppId.avatar],
+          sources: [AppId.Space, AppId.Avatar],
           publicationTypes: [PublicationTypes.Post],
         },
       }
@@ -74,7 +73,7 @@ export default function User({ publications, ...rest }: Props) {
       {publications && publications.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4">
           {publications?.map((publication) => {
-            if (publication.appId === AppId.space) {
+            if (publication.appId === AppId.Space) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 
               return (
@@ -86,7 +85,7 @@ export default function User({ publications, ...rest }: Props) {
                   </Link>
                 </div>
               );
-            } else if (publication.appId === AppId.avatar) {
+            } else if (publication.appId === AppId.Avatar) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 
               return (

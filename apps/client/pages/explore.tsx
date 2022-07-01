@@ -14,6 +14,7 @@ import { NextPageContext } from "next";
 import Link from "next/link";
 import { useState } from "react";
 
+import { AppId, getMediaImageSSR } from "@wired-xr/lens";
 import {
   ExplorePublicationsDocument,
   ExplorePublicationsQuery,
@@ -25,14 +26,13 @@ import {
   Post,
   PublicationSortCriteria,
   PublicationTypes,
-} from "../src/generated/graphql";
+} from "@wired-xr/lens/generated/graphql";
+
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
 import AvatarCard from "../src/home/lens/AvatarCard";
 import SpaceCard from "../src/home/lens/SpaceCard";
 import { client } from "../src/lib/faunadb/client";
 import { lensClient } from "../src/lib/lens/client";
-import { getMediaImageSSR } from "../src/lib/lens/hooks/useMediaImage";
-import { AppId } from "../src/lib/lens/types";
 import MetaTags from "../src/ui/MetaTags";
 import Carousel from "../src/ui/base/Carousel";
 import { useIsMobile } from "../src/utils/useIsMobile";
@@ -112,7 +112,7 @@ async function fetchLatestSpaces(pageInfo?: PaginatedResultInfo, limit = 3) {
       ExplorePublicationsDocument,
       {
         request: {
-          sources: [AppId.space],
+          sources: [AppId.Space],
           sortCriteria: PublicationSortCriteria.Latest,
           publicationTypes: [PublicationTypes.Post],
           limit,
@@ -146,7 +146,7 @@ async function fetchLatestAvatars(pageInfo?: PaginatedResultInfo, limit = 5) {
       ExplorePublicationsDocument,
       {
         request: {
-          sources: [AppId.avatar],
+          sources: [AppId.Avatar],
           sortCriteria: PublicationSortCriteria.Latest,
           publicationTypes: [PublicationTypes.Post],
           limit,

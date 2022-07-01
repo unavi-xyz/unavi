@@ -1,16 +1,20 @@
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useContext, useEffect, useState } from "react";
+
+import { EthersContext } from "@wired-xr/ethers";
+import {
+  trimHandle,
+  useProfilesByAddress,
+  useSetDefaultProfile,
+} from "@wired-xr/lens";
 
 import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
-import { useEthersStore } from "../../src/lib/ethers/store";
-import { useProfilesByAddress } from "../../src/lib/lens/hooks/useProfilesByAddress";
-import { useSetDefaultProfile } from "../../src/lib/lens/hooks/useSetDefaultProfile";
-import { trimHandle } from "../../src/lib/lens/utils";
 import MetaTags from "../../src/ui/MetaTags";
 import Button from "../../src/ui/base/Button";
 import Select from "../../src/ui/base/Select";
 
 export default function Account() {
-  const address = useEthersStore((state) => state.address);
+  const { address } = useContext(EthersContext);
+
   const profiles = useProfilesByAddress(address);
   const defaultProfile = profiles?.find((profile) => profile.isDefault);
 

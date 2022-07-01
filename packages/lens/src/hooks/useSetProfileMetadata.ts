@@ -1,0 +1,82 @@
+import { utils } from "ethers";
+import { useContext } from "react";
+
+import { EthersContext } from "@wired-xr/ethers";
+import { IpfsContext } from "@wired-xr/ipfs";
+import {
+  ContractAddress,
+  LensContext,
+  ProfileMetadata,
+  pollUntilIndexed,
+  removeTypename,
+} from "@wired-xr/lens";
+
+import { LensPeriphery__factory } from "../../contracts";
+import { useCreateSetProfileMetadataTypedDataMutation } from "../../generated/graphql";
+
+export function useSetProfileMetadata(profileId: string) {
+  const [, createTypedData] = useCreateSetProfileMetadataTypedDataMutation();
+
+  const { uploadStringToIpfs } = useContext(IpfsContext);
+  const { client, authenticate } = useContext(LensContext);
+  const { signer } = useContext(EthersContext);
+
+  async function setProfileMetadata(metadata: ProfileMetadata) {
+    if (!signer) throw new Error("No signer");
+
+    try {
+      //authenticate
+      await authenticate();
+
+      //upload metdata to ipfs
+      const url = await uploadStringToIpfs(JSON.stringify(metadata));
+
+      //create typed data
+      const { data, error } = await createTypedData({
+        request: {
+          profileId,
+          metadata: url,
+        },
+      });
+
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("No typed data returned");
+
+      const typedData = data.createSetProfileMetadataTypedData.typedData;
+
+      //sign typed data
+      const signature = await signer._signTypedData(
+        removeTypename(typedData.domain),
+        removeTypename(typedData.types),
+        removeTypename(typedData.value)
+      );
+      const { v, r, s } = utils.splitSignature(signature);
+
+      //send transaction
+      const contract = LensPeriphery__factory.connect(
+        ContractAddress.LensPeriphery,
+        signer
+      );
+      const tx = await contract.setProfileMetadataURIWithSig({
+        profileId: typedData.value.profileId,
+        metadata: typedData.value.metadata,
+        sig: {
+          v,
+          r,
+          s,
+          deadline: typedData.value.deadline,
+        },
+      });
+
+      //wait for transaction
+      await tx.wait();
+
+      //wait for indexing
+      await pollUntilIndexed(client, tx.hash);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  return setProfileMetadata;
+}

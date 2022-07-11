@@ -8933,10 +8933,10 @@ mediasoup-client@^3.6.52:
     sdp-transform "^2.14.1"
     supports-color "^9.2.2"
 
-mediasoup@^3.10.0:
-  version "3.10.0"
-  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.10.0.tgz#cc9c2bf4d0fb9e62662db4b0dee9f2eee8fa3747"
-  integrity sha512-ZEW98NonpA857Oi+gw5jkK7IrPkkaIahJQr0htwPI6Fpl700hLyBrV3nlMMQr+/AgKSnC4yvXKUnvnQP5WEsTw==
+mediasoup@^3.10.3:
+  version "3.10.3"
+  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.10.3.tgz#a54d75940c942711d6e6e1670d8d039c843cff0c"
+  integrity sha512-1ZTHju7Rcpl1gcXf7Dz3ZO1zlbZBdGEIQw3C1yyFyuJiRZLAA06dipmq+6i4Ob5+095pslZbAJs5DjowePJRDA==
   dependencies:
     "@types/node" "^16.11.10"
     debug "^4.3.4"

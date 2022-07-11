@@ -17,4 +17,4 @@ services:
       - "443:443"
       - "${RTC_MIN_PORT}-${RTC_MAX_PORT}:${RTC_MIN_PORT}-${RTC_MAX_PORT}"
     volumes:
-      - ./apps/host/src:/src
+      - ./src:/src

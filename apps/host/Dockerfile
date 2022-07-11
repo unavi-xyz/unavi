@@ -16,7 +16,6 @@ RUN \
 
 FROM base AS pruner
 RUN yarn global add turbo
-RUN yarn global add typescript
 COPY . .
 RUN turbo prune --scope=${SCOPE} --docker
 

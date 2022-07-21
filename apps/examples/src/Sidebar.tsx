@@ -9,7 +9,7 @@ interface Props {
 export default function Sidebar({ children }: Props) {
   return (
     <div className="flex h-full">
-      <div className="w-80 flex-shrink-0 px-8 py-6 h-full bg-white space-y-4 z-40 overflow-y-scroll">
+      <div className="w-96 flex-shrink-0 px-8 py-6 h-full bg-white space-y-4 z-40 overflow-y-scroll">
         <Link href="/">
           <div className="text-3xl font-bold cursor-pointer text-center">Examples</div>
         </Link>

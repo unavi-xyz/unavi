@@ -51,6 +51,10 @@ import {
 } from "./schemaTypes";
 import { LoadedBufferView, LoadedGLTF } from "./types";
 
+type SceneResult = {
+  scene: Group;
+  animations: AnimationMixer;
+};
 type PrimitiveResult = [MeshPrimitive, BufferGeometry, MeshStandardMaterial];
 
 // Converts a loaded glTf to Three.js objects
@@ -59,17 +63,20 @@ export class GLTFParser {
   private _bufferViews: LoadedBufferView[];
   private _images: ImageBitmap[];
 
+  private _scenes = new Map<number, SceneResult>();
+
+  // Cache
   private _accessors = new Map<number, BufferAttribute | InterleavedBufferAttribute>();
+  private _boneIndexes = new Set<number>();
   private _interleavedBuffers = new Map<string, InterleavedBuffer>();
-  private _meshes = new Map<number, Group>();
+  private _meshes = new Map<number, Object3D>();
   private _nodes = new Map<number, Object3D>();
+  private _primitives = new Map<string, PrimitiveResult>();
+  private _skinnedMeshIndexes = new Set<number>();
   private _textures = new Map<
     TextureInfo | MaterialNormalTextureInfo | MaterialOcclusionTextureInfo,
     CanvasTexture
   >();
-
-  private _boneIndexes = new Set<number>();
-  private _skinnedMeshIndexes = new Set<number>();
 
   constructor({ json, bufferViews = [], images = [] }: LoadedGLTF) {
     this._json = json;
@@ -78,14 +85,33 @@ export class GLTFParser {
   }
 
   public async parse() {
-    // Scene
-    if (this._json.scenes === undefined || this._json.scenes.length === 0) {
+    const sceneIndex = this._json.scene ?? 0;
+    const scene = await this._loadScene(sceneIndex);
+
+    return scene;
+  }
+
+  private async _loadScene(index: number) {
+    const cached = this._scenes.get(index);
+    if (cached !== undefined) return cached;
+
+    if (!this._json.scenes) {
       throw new Error("No scenes found");
     }
 
-    const sceneIndex = this._json.scene ?? 0;
-    const scene = this._json.scenes[sceneIndex];
-    const group = new Group();
+    // Clear cache
+    this._accessors.clear();
+    this._boneIndexes.clear();
+    this._interleavedBuffers.clear();
+    this._meshes.clear();
+    this._nodes.clear();
+    this._primitives.clear();
+    this._skinnedMeshIndexes.clear();
+    this._textures.clear();
+
+    const sceneDef = this._json.scenes[index];
+    const scene = new Group();
+    scene.name = sceneDef.name ?? `scene_${index}`;
 
     // Mark bones
     if (this._json.skins !== undefined) {
@@ -97,7 +123,7 @@ export class GLTFParser {
     }
 
     // Mark skinned meshes
-    scene.nodes?.forEach(async (nodeIndex) => {
+    sceneDef.nodes?.forEach(async (nodeIndex) => {
       if (!this._json.nodes) {
         throw new Error("No nodes found");
       }
@@ -111,9 +137,9 @@ export class GLTFParser {
     });
 
     // Nodes
-    const nodePromises = scene.nodes?.map(async (nodeIndex) => {
+    const nodePromises = sceneDef.nodes?.map(async (nodeIndex) => {
       const node = await this._loadNode(nodeIndex);
-      group.add(node);
+      scene.add(node);
     });
     await Promise.all(nodePromises ?? []);
 
@@ -124,28 +150,19 @@ export class GLTFParser {
     });
     const animationClips = await Promise.all(animationPromises ?? []);
 
-    const animationMixer = new AnimationMixer(group);
+    const animationMixer = new AnimationMixer(scene);
     const animationActions = animationClips.map((clip) => animationMixer.clipAction(clip));
 
     animationActions.forEach((action) => {
       action.play();
     });
 
-    // Clean up
-    this._json = undefined as any;
-    this._bufferViews = [];
-    this._images = [];
-    this._accessors.clear();
-    this._interleavedBuffers.clear();
-    this._meshes.clear();
-    this._nodes.clear();
-    this._textures.clear();
-    this._boneIndexes.clear();
-
-    return {
-      group,
-      animationMixer,
+    const result: SceneResult = {
+      scene,
+      animations: animationMixer,
     };
+    this._scenes.set(index, result);
+    return result;
   }
 
   private async _loadAnimation(index: number) {
@@ -269,8 +286,10 @@ export class GLTFParser {
     const node = this._boneIndexes.has(index) ? new Bone() : new Group();
 
     // Transform
-    if (nodeDef.matrix) {
-      node.matrix.fromArray(nodeDef.matrix);
+    if (nodeDef.matrix !== undefined) {
+      const matrix = new Matrix4();
+      matrix.fromArray(nodeDef.matrix);
+      node.applyMatrix4(matrix);
     } else {
       if (nodeDef.translation) {
         node.position.fromArray(nodeDef.translation);
@@ -301,13 +320,13 @@ export class GLTFParser {
       const joints = await Promise.all(jointPromises);
 
       node.traverse((child: Object3D | SkinnedMesh) => {
-        if (!("isSkinnedMesh" in child && child.isSkinnedMesh)) return;
+        if (!(child instanceof SkinnedMesh)) return;
 
         const bones: Bone[] = [];
         const boneInverses: Matrix4[] = [];
 
         joints.forEach((joint, i) => {
-          if (!("isBone" in joint && joint.isBone)) return;
+          if (!(joint instanceof Bone)) return;
 
           const inverseMatrix = new Matrix4();
 
@@ -319,7 +338,7 @@ export class GLTFParser {
           boneInverses.push(inverseMatrix);
         });
 
-        child.bind(new Skeleton(bones), child.matrixWorld);
+        child.bind(new Skeleton(bones, boneInverses), child.matrixWorld);
       });
     }
 
@@ -371,118 +390,48 @@ export class GLTFParser {
 
     const meshDef = this._json.meshes[index];
 
-    // Load primitives
-    const primitivePromises = meshDef.primitives.map(async (primitive) => {
-      const geometry = new BufferGeometry();
-
-      // Attributes
-      const attributePromises = Object.entries(primitive.attributes).map(
-        async ([name, accessorId]) => {
-          const attribute = await this._loadAccessor(accessorId);
-
-          if (attribute === null) {
-            throw new Error(`Attribute ${name} not found`);
-          }
-
-          const threeName = ATTRIBUTES[name as AttributeName] ?? name.toLowerCase();
-
-          geometry.setAttribute(threeName, attribute);
-        }
-      );
-      await Promise.all(attributePromises);
-
-      // Indices
-      if (primitive.indices !== undefined && !geometry.index) {
-        const attribute = await this._loadAccessor(primitive.indices);
-
-        if (attribute === null) {
-          throw new Error(`Indices not found`);
-        }
-
-        geometry.setIndex(attribute as any);
-      }
-
-      // Material
-      const material =
-        primitive.material === undefined
-          ? new MeshStandardMaterial()
-          : await this._loadMaterial(primitive.material);
-
-      // Morph targets
-      if (primitive.targets !== undefined) {
-        const targetPromises = primitive.targets.map(async (target) => {
-          const entryPromises = Object.entries(target).map(async ([name, accessorId]) => {
-            const accessor = await this._loadAccessor(accessorId);
-
-            if (accessor === null) {
-              throw new Error(`Target ${name} not found`);
-            }
-
-            if (accessor.array instanceof Float32Array) {
-              // Convert to Int32Array
-              // const array = new Int32Array(accessor.array.length).
-              // accessor.array = new Float32Array(accessor.array);
-            }
-
-            switch (name) {
-              case "POSITION":
-                if (geometry.morphAttributes.position === undefined) {
-                  geometry.morphAttributes.position = [];
-                }
-
-                geometry.morphAttributes.position.push(accessor);
-                break;
-              case "NORMAL":
-                if (geometry.morphAttributes.normal === undefined) {
-                  geometry.morphAttributes.normal = [];
-                }
-
-                geometry.morphAttributes.normal.push(accessor);
-                break;
-              case "TANGENT":
-                if (geometry.morphAttributes.tangent === undefined) {
-                  geometry.morphAttributes.tangent = [];
-                }
-
-                geometry.morphAttributes.tangent.push(accessor);
-                break;
-            }
-          });
-          await Promise.all(entryPromises);
-        });
-        await Promise.all(targetPromises);
-
-        geometry.morphTargetsRelative = true;
-      }
-
-      const result: PrimitiveResult = [primitive, geometry, material];
-      return result;
-    });
-    const primitiveResults = await Promise.all(primitivePromises);
+    // Load geometry
+    const primitivePromises = meshDef.primitives.map((primitive) => this._loadPrimitive(primitive));
+    const primitives = await Promise.all(primitivePromises);
 
     // Create meshes
-    const meshes = primitiveResults.map(([primitive, geometry, material]) => {
+    const meshes = primitives.map(([primitive, geometry, material], i) => {
+      let mesh: Mesh | Line | Points;
+
       switch (primitive.mode) {
         case WEBGL_CONSTANTS.TRIANGLES:
         case WEBGL_CONSTANTS.TRIANGLE_STRIP:
         case WEBGL_CONSTANTS.TRIANGLE_FAN:
         case undefined:
           const isSkinnedMesh = this._skinnedMeshIndexes.has(index);
-          return isSkinnedMesh ? new SkinnedMesh(geometry, material) : new Mesh(geometry, material);
+          mesh = isSkinnedMesh ? new SkinnedMesh(geometry, material) : new Mesh(geometry, material);
+
+          if (mesh instanceof SkinnedMesh && !mesh.geometry.attributes.skinWeight.normalized) {
+            mesh.normalizeSkinWeights();
+          }
+
+          break;
         case WEBGL_CONSTANTS.LINES:
-          return new LineSegments(geometry, material);
+          mesh = new LineSegments(geometry, material);
+          break;
         case WEBGL_CONSTANTS.LINE_STRIP:
-          return new Line(geometry, material);
+          mesh = new Line(geometry, material);
+          break;
         case WEBGL_CONSTANTS.LINE_LOOP:
-          return new LineLoop(geometry, material);
+          mesh = new LineLoop(geometry, material);
+          break;
         case WEBGL_CONSTANTS.POINTS:
-          return new Points(geometry, material);
+          mesh = new Points(geometry, material);
+          break;
         default:
           throw new Error(`Unknown primitive mode ${primitive.mode}`);
       }
+
+      mesh.name = meshDef.name ?? `mesh_${index}_${i}`;
+      return mesh;
     });
 
-    // Update morph targets
+    // Set morph targets
     meshes.forEach((mesh) => {
       if (Object.keys(mesh.geometry.morphAttributes).length > 0) {
         mesh.updateMorphTargets();
@@ -493,13 +442,107 @@ export class GLTFParser {
       }
     });
 
-    const group = new Group();
-    meshes.forEach((mesh) => {
-      group.add(mesh);
-    });
+    const mesh = meshes.length === 1 ? meshes[0] : new Group().add(...meshes);
+    this._meshes.set(index, mesh);
+    return mesh;
+  }
 
-    this._meshes.set(index, group);
-    return group;
+  private async _loadPrimitive(primitiveDef: MeshPrimitive) {
+    const cacheKey = JSON.stringify(primitiveDef);
+    const cached = this._primitives.get(cacheKey);
+    if (cached) return cached;
+
+    const geometry = new BufferGeometry();
+
+    // Attributes
+    const attributePromises = Object.entries(primitiveDef.attributes).map(
+      async ([name, accessorId]) => {
+        const threeName = ATTRIBUTES[name as AttributeName] ?? name.toLowerCase();
+        if (threeName in geometry.attributes) return;
+
+        const attribute = await this._loadAccessor(accessorId);
+
+        if (attribute === null) {
+          throw new Error(`Attribute ${name} not found`);
+        }
+
+        geometry.setAttribute(threeName, attribute);
+      }
+    );
+    await Promise.all(attributePromises);
+
+    // Indices
+    if (primitiveDef.indices !== undefined && geometry.index == null) {
+      const accessor = await this._loadAccessor(primitiveDef.indices);
+
+      if (accessor === null) {
+        throw new Error(`Indices not found`);
+      }
+
+      if (accessor instanceof InterleavedBufferAttribute) {
+        throw new Error(`Indices are interleaved`);
+      }
+
+      geometry.setIndex(accessor);
+    }
+
+    // Material
+    const material =
+      primitiveDef.material === undefined
+        ? new MeshStandardMaterial()
+        : await this._loadMaterial(primitiveDef.material);
+
+    // Morph targets
+    if (primitiveDef.targets !== undefined) {
+      const targetPromises = primitiveDef.targets.map(async (target) => {
+        const entryPromises = Object.entries(target).map(async ([name, accessorId]) => {
+          const accessor = await this._loadAccessor(accessorId);
+
+          if (accessor === null) {
+            throw new Error(`Target ${name} not found`);
+          }
+
+          switch (name) {
+            case "POSITION":
+              if (geometry.morphAttributes.position === undefined) {
+                geometry.morphAttributes.position = [];
+              }
+
+              geometry.morphAttributes.position.push(accessor);
+              break;
+            case "NORMAL":
+              if (geometry.morphAttributes.normal === undefined) {
+                geometry.morphAttributes.normal = [];
+              }
+
+              geometry.morphAttributes.normal.push(accessor);
+              break;
+            case "TANGENT":
+              if (geometry.morphAttributes.tangent === undefined) {
+                geometry.morphAttributes.tangent = [];
+              }
+
+              geometry.morphAttributes.tangent.push(accessor);
+              break;
+            case "COLOR_0":
+              if (geometry.morphAttributes.color === undefined) {
+                geometry.morphAttributes.color = [];
+              }
+
+              geometry.morphAttributes.color.push(accessor);
+              break;
+          }
+        });
+        await Promise.all(entryPromises);
+      });
+      await Promise.all(targetPromises);
+
+      geometry.morphTargetsRelative = true;
+    }
+
+    const result: PrimitiveResult = [primitiveDef, geometry, material];
+    this._primitives.set(cacheKey, result);
+    return result;
   }
 
   private async _loadMaterial(index: number) {
@@ -509,7 +552,7 @@ export class GLTFParser {
 
     const materialDef = this._json.materials[index];
     const material = new MeshStandardMaterial();
-    if (materialDef.name) material.name = materialDef.name;
+    material.name = materialDef.name ?? `material_${index}`;
 
     const {
       baseColorFactor = [1, 1, 1, 1],
@@ -598,8 +641,7 @@ export class GLTFParser {
 
     const image = this._images[textureDef.source];
     const texture = new CanvasTexture(image);
-
-    if (textureDef.name) texture.name = textureDef.name;
+    texture.name = textureDef.name ?? `texture_${info.index}`;
     texture.flipY = false;
 
     this._textures.set(info, texture);

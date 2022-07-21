@@ -4,10 +4,10 @@ import {
   Box3,
   DirectionalLight,
   Mesh,
-  Object3D,
   PMREMGenerator,
   PerspectiveCamera,
   Scene,
+  SkinnedMesh,
   Vector3,
   WebGLRenderer,
   sRGBEncoding,
@@ -91,10 +91,10 @@ export class RenderWorker {
   public async createGLTF(data: LoadedGLTF) {
     // Parse gltf
     this._parser = new GLTFParser(data);
-    const { animationMixer, group } = await this._parser.parse();
+    const { animations, scene } = await this._parser.parse();
 
     // Calculate bounding box
-    const boundingBox = new Box3().setFromObject(group);
+    const boundingBox = new Box3().setFromObject(scene);
     const size = boundingBox.getSize(new Vector3());
     const center = boundingBox.getCenter(new Vector3());
 
@@ -114,21 +114,24 @@ export class RenderWorker {
     this._camera.updateProjectionMatrix();
 
     // Add to scene
-    this._scene.add(group);
-    this._mixers.set(group.uuid, animationMixer);
+    this._scene.add(scene);
+    this._mixers.set(scene.uuid, animations);
   }
 
   public destroy() {
     // Dispose rendering context
     this._renderer.dispose();
 
-    // Dispose scene
+    // Dispose all objects
     this._scene.traverse((object) => {
-      if (object instanceof Mesh) {
+      if (object instanceof Mesh || object instanceof SkinnedMesh) {
         object.geometry.dispose();
         object.material.dispose();
       }
     });
+
+    // Clear scene
+    this._scene.clear();
 
     // Clear mixers
     this._mixers.clear();

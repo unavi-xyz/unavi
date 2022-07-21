@@ -499,12 +499,18 @@ export class GLTFParser {
         ? new MeshStandardMaterial()
         : await this._loadMaterial(primitiveDef.material);
 
+    // Occlusion map needs a second set of UVs
     if (
       material.aoMap &&
       geometry.attributes.uv2 === undefined &&
       geometry.attributes.uv !== undefined
     ) {
       geometry.setAttribute("uv2", geometry.attributes.uv);
+    }
+
+    // Enable vertex colors
+    if (geometry.attributes.color !== undefined) {
+      material.vertexColors = true;
     }
 
     // If three.js needs to generate tangents, flip normal map y

@@ -22,27 +22,21 @@ export default function CylinderMenu({ selected, handleChange }: Props) {
       <MenuRow title="Radius Top">
         <NumberInput
           updatedValue={String(round(radiusTop))}
-          onChange={(e) =>
-            handleChange("radiusTop", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("radiusTop", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 
       <MenuRow title="Radius Bottom">
         <NumberInput
           updatedValue={String(round(radiusBottom))}
-          onChange={(e) =>
-            handleChange("radiusBottom", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("radiusBottom", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 
       <MenuRow title="Height">
         <NumberInput
           updatedValue={String(round(height))}
-          onChange={(e) =>
-            handleChange("height", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("height", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 
@@ -50,10 +44,7 @@ export default function CylinderMenu({ selected, handleChange }: Props) {
         <NumberInput
           updatedValue={String(round(radialSegments))}
           onChange={(e) =>
-            handleChange(
-              "radialSegments",
-              Math.max(round(Number(e.currentTarget.value)), 2)
-            )
+            handleChange("radialSegments", Math.max(round(Number(e.currentTarget.value)), 2))
           }
         />
       </MenuRow>

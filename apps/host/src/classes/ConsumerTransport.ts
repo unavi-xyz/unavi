@@ -1,8 +1,5 @@
 import { Consumer, ConsumerOptions } from "mediasoup/node/lib/Consumer";
-import {
-  DataConsumer,
-  DataConsumerOptions,
-} from "mediasoup/node/lib/DataConsumer";
+import { DataConsumer, DataConsumerOptions } from "mediasoup/node/lib/DataConsumer";
 
 import { Transport } from "./Transport";
 

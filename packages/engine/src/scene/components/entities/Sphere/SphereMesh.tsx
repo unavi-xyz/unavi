@@ -8,12 +8,7 @@ interface SphereMeshProps {
   materialId?: string;
 }
 
-export function SphereMesh({
-  radius,
-  widthSegments,
-  heightSegments,
-  materialId,
-}: SphereMeshProps) {
+export function SphereMesh({ radius, widthSegments, heightSegments, materialId }: SphereMeshProps) {
   const material = useMaterial(materialId);
 
   return (

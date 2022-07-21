@@ -20,9 +20,7 @@ export default function NavigationTab({ href, text }: Props) {
     setSelected(router.asPath == href);
   }, [router, href]);
 
-  const selectedClass = selected
-    ? "bg-surfaceVariant"
-    : "hover:bg-surfaceVariant";
+  const selectedClass = selected ? "bg-surfaceVariant" : "hover:bg-surfaceVariant";
 
   return (
     <Link href={href} passHref>

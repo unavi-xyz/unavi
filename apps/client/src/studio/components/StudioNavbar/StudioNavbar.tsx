@@ -4,12 +4,7 @@ import { useContext } from "react";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
-import {
-  MdArrowBackIosNew,
-  MdOutlineGridOn,
-  MdPreview,
-  MdSync,
-} from "react-icons/md";
+import { MdArrowBackIosNew, MdOutlineGridOn, MdPreview, MdSync } from "react-icons/md";
 
 import { LensContext } from "@wired-xr/lens";
 
@@ -76,10 +71,7 @@ export default function StudioNavbar() {
         </div>
 
         <div className="h-full aspect-square">
-          <Tooltip
-            text={`${debug ? "Hide" : "Show"} Colliders`}
-            placement="bottom"
-          >
+          <Tooltip text={`${debug ? "Hide" : "Show"} Colliders`} placement="bottom">
             <IconButton selected={debug} onClick={handleToggleDebug}>
               <HiCubeTransparent />
             </IconButton>
@@ -96,9 +88,7 @@ export default function StudioNavbar() {
           </Tooltip>
         </div>
 
-        <div className="pl-2">
-          {handle ? <PublishButton /> : <LoginButton />}
-        </div>
+        <div className="pl-2">{handle ? <PublishButton /> : <LoginButton />}</div>
       </div>
     </div>
   );

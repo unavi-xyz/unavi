@@ -1,0 +1,44 @@
+version: "3"
+
+services:
+  node:
+    build:
+      context: ../../
+      dockerfile: apps/home/Dockerfile.dev
+      args:
+        - SCOPE=@wired-xr/home
+    image: wired-home-node-dev
+    container_name: wired-home-node-dev
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - ./src:/apps/home/src
+
+  db:
+    build:
+      context: ./db
+    container_name: wired-home-postgres
+    image: wired-home-postgres
+    ports:
+      - "5433:${DB_PORT}"
+    volumes:
+      - data-dev:/data/db
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"
+
+volumes:
+  data-dev: {}

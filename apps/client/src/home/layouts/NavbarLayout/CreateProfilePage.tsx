@@ -22,11 +22,7 @@ export default function CreateProfilePage() {
 
   const { valid, error: validateError, fetching } = useValidateHandle(handle);
 
-  const {
-    setHandle: setLensHandle,
-    client,
-    authenticate,
-  } = useContext(LensContext);
+  const { setHandle: setLensHandle, client, authenticate } = useContext(LensContext);
 
   const loading = fetching || formHandle !== handle || loadingSubmit;
   const disabled = !valid;
@@ -62,17 +58,14 @@ export default function CreateProfilePage() {
 
       //create the profile
       const { error } = await client
-        .mutation<CreateProfileMutation, CreateProfileMutationVariables>(
-          CreateProfileDocument,
-          {
-            request: {
-              handle,
-              followModule: null,
-              followNFTURI: null,
-              profilePictureUri: null,
-            },
-          }
-        )
+        .mutation<CreateProfileMutation, CreateProfileMutationVariables>(CreateProfileDocument, {
+          request: {
+            handle,
+            followModule: null,
+            followNFTURI: null,
+            profilePictureUri: null,
+          },
+        })
         .toPromise();
 
       if (error) throw new Error(error.message);
@@ -113,12 +106,7 @@ export default function CreateProfilePage() {
         />
 
         <div className="flex justify-end w-full">
-          <Button
-            variant="filled"
-            disabled={disabled}
-            loading={loading}
-            onClick={handleSubmit}
-          >
+          <Button variant="filled" disabled={disabled} loading={loading} onClick={handleSubmit}>
             Submit
           </Button>
         </div>

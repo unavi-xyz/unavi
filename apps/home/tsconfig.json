@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./build"
+  },
+  "exclude": ["node_modules", "build"],
+  "extends": "@wired-xr/tsconfig/base.json"
+}

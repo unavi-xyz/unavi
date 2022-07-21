@@ -1,15 +1,4 @@
-import {
-  Append,
-  Count,
-  Distinct,
-  Index,
-  Lambda,
-  Map,
-  Match,
-  Paginate,
-  Select,
-  Var,
-} from "faunadb";
+import { Append, Count, Distinct, Index, Lambda, Map, Match, Paginate, Select, Var } from "faunadb";
 import { NextPageContext } from "next";
 import Link from "next/link";
 import { useState } from "react";
@@ -52,14 +41,7 @@ async function fetchHotSpaces() {
             "id",
             Append(
               [Var("id")],
-              [
-                Count(
-                  Select(
-                    "data",
-                    Paginate(Match(Index("Space-View-Events-By-Id"), Var("id")))
-                  )
-                ),
-              ]
+              [Count(Select("data", Paginate(Match(Index("Space-View-Events-By-Id"), Var("id")))))]
             )
           )
         )
@@ -73,14 +55,11 @@ async function fetchHotSpaces() {
 
     ///get space publications
     const spacesQuery = await lensClient
-      .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
-        GetPublicationsDocument,
-        {
-          request: {
-            publicationIds: topSpaceViews.map(([_, id]) => id),
-          },
-        }
-      )
+      .query<GetPublicationsQuery, GetPublicationsQueryVariables>(GetPublicationsDocument, {
+        request: {
+          publicationIds: topSpaceViews.map(([_, id]) => id),
+        },
+      })
       .toPromise();
 
     const items = (spacesQuery.data?.publications.items as Post[]) ?? [];
@@ -196,15 +175,9 @@ export async function getServerSideProps({ res }: NextPageContext) {
   const hotSpaces = await fetchHotSpaces();
 
   const props: Props = {
-    initialLatestSpaces: [
-      ...firstLatestSpaces.items,
-      ...secondPageSpaces.items,
-    ],
+    initialLatestSpaces: [...firstLatestSpaces.items, ...secondPageSpaces.items],
     initialLatestSpacesInfo: secondPageSpaces.info,
-    initialLatestAvatars: [
-      ...firstLatestAvatars.items,
-      ...secondPageAvatars.items,
-    ],
+    initialLatestAvatars: [...firstLatestAvatars.items, ...secondPageAvatars.items],
     initialLatestAvatarsInfo: secondPageAvatars.info,
     hotSpaces: hotSpaces ?? [],
   };
@@ -249,8 +222,7 @@ export default function Explore({
 
   const [hotSpacesPage, setHotSpacesPage] = useState(0);
   const disableHotSpacesBack = hotSpacesPage === 0;
-  const disableHotSpacesForward =
-    hotSpacesPage === hotSpaces.length / spaceLimit - 1;
+  const disableHotSpacesForward = hotSpacesPage === hotSpaces.length / spaceLimit - 1;
 
   return (
     <>
@@ -281,9 +253,7 @@ export default function Explore({
                   <a
                     className="h-40 transition duration-500"
                     style={{
-                      transform: `translate(calc(-${
-                        hotSpacesPage * spaceLimit
-                      }00% + ${
+                      transform: `translate(calc(-${hotSpacesPage * spaceLimit}00% + ${
                         spaceLimit > 1 ? Math.min(hotSpacesPage, 1) * 15 : 0
                       }%))`,
                     }}
@@ -308,9 +278,7 @@ export default function Explore({
                   <a
                     className="h-40 transition duration-500"
                     style={{
-                      transform: `translate(calc(-${
-                        latestSpaces.page * spaceLimit
-                      }00% + ${
+                      transform: `translate(calc(-${latestSpaces.page * spaceLimit}00% + ${
                         spaceLimit > 1 ? Math.min(latestSpaces.page, 1) * 15 : 0
                       }%))`,
                     }}
@@ -335,12 +303,8 @@ export default function Explore({
                   <a
                     className="h-64 transition duration-500"
                     style={{
-                      transform: `translate(calc(-${
-                        latestAvatars.page * avatarLimit
-                      }00% + ${
-                        avatarLimit > 1
-                          ? Math.min(latestAvatars.page, 1) * 15
-                          : 0
+                      transform: `translate(calc(-${latestAvatars.page * avatarLimit}00% + ${
+                        avatarLimit > 1 ? Math.min(latestAvatars.page, 1) * 15 : 0
                       }%))`,
                     }}
                   >

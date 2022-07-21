@@ -4,12 +4,18 @@ import { createContext, useState } from "react";
 export const EthersContext = createContext<{
   address: string | undefined;
   signer: ethers.providers.JsonRpcSigner | undefined;
-  connectWallet: () => void;
+  connectWallet: () => Promise<{
+    address: string | undefined;
+    signer: ethers.providers.JsonRpcSigner | undefined;
+  }>;
   disconnectWallet: () => void;
 }>({
   address: undefined,
   signer: undefined,
-  connectWallet: () => {},
+  connectWallet: async () => ({
+    address: undefined,
+    signer: undefined,
+  }),
   disconnectWallet: () => {},
 });
 
@@ -57,11 +63,15 @@ export function EthersProvider({ children }: Props) {
 
       setAddress(address);
       setSigner(signer);
+
+      return { address, signer };
     } catch (error) {
       console.error(error);
 
       if (address) setAddress(undefined);
       if (signer) setSigner(undefined);
+
+      return { address: undefined, signer: undefined };
     }
   }
 

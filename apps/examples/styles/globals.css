@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-family: "Lato", sans-serif;
+  @apply bg-neutral-300;
+}

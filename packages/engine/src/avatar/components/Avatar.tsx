@@ -13,10 +13,7 @@ type Animations = {
   jump: AnimationAction;
 };
 
-export type AnimationWeights = Record<
-  keyof Animations,
-  MutableRefObject<number>
->;
+export type AnimationWeights = Record<keyof Animations, MutableRefObject<number>>;
 
 interface Props {
   src: string;
@@ -69,16 +66,10 @@ export function Avatar({ src, animationsSrc, animationWeights }: Props) {
 
     if (animations) {
       //start and stop jumping animation
-      if (
-        jumpingState.current === true &&
-        animationWeights.jump.current === 0
-      ) {
+      if (jumpingState.current === true && animationWeights.jump.current === 0) {
         jumpingState.current = false;
         animations.jump.stop();
-      } else if (
-        jumpingState.current === false &&
-        animationWeights.jump.current > 0
-      ) {
+      } else if (jumpingState.current === false && animationWeights.jump.current > 0) {
         jumpingState.current = true;
         animations.jump.play();
       }

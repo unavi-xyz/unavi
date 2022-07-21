@@ -60,10 +60,7 @@ export function useInterpolateLocation(locationRef: RefObject<PlayerLocation>) {
   //interpoalte it between intervals
   useFrame((_, delta) => {
     deltaTotal.current += delta;
-    const alpha = Math.min(
-      deltaTotal.current * (1000 / LOCATION_PUBLISH_INTERVAL_MS),
-      1
-    );
+    const alpha = Math.min(deltaTotal.current * (1000 / LOCATION_PUBLISH_INTERVAL_MS), 1);
 
     //interpolate position
     interpolatedRef.current.position.lerpVectors(

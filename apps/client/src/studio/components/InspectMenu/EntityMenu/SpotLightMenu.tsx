@@ -40,38 +40,28 @@ export default function SpotLightMenu({ selected, handleChange }: Props) {
     <>
       <MenuRow title="Color">
         <div className="h-6">
-          <ColorInput
-            inputRef={colorRef}
-            defaultValue={color}
-            onChange={onColorChange}
-          />
+          <ColorInput inputRef={colorRef} defaultValue={color} onChange={onColorChange} />
         </div>
       </MenuRow>
 
       <MenuRow title="Intensity">
         <NumberInput
           updatedValue={String(round(intensity))}
-          onChange={(e) =>
-            handleChange("intensity", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("intensity", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 
       <MenuRow title="Distance">
         <NumberInput
           updatedValue={String(round(distance))}
-          onChange={(e) =>
-            handleChange("distance", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("distance", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 
       <MenuRow title="Decay">
         <NumberInput
           updatedValue={String(round(decay))}
-          onChange={(e) =>
-            handleChange("decay", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("decay", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 
@@ -79,10 +69,7 @@ export default function SpotLightMenu({ selected, handleChange }: Props) {
         <NumberInput
           updatedValue={String(round(penumbra))}
           onChange={(e) =>
-            handleChange(
-              "penumbra",
-              Math.max(0, Math.min(1, round(Number(e.currentTarget.value))))
-            )
+            handleChange("penumbra", Math.max(0, Math.min(1, round(Number(e.currentTarget.value)))))
           }
         />
       </MenuRow>

@@ -86,12 +86,7 @@ export default function NewProjectsPage({ onBack }: Props) {
 
         <div>Select where to store the project in your filesystem</div>
 
-        <Button
-          variant="tonal"
-          squared="large"
-          fullWidth
-          onClick={handleSelectDirectory}
-        >
+        <Button variant="tonal" squared="large" fullWidth onClick={handleSelectDirectory}>
           <div className="flex items-center justify-center space-x-2 py-2">
             <MdOutlineFolderOpen className="text-lg" />
             <div>Select Folder</div>

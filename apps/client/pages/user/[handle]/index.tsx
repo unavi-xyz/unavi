@@ -35,25 +35,20 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
     };
 
   const publicationsQuery = await lensClient
-    .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
-      GetPublicationsDocument,
-      {
-        request: {
-          profileId: props.profile.id,
-          sources: [AppId.Space, AppId.Avatar],
-          publicationTypes: [PublicationTypes.Post],
-        },
-      }
-    )
+    .query<GetPublicationsQuery, GetPublicationsQueryVariables>(GetPublicationsDocument, {
+      request: {
+        profileId: props.profile.id,
+        sources: [AppId.Space, AppId.Avatar],
+        publicationTypes: [PublicationTypes.Post],
+      },
+    })
     .toPromise();
 
-  const publications = publicationsQuery.data?.publications.items.map(
-    (item) => {
-      const postItem = item as Post;
-      postItem.metadata.image = getMediaImageSSR(postItem.metadata.media[0]);
-      return postItem;
-    }
-  );
+  const publications = publicationsQuery.data?.publications.items.map((item) => {
+    const postItem = item as Post;
+    postItem.metadata.image = getMediaImageSSR(postItem.metadata.media[0]);
+    return postItem;
+  });
 
   return {
     props: {

@@ -27,16 +27,11 @@ export default function MaterialProperties({ selected }: Props) {
   const emissiveRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<any>(null);
 
-  function updateMaterial(
-    callback: (draft: WritableDraft<IMaterial>) => void,
-    delay = 0
-  ) {
+  function updateMaterial(callback: (draft: WritableDraft<IMaterial>) => void, delay = 0) {
     const debounce = setTimeout(async () => {
       try {
         //update material
-        await useStudioStore
-          .getState()
-          .updateMaterialFile(materialId, callback);
+        await useStudioStore.getState().updateMaterialFile(materialId, callback);
 
         //load material
         await useStudioStore.getState().loadAsset(materialId, true);
@@ -110,9 +105,7 @@ export default function MaterialProperties({ selected }: Props) {
       });
 
       //create image asset
-      const assetId = await useStudioStore
-        .getState()
-        .createAssetFromFile(fileHandle, "image");
+      const assetId = await useStudioStore.getState().createAssetFromFile(fileHandle, "image");
       if (!assetId) return;
 
       //update material
@@ -136,11 +129,7 @@ export default function MaterialProperties({ selected }: Props) {
     <>
       <MenuRow title="Color">
         <div className="h-6">
-          <ColorInput
-            inputRef={colorRef}
-            defaultValue={material.color}
-            onChange={onColorChange}
-          />
+          <ColorInput inputRef={colorRef} defaultValue={material.color} onChange={onColorChange} />
         </div>
       </MenuRow>
 

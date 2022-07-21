@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "rootDir": "..",
+    "lib": ["WebWorker", "ESNext"],
+    "composite": true,
+    "incremental": true
+  },
+  "extends": "../../tsconfig.json",
+  "include": ["../**/*.ts"]
+}

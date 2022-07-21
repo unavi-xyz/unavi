@@ -3,12 +3,7 @@ import { useContext } from "react";
 
 import { EthersContext } from "@wired-xr/ethers";
 import { IpfsContext } from "@wired-xr/ipfs";
-import {
-  ContractAddress,
-  LensContext,
-  pollUntilIndexed,
-  removeTypename,
-} from "@wired-xr/lens";
+import { ContractAddress, LensContext, pollUntilIndexed, removeTypename } from "@wired-xr/lens";
 
 import { LensHub__factory } from "../../contracts";
 import { useCreateSetProfileImageTypedDataMutation } from "../../generated/graphql";

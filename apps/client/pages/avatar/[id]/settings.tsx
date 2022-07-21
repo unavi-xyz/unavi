@@ -7,10 +7,7 @@ import { useHidePublicationMutation } from "@wired-xr/lens/generated/graphql";
 
 import AvatarLayout from "../../../src/home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
-import {
-  PublicationProps,
-  getPublicationProps,
-} from "../../../src/lib/lens/getPublicationProps";
+import { PublicationProps, getPublicationProps } from "../../../src/lib/lens/getPublicationProps";
 import Button from "../../../src/ui/base/Button";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
@@ -62,9 +59,8 @@ export default function Settings(props: PublicationProps) {
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">
-          Deleting an avatar does not remove it from the blockchain. It only
-          hides it from the indexer. Anyone can still find the avatar by using
-          their own indexer.
+          Deleting an avatar does not remove it from the blockchain. It only hides it from the
+          indexer. Anyone can still find the avatar by using their own indexer.
         </div>
 
         <Button

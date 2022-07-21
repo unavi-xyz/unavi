@@ -75,9 +75,7 @@ export default function MaterialPicker({ selected }: Props) {
       await writableStream.close();
 
       //set material
-      await useStudioStore
-        .getState()
-        .setMaterialFromFile(selected.id, fileHandle);
+      await useStudioStore.getState().setMaterialFromFile(selected.id, fileHandle);
     } catch (error) {
       console.error(error);
     }

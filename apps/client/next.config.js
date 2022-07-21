@@ -3,6 +3,7 @@ const runtimeCaching = require("next-pwa/cache");
 const withTM = require("next-transpile-modules")([
   "three",
   "@wired-xr/engine",
+  "@wired-xr/new-engine",
   "@wired-xr/ethers",
   "@wired-xr/ipfs",
   "@wired-xr/lens",

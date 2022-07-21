@@ -5,12 +5,7 @@ import { FaBook, FaDiscord } from "react-icons/fa";
 import { MdArrowDownward } from "react-icons/md";
 import { VscGithubInverted, VscTwitter } from "react-icons/vsc";
 
-import {
-  DISCORD_URL,
-  DOCS_URL,
-  GITHUB_URL,
-  TWITTER_URL,
-} from "../src/constants";
+import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../src/constants";
 import LoginPage from "../src/home/layouts/NavbarLayout/LoginPage";
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../src/ui/MetaTags";
@@ -34,30 +29,18 @@ export default function Index() {
             <div className="w-full h-full flex flex-col justify-center">
               <div className="text-8xl font-black">The Wired</div>
 
-              <div className="text-3xl pt-0.5">
-                An open and decentralized 3d social platform.
-              </div>
+              <div className="text-3xl pt-0.5">An open and decentralized 3d social platform.</div>
 
               <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
                 <div className="w-full md:w-fit">
-                  <Button
-                    variant="filled"
-                    squared="small"
-                    fullWidth
-                    onClick={() => setOpen(true)}
-                  >
+                  <Button variant="filled" squared="small" fullWidth onClick={() => setOpen(true)}>
                     <div className="px-1">Get Started</div>
                   </Button>
                 </div>
 
                 <div className="w-full md:w-fit">
                   <Button variant="text" squared="small" fullWidth>
-                    <a
-                      href={DOCS_URL}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-1"
-                    >
+                    <a href={DOCS_URL} target="_blank" rel="noreferrer" className="px-1">
                       Learn More
                     </a>
                   </Button>
@@ -105,14 +88,11 @@ export default function Index() {
                 Create
               </div>
 
-              <div className="-ml-1 text-5xl">
-                Leave your mark on cyberspace
-              </div>
+              <div className="-ml-1 text-5xl">Leave your mark on cyberspace</div>
 
               <div className="text-xl text-outline">
-                Whether you{"'"}re looking to build a digital home, start a
-                clothing brand, or just scratch that creative itch - The Wired
-                has you covered.
+                Whether you{"'"}re looking to build a digital home, start a clothing brand, or just
+                scratch that creative itch - The Wired has you covered.
               </div>
 
               <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
@@ -139,9 +119,8 @@ export default function Index() {
               <div className="-ml-1 text-5xl">Discover new experiences</div>
 
               <div className="text-xl text-outline">
-                Go rock climbing on Ganymede, hit an underground music festival,
-                watch the sunset on Tatooine with a group of friends - who knows
-                what you
+                Go rock climbing on Ganymede, hit an underground music festival, watch the sunset on
+                Tatooine with a group of friends - who knows what you
                 {"'"}ll find.
               </div>
 
@@ -188,24 +167,16 @@ export default function Index() {
                 Open
               </div>
 
-              <div className="-ml-1 text-5xl">
-                Take control of your digital life
-              </div>
+              <div className="-ml-1 text-5xl">Take control of your digital life</div>
 
               <div className="text-xl text-outline">
-                Above all, The Wired is an open platform. Anyone can run their
-                own game servers, modify their client, or build something new on
-                top of it.
+                Above all, The Wired is an open platform. Anyone can run their own game servers,
+                modify their client, or build something new on top of it.
               </div>
 
               <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
                 <Button variant="filled" squared="small">
-                  <a
-                    href={DOCS_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-1"
-                  >
+                  <a href={DOCS_URL} target="_blank" rel="noreferrer" className="px-1">
                     Learn More
                   </a>
                 </Button>

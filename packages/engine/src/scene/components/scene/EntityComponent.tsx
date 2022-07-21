@@ -11,20 +11,14 @@ interface Props {
   children: ReactNode;
 }
 
-export function EntityComponent({
-  groupRef = createRef<Group>(),
-  entity,
-  children,
-}: Props) {
+export function EntityComponent({ groupRef = createRef<Group>(), entity, children }: Props) {
   useEffect(() => {
     if (!groupRef.current) return;
 
     //set the transform whenever it changes
     groupRef.current.position.fromArray(entity.transform.position);
     groupRef.current.scale.fromArray(entity.transform.scale);
-    groupRef.current.rotation.setFromVector3(
-      tempVec3.fromArray(entity.transform.rotation)
-    );
+    groupRef.current.rotation.setFromVector3(tempVec3.fromArray(entity.transform.rotation));
   }, [entity]);
 
   const Component = ENTITY_COMPONENTS[entity.type];

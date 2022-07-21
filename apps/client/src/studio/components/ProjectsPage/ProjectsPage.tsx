@@ -31,37 +31,24 @@ export default function ProjectsPage() {
   //if file access API not supported
   if (window && !window.showDirectoryPicker) return <BrowserErrorPage />;
 
-  if (newProject)
-    return <NewProjectsPage onBack={() => setNewProject(false)} />;
+  if (newProject) return <NewProjectsPage onBack={() => setNewProject(false)} />;
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center space-y-1">
         <h1 className="text-3xl flex justify-center">Project</h1>
-        <p className="text-lg flex justify-center">
-          Open an existing project or create a new one
-        </p>
+        <p className="text-lg flex justify-center">Open an existing project or create a new one</p>
       </div>
 
       <div className="flex justify-center space-x-4">
-        <Button
-          variant="tonal"
-          squared="large"
-          fullWidth
-          onClick={handleOpenProject}
-        >
+        <Button variant="tonal" squared="large" fullWidth onClick={handleOpenProject}>
           <div className="flex items-center justify-center space-x-2 py-2">
             <MdOutlineFolderOpen className="text-lg" />
             <div>Open Project</div>
           </div>
         </Button>
 
-        <Button
-          variant="tonal"
-          squared="large"
-          fullWidth
-          onClick={() => setNewProject(true)}
-        >
+        <Button variant="tonal" squared="large" fullWidth onClick={() => setNewProject(true)}>
           <div className="flex items-center justify-center space-x-2 py-2">
             <MdAdd className="text-lg" />
             <div>New Project</div>

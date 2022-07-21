@@ -24,12 +24,5 @@ export default function FileImageIcon({ handle }: Props) {
 
   if (!image) return null;
 
-  return (
-    <img
-      src={image}
-      alt={handle.name}
-      draggable={false}
-      className="max-h-14 rounded-md"
-    />
-  );
+  return <img src={image} alt={handle.name} draggable={false} className="max-h-14 rounded-md" />;
 }

@@ -7,7 +7,5 @@ interface Props {
 }
 
 export default function SpaceCard({ space }: Props) {
-  return (
-    <Card text={space.metadata.name ?? space.id} image={space.metadata.image} />
-  );
+  return <Card text={space.metadata.name ?? space.id} image={space.metadata.image} />;
 }

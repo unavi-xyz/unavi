@@ -1,9 +1,4 @@
-import {
-  VscCircleLargeOutline,
-  VscFile,
-  VscFileBinary,
-  VscFileCode,
-} from "react-icons/vsc";
+import { VscCircleLargeOutline, VscFile, VscFileBinary, VscFileCode } from "react-icons/vsc";
 
 import FileImageIcon from "./FileImageIcon";
 

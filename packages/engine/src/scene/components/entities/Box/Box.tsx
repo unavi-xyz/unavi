@@ -13,13 +13,7 @@ export interface BoxProps {
   materialId?: string;
 }
 
-export function Box({
-  width = 1,
-  height = 1,
-  depth = 1,
-  physics = true,
-  materialId,
-}: BoxProps) {
+export function Box({ width = 1, height = 1, depth = 1, physics = true, materialId }: BoxProps) {
   const ref = useRef<Group>(null);
   const [key, setKey] = useState(0);
 
@@ -31,12 +25,7 @@ export function Box({
 
   return (
     <group ref={ref}>
-      <BoxMesh
-        width={width}
-        height={height}
-        depth={depth}
-        materialId={materialId}
-      />
+      <BoxMesh width={width} height={height} depth={depth} materialId={materialId} />
 
       {physics && (
         <BoxCollider

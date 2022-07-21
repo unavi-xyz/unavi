@@ -11,7 +11,7 @@ import {
   ProduceAudioDataSchema,
   ProduceDataDataSchema,
   SendChatMessageDataSchema,
-} from "@wired-xr/engine/src/networking/schemas";
+} from "@wired-xr/engine";
 
 import { GameManager } from "./classes/GameManager";
 import { createMediasoupRouter, createWebRtcTransport } from "./mediasoup";
@@ -39,7 +39,7 @@ async function start() {
   //create mediasoup router
   const router = await createMediasoupRouter();
 
-  //global variables
+  //create game manager
   const manager = new GameManager(router);
 
   //handle express requests
@@ -173,8 +173,7 @@ async function start() {
       try {
         const { dtlsParameters } = ConnectTransportDataSchema.parse(data);
 
-        if (!player.producer.transport)
-          throw new Error("audioProducerTransport is required");
+        if (!player.producer.transport) throw new Error("audioProducerTransport is required");
 
         await player.producer.transport.connect({
           dtlsParameters,
@@ -195,8 +194,7 @@ async function start() {
       try {
         const { dtlsParameters } = ConnectTransportDataSchema.parse(data);
 
-        if (!player.consumer.transport)
-          throw new Error("audioConsumerTransport is required");
+        if (!player.consumer.transport) throw new Error("audioConsumerTransport is required");
 
         await player.consumer.transport.connect({
           dtlsParameters,

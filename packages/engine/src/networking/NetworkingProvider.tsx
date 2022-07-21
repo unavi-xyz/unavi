@@ -44,11 +44,7 @@ interface NetworkingProviderProps {
   children: React.ReactNode;
 }
 
-export function NetworkingProvider({
-  spaceId,
-  host,
-  children,
-}: NetworkingProviderProps) {
+export function NetworkingProvider({ spaceId, host, children }: NetworkingProviderProps) {
   const [socket, setSocket] = useState<TypedSocket>();
   const [device, setDevice] = useState<Device>();
 
@@ -150,24 +146,20 @@ export function NetworkingProvider({
 
         //handle connect
         transport.on("connect", ({ dtlsParameters }, callback, errcallback) => {
-          socket.emit(
-            "connect_producer_transport",
-            { dtlsParameters },
-            (res) => {
-              try {
-                const { success } = ConnectTransportResponseSchema.parse(res);
+          socket.emit("connect_producer_transport", { dtlsParameters }, (res) => {
+            try {
+              const { success } = ConnectTransportResponseSchema.parse(res);
 
-                if (!success) {
-                  throw new Error("Failed to connect producer transport");
-                }
-
-                callback();
-              } catch (error) {
-                console.error(error);
-                errcallback();
+              if (!success) {
+                throw new Error("Failed to connect producer transport");
               }
+
+              callback();
+            } catch (error) {
+              console.error(error);
+              errcallback();
             }
-          );
+          });
         });
 
         //log connection state
@@ -283,24 +275,20 @@ export function NetworkingProvider({
 
         //handle connect
         transport.on("connect", ({ dtlsParameters }, callback, errcallback) => {
-          socket.emit(
-            "connect_consumer_transport",
-            { dtlsParameters },
-            (res) => {
-              try {
-                const { success } = ConnectTransportResponseSchema.parse(res);
+          socket.emit("connect_consumer_transport", { dtlsParameters }, (res) => {
+            try {
+              const { success } = ConnectTransportResponseSchema.parse(res);
 
-                if (!success) {
-                  throw new Error("Failed to connect producer transport");
-                }
-
-                callback();
-              } catch (error) {
-                console.error(error);
-                errcallback();
+              if (!success) {
+                throw new Error("Failed to connect producer transport");
               }
+
+              callback();
+            } catch (error) {
+              console.error(error);
+              errcallback();
             }
-          );
+          });
         });
 
         //log connection state
@@ -395,8 +383,7 @@ export function NetworkingProvider({
 
             if (transport.closed) throw new Error("Transport closed");
 
-            if (!sctpStreamParameters)
-              throw new Error("No sctpStreamParameters");
+            if (!sctpStreamParameters) throw new Error("No sctpStreamParameters");
 
             if (!dataProducerId) throw new Error("No dataProducerId");
 

@@ -15,16 +15,12 @@ box.props.height = 0.5;
 box.props.depth = 10;
 box.transform.position = [0, -0.75, 0];
 
-const ambientLight: IEntity<"AmbientLight"> = deepClone(
-  ALL_PRESETS["AmbientLight"]
-);
+const ambientLight: IEntity<"AmbientLight"> = deepClone(ALL_PRESETS["AmbientLight"]);
 ambientLight.id = nanoid();
 ambientLight.parentId = "root";
 ambientLight.props.intensity = 0.1;
 
-const directionalLight: IEntity<"DirectionalLight"> = deepClone(
-  ALL_PRESETS["DirectionalLight"]
-);
+const directionalLight: IEntity<"DirectionalLight"> = deepClone(ALL_PRESETS["DirectionalLight"]);
 directionalLight.id = nanoid();
 directionalLight.parentId = "root";
 directionalLight.transform.position = [-1, 1, 1];

@@ -42,10 +42,7 @@ export interface IStudioStore extends ISceneSlice {
     type: AssetType
   ) => Promise<string | void>;
 
-  setMaterialFromFile: (
-    entityId: string,
-    fileHandle: FileSystemFileHandle
-  ) => Promise<void>;
+  setMaterialFromFile: (entityId: string, fileHandle: FileSystemFileHandle) => Promise<void>;
 
   updateMaterialFile: (
     assetId: string,
@@ -133,9 +130,7 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
     });
 
     //if not, create one
-    const assetId = foundAsset
-      ? foundAsset[0]
-      : get().addAsset({ type, uri: path });
+    const assetId = foundAsset ? foundAsset[0] : get().addAsset({ type, uri: path });
 
     //load asset
     await get().loadAsset(assetId);
@@ -143,10 +138,7 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
     return assetId;
   },
 
-  async setMaterialFromFile(
-    entityId: string,
-    fileHandle: FileSystemFileHandle
-  ) {
+  async setMaterialFromFile(entityId: string, fileHandle: FileSystemFileHandle) {
     //create asset
     const assetId = await get().createAssetFromFile(fileHandle, "material");
     if (!assetId) throw new Error("Failed to create asset");
@@ -158,10 +150,7 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
     });
   },
 
-  async updateMaterialFile(
-    assetId: string,
-    callback: (draft: WritableDraft<IMaterial>) => void
-  ) {
+  async updateMaterialFile(assetId: string, callback: (draft: WritableDraft<IMaterial>) => void) {
     //get asset
     const asset = get().scene.assets[assetId];
     if (!asset) throw new Error("Asset not found");

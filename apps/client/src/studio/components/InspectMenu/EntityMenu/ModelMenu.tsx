@@ -33,9 +33,7 @@ export default function ModelMenu({ selected, handleChange }: Props) {
       if (!fileHandle) return;
 
       //create asset
-      const assetId = await useStudioStore
-        .getState()
-        .createAssetFromFile(fileHandle, "model");
+      const assetId = await useStudioStore.getState().createAssetFromFile(fileHandle, "model");
 
       //set model
       handleChange("modelId", assetId);

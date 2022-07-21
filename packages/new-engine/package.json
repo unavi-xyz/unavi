@@ -1,0 +1,35 @@
+{
+  "name": "@wired-xr/new-engine",
+  "version": "0.1.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --watch"
+  },
+  "dependencies": {
+    "@pixiv/three-vrm": "^1.0.0-beta.18",
+    "bitecs": "^0.3.38",
+    "mediasoup-client": "^3.6.52",
+    "nanoid": "^3.3.1",
+    "socket.io-client": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^28.1.4",
+    "@types/three": "^0.140.0",
+    "@wired-xr/tsconfig": "*",
+    "eslint": "^8.14.0",
+    "eslint-config-prettier": "^8.5.0",
+    "jest": "^28.1.2",
+    "jest-environment-jsdom": "^28.1.3",
+    "ts-jest": "^28.0.5",
+    "typescript": "^4.7.4",
+    "workerloader-jest-transformer": "^0.1.0"
+  },
+  "peerDependencies": {
+    "three": "^0.140.2"
+  }
+}

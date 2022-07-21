@@ -8,9 +8,7 @@ interface Props {
 }
 
 export default function MenuBlock({ menuId, title, children }: Props) {
-  const closedInspectMenus = useStudioStore(
-    (state) => state.closedInspectMenus
-  );
+  const closedInspectMenus = useStudioStore((state) => state.closedInspectMenus);
 
   return (
     <CollapseMenu

@@ -1,11 +1,7 @@
 import { ChangeEvent, useContext, useEffect, useState } from "react";
 
 import { EthersContext } from "@wired-xr/ethers";
-import {
-  trimHandle,
-  useProfilesByAddress,
-  useSetDefaultProfile,
-} from "@wired-xr/lens";
+import { trimHandle, useProfilesByAddress, useSetDefaultProfile } from "@wired-xr/lens";
 
 import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
 import MetaTags from "../../src/ui/MetaTags";
@@ -24,12 +20,10 @@ export default function Account() {
 
   const setDefaultProfile = useSetDefaultProfile();
 
-  const disabled =
-    selected?.slice(1) === defaultProfile?.handle && Boolean(selected);
+  const disabled = selected?.slice(1) === defaultProfile?.handle && Boolean(selected);
 
   useEffect(() => {
-    const handles =
-      profiles?.map((profile) => `@${trimHandle(profile.handle)}`) ?? [];
+    const handles = profiles?.map((profile) => `@${trimHandle(profile.handle)}`) ?? [];
     setOptions(handles);
     setSelected(handles[0]);
   }, [profiles]);
@@ -42,9 +36,7 @@ export default function Account() {
     if (disabled || loading || !selected || !profiles) return;
 
     const handle = selected.slice(1);
-    const profile = profiles.find(
-      (profile) => trimHandle(profile.handle) === handle
-    );
+    const profile = profiles.find((profile) => trimHandle(profile.handle) === handle);
 
     if (!profile) return;
 
@@ -70,17 +62,15 @@ export default function Account() {
         <div className="space-y-2">
           <div className="font-bold text-xl">Default Profile</div>
           <div>
-            Selecting a default profile will help people discover who you are.
-            You can change your default profile at any time.
+            Selecting a default profile will help people discover who you are. You can change your
+            default profile at any time.
           </div>
         </div>
 
         {defaultProfile && (
           <div className="flex space-x-1">
             <div>Current default profile:</div>
-            <div className="font-black">
-              @{trimHandle(defaultProfile.handle)}
-            </div>
+            <div className="font-black">@{trimHandle(defaultProfile.handle)}</div>
           </div>
         )}
 
@@ -89,19 +79,12 @@ export default function Account() {
             title="Select profile"
             options={options}
             value={selected}
-            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-              setSelected(e.target.value)
-            }
+            onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelected(e.target.value)}
           />
         </div>
 
         <div className="w-full flex justify-end">
-          <Button
-            variant="filled"
-            onClick={handleSave}
-            loading={loading}
-            disabled={disabled}
-          >
+          <Button variant="filled" onClick={handleSave} loading={loading} disabled={disabled}>
             Save
           </Button>
         </div>

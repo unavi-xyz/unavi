@@ -8,28 +8,17 @@ interface Props {
   [key: string]: any;
 }
 
-export default function TextArea({
-  title,
-  textAreaRef,
-  onChange,
-  frontAdornment,
-  ...rest
-}: Props) {
+export default function TextArea({ title, textAreaRef, onChange, frontAdornment, ...rest }: Props) {
   const id = useId();
 
   return (
     <div className="w-full flex flex-col space-y-1">
-      <label
-        htmlFor={id}
-        className="block text-lg font-bold pointer-events-none"
-      >
+      <label htmlFor={id} className="block text-lg font-bold pointer-events-none">
         {title}
       </label>
 
       <div className="flex items-center border rounded-lg">
-        {frontAdornment && (
-          <span className="pl-2 text-primary font-bold">{frontAdornment}</span>
-        )}
+        {frontAdornment && <span className="pl-2 text-primary font-bold">{frontAdornment}</span>}
         <textarea
           ref={textAreaRef}
           id={id}

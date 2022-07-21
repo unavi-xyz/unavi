@@ -50,21 +50,14 @@ export default function TextMenu({ selected, handleChange }: Props) {
         <NumberInput
           updatedValue={String(round(fontSize))}
           onChange={(e) =>
-            handleChange(
-              "fontSize",
-              Math.max(0, round(Number(e.currentTarget.value)))
-            )
+            handleChange("fontSize", Math.max(0, round(Number(e.currentTarget.value))))
           }
         />
       </MenuRow>
 
       <MenuRow title="Color">
         <div className="h-6">
-          <ColorInput
-            inputRef={colorRef}
-            defaultValue={color}
-            onChange={onColorChange}
-          />
+          <ColorInput inputRef={colorRef} defaultValue={color} onChange={onColorChange} />
         </div>
       </MenuRow>
     </>

@@ -15,6 +15,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "${RTC_MIN_PORT}-${RTC_MAX_PORT}:${RTC_MIN_PORT}-${RTC_MAX_PORT}"
+      - "${RTC_MIN_PORT}-${RTC_MAX_PORT}:${RTC_MIN_PORT}-${RTC_MAX_PORT}/tcp"
+      - "${RTC_MIN_PORT}-${RTC_MAX_PORT}:${RTC_MIN_PORT}-${RTC_MAX_PORT}/udp"
     volumes:
       - ./src:/src

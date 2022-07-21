@@ -17,8 +17,7 @@ export default function BrowserErrorPage() {
         >
           File System Access API
         </a>
-        . Please switch to a different browser (such as Chrome) to use the
-        studio.
+        . Please switch to a different browser (such as Chrome) to use the studio.
       </div>
 
       <Link href="/" passHref>

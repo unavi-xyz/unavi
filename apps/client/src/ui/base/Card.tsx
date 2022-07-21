@@ -15,9 +15,7 @@ export default function Card({ image, text, subtext, aspect = "card" }: Props) {
       className={`group p-3 w-full h-full overflow-hidden rounded-2xl hover:cursor-pointer
                   flex flex-col hover:ring-2 hover:ring-outline`}
     >
-      <div
-        className={`h-full overflow-hidden rounded-xl ${aspectCss} bg-primaryContainer`}
-      >
+      <div className={`h-full overflow-hidden rounded-xl ${aspectCss} bg-primaryContainer`}>
         <div className="relative w-full h-full">
           {image && (
             <Image
@@ -35,9 +33,7 @@ export default function Card({ image, text, subtext, aspect = "card" }: Props) {
 
       <div className="space-y-2 pt-2">
         {text && <div className="px-1 text-xl overflow-hidden">{text}</div>}
-        {subtext && (
-          <div className="px-1 text-lg overflow-hidden">{subtext}</div>
-        )}
+        {subtext && <div className="px-1 text-lg overflow-hidden">{subtext}</div>}
       </div>
     </div>
   );

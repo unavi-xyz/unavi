@@ -33,19 +33,12 @@ export default function ProfileLayout({
 
   return (
     <>
-      <MetaTags
-        title={metadata.title}
-        description={metadata.description}
-        image={metadata.image}
-      />
+      <MetaTags title={metadata.title} description={metadata.description} image={metadata.image} />
 
       <Head>
         <meta property="og:type" content="profile" />
         <meta property="og:profile:username" content={handle} />
-        <meta
-          property="og:profile:first_name"
-          content={profile?.name ?? handle}
-        />
+        <meta property="og:profile:first_name" content={profile?.name ?? handle} />
       </Head>
 
       {profile ? (
@@ -77,21 +70,13 @@ export default function ProfileLayout({
 
               <div className="w-full py-2 flex space-x-4 justify-center">
                 <div className="flex flex-col md:flex-row md:space-x-1 items-center">
-                  <div className="font-black text-lg">
-                    {profile.stats.totalFollowing}
-                  </div>
-                  <div className="text-outline leading-5 text-lg">
-                    Following
-                  </div>
+                  <div className="font-black text-lg">{profile.stats.totalFollowing}</div>
+                  <div className="text-outline leading-5 text-lg">Following</div>
                 </div>
 
                 <div className="flex flex-col md:flex-row md:space-x-1 items-center">
-                  <div className="font-black text-lg">
-                    {profile.stats.totalFollowers}
-                  </div>
-                  <div className="text-outline leading-5 text-lg">
-                    Followers
-                  </div>
+                  <div className="font-black text-lg">{profile.stats.totalFollowers}</div>
+                  <div className="text-outline leading-5 text-lg">Followers</div>
                 </div>
               </div>
             </div>
@@ -110,11 +95,7 @@ export default function ProfileLayout({
                   </Link>
                 ) : (
                   <div>
-                    <Button
-                      variant="filled"
-                      squared="small"
-                      disabled={!viewerHandle}
-                    >
+                    <Button variant="filled" squared="small" disabled={!viewerHandle}>
                       <div className="flex justify-center items-center space-x-1 px-6">
                         <MdAdd />
                         <div>Follow</div>
@@ -138,16 +119,12 @@ export default function ProfileLayout({
               </div>
 
               <div className="w-full pt-2">
-                <div className="text-sm md:text-base text-center">
-                  {profile.bio}
-                </div>
+                <div className="text-sm md:text-base text-center">{profile.bio}</div>
               </div>
 
               <div className="flex space-x-4 flex-wrap">
                 {location && (
-                  <AttributeRow icon={<MdOutlineLocationOn />}>
-                    {location.value}
-                  </AttributeRow>
+                  <AttributeRow icon={<MdOutlineLocationOn />}>{location.value}</AttributeRow>
                 )}
 
                 {website && (

@@ -10,12 +10,7 @@ export interface BoxColliderProps {
   transform: Transform;
 }
 
-export function BoxCollider({
-  width,
-  height,
-  depth,
-  transform,
-}: BoxColliderProps) {
+export function BoxCollider({ width, height, depth, transform }: BoxColliderProps) {
   const args: Triplet = [
     width * transform.scale[0],
     height * transform.scale[1],

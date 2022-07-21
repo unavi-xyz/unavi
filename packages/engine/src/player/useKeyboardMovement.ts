@@ -20,11 +20,7 @@ interface Props {
  * @param props
  * @constructor
  */
-export function useKeyboardMovement({
-  paused = false,
-  direction,
-  jump,
-}: Props) {
+export function useKeyboardMovement({ paused = false, direction, jump }: Props) {
   const pressedKeys = useRef([false, false, false, false]);
 
   useEffect(() => {

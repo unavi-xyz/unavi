@@ -1,4 +1,3 @@
-import { Physics } from "@react-three/cannon";
 import { useContextBridge } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Context } from "urql";
@@ -24,9 +23,7 @@ export function EngineCanvas({ children }: Props) {
 
   return (
     <Canvas shadows>
-      <ContextBridge>
-        <Physics>{children}</Physics>
-      </ContextBridge>
+      <ContextBridge>{children}</ContextBridge>
     </Canvas>
   );
 }

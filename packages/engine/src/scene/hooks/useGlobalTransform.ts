@@ -24,9 +24,7 @@ export function useGlobalTransform(ref: RefObject<Object3D>) {
       const scale = ref.current.getWorldScale(tempVec3.current).toArray();
       const rotation = tempVec3.current
         .setFromEuler(
-          tempEuler.current.setFromQuaternion(
-            ref.current.getWorldQuaternion(tempQuat.current)
-          )
+          tempEuler.current.setFromQuaternion(ref.current.getWorldQuaternion(tempQuat.current))
         )
         .toArray();
 

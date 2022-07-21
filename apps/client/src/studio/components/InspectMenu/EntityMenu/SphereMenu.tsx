@@ -20,27 +20,21 @@ export default function SphereMenu({ selected, handleChange }: Props) {
       <MenuRow title="Radius">
         <NumberInput
           updatedValue={String(round(radius))}
-          onChange={(e) =>
-            handleChange("radius", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("radius", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 
       <MenuRow title="Width Segments">
         <NumberInput
           updatedValue={String(round(widthSegments))}
-          onChange={(e) =>
-            handleChange("widthSegments", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("widthSegments", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 
       <MenuRow title="Height Segments">
         <NumberInput
           updatedValue={String(round(heightSegments))}
-          onChange={(e) =>
-            handleChange("heightSegments", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("heightSegments", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 

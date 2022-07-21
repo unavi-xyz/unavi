@@ -22,14 +22,8 @@ export interface ISceneSlice {
   addAsset: (asset: Asset) => string;
   removeAsset: (id: string) => void;
 
-  updateEntity: (
-    id: string,
-    callback: (draft: WritableDraft<IEntity>) => void
-  ) => void;
-  updateAsset: (
-    id: string,
-    callback: (draft: WritableDraft<Asset>) => void
-  ) => void;
+  updateEntity: (id: string, callback: (draft: WritableDraft<IEntity>) => void) => void;
+  updateAsset: (id: string, callback: (draft: WritableDraft<Asset>) => void) => void;
 }
 
 export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
@@ -80,8 +74,7 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
         parent.children = parent.children.filter((child) => child.id !== id);
 
         if (index === -1) parent.children.push(entity);
-        else if (currentIndex < index)
-          parent.children.splice(index - 1, 0, entity);
+        else if (currentIndex < index) parent.children.splice(index - 1, 0, entity);
         else parent.children.splice(index, 0, entity);
         return;
       }
@@ -90,9 +83,7 @@ export const createSceneSlice: StoreSlice<ISceneSlice> = (set, get) => ({
         //remove from old parent
         const oldParent = findEntityById(draft.tree, entity.parentId);
         if (oldParent) {
-          oldParent.children = oldParent.children.filter(
-            (child) => child.id !== id
-          );
+          oldParent.children = oldParent.children.filter((child) => child.id !== id);
         }
       }
 

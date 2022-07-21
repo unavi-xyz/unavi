@@ -20,27 +20,21 @@ export default function BoxMenu({ selected, handleChange }: Props) {
       <MenuRow title="Width">
         <NumberInput
           updatedValue={String(round(width))}
-          onChange={(e) =>
-            handleChange("width", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("width", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 
       <MenuRow title="Height">
         <NumberInput
           updatedValue={String(round(height))}
-          onChange={(e) =>
-            handleChange("height", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("height", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 
       <MenuRow title="Depth">
         <NumberInput
           updatedValue={String(round(depth))}
-          onChange={(e) =>
-            handleChange("depth", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("depth", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
 

@@ -1,22 +1,18 @@
 import { NextPageContext } from "next";
 import { useEffect } from "react";
 
-import {
-  EngineCanvas,
-  NetworkingProvider,
-  Player,
-  PlayerManager,
-  Scene,
-} from "@wired-xr/engine";
-
+// import {
+//   EngineCanvas,
+//   NetworkingProvider,
+//   Player,
+//   PlayerManager,
+//   Scene,
+// } from "@wired-xr/engine";
 import Chat from "../../src/app/Chat";
 import { useAppHotkeys } from "../../src/app/hooks/useAppHotkeys";
 import { useLoadAssets } from "../../src/app/hooks/useLoadAssets";
 import { useSetIdentity } from "../../src/app/hooks/useSetIdentity";
-import {
-  PublicationProps,
-  getPublicationProps,
-} from "../../src/lib/lens/getPublicationProps";
+import { PublicationProps, getPublicationProps } from "../../src/lib/lens/getPublicationProps";
 import MetaTags from "../../src/ui/MetaTags";
 
 export const DEFAULT_HOST = "wss://host.thewired.space";
@@ -42,9 +38,7 @@ interface Props extends PublicationProps {
 export default function App({ id, metadata, publication }: Props) {
   const { loadedScene, spawn } = useLoadAssets(publication?.metadata.content);
 
-  const ownerHost = publication?.profile.attributes?.find(
-    (item) => item.key === "host"
-  )?.value;
+  const ownerHost = publication?.profile.attributes?.find((item) => item.key === "host")?.value;
 
   const host =
     process.env.NODE_ENV === "development"
@@ -78,7 +72,7 @@ export default function App({ id, metadata, publication }: Props) {
         <div className="h-full">
           <div className="crosshair" />
 
-          <NetworkingProvider spaceId={id} host={host}>
+          {/* <NetworkingProvider spaceId={id} host={host}>
             <Chat />
 
             <EngineCanvas>
@@ -90,7 +84,7 @@ export default function App({ id, metadata, publication }: Props) {
                 defaultAvatarUrl="/models/avatar.vrm"
               />
             </EngineCanvas>
-          </NetworkingProvider>
+          </NetworkingProvider> */}
         </div>
       )}
     </>

@@ -3,10 +3,7 @@ export interface DirectionalLightProps {
   intensity?: number;
 }
 
-export function DirectionalLight({
-  color = "#ffffff",
-  intensity = 1,
-}: DirectionalLightProps) {
+export function DirectionalLight({ color = "#ffffff", intensity = 1 }: DirectionalLightProps) {
   return (
     <directionalLight
       castShadow

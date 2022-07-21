@@ -28,8 +28,7 @@ export default function FileUpload({
     if (file) setFile(file);
   }
 
-  const colorClass =
-    color === "Surface" ? "bg-surface text-onSurface" : "bg-surfaceVariant";
+  const colorClass = color === "Surface" ? "bg-surface text-onSurface" : "bg-surfaceVariant";
 
   return (
     <div className="flex flex-col space-y-1">
@@ -40,9 +39,7 @@ export default function FileUpload({
       >
         <div className="flex items-center">
           <div className="px-3 py-2 rounded-l-lg">Choose File</div>
-          <div className="px-3 py-2 break-all">
-            {file ? file.name : "No file chosen"}
-          </div>
+          <div className="px-3 py-2 break-all">{file ? file.name : "No file chosen"}</div>
         </div>
       </label>
 

@@ -16,7 +16,5 @@ interface AssetProviderProps {
 }
 
 export function AssetProvider({ assets, children }: AssetProviderProps) {
-  return (
-    <AssetContext.Provider value={{ assets }}>{children}</AssetContext.Provider>
-  );
+  return <AssetContext.Provider value={{ assets }}>{children}</AssetContext.Provider>;
 }

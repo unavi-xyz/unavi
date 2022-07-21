@@ -25,11 +25,7 @@ interface Props extends PublicationProps {
   children: React.ReactNode;
 }
 
-export default function AvatarLayout({
-  children,
-  metadata,
-  publication,
-}: Props) {
+export default function AvatarLayout({ children, metadata, publication }: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
@@ -75,9 +71,7 @@ export default function AvatarLayout({
         value,
       };
 
-      const currentIndex = attributes.findIndex(
-        (attribute) => attribute.key === key
-      );
+      const currentIndex = attributes.findIndex((attribute) => attribute.key === key);
 
       if (value === undefined) {
         if (currentIndex !== -1) {
@@ -194,9 +188,7 @@ export default function AvatarLayout({
                   <div className="font-bold flex space-x-1 justify-center md:justify-start">
                     <div>By</div>
                     <Link href={`/user/${author}`}>
-                      <a className="hover:underline cursor-pointer">
-                        @{author}
-                      </a>
+                      <a className="hover:underline cursor-pointer">@{author}</a>
                     </Link>
                   </div>
                 </div>
@@ -211,9 +203,7 @@ export default function AvatarLayout({
                     disabled={disableEquipButton}
                     onClick={handleUnequipAvatar}
                   >
-                    <div className="py-2 group-hover:hidden">
-                      Avatar Equipped
-                    </div>
+                    <div className="py-2 group-hover:hidden">Avatar Equipped</div>
                     <div className="py-2 hidden group-hover:block">Unequip</div>
                   </Button>
                 </div>
@@ -235,12 +225,7 @@ export default function AvatarLayout({
             <div className="flex space-x-4">
               <NavigationTab href={`/avatar/${id}`} text="About" />
 
-              {isAuthor && (
-                <NavigationTab
-                  href={`/avatar/${id}/settings`}
-                  text="Settings"
-                />
-              )}
+              {isAuthor && <NavigationTab href={`/avatar/${id}/settings`} text="Settings" />}
             </div>
 
             <div>{children}</div>

@@ -1,9 +1,12 @@
 export enum SessionStorage {
   AutoLogin = "auto_login",
+  ActiveHomeToken = "active_home_token",
 }
 
 export enum LocalStorage {
   PreviousHandle = "prev_handle",
+
+  HomeToken = "home_token",
 
   AccessToken = "access_token",
   AccessExpire = "access_expire",

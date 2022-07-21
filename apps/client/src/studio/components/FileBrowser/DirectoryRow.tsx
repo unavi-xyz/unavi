@@ -2,10 +2,7 @@ import { useEffect, useState } from "react";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 import { VscFolder, VscFolderOpened } from "react-icons/vsc";
 
-import {
-  compareDirectoryArrays,
-  readDirectoryContents,
-} from "../../../studio/filesystem";
+import { compareDirectoryArrays, readDirectoryContents } from "../../../studio/filesystem";
 import { useStudioStore } from "../../../studio/store";
 
 interface Props {
@@ -13,14 +10,9 @@ interface Props {
   defaultExpanded?: boolean;
 }
 
-export default function DirectoryRow({
-  handle,
-  defaultExpanded = false,
-}: Props) {
+export default function DirectoryRow({ handle, defaultExpanded = false }: Props) {
   const [open, setOpen] = useState(defaultExpanded);
-  const [childrenDirectories, setChildrenDirectories] = useState<
-    FileSystemDirectoryHandle[]
-  >([]);
+  const [childrenDirectories, setChildrenDirectories] = useState<FileSystemDirectoryHandle[]>([]);
 
   const selectedDirectory = useStudioStore((state) => state.selectedDirectory);
 
@@ -30,10 +22,7 @@ export default function DirectoryRow({
 
       const { directories } = await readDirectoryContents(handle);
 
-      const directoryDiff = compareDirectoryArrays(
-        childrenDirectories,
-        directories
-      );
+      const directoryDiff = compareDirectoryArrays(childrenDirectories, directories);
 
       if (directoryDiff.length > 0) setChildrenDirectories(directories);
       else setOpen(false);
@@ -54,9 +43,7 @@ export default function DirectoryRow({
 
   const hasChildren = childrenDirectories.length > 0;
   const isSelected = selectedDirectory?.name === handle.name;
-  const selectedClass = isSelected
-    ? "bg-surfaceVariant"
-    : "hover:bg-surfaceVariant";
+  const selectedClass = isSelected ? "bg-surfaceVariant" : "hover:bg-surfaceVariant";
 
   return (
     <div>

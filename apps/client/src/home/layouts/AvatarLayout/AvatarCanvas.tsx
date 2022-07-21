@@ -47,11 +47,7 @@ export default function AvatarCanvas({
       {background && (
         <group>
           <Sky inclination={0} />
-          <mesh
-            receiveShadow
-            rotation={[Math.PI / -2, 0, 0]}
-            position={[0, 0.01, 0]}
-          >
+          <mesh receiveShadow rotation={[Math.PI / -2, 0, 0]} position={[0, 0.01, 0]}>
             <planeBufferGeometry args={[100, 100]} />
             <meshStandardMaterial color="#EADDFF" />
           </mesh>

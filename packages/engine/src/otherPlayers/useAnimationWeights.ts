@@ -44,10 +44,7 @@ export function useAnimationWeights(
     averageVelocity.current.add(velocity.current).divideScalar(2);
 
     //if positive y velocity, trigger jump
-    if (
-      averageVelocity.current.y > JUMP_STRENGTH / 2 &&
-      jumpProgressRef.current === 0
-    ) {
+    if (averageVelocity.current.y > JUMP_STRENGTH / 2 && jumpProgressRef.current === 0) {
       jumpProgressRef.current = JUMP_DURATION_SECONDS;
     }
 

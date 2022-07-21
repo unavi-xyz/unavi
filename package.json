@@ -13,7 +13,8 @@
     "dev": "turbo run dev --parallel",
     "format": "prettier --write . --ignore-path .gitignore && npx sort-package-json",
     "postinstall": "husky install",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "test": "turbo run test"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",
@@ -25,11 +26,12 @@
     "lint-staged": "^13.0.0",
     "prettier": "^2.5.1",
     "prettier-plugin-sort-json": "^0.0.2",
+    "prettier-plugin-sql": "^0.9.0",
     "sort-package-json": "^1.57.0",
     "turbo": "latest",
     "typescript": "^4.7.4"
   },
-  "packageManager": "yarn@1.22.17",
+  "packageManager": "yarn@1.22.19",
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=7.0.0"

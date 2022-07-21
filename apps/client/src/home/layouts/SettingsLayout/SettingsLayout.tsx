@@ -2,11 +2,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useContext, useState } from "react";
-import {
-  MdAdd,
-  MdOutlineAccountBalanceWallet,
-  MdOutlinePersonOutline,
-} from "react-icons/md";
+import { MdAdd, MdOutlineAccountBalanceWallet, MdOutlinePersonOutline } from "react-icons/md";
 
 import { LensContext, useProfileByHandle } from "@wired-xr/lens";
 

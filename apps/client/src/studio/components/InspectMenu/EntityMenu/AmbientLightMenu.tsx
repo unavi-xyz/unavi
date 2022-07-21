@@ -37,20 +37,14 @@ export default function AmbientLightMenu({ selected, handleChange }: Props) {
     <>
       <MenuRow title="Color">
         <div className="h-6">
-          <ColorInput
-            inputRef={colorRef}
-            defaultValue={color}
-            onChange={onColorChange}
-          />
+          <ColorInput inputRef={colorRef} defaultValue={color} onChange={onColorChange} />
         </div>
       </MenuRow>
 
       <MenuRow title="Intensity">
         <NumberInput
           updatedValue={String(round(intensity))}
-          onChange={(e) =>
-            handleChange("intensity", round(Number(e.currentTarget.value)))
-          }
+          onChange={(e) => handleChange("intensity", round(Number(e.currentTarget.value)))}
         />
       </MenuRow>
     </>

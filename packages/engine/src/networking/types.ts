@@ -111,11 +111,7 @@ export type Channels = {
   location: PlayerLocation;
 };
 
-export const channelNames: Array<keyof Channels> = [
-  "identity",
-  "message",
-  "location",
-];
+export const channelNames: Array<keyof Channels> = ["identity", "message", "location"];
 
 export type PlayerChannels = Record<keyof Channels, RTCDataChannel>;
 
@@ -130,15 +126,9 @@ export type SentChatMessage = WebsocketMessageBase<"chatmessage", string>;
 export type SentIdentity = WebsocketMessageBase<"identity", string>;
 export type SentLocation = WebsocketMessageBase<"location", PlayerLocation>;
 
-export type SentWebsocketMessage =
-  | SentChatMessage
-  | SentIdentity
-  | SentLocation;
+export type SentWebsocketMessage = SentChatMessage | SentIdentity | SentLocation;
 
-export type RecievedChatMessage = WebsocketMessageBase<
-  "chatmessage",
-  IChatMessage
->;
+export type RecievedChatMessage = WebsocketMessageBase<"chatmessage", IChatMessage>;
 export type RecievedIdentity = WebsocketMessageBase<"identity", PlayerIdentity>;
 export type RecievedLocation = WebsocketMessageBase<"location", PlayerLocation>;
 export type RecievedLeaveMessage = WebsocketMessageBase<

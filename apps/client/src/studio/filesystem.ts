@@ -34,9 +34,7 @@ export async function writeScene(scene: IScene) {
   await writableStream.close();
 }
 
-export async function readDirectoryContents(
-  directoryHandle: FileSystemDirectoryHandle
-) {
+export async function readDirectoryContents(directoryHandle: FileSystemDirectoryHandle) {
   const files: FileSystemFileHandle[] = [];
   const directories: FileSystemDirectoryHandle[] = [];
 
@@ -106,10 +104,7 @@ export async function getFileByPath(
   }
 }
 
-export function compareFileArrays(
-  a: FileSystemFileHandle[],
-  b: FileSystemFileHandle[]
-) {
+export function compareFileArrays(a: FileSystemFileHandle[], b: FileSystemFileHandle[]) {
   const difference = a
     .filter((aHandle) => {
       return !b.some((bHandle) => bHandle.name === aHandle.name);

@@ -59,9 +59,7 @@ export default function Dialog({ open, onClose = () => {}, children }: Props) {
                    transition duration-200 ease-in-out scale-75 opacity-0 bg-surface
                    text-onSurface"
       >
-        <DialogContext.Provider value={{ close: onClose }}>
-          {children}
-        </DialogContext.Provider>
+        <DialogContext.Provider value={{ close: onClose }}>{children}</DialogContext.Provider>
       </dialog>
     </div>,
     document.body

@@ -38,9 +38,7 @@ export function Sphere({
         materialId={materialId}
       />
 
-      {physics && (
-        <SphereCollider key={key} radius={radius} transform={globalTransform} />
-      )}
+      {physics && <SphereCollider key={key} radius={radius} transform={globalTransform} />}
     </group>
   );
 }

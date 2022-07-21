@@ -19,9 +19,7 @@ export default function InspectMenu() {
 
   return (
     <div key={selected.id} className="p-4 space-y-8 w-full">
-      <div className="flex justify-center text-xl font-bold">
-        {selected.name}
-      </div>
+      <div className="flex justify-center text-xl font-bold">{selected.name}</div>
 
       <MenuBlock menuId="Transform">
         <TransformMenu />

@@ -53,10 +53,7 @@ export function useSetProfileMetadata(profileId: string) {
       const { v, r, s } = utils.splitSignature(signature);
 
       //send transaction
-      const contract = LensPeriphery__factory.connect(
-        ContractAddress.LensPeriphery,
-        signer
-      );
+      const contract = LensPeriphery__factory.connect(ContractAddress.LensPeriphery, signer);
       const tx = await contract.setProfileMetadataURIWithSig({
         profileId: typedData.value.profileId,
         metadata: typedData.value.metadata,

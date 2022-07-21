@@ -6,7 +6,5 @@ export interface SpaceProps {
 }
 
 export default function Space({ spaceId, host }: SpaceProps) {
-  return (
-    <NetworkingProvider spaceId={spaceId} host={host}></NetworkingProvider>
-  );
+  return <NetworkingProvider spaceId={spaceId} host={host}></NetworkingProvider>;
 }

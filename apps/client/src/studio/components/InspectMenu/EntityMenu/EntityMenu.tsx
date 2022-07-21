@@ -37,40 +37,20 @@ export default function EntityMenu() {
     case "Box":
       return <BoxMenu selected={selected as any} handleChange={handleChange} />;
     case "Sphere":
-      return (
-        <SphereMenu selected={selected as any} handleChange={handleChange} />
-      );
+      return <SphereMenu selected={selected as any} handleChange={handleChange} />;
     case "Cylinder":
-      return (
-        <CylinderMenu selected={selected as any} handleChange={handleChange} />
-      );
+      return <CylinderMenu selected={selected as any} handleChange={handleChange} />;
     case "Model":
-      return (
-        <ModelMenu selected={selected as any} handleChange={handleChange} />
-      );
+      return <ModelMenu selected={selected as any} handleChange={handleChange} />;
     case "PointLight":
-      return (
-        <PointLightMenu
-          selected={selected as any}
-          handleChange={handleChange}
-        />
-      );
+      return <PointLightMenu selected={selected as any} handleChange={handleChange} />;
     case "AmbientLight":
     case "DirectionalLight":
-      return (
-        <AmbientLightMenu
-          selected={selected as any}
-          handleChange={handleChange}
-        />
-      );
+      return <AmbientLightMenu selected={selected as any} handleChange={handleChange} />;
     case "SpotLight":
-      return (
-        <SpotLightMenu selected={selected as any} handleChange={handleChange} />
-      );
+      return <SpotLightMenu selected={selected as any} handleChange={handleChange} />;
     case "Text":
-      return (
-        <TextMenu selected={selected as any} handleChange={handleChange} />
-      );
+      return <TextMenu selected={selected as any} handleChange={handleChange} />;
     default:
       return null;
   }

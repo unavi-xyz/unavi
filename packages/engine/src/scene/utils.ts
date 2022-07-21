@@ -1,9 +1,6 @@
 import { IEntity, Transform } from "./types";
 
-export function findEntityById(
-  entity: IEntity,
-  id: string
-): IEntity | undefined {
+export function findEntityById(entity: IEntity, id: string): IEntity | undefined {
   if (entity.id === id) return entity;
 
   for (const child of entity.children) {
@@ -14,10 +11,7 @@ export function findEntityById(
   return undefined;
 }
 
-export function traverseTree(
-  entity: IEntity,
-  callback: (entity: IEntity) => void
-) {
+export function traverseTree(entity: IEntity, callback: (entity: IEntity) => void) {
   callback(entity);
 
   for (const child of entity.children) {

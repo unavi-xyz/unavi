@@ -10,6 +10,9 @@
     "codegen": {
       "dependsOn": ["^build"]
     },
+    "test": {
+      "dependsOn": ["^build", "codegen"]
+    },
     "dev": {
       "dependsOn": ["^build"],
       "cache": false

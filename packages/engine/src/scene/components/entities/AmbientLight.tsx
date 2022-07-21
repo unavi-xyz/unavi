@@ -3,9 +3,6 @@ export interface AmbientLightProps {
   intensity?: number;
 }
 
-export function AmbientLight({
-  color = "#ffffff",
-  intensity = 1,
-}: AmbientLightProps) {
+export function AmbientLight({ color = "#ffffff", intensity = 1 }: AmbientLightProps) {
   return <ambientLight args={[color, intensity]} />;
 }

@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./build",
+    "composite": true,
+    "incremental": true,
+    "lib": ["ESNext", "DOM"]
+  },
+  "exclude": ["dist", "build", "node_modules"],
+  "extends": "@wired-xr/tsconfig/base.json",
+  "references": [
+    {
+      "path": "src/workers"
+    }
+  ]
+}

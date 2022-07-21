@@ -25,11 +25,7 @@ export default function ProfileButton() {
         </div>
 
         <div className="mt-1">
-          <DropdownMenu
-            placement="right"
-            open={open}
-            onClose={() => setOpen(false)}
-          >
+          <DropdownMenu placement="right" open={open} onClose={() => setOpen(false)}>
             <ProfileMenu />
           </DropdownMenu>
         </div>

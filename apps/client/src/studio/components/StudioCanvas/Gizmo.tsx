@@ -21,11 +21,7 @@ export default function Gizmo() {
     const position = selectedRef.current.position.toArray();
     const scale = selectedRef.current.scale.toArray();
     const rotationArray = selectedRef.current.rotation.toArray();
-    const rotation: Triplet = [
-      rotationArray[0],
-      rotationArray[1],
-      rotationArray[2],
-    ];
+    const rotation: Triplet = [rotationArray[0], rotationArray[1], rotationArray[2]];
 
     const transform = { position, rotation, scale };
 

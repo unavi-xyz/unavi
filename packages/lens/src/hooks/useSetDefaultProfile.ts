@@ -2,12 +2,7 @@ import { utils } from "ethers";
 import { useContext } from "react";
 
 import { EthersContext } from "@wired-xr/ethers";
-import {
-  ContractAddress,
-  LensContext,
-  pollUntilIndexed,
-  removeTypename,
-} from "@wired-xr/lens";
+import { ContractAddress, LensContext, pollUntilIndexed, removeTypename } from "@wired-xr/lens";
 
 import { LensHub__factory } from "../../contracts";
 import { useCreateSetDefaultProfileTypedDataMutation } from "../../generated/graphql";

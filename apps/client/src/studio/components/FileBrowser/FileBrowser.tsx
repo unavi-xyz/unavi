@@ -15,24 +15,17 @@ export default function FileBrowser() {
   const selectedDirectory = useStudioStore((state) => state.selectedDirectory);
 
   const [filesHandles, setFilesHandles] = useState<FileSystemFileHandle[]>([]);
-  const [directoryHandles, setDirectoryHandles] = useState<
-    FileSystemDirectoryHandle[]
-  >([]);
+  const [directoryHandles, setDirectoryHandles] = useState<FileSystemDirectoryHandle[]>([]);
 
   useEffect(() => {
     async function readEntries() {
       if (!rootHandle) return;
 
       const directoryHandle = selectedDirectory ?? rootHandle;
-      const { files, directories } = await readDirectoryContents(
-        directoryHandle
-      );
+      const { files, directories } = await readDirectoryContents(directoryHandle);
 
       const fileDiff = compareFileArrays(filesHandles, files);
-      const directoryDiff = compareDirectoryArrays(
-        directoryHandles,
-        directories
-      );
+      const directoryDiff = compareDirectoryArrays(directoryHandles, directories);
 
       if (fileDiff.length > 0) setFilesHandles(files);
       if (directoryDiff.length > 0) setDirectoryHandles(directories);

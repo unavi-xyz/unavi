@@ -70,11 +70,7 @@ export function Player({ spawn = [0, 0, 0] }: Props) {
 
   return (
     <object3D ref={ref}>
-      <raycaster
-        ref={raycaster}
-        near={PLAYER_HEIGHT - 0.01}
-        far={PLAYER_HEIGHT + 0.1}
-      />
+      <raycaster ref={raycaster} near={PLAYER_HEIGHT - 0.01} far={PLAYER_HEIGHT + 0.1} />
       <PointerLockControls />
     </object3D>
   );

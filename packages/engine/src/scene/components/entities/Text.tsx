@@ -6,11 +6,7 @@ export interface TextProps {
   color?: string;
 }
 
-export function Text({
-  text = "",
-  fontSize = 1,
-  color = "#000000",
-}: TextProps) {
+export function Text({ text = "", fontSize = 1, color = "#000000" }: TextProps) {
   return (
     <DreiText color={color} fontSize={fontSize}>
       {text}

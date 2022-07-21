@@ -99,10 +99,7 @@ export default function Preview() {
           </Canvas>
         )}
 
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="fixed top-0 right-0 p-6 text-2xl"
-        >
+        <div onClick={(e) => e.stopPropagation()} className="fixed top-0 right-0 p-6 text-2xl">
           <Link href={"/studio"} passHref>
             <a
               className="block cursor-pointer p-2 rounded-full bg-surface text-onSurface

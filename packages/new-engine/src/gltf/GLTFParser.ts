@@ -143,14 +143,14 @@ export class GLTFParser {
       }
     });
 
-    // Nodes
+    // Load Nodes
     const nodePromises = sceneDef.nodes?.map(async (nodeIndex) => {
       const node = await this._loadNode(nodeIndex);
       scene.add(node);
     });
     await Promise.all(nodePromises ?? []);
 
-    // Animations
+    // Load Animations
     const animationPromises = this._json.animations?.map(async (_, index) => {
       const animation = await this._loadAnimation(index);
       return animation;
@@ -506,6 +506,11 @@ export class GLTFParser {
       geometry.attributes.uv !== undefined
     ) {
       geometry.setAttribute("uv2", geometry.attributes.uv);
+    }
+
+    // Enable flat shading
+    if (geometry.attributes.normal === undefined) {
+      material.flatShading = true;
     }
 
     // Enable vertex colors

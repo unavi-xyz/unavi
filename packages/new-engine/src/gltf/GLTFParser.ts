@@ -499,6 +499,20 @@ export class GLTFParser {
         ? new MeshStandardMaterial()
         : await this._loadMaterial(primitiveDef.material);
 
+    if (
+      material.aoMap &&
+      geometry.attributes.uv2 === undefined &&
+      geometry.attributes.uv !== undefined
+    ) {
+      geometry.setAttribute("uv2", geometry.attributes.uv);
+    }
+
+    // If three.js needs to generate tangents, flip normal map y
+    // https://github.com/mrdoob/three.js/issues/11438#issuecomment-507003995
+    if (geometry.attributes.tangent === undefined) {
+      material.normalScale.y *= -1;
+    }
+
     // Morph targets
     if (primitiveDef.targets !== undefined) {
       const targetPromises = primitiveDef.targets.map(async (target) => {

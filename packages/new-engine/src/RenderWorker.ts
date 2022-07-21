@@ -46,14 +46,6 @@ export class RenderWorker {
     const environment = premGenerator.fromScene(new RoomEnvironment()).texture;
     this._scene.environment = environment;
 
-    // Lights
-    const ambientLight = new AmbientLight(0xffffff, 0.5);
-    this._scene.add(ambientLight);
-
-    const directionalLight = new DirectionalLight(0xffffff, 0.5);
-    directionalLight.position.set(0, 0, 1);
-    this._scene.add(directionalLight);
-
     // Camera
     this._camera = new PerspectiveCamera(75, canvas.width / canvas.height);
 
@@ -99,6 +91,8 @@ export class RenderWorker {
     const center = boundingBox.getCenter(new Vector3());
 
     // Set camera position
+    if (size.x === 0) size.setX(1);
+    if (size.y === 0) size.setY(1);
     if (size.z === 0) size.setZ(1);
     this._camera.position.set(size.x, size.y, size.z * 2);
 
@@ -111,6 +105,7 @@ export class RenderWorker {
     const max = boundingBox.max.z === 0 ? 1 : boundingBox.max.z;
     this._camera.near = Math.abs(min) / 100;
     this._camera.far = Math.abs(max) * 100;
+    this._camera.far = Math.max(this._camera.far, 50);
     this._camera.updateProjectionMatrix();
 
     // Add to scene

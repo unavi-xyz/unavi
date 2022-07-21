@@ -1,4 +1,16 @@
-import { InterpolateDiscrete, InterpolateLinear, InterpolateSmooth } from "three";
+import {
+  ClampToEdgeWrapping,
+  InterpolateDiscrete,
+  InterpolateLinear,
+  LinearFilter,
+  LinearMipmapLinearFilter,
+  LinearMipmapNearestFilter,
+  MirroredRepeatWrapping,
+  NearestFilter,
+  NearestMipmapLinearFilter,
+  NearestMipmapNearestFilter,
+  RepeatWrapping,
+} from "three";
 
 export const WEBGL_CONSTANTS = {
   FLOAT: 5126,
@@ -75,4 +87,19 @@ export const PATH_PROPERTIES = {
   translation: "position",
   rotation: "quaternion",
   weights: "morphTargetInfluences",
+};
+
+export const WEBGL_FILTERS = {
+  9728: NearestFilter,
+  9729: LinearFilter,
+  9984: NearestMipmapNearestFilter,
+  9985: LinearMipmapNearestFilter,
+  9986: NearestMipmapLinearFilter,
+  9987: LinearMipmapLinearFilter,
+};
+
+export const WEBGL_WRAPPINGS = {
+  33071: ClampToEdgeWrapping,
+  33648: MirroredRepeatWrapping,
+  10497: RepeatWrapping,
 };

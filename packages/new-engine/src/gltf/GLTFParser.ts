@@ -5,6 +5,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   CanvasTexture,
+  ClampToEdgeWrapping,
   DoubleSide,
   Group,
   InterleavedBuffer,
@@ -12,6 +13,8 @@ import {
   Line,
   LineLoop,
   LineSegments,
+  LinearFilter,
+  LinearMipMapLinearFilter,
   Matrix4,
   Mesh,
   MeshStandardMaterial,
@@ -19,6 +22,7 @@ import {
   Object3D,
   Points,
   QuaternionKeyframeTrack,
+  RepeatWrapping,
   Skeleton,
   SkinnedMesh,
   VectorKeyframeTrack,
@@ -39,7 +43,9 @@ import {
   TypeSize,
   WEBGL_COMPONENT_TYPES,
   WEBGL_CONSTANTS,
+  WEBGL_FILTERS,
   WEBGL_TYPE_SIZES,
+  WEBGL_WRAPPINGS,
 } from "./constants";
 import {
   BufferView,
@@ -47,6 +53,7 @@ import {
   MaterialNormalTextureInfo,
   MaterialOcclusionTextureInfo,
   MeshPrimitive,
+  Sampler,
   TextureInfo,
 } from "./schemaTypes";
 import { LoadedBufferView, LoadedGLTF } from "./types";
@@ -563,26 +570,18 @@ export class GLTFParser {
     } = materialDef.pbrMetallicRoughness ?? {};
 
     material.color.fromArray(baseColorFactor);
+    material.opacity = baseColorFactor[3];
     material.metalness = metallicFactor;
     material.roughness = roughnessFactor;
 
-    // Metallic roughness texture
-    if (metallicRoughnessTexture !== undefined) {
-      const texture = await this._loadTexture(metallicRoughnessTexture);
-      material.metalnessMap = texture;
-      material.roughnessMap = texture;
-    }
+    if (materialDef.doubleSided) material.side = DoubleSide;
 
-    // Side
-    const doubleSided = materialDef.doubleSided ?? false;
-    if (doubleSided) material.side = DoubleSide;
-
-    // Emissive
     const emissiveFactor = materialDef.emissiveFactor ?? [0, 0, 0];
     material.emissive.fromArray(emissiveFactor);
 
     // Alpha
     const alphaMode = materialDef.alphaMode ?? ALPHA_MODES.OPAQUE;
+
     if (alphaMode === ALPHA_MODES.BLEND) {
       material.transparent = true;
       material.depthWrite = false;
@@ -599,6 +598,12 @@ export class GLTFParser {
       const texture = await this._loadTexture(baseColorTexture);
       texture.encoding = sRGBEncoding;
       material.map = texture;
+    }
+
+    if (metallicRoughnessTexture) {
+      const texture = await this._loadTexture(metallicRoughnessTexture);
+      material.metalnessMap = texture;
+      material.roughnessMap = texture;
     }
 
     if (materialDef.normalTexture) {
@@ -639,10 +644,34 @@ export class GLTFParser {
       throw new Error(`Texture ${info.index} has no source`);
     }
 
+    // Create texture
     const image = this._images[textureDef.source];
     const texture = new CanvasTexture(image);
-    texture.name = textureDef.name ?? `texture_${info.index}`;
+    texture.needsUpdate = true;
     texture.flipY = false;
+    if (textureDef.name) texture.name = textureDef.name;
+
+    // Sampler
+    let samplerDef: Sampler = {};
+    const samplerIndex = textureDef.sampler;
+    if (samplerIndex !== undefined) {
+      if (this._json.samplers === undefined) {
+        throw new Error("No samplers found");
+      }
+      samplerDef = this._json.samplers[samplerIndex];
+    }
+
+    const magFilter = samplerDef.magFilter as keyof typeof WEBGL_FILTERS;
+    texture.magFilter = WEBGL_FILTERS[magFilter] ?? LinearFilter;
+
+    const minFilter = samplerDef.minFilter as keyof typeof WEBGL_FILTERS;
+    texture.minFilter = WEBGL_FILTERS[minFilter] ?? LinearMipMapLinearFilter;
+
+    const wrapS = samplerDef.wrapS as keyof typeof WEBGL_WRAPPINGS;
+    texture.wrapS = WEBGL_WRAPPINGS[wrapS] ?? RepeatWrapping;
+
+    const wrapT = samplerDef.wrapT as keyof typeof WEBGL_WRAPPINGS;
+    texture.wrapT = WEBGL_WRAPPINGS[wrapT] ?? RepeatWrapping;
 
     this._textures.set(info, texture);
     return texture;

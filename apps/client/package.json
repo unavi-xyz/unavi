@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@react-three/cannon": "^6.3.0",
-    "@react-three/drei": "^9.6.2",
+    "@react-three/drei": "^9.17.3",
     "@react-three/fiber": "^8.0.13",
     "@wired-xr/avatar": "*",
     "@wired-xr/scene": "*",

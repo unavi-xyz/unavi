@@ -5,7 +5,6 @@ import {
   BufferAttribute,
   BufferGeometry,
   CanvasTexture,
-  ClampToEdgeWrapping,
   DoubleSide,
   Group,
   InterleavedBuffer,
@@ -136,16 +135,20 @@ export class GLTFParser {
       }
 
       const nodeDef = this._json.nodes[nodeIndex];
-      if (nodeDef.skin !== undefined) {
-        if (nodeDef.skin !== undefined) {
-          this._skinnedMeshIndexes.add(nodeIndex);
-        }
+      if (nodeDef.mesh !== undefined && nodeDef.skin !== undefined) {
+        const meshIndex = nodeDef.mesh;
+        this._skinnedMeshIndexes.add(meshIndex);
       }
     });
 
     // Load Nodes
     const nodePromises = sceneDef.nodes?.map(async (nodeIndex) => {
-      const node = await this._loadNode(nodeIndex);
+      if (this._json.nodes === undefined) {
+        throw new Error("No nodes found");
+      }
+
+      const node = await this._buildNodeHierarchy(nodeIndex);
+
       scene.add(node);
     });
     await Promise.all(nodePromises ?? []);
@@ -281,6 +284,30 @@ export class GLTFParser {
     return animationClip;
   }
 
+  private async _buildNodeHierarchy(index: number) {
+    const node = await this._loadNode(index);
+
+    if (this._json.nodes === undefined) {
+      throw new Error("No nodes found");
+    }
+
+    const nodeDef = this._json.nodes[index];
+
+    // Children
+    if (nodeDef.children) {
+      const childrenPromises = nodeDef.children.map((childIndex) =>
+        this._buildNodeHierarchy(childIndex)
+      );
+      const children = await Promise.all(childrenPromises);
+
+      children.forEach((child) => {
+        node.add(child);
+      });
+    }
+
+    return node;
+  }
+
   private async _loadNode(index: number) {
     const cached = this._nodes.get(index);
     if (cached) return cached;
@@ -321,12 +348,10 @@ export class GLTFParser {
     if (nodeDef.skin !== undefined) {
       const skinEntry = await this._loadSkin(nodeDef.skin);
 
-      const jointPromises = skinEntry.joints.map(async (joint) => {
-        return await this._loadNode(joint);
-      });
+      const jointPromises = skinEntry.joints.map((joint) => this._loadNode(joint));
       const joints = await Promise.all(jointPromises);
 
-      node.traverse((child: Object3D | SkinnedMesh) => {
+      node.traverse((child) => {
         if (!(child instanceof SkinnedMesh)) return;
 
         const bones: Bone[] = [];
@@ -335,30 +360,17 @@ export class GLTFParser {
         joints.forEach((joint, i) => {
           if (!(joint instanceof Bone)) return;
 
-          const inverseMatrix = new Matrix4();
+          const matrix = new Matrix4();
 
           if (skinEntry.inverseBindMatrices !== null) {
-            inverseMatrix.fromArray(skinEntry.inverseBindMatrices.array, i * 16);
+            matrix.fromArray(skinEntry.inverseBindMatrices.array, i * 16);
           }
 
           bones.push(joint);
-          boneInverses.push(inverseMatrix);
+          boneInverses.push(matrix);
         });
 
         child.bind(new Skeleton(bones, boneInverses), child.matrixWorld);
-      });
-    }
-
-    // Children
-    if (nodeDef.children) {
-      const childrenPromises = nodeDef.children.map(async (childIndex) => {
-        const child = await this._loadNode(childIndex);
-        return child;
-      });
-      const children = await Promise.all(childrenPromises);
-
-      children.forEach((child) => {
-        node.add(child);
       });
     }
 

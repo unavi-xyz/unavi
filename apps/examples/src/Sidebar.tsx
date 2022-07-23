@@ -30,6 +30,36 @@ export default function Sidebar({ children }: Props) {
           <SidebarButton href="/example/WaterBottle">Water Bottle</SidebarButton>
         </div>
 
+        <div className="text-xl font-bold">Standard</div>
+
+        <div className="space-y-2">
+          <SidebarButton href="/example/Box">Box</SidebarButton>
+          <SidebarButton href="/example/BoxInterleaved">Box Interleaved</SidebarButton>
+          <SidebarButton href="/example/BoxTextured">Box Textured</SidebarButton>
+          <SidebarButton href="/example/BoxTexturedNonPowerOfTwo">
+            Box Textured Non Power Of Two
+          </SidebarButton>
+          <SidebarButton href="/example/BoxWithSpaces">Box With Spaces</SidebarButton>
+          <SidebarButton href="/example/BoxVertexColors">Box Vertex Colors</SidebarButton>
+          <SidebarButton href="/example/Cube">Cube</SidebarButton>
+          <SidebarButton href="/example/AnimatedCube">Animated Cube</SidebarButton>
+          <SidebarButton href="/example/Duck">Duck</SidebarButton>
+          <SidebarButton href="/example/TwoCylinderEngine">2 Cylinder Engine</SidebarButton>
+          <SidebarButton href="/example/ReciprocatingSaw">Reciprocating Saw</SidebarButton>
+          <SidebarButton href="/example/GearboxAssy">Gearbox Assy</SidebarButton>
+          <SidebarButton href="/example/Buggy">Buggy</SidebarButton>
+          <SidebarButton href="/example/BoxAnimated">Box Animated</SidebarButton>
+          <SidebarButton href="/example/CesiumMilkTruck">Cesium Milk Truck</SidebarButton>
+          <SidebarButton href="/example/RiggedSimple">Rigged Simple</SidebarButton>
+          <SidebarButton href="/example/RiggedFigure">Rigged Figure</SidebarButton>
+          <SidebarButton href="/example/CesiumMan">Cesium Man</SidebarButton>
+          <SidebarButton href="/example/BrainStem">Brain Stem</SidebarButton>
+          <SidebarButton href="/example/Fox">Fox</SidebarButton>
+          <SidebarButton href="/example/VirtualCity">Virtual City</SidebarButton>
+          <SidebarButton href="/example/Sponza">Sponza</SidebarButton>
+          <SidebarButton href="/example/TwoSidedPlane">Two Sided Plane</SidebarButton>
+        </div>
+
         <div className="text-xl font-bold">Feature Tests</div>
 
         <div className="space-y-2">

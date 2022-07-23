@@ -1,34 +1,22 @@
 import { LoadedGLTF } from "./gltf";
 
 type WorkerMessage<T, D> = {
+  id: number;
   type: T;
   data: D;
 };
 
-// Render
-export type RenderStartMessage = WorkerMessage<"start", {}>;
-export type RenderStopMessage = WorkerMessage<"stop", {}>;
-
-export type RenderInitMessage = WorkerMessage<
-  "renderInit",
+// To game worker
+export type ToGameWorkerLoadGltf = WorkerMessage<
+  "load_gltf",
   {
-    canvas: HTMLCanvasElement;
+    uri: string;
   }
 >;
 
-export type RenderMessage = RenderStartMessage | RenderStopMessage | RenderInitMessage;
+export type ToGameMessage = ToGameWorkerLoadGltf;
 
-// Game
-export type GameLoadGltfMessage = WorkerMessage<
-  "loadGltf",
-  {
-    url: string;
-  }
->;
+// From game worker
+export type FromGameLoadedGltf = WorkerMessage<"loaded_gltf", LoadedGLTF>;
 
-export type GameMessage = GameLoadGltfMessage;
-
-// Main
-export type MainGLTFMessage = WorkerMessage<"gltf", LoadedGLTF>;
-
-export type MainMessage = MainGLTFMessage;
+export type FromGameMessage = FromGameLoadedGltf;

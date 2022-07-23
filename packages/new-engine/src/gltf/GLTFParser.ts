@@ -1,4 +1,5 @@
 import {
+  AnimationAction,
   AnimationClip,
   AnimationMixer,
   Bone,
@@ -46,6 +47,7 @@ import {
   WEBGL_TYPE_SIZES,
   WEBGL_WRAPPINGS,
 } from "./constants";
+import { getNormalizedComponentScale } from "./getNormalizedComponentScale";
 import {
   BufferView,
   GLTF,
@@ -57,10 +59,12 @@ import {
 } from "./schemaTypes";
 import { LoadedBufferView, LoadedGLTF } from "./types";
 
-type SceneResult = {
+export type ParsedGLTF = {
   scene: Group;
-  animations: AnimationMixer;
+  animationActions: AnimationAction[];
+  animationMixer: AnimationMixer;
 };
+
 type PrimitiveResult = [MeshPrimitive, BufferGeometry, MeshStandardMaterial];
 
 // Converts a loaded glTf to Three.js objects
@@ -69,7 +73,7 @@ export class GLTFParser {
   private _bufferViews: LoadedBufferView[];
   private _images: ImageBitmap[];
 
-  private _scenes = new Map<number, SceneResult>();
+  private _scenes = new Map<number, ParsedGLTF>();
 
   // Cache
   private _accessors = new Map<number, BufferAttribute | InterleavedBufferAttribute>();
@@ -120,7 +124,7 @@ export class GLTFParser {
     scene.name = sceneDef.name ?? `scene_${index}`;
 
     // Mark bones
-    if (this._json.skins !== undefined) {
+    if (this._json.skins) {
       this._json.skins.forEach((skin) => {
         skin.joints.forEach((jointIndex) => {
           this._boneIndexes.add(jointIndex);
@@ -129,48 +133,34 @@ export class GLTFParser {
     }
 
     // Mark skinned meshes
-    sceneDef.nodes?.forEach(async (nodeIndex) => {
-      if (!this._json.nodes) {
-        throw new Error("No nodes found");
-      }
+    if (this._json.nodes) {
+      this._json.nodes.forEach((nodeDef) => {
+        if (nodeDef.mesh !== undefined && nodeDef.skin !== undefined) {
+          this._skinnedMeshIndexes.add(nodeDef.mesh);
+        }
+      });
+    }
 
-      const nodeDef = this._json.nodes[nodeIndex];
-      if (nodeDef.mesh !== undefined && nodeDef.skin !== undefined) {
-        const meshIndex = nodeDef.mesh;
-        this._skinnedMeshIndexes.add(meshIndex);
-      }
-    });
-
-    // Load Nodes
-    const nodePromises = sceneDef.nodes?.map(async (nodeIndex) => {
-      if (this._json.nodes === undefined) {
-        throw new Error("No nodes found");
-      }
-
-      const node = await this._buildNodeHierarchy(nodeIndex);
-
-      scene.add(node);
-    });
-    await Promise.all(nodePromises ?? []);
+    if (sceneDef.nodes) {
+      // Load Nodes
+      const nodePromises = sceneDef.nodes.map((nodeIndex) => this._buildNodeHierarchy(nodeIndex));
+      const nodes = await Promise.all(nodePromises);
+      scene.add(...nodes);
+    }
 
     // Load Animations
-    const animationPromises = this._json.animations?.map(async (_, index) => {
-      const animation = await this._loadAnimation(index);
-      return animation;
-    });
+    const animationPromises = this._json.animations?.map((_, index) => this._loadAnimation(index));
     const animationClips = await Promise.all(animationPromises ?? []);
 
     const animationMixer = new AnimationMixer(scene);
     const animationActions = animationClips.map((clip) => animationMixer.clipAction(clip));
 
-    animationActions.forEach((action) => {
-      action.play();
-    });
-
-    const result: SceneResult = {
+    const result: ParsedGLTF = {
       scene,
-      animations: animationMixer,
+      animationActions,
+      animationMixer,
     };
+
     this._scenes.set(index, result);
     return result;
   }
@@ -202,12 +192,24 @@ export class GLTFParser {
       }
 
       const node = await this._loadNode(channel.target.node);
-
       node.updateMatrix();
       node.matrixAutoUpdate = true;
 
       const interpolationType = sampler.interpolation ?? "LINEAR";
       const interpolation = INTERPOLATION[interpolationType];
+
+      let outputArray: Float32Array | number[] = Array.from(output.array);
+
+      if (output.normalized) {
+        const scale = getNormalizedComponentScale(outputArray.constructor as any);
+        const scaled = new Float32Array(outputArray.length);
+
+        outputArray.forEach((value, index) => {
+          scaled[index] = value * scale;
+        });
+
+        outputArray = scaled;
+      }
 
       let TypedKeyframeTrack:
         | typeof NumberKeyframeTrack
@@ -243,7 +245,7 @@ export class GLTFParser {
         const track = new TypedKeyframeTrack(
           `${name}.${PATH_PROPERTIES[channel.target.path]}`,
           Array.from(input.array),
-          Array.from(output.array),
+          Array.from(outputArray),
           interpolation
         );
 
@@ -299,10 +301,7 @@ export class GLTFParser {
         this._buildNodeHierarchy(childIndex)
       );
       const children = await Promise.all(childrenPromises);
-
-      children.forEach((child) => {
-        node.add(child);
-      });
+      node.add(...children);
     }
 
     return node;

@@ -1,23 +1,24 @@
 import { GLTFLoader } from "../gltf/GLTFLoader";
-import { GameMessage, MainGLTFMessage } from "../types";
+import { FromGameLoadedGltf, ToGameMessage } from "../types";
 
-onmessage = (event: MessageEvent<GameMessage>) => {
-  const { type, data } = event.data;
+onmessage = (event: MessageEvent<ToGameMessage>) => {
+  const { type, data, id } = event.data;
 
   switch (type) {
-    case "loadGltf":
-      loadGltf(data.url);
+    case "load_gltf":
+      loadGltf(data.uri, id);
   }
 };
 
-async function loadGltf(url: string) {
+async function loadGltf(uri: string, id: number) {
   const loader = new GLTFLoader();
-  const data = await loader.load(url);
+  const data = await loader.load(uri);
 
   if (!data) return;
 
-  const message: MainGLTFMessage = {
-    type: "gltf",
+  const message: FromGameLoadedGltf = {
+    id,
+    type: "loaded_gltf",
     data,
   };
 

@@ -1,5 +1,5 @@
-import { GameWorker } from "./GameWorker";
-import { RenderWorker } from "./RenderWorker";
+import { GameManager } from "./GameManager";
+import { RenderManager } from "./RenderManager";
 
 const GAME_FPS = 60;
 const GAME_INTERVAL = GAME_FPS;
@@ -13,12 +13,12 @@ export class Engine {
   private _lastGameTime = 0;
   private _lastRenderTime = 0;
 
-  private _renderWorker: RenderWorker;
-  private _gameWorker: GameWorker;
+  private _renderManager: RenderManager;
+  private _gameManager: GameManager;
 
   constructor({ canvas }: EngineOptions) {
-    this._renderWorker = new RenderWorker(canvas);
-    this._gameWorker = new GameWorker(this._renderWorker);
+    this._renderManager = new RenderManager(canvas);
+    this._gameManager = new GameManager(this._renderManager);
 
     // Start render loop
     this.start();
@@ -41,15 +41,15 @@ export class Engine {
       this._lastGameTime = timeSeconds - (this._lastGameTime % GAME_INTERVAL);
 
       // Update game state
-      this._gameWorker.update(deltaGame);
+      this._gameManager.update(deltaGame);
     }
 
     // Render
-    this._renderWorker.render(deltaRender);
+    this._renderManager.render(deltaRender);
   }
 
-  public loadGltf(url: string) {
-    this._gameWorker.loadGltf(url);
+  public loadGltf(uri: string) {
+    return this._gameManager.loadGltf(uri);
   }
 
   public start() {
@@ -68,8 +68,8 @@ export class Engine {
 
   public destroy() {
     // Destroy workers
-    this._gameWorker.destroy();
-    this._renderWorker.destroy();
+    this._gameManager.destroy();
+    this._renderManager.destroy();
 
     // Stop render loop
     this.stop();

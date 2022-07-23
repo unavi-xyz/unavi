@@ -24,6 +24,36 @@ Models demonstrating features of the core glTF specification. Some models may in
 | [Suzanne](public/models/Suzanne)                |    ![screenshot](public/models/Suzanne/screenshot/screenshot.jpg)     |                    |                    |                    |
 | [Water Bottle](public/models/WaterBottle)       |  ![screenshot](public/models/WaterBottle/screenshot/screenshot.jpg)   | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
+## Standard
+
+Standard models demonstrating multiple features of the core specification.
+
+| Model                                                       | Screenshot                                                                      | Description                                                                              |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [Box](public/models/Box)                                    | ![screenshot](public/models/Box/screenshot/screenshot.png)                      | One mesh and one material. Start with this.                                              |
+| [Box Interleaved](public/models/BoxInterleaved)             | ![screenshot](public/models/BoxInterleaved/screenshot/screenshot.png)           | Box example with interleaved position and normal attributes.                             |
+| [Box Textured](public/models/BoxTextured)                   | ![screenshot](public/models/BoxTextured/screenshot/screenshot.png)              | Box with one texture. Start with this to test textures.                                  |
+| [Box Textured NPOT](public/models/BoxTexturedNonPowerOfTwo) | ![screenshot](public/models/BoxTexturedNonPowerOfTwo/screenshot/screenshot.png) | Box with a non-power-of-2 (NPOT) texture. Not all implementations support NPOT textures. |
+| [Box With Spaces](public/models/Box%20With%20Spaces)        | ![screenshot](public/models/Box%20With%20Spaces/screenshot/screenshot.png)      | Box with URI-encoded spaces in the texture names used by a simple PBR material.          |
+| [Box Vertex Colors](public/models/BoxVertexColors)          | ![screenshot](public/models/BoxVertexColors/screenshot/screenshot.png)          | Box with vertex colors applied.                                                          |
+| [Cube](public/models/Cube)                                  | ![screenshot](public/models/Cube/screenshot/screenshot.jpg)                     | A cube with non-smoothed faces.                                                          |
+| [Animated Cube](public/models/AnimatedCube)                 | ![screenshot](public/models/AnimatedCube/screenshot/screenshot.gif)             | Same as previous cube having a linear rotation animation.                                |
+| [Duck](public/models/Duck)                                  | ![screenshot](public/models/Duck/screenshot/screenshot.png)                     | The COLLADA duck. One texture.                                                           |
+| [2 Cylinder Engine](public/models/2CylinderEngine)          | ![screenshot](public/models/2CylinderEngine/screenshot/screenshot.png)          | Small CAD data set, including hierarchy.                                                 |
+| [Reciprocating Saw](public/models/ReciprocatingSaw)         | ![screenshot](public/models/ReciprocatingSaw/screenshot/screenshot.png)         | Small CAD data set, including hierarchy.                                                 |
+| [Gearbox Assy](public/models/GearboxAssy)                   | ![screenshot](public/models/GearboxAssy/screenshot/screenshot.png)              | Medium-sized CAD data set, including hierarchy.                                          |
+| [Buggy](public/models/Buggy)                                | ![screenshot](public/models/Buggy/screenshot/screenshot.png)                    | Medium-sized CAD data set, including hierarchy                                           |
+| [Box Animated](public/models/BoxAnimated)                   | ![screenshot](public/models/BoxAnimated/screenshot/screenshot.gif)              | Rotation and Translation Animations. Start with this to test animations.                 |
+| [Cesium Milk Truck](public/models/CesiumMilkTruck)          | ![screenshot](public/models/CesiumMilkTruck/screenshot/screenshot.gif)          | Textured. Multiple nodes/meshes. Animations.                                             |
+| [Rigged Simple](public/models/RiggedSimple)                 | ![screenshot](public/models/RiggedSimple/screenshot/screenshot.gif)             | Animations. Skins. Start with this to test skinning.                                     |
+| [Rigged Figure](public/models/RiggedFigure)                 | ![screenshot](public/models/RiggedFigure/screenshot/screenshot.gif)             | Animations. Skins.                                                                       |
+| [Cesium Man](public/models/CesiumMan)                       | ![screenshot](public/models/CesiumMan/screenshot/screenshot.gif)                | Textured. Animations. Skins.                                                             |
+| [BrainStem](public/models/BrainStem)                        | ![screenshot](public/models/BrainStem/screenshot/screenshot.gif)                | Animations. Skins.                                                                       |
+| [Fox](public/models/Fox)                                    | ![screenshot](public/models/Fox/screenshot/screenshot.jpg)                      | Multiple animations cycles: Survey, Walk, Run.                                           |
+| [Virtual City](public/models/VC)                            | ![screenshot](public/models/VC/screenshot/screenshot.gif)                       | Textured. Animations.                                                                    |
+| [Sponza](public/models/Sponza)                              | ![screenshot](public/models/Sponza/screenshot/screenshot.jpg)                   | Building interior, often used to test lighting.                                          |
+| [Two Sided Plane](public/models/TwoSidedPlane)              | ![screenshot](public/models/TwoSidedPlane/screenshot/screenshot.jpg)            | A plane having the two sided material parameter enabled.                                 |
+
 ### Feature Tests
 
 Models meant to easily illustrate and test specific features of the core specification.

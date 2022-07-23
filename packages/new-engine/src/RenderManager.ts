@@ -159,4 +159,8 @@ export class RenderManager {
     // Remove stats
     document.body.removeChild(this._stats.dom);
   }
+
+  public info() {
+    return this._renderer.info;
+  }
 }

@@ -66,6 +66,10 @@ export class Engine {
     }
   }
 
+  public info() {
+    return this._renderManager.info();
+  }
+
   public destroy() {
     // Destroy workers
     this._gameManager.destroy();

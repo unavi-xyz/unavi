@@ -5,6 +5,22 @@ import { Engine } from "@wired-xr/new-engine";
 
 import Panel from "./Panel/Panel";
 
+export interface RenderInfo {
+  load: {
+    time: number;
+  };
+  memory: {
+    geometries: number;
+    textures: number;
+  };
+  render: {
+    calls: number;
+    lines: number;
+    points: number;
+    triangles: number;
+  };
+}
+
 interface Props {
   gltf: string;
 }
@@ -13,8 +29,9 @@ export default function ExampleCanvas({ gltf }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [animations, setAnimations] = useState<AnimationAction[]>();
   const [loaded, setLoaded] = useState(false);
+  const [animations, setAnimations] = useState<AnimationAction[]>();
+  const [info, setInfo] = useState<RenderInfo>();
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -34,11 +51,14 @@ export default function ExampleCanvas({ gltf }: Props) {
 
     let interval: any;
 
+    const startTime = performance.now();
+
     // Load gltf
     engine
       .loadGltf(gltf)
-      .then((res) => {
-        const { scene, animations } = res;
+      .then(({ animations }) => {
+        const loadTime = Math.round(performance.now() - startTime) / 1000;
+
         setAnimations(animations);
         setLoaded(true);
 
@@ -47,19 +67,27 @@ export default function ExampleCanvas({ gltf }: Props) {
           animations[0].play();
         }
 
-        // console.log("🧛‍♀️", animations[0]);
+        function updateInfo() {
+          const { render, memory } = engine.info();
+          const { triangles, points, lines, calls } = render;
 
-        const targetUUID = animations[0].getClip().tracks[0].name.split(".")[0];
+          setInfo({
+            load: {
+              time: loadTime,
+            },
+            memory,
+            render: {
+              calls,
+              lines,
+              points,
+              triangles,
+            },
+          });
+        }
 
-        scene.traverse((child) => {
-          if (child.uuid !== targetUUID) return;
+        updateInfo();
 
-          // console.log("🧳", child);
-
-          interval = setInterval(() => {
-            // console.log(child.rotation);
-          }, 810);
-        });
+        interval = setInterval(updateInfo, 1000);
       })
       .catch((error) => {
         console.error(error);
@@ -71,6 +99,7 @@ export default function ExampleCanvas({ gltf }: Props) {
       window.removeEventListener("resize", updateCanvasSize);
       setAnimations(undefined);
       setLoaded(false);
+      setInfo(undefined);
       clearInterval(interval);
     };
   }, [canvasRef, gltf]);
@@ -93,7 +122,7 @@ export default function ExampleCanvas({ gltf }: Props) {
         <canvas ref={canvasRef} className="w-full h-full" />
       </div>
 
-      <Panel loaded={loaded} animations={animations} />
+      <Panel loaded={loaded} animations={animations} info={info} />
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimationAction } from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { Engine } from "@wired-xr/new-engine";
 
@@ -8,6 +9,7 @@ import Panel from "./Panel/Panel";
 export interface RenderInfo {
   load: {
     time: number;
+    threeTime: number;
   };
   memory: {
     geometries: number;
@@ -49,14 +51,13 @@ export default function ExampleCanvas({ gltf }: Props) {
       stats.style.left = "calc(100% - 79px)";
     }
 
-    let interval: any;
-
+    let interval: NodeJS.Timer;
     const startTime = performance.now();
 
     // Load gltf
     engine
       .loadGltf(gltf)
-      .then(({ animations }) => {
+      .then(async ({ animations }) => {
         const loadTime = Math.round(performance.now() - startTime) / 1000;
 
         setAnimations(animations);
@@ -67,6 +68,12 @@ export default function ExampleCanvas({ gltf }: Props) {
           animations[0].play();
         }
 
+        // Test against threejs loader load time
+        const threeLoader = new GLTFLoader();
+        const startThreeTime = performance.now();
+        await threeLoader.loadAsync(gltf);
+        const threeTime = Math.round(performance.now() - startThreeTime) / 1000;
+
         function updateInfo() {
           const { render, memory } = engine.info();
           const { triangles, points, lines, calls } = render;
@@ -74,6 +81,7 @@ export default function ExampleCanvas({ gltf }: Props) {
           setInfo({
             load: {
               time: loadTime,
+              threeTime,
             },
             memory,
             render: {

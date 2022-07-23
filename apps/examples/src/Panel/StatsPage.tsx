@@ -7,11 +7,16 @@ interface Props {
 export default function StatsPage({ info }: Props) {
   return (
     <div>
-      <div className="py-1 text-center font-bold">Load</div>
+      <div className="py-1 text-center font-bold">Load Time Comparison</div>
 
       <div className="grid grid-cols-2">
         <div>Load Time</div>
         <div>{info.load.time}s</div>
+      </div>
+
+      <div className="grid grid-cols-2">
+        <div>Three Load Time</div>
+        <div>{info.load.threeTime}s</div>
       </div>
 
       <div className="py-1 text-center font-bold">Memory</div>

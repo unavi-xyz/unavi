@@ -19,6 +19,8 @@ export class GameManager {
   }
 
   public loadGltf(uri: string) {
+    const startTime = performance.now();
+
     const message: ToGameWorkerLoadGltf = {
       id: this._messageId++,
       type: "load_gltf",
@@ -38,7 +40,15 @@ export class GameManager {
         this._worker.removeEventListener("message", onMessage);
 
         if (type === "loaded_gltf") {
+          const loadedTime = performance.now();
+
+          console.log(`Loaded gltf in ${Math.round(loadedTime - startTime) / 1000}s`);
+
           const gltf = await this._renderManager.createGLTF(data);
+          const createdTime = performance.now();
+
+          console.log(`Parsed gltf in ${Math.round(createdTime - loadedTime) / 1000}s`);
+
           resolve(gltf);
         } else {
           reject();

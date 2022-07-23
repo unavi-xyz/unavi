@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimationAction } from "three";
+import { AnimationAction, Scene } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { Engine } from "@wired-xr/new-engine";

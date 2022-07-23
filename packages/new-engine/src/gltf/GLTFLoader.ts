@@ -1,7 +1,10 @@
 import { fetchUri } from "../utils/fetchUri";
 import { UriType, parseUri } from "../utils/parseUri";
+import { loadBuffer } from "./loader/loadBuffer";
+import { BufferViewResult, loadBufferView } from "./loader/loadBufferView";
+import { loadImage } from "./loader/loadImage";
 import { GLTF } from "./schemaTypes";
-import { LoadedBufferView, LoadedGLTF } from "./types";
+import { LoadedGLTF } from "./types";
 
 const GLTF_MAGIC = "glTF";
 const BINARY_HEADER_LENGTH = 12;
@@ -15,8 +18,11 @@ export class GLTFLoader {
   private _json: GLTF | null = null;
   private _bin: ArrayBuffer | null = null;
   private _baseUrl: string | null = null;
-  private _buffers = new Map<number, ArrayBuffer>();
-  private _bufferViews = new Map<number, LoadedBufferView>();
+
+  // Cache
+  private _buffers = new Map<number, Promise<ArrayBuffer>>();
+  private _bufferViews = new Map<number, Promise<BufferViewResult>>();
+  private _images = new Map<number, Promise<ImageBitmap>>();
 
   public async load(uri: string): Promise<LoadedGLTF> {
     // Parse uri
@@ -24,7 +30,7 @@ export class GLTFLoader {
 
     if (uriType === UriType.RelativePath) {
       // Save the base url
-      // Append it to all future relative uris
+      // Append it to all future relative urls
       const split = uri.split("/");
       split.pop();
       if (split.length > 0) {
@@ -100,130 +106,55 @@ export class GLTFLoader {
       throw new Error("No JSON found");
     }
 
-    // Load buffers
-    const bufferPromises =
-      this._json.buffers?.map((_, index) => {
-        return this._loadBuffer(index);
-      }) ?? [];
-
-    await Promise.all(bufferPromises);
-
     // Load buffer views
     const bufferViewPromises =
-      this._json.bufferViews?.map((_, index) => {
-        return this._loadBufferView(index);
-      }) ?? [];
-
-    const bufferViews = await Promise.all(bufferViewPromises);
+      this._json.bufferViews?.map((_, index) => this._loadBufferView(index)) ?? [];
 
     // Load images
-    const imagePromises =
-      this._json.images?.map(async (_, index) => {
-        const image = await this._loadImage(index);
-        return image;
-      }) ?? [];
+    const imagePromises = this._json.images?.map((_, index) => this._loadImage(index)) ?? [];
 
+    const bufferViews = await Promise.all(bufferViewPromises);
     const images = await Promise.all(imagePromises);
-
-    const json = { ...this._json };
 
     // Clear cache
     this._buffers.clear();
     this._bufferViews.clear();
-    this._json = null;
-    this._bin = null;
-    this._baseUrl = null;
+    this._images.clear();
 
     return {
-      json,
+      json: this._json,
       bufferViews,
       images,
     };
   }
 
-  private async _loadImage(index: number) {
-    if (this._json?.images === undefined) {
-      throw new Error("No images found");
-    }
+  private _loadImage(index: number) {
+    const cached = this._images.get(index);
+    if (cached) return cached;
 
-    const { uri, bufferView, mimeType } = this._json.images[index];
+    const image = loadImage(index, this._json, this._baseUrl, this._loadBufferView.bind(this));
 
-    if (uri === undefined) {
-      if (bufferView === undefined) {
-        throw new Error("No uri or buffView found");
-      }
-
-      // Load image from buffer
-      const { bufferView: arrayBuffer } = await this._loadBufferView(bufferView);
-      const blob = new Blob([arrayBuffer], { type: mimeType });
-      const image = await createImageBitmap(blob);
-      return image;
-    }
-
-    // Fetch image
-    const res = await fetchUri(uri, this._baseUrl);
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch ${uri}`);
-    }
-
-    const blob = await res.blob();
-    const image = await createImageBitmap(blob);
+    this._images.set(index, image);
     return image;
   }
 
-  private async _loadBufferView(index: number) {
+  private _loadBufferView(index: number) {
     const cached = this._bufferViews.get(index);
     if (cached) return cached;
 
-    if (this._json?.bufferViews === undefined) {
-      throw new Error("No bufferViews found");
-    }
+    const bufferView = loadBufferView(index, this._json, this._loadBuffer.bind(this));
 
-    const bufferViewDef = this._json.bufferViews[index];
-    const buffer = await this._loadBuffer(bufferViewDef.buffer);
-
-    const byteLength = bufferViewDef.byteLength;
-    const byteOffset = bufferViewDef.byteOffset ?? 0;
-    const bufferView = buffer.slice(byteOffset, byteOffset + byteLength);
-
-    const result = { bufferViewDef, bufferView };
-    this._bufferViews.set(index, result);
-    return result;
+    this._bufferViews.set(index, bufferView);
+    return bufferView;
   }
 
-  private async _loadBuffer(index: number) {
+  private _loadBuffer(index: number) {
     const cached = this._buffers.get(index);
     if (cached) return cached;
 
-    if (this._json?.buffers === undefined) {
-      throw new Error("No buffers found");
-    }
+    const buffer = loadBuffer(index, this._json, this._bin, this._baseUrl);
 
-    const { uri } = this._json.buffers[index];
-
-    // If present, GLB bin is required to be the first buffer
-    if (uri === undefined && index === 0) {
-      if (!this._bin) {
-        throw new Error("No bin found");
-      }
-
-      return this._bin;
-    }
-
-    if (uri === undefined) {
-      throw new Error("No uri found");
-    }
-
-    // Fetch buffer
-    const res = await fetchUri(uri, this._baseUrl);
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch ${uri}`);
-    }
-
-    const arrayBuffer = await res.arrayBuffer();
-    this._buffers.set(index, arrayBuffer);
-    return arrayBuffer;
+    this._buffers.set(index, buffer);
+    return buffer;
   }
 }

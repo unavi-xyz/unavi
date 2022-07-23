@@ -1,92 +1,57 @@
 import {
-  AnimationAction,
   AnimationClip,
-  AnimationMixer,
-  Bone,
-  BufferAttribute,
-  BufferGeometry,
   CanvasTexture,
-  DoubleSide,
-  Group,
   InterleavedBuffer,
-  InterleavedBufferAttribute,
-  Line,
-  LineLoop,
-  LineSegments,
-  LinearFilter,
-  LinearMipMapLinearFilter,
-  Matrix4,
-  Mesh,
   MeshStandardMaterial,
-  NumberKeyframeTrack,
   Object3D,
-  Points,
-  QuaternionKeyframeTrack,
-  RepeatWrapping,
-  Skeleton,
-  SkinnedMesh,
-  VectorKeyframeTrack,
-  sRGBEncoding,
 } from "three";
 
+import { BufferViewResult } from "./loader/loadBufferView";
+import { buildNodeHierarchy } from "./parser/buildNodeHierarchy";
+import { AccessorResult, loadAccessor } from "./parser/loadAccessor";
+import { loadAnimation } from "./parser/loadAnimation";
+import { loadMaterial } from "./parser/loadMaterial";
+import { loadMesh } from "./parser/loadMesh";
+import { loadNode } from "./parser/loadNode";
+import { PrimitiveResult, loadPrimitive } from "./parser/loadPrimitive";
+import { SceneResult, loadScene } from "./parser/loadScene";
+import { SkinResult, loadSkin } from "./parser/loadSkin";
+import { loadTexture } from "./parser/loadTexture";
 import {
-  GLTFCubicSplineInterpolant,
-  GLTFCubicSplineQuaternionInterpolant,
-} from "./CubicSplineInterpolation";
-import {
-  ALPHA_MODES,
-  ATTRIBUTES,
-  AttributeName,
-  ComponentType,
-  INTERPOLATION,
-  PATH_PROPERTIES,
-  TypeSize,
-  WEBGL_COMPONENT_TYPES,
-  WEBGL_CONSTANTS,
-  WEBGL_FILTERS,
-  WEBGL_TYPE_SIZES,
-  WEBGL_WRAPPINGS,
-} from "./constants";
-import { getNormalizedComponentScale } from "./getNormalizedComponentScale";
-import {
-  BufferView,
   GLTF,
   MaterialNormalTextureInfo,
   MaterialOcclusionTextureInfo,
   MeshPrimitive,
-  Sampler,
   TextureInfo,
 } from "./schemaTypes";
-import { LoadedBufferView, LoadedGLTF } from "./types";
-
-export type ParsedGLTF = {
-  scene: Group;
-  animationActions: AnimationAction[];
-  animationMixer: AnimationMixer;
-};
-
-type PrimitiveResult = [MeshPrimitive, BufferGeometry, MeshStandardMaterial];
+import { LoadedGLTF } from "./types";
 
 // Converts a loaded glTf to Three.js objects
 export class GLTFParser {
   private _json: GLTF;
-  private _bufferViews: LoadedBufferView[];
+  private _bufferViews: BufferViewResult[];
   private _images: ImageBitmap[];
 
-  private _scenes = new Map<number, ParsedGLTF>();
+  private _scenes = new Map<number, Promise<SceneResult>>();
 
   // Cache
-  private _accessors = new Map<number, BufferAttribute | InterleavedBufferAttribute>();
   private _boneIndexes = new Set<number>();
-  private _interleavedBuffers = new Map<string, InterleavedBuffer>();
-  private _meshes = new Map<number, Object3D>();
-  private _nodes = new Map<number, Object3D>();
-  private _primitives = new Map<string, PrimitiveResult>();
   private _skinnedMeshIndexes = new Set<number>();
-  private _textures = new Map<
-    TextureInfo | MaterialNormalTextureInfo | MaterialOcclusionTextureInfo,
-    CanvasTexture
-  >();
+
+  private _meshReferenceCount = new Map<number, number>();
+  private _meshUseCount = new Map<number, number>();
+  private _nodeReferenceCount = new Map<number, number>();
+  private _nodeUseCount = new Map<number, number>();
+
+  private _accessors = new Map<number, Promise<AccessorResult>>();
+  private _animations = new Map<number, Promise<AnimationClip>>();
+  private _interleavedBuffers = new Map<string, InterleavedBuffer>();
+  private _materials = new Map<number, Promise<MeshStandardMaterial>>();
+  private _meshes = new Map<number, Promise<Object3D>>();
+  private _nodes = new Map<number, Promise<Object3D>>();
+  private _primitives = new Map<string, Promise<PrimitiveResult>>();
+  private _skins = new Map<number, Promise<SkinResult>>();
+  private _textures = new Map<string, Promise<CanvasTexture>>();
 
   constructor({ json, bufferViews = [], images = [] }: LoadedGLTF) {
     this._json = json;
@@ -97,768 +62,181 @@ export class GLTFParser {
   public async parse() {
     const sceneIndex = this._json.scene ?? 0;
     const scene = await this._loadScene(sceneIndex);
-
     return scene;
   }
 
-  private async _loadScene(index: number) {
+  private _loadScene(index: number) {
     const cached = this._scenes.get(index);
-    if (cached !== undefined) return cached;
-
-    if (!this._json.scenes) {
-      throw new Error("No scenes found");
-    }
+    if (cached) return cached;
 
     // Clear cache
-    this._accessors.clear();
     this._boneIndexes.clear();
+    this._skinnedMeshIndexes.clear();
+
+    this._meshReferenceCount.clear();
+    this._meshUseCount.clear();
+    this._nodeReferenceCount.clear();
+    this._nodeUseCount.clear();
+
+    this._accessors.clear();
+    this._animations.clear();
     this._interleavedBuffers.clear();
+    this._materials.clear();
     this._meshes.clear();
     this._nodes.clear();
     this._primitives.clear();
-    this._skinnedMeshIndexes.clear();
+    this._skins.clear();
     this._textures.clear();
 
-    const sceneDef = this._json.scenes[index];
-    const scene = new Group();
-    scene.name = sceneDef.name ?? `scene_${index}`;
+    const scene = loadScene(
+      index,
+      this._json,
+      this._boneIndexes,
+      this._skinnedMeshIndexes,
+      this._meshReferenceCount,
+      this._buildNodeHierarchy.bind(this),
+      this._loadAnimation.bind(this)
+    );
 
-    // Mark bones
-    if (this._json.skins) {
-      this._json.skins.forEach((skin) => {
-        skin.joints.forEach((jointIndex) => {
-          this._boneIndexes.add(jointIndex);
-        });
-      });
-    }
-
-    // Mark skinned meshes
-    if (this._json.nodes) {
-      this._json.nodes.forEach((nodeDef) => {
-        if (nodeDef.mesh !== undefined && nodeDef.skin !== undefined) {
-          this._skinnedMeshIndexes.add(nodeDef.mesh);
-        }
-      });
-    }
-
-    if (sceneDef.nodes) {
-      // Load Nodes
-      const nodePromises = sceneDef.nodes.map((nodeIndex) => this._buildNodeHierarchy(nodeIndex));
-      const nodes = await Promise.all(nodePromises);
-      scene.add(...nodes);
-    }
-
-    // Load Animations
-    const animationPromises = this._json.animations?.map((_, index) => this._loadAnimation(index));
-    const animationClips = await Promise.all(animationPromises ?? []);
-
-    const animationMixer = new AnimationMixer(scene);
-    const animationActions = animationClips.map((clip) => animationMixer.clipAction(clip));
-
-    const result: ParsedGLTF = {
-      scene,
-      animationActions,
-      animationMixer,
-    };
-
-    this._scenes.set(index, result);
-    return result;
+    this._scenes.set(index, scene);
+    return scene;
   }
 
-  private async _loadAnimation(index: number) {
-    if (this._json.animations === undefined) {
-      throw new Error("No animations found");
-    }
-
-    const animationDef = this._json.animations[index];
-
-    // Load channels
-    const channelPromises = animationDef.channels.map(async (channel) => {
-      const sampler = animationDef.samplers[channel.sampler];
-
-      const input = await this._loadAccessor(sampler.input);
-      const output = await this._loadAccessor(sampler.output);
-
-      if (channel.target.node === undefined) {
-        throw new Error(`Animation target has no node`);
-      }
-
-      if (input === null) {
-        throw new Error(`Animation input is null`);
-      }
-
-      if (output === null) {
-        throw new Error(`Animation output is null`);
-      }
-
-      const node = await this._loadNode(channel.target.node);
-      node.updateMatrix();
-      node.matrixAutoUpdate = true;
-
-      const interpolationType = sampler.interpolation ?? "LINEAR";
-      const interpolation = INTERPOLATION[interpolationType];
-
-      let outputArray: Float32Array | number[] = Array.from(output.array);
-
-      if (output.normalized) {
-        const scale = getNormalizedComponentScale(outputArray.constructor as any);
-        const scaled = new Float32Array(outputArray.length);
-
-        outputArray.forEach((value, index) => {
-          scaled[index] = value * scale;
-        });
-
-        outputArray = scaled;
-      }
-
-      let TypedKeyframeTrack:
-        | typeof NumberKeyframeTrack
-        | typeof QuaternionKeyframeTrack
-        | typeof VectorKeyframeTrack;
-
-      switch (channel.target.path) {
-        case "weights":
-          TypedKeyframeTrack = NumberKeyframeTrack;
-          break;
-        case "rotation":
-          TypedKeyframeTrack = QuaternionKeyframeTrack;
-          break;
-        case "translation":
-        case "scale":
-        default:
-          TypedKeyframeTrack = VectorKeyframeTrack;
-      }
-
-      const names: string[] = [];
-
-      if (channel.target.path === "weights") {
-        node.traverse((child) => {
-          if ("morphTargetInfluences" in child) {
-            names.push(child.uuid);
-          }
-        });
-      } else {
-        names.push(node.uuid);
-      }
-
-      const channelTracks = names.map((name) => {
-        const track = new TypedKeyframeTrack(
-          `${name}.${PATH_PROPERTIES[channel.target.path]}`,
-          Array.from(input.array),
-          Array.from(outputArray),
-          interpolation
-        );
-
-        // Override interpolation with custom factory method
-        // The built in three.js cubic interpolation does not work with glTF
-        if (sampler.interpolation === "CUBICSPLINE") {
-          // @ts-ignore
-          track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline(result) {
-            // A CUBICSPLINE keyframe in glTF has three output values for each input value,
-            // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
-            // must be divided by three to get the interpolant's sampleSize argument.
-
-            const interpolantType =
-              this instanceof QuaternionKeyframeTrack
-                ? GLTFCubicSplineQuaternionInterpolant
-                : GLTFCubicSplineInterpolant;
-
-            return new interpolantType(this.times, this.values, this.getValueSize() / 3, result);
-          };
-
-          // Mark as CUBICSPLINE. `track.getInterpolation()` doesn't support custom interpolants.
-          // @ts-ignore
-          track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline = true;
-        }
-
-        return track;
-      });
-
-      return channelTracks;
-    });
-    const tracks = await Promise.all(channelPromises);
-    const flattened = tracks.flat();
-
-    // Create animation
-    const name = animationDef.name ?? `animation_${index}`;
-    const animationClip = new AnimationClip(name, undefined, flattened);
-
-    return animationClip;
-  }
-
-  private async _buildNodeHierarchy(index: number) {
-    const node = await this._loadNode(index);
-
-    if (this._json.nodes === undefined) {
-      throw new Error("No nodes found");
-    }
-
-    const nodeDef = this._json.nodes[index];
-
-    // Children
-    if (nodeDef.children) {
-      const childrenPromises = nodeDef.children.map((childIndex) =>
-        this._buildNodeHierarchy(childIndex)
-      );
-      const children = await Promise.all(childrenPromises);
-      node.add(...children);
-    }
+  private _buildNodeHierarchy(index: number) {
+    const node = buildNodeHierarchy(
+      index,
+      this._json,
+      this._loadNode.bind(this),
+      this._buildNodeHierarchy.bind(this)
+    );
 
     return node;
   }
 
-  private async _loadNode(index: number) {
-    const cached = this._nodes.get(index);
+  private _loadAnimation(index: number) {
+    const cached = this._animations.get(index);
     if (cached) return cached;
 
-    if (this._json.nodes === undefined) {
-      throw new Error("No nodes found");
+    const animation = loadAnimation(
+      index,
+      this._json,
+      this._loadAccessor.bind(this),
+      this._loadNode.bind(this)
+    );
+
+    this._animations.set(index, animation);
+    return animation;
+  }
+
+  private _loadAccessor(index: number) {
+    const cached = this._accessors.get(index);
+    if (cached) return cached;
+
+    const accessor = loadAccessor(index, this._json, this._bufferViews, this._interleavedBuffers);
+
+    this._accessors.set(index, accessor);
+    return accessor;
+  }
+
+  private async _loadNode(index: number) {
+    const cached = this._nodes.get(index);
+    if (cached) {
+      const references = this._nodeReferenceCount.get(index) ?? 0;
+      if (references <= 1) return cached;
+
+      const count = this._nodeUseCount.get(index) ?? 0;
+      this._nodeUseCount.set(index, count + 1);
+
+      const node = await cached;
+      const clone = node.clone();
+      clone.name = `${node.name}_instance_${count}`;
+      return clone;
     }
 
-    const nodeDef = this._json.nodes[index];
-    const node = this._boneIndexes.has(index) ? new Bone() : new Group();
-
-    // Transform
-    if (nodeDef.matrix !== undefined) {
-      const matrix = new Matrix4();
-      matrix.fromArray(nodeDef.matrix);
-      node.applyMatrix4(matrix);
-    } else {
-      if (nodeDef.translation) {
-        node.position.fromArray(nodeDef.translation);
-      }
-
-      if (nodeDef.rotation) {
-        node.quaternion.fromArray(nodeDef.rotation);
-      }
-
-      if (nodeDef.scale) {
-        node.scale.fromArray(nodeDef.scale);
-      }
-    }
-
-    // Mesh
-    if (nodeDef.mesh !== undefined) {
-      const mesh = await this._loadMesh(nodeDef.mesh);
-      node.add(mesh);
-    }
-
-    // Skin
-    if (nodeDef.skin !== undefined) {
-      const skinEntry = await this._loadSkin(nodeDef.skin);
-
-      const jointPromises = skinEntry.joints.map((joint) => this._loadNode(joint));
-      const joints = await Promise.all(jointPromises);
-
-      node.traverse((child) => {
-        if (!(child instanceof SkinnedMesh)) return;
-
-        const bones: Bone[] = [];
-        const boneInverses: Matrix4[] = [];
-
-        joints.forEach((joint, i) => {
-          if (!(joint instanceof Bone)) return;
-
-          const matrix = new Matrix4();
-
-          if (skinEntry.inverseBindMatrices !== null) {
-            matrix.fromArray(skinEntry.inverseBindMatrices.array, i * 16);
-          }
-
-          bones.push(joint);
-          boneInverses.push(matrix);
-        });
-
-        child.bind(new Skeleton(bones, boneInverses), child.matrixWorld);
-      });
-    }
+    const node = loadNode(
+      index,
+      this._json,
+      this._boneIndexes,
+      this._loadMesh.bind(this),
+      this._loadSkin.bind(this),
+      this._loadNode.bind(this)
+    );
 
     this._nodes.set(index, node);
     return node;
   }
 
-  private async _loadSkin(index: number) {
-    if (this._json.skins === undefined) {
-      throw new Error("No skins found");
-    }
-
-    const skinDef = this._json.skins[index];
-
-    if (skinDef.inverseBindMatrices === undefined) {
-      throw new Error("No meshes found");
-    }
-
-    const accessor = await this._loadAccessor(skinDef.inverseBindMatrices);
-
-    const skinEntry = {
-      joints: skinDef.joints,
-      inverseBindMatrices: accessor,
-    };
-
-    return skinEntry;
-  }
-
   private async _loadMesh(index: number) {
-    const cached = this._meshes.get(index);
-    if (cached) return cached;
+    const cache = this._meshes.get(index);
+    if (cache) {
+      const references = this._meshReferenceCount.get(index) ?? 0;
+      if (references <= 1) return cache;
 
-    if (this._json.meshes === undefined) {
-      throw new Error("No meshes found");
+      const count = this._meshUseCount.get(index) ?? 0;
+      this._meshUseCount.set(index, count + 1);
+
+      const mesh = await cache;
+      const clone = mesh.clone();
+      clone.name = `${mesh.name}_instance_${count}`;
+      return clone;
     }
 
-    const meshDef = this._json.meshes[index];
+    const mesh = loadMesh(
+      index,
+      this._json,
+      this._skinnedMeshIndexes,
+      this._loadPrimitive.bind(this)
+    );
 
-    // Load geometry
-    const primitivePromises = meshDef.primitives.map((primitive) => this._loadPrimitive(primitive));
-    const primitives = await Promise.all(primitivePromises);
-
-    // Create meshes
-    const meshes = primitives.map(([primitive, geometry, material], i) => {
-      let mesh: Mesh | Line | Points;
-
-      switch (primitive.mode) {
-        case WEBGL_CONSTANTS.TRIANGLES:
-        case WEBGL_CONSTANTS.TRIANGLE_STRIP:
-        case WEBGL_CONSTANTS.TRIANGLE_FAN:
-        case undefined:
-          const isSkinnedMesh = this._skinnedMeshIndexes.has(index);
-          mesh = isSkinnedMesh ? new SkinnedMesh(geometry, material) : new Mesh(geometry, material);
-
-          if (mesh instanceof SkinnedMesh && !mesh.geometry.attributes.skinWeight.normalized) {
-            mesh.normalizeSkinWeights();
-          }
-
-          break;
-        case WEBGL_CONSTANTS.LINES:
-          mesh = new LineSegments(geometry, material);
-          break;
-        case WEBGL_CONSTANTS.LINE_STRIP:
-          mesh = new Line(geometry, material);
-          break;
-        case WEBGL_CONSTANTS.LINE_LOOP:
-          mesh = new LineLoop(geometry, material);
-          break;
-        case WEBGL_CONSTANTS.POINTS:
-          mesh = new Points(geometry, material);
-          break;
-        default:
-          throw new Error(`Unknown primitive mode ${primitive.mode}`);
-      }
-
-      mesh.name = meshDef.name ?? `mesh_${index}_${i}`;
-      return mesh;
-    });
-
-    // Set morph targets
-    meshes.forEach((mesh) => {
-      if (Object.keys(mesh.geometry.morphAttributes).length > 0) {
-        mesh.updateMorphTargets();
-
-        if (meshDef.weights !== undefined) {
-          mesh.morphTargetInfluences = [...meshDef.weights];
-        }
-      }
-    });
-
-    const mesh = meshes.length === 1 ? meshes[0] : new Group().add(...meshes);
     this._meshes.set(index, mesh);
     return mesh;
   }
 
-  private async _loadPrimitive(primitiveDef: MeshPrimitive) {
+  private _loadSkin(index: number) {
+    const cached = this._skins.get(index);
+    if (cached) return cached;
+
+    const skin = loadSkin(index, this._json, this._loadAccessor.bind(this));
+
+    this._skins.set(index, skin);
+    return skin;
+  }
+
+  private _loadPrimitive(primitiveDef: MeshPrimitive) {
     const cacheKey = JSON.stringify(primitiveDef);
     const cached = this._primitives.get(cacheKey);
     if (cached) return cached;
 
-    const geometry = new BufferGeometry();
-
-    // Attributes
-    const attributePromises = Object.entries(primitiveDef.attributes).map(
-      async ([name, accessorId]) => {
-        const threeName = ATTRIBUTES[name as AttributeName] ?? name.toLowerCase();
-        if (threeName in geometry.attributes) return;
-
-        const attribute = await this._loadAccessor(accessorId);
-
-        if (attribute === null) {
-          throw new Error(`Attribute ${name} not found`);
-        }
-
-        geometry.setAttribute(threeName, attribute);
-      }
+    const primitive = loadPrimitive(
+      primitiveDef,
+      this._loadAccessor.bind(this),
+      this._loadMaterial.bind(this)
     );
-    await Promise.all(attributePromises);
 
-    // Indices
-    if (primitiveDef.indices !== undefined && geometry.index == null) {
-      const accessor = await this._loadAccessor(primitiveDef.indices);
-
-      if (accessor === null) {
-        throw new Error(`Indices not found`);
-      }
-
-      if (accessor instanceof InterleavedBufferAttribute) {
-        throw new Error(`Indices are interleaved`);
-      }
-
-      geometry.setIndex(accessor);
-    }
-
-    // Material
-    const material =
-      primitiveDef.material === undefined
-        ? new MeshStandardMaterial()
-        : await this._loadMaterial(primitiveDef.material);
-
-    // Occlusion map needs a second set of UVs
-    if (
-      material.aoMap &&
-      geometry.attributes.uv2 === undefined &&
-      geometry.attributes.uv !== undefined
-    ) {
-      geometry.setAttribute("uv2", geometry.attributes.uv);
-    }
-
-    // Enable flat shading
-    if (geometry.attributes.normal === undefined) {
-      material.flatShading = true;
-    }
-
-    // Enable vertex colors
-    if (geometry.attributes.color !== undefined) {
-      material.vertexColors = true;
-    }
-
-    // If three.js needs to generate tangents, flip normal map y
-    // https://github.com/mrdoob/three.js/issues/11438#issuecomment-507003995
-    if (geometry.attributes.tangent === undefined) {
-      material.normalScale.y *= -1;
-    }
-
-    // Morph targets
-    if (primitiveDef.targets !== undefined) {
-      const targetPromises = primitiveDef.targets.map(async (target) => {
-        const entryPromises = Object.entries(target).map(async ([name, accessorId]) => {
-          const accessor = await this._loadAccessor(accessorId);
-
-          if (accessor === null) {
-            throw new Error(`Target ${name} not found`);
-          }
-
-          switch (name) {
-            case "POSITION":
-              if (geometry.morphAttributes.position === undefined) {
-                geometry.morphAttributes.position = [];
-              }
-
-              geometry.morphAttributes.position.push(accessor);
-              break;
-            case "NORMAL":
-              if (geometry.morphAttributes.normal === undefined) {
-                geometry.morphAttributes.normal = [];
-              }
-
-              geometry.morphAttributes.normal.push(accessor);
-              break;
-            case "TANGENT":
-              if (geometry.morphAttributes.tangent === undefined) {
-                geometry.morphAttributes.tangent = [];
-              }
-
-              geometry.morphAttributes.tangent.push(accessor);
-              break;
-            case "COLOR_0":
-              if (geometry.morphAttributes.color === undefined) {
-                geometry.morphAttributes.color = [];
-              }
-
-              geometry.morphAttributes.color.push(accessor);
-              break;
-          }
-        });
-        await Promise.all(entryPromises);
-      });
-      await Promise.all(targetPromises);
-
-      geometry.morphTargetsRelative = true;
-    }
-
-    const result: PrimitiveResult = [primitiveDef, geometry, material];
-    this._primitives.set(cacheKey, result);
-    return result;
+    this._primitives.set(cacheKey, primitive);
+    return primitive;
   }
 
-  private async _loadMaterial(index: number) {
-    if (this._json.materials === undefined) {
-      throw new Error("No materials found");
-    }
+  private _loadMaterial(index: number) {
+    const cached = this._materials.get(index);
+    if (cached) return cached;
 
-    const materialDef = this._json.materials[index];
-    const material = new MeshStandardMaterial();
-    material.name = materialDef.name ?? `material_${index}`;
+    const material = loadMaterial(index, this._json, this._loadTexture.bind(this));
 
-    const {
-      baseColorFactor = [1, 1, 1, 1],
-      metallicFactor = 1,
-      roughnessFactor = 1,
-      baseColorTexture,
-      metallicRoughnessTexture,
-    } = materialDef.pbrMetallicRoughness ?? {};
-
-    material.color.fromArray(baseColorFactor);
-    material.opacity = baseColorFactor[3];
-    material.metalness = metallicFactor;
-    material.roughness = roughnessFactor;
-
-    if (materialDef.doubleSided) material.side = DoubleSide;
-
-    const emissiveFactor = materialDef.emissiveFactor ?? [0, 0, 0];
-    material.emissive.fromArray(emissiveFactor);
-
-    // Alpha
-    const alphaMode = materialDef.alphaMode ?? ALPHA_MODES.OPAQUE;
-
-    if (alphaMode === ALPHA_MODES.BLEND) {
-      material.transparent = true;
-      material.depthWrite = false;
-    } else {
-      material.transparent = false;
-
-      if (alphaMode === ALPHA_MODES.MASK) {
-        material.alphaTest = materialDef.alphaCutoff ?? 0.5;
-      }
-    }
-
-    // Textures
-    if (baseColorTexture) {
-      const texture = await this._loadTexture(baseColorTexture);
-      texture.encoding = sRGBEncoding;
-      material.map = texture;
-    }
-
-    if (metallicRoughnessTexture) {
-      const texture = await this._loadTexture(metallicRoughnessTexture);
-      material.metalnessMap = texture;
-      material.roughnessMap = texture;
-    }
-
-    if (materialDef.normalTexture) {
-      const texture = await this._loadTexture(materialDef.normalTexture);
-      material.normalMap = texture;
-      const scale = materialDef.normalTexture.scale ?? 1;
-      material.normalScale.set(scale, scale);
-    }
-
-    if (materialDef.occlusionTexture) {
-      const texture = await this._loadTexture(materialDef.occlusionTexture);
-      material.aoMap = texture;
-      material.aoMapIntensity = materialDef.occlusionTexture.strength ?? 1;
-    }
-
-    if (materialDef.emissiveTexture) {
-      const texture = await this._loadTexture(materialDef.emissiveTexture);
-      texture.encoding = sRGBEncoding;
-      material.emissiveMap = texture;
-    }
-
+    this._materials.set(index, material);
     return material;
   }
 
-  private async _loadTexture(
+  private _loadTexture(
     info: TextureInfo | MaterialNormalTextureInfo | MaterialOcclusionTextureInfo
   ) {
-    const cached = this._textures.get(info);
+    const cacheKey = JSON.stringify(info);
+    const cached = this._textures.get(cacheKey);
     if (cached) return cached;
 
-    if (this._json.textures === undefined) {
-      throw new Error("No textures found");
-    }
+    const texture = loadTexture(info, this._json, this._images);
 
-    const textureDef = this._json.textures[info.index];
-
-    if (textureDef.source === undefined) {
-      throw new Error(`Texture ${info.index} has no source`);
-    }
-
-    // Create texture
-    const image = this._images[textureDef.source];
-    const texture = new CanvasTexture(image);
-    texture.needsUpdate = true;
-    texture.flipY = false;
-    if (textureDef.name) texture.name = textureDef.name;
-
-    // Sampler
-    let samplerDef: Sampler = {};
-    const samplerIndex = textureDef.sampler;
-    if (samplerIndex !== undefined) {
-      if (this._json.samplers === undefined) {
-        throw new Error("No samplers found");
-      }
-      samplerDef = this._json.samplers[samplerIndex];
-    }
-
-    const magFilter = samplerDef.magFilter as keyof typeof WEBGL_FILTERS;
-    texture.magFilter = WEBGL_FILTERS[magFilter] ?? LinearFilter;
-
-    const minFilter = samplerDef.minFilter as keyof typeof WEBGL_FILTERS;
-    texture.minFilter = WEBGL_FILTERS[minFilter] ?? LinearMipMapLinearFilter;
-
-    const wrapS = samplerDef.wrapS as keyof typeof WEBGL_WRAPPINGS;
-    texture.wrapS = WEBGL_WRAPPINGS[wrapS] ?? RepeatWrapping;
-
-    const wrapT = samplerDef.wrapT as keyof typeof WEBGL_WRAPPINGS;
-    texture.wrapT = WEBGL_WRAPPINGS[wrapT] ?? RepeatWrapping;
-
-    this._textures.set(info, texture);
+    this._textures.set(cacheKey, texture);
     return texture;
-  }
-
-  private async _loadAccessor(index: number) {
-    const cached = this._accessors.get(index);
-    if (cached) return cached;
-
-    if (this._json.accessors === undefined) {
-      throw new Error("No accessors found");
-    }
-
-    const accessorDef = this._json.accessors[index];
-
-    if (accessorDef.bufferView === undefined && accessorDef.sparse === undefined) {
-      // Ignore empty accessors, which may be used to declare runtime
-      // information about attributes coming from another source (e.g. Draco
-      // compression extension).
-      return null;
-    }
-
-    // Load buffer views
-    const views: ({ bufferViewDef: BufferView; bufferView: ArrayBuffer } | null)[] = [];
-
-    if (accessorDef.bufferView !== undefined) {
-      const bufferView = await this._bufferViews[accessorDef.bufferView];
-      views.push(bufferView);
-    } else {
-      views.push(null);
-    }
-
-    if (accessorDef.sparse !== undefined) {
-      const indices = await this._bufferViews[accessorDef.sparse.indices.bufferView];
-      const values = await this._bufferViews[accessorDef.sparse.values.bufferView];
-
-      views.push(indices, values);
-    }
-
-    if (accessorDef.componentType in WEBGL_COMPONENT_TYPES === false) {
-      throw new Error(`Invalid component type: ${accessorDef.componentType}`);
-    }
-
-    const componentType = accessorDef.componentType as ComponentType;
-    const TypedArray = WEBGL_COMPONENT_TYPES[componentType];
-
-    if (accessorDef.type in WEBGL_TYPE_SIZES === false) {
-      throw new Error(`Invalid type: ${accessorDef.type}`);
-    }
-
-    const { bufferViewDef, bufferView } = views[0]
-      ? views[0]
-      : { bufferViewDef: null, bufferView: null };
-
-    const type = accessorDef.type as TypeSize;
-    const itemSize = WEBGL_TYPE_SIZES[type];
-
-    const elementBytes = TypedArray.BYTES_PER_ELEMENT;
-    const itemBytes = elementBytes * itemSize;
-    const byteStride = bufferViewDef?.byteStride;
-    const byteOffset = accessorDef.byteOffset ?? 0;
-    const normalized = accessorDef.normalized;
-
-    // Create buffer attribute
-    let bufferAttribute: BufferAttribute | InterleavedBufferAttribute;
-
-    const isInterleaved = byteStride && byteStride !== itemBytes && bufferView;
-    if (isInterleaved) {
-      const ibSlice = Math.floor(byteOffset / byteStride);
-      const cacheKey = `${accessorDef.bufferView}-${accessorDef.componentType}-${ibSlice}-${accessorDef.count}`;
-      let interleavedBuffer = this._interleavedBuffers.get(cacheKey);
-
-      if (interleavedBuffer === undefined) {
-        const array = new TypedArray(
-          bufferView,
-          ibSlice * byteStride,
-          (accessorDef.count * byteStride) / elementBytes
-        );
-
-        interleavedBuffer = new InterleavedBuffer(array, byteStride / elementBytes);
-
-        this._interleavedBuffers.set(cacheKey, interleavedBuffer);
-      }
-
-      if (interleavedBuffer === undefined) {
-        throw new Error("Failed to create interleaved buffer");
-      }
-
-      bufferAttribute = new InterleavedBufferAttribute(
-        interleavedBuffer,
-        itemSize,
-        (byteOffset % byteStride) / elementBytes,
-        normalized
-      );
-    } else {
-      let array: ArrayLike<number>;
-
-      if (bufferView === null) {
-        array = new TypedArray(accessorDef.count * itemSize);
-      } else {
-        array = new TypedArray(bufferView, byteOffset, accessorDef.count * itemSize);
-      }
-
-      bufferAttribute = new BufferAttribute(array, itemSize, normalized);
-    }
-
-    // Sparse
-    if (accessorDef.sparse !== undefined && views[1] !== null && views[2] !== null) {
-      const itemSizeIndices = WEBGL_TYPE_SIZES.SCALAR;
-      const indicesComponentType = accessorDef.sparse.indices.componentType as ComponentType;
-
-      if (indicesComponentType in WEBGL_COMPONENT_TYPES === false) {
-        throw new Error(`Invalid component type: ${accessorDef.componentType}`);
-      }
-
-      const TypedArrayIndices = WEBGL_COMPONENT_TYPES[indicesComponentType];
-
-      const byteOffsetIndices = accessorDef.sparse.indices.byteOffset ?? 0;
-      const byteOffsetValues = accessorDef.sparse.values.byteOffset ?? 0;
-
-      const sparseIndices = new TypedArrayIndices(
-        views[1].bufferView,
-        byteOffsetIndices,
-        accessorDef.sparse.count * itemSizeIndices
-      );
-      const sparseValues = new TypedArray(
-        views[2].bufferView,
-        byteOffsetValues,
-        accessorDef.sparse.count * itemSize
-      );
-
-      if (bufferView !== null) {
-        // Avoid modifying the original ArrayBuffer, if the bufferView wasn't initialized with zeroes.
-        bufferAttribute = new BufferAttribute(
-          new TypedArray(bufferAttribute.array),
-          itemSize,
-          normalized
-        );
-      }
-
-      sparseIndices.forEach((index, i) => {
-        bufferAttribute.setX(index, sparseValues[i * itemSize]);
-        if (itemSize >= 2) bufferAttribute.setY(index, sparseValues[i * itemSize + 1]);
-        if (itemSize >= 3) bufferAttribute.setZ(index, sparseValues[i * itemSize + 2]);
-        if (itemSize >= 4) bufferAttribute.setW(index, sparseValues[i * itemSize + 3]);
-        if (itemSize >= 5) throw new Error("Unsupported itemSize in sparse BufferAttribute.");
-      });
-    }
-
-    bufferAttribute.name = accessorDef.name ?? `bufferAttribute_${index}`;
-    this._accessors.set(index, bufferAttribute);
-    return bufferAttribute;
   }
 }

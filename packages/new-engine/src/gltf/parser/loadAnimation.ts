@@ -52,9 +52,6 @@ export async function loadAnimation(
     node.updateMatrix();
     node.matrixAutoUpdate = true;
 
-    const interpolationType = sampler.interpolation ?? "LINEAR";
-    const interpolation = INTERPOLATION[interpolationType];
-
     let outputArray = Array.from(output.array);
 
     if (output.normalized) {
@@ -98,6 +95,9 @@ export async function loadAnimation(
       names.push(node.uuid);
     }
 
+    const interpolationType = sampler.interpolation ?? "LINEAR";
+    const interpolation = INTERPOLATION[interpolationType];
+
     const channelTracks = names.map((name) => {
       const track = new TypedKeyframeTrack(
         `${name}.${PATH_PROPERTIES[channel.target.path]}`,
@@ -133,6 +133,7 @@ export async function loadAnimation(
 
     return channelTracks;
   });
+
   const tracks = await Promise.all(channelPromises);
   const flattened = tracks.flat();
 

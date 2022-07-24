@@ -71,8 +71,6 @@ export async function loadAccessor(
   const isInterleaved = byteStride && byteStride !== itemBytes && bufferView;
 
   if (isInterleaved) {
-    const startInterleaved = performance.now();
-
     const ibSlice = Math.floor(byteOffset / byteStride);
     const cacheKey = `${accessorDef.bufferView}-${accessorDef.componentType}-${ibSlice}-${accessorDef.count}`;
     let interleavedBuffer = interleavedBuffers.get(cacheKey);
@@ -99,9 +97,6 @@ export async function loadAccessor(
       (byteOffset % byteStride) / elementBytes,
       normalized
     );
-
-    const endInterleaved = performance.now();
-    console.log(`Interleaved buffer creation took ${endInterleaved - startInterleaved}ms`);
   } else {
     let array: ArrayLike<number>;
 

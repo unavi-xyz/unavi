@@ -16,8 +16,6 @@ export default function CreateScenePage() {
       name,
       description,
     });
-
-    console.log("👗", res);
   }
 
   return (

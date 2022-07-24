@@ -22,7 +22,6 @@ export class GLTFLoader {
   // Cache
   private _buffers = new Map<number, Promise<ArrayBuffer>>();
   private _bufferViews = new Map<number, Promise<BufferViewResult>>();
-  private _images = new Map<number, Promise<ImageBitmap>>();
 
   public async load(uri: string): Promise<LoadedGLTF> {
     // Parse uri
@@ -106,11 +105,9 @@ export class GLTFLoader {
       throw new Error("No JSON found");
     }
 
-    // Load buffer views
     const bufferViewPromises =
       this._json.bufferViews?.map((_, index) => this._loadBufferView(index)) ?? [];
 
-    // Load images
     const imagePromises = this._json.images?.map((_, index) => this._loadImage(index)) ?? [];
 
     const bufferViews = await Promise.all(bufferViewPromises);
@@ -119,7 +116,6 @@ export class GLTFLoader {
     // Clear cache
     this._buffers.clear();
     this._bufferViews.clear();
-    this._images.clear();
 
     return {
       json: this._json,
@@ -129,12 +125,7 @@ export class GLTFLoader {
   }
 
   private _loadImage(index: number) {
-    const cached = this._images.get(index);
-    if (cached) return cached;
-
     const image = loadImage(index, this._json, this._baseUrl, this._loadBufferView.bind(this));
-
-    this._images.set(index, image);
     return image;
   }
 

@@ -22,5 +22,9 @@ async function loadGltf(uri: string, id: number) {
     data,
   };
 
-  postMessage(message);
+  // Transferable objects
+  const buffers = data.bufferViews?.map(({ bufferView }) => bufferView) ?? [];
+  const images = data.images ?? [];
+
+  postMessage(message, [...buffers, ...images]);
 }

@@ -82,7 +82,7 @@ export async function loadPrimitive(
 
   // Morph targets
   if (primitiveDef.targets !== undefined) {
-    const targetPromises = primitiveDef.targets.map(async (target) => {
+    const targetPromises = primitiveDef.targets.map((target) => {
       const entryPromises = Object.entries(target).map(async ([name, accessorId]) => {
         const accessor = await loadAccessor(accessorId);
 
@@ -121,8 +121,10 @@ export async function loadPrimitive(
             break;
         }
       });
-      await Promise.all(entryPromises);
+
+      return Promise.all(entryPromises);
     });
+
     await Promise.all(targetPromises);
 
     geometry.morphTargetsRelative = true;

@@ -50,27 +50,21 @@ export async function loadScene(
     });
   }
 
-  // Load Nodes
-  const startNodes = performance.now();
-
+  // Load nodes + animations
   const nodePromises = sceneDef.nodes?.map((nodeIndex) => buildNodeHierarchy(nodeIndex)) ?? [];
-  const nodes = await Promise.all(nodePromises);
+  const animationPromises = json.animations?.map((_, index) => loadAnimation(index)) ?? [];
+
+  const [nodes, animationClips] = await Promise.all([
+    Promise.all(nodePromises),
+    Promise.all(animationPromises),
+  ]);
+
+  // Add nodes to scene
   scene.add(...nodes);
 
-  const endNodes = performance.now();
-  console.log(`Loaded ${nodePromises.length} nodes in ${(endNodes - startNodes) / 1000} seconds`);
-
-  // Load Animations
-  const animationPromises = json.animations?.map((_, index) => loadAnimation(index));
-  const animationClips = await Promise.all(animationPromises ?? []);
-
+  // Create animation mixer
   const animationMixer = new AnimationMixer(scene);
   const animationActions = animationClips.map((clip) => animationMixer.clipAction(clip));
-
-  const endAnimations = performance.now();
-  console.log(
-    `Loaded ${animationClips.length} animations in ${(endAnimations - endNodes) / 1000} seconds`
-  );
 
   return {
     scene,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimationAction, Scene } from "three";
+import { AnimationAction, AnimationMixer, Scene } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { Engine } from "@wired-xr/new-engine";
@@ -69,9 +69,13 @@ export default function ExampleCanvas({ gltf }: Props) {
         }
 
         // Test against threejs loader load time
-        const threeLoader = new GLTFLoader();
+        const threeScene = new Scene();
         const startThreeTime = performance.now();
-        await threeLoader.loadAsync(gltf);
+        const threeLoader = new GLTFLoader();
+        const threeGltf = await threeLoader.loadAsync(gltf);
+        const threeMixer = new AnimationMixer(threeGltf.scene);
+        threeGltf.animations.forEach((animation) => threeMixer.clipAction(animation));
+        threeScene.add(threeGltf.scene);
         const threeTime = Math.round(performance.now() - startThreeTime) / 1000;
 
         function updateInfo() {

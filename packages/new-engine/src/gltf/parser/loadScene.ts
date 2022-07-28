@@ -1,11 +1,10 @@
-import { AnimationAction, AnimationClip, AnimationMixer, Group, Object3D } from "three";
+import { AnimationClip, Group, Object3D } from "three";
 
 import { GLTF } from "../schemaTypes";
 
 export type SceneResult = {
   scene: Group;
-  animationActions: AnimationAction[];
-  animationMixer: AnimationMixer;
+  animations: AnimationClip[];
 };
 
 export async function loadScene(
@@ -54,7 +53,7 @@ export async function loadScene(
   const nodePromises = sceneDef.nodes?.map((nodeIndex) => buildNodeHierarchy(nodeIndex)) ?? [];
   const animationPromises = json.animations?.map((_, index) => loadAnimation(index)) ?? [];
 
-  const [nodes, animationClips] = await Promise.all([
+  const [nodes, animations] = await Promise.all([
     Promise.all(nodePromises),
     Promise.all(animationPromises),
   ]);
@@ -62,13 +61,8 @@ export async function loadScene(
   // Add nodes to scene
   scene.add(...nodes);
 
-  // Create animation mixer
-  const animationMixer = new AnimationMixer(scene);
-  const animationActions = animationClips.map((clip) => animationMixer.clipAction(clip));
-
   return {
     scene,
-    animationActions,
-    animationMixer,
+    animations,
   };
 }

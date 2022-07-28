@@ -107,6 +107,13 @@ export const PATH_PROPERTIES = {
   weights: "morphTargetInfluences",
 };
 
+export const PATH_PROPERTIES_REVERSE = {
+  scale: "scale",
+  position: "translation",
+  quaternion: "rotation",
+  morphTargetInfluences: "weights",
+};
+
 export const WEBGL_FILTERS = {
   9728: NearestFilter,
   9729: LinearFilter,

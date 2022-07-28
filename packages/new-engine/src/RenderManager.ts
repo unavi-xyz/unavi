@@ -1,4 +1,5 @@
 import {
+  AnimationClip,
   AnimationMixer,
   Box3,
   Mesh,
@@ -25,7 +26,8 @@ export class RenderManager {
   #scene = new Scene();
   #canvasWidth = 0;
   #canvasHeight = 0;
-  #mixers = new Map<string, AnimationMixer>();
+  #mixer: AnimationMixer | null = null;
+  #clips: AnimationClip[] = [];
   #parser: GLTFParser | null = null;
 
   #currentGltf: Object3D | null = null;
@@ -78,7 +80,7 @@ export class RenderManager {
 
   render(delta: number) {
     this.#updateCanvasSize();
-    this.#mixers.forEach((mixer) => mixer.update(delta));
+    if (this.#mixer) this.#mixer.update(delta);
     this.#renderer.render(this.#scene, this.#camera);
     this.#stats.update();
   }
@@ -93,7 +95,13 @@ export class RenderManager {
 
     // Parse gltf
     this.#parser = new GLTFParser(data);
-    const { animationActions, animationMixer, scene } = await this.#parser.parse();
+    const { scene, animations } = await this.#parser.parse();
+
+    // Animations
+    const mixer = new AnimationMixer(scene);
+    const actions = animations.map((clip) => mixer.clipAction(clip));
+    this.#mixer = mixer;
+    this.#clips = animations;
 
     // Calculate bounding box
     const boundingBox = new Box3().setFromObject(scene);
@@ -121,17 +129,16 @@ export class RenderManager {
     // Add to scene
     this.#currentGltf = scene;
     this.#scene.add(scene);
-    this.#mixers.set(scene.uuid, animationMixer);
 
     return {
       scene,
-      animations: animationActions,
+      animations: actions,
     };
   }
 
   export() {
     const exporter = new GLTFExporter();
-    return exporter.exportAsBinary(this.#scene);
+    return exporter.exportAsBinary(this.#scene, this.#clips);
   }
 
   destroy() {
@@ -140,12 +147,6 @@ export class RenderManager {
 
     // Dispose all objects
     disposeTree(this.#scene);
-
-    // Clear scene
-    this.#scene.clear();
-
-    // Clear mixers
-    this.#mixers.clear();
 
     // Remove stats
     document.body.removeChild(this.#stats.dom);

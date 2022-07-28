@@ -74,13 +74,17 @@ export function processAccessor(
 
   const bufferView = processBufferView(attribute, componentType, start, count);
 
+  // @ts-ignore
+  const type: string | undefined = TYPES[attribute.itemSize];
+  if (type === undefined) throw new Error(`Unsupported item size: ${attribute.itemSize}`);
+
   const accessorDef: Accessor = {
     bufferView,
     componentType,
     count,
     max: minMax.max,
     min: minMax.min,
-    type: TYPES[attribute.itemSize as keyof typeof TYPES],
+    type,
   };
 
   if (attribute.normalized) accessorDef.normalized = true;

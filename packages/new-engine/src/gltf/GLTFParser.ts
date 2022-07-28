@@ -6,6 +6,7 @@ import {
   Object3D,
 } from "three";
 
+import { IGLTF } from "../types";
 import { BufferViewResult } from "./loader/loadBufferView";
 import { buildNodeHierarchy } from "./parser/buildNodeHierarchy";
 import { AccessorResult, loadAccessor } from "./parser/loadAccessor";
@@ -61,8 +62,8 @@ export class GLTFParser {
 
   public async parse() {
     const sceneIndex = this.#json.scene ?? 0;
-    const scene = await this.#loadScene(sceneIndex);
-    return scene;
+    const parsed = await this.#loadScene(sceneIndex);
+    return parsed;
   }
 
   #loadScene(index: number) {

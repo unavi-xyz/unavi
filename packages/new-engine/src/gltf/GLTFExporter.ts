@@ -1,4 +1,5 @@
 import {
+  AnimationClip,
   BufferAttribute,
   BufferGeometry,
   InterleavedBufferAttribute,
@@ -14,6 +15,7 @@ import {
 
 import { getPaddedArrayBuffer } from "./exporter/getPaddedArrayBuffer";
 import { processAccessor } from "./exporter/processAccessor";
+import { processAnimation } from "./exporter/processAnimation";
 import { processBufferView } from "./exporter/processBufferView";
 import { processBufferViewImage } from "./exporter/processBufferViewImage";
 import { processImage } from "./exporter/processImage";
@@ -66,21 +68,21 @@ export class GLTFExporter {
 
   constructor() {}
 
-  async exportAsJSON(input: Object3D | Object3D[]) {
+  async exportAsJSON(input: Object3D | Object3D[], animations?: AnimationClip[]) {
     this.#options.binary = true;
-    const json = await this.#exportObjects(input);
+    const json = await this.#exportObjects(input, animations);
     return json as GLTF;
   }
 
-  async exportAsBinary(input: Object3D | Object3D[]) {
+  async exportAsBinary(input: Object3D | Object3D[], animations?: AnimationClip[]) {
     this.#options.binary = true;
-    const glbBuffer = await this.#exportObjects(input);
+    const glbBuffer = await this.#exportObjects(input, animations);
     return glbBuffer as ArrayBuffer;
   }
 
-  async #exportObjects(input: Object3D | Object3D[]) {
+  async #exportObjects(input: Object3D | Object3D[], animations?: AnimationClip[]) {
     // Process input
-    this.#processInput(input);
+    this.#processInput(input, animations);
 
     await Promise.all(this.#pending);
 
@@ -140,22 +142,23 @@ export class GLTFExporter {
     }
   }
 
-  #processInput(input: Object3D | Object3D[]) {
+  #processInput(input: Object3D | Object3D[], animations: AnimationClip[] = []) {
     const objects = Array.isArray(input) ? input : [input];
     const objectsWithoutScene: Object3D[] = [];
 
-    // Process all objects
     objects.forEach((object) => {
       if (object instanceof Scene) {
+        // Process scenes
         this.#processScene(object);
       } else {
         objectsWithoutScene.push(object);
       }
     });
 
+    // Process non-scene objects
     if (objectsWithoutScene.length > 0) {
       const scene = new Scene();
-      // Push to children instead of adding to scene to avoid modifying .parent
+      // Push to children instead of adding to scene to avoid modifying .parent attribute
       scene.children.push(...objectsWithoutScene);
       this.#processScene(scene);
     }
@@ -163,9 +166,23 @@ export class GLTFExporter {
     // Set default scene
     if (this.#json.scenes?.length === 1) this.#json.scene = 0;
 
-    // Process skins
-
     // Process animations
+    animations.forEach((clip) => {
+      this.#processAnimation(clip, objects[0]);
+    });
+
+    // Process skins
+  }
+
+  #processAnimation(clip: AnimationClip, root: Object3D) {
+    const index = processAnimation(
+      clip,
+      root,
+      this.#json,
+      this.#processNode.bind(this),
+      this.#processAccessor.bind(this)
+    );
+    return index;
   }
 
   #processScene(scene: Scene) {
@@ -275,7 +292,7 @@ export class GLTFExporter {
 
   #processAccessor(
     attribute: BufferAttribute | InterleavedBufferAttribute,
-    geometry: BufferGeometry,
+    geometry?: BufferGeometry,
     count?: number,
     start?: number
   ) {

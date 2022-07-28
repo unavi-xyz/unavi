@@ -1,26 +1,19 @@
-import { AnimationAction, Group } from "three";
-
 import { RenderManager } from "./RenderManager";
-import { FromGameMessage, ToGameWorkerLoadGltf } from "./types";
-
-export interface IGLTF {
-  scene: Group;
-  animations: AnimationAction[];
-}
+import { FromGameMessage, IGLTF, ToGameWorkerLoadGltf } from "./types";
 
 export class GameManager {
-  private _worker = new Worker(new URL("./workers/Game.worker.ts", import.meta.url));
-  private _messageId = 0;
+  #worker = new Worker(new URL("./workers/Game.worker.ts", import.meta.url));
+  #messageId = 0;
 
-  private _renderManager: RenderManager;
+  #renderManager: RenderManager;
 
   constructor(renderManager: RenderManager) {
-    this._renderManager = renderManager;
+    this.#renderManager = renderManager;
   }
 
-  public loadGltf(uri: string) {
+  loadGltf(uri: string) {
     const message: ToGameWorkerLoadGltf = {
-      id: this._messageId++,
+      id: this.#messageId++,
       type: "load_gltf",
       data: {
         uri,
@@ -28,33 +21,37 @@ export class GameManager {
     };
 
     // Send message to worker
-    this._worker.postMessage(message);
+    this.#worker.postMessage(message);
 
     // Wait for worker to respond
     const promise = new Promise<IGLTF>((resolve, reject) => {
       const onMessage = async (event: MessageEvent<FromGameMessage>) => {
         const { type, data, id } = event.data;
         if (id !== message.id) return;
-        this._worker.removeEventListener("message", onMessage);
+        this.#worker.removeEventListener("message", onMessage);
 
         if (type === "loaded_gltf") {
-          const gltf = await this._renderManager.createGLTF(data);
+          const gltf = await this.#renderManager.createGLTF(data);
           resolve(gltf);
         } else {
           reject();
         }
       };
 
-      this._worker.addEventListener("message", onMessage);
+      this.#worker.addEventListener("message", onMessage);
     });
 
     return promise;
   }
 
-  public update(delta: number) {}
+  export() {
+    return this.#renderManager.export();
+  }
 
-  public destroy() {
+  update(delta: number) {}
+
+  destroy() {
     //terminate worker
-    this._worker.terminate();
+    this.#worker.terminate();
   }
 }

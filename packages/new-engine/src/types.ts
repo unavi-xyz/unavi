@@ -1,4 +1,11 @@
+import { AnimationAction, Group } from "three";
+
 import { LoadedGLTF } from "./gltf";
+
+export interface IGLTF {
+  scene: Group;
+  animations: AnimationAction[];
+}
 
 type WorkerMessage<T, D> = {
   id: number;

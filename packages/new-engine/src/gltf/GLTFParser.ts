@@ -26,126 +26,126 @@ import {
 } from "./schemaTypes";
 import { LoadedGLTF } from "./types";
 
-// Converts a loaded glTf to Three.js objects
+// Converts a loaded glTf to a three.js scene
 export class GLTFParser {
-  private _json: GLTF;
-  private _bufferViews: BufferViewResult[];
-  private _images: ImageBitmap[];
+  #json: GLTF;
+  #bufferViews: BufferViewResult[];
+  #images: ImageBitmap[];
 
-  private _scenes = new Map<number, Promise<SceneResult>>();
+  #scenes = new Map<number, Promise<SceneResult>>();
 
   // Cache
-  private _boneIndexes = new Set<number>();
-  private _skinnedMeshIndexes = new Set<number>();
+  #boneIndexes = new Set<number>();
+  #skinnedMeshIndexes = new Set<number>();
 
-  private _meshReferenceCount = new Map<number, number>();
-  private _meshUseCount = new Map<number, number>();
-  private _nodeReferenceCount = new Map<number, number>();
-  private _nodeUseCount = new Map<number, number>();
+  #meshReferenceCount = new Map<number, number>();
+  #meshUseCount = new Map<number, number>();
+  #nodeReferenceCount = new Map<number, number>();
+  #nodeUseCount = new Map<number, number>();
 
-  private _accessors = new Map<number, Promise<AccessorResult>>();
-  private _animations = new Map<number, Promise<AnimationClip>>();
-  private _interleavedBuffers = new Map<string, InterleavedBuffer>();
-  private _materials = new Map<number, Promise<MeshStandardMaterial>>();
-  private _meshes = new Map<number, Promise<Object3D>>();
-  private _nodes = new Map<number, Promise<Object3D>>();
-  private _primitives = new Map<string, Promise<PrimitiveResult>>();
-  private _skins = new Map<number, Promise<SkinResult>>();
-  private _textures = new Map<string, Promise<CanvasTexture>>();
+  #accessors = new Map<number, Promise<AccessorResult>>();
+  #animations = new Map<number, Promise<AnimationClip>>();
+  #interleavedBuffers = new Map<string, InterleavedBuffer>();
+  #materials = new Map<number, Promise<MeshStandardMaterial>>();
+  #meshes = new Map<number, Promise<Object3D>>();
+  #nodes = new Map<number, Promise<Object3D>>();
+  #primitives = new Map<string, Promise<PrimitiveResult>>();
+  #skins = new Map<number, Promise<SkinResult>>();
+  #textures = new Map<string, Promise<CanvasTexture>>();
 
   constructor({ json, bufferViews = [], images = [] }: LoadedGLTF) {
-    this._json = json;
-    this._bufferViews = bufferViews;
-    this._images = images;
+    this.#json = json;
+    this.#bufferViews = bufferViews;
+    this.#images = images;
   }
 
   public async parse() {
-    const sceneIndex = this._json.scene ?? 0;
-    const scene = await this._loadScene(sceneIndex);
+    const sceneIndex = this.#json.scene ?? 0;
+    const scene = await this.#loadScene(sceneIndex);
     return scene;
   }
 
-  private _loadScene(index: number) {
-    const cached = this._scenes.get(index);
+  #loadScene(index: number) {
+    const cached = this.#scenes.get(index);
     if (cached) return cached;
 
     // Clear cache
-    this._boneIndexes.clear();
-    this._skinnedMeshIndexes.clear();
+    this.#boneIndexes.clear();
+    this.#skinnedMeshIndexes.clear();
 
-    this._meshReferenceCount.clear();
-    this._meshUseCount.clear();
-    this._nodeReferenceCount.clear();
-    this._nodeUseCount.clear();
+    this.#meshReferenceCount.clear();
+    this.#meshUseCount.clear();
+    this.#nodeReferenceCount.clear();
+    this.#nodeUseCount.clear();
 
-    this._accessors.clear();
-    this._animations.clear();
-    this._interleavedBuffers.clear();
-    this._materials.clear();
-    this._meshes.clear();
-    this._nodes.clear();
-    this._primitives.clear();
-    this._skins.clear();
-    this._textures.clear();
+    this.#accessors.clear();
+    this.#animations.clear();
+    this.#interleavedBuffers.clear();
+    this.#materials.clear();
+    this.#meshes.clear();
+    this.#nodes.clear();
+    this.#primitives.clear();
+    this.#skins.clear();
+    this.#textures.clear();
 
     const scene = loadScene(
       index,
-      this._json,
-      this._boneIndexes,
-      this._skinnedMeshIndexes,
-      this._meshReferenceCount,
-      this._buildNodeHierarchy.bind(this),
-      this._loadAnimation.bind(this)
+      this.#json,
+      this.#boneIndexes,
+      this.#skinnedMeshIndexes,
+      this.#meshReferenceCount,
+      this.#buildNodeHierarchy.bind(this),
+      this.#loadAnimation.bind(this)
     );
 
-    this._scenes.set(index, scene);
+    this.#scenes.set(index, scene);
     return scene;
   }
 
-  private _buildNodeHierarchy(index: number) {
+  #buildNodeHierarchy(index: number) {
     const node = buildNodeHierarchy(
       index,
-      this._json,
-      this._loadNode.bind(this),
-      this._buildNodeHierarchy.bind(this)
+      this.#json,
+      this.#loadNode.bind(this),
+      this.#buildNodeHierarchy.bind(this)
     );
 
     return node;
   }
 
-  private _loadAnimation(index: number) {
-    const cached = this._animations.get(index);
+  #loadAnimation(index: number) {
+    const cached = this.#animations.get(index);
     if (cached) return cached;
 
     const animation = loadAnimation(
       index,
-      this._json,
-      this._loadAccessor.bind(this),
-      this._loadNode.bind(this)
+      this.#json,
+      this.#loadAccessor.bind(this),
+      this.#loadNode.bind(this)
     );
 
-    this._animations.set(index, animation);
+    this.#animations.set(index, animation);
     return animation;
   }
 
-  private _loadAccessor(index: number) {
-    const cached = this._accessors.get(index);
+  #loadAccessor(index: number) {
+    const cached = this.#accessors.get(index);
     if (cached) return cached;
 
-    const accessor = loadAccessor(index, this._json, this._bufferViews, this._interleavedBuffers);
+    const accessor = loadAccessor(index, this.#json, this.#bufferViews, this.#interleavedBuffers);
 
-    this._accessors.set(index, accessor);
+    this.#accessors.set(index, accessor);
     return accessor;
   }
 
-  private async _loadNode(index: number) {
-    const cached = this._nodes.get(index);
+  async #loadNode(index: number) {
+    const cached = this.#nodes.get(index);
     if (cached) {
-      const references = this._nodeReferenceCount.get(index) ?? 0;
+      const references = this.#nodeReferenceCount.get(index) ?? 0;
       if (references <= 1) return cached;
 
-      const count = this._nodeUseCount.get(index) ?? 0;
-      this._nodeUseCount.set(index, count + 1);
+      const count = this.#nodeUseCount.get(index) ?? 0;
+      this.#nodeUseCount.set(index, count + 1);
 
       const node = await cached;
       const clone = node.clone();
@@ -155,25 +155,25 @@ export class GLTFParser {
 
     const node = loadNode(
       index,
-      this._json,
-      this._boneIndexes,
-      this._loadMesh.bind(this),
-      this._loadSkin.bind(this),
-      this._loadNode.bind(this)
+      this.#json,
+      this.#boneIndexes,
+      this.#loadMesh.bind(this),
+      this.#loadSkin.bind(this),
+      this.#loadNode.bind(this)
     );
 
-    this._nodes.set(index, node);
+    this.#nodes.set(index, node);
     return node;
   }
 
-  private async _loadMesh(index: number) {
-    const cache = this._meshes.get(index);
+  async #loadMesh(index: number) {
+    const cache = this.#meshes.get(index);
     if (cache) {
-      const references = this._meshReferenceCount.get(index) ?? 0;
+      const references = this.#meshReferenceCount.get(index) ?? 0;
       if (references <= 1) return cache;
 
-      const count = this._meshUseCount.get(index) ?? 0;
-      this._meshUseCount.set(index, count + 1);
+      const count = this.#meshUseCount.get(index) ?? 0;
+      this.#meshUseCount.set(index, count + 1);
 
       const mesh = await cache;
       const clone = mesh.clone();
@@ -183,60 +183,58 @@ export class GLTFParser {
 
     const mesh = loadMesh(
       index,
-      this._json,
-      this._skinnedMeshIndexes,
-      this._loadPrimitive.bind(this)
+      this.#json,
+      this.#skinnedMeshIndexes,
+      this.#loadPrimitive.bind(this)
     );
 
-    this._meshes.set(index, mesh);
+    this.#meshes.set(index, mesh);
     return mesh;
   }
 
-  private _loadSkin(index: number) {
-    const cached = this._skins.get(index);
+  #loadSkin(index: number) {
+    const cached = this.#skins.get(index);
     if (cached) return cached;
 
-    const skin = loadSkin(index, this._json, this._loadAccessor.bind(this));
+    const skin = loadSkin(index, this.#json, this.#loadAccessor.bind(this));
 
-    this._skins.set(index, skin);
+    this.#skins.set(index, skin);
     return skin;
   }
 
-  private _loadPrimitive(primitiveDef: MeshPrimitive) {
+  #loadPrimitive(primitiveDef: MeshPrimitive) {
     const cacheKey = JSON.stringify(primitiveDef);
-    const cached = this._primitives.get(cacheKey);
+    const cached = this.#primitives.get(cacheKey);
     if (cached) return cached;
 
     const primitive = loadPrimitive(
       primitiveDef,
-      this._loadAccessor.bind(this),
-      this._loadMaterial.bind(this)
+      this.#loadAccessor.bind(this),
+      this.#loadMaterial.bind(this)
     );
 
-    this._primitives.set(cacheKey, primitive);
+    this.#primitives.set(cacheKey, primitive);
     return primitive;
   }
 
-  private _loadMaterial(index: number) {
-    const cached = this._materials.get(index);
+  #loadMaterial(index: number) {
+    const cached = this.#materials.get(index);
     if (cached) return cached;
 
-    const material = loadMaterial(index, this._json, this._loadTexture.bind(this));
+    const material = loadMaterial(index, this.#json, this.#loadTexture.bind(this));
 
-    this._materials.set(index, material);
+    this.#materials.set(index, material);
     return material;
   }
 
-  private _loadTexture(
-    info: TextureInfo | MaterialNormalTextureInfo | MaterialOcclusionTextureInfo
-  ) {
+  #loadTexture(info: TextureInfo | MaterialNormalTextureInfo | MaterialOcclusionTextureInfo) {
     const cacheKey = JSON.stringify(info);
-    const cached = this._textures.get(cacheKey);
+    const cached = this.#textures.get(cacheKey);
     if (cached) return cached;
 
-    const texture = loadTexture(info, this._json, this._images);
+    const texture = loadTexture(info, this.#json, this.#images);
 
-    this._textures.set(cacheKey, texture);
+    this.#textures.set(cacheKey, texture);
     return texture;
   }
 }

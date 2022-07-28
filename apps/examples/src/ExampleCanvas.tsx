@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { AnimationAction, AnimationMixer, Scene } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-import { Engine } from "@wired-xr/new-engine";
+import { Engine, IGLTF } from "@wired-xr/new-engine";
 
 import Panel from "./Panel/Panel";
 
 export interface RenderInfo {
   load: {
     time: number;
-    threeTime: number;
+    threeTime?: number;
+    exportedTime?: number;
   };
   memory: {
     geometries: number;
@@ -23,17 +24,26 @@ export interface RenderInfo {
   };
 }
 
-interface Props {
-  gltf: string;
+export interface Settings {
+  testThree: boolean;
+  testExport: boolean;
 }
 
-export default function ExampleCanvas({ gltf }: Props) {
+interface Props {
+  uri: string;
+}
+
+export default function ExampleCanvas({ uri }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [loaded, setLoaded] = useState(false);
   const [animations, setAnimations] = useState<AnimationAction[]>();
   const [info, setInfo] = useState<RenderInfo>();
+  const [settings, setSettings] = useState<Settings>({
+    testThree: false,
+    testExport: true,
+  });
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -52,54 +62,83 @@ export default function ExampleCanvas({ gltf }: Props) {
     }
 
     let interval: NodeJS.Timer;
-    const startTime = performance.now();
+    let startTime = performance.now();
+    let endTime: number;
+    let exportedStartTime: number;
+    let exportedTime: number;
 
-    // Load gltf
-    engine
-      .loadGltf(gltf)
-      .then(async ({ animations }) => {
-        const loadTime = Math.round(performance.now() - startTime) / 1000;
+    async function handleLoaded({ animations }: IGLTF) {
+      setAnimations(animations);
+      setLoaded(true);
 
-        setAnimations(animations);
-        setLoaded(true);
+      // Start first animation
+      if (animations.length > 0) {
+        animations[0].play();
+      }
 
-        // Start first animation
-        if (animations.length > 0) {
-          animations[0].play();
-        }
+      async function testThree() {
+        if (!settings.testThree) return;
 
         // Test against threejs loader load time
         const threeScene = new Scene();
         const startThreeTime = performance.now();
         const threeLoader = new GLTFLoader();
-        const threeGltf = await threeLoader.loadAsync(gltf);
+        const threeGltf = await threeLoader.loadAsync(uri);
         const threeMixer = new AnimationMixer(threeGltf.scene);
         threeGltf.animations.forEach((animation) => threeMixer.clipAction(animation));
         threeScene.add(threeGltf.scene);
-        const threeTime = Math.round(performance.now() - startThreeTime) / 1000;
+        const time = Math.round(performance.now() - startThreeTime) / 1000;
+        return time;
+      }
 
-        function updateInfo() {
-          const { render, memory } = engine.info();
-          const { triangles, points, lines, calls } = render;
+      const threeTime = await testThree();
 
-          setInfo({
-            load: {
-              time: loadTime,
-              threeTime,
-            },
-            memory,
-            render: {
-              calls,
-              lines,
-              points,
-              triangles,
-            },
-          });
+      function updateInfo() {
+        const { render, memory } = engine.info();
+        const { triangles, points, lines, calls } = render;
+
+        setInfo({
+          load: {
+            time: endTime,
+            threeTime,
+            exportedTime,
+          },
+          memory,
+          render: {
+            calls,
+            lines,
+            points,
+            triangles,
+          },
+        });
+      }
+
+      updateInfo();
+      interval = setInterval(updateInfo, 1000);
+    }
+
+    // Load gltf
+    engine
+      .loadGltf(uri)
+      .then(async (res) => {
+        endTime = Math.round(performance.now() - startTime) / 1000;
+
+        if (settings.testExport) {
+          // Export to glb
+          const glb = await engine.export();
+          const blob = new Blob([glb], { type: "application/octet-stream" });
+          const url = URL.createObjectURL(blob);
+
+          // Load the exported glb
+          exportedStartTime = performance.now();
+          const gltf = await engine.loadGltf(url);
+          exportedTime = Math.round(performance.now() - exportedStartTime) / 1000;
+
+          handleLoaded(gltf);
+          return;
         }
 
-        updateInfo();
-
-        interval = setInterval(updateInfo, 1000);
+        handleLoaded(res);
       })
       .catch((error) => {
         console.error(error);
@@ -114,7 +153,7 @@ export default function ExampleCanvas({ gltf }: Props) {
       setInfo(undefined);
       clearInterval(interval);
     };
-  }, [canvasRef, gltf]);
+  }, [canvasRef, uri, settings]);
 
   function updateCanvasSize() {
     const canvas = canvasRef.current;
@@ -134,7 +173,13 @@ export default function ExampleCanvas({ gltf }: Props) {
         <canvas ref={canvasRef} className="w-full h-full" />
       </div>
 
-      <Panel loaded={loaded} animations={animations} info={info} />
+      <Panel
+        loaded={loaded}
+        animations={animations}
+        info={info}
+        settings={settings}
+        setSettings={setSettings}
+      />
     </>
   );
 }

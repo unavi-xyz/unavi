@@ -15,15 +15,15 @@ const decoder = new TextDecoder();
 // Fetches a glTF and loads it into memory
 // Designed to run in a Web Worker
 export class GLTFLoader {
-  private _json: GLTF | null = null;
-  private _bin: ArrayBuffer | null = null;
-  private _baseUrl: string | null = null;
+  #json: GLTF | null = null;
+  #bin: ArrayBuffer | null = null;
+  #baseUrl: string | null = null;
 
   // Cache
-  private _buffers = new Map<number, Promise<ArrayBuffer>>();
-  private _bufferViews = new Map<number, Promise<BufferViewResult>>();
+  #buffers = new Map<number, Promise<ArrayBuffer>>();
+  #bufferViews = new Map<number, Promise<BufferViewResult>>();
 
-  public async load(uri: string): Promise<LoadedGLTF> {
+  async load(uri: string): Promise<LoadedGLTF> {
     // Parse uri
     const uriType = parseUri(uri);
 
@@ -33,7 +33,7 @@ export class GLTFLoader {
       const split = uri.split("/");
       split.pop();
       if (split.length > 0) {
-        this._baseUrl = split.join("/");
+        this.#baseUrl = split.join("/");
       }
     }
 
@@ -49,7 +49,7 @@ export class GLTFLoader {
     try {
       // See if the file is in json format
       const text = await blob.text();
-      this._json = JSON.parse(text);
+      this.#json = JSON.parse(text);
     } catch {
       // If not, assume it's a binary glb
       const buffer = await blob.arrayBuffer();
@@ -88,10 +88,10 @@ export class GLTFLoader {
           case BINARY_CHUNK_TYPES.JSON:
             const jsonArray = new Uint8Array(buffer, byteOffset, chunkLength);
             const text = decoder.decode(jsonArray);
-            this._json = JSON.parse(text);
+            this.#json = JSON.parse(text);
             break;
           case BINARY_CHUNK_TYPES.BIN:
-            this._bin = buffer.slice(byteOffset, byteOffset + chunkLength);
+            this.#bin = buffer.slice(byteOffset, byteOffset + chunkLength);
             break;
           default:
             break;
@@ -101,51 +101,51 @@ export class GLTFLoader {
       }
     }
 
-    if (!this._json) {
+    if (!this.#json) {
       throw new Error("No JSON found");
     }
 
     const bufferViewPromises =
-      this._json.bufferViews?.map((_, index) => this._loadBufferView(index)) ?? [];
+      this.#json.bufferViews?.map((_, index) => this.#loadBufferView(index)) ?? [];
 
-    const imagePromises = this._json.images?.map((_, index) => this._loadImage(index)) ?? [];
+    const imagePromises = this.#json.images?.map((_, index) => this.#loadImage(index)) ?? [];
 
     const bufferViews = await Promise.all(bufferViewPromises);
     const images = await Promise.all(imagePromises);
 
     // Clear cache
-    this._buffers.clear();
-    this._bufferViews.clear();
+    this.#buffers.clear();
+    this.#bufferViews.clear();
 
     return {
-      json: this._json,
+      json: this.#json,
       bufferViews,
       images,
     };
   }
 
-  private _loadImage(index: number) {
-    const image = loadImage(index, this._json, this._baseUrl, this._loadBufferView.bind(this));
+  #loadImage(index: number) {
+    const image = loadImage(index, this.#json, this.#baseUrl, this.#loadBufferView.bind(this));
     return image;
   }
 
-  private _loadBufferView(index: number) {
-    const cached = this._bufferViews.get(index);
+  #loadBufferView(index: number) {
+    const cached = this.#bufferViews.get(index);
     if (cached) return cached;
 
-    const bufferView = loadBufferView(index, this._json, this._loadBuffer.bind(this));
+    const bufferView = loadBufferView(index, this.#json, this.#loadBuffer.bind(this));
 
-    this._bufferViews.set(index, bufferView);
+    this.#bufferViews.set(index, bufferView);
     return bufferView;
   }
 
-  private _loadBuffer(index: number) {
-    const cached = this._buffers.get(index);
+  #loadBuffer(index: number) {
+    const cached = this.#buffers.get(index);
     if (cached) return cached;
 
-    const buffer = loadBuffer(index, this._json, this._bin, this._baseUrl);
+    const buffer = loadBuffer(index, this.#json, this.#bin, this.#baseUrl);
 
-    this._buffers.set(index, buffer);
+    this.#buffers.set(index, buffer);
     return buffer;
   }
 }

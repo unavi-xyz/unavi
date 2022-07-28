@@ -13,25 +13,31 @@ import {
 } from "three";
 
 export const WEBGL_CONSTANTS = {
-  FLOAT: 5126,
-  //FLOAT_MAT2: 35674,
-  FLOAT_MAT3: 35675,
-  FLOAT_MAT4: 35676,
-  FLOAT_VEC2: 35664,
-  FLOAT_VEC3: 35665,
-  FLOAT_VEC4: 35666,
-  LINEAR: 9729,
+  POINTS: 0x0000,
+  LINES: 0x0001,
+  LINE_LOOP: 0x0002,
+  LINE_STRIP: 0x0003,
+  TRIANGLES: 0x0004,
+  TRIANGLE_STRIP: 0x0005,
+  TRIANGLE_FAN: 0x0006,
+
+  UNSIGNED_BYTE: 0x1401,
+  UNSIGNED_SHORT: 0x1403,
+  FLOAT: 0x1406,
+  UNSIGNED_INT: 0x1405,
+  ARRAY_BUFFER: 0x8892,
+  ELEMENT_ARRAY_BUFFER: 0x8893,
+
+  NEAREST: 0x2600,
+  LINEAR: 0x2601,
+  NEAREST_MIPMAP_NEAREST: 0x2700,
+  LINEAR_MIPMAP_NEAREST: 0x2701,
+  NEAREST_MIPMAP_LINEAR: 0x2702,
+  LINEAR_MIPMAP_LINEAR: 0x2703,
+
+  CLAMP_TO_EDGE: 33071,
+  MIRRORED_REPEAT: 33648,
   REPEAT: 10497,
-  SAMPLER_2D: 35678,
-  POINTS: 0,
-  LINES: 1,
-  LINE_LOOP: 2,
-  LINE_STRIP: 3,
-  TRIANGLES: 4,
-  TRIANGLE_STRIP: 5,
-  TRIANGLE_FAN: 6,
-  UNSIGNED_BYTE: 5121,
-  UNSIGNED_SHORT: 5123,
 };
 
 export const WEBGL_COMPONENT_TYPES = {
@@ -68,7 +74,19 @@ export const ATTRIBUTES = {
   JOINTS_0: "skinIndex",
 };
 
+export const THREE_ATTTRIBUTES = {
+  position: "position",
+  normal: "normal",
+  tangent: "tangent",
+  uv: "TEXCOORD_0",
+  uv2: "TEXCOORD_1",
+  color: "COLOR_0",
+  skinWeight: "WEIGHTS_0",
+  skinIndex: "JOINTS_0",
+};
+
 export type AttributeName = keyof typeof ATTRIBUTES;
+export type ThreeAttributeName = keyof typeof THREE_ATTTRIBUTES;
 
 export const ALPHA_MODES = {
   OPAQUE: "OPAQUE",

@@ -22,6 +22,7 @@
     "@babel/preset-env": "^7.16.11",
     "@babel/preset-react": "^7.16.7",
     "@types/babel__core": "^7",
+    "@types/offscreencanvas": "^2019.7.0",
     "@types/react": "^18.0.8",
     "@types/react-dom": "^18.0.3",
     "@wired-xr/tsconfig": "*",

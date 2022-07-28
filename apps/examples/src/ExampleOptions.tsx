@@ -38,7 +38,7 @@ export default function ExampleOptions({ options }: Props) {
         </div>
       )}
 
-      <ExampleCanvas gltf={gltf} />
+      <ExampleCanvas uri={gltf} />
     </>
   );
 }

@@ -1,13 +1,15 @@
 import { CgSpinner } from "react-icons/cg";
 import { AnimationAction } from "three";
 
-import { RenderInfo } from "../ExampleCanvas";
+import { RenderInfo, Settings } from "../ExampleCanvas";
 import PanelPage from "./PanelPage";
 
 interface Props {
   loaded: boolean;
   animations?: AnimationAction[];
   info?: RenderInfo;
+  settings?: Settings;
+  setSettings?: (settings: Settings) => void;
 }
 
 export default function Panel({ loaded, ...rest }: Props) {

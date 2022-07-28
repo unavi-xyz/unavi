@@ -9,71 +9,75 @@ export interface EngineOptions {
 }
 
 export class Engine {
-  private _animationFrameId: number | null = null;
-  private _lastGameTime = 0;
-  private _lastRenderTime = 0;
+  #animationFrameId: number | null = null;
+  #lastGameTime = 0;
+  #lastRenderTime = 0;
 
-  private _renderManager: RenderManager;
-  private _gameManager: GameManager;
+  #renderManager: RenderManager;
+  #gameManager: GameManager;
 
   constructor({ canvas }: EngineOptions) {
-    this._renderManager = new RenderManager(canvas);
-    this._gameManager = new GameManager(this._renderManager);
+    this.#renderManager = new RenderManager(canvas);
+    this.#gameManager = new GameManager(this.#renderManager);
 
     // Start render loop
     this.start();
   }
 
-  private _renderLoop(time: number) {
+  #renderLoop(time: number) {
     const timeSeconds = time / 1000;
 
     // Request the next frame
-    this._animationFrameId = requestAnimationFrame(this._renderLoop.bind(this));
+    this.#animationFrameId = requestAnimationFrame(this.#renderLoop.bind(this));
 
     // Calculate delta
-    const deltaGame = timeSeconds - this._lastGameTime;
-    const deltaRender = timeSeconds - this._lastRenderTime;
-    this._lastRenderTime = timeSeconds;
+    const deltaGame = timeSeconds - this.#lastGameTime;
+    const deltaRender = timeSeconds - this.#lastRenderTime;
+    this.#lastRenderTime = timeSeconds;
 
     // Limit game updates to 60fps
     if (deltaGame > GAME_INTERVAL) {
       // Adjust for animation frame not being exactly 60fps
-      this._lastGameTime = timeSeconds - (this._lastGameTime % GAME_INTERVAL);
+      this.#lastGameTime = timeSeconds - (this.#lastGameTime % GAME_INTERVAL);
 
       // Update game state
-      this._gameManager.update(deltaGame);
+      this.#gameManager.update(deltaGame);
     }
 
     // Render
-    this._renderManager.render(deltaRender);
+    this.#renderManager.render(deltaRender);
   }
 
-  public loadGltf(uri: string) {
-    return this._gameManager.loadGltf(uri);
+  loadGltf(uri: string) {
+    return this.#gameManager.loadGltf(uri);
   }
 
-  public start() {
+  export() {
+    return this.#gameManager.export();
+  }
+
+  start() {
     // Start render loop
-    this._lastGameTime = performance.now();
-    this._animationFrameId = requestAnimationFrame(this._renderLoop.bind(this));
+    this.#lastGameTime = performance.now();
+    this.#animationFrameId = requestAnimationFrame(this.#renderLoop.bind(this));
   }
 
-  public stop() {
+  stop() {
     // Stop render loop
-    if (this._animationFrameId) {
-      cancelAnimationFrame(this._animationFrameId);
-      this._animationFrameId = null;
+    if (this.#animationFrameId) {
+      cancelAnimationFrame(this.#animationFrameId);
+      this.#animationFrameId = null;
     }
   }
 
-  public info() {
-    return this._renderManager.info();
+  info() {
+    return this.#renderManager.info();
   }
 
-  public destroy() {
+  destroy() {
     // Destroy workers
-    this._gameManager.destroy();
-    this._renderManager.destroy();
+    this.#gameManager.destroy();
+    this.#renderManager.destroy();
 
     // Stop render loop
     this.stop();

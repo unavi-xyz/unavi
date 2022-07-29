@@ -61,7 +61,7 @@ export function processAnimation(
       default:
         // See if there is a custom cubic spline interpolation
         // @ts-ignore
-        if (track.createInterpolantisInterpolantFactoryMethodGLTFCubicSpline === true) {
+        if (track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline === true) {
           interpolation = "CUBICSPLINE";
           // itemSize of CUBICSPLINE keyframe is 9
           // (VEC3 * 3: inTangent, splineVertex, and outTangent)

@@ -24,6 +24,7 @@ import { processMesh } from "./exporter/processMesh";
 import { processNode } from "./exporter/processNode";
 import { processSampler } from "./exporter/processSampler";
 import { processScene } from "./exporter/processScene";
+import { processSkin } from "./exporter/processSkin";
 import { processTexture } from "./exporter/processTexture";
 import { GLTF } from "./schemaTypes";
 
@@ -172,12 +173,25 @@ export class GLTFExporter {
     });
 
     // Process skins
+    this.#skins.forEach((skin) => {
+      this.#processSkin(skin);
+    });
   }
 
   #processAnimation(clip: AnimationClip, root: Object3D) {
     const index = processAnimation(
       clip,
       root,
+      this.#json,
+      this.#processNode.bind(this),
+      this.#processAccessor.bind(this)
+    );
+    return index;
+  }
+
+  #processSkin(skin: SkinnedMesh) {
+    const index = processSkin(
+      skin,
       this.#json,
       this.#processNode.bind(this),
       this.#processAccessor.bind(this)

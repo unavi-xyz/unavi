@@ -5,6 +5,7 @@ import {
   InterpolateDiscrete,
   InterpolateLinear,
   Object3D,
+  SkinnedMesh,
 } from "three";
 
 import { PATH_PROPERTIES_REVERSE } from "../constants";
@@ -33,14 +34,20 @@ export function processAnimation(
 
     let node: Object3D | undefined;
     root.traverse((object) => {
-      if (object.name === nodeName) node = object;
-      if (object.uuid === nodeName) node = object;
+      if (object.uuid === nodeName || object.name === nodeName) {
+        node = object;
+      }
     });
 
     if (!node) throw new Error(`Unknown node ${nodeName}`);
 
     const inputItemSize = 1;
     let outputItemSize = track.values.length / track.times.length;
+
+    if (path === "weights" && "morphTargetInfluences" in node) {
+      //@ts-ignore
+      outputItemSize /= node.morphTargetInfluences.length;
+    }
 
     // Interpolation
     let interpolation: "LINEAR" | "STEP" | "CUBICSPLINE" | undefined;

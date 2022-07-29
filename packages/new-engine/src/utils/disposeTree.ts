@@ -2,8 +2,8 @@ import { Mesh, MeshStandardMaterial, Object3D, SkinnedMesh } from "three";
 
 export function disposeTree(root: Object3D) {
   root.traverse((object) => {
-    if (object instanceof Mesh || object instanceof SkinnedMesh) {
-      const mesh = object as Mesh | SkinnedMesh;
+    if (object instanceof Mesh) {
+      const mesh = object as Mesh;
 
       const materials = mesh.material instanceof Array ? mesh.material : [mesh.material];
       materials.forEach((material) => {

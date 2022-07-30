@@ -63,6 +63,14 @@ export const WEBGL_TYPE_SIZES = {
 
 export type TypeSize = keyof typeof WEBGL_TYPE_SIZES;
 
+export const ATTRIBUTE_TYPES = {
+  1: "SCALAR",
+  2: "VEC2",
+  3: "VEC3",
+  4: "VEC4",
+  16: "MAT4",
+};
+
 export const ATTRIBUTES = {
   POSITION: "position",
   NORMAL: "normal",

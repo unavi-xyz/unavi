@@ -1,28 +1,26 @@
 import { BufferView, GLTF } from "../schemaTypes";
 import { getPaddedArrayBuffer } from "./getPaddedArrayBuffer";
-
-interface BufferViewImageResult {
-  index: number;
-  byteLength: number;
-}
+import { BufferViewResult } from "./processBufferView";
 
 export async function processBufferViewImage(
   blob: Blob,
   json: GLTF,
-  byteOffset: number,
-  processBuffer: (buffer: ArrayBuffer) => number
-): Promise<BufferViewImageResult> {
+  processBuffer: (buffer: ArrayBuffer, name: string) => number
+): Promise<BufferViewResult> {
+  if (!json.bufferViews) json.bufferViews = [];
+
+  const name = `image_${json.bufferViews.length}`;
+
   const arrayBuffer = await blob.arrayBuffer();
   const buffer = getPaddedArrayBuffer(arrayBuffer);
-  const bufferIndex = processBuffer(buffer);
+  const bufferIndex = processBuffer(buffer, name);
 
   const bufferViewDef: BufferView = {
-    buffer: bufferIndex,
-    byteOffset,
+    name,
+    buffer: 0,
     byteLength: buffer.byteLength,
   };
 
-  if (!json.bufferViews) json.bufferViews = [];
   const index = json.bufferViews.push(bufferViewDef) - 1;
-  return { index, byteLength: buffer.byteLength };
+  return { index, bufferIndex };
 }

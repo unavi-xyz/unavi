@@ -1,16 +1,9 @@
 import { BufferAttribute, BufferGeometry, InterleavedBufferAttribute } from "three";
 
-import { WEBGL_CONSTANTS } from "../constants";
+import { ATTRIBUTE_TYPES, WEBGL_CONSTANTS } from "../constants";
 import { Accessor, GLTF } from "../schemaTypes";
 import { getMinMax } from "./getMinMax";
-
-const TYPES = {
-  1: "SCALAR",
-  2: "VEC2",
-  3: "VEC3",
-  4: "VEC4",
-  16: "MAT4",
-};
+import { BufferViewResult } from "./processBufferView";
 
 export function processAccessor(
   attribute: BufferAttribute | InterleavedBufferAttribute,
@@ -20,7 +13,7 @@ export function processAccessor(
     componentType: number,
     start: number,
     count: number
-  ) => number,
+  ) => BufferViewResult,
   geometry?: BufferGeometry,
   count?: number,
   start = 0
@@ -72,19 +65,22 @@ export function processAccessor(
     }
   }
 
-  const bufferView = processBufferView(attribute, componentType, start, count);
-
   // @ts-ignore
-  const type: string | undefined = TYPES[attribute.itemSize];
+  const type: string | undefined = ATTRIBUTE_TYPES[attribute.itemSize];
   if (type === undefined) throw new Error(`Unsupported item size: ${attribute.itemSize}`);
 
+  const { index, bufferIndex } = processBufferView(attribute, componentType, start, count);
+
   const accessorDef: Accessor = {
-    bufferView,
+    bufferView: index,
+    byteOffset: 0,
     componentType,
     count,
     max: minMax.max,
     min: minMax.min,
     type,
+    // Temporary custom property
+    bufferIndex,
   };
 
   if (attribute.normalized) accessorDef.normalized = true;

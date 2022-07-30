@@ -1,17 +1,21 @@
 import { BufferAttribute, InterleavedBufferAttribute } from "three";
 
-import { WEBGL_CONSTANTS } from "../constants";
+import { ATTRIBUTE_TYPES, WEBGL_CONSTANTS } from "../constants";
 import { BufferView, GLTF } from "../schemaTypes";
 import { getPaddedBufferSize } from "./getPaddedBufferSize";
+
+export type BufferViewResult = {
+  index: number;
+  bufferIndex: number;
+};
 
 export function processBufferView(
   attribute: BufferAttribute | InterleavedBufferAttribute,
   componentType: number,
   start: number,
   count: number,
-  byteOffset: number,
   json: GLTF,
-  processBuffer: (buffer: ArrayBuffer) => number
+  processBuffer: (buffer: ArrayBuffer, name: string) => number
 ) {
   // Create a data view and add all attributes to it
   let componentSize: number;
@@ -75,18 +79,38 @@ export function processBufferView(
       offset += componentSize;
     }
   }
+  // @ts-ignore
+  const type: string = ATTRIBUTE_TYPES[attribute.itemSize];
+  const componentName = getComponentName(componentType);
+  const name = `${type}_${componentName}`;
 
-  const buffer = processBuffer(dataView.buffer);
+  const bufferIndex = processBuffer(dataView.buffer, name);
+
+  // See if we can combine this bufferView into a previous bufferView
+  // We look for a bufferView with the same attribute and component type
+  // We store this info in the name
+  const foundIndex = json.bufferViews?.findIndex((bufferView) => bufferView.name === name);
+
+  if (!json.bufferViews) json.bufferViews = [];
+  if (!json.buffers) throw new Error(`No buffers found`);
+
+  if (foundIndex !== undefined && foundIndex !== -1) {
+    const found = json.bufferViews[foundIndex];
+    found.byteLength += byteLength;
+    return { index: foundIndex, bufferIndex };
+  }
 
   const bufferViewDef: BufferView = {
-    buffer,
-    byteOffset,
+    name,
+    buffer: 0,
     byteLength,
   };
 
-  byteOffset += byteLength;
-
-  if (!json.bufferViews) json.bufferViews = [];
   const index = json.bufferViews.push(bufferViewDef) - 1;
-  return { index, byteOffset };
+  return { index, bufferIndex };
+}
+
+function getComponentName(componentType: number) {
+  // @ts-ignore
+  return Object.keys(WEBGL_CONSTANTS).find((key) => WEBGL_CONSTANTS[key] === componentType);
 }

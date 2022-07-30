@@ -53,9 +53,7 @@ export class GLTFExporter {
     },
   };
 
-  #buffers: ArrayBuffer[] = [];
-  #byteOffset = 0;
-
+  #buffers = new Map<string, ArrayBuffer[]>();
   #skins: SkinnedMesh[] = [];
 
   #pending: Promise<any>[] = [];
@@ -88,11 +86,54 @@ export class GLTFExporter {
     await Promise.all(this.#pending);
 
     // Merge buffers
-    const blob = new Blob(this.#buffers, { type: "application/octet-stream" });
+    const bufferArray: ArrayBuffer[] = [];
+    let byteOffset = 0;
+
+    this.#buffers.forEach((value, key) => {
+      let viewByteOffset = 0;
+
+      // Update buffer views
+      this.#json.bufferViews?.forEach((bufferView) => {
+        if (bufferView.name === key) {
+          bufferView.byteOffset = byteOffset;
+        }
+      });
+
+      value.forEach((buffer, i) => {
+        bufferArray.push(buffer);
+
+        // Update accessors
+        this.#json.accessors?.forEach((accessor) => {
+          if (!this.#json.bufferViews || accessor.bufferView === undefined) return;
+          const bufferView = this.#json.bufferViews[accessor.bufferView];
+
+          if (bufferView.name === key && accessor.bufferIndex === i) {
+            accessor.byteOffset = viewByteOffset;
+          }
+        });
+
+        // Update images
+        this.#json.images?.forEach((image) => {
+          if (!this.#json.bufferViews || image.bufferView === undefined) return;
+          const bufferView = this.#json.bufferViews[image.bufferView];
+
+          if (bufferView.name === key && image.bufferIndex === i) {
+            // Add byte offset to image
+            image.byteOffset = viewByteOffset;
+          }
+        });
+
+        byteOffset += buffer.byteLength;
+        viewByteOffset += buffer.byteLength;
+      });
+    });
+
+    const blob = new Blob(bufferArray, { type: "application/octet-stream" });
 
     // Update byte length of the single buffer
-    if (this.#json.buffers && this.#json.buffers.length > 1) {
-      this.#json.buffers[0].byteLength = blob.size;
+
+    if (bufferArray.length > 0) {
+      this.#json.buffers = [{ byteLength: blob.size }];
     }
 
     if (this.#options.binary) {
@@ -327,37 +368,32 @@ export class GLTFExporter {
     start: number,
     count: number
   ) {
-    const { index, byteOffset } = processBufferView(
+    const index = processBufferView(
       attribute,
       componentType,
       start,
       count,
-      this.#byteOffset,
       this.#json,
       this.#processBuffer.bind(this)
     );
-
-    this.#byteOffset = byteOffset;
     return index;
   }
 
   async #processBufferViewImage(blob: Blob) {
-    const { index, byteLength } = await processBufferViewImage(
-      blob,
-      this.#json,
-      this.#byteOffset,
-      this.#processBuffer.bind(this)
-    );
-
-    this.#byteOffset += byteLength;
-
+    const index = await processBufferViewImage(blob, this.#json, this.#processBuffer.bind(this));
     return index;
   }
 
-  #processBuffer(buffer: ArrayBuffer) {
+  #processBuffer(buffer: ArrayBuffer, name: string) {
     if (!this.#json.buffers) this.#json.buffers = [{ byteLength: 0 }];
-    // All buffers are merged before export
-    this.#buffers.push(buffer);
-    return 0;
+
+    const nameArray = this.#buffers.get(name) ?? [];
+    const index = nameArray.push(buffer) - 1;
+    this.#buffers.set(name, nameArray);
+
+    // Returns the index of the buffer in the name buffers array
+    // This is a bit misleading, but it allows us to identify the buffer
+    // later when we go to combine them all
+    return index;
   }
 }

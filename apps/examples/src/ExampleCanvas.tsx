@@ -125,14 +125,18 @@ export default function ExampleCanvas({ uri }: Props) {
 
         if (settings.testExport) {
           // Export to glb
+          const exportStart = performance.now();
           const glb = await engine.export();
           const blob = new Blob([glb], { type: "application/octet-stream" });
           const url = URL.createObjectURL(blob);
+          const exportDone = Math.round(performance.now() - exportStart) / 1000;
+          console.log("Exported in", exportDone, "s");
 
           // Load the exported glb
           exportedStartTime = performance.now();
           const gltf = await engine.loadGltf(url);
           exportedTime = Math.round(performance.now() - exportedStartTime) / 1000;
+          console.log("Loaded exported in", exportedTime, "s");
 
           handleLoaded(gltf);
           return;

@@ -1,25 +1,45 @@
-import { BufferAttribute, BufferGeometry, InterleavedBufferAttribute } from "three";
+import {
+  BufferAttribute,
+  BufferGeometry,
+  InterleavedBuffer,
+  InterleavedBufferAttribute,
+} from "three";
 
 import { ATTRIBUTE_TYPES, WEBGL_CONSTANTS } from "../constants";
 import { Accessor, GLTF } from "../schemaTypes";
 import { getMinMax } from "./getMinMax";
 import { BufferViewResult } from "./processBufferView";
 
+export interface ProcessAccessorOptions {
+  interleavedBuffer?: InterleavedBuffer;
+  geometry?: BufferGeometry;
+  count?: number;
+  start?: number;
+}
+
 export function processAccessor(
   attribute: BufferAttribute | InterleavedBufferAttribute,
   json: GLTF,
   processBufferView: (
-    attribute: BufferAttribute | InterleavedBufferAttribute,
+    attribute: BufferAttribute,
     componentType: number,
     start: number,
     count: number
   ) => BufferViewResult,
-  geometry?: BufferGeometry,
-  count?: number,
-  start = 0
+  processInterleavedBufferView: (
+    attribute: InterleavedBufferAttribute,
+    buffer: InterleavedBuffer,
+    componentType: number,
+    start: number,
+    count: number
+  ) => BufferViewResult,
+  options: ProcessAccessorOptions = {}
 ) {
-  let componentType: number;
+  let { start, count, geometry, interleavedBuffer } = options;
 
+  if (start === undefined) start = 0;
+
+  let componentType: number;
   switch (attribute.array.constructor) {
     case Float32Array:
       componentType = WEBGL_CONSTANTS.FLOAT;
@@ -54,7 +74,7 @@ export function processAccessor(
     if (count < 0) count = 0;
   }
 
-  const minMax = getMinMax(attribute, start, count);
+  const { min, max } = getMinMax(attribute, start, count);
   let bufferViewTarget: number | undefined;
 
   if (geometry) {
@@ -69,15 +89,21 @@ export function processAccessor(
   const type: string | undefined = ATTRIBUTE_TYPES[attribute.itemSize];
   if (type === undefined) throw new Error(`Unsupported item size: ${attribute.itemSize}`);
 
-  const { index, bufferIndex } = processBufferView(attribute, componentType, start, count);
+  const interleaved = attribute instanceof InterleavedBufferAttribute;
+  if (interleaved && !interleavedBuffer) throw new Error("Interleaved buffer is required");
+
+  const { index, bufferIndex } = interleaved
+    ? // @ts-ignore
+      processInterleavedBufferView(attribute, interleavedBuffer, componentType, start, count)
+    : processBufferView(attribute, componentType, start, count);
 
   const accessorDef: Accessor = {
     bufferView: index,
     byteOffset: 0,
     componentType,
     count,
-    max: minMax.max,
-    min: minMax.min,
+    max,
+    min,
     type,
     // Temporary custom property
     bufferIndex,

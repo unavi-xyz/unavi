@@ -83,9 +83,9 @@ export const ATTRIBUTES = {
 };
 
 export const THREE_ATTTRIBUTES = {
-  position: "position",
-  normal: "normal",
-  tangent: "tangent",
+  position: "POSITION",
+  normal: "NORMAL",
+  tangent: "TANGENT",
   uv: "TEXCOORD_0",
   uv2: "TEXCOORD_1",
   color: "COLOR_0",

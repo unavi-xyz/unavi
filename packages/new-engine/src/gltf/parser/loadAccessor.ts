@@ -71,17 +71,17 @@ export async function loadAccessor(
   const isInterleaved = byteStride && byteStride !== itemBytes && bufferView;
 
   if (isInterleaved) {
-    const ibSlice = Math.floor(byteOffset / byteStride);
-    const cacheKey = `${accessorDef.bufferView}-${accessorDef.componentType}-${ibSlice}-${accessorDef.count}`;
+    const slice = Math.floor(byteOffset / byteStride);
+    const cacheKey = `${accessorDef.bufferView}-${accessorDef.componentType}-${slice}-${accessorDef.count}`;
     let interleavedBuffer = interleavedBuffers.get(cacheKey);
 
     if (interleavedBuffer === undefined) {
       const array = new TypedArray(
         bufferView,
-        ibSlice * byteStride,
+        slice * byteStride,
         (accessorDef.count * byteStride) / elementBytes
       );
-
+      // console.log("🙆‍♀️", array);
       interleavedBuffer = new InterleavedBuffer(array, byteStride / elementBytes);
 
       interleavedBuffers.set(cacheKey, interleavedBuffer);

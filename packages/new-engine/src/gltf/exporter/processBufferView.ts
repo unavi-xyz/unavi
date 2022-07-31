@@ -1,4 +1,4 @@
-import { BufferAttribute, InterleavedBufferAttribute } from "three";
+import { BufferAttribute } from "three";
 
 import { ATTRIBUTE_TYPES, WEBGL_CONSTANTS } from "../constants";
 import { BufferView, GLTF } from "../schemaTypes";
@@ -10,13 +10,15 @@ export type BufferViewResult = {
 };
 
 export function processBufferView(
-  attribute: BufferAttribute | InterleavedBufferAttribute,
+  attribute: BufferAttribute,
   componentType: number,
   start: number,
   count: number,
   json: GLTF,
   processBuffer: (buffer: ArrayBuffer, name: string) => number
 ) {
+  if (!json.bufferViews) json.bufferViews = [];
+
   // Create a data view and add all attributes to it
   let componentSize: number;
   switch (componentType) {
@@ -32,7 +34,6 @@ export function processBufferView(
 
   const byteLength = getPaddedBufferSize(count * attribute.itemSize * componentSize);
   const dataView = new DataView(new ArrayBuffer(byteLength));
-
   let offset = 0;
 
   for (let i = 0; i < start + count; i++) {
@@ -79,21 +80,16 @@ export function processBufferView(
       offset += componentSize;
     }
   }
+
   // @ts-ignore
   const type: string = ATTRIBUTE_TYPES[attribute.itemSize];
   const componentName = getComponentName(componentType);
-  const name = `${type}_${componentName}`;
+  let name = `${type}_${componentName}`;
 
   const bufferIndex = processBuffer(dataView.buffer, name);
 
-  // See if we can combine this bufferView into a previous bufferView
-  // We look for a bufferView with the same attribute and component type
-  // We store this info in the name
-  const foundIndex = json.bufferViews?.findIndex((bufferView) => bufferView.name === name);
-
-  if (!json.bufferViews) json.bufferViews = [];
-  if (!json.buffers) throw new Error(`No buffers found`);
-
+  // See if we can combine this buffer view with an existing one
+  const foundIndex = json.bufferViews.findIndex((bufferView) => bufferView.name === name);
   if (foundIndex !== undefined && foundIndex !== -1) {
     const found = json.bufferViews[foundIndex];
     found.byteLength += byteLength;

@@ -4,7 +4,6 @@ import { GLTFExporterOptions } from "../GLTFExporter";
 import { GLTF, Image } from "../schemaTypes";
 import { canvasToBlobPromise } from "./canvasToBlobPromise";
 import { getCanvas } from "./getCanvas";
-import { BufferViewResult } from "./processBufferView";
 
 const maxTextureSize = Infinity;
 
@@ -15,7 +14,7 @@ export async function processImage(
   mimeType: string,
   json: GLTF,
   options: GLTFExporterOptions,
-  processBufferViewImage: (blob: Blob) => Promise<BufferViewResult>
+  processBufferViewImage: (blob: Blob) => Promise<number>
 ): Promise<number> {
   const imageDef: Image = { mimeType };
 
@@ -64,12 +63,8 @@ export async function processImage(
     const blob = await canvasToBlobPromise(canvas, mimeType);
     if (!blob) throw new Error("Could not get blob");
 
-    const { index, bufferIndex } = await processBufferViewImage(blob);
-
+    const index = await processBufferViewImage(blob);
     imageDef.bufferView = index;
-
-    // Temporary custom property
-    imageDef.bufferIndex = bufferIndex;
   } else {
     // Create data url
     if (canvas instanceof HTMLCanvasElement) {

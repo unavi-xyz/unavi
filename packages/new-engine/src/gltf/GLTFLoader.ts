@@ -105,6 +105,8 @@ export class GLTFLoader {
       throw new Error("No JSON found");
     }
 
+    console.log("🔃 Loaded glTF:", this.#json);
+
     const bufferViewPromises =
       this.#json.bufferViews?.map((_, index) => this.#loadBufferView(index)) ?? [];
 

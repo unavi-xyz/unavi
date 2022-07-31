@@ -1,7 +1,7 @@
 import {
   AnimationClip,
   BufferAttribute,
-  BufferGeometry,
+  InterleavedBuffer,
   InterleavedBufferAttribute,
   Line,
   Material,
@@ -13,12 +13,14 @@ import {
   Texture,
 } from "three";
 
+import { WEBGL_TYPE_SIZES } from "./constants";
 import { getPaddedArrayBuffer } from "./exporter/getPaddedArrayBuffer";
-import { processAccessor } from "./exporter/processAccessor";
+import { ProcessAccessorOptions, processAccessor } from "./exporter/processAccessor";
 import { processAnimation } from "./exporter/processAnimation";
 import { processBufferView } from "./exporter/processBufferView";
 import { processBufferViewImage } from "./exporter/processBufferViewImage";
 import { processImage } from "./exporter/processImage";
+import { processInterleavedBufferView } from "./exporter/processInterleavedBufferView";
 import { processMaterial } from "./exporter/processMaterial";
 import { processMesh } from "./exporter/processMesh";
 import { processNode } from "./exporter/processNode";
@@ -87,19 +89,20 @@ export class GLTFExporter {
 
     // Merge buffers
     const bufferArray: ArrayBuffer[] = [];
-    let byteOffset = 0;
+    let bufferOffset = 0;
 
-    this.#buffers.forEach((value, key) => {
-      let viewByteOffset = 0;
-
+    this.#buffers.forEach((viewBuffers, viewName) => {
       // Update buffer views
       this.#json.bufferViews?.forEach((bufferView) => {
-        if (bufferView.name === key) {
-          bufferView.byteOffset = byteOffset;
+        if (bufferView.name === viewName) {
+          bufferView.byteOffset = bufferOffset;
         }
       });
 
-      value.forEach((buffer, i) => {
+      let viewOffset = 0;
+      let interleavedOffset = 0;
+
+      viewBuffers.forEach((buffer, i) => {
         bufferArray.push(buffer);
 
         // Update accessors
@@ -107,31 +110,41 @@ export class GLTFExporter {
           if (!this.#json.bufferViews || accessor.bufferView === undefined) return;
           const bufferView = this.#json.bufferViews[accessor.bufferView];
 
-          if (bufferView.name === key && accessor.bufferIndex === i) {
-            accessor.byteOffset = viewByteOffset;
+          if (bufferView.name === viewName && accessor.bufferIndex === i) {
+            accessor.byteOffset = viewOffset + interleavedOffset;
+            delete accessor.bufferIndex;
+
+            // @ts-ignore
+            let itemBytes: number = WEBGL_TYPE_SIZES[accessor.type];
+
+            switch (accessor.componentType) {
+              case 5122: // SHORT
+              case 5123: // UNSIGNED_SHORT
+                itemBytes *= 2;
+                break;
+              case 5125: // UNSIGNED_INT
+              case 5126: // FLOAT
+                itemBytes *= 4;
+                break;
+            }
+
+            const interleaved = bufferView.byteStride !== undefined;
+
+            if (interleaved) {
+              interleavedOffset += itemBytes;
+            } else {
+              viewOffset += buffer.byteLength;
+            }
           }
         });
 
-        // Update images
-        this.#json.images?.forEach((image) => {
-          if (!this.#json.bufferViews || image.bufferView === undefined) return;
-          const bufferView = this.#json.bufferViews[image.bufferView];
-
-          if (bufferView.name === key && image.bufferIndex === i) {
-            // Add byte offset to image
-            image.byteOffset = viewByteOffset;
-          }
-        });
-
-        byteOffset += buffer.byteLength;
-        viewByteOffset += buffer.byteLength;
+        bufferOffset += buffer.byteLength;
       });
     });
 
     const blob = new Blob(bufferArray, { type: "application/octet-stream" });
 
     // Update byte length of the single buffer
-
     if (bufferArray.length > 0) {
       this.#json.buffers = [{ byteLength: blob.size }];
     }
@@ -347,29 +360,45 @@ export class GLTFExporter {
 
   #processAccessor(
     attribute: BufferAttribute | InterleavedBufferAttribute,
-    geometry?: BufferGeometry,
-    count?: number,
-    start?: number
+    options?: ProcessAccessorOptions
   ) {
     const index = processAccessor(
       attribute,
       this.#json,
       this.#processBufferView.bind(this),
-      geometry,
-      count,
-      start
+      this.#processInterleavedBufferView.bind(this),
+      options
     );
     return index;
   }
 
   #processBufferView(
-    attribute: BufferAttribute | InterleavedBufferAttribute,
+    attribute: BufferAttribute,
     componentType: number,
     start: number,
     count: number
   ) {
     const index = processBufferView(
       attribute,
+      componentType,
+      start,
+      count,
+      this.#json,
+      this.#processBuffer.bind(this)
+    );
+    return index;
+  }
+
+  #processInterleavedBufferView(
+    attribute: InterleavedBufferAttribute,
+    buffer: InterleavedBuffer,
+    componentType: number,
+    start: number,
+    count: number
+  ) {
+    const index = processInterleavedBufferView(
+      attribute,
+      buffer,
       componentType,
       start,
       count,

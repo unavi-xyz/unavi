@@ -1,6 +1,7 @@
 import {
   BufferAttribute,
   BufferGeometry,
+  InterleavedBuffer,
   InterleavedBufferAttribute,
   Line,
   LineLoop,
@@ -10,19 +11,18 @@ import {
   Points,
 } from "three";
 
-import { ATTRIBUTES, THREE_ATTTRIBUTES, ThreeAttributeName, WEBGL_CONSTANTS } from "../constants";
+import { ATTRIBUTES, THREE_ATTTRIBUTES, WEBGL_CONSTANTS } from "../constants";
 import { GLTF, Mesh as MeshDef, MeshPrimitive } from "../schemaTypes";
 import { createNormalizedNormalAttribute } from "./createNormalizedNormalAttribute";
 import { isNormalizedNormalAttribute } from "./isNormalizedNormalAttribute";
+import { ProcessAccessorOptions } from "./processAccessor";
 
 export function processMesh(
   mesh: Mesh | Line | Points,
   json: GLTF,
   processAccessor: (
     attribute: BufferAttribute | InterleavedBufferAttribute,
-    geometry: BufferGeometry,
-    count?: number,
-    start?: number
+    options?: ProcessAccessorOptions
   ) => number | null,
   processMaterial: (material: Material) => number
 ) {
@@ -56,35 +56,101 @@ export function processMesh(
 
   // Attributes
   const attributes: { [key: string]: number } = {};
+  const attributeNames = Object.keys(geometry.attributes);
+  let interleavedArray = new Float32Array(0);
+  let interleavedStride: number = 0;
 
-  for (const name in geometry.attributes) {
+  const attributeTypes = attributeNames.map((name) => {
+    const attribute = geometry.getAttribute(name);
+    const componentType = attribute.array.constructor.name;
+    return componentType;
+  });
+
+  const interleave =
+    attributeTypes.every((type) => type === "Float32Array") && attributeTypes.length > 1;
+
+  if (interleave) {
+    // Set stride and length
+    let length = 0;
+
+    attributeNames.forEach((name) => {
+      const attribute = geometry.getAttribute(name);
+      interleavedStride += attribute.itemSize;
+      length += attribute.count * attribute.itemSize;
+    });
+
+    // Build interleaved array
+    interleavedArray = new Float32Array(length);
+    let interleaveOffset = 0;
+
+    const count = length / interleavedStride;
+    for (let i = 0; i < count; i++) {
+      attributeNames.forEach((name) => {
+        const attribute = geometry.getAttribute(name);
+        const itemSize = attribute.itemSize;
+
+        if (attribute instanceof BufferAttribute) {
+          for (let j = 0; j < itemSize; j++) {
+            const value = attribute.array[i * itemSize + j];
+            interleavedArray[interleaveOffset + j] = value;
+          }
+        } else {
+          const stride = attribute.data.stride;
+          const offset = attribute.offset;
+
+          for (let j = 0; j < itemSize; j++) {
+            const value = attribute.array[offset + i * stride + j];
+            interleavedArray[interleaveOffset + j] = value;
+          }
+        }
+
+        interleaveOffset += itemSize;
+      });
+    }
+  }
+
+  const interleavedBuffer = new InterleavedBuffer(interleavedArray, interleavedStride);
+
+  let interleaveOffset = 0;
+
+  attributeNames.forEach((name) => {
     // Ignore morph targets, which are exported later
-    if (name.slice(0, 5) === "morph") continue;
+    if (name.slice(0, 5) === "morph") return;
 
-    const attribute = geometry.attributes[name];
-    const attributeName = THREE_ATTTRIBUTES[name as ThreeAttributeName] ?? `_${name.toUpperCase()}`;
+    let attribute = geometry.attributes[name];
+    const originalName = attribute.name;
+    // @ts-ignore
+    const attributeName = THREE_ATTTRIBUTES[name] ?? `_${name.toUpperCase()}`;
 
     // JOINTS_0 must be UNSIGNED_BYTE or UNSIGNED_SHORT
-    let modifiedAttribute = attribute;
-    const array = attribute.array;
     if (
       attributeName === "JOINTS_0" &&
-      !(array instanceof Uint16Array) &&
-      !(array instanceof Uint8Array)
+      !(attribute.array instanceof Uint16Array) &&
+      !(attribute.array instanceof Uint8Array)
     ) {
-      modifiedAttribute = new BufferAttribute(
-        new Uint16Array(array),
+      attribute = new BufferAttribute(
+        new Uint16Array(attribute.array),
         attribute.itemSize,
         attribute.normalized
       );
     }
 
-    const accessorIndex = processAccessor(modifiedAttribute, geometry);
-
-    if (accessorIndex !== null) {
-      attributes[attributeName] = accessorIndex;
+    if (interleave) {
+      // Convert to interleaved attribute
+      attribute = new InterleavedBufferAttribute(
+        interleavedBuffer,
+        attribute.itemSize,
+        interleaveOffset,
+        attribute.normalized
+      );
     }
-  }
+
+    interleaveOffset += attribute.itemSize;
+    if (originalName) attribute.name = originalName;
+
+    const accessorIndex = processAccessor(attribute, { geometry, interleavedBuffer });
+    if (accessorIndex !== null) attributes[attributeName] = accessorIndex;
+  });
 
   // Set the normal back to the original value
   if (normal !== undefined) geometry.setAttribute(ATTRIBUTES.NORMAL, normal);
@@ -93,9 +159,7 @@ export function processMesh(
   if (Object.keys(attributes).length === 0) return null;
 
   // Morph targets
-  const targets: {
-    [k: string]: number;
-  }[] = [];
+  const targets: { [k: string]: number }[] = [];
   const weights: number[] = [];
 
   if (mesh.morphTargetInfluences) {
@@ -125,7 +189,7 @@ export function processMesh(
           }
         }
 
-        const accessorIndex = processAccessor(relativeAttribute, geometry);
+        const accessorIndex = processAccessor(relativeAttribute, { geometry });
 
         if (accessorIndex !== null) {
           target[gltfAttributeName] = accessorIndex;
@@ -156,7 +220,11 @@ export function processMesh(
     if (targets.length > 0) primitive.targets = targets;
 
     if (geometry.index) {
-      const accessor = processAccessor(geometry.index, geometry, group.start, group.count);
+      const accessor = processAccessor(geometry.index, {
+        geometry,
+        start: group.start,
+        count: group.count,
+      });
       if (accessor !== null) primitive.indices = accessor;
     }
 

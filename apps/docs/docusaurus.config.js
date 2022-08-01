@@ -12,7 +12,7 @@ const config = {
   baseUrl: "/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
-  favicon: "img/Logo.png",
+  favicon: "img/Logo-Icon.png",
   titleDelimiter: " / ",
 
   i18n: {
@@ -47,7 +47,7 @@ const config = {
         id: "discord",
         content:
           '🎉 The Wired has entered early alpha! Join our discord <a target="_blank" rel="noopener noreferrer" href="https://discord.gg/VCsAEneUMn">here</a>.',
-        backgroundColor: "#fac213",
+        backgroundColor: "#52DAFF",
         textColor: "#000000",
         isCloseable: true,
       },
@@ -56,7 +56,7 @@ const config = {
         title: "The Wired",
         logo: {
           alt: "The Wired Logo",
-          src: "img/Logo.png",
+          src: "img/Logo-Icon.png",
         },
         items: [
           {

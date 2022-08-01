@@ -16,7 +16,7 @@ interface Props {
 export default function MetaTags({
   title = "The Wired",
   description = "An open and decentralized 3d social platform",
-  image = "/images/Logo-Rounded.png",
+  image = "/images/Logo.png",
   card = "summary",
 }: Props) {
   const width = card === "summary_large_image" ? "1200" : "256";

@@ -6,7 +6,7 @@
   "display": "fullscreen",
   "icons": [
     {
-      "src": "images/Logo.png",
+      "src": "images/Logo-Icon.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"

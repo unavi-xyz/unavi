@@ -60,7 +60,7 @@ export default function ProfileLayout({
           <div className="flex justify-center pb-4 px-4 md:px-0">
             <div className="w-full flex flex-col items-center space-y-2">
               <div className="w-32 rounded-full -mt-16 flex z-10 ring-4 ring-background">
-                {profileImage && <ProfilePicture src={profileImage} circle />}
+                {<ProfilePicture src={profileImage ?? `https://avatar.tobi.sh/${handle}`} circle />}
               </div>
 
               <div className="flex flex-col items-center">

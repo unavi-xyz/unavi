@@ -19,7 +19,7 @@ export default function ViewerProfilePicture({ circle, draggable }: Props) {
   });
 
   const profile = data?.profiles.items[0];
-  const src = useMediaImage(profile?.picture);
+  const src = useMediaImage(profile?.picture) ?? `https://avatar.tobi.sh/${handle}`;
 
   return <ProfilePicture circle={circle} draggable={draggable} src={src} />;
 }

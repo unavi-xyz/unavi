@@ -1,4 +1,4 @@
-import * as trpcExpress from "@trpc/server/adapters/express/dist/trpc-server-adapters-express.cjs";
+import * as trpcNext from "@trpc/server/adapters/next";
 import jwt from "jsonwebtoken";
 
 import { prisma } from "./prisma";
@@ -20,9 +20,7 @@ export interface IAuthenticatedContext extends IBaseContext {
 
 export type IContext = IGuestContext | IAuthenticatedContext;
 
-export async function createContext({
-  req,
-}: trpcExpress.CreateExpressContextOptions): Promise<IContext> {
+export async function createContext({ req }: trpcNext.CreateNextContextOptions): Promise<IContext> {
   // Get secret from db
   const internal = await prisma.internal.findFirst();
 

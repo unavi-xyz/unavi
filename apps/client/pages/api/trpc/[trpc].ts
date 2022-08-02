@@ -1,12 +1,13 @@
 import * as trpc from "@trpc/server";
+import * as trpcNext from "@trpc/server/adapters/next";
 import { MiddlewareResult } from "@trpc/server/dist/declarations/src/internals/middlewares";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 
-import { IAuthenticatedContext, IContext } from "./context";
-import { prisma } from "./prisma";
+import { IAuthenticatedContext, IContext, createContext } from "../../../src/trpc/context";
+import { prisma } from "../../../src/trpc/prisma";
 
-export const router = trpc
+export const appRouter = trpc
   .router<IContext>()
   .query("ping", {
     resolve() {
@@ -63,4 +64,11 @@ export const router = trpc
     },
   });
 
-export type ApiRouter = typeof router;
+// export type definition of API
+export type AppRouter = typeof appRouter;
+
+// export API handler
+export default trpcNext.createNextApiHandler({
+  router: appRouter,
+  createContext,
+});

@@ -4,7 +4,8 @@ import { MdAdd } from "react-icons/md";
 import { LensContext } from "@wired-xr/lens";
 
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
-import { trpcClient } from "../src/lib/trpc/client";
+import { LoginContext } from "../src/trpc/LoginProvider";
+import { trpc } from "../src/trpc/trpc";
 import CreateScenePage from "../src/ui/CreateScenePage";
 import MetaTags from "../src/ui/MetaTags";
 import Button from "../src/ui/base/Button";
@@ -13,31 +14,21 @@ import Dialog from "../src/ui/base/Dialog";
 
 export default function Create() {
   const [openCreateSpace, setOpenCreateSpace] = useState(false);
-  const [projects, setProjects] = useState<any[]>([]);
 
+  const { data, status, refetch } = trpc.useQuery(["projects"], {
+    enabled: false,
+  });
+
+  const utils = trpc.useContext();
   const { handle } = useContext(LensContext);
+  const { authenticated } = useContext(LoginContext);
 
   useEffect(() => {
-    if (!handle) {
-      setProjects([]);
-      return;
+    if (authenticated) {
+      utils.invalidateQueries(["projects"]);
+      refetch();
     }
-
-    // Fetch projects
-    trpcClient
-      .query("projects")
-      .then((res) => {
-        setProjects(res);
-      })
-      .catch((err) => {
-        console.error(err);
-        setProjects([]);
-      });
-
-    return () => {
-      setProjects([]);
-    };
-  }, [handle]);
+  }, [handle, utils, authenticated, refetch]);
 
   return (
     <>
@@ -60,8 +51,11 @@ export default function Create() {
             </div>
           </div>
 
+          {status === "error" && <div className="text-center">Error</div>}
+          {status === "loading" && <div className="text-center">Loading...</div>}
+
           <div className="grid grid-cols-3 gap-2">
-            {projects.map(({ id }) => (
+            {data?.map(({ id }) => (
               <Card key={id} />
             ))}
           </div>

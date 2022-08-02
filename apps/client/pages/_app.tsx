@@ -1,13 +1,17 @@
+import { withTRPC } from "@trpc/next";
 import Head from "next/head";
 import React from "react";
 
 import { EthersProvider } from "@wired-xr/ethers";
 import { IpfsProvider } from "@wired-xr/ipfs";
-import { LensProvider, useAutoLogin } from "@wired-xr/lens";
+import { LensProvider } from "@wired-xr/lens";
 
+import LoginProvider from "../src/trpc/LoginProvider";
+import { useJWTStore } from "../src/trpc/store";
 import "../styles/globals.css";
+import { AppRouter } from "./api/trpc/[trpc]";
 
-export default function App({ Component, pageProps }: any) {
+function App({ Component, pageProps }: any) {
   const getLayout = Component.getLayout || ((page: React.ReactNode) => page);
 
   return (
@@ -23,7 +27,7 @@ export default function App({ Component, pageProps }: any) {
         <IpfsProvider>
           <EthersProvider>
             <LensProvider>
-              <AutoLogin>{getLayout(<Component {...pageProps} />)}</AutoLogin>
+              <LoginProvider>{getLayout(<Component {...pageProps} />)}</LoginProvider>
             </LensProvider>
           </EthersProvider>
         </IpfsProvider>
@@ -32,8 +36,23 @@ export default function App({ Component, pageProps }: any) {
   );
 }
 
-function AutoLogin({ children }: { children: React.ReactNode }) {
-  useAutoLogin();
+export default withTRPC<AppRouter>({
+  config({ ctx }) {
+    const url = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}/api/trpc`
+      : "http://localhost:3000/api/trpc";
 
-  return <>{children}</>;
-}
+    return {
+      url,
+      queryClientConfig: { defaultOptions: { queries: { staleTime: 60 } } },
+      headers() {
+        const token = useJWTStore.getState().token;
+
+        return {
+          Authorization: `Bearer ${token}`,
+        };
+      },
+    };
+  },
+  ssr: true,
+})(App);

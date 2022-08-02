@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-import { trpcClient } from "../lib/trpc/client";
+import { trpc } from "../trpc/trpc";
 import Button from "./base/Button";
 import TextField from "./base/TextField";
 
@@ -8,16 +8,18 @@ export default function CreateScenePage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
 
+  const { mutateAsync } = trpc.useMutation("create-project");
+
   async function handleCreate() {
     const name = nameRef.current?.value ?? "";
     const description = descriptionRef.current?.value ?? "";
 
-    const res = await trpcClient.mutation("create-project", {
+    const project = await mutateAsync({
       name,
       description,
     });
 
-    console.log(res);
+    console.log(project);
   }
 
   return (

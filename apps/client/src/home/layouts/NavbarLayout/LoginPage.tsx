@@ -1,22 +1,22 @@
 import { useContext, useEffect, useState } from "react";
 
 import { EthersContext } from "@wired-xr/ethers";
-import { LensContext, LocalStorage, SessionStorage, trimHandle } from "@wired-xr/lens";
+import { LensContext, LocalStorage, trimHandle } from "@wired-xr/lens";
 import { useGetProfilesQuery } from "@wired-xr/lens/generated/graphql";
 
-import { databaseHost, trpcClient } from "../../../lib/trpc/client";
+import { LoginContext } from "../../../trpc/LoginProvider";
 import Button from "../../../ui/base/Button";
 import { useCloseDialog } from "../../../ui/base/Dialog";
 import CreateProfilePage from "./CreateProfilePage";
 import MetamaskFox from "./MetamaskFox";
 
 export default function LoginPage() {
+  const { authenticated } = useContext(LoginContext);
   const { setHandle } = useContext(LensContext);
-  const { address, signer, connectWallet } = useContext(EthersContext);
+  const { address, connectWallet } = useContext(EthersContext);
   const close = useCloseDialog();
 
   const [showCreatePage, setShowCreatePage] = useState(false);
-  const [dbAuthenticated, setDbAuthenticated] = useState(false);
 
   const [{ fetching, data }] = useGetProfilesQuery({
     variables: {
@@ -31,7 +31,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (!data) return;
 
-    if (!dbAuthenticated) {
+    if (!authenticated) {
       setHandle(undefined);
       return;
     }
@@ -55,83 +55,7 @@ export default function LoginPage() {
     //save the handle, the user is now logged in
     setHandle(handle);
     close();
-  }, [data, close, address, setHandle, dbAuthenticated]);
-
-  //authenticate the user whenever the connected address changes
-  useEffect(() => {
-    authenticate();
-
-    async function authenticate() {
-      if (!address || !signer) {
-        setDbAuthenticated(false);
-        return;
-      }
-
-      try {
-        //ping server
-        try {
-          await trpcClient.query("ping");
-        } catch {
-          throw new Error("Could not connect to server");
-        }
-
-        const tokenKey = `${LocalStorage.DatabaseToken}${databaseHost}${address}`;
-
-        //get saved JWT token
-        const prevToken = localStorage.getItem(tokenKey);
-
-        if (prevToken) {
-          console.log("🔒 Using saved JWT token.");
-          try {
-            //if token exists, see if its still valid
-            sessionStorage.setItem(SessionStorage.ActiveDatabaseToken, prevToken);
-            const valid = await trpcClient.query("authenticated");
-
-            if (!valid) throw new Error("Token is not valid.");
-
-            console.log("🔒✅ User authenticated.");
-            setDbAuthenticated(true);
-          } catch (e) {
-            console.log("🔒❌ Invalid JWT token.");
-            setDbAuthenticated(false);
-            localStorage.removeItem(tokenKey);
-            authenticate();
-          }
-        } else {
-          console.log("🔒 No saved JWT token. Creating a new one...");
-          try {
-            //expires in 1 month
-            const expirationDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-            const expiration = expirationDate.getTime();
-
-            //prompt user to sign a message to verify their login
-            const line1 = "The Wired Login";
-            const line2 = `Expiration: ${expirationDate.toLocaleDateString()}`;
-            const line3 = `Server: ${databaseHost}`;
-            const signature = await signer.signMessage(`${line1}\n${line2}\n${line3}`);
-
-            const { token } = await trpcClient.mutation("login", {
-              address,
-              signature,
-              expiration,
-            });
-
-            //save JWT token
-            localStorage.setItem(tokenKey, token);
-            sessionStorage.setItem(SessionStorage.ActiveDatabaseToken, token);
-
-            console.log("🔒✅ JWT token created. User authenticated.");
-            setDbAuthenticated(true);
-          } catch (e) {
-            console.log("🔒❌ Error creating JWT token.");
-            setDbAuthenticated(false);
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, [address, signer, connectWallet]);
+  }, [data, close, address, setHandle, authenticated]);
 
   if (showCreatePage) return <CreateProfilePage />;
 

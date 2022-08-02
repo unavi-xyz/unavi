@@ -5,11 +5,13 @@ import { MdLogout, MdOutlinePersonOutline, MdOutlineSettings } from "react-icons
 import { EthersContext } from "@wired-xr/ethers";
 import { LensContext, trimHandle, useProfilesByAddress } from "@wired-xr/lens";
 
+import { LoginContext } from "../../../trpc/LoginProvider";
 import ProfileMenuButton from "./ProfileMenuButton";
 
 export default function ProfileMenu() {
-  const { handle, logout, switchProfile } = useContext(LensContext);
+  const { handle, switchProfile } = useContext(LensContext);
   const { address } = useContext(EthersContext);
+  const { logout } = useContext(LoginContext);
 
   const profiles = useProfilesByAddress(address);
 

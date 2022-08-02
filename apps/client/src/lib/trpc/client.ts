@@ -1,15 +1,15 @@
 import { createTRPCClient } from "@trpc/client";
 
-import { HomeRouter } from "@wired-xr/home/src/router";
+import { ApiRouter } from "@wired-xr/client-db/src/router";
 import { SessionStorage } from "@wired-xr/lens";
 
-export const homeserver =
-  process.env.NODE_ENV === "production" ? "https://home.thewired.space" : "http://localhost:5000";
+export const databaseHost =
+  process.env.NODE_ENV === "production" ? "https://db.thewired.space" : "http://localhost:5000";
 
-export const trpcClient = createTRPCClient<HomeRouter>({
-  url: `${homeserver}/trpc`,
+export const trpcClient = createTRPCClient<ApiRouter>({
+  url: `${databaseHost}/trpc`,
   headers() {
-    const token = sessionStorage.getItem(SessionStorage.ActiveHomeToken);
+    const token = sessionStorage.getItem(SessionStorage.ActiveDatabaseToken);
 
     if (!token) return {};
 

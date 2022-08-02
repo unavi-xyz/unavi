@@ -29,15 +29,12 @@ async function start() {
     })
   );
 
-  app.get("/ping", (req, res) => {
+  app.get("/ping", (_, res) => {
     res.send("pong");
   });
 
   //start http server
-  const port = process.env.PORT ?? 5000;
-
+  const port = 3000;
   app.listen(port);
-
   console.log(`Server started on port ${port}`);
 }
-//

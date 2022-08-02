@@ -1,6 +1,13 @@
 FROM node:16 as base
 ARG SCOPE
+ARG DB_USER
+ARG DB_PASSWORD
+ARG DB_NAME
+ARG DB_HOST
+ARG DB_PORT
+
 ENV SCOPE=${SCOPE}
+ENV DB_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
 ENV YARN_CACHE_FOLDER=.yarn-cache
 
 FROM base AS pruner
@@ -25,6 +32,8 @@ RUN rm -rf /${YARN_CACHE_FOLDER}
 FROM base AS builder
 COPY --from=dev-deps . .
 COPY --from=pruner /out/full/ .
+
+RUN yarn turbo run codegen --filter=${SCOPE}...
 RUN yarn turbo run build --filter=${SCOPE}...
 RUN find . -name node_modules | xargs rm -rf
 
@@ -32,5 +41,3 @@ FROM base AS runner
 COPY --from=dev-deps . .
 COPY --from=prod-deps . .
 COPY --from=builder . .
-
-CMD yarn workspace ${SCOPE} start

@@ -4,7 +4,7 @@ import { EthersContext } from "@wired-xr/ethers";
 import { LensContext, LocalStorage, SessionStorage, trimHandle } from "@wired-xr/lens";
 import { useGetProfilesQuery } from "@wired-xr/lens/generated/graphql";
 
-import { homeserver, trpcClient } from "../../../lib/trpc/client";
+import { databaseHost, trpcClient } from "../../../lib/trpc/client";
 import Button from "../../../ui/base/Button";
 import { useCloseDialog } from "../../../ui/base/Dialog";
 import CreateProfilePage from "./CreateProfilePage";
@@ -16,7 +16,7 @@ export default function LoginPage() {
   const close = useCloseDialog();
 
   const [showCreatePage, setShowCreatePage] = useState(false);
-  const [homeAuthenticated, setHomeAuthenticated] = useState(false);
+  const [dbAuthenticated, setDbAuthenticated] = useState(false);
 
   const [{ fetching, data }] = useGetProfilesQuery({
     variables: {
@@ -31,7 +31,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (!data) return;
 
-    if (!homeAuthenticated) {
+    if (!dbAuthenticated) {
       setHandle(undefined);
       return;
     }
@@ -55,7 +55,7 @@ export default function LoginPage() {
     //save the handle, the user is now logged in
     setHandle(handle);
     close();
-  }, [data, close, address, setHandle, homeAuthenticated]);
+  }, [data, close, address, setHandle, dbAuthenticated]);
 
   //authenticate the user whenever the connected address changes
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function LoginPage() {
 
     async function authenticate() {
       if (!address || !signer) {
-        setHomeAuthenticated(false);
+        setDbAuthenticated(false);
         return;
       }
 
@@ -75,7 +75,7 @@ export default function LoginPage() {
           throw new Error("Could not connect to server");
         }
 
-        const tokenKey = `${LocalStorage.HomeToken}${homeserver}${address}`;
+        const tokenKey = `${LocalStorage.DatabaseToken}${databaseHost}${address}`;
 
         //get saved JWT token
         const prevToken = localStorage.getItem(tokenKey);
@@ -84,16 +84,16 @@ export default function LoginPage() {
           console.log("🔒 Using saved JWT token.");
           try {
             //if token exists, see if its still valid
-            sessionStorage.setItem(SessionStorage.ActiveHomeToken, prevToken);
+            sessionStorage.setItem(SessionStorage.ActiveDatabaseToken, prevToken);
             const valid = await trpcClient.query("authenticated");
 
             if (!valid) throw new Error("Token is not valid.");
 
             console.log("🔒✅ User authenticated.");
-            setHomeAuthenticated(true);
+            setDbAuthenticated(true);
           } catch (e) {
             console.log("🔒❌ Invalid JWT token.");
-            setHomeAuthenticated(false);
+            setDbAuthenticated(false);
             localStorage.removeItem(tokenKey);
             authenticate();
           }
@@ -107,7 +107,7 @@ export default function LoginPage() {
             //prompt user to sign a message to verify their login
             const line1 = "The Wired Login";
             const line2 = `Expiration: ${expirationDate.toLocaleDateString()}`;
-            const line3 = `Home Server: ${homeserver}`;
+            const line3 = `Server: ${databaseHost}`;
             const signature = await signer.signMessage(`${line1}\n${line2}\n${line3}`);
 
             const { token } = await trpcClient.mutation("login", {
@@ -118,13 +118,13 @@ export default function LoginPage() {
 
             //save JWT token
             localStorage.setItem(tokenKey, token);
-            sessionStorage.setItem(SessionStorage.ActiveHomeToken, token);
+            sessionStorage.setItem(SessionStorage.ActiveDatabaseToken, token);
 
             console.log("🔒✅ JWT token created. User authenticated.");
-            setHomeAuthenticated(true);
+            setDbAuthenticated(true);
           } catch (e) {
             console.log("🔒❌ Error creating JWT token.");
-            setHomeAuthenticated(false);
+            setDbAuthenticated(false);
           }
         }
       } catch (e) {

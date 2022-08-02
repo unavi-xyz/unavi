@@ -1,0 +1,38 @@
+version: "3"
+
+services:
+  api:
+    build:
+      context: ../../
+      dockerfile: apps/client-db/Dockerfile
+      args:
+        - SCOPE=${SCOPE}
+        - DB_USER=${DB_USER}
+        - DB_PASSWORD=${DB_PASSWORD}
+        - DB_NAME=${DB_NAME}
+        - DB_HOST=db
+        - DB_PORT=5432
+    image: client-db-api
+    container_name: client-db-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT}:3000"
+    depends_on:
+      - db
+    links:
+      - db
+    command: yarn workspace ${SCOPE} docker:start
+
+  db:
+    image: postgres
+    container_name: client-db-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - data:/var/lib/postgresql/data
+
+volumes:
+  data: {}

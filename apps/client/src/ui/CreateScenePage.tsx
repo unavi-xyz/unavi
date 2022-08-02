@@ -12,10 +12,12 @@ export default function CreateScenePage() {
     const name = nameRef.current?.value ?? "";
     const description = descriptionRef.current?.value ?? "";
 
-    const res = await trpcClient.mutation("create-scene", {
+    const res = await trpcClient.mutation("create-project", {
       name,
       description,
     });
+
+    console.log(res);
   }
 
   return (

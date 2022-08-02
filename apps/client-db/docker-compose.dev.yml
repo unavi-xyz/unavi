@@ -1,0 +1,41 @@
+version: "3"
+
+services:
+  api:
+    build:
+      context: ../../
+      dockerfile: apps/client-db/Dockerfile
+      args:
+        - SCOPE=${SCOPE}
+        - DB_USER=${DB_USER}
+        - DB_PASSWORD=${DB_PASSWORD}
+        - DB_NAME=${DB_NAME}
+        - DB_HOST=db
+        - DB_PORT=5432
+    image: client-db-api-dev
+    container_name: client-db-api-dev
+    restart: unless-stopped
+    ports:
+      - "${API_PORT}:3000"
+    volumes:
+      - ./src:/apps/client-db/src
+      - ./prisma:/apps/client-db/prisma
+    depends_on:
+      - db
+    links:
+      - db
+    command: yarn workspace ${SCOPE} docker:dev
+
+  db:
+    image: postgres
+    container_name: client-db-postgres-dev
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - data-dev:/var/lib/postgresql/data
+
+volumes:
+  data-dev: {}

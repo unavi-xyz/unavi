@@ -1,6 +1,6 @@
-import { useContext, useState } from "react";
+import { useState } from "react";
+import { useAccount } from "wagmi";
 
-import { EthersContext } from "@wired-xr/ethers";
 import { useProfilesByAddress } from "@wired-xr/lens";
 
 import DropdownMenu from "../../../ui/base/DropdownMenu";
@@ -11,7 +11,7 @@ export default function ProfileButton() {
   const [open, setOpen] = useState(false);
 
   //this is a hack to fetch the profiles before the dropdown opens
-  const { address } = useContext(EthersContext);
+  const { address } = useAccount();
   useProfilesByAddress(address);
 
   return (

@@ -1,7 +1,7 @@
 import { utils } from "ethers";
 import { useContext } from "react";
+import { useSignTypedData, useSigner } from "wagmi";
 
-import { EthersContext } from "@wired-xr/ethers";
 import { ContractAddress, LensContext, pollUntilIndexed, removeTypename } from "@wired-xr/lens";
 
 import { LensHub__factory } from "../../contracts";
@@ -11,7 +11,8 @@ export function useSetDefaultProfile() {
   const [, createTypedData] = useCreateSetDefaultProfileTypedDataMutation();
 
   const { client, authenticate } = useContext(LensContext);
-  const { signer } = useContext(EthersContext);
+  const { data: signer } = useSigner();
+  const { signTypedDataAsync } = useSignTypedData();
 
   async function setDefaultProfile(profileId: string) {
     if (!signer) throw new Error("No signer");
@@ -32,11 +33,16 @@ export function useSetDefaultProfile() {
     const typedData = data.createSetDefaultProfileTypedData.typedData;
 
     //sign typed data
-    const signature = await signer._signTypedData(
-      removeTypename(typedData.domain),
-      removeTypename(typedData.types),
-      removeTypename(typedData.value)
-    );
+    const domain = removeTypename(typedData.domain);
+    const types = removeTypename(typedData.types);
+    const value = removeTypename(typedData.value);
+
+    const signature = await signTypedDataAsync({
+      domain,
+      types,
+      value,
+    });
+
     const { v, r, s } = utils.splitSignature(signature);
 
     //send transaction

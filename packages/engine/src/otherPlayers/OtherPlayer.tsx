@@ -26,7 +26,7 @@ export function OtherPlayer({ id, animationsUrl, defaultAvatarUrl }: Props) {
     rotation: 0,
   });
 
-  const [handle, setHandle] = useState<string>("lainpilled");
+  const [handle, setHandle] = useState<string>();
 
   const { otherPlayers } = useContext(NetworkingContext);
 

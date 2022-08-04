@@ -1,17 +1,13 @@
 export enum SessionStorage {
   AutoLogin = "auto_login",
-  ActiveDatabaseToken = "active_database_token",
 }
 
 export enum LocalStorage {
-  PreviousHandle = "prev_handle",
-
-  DatabaseToken = "database_token",
-
-  AccessToken = "access_token",
-  AccessExpire = "access_expire",
-  RefreshToken = "refresh_token",
-  RefreshExpire = "refresh_expire",
+  PreviousHandle = "prev_handle_",
+  AccessToken = "access_token_",
+  AccessExpire = "access_expire_",
+  RefreshToken = "refresh_token_",
+  RefreshExpire = "refresh_expire_",
 }
 
 export enum ContractAddress {

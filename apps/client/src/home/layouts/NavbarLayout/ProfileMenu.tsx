@@ -1,19 +1,19 @@
 import Link from "next/link";
 import { useContext } from "react";
 import { MdLogout, MdOutlinePersonOutline, MdOutlineSettings } from "react-icons/md";
+import { useAccount } from "wagmi";
 
-import { EthersContext } from "@wired-xr/ethers";
 import { LensContext, trimHandle, useProfilesByAddress } from "@wired-xr/lens";
 
-import { LoginContext } from "../../../trpc/LoginProvider";
+import { LoginContext } from "../../../login/LoginProvider";
 import ProfileMenuButton from "./ProfileMenuButton";
 
 export default function ProfileMenu() {
-  const { handle, switchProfile } = useContext(LensContext);
-  const { address } = useContext(EthersContext);
+  const { handle, setHandle } = useContext(LensContext);
+  const { address } = useAccount();
   const { logout } = useContext(LoginContext);
 
-  const profiles = useProfilesByAddress(address);
+  const { profiles } = useProfilesByAddress(address);
 
   const otherProfiles = profiles?.filter((profile) => trimHandle(profile.handle) !== handle);
 
@@ -57,7 +57,7 @@ export default function ProfileMenu() {
             {otherProfiles.map((profile) => {
               const profileHandle = trimHandle(profile.handle);
               return (
-                <button key={profile.id} onClick={() => switchProfile(profileHandle)}>
+                <button key={profile.id} onClick={() => setHandle(profileHandle)}>
                   <ProfileMenuButton>@{profileHandle}</ProfileMenuButton>
                 </button>
               );

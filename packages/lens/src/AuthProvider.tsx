@@ -1,6 +1,5 @@
-import { createContext, useContext, useState } from "react";
-
-import { EthersContext } from "@wired-xr/ethers";
+import { createContext, useContext, useEffect, useState } from "react";
+import { useAccount, useSignMessage } from "wagmi";
 
 import {
   AuthenticateDocument,
@@ -19,29 +18,35 @@ import { LocalStorage, SessionStorage } from "./constants";
 export interface IAuthContext {
   authenticated: boolean;
   handle: string | undefined;
-  setHandle: (handle: string | undefined) => void;
   authenticate: () => Promise<void>;
   logout: () => void;
-  switchProfile: (handle: string) => void;
+  setHandle: (handle: string | undefined) => void;
 }
 
 export const initialAuthContext: IAuthContext = {
   authenticated: false,
   handle: undefined,
-  setHandle: () => {},
   authenticate: () => Promise.resolve(),
   logout: () => {},
-  switchProfile: () => {},
+  setHandle: () => {},
 };
 
 export const AuthContext = createContext<IAuthContext>(initialAuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { client } = useContext(ClientContext);
-  const { address, signer } = useContext(EthersContext);
-
   const [authenticated, setAuthenticated] = useState(false);
   const [handle, setHandle] = useState<string>();
+
+  const { client } = useContext(ClientContext);
+  const { address, isConnected } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+
+  useEffect(() => {
+    if (isConnected && handle) {
+      // Mark current handle as auto-login
+      sessionStorage.setItem(SessionStorage.AutoLogin, handle);
+    }
+  }, [isConnected, handle, setHandle]);
 
   async function generateChallenge(address: string) {
     const { data, error } = await client
@@ -98,7 +103,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function authenticate() {
     if (!address) throw new Error("No address");
-    if (!signer) throw new Error("No signer");
 
     //if access token is valid, return
     const accessToken = localStorage.getItem(`${LocalStorage.AccessToken}${address}`);
@@ -126,10 +130,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     //if no valid token, generate a challenge
-    const challenge = await generateChallenge(address);
+    const message = await generateChallenge(address);
 
-    //sign challenge
-    const signature = await signer.signMessage(challenge);
+    //sign message
+    const signature = await signMessageAsync({ message });
 
     //authenticate with api
     const { data, error } = await client
@@ -157,21 +161,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setHandle(undefined);
   }
 
-  function switchProfile(handle: string) {
-    sessionStorage.setItem(SessionStorage.AutoLogin, handle);
-    localStorage.setItem(`${LocalStorage.PreviousHandle}${address}`, handle);
-    setHandle(handle);
-  }
-
   return (
     <AuthContext.Provider
       value={{
         authenticated,
         handle,
-        setHandle,
         authenticate,
         logout,
-        switchProfile,
+        setHandle,
       }}
     >
       {children}

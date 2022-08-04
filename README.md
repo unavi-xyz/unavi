@@ -15,9 +15,9 @@
 - Decentralized identity / social graph using [Lens Protocol](https://lens.dev/)
 - Decentralized data storage using [IPFS](https://ipfs.io/)
 - Open backend, anyone can run their own [host](apps/host) server
-- 3d rendering using [Threejs](https://github.com/mrdoob/three.js) / [React Three Fiber](https://github.com/pmndrs/react-three-fiber)
-- Physics using [Cannon ES](https://github.com/pmndrs/cannon-es) / [React Three Cannon](https://github.com/pmndrs/use-cannon/tree/master/packages/react-three-cannon#readme)
+- 3d rendering using [Threejs](https://github.com/mrdoob/three.js)
 - VRM avatar support using [Three VRM](https://github.com/pixiv/three-vrm)
+- glTF-based scene structure
 
 ## Development
 
@@ -26,13 +26,13 @@ This turborepo uses Yarn as a package manager. It includes the following apps/pa
 ### Apps
 
 - [client](apps/client): a website used to access The Wired
+- [client-db](apps/client-db): a database used by the client
 - [docs](apps/docs): a documentation website
 - [host](apps/host): a server for hosting spaces
 
 ### Packages
 
 - [engine](packages/engine): a 3d game engine
-- [ethers](packages/ethers): helpers for interacting with Ethers
 - [ipfs](packages/ipfs): helpers for interacting with IPFS
 - [lens](packages/lens): helpers for interacting with Lens
 

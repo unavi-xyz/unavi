@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-import { trpc } from "../trpc/trpc";
+import { trpc } from "../login/trpc";
 import Button from "./base/Button";
 import TextField from "./base/TextField";
 

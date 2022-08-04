@@ -12,7 +12,7 @@ const config = {
   baseUrl: "/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
-  favicon: "img/Logo-Icon.png",
+  favicon: "img/Logo-Maskable.png",
   titleDelimiter: " / ",
 
   i18n: {
@@ -56,7 +56,7 @@ const config = {
         title: "The Wired",
         logo: {
           alt: "The Wired Logo",
-          src: "img/Logo-Icon.png",
+          src: "img/Logo-Maskable.png",
         },
         items: [
           {

@@ -47,7 +47,7 @@ export default function Dialog({ open, onClose = () => {}, children }: Props) {
     <div
       ref={scrimRef}
       onMouseDown={onClose}
-      className="fixed top-0 left-0 bg-black bg-opacity-50 w-screen
+      className="fixed top-0 left-0 bg-black bg-opacity-30 w-screen
                  h-screen flex flex-col justify-center z-50 opacity-0
                  transition-opacity duration-200 ease-in-out"
     >
@@ -57,7 +57,7 @@ export default function Dialog({ open, onClose = () => {}, children }: Props) {
         onMouseDown={(e) => e.stopPropagation()}
         className="rounded-3xl p-10 w-full max-w-xl flex flex-col space-y-4
                    transition duration-200 ease-in-out scale-75 opacity-0 bg-surface
-                   text-onSurface"
+                   text-onSurface drop-shadow-lg"
       >
         <DialogContext.Provider value={{ close: onClose }}>{children}</DialogContext.Provider>
       </dialog>

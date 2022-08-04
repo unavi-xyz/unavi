@@ -1,27 +1,36 @@
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { useContext } from "react";
 import { FaBook, FaDiscord } from "react-icons/fa";
 import { MdArrowDownward } from "react-icons/md";
 import { VscGithubInverted, VscTwitter } from "react-icons/vsc";
 
+import { LensContext } from "@wired-xr/lens";
+
 import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../src/constants";
-import LoginPage from "../src/home/layouts/NavbarLayout/LoginPage";
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../src/ui/MetaTags";
 import Button from "../src/ui/base/Button";
-import Dialog from "../src/ui/base/Dialog";
 
 export default function Index() {
-  const [open, setOpen] = useState(false);
+  const { handle } = useContext(LensContext);
+  const { openConnectModal } = useConnectModal();
+  const router = useRouter();
+
+  function handlePlay() {
+    if (!handle && openConnectModal) {
+      openConnectModal();
+      return;
+    }
+
+    router.push("/explore");
+  }
 
   return (
     <>
       <MetaTags />
-
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <LoginPage />
-      </Dialog>
 
       <div className="flex justify-center">
         <div className="max-w mx-4 snap-mandatory snap-y">
@@ -33,8 +42,8 @@ export default function Index() {
 
               <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
                 <div className="w-full md:w-fit">
-                  <Button variant="filled" squared="small" fullWidth onClick={() => setOpen(true)}>
-                    <div className="px-1">Get Started</div>
+                  <Button variant="filled" squared="small" fullWidth onClick={handlePlay}>
+                    <div className="px-1">Play Now</div>
                   </Button>
                 </div>
 

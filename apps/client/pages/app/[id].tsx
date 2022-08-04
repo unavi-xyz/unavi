@@ -55,7 +55,7 @@ export default function App({ id, metadata, publication }: Props) {
     //so we can show popular spaces on the explore page
     //idk if this is a good way to do it but it works for now
     if (process.env.NODE_ENV === "production") {
-      fetch(`/api/space/${id}/add-view`);
+      // fetch(`/api/space/${id}/add-view`);
     }
   }, [id]);
 

@@ -1,6 +1,6 @@
-import { ChangeEvent, useContext, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
+import { useAccount } from "wagmi";
 
-import { EthersContext } from "@wired-xr/ethers";
 import { trimHandle, useProfilesByAddress, useSetDefaultProfile } from "@wired-xr/lens";
 
 import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
@@ -9,9 +9,9 @@ import Button from "../../src/ui/base/Button";
 import Select from "../../src/ui/base/Select";
 
 export default function Account() {
-  const { address } = useContext(EthersContext);
+  const { address } = useAccount();
 
-  const profiles = useProfilesByAddress(address);
+  const { profiles } = useProfilesByAddress(address);
   const defaultProfile = profiles?.find((profile) => profile.isDefault);
 
   const [options, setOptions] = useState<string[]>([]);

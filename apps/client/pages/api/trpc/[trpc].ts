@@ -1,11 +1,10 @@
 import * as trpc from "@trpc/server";
 import * as trpcNext from "@trpc/server/adapters/next";
 import { MiddlewareResult } from "@trpc/server/dist/declarations/src/internals/middlewares";
-import jwt from "jsonwebtoken";
 import { z } from "zod";
 
-import { IAuthenticatedContext, IContext, createContext } from "../../../src/trpc/context";
-import { prisma } from "../../../src/trpc/prisma";
+import { IAuthenticatedContext, IContext, createContext } from "../../../src/login/context";
+import { prisma } from "../../../src/login/prisma";
 
 export const appRouter = trpc
   .router<IContext>()
@@ -14,29 +13,12 @@ export const appRouter = trpc
       return "pong";
     },
   })
-  .mutation("login", {
-    input: z.object({
-      address: z.string().length(42),
-      signature: z.string().length(132),
-      expiration: z.number().gt(Date.now()),
-    }),
-    async resolve({ ctx, input }) {
-      const { address, signature, expiration } = input;
-      const token = jwt.sign({ address, signature, expiration }, ctx.secret);
-      return { token };
-    },
-  })
   .middleware(async ({ ctx, next }) => {
     if (ctx.authenticated === false) {
       throw new trpc.TRPCError({ code: "UNAUTHORIZED" });
     }
 
     return next() as Promise<MiddlewareResult<IAuthenticatedContext>>;
-  })
-  .query("authenticated", {
-    async resolve() {
-      return true;
-    },
   })
   .query("projects", {
     async resolve({ ctx }) {

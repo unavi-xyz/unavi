@@ -2,7 +2,6 @@ import { useContextBridge } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Context } from "urql";
 
-import { EthersContext } from "@wired-xr/ethers";
 import { IpfsContext } from "@wired-xr/ipfs";
 import { LensContext } from "@wired-xr/lens";
 
@@ -13,13 +12,7 @@ interface Props {
 }
 
 export function EngineCanvas({ children }: Props) {
-  const ContextBridge = useContextBridge(
-    NetworkingContext,
-    LensContext,
-    EthersContext,
-    IpfsContext,
-    Context
-  );
+  const ContextBridge = useContextBridge(NetworkingContext, LensContext, IpfsContext, Context);
 
   return (
     <Canvas shadows>

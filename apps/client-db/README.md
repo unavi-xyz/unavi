@@ -1,15 +1,15 @@
 # @wired-xr/client-db
 
-A dockerized database the client.
+A dockerized database for the client.
 
 ## Features
 
-- Handles user authentication using wallet signatures + JWT tokens
+- API handles user authentication using wallet signatures + JWT tokens
 - Stores studio projects
-- Stores metrics - ie popular spaces, number of users, etc.
+- Stores basic metrics - popular spaces, number of users, etc.
 
 ## Tech Stack
 
-- Nextjs + tRPC api
+- Nextjs + tRPC API
 - Prisma ORM
 - Postgresql database

@@ -1,4 +1,3 @@
-import { Append, Count, Distinct, Index, Lambda, Map, Match, Paginate, Select, Var } from "faunadb";
 import { NextPageContext } from "next";
 import Link from "next/link";
 import { useState } from "react";
@@ -20,7 +19,6 @@ import {
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
 import AvatarCard from "../src/home/lens/AvatarCard";
 import SpaceCard from "../src/home/lens/SpaceCard";
-import { client } from "../src/lib/faunadb/client";
 import { lensClient } from "../src/lib/lens/client";
 import MetaTags from "../src/ui/MetaTags";
 import Carousel from "../src/ui/base/Carousel";
@@ -29,61 +27,61 @@ import { useQueryPagination } from "../src/utils/useQueryPagination";
 
 const HOT_SPACES_LIMIT = 6;
 
-async function fetchHotSpaces() {
-  try {
-    //get hot spaces
-    const doc = await client.query(
-      Select(
-        "data",
-        Map(
-          Distinct(Paginate(Match(Index("Space-View-Event-Ids")))),
-          Lambda(
-            "id",
-            Append(
-              [Var("id")],
-              [Count(Select("data", Paginate(Match(Index("Space-View-Events-By-Id"), Var("id")))))]
-            )
-          )
-        )
-      )
-    );
+// async function fetchHotSpaces() {
+//   try {
+//     //get hot spaces
+//     const doc = await client.query(
+//       Select(
+//         "data",
+//         Map(
+//           Distinct(Paginate(Match(Index("Space-View-Event-Ids")))),
+//           Lambda(
+//             "id",
+//             Append(
+//               [Var("id")],
+//               [Count(Select("data", Paginate(Match(Index("Space-View-Events-By-Id"), Var("id")))))]
+//             )
+//           )
+//         )
+//       )
+//     );
 
-    const spaceViews = doc as Array<[number, string]>;
+//     const spaceViews = doc as Array<[number, string]>;
 
-    //only take the top spaces
-    const topSpaceViews = spaceViews.slice(0, HOT_SPACES_LIMIT);
+//     //only take the top spaces
+//     const topSpaceViews = spaceViews.slice(0, HOT_SPACES_LIMIT);
 
-    ///get space publications
-    const spacesQuery = await lensClient
-      .query<GetPublicationsQuery, GetPublicationsQueryVariables>(GetPublicationsDocument, {
-        request: {
-          publicationIds: topSpaceViews.map(([_, id]) => id),
-        },
-      })
-      .toPromise();
+//     ///get space publications
+//     const spacesQuery = await lensClient
+//       .query<GetPublicationsQuery, GetPublicationsQueryVariables>(GetPublicationsDocument, {
+//         request: {
+//           publicationIds: topSpaceViews.map(([_, id]) => id),
+//         },
+//       })
+//       .toPromise();
 
-    const items = (spacesQuery.data?.publications.items as Post[]) ?? [];
-    const sortedItems = items.sort((a, b) => {
-      const aViews = topSpaceViews.find(([_, id]) => id === a.id)?.[0] ?? 0;
-      const bViews = topSpaceViews.find(([_, id]) => id === b.id)?.[0] ?? 0;
+//     const items = (spacesQuery.data?.publications.items as Post[]) ?? [];
+//     const sortedItems = items.sort((a, b) => {
+//       const aViews = topSpaceViews.find(([_, id]) => id === a.id)?.[0] ?? 0;
+//       const bViews = topSpaceViews.find(([_, id]) => id === b.id)?.[0] ?? 0;
 
-      return bViews - aViews;
-    });
+//       return bViews - aViews;
+//     });
 
-    //fetch media images
-    const fetchedItems = sortedItems.map((item) => {
-      if (!item.metadata.media[0]) return item;
-      const newItem = { ...item };
-      newItem.metadata.image = getMediaImageSSR(item.metadata.media[0]);
-      return newItem;
-    });
+//     //fetch media images
+//     const fetchedItems = sortedItems.map((item) => {
+//       if (!item.metadata.media[0]) return item;
+//       const newItem = { ...item };
+//       newItem.metadata.image = getMediaImageSSR(item.metadata.media[0]);
+//       return newItem;
+//     });
 
-    return fetchedItems;
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-}
+//     return fetchedItems;
+//   } catch (error) {
+//     console.error(error);
+//     return [];
+//   }
+// }
 
 async function fetchLatestSpaces(pageInfo?: PaginatedResultInfo, limit = 3) {
   const latestAvatarsQuery = await lensClient
@@ -172,14 +170,14 @@ export async function getServerSideProps({ res }: NextPageContext) {
   const secondPageAvatars = await fetchLatestAvatars(firstLatestAvatars.info);
 
   //fetch hot spaces
-  const hotSpaces = await fetchHotSpaces();
+  // const hotSpaces = await fetchHotSpaces();
 
   const props: Props = {
     initialLatestSpaces: [...firstLatestSpaces.items, ...secondPageSpaces.items],
     initialLatestSpacesInfo: secondPageSpaces.info,
     initialLatestAvatars: [...firstLatestAvatars.items, ...secondPageAvatars.items],
     initialLatestAvatarsInfo: secondPageAvatars.info,
-    hotSpaces: hotSpaces ?? [],
+    hotSpaces: [],
   };
 
   return {

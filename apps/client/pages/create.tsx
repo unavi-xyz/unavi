@@ -1,11 +1,10 @@
-import { useContext, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
-
-import { LensContext } from "@wired-xr/lens";
+import { useAccount } from "wagmi";
 
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
-import { LoginContext } from "../src/trpc/LoginProvider";
-import { trpc } from "../src/trpc/trpc";
+import { trpc } from "../src/login/trpc";
 import CreateScenePage from "../src/ui/CreateScenePage";
 import MetaTags from "../src/ui/MetaTags";
 import Button from "../src/ui/base/Button";
@@ -15,20 +14,20 @@ import Dialog from "../src/ui/base/Dialog";
 export default function Create() {
   const [openCreateSpace, setOpenCreateSpace] = useState(false);
 
+  const { status: authState } = useSession();
+  const { status: accountStatus } = useAccount();
+  const utils = trpc.useContext();
+
   const { data, status, refetch } = trpc.useQuery(["projects"], {
-    enabled: false,
+    enabled: authState === "authenticated",
+    retry: false,
   });
 
-  const utils = trpc.useContext();
-  const { handle } = useContext(LensContext);
-  const { authenticated } = useContext(LoginContext);
-
   useEffect(() => {
-    if (authenticated) {
-      utils.invalidateQueries(["projects"]);
-      refetch();
-    }
-  }, [handle, utils, authenticated, refetch]);
+    if (authState !== "authenticated" || accountStatus !== "connected") return;
+    utils.invalidateQueries(["projects"]);
+    refetch();
+  }, [utils, refetch, authState, accountStatus]);
 
   return (
     <>
@@ -45,9 +44,11 @@ export default function Create() {
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">Projects</div>
             <div>
-              <Button variant="outlined" squared="small" onClick={() => setOpenCreateSpace(true)}>
-                <MdAdd className="text-lg" />
-              </Button>
+              {authState === "authenticated" && (
+                <Button variant="outlined" squared="small" onClick={() => setOpenCreateSpace(true)}>
+                  <MdAdd className="text-lg" />
+                </Button>
+              )}
             </div>
           </div>
 
@@ -55,9 +56,7 @@ export default function Create() {
           {status === "loading" && <div className="text-center">Loading...</div>}
 
           <div className="grid grid-cols-3 gap-2">
-            {data?.map(({ id }) => (
-              <Card key={id} />
-            ))}
+            {authState === "authenticated" && data?.map(({ id }) => <Card key={id} />)}
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { utils } from "ethers";
 import { useContext } from "react";
+import { useSignTypedData, useSigner } from "wagmi";
 
-import { EthersContext } from "@wired-xr/ethers";
 import { IpfsContext } from "@wired-xr/ipfs";
 import {
   ContractAddress,
@@ -19,7 +19,8 @@ export function useSetProfileMetadata(profileId: string) {
 
   const { uploadStringToIpfs } = useContext(IpfsContext);
   const { client, authenticate } = useContext(LensContext);
-  const { signer } = useContext(EthersContext);
+  const { data: signer } = useSigner();
+  const { signTypedDataAsync } = useSignTypedData();
 
   async function setProfileMetadata(metadata: ProfileMetadata) {
     if (!signer) throw new Error("No signer");
@@ -45,11 +46,16 @@ export function useSetProfileMetadata(profileId: string) {
       const typedData = data.createSetProfileMetadataTypedData.typedData;
 
       //sign typed data
-      const signature = await signer._signTypedData(
-        removeTypename(typedData.domain),
-        removeTypename(typedData.types),
-        removeTypename(typedData.value)
-      );
+      const domain = removeTypename(typedData.domain);
+      const types = removeTypename(typedData.types);
+      const value = removeTypename(typedData.value);
+
+      const signature = await signTypedDataAsync({
+        domain,
+        types,
+        value,
+      });
+
       const { v, r, s } = utils.splitSignature(signature);
 
       //send transaction

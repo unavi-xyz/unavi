@@ -22,7 +22,7 @@ export default function CreateProfilePage() {
 
   const { valid, error: validateError, fetching } = useValidateHandle(handle);
 
-  const { setHandle: setLensHandle, client, authenticate } = useContext(LensContext);
+  const { setHandle: switchProfile, client, authenticate } = useContext(LensContext);
 
   const loading = fetching || formHandle !== handle || loadingSubmit;
   const disabled = !valid;
@@ -71,7 +71,7 @@ export default function CreateProfilePage() {
       if (error) throw new Error(error.message);
 
       //log the user in
-      setLensHandle(handle);
+      switchProfile(handle);
 
       //redirect to the profile page
       router.push(`/user/${handle}`);
@@ -88,7 +88,7 @@ export default function CreateProfilePage() {
     <div className="space-y-8">
       <div className="flex flex-col items-center space-y-1">
         <h1 className="text-3xl flex justify-center">Create a Profile</h1>
-        <p className="text-lg flex justify-center">Mint a new profile NFT</p>
+        <p className="text-lg flex justify-center">Mint a Lens profile NFT</p>
       </div>
 
       <div className="space-y-4">

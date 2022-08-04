@@ -1,7 +1,7 @@
 import { useGetProfilesQuery } from "../../generated/graphql";
 
 export function useProfilesByAddress(address: string | undefined) {
-  const [{ data }] = useGetProfilesQuery({
+  const [{ data, fetching }] = useGetProfilesQuery({
     variables: {
       request: {
         ownedBy: [address],
@@ -11,5 +11,5 @@ export function useProfilesByAddress(address: string | undefined) {
   });
 
   const profiles = data?.profiles.items;
-  return profiles;
+  return { profiles, fetching };
 }

@@ -9,7 +9,6 @@
   "dependencies": {
     "@pixiv/three-vrm": "^1.0.0-beta.16",
     "@react-three/drei": "^9.6.2",
-    "@wired-xr/ethers": "*",
     "@wired-xr/ipfs": "*",
     "@wired-xr/lens": "*",
     "immer": "^9.0.12",

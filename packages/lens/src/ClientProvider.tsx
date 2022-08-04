@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { Client, Provider, createClient } from "urql";
-
-import { EthersContext } from "@wired-xr/ethers";
+import { useAccount } from "wagmi";
 
 import { API_URL, LocalStorage } from "./constants";
 
@@ -12,7 +11,6 @@ export interface IClientContext {
 }
 
 export const initialClientContext: IClientContext = { client: defaultClient };
-
 export const ClientContext = createContext<IClientContext>(initialClientContext);
 
 interface Props {
@@ -22,7 +20,7 @@ interface Props {
 export function ClientProvider({ children }: Props) {
   const [client, setClient] = useState<Client>(defaultClient);
 
-  const { address } = useContext(EthersContext);
+  const { address } = useAccount();
 
   useEffect(() => {
     if (!address) {

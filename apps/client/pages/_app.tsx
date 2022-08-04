@@ -68,19 +68,19 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
         <meta name="theme-color" content="#ffffff" />
       </Head>
 
-      <div className="w-full h-screen overflow-y-scroll">
-        <SessionProvider session={session}>
-          <WagmiConfig client={wagmiClient}>
-            <RainbowKitProvider theme={theme} chains={chains}>
-              <IpfsProvider>
-                <LensProvider>
-                  <LoginProvider>{getLayout(<Component {...pageProps} />)}</LoginProvider>
-                </LensProvider>
-              </IpfsProvider>
-            </RainbowKitProvider>
-          </WagmiConfig>
-        </SessionProvider>
-      </div>
+      <SessionProvider session={session}>
+        <WagmiConfig client={wagmiClient}>
+          <RainbowKitProvider theme={theme} chains={chains}>
+            <IpfsProvider>
+              <LensProvider>
+                <LoginProvider>
+                  <div className="w-full h-screen">{getLayout(<Component {...pageProps} />)}</div>
+                </LoginProvider>
+              </LensProvider>
+            </IpfsProvider>
+          </RainbowKitProvider>
+        </WagmiConfig>
+      </SessionProvider>
     </>
   );
 }

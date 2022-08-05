@@ -22,7 +22,7 @@ export default function LoginProvider({ children }: Props) {
   const [disableAutoConnect, setDisableAutoconnect] = useState(false);
 
   const { logout: lensLogout, setHandle } = useContext(LensContext);
-  const { address, status: accountStatus } = useAccount();
+  const { address, isConnected, isDisconnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { profiles, fetching } = useProfilesByAddress(address);
   const { status: sessionStatus, data: session } = useSession();
@@ -33,15 +33,15 @@ export default function LoginProvider({ children }: Props) {
   useEffect(() => {
     if (disableAutoConnect) return;
 
-    if (accountStatus === "disconnected" && sessionStatus === "authenticated") {
+    if (isDisconnected && sessionStatus === "authenticated") {
       // Try to auto connect wallet
       wagmiClient?.autoConnect();
     }
-  }, [accountStatus, sessionStatus, disableAutoConnect]);
+  }, [isDisconnected, sessionStatus, disableAutoConnect]);
 
   // Sign out from authentication if address changes
   useEffect(() => {
-    if (accountStatus === "connected" && sessionStatus === "authenticated") {
+    if (isConnected && sessionStatus === "authenticated") {
       const authenticatedAddress = session?.user?.name;
 
       if (authenticatedAddress !== address) {
@@ -49,7 +49,7 @@ export default function LoginProvider({ children }: Props) {
         signOut({ redirect: false });
       }
     }
-  }, [accountStatus, address, session, sessionStatus]);
+  }, [isConnected, address, session, sessionStatus]);
 
   // Set handle on authentication
   useEffect(() => {

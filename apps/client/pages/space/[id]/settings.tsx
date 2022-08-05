@@ -58,7 +58,7 @@ export default function Settings(props: SpaceLayoutProps) {
 
   return (
     <SpaceLayout {...props}>
-      <div className="bg-primaryContainer text-onPrimaryContainer rounded-2xl p-8 space-y-4">
+      <div className="bg-errorContainer text-onErrorContainer rounded-2xl p-8 space-y-4">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">
@@ -68,7 +68,7 @@ export default function Settings(props: SpaceLayoutProps) {
 
         <Button
           variant="filled"
-          color="primary"
+          color="error"
           squared="large"
           loading={loading}
           onClick={handleDelete}

@@ -8,8 +8,17 @@ datasource db {
 }
 
 model Project {
-  id          Int    @id @default(autoincrement())
-  name        String
-  description String
-  owner       String
+  id Int @id @default(autoincrement())
+
+  owner String
+
+  name        String?
+  description String?
+  image       String?
+
+  scene       String?
+  studioState String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 }

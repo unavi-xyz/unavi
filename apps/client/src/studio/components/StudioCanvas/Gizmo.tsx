@@ -13,7 +13,7 @@ export default function Gizmo() {
   const visible = Boolean(selected) && Boolean(selectedRef);
 
   function handleMouseUp() {
-    useStudioStore.setState({ usingGizmo: false });
+    useStudioStore.setState({ usingTransform: false });
 
     if (!selected || !selectedRef?.current) return;
 
@@ -39,7 +39,7 @@ export default function Gizmo() {
       showY={visible}
       showZ={visible}
       enabled={visible}
-      onMouseDown={() => useStudioStore.setState({ usingGizmo: true })}
+      onMouseDown={() => useStudioStore.setState({ usingTransform: true })}
       onMouseUp={handleMouseUp}
     />
   );

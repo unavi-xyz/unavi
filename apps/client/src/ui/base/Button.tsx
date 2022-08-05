@@ -4,7 +4,7 @@ export type ButtonVariant = "elevated" | "filled" | "tonal" | "outlined" | "text
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
-  color?: "primary" | "primary";
+  color?: "primary" | "error";
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -13,7 +13,7 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
 }
 
-export default function Button({
+export default function sButton({
   variant = "text",
   color = "primary",
   loading = false,
@@ -28,25 +28,30 @@ export default function Button({
     variant === "text"
       ? color === "primary"
         ? "hover:bg-primaryContainer hover:text-onPrimaryContainer"
-        : "hover:bg-primaryContainer hover:text-onPrimaryContainer"
-      : "";
+        : "hover:bg-errorContainer hover:text-onErrorContainer"
+      : null;
 
   const outlineClass =
     variant === "outlined"
       ? color === "primary"
         ? `ring-1 ring-outline hover:ring-onPrimaryContainer
            hover:text-onPrimaryContainer hover:bg-primaryContainer`
-        : `ring-1 ring-outline hover:ring-onPrimaryContainer
-           hover:text-onPrimaryContainer hover:bg-primaryContainer`
+        : `ring-1 ring-outline hover:ring-onErrorContainer
+           hover:text-onErrorContainer hover:bg-errorContainer`
       : null;
 
-  const tonalClass = variant === "tonal" ? "bg-primaryContainer text-onPrimaryContainer" : null;
+  const tonalClass =
+    variant === "tonal"
+      ? color === "primary"
+        ? "bg-primaryContainer text-onPrimaryContainer"
+        : "bg-errorContainer text-onErrorContainer"
+      : null;
 
   const filledClass =
     variant === "filled"
       ? color === "primary"
         ? "bg-primary text-onPrimary"
-        : "bg-primary text-onPrimary"
+        : "bg-error text-onError"
       : null;
 
   const elevatedClass =

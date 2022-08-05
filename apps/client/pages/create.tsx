@@ -1,18 +1,19 @@
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
 import { useAccount } from "wagmi";
 
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
 import { trpc } from "../src/login/trpc";
-import CreateScenePage from "../src/ui/CreateScenePage";
+import CreateProjectPage from "../src/ui/CreateProjectPage";
 import MetaTags from "../src/ui/MetaTags";
 import Button from "../src/ui/base/Button";
 import Card from "../src/ui/base/Card";
 import Dialog from "../src/ui/base/Dialog";
 
 export default function Create() {
-  const [openCreateSpace, setOpenCreateSpace] = useState(false);
+  const [openCreateProject, setOpenCreateProject] = useState(false);
 
   const { status: authState } = useSession();
   const { status: accountStatus } = useAccount();
@@ -20,7 +21,6 @@ export default function Create() {
 
   const { data, status, refetch } = trpc.useQuery(["projects"], {
     enabled: authState === "authenticated",
-    retry: false,
   });
 
   useEffect(() => {
@@ -33,8 +33,8 @@ export default function Create() {
     <>
       <MetaTags title="Create" />
 
-      <Dialog open={openCreateSpace} onClose={() => setOpenCreateSpace(false)}>
-        <CreateScenePage />
+      <Dialog open={openCreateProject} onClose={() => setOpenCreateProject(false)}>
+        <CreateProjectPage />
       </Dialog>
 
       <div className="flex justify-center py-8 mx-4">
@@ -45,7 +45,11 @@ export default function Create() {
             <div className="text-2xl font-bold">Projects</div>
             <div>
               {authState === "authenticated" && (
-                <Button variant="outlined" squared="small" onClick={() => setOpenCreateSpace(true)}>
+                <Button
+                  variant="outlined"
+                  squared="small"
+                  onClick={() => setOpenCreateProject(true)}
+                >
                   <MdAdd className="text-lg" />
                 </Button>
               )}
@@ -56,7 +60,14 @@ export default function Create() {
           {status === "loading" && <div className="text-center">Loading...</div>}
 
           <div className="grid grid-cols-3 gap-2">
-            {authState === "authenticated" && data?.map(({ id }) => <Card key={id} />)}
+            {authState === "authenticated" &&
+              data?.map(({ id, name, image }) => (
+                <Link key={id} href={`/project/${id}`}>
+                  <div>
+                    <Card text={name ?? ""} image={image ?? ""} />
+                  </div>
+                </Link>
+              ))}
           </div>
         </div>
       </div>

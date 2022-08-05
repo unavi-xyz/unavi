@@ -10,7 +10,7 @@
     "docker:down": "docker compose down",
     "docker:prune": "yarn docker:down && docker image rm -f client-db-api",
     "docker:up": "docker compose up",
-    "migrate": "prisma migrate dev",
+    "migrate": "prisma migrate dev && prisma migrate deploy",
     "start": "yarn docker:prune && yarn build && yarn docker:up"
   },
   "devDependencies": {

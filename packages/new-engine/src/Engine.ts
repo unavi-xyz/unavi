@@ -6,6 +6,8 @@ const GAME_INTERVAL = GAME_FPS;
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
+  stats?: boolean;
+  alpha?: boolean;
 }
 
 export class Engine {
@@ -16,8 +18,8 @@ export class Engine {
   #renderManager: RenderManager;
   #gameManager: GameManager;
 
-  constructor({ canvas }: EngineOptions) {
-    this.#renderManager = new RenderManager(canvas);
+  constructor({ canvas, stats, alpha }: EngineOptions) {
+    this.#renderManager = new RenderManager({ canvas, stats, alpha });
     this.#gameManager = new GameManager(this.#renderManager);
 
     // Start render loop
@@ -57,6 +59,8 @@ export class Engine {
   }
 
   start() {
+    this.stop();
+
     // Start render loop
     this.#lastGameTime = performance.now();
     this.#animationFrameId = requestAnimationFrame(this.#renderLoop.bind(this));
@@ -81,5 +85,17 @@ export class Engine {
 
     // Stop render loop
     this.stop();
+  }
+
+  get scene() {
+    return this.#renderManager.scene;
+  }
+
+  get camera() {
+    return this.#renderManager.camera;
+  }
+
+  get renderer() {
+    return this.#renderManager.renderer;
   }
 }

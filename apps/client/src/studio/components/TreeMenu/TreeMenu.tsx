@@ -5,18 +5,23 @@ import SpecialsButton from "./SpecialsButton";
 import TreeMenuItem from "./TreeMenuItem";
 
 export default function TreeMenu() {
-  const tree = useStudioStore((state) => state.scene.tree);
+  const root = useStudioStore((state) => state.root);
+
+  // Use treeNonce to force re-rendering of the tree menu
+  useStudioStore((state) => state.treeNonce);
+
+  if (!root) return null;
 
   return (
     <div className="h-full flex flex-col">
       <div className="py-2 h-14 flex items-center justify-center space-x-2">
         <ObjectsButton />
-        <LightsButton />
-        <SpecialsButton />
+        {/* <LightsButton />
+        <SpecialsButton /> */}
       </div>
 
       <div className="pt-2 pr-4 w-full h-full overflow-y-auto">
-        <TreeMenuItem entity={tree} isRoot />
+        <TreeMenuItem object={root} isRoot />
       </div>
     </div>
   );

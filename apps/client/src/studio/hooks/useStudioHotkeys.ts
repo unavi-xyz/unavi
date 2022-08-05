@@ -1,12 +1,9 @@
-import produce from "immer";
-import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
 
-import { findEntityById, traverseTree } from "@wired-xr/engine";
-
 import { useStudioStore } from "../store";
+import { addObjectAsSibling, findObject, removeObjectFromScene } from "../utils/scene";
 
-export function useHotkeys() {
+export function useStudioHotkeys() {
   const [copiedId, setCopiedId] = useState<string>();
 
   useEffect(() => {
@@ -14,8 +11,13 @@ export function useHotkeys() {
       switch (e.key) {
         case "Delete":
           const selectedId = useStudioStore.getState().selectedId;
-          if (selectedId) useStudioStore.getState().removeEntity(selectedId);
-          useStudioStore.setState({ selectedId: undefined });
+          if (selectedId) {
+            const object = findObject(selectedId);
+            if (!object) return;
+
+            removeObjectFromScene(object);
+            useStudioStore.setState({ selectedId: null });
+          }
           break;
         case "w":
           useStudioStore.setState({ tool: "translate" });
@@ -27,50 +29,30 @@ export function useHotkeys() {
           useStudioStore.setState({ tool: "scale" });
           break;
         case "c":
+          // Copy
           if (e.ctrlKey) {
-            //copy
             const selectedId = useStudioStore.getState().selectedId;
-            const scene = useStudioStore.getState().scene;
-            if (selectedId) {
-              setCopiedId(selectedId);
-            }
+            if (selectedId) setCopiedId(selectedId);
           }
           break;
         case "v":
+          // Pase
           if (e.ctrlKey) {
-            //paste
             if (!copiedId) return;
-            const scene = useStudioStore.getState().scene;
-            const copiedEntity = findEntityById(scene.tree, copiedId);
-            if (!copiedEntity) return;
 
-            const newEntity = produce(copiedEntity, (draft) => {
-              traverseTree(draft, (entity) => {
-                const id = nanoid();
-                entity.id = id;
+            const copiedObject = findObject(copiedId);
+            if (!copiedObject) return;
 
-                if (entity.children) {
-                  entity.children.forEach((child) => {
-                    child.parentId = id;
-                  });
-                }
-              });
-            });
-
-            useStudioStore.getState().addEntity(newEntity);
-            useStudioStore.setState({ selectedId: newEntity.id });
+            const clone = copiedObject.clone();
+            addObjectAsSibling(clone, copiedObject, "below");
           }
           break;
       }
     }
 
-    function handleKeyUp(e: KeyboardEvent) {}
-
     document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("keyup", handleKeyUp);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("keyup", handleKeyUp);
     };
   }, [copiedId]);
 }

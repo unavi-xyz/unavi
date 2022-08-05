@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimationAction, AnimationMixer, Scene } from "three";
+import { AnimationAction, AnimationMixer, Box3, Scene, Vector3 } from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { Engine, IGLTF } from "@wired-xr/new-engine";
@@ -42,7 +43,7 @@ export default function ExampleCanvas({ uri }: Props) {
   const [info, setInfo] = useState<RenderInfo>();
   const [settings, setSettings] = useState<Settings>({
     testThree: false,
-    testExport: true,
+    testExport: false,
   });
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export default function ExampleCanvas({ uri }: Props) {
     window.addEventListener("resize", updateCanvasSize);
 
     // Create engine
-    const engine = new Engine({ canvas: canvasRef.current });
+    const engine = new Engine({ canvas: canvasRef.current, stats: true, alpha: true });
 
     // Move stats to the right
     const stats = document.getElementById("stats");
@@ -70,6 +71,32 @@ export default function ExampleCanvas({ uri }: Props) {
     async function handleLoaded({ animations }: IGLTF) {
       setAnimations(animations);
       setLoaded(true);
+
+      const camera = engine.camera;
+
+      // Calculate bounding box
+      const boundingBox = new Box3().setFromObject(engine.scene);
+      const size = boundingBox.getSize(new Vector3());
+      const center = boundingBox.getCenter(new Vector3());
+
+      // Set camera position
+      if (size.x === 0) size.setX(1);
+      if (size.y === 0) size.setY(1);
+      if (size.z === 0) size.setZ(1);
+      camera.position.set(size.x, size.y, size.z * 2);
+
+      // Set camera rotation
+      camera.lookAt(center);
+      const orbitControls = new OrbitControls(camera, engine.renderer.domElement);
+      orbitControls.target.copy(center);
+
+      // Set camera near and far
+      const min = boundingBox.min.z === 0 ? 1 : boundingBox.min.z;
+      const max = boundingBox.max.z === 0 ? 1 : boundingBox.max.z;
+      camera.near = Math.abs(min) / 1000;
+      camera.far = Math.abs(max) * 100;
+      camera.far = Math.max(camera.far, 50);
+      camera.updateProjectionMatrix();
 
       // Start first animation
       if (animations.length > 0) {

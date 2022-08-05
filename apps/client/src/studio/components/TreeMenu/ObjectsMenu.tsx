@@ -1,25 +1,61 @@
-import { OBJECT_PRESETS } from "../../../studio/presets";
-import { useStudioStore } from "../../../studio/store";
+import {
+  BoxBufferGeometry,
+  CylinderBufferGeometry,
+  Mesh,
+  MeshStandardMaterial,
+  Object3D,
+  SphereBufferGeometry,
+} from "three";
+
+import { addObjectToScene } from "../../utils/scene";
+
+enum ObjectName {
+  Box = "Box",
+  Sphere = "Sphere",
+  Cylinder = "Cylinder",
+}
 
 export default function ObjectsMenu() {
-  const selectedId = useStudioStore((state) => state.selectedId);
-  const addPreset = useStudioStore((state) => state.addPreset);
+  function addObject(name: ObjectName) {
+    const object = getObject(name);
+    addObjectToScene(object);
+  }
 
   return (
-    <div className="p-2 space-y-1">
-      {Object.entries(OBJECT_PRESETS).map(([name, preset]) => (
+    <div className="p-2">
+      {Object.values(ObjectName).map((name) => (
         <button
           key={name}
-          onClick={() => {
-            const entity = addPreset(preset, selectedId);
-            if (entity) useStudioStore.setState({ selectedId: entity.id });
-          }}
+          onClick={() => addObject(name)}
           className="w-full flex hover:bg-primaryContainer hover:text-onPrimaryContainer
-                     rounded-md px-4 py-1 transition items-center space-x-2"
+                     rounded px-4 py-1 transition items-center"
         >
-          <div>{name}</div>
+          {name}
         </button>
       ))}
     </div>
   );
+}
+
+function getObject(name: ObjectName): Object3D {
+  switch (name) {
+    case ObjectName.Box:
+      const boxGeometry = new BoxBufferGeometry(1, 1, 1);
+      const boxMaterial = new MeshStandardMaterial({ color: 0xffff00 });
+      const boxMesh = new Mesh(boxGeometry, boxMaterial);
+      boxMesh.name = "Box";
+      return boxMesh;
+    case ObjectName.Sphere:
+      const sphereGeometry = new SphereBufferGeometry(0.5);
+      const sphereMaterial = new MeshStandardMaterial({ color: 0x00ff00 });
+      const sphereMesh = new Mesh(sphereGeometry, sphereMaterial);
+      sphereMesh.name = "Sphere";
+      return sphereMesh;
+    case ObjectName.Cylinder:
+      const cylinderGeometry = new CylinderBufferGeometry(0.5, 0.5, 1);
+      const cylinderMaterial = new MeshStandardMaterial({ color: 0x0000ff });
+      const cylinderMesh = new Mesh(cylinderGeometry, cylinderMaterial);
+      cylinderMesh.name = "Cylinder";
+      return cylinderMesh;
+  }
 }

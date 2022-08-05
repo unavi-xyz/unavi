@@ -5,15 +5,26 @@ import Split from "react-split";
 
 import { Engine } from "@wired-xr/new-engine";
 
-import FileBrowser from "../../src/studio/components/FileBrowser/FileBrowser";
-import InspectMenu from "../../src/studio/components/InspectMenu/InspectMenu";
-import StudioNavbar from "../../src/studio/components/StudioNavbar/StudioNavbar";
-import TreeMenu from "../../src/studio/components/TreeMenu/TreeMenu";
-import MetaTags from "../../src/ui/MetaTags";
+import StudioNavbar from "../../../src/studio/components/StudioNavbar/StudioNavbar";
+import TreeMenu from "../../../src/studio/components/TreeMenu/TreeMenu";
+import { useAutosave } from "../../../src/studio/hooks/useAutosave";
+import { useLoad } from "../../../src/studio/hooks/useLoad";
+import { useOrbitControls } from "../../../src/studio/hooks/useOrbitControls";
+import { useStudioHotkeys } from "../../../src/studio/hooks/useStudioHotkeys";
+import { useTransformControls } from "../../../src/studio/hooks/useTransformControls";
+import { useStudioStore } from "../../../src/studio/store";
+import MetaTags from "../../../src/ui/MetaTags";
 
 export default function Studio() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useLoad();
+  useAutosave();
+
+  useTransformControls();
+  useOrbitControls();
+  useStudioHotkeys();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -24,16 +35,12 @@ export default function Studio() {
     window.addEventListener("resize", updateCanvasSize);
 
     // Start engine
-    const engine = new Engine({
-      canvas,
-    });
-
-    // Load glTF
-    const url = "/models/shapes.glb";
-    engine.loadGltf(url);
+    const engine = new Engine({ canvas });
+    useStudioStore.setState({ engine });
 
     return () => {
       engine.destroy();
+      useStudioStore.setState({ engine: null });
       window.removeEventListener("resize", updateCanvasSize);
     };
   }, [canvasRef]);
@@ -89,15 +96,11 @@ export default function Studio() {
                   </div>
                 </div>
 
-                <div className="float-left h-full">
-                  <InspectMenu />
-                </div>
+                <div className="float-left h-full">{/* <InspectMenu /> */}</div>
               </Split>
             </div>
 
-            <div>
-              <FileBrowser />
-            </div>
+            <div>{/* <FileBrowser /> */}</div>
           </Split>
         </div>
       </DndProvider>

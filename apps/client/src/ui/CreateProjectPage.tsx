@@ -1,10 +1,13 @@
+import { useRouter } from "next/router";
 import { useRef } from "react";
 
 import { trpc } from "../login/trpc";
 import Button from "./base/Button";
 import TextField from "./base/TextField";
 
-export default function CreateScenePage() {
+export default function CreateProjectPage() {
+  const router = useRouter();
+
   const nameRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
 
@@ -14,19 +17,19 @@ export default function CreateScenePage() {
     const name = nameRef.current?.value ?? "";
     const description = descriptionRef.current?.value ?? "";
 
-    const project = await mutateAsync({
+    const { id } = await mutateAsync({
       name,
       description,
     });
 
-    console.log(project);
+    router.push(`/project/${id}`);
   }
 
   return (
     <div className="space-y-8">
-      <div className="text-3xl font-bold text-center">Create a Scene</div>
+      <div className="text-3xl font-bold text-center">Create a Project</div>
 
-      <TextField inputRef={nameRef} title="Name" defaultValue="New Scene" />
+      <TextField inputRef={nameRef} title="Name" defaultValue="New Project" />
       <TextField inputRef={descriptionRef} title="Description" defaultValue="" />
 
       <div className="flex justify-end">

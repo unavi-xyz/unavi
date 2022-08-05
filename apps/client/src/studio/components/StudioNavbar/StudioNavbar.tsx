@@ -1,52 +1,54 @@
-import Link from "next/link";
 import { useRouter } from "next/router";
-import { useContext } from "react";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew, MdOutlineGridOn, MdPreview, MdSync } from "react-icons/md";
 
-import { LensContext } from "@wired-xr/lens";
-
-import LoginButton from "../../../home/layouts/NavbarLayout/LoginButton";
 import { useStudioStore } from "../../../studio/store";
 import IconButton from "../../../ui/base/IconButton";
 import Tooltip from "../../../ui/base/Tooltip";
-import { useProject } from "../../hooks/useProject";
-import PublishButton from "./PublishButton";
+import { useSave } from "../../hooks/useSave";
 import ToolButton from "./ToolButton";
 
 export default function StudioNavbar() {
-  const { handle } = useContext(LensContext);
+  const router = useRouter();
+  const id = router.query.id;
 
   const debug = useStudioStore((state) => state.debug);
   const grid = useStudioStore((state) => state.grid);
+  const name = useStudioStore((state) => state.name);
 
-  const project = useProject();
-  const router = useRouter();
+  const { save } = useSave();
 
   function handleToggleDebug() {
-    useStudioStore.setState({ debug: !debug, selectedId: undefined });
+    useStudioStore.setState({ debug: !debug, selectedId: null });
   }
 
   function handleToggleGrid() {
     useStudioStore.setState({ grid: !grid });
   }
 
-  function handlePreview() {
-    router.push("/studio/preview");
+  async function handleBack() {
+    await save();
+    router.push(`/project/${id}`);
+  }
+
+  async function handlePreview() {
+    await save();
+    router.push(`/studio/${id}/preview`);
   }
 
   return (
     <div className="flex justify-between items-center h-full px-4 py-2">
       <div className="w-full flex items-center space-x-4 text-lg">
-        <Link href="/create">
-          <a className="cursor-pointer transition text-outline hover:text-inherit p-1">
-            <MdArrowBackIosNew />
-          </a>
-        </Link>
+        <div
+          onClick={handleBack}
+          className="cursor-pointer transition text-outline hover:text-inherit p-1"
+        >
+          <MdArrowBackIosNew />
+        </div>
 
-        <div>{project?.name}</div>
+        <div>{name}</div>
       </div>
 
       <div className="w-full h-full flex justify-center items-center space-x-2">
@@ -88,7 +90,7 @@ export default function StudioNavbar() {
           </Tooltip>
         </div>
 
-        <div className="pl-2">{handle ? <PublishButton /> : <LoginButton />}</div>
+        {/* <div className="pl-2">{handle ? <PublishButton /> : <LoginButton />}</div> */}
       </div>
     </div>
   );

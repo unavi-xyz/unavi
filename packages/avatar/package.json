@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@pixiv/three-vrm": "^0.6.10",
-    "@react-three/drei": "^9.6.2"
+    "@react-three/drei": "^9.19.7"
   },
   "peerDependencies": {
     "@react-three/fiber": ">=8.0",

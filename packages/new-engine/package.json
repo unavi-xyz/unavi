@@ -11,8 +11,8 @@
     "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --watch"
   },
   "dependencies": {
+    "@dimforge/rapier3d": "^0.9.0",
     "@pixiv/three-vrm": "^1.0.0-beta.18",
-    "bitecs": "^0.3.38",
     "mediasoup-client": "^3.6.52",
     "nanoid": "^3.3.1",
     "socket.io-client": "^4.5.1"

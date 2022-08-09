@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 
 import { useStudioStore } from "../store";
-import { addObjectAsSibling, findObject, removeObjectFromScene } from "../utils/scene";
+import { addItemAsSibling, cloneItem, findItem } from "../utils/scene";
 
 export function useStudioHotkeys() {
   const [copiedId, setCopiedId] = useState<string>();
 
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
+    async function handleKeyDown(e: KeyboardEvent) {
+      const engine = useStudioStore.getState().engine;
+      if (!engine) return;
+
       switch (e.key) {
         case "Delete":
           const selectedId = useStudioStore.getState().selectedId;
           if (selectedId) {
-            const object = findObject(selectedId);
-            if (!object) return;
-
-            removeObjectFromScene(object);
+            const item = findItem(selectedId, engine.tree);
+            if (!item) return;
+            item.removeFromParent();
             useStudioStore.setState({ selectedId: null });
           }
           break;
@@ -40,11 +42,11 @@ export function useStudioHotkeys() {
           if (e.ctrlKey) {
             if (!copiedId) return;
 
-            const copiedObject = findObject(copiedId);
-            if (!copiedObject) return;
+            const copiedItem = findItem(copiedId, engine.tree);
+            if (!copiedItem) return;
 
-            const clone = copiedObject.clone();
-            addObjectAsSibling(clone, copiedObject, "below");
+            const clone = await cloneItem(copiedItem, engine);
+            addItemAsSibling(clone, copiedItem, "above");
           }
           break;
       }

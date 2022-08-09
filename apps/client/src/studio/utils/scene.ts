@@ -1,72 +1,67 @@
-import { Object3D } from "three";
+import { Engine, TreeItem } from "@wired-xr/new-engine";
 
 import { useStudioStore } from "../store";
-import { UserData } from "../types";
 
 export function updateTree() {
   const treeNonce = useStudioStore.getState().treeNonce;
   useStudioStore.setState({ treeNonce: treeNonce + 1 });
 }
 
-export function addObjectToScene(object: Object3D) {
-  const root = useStudioStore.getState().root;
+export function findItem(
+  key: string,
+  item: TreeItem,
+  property: keyof TreeItem = "id"
+): TreeItem | undefined {
+  if (item[property] === key) return item;
 
-  const userData: UserData = object.userData;
-  userData.treeNode = true;
-
-  root.add(object);
-
-  updateTree();
+  // Children
+  for (const child of item.children) {
+    const found = findItem(key, child, property);
+    if (found) return found;
+  }
 }
 
-export function removeObjectFromScene(object: Object3D) {
-  const root = useStudioStore.getState().root;
-  root.remove(object);
-  updateTree();
-}
-
-export function findObject(uuid: string) {
-  const root = useStudioStore.getState().root;
-
-  let found: Object3D | undefined;
-
-  root.traverse((object) => {
-    if (object.uuid === uuid) {
-      found = object;
-    }
-  });
-
-  return found;
-}
-
-export function addObjectToParent(object: Object3D, parent: Object3D) {
-  parent.add(object);
-  updateTree();
-}
-
-export function addObjectAsSibling(
-  object: Object3D,
-  sibling: Object3D,
+export function addItemAsSibling(
+  item: TreeItem,
+  sibling: TreeItem,
   placement: "above" | "below" = "below"
 ) {
   const parent = sibling.parent;
   if (!parent) return;
 
-  // Add object to parent
-  parent.add(object);
-
+  // Add item to parent
+  parent.addChild(item);
   const siblingIndex = parent.children.indexOf(sibling);
-  const objectIndex = parent.children.indexOf(object);
+  const itemIndex = parent.children.indexOf(item);
 
-  // Remove object from parent children array
-  parent.children.splice(objectIndex, 1);
+  // Remove item from parent children array
+  parent.children.splice(itemIndex, 1);
 
   // Add it back in at the correct index
   if (placement === "above") {
-    parent.children.splice(siblingIndex, 0, object);
+    parent.children.splice(siblingIndex, 0, item);
   } else {
-    parent.children.splice(siblingIndex + 1, 0, object);
+    parent.children.splice(siblingIndex + 1, 0, item);
   }
 
   updateTree();
+}
+
+export async function cloneItem(item: TreeItem, engine: Engine) {
+  const clone = new TreeItem();
+  clone.name = item.name;
+
+  // Three object
+  if (item.threeUUID) {
+    const object = await engine.renderThread.getObject(item.threeUUID);
+    const clonedObject = object.clone();
+    clone.threeUUID = clonedObject.uuid;
+    engine.renderThread.addObject(clonedObject);
+  }
+
+  // Children
+  const childrenPromises = item.children.map((child) => cloneItem(child, engine));
+  clone.children = await Promise.all(childrenPromises);
+
+  return clone;
 }

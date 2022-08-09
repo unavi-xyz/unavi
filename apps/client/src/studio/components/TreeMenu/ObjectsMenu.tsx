@@ -7,7 +7,10 @@ import {
   SphereBufferGeometry,
 } from "three";
 
-import { addObjectToScene } from "../../utils/scene";
+import { TreeItem } from "@wired-xr/new-engine";
+
+import { useStudioStore } from "../../store";
+import { updateTree } from "../../utils/scene";
 
 enum ObjectName {
   Box = "Box",
@@ -17,8 +20,21 @@ enum ObjectName {
 
 export default function ObjectsMenu() {
   function addObject(name: ObjectName) {
+    const engine = useStudioStore.getState().engine;
+    if (!engine) return;
+
+    // Create three.js object
     const object = getObject(name);
-    addObjectToScene(object);
+    engine.renderThread.addObject(object);
+
+    // Create tree item
+    const treeItem = new TreeItem();
+    treeItem.threeUUID = object.uuid;
+    treeItem.name = object.name;
+    engine.tree.addChild(treeItem);
+
+    // Update tree
+    updateTree();
   }
 
   return (

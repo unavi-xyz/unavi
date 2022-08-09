@@ -1,4 +1,4 @@
-import { Mesh, MeshStandardMaterial, Object3D, SkinnedMesh } from "three";
+import { Mesh, MeshStandardMaterial, Object3D } from "three";
 
 export function disposeTree(root: Object3D) {
   root.traverse((object) => {

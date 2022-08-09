@@ -24,6 +24,7 @@
     "@wired-xr/ipfs": "*",
     "@wired-xr/lens": "*",
     "@wired-xr/new-engine": "*",
+    "bitecs": "^0.3.38",
     "ethers": "^5.6.9",
     "immer": "^9.0.12",
     "jotai": "^1.6.6",
@@ -41,6 +42,7 @@
     "three": "^0.140.0",
     "urql": "^2.2.0",
     "wagmi": "^0.6.0",
+    "webpack-global-object-x": "^1.0.1",
     "zod": "^3.17.10",
     "zustand": "^3.7.1"
   },

@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { useEffect } from "react";
 
 import { useStudioStore } from "../store";
 
@@ -7,22 +6,18 @@ export function useOrbitControls() {
   const engine = useStudioStore((state) => state.engine);
   const usingTransform = useStudioStore((state) => state.usingTransform);
 
-  const [controls, setControls] = useState<OrbitControls>();
-
+  // Create orbit controls
   useEffect(() => {
     if (!engine) return;
-
-    const canvas = engine.renderer.domElement;
-    const orbitControls = new OrbitControls(engine.camera, canvas);
-    setControls(orbitControls);
-
+    engine.renderThread.createOrbitControls();
     return () => {
-      orbitControls.dispose();
+      engine.renderThread.destroyOrbitControls();
     };
   }, [engine]);
 
+  // Enable and disable orbit controls
   useEffect(() => {
-    if (!controls) return;
-    controls.enabled = !usingTransform;
-  }, [usingTransform, controls]);
+    if (!engine) return;
+    engine.renderThread.setOrbitControlsEnabled(!usingTransform);
+  }, [engine, usingTransform]);
 }

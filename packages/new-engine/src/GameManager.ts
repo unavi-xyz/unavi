@@ -1,18 +1,28 @@
+import { ColliderDesc, World } from "@dimforge/rapier3d";
+
 import { RenderManager } from "./RenderManager";
-import { FromGameMessage, IGLTF, ToGameWorkerLoadGltf } from "./types";
+import { FromGameMessage, IGLTF, ToGameLoadGltf } from "./types";
+
+const gravity = { x: 0, y: -9.81, z: 0 };
 
 export class GameManager {
-  #worker = new Worker(new URL("./workers/Game.worker.ts", import.meta.url));
+  #worker = new Worker(new URL("./workers/Game.worker.js", import.meta.url), { type: "module" });
   #messageId = 0;
 
   #renderManager: RenderManager;
 
+  #world = new World(gravity);
+
   constructor(renderManager: RenderManager) {
     this.#renderManager = renderManager;
+
+    // Create ground
+    const groundCollider = ColliderDesc.cuboid(10, 0.1, 10);
+    this.#world.createCollider(groundCollider);
   }
 
   loadGltf(uri: string) {
-    const message: ToGameWorkerLoadGltf = {
+    const message: ToGameLoadGltf = {
       id: this.#messageId++,
       type: "load_gltf",
       data: {
@@ -48,10 +58,12 @@ export class GameManager {
     return this.#renderManager.export();
   }
 
-  update(delta: number) {}
+  update(delta: number) {
+    this.#world.step();
+  }
 
   destroy() {
-    //terminate worker
+    // Terminate worker
     this.#worker.terminate();
   }
 }

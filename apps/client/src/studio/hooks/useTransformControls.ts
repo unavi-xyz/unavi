@@ -1,106 +1,59 @@
-import { useEffect, useRef, useState } from "react";
-import { Raycaster, Vector2 } from "three";
-import { TransformControls } from "three/examples/jsm/controls/TransformControls";
+import { useEffect } from "react";
 
 import { useStudioStore } from "../store";
-import { UserData } from "../types";
-import { findObject } from "../utils/scene";
+import { findItem } from "../utils/scene";
 
 export function useTransformControls() {
   const engine = useStudioStore((state) => state.engine);
   const selectedId = useStudioStore((state) => state.selectedId);
   const tool = useStudioStore((state) => state.tool);
 
-  const mouseRef = useRef(new Vector2());
-  const raycasterRef = useRef(new Raycaster());
-
-  const [controls, setControls] = useState<TransformControls>();
-
   // Create transform controls
   useEffect(() => {
     if (!engine) return;
 
-    const canvas = engine.renderer.domElement;
-    const transformControls = new TransformControls(engine.camera, canvas);
-    engine.scene.add(transformControls);
+    engine.renderThread.createTransformControls();
 
-    function onMouseDown(event: MouseEvent) {
-      if (!engine || !canvas) return;
+    engine.renderThread.onClickIntersection = (uuid) => {
+      if (uuid) {
+        const item = findItem(uuid, engine.tree, "threeUUID");
 
-      // If currently using transform controls, don't select anything
-      if (useStudioStore.getState().usingTransform) return;
-
-      event.preventDefault();
-
-      // Get mouse position on the canvas
-      const box = canvas.getBoundingClientRect();
-      const x = event.clientX - box.left;
-      const y = event.clientY - box.top;
-
-      mouseRef.current.x = (x / canvas.scrollWidth) * 2 - 1;
-      mouseRef.current.y = -(y / canvas.scrollHeight) * 2 + 1;
-
-      // Set raycaster
-      raycasterRef.current.setFromCamera(mouseRef.current, engine.camera);
-
-      // Get intersected objects
-      const intersected = raycasterRef.current.intersectObjects(engine.scene.children);
-
-      // Find the first object that is part of the tree
-      const intersection = intersected.find(({ object }) => {
-        const userData: UserData = object.userData;
-        return userData.treeNode;
-      });
-
-      // If no valid object was found, remove selectedId
-      if (!intersection) {
-        useStudioStore.setState({ selectedId: null });
-        return;
+        if (item) {
+          useStudioStore.setState({ selectedId: item.id });
+          return;
+        }
       }
 
-      useStudioStore.setState({ selectedId: intersection.object.uuid });
-    }
-
-    function onTransformDown() {
-      useStudioStore.setState({ usingTransform: true });
-    }
-
-    function onMouseUp() {
-      useStudioStore.setState({ usingTransform: false });
-    }
-
-    canvas.addEventListener("mousedown", onMouseDown);
-    canvas.addEventListener("mouseup", onMouseUp);
-    transformControls.addEventListener("mouseDown", onTransformDown);
-
-    setControls(transformControls);
+      useStudioStore.setState({ selectedId: null });
+    };
 
     return () => {
-      canvas.removeEventListener("mousedown", onMouseDown);
-      canvas.removeEventListener("mouseup", onMouseUp);
-      transformControls.removeEventListener("mouseDown", onTransformDown);
-      transformControls.removeFromParent();
-      transformControls.dispose();
+      engine.renderThread.destroyTransformControls();
     };
   }, [engine]);
 
   // Attach controls to selected object
   useEffect(() => {
-    if (!engine || !controls || !selectedId) return;
+    if (!engine) return;
 
-    const selectedObject = findObject(selectedId);
-    if (!selectedObject) return;
+    if (!selectedId) {
+      engine.renderThread.detachTransformControls();
+      return;
+    }
 
-    controls.attach(selectedObject);
+    const item = findItem(selectedId, engine.tree);
 
-    return () => {
-      controls.detach();
-    };
-  }, [engine, controls, selectedId]);
+    if (!item || !item.threeUUID) {
+      engine.renderThread.detachTransformControls();
+      return;
+    }
+
+    engine.renderThread.attachTransformControls(item.threeUUID);
+  }, [engine, selectedId]);
 
   // Switch controls to tool
   useEffect(() => {
-    if (!engine || !controls) return;
-    controls.setMode(tool);
-  }, [engine, controls, tool]);
+    if (!engine) return;
+    engine.renderThread.setTransformControlsMode(tool);
+  }, [engine, tool]);
 }

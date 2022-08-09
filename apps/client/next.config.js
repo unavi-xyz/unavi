@@ -28,5 +28,9 @@ module.exports = withPWA(
       disable: process.env.NODE_ENV === "development",
       runtimeCaching,
     },
+    webpack: function (config) {
+      config.experiments = { syncWebAssembly: true, asyncWebAssembly: true, layers: true };
+      return config;
+    },
   })
 );

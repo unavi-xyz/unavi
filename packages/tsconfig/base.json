@@ -3,7 +3,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "composite": false,
+    "incremental": true,
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
@@ -19,5 +19,5 @@
     "sourceMap": true
   },
   "display": "Default",
-  "exclude": ["node_modules", "build", "dist"]
+  "exclude": ["node_modules", "build", "dist", ".turbo"]
 }

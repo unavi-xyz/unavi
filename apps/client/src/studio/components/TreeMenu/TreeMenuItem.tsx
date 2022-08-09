@@ -1,28 +1,27 @@
 import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
-import { Object3D } from "three";
+
+import { TreeItem } from "@wired-xr/new-engine";
 
 import { useStudioStore } from "../../../studio/store";
-import { DND_TYPES, UserData } from "../../../studio/types";
-import { addObjectAsSibling, addObjectToParent, findObject } from "../../utils/scene";
+import { DND_TYPES } from "../../../studio/types";
+import { addItemAsSibling, findItem } from "../../utils/scene";
 
 type DragItem = {
   id: string;
 };
 
 interface Props {
-  object: Object3D;
+  item: TreeItem;
   isRoot?: boolean;
 }
 
-export default function TreeMenuItem({ object, isRoot = false }: Props) {
+export default function TreeMenuItem({ item, isRoot = false }: Props) {
+  const { id } = item;
+
   const ref = useRef<HTMLDivElement>(null);
-
-  const id = object.uuid;
-
   const selectedId = useStudioStore((state) => state.selectedId);
-
   const [open, setOpen] = useState(true);
 
   // Create drag source
@@ -46,11 +45,14 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
-          const dropped = findObject(droppedId);
+          const engine = useStudioStore.getState().engine;
+          if (!engine) return;
+
+          const dropped = findItem(droppedId, engine.tree);
           if (!dropped) return;
 
           // Move to new parent
-          addObjectToParent(dropped, object);
+          item.addChild(dropped);
         }
       },
       collect: (monitor) => ({
@@ -69,11 +71,14 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
-          const dropped = findObject(droppedId);
-          if (!dropped || !object.parent) return;
+          const engine = useStudioStore.getState().engine;
+          if (!engine) return;
+
+          const dropped = findItem(droppedId, engine.tree);
+          if (!dropped || !item.parent) return;
 
           // Add as sibling
-          addObjectAsSibling(dropped, object, "above");
+          addItemAsSibling(dropped, item, "above");
         }
       },
       collect: (monitor) => ({
@@ -92,11 +97,14 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
-          const dropped = findObject(droppedId);
-          if (!dropped || !object.parent) return;
+          const engine = useStudioStore.getState().engine;
+          if (!engine) return;
+
+          const dropped = findItem(droppedId, engine.tree);
+          if (!dropped || !item.parent) return;
 
           // Add as sibling
-          addObjectAsSibling(dropped, object, "below");
+          addItemAsSibling(dropped, item, "below");
         }
       },
       collect: (monitor) => ({
@@ -106,9 +114,9 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
     [id]
   );
 
-  if (!object) return null;
+  if (!item) return null;
 
-  const hasChildren = object.children.length > 0;
+  const hasChildren = item.children.length > 0;
   const isSelected = selectedId === id;
   const bgClass =
     isSelected || isOver
@@ -155,22 +163,17 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
               {hasChildren && (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
             </div>
 
-            <div>{object.name ?? object.type}</div>
+            <div>{item.name || item.id}</div>
           </div>
         )}
 
         {open && (
           <div className={`${opacityClass}`}>
-            {object.children.map((child, i) => {
-              const userData: UserData = child.userData;
-
-              // If not a node, skip
-              if (!userData.treeNode) return null;
-
-              if (i === object.children.length - 1 && !isRoot) {
+            {item.children.map((child, i) => {
+              if (i === item.children.length - 1 && !isRoot) {
                 return (
                   <div key={child.id} className="h-full">
-                    <TreeMenuItem object={child} />
+                    <TreeMenuItem item={child} />
                     <div
                       ref={dropBelow}
                       className={`h-1 ml-4 rounded-full ${highlightBelowClass} ${marginClass}`}
@@ -179,7 +182,7 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
                 );
               }
 
-              return <TreeMenuItem key={child.id} object={child} />;
+              return <TreeMenuItem key={child.id} item={child} />;
             })}
           </div>
         )}

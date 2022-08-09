@@ -1,5 +1,5 @@
 import { GLTFLoader } from "../gltf/GLTFLoader";
-import { FromGameLoadedGltf, ToGameMessage } from "../types";
+import { LoadedGltf, ToGameMessage } from "../types";
 
 onmessage = (event: MessageEvent<ToGameMessage>) => {
   const { type, data, id } = event.data;
@@ -16,7 +16,7 @@ async function loadGltf(uri: string, id: number) {
 
   if (!data) return;
 
-  const message: FromGameLoadedGltf = {
+  const message: LoadedGltf = {
     id,
     type: "loaded_gltf",
     data,

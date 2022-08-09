@@ -15,7 +15,7 @@ type WorkerMessage<S extends string, D> = {
 
 // To render worker
 export type ToRenderDestroy = WorkerMessage<"destroy", null>;
-export type toRenderSetObject = WorkerMessage<"set_object", { json: any }>;
+export type toRenderSetTree = WorkerMessage<"set_tree", { json: any }>;
 export type ToRenderAddObject = WorkerMessage<"add_object", { json: any; parent?: string }>;
 export type ToRenderRemoveObject = WorkerMessage<"remove_object", { uuid: string }>;
 export type ToRenderMoveObject = WorkerMessage<"move_object", { uuid: string; parent: string }>;
@@ -49,7 +49,7 @@ export type ToRenderDetachTransformControls = WorkerMessage<"detach_transform_co
 
 export type ToRenderMessage =
   | ToRenderDestroy
-  | toRenderSetObject
+  | toRenderSetTree
   | ToRenderAddObject
   | ToRenderRemoveObject
   | ToRenderMoveObject

@@ -134,7 +134,7 @@ export class Controls {
     );
 
     // Get intersected objects
-    const intersected = this.#transformRaycaster.intersectObject(this.#worker.objects);
+    const intersected = this.#transformRaycaster.intersectObject(this.#worker.tree.tree);
     const uuid = intersected.length > 0 ? intersected[0].object.uuid : null;
 
     // Send to the main thread

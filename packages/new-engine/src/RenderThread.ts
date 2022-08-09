@@ -49,7 +49,7 @@ export class RenderThread {
 
   setObject(object: Object3D) {
     const json = object.toJSON();
-    this.#worker.postMessage({ subject: "set_object", data: { json } });
+    this.#worker.postMessage({ subject: "set_tree", data: { json } });
   }
 
   addObject(object: Object3D, parent?: string | null) {

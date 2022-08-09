@@ -30,18 +30,20 @@ export function addItemAsSibling(
   if (!parent) return;
 
   // Add item to parent
-  parent.addChild(item);
+  moveItem(item, parent);
+
   const siblingIndex = parent.children.indexOf(sibling);
   const itemIndex = parent.children.indexOf(item);
+  const offset = itemIndex < siblingIndex ? -1 : 0;
 
   // Remove item from parent children array
   parent.children.splice(itemIndex, 1);
 
   // Add it back in at the correct index
   if (placement === "above") {
-    parent.children.splice(siblingIndex, 0, item);
+    parent.children.splice(siblingIndex + offset, 0, item);
   } else {
-    parent.children.splice(siblingIndex + 1, 0, item);
+    parent.children.splice(siblingIndex + offset + 1, 0, item);
   }
 
   updateTree();

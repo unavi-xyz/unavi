@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { useStudioStore } from "../store";
-import { addItemAsSibling, cloneItem, findItem } from "../utils/scene";
+import { addItemAsSibling, cloneItem, findItem, removeItem } from "../utils/scene";
 
 export function useStudioHotkeys() {
   const [copiedId, setCopiedId] = useState<string>();
@@ -17,7 +17,10 @@ export function useStudioHotkeys() {
           if (selectedId) {
             const item = findItem(selectedId, engine.tree);
             if (!item) return;
-            item.removeFromParent();
+
+            removeItem(item);
+
+            engine.renderThread.detachTransformControls();
             useStudioStore.setState({ selectedId: null });
           }
           break;

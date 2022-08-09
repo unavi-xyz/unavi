@@ -6,7 +6,7 @@ import { TreeItem } from "@wired-xr/new-engine";
 
 import { useStudioStore } from "../../../studio/store";
 import { DND_TYPES } from "../../../studio/types";
-import { addItemAsSibling, findItem } from "../../utils/scene";
+import { addItemAsSibling, findItem, moveItem } from "../../utils/scene";
 
 type DragItem = {
   id: string;
@@ -52,7 +52,7 @@ export default function TreeMenuItem({ item, isRoot = false }: Props) {
           if (!dropped) return;
 
           // Move to new parent
-          item.addChild(dropped);
+          moveItem(dropped, item);
         }
       },
       collect: (monitor) => ({

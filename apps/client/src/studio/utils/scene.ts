@@ -65,3 +65,29 @@ export async function cloneItem(item: TreeItem, engine: Engine) {
 
   return clone;
 }
+
+export function removeItem(item: TreeItem) {
+  item.removeFromParent();
+
+  if (item.threeUUID) {
+    const engine = useStudioStore.getState().engine;
+    if (engine) {
+      engine.renderThread.removeObject(item.threeUUID);
+    }
+  }
+
+  updateTree();
+}
+
+export function moveItem(item: TreeItem, parent: TreeItem) {
+  parent.addChild(item);
+
+  if (item.threeUUID && parent.threeUUID) {
+    const engine = useStudioStore.getState().engine;
+    if (engine) {
+      engine.renderThread.moveObject(item.threeUUID, parent.threeUUID);
+    }
+  }
+
+  updateTree();
+}

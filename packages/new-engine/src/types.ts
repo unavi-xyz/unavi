@@ -15,24 +15,12 @@ type WorkerMessage<S extends string, D> = {
 
 // To render worker
 export type ToRenderDestroy = WorkerMessage<"destroy", null>;
-export type ToRenderAddObject = WorkerMessage<
-  "add_object",
-  {
-    json: any;
-  }
->;
-export type ToRenderGetObject = WorkerMessage<
-  "get_object",
-  {
-    uuid: string;
-  }
->;
-export type ToRenderCreateSkybox = WorkerMessage<
-  "create_skybox",
-  {
-    path: string;
-  }
->;
+export type toRenderSetObject = WorkerMessage<"set_object", { json: any }>;
+export type ToRenderAddObject = WorkerMessage<"add_object", { json: any; parent?: string }>;
+export type ToRenderRemoveObject = WorkerMessage<"remove_object", { uuid: string }>;
+export type ToRenderMoveObject = WorkerMessage<"move_object", { uuid: string; parent: string }>;
+export type ToRenderGetObject = WorkerMessage<"get_object", { uuid: string }>;
+export type ToRenderCreateSkybox = WorkerMessage<"create_skybox", { path: string }>;
 
 // Orbit controls
 export type ToRenderCreateOrbitControls = WorkerMessage<"create_orbit_controls", null>;
@@ -61,7 +49,10 @@ export type ToRenderDetachTransformControls = WorkerMessage<"detach_transform_co
 
 export type ToRenderMessage =
   | ToRenderDestroy
+  | toRenderSetObject
   | ToRenderAddObject
+  | ToRenderRemoveObject
+  | ToRenderMoveObject
   | ToRenderGetObject
   | ToRenderCreateSkybox
   | ToRenderCreateOrbitControls

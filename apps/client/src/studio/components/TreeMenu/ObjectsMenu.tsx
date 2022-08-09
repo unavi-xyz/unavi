@@ -10,7 +10,7 @@ import {
 import { TreeItem } from "@wired-xr/new-engine";
 
 import { useStudioStore } from "../../store";
-import { updateTree } from "../../utils/scene";
+import { findItem, updateTree } from "../../utils/scene";
 
 enum ObjectName {
   Box = "Box",
@@ -23,15 +23,34 @@ export default function ObjectsMenu() {
     const engine = useStudioStore.getState().engine;
     if (!engine) return;
 
+    let parent;
+    const selectedId = useStudioStore.getState().selectedId;
+    if (selectedId) {
+      const item = findItem(selectedId, engine.tree);
+      if (item) {
+        parent = item.threeUUID;
+      }
+    }
+
     // Create three.js object
     const object = getObject(name);
-    engine.renderThread.addObject(object);
+    engine.renderThread.addObject(object, parent);
 
     // Create tree item
     const treeItem = new TreeItem();
     treeItem.threeUUID = object.uuid;
     treeItem.name = object.name;
-    engine.tree.addChild(treeItem);
+
+    if (selectedId) {
+      const item = findItem(selectedId, engine.tree);
+      if (item) {
+        item.addChild(treeItem);
+      } else {
+        engine.tree.addChild(treeItem);
+      }
+    } else {
+      engine.tree.addChild(treeItem);
+    }
 
     // Update tree
     updateTree();

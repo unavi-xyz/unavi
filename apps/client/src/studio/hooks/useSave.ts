@@ -15,12 +15,8 @@ export function useSave() {
 
     const id = parseInt(router.query.id as string);
 
-    let scene;
-
-    if (engine.tree.threeUUID) {
-      const object = await engine.renderThread.getObject(engine.tree.threeUUID);
-      scene = JSON.stringify(object.toJSON());
-    }
+    const object = await engine.renderThread.getObject("root");
+    const scene = JSON.stringify(object.toJSON());
 
     const tree = JSON.stringify(engine.tree.toJSON());
     const studioState = JSON.stringify(getStudioState());

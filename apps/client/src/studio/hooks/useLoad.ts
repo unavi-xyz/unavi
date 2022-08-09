@@ -33,7 +33,7 @@ export function useLoad() {
       const scene = JSON.parse(project.scene);
 
       loader.parse(scene, (object) => {
-        engine.renderThread.addObject(object);
+        engine.renderThread.setObject(object);
       });
     }
 

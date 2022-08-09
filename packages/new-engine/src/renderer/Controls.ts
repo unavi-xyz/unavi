@@ -1,9 +1,9 @@
-import { Camera, Object3D, Raycaster, Renderer, Scene } from "three";
+import { Raycaster } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls";
 
 import { ToRenderMessage } from "../types";
-import { FromRenderPostMessage } from "./RenderWorker";
+import { RenderWorker } from "./RenderWorker";
 
 export class Controls {
   #orbitControls: OrbitControls | null = null;
@@ -13,35 +13,24 @@ export class Controls {
   #mouseY = 0;
   #usingTransformControls = false;
 
-  #camera: Camera;
-  #renderer: Renderer;
-  #canvas: HTMLCanvasElement;
-  #scene: Scene;
-  #objects: Object3D;
-  #postMessage: FromRenderPostMessage;
+  #worker: RenderWorker;
 
-  constructor(
-    camera: Camera,
-    renderer: Renderer,
-    scene: Scene,
-    objects: Object3D,
-    postMessage: FromRenderPostMessage
-  ) {
-    this.#camera = camera;
-    this.#renderer = renderer;
-    this.#canvas = renderer.domElement;
-    this.#scene = scene;
-    this.#objects = objects;
-    this.#postMessage = postMessage;
+  constructor(worker: RenderWorker) {
+    this.#worker = worker;
   }
 
   onmessage(event: MessageEvent<ToRenderMessage>) {
+    const camera = this.#worker.camera;
+    const renderer = this.#worker.renderer;
+    const scene = this.#worker.scene;
+    if (!camera || !renderer || !scene) return;
+
     const { subject, data } = event.data;
 
     switch (subject) {
       case "create_orbit_controls":
         this.#destroyOrbitControls();
-        this.#orbitControls = new OrbitControls(this.#camera, this.#renderer.domElement);
+        this.#orbitControls = new OrbitControls(camera, renderer.domElement);
         break;
       case "destroy_orbit_controls":
         this.#destroyOrbitControls();
@@ -51,17 +40,17 @@ export class Controls {
         break;
       case "create_transform_controls":
         this.#destroyTransformControls();
-        if (this.#camera && this.#renderer) {
-          this.#transformControls = new TransformControls(this.#camera, this.#canvas);
+        if (camera && renderer) {
+          this.#transformControls = new TransformControls(camera, renderer.domElement);
           this.#transformRaycaster = new Raycaster();
-          this.#scene.add(this.#transformControls);
+          scene.add(this.#transformControls);
 
           this.#transformControls.addEventListener(
             "mouseDown",
             this.#onTransformMouseDown.bind(this)
           );
-          this.#canvas.addEventListener("mouseup", this.#onCanvasMouseUp.bind(this));
-          this.#canvas.addEventListener("mousedown", this.#onCanvasMouseDown.bind(this));
+          renderer.domElement.addEventListener("mouseup", this.#onCanvasMouseUp.bind(this));
+          renderer.domElement.addEventListener("mousedown", this.#onCanvasMouseDown.bind(this));
         }
         break;
       case "destroy_transform_controls":
@@ -75,7 +64,7 @@ export class Controls {
         break;
       case "attach_transform_controls":
         if (this.#transformControls) {
-          const object = this.#scene.getObjectByProperty("uuid", data.uuid);
+          const object = scene.getObjectByProperty("uuid", data.uuid);
           if (object) this.#transformControls.attach(object);
         }
         break;
@@ -93,12 +82,16 @@ export class Controls {
   }
 
   #destroyTransformControls() {
+    const renderer = this.#worker.renderer;
+    const scene = this.#worker.scene;
+    if (!renderer || !scene) return;
+
     if (this.#transformControls) {
       this.#transformControls.removeEventListener("mouseDown", this.#onTransformMouseDown);
-      this.#renderer.domElement.removeEventListener("mouseup", this.#onCanvasMouseUp);
-      this.#renderer.domElement.removeEventListener("mousedown", this.#onCanvasMouseDown);
+      renderer.domElement.removeEventListener("mouseup", this.#onCanvasMouseUp);
+      renderer.domElement.removeEventListener("mousedown", this.#onCanvasMouseDown);
 
-      this.#scene.remove(this.#transformControls);
+      scene.remove(this.#transformControls);
       this.#transformControls.dispose();
       this.#transformControls = null;
       this.#transformRaycaster = null;
@@ -116,15 +109,20 @@ export class Controls {
   }
 
   #onCanvasMouseDown(event: MouseEvent) {
-    if (!this.#transformRaycaster || !this.#camera || this.#usingTransformControls) return;
+    const renderer = this.#worker.renderer;
+    const camera = this.#worker.camera;
+
+    if (!renderer || !camera) return;
+
+    if (!this.#transformRaycaster || !camera || this.#usingTransformControls) return;
 
     // Get mouse position on the canvas
-    const box = this.#canvas.getBoundingClientRect();
+    const box = renderer.domElement.getBoundingClientRect();
     const x = event.clientX - box.left;
     const y = event.clientY - box.top;
 
-    this.#mouseX = (x / this.#canvas.scrollWidth) * 2 - 1;
-    this.#mouseY = -(y / this.#canvas.scrollHeight) * 2 + 1;
+    this.#mouseX = (x / renderer.domElement.scrollWidth) * 2 - 1;
+    this.#mouseY = -(y / renderer.domElement.scrollHeight) * 2 + 1;
 
     // Set raycaster
     this.#transformRaycaster.setFromCamera(
@@ -132,15 +130,15 @@ export class Controls {
         x: this.#mouseX,
         y: this.#mouseY,
       },
-      this.#camera
+      camera
     );
 
     // Get intersected objects
-    const intersected = this.#transformRaycaster.intersectObjects(this.#objects.children);
+    const intersected = this.#transformRaycaster.intersectObject(this.#worker.objects);
     const uuid = intersected.length > 0 ? intersected[0].object.uuid : null;
 
     // Send to the main thread
-    this.#postMessage({
+    this.#worker.postMessage({
       subject: "click_intersection",
       data: {
         uuid,

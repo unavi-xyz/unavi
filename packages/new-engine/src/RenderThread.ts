@@ -47,9 +47,26 @@ export class RenderThread {
 
   onClickIntersection(uuid: string | null) {}
 
-  addObject(object: Object3D) {
+  setObject(object: Object3D) {
     const json = object.toJSON();
-    this.#worker.postMessage({ subject: "add_object", data: { json } });
+    this.#worker.postMessage({ subject: "set_object", data: { json } });
+  }
+
+  addObject(object: Object3D, parent?: string | null) {
+    const json = object.toJSON();
+    if (parent) {
+      this.#worker.postMessage({ subject: "add_object", data: { json, parent } });
+    } else {
+      this.#worker.postMessage({ subject: "add_object", data: { json } });
+    }
+  }
+
+  removeObject(uuid: string) {
+    this.#worker.postMessage({ subject: "remove_object", data: { uuid } });
+  }
+
+  moveObject(uuid: string, parent: string) {
+    this.#worker.postMessage({ subject: "move_object", data: { uuid, parent } });
   }
 
   getObject(uuid: string) {

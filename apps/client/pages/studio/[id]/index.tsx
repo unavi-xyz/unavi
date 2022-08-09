@@ -19,8 +19,8 @@ export default function Studio() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // useLoad();
-  // useAutosave();
+  useLoad();
+  useAutosave();
 
   useTransformControls();
   useOrbitControls();
@@ -36,7 +36,7 @@ export default function Studio() {
 
     // Start engine
     const engine = new Engine(canvas);
-    useStudioStore.setState({ engine });
+    useStudioStore.setState({ engine, canvas });
 
     return () => {
       engine.destroy();

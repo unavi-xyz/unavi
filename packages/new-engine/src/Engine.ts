@@ -6,6 +6,7 @@ export class Engine {
   tree = new TreeItem();
 
   constructor(canvas: HTMLCanvasElement) {
+    this.tree.threeUUID = "root";
     this.renderThread = new RenderThread(canvas);
   }
 

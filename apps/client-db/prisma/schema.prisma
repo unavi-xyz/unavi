@@ -18,6 +18,7 @@ model Project {
 
   scene       String?
   studioState String?
+  tree        String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())

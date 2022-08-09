@@ -2,6 +2,8 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { ObjectLoader } from "three";
 
+import { TreeItem } from "@wired-xr/new-engine";
+
 import { trpc } from "../../login/trpc";
 import { useStudioStore } from "../store";
 
@@ -9,47 +11,42 @@ export function useLoad() {
   const router = useRouter();
   const id = router.query.id;
 
-  const { data } = trpc.useQuery(["project", { id: parseInt(id as string) }], {
+  const { data: project } = trpc.useQuery(["project", { id: parseInt(id as string) }], {
     enabled: id !== undefined,
   });
 
   const engine = useStudioStore((state) => state.engine);
-  const root = useStudioStore((state) => state.root);
 
   // Load the project on query fetch
   useEffect(() => {
-    if (!engine || !data) return;
+    if (!engine || !project) return;
 
     // Name and description
     useStudioStore.setState({
-      name: data.name,
-      description: data.description,
+      name: project.name ?? "",
+      description: project.description ?? "",
     });
 
     // Load scene
-    if (data.scene) {
+    if (project.scene) {
       const loader = new ObjectLoader();
-      const scene = JSON.parse(data.scene);
+      const scene = JSON.parse(project.scene);
 
       loader.parse(scene, (object) => {
-        useStudioStore.setState({ root: object });
+        engine.renderThread.addObject(object);
       });
     }
 
     // Load studio state
-    if (data.studioState) {
-      const studioState = JSON.parse(data.studioState);
+    if (project.studioState) {
+      const studioState = JSON.parse(project.studioState);
       useStudioStore.setState(studioState);
     }
-  }, [engine, data]);
 
-  // Add root to engine scene
-  useEffect(() => {
-    if (!engine) return;
-    engine.scene.add(root);
-
-    return () => {
-      root.removeFromParent();
-    };
-  }, [engine, root]);
+    // Load tree
+    if (project.tree) {
+      const tree = JSON.parse(project.tree);
+      engine.tree = new TreeItem(tree);
+    }
+  }, [engine, project]);
 }

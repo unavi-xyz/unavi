@@ -55,12 +55,17 @@ export class RenderThread {
   getObject(uuid: string) {
     const id = this.#messageId++;
 
-    const promise = new Promise<Object3D>((resolve) => {
+    const promise = new Promise<Object3D>((resolve, reject) => {
       this.#listeners.set(id, (message: FromRenderMessage) => {
         if (message.subject === "got_object") {
           const loader = new ObjectLoader();
-          const object = loader.parse(message.data.json);
-          resolve(object);
+
+          if (message.data.json) {
+            const object = loader.parse(message.data.json);
+            resolve(object);
+          }
+
+          reject(new Error("No object found"));
         }
       });
     });

@@ -7,10 +7,11 @@ import { Tool } from "./types";
 
 export interface IStudioStore {
   engine: Engine | null;
+  canvas: HTMLCanvasElement | null;
   root: Object3D;
 
-  name: string | undefined;
-  description: string | undefined;
+  name: string;
+  description: string;
 
   preview: boolean;
   debug: boolean;
@@ -24,10 +25,11 @@ export interface IStudioStore {
 
 export const useStudioStore = create<IStudioStore>((set, get) => ({
   engine: null,
+  canvas: null,
   root: new Group(),
 
-  name: undefined,
-  description: undefined,
+  name: "",
+  description: "",
 
   preview: false,
   debug: false,

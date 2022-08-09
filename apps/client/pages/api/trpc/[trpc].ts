@@ -66,10 +66,11 @@ export const appRouter = trpc
       image: z.string().optional(),
       scene: z.string().optional(),
       studioState: z.string().optional(),
+      tree: z.string().optional(),
     }),
     async resolve({
       ctx: { address },
-      input: { id, name, description, image, scene, studioState },
+      input: { id, name, description, image, scene, studioState, tree },
     }) {
       // Verify that the user owns the project
       const project = await prisma.project.findFirst({ where: { id, owner: address } });
@@ -86,6 +87,7 @@ export const appRouter = trpc
           image,
           scene,
           studioState,
+          tree,
           updatedAt: new Date(),
         },
       });

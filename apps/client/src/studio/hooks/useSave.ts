@@ -10,16 +10,23 @@ export function useSave() {
   const { mutateAsync } = trpc.useMutation("save-project");
 
   async function save() {
-    const { root, name, description, engine } = useStudioStore.getState();
-    if (!engine) return;
+    const { name, description, engine, canvas } = useStudioStore.getState();
+    if (!engine || !canvas) return;
 
     const id = parseInt(router.query.id as string);
 
-    const scene = JSON.stringify(root.toJSON());
+    let scene;
+
+    if (engine.tree.threeUUID) {
+      const object = await engine.renderThread.getObject(engine.tree.threeUUID);
+      scene = JSON.stringify(object.toJSON());
+    }
+
+    const tree = JSON.stringify(engine.tree.toJSON());
     const studioState = JSON.stringify(getStudioState());
 
     // Take screenshot of the scene
-    const image = engine.renderer.domElement.toDataURL("image/jpeg", 0.5);
+    const image = canvas.toDataURL("image/jpeg", 0.5);
 
     await mutateAsync({
       id,
@@ -27,6 +34,7 @@ export function useSave() {
       description,
       scene,
       studioState,
+      tree,
       image,
     });
   }

@@ -66,16 +66,16 @@ export class RenderWorker {
   }
 
   async #getObject(uuid: string, id?: number) {
+    if (uuid === "root") {
+      const json = await this.#objects.toJSON();
+      this.#postMessage({ id, subject: "got_object", data: { json } });
+      return;
+    }
+
     const found = this.#objects.getObjectByProperty("uuid", uuid);
     const json = found?.toJSON();
 
-    this.#postMessage({
-      id,
-      subject: "got_object",
-      data: {
-        json,
-      },
-    });
+    this.#postMessage({ id, subject: "got_object", data: { json } });
   }
 
   #init(canvas: HTMLCanvasElement) {

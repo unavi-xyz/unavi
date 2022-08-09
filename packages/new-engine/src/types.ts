@@ -27,6 +27,12 @@ export type ToRenderGetObject = WorkerMessage<
     uuid: string;
   }
 >;
+export type ToRenderCreateSkybox = WorkerMessage<
+  "create_skybox",
+  {
+    path: string;
+  }
+>;
 
 // Orbit controls
 export type ToRenderCreateOrbitControls = WorkerMessage<"create_orbit_controls", null>;
@@ -57,6 +63,7 @@ export type ToRenderMessage =
   | ToRenderDestroy
   | ToRenderAddObject
   | ToRenderGetObject
+  | ToRenderCreateSkybox
   | ToRenderCreateOrbitControls
   | ToRenderDestroyOrbitControls
   | ToRenderSetOrbitControlsEnabled

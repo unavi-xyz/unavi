@@ -116,4 +116,9 @@ export class RenderThread {
   detachTransformControls() {
     this.#worker.postMessage({ subject: "detach_transform_controls", data: null });
   }
+
+  // Skybox
+  createSkybox(path: string) {
+    this.#worker.postMessage({ subject: "create_skybox", data: { path } });
+  }
 }

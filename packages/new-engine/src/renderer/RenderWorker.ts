@@ -1,4 +1,5 @@
 import {
+  CubeTextureLoader,
   Group,
   ObjectLoader,
   PMREMGenerator,
@@ -12,6 +13,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { Controls } from "../renderer/Controls";
 import { FromRenderMessage, ToRenderMessage } from "../types";
 import { disposeTree } from "../utils/disposeTree";
+import { Skybox } from "./Skybox";
 
 export type FromRenderPostMessage = (
   message: FromRenderMessage,
@@ -29,6 +31,7 @@ export class RenderWorker {
   #canvasHeight = 0;
 
   #controls: Controls | null = null;
+  #skybox = new Skybox(this.#scene);
 
   #postMessage: FromRenderPostMessage = (...args) => {
     this.postMessage(...args);
@@ -45,6 +48,7 @@ export class RenderWorker {
     const { id, subject, data } = event.data;
 
     this.#controls?.onmessage(event);
+    this.#skybox.onmessage(event);
 
     switch (subject) {
       case "add_object":

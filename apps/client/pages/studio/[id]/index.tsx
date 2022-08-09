@@ -35,7 +35,7 @@ export default function Studio() {
     window.addEventListener("resize", updateCanvasSize);
 
     // Start engine
-    const engine = new Engine(canvas);
+    const engine = new Engine(canvas, { skyboxPath: "/images/skybox/" });
     useStudioStore.setState({ engine, canvas });
 
     return () => {

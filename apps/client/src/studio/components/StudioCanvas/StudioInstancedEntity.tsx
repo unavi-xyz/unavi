@@ -23,7 +23,7 @@ export default function StudioInstancedEntity({ entity }: Props) {
   function handlePointerUp(e: ThreeEvent<PointerEvent>) {
     // @ts-ignore
     if (e.button !== 0) return;
-    if (useStudioStore.getState().usingTransform) return;
+    if (useStudioStore.getState().usingTransformControls) return;
 
     //select the entity when clicked
     e.stopPropagation();

@@ -1,24 +1,23 @@
 import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
-
-import { TreeItem } from "@wired-xr/new-engine";
+import { Object3D } from "three";
 
 import { useStudioStore } from "../../../studio/store";
 import { DND_TYPES } from "../../../studio/types";
-import { addItemAsSibling, findItem, moveItem } from "../../utils/scene";
+import { addItemAsSibling, getObject, moveObject, updateTree } from "../../utils/scene";
 
 type DragItem = {
   id: string;
 };
 
 interface Props {
-  item: TreeItem;
+  object: Object3D;
   isRoot?: boolean;
 }
 
-export default function TreeMenuItem({ item, isRoot = false }: Props) {
-  const { id } = item;
+export default function TreeMenuItem({ object, isRoot = false }: Props) {
+  const id = object.uuid;
 
   const ref = useRef<HTMLDivElement>(null);
   const selectedId = useStudioStore((state) => state.selectedId);
@@ -48,11 +47,12 @@ export default function TreeMenuItem({ item, isRoot = false }: Props) {
           const engine = useStudioStore.getState().engine;
           if (!engine) return;
 
-          const dropped = findItem(droppedId, engine.tree);
+          const dropped = getObject(droppedId);
           if (!dropped) return;
 
           // Move to new parent
-          moveItem(dropped, item);
+          moveObject(dropped, object);
+          updateTree();
         }
       },
       collect: (monitor) => ({
@@ -74,11 +74,11 @@ export default function TreeMenuItem({ item, isRoot = false }: Props) {
           const engine = useStudioStore.getState().engine;
           if (!engine) return;
 
-          const dropped = findItem(droppedId, engine.tree);
-          if (!dropped || !item.parent) return;
+          const dropped = getObject(droppedId);
+          if (!dropped || !object.parent) return;
 
           // Add as sibling
-          addItemAsSibling(dropped, item, "above");
+          addItemAsSibling(dropped, object, "above");
         }
       },
       collect: (monitor) => ({
@@ -100,11 +100,11 @@ export default function TreeMenuItem({ item, isRoot = false }: Props) {
           const engine = useStudioStore.getState().engine;
           if (!engine) return;
 
-          const dropped = findItem(droppedId, engine.tree);
-          if (!dropped || !item.parent) return;
+          const dropped = getObject(droppedId);
+          if (!dropped || !object.parent) return;
 
           // Add as sibling
-          addItemAsSibling(dropped, item, "below");
+          addItemAsSibling(dropped, object, "below");
         }
       },
       collect: (monitor) => ({
@@ -114,9 +114,9 @@ export default function TreeMenuItem({ item, isRoot = false }: Props) {
     [id]
   );
 
-  if (!item) return null;
+  if (!object) return null;
 
-  const hasChildren = item.children.length > 0;
+  const hasChildren = object.children.length > 0;
   const isSelected = selectedId === id;
   const bgClass =
     isSelected || isOver
@@ -163,17 +163,17 @@ export default function TreeMenuItem({ item, isRoot = false }: Props) {
               {hasChildren && (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
             </div>
 
-            <div>{item.name || item.id}</div>
+            <div>{object.name || object.uuid}</div>
           </div>
         )}
 
         {open && (
           <div className={`${opacityClass}`}>
-            {item.children.map((child, i) => {
-              if (i === item.children.length - 1 && !isRoot) {
+            {object.children.map((child, i) => {
+              if (i === object.children.length - 1 && !isRoot) {
                 return (
-                  <div key={child.id} className="h-full">
-                    <TreeMenuItem item={child} />
+                  <div key={child.uuid} className="h-full">
+                    <TreeMenuItem object={child} />
                     <div
                       ref={dropBelow}
                       className={`h-1 ml-4 rounded-full ${highlightBelowClass} ${marginClass}`}
@@ -182,7 +182,7 @@ export default function TreeMenuItem({ item, isRoot = false }: Props) {
                 );
               }
 
-              return <TreeMenuItem key={child.id} item={child} />;
+              return <TreeMenuItem key={child.uuid} object={child} />;
             })}
           </div>
         )}

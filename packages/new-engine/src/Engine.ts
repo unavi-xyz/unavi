@@ -1,5 +1,4 @@
-import { RenderThread } from "./RenderThread";
-import { TreeItem } from "./classes/TreeItem";
+import { RenderManager } from "./RenderManager";
 
 export interface EngineOptions {
   skyboxPath?: string;
@@ -10,21 +9,15 @@ const defaultOptions = {
 };
 
 export class Engine {
-  renderThread: RenderThread;
-  tree = new TreeItem();
+  renderManager: RenderManager;
 
   constructor(canvas: HTMLCanvasElement, options?: EngineOptions) {
     const { skyboxPath } = Object.assign(defaultOptions, options);
 
-    this.tree.threeUUID = "root";
-    this.renderThread = new RenderThread(canvas);
-
-    if (skyboxPath) {
-      this.renderThread.createSkybox(skyboxPath);
-    }
+    this.renderManager = new RenderManager(canvas, { skyboxPath });
   }
 
   destroy() {
-    this.renderThread.destroy();
+    this.renderManager.destroy();
   }
 }

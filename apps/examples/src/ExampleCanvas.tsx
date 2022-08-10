@@ -87,7 +87,7 @@ export default function ExampleCanvas({ uri }: Props) {
 
       // Set camera rotation
       camera.lookAt(center);
-      const orbitControls = new OrbitControls(camera, engine.renderer.domElement);
+      const orbitControls = new OrbitControls(camera, engine.renderManager.domElement);
       orbitControls.target.copy(center);
 
       // Set camera near and far

@@ -13,13 +13,13 @@ export interface IStudioStore {
   name: string;
   description: string;
 
-  preview: boolean;
   debug: boolean;
   grid: boolean;
   tool: Tool;
   selectedId: string | null;
 
-  usingTransform: boolean;
+  preview: boolean;
+  usingTransformControls: boolean;
   treeNonce: number;
 }
 
@@ -36,7 +36,7 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
   grid: false,
 
   tool: "translate",
-  usingTransform: false,
+  usingTransformControls: false,
   selectedId: null,
 
   treeNonce: 0,

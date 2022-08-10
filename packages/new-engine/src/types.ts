@@ -7,6 +7,11 @@ export interface IGLTF {
   animations: AnimationAction[];
 }
 
+export interface UserData {
+  isTreeNode?: boolean;
+}
+
+// Messages
 type WorkerMessage<S extends string, D> = {
   id?: number;
   subject: S;

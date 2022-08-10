@@ -36,7 +36,7 @@ export default function Studio() {
 
     // Start engine
     const engine = new Engine(canvas, { skyboxPath: "/images/skybox/" });
-    useStudioStore.setState({ engine, canvas });
+    useStudioStore.setState({ engine });
 
     return () => {
       engine.destroy();

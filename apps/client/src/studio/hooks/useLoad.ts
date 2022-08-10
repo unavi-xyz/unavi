@@ -2,10 +2,9 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { ObjectLoader } from "three";
 
-import { TreeItem } from "@wired-xr/new-engine";
-
 import { trpc } from "../../login/trpc";
 import { useStudioStore } from "../store";
+import { updateTree } from "../utils/scene";
 
 export function useLoad() {
   const router = useRouter();
@@ -16,6 +15,7 @@ export function useLoad() {
   });
 
   const engine = useStudioStore((state) => state.engine);
+  const root = useStudioStore((state) => state.root);
 
   // Load the project on query fetch
   useEffect(() => {
@@ -32,9 +32,10 @@ export function useLoad() {
       const loader = new ObjectLoader();
       const scene = JSON.parse(project.scene);
 
-      loader.parse(scene, (object) => {
-        engine.renderThread.setObject(object);
-      });
+      const object = loader.parse(scene);
+      useStudioStore.setState({ root: object });
+
+      updateTree();
     }
 
     // Load studio state
@@ -42,11 +43,15 @@ export function useLoad() {
       const studioState = JSON.parse(project.studioState);
       useStudioStore.setState(studioState);
     }
-
-    // Load tree
-    if (project.tree) {
-      const tree = JSON.parse(project.tree);
-      engine.tree = new TreeItem(tree);
-    }
   }, [engine, project]);
+
+  // Add root to scene
+  useEffect(() => {
+    if (!engine || !root) return;
+    engine.renderManager.scene.add(root);
+
+    return () => {
+      root.removeFromParent();
+    };
+  }, [engine, root]);
 }

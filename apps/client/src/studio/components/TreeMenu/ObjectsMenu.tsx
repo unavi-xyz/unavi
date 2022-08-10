@@ -7,10 +7,10 @@ import {
   SphereBufferGeometry,
 } from "three";
 
-import { TreeItem } from "@wired-xr/new-engine";
+import { UserData } from "@wired-xr/new-engine";
 
 import { useStudioStore } from "../../store";
-import { findItem, updateTree } from "../../utils/scene";
+import { getObject, updateTree } from "../../utils/scene";
 
 enum ObjectName {
   Box = "Box",
@@ -20,39 +20,26 @@ enum ObjectName {
 
 export default function ObjectsMenu() {
   function addObject(name: ObjectName) {
-    const engine = useStudioStore.getState().engine;
+    const { engine, root } = useStudioStore.getState();
     if (!engine) return;
 
-    let parent;
-    const selectedId = useStudioStore.getState().selectedId;
-    if (selectedId) {
-      const item = findItem(selectedId, engine.tree);
-      if (item) {
-        parent = item.threeUUID;
-      }
-    }
-
     // Create three.js object
-    const object = getObject(name);
-    engine.renderThread.addObject(object, parent);
+    const object = createObject(name);
 
-    // Create tree item
-    const treeItem = new TreeItem();
-    treeItem.threeUUID = object.uuid;
-    treeItem.name = object.name;
+    const userData: UserData = {
+      isTreeNode: true,
+    };
 
-    if (selectedId) {
-      const item = findItem(selectedId, engine.tree);
-      if (item) {
-        item.addChild(treeItem);
-      } else {
-        engine.tree.addChild(treeItem);
-      }
-    } else {
-      engine.tree.addChild(treeItem);
-    }
+    object.userData = userData;
 
-    // Update tree
+    // Get parent
+    const selectedId = useStudioStore.getState().selectedId;
+    const selected = selectedId ? getObject(selectedId) : undefined;
+    const parent = selected ?? root;
+
+    // Add to scene
+    parent.add(object);
+
     updateTree();
   }
 
@@ -72,7 +59,7 @@ export default function ObjectsMenu() {
   );
 }
 
-function getObject(name: ObjectName): Object3D {
+function createObject(name: ObjectName): Object3D {
   switch (name) {
     case ObjectName.Box:
       const boxGeometry = new BoxBufferGeometry(1, 1, 1);

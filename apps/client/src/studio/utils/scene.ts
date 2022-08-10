@@ -1,4 +1,4 @@
-import { Engine, TreeItem } from "@wired-xr/new-engine";
+import { Object3D, Quaternion, Vector3 } from "three";
 
 import { useStudioStore } from "../store";
 
@@ -7,89 +7,50 @@ export function updateTree() {
   useStudioStore.setState({ treeNonce: treeNonce + 1 });
 }
 
-export function findItem(
-  key: string,
-  item: TreeItem,
-  property: keyof TreeItem = "id"
-): TreeItem | undefined {
-  if (item[property] === key) return item;
-
-  // Children
-  for (const child of item.children) {
-    const found = findItem(key, child, property);
-    if (found) return found;
-  }
+export function getObject(uuid: string) {
+  const root = useStudioStore.getState().root;
+  const object = root.getObjectByProperty("uuid", uuid);
+  return object;
 }
 
 export function addItemAsSibling(
-  item: TreeItem,
-  sibling: TreeItem,
+  object: Object3D,
+  sibling: Object3D,
   placement: "above" | "below" = "below"
 ) {
   const parent = sibling.parent;
   if (!parent) return;
 
-  // Add item to parent
-  moveItem(item, parent);
+  // Add object to parent
+  moveObject(object, parent);
 
   const siblingIndex = parent.children.indexOf(sibling);
-  const itemIndex = parent.children.indexOf(item);
-  const offset = itemIndex < siblingIndex ? -1 : 0;
+  const objectIndex = parent.children.indexOf(object);
+  const offset = objectIndex < siblingIndex ? -1 : 0;
 
-  // Remove item from parent children array
-  parent.children.splice(itemIndex, 1);
+  // Remove object from parent children array
+  parent.children.splice(objectIndex, 1);
 
   // Add it back in at the correct index
   if (placement === "above") {
-    parent.children.splice(siblingIndex + offset, 0, item);
+    parent.children.splice(siblingIndex + offset, 0, object);
   } else {
-    parent.children.splice(siblingIndex + offset + 1, 0, item);
+    parent.children.splice(siblingIndex + offset + 1, 0, object);
   }
 
   updateTree();
 }
 
-export async function cloneItem(item: TreeItem, engine: Engine) {
-  const clone = new TreeItem();
-  clone.name = item.name;
+export function moveObject(object: Object3D, newParent: Object3D) {
+  // Save object transform
+  const position = object.getWorldPosition(new Vector3());
+  const rotation = object.getWorldQuaternion(new Quaternion());
 
-  // Three object
-  if (item.threeUUID) {
-    const object = await engine.renderThread.getObject(item.threeUUID);
-    const clonedObject = object.clone();
-    clone.threeUUID = clonedObject.uuid;
-    engine.renderThread.addObject(clonedObject);
-  }
+  // Add object to new parent
+  newParent.add(object);
 
-  // Children
-  const childrenPromises = item.children.map((child) => cloneItem(child, engine));
-  clone.children = await Promise.all(childrenPromises);
-
-  return clone;
-}
-
-export function removeItem(item: TreeItem) {
-  item.removeFromParent();
-
-  if (item.threeUUID) {
-    const engine = useStudioStore.getState().engine;
-    if (engine) {
-      engine.renderThread.removeObject(item.threeUUID);
-    }
-  }
-
-  updateTree();
-}
-
-export function moveItem(item: TreeItem, parent: TreeItem) {
-  parent.addChild(item);
-
-  if (item.threeUUID && parent.threeUUID) {
-    const engine = useStudioStore.getState().engine;
-    if (engine) {
-      engine.renderThread.moveObject(item.threeUUID, parent.threeUUID);
-    }
-  }
-
-  updateTree();
+  // Restore object transform
+  const inverseParentRotation = newParent.getWorldQuaternion(new Quaternion()).invert();
+  object.position.copy(newParent.worldToLocal(position));
+  object.quaternion.multiplyQuaternions(rotation, inverseParentRotation);
 }

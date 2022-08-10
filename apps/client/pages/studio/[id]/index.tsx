@@ -8,6 +8,7 @@ import { Engine } from "@wired-xr/new-engine";
 import StudioNavbar from "../../../src/studio/components/StudioNavbar/StudioNavbar";
 import TreeMenu from "../../../src/studio/components/TreeMenu/TreeMenu";
 import { useAutosave } from "../../../src/studio/hooks/useAutosave";
+import { useGrid } from "../../../src/studio/hooks/useGrid";
 import { useLoad } from "../../../src/studio/hooks/useLoad";
 import { useOrbitControls } from "../../../src/studio/hooks/useOrbitControls";
 import { useStudioHotkeys } from "../../../src/studio/hooks/useStudioHotkeys";
@@ -25,6 +26,7 @@ export default function Studio() {
   useTransformControls();
   useOrbitControls();
   useStudioHotkeys();
+  useGrid();
 
   useEffect(() => {
     const canvas = canvasRef.current;

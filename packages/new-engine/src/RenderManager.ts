@@ -1,5 +1,6 @@
 import {
   CubeTextureLoader,
+  FogExp2,
   PMREMGenerator,
   PerspectiveCamera,
   Scene,
@@ -45,6 +46,9 @@ export class RenderManager {
     const environment = premGenerator.fromScene(new RoomEnvironment()).texture;
     this.scene.environment = environment;
 
+    // Fog
+    this.scene.fog = new FogExp2(0xeefaff, 0.005);
+
     // Skybox
     if (skyboxPath) {
       this.scene.background = new CubeTextureLoader()
@@ -53,8 +57,8 @@ export class RenderManager {
     }
 
     // Camera
-    this.camera = new PerspectiveCamera(75, canvas.width / canvas.height);
-    this.camera.position.set(0, 0, 5);
+    this.camera = new PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+    this.camera.position.set(-2, 2, 5);
     this.camera.lookAt(0, 0, 0);
 
     // Start rendering

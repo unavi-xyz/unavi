@@ -40,6 +40,9 @@ export default function Studio() {
     const engine = new Engine(canvas, { skyboxPath: "/images/skybox/" });
     useStudioStore.setState({ engine });
 
+    engine.renderManager.camera.position.set(-2, 2, 5);
+    engine.renderManager.camera.lookAt(0, 0, 0);
+
     return () => {
       engine.destroy();
       useStudioStore.setState({ engine: null });

@@ -2,12 +2,19 @@ import { ColliderDesc, RigidBody, RigidBodyDesc, Vector, World } from "@dimforge
 
 import { FromGameMessage } from "../types";
 
+const TERMINAL_VELOCITY = 50;
+const JUMP_STRENGTH = 6;
+
 export class GameWorker {
   #world = new World({ x: 0, y: -9.81, z: 0 });
 
   #playerBody: RigidBody | null = null;
   #playerPosition: Float32Array | null = null;
   #playerVelocity: Float32Array | null = null;
+
+  #lastUpdate = 0;
+  #velocityY = 0;
+  #jump = false;
 
   constructor() {
     // Create ground
@@ -44,10 +51,42 @@ export class GameWorker {
     });
   }
 
+  setJumping(pressingJump: boolean) {
+    this.#jump = true;
+  }
+
   #gameLoop() {
+    const delta = (performance.now() - this.#lastUpdate) / 1000;
+    this.#lastUpdate = performance.now();
+
+    // Gravity
+    this.#velocityY -= 9.81 * delta;
+    this.#velocityY = Math.max(this.#velocityY, -TERMINAL_VELOCITY);
+    this.#velocityY = Math.min(this.#velocityY, TERMINAL_VELOCITY);
+
+    // Jumping
+    if (this.#jump) {
+      this.#velocityY = JUMP_STRENGTH;
+      this.#jump = false;
+    }
+
+    // Ground collision
+    if (this.#playerBody) {
+      const { x, y, z } = this.#playerBody.translation();
+      if (y < 0) {
+        this.#playerBody.setTranslation({ x, y: 0, z }, true);
+        this.#velocityY = 0;
+      }
+    }
+
     // Set player velocity
     if (this.#playerVelocity && this.#playerBody) {
-      const velocity: Vector = { x: this.#playerVelocity[0], y: 0, z: this.#playerVelocity[1] };
+      const velocity: Vector = {
+        x: this.#playerVelocity[0],
+        y: this.#velocityY,
+        z: this.#playerVelocity[1],
+      };
+
       this.#playerBody.setLinvel(velocity, true);
     }
 

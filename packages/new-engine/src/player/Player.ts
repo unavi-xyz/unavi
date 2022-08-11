@@ -29,9 +29,7 @@ export class Player {
     document.addEventListener("keydown", this.#keydown);
     document.addEventListener("keyup", this.#keyup);
 
-    setTimeout(() => {
-      this.#engine.gameThread.initPlayer();
-    }, 1000);
+    this.#engine.gameThread.initPlayer();
   }
 
   destroy() {
@@ -60,6 +58,9 @@ export class Player {
         break;
       case "d":
         this.#pressingD = true;
+        break;
+      case " ":
+        this.#engine.gameThread.jump();
         break;
       default:
         return;

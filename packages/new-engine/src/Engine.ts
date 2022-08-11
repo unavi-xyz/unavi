@@ -19,11 +19,19 @@ export class Engine {
   #player: Player | null = null;
 
   constructor(canvas: HTMLCanvasElement, options?: EngineOptions) {
-    const { skyboxPath, player } = Object.assign(defaultOptions, options);
+    const { skyboxPath, player } = { ...defaultOptions, ...options };
 
     this.renderManager = new RenderManager(canvas, { skyboxPath });
 
+    this.init(player);
+  }
+
+  async init(player?: boolean) {
+    await this.gameThread.waitForReady();
     if (player) this.#player = new Player(this);
+
+    // Start rendering
+    this.renderManager.start();
   }
 
   destroy() {

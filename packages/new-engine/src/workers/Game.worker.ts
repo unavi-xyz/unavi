@@ -1,5 +1,5 @@
 import { GameWorker } from "../game/GameWorker";
-import { ToGameMessage } from "../types";
+import { FromGameMessage, ToGameMessage } from "../types";
 
 const gameWorker = new GameWorker();
 
@@ -10,5 +10,14 @@ onmessage = (event: MessageEvent<ToGameMessage>) => {
     case "init_player":
       gameWorker.initPlayer();
       break;
+    case "jumping":
+      gameWorker.setJumping(data);
+      break;
   }
 };
+
+const message: FromGameMessage = {
+  subject: "ready",
+  data: null,
+};
+postMessage(message);

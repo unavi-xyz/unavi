@@ -18,9 +18,11 @@ type WorkerMessage<S extends string, D> = {
 
 // To game worker
 export type ToGameInitPlayer = WorkerMessage<"init_player", null>;
-export type ToGameMessage = ToGameInitPlayer;
+export type ToGameJump = WorkerMessage<"jumping", boolean>;
+export type ToGameMessage = ToGameInitPlayer | ToGameJump;
 
 // From game worker
+export type FromGameReady = WorkerMessage<"ready", null>;
 export type FromGamePlayerBuffers = WorkerMessage<
   "player_buffers",
   {
@@ -28,4 +30,4 @@ export type FromGamePlayerBuffers = WorkerMessage<
     velocity: Float32Array;
   }
 >;
-export type FromGameMessage = FromGamePlayerBuffers;
+export type FromGameMessage = FromGameReady | FromGamePlayerBuffers;

@@ -43,7 +43,7 @@ export class RenderManager {
   #tempVec3 = new Vector3();
 
   constructor(canvas: HTMLCanvasElement, options?: RenderManagerOptions) {
-    const { skyboxPath } = Object.assign(defaultOptions, options);
+    const { skyboxPath } = { ...defaultOptions, ...options };
 
     // Renderer
     this.renderer = new WebGLRenderer({
@@ -74,11 +74,6 @@ export class RenderManager {
 
     // Camera
     this.camera = new PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
-    this.camera.position.set(-2, 2, 5);
-    this.camera.lookAt(0, 0, 0);
-
-    // Start rendering
-    this.start();
   }
 
   start() {

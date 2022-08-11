@@ -19,8 +19,6 @@ export function useAuthenticate() {
       const nonce = await getCsrfToken();
       if (!nonce) throw new Error("Could not get CSRF token");
 
-      console.log("🙅‍♂️", sessionStatus);
-
       // Prompt user to sign a message to verify their identity
       const message = createAuthMessage(window.location.host, nonce);
       const signature = await signMessageAsync({ message });

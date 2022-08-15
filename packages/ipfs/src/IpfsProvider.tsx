@@ -1,8 +1,6 @@
 import { IPFSHTTPClient, create } from "ipfs-http-client";
 import { createContext, useEffect, useState } from "react";
 
-import { DEFAULT_ENDPOINT } from "./constants";
-
 export const IpfsContext = createContext<{
   ipfs: IPFSHTTPClient | undefined;
   loadFromIpfs: (hash: string) => Promise<string | undefined>;
@@ -20,7 +18,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-export function IpfsProvider({ url = DEFAULT_ENDPOINT, children }: Props) {
+export function IpfsProvider({ url = process.env.NEXT_PUBLIC_IPFS_ENDPOINT, children }: Props) {
   const [ipfs, setIpfs] = useState<IPFSHTTPClient>();
 
   useEffect(() => {
@@ -29,7 +27,15 @@ export function IpfsProvider({ url = DEFAULT_ENDPOINT, children }: Props) {
       return;
     }
 
-    const newClient = create({ url });
+    const authKey = process.env.NEXT_PUBLIC_IPFS_AUTH;
+    if (!authKey) throw new Error("NEXT_PUBLIC_IPFS_AUTH is not set");
+
+    const newClient = create({
+      url,
+      headers: {
+        Authorization: `Basic ${Buffer.from(authKey).toString("base64")}`,
+      },
+    });
     setIpfs(newClient);
   }, [url]);
 

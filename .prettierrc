@@ -3,6 +3,5 @@
   "importOrderGroupNamespaceSpecifiers": true,
   "importOrderSeparation": true,
   "importOrderSortSpecifiers": true,
-  "language": "postgresql",
   "printWidth": 100
 }

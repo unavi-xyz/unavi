@@ -1,7 +1,6 @@
-import { Group, Object3D } from "three";
 import create from "zustand";
 
-import { Engine } from "@wired-xr/new-engine";
+import { Engine } from "@wired-xr/engine";
 
 import { Tool } from "./types";
 

@@ -3,7 +3,7 @@ import { AnimationAction, AnimationMixer, Box3, Scene, Vector3 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-import { Engine, IGLTF } from "@wired-xr/new-engine";
+import { Engine, IGLTF } from "@wired-xr/engine";
 
 import Panel from "./Panel/Panel";
 

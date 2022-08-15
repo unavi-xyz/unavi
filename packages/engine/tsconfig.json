@@ -1,4 +1,16 @@
 {
-  "exclude": ["dist", "build", "node_modules"],
-  "extends": "@wired-xr/tsconfig/react-library.json"
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./build",
+    "lib": ["ESNext", "DOM"],
+    "composite": true
+  },
+  "exclude": ["./src/workers/*.ts"],
+  "extends": "@wired-xr/tsconfig/base.json",
+  "include": ["./src/**/*.ts"],
+  "references": [
+    {
+      "path": "./src/workers"
+    }
+  ]
 }

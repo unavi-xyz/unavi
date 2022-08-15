@@ -26,7 +26,8 @@ This turborepo uses Yarn as a package manager. It includes the following apps/pa
 ### Apps
 
 - [client](apps/client): a website used to access The Wired
-- [client-db](apps/client-db): a database used by the client
+- [client-db](apps/client-db): a database for the client
+- [examples](apps/examples): examples for testing the engine
 - [docs](apps/docs): a documentation website
 - [host](apps/host): a server for hosting spaces
 
@@ -35,6 +36,7 @@ This turborepo uses Yarn as a package manager. It includes the following apps/pa
 - [engine](packages/engine): a 3d game engine
 - [ipfs](packages/ipfs): helpers for interacting with IPFS
 - [lens](packages/lens): helpers for interacting with Lens
+- [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
 
 ### Install
 

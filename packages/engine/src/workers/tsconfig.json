@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
     "rootDir": "..",
-    "lib": ["WebWorker", "ESNext"],
+    "lib": ["ESNext", "WebWorker"],
     "composite": true
   },
-  "exclude": [""],
+  "exclude": [],
   "extends": "../../tsconfig.json",
   "include": ["../**/*.ts"]
 }

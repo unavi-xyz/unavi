@@ -3,8 +3,6 @@ import { OrbitControls, Sky } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 
-import { Avatar } from "@wired-xr/engine";
-
 interface Props {
   url: string;
   background?: boolean;
@@ -55,7 +53,7 @@ export default function AvatarCanvas({
       )}
 
       <group rotation={[0, Math.PI, 0]}>
-        <Avatar
+        {/* <Avatar
           src={url}
           animationsSrc="/models/animations.fbx"
           animationWeights={{
@@ -64,7 +62,7 @@ export default function AvatarCanvas({
             run: { current: 0 },
             jump: { current: 0 },
           }}
-        />
+        /> */}
       </group>
     </Canvas>
   );

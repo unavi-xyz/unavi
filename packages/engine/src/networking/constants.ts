@@ -1,1 +1,0 @@
-export const LOCATION_PUBLISH_INTERVAL_MS = 100;

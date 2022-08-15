@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { ReactPortal, useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const DialogContext = React.createContext({ close: () => {} });
@@ -9,7 +9,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-export default function Dialog({ open, onClose = () => {}, children }: Props) {
+export default function Dialog({ open, onClose = () => {}, children }: Props): ReactPortal | null {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
 

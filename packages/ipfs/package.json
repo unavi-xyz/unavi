@@ -7,13 +7,13 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "ipfs-http-client": "^56.0.3"
+    "ipfs-http-client": "^57.0.3"
   },
   "devDependencies": {
-    "@types/react": "18.0.8",
-    "@types/react-dom": "^18.0.3",
+    "@types/react": "18.0.17",
+    "@types/react-dom": "^18.0.6",
     "@wired-xr/tsconfig": "*",
-    "eslint": "^8.14.0",
+    "eslint": "^8.22.0",
     "eslint-config-prettier": "^8.5.0",
     "typescript": "^4.7.4"
   },

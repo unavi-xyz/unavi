@@ -1,9 +1,7 @@
 const withPWA = require("next-pwa");
 const runtimeCaching = require("next-pwa/cache");
 const withTM = require("next-transpile-modules")([
-  "three",
   "@wired-xr/engine",
-  "@wired-xr/new-engine",
   "@wired-xr/ipfs",
   "@wired-xr/lens",
 ]);
@@ -46,7 +44,8 @@ module.exports = withPWA(
       runtimeCaching,
     },
     webpack: function (config) {
-      config.experiments = { syncWebAssembly: true, asyncWebAssembly: true, layers: true };
+      config.experiments.syncWebAssembly = true;
+      config.experiments.asyncWebAssembly = true;
       return config;
     },
   })

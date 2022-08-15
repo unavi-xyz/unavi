@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect, useRef } from "react";
 import { MdClose } from "react-icons/md";
 
-import { Engine } from "@wired-xr/new-engine";
+import { Engine } from "@wired-xr/engine";
 
 import { useLoad } from "../../../src/studio/hooks/useLoad";
 import { useStudioStore } from "../../../src/studio/store";

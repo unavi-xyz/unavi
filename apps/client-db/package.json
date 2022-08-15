@@ -14,6 +14,6 @@
     "start": "yarn docker:prune && yarn build && yarn docker:up"
   },
   "devDependencies": {
-    "prisma": "^4.1.1"
+    "prisma": "^4.2.1"
   }
 }

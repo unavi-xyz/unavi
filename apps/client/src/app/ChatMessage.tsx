@@ -1,19 +1,17 @@
 import { useEffect, useState } from "react";
 
-import { IChatMessage } from "@wired-xr/engine";
-
 const showDurationMs = 10 * 1000;
 
-function isFading(message: IChatMessage) {
+function isFading(message: any) {
   return Date.now() - message.timestamp > showDurationMs;
 }
 
-function isHidden(message: IChatMessage) {
+function isHidden(message: any) {
   return Date.now() - message.timestamp > showDurationMs + 2000;
 }
 
 interface Props {
-  message: IChatMessage;
+  message: any;
 }
 
 export default function ChatMessage({ message }: Props) {

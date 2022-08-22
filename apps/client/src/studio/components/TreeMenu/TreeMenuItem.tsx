@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
-import { Object3D } from "three";
 
 import { useStudioStore } from "../../../studio/store";
 import { DND_TYPES } from "../../../studio/types";
@@ -12,7 +11,7 @@ type DragItem = {
 };
 
 interface Props {
-  object: Object3D;
+  object: any;
   isRoot?: boolean;
 }
 
@@ -169,7 +168,7 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
 
         {open && (
           <div className={`${opacityClass}`}>
-            {object.children.map((child, i) => {
+            {object.children.map((child: any, i: any) => {
               if (i === object.children.length - 1 && !isRoot) {
                 return (
                   <div key={child.uuid} className="h-full">

@@ -6,7 +6,6 @@ import {
   Object3D,
 } from "three";
 
-import { IGLTF } from "../types";
 import { BufferViewResult } from "./loader/loadBufferView";
 import { buildNodeHierarchy } from "./parser/buildNodeHierarchy";
 import { AccessorResult, loadAccessor } from "./parser/loadAccessor";

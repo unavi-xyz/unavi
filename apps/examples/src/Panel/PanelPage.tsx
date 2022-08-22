@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { AnimationAction } from "three";
 
 import { RenderInfo, Settings } from "../ExampleCanvas";
 import AnimationsPage from "./AnimationsPage";
@@ -8,7 +7,7 @@ import SettingsPage from "./SettingsPage";
 import StatsPage from "./StatsPage";
 
 interface Props {
-  animations?: AnimationAction[];
+  animations?: any[];
   info?: RenderInfo;
   settings?: Settings;
   setSettings?: (settings: Settings) => void;

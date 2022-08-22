@@ -1,4 +1,3 @@
-import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useContext, useState } from "react";
@@ -27,10 +26,6 @@ export default function SettingsLayout({ children }: Props) {
 
   return (
     <div className="flex justify-center">
-      <Head>
-        <title>Settings / The Wired</title>
-      </Head>
-
       <Dialog open={open} onClose={() => setOpen(false)}>
         <CreateProfilePage />
       </Dialog>

@@ -1,42 +1,55 @@
-import { GameThread } from "./GameThread";
-import { RenderManager } from "./RenderManager";
-import { Player } from "./player/Player";
+import { createWorld } from "bitecs";
+
+import { LoaderThread } from "./LoaderThread";
+import { RenderThread } from "./RenderThread";
+import { config, deserialize } from "./ecs/components";
 
 export interface EngineOptions {
   skyboxPath?: string;
-  player?: boolean;
+  controls?: "orbit" | "player";
 }
 
-const defaultOptions = {
-  skyboxPath: undefined,
-  player: false,
+const defaultOptions: EngineOptions = {
+  controls: "player",
 };
 
 export class Engine {
-  gameThread = new GameThread(this);
-  renderManager: RenderManager;
+  world = createWorld(config);
 
-  #player: Player | null = null;
+  renderThread: RenderThread;
+  loaderThread = new LoaderThread();
+
+  names: string[] = [];
 
   constructor(canvas: HTMLCanvasElement, options?: EngineOptions) {
-    const { skyboxPath, player } = { ...defaultOptions, ...options };
+    const { skyboxPath, controls } = { ...defaultOptions, ...options };
+    this.renderThread = new RenderThread(canvas, { skyboxPath, controls });
 
-    this.renderManager = new RenderManager(canvas, { skyboxPath });
-
-    this.init(player);
+    this.start();
   }
 
-  async init(player?: boolean) {
-    await this.gameThread.waitForReady();
-    if (player) this.#player = new Player(this);
+  async start() {
+    await this.renderThread.waitForReady();
+    this.renderThread.start();
+  }
 
-    // Start rendering
-    this.renderManager.start();
+  stop() {
+    this.renderThread.stop();
   }
 
   destroy() {
-    this.renderManager.destroy();
-    this.gameThread.destroy();
-    if (this.#player) this.#player.destroy();
+    this.renderThread.destroy();
+    this.loaderThread.destroy();
+  }
+
+  async loadGltf(path: string) {
+    await this.loaderThread.waitForReady();
+    const { data } = await this.loaderThread.loadGltf(path);
+    this.names = data.assets.names;
+
+    this.world = createWorld(config);
+    deserialize(this.world, data.world);
+
+    this.renderThread.loadScene(data.world, data.assets.images, data.assets.accessors);
   }
 }

@@ -19,38 +19,46 @@ import MetaTags from "../../../src/ui/MetaTags";
 export default function Studio() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const engineLoaded = useRef(false);
 
-  useLoad();
-  useAutosave();
+  // useLoad();
+  // useAutosave();
 
-  useTransformControls();
-  useOrbitControls();
-  useStudioHotkeys();
-  useGrid();
+  // useTransformControls();
+  // useOrbitControls();
+  // useStudioHotkeys();
+  // useGrid();
 
   useEffect(() => {
+    window.addEventListener("resize", updateCanvasSize);
+
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || engineLoaded.current) return;
+
+    // React 18 triggers useEffect twice on initial render in dev mode
+    // this breaks canvas.transferControlToOffscreen(), which can only be called once
+    // So we need limit this useEffect to only run once
+    engineLoaded.current = true;
 
     // Set initial canvas size
     updateCanvasSize();
-    window.addEventListener("resize", updateCanvasSize);
 
     // Start engine
     const engine = new Engine(canvas, { skyboxPath: "/images/skybox/" });
     useStudioStore.setState({ engine });
 
-    engine.renderManager.camera.position.set(-2, 2, 5);
-    engine.renderManager.camera.lookAt(0, 0, 0);
+    // engine.renderManager.camera.position.set(-2, 2, 5);
+    // engine.renderManager.camera.lookAt(0, 0, 0);
 
     return () => {
-      engine.destroy();
-      useStudioStore.setState({ engine: null });
       window.removeEventListener("resize", updateCanvasSize);
     };
-  }, [canvasRef]);
+  }, []);
 
   function updateCanvasSize() {
+    // Can't resize OffscreenCanvas
+    // if (typeof OffscreenCanvas !== "undefined") return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 

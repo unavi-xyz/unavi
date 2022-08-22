@@ -44,48 +44,48 @@ export default function ObjectsMenu() {
 }
 
 function createObject(name: ObjectName) {
-  // switch (name) {
-  //   case ObjectName.Box:
-  //     // Mesh
-  //     const boxGeometry = new BoxBufferGeometry(1, 1, 1);
-  //     const boxMaterial = new MeshStandardMaterial({ color: 0xffff00 });
-  //     const boxMesh = new Mesh(boxGeometry, boxMaterial);
-  //     boxMesh.name = "Box";
-  //     // Physics
-  //     const boxUserData: UserData = {
-  //       OMI_collider: {
-  //         type: "box",
-  //         extents: [1, 1, 1],
-  //       },
-  //       OMI_physics_body: {
-  //         type: "static",
-  //       },
-  //     };
-  //     boxMesh.userData = boxUserData;
-  //     return boxMesh;
-  //   case ObjectName.Sphere:
-  //     // Mesh
-  //     const sphereGeometry = new SphereBufferGeometry(0.5);
-  //     const sphereMaterial = new MeshStandardMaterial({ color: 0x00ff00 });
-  //     const sphereMesh = new Mesh(sphereGeometry, sphereMaterial);
-  //     sphereMesh.name = "Sphere";
-  //     // Physics
-  //     const sphereUserData: UserData = {
-  //       OMI_collider: {
-  //         type: "sphere",
-  //         radius: 0.5,
-  //       },
-  //       OMI_physics_body: {
-  //         type: "static",
-  //       },
-  //     };
-  //     sphereMesh.userData = sphereUserData;
-  //     return sphereMesh;
-  //   case ObjectName.Cylinder:
-  //     const cylinderGeometry = new CylinderBufferGeometry(0.5, 0.5, 1);
-  //     const cylinderMaterial = new MeshStandardMaterial({ color: 0x0000ff });
-  //     const cylinderMesh = new Mesh(cylinderGeometry, cylinderMaterial);
-  //     cylinderMesh.name = "Cylinder";
-  //     return cylinderMesh;
-  // }
+  switch (name) {
+    case ObjectName.Box:
+    // // Mesh
+    // const boxGeometry = new BoxBufferGeometry(1, 1, 1);
+    // const boxMaterial = new MeshStandardMaterial({ color: 0xffff00 });
+    // const boxMesh = new Mesh(boxGeometry, boxMaterial);
+    // boxMesh.name = "Box";
+    // // Physics
+    // const boxUserData: UserData = {
+    //   OMI_collider: {
+    //     type: "box",
+    //     extents: [1, 1, 1],
+    //   },
+    //   OMI_physics_body: {
+    //     type: "static",
+    //   },
+    // };
+    // boxMesh.userData = boxUserData;
+    // return boxMesh;
+    // case ObjectName.Sphere:
+    //   // Mesh
+    //   const sphereGeometry = new SphereBufferGeometry(0.5);
+    //   const sphereMaterial = new MeshStandardMaterial({ color: 0x00ff00 });
+    //   const sphereMesh = new Mesh(sphereGeometry, sphereMaterial);
+    //   sphereMesh.name = "Sphere";
+    //   // Physics
+    //   const sphereUserData: UserData = {
+    //     OMI_collider: {
+    //       type: "sphere",
+    //       radius: 0.5,
+    //     },
+    //     OMI_physics_body: {
+    //       type: "static",
+    //     },
+    //   };
+    //   sphereMesh.userData = sphereUserData;
+    //   return sphereMesh;
+    // case ObjectName.Cylinder:
+    //   const cylinderGeometry = new CylinderBufferGeometry(0.5, 0.5, 1);
+    //   const cylinderMaterial = new MeshStandardMaterial({ color: 0x0000ff });
+    //   const cylinderMesh = new Mesh(cylinderGeometry, cylinderMaterial);
+    //   cylinderMesh.name = "Cylinder";
+    //   return cylinderMesh;
+  }
 }

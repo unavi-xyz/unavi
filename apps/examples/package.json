@@ -14,8 +14,7 @@
     "next": "^12.2.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-icons": "^4.4.0",
-    "three": "^0.140.0"
+    "react-icons": "^4.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.18.10",

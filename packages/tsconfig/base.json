@@ -16,7 +16,8 @@
     "preserveWatchOutput": true,
     "skipLibCheck": true,
     "strict": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "resolveJsonModule": true
   },
   "display": "Default",
   "exclude": ["node_modules", "build", "dist", ".turbo"]

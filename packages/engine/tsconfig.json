@@ -5,7 +5,7 @@
     "lib": ["ESNext", "DOM"],
     "composite": true
   },
-  "exclude": ["./src/workers/*.ts"],
+  "exclude": ["./src/workers"],
   "extends": "@wired-xr/tsconfig/base.json",
   "include": ["./src/**/*.ts"],
   "references": [

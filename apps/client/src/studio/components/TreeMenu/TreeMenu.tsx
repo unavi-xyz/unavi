@@ -15,7 +15,7 @@ export default function TreeMenu() {
       </div>
 
       <div className="pt-2 pr-4 w-full h-full overflow-y-auto">
-        <TreeMenuItem object={root} isRoot />
+        {/* <TreeMenuItem object={root} isRoot /> */}
       </div>
     </div>
   );

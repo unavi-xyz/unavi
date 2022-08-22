@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { AnimationAction } from "three";
 
 interface Props {
-  action: AnimationAction;
+  action: any;
 }
 
 export default function AnimationControl({ action }: Props) {

@@ -1,12 +1,11 @@
 import { CgSpinner } from "react-icons/cg";
-import { AnimationAction } from "three";
 
 import { RenderInfo, Settings } from "../ExampleCanvas";
 import PanelPage from "./PanelPage";
 
 interface Props {
   loaded: boolean;
-  animations?: AnimationAction[];
+  animations?: any[];
   info?: RenderInfo;
   settings?: Settings;
   setSettings?: (settings: Settings) => void;

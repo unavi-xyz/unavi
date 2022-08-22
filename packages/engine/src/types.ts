@@ -1,12 +1,5 @@
 import { AnimationAction, Group } from "three";
 
-import { LoadedGLTF } from "./gltf";
-
-export interface IGLTF {
-  scene: Group;
-  animations: AnimationAction[];
-}
-
 export type BoxCollider = {
   type: "box";
   extents?: [number, number, number];
@@ -52,11 +45,18 @@ export interface UserData {
   OMI_physics_body?: OMIPhysicsBody;
 }
 
+export type PostMessage<M extends WorkerMessage = WorkerMessage> = (
+  message: M,
+  transfer?: Transferable[]
+) => void;
+
+export type Transferable = ArrayBuffer | MessagePort | ImageBitmap | OffscreenCanvas;
+
 // Messages
-type WorkerMessage<S extends string, D> = {
+export type WorkerMessage<Subject extends string = string, Data = any> = {
   id?: number;
-  subject: S;
-  data: D;
+  subject: Subject;
+  data: Data;
 };
 
 // To game worker
@@ -74,9 +74,3 @@ export type FromGamePlayerBuffers = WorkerMessage<
   }
 >;
 export type FromGameMessage = FromGameReady | FromGamePlayerBuffers;
-
-// To loader worker
-export type ToLoaderMessage = WorkerMessage<"load_gltf", { uri: string }>;
-
-// From loader worker
-export type FromLoaderLoadedGltf = WorkerMessage<"loaded_gltf", LoadedGLTF>;

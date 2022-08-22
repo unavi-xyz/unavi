@@ -2,7 +2,7 @@ import { Engine } from "./Engine";
 import { FromGameMessage, ToGameMessage } from "./types";
 
 export class GameThread {
-  #worker = new Worker(new URL("./workers/Game.worker", import.meta.url), { type: "module" });
+  #worker = new Worker(new URL("./workers/Game.worker.ts", import.meta.url), { type: "module" });
 
   ready = false;
   #readyListeners: Array<() => void> = [];

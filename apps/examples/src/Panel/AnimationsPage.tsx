@@ -1,9 +1,7 @@
-import { AnimationAction } from "three";
-
 import AnimationControl from "./AnimationControl";
 
 interface Props {
-  animations: AnimationAction[];
+  animations: any[];
 }
 
 export default function AnimationsPage({ animations }: Props) {

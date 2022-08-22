@@ -1,5 +1,3 @@
-import { Object3D, Quaternion, Vector3 } from "three";
-
 import { useStudioStore } from "../store";
 
 export function updateTree() {
@@ -8,14 +6,13 @@ export function updateTree() {
 }
 
 export function getObject(uuid: string) {
-  const root = useStudioStore.getState().root;
-  const object = root.getObjectByProperty("uuid", uuid);
-  return object;
+  // const object = root.getObjectByProperty("uuid", uuid);
+  // return object;
 }
 
 export function addItemAsSibling(
-  object: Object3D,
-  sibling: Object3D,
+  object: any,
+  sibling: any,
   placement: "above" | "below" = "below"
 ) {
   const parent = sibling.parent;
@@ -41,16 +38,14 @@ export function addItemAsSibling(
   updateTree();
 }
 
-export function moveObject(object: Object3D, newParent: Object3D) {
-  // Save object transform
-  const position = object.getWorldPosition(new Vector3());
-  const rotation = object.getWorldQuaternion(new Quaternion());
-
-  // Add object to new parent
-  newParent.add(object);
-
-  // Restore object transform
-  const inverseParentRotation = newParent.getWorldQuaternion(new Quaternion()).invert();
-  object.position.copy(newParent.worldToLocal(position));
-  object.quaternion.multiplyQuaternions(rotation, inverseParentRotation);
+export function moveObject(object: any, newParent: any) {
+  // // Save object transform
+  // const position = object.getWorldPosition(new Vector3());
+  // const rotation = object.getWorldQuaternion(new Quaternion());
+  // // Add object to new parent
+  // newParent.add(object);
+  // // Restore object transform
+  // const inverseParentRotation = newParent.getWorldQuaternion(new Quaternion()).invert();
+  // object.position.copy(newParent.worldToLocal(position));
+  // object.quaternion.multiplyQuaternions(rotation, inverseParentRotation);
 }

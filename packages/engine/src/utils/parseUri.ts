@@ -1,6 +1,6 @@
 export enum UriType {
   DataUri = "data",
-  Ipfs = "ipfs",
+  IPFS = "ipfs",
   Url = "url",
   RelativePath = "relative",
 }
@@ -13,7 +13,7 @@ export function parseUri(uri: string) {
   if (isData) {
     return UriType.DataUri;
   } else if (isIPFS) {
-    return UriType.Ipfs;
+    return UriType.IPFS;
   } else if (isUrl) {
     return UriType.Url;
   } else {

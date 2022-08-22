@@ -1,6 +1,5 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
-import { ObjectLoader } from "three";
 
 import { trpc } from "../../login/trpc";
 import { useStudioStore } from "../store";
@@ -15,7 +14,6 @@ export function useLoad() {
   });
 
   const engine = useStudioStore((state) => state.engine);
-  const root = useStudioStore((state) => state.root);
 
   // Load the project on query fetch
   useEffect(() => {
@@ -29,13 +27,11 @@ export function useLoad() {
 
     // Load scene
     if (project.scene) {
-      const loader = new ObjectLoader();
-      const scene = JSON.parse(project.scene);
-
-      const object = loader.parse(scene);
-      useStudioStore.setState({ root: object });
-
-      updateTree();
+      // const loader = new ObjectLoader();
+      // const scene = JSON.parse(project.scene);
+      // const object = loader.parse(scene);
+      // useStudioStore.setState({ root: object });
+      // updateTree();
     }
 
     // Load studio state
@@ -46,12 +42,12 @@ export function useLoad() {
   }, [engine, project]);
 
   // Add root to scene
-  useEffect(() => {
-    if (!engine || !root) return;
-    engine.renderManager.scene.add(root);
+  // useEffect(() => {
+  //   if (!engine || !root) return;
+  //   // engine.renderManager.scene.add(root);
 
-    return () => {
-      root.removeFromParent();
-    };
-  }, [engine, root]);
+  //   return () => {
+  //     root.removeFromParent();
+  //   };
+  // }, [engine, root]);
 }

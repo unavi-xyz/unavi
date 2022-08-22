@@ -2,6 +2,7 @@ import {
   AnimationMixer,
   Box3,
   CubeTextureLoader,
+  Fog,
   FogExp2,
   PMREMGenerator,
   PerspectiveCamera,
@@ -161,9 +162,11 @@ export class RenderWorker {
 
       const min = boundingBox.min.z === 0 ? 1 : boundingBox.min.z;
       const max = boundingBox.max.z === 0 ? 1 : boundingBox.max.z;
-      this.#camera.near = Math.abs(min) / 1000;
-      this.#camera.far = Math.abs(max) * 100;
-      this.#camera.far = Math.max(this.#camera.far, 50);
+      const near = Math.abs(min) / 100;
+      const far = Math.max(50, Math.abs(max) * 100);
+      this.#scene.fog = new Fog(0xeefaff, near, far);
+      this.#camera.near = near;
+      this.#camera.far = far;
       this.#camera.updateProjectionMatrix();
     }
   }

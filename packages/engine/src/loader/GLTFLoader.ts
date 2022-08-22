@@ -9,6 +9,7 @@ import {
   Primitive as IPrimitive,
   PrimitiveTarget as IPrimitiveTarget,
   Scene as IScene,
+  Skin as ISkin,
   Texture as ITexture,
   Root,
   WebIO,
@@ -39,16 +40,20 @@ import {
   Node,
   NodeMesh,
   NodeParent,
+  NodeSkin,
   NormalTexture,
   OcclusionTexture,
   Primitive,
   PrimitiveIndices,
   PrimitiveMaterial,
+  Skin,
+  SkinJoint,
   TargetPath,
   Texture,
   config,
   serialize,
 } from "../ecs/components";
+import { nodeQuery } from "../ecs/queries";
 import { Assets, LoadedGLTF } from "./types";
 import { loadTextureInfo } from "./utils";
 
@@ -99,7 +104,10 @@ export class GLTFLoader {
       this.#loadNode(child, eid);
     });
 
-    //  Load animations
+    // Load skins
+    this.#loadSkins();
+
+    // Load animations
     if (!this.#root) throw new Error("No root");
     this.#root.listAnimations().forEach((animation) => {
       this.#loadAnimation(animation);
@@ -218,6 +226,45 @@ export class GLTFLoader {
     });
 
     this.#cache.nodes.set(node, eid);
+  }
+
+  #loadSkins() {
+    this.#cache.nodes.forEach((eid, node) => {
+      const skin = node.getSkin();
+      if (skin) {
+        addComponent(this.#world, NodeSkin, eid);
+        NodeSkin.skin[eid] = this.#loadSkin(skin);
+      }
+    });
+  }
+
+  #loadSkin(skin: ISkin) {
+    // Create entity
+    const eid = addEntity(this.#world);
+    addComponent(this.#world, Skin, eid);
+
+    const inverseBindMatrices = skin.getInverseBindMatrices();
+    if (!inverseBindMatrices) throw new Error("No inverse bind matrices");
+    Skin.inverseBindMatrices[eid] = this.#loadAccessor(inverseBindMatrices);
+
+    // Load joints
+    skin.listJoints().forEach((joint) => {
+      this.#loadJoint(joint, eid);
+    });
+
+    return eid;
+  }
+
+  #loadJoint(joint: INode, skinId: number) {
+    // Create entity
+    const eid = addEntity(this.#world);
+    addComponent(this.#world, SkinJoint, eid);
+
+    // Set properties
+    SkinJoint.skin[eid] = skinId;
+    const jointId = this.#cache.nodes.get(joint);
+    if (jointId === undefined) throw new Error("No joint entity");
+    SkinJoint.joint[eid] = jointId;
   }
 
   #loadMesh(mesh: IMesh) {

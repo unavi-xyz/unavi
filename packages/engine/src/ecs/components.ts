@@ -42,6 +42,17 @@ export const Node = defineComponent({
 });
 export const NodeParent = defineComponent({ parent: Types.eid });
 export const NodeMesh = defineComponent({ mesh: Types.eid });
+export const NodeSkin = defineComponent({ skin: Types.eid });
+
+// Skin
+export const Skin = defineComponent({
+  inverseBindMatrices: Asset,
+});
+
+export const SkinJoint = defineComponent({
+  skin: Types.eid,
+  joint: Types.eid,
+});
 
 // Primitive
 export const AttributeType = {
@@ -146,6 +157,9 @@ export const config = [
   Node,
   NodeParent,
   NodeMesh,
+  NodeSkin,
+  Skin,
+  SkinJoint,
   Primitive,
   PrimitiveMaterial,
   PrimitiveIndices,

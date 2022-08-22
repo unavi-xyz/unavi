@@ -20,17 +20,25 @@ import {
   Node,
   NodeMesh,
   NodeParent,
+  NodeSkin,
   NormalTexture,
   OcclusionTexture,
   Primitive,
   PrimitiveIndices,
   PrimitiveMaterial,
+  Skin,
+  SkinJoint,
 } from "./components";
 
 export const nodeQuery = defineQuery([Node]);
 export const nodeWithMeshQuery = defineQuery([Node, NodeMesh]);
+export const nodeWithSkinQuery = defineQuery([Node, NodeSkin]);
+export const nodeWithMeshAndSkinQuery = defineQuery([Node, NodeMesh, NodeSkin]);
 export const nodeWithParentQuery = defineQuery([Node, NodeParent]);
 export const nodeWithoutParentQuery = defineQuery([Node, Not(NodeParent)]);
+
+export const skinQuery = defineQuery([Skin]);
+export const jointQuery = defineQuery([SkinJoint]);
 
 export const primitiveQuery = defineQuery([Primitive]);
 export const primitiveWithMaterialQuery = defineQuery([Primitive, PrimitiveMaterial]);

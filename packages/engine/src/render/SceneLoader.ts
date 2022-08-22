@@ -1,6 +1,7 @@
 import { ComponentType, DESERIALIZE_MODE, TypedArray, createWorld, defineQuery } from "bitecs";
 import {
   AnimationClip,
+  Bone,
   BufferAttribute,
   BufferGeometry,
   CanvasTexture,
@@ -17,6 +18,7 @@ import {
   LinearFilter,
   LinearMipMapLinearFilter,
   LinearMipMapNearestFilter,
+  Matrix4,
   Mesh,
   MeshStandardMaterial,
   MirroredRepeatWrapping,
@@ -28,6 +30,8 @@ import {
   Points,
   QuaternionKeyframeTrack,
   RepeatWrapping,
+  Skeleton,
+  SkinnedMesh,
   VectorKeyframeTrack,
   sRGBEncoding,
 } from "three";
@@ -54,11 +58,14 @@ import {
   Node,
   NodeMesh,
   NodeParent,
+  NodeSkin,
   NormalTexture,
   OcclusionTexture,
   Primitive,
   PrimitiveIndices,
   PrimitiveMaterial,
+  Skin,
+  SkinJoint,
   TargetPath,
   Texture,
   TextureInfo,
@@ -68,6 +75,7 @@ import {
 import {
   animationChannelQuery,
   animationQuery,
+  jointQuery,
   materialQuery,
   materialWithColorTextureQuery,
   materialWithEmissiveTextureQuery,
@@ -75,11 +83,14 @@ import {
   materialWithNormalTextureQuery,
   materialWithOcclusionTextureQuery,
   nodeQuery,
+  nodeWithMeshAndSkinQuery,
   nodeWithMeshQuery,
   nodeWithParentQuery,
+  nodeWithSkinQuery,
   nodeWithoutParentQuery,
   primitiveQuery,
   primitiveWithIndicesQuery,
+  skinQuery,
 } from "../ecs/queries";
 import { WEBGL_CONSTANTS } from "../gltf";
 import {
@@ -98,22 +109,23 @@ type KeyframeTrackConstructor =
 
 // Parses an ECS world into a three.js scene
 export class SceneLoader {
-  #scene = new Group();
   #world = createWorld(config);
   #images: ImageBitmap[] = [];
   #accessors: TypedArray[] = [];
+
+  #scene = new Group();
+  #animations: AnimationClip[] = [];
 
   #materials = new Map<number, MeshStandardMaterial>();
   #geometies = new Map<number, BufferGeometry>();
   #primitives = new Map<number, PrimitiveObject3D>();
   #meshes = new Map<number, number[]>();
   #objects = new Map<number, Object3D>();
-  #animations: AnimationClip[] = [];
 
   parse({ worldBuffer, images, accessors }: LoadSceneData) {
-    deserialize(this.#world, worldBuffer, DESERIALIZE_MODE.MAP);
     this.#images = images;
     this.#accessors = accessors;
+    deserialize(this.#world, worldBuffer, DESERIALIZE_MODE.MAP);
 
     // Parse materials
     this.#parseMaterials();
@@ -242,8 +254,10 @@ export class SceneLoader {
   #parseNodes() {
     // Create nodes
     const nodes = nodeQuery(this.#world);
+    const joints = jointQuery(this.#world);
     nodes.forEach((eid) => {
-      const object = new Object3D();
+      const isBone = joints.reduce((acc, jeid) => acc || SkinJoint.joint[jeid] === eid, false);
+      const object = isBone ? new Bone() : new Object3D();
       this.#objects.set(eid, object);
 
       // Set transform
@@ -275,6 +289,41 @@ export class SceneLoader {
         const primitive = this.#primitives.get(peid);
         if (!primitive) throw new Error("Primitive not found");
         object.add(primitive);
+      });
+    });
+
+    // Load skins
+    const withSkin = nodeWithSkinQuery(this.#world);
+    withSkin.forEach((eid) => {
+      const object = this.#objects.get(eid);
+      if (!object) throw new Error("Node not found");
+
+      object.traverse((child) => {
+        if (!(child instanceof SkinnedMesh)) return;
+
+        const skinId = NodeSkin.skin[eid];
+        const bones: Bone[] = [];
+        const boneInverses: Matrix4[] = [];
+
+        joints.forEach((jeid, i) => {
+          const jointSkin = SkinJoint.skin[jeid];
+          if (jointSkin !== skinId) return;
+          const nodeId = SkinJoint.joint[jeid];
+          const joint = this.#objects.get(nodeId);
+          if (!joint) throw new Error("Joint not found");
+          if (!(joint instanceof Bone)) throw new Error("Joint is not a bone");
+
+          const matrix = new Matrix4();
+
+          const index = Skin.inverseBindMatrices[skinId];
+          const inverseBindMatrices = this.#accessors[index];
+          matrix.fromArray(inverseBindMatrices, i * 16);
+
+          bones.push(joint);
+          boneInverses.push(matrix);
+        });
+
+        child.bind(new Skeleton(bones, boneInverses), child.matrixWorld);
       });
     });
 
@@ -318,7 +367,8 @@ export class SceneLoader {
     withIndicies.forEach((eid) => {
       const indices = this.#parseAttribute(PrimitiveIndices, eid);
       const geometry = this.#geometies.get(eid);
-      geometry?.setIndex(indices);
+      if (!geometry) throw new Error("Geometry not found");
+      geometry.setIndex(indices);
     });
 
     // Set attributes
@@ -361,7 +411,19 @@ export class SceneLoader {
         case WEBGL_CONSTANTS.TRIANGLES:
         case WEBGL_CONSTANTS.TRIANGLE_STRIP:
         case WEBGL_CONSTANTS.TRIANGLE_FAN:
-          mesh = new Mesh(geometry, material);
+          const primitiveMesh = Primitive.mesh[eid];
+          const withMeshAndSkin = nodeWithMeshAndSkinQuery(this.#world);
+          const isSkinnedMesh = withMeshAndSkin.reduce((acc, neid) => {
+            const nodeMesh = NodeMesh.mesh[neid];
+            return acc || nodeMesh === primitiveMesh;
+          }, false);
+
+          mesh = isSkinnedMesh ? new SkinnedMesh(geometry, material) : new Mesh(geometry, material);
+
+          if (mesh instanceof SkinnedMesh) {
+            const normalized = mesh.geometry.attributes.skinWeight.normalized;
+            if (!normalized) mesh.normalizeSkinWeights();
+          }
           break;
         case WEBGL_CONSTANTS.LINES:
           mesh = new LineSegments(geometry, material);
@@ -399,8 +461,7 @@ export class SceneLoader {
         const primitive = this.#primitives.get(peid);
         if (!primitive) throw new Error("Primitive not found");
         primitive.updateMorphTargets();
-        if (!primitive.morphTargetInfluences) return;
-        primitive.morphTargetInfluences.forEach((_, i) => {
+        primitive.morphTargetInfluences?.forEach((_, i) => {
           if (!primitive.morphTargetInfluences) return;
           primitive.morphTargetInfluences[i] = weights[i] ?? 0;
         });

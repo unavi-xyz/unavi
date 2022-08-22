@@ -53,7 +53,6 @@ import {
   config,
   serialize,
 } from "../ecs/components";
-import { nodeQuery } from "../ecs/queries";
 import { Assets, LoadedGLTF } from "./types";
 import { loadTextureInfo } from "./utils";
 
@@ -63,13 +62,13 @@ const extensionDeps = {};
 export class GLTFLoader {
   #io = new WebIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(extensionDeps);
   #root: Root | null = null;
-  #cache = {
-    nodes: new Map<INode, number>(),
-    mesh: new Map<IMesh, number>(),
-    material: new Map<IMaterial, number>(),
-    texture: new Map<ITexture, number>(),
-    accessor: new Map<IAccessor, number>(),
-  };
+
+  #nodes = new Map<INode, number>();
+  #meshes = new Map<IMesh, number>();
+  #materials = new Map<IMaterial, number>();
+  #textures = new Map<ITexture, number>();
+  #accessors = new Map<IAccessor, number>();
+
   #imagePromises: Promise<ImageBitmap>[] = [];
 
   #world = createWorld(config);
@@ -135,7 +134,7 @@ export class GLTFLoader {
     // Set target
     const targetNode = channel.getTargetNode();
     if (!targetNode) throw new Error("No target node");
-    const nodeId = this.#cache.nodes.get(targetNode);
+    const nodeId = this.#nodes.get(targetNode);
     if (!nodeId) throw new Error("No target node entity");
     AnimationChannel.target[eid] = nodeId;
 
@@ -225,11 +224,11 @@ export class GLTFLoader {
       this.#loadNode(child, eid);
     });
 
-    this.#cache.nodes.set(node, eid);
+    this.#nodes.set(node, eid);
   }
 
   #loadSkins() {
-    this.#cache.nodes.forEach((eid, node) => {
+    this.#nodes.forEach((eid, node) => {
       const skin = node.getSkin();
       if (skin) {
         addComponent(this.#world, NodeSkin, eid);
@@ -262,14 +261,15 @@ export class GLTFLoader {
 
     // Set properties
     SkinJoint.skin[eid] = skinId;
-    const jointId = this.#cache.nodes.get(joint);
+    const jointId = this.#nodes.get(joint);
     if (jointId === undefined) throw new Error("No joint entity");
-    SkinJoint.joint[eid] = jointId;
+    SkinJoint.bone[eid] = jointId;
   }
 
   #loadMesh(mesh: IMesh) {
-    const cached = this.#cache.mesh.get(mesh);
-    if (cached !== undefined) return cached;
+    // TODO: Use instanced meshes
+    // const cached = this.#meshes.get(mesh);
+    // if (cached !== undefined) return cached;
 
     // Create entity
     const eid = addEntity(this.#world);
@@ -279,7 +279,7 @@ export class GLTFLoader {
       this.#loadPrimitive(primitive, eid);
     });
 
-    this.#cache.mesh.set(mesh, eid);
+    this.#meshes.set(mesh, eid);
     return eid;
   }
 
@@ -390,7 +390,7 @@ export class GLTFLoader {
   }
 
   #loadMaterial(material: IMaterial) {
-    const cached = this.#cache.material.get(material);
+    const cached = this.#materials.get(material);
     if (cached !== undefined) return cached;
 
     // Create entity
@@ -472,12 +472,12 @@ export class GLTFLoader {
       loadTextureInfo(occlusionInfo, OcclusionTexture.info, eid);
     }
 
-    this.#cache.material.set(material, eid);
+    this.#materials.set(material, eid);
     return eid;
   }
 
   #loadTexture(texture: ITexture) {
-    const cached = this.#cache.texture.get(texture);
+    const cached = this.#textures.get(texture);
     if (cached !== undefined) return cached;
 
     // Create entity
@@ -494,19 +494,19 @@ export class GLTFLoader {
       Texture.image[eid] = this.#imagePromises.push(bitmap) - 1;
     } else throw new Error("Texture has no image");
 
-    this.#cache.texture.set(texture, eid);
+    this.#textures.set(texture, eid);
     return eid;
   }
 
   #loadAccessor(accessor: IAccessor) {
-    const cached = this.#cache.accessor.get(accessor);
+    const cached = this.#accessors.get(accessor);
     if (cached !== undefined) return cached;
 
     const array = accessor.getArray();
     if (!array) throw new Error("Accessor array is null");
 
     const index = this.#assets.accessors.push(array) - 1;
-    this.#cache.accessor.set(accessor, index);
+    this.#accessors.set(accessor, index);
     return index;
   }
 }

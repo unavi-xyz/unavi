@@ -157,8 +157,8 @@ export class SceneLoader {
         const sampler = AnimationChannel.sampler[eid];
         const input = AnimationSampler.input[sampler];
         const output = AnimationSampler.output[sampler];
-        const inputArray = this.#accessors[input];
-        const outputArray = this.#accessors[output];
+        const inputArray = Array.from(this.#accessors[input]);
+        const outputArray = Array.from(this.#accessors[output]);
 
         const targetPath = AnimationChannel.targetPath[eid];
         let threePath: string;
@@ -216,8 +216,8 @@ export class SceneLoader {
         names.forEach((name) => {
           const track = new TypedKeyframeTrack(
             `${name}.${threePath}`,
-            Array.from(inputArray),
-            Array.from(outputArray),
+            inputArray,
+            outputArray,
             interpolationMode
           );
 
@@ -256,7 +256,7 @@ export class SceneLoader {
     const nodes = nodeQuery(this.#world);
     const joints = jointQuery(this.#world);
     nodes.forEach((eid) => {
-      const isBone = joints.reduce((acc, jeid) => acc || SkinJoint.joint[jeid] === eid, false);
+      const isBone = joints.reduce((acc, jeid) => acc || SkinJoint.bone[jeid] === eid, false);
       const object = isBone ? new Bone() : new Object3D();
       this.#objects.set(eid, object);
 
@@ -298,28 +298,26 @@ export class SceneLoader {
       const object = this.#objects.get(eid);
       if (!object) throw new Error("Node not found");
 
+      const skinId = NodeSkin.skin[eid];
+      const index = Skin.inverseBindMatrices[skinId];
+      const inverseBindMatrices = this.#accessors[index];
+
       object.traverse((child) => {
         if (!(child instanceof SkinnedMesh)) return;
 
-        const skinId = NodeSkin.skin[eid];
         const bones: Bone[] = [];
         const boneInverses: Matrix4[] = [];
 
         joints.forEach((jeid, i) => {
-          const jointSkin = SkinJoint.skin[jeid];
-          if (jointSkin !== skinId) return;
-          const nodeId = SkinJoint.joint[jeid];
-          const joint = this.#objects.get(nodeId);
-          if (!joint) throw new Error("Joint not found");
-          if (!(joint instanceof Bone)) throw new Error("Joint is not a bone");
+          const beid = SkinJoint.bone[jeid];
+          const bone = this.#objects.get(beid);
+          if (!bone) throw new Error("Joint not found");
+          if (!(bone instanceof Bone)) throw new Error("Joint is not a bone");
 
           const matrix = new Matrix4();
-
-          const index = Skin.inverseBindMatrices[skinId];
-          const inverseBindMatrices = this.#accessors[index];
           matrix.fromArray(inverseBindMatrices, i * 16);
 
-          bones.push(joint);
+          bones.push(bone);
           boneInverses.push(matrix);
         });
 
@@ -402,7 +400,7 @@ export class SceneLoader {
 
       // If three.js needs to generate tangents, flip normal map y
       // https://github.com/mrdoob/three.js/issues/11438#issuecomment-507003995
-      if (geometry.attributes.tangent) material.normalScale.y *= -1;
+      if (!geometry.attributes.tangent) material.normalScale.y *= -1;
 
       // Create mesh
       const mode = Primitive.mode[eid];
@@ -450,8 +448,8 @@ export class SceneLoader {
     this.#setMorphAttributes("tangent", AttributeTangent);
 
     // Set weights
-    const nodes = nodeQuery(this.#world);
-    nodes.forEach((neid) => {
+    const withMesh = nodeWithMeshQuery(this.#world);
+    withMesh.forEach((neid) => {
       const nodeMesh = NodeMesh.mesh[neid];
       const weights = Array.from(Node.weights[neid]);
 
@@ -460,6 +458,7 @@ export class SceneLoader {
         if (nodeMesh !== primitiveMesh) return;
         const primitive = this.#primitives.get(peid);
         if (!primitive) throw new Error("Primitive not found");
+
         primitive.updateMorphTargets();
         primitive.morphTargetInfluences?.forEach((_, i) => {
           if (!primitive.morphTargetInfluences) return;
@@ -477,7 +476,9 @@ export class SceneLoader {
       const peid = MorphTarget.primitive[eid];
       const primitive = this.#primitives.get(peid);
       if (!primitive) throw new Error("Primitive not found");
-      primitive.geometry.morphAttributes[attributeName] = [attribute];
+      const array = primitive.geometry.morphAttributes[attributeName] ?? [];
+      array.push(attribute);
+      primitive.geometry.morphAttributes[attributeName] = array;
     });
   }
 

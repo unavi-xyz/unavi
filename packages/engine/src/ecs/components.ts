@@ -51,7 +51,7 @@ export const Skin = defineComponent({
 
 export const SkinJoint = defineComponent({
   skin: Types.eid,
-  joint: Types.eid,
+  bone: Types.eid,
 });
 
 // Primitive

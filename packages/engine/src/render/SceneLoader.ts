@@ -1,4 +1,4 @@
-import { ComponentType, TypedArray, createWorld, defineQuery } from "bitecs";
+import { ComponentType, DESERIALIZE_MODE, TypedArray, createWorld, defineQuery } from "bitecs";
 import {
   AnimationClip,
   BufferAttribute,
@@ -7,9 +7,9 @@ import {
   ClampToEdgeWrapping,
   DoubleSide,
   FrontSide,
+  Group,
   InterpolateDiscrete,
   InterpolateLinear,
-  InterpolateSmooth,
   InterpolationModes,
   Line,
   LineLoop,
@@ -77,6 +77,7 @@ import {
   nodeQuery,
   nodeWithMeshQuery,
   nodeWithParentQuery,
+  nodeWithoutParentQuery,
   primitiveQuery,
   primitiveWithIndicesQuery,
 } from "../ecs/queries";
@@ -97,6 +98,7 @@ type KeyframeTrackConstructor =
 
 // Parses an ECS world into a three.js scene
 export class SceneLoader {
+  #scene = new Group();
   #world = createWorld(config);
   #images: ImageBitmap[] = [];
   #accessors: TypedArray[] = [];
@@ -106,10 +108,10 @@ export class SceneLoader {
   #primitives = new Map<number, PrimitiveObject3D>();
   #meshes = new Map<number, number[]>();
   #objects = new Map<number, Object3D>();
-  #animations = new Map<number, AnimationClip>();
+  #animations: AnimationClip[] = [];
 
   parse({ worldBuffer, images, accessors }: LoadSceneData) {
-    deserialize(this.#world, worldBuffer);
+    deserialize(this.#world, worldBuffer, DESERIALIZE_MODE.MAP);
     this.#images = images;
     this.#accessors = accessors;
 
@@ -124,22 +126,15 @@ export class SceneLoader {
 
     // Parse animations
     this.#parseAnimations();
-    const animations = Array.from(this.#animations.values());
 
-    // Create scene
-    const scene = new Object3D();
-    this.#objects.forEach((object) => {
-      scene.add(object);
-    });
-
-    return { scene, animations };
+    return { scene: this.#scene, animations: this.#animations };
   }
 
   #parseAnimations() {
     // Create animation clips
     const animations = animationQuery(this.#world);
     const animationChannels = animationChannelQuery(this.#world);
-    animations.forEach((aeid) => {
+    const clips = animations.map((aeid) => {
       let tracks: KeyframeTrack[] = [];
 
       animationChannels.forEach((eid) => {
@@ -238,8 +233,10 @@ export class SceneLoader {
       });
 
       const clip = new AnimationClip("", undefined, tracks);
-      this.#animations.set(aeid, clip);
+      return clip;
     });
+
+    this.#animations = clips;
   }
 
   #parseNodes() {
@@ -272,7 +269,7 @@ export class SceneLoader {
 
       const meid = NodeMesh.mesh[eid];
       const primitives = this.#meshes.get(meid);
-      if (!primitives) throw new Error("Primitive not found");
+      if (!primitives) throw new Error("Primitives not found");
 
       primitives.forEach((peid) => {
         const primitive = this.#primitives.get(peid);
@@ -291,6 +288,13 @@ export class SceneLoader {
       if (!parent) throw new Error("Parent not found");
       parent.add(object);
     });
+
+    const withoutParent = nodeWithoutParentQuery(this.#world);
+    withoutParent.forEach((eid) => {
+      const object = this.#objects.get(eid);
+      if (!object) throw new Error("Node not found");
+      this.#scene.add(object);
+    });
   }
 
   #parsePrimitives() {
@@ -299,6 +303,7 @@ export class SceneLoader {
     primitives.forEach((eid) => {
       // Create geometry
       const geometry = new BufferGeometry();
+      geometry.morphTargetsRelative = true;
       this.#geometies.set(eid, geometry);
 
       // Add to mesh
@@ -349,13 +354,9 @@ export class SceneLoader {
       // https://github.com/mrdoob/three.js/issues/11438#issuecomment-507003995
       if (geometry.attributes.tangent) material.normalScale.y *= -1;
 
-      geometry.morphTargetsRelative = true;
-
       // Create mesh
       const mode = Primitive.mode[eid];
-
       let mesh: PrimitiveObject3D;
-
       switch (mode) {
         case WEBGL_CONSTANTS.TRIANGLES:
         case WEBGL_CONSTANTS.TRIANGLE_STRIP:

@@ -1,4 +1,4 @@
-import { defineQuery } from "bitecs";
+import { Not, defineQuery } from "bitecs";
 
 import {
   Animation,
@@ -30,6 +30,7 @@ import {
 export const nodeQuery = defineQuery([Node]);
 export const nodeWithMeshQuery = defineQuery([Node, NodeMesh]);
 export const nodeWithParentQuery = defineQuery([Node, NodeParent]);
+export const nodeWithoutParentQuery = defineQuery([Node, Not(NodeParent)]);
 
 export const primitiveQuery = defineQuery([Primitive]);
 export const primitiveWithMaterialQuery = defineQuery([Primitive, PrimitiveMaterial]);

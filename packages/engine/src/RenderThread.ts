@@ -1,16 +1,14 @@
 import { TypedArray } from "bitecs";
 
 import { RenderWorker } from "./render/RenderWorker";
-import {
-  FakePointerData,
-  FromRenderMessage,
-  RenderWorkerOptions,
-  ToRenderMessage,
-} from "./render/types";
+import { FakePointerData, FromRenderMessage, ToRenderMessage } from "./render/types";
 import { Transferable } from "./types";
 import { FakeWorker } from "./utils/FakeWorker";
 
-export interface RenderThreadOptions extends RenderWorkerOptions {}
+export interface RenderThreadOptions {
+  controls?: "orbit" | "player";
+  skyboxPath?: string;
+}
 
 export class RenderThread {
   ready = false;
@@ -77,7 +75,13 @@ export class RenderThread {
   }
 
   loadScene(worldBuffer: ArrayBuffer, images: ImageBitmap[], accessors: TypedArray[]) {
-    this.#postMessage({ subject: "load_scene", data: { worldBuffer, images, accessors } });
+    this.#postMessage(
+      {
+        subject: "load_scene",
+        data: { worldBuffer, images, accessors },
+      },
+      [worldBuffer, ...images, ...accessors.map((accessor) => accessor.buffer)]
+    );
   }
 
   start() {

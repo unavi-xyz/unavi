@@ -58,6 +58,15 @@ export default function ExampleCanvas({ uri }: Props) {
 
   useEffect(() => {
     if (!engine) return;
+
+    return () => {
+      engine.destroy();
+      window.removeEventListener("resize", updateCanvasSize);
+    };
+  }, [engine]);
+
+  useEffect(() => {
+    if (!engine) return;
     // Load gltf
     engine.loadGltf(uri);
   }, [engine, uri]);

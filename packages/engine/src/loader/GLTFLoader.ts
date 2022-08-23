@@ -87,7 +87,6 @@ export class GLTFLoader {
 
     const world = serialize(this.#world);
 
-    // Wait for all image promises to resolve
     const images = await Promise.all(this.#imagePromises);
     this.#assets.images = images;
 
@@ -95,12 +94,9 @@ export class GLTFLoader {
   }
 
   #loadScene(scene: IScene) {
-    // Create entity
-    const eid = addEntity(this.#world);
-
     // Load nodes
     scene.listChildren().forEach((child) => {
-      this.#loadNode(child, eid);
+      this.#loadNode(child);
     });
 
     // Load skins
@@ -135,7 +131,7 @@ export class GLTFLoader {
     const targetNode = channel.getTargetNode();
     if (!targetNode) throw new Error("No target node");
     const nodeId = this.#nodes.get(targetNode);
-    if (!nodeId) throw new Error("No target node entity");
+    if (nodeId === undefined) throw new Error("No target node entity");
     AnimationChannel.target[eid] = nodeId;
 
     // Set target path
@@ -178,7 +174,7 @@ export class GLTFLoader {
     Node.name[eid] = this.#assets.names.push(node.getName()) - 1;
 
     // Set parent
-    if (parent) {
+    if (parent !== undefined) {
       addComponent(this.#world, NodeParent, eid);
       NodeParent.parent[eid] = parent;
     }

@@ -90,14 +90,12 @@ import {
   nodeWithoutParentQuery,
   primitiveQuery,
   primitiveWithIndicesQuery,
-  skinQuery,
 } from "../ecs/queries";
-import { WEBGL_CONSTANTS } from "../gltf";
 import {
   GLTFCubicSplineInterpolant,
   GLTFCubicSplineQuaternionInterpolant,
 } from "./CubicSplineInterpolation";
-import { ThreeAnimationPathName as ThreePathName } from "./constants";
+import { ThreeAnimationPathName as ThreePathName, WEBGL_CONSTANTS } from "./constants";
 import { LoadSceneData } from "./types";
 
 type PrimitiveObject3D = Mesh | Line | LineSegments | LineLoop | Points;
@@ -107,7 +105,7 @@ type KeyframeTrackConstructor =
   | typeof QuaternionKeyframeTrack
   | typeof VectorKeyframeTrack;
 
-// Parses an ECS world into a three.js scene
+// Loads an ECS world into a three.js scene
 export class SceneLoader {
   #world = createWorld(config);
   #images: ImageBitmap[] = [];
@@ -125,6 +123,7 @@ export class SceneLoader {
   parse({ worldBuffer, images, accessors }: LoadSceneData) {
     this.#images = images;
     this.#accessors = accessors;
+    this.#world = createWorld(config);
     deserialize(this.#world, worldBuffer, DESERIALIZE_MODE.MAP);
 
     // Parse materials

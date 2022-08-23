@@ -1,5 +1,3 @@
-import { AnimationAction, Group } from "three";
-
 export type BoxCollider = {
   type: "box";
   extents?: [number, number, number];

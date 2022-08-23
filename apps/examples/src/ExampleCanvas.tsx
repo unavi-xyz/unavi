@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Engine } from "@wired-xr/engine";
 
@@ -32,37 +32,53 @@ interface Props {
 export default function ExampleCanvas({ uri }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [engine, setEngine] = useState<Engine>();
+  const initialized = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || initialized.current) return;
+
+    initialized.current = true;
 
     // Set canvas size
     updateCanvasSize();
     window.addEventListener("resize", updateCanvasSize);
 
     // Create engine
-    const engine = new Engine(canvas, { controls: "orbit" });
+    const newEngine = new Engine(canvas, { controls: "orbit" });
 
-    // Load gltf
-    engine.loadGltf(uri);
-
-    return () => {
+    if (engine) {
       engine.destroy();
       window.removeEventListener("resize", updateCanvasSize);
-    };
-  }, [canvasRef, uri]);
+    }
+
+    setEngine(newEngine);
+  }, [canvasRef, engine, uri]);
+
+  useEffect(() => {
+    if (!engine) return;
+    // Load gltf
+    engine.loadGltf(uri);
+  }, [engine, uri]);
 
   function updateCanvasSize() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    // Only run if canvas is available
+    // (canvas is not available when using OffscreenCanvas)
+    if (typeof OffscreenCanvas !== "undefined" && initialized.current) return;
 
-    const container = containerRef.current;
-    if (!container) return;
+    try {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const container = containerRef.current;
+      if (!container) return;
 
-    // Resize canvas
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
+      // Resize canvas
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   return (

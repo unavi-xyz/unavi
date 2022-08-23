@@ -4,6 +4,7 @@ import {
   CubeTextureLoader,
   Fog,
   FogExp2,
+  Object3D,
   PMREMGenerator,
   PerspectiveCamera,
   Scene,
@@ -11,11 +12,16 @@ import {
   WebGLRenderer,
   sRGBEncoding,
 } from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 
 import { PostMessage } from "../types";
 import { disposeTree } from "../utils/disposeTree";
+import {
+  FakePointerEvent,
+  FakeWheelEvent,
+  OrbitControls,
+  PointerCaptureEvent,
+} from "./OrbitControls";
 import { SceneLoader } from "./SceneLoader";
 import { FromRenderMessage, LoadSceneData, RenderWorkerOptions, ToRenderMessage } from "./types";
 
@@ -24,6 +30,7 @@ export class RenderWorker {
   #canvas: HTMLCanvasElement | OffscreenCanvas | undefined;
 
   #scene = new Scene();
+  #gltf: Object3D | null = null;
   #renderer: WebGLRenderer | null = null;
   #camera: PerspectiveCamera | null = null;
   #orbitControls: OrbitControls | null = null;
@@ -60,13 +67,43 @@ export class RenderWorker {
       case "load_scene":
         this.loadScene(data);
         break;
+      case "size":
+        this.#updateCanvasSize(data.width, data.height);
+        break;
+      case "pointermove":
+        const pointerMoveEvent: FakePointerEvent = new CustomEvent("pointermove", {
+          detail: data,
+        });
+        this.#orbitControls?.domElement.dispatchEvent(pointerMoveEvent);
+        break;
+      case "pointerdown":
+        const pointerDownEvent: FakePointerEvent = new CustomEvent("pointerdown", { detail: data });
+        this.#orbitControls?.domElement.dispatchEvent(pointerDownEvent);
+        break;
+      case "pointerup":
+        const pointerUpEvent: FakePointerEvent = new CustomEvent("pointerup", { detail: data });
+        this.#orbitControls?.domElement.dispatchEvent(pointerUpEvent);
+        break;
+      case "pointercancel":
+        const pointerCancelEvent: FakePointerEvent = new CustomEvent("pointercancel", {
+          detail: data,
+        });
+        this.#orbitControls?.domElement.dispatchEvent(pointerCancelEvent);
+        break;
+      case "wheel":
+        const wheelEvent: FakeWheelEvent = new CustomEvent("wheel", { detail: data });
+        this.#orbitControls?.domElement.dispatchEvent(wheelEvent);
+        break;
       default:
         throw new Error(`Unknown message subject: ${subject}`);
     }
   };
 
-  init({ skyboxPath, controls }: RenderWorkerOptions) {
+  init({ skyboxPath, controls, pixelRatio, canvasWidth, canvasHeight }: RenderWorkerOptions) {
     if (!this.#canvas) throw new Error("Canvas not set");
+
+    this.#canvasWidth = canvasWidth;
+    this.#canvasHeight = canvasHeight;
 
     // Renderer
     this.#renderer = new WebGLRenderer({
@@ -75,8 +112,8 @@ export class RenderWorker {
       alpha: true,
       preserveDrawingBuffer: true,
     });
-    this.#renderer.setPixelRatio(window.devicePixelRatio);
-    this.#renderer.setSize(this.#canvas.width, this.#canvas.height);
+    if (pixelRatio !== undefined) this.#renderer.setPixelRatio(pixelRatio);
+    this.#renderer.setSize(canvasWidth, canvasHeight, false);
     this.#renderer.outputEncoding = sRGBEncoding;
     this.#renderer.physicallyCorrectLights = true;
 
@@ -98,11 +135,21 @@ export class RenderWorker {
     }
 
     // Camera
-    this.#camera = new PerspectiveCamera(75, this.#canvas.width / this.#canvas.height, 0.1, 1000);
+    this.#camera = new PerspectiveCamera(75, canvasWidth / canvasHeight, 0.1, 1000);
 
     // Controls
     if (controls === "orbit") {
-      this.#orbitControls = new OrbitControls(this.#camera, this.#renderer.domElement);
+      const target = new EventTarget();
+      //@ts-ignore
+      target.addEventListener("setPointerCapture", (e: PointerCaptureEvent) => {
+        this.#postMessage({ subject: "setPointerCapture", data: e.detail });
+      });
+      //@ts-ignore
+      target.addEventListener("releasePointerCapture", (e: PointerCaptureEvent) => {
+        this.#postMessage({ subject: "releasePointerCapture", data: e.detail });
+      });
+
+      this.#orbitControls = new OrbitControls(this.#camera, target, canvasWidth, canvasHeight);
       this.#orbitControls.enableDamping = true;
       this.#orbitControls.dampingFactor = 0.05;
       this.#camera.position.set(-1, 2, 5);
@@ -134,13 +181,21 @@ export class RenderWorker {
   }
 
   loadScene(data: LoadSceneData) {
+    if (this.#gltf) {
+      this.#scene.remove(this.#gltf);
+      disposeTree(this.#gltf);
+      this.#gltf = null;
+    }
+
     const parser = new SceneLoader();
     const { scene, animations } = parser.parse(data);
-    this.#scene.add(scene);
+
+    this.#gltf = scene;
+    this.#scene.add(this.#gltf);
 
     // Play animations
     if (animations.length > 0) {
-      this.#mixer = new AnimationMixer(this.#scene);
+      this.#mixer = new AnimationMixer(this.#gltf);
       for (const animation of animations) {
         this.#mixer.clipAction(animation).play();
       }
@@ -179,24 +234,19 @@ export class RenderWorker {
     const delta = time - this.#lastTime;
     this.#lastTime = time;
 
-    this.#updateCanvasSize();
     this.#mixer?.update(delta / 1000);
     this.#orbitControls?.update();
     this.#renderer.render(this.#scene, this.#camera);
   }
 
-  #updateCanvasSize() {
+  #updateCanvasSize(width: number, height: number) {
     if (!this.#renderer || !this.#camera) return;
-
-    const width = this.#renderer.domElement.width;
-    const height = this.#renderer.domElement.height;
-
     if (width === this.#canvasWidth && height === this.#canvasHeight) return;
 
     this.#canvasWidth = width;
     this.#canvasHeight = height;
 
-    this.#renderer.setSize(width, height);
+    this.#renderer.setSize(width, height, false);
     this.#camera.aspect = width / height;
     this.#camera.updateProjectionMatrix();
   }

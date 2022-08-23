@@ -9,10 +9,6 @@ export interface EngineOptions {
   controls?: "orbit" | "player";
 }
 
-const defaultOptions: EngineOptions = {
-  controls: "player",
-};
-
 export class Engine {
   world = createWorld(config);
 
@@ -22,7 +18,8 @@ export class Engine {
   names: string[] = [];
 
   constructor(canvas: HTMLCanvasElement, options?: EngineOptions) {
-    const { skyboxPath, controls } = { ...defaultOptions, ...options };
+    const { skyboxPath, controls = "player" } = { ...options };
+
     this.renderThread = new RenderThread(canvas, { skyboxPath, controls });
 
     this.start();

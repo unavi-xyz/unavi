@@ -21,5 +21,3 @@ const message: FromGameMessage = {
   data: null,
 };
 postMessage(message);
-
-console.log("👩‍❤️‍👩", typeof window);

@@ -1,14 +1,7 @@
 import { TypedArray } from "bitecs";
 
 import { WorkerMessage } from "../types";
-
-export interface RenderWorkerOptions {
-  skyboxPath?: string;
-  controls?: "orbit" | "player";
-  pixelRatio?: number;
-  canvasWidth: number;
-  canvasHeight: number;
-}
+import { RenderWorkerOptions } from "./RenderWorker";
 
 export type LoadSceneData = {
   worldBuffer: ArrayBuffer;
@@ -16,7 +9,7 @@ export type LoadSceneData = {
   accessors: TypedArray[];
 };
 
-export type FakePointerData = {
+export type PointerData = {
   pointerType: string;
   pointerId: number;
   pageX: number;
@@ -27,9 +20,14 @@ export type FakePointerData = {
   ctrlKey: boolean;
   shiftKey: boolean;
   metaKey: boolean;
+  pointer: {
+    x: number;
+    y: number;
+    button: number;
+  };
 };
 
-export type FakeWheelData = {
+export type WheelData = {
   deltaY: number;
 };
 
@@ -40,14 +38,24 @@ export type ToRenderMessage =
   | WorkerMessage<"stop">
   | WorkerMessage<"destroy">
   | WorkerMessage<"load_scene", LoadSceneData>
+  | WorkerMessage<"update_scene", ArrayBuffer>
   | WorkerMessage<"size", { width: number; height: number }>
-  | WorkerMessage<"pointermove", FakePointerData>
-  | WorkerMessage<"pointerup", FakePointerData>
-  | WorkerMessage<"pointerdown", FakePointerData>
-  | WorkerMessage<"pointercancel", FakePointerData>
-  | WorkerMessage<"wheel", FakeWheelData>;
+  | WorkerMessage<"pointermove", PointerData>
+  | WorkerMessage<"pointerup", PointerData>
+  | WorkerMessage<"pointerdown", PointerData>
+  | WorkerMessage<"pointercancel", PointerData>
+  | WorkerMessage<"wheel", WheelData>
+  | WorkerMessage<"set_transform_target", number | null>
+  | WorkerMessage<"set_transform_mode", "translate" | "rotate" | "scale">;
 
 export type FromRenderMessage =
   | WorkerMessage<"ready">
-  | WorkerMessage<"setPointerCapture", number>
-  | WorkerMessage<"releasePointerCapture", number>;
+  | WorkerMessage<"clicked_object", number | null>
+  | WorkerMessage<
+      "set_transform",
+      {
+        position: [number, number, number];
+        rotation: [number, number, number, number];
+        scale: [number, number, number];
+      }
+    >;

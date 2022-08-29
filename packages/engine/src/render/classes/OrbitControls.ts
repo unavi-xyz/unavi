@@ -11,7 +11,7 @@ import {
   Vector3,
 } from "three";
 
-import { FakePointerData, FakeWheelData } from "./types";
+import { PointerData, WheelData } from "../types";
 
 // https://github.com/mrdoob/three.js/blob/dev/examples/jsm/controls/OrbitControls.js
 
@@ -23,10 +23,8 @@ import { FakePointerData, FakeWheelData } from "./types";
 //    Pan - right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move
 
 export type FakeKeyDownEvent = CustomEvent<{ code: string }>;
-export type FakePointerEvent = CustomEvent<FakePointerData>;
-export type FakeWheelEvent = CustomEvent<FakeWheelData>;
-
-export type PointerCaptureEvent = CustomEvent<number>;
+export type FakePointerEvent = CustomEvent<PointerData>;
+export type FakeWheelEvent = CustomEvent<WheelData>;
 
 const _changeEvent = { type: "change" };
 const _startEvent = { type: "start" };
@@ -713,9 +711,6 @@ export class OrbitControls extends EventDispatcher {
       if (scope.enabled === false) return;
 
       if (pointers.length === 0) {
-        scope.domElement.dispatchEvent(
-          new CustomEvent("setPointerCapture", { detail: event.detail.pointerId })
-        );
         //@ts-ignore
         scope.domElement.addEventListener("pointermove", onPointerMove);
         //@ts-ignore
@@ -747,9 +742,6 @@ export class OrbitControls extends EventDispatcher {
       removePointer(event);
 
       if (pointers.length === 0) {
-        scope.domElement.dispatchEvent(
-          new CustomEvent("releasePointerCapture", { detail: event.detail.pointerId })
-        );
         //@ts-ignore
         scope.domElement.removeEventListener("pointermove", onPointerMove);
         //@ts-ignore

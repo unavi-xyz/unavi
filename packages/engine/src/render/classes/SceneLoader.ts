@@ -69,12 +69,10 @@ import {
   TargetPath,
   Texture,
   TextureInfo,
-  config,
-  deserialize,
-} from "../ecs/components";
-import {
   animationChannelQuery,
   animationQuery,
+  config,
+  deserialize,
   jointQuery,
   materialQuery,
   materialWithColorTextureQuery,
@@ -90,13 +88,13 @@ import {
   nodeWithoutParentQuery,
   primitiveQuery,
   primitiveWithIndicesQuery,
-} from "../ecs/queries";
+} from "../../ecs";
+import { ThreeAnimationPathName as ThreePathName, WEBGL_CONSTANTS } from "../constants";
+import { LoadSceneData } from "../types";
 import {
   GLTFCubicSplineInterpolant,
   GLTFCubicSplineQuaternionInterpolant,
 } from "./CubicSplineInterpolation";
-import { ThreeAnimationPathName as ThreePathName, WEBGL_CONSTANTS } from "./constants";
-import { LoadSceneData } from "./types";
 
 type PrimitiveObject3D = Mesh | Line | LineSegments | LineLoop | Points;
 type KeyframeTrack = NumberKeyframeTrack | QuaternionKeyframeTrack | VectorKeyframeTrack;

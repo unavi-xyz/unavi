@@ -1,9 +1,11 @@
+import { DESERIALIZE_MODE } from "bitecs";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
+import { deserialize } from "@wired-xr/engine";
+
 import { trpc } from "../../login/trpc";
 import { useStudioStore } from "../store";
-import { updateTree } from "../utils/scene";
 
 export function useLoad() {
   const router = useRouter();
@@ -13,41 +15,32 @@ export function useLoad() {
     enabled: id !== undefined,
   });
 
+  const { data: world } = trpc.useQuery(["world", { id: parseInt(id as string) }], {
+    enabled: id !== undefined,
+  });
+
   const engine = useStudioStore((state) => state.engine);
 
   // Load the project on query fetch
   useEffect(() => {
-    if (!engine || !project) return;
+    if (!engine || !project || !world) return;
 
-    // Name and description
+    // Set name and description
     useStudioStore.setState({
       name: project.name ?? "",
       description: project.description ?? "",
     });
 
-    // Load scene
-    if (project.scene) {
-      // const loader = new ObjectLoader();
-      // const scene = JSON.parse(project.scene);
-      // const object = loader.parse(scene);
-      // useStudioStore.setState({ root: object });
-      // updateTree();
-    }
-
-    // Load studio state
+    // Set studio state
     if (project.studioState) {
       const studioState = JSON.parse(project.studioState);
       useStudioStore.setState(studioState);
     }
-  }, [engine, project]);
 
-  // Add root to scene
-  // useEffect(() => {
-  //   if (!engine || !root) return;
-  //   // engine.renderManager.scene.add(root);
-
-  //   return () => {
-  //     root.removeFromParent();
-  //   };
-  // }, [engine, root]);
+    // Set world
+    const worldJson = JSON.parse(world);
+    const worldBuffer = Buffer.from(worldJson).buffer;
+    deserialize(engine.world, worldBuffer, DESERIALIZE_MODE.REPLACE);
+    engine.updateScene();
+  }, [engine, project, world]);
 }

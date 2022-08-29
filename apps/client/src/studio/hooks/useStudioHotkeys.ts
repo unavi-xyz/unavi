@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import { useStudioStore } from "../store";
-import { addItemAsSibling, getObject } from "../utils/scene";
 
 export function useStudioHotkeys() {
   const [copiedId, setCopiedId] = useState<string>();
@@ -13,15 +12,15 @@ export function useStudioHotkeys() {
 
       switch (e.key) {
         case "Delete":
-          const selectedId = useStudioStore.getState().selectedId;
-          if (selectedId) {
-            const object = getObject(selectedId);
-            if (!object) return;
+          // const selectedId = useStudioStore.getState().selectedId;
+          // if (selectedId) {
+          //   const object = getObject(selectedId);
+          //   if (!object) return;
 
-            object.removeFromParent();
+          //   object.removeFromParent();
 
-            useStudioStore.setState({ selectedId: null });
-          }
+          //   useStudioStore.setState({ selectedId: null });
+          // }
           break;
         case "w":
           useStudioStore.setState({ tool: "translate" });
@@ -33,23 +32,23 @@ export function useStudioHotkeys() {
           useStudioStore.setState({ tool: "scale" });
           break;
         case "c":
-          // Copy
-          if (e.ctrlKey) {
-            const selectedId = useStudioStore.getState().selectedId;
-            if (selectedId) setCopiedId(selectedId);
-          }
+          // // Copy
+          // if (e.ctrlKey) {
+          //   const selectedId = useStudioStore.getState().selectedId;
+          //   if (selectedId) setCopiedId(selectedId);
+          // }
           break;
         case "v":
-          // Pase
-          if (e.ctrlKey) {
-            if (!copiedId) return;
+          // // Paste
+          // if (e.ctrlKey) {
+          //   if (!copiedId) return;
 
-            const object = getObject(copiedId);
-            if (!object) return;
+          //   const object = getObject(copiedId);
+          //   if (!object) return;
 
-            const clone = object.clone();
-            addItemAsSibling(clone, object, "above");
-          }
+          //   const clone = object.clone();
+          //   addItemAsSibling(clone, object, "above");
+          // }
           break;
       }
     }

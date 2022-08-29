@@ -19,6 +19,11 @@ const settings = withTM({
         destination: "/",
         permanent: false,
       },
+      {
+        source: "/studio",
+        destination: "/create",
+        permanent: false,
+      },
     ];
   },
   async headers() {

@@ -10,6 +10,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.159.0",
     "@prisma/client": "^4.2.1",
     "@rainbow-me/rainbowkit": "^0.4.6",
     "@trpc/client": "^9.27.0",

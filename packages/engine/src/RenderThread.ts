@@ -1,13 +1,15 @@
 import { TypedArray } from "bitecs";
 
+import { SceneObject } from "./ecs";
 import { RenderWorker } from "./render/RenderWorker";
-import { FakePointerData, FromRenderMessage, ToRenderMessage } from "./render/types";
+import { FromRenderMessage, PointerData, ToRenderMessage } from "./render/types";
 import { Transferable } from "./types";
 import { FakeWorker } from "./utils/FakeWorker";
 
 export interface RenderThreadOptions {
-  controls?: "orbit" | "player";
+  camera: "orbit" | "player";
   skyboxPath?: string;
+  enableTransformControls?: boolean;
 }
 
 export class RenderThread {
@@ -16,14 +18,18 @@ export class RenderThread {
   #worker: Worker | FakeWorker;
   #canvas: HTMLCanvasElement;
   #onReady: Array<() => void> = [];
+  #target: number | null = null;
 
-  constructor(canvas: HTMLCanvasElement, { controls, skyboxPath }: RenderThreadOptions) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    { camera, skyboxPath, enableTransformControls }: RenderThreadOptions
+  ) {
     this.#canvas = canvas;
 
-    // Create worker if browser supports OffscreenCanvas
-    // A path to the worker script must be provided
-    if (typeof OffscreenCanvas !== "undefined") {
-      console.log("🖥️ Rendering with OffscreenCanvas");
+    // Render in a worker if browser supports OffscreenCanvas
+    // Unless we're in development mode, which causes issues with transferControlToOffscreen()
+    if (typeof OffscreenCanvas !== "undefined" && process.env.NODE_ENV !== "development") {
+      console.log("🖥️ Browser supports OffscreenCanvas. Rendering on worker thread.");
       const offscreen = canvas.transferControlToOffscreen();
       this.#worker = new Worker(new URL("./workers/Render.worker.ts", import.meta.url), {
         type: "module",
@@ -31,8 +37,8 @@ export class RenderThread {
       // Initialize worker
       this.#postMessage({ subject: "set_canvas", data: offscreen }, [offscreen]);
     } else {
-      console.log("🖥️ Rendering on main thread");
-      // Otherwise, create a fake worker that runs in the main thread
+      console.log("🖥️ Browser does not support OffscreenCanvas. Rendering on main thread.");
+      // Otherwise, render in a fake worker on the main thread
       this.#worker = new FakeWorker();
       const renderWorker = new RenderWorker(
         this.#worker.workerPort.postMessage.bind(this.#worker.workerPort),
@@ -48,15 +54,16 @@ export class RenderThread {
     this.#postMessage({
       subject: "init",
       data: {
-        controls,
-        skyboxPath,
         pixelRatio: window.devicePixelRatio,
         canvasWidth: canvas.clientWidth,
         canvasHeight: canvas.clientHeight,
+        camera,
+        skyboxPath,
+        enableTransformControls,
       },
     });
 
-    // Event listeners\
+    // Event listeners
     window.addEventListener("resize", this.#onResize.bind(this));
     canvas.addEventListener("contextmenu", this.#onContextMenu.bind(this));
     canvas.addEventListener("pointermove", this.#onPointerMove.bind(this));
@@ -84,6 +91,10 @@ export class RenderThread {
     );
   }
 
+  updateScene(buffer: ArrayBuffer) {
+    this.#postMessage({ subject: "update_scene", data: buffer }, [buffer]);
+  }
+
   start() {
     this.#postMessage({ subject: "start", data: null });
   }
@@ -104,6 +115,17 @@ export class RenderThread {
     this.#canvas.removeEventListener("wheel", this.#onWheel);
   }
 
+  setTransformTarget(target: number | null) {
+    this.#target = target;
+    this.#postMessage({ subject: "set_transform_target", data: target });
+  }
+
+  setTransformMode(mode: "translate" | "rotate" | "scale") {
+    this.#postMessage({ subject: "set_transform_mode", data: mode });
+  }
+
+  onObjectClick(eid: number | null) {}
+
   #onmessage = (event: MessageEvent<FromRenderMessage>) => {
     const { subject, data } = event.data;
 
@@ -113,14 +135,23 @@ export class RenderThread {
         this.#onReady.forEach((resolve) => resolve());
         this.#onReady = [];
         break;
-      case "setPointerCapture":
-        this.#canvas.setPointerCapture(data);
+      case "clicked_object":
+        this.onObjectClick(data);
         break;
-      case "releasePointerCapture":
-        this.#canvas.releasePointerCapture(data);
+      case "set_transform":
+        if (this.#target !== null) {
+          SceneObject.position.x[this.#target] = data.position[0];
+          SceneObject.position.y[this.#target] = data.position[1];
+          SceneObject.position.z[this.#target] = data.position[2];
+          SceneObject.rotation.x[this.#target] = data.rotation[0];
+          SceneObject.rotation.y[this.#target] = data.rotation[1];
+          SceneObject.rotation.z[this.#target] = data.rotation[2];
+          SceneObject.rotation.w[this.#target] = data.rotation[3];
+          SceneObject.scale.x[this.#target] = data.scale[0];
+          SceneObject.scale.y[this.#target] = data.scale[1];
+          SceneObject.scale.z[this.#target] = data.scale[2];
+        }
         break;
-      default:
-        throw new Error(`Unknown message subject: ${subject}`);
     }
   };
 
@@ -145,28 +176,32 @@ export class RenderThread {
   #onPointerMove(event: PointerEvent) {
     this.#postMessage({
       subject: "pointermove",
-      data: getPointerData(event),
+      data: getPointerData(event, this.#canvas),
     });
   }
 
   #onPointerUp(event: PointerEvent) {
+    this.#canvas.releasePointerCapture(event.pointerId);
+
     this.#postMessage({
       subject: "pointerup",
-      data: getPointerData(event),
+      data: getPointerData(event, this.#canvas),
     });
   }
 
   #onPointerDown(event: PointerEvent) {
+    this.#canvas.setPointerCapture(event.pointerId);
+
     this.#postMessage({
       subject: "pointerdown",
-      data: getPointerData(event),
+      data: getPointerData(event, this.#canvas),
     });
   }
 
   #onPointerCancel(event: PointerEvent) {
     this.#postMessage({
       subject: "pointercancel",
-      data: getPointerData(event),
+      data: getPointerData(event, this.#canvas),
     });
   }
 
@@ -181,7 +216,23 @@ export class RenderThread {
   }
 }
 
-function getPointerData(event: PointerEvent): FakePointerData {
+function getPointerData(event: PointerEvent, canvas: HTMLCanvasElement): PointerData {
+  let pointer;
+  if (canvas.ownerDocument.pointerLockElement) {
+    pointer = {
+      x: 0,
+      y: 0,
+      button: event.button,
+    };
+  } else {
+    const rect = canvas.getBoundingClientRect();
+    pointer = {
+      x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      y: (-(event.clientY - rect.top) / rect.height) * 2 + 1,
+      button: event.button,
+    };
+  }
+
   return {
     pointerId: event.pointerId,
     pointerType: event.pointerType,
@@ -193,5 +244,6 @@ function getPointerData(event: PointerEvent): FakePointerData {
     ctrlKey: event.ctrlKey,
     shiftKey: event.shiftKey,
     metaKey: event.metaKey,
+    pointer,
   };
 }

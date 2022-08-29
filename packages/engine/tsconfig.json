@@ -6,5 +6,5 @@
     "composite": true
   },
   "extends": "@wired-xr/tsconfig/base.json",
-  "include": ["./src/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }

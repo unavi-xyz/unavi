@@ -7,34 +7,31 @@ import { Tool } from "./types";
 export interface IStudioStore {
   engine: Engine | null;
   canvas: HTMLCanvasElement | null;
-
   name: string;
   description: string;
+  preview: boolean;
+  selectedId: number | null;
+  treeNonce: number;
+  root: number | null;
 
   debug: boolean;
   grid: boolean;
   tool: Tool;
-  selectedId: string | null;
-
-  preview: boolean;
-  usingTransformControls: boolean;
-  treeNonce: number;
+  names: { [id: number]: string };
 }
 
 export const useStudioStore = create<IStudioStore>((set, get) => ({
   engine: null,
   canvas: null,
-
   name: "",
   description: "",
-
   preview: false,
+  selectedId: null,
+  treeNonce: 0,
+  root: null,
+
   debug: false,
   grid: false,
-
   tool: "translate",
-  usingTransformControls: false,
-  selectedId: null,
-
-  treeNonce: 0,
+  names: {},
 }));

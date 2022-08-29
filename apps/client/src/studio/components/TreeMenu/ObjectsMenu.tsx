@@ -1,7 +1,10 @@
-import { UserData } from "@wired-xr/engine";
+import { addComponent, addEntity } from "bitecs";
+
+import { Box, Cylinder, SceneObject, Sphere } from "@wired-xr/engine";
 
 import { useStudioStore } from "../../store";
-import { getObject, updateTree } from "../../utils/scene";
+import { setObjectName } from "../../utils/setObjectName";
+import { updateTree } from "../../utils/tree";
 
 enum ObjectName {
   Box = "Box",
@@ -11,30 +14,24 @@ enum ObjectName {
 
 export default function ObjectsMenu() {
   function addObject(name: ObjectName) {
-    const { engine, root } = useStudioStore.getState();
-    if (!engine) return;
+    // Create entity
+    const eid = createObject(name);
+    if (eid === undefined) return;
 
-    // Create three.js object
-    const object = createObject(name);
-    // Get parent
-    const selectedId = useStudioStore.getState().selectedId;
-    const selected = selectedId ? getObject(selectedId) : undefined;
-    const parent = selected ?? root;
-
-    // Add to scene
-    parent.add(object);
-
+    // Update scene
+    const engine = useStudioStore.getState().engine;
+    engine?.updateScene();
     updateTree();
   }
 
   return (
-    <div className="p-2">
+    <div className="p-2 space-y-0.5">
       {Object.values(ObjectName).map((name) => (
         <button
           key={name}
           onClick={() => addObject(name)}
           className="w-full flex hover:bg-primaryContainer hover:text-onPrimaryContainer
-                     rounded px-4 py-1 transition items-center"
+                     rounded px-4 py-0.5 transition items-center"
         >
           {name}
         </button>
@@ -44,48 +41,51 @@ export default function ObjectsMenu() {
 }
 
 function createObject(name: ObjectName) {
+  const engine = useStudioStore.getState().engine;
+  if (!engine) return;
+  const world = engine.world;
+
+  // Create entity
+  const eid = addEntity(world);
+
+  // Set name
+  setObjectName(eid, name);
+
+  // Add SceneObject component
+  addComponent(world, SceneObject, eid);
+  SceneObject.position.x[eid] = 0;
+  SceneObject.position.y[eid] = 0;
+  SceneObject.position.z[eid] = 0;
+  SceneObject.rotation.x[eid] = 0;
+  SceneObject.rotation.y[eid] = 0;
+  SceneObject.rotation.z[eid] = 0;
+  SceneObject.rotation.w[eid] = 1;
+  SceneObject.scale.x[eid] = 1;
+  SceneObject.scale.y[eid] = 1;
+  SceneObject.scale.z[eid] = 1;
+
+  // Add object component
   switch (name) {
     case ObjectName.Box:
-    // // Mesh
-    // const boxGeometry = new BoxBufferGeometry(1, 1, 1);
-    // const boxMaterial = new MeshStandardMaterial({ color: 0xffff00 });
-    // const boxMesh = new Mesh(boxGeometry, boxMaterial);
-    // boxMesh.name = "Box";
-    // // Physics
-    // const boxUserData: UserData = {
-    //   OMI_collider: {
-    //     type: "box",
-    //     extents: [1, 1, 1],
-    //   },
-    //   OMI_physics_body: {
-    //     type: "static",
-    //   },
-    // };
-    // boxMesh.userData = boxUserData;
-    // return boxMesh;
-    // case ObjectName.Sphere:
-    //   // Mesh
-    //   const sphereGeometry = new SphereBufferGeometry(0.5);
-    //   const sphereMaterial = new MeshStandardMaterial({ color: 0x00ff00 });
-    //   const sphereMesh = new Mesh(sphereGeometry, sphereMaterial);
-    //   sphereMesh.name = "Sphere";
-    //   // Physics
-    //   const sphereUserData: UserData = {
-    //     OMI_collider: {
-    //       type: "sphere",
-    //       radius: 0.5,
-    //     },
-    //     OMI_physics_body: {
-    //       type: "static",
-    //     },
-    //   };
-    //   sphereMesh.userData = sphereUserData;
-    //   return sphereMesh;
-    // case ObjectName.Cylinder:
-    //   const cylinderGeometry = new CylinderBufferGeometry(0.5, 0.5, 1);
-    //   const cylinderMaterial = new MeshStandardMaterial({ color: 0x0000ff });
-    //   const cylinderMesh = new Mesh(cylinderGeometry, cylinderMaterial);
-    //   cylinderMesh.name = "Cylinder";
-    //   return cylinderMesh;
+      addComponent(world, Box, eid);
+      Box.width[eid] = 1;
+      Box.height[eid] = 1;
+      Box.depth[eid] = 1;
+      break;
+    case ObjectName.Sphere:
+      addComponent(world, Sphere, eid);
+      Sphere.radius[eid] = 0.5;
+      Sphere.widthSegments[eid] = 32;
+      Sphere.heightSegments[eid] = 32;
+      break;
+    case ObjectName.Cylinder:
+      addComponent(world, Cylinder, eid);
+      Cylinder.radiusTop[eid] = 0.5;
+      Cylinder.radiusBottom[eid] = 0.5;
+      Cylinder.height[eid] = 1;
+      Cylinder.radialSegments[eid] = 32;
+      break;
   }
+
+  return eid;
 }

@@ -1,5 +1,5 @@
 // Wrap some code in a fake worker to mimic a web worker interface
-// This allows us to run web worker code in the main thread
+// This allows us to keep the same API for running code in a web worker or the main thread
 export class FakeWorker<To = any, From = any> {
   #channel = new MessageChannel();
 

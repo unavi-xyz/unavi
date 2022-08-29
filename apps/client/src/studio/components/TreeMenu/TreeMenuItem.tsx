@@ -1,25 +1,33 @@
+import { Not, defineQuery } from "bitecs";
 import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
+import { Child, SceneObject, childObjectsQuery, sceneObjectQuery } from "@wired-xr/engine";
+
 import { useStudioStore } from "../../../studio/store";
 import { DND_TYPES } from "../../../studio/types";
-import { addItemAsSibling, getObject, moveObject, updateTree } from "../../utils/scene";
+import { addItemAsSibling, moveObject, updateTree } from "../../utils/tree";
 
 type DragItem = {
   id: string;
 };
 
 interface Props {
-  object: any;
-  isRoot?: boolean;
+  id?: number;
 }
 
-export default function TreeMenuItem({ object, isRoot = false }: Props) {
-  const id = object.uuid;
+const ROOT = -1;
+
+const rootObjectQuery = defineQuery([SceneObject, Not(Child)]);
+
+export default function TreeMenuItem({ id = ROOT }: Props) {
+  const isRoot = id === ROOT;
 
   const ref = useRef<HTMLDivElement>(null);
   const selectedId = useStudioStore((state) => state.selectedId);
+  const engine = useStudioStore((state) => state.engine);
+  const names = useStudioStore((state) => state.names);
   const [open, setOpen] = useState(true);
 
   // Create drag source
@@ -39,18 +47,12 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
     () => ({
       accept: DND_TYPES.TreeNode,
       drop({ id: droppedId }: DragItem, monitor) {
-        if (droppedId !== id) {
+        if (Number(droppedId) !== id) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
-          const engine = useStudioStore.getState().engine;
-          if (!engine) return;
-
-          const dropped = getObject(droppedId);
-          if (!dropped) return;
-
           // Move to new parent
-          moveObject(dropped, object);
+          moveObject(Number(droppedId), id);
           updateTree();
         }
       },
@@ -66,18 +68,13 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
     () => ({
       accept: DND_TYPES.TreeNode,
       drop({ id: droppedId }: DragItem, monitor) {
-        if (droppedId !== id) {
+        if (Number(droppedId) !== id) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
-          const engine = useStudioStore.getState().engine;
-          if (!engine) return;
-
-          const dropped = getObject(droppedId);
-          if (!dropped || !object.parent) return;
-
           // Add as sibling
-          addItemAsSibling(dropped, object, "above");
+          addItemAsSibling(Number(droppedId), id, "above");
+          updateTree();
         }
       },
       collect: (monitor) => ({
@@ -92,18 +89,13 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
     () => ({
       accept: DND_TYPES.TreeNode,
       drop({ id: droppedId }: DragItem, monitor) {
-        if (droppedId !== id) {
+        if (Number(droppedId) !== id) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
-          const engine = useStudioStore.getState().engine;
-          if (!engine) return;
-
-          const dropped = getObject(droppedId);
-          if (!dropped || !object.parent) return;
-
           // Add as sibling
-          addItemAsSibling(dropped, object, "below");
+          addItemAsSibling(Number(droppedId), id, "below");
+          updateTree();
         }
       },
       collect: (monitor) => ({
@@ -113,9 +105,14 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
     [id]
   );
 
-  if (!object) return null;
+  if (id == undefined || !engine) return null;
 
-  const hasChildren = object.children.length > 0;
+  const childObjects = childObjectsQuery(engine.world);
+  const objectChildren = childObjects.filter((eid) => Child.parent[eid] === id);
+  const rootObjects = rootObjectQuery(engine.world);
+  const children = isRoot ? rootObjects : objectChildren;
+
+  const hasChildren = children.length > 1;
   const isSelected = selectedId === id;
   const bgClass =
     isSelected || isOver
@@ -162,17 +159,17 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
               {hasChildren && (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
             </div>
 
-            <div>{object.name || object.uuid}</div>
+            <div>{names[id]}</div>
           </div>
         )}
 
         {open && (
           <div className={`${opacityClass}`}>
-            {object.children.map((child: any, i: any) => {
-              if (i === object.children.length - 1 && !isRoot) {
+            {children.map((child, i) => {
+              if (i === children.length - 1 && !isRoot) {
                 return (
-                  <div key={child.uuid} className="h-full">
-                    <TreeMenuItem object={child} />
+                  <div key={child} className="h-full">
+                    <TreeMenuItem id={child} />
                     <div
                       ref={dropBelow}
                       className={`h-1 ml-4 rounded-full ${highlightBelowClass} ${marginClass}`}
@@ -181,7 +178,7 @@ export default function TreeMenuItem({ object, isRoot = false }: Props) {
                 );
               }
 
-              return <TreeMenuItem key={child.uuid} object={child} />;
+              return <TreeMenuItem key={child} id={child} />;
             })}
           </div>
         )}

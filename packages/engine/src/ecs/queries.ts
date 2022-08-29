@@ -1,5 +1,6 @@
 import { Not, defineQuery } from "bitecs";
 
+import { Child, SceneObject } from "./components";
 import {
   Animation,
   AnimationChannel,
@@ -28,7 +29,7 @@ import {
   PrimitiveMaterial,
   Skin,
   SkinJoint,
-} from "./components";
+} from "./glTF-components";
 
 export const nodeQuery = defineQuery([Node]);
 export const nodeWithMeshQuery = defineQuery([Node, NodeMesh]);
@@ -67,3 +68,7 @@ export const materialWithOcclusionTextureQuery = defineQuery([Material, Occlusio
 export const animationQuery = defineQuery([Animation]);
 export const animationChannelQuery = defineQuery([AnimationChannel]);
 export const animationSamplerQuery = defineQuery([AnimationSampler]);
+
+export const sceneObjectQuery = defineQuery([SceneObject]);
+export const childObjectsQuery = defineQuery([SceneObject, Child]);
+export const rootObjectsQuery = defineQuery([SceneObject, Not(Child)]);

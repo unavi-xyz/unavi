@@ -17,6 +17,7 @@ const Vector4 = {
 
 // Scene Objects
 export const SceneObject = defineComponent({
+  name: Types.ui32,
   position: Vector3,
   rotation: Vector4,
   scale: Vector3,

@@ -1,4 +1,4 @@
-import { DESERIALIZE_MODE, Not, createWorld, defineQuery } from "bitecs";
+import { Not, createWorld, defineQuery, deleteWorld } from "bitecs";
 import {
   BoxBufferGeometry,
   CylinderBufferGeometry,
@@ -25,9 +25,13 @@ export class SceneMapper {
   #objectMap = new Map<number, Object3D>();
   #meshMap = new Map<number, Mesh>();
 
+  destroy() {
+    deleteWorld(this.#world);
+  }
+
   updateScene(buffer: ArrayBuffer) {
     // Load world changes
-    deserialize(this.#world, buffer, DESERIALIZE_MODE.REPLACE);
+    deserialize(this.#world, buffer);
 
     // Update scene
     const boxes = this.#boxQuery(this.#world);

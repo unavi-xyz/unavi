@@ -3,7 +3,7 @@ import { addComponent, addEntity } from "bitecs";
 import { Box, Cylinder, SceneObject, Sphere } from "@wired-xr/engine";
 
 import { useStudioStore } from "../../store";
-import { setObjectName } from "../../utils/setObjectName";
+import { addObjectName } from "../../utils/names";
 import { updateTree } from "../../utils/tree";
 
 enum ObjectName {
@@ -49,10 +49,11 @@ function createObject(name: ObjectName) {
   const eid = addEntity(world);
 
   // Set name
-  setObjectName(eid, name);
+  const nameId = addObjectName(name);
 
   // Add SceneObject component
   addComponent(world, SceneObject, eid);
+  SceneObject.name[eid] = nameId;
   SceneObject.position.x[eid] = 0;
   SceneObject.position.y[eid] = 0;
   SceneObject.position.z[eid] = 0;
@@ -85,6 +86,8 @@ function createObject(name: ObjectName) {
       Cylinder.height[eid] = 1;
       Cylinder.radialSegments[eid] = 32;
       break;
+    default:
+      throw new Error("Unknown object name");
   }
 
   return eid;

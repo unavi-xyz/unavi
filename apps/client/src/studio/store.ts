@@ -12,7 +12,6 @@ export interface IStudioStore {
   preview: boolean;
   selectedId: number | null;
   treeNonce: number;
-  root: number | null;
 
   debug: boolean;
   grid: boolean;
@@ -28,7 +27,6 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
   preview: false,
   selectedId: null,
   treeNonce: 0,
-  root: null,
 
   debug: false,
   grid: false,

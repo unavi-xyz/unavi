@@ -8,6 +8,7 @@ import { Engine } from "@wired-xr/engine";
 import StudioNavbar from "../../../src/studio/components/StudioNavbar/StudioNavbar";
 import TreeMenu from "../../../src/studio/components/TreeMenu/TreeMenu";
 import { useAutosave } from "../../../src/studio/hooks/useAutosave";
+import { useFixSave } from "../../../src/studio/hooks/useFixSave";
 import { useLoad } from "../../../src/studio/hooks/useLoad";
 import { useStudioHotkeys } from "../../../src/studio/hooks/useStudioHotkeys";
 import { useTransformControls } from "../../../src/studio/hooks/useTransformControls";
@@ -19,6 +20,7 @@ export default function Studio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [engineKey, setEngineKey] = useState(0);
 
+  useFixSave();
   useLoad();
   useAutosave();
   useTransformControls();
@@ -45,6 +47,7 @@ export default function Studio() {
     return () => {
       engine.destroy();
       window.removeEventListener("resize", updateCanvasSize);
+      useStudioStore.setState({ engine: null });
     };
   }, [engineKey]);
 

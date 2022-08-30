@@ -85,6 +85,7 @@ export class TransformControlsPlugin extends Plugin {
   }
 
   destroy() {
+    this.#transformControls.detach();
     this.#transformControls.dispose();
   }
 }

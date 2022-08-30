@@ -19,7 +19,7 @@ export default function Project() {
 
   return (
     <>
-      <MetaTags title={data.name ?? "Project"} />
+      <MetaTags title={data.name || "Create"} />
 
       <div className="mx-4 h-full">
         <div className="max-w mx-auto py-8 w-full h-full space-y-8">

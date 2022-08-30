@@ -173,6 +173,7 @@ export class RenderWorker {
 
   destroy() {
     this.stop();
+    this.#sceneMapper.destroy();
     this.#plugins.forEach((plugin) => plugin.destroy());
     disposeTree(this.#scene);
     this.#renderer?.dispose();

@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
-import { Child, SceneObject, childObjectsQuery, sceneObjectQuery } from "@wired-xr/engine";
+import { Child, SceneObject, childObjectsQuery } from "@wired-xr/engine";
 
 import { useStudioStore } from "../../../studio/store";
 import { DND_TYPES } from "../../../studio/types";
@@ -159,7 +159,7 @@ export default function TreeMenuItem({ id = ROOT }: Props) {
               {hasChildren && (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
             </div>
 
-            <div>{names[id]}</div>
+            <div>{names[SceneObject.name[id]]}</div>
           </div>
         )}
 

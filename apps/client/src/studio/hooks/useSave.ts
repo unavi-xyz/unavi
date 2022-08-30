@@ -12,12 +12,11 @@ export function useSave() {
   const { mutateAsync } = trpc.useMutation("save-project");
 
   async function save() {
+    const id = parseInt(router.query.id as string);
     const { name, description, engine } = useStudioStore.getState();
+    const studioState = JSON.stringify(getStudioState());
     if (!engine) return;
 
-    const id = parseInt(router.query.id as string);
-
-    const studioState = JSON.stringify(getStudioState());
     const worldBuffer = serialize(engine.world);
     const world = Buffer.from(worldBuffer).toJSON();
 

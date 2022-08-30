@@ -1,4 +1,3 @@
-import { DESERIALIZE_MODE } from "bitecs";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
@@ -13,10 +12,12 @@ export function useLoad() {
 
   const { data: project } = trpc.useQuery(["project", { id: parseInt(id as string) }], {
     enabled: id !== undefined,
+    cacheTime: 0,
   });
 
   const { data: world } = trpc.useQuery(["world", { id: parseInt(id as string) }], {
     enabled: id !== undefined,
+    cacheTime: 0,
   });
 
   const engine = useStudioStore((state) => state.engine);
@@ -40,7 +41,7 @@ export function useLoad() {
     // Set world
     const worldJson = JSON.parse(world);
     const worldBuffer = Buffer.from(worldJson).buffer;
-    deserialize(engine.world, worldBuffer, DESERIALIZE_MODE.REPLACE);
+    deserialize(engine.world, worldBuffer);
     engine.updateScene();
   }, [engine, project, world]);
 }

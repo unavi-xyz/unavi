@@ -18,7 +18,6 @@ import MetaTags from "../../../src/ui/MetaTags";
 export default function Studio() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [engineKey, setEngineKey] = useState(0);
 
   useFixSave();
   useLoad();
@@ -27,13 +26,8 @@ export default function Studio() {
   useStudioHotkeys();
 
   useEffect(() => {
-    window.addEventListener("resize", updateCanvasSize);
-
     const canvas = canvasRef.current;
     if (!canvas) throw new Error("Canvas not found");
-
-    // Set initial canvas size
-    updateCanvasSize();
 
     // Create engine
     const engine = new Engine(canvas, {
@@ -46,10 +40,19 @@ export default function Studio() {
 
     return () => {
       engine.destroy();
-      window.removeEventListener("resize", updateCanvasSize);
       useStudioStore.setState({ engine: null });
     };
-  }, [engineKey]);
+  }, []);
+
+  useEffect(() => {
+    // Set initial canvas size
+    updateCanvasSize();
+
+    window.addEventListener("resize", updateCanvasSize);
+    return () => {
+      window.removeEventListener("resize", updateCanvasSize);
+    };
+  }, []);
 
   function updateCanvasSize() {
     // Only run if canvas is available
@@ -105,7 +108,7 @@ export default function Studio() {
 
                 <div className="float-left h-full border-x">
                   <div ref={containerRef} className="relative w-full h-full overflow-hidden">
-                    <canvas key={engineKey} ref={canvasRef} className="w-full h-full" />
+                    <canvas ref={canvasRef} className="w-full h-full" />
                   </div>
                 </div>
 
@@ -120,3 +123,4 @@ export default function Studio() {
     </>
   );
 }
+//

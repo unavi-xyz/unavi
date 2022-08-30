@@ -1,4 +1,4 @@
-import { Changed, createWorld, defineSerializer, deleteWorld } from "bitecs";
+import { Changed, createWorld, defineSerializer, resetWorld } from "bitecs";
 
 import { LoaderThread } from "./LoaderThread";
 import { RenderThread } from "./RenderThread";
@@ -38,7 +38,7 @@ export class Engine {
   destroy() {
     this.renderThread.destroy();
     this.loaderThread.destroy();
-    deleteWorld(this.world);
+    resetWorld(this.world);
   }
 
   updateScene() {

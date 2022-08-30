@@ -1,4 +1,4 @@
-import { Not, createWorld, defineQuery, deleteWorld } from "bitecs";
+import { Not, createWorld, defineQuery, resetWorld } from "bitecs";
 import {
   BoxBufferGeometry,
   CylinderBufferGeometry,
@@ -26,7 +26,7 @@ export class SceneMapper {
   #meshMap = new Map<number, Mesh>();
 
   destroy() {
-    deleteWorld(this.#world);
+    resetWorld(this.#world);
   }
 
   updateScene(buffer: ArrayBuffer) {
@@ -139,6 +139,7 @@ export class SceneMapper {
       if (!parent) throw new Error("Parent not found");
 
       // Add to parent
+      console.log("👻", parent, object);
       parent.add(object);
     });
 

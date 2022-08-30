@@ -10,7 +10,6 @@ export function useFixSave() {
 
   useEffect(() => {
     if (!engine) return;
-
     const eid = addEntity(engine.world);
     removeEntity(engine.world, eid);
   }, [engine]);

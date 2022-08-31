@@ -72,3 +72,41 @@ export type FromGamePlayerBuffers = WorkerMessage<
   }
 >;
 export type FromGameMessage = FromGameReady | FromGamePlayerBuffers;
+
+//
+export type BaseObject = {
+  id: string;
+  name: string;
+  parent: string | null;
+  position: [number, number, number];
+  rotation: [number, number, number, number];
+  scale: [number, number, number];
+};
+
+export type Group = BaseObject & {
+  type: "Group";
+};
+
+export type Box = BaseObject & {
+  type: "Box";
+  width: number;
+  height: number;
+  depth: number;
+};
+
+export type Sphere = BaseObject & {
+  type: "Sphere";
+  radius: number;
+  widthSegments: number;
+  heightSegments: number;
+};
+
+export type Cylinder = BaseObject & {
+  type: "Cylinder";
+  radiusTop: number;
+  radiusBottom: number;
+  height: number;
+  radialSegments: number;
+};
+
+export type Entity = Group | Box | Sphere | Cylinder;

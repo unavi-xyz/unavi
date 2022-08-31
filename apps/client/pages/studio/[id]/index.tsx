@@ -8,7 +8,6 @@ import { Engine } from "@wired-xr/engine";
 import StudioNavbar from "../../../src/studio/components/StudioNavbar/StudioNavbar";
 import TreeMenu from "../../../src/studio/components/TreeMenu/TreeMenu";
 import { useAutosave } from "../../../src/studio/hooks/useAutosave";
-import { useFixSave } from "../../../src/studio/hooks/useFixSave";
 import { useLoad } from "../../../src/studio/hooks/useLoad";
 import { useStudioHotkeys } from "../../../src/studio/hooks/useStudioHotkeys";
 import { useTransformControls } from "../../../src/studio/hooks/useTransformControls";
@@ -19,9 +18,8 @@ export default function Studio() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useFixSave();
   useLoad();
-  useAutosave();
+  // useAutosave();
   useTransformControls();
   useStudioHotkeys();
 

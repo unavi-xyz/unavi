@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { removeEntity } from "../actions/RemoveEntityAction";
 import { useStudioStore } from "../store";
 
 export function useStudioHotkeys() {
@@ -12,15 +13,10 @@ export function useStudioHotkeys() {
 
       switch (e.key) {
         case "Delete":
-          // const selectedId = useStudioStore.getState().selectedId;
-          // if (selectedId) {
-          //   const object = getObject(selectedId);
-          //   if (!object) return;
-
-          //   object.removeFromParent();
-
-          //   useStudioStore.setState({ selectedId: null });
-          // }
+          const selectedId = useStudioStore.getState().selectedId;
+          if (selectedId) {
+            removeEntity(selectedId);
+          }
           break;
         case "w":
           useStudioStore.setState({ tool: "translate" });

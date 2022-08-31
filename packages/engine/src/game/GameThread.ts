@@ -1,5 +1,5 @@
-import { Engine } from "./Engine";
-import { FromGameMessage, ToGameMessage } from "./types";
+import { Engine } from "../Engine";
+import { FromGameMessage, ToGameMessage } from "../types";
 
 export class GameThread {
   #worker = new Worker(new URL("./workers/Game.worker.ts", import.meta.url), { type: "module" });

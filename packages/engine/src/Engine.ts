@@ -1,8 +1,4 @@
-import { Changed, createWorld, defineSerializer, resetWorld } from "bitecs";
-
-import { LoaderThread } from "./LoaderThread";
-import { RenderThread } from "./RenderThread";
-import { config, deserialize } from "./ecs/components";
+import { RenderThread } from "./render/RenderThread";
 
 export interface EngineOptions {
   skyboxPath?: string;
@@ -11,18 +7,12 @@ export interface EngineOptions {
 }
 
 export class Engine {
-  world = createWorld(config);
-
   renderThread: RenderThread;
-  loaderThread = new LoaderThread();
-
-  #serializeChanged = defineSerializer(config.map((c) => Changed(c)));
+  // loaderThread = new LoaderThread();
 
   constructor(canvas: HTMLCanvasElement, options?: EngineOptions) {
     const { skyboxPath, camera = "player", enableTransformControls } = { ...options };
-
     this.renderThread = new RenderThread(canvas, { skyboxPath, camera, enableTransformControls });
-
     this.start();
   }
 
@@ -37,22 +27,6 @@ export class Engine {
 
   destroy() {
     this.renderThread.destroy();
-    this.loaderThread.destroy();
-    resetWorld(this.world);
-  }
-
-  updateScene() {
-    const buffer = this.#serializeChanged(this.world);
-    this.renderThread.updateScene(buffer);
-  }
-
-  async loadGltf(path: string) {
-    await this.loaderThread.waitForReady();
-    const { data } = await this.loaderThread.loadGltf(path);
-
-    this.world = createWorld(config);
-    deserialize(this.world, data.world);
-
-    this.renderThread.loadScene(data.world, data.assets.images, data.assets.accessors);
+    // this.loaderThread.destroy();
   }
 }

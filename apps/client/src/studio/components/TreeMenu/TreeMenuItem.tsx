@@ -1,34 +1,31 @@
-import { Not, defineQuery } from "bitecs";
 import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
-import { Child, SceneObject, childObjectsQuery } from "@wired-xr/engine";
-
 import { useStudioStore } from "../../../studio/store";
 import { DND_TYPES } from "../../../studio/types";
-import { addItemAsSibling, moveObject, updateTree } from "../../utils/tree";
+import { moveEntity } from "../../actions/MoveEntityAction";
+import { findChildren, moveToSibling } from "../../utils/tree";
 
 type DragItem = {
   id: string;
 };
 
 interface Props {
-  id?: number;
+  id?: string;
 }
 
-const ROOT = -1;
-
-const rootObjectQuery = defineQuery([SceneObject, Not(Child)]);
+const ROOT = "root";
 
 export default function TreeMenuItem({ id = ROOT }: Props) {
   const isRoot = id === ROOT;
 
   const ref = useRef<HTMLDivElement>(null);
   const selectedId = useStudioStore((state) => state.selectedId);
-  const engine = useStudioStore((state) => state.engine);
-  const names = useStudioStore((state) => state.names);
+  const tree = useStudioStore((state) => state.tree);
   const [open, setOpen] = useState(true);
+  const children = findChildren(id);
+  const object = tree[id];
 
   // Create drag source
   const [{ isDragging }, drag] = useDrag(
@@ -47,13 +44,12 @@ export default function TreeMenuItem({ id = ROOT }: Props) {
     () => ({
       accept: DND_TYPES.TreeNode,
       drop({ id: droppedId }: DragItem, monitor) {
-        if (Number(droppedId) !== id) {
+        if (droppedId !== id) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
           // Move to new parent
-          moveObject(Number(droppedId), id);
-          updateTree();
+          moveEntity(droppedId, id);
         }
       },
       collect: (monitor) => ({
@@ -68,13 +64,12 @@ export default function TreeMenuItem({ id = ROOT }: Props) {
     () => ({
       accept: DND_TYPES.TreeNode,
       drop({ id: droppedId }: DragItem, monitor) {
-        if (Number(droppedId) !== id) {
+        if (droppedId !== id) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
           // Add as sibling
-          addItemAsSibling(Number(droppedId), id, "above");
-          updateTree();
+          moveToSibling(droppedId, id, "above");
         }
       },
       collect: (monitor) => ({
@@ -89,13 +84,12 @@ export default function TreeMenuItem({ id = ROOT }: Props) {
     () => ({
       accept: DND_TYPES.TreeNode,
       drop({ id: droppedId }: DragItem, monitor) {
-        if (Number(droppedId) !== id) {
+        if (droppedId !== id) {
           const didDrop = monitor.didDrop();
           if (didDrop) return;
 
           // Add as sibling
-          addItemAsSibling(Number(droppedId), id, "below");
-          updateTree();
+          moveToSibling(droppedId, id, "below");
         }
       },
       collect: (monitor) => ({
@@ -104,13 +98,6 @@ export default function TreeMenuItem({ id = ROOT }: Props) {
     }),
     [id]
   );
-
-  if (id == undefined || !engine) return null;
-
-  const childObjects = childObjectsQuery(engine.world);
-  const objectChildren = childObjects.filter((eid) => Child.parent[eid] === id);
-  const rootObjects = rootObjectQuery(engine.world);
-  const children = isRoot ? rootObjects : objectChildren;
 
   const hasChildren = children.length > 1;
   const isSelected = selectedId === id;
@@ -159,7 +146,7 @@ export default function TreeMenuItem({ id = ROOT }: Props) {
               {hasChildren && (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
             </div>
 
-            <div>{names[SceneObject.name[id]]}</div>
+            <div>{object.name}</div>
           </div>
         )}
 

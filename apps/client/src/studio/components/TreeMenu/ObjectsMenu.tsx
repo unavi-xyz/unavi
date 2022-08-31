@@ -1,10 +1,8 @@
-import { addComponent, addEntity } from "bitecs";
+import { nanoid } from "nanoid";
 
-import { Box, Cylinder, SceneObject, Sphere } from "@wired-xr/engine";
+import { BaseObject, Box, Cylinder, Sphere } from "@wired-xr/engine";
 
-import { useStudioStore } from "../../store";
-import { addObjectName } from "../../utils/names";
-import { updateTree } from "../../utils/tree";
+import { addEntity } from "../../actions/AddEntityAction";
 
 enum ObjectName {
   Box = "Box",
@@ -14,14 +12,8 @@ enum ObjectName {
 
 export default function ObjectsMenu() {
   function addObject(name: ObjectName) {
-    // Create entity
-    const eid = createObject(name);
-    if (eid === undefined) return;
-
-    // Update scene
-    const engine = useStudioStore.getState().engine;
-    engine?.updateScene();
-    updateTree();
+    const entity = createEntity(name);
+    addEntity(entity);
   }
 
   return (
@@ -40,55 +32,48 @@ export default function ObjectsMenu() {
   );
 }
 
-function createObject(name: ObjectName) {
-  const engine = useStudioStore.getState().engine;
-  if (!engine) return;
-  const world = engine.world;
-
-  // Create entity
-  const eid = addEntity(world);
-
-  // Set name
-  const nameId = addObjectName(name);
-
-  // Add SceneObject component
-  addComponent(world, SceneObject, eid);
-  SceneObject.name[eid] = nameId;
-  SceneObject.position.x[eid] = 0;
-  SceneObject.position.y[eid] = 0;
-  SceneObject.position.z[eid] = 0;
-  SceneObject.rotation.x[eid] = 0;
-  SceneObject.rotation.y[eid] = 0;
-  SceneObject.rotation.z[eid] = 0;
-  SceneObject.rotation.w[eid] = 1;
-  SceneObject.scale.x[eid] = 1;
-  SceneObject.scale.y[eid] = 1;
-  SceneObject.scale.z[eid] = 1;
+function createEntity(name: ObjectName) {
+  const id = nanoid();
+  const base: BaseObject = {
+    id,
+    name,
+    parent: null,
+    position: [0, 0, 0],
+    rotation: [0, 0, 0, 1],
+    scale: [1, 1, 1],
+  };
 
   // Add object component
   switch (name) {
     case ObjectName.Box:
-      addComponent(world, Box, eid);
-      Box.width[eid] = 1;
-      Box.height[eid] = 1;
-      Box.depth[eid] = 1;
-      break;
+      const box: Box = {
+        ...base,
+        type: "Box",
+        width: 1,
+        height: 1,
+        depth: 1,
+      };
+      return box;
     case ObjectName.Sphere:
-      addComponent(world, Sphere, eid);
-      Sphere.radius[eid] = 0.5;
-      Sphere.widthSegments[eid] = 32;
-      Sphere.heightSegments[eid] = 32;
-      break;
+      const sphere: Sphere = {
+        ...base,
+        type: "Sphere",
+        radius: 0.5,
+        widthSegments: 32,
+        heightSegments: 32,
+      };
+      return sphere;
     case ObjectName.Cylinder:
-      addComponent(world, Cylinder, eid);
-      Cylinder.radiusTop[eid] = 0.5;
-      Cylinder.radiusBottom[eid] = 0.5;
-      Cylinder.height[eid] = 1;
-      Cylinder.radialSegments[eid] = 32;
-      break;
+      const cylinder: Cylinder = {
+        ...base,
+        type: "Cylinder",
+        radiusTop: 0.5,
+        radiusBottom: 0.5,
+        height: 1,
+        radialSegments: 32,
+      };
+      return cylinder;
     default:
       throw new Error("Unknown object name");
   }
-
-  return eid;
 }

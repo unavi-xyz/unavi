@@ -42,8 +42,8 @@ async function getWorld(id: number) {
     if (!Body) return null;
 
     // @ts-ignore
-    const buffer: Buffer = Body.read();
-    return buffer.toString();
+    const buffer: string = Body.read();
+    return JSON.parse(buffer);
   } catch (e) {
     return null;
   }
@@ -117,12 +117,7 @@ export const appRouter = trpc
       description: z.string().max(2040).optional(),
       image: z.string().optional(),
       studioState: z.string().optional(),
-      world: z
-        .object({
-          type: z.string(),
-          data: z.number().array(),
-        })
-        .optional(),
+      world: z.any(),
     }),
     async resolve({
       ctx: { address },

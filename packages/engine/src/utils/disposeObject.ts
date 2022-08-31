@@ -1,6 +1,6 @@
 import { Mesh, MeshStandardMaterial, Object3D } from "three";
 
-export function disposeTree(root: Object3D) {
+export function disposeObject(root: Object3D) {
   root.traverse((object) => {
     if (object instanceof Mesh) {
       const mesh = object as Mesh;

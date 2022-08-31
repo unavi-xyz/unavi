@@ -12,7 +12,7 @@ import {
 } from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 
-import { disposeTree } from "./utils/disposeTree";
+import { disposeObject } from "./utils/disposeObject";
 
 const DAMPEN_FACTOR = 2;
 const SPEED = 3;
@@ -91,7 +91,7 @@ export class RenderManager {
     // Dispose rendering context
     this.renderer.dispose();
     // Dispose all objects
-    disposeTree(this.scene);
+    disposeObject(this.scene);
   }
 
   setPlayerInputVector(input: Vector2) {

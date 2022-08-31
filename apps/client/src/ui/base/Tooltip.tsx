@@ -1,7 +1,7 @@
 interface Props {
   text?: string;
   placement?: "left" | "right" | "bottom" | "top";
-  children: React.ReactChild;
+  children: JSX.Element;
 }
 
 export default function Tooltip({ text, placement = "bottom", children }: Props) {

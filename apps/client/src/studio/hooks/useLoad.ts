@@ -1,9 +1,10 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
-import { deserialize } from "@wired-xr/engine";
+import { Entity } from "@wired-xr/engine";
 
 import { trpc } from "../../login/trpc";
+import { addEntity } from "../actions/AddEntityAction";
 import { useStudioStore } from "../store";
 
 export function useLoad() {
@@ -38,10 +39,9 @@ export function useLoad() {
       useStudioStore.setState(studioState);
     }
 
-    // Set world
-    const worldJson = JSON.parse(world);
-    const worldBuffer = Buffer.from(worldJson).buffer;
-    deserialize(engine.world, worldBuffer);
-    engine.updateScene();
+    // Load the world
+    Object.values(world).forEach((entity) => {
+      addEntity(entity as Entity);
+    });
   }, [engine, project, world]);
 }

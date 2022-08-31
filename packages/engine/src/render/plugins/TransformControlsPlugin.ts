@@ -1,30 +1,26 @@
 import { PerspectiveCamera, Scene } from "three";
 
-import { PostMessage } from "../../types";
 import { PluginState } from "../RenderWorker";
 import { FakePointerEvent } from "../classes/OrbitControls";
-import { SceneMapper } from "../classes/SceneMapper";
+import { SceneManager } from "../classes/SceneManager";
 import { TransformControls } from "../classes/TransformControls";
-import { FromRenderMessage, ToRenderMessage } from "../types";
+import { ToRenderMessage } from "../types";
 import { Plugin } from "./Plugin";
 
 export class TransformControlsPlugin extends Plugin {
   #target = new EventTarget();
-  #mapper: SceneMapper;
+  #sceneManager: SceneManager;
   #transformControls: TransformControls;
-  #postMessage: PostMessage<FromRenderMessage>;
 
   constructor(
     camera: PerspectiveCamera,
-    mapper: SceneMapper,
+    sceneManager: SceneManager,
     scene: Scene,
-    postMessage: PostMessage<FromRenderMessage>,
     state: PluginState
   ) {
     super();
 
-    this.#mapper = mapper;
-    this.#postMessage = postMessage;
+    this.#sceneManager = sceneManager;
     this.#transformControls = new TransformControls(camera, this.#target);
     scene.add(this.#transformControls);
 
@@ -38,19 +34,10 @@ export class TransformControlsPlugin extends Plugin {
       // Send new transform to main thread
       const object = this.#transformControls.object;
       if (!object) throw new Error("No object found");
+      const id = this.#sceneManager.findId(object);
+      if (id === undefined) throw new Error("Object id not found");
 
-      const position = object.position;
-      const rotation = object.quaternion;
-      const scale = object.scale;
-
-      this.#postMessage({
-        subject: "set_transform",
-        data: {
-          position: [position.x, position.y, position.z],
-          rotation: [rotation.x, rotation.y, rotation.z, rotation.w],
-          scale: [scale.x, scale.y, scale.z],
-        },
-      });
+      this.#sceneManager.setTransform(id);
     });
   }
 
@@ -61,7 +48,7 @@ export class TransformControlsPlugin extends Plugin {
       case "set_transform_target":
         if (data === null) this.#transformControls.detach();
         else {
-          const object = this.#mapper.findObject(data);
+          const object = this.#sceneManager.findObject(data);
           if (object) this.#transformControls.attach(object);
           else throw new Error(`Object not found: ${data}`);
         }
@@ -81,6 +68,14 @@ export class TransformControlsPlugin extends Plugin {
         const pointerUpEvent: FakePointerEvent = new CustomEvent("pointerup", { detail: data });
         this.#target.dispatchEvent(pointerUpEvent);
         break;
+      case "remove_entity":
+        const attachedObject = this.#transformControls.object;
+        if (attachedObject) {
+          const id = this.#sceneManager.findId(attachedObject);
+          if (id === undefined) throw new Error("Object id not found");
+          // Detach if attached object is removed
+          if (id === data) this.#transformControls.detach();
+        }
     }
   }
 

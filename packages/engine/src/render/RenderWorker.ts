@@ -9,8 +9,8 @@ import {
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 
 import { PostMessage } from "../types";
-import { disposeTree } from "../utils/disposeTree";
-import { SceneMapper } from "./classes/SceneMapper";
+import { disposeObject } from "../utils/disposeObject";
+import { SceneManager } from "./classes/SceneManager";
 import { OrbitControlsPlugin } from "./plugins/OrbitControlsPlugin";
 import { Plugin } from "./plugins/Plugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
@@ -32,7 +32,7 @@ export type PluginState = {
 };
 
 export class RenderWorker {
-  #sceneMapper = new SceneMapper();
+  #sceneManager: SceneManager;
 
   #postMessage: PostMessage<FromRenderMessage>;
   #canvas: HTMLCanvasElement | OffscreenCanvas | undefined;
@@ -52,13 +52,15 @@ export class RenderWorker {
   };
 
   constructor(postMessage: PostMessage, canvas?: HTMLCanvasElement) {
-    this.#postMessage = postMessage;
     this.#canvas = canvas;
-    this.#scene.add(this.#sceneMapper.root);
+    this.#postMessage = postMessage;
+    this.#sceneManager = new SceneManager(this.#postMessage);
+    this.#scene.add(this.#sceneManager.root);
   }
 
-  onmessage = (event: MessageEvent<ToRenderMessage>) => {
+  onmessage(event: MessageEvent<ToRenderMessage>) {
     this.#plugins.forEach((plugin) => plugin.onmessage(event));
+    this.#sceneManager.onmessage(event);
 
     const { subject, data } = event.data;
     switch (subject) {
@@ -83,11 +85,8 @@ export class RenderWorker {
       case "size":
         this.#updateCanvasSize(data.width, data.height);
         break;
-      case "update_scene":
-        this.#sceneMapper.updateScene(data);
-        break;
     }
-  };
+  }
 
   async init({
     pixelRatio,
@@ -147,12 +146,11 @@ export class RenderWorker {
       this.#plugins.unshift(
         new TransformControlsPlugin(
           this.#camera,
-          this.#sceneMapper,
+          this.#sceneManager,
           this.#scene,
-          this.#postMessage,
           this.#pluginState
         ),
-        new RaycasterPlugin(this.#camera, this.#sceneMapper, this.#postMessage, this.#pluginState)
+        new RaycasterPlugin(this.#camera, this.#sceneManager, this.#postMessage, this.#pluginState)
       );
 
     // Ready
@@ -173,16 +171,15 @@ export class RenderWorker {
 
   destroy() {
     this.stop();
-    this.#sceneMapper.destroy();
     this.#plugins.forEach((plugin) => plugin.destroy());
-    disposeTree(this.#scene);
+    disposeObject(this.#scene);
     this.#renderer?.dispose();
   }
 
   loadScene(data: LoadSceneData) {
     // if (this.#gltf) {
     //   this.#scene.remove(this.#gltf);
-    //   disposeTree(this.#gltf);
+    //   disposeObject(this.#gltf);
     //   this.#gltf = null;
     // }
     // const parser = new SceneLoader();

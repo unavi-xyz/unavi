@@ -1,6 +1,6 @@
 import create from "zustand";
 
-import { Engine } from "@wired-xr/engine";
+import { Engine, Entity } from "@wired-xr/engine";
 
 import { Tool } from "./types";
 
@@ -10,13 +10,14 @@ export interface IStudioStore {
   name: string;
   description: string;
   preview: boolean;
-  selectedId: number | null;
+  selectedId: string | null;
+
   treeNonce: number;
+  tree: { [id: string]: Entity };
 
   debug: boolean;
   grid: boolean;
   tool: Tool;
-  names: { [id: number]: string };
 }
 
 export const useStudioStore = create<IStudioStore>((set, get) => ({
@@ -26,10 +27,11 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
   description: "",
   preview: false,
   selectedId: null,
+
   treeNonce: 0,
+  tree: {},
 
   debug: false,
   grid: false,
   tool: "translate",
-  names: {},
 }));

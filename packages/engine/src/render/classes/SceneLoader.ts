@@ -1,4 +1,11 @@
-import { ComponentType, DESERIALIZE_MODE, TypedArray, createWorld, defineQuery } from "bitecs";
+import {
+  ComponentType,
+  DESERIALIZE_MODE,
+  TypedArray,
+  createWorld,
+  defineDeserializer,
+  defineQuery,
+} from "bitecs";
 import {
   AnimationClip,
   Bone,
@@ -72,7 +79,6 @@ import {
   animationChannelQuery,
   animationQuery,
   config,
-  deserialize,
   jointQuery,
   materialQuery,
   materialWithColorTextureQuery,
@@ -118,11 +124,13 @@ export class SceneLoader {
   #meshes = new Map<number, number[]>();
   #objects = new Map<number, Object3D>();
 
+  #deserialize = defineDeserializer(config);
+
   parse({ worldBuffer, images, accessors }: LoadSceneData) {
     this.#images = images;
     this.#accessors = accessors;
     this.#world = createWorld(config);
-    deserialize(this.#world, worldBuffer, DESERIALIZE_MODE.MAP);
+    this.#deserialize(this.#world, worldBuffer, DESERIALIZE_MODE.MAP);
 
     // Parse materials
     this.#parseMaterials();

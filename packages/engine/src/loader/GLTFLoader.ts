@@ -15,7 +15,7 @@ import {
   WebIO,
 } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
-import { ComponentType, addComponent, addEntity, createWorld } from "bitecs";
+import { ComponentType, addComponent, addEntity, createWorld, defineSerializer } from "bitecs";
 
 import {
   AlphaMode,
@@ -51,7 +51,6 @@ import {
   TargetPath,
   Texture,
   config,
-  serialize,
 } from "../ecs/components";
 import { Assets, LoadedGLTF } from "./types";
 import { loadTextureInfo } from "./utils";
@@ -78,6 +77,8 @@ export class GLTFLoader {
     accessors: [],
   };
 
+  #serialize = defineSerializer(config);
+
   async load(uri: string): Promise<LoadedGLTF> {
     const document = await this.#io.read(uri);
     this.#root = document.getRoot();
@@ -85,7 +86,7 @@ export class GLTFLoader {
 
     this.#loadScene(scene);
 
-    const world = serialize(this.#world);
+    const world = this.#serialize(this.#world);
 
     const images = await Promise.all(this.#imagePromises);
     this.#assets.images = images;

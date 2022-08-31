@@ -2,14 +2,14 @@ import { Camera, Raycaster } from "three";
 
 import { PostMessage } from "../../types";
 import { PluginState } from "../RenderWorker";
-import { SceneMapper } from "../classes/SceneMapper";
+import { SceneManager } from "../classes/SceneManager";
 import { FromRenderMessage, PointerData, ToRenderMessage } from "../types";
 import { Plugin } from "./Plugin";
 
 export class RaycasterPlugin extends Plugin {
   #raycaster = new Raycaster();
   #camera: Camera;
-  #mapper: SceneMapper;
+  #sceneManager: SceneManager;
   #postMessage: PostMessage<FromRenderMessage>;
   #state: PluginState;
 
@@ -17,14 +17,14 @@ export class RaycasterPlugin extends Plugin {
 
   constructor(
     camera: Camera,
-    mapper: SceneMapper,
+    sceneManager: SceneManager,
     postMessage: PostMessage<FromRenderMessage>,
     state: PluginState
   ) {
     super();
 
     this.#camera = camera;
-    this.#mapper = mapper;
+    this.#sceneManager = sceneManager;
     this.#postMessage = postMessage;
     this.#state = state;
   }
@@ -52,11 +52,11 @@ export class RaycasterPlugin extends Plugin {
     this.#raycaster.setFromCamera({ x: data.pointer.x, y: data.pointer.y }, this.#camera);
 
     // Get intersected objects
-    const intersected = this.#raycaster.intersectObject(this.#mapper.root);
+    const intersected = this.#raycaster.intersectObject(this.#sceneManager.root);
 
     if (intersected.length > 0) {
       const object = intersected[0].object;
-      const id = this.#mapper.findId(object);
+      const id = this.#sceneManager.findId(object);
 
       if (id !== undefined) {
         this.#postMessage({ subject: "clicked_object", data: id });

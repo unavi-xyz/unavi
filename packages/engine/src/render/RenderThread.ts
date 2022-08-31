@@ -1,10 +1,9 @@
 import { TypedArray } from "bitecs";
 
-import { SceneObject } from "./ecs";
-import { RenderWorker } from "./render/RenderWorker";
-import { FromRenderMessage, PointerData, ToRenderMessage } from "./render/types";
-import { Transferable } from "./types";
-import { FakeWorker } from "./utils/FakeWorker";
+import { Entity, Transferable } from "../types";
+import { FakeWorker } from "../utils/FakeWorker";
+import { RenderWorker } from "./RenderWorker";
+import { FromRenderMessage, PointerData, ToRenderMessage } from "./types";
 
 export interface RenderThreadOptions {
   camera: "orbit" | "player";
@@ -18,7 +17,6 @@ export class RenderThread {
   #worker: Worker | FakeWorker;
   #canvas: HTMLCanvasElement;
   #onReady: Array<() => void> = [];
-  #target: number | null = null;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -44,7 +42,7 @@ export class RenderThread {
         this.#worker.workerPort.postMessage.bind(this.#worker.workerPort),
         canvas
       );
-      this.#worker.workerPort.onmessage = renderWorker.onmessage;
+      this.#worker.workerPort.onmessage = renderWorker.onmessage.bind(renderWorker);
     }
 
     // On message from worker
@@ -91,8 +89,19 @@ export class RenderThread {
     );
   }
 
-  updateScene(buffer: ArrayBuffer) {
-    this.#postMessage({ subject: "update_scene", data: buffer }, [buffer]);
+  addEntity(data: Entity) {
+    this.#postMessage({ subject: "add_entity", data });
+  }
+
+  moveEntity(entityId: string, parentId: string | null) {
+    this.#postMessage({
+      subject: "move_entity",
+      data: { entityId, parentId },
+    });
+  }
+
+  removeEntity(entityId: string) {
+    this.#postMessage({ subject: "remove_entity", data: entityId });
   }
 
   start() {
@@ -115,8 +124,7 @@ export class RenderThread {
     this.#canvas.removeEventListener("wheel", this.#onWheel);
   }
 
-  setTransformTarget(target: number | null) {
-    this.#target = target;
+  setTransformTarget(target: string | null) {
     this.#postMessage({ subject: "set_transform_target", data: target });
   }
 
@@ -124,7 +132,9 @@ export class RenderThread {
     this.#postMessage({ subject: "set_transform_mode", data: mode });
   }
 
-  onObjectClick(eid: number | null) {}
+  onObjectClick(id: string | null) {}
+
+  onSetTransform(id: string, position: number[], rotation: number[], scale: number[]) {}
 
   #onmessage = (event: MessageEvent<FromRenderMessage>) => {
     const { subject, data } = event.data;
@@ -139,18 +149,7 @@ export class RenderThread {
         this.onObjectClick(data);
         break;
       case "set_transform":
-        if (this.#target !== null) {
-          SceneObject.position.x[this.#target] = data.position[0];
-          SceneObject.position.y[this.#target] = data.position[1];
-          SceneObject.position.z[this.#target] = data.position[2];
-          SceneObject.rotation.x[this.#target] = data.rotation[0];
-          SceneObject.rotation.y[this.#target] = data.rotation[1];
-          SceneObject.rotation.z[this.#target] = data.rotation[2];
-          SceneObject.rotation.w[this.#target] = data.rotation[3];
-          SceneObject.scale.x[this.#target] = data.scale[0];
-          SceneObject.scale.y[this.#target] = data.scale[1];
-          SceneObject.scale.z[this.#target] = data.scale[2];
-        }
+        this.onSetTransform(data.id, data.position, data.rotation, data.scale);
         break;
     }
   };

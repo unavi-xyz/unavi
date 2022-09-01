@@ -15,6 +15,7 @@ export default function SpaceLayout({
   metadata,
   publication,
   playerCount,
+  image,
   host,
 }: SpaceLayoutProps) {
   const router = useRouter();
@@ -38,9 +39,9 @@ export default function SpaceLayout({
           <div className="flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8">
             <div className="w-full h-full rounded-3xl aspect-card bg-primaryContainer">
               <div className="relative object-cover w-full h-full">
-                {metadata.image && (
+                {image && (
                   <Image
-                    src={metadata.image}
+                    src={image}
                     priority
                     fill
                     sizes="40vw"

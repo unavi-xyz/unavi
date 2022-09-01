@@ -1,4 +1,8 @@
-import { HANDLE_ENDING, getMediaImageSSR } from "@wired-xr/lens";
+import {
+  HANDLE_ENDING,
+  getMediaImageSSR,
+  getMediaImageUri,
+} from "@wired-xr/lens";
 import {
   GetProfileDocument,
   GetProfileQuery,
@@ -8,6 +12,7 @@ import {
 
 import { lensClient } from "../../../lib/lens/client";
 import { PageMetadata } from "../../../types";
+import { parseUri } from "../../../utils/parseUri";
 
 export interface ProfileLayoutProps {
   handle: string;
@@ -36,8 +41,12 @@ export async function getProfileLayoutProps(
     image: getMediaImageSSR(profile?.picture) ?? "",
   };
 
-  const coverImage = getMediaImageSSR(profile?.coverPicture);
-  const profileImage = getMediaImageSSR(profile?.picture);
+  const coverImage = profile?.coverPicture
+    ? parseUri(getMediaImageUri(profile.coverPicture))
+    : null;
+  const profileImage = profile?.picture
+    ? parseUri(getMediaImageUri(profile.picture))
+    : null;
 
   return { handle, metadata, profile, coverImage, profileImage };
 }

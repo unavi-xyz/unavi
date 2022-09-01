@@ -2,14 +2,11 @@ import { NextPageContext } from "next";
 import Link from "next/link";
 import { useState } from "react";
 
-import { AppId, getMediaImageSSR } from "@wired-xr/lens";
+import { AppId } from "@wired-xr/lens";
 import {
   ExplorePublicationsDocument,
   ExplorePublicationsQuery,
   ExplorePublicationsQueryVariables,
-  GetPublicationsDocument,
-  GetPublicationsQuery,
-  GetPublicationsQueryVariables,
   PaginatedResultInfo,
   Post,
   PublicationSortCriteria,

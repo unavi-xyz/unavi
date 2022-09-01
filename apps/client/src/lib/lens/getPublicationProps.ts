@@ -1,4 +1,4 @@
-import { AppId, getMediaImageSSR } from "@wired-xr/lens";
+import { AppId, getMediaImageSSR, getMediaImageUri } from "@wired-xr/lens";
 import {
   GetPublicationDocument,
   GetPublicationQuery,
@@ -7,11 +7,13 @@ import {
 } from "@wired-xr/lens";
 
 import { PageMetadata } from "../../types";
+import { parseUri } from "../../utils/parseUri";
 import { lensClient } from "./client";
 
 export interface PublicationProps {
   metadata: PageMetadata;
   publication: Publication | undefined;
+  image: string | undefined;
 }
 
 export async function getPublicationProps(publicationId: string) {
@@ -40,15 +42,19 @@ export async function getPublicationProps(publicationId: string) {
       ? `${publicationType} by @${publication?.profile.handle}`
       : "";
 
-  const image = getMediaImageSSR(publication?.metadata.media[0]) ?? "";
+  const metadataImage = getMediaImageSSR(publication?.metadata.media[0]) ?? "";
 
   const metadata: PageMetadata = {
     title,
     description,
-    image,
+    image: metadataImage,
   };
 
-  const props: PublicationProps = { metadata, publication };
+  const image = publication
+    ? parseUri(getMediaImageUri(publication.metadata.media[0]))
+    : undefined;
+
+  const props: PublicationProps = { metadata, publication, image };
 
   return props;
 }

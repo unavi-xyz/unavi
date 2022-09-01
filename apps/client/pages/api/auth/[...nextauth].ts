@@ -37,8 +37,8 @@ export default function auth(req: NextApiRequest, res: NextApiResponse) {
 
           // Verify host
           if (
-            host !== process.env.HOST ||
-            host !== process.env.VERCEL_URL ||
+            host !== process.env.HOST &&
+            host !== process.env.VERCEL_URL &&
             host !== "localhost:3000"
           ) {
             log.warn("Invalid host", {

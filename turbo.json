@@ -8,6 +8,7 @@
     "client#build": {
       "dependsOn": [
         "^build",
+        "$NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT",
         "$NEXT_PUBLIC_IPFS_ENDPOINT",
         "$NEXT_PUBLIC_IPFS_GATEWAY",
         "$NEXT_PUBLIC_IPFS_AUTH",

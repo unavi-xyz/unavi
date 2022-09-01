@@ -20,6 +20,9 @@ import { theme } from "../src/login/theme";
 import "../styles/globals.css";
 import { AppRouter } from "./api/trpc/[trpc]";
 
+// Export web vitals
+export { reportWebVitals } from "next-axiom";
+
 // RainbowKit / Wagmi
 const apiKey = process.env.ALCHEMY_ID;
 

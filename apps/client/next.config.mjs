@@ -1,3 +1,4 @@
+import { withAxiom } from "next-axiom";
 import withPWA from "next-pwa";
 import runtimeCaching from "next-pwa/cache.js";
 import createTM from "next-transpile-modules";
@@ -21,57 +22,59 @@ function defineConfig(config) {
   return config;
 }
 
-const config = withTM(
-  defineConfig({
-    reactStrictMode: true,
-    swcMinify: true,
-    images: {
-      domains: [process.env.NEXT_PUBLIC_IPFS_GATEWAY, "avatar.tobi.sh"],
-    },
-    async redirects() {
-      return [
-        {
-          source: "/app",
-          destination: "/",
-          permanent: false,
-        },
-        {
-          source: "/studio",
-          destination: "/create",
-          permanent: false,
-        },
-      ];
-    },
-    async headers() {
-      return [
-        {
-          source: "/:path*",
-          headers: [
-            {
-              key: "Cross-Origin-Opener-Policy",
-              value: "same-origin",
-            },
-            {
-              key: "Cross-Origin-Embedder-Policy",
-              value: "require-corp",
-            },
-          ],
-        },
-      ];
-    },
-    pwa: {
-      dest: "public",
-      runtimeCaching,
-    },
-    webpack: function (config) {
-      config.experiments = {
-        ...config.experiments,
-        asyncWebAssembly: true,
-        syncWebAssembly: true,
-      };
-      return config;
-    },
-  })
+const config = withAxiom(
+  withTM(
+    defineConfig({
+      reactStrictMode: true,
+      swcMinify: true,
+      images: {
+        domains: [process.env.NEXT_PUBLIC_IPFS_GATEWAY, "avatar.tobi.sh"],
+      },
+      async redirects() {
+        return [
+          {
+            source: "/app",
+            destination: "/",
+            permanent: false,
+          },
+          {
+            source: "/studio",
+            destination: "/create",
+            permanent: false,
+          },
+        ];
+      },
+      async headers() {
+        return [
+          {
+            source: "/:path*",
+            headers: [
+              {
+                key: "Cross-Origin-Opener-Policy",
+                value: "same-origin",
+              },
+              {
+                key: "Cross-Origin-Embedder-Policy",
+                value: "require-corp",
+              },
+            ],
+          },
+        ];
+      },
+      pwa: {
+        dest: "public",
+        runtimeCaching,
+      },
+      webpack: function (config) {
+        config.experiments = {
+          ...config.experiments,
+          asyncWebAssembly: true,
+          syncWebAssembly: true,
+        };
+        return config;
+      },
+    })
+  )
 );
 
 export default process.env.NODE_ENV === "development"

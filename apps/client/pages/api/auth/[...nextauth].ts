@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { getCsrfToken } from "next-auth/react";
+import { log } from "next-axiom";
 
 import { parseAuthMessage } from "../../../src/login/authMessage";
 
@@ -16,14 +17,20 @@ export default function auth(req: NextApiRequest, res: NextApiResponse) {
           signature: { label: "Signature", type: "text" },
         },
         async authorize(credentials) {
-          if (!credentials) return null;
+          if (!credentials) {
+            log.warn("No credentials");
+            return null;
+          }
 
           // Verify message
           const signerAddress = ethers.utils.verifyMessage(
             credentials.message,
             credentials.signature
           );
-          if (!signerAddress) return null;
+          if (!signerAddress) {
+            log.warn("Invalid signature");
+            return null;
+          }
 
           // Parse message
           const { host, nonce } = parseAuthMessage(credentials.message);
@@ -32,11 +39,17 @@ export default function auth(req: NextApiRequest, res: NextApiResponse) {
           const nextAuthHost = process.env.VERCEL_URL
             ? `${process.env.VERCEL_URL}`
             : "localhost:3000";
-          if (host !== nextAuthHost) return null;
+          if (host !== nextAuthHost) {
+            log.warn("Invalid host");
+            return null;
+          }
 
           // Verify nonce
           const crsfToken = await getCsrfToken({ req });
-          if (!crsfToken || nonce !== crsfToken) return null;
+          if (!crsfToken || nonce !== crsfToken) {
+            log.warn("Invalid nonce");
+            return null;
+          }
 
           return {
             id: signerAddress,

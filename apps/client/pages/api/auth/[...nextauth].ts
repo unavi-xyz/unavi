@@ -40,7 +40,11 @@ export default function auth(req: NextApiRequest, res: NextApiResponse) {
             ? `${process.env.VERCEL_URL}`
             : "localhost:3000";
           if (host !== nextAuthHost) {
-            log.warn("Invalid host");
+            log.warn("Invalid host", {
+              host,
+              nextAuthHost,
+              vercel: process.env.VERCEL_URL,
+            });
             return null;
           }
 

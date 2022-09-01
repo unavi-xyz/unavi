@@ -46,7 +46,7 @@ export default function ExampleCanvas({ uri }: Props) {
     window.addEventListener("resize", updateCanvasSize);
 
     // Create engine
-    const newEngine = new Engine(canvas, { controls: "orbit" });
+    const newEngine = new Engine(canvas, { camera: "orbit" });
 
     if (engine) {
       engine.destroy();
@@ -68,7 +68,7 @@ export default function ExampleCanvas({ uri }: Props) {
   useEffect(() => {
     if (!engine) return;
     // Load gltf
-    engine.loadGltf(uri);
+    // engine.loadGltf(uri);
   }, [engine, uri]);
 
   function updateCanvasSize() {

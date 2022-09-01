@@ -18,8 +18,8 @@ import { prisma } from "../../../src/login/prisma";
 const BUCKET_NAME = "wired";
 
 const s3Client = new S3Client({
-  endpoint: "https://nyc3.digitaloceanspaces.com",
-  region: "nyc3",
+  endpoint: process.env.S3_ENDPOINT ?? "",
+  region: process.env.S3_REGION ?? "",
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
     secretAccessKey: process.env.S3_SECRET ?? "",

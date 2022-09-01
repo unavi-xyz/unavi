@@ -17,8 +17,7 @@
     "skipLibCheck": true,
     "strict": true,
     "sourceMap": true,
-    "resolveJsonModule": true,
-    "noUncheckedIndexedAccess": false
+    "resolveJsonModule": true
   },
   "display": "Default",
   "exclude": ["node_modules", "build", "dist", ".turbo"]

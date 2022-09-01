@@ -27,6 +27,11 @@ const config = withAxiom(
     defineConfig({
       reactStrictMode: true,
       swcMinify: true,
+      experimental: {
+        images: {
+          allowFutureImage: true,
+        },
+      },
       images: {
         domains: [process.env.NEXT_PUBLIC_IPFS_GATEWAY, "avatar.tobi.sh"],
       },

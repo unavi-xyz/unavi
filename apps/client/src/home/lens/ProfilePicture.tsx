@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "next/future/image";
 
 interface Props {
   src?: string;
@@ -17,9 +17,9 @@ export default function ProfilePicture({
 
   return (
     <Image
-      width="256px"
-      height="256px"
       src={src}
+      width={256}
+      height={256}
       draggable={draggable}
       alt="profile picture"
       className={`${circleClass} bg-primaryContainer`}

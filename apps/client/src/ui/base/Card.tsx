@@ -1,13 +1,20 @@
-import Image from "next/image";
+import Image from "next/future/image";
 
 interface Props {
   image?: string;
   text?: string;
   subtext?: string;
+  sizes?: string;
   aspect?: "card" | "vertical";
 }
 
-export default function Card({ image, text, subtext, aspect = "card" }: Props) {
+export default function Card({
+  image,
+  text,
+  subtext,
+  sizes,
+  aspect = "card",
+}: Props) {
   const aspectCss = aspect === "card" ? "aspect-card" : "aspect-vertical";
 
   return (
@@ -23,10 +30,10 @@ export default function Card({ image, text, subtext, aspect = "card" }: Props) {
             <Image
               src={image}
               priority
+              fill
+              sizes={sizes}
               draggable={false}
               alt="card image"
-              layout="fill"
-              objectFit="cover"
               className="group-hover:scale-110 transition duration-500 ease-in-out rounded-xl"
             />
           )}

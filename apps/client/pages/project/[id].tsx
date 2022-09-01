@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "next/future/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
@@ -32,8 +32,9 @@ export default function Project() {
                 {data.image && (
                   <Image
                     src={data.image}
-                    layout="fill"
                     priority
+                    fill
+                    sizes="40vw"
                     alt="project preview"
                     className="rounded-3xl object-cover"
                   />

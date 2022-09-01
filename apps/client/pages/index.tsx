@@ -1,5 +1,5 @@
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import Image from "next/image";
+import Image from "next/future/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useContext } from "react";
@@ -78,10 +78,10 @@ export default function Index() {
               <Image
                 src="/images/jump.png"
                 priority
-                layout="fill"
+                fill
+                sizes="24vw"
                 alt="Wired-chan"
-                objectFit="contain"
-                className="select-none"
+                className="select-none object-contain"
               />
             </div>
           </div>
@@ -98,10 +98,10 @@ export default function Index() {
               <div className="relative w-full h-full">
                 <Image
                   src="/images/Create.png"
-                  layout="fill"
+                  fill
+                  sizes="24vw"
                   alt="Wired-chan"
-                  objectFit="contain"
-                  className="select-none"
+                  className="select-none object-contain"
                 />
               </div>
             </div>
@@ -167,10 +167,10 @@ export default function Index() {
               <div className="relative w-full h-full">
                 <Image
                   src="/images/Explore.png"
-                  layout="fill"
+                  fill
+                  sizes="24vw"
                   alt="Wired-chan"
-                  objectFit="contain"
-                  className="select-none"
+                  className="select-none object-contain"
                 />
               </div>
             </div>
@@ -181,10 +181,10 @@ export default function Index() {
               <div className="relative w-full h-full">
                 <Image
                   src="/images/Open.png"
-                  layout="fill"
+                  fill
+                  sizes="24vw"
                   alt="Wired-chan"
-                  objectFit="contain"
-                  className="select-none"
+                  className="select-none object-contain"
                 />
               </div>
             </div>
@@ -227,10 +227,10 @@ export default function Index() {
               <div className="relative w-full h-full">
                 <Image
                   src="/images/sitting.png"
-                  layout="fill"
+                  fill
+                  sizes="24vw"
                   alt="Wired-chan"
-                  objectFit="contain"
-                  className="select-none"
+                  className="select-none object-contain"
                 />
               </div>
             </div>

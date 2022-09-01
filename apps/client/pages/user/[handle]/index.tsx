@@ -80,7 +80,7 @@ export default function User({ publications, ...rest }: Props) {
                 <div key={publication.id} className="w-full md:col-span-2 p-1">
                   <Link href={`/space/${publication.id}`} passHref>
                     <a>
-                      <SpaceCard space={publication} />
+                      <SpaceCard space={publication} sizes="49vw" />
                     </a>
                   </Link>
                 </div>
@@ -92,7 +92,7 @@ export default function User({ publications, ...rest }: Props) {
                 <div key={publication.id} className="w-full p-1">
                   <Link href={`/avatar/${publication.id}`} passHref>
                     <a>
-                      <AvatarCard avatar={publication} />
+                      <AvatarCard avatar={publication} sizes="24vw" />
                     </a>
                   </Link>
                 </div>

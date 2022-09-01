@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "next/future/image";
 import Link from "next/link";
 import { useContext } from "react";
 
@@ -21,7 +21,8 @@ export default function Navbar() {
                 <Image
                   src="/images/Logo-Maskable.png"
                   alt="logo"
-                  layout="fill"
+                  fill
+                  sizes="36px"
                 />
               </a>
             </Link>

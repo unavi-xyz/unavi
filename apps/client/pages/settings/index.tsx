@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "next/future/image";
 import { useContext, useEffect, useRef, useState } from "react";
 
 import { IpfsContext } from "@wired-xr/ipfs";
@@ -170,10 +170,10 @@ export default function Settings() {
                     <div className="relative object-cover w-full h-full">
                       <Image
                         src={coverUrl}
-                        layout="fill"
+                        fill
+                        sizes="49vw"
                         alt="cover picture preview"
-                        objectFit="cover"
-                        className="rounded-xl h-full w-full"
+                        className="rounded-xl h-full w-full object-cover"
                       />
                     </div>
                   </div>
@@ -217,20 +217,20 @@ export default function Settings() {
                   <div className="relative w-full h-full aspect-square">
                     <Image
                       src={pfpUrl}
-                      layout="fill"
+                      fill
+                      sizes="24vw"
                       alt="profile picture preview square"
-                      objectFit="cover"
-                      className="rounded-xl h-full w-full"
+                      className="rounded-xl h-full w-full object-cover"
                     />
                   </div>
 
                   <div className="relative w-full h-full aspect-square">
                     <Image
                       src={pfpUrl}
-                      layout="fill"
+                      fill
+                      sizes="24vw"
                       alt="profile picture preview circle"
-                      objectFit="cover"
-                      className="rounded-full h-full w-full"
+                      className="rounded-full h-full w-full object-cover"
                     />
                   </div>
                 </div>

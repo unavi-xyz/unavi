@@ -292,7 +292,7 @@ export default function Explore({
                       }%))`,
                     }}
                   >
-                    <SpaceCard space={space} />
+                    <SpaceCard space={space} sizes="227px" />
                   </a>
                 </Link>
               ))}
@@ -321,7 +321,7 @@ export default function Explore({
                       }%))`,
                     }}
                   >
-                    <AvatarCard avatar={avatar} />
+                    <AvatarCard avatar={avatar} sizes="140px" />
                   </a>
                 </Link>
               ))}

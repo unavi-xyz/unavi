@@ -1,5 +1,5 @@
+import Image from "next/future/image";
 import Head from "next/head";
-import Image from "next/image";
 import Link from "next/link";
 import { useContext } from "react";
 import { FaTwitter } from "react-icons/fa";
@@ -56,7 +56,8 @@ export default function ProfileLayout({
                 <Image
                   src={coverImage}
                   priority
-                  layout="fill"
+                  fill
+                  sizes="80vw"
                   alt="cover"
                   className="w-full h-full object-cover md:rounded-3xl"
                 />

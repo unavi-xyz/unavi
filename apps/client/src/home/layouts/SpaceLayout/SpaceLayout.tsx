@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "next/future/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useContext } from "react";
@@ -41,8 +41,9 @@ export default function SpaceLayout({
                 {metadata.image && (
                   <Image
                     src={metadata.image}
-                    layout="fill"
                     priority
+                    fill
+                    sizes="40vw"
                     alt="space preview"
                     className="rounded-3xl"
                   />

@@ -13,8 +13,10 @@ export interface SpaceLayoutProps extends PublicationProps {
 }
 
 export async function getSpaceLayoutProps(id: string) {
+  // Fetch publication data
   const publicationProps = await getPublicationProps(id as string);
 
+  // Fetch player count
   const host =
     process.env.NODE_ENV === "production"
       ? publicationProps.publication?.profile.attributes?.find(

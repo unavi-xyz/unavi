@@ -8,7 +8,7 @@ import {
 } from "../../../src/home/layouts/SpaceLayout/getSpaceLayoutProps";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=10");
+  res?.setHeader("Cache-Control", "s-maxage=30");
 
   const props = await getSpaceLayoutProps(query.id as string);
 

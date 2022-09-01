@@ -22,6 +22,7 @@ import SpaceCard from "../src/home/lens/SpaceCard";
 import { lensClient } from "../src/lib/lens/client";
 import MetaTags from "../src/ui/MetaTags";
 import Carousel from "../src/ui/base/Carousel";
+import { parseUri } from "../src/utils/parseUri";
 import { useIsMobile } from "../src/utils/useIsMobile";
 import { useQueryPagination } from "../src/utils/useQueryPagination";
 
@@ -107,7 +108,7 @@ async function fetchLatestSpaces(pageInfo?: PaginatedResultInfo, limit = 3) {
   const fetchedItems = items.map((item) => {
     if (!item.metadata.media[0]) return item;
     const newItem = { ...item };
-    newItem.metadata.image = getMediaImageSSR(item.metadata.media[0]);
+    newItem.metadata.image = parseUri(item.metadata.media[0].original.url);
     return newItem;
   });
 
@@ -141,7 +142,7 @@ async function fetchLatestAvatars(pageInfo?: PaginatedResultInfo, limit = 5) {
   const fetchedItems = items.map((item) => {
     if (!item.metadata.media[0]) return item;
     const newItem = { ...item };
-    newItem.metadata.image = getMediaImageSSR(item.metadata.media[0]);
+    newItem.metadata.image = parseUri(item.metadata.media[0].original.url);
     return newItem;
   });
 
@@ -162,12 +163,18 @@ export async function getServerSideProps({ res }: NextPageContext) {
   };
 
   //fetch the first page
-  const firstLatestSpaces = await fetchLatestSpaces(pageInfo);
-  const firstLatestAvatars = await fetchLatestAvatars(pageInfo);
+  const firstLatestSpacesPromise = fetchLatestSpaces(pageInfo);
+  const firstLatestAvatarsPromise = fetchLatestAvatars(pageInfo);
+
+  const firstLatestSpaces = await firstLatestSpacesPromise;
+  const firstLatestAvatars = await firstLatestAvatarsPromise;
 
   //also fetch the next page
-  const secondPageSpaces = await fetchLatestSpaces(firstLatestSpaces.info);
-  const secondPageAvatars = await fetchLatestAvatars(firstLatestAvatars.info);
+  const secondPageSpacesPromise = fetchLatestSpaces(firstLatestSpaces.info);
+  const secondPageAvatarsPromise = fetchLatestAvatars(firstLatestAvatars.info);
+
+  const secondPageSpaces = await secondPageSpacesPromise;
+  const secondPageAvatars = await secondPageAvatarsPromise;
 
   //fetch hot spaces
   // const hotSpaces = await fetchHotSpaces();

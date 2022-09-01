@@ -15,7 +15,10 @@ import {
 
 import { WEBGL_TYPE_SIZES } from "./constants";
 import { getPaddedArrayBuffer } from "./exporter/getPaddedArrayBuffer";
-import { ProcessAccessorOptions, processAccessor } from "./exporter/processAccessor";
+import {
+  ProcessAccessorOptions,
+  processAccessor,
+} from "./exporter/processAccessor";
 import { processAnimation } from "./exporter/processAnimation";
 import { processBufferView } from "./exporter/processBufferView";
 import { processBufferViewImage } from "./exporter/processBufferViewImage";
@@ -69,19 +72,28 @@ export class GLTFExporter {
 
   constructor() {}
 
-  async exportAsJSON(input: Object3D | Object3D[], animations?: AnimationClip[]) {
+  async exportAsJSON(
+    input: Object3D | Object3D[],
+    animations?: AnimationClip[]
+  ) {
     this.#options.binary = true;
     const json = await this.#exportObjects(input, animations);
     return json as GLTF;
   }
 
-  async exportAsBinary(input: Object3D | Object3D[], animations?: AnimationClip[]) {
+  async exportAsBinary(
+    input: Object3D | Object3D[],
+    animations?: AnimationClip[]
+  ) {
     this.#options.binary = true;
     const glbBuffer = await this.#exportObjects(input, animations);
     return glbBuffer as ArrayBuffer;
   }
 
-  async #exportObjects(input: Object3D | Object3D[], animations?: AnimationClip[]) {
+  async #exportObjects(
+    input: Object3D | Object3D[],
+    animations?: AnimationClip[]
+  ) {
     // Process input
     this.#processInput(input, animations);
 
@@ -107,7 +119,8 @@ export class GLTFExporter {
 
         // Update accessors
         this.#json.accessors?.forEach((accessor) => {
-          if (!this.#json.bufferViews || accessor.bufferView === undefined) return;
+          if (!this.#json.bufferViews || accessor.bufferView === undefined)
+            return;
           const bufferView = this.#json.bufferViews[accessor.bufferView];
 
           if (bufferView.name === viewName && accessor.bufferIndex === i) {
@@ -154,7 +167,9 @@ export class GLTFExporter {
 
       // Binary chunk
       const binaryChunk = getPaddedArrayBuffer(buffer);
-      const binaryChunkPrefix = new DataView(new ArrayBuffer(GLB_CHUNK_PREFIX_BYTES));
+      const binaryChunkPrefix = new DataView(
+        new ArrayBuffer(GLB_CHUNK_PREFIX_BYTES)
+      );
       binaryChunkPrefix.setUint32(0, binaryChunk.byteLength, true);
       binaryChunkPrefix.setUint32(4, GLB_CHUNK_TYPE_BIN, true);
 
@@ -162,7 +177,9 @@ export class GLTFExporter {
       const jsonText = JSON.stringify(this.#json);
       const jsonBuffer = new TextEncoder().encode(jsonText).buffer;
       const jsonChunk = getPaddedArrayBuffer(jsonBuffer, 0x20);
-      const jsonChunkPrefix = new DataView(new ArrayBuffer(GLB_CHUNK_PREFIX_BYTES));
+      const jsonChunkPrefix = new DataView(
+        new ArrayBuffer(GLB_CHUNK_PREFIX_BYTES)
+      );
       jsonChunkPrefix.setUint32(0, jsonChunk.byteLength, true);
       jsonChunkPrefix.setUint32(4, GLB_CHUNK_TYPE_JSON, true);
 
@@ -197,7 +214,10 @@ export class GLTFExporter {
     }
   }
 
-  #processInput(input: Object3D | Object3D[], animations: AnimationClip[] = []) {
+  #processInput(
+    input: Object3D | Object3D[],
+    animations: AnimationClip[] = []
+  ) {
     const objects = Array.isArray(input) ? input : [input];
     const objectsWithoutScene: Object3D[] = [];
 
@@ -254,7 +274,11 @@ export class GLTFExporter {
   }
 
   #processScene(scene: Scene) {
-    const sceneIndex = processScene(scene, this.#json, this.#processNode.bind(this));
+    const sceneIndex = processScene(
+      scene,
+      this.#json,
+      this.#processNode.bind(this)
+    );
     return sceneIndex;
   }
 
@@ -293,7 +317,11 @@ export class GLTFExporter {
     const cached = this.#cache.materials.get(material);
     if (cached !== undefined) return cached;
 
-    const index = processMaterial(material, this.#json, this.#processTexture.bind(this));
+    const index = processMaterial(
+      material,
+      this.#json,
+      this.#processTexture.bind(this)
+    );
 
     this.#cache.materials.set(material, index);
     return index;
@@ -320,7 +348,12 @@ export class GLTFExporter {
     return index;
   }
 
-  async #processImage(image: ImageBitmap, format: number, flipY: boolean, mimeType = "image/png") {
+  async #processImage(
+    image: ImageBitmap,
+    format: number,
+    flipY: boolean,
+    mimeType = "image/png"
+  ) {
     const cachedImage = this.#cache.images.get(image);
     const cachedFlipY = cachedImage?.get(flipY);
     const cachedMimeType = cachedFlipY?.get(mimeType);
@@ -409,7 +442,11 @@ export class GLTFExporter {
   }
 
   async #processBufferViewImage(blob: Blob) {
-    const index = await processBufferViewImage(blob, this.#json, this.#processBuffer.bind(this));
+    const index = await processBufferViewImage(
+      blob,
+      this.#json,
+      this.#processBuffer.bind(this)
+    );
     return index;
   }
 

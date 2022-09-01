@@ -30,7 +30,11 @@ export default function CreateProjectPage() {
       <div className="text-3xl font-bold text-center">Create a Project</div>
 
       <TextField inputRef={nameRef} title="Name" defaultValue="New Project" />
-      <TextField inputRef={descriptionRef} title="Description" defaultValue="" />
+      <TextField
+        inputRef={descriptionRef}
+        title="Description"
+        defaultValue=""
+      />
 
       <div className="flex justify-end">
         <Button variant="filled" onClick={handleCreate}>

@@ -108,9 +108,11 @@ export class GLTFLoader {
     console.log("🔃 Loaded glTF:", this.#json);
 
     const bufferViewPromises =
-      this.#json.bufferViews?.map((_, index) => this.#loadBufferView(index)) ?? [];
+      this.#json.bufferViews?.map((_, index) => this.#loadBufferView(index)) ??
+      [];
 
-    const imagePromises = this.#json.images?.map((_, index) => this.#loadImage(index)) ?? [];
+    const imagePromises =
+      this.#json.images?.map((_, index) => this.#loadImage(index)) ?? [];
 
     const bufferViews = await Promise.all(bufferViewPromises);
     const images = await Promise.all(imagePromises);
@@ -127,7 +129,12 @@ export class GLTFLoader {
   }
 
   #loadImage(index: number) {
-    const image = loadImage(index, this.#json, this.#baseUrl, this.#loadBufferView.bind(this));
+    const image = loadImage(
+      index,
+      this.#json,
+      this.#baseUrl,
+      this.#loadBufferView.bind(this)
+    );
     return image;
   }
 
@@ -135,7 +142,11 @@ export class GLTFLoader {
     const cached = this.#bufferViews.get(index);
     if (cached) return cached;
 
-    const bufferView = loadBufferView(index, this.#json, this.#loadBuffer.bind(this));
+    const bufferView = loadBufferView(
+      index,
+      this.#json,
+      this.#loadBuffer.bind(this)
+    );
 
     this.#bufferViews.set(index, bufferView);
     return bufferView;

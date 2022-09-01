@@ -4,7 +4,11 @@ interface Props {
   children: JSX.Element;
 }
 
-export default function Tooltip({ text, placement = "bottom", children }: Props) {
+export default function Tooltip({
+  text,
+  placement = "bottom",
+  children,
+}: Props) {
   const margin =
     placement === "top"
       ? "mb-14 bottom-0 left-1/2 transform -translate-x-1/2"

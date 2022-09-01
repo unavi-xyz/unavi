@@ -65,7 +65,9 @@ export function processInterleavedBufferView(
   name = `${attribute.data.uuid}`;
 
   // See if we have already added this interleaved buffer
-  const foundIndex = json.bufferViews.findIndex((bufferView) => bufferView.name === name);
+  const foundIndex = json.bufferViews.findIndex(
+    (bufferView) => bufferView.name === name
+  );
   if (foundIndex !== undefined && foundIndex !== -1) {
     return { index: foundIndex, bufferIndex: 0 };
   }
@@ -87,5 +89,7 @@ export function processInterleavedBufferView(
 
 function getComponentName(componentType: number) {
   // @ts-ignore
-  return Object.keys(WEBGL_CONSTANTS).find((key) => WEBGL_CONSTANTS[key] === componentType);
+  return Object.keys(WEBGL_CONSTANTS).find(
+    (key) => WEBGL_CONSTANTS[key] === componentType
+  );
 }

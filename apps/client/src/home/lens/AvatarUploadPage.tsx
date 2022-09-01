@@ -3,7 +3,13 @@ import { useRouter } from "next/router";
 import { useContext, useRef, useState } from "react";
 
 import { IpfsContext } from "@wired-xr/ipfs";
-import { AppId, LensContext, Metadata, MetadataVersions, useCreatePost } from "@wired-xr/lens";
+import {
+  AppId,
+  LensContext,
+  Metadata,
+  MetadataVersions,
+  useCreatePost,
+} from "@wired-xr/lens";
 import { useProfileByHandle } from "@wired-xr/lens";
 
 import Button from "../../ui/base/Button";
@@ -126,7 +132,11 @@ export default function AvatarUploadPage() {
       {(imageFile || vrmFile) && (
         <div className="flex space-x-4">
           {imageFile && (
-            <Card text={name} image={URL.createObjectURL(imageFile)} aspect="vertical" />
+            <Card
+              text={name}
+              image={URL.createObjectURL(imageFile)}
+              aspect="vertical"
+            />
           )}
 
           <div className="w-full">
@@ -136,7 +146,12 @@ export default function AvatarUploadPage() {
       )}
 
       <div className="flex justify-end">
-        <Button onClick={handleSubmit} variant="filled" disabled={disableSubmit} loading={loading}>
+        <Button
+          onClick={handleSubmit}
+          variant="filled"
+          disabled={disableSubmit}
+          loading={loading}
+        >
           Submit
         </Button>
       </div>

@@ -18,7 +18,11 @@ export default function Navbar() {
           <div className="flex items-center">
             <Link href="/" passHref>
               <a className="cursor-pointer relative h-9 aspect-square">
-                <Image src="/images/Logo-Maskable.png" alt="logo" layout="fill" />
+                <Image
+                  src="/images/Logo-Maskable.png"
+                  alt="logo"
+                  layout="fill"
+                />
               </a>
             </Link>
           </div>

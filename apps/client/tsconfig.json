@@ -1,6 +1,6 @@
 {
   "extends": "@wired-xr/tsconfig/nextjs.json",
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.mjs"],
   "references": [
     {
       "path": "../../packages/engine"

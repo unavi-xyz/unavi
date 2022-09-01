@@ -31,7 +31,9 @@
       "componentType": 5126,
       "count": 7866,
       "max": [0.49000006914138794, 0.050000011920928955, 0.02252579852938652],
-      "min": [-0.49000000953674316, -0.050000011920928955, -0.0071332501247525215],
+      "min": [
+        -0.49000000953674316, -0.050000011920928955, -0.0071332501247525215
+      ],
       "type": "VEC3"
     },
     {
@@ -198,7 +200,11 @@
       "uri": "TransmissionRoughnessTest.bin"
     }
   ],
-  "extensionsUsed": ["KHR_materials_transmission", "KHR_materials_ior", "KHR_materials_volume"],
+  "extensionsUsed": [
+    "KHR_materials_transmission",
+    "KHR_materials_ior",
+    "KHR_materials_volume"
+  ],
   "images": [
     {
       "mimeType": "image/png",
@@ -343,7 +349,9 @@
     {
       "name": "Mat_Opaque",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.800000011920929, 0.800000011920929, 0.800000011920929, 1],
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
         "metallicRoughnessTexture": {
           "index": 6,
           "texCoord": 0

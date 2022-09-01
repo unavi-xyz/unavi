@@ -44,8 +44,8 @@ export default function HostPage() {
       <div className="flex flex-col items-center space-y-1">
         <h1 className="text-3xl flex justify-center">Host Server</h1>
         <p className="text-center">
-          Specify a server to host your spaces. Can be changed at any time. (defaults to{" "}
-          <b>host.thewired.space</b>)
+          Specify a server to host your spaces. Can be changed at any time.
+          (defaults to <b>host.thewired.space</b>)
         </p>
       </div>
 

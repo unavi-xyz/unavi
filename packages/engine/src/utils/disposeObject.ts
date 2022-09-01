@@ -5,7 +5,8 @@ export function disposeObject(root: Object3D) {
     if (object instanceof Mesh) {
       const mesh = object as Mesh;
 
-      const materials = mesh.material instanceof Array ? mesh.material : [mesh.material];
+      const materials =
+        mesh.material instanceof Array ? mesh.material : [mesh.material];
       materials.forEach((material) => {
         // Dispose textures
         if (material instanceof MeshStandardMaterial) {

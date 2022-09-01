@@ -1,6 +1,10 @@
 import { nanoid } from "nanoid";
 
-import { AttributeData, MetadataVersions, ProfileMetadata } from "@wired-xr/lens";
+import {
+  AttributeData,
+  MetadataVersions,
+  ProfileMetadata,
+} from "@wired-xr/lens";
 
 import { Profile } from "../../generated/graphql";
 
@@ -38,7 +42,9 @@ export function createProfileMetadata(profile: Profile) {
       value,
     };
 
-    const currentIndex = metadata.attributes.findIndex((attribute) => attribute.key === key);
+    const currentIndex = metadata.attributes.findIndex(
+      (attribute) => attribute.key === key
+    );
 
     if (value === undefined) {
       if (currentIndex !== -1) {

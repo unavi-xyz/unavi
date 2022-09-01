@@ -50,11 +50,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function generateChallenge(address: string) {
     const { data, error } = await client
-      .query<GetChallengeQuery, GetChallengeQueryVariables>(GetChallengeDocument, {
-        request: {
-          address,
-        },
-      })
+      .query<GetChallengeQuery, GetChallengeQueryVariables>(
+        GetChallengeDocument,
+        {
+          request: {
+            address,
+          },
+        }
+      )
       .toPromise();
 
     if (error) throw new Error(error.message);
@@ -64,7 +67,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function setAccessToken(accessToken: string) {
-    const TwentyNineMinutesFromNow = new Date(new Date().getTime() + 29 * 60 * 1000);
+    const TwentyNineMinutesFromNow = new Date(
+      new Date().getTime() + 29 * 60 * 1000
+    );
 
     localStorage.setItem(`${LocalStorage.AccessToken}${address}`, accessToken);
     localStorage.setItem(
@@ -76,12 +81,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function setRefreshToken(refreshToken: string) {
     const OneDayFromNow = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
 
-    localStorage.setItem(`${LocalStorage.RefreshToken}${address}`, refreshToken);
-    localStorage.setItem(`${LocalStorage.RefreshExpire}${address}`, OneDayFromNow.toString());
+    localStorage.setItem(
+      `${LocalStorage.RefreshToken}${address}`,
+      refreshToken
+    );
+    localStorage.setItem(
+      `${LocalStorage.RefreshExpire}${address}`,
+      OneDayFromNow.toString()
+    );
   }
 
   async function refreshAccessToken() {
-    const refreshToken = localStorage.getItem(`${LocalStorage.RefreshToken}${address}`);
+    const refreshToken = localStorage.getItem(
+      `${LocalStorage.RefreshToken}${address}`
+    );
 
     if (refreshToken) {
       const { data, error } = await client
@@ -105,8 +118,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!address) throw new Error("No address");
 
     //if access token is valid, return
-    const accessToken = localStorage.getItem(`${LocalStorage.AccessToken}${address}`);
-    const accessExpire = localStorage.getItem(`${LocalStorage.AccessExpire}${address}`);
+    const accessToken = localStorage.getItem(
+      `${LocalStorage.AccessToken}${address}`
+    );
+    const accessExpire = localStorage.getItem(
+      `${LocalStorage.AccessExpire}${address}`
+    );
 
     if (accessToken && accessExpire) {
       const now = new Date();
@@ -117,8 +134,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     //if refresh token is valid, refresh access token
-    const refreshToken = localStorage.getItem(`${LocalStorage.RefreshToken}${address}`);
-    const refreshExpire = localStorage.getItem(`${LocalStorage.RefreshExpire}${address}`);
+    const refreshToken = localStorage.getItem(
+      `${LocalStorage.RefreshToken}${address}`
+    );
+    const refreshExpire = localStorage.getItem(
+      `${LocalStorage.RefreshExpire}${address}`
+    );
 
     if (refreshToken && refreshExpire) {
       const now = new Date();
@@ -137,12 +158,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     //authenticate with api
     const { data, error } = await client
-      .mutation<AuthenticateMutation, AuthenticateMutationVariables>(AuthenticateDocument, {
-        request: {
-          address,
-          signature,
-        },
-      })
+      .mutation<AuthenticateMutation, AuthenticateMutationVariables>(
+        AuthenticateDocument,
+        {
+          request: {
+            address,
+            signature,
+          },
+        }
+      )
       .toPromise();
 
     if (error) throw new Error(error.message);

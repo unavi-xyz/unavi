@@ -1,11 +1,6 @@
 module.exports = {
   root: true,
-  extends: ["next", "prettier"],
-  settings: {
-    next: {
-      rootDir: ["apps/*/", "packages/*/"],
-    },
-  },
+  extends: ["custom"],
   rules: {
     "@next/next/no-img-element": "off",
   },

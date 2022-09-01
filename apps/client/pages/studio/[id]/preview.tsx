@@ -27,7 +27,10 @@ export default function Preview() {
     window.addEventListener("resize", updateCanvasSize);
 
     // Start engine
-    const engine = new Engine(canvas, { skyboxPath: "/images/skybox/", player: true });
+    const engine = new Engine(canvas, {
+      skyboxPath: "/images/skybox/",
+      player: true,
+    });
     useStudioStore.setState({ engine });
 
     return () => {
@@ -56,11 +59,17 @@ export default function Preview() {
       <div className="crosshair" />
 
       <div className="h-full">
-        <div ref={containerRef} className="relative w-full h-full overflow-hidden">
+        <div
+          ref={containerRef}
+          className="relative w-full h-full overflow-hidden"
+        >
           <canvas ref={canvasRef} className="w-full h-full" />
         </div>
 
-        <div onClick={(e) => e.stopPropagation()} className="fixed top-0 right-0 p-6 text-2xl">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="fixed top-0 right-0 p-6 text-2xl"
+        >
           <Link href={`/studio/${id}`} passHref>
             <a
               className="block cursor-pointer p-2 rounded-full bg-surface text-onSurface

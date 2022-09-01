@@ -1,4 +1,8 @@
-import { RainbowKitProvider, connectorsForWallets, wallet } from "@rainbow-me/rainbowkit";
+import {
+  RainbowKitProvider,
+  connectorsForWallets,
+  wallet,
+} from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
 import { withTRPC } from "@trpc/next";
 import { SessionProvider } from "next-auth/react";
@@ -74,7 +78,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
             <IpfsProvider>
               <LensProvider>
                 <LoginProvider>
-                  <div className="w-full h-screen">{getLayout(<Component {...pageProps} />)}</div>
+                  <div className="w-full h-screen">
+                    {getLayout(<Component {...pageProps} />)}
+                  </div>
                 </LoginProvider>
               </LensProvider>
             </IpfsProvider>

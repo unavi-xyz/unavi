@@ -1,4 +1,10 @@
-import React, { ReactPortal, useContext, useEffect, useRef, useState } from "react";
+import React, {
+  ReactPortal,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 
 const DialogContext = React.createContext({ close: () => {} });
@@ -9,7 +15,11 @@ interface Props {
   children: React.ReactNode;
 }
 
-export default function Dialog({ open, onClose = () => {}, children }: Props): ReactPortal | null {
+export default function Dialog({
+  open,
+  onClose = () => {},
+  children,
+}: Props): ReactPortal | null {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +69,9 @@ export default function Dialog({ open, onClose = () => {}, children }: Props): R
                    transition duration-200 ease-in-out scale-75 opacity-0 bg-surface
                    text-onSurface drop-shadow-lg"
       >
-        <DialogContext.Provider value={{ close: onClose }}>{children}</DialogContext.Provider>
+        <DialogContext.Provider value={{ close: onClose }}>
+          {children}
+        </DialogContext.Provider>
       </dialog>
     </div>,
     document.body

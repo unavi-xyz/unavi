@@ -16,7 +16,9 @@ export interface IAuthenticatedContext extends IBaseContext {
 
 export type IContext = IGuestContext | IAuthenticatedContext;
 
-export async function createContext({ req }: trpcNext.CreateNextContextOptions): Promise<IContext> {
+export async function createContext({
+  req,
+}: trpcNext.CreateNextContextOptions): Promise<IContext> {
   const token = await getToken({ req, secret: process.env.NEXT_AUTH_SECRET });
 
   if (!token || !token.name) {

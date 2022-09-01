@@ -26,23 +26,36 @@ export class RenderThread {
 
     // Render in a worker if browser supports OffscreenCanvas
     // Unless we're in development mode, which causes issues with transferControlToOffscreen()
-    if (typeof OffscreenCanvas !== "undefined" && process.env.NODE_ENV !== "development") {
-      console.log("🖥️ Browser supports OffscreenCanvas. Rendering on worker thread.");
+    if (
+      typeof OffscreenCanvas !== "undefined" &&
+      process.env.NODE_ENV !== "development"
+    ) {
+      console.log(
+        "🖥️ Browser supports OffscreenCanvas. Rendering on worker thread."
+      );
       const offscreen = canvas.transferControlToOffscreen();
-      this.#worker = new Worker(new URL("./workers/Render.worker.ts", import.meta.url), {
-        type: "module",
-      });
+      this.#worker = new Worker(
+        new URL("./workers/Render.worker.ts", import.meta.url),
+        {
+          type: "module",
+        }
+      );
       // Initialize worker
-      this.#postMessage({ subject: "set_canvas", data: offscreen }, [offscreen]);
+      this.#postMessage({ subject: "set_canvas", data: offscreen }, [
+        offscreen,
+      ]);
     } else {
-      console.log("🖥️ Browser does not support OffscreenCanvas. Rendering on main thread.");
+      console.log(
+        "🖥️ Browser does not support OffscreenCanvas. Rendering on main thread."
+      );
       // Otherwise, render in a fake worker on the main thread
       this.#worker = new FakeWorker();
       const renderWorker = new RenderWorker(
         this.#worker.workerPort.postMessage.bind(this.#worker.workerPort),
         canvas
       );
-      this.#worker.workerPort.onmessage = renderWorker.onmessage.bind(renderWorker);
+      this.#worker.workerPort.onmessage =
+        renderWorker.onmessage.bind(renderWorker);
     }
 
     // On message from worker
@@ -79,7 +92,11 @@ export class RenderThread {
     return promise;
   }
 
-  loadScene(worldBuffer: ArrayBuffer, images: ImageBitmap[], accessors: TypedArray[]) {
+  loadScene(
+    worldBuffer: ArrayBuffer,
+    images: ImageBitmap[],
+    accessors: TypedArray[]
+  ) {
     this.#postMessage(
       {
         subject: "load_scene",
@@ -134,7 +151,12 @@ export class RenderThread {
 
   onObjectClick(id: string | null) {}
 
-  onSetTransform(id: string, position: number[], rotation: number[], scale: number[]) {}
+  onSetTransform(
+    id: string,
+    position: number[],
+    rotation: number[],
+    scale: number[]
+  ) {}
 
   #onmessage = (event: MessageEvent<FromRenderMessage>) => {
     const { subject, data } = event.data;
@@ -215,7 +237,10 @@ export class RenderThread {
   }
 }
 
-function getPointerData(event: PointerEvent, canvas: HTMLCanvasElement): PointerData {
+function getPointerData(
+  event: PointerEvent,
+  canvas: HTMLCanvasElement
+): PointerData {
   let pointer;
   if (canvas.ownerDocument.pointerLockElement) {
     pointer = {

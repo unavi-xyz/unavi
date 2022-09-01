@@ -1,6 +1,11 @@
 import Spinner from "./Spinner";
 
-export type ButtonVariant = "elevated" | "filled" | "tonal" | "outlined" | "text";
+export type ButtonVariant =
+  | "elevated"
+  | "filled"
+  | "tonal"
+  | "outlined"
+  | "text";
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -75,7 +80,11 @@ export default function sButton({
   const loadingClass = loading ? "opacity-0" : null;
   const fullWidthClass = fullWidth ? "w-full" : null;
   const squaredClass =
-    squared === "small" ? "rounded" : squared === "large" ? "rounded-xl" : "rounded-full";
+    squared === "small"
+      ? "rounded"
+      : squared === "large"
+      ? "rounded-xl"
+      : "rounded-full";
 
   const paddingClass = icon ? "p-2.5" : "px-5 py-1.5";
 

@@ -15,7 +15,13 @@ import {
   WebIO,
 } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
-import { ComponentType, addComponent, addEntity, createWorld, defineSerializer } from "bitecs";
+import {
+  ComponentType,
+  addComponent,
+  addEntity,
+  createWorld,
+  defineSerializer,
+} from "bitecs";
 
 import {
   AlphaMode,
@@ -59,7 +65,9 @@ const extensionDeps = {};
 
 // Loads a glTF asset into engine ECS format
 export class GLTFLoader {
-  #io = new WebIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(extensionDeps);
+  #io = new WebIO()
+    .registerExtensions(ALL_EXTENSIONS)
+    .registerDependencies(extensionDeps);
   #root: Root | null = null;
 
   #nodes = new Map<INode, number>();
@@ -443,8 +451,14 @@ export class GLTFLoader {
     const metallicRoughnessInfo = material.getMetallicRoughnessTextureInfo();
     if (metallicRoughnessTexture && metallicRoughnessInfo) {
       addComponent(this.#world, MetallicRoughnessTexture, eid);
-      MetallicRoughnessTexture.texture[eid] = this.#loadTexture(metallicRoughnessTexture);
-      loadTextureInfo(metallicRoughnessInfo, MetallicRoughnessTexture.info, eid);
+      MetallicRoughnessTexture.texture[eid] = this.#loadTexture(
+        metallicRoughnessTexture
+      );
+      loadTextureInfo(
+        metallicRoughnessInfo,
+        MetallicRoughnessTexture.info,
+        eid
+      );
     }
 
     // Normal

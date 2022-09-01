@@ -32,7 +32,9 @@ export function processBufferView(
       componentSize = 4;
   }
 
-  const byteLength = getPaddedBufferSize(count * attribute.itemSize * componentSize);
+  const byteLength = getPaddedBufferSize(
+    count * attribute.itemSize * componentSize
+  );
   const dataView = new DataView(new ArrayBuffer(byteLength));
   let offset = 0;
 
@@ -89,7 +91,9 @@ export function processBufferView(
   const bufferIndex = processBuffer(dataView.buffer, name);
 
   // See if we can combine this buffer view with an existing one
-  const foundIndex = json.bufferViews.findIndex((bufferView) => bufferView.name === name);
+  const foundIndex = json.bufferViews.findIndex(
+    (bufferView) => bufferView.name === name
+  );
   if (foundIndex !== undefined && foundIndex !== -1) {
     const found = json.bufferViews[foundIndex];
     found.byteLength += byteLength;
@@ -108,5 +112,7 @@ export function processBufferView(
 
 function getComponentName(componentType: number) {
   // @ts-ignore
-  return Object.keys(WEBGL_CONSTANTS).find((key) => WEBGL_CONSTANTS[key] === componentType);
+  return Object.keys(WEBGL_CONSTANTS).find(
+    (key) => WEBGL_CONSTANTS[key] === componentType
+  );
 }

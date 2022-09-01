@@ -2,13 +2,18 @@ import { LinearEncoding, Source, Texture, sRGBEncoding } from "three";
 
 import { getCanvas } from "./getCanvas";
 
-export function buildMetalRoughTexture(metalnessMap: Texture | null, roughnessMap: Texture | null) {
+export function buildMetalRoughTexture(
+  metalnessMap: Texture | null,
+  roughnessMap: Texture | null
+) {
   if (metalnessMap === roughnessMap) return metalnessMap;
 
   function getEncodingConversion(map: Texture) {
     if (map.encoding === sRGBEncoding) {
       return function SRGBToLinear(c: number) {
-        return c < 0.04045 ? c * 0.0773993808 : Math.pow(c * 0.9478672986 + 0.0521327014, 2.4);
+        return c < 0.04045
+          ? c * 0.0773993808
+          : Math.pow(c * 0.9478672986 + 0.0521327014, 2.4);
       };
     }
 

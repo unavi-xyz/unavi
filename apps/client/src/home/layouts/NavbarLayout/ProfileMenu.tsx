@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { useContext } from "react";
-import { MdLogout, MdOutlinePersonOutline, MdOutlineSettings } from "react-icons/md";
+import {
+  MdLogout,
+  MdOutlinePersonOutline,
+  MdOutlineSettings,
+} from "react-icons/md";
 import { useAccount } from "wagmi";
 
 import { LensContext, trimHandle, useProfilesByAddress } from "@wired-xr/lens";
@@ -15,7 +19,9 @@ export default function ProfileMenu() {
 
   const { profiles } = useProfilesByAddress(address);
 
-  const otherProfiles = profiles?.filter((profile) => trimHandle(profile.handle) !== handle);
+  const otherProfiles = profiles?.filter(
+    (profile) => trimHandle(profile.handle) !== handle
+  );
 
   if (!handle) return null;
 
@@ -30,13 +36,17 @@ export default function ProfileMenu() {
       <div className="px-2 space-y-1">
         <Link href={`/user/${handle}`} passHref>
           <a className="block">
-            <ProfileMenuButton icon={<MdOutlinePersonOutline />}>Your Profile</ProfileMenuButton>
+            <ProfileMenuButton icon={<MdOutlinePersonOutline />}>
+              Your Profile
+            </ProfileMenuButton>
           </a>
         </Link>
 
         <Link href="/settings" passHref>
           <a className="block">
-            <ProfileMenuButton icon={<MdOutlineSettings />}>Settings</ProfileMenuButton>
+            <ProfileMenuButton icon={<MdOutlineSettings />}>
+              Settings
+            </ProfileMenuButton>
           </a>
         </Link>
 
@@ -49,7 +59,10 @@ export default function ProfileMenu() {
         <>
           <hr />
 
-          <div onPointerUp={(e) => e.stopPropagation()} className="flex justify-center font-bold">
+          <div
+            onPointerUp={(e) => e.stopPropagation()}
+            className="flex justify-center font-bold"
+          >
             Switch Profiles
           </div>
 
@@ -57,7 +70,10 @@ export default function ProfileMenu() {
             {otherProfiles.map((profile) => {
               const profileHandle = trimHandle(profile.handle);
               return (
-                <button key={profile.id} onClick={() => setHandle(profileHandle)}>
+                <button
+                  key={profile.id}
+                  onClick={() => setHandle(profileHandle)}
+                >
                   <ProfileMenuButton>@{profileHandle}</ProfileMenuButton>
                 </button>
               );

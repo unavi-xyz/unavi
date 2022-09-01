@@ -105,7 +105,10 @@ export default function Studio() {
                 </div>
 
                 <div className="float-left h-full border-x">
-                  <div ref={containerRef} className="relative w-full h-full overflow-hidden">
+                  <div
+                    ref={containerRef}
+                    className="relative w-full h-full overflow-hidden"
+                  >
                     <canvas ref={canvasRef} className="w-full h-full" />
                   </div>
                 </div>

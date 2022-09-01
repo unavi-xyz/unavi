@@ -1,20 +1,36 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "baseBranch": "origin/main",
   "pipeline": {
-    "lint": {},
     "build": {
       "dependsOn": ["^build", "codegen"],
       "outputs": ["dist/**", ".next/**"]
+    },
+    "client#build": {
+      "dependsOn": [
+        "^build",
+        "$NEXT_PUBLIC_IPFS_ENDPOINT",
+        "$NEXT_PUBLIC_IPFS_GATEWAY",
+        "$NEXT_PUBLIC_IPFS_AUTH",
+        "$NEXT_AUTH_SECRET",
+        "$ALCHEMY_ID",
+        "$S3_ACCESS_KEY_ID",
+        "$S3_SECRET",
+        "$NODE_ENV",
+        "$VERCEL_URL",
+        "$HOST"
+      ],
+      "outputs": [".next/**"]
+    },
+    "lint": {
+      "outputs": []
     },
     "codegen": {
       "dependsOn": ["^build"]
     },
     "test": {
-      "dependsOn": ["^build", "codegen"]
+      "dependsOn": ["build", "codegen"]
     },
     "dev": {
-      "dependsOn": ["^build"],
       "cache": false
     }
   }

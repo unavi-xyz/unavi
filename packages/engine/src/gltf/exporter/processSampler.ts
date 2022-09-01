@@ -41,7 +41,9 @@ export function processSampler(map: Texture, json: GLTF) {
 
   // Check if sampler already exists
   const stringified = JSON.stringify(samplerDef);
-  const existing = json.samplers.findIndex((sampler) => JSON.stringify(sampler) === stringified);
+  const existing = json.samplers.findIndex(
+    (sampler) => JSON.stringify(sampler) === stringified
+  );
   if (existing !== -1) return existing;
 
   // Otherwise add a new sampler

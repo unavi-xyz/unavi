@@ -54,7 +54,9 @@ export function processAccessor(
       componentType = WEBGL_CONSTANTS.UNSIGNED_BYTE;
       break;
     default:
-      throw new Error(`Unsupported component type: ${attribute.array.constructor.name}`);
+      throw new Error(
+        `Unsupported component type: ${attribute.array.constructor.name}`
+      );
   }
 
   if (count === undefined) count = attribute.count;
@@ -87,14 +89,22 @@ export function processAccessor(
 
   // @ts-ignore
   const type: string | undefined = ATTRIBUTE_TYPES[attribute.itemSize];
-  if (type === undefined) throw new Error(`Unsupported item size: ${attribute.itemSize}`);
+  if (type === undefined)
+    throw new Error(`Unsupported item size: ${attribute.itemSize}`);
 
   const interleaved = attribute instanceof InterleavedBufferAttribute;
-  if (interleaved && !interleavedBuffer) throw new Error("Interleaved buffer is required");
+  if (interleaved && !interleavedBuffer)
+    throw new Error("Interleaved buffer is required");
 
   const { index, bufferIndex } = interleaved
     ? // @ts-ignore
-      processInterleavedBufferView(attribute, interleavedBuffer, componentType, start, count)
+      processInterleavedBufferView(
+        attribute,
+        interleavedBuffer,
+        componentType,
+        start,
+        count
+      )
     : processBufferView(attribute, componentType, start, count);
 
   const accessorDef: Accessor = {

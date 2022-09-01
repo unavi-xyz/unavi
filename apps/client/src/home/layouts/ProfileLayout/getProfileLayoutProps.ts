@@ -17,7 +17,9 @@ export interface ProfileLayoutProps {
   profileImage: string | null;
 }
 
-export async function getProfileLayoutProps(handle: string): Promise<ProfileLayoutProps> {
+export async function getProfileLayoutProps(
+  handle: string
+): Promise<ProfileLayoutProps> {
   const profileQuery = await lensClient
     .query<GetProfileQuery, GetProfileQueryVariables>(GetProfileDocument, {
       request: {

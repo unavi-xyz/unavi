@@ -173,9 +173,15 @@ export async function getServerSideProps({ res }: NextPageContext) {
   // const hotSpaces = await fetchHotSpaces();
 
   const props: Props = {
-    initialLatestSpaces: [...firstLatestSpaces.items, ...secondPageSpaces.items],
+    initialLatestSpaces: [
+      ...firstLatestSpaces.items,
+      ...secondPageSpaces.items,
+    ],
     initialLatestSpacesInfo: secondPageSpaces.info,
-    initialLatestAvatars: [...firstLatestAvatars.items, ...secondPageAvatars.items],
+    initialLatestAvatars: [
+      ...firstLatestAvatars.items,
+      ...secondPageAvatars.items,
+    ],
     initialLatestAvatarsInfo: secondPageAvatars.info,
     hotSpaces: [],
   };
@@ -220,7 +226,8 @@ export default function Explore({
 
   const [hotSpacesPage, setHotSpacesPage] = useState(0);
   const disableHotSpacesBack = hotSpacesPage === 0;
-  const disableHotSpacesForward = hotSpacesPage === hotSpaces.length / spaceLimit - 1;
+  const disableHotSpacesForward =
+    hotSpacesPage === hotSpaces.length / spaceLimit - 1;
 
   return (
     <>
@@ -251,7 +258,9 @@ export default function Explore({
                   <a
                     className="h-40 transition duration-500"
                     style={{
-                      transform: `translate(calc(-${hotSpacesPage * spaceLimit}00% + ${
+                      transform: `translate(calc(-${
+                        hotSpacesPage * spaceLimit
+                      }00% + ${
                         spaceLimit > 1 ? Math.min(hotSpacesPage, 1) * 15 : 0
                       }%))`,
                     }}
@@ -276,7 +285,9 @@ export default function Explore({
                   <a
                     className="h-40 transition duration-500"
                     style={{
-                      transform: `translate(calc(-${latestSpaces.page * spaceLimit}00% + ${
+                      transform: `translate(calc(-${
+                        latestSpaces.page * spaceLimit
+                      }00% + ${
                         spaceLimit > 1 ? Math.min(latestSpaces.page, 1) * 15 : 0
                       }%))`,
                     }}
@@ -301,8 +312,12 @@ export default function Explore({
                   <a
                     className="h-64 transition duration-500"
                     style={{
-                      transform: `translate(calc(-${latestAvatars.page * avatarLimit}00% + ${
-                        avatarLimit > 1 ? Math.min(latestAvatars.page, 1) * 15 : 0
+                      transform: `translate(calc(-${
+                        latestAvatars.page * avatarLimit
+                      }00% + ${
+                        avatarLimit > 1
+                          ? Math.min(latestAvatars.page, 1) * 15
+                          : 0
                       }%))`,
                     }}
                   >

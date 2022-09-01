@@ -18,7 +18,9 @@ export async function buildNodeHierarchy(
 
   // Children
   if (nodeDef.children) {
-    const childrenPromises = nodeDef.children.map((childIndex) => _buildNodeHierarchy(childIndex));
+    const childrenPromises = nodeDef.children.map((childIndex) =>
+      _buildNodeHierarchy(childIndex)
+    );
     const children = await Promise.all(childrenPromises);
     node.add(...children);
   }

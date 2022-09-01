@@ -60,7 +60,12 @@ export class OrbitControls extends EventDispatcher {
   zoom0: number;
   _domElementKeyEvents: EventTarget | null;
 
-  keys = { LEFT: "ArrowLeft", UP: "ArrowUp", RIGHT: "ArrowRight", BOTTOM: "ArrowDown" };
+  keys = {
+    LEFT: "ArrowLeft",
+    UP: "ArrowUp",
+    RIGHT: "ArrowRight",
+    BOTTOM: "ArrowDown",
+  };
   mouseButtons = { LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.PAN };
   touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
 
@@ -82,7 +87,9 @@ export class OrbitControls extends EventDispatcher {
     super();
 
     if (domElement === undefined)
-      console.warn('THREE.OrbitControls: The second parameter "domElement" is now mandatory.');
+      console.warn(
+        'THREE.OrbitControls: The second parameter "domElement" is now mandatory.'
+      );
 
     this.object = object;
     this.domElement = domElement;
@@ -190,7 +197,10 @@ export class OrbitControls extends EventDispatcher {
       const offset = new Vector3();
 
       // so camera.up is the orbit axis
-      const quat = new Quaternion().setFromUnitVectors(object.up, new Vector3(0, 1, 0));
+      const quat = new Quaternion().setFromUnitVectors(
+        object.up,
+        new Vector3(0, 1, 0)
+      );
       const quatInverse = quat.clone().invert();
 
       const lastPosition = new Vector3();
@@ -244,7 +254,10 @@ export class OrbitControls extends EventDispatcher {
         }
 
         // restrict phi to be between desired limits
-        spherical.phi = Math.max(scope.minPolarAngle, Math.min(scope.maxPolarAngle, spherical.phi));
+        spherical.phi = Math.max(
+          scope.minPolarAngle,
+          Math.min(scope.maxPolarAngle, spherical.phi)
+        );
 
         spherical.makeSafe();
 
@@ -430,19 +443,31 @@ export class OrbitControls extends EventDispatcher {
           let targetDistance = offset.length();
 
           // half of the fov is center to top of screen
-          targetDistance *= Math.tan(((scope.object.fov / 2) * Math.PI) / 180.0);
+          targetDistance *= Math.tan(
+            ((scope.object.fov / 2) * Math.PI) / 180.0
+          );
 
           // we use only clientHeight here so aspect ratio does not distort speed
-          panLeft((2 * deltaX * targetDistance) / clientHeight, scope.object.matrix);
-          panUp((2 * deltaY * targetDistance) / clientHeight, scope.object.matrix);
-        } else if (scope.object instanceof OrthographicCamera) {
-          // orthographic
           panLeft(
-            (deltaX * (scope.object.right - scope.object.left)) / scope.object.zoom / clientWidth,
+            (2 * deltaX * targetDistance) / clientHeight,
             scope.object.matrix
           );
           panUp(
-            (deltaY * (scope.object.top - scope.object.bottom)) / scope.object.zoom / clientHeight,
+            (2 * deltaY * targetDistance) / clientHeight,
+            scope.object.matrix
+          );
+        } else if (scope.object instanceof OrthographicCamera) {
+          // orthographic
+          panLeft(
+            (deltaX * (scope.object.right - scope.object.left)) /
+              scope.object.zoom /
+              clientWidth,
+            scope.object.matrix
+          );
+          panUp(
+            (deltaY * (scope.object.top - scope.object.bottom)) /
+              scope.object.zoom /
+              clientHeight,
             scope.object.matrix
           );
         } else {
@@ -510,7 +535,9 @@ export class OrbitControls extends EventDispatcher {
     function handleMouseMoveRotate(event: FakePointerEvent) {
       rotateEnd.set(event.detail.clientX, event.detail.clientY);
 
-      rotateDelta.subVectors(rotateEnd, rotateStart).multiplyScalar(scope.rotateSpeed);
+      rotateDelta
+        .subVectors(rotateEnd, rotateStart)
+        .multiplyScalar(scope.rotateSpeed);
 
       const element = scope.domElement;
 
@@ -644,7 +671,9 @@ export class OrbitControls extends EventDispatcher {
         rotateEnd.set(x, y);
       }
 
-      rotateDelta.subVectors(rotateEnd, rotateStart).multiplyScalar(scope.rotateSpeed);
+      rotateDelta
+        .subVectors(rotateEnd, rotateStart)
+        .multiplyScalar(scope.rotateSpeed);
 
       const element = scope.domElement;
 
@@ -788,7 +817,11 @@ export class OrbitControls extends EventDispatcher {
           break;
 
         case MOUSE.ROTATE:
-          if (event.detail.ctrlKey || event.detail.metaKey || event.detail.shiftKey) {
+          if (
+            event.detail.ctrlKey ||
+            event.detail.metaKey ||
+            event.detail.shiftKey
+          ) {
             if (scope.enablePan === false) return;
 
             handleMouseDownPan(event);
@@ -805,7 +838,11 @@ export class OrbitControls extends EventDispatcher {
           break;
 
         case MOUSE.PAN:
-          if (event.detail.ctrlKey || event.detail.metaKey || event.detail.shiftKey) {
+          if (
+            event.detail.ctrlKey ||
+            event.detail.metaKey ||
+            event.detail.shiftKey
+          ) {
             if (scope.enableRotate === false) return;
 
             handleMouseDownRotate(event);
@@ -858,7 +895,12 @@ export class OrbitControls extends EventDispatcher {
     }
 
     function onMouseWheel(event: FakeWheelEvent) {
-      if (scope.enabled === false || scope.enableZoom === false || state !== STATE.NONE) return;
+      if (
+        scope.enabled === false ||
+        scope.enableZoom === false ||
+        state !== STATE.NONE
+      )
+        return;
 
       scope.dispatchEvent(_startEvent);
 
@@ -906,7 +948,8 @@ export class OrbitControls extends EventDispatcher {
         case 2:
           switch (scope.touches.TWO) {
             case TOUCH.DOLLY_PAN:
-              if (scope.enableZoom === false && scope.enablePan === false) return;
+              if (scope.enableZoom === false && scope.enablePan === false)
+                return;
 
               handleTouchStartDollyPan();
 
@@ -915,7 +958,8 @@ export class OrbitControls extends EventDispatcher {
               break;
 
             case TOUCH.DOLLY_ROTATE:
-              if (scope.enableZoom === false && scope.enableRotate === false) return;
+              if (scope.enableZoom === false && scope.enableRotate === false)
+                return;
 
               handleTouchStartDollyRotate();
 
@@ -970,7 +1014,8 @@ export class OrbitControls extends EventDispatcher {
           break;
 
         case STATE.TOUCH_DOLLY_ROTATE:
-          if (scope.enableZoom === false && scope.enableRotate === false) return;
+          if (scope.enableZoom === false && scope.enableRotate === false)
+            return;
 
           handleTouchMoveDollyRotate(event);
 
@@ -1011,7 +1056,9 @@ export class OrbitControls extends EventDispatcher {
 
     function getSecondPointerPosition(event: FakePointerEvent) {
       const pointer =
-        event.detail.pointerId === pointers[0].detail.pointerId ? pointers[1] : pointers[0];
+        event.detail.pointerId === pointers[0].detail.pointerId
+          ? pointers[1]
+          : pointers[0];
 
       return pointerPositions[pointer.detail.pointerId];
     }
@@ -1021,7 +1068,9 @@ export class OrbitControls extends EventDispatcher {
     //@ts-ignore
     scope.domElement.addEventListener("pointercancel", onPointerCancel);
     //@ts-ignore
-    scope.domElement.addEventListener("wheel", onMouseWheel, { passive: false });
+    scope.domElement.addEventListener("wheel", onMouseWheel, {
+      passive: false,
+    });
 
     // force an update at start
     this.update();

@@ -1,4 +1,13 @@
-import { Group, Line, LineLoop, LineSegments, Mesh, Object3D, Points, SkinnedMesh } from "three";
+import {
+  Group,
+  Line,
+  LineLoop,
+  LineSegments,
+  Mesh,
+  Object3D,
+  Points,
+  SkinnedMesh,
+} from "three";
 
 import { WEBGL_CONSTANTS } from "../constants";
 import { GLTF, MeshPrimitive } from "../schemaTypes";
@@ -17,7 +26,9 @@ export async function loadMesh(
   const meshDef = json.meshes[index];
 
   // Load primtives
-  const primitivePromises = meshDef.primitives.map((primitive) => loadPrimitive(primitive));
+  const primitivePromises = meshDef.primitives.map((primitive) =>
+    loadPrimitive(primitive)
+  );
   const primitives = await Promise.all(primitivePromises);
 
   // Create meshes
@@ -30,9 +41,14 @@ export async function loadMesh(
       case WEBGL_CONSTANTS.TRIANGLE_FAN:
       case undefined:
         const isSkinnedMesh = skinnedMeshIndexes.has(index);
-        mesh = isSkinnedMesh ? new SkinnedMesh(geometry, material) : new Mesh(geometry, material);
+        mesh = isSkinnedMesh
+          ? new SkinnedMesh(geometry, material)
+          : new Mesh(geometry, material);
 
-        if (mesh instanceof SkinnedMesh && !mesh.geometry.attributes.skinWeight.normalized) {
+        if (
+          mesh instanceof SkinnedMesh &&
+          !mesh.geometry.attributes.skinWeight.normalized
+        ) {
           mesh.normalizeSkinWeights();
         }
 

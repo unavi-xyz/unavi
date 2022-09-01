@@ -112,14 +112,18 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }],
+    "inputs": [
+      { "internalType": "address", "name": "owner", "type": "address" }
+    ],
     "name": "balanceOf",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
+    ],
     "name": "burn",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -339,7 +343,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "address", "name": "wallet", "type": "address" }],
+    "inputs": [
+      { "internalType": "address", "name": "wallet", "type": "address" }
+    ],
     "name": "defaultProfile",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -371,7 +377,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
+    ],
     "name": "exists",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
@@ -387,7 +395,9 @@
       { "internalType": "bytes[]", "name": "datas", "type": "bytes[]" }
     ],
     "name": "follow",
-    "outputs": [{ "internalType": "uint256[]", "name": "", "type": "uint256[]" }],
+    "outputs": [
+      { "internalType": "uint256[]", "name": "", "type": "uint256[]" }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -424,12 +434,16 @@
       }
     ],
     "name": "followWithSig",
-    "outputs": [{ "internalType": "uint256[]", "name": "", "type": "uint256[]" }],
+    "outputs": [
+      { "internalType": "uint256[]", "name": "", "type": "uint256[]" }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
+    ],
     "name": "getApproved",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
@@ -473,7 +487,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "profileId", "type": "uint256" }
+    ],
     "name": "getDispatcher",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
@@ -487,14 +503,18 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "profileId", "type": "uint256" }
+    ],
     "name": "getFollowModule",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "profileId", "type": "uint256" }
+    ],
     "name": "getFollowNFT",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
@@ -508,7 +528,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "profileId", "type": "uint256" }
+    ],
     "name": "getFollowNFTURI",
     "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
     "stateMutability": "view",
@@ -522,14 +544,18 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "profileId", "type": "uint256" }
+    ],
     "name": "getHandle",
     "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "profileId", "type": "uint256" }
+    ],
     "name": "getProfile",
     "outputs": [
       {
@@ -554,7 +580,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "string", "name": "handle", "type": "string" }],
+    "inputs": [
+      { "internalType": "string", "name": "handle", "type": "string" }
+    ],
     "name": "getProfileIdByHandle",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -601,7 +629,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "profileId", "type": "uint256" }
+    ],
     "name": "getPubCount",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -626,7 +656,9 @@
       { "internalType": "uint256", "name": "pubId", "type": "uint256" }
     ],
     "name": "getPubType",
-    "outputs": [{ "internalType": "enum DataTypes.PubType", "name": "", "type": "uint8" }],
+    "outputs": [
+      { "internalType": "enum DataTypes.PubType", "name": "", "type": "uint8" }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
@@ -675,21 +707,27 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "address", "name": "collectModule", "type": "address" }],
+    "inputs": [
+      { "internalType": "address", "name": "collectModule", "type": "address" }
+    ],
     "name": "isCollectModuleWhitelisted",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "address", "name": "followModule", "type": "address" }],
+    "inputs": [
+      { "internalType": "address", "name": "followModule", "type": "address" }
+    ],
     "name": "isFollowModuleWhitelisted",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "address", "name": "profileCreator", "type": "address" }],
+    "inputs": [
+      { "internalType": "address", "name": "profileCreator", "type": "address" }
+    ],
     "name": "isProfileCreatorWhitelisted",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
@@ -709,7 +747,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
+    ],
     "name": "mintTimestampOf",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -820,7 +860,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
+    ],
     "name": "ownerOf",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
@@ -992,7 +1034,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "profileId", "type": "uint256" }
+    ],
     "name": "setDefaultProfile",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -1192,7 +1236,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "address", "name": "newGovernance", "type": "address" }],
+    "inputs": [
+      { "internalType": "address", "name": "newGovernance", "type": "address" }
+    ],
     "name": "setGovernance",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -1261,7 +1307,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "bytes4", "name": "interfaceId", "type": "bytes4" }],
+    "inputs": [
+      { "internalType": "bytes4", "name": "interfaceId", "type": "bytes4" }
+    ],
     "name": "supportsInterface",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
@@ -1275,14 +1323,18 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "index", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "index", "type": "uint256" }
+    ],
     "name": "tokenByIndex",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
+    ],
     "name": "tokenDataOf",
     "outputs": [
       {
@@ -1313,7 +1365,9 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
+    ],
     "name": "tokenURI",
     "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
     "stateMutability": "view",

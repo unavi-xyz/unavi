@@ -9,14 +9,21 @@ import {
 } from "three";
 
 import { PATH_PROPERTIES_REVERSE } from "../constants";
-import { Animation, AnimationChannel, AnimationSampler, GLTF } from "../schemaTypes";
+import {
+  Animation,
+  AnimationChannel,
+  AnimationSampler,
+  GLTF,
+} from "../schemaTypes";
 
 export function processAnimation(
   clip: AnimationClip,
   root: Object3D,
   json: GLTF,
   processNode: (node: Object3D) => number,
-  processAccessor: (attribute: BufferAttribute | InterleavedBufferAttribute) => number | null
+  processAccessor: (
+    attribute: BufferAttribute | InterleavedBufferAttribute
+  ) => number | null
 ) {
   const tracks = clip.tracks;
 
@@ -61,7 +68,10 @@ export function processAnimation(
       default:
         // See if there is a custom cubic spline interpolation
         // @ts-ignore
-        if (track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline === true) {
+        if (
+          track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline ===
+          true
+        ) {
           interpolation = "CUBICSPLINE";
           // itemSize of CUBICSPLINE keyframe is 9
           // (VEC3 * 3: inTangent, splineVertex, and outTangent)
@@ -75,8 +85,12 @@ export function processAnimation(
     }
 
     // Sampler
-    const input = processAccessor(new BufferAttribute(track.times, inputItemSize));
-    const output = processAccessor(new BufferAttribute(track.values, outputItemSize));
+    const input = processAccessor(
+      new BufferAttribute(track.times, inputItemSize)
+    );
+    const output = processAccessor(
+      new BufferAttribute(track.values, outputItemSize)
+    );
 
     if (input === null || output === null) throw new Error("Invalid accessor");
 

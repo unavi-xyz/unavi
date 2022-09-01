@@ -5,7 +5,8 @@ export function isNormalizedNormalAttribute(normal: BufferAttribute): boolean {
 
   for (let i = 0, il = normal.count; i < il; i++) {
     // 0.0005 is from glTF-validator
-    if (Math.abs(vector.fromBufferAttribute(normal, i).length() - 1.0) > 0.0005) return false;
+    if (Math.abs(vector.fromBufferAttribute(normal, i).length() - 1.0) > 0.0005)
+      return false;
   }
 
   return true;

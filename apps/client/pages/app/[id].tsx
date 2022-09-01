@@ -4,7 +4,10 @@ import { useEffect } from "react";
 import Chat from "../../src/app/Chat";
 import { useAppHotkeys } from "../../src/app/hooks/useAppHotkeys";
 import { useSetIdentity } from "../../src/app/hooks/useSetIdentity";
-import { PublicationProps, getPublicationProps } from "../../src/lib/lens/getPublicationProps";
+import {
+  PublicationProps,
+  getPublicationProps,
+} from "../../src/lib/lens/getPublicationProps";
 import MetaTags from "../../src/ui/MetaTags";
 
 export const DEFAULT_HOST = "wss://host.thewired.space";
@@ -28,7 +31,9 @@ interface Props extends PublicationProps {
 }
 
 export default function App({ id, metadata, publication }: Props) {
-  const ownerHost = publication?.profile.attributes?.find((item) => item.key === "host")?.value;
+  const ownerHost = publication?.profile.attributes?.find(
+    (item) => item.key === "host"
+  )?.value;
 
   const host =
     process.env.NODE_ENV === "development"

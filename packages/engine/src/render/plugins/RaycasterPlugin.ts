@@ -46,13 +46,23 @@ export class RaycasterPlugin extends Plugin {
   }
 
   #onPointerUp(data: PointerData) {
-    if (data.button !== 0 || this.#state.usingTransformControls || this.#moveCount > 20) return;
+    if (
+      data.button !== 0 ||
+      this.#state.usingTransformControls ||
+      this.#moveCount > 20
+    )
+      return;
 
     // Move raycaster to pointer position
-    this.#raycaster.setFromCamera({ x: data.pointer.x, y: data.pointer.y }, this.#camera);
+    this.#raycaster.setFromCamera(
+      { x: data.pointer.x, y: data.pointer.y },
+      this.#camera
+    );
 
     // Get intersected objects
-    const intersected = this.#raycaster.intersectObject(this.#sceneManager.root);
+    const intersected = this.#raycaster.intersectObject(
+      this.#sceneManager.root
+    );
 
     if (intersected.length > 0) {
       const object = intersected[0].object;

@@ -1,4 +1,9 @@
-import { CanvasTexture, LinearFilter, LinearMipMapLinearFilter, RepeatWrapping } from "three";
+import {
+  CanvasTexture,
+  LinearFilter,
+  LinearMipMapLinearFilter,
+  RepeatWrapping,
+} from "three";
 
 import { WEBGL_FILTERS, WEBGL_WRAPPINGS } from "../constants";
 import {

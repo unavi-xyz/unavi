@@ -21,7 +21,8 @@ export default function ExampleOptions({ options }: Props) {
           <div className="flex justify-center mt-2">
             <div className="flex space-x-2 p-2 bg-white rounded-md">
               {options.map(({ name, href }) => {
-                const selected = href === gltf ? "bg-gray-200" : "hover:bg-gray-200";
+                const selected =
+                  href === gltf ? "bg-gray-200" : "hover:bg-gray-200";
 
                 return (
                   <button

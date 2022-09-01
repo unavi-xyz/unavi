@@ -11,9 +11,12 @@ export default function Project() {
   const router = useRouter();
   const id = router.query.id;
 
-  const { data, isFetched } = trpc.useQuery(["project", { id: parseInt(id as string) }], {
-    enabled: id !== undefined,
-  });
+  const { data, isFetched } = trpc.useQuery(
+    ["project", { id: parseInt(id as string) }],
+    {
+      enabled: id !== undefined,
+    }
+  );
 
   if (!isFetched || !data) return null;
 
@@ -39,7 +42,9 @@ export default function Project() {
             </div>
 
             <div className="md:w-2/3 min-w-fit flex flex-col justify-between space-y-8">
-              <div className="font-black text-3xl flex justify-center">{data.name}</div>
+              <div className="font-black text-3xl flex justify-center">
+                {data.name}
+              </div>
 
               <Link href={`/studio/${id}`} passHref>
                 <a>

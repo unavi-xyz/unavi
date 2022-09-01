@@ -2,7 +2,12 @@ import { signOut, useSession } from "next-auth/react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 
-import { LensContext, SessionStorage, trimHandle, useProfilesByAddress } from "@wired-xr/lens";
+import {
+  LensContext,
+  SessionStorage,
+  trimHandle,
+  useProfilesByAddress,
+} from "@wired-xr/lens";
 
 import { wagmiClient } from "../../pages/_app";
 import CreateProfilePage from "../home/layouts/NavbarLayout/CreateProfilePage";
@@ -53,11 +58,14 @@ export default function LoginProvider({ children }: Props) {
 
   // Set handle on authentication
   useEffect(() => {
-    if (!address || !profiles || fetching || sessionStatus !== "authenticated") return;
+    if (!address || !profiles || fetching || sessionStatus !== "authenticated")
+      return;
 
     // If auto login is set, login with that handle
     const autoLogin = sessionStorage.getItem(SessionStorage.AutoLogin);
-    const hasAutoLogin = profiles.find((profile) => trimHandle(profile.handle) === autoLogin);
+    const hasAutoLogin = profiles.find(
+      (profile) => trimHandle(profile.handle) === autoLogin
+    );
 
     if (autoLogin && hasAutoLogin) {
       setHandle(autoLogin);

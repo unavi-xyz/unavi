@@ -11,7 +11,14 @@ interface Props {
   onForward?: () => void;
 }
 
-export default function Carousel({ children, title, back, forward, onBack, onForward }: Props) {
+export default function Carousel({
+  children,
+  title,
+  back,
+  forward,
+  onBack,
+  onForward,
+}: Props) {
   return (
     <div>
       <div className="text-2xl font-bold">{title}</div>
@@ -22,7 +29,9 @@ export default function Carousel({ children, title, back, forward, onBack, onFor
           </Button>
         </div>
 
-        <div className="w-full p-2 overflow-x-hidden grid grid-flow-col">{children}</div>
+        <div className="w-full p-2 overflow-x-hidden grid grid-flow-col">
+          {children}
+        </div>
 
         <div className="flex items-center justify-center">
           <Button variant="tonal" icon disabled={!forward} onClick={onForward}>

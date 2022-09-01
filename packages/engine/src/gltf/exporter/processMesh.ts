@@ -27,7 +27,8 @@ export function processMesh(
   processMaterial: (material: Material) => number
 ) {
   const geometry = mesh.geometry;
-  if (!(geometry instanceof BufferGeometry)) throw new Error("Geometry must be a BufferGeometry.");
+  if (!(geometry instanceof BufferGeometry))
+    throw new Error("Geometry must be a BufferGeometry.");
 
   const meshDef: MeshDef = { primitives: [] };
   if (mesh.name) meshDef.name = mesh.name;
@@ -49,7 +50,10 @@ export function processMesh(
 
   // Normalize the normal attribute, if not already normalized
   const normal = geometry.getAttribute(ATTRIBUTES.NORMAL);
-  if (normal instanceof BufferAttribute && !isNormalizedNormalAttribute(normal)) {
+  if (
+    normal instanceof BufferAttribute &&
+    !isNormalizedNormalAttribute(normal)
+  ) {
     const normalized = createNormalizedNormalAttribute(normal);
     geometry.setAttribute(ATTRIBUTES.NORMAL, normalized);
   }
@@ -67,7 +71,8 @@ export function processMesh(
   });
 
   const interleave =
-    attributeTypes.every((type) => type === "Float32Array") && attributeTypes.length > 1;
+    attributeTypes.every((type) => type === "Float32Array") &&
+    attributeTypes.length > 1;
 
   if (interleave) {
     // Set stride and length
@@ -109,7 +114,10 @@ export function processMesh(
     }
   }
 
-  const interleavedBuffer = new InterleavedBuffer(interleavedArray, interleavedStride);
+  const interleavedBuffer = new InterleavedBuffer(
+    interleavedArray,
+    interleavedStride
+  );
 
   let interleaveOffset = 0;
 
@@ -148,7 +156,10 @@ export function processMesh(
     interleaveOffset += attribute.itemSize;
     if (originalName) attribute.name = originalName;
 
-    const accessorIndex = processAccessor(attribute, { geometry, interleavedBuffer });
+    const accessorIndex = processAccessor(attribute, {
+      geometry,
+      interleavedBuffer,
+    });
     if (accessorIndex !== null) attributes[attributeName] = accessorIndex;
   });
 
@@ -169,7 +180,11 @@ export function processMesh(
       for (const attributeName in geometry.morphAttributes) {
         // glTF 2.0 morph supports POSITION/NORMAL/TANGENT.
         // Three.js doesn't support TANGENT yet.
-        if (attributeName !== ATTRIBUTES.POSITION && attributeName !== ATTRIBUTES.NORMAL) continue;
+        if (
+          attributeName !== ATTRIBUTES.POSITION &&
+          attributeName !== ATTRIBUTES.NORMAL
+        )
+          continue;
 
         const attribute = geometry.morphAttributes[attributeName][i];
         const gltfAttributeName = attributeName.toUpperCase();
@@ -197,7 +212,8 @@ export function processMesh(
       }
 
       targets.push(target);
-      if (mesh.morphTargetInfluences) weights.push(mesh.morphTargetInfluences[i]);
+      if (mesh.morphTargetInfluences)
+        weights.push(mesh.morphTargetInfluences[i]);
     });
 
     meshDef.weights = weights;
@@ -206,7 +222,9 @@ export function processMesh(
   // Primitives
   if (Array.isArray(mesh.material) && geometry.groups.length === 0) return null;
 
-  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  const materials = Array.isArray(mesh.material)
+    ? mesh.material
+    : [mesh.material];
   const groups = Array.isArray(mesh.material)
     ? geometry.groups
     : [{ materialIndex: 0, start: undefined, count: undefined }];

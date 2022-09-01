@@ -62,8 +62,9 @@ export default function Settings(props: SpaceLayoutProps) {
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">
-          Deleting a space does not remove it from the blockchain. It only hides it from the
-          indexer. Anyone can still find the space by using their own indexer.
+          Deleting a space does not remove it from the blockchain. It only hides
+          it from the indexer. Anyone can still find the space by using their
+          own indexer.
         </div>
 
         <Button

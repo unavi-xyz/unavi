@@ -1,10 +1,18 @@
 import * as trpc from "@trpc/server";
 import * as trpcNext from "@trpc/server/adapters/next";
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { MiddlewareResult } from "@trpc/server/dist/declarations/src/internals/middlewares";
 import { z } from "zod";
 
-import { IAuthenticatedContext, IContext, createContext } from "../../../src/login/context";
+import {
+  IAuthenticatedContext,
+  IContext,
+  createContext,
+} from "../../../src/login/context";
 import { prisma } from "../../../src/login/prisma";
 
 const BUCKET_NAME = "wired";
@@ -74,7 +82,9 @@ export const appRouter = trpc
       id: z.number(),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
-      const project = await prisma.project.findFirst({ where: { id, owner: address } });
+      const project = await prisma.project.findFirst({
+        where: { id, owner: address },
+      });
       return project;
     },
   })
@@ -83,7 +93,9 @@ export const appRouter = trpc
       id: z.number(),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
-      const project = await prisma.project.findFirst({ where: { id, owner: address } });
+      const project = await prisma.project.findFirst({
+        where: { id, owner: address },
+      });
       if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
 
       const world = await getWorld(id);
@@ -124,7 +136,9 @@ export const appRouter = trpc
       input: { id, name, description, image, studioState, world },
     }) {
       // Verify that the user owns the project
-      const project = await prisma.project.findFirst({ where: { id, owner: address } });
+      const project = await prisma.project.findFirst({
+        where: { id, owner: address },
+      });
       if (!project) throw new trpc.TRPCError({ code: "UNAUTHORIZED" });
 
       // Upload world to S3

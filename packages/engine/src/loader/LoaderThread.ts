@@ -1,4 +1,8 @@
-import { FromLoaderLoadedGLTF, FromLoaderMessage, ToLoaderMessage } from "./types";
+import {
+  FromLoaderLoadedGLTF,
+  FromLoaderMessage,
+  ToLoaderMessage,
+} from "./types";
 
 export class LoaderThread {
   ready = false;

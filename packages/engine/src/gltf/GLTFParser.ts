@@ -132,7 +132,12 @@ export class GLTFParser {
     const cached = this.#accessors.get(index);
     if (cached) return cached;
 
-    const accessor = loadAccessor(index, this.#json, this.#bufferViews, this.#interleavedBuffers);
+    const accessor = loadAccessor(
+      index,
+      this.#json,
+      this.#bufferViews,
+      this.#interleavedBuffers
+    );
 
     this.#accessors.set(index, accessor);
     return accessor;
@@ -221,13 +226,19 @@ export class GLTFParser {
     const cached = this.#materials.get(index);
     if (cached) return cached;
 
-    const material = loadMaterial(index, this.#json, this.#loadTexture.bind(this));
+    const material = loadMaterial(
+      index,
+      this.#json,
+      this.#loadTexture.bind(this)
+    );
 
     this.#materials.set(index, material);
     return material;
   }
 
-  #loadTexture(info: TextureInfo | MaterialNormalTextureInfo | MaterialOcclusionTextureInfo) {
+  #loadTexture(
+    info: TextureInfo | MaterialNormalTextureInfo | MaterialOcclusionTextureInfo
+  ) {
     const cacheKey = JSON.stringify(info);
     const cached = this.#textures.get(cacheKey);
     if (cached) return cached;

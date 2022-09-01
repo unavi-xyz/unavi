@@ -123,16 +123,28 @@ export class RenderWorker {
 
     // Skybox
     if (skyboxPath)
-      loadCubeTexture(skyboxPath).then((texture) => (this.#scene.background = texture));
+      loadCubeTexture(skyboxPath).then(
+        (texture) => (this.#scene.background = texture)
+      );
 
     // Camera
-    this.#camera = new PerspectiveCamera(75, canvasWidth / canvasHeight, 0.1, 1000);
+    this.#camera = new PerspectiveCamera(
+      75,
+      canvasWidth / canvasHeight,
+      0.1,
+      1000
+    );
 
     // Camera
     switch (camera) {
       case "orbit":
         this.#plugins.push(
-          new OrbitControlsPlugin(this.#camera, canvasWidth, canvasHeight, this.#pluginState)
+          new OrbitControlsPlugin(
+            this.#camera,
+            canvasWidth,
+            canvasHeight,
+            this.#pluginState
+          )
         );
         break;
       case "player":
@@ -150,7 +162,12 @@ export class RenderWorker {
           this.#scene,
           this.#pluginState
         ),
-        new RaycasterPlugin(this.#camera, this.#sceneManager, this.#postMessage, this.#pluginState)
+        new RaycasterPlugin(
+          this.#camera,
+          this.#sceneManager,
+          this.#postMessage,
+          this.#pluginState
+        )
       );
 
     // Ready

@@ -135,7 +135,11 @@ export class Player {
     return audioProducerId;
   }
 
-  public async consumeAudio(producerId: string, playerId: string, spaceId: string) {
+  public async consumeAudio(
+    producerId: string,
+    playerId: string,
+    spaceId: string
+  ) {
     const rtpCapabilities = this._rtpCapabilities;
     if (!rtpCapabilities) return;
 
@@ -185,7 +189,11 @@ export class Player {
     return dataProducerId;
   }
 
-  public async consumeData(dataProducerId: string, playerId: string, spaceId: string) {
+  public async consumeData(
+    dataProducerId: string,
+    playerId: string,
+    spaceId: string
+  ) {
     const dataConsumer = await this.consumer.consumeData({
       dataProducerId,
     });

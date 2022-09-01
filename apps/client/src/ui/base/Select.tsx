@@ -7,7 +7,14 @@ interface Props {
   [key: string]: any;
 }
 
-export default function Select({ options, inputAdornment, title, value, thin, ...rest }: Props) {
+export default function Select({
+  options,
+  inputAdornment,
+  title,
+  value,
+  thin,
+  ...rest
+}: Props) {
   const thinCss = thin ? undefined : "py-2";
 
   return (

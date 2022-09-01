@@ -69,11 +69,23 @@ export class RenderManager {
     if (skyboxPath) {
       this.scene.background = new CubeTextureLoader()
         .setPath(skyboxPath)
-        .load(["right.bmp", "left.bmp", "top.bmp", "bottom.bmp", "front.bmp", "back.bmp"]);
+        .load([
+          "right.bmp",
+          "left.bmp",
+          "top.bmp",
+          "bottom.bmp",
+          "front.bmp",
+          "back.bmp",
+        ]);
     }
 
     // Camera
-    this.camera = new PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+    this.camera = new PerspectiveCamera(
+      75,
+      canvas.width / canvas.height,
+      0.1,
+      1000
+    );
   }
 
   start() {
@@ -82,7 +94,8 @@ export class RenderManager {
   }
 
   stop() {
-    if (this.#animationFrameId !== null) cancelAnimationFrame(this.#animationFrameId);
+    if (this.#animationFrameId !== null)
+      cancelAnimationFrame(this.#animationFrameId);
   }
 
   destroy() {
@@ -106,7 +119,13 @@ export class RenderManager {
     this.#playerInputVector.copy(input);
   }
 
-  setPlayerBuffers({ position, velocity }: { position: Float32Array; velocity: Float32Array }) {
+  setPlayerBuffers({
+    position,
+    velocity,
+  }: {
+    position: Float32Array;
+    velocity: Float32Array;
+  }) {
     this.#playerPosition = position;
     this.#playerVelocity = velocity;
   }

@@ -50,8 +50,10 @@ export async function loadScene(
   }
 
   // Load nodes + animations
-  const nodePromises = sceneDef.nodes?.map((nodeIndex) => buildNodeHierarchy(nodeIndex)) ?? [];
-  const animationPromises = json.animations?.map((_, index) => loadAnimation(index)) ?? [];
+  const nodePromises =
+    sceneDef.nodes?.map((nodeIndex) => buildNodeHierarchy(nodeIndex)) ?? [];
+  const animationPromises =
+    json.animations?.map((_, index) => loadAnimation(index)) ?? [];
 
   const [nodes, animations] = await Promise.all([
     Promise.all(nodePromises),

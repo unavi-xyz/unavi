@@ -22,7 +22,10 @@ export class Player {
     this.#engine = engine;
     this.#canvas = engine.renderManager.renderer.domElement;
 
-    this.#controls = new PointerLockControls(engine.renderManager.camera, document.body);
+    this.#controls = new PointerLockControls(
+      engine.renderManager.camera,
+      document.body
+    );
     this.#controls.connect();
 
     this.#canvas.addEventListener("click", this.#click);

@@ -1,5 +1,9 @@
 export function createAuthMessage(host: string, nonce: string) {
-  const message = ["🔌 The Wired Login", `💻 Host: ${host}`, `⚡ Nonce: ${nonce}`].join("\n");
+  const message = [
+    "🔌 The Wired Login",
+    `💻 Host: ${host}`,
+    `⚡ Nonce: ${nonce}`,
+  ].join("\n");
   return message;
 }
 

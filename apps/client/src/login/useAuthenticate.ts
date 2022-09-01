@@ -12,7 +12,8 @@ export function useAuthenticate() {
 
   // Once a wallet is connected, authenticate the user with the database
   useEffect(() => {
-    if (accountStatus !== "connected" || sessionStatus !== "unauthenticated") return;
+    if (accountStatus !== "connected" || sessionStatus !== "unauthenticated")
+      return;
 
     async function authenticate() {
       // Generate a new token

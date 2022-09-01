@@ -40,7 +40,9 @@ export async function processImage(
     }
 
     if (image.width > maxTextureSize || image.height > maxTextureSize) {
-      throw new Error("DataTexture width and height must not exceed " + maxTextureSize);
+      throw new Error(
+        "DataTexture width and height must not exceed " + maxTextureSize
+      );
     }
 
     const data = new Uint8ClampedArray(image.height * image.width * 4);

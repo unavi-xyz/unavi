@@ -18,7 +18,10 @@ interface Props {
   children: React.ReactNode;
 }
 
-export function IpfsProvider({ url = process.env.NEXT_PUBLIC_IPFS_ENDPOINT, children }: Props) {
+export function IpfsProvider({
+  url = process.env.NEXT_PUBLIC_IPFS_ENDPOINT,
+  children,
+}: Props) {
   const [ipfs, setIpfs] = useState<IPFSHTTPClient>();
 
   useEffect(() => {

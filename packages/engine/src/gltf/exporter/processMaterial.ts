@@ -72,7 +72,10 @@ export function processMaterial(
 
   // Metallic roughness texture
   if (hasMetalRoughness && (material.metalnessMap || material.roughnessMap)) {
-    const texture = buildMetalRoughTexture(material.metalnessMap, material.roughnessMap);
+    const texture = buildMetalRoughTexture(
+      material.metalnessMap,
+      material.roughnessMap
+    );
     if (!texture) throw new Error("Failed to build metal roughness texture.");
     const index = processTexture(texture);
     materialDef.pbrMetallicRoughness.metallicRoughnessTexture = { index };
@@ -81,7 +84,9 @@ export function processMaterial(
   // Emissive
   if ("emissive" in material && material.emissive) {
     // Keep emissive between 0 and 1
-    const emissive = material.emissive.clone().multiplyScalar(material.emissiveIntensity);
+    const emissive = material.emissive
+      .clone()
+      .multiplyScalar(material.emissiveIntensity);
     const maxEmissive = Math.max(...emissive.toArray());
 
     if (maxEmissive > 1) emissive.multiplyScalar(1 / maxEmissive);
@@ -110,7 +115,11 @@ export function processMaterial(
   // Occlusion texture
   if ("aoMap" in material && material.aoMap) {
     const index = processTexture(material.aoMap);
-    materialDef.occlusionTexture = { index, texCoord: 1, strength: material.aoMapIntensity };
+    materialDef.occlusionTexture = {
+      index,
+      texCoord: 1,
+      strength: material.aoMapIntensity,
+    };
   }
 
   // Alpha mode

@@ -7,7 +7,12 @@ export function processTexture(
   json: GLTF,
   pending: Promise<any>[],
   processSampler: (map: Texture) => number,
-  processImage: (image: any, format: number, flipY: boolean, mimeType?: string) => Promise<number>
+  processImage: (
+    image: any,
+    format: number,
+    flipY: boolean,
+    mimeType?: string
+  ) => Promise<number>
 ): number {
   let mimeType: string | undefined = map.userData.mimeType;
   if (mimeType === "image/webp") mimeType = "image/png";
@@ -20,7 +25,12 @@ export function processTexture(
     // We need an up to date byteLength for creating the image buffer view
     // This is weird and hacky, but it works
     Promise.all(pending).then(() => {
-      const sourcePromise = processImage(map.image, map.format, map.flipY, mimeType);
+      const sourcePromise = processImage(
+        map.image,
+        map.format,
+        map.flipY,
+        mimeType
+      );
 
       sourcePromise.then((source) => {
         textureDef.source = source;

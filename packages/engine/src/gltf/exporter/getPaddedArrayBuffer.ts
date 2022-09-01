@@ -1,6 +1,9 @@
 import { getPaddedBufferSize } from "./getPaddedBufferSize";
 
-export function getPaddedArrayBuffer(arrayBuffer: ArrayBuffer, paddingByte = 0) {
+export function getPaddedArrayBuffer(
+  arrayBuffer: ArrayBuffer,
+  paddingByte = 0
+) {
   const paddedLength = getPaddedBufferSize(arrayBuffer.byteLength);
 
   if (paddedLength !== arrayBuffer.byteLength) {

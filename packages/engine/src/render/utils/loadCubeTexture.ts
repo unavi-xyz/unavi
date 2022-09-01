@@ -6,9 +6,14 @@ export async function loadCubeTexture(path: string): Promise<CubeTexture> {
   loader.setPath(path);
 
   const images = await Promise.all(
-    ["right.bmp", "left.bmp", "top.bmp", "bottom.bmp", "front.bmp", "back.bmp"].map((file) =>
-      loader.loadAsync(file)
-    )
+    [
+      "right.bmp",
+      "left.bmp",
+      "top.bmp",
+      "bottom.bmp",
+      "front.bmp",
+      "back.bmp",
+    ].map((file) => loader.loadAsync(file))
   );
 
   const texture = new CubeTexture();

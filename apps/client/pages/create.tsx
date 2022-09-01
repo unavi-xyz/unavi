@@ -33,7 +33,10 @@ export default function Create() {
     <>
       <MetaTags title="Create" />
 
-      <Dialog open={openCreateProject} onClose={() => setOpenCreateProject(false)}>
+      <Dialog
+        open={openCreateProject}
+        onClose={() => setOpenCreateProject(false)}
+      >
         <CreateProjectPage />
       </Dialog>
 
@@ -57,7 +60,9 @@ export default function Create() {
           </div>
 
           {status === "error" && <div className="text-center">Error</div>}
-          {status === "loading" && <div className="text-center">Loading...</div>}
+          {status === "loading" && (
+            <div className="text-center">Loading...</div>
+          )}
 
           <div className="grid grid-cols-3 gap-2">
             {authState === "authenticated" &&

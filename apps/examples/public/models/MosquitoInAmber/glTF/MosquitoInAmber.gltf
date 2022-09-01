@@ -195,7 +195,11 @@
       "uri": "MosquitoInAmber.bin"
     }
   ],
-  "extensionsUsed": ["KHR_materials_transmission", "KHR_materials_ior", "KHR_materials_volume"],
+  "extensionsUsed": [
+    "KHR_materials_transmission",
+    "KHR_materials_ior",
+    "KHR_materials_volume"
+  ],
   "images": [
     {
       "mimeType": "image/jpeg",

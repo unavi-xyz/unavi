@@ -95,7 +95,10 @@ import {
   primitiveQuery,
   primitiveWithIndicesQuery,
 } from "../../ecs";
-import { ThreeAnimationPathName as ThreePathName, WEBGL_CONSTANTS } from "../constants";
+import {
+  ThreeAnimationPathName as ThreePathName,
+  WEBGL_CONSTANTS,
+} from "../constants";
 import { LoadSceneData } from "../types";
 import {
   GLTFCubicSplineInterpolant,
@@ -103,7 +106,10 @@ import {
 } from "./CubicSplineInterpolation";
 
 type PrimitiveObject3D = Mesh | Line | LineSegments | LineLoop | Points;
-type KeyframeTrack = NumberKeyframeTrack | QuaternionKeyframeTrack | VectorKeyframeTrack;
+type KeyframeTrack =
+  | NumberKeyframeTrack
+  | QuaternionKeyframeTrack
+  | VectorKeyframeTrack;
 type KeyframeTrackConstructor =
   | typeof NumberKeyframeTrack
   | typeof QuaternionKeyframeTrack
@@ -230,19 +236,26 @@ export class SceneLoader {
             // Create a custom interpolant for cubic spline interpolation
             // The built in three.js interpolant is not compatible with the glTF spec
             // @ts-ignore
-            track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline(result) {
-              // A CUBICSPLINE keyframe in glTF has three output values for each input value,
-              // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
-              // must be divided by three to get the interpolant's sampleSize argument.
-              const InterpolantType =
-                this instanceof QuaternionKeyframeTrack
-                  ? GLTFCubicSplineQuaternionInterpolant
-                  : GLTFCubicSplineInterpolant;
+            track.createInterpolant =
+              function InterpolantFactoryMethodGLTFCubicSpline(result) {
+                // A CUBICSPLINE keyframe in glTF has three output values for each input value,
+                // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
+                // must be divided by three to get the interpolant's sampleSize argument.
+                const InterpolantType =
+                  this instanceof QuaternionKeyframeTrack
+                    ? GLTFCubicSplineQuaternionInterpolant
+                    : GLTFCubicSplineInterpolant;
 
-              return new InterpolantType(this.times, this.values, this.getValueSize() / 3, result);
-            };
+                return new InterpolantType(
+                  this.times,
+                  this.values,
+                  this.getValueSize() / 3,
+                  result
+                );
+              };
             // @ts-ignore
-            track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline = true;
+            track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline =
+              true;
           }
 
           tracks.push(track);
@@ -261,7 +274,10 @@ export class SceneLoader {
     const nodes = nodeQuery(this.#world);
     const joints = jointQuery(this.#world);
     nodes.forEach((eid) => {
-      const isBone = joints.reduce((acc, jeid) => acc || SkinJoint.bone[jeid] === eid, false);
+      const isBone = joints.reduce(
+        (acc, jeid) => acc || SkinJoint.bone[jeid] === eid,
+        false
+      );
       const object = isBone ? new Bone() : new Object3D();
       this.#objects.set(eid, object);
 
@@ -393,7 +409,11 @@ export class SceneLoader {
       const material = this.#materials.get(meid) ?? new MeshStandardMaterial();
 
       // Occlusion map needs a second set of UVs
-      if (material.aoMap && geometry.attributes.uv && !geometry.attributes.uv2) {
+      if (
+        material.aoMap &&
+        geometry.attributes.uv &&
+        !geometry.attributes.uv2
+      ) {
         geometry.setAttribute("uv2", geometry.attributes.uv);
       }
 
@@ -421,7 +441,9 @@ export class SceneLoader {
             return acc || nodeMesh === primitiveMesh;
           }, false);
 
-          mesh = isSkinnedMesh ? new SkinnedMesh(geometry, material) : new Mesh(geometry, material);
+          mesh = isSkinnedMesh
+            ? new SkinnedMesh(geometry, material)
+            : new Mesh(geometry, material);
 
           if (mesh instanceof SkinnedMesh) {
             const normalized = mesh.geometry.attributes.skinWeight.normalized;
@@ -473,7 +495,10 @@ export class SceneLoader {
     });
   }
 
-  #setMorphAttributes(attributeName: string, component: ComponentType<typeof AttributeType>) {
+  #setMorphAttributes(
+    attributeName: string,
+    component: ComponentType<typeof AttributeType>
+  ) {
     const query = defineQuery([MorphTarget, component]);
     const withAttribute = query(this.#world);
     withAttribute.forEach((eid) => {
@@ -487,7 +512,10 @@ export class SceneLoader {
     });
   }
 
-  #setPrimitiveAttributes(threeName: string, component: ComponentType<typeof AttributeType>) {
+  #setPrimitiveAttributes(
+    threeName: string,
+    component: ComponentType<typeof AttributeType>
+  ) {
     const query = defineQuery([Primitive, component]);
     const withAttribute = query(this.#world);
     withAttribute.forEach((eid) => {
@@ -536,7 +564,9 @@ export class SceneLoader {
     });
 
     // Metallic roughness textures
-    const metallicRoughnessTextures = materialWithMetallicRoughnessTextureQuery(this.#world);
+    const metallicRoughnessTextures = materialWithMetallicRoughnessTextureQuery(
+      this.#world
+    );
     metallicRoughnessTextures.forEach((eid) => {
       const material = this.#materials.get(eid);
       if (!material) throw new Error("Material not found");

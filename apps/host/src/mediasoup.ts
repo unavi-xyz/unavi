@@ -8,7 +8,10 @@ export async function createMediasoupRouter() {
   });
 
   worker.on("died", () => {
-    console.error("mediasoup Worker died, exiting  in 2 seconds... [pid:%d]", worker.pid);
+    console.error(
+      "mediasoup Worker died, exiting  in 2 seconds... [pid:%d]",
+      worker.pid
+    );
 
     setTimeout(() => process.exit(1), 2000);
   });

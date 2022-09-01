@@ -2,7 +2,12 @@ import { utils } from "ethers";
 import { useContext } from "react";
 import { useSignTypedData, useSigner } from "wagmi";
 
-import { ContractAddress, LensContext, pollUntilIndexed, removeTypename } from "@wired-xr/lens";
+import {
+  ContractAddress,
+  LensContext,
+  pollUntilIndexed,
+  removeTypename,
+} from "@wired-xr/lens";
 
 import { LensHub__factory } from "../../contracts";
 import { useCreateSetDefaultProfileTypedDataMutation } from "../../generated/graphql";

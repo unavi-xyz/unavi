@@ -2,6 +2,5 @@
   "importOrder": ["<THIRD_PARTY_MODULES>", "^@wired-xr/(.*)$", "^[./]"],
   "importOrderGroupNamespaceSpecifiers": true,
   "importOrderSeparation": true,
-  "importOrderSortSpecifiers": true,
-  "printWidth": 100
+  "importOrderSortSpecifiers": true
 }

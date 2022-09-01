@@ -14,7 +14,7 @@
     "@types/react-dom": "^18.0.6",
     "@wired-xr/tsconfig": "*",
     "eslint": "^8.22.0",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-custom": "*",
     "typescript": "^4.7.4"
   },
   "peerDependencies": {

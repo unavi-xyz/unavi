@@ -48,7 +48,11 @@ export type PostMessage<M extends WorkerMessage = WorkerMessage> = (
   transfer?: Transferable[]
 ) => void;
 
-export type Transferable = ArrayBuffer | MessagePort | ImageBitmap | OffscreenCanvas;
+export type Transferable =
+  | ArrayBuffer
+  | MessagePort
+  | ImageBitmap
+  | OffscreenCanvas;
 
 // Messages
 export type WorkerMessage<Subject extends string = string, Data = any> = {

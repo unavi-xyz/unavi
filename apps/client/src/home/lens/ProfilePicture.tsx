@@ -6,7 +6,11 @@ interface Props {
   draggable?: boolean;
 }
 
-export default function ProfilePicture({ src, circle, draggable = true }: Props) {
+export default function ProfilePicture({
+  src,
+  circle,
+  draggable = true,
+}: Props) {
   const circleClass = circle ? "rounded-full" : "rounded-xl";
 
   if (!src) return null;

@@ -1,5 +1,8 @@
 import { DEFAULT_HOST } from "../../../../pages/app/[id]";
-import { PublicationProps, getPublicationProps } from "../../../lib/lens/getPublicationProps";
+import {
+  PublicationProps,
+  getPublicationProps,
+} from "../../../lib/lens/getPublicationProps";
 
 const HTTP = process.env.NODE_ENV === "production" ? "https" : "http";
 
@@ -14,12 +17,15 @@ export async function getSpaceLayoutProps(id: string) {
 
   const host =
     process.env.NODE_ENV === "production"
-      ? publicationProps.publication?.profile.attributes?.find((item) => item.key === "host")
-          ?.value ?? DEFAULT_HOST
+      ? publicationProps.publication?.profile.attributes?.find(
+          (item) => item.key === "host"
+        )?.value ?? DEFAULT_HOST
       : "localhost:4000";
 
   try {
-    const playerCountRes = await fetch(`${HTTP}://${host}/space/${id}/player_count`);
+    const playerCountRes = await fetch(
+      `${HTTP}://${host}/space/${id}/player_count`
+    );
     const playerCount = await playerCountRes.json();
 
     return {

@@ -131,13 +131,29 @@ export default function Settings() {
                 <div>{profile.id}</div>
               </div>
 
-              <TextField inputRef={nameRef} title="Name" defaultValue={profile?.name ?? ""} />
+              <TextField
+                inputRef={nameRef}
+                title="Name"
+                defaultValue={profile?.name ?? ""}
+              />
 
-              <TextArea textAreaRef={bioRef} title="Bio" defaultValue={profile?.bio ?? ""} />
+              <TextArea
+                textAreaRef={bioRef}
+                title="Bio"
+                defaultValue={profile?.bio ?? ""}
+              />
 
-              <TextField inputRef={locationRef} title="Location" defaultValue={location?.value} />
+              <TextField
+                inputRef={locationRef}
+                title="Location"
+                defaultValue={location?.value}
+              />
 
-              <TextField inputRef={websiteRef} title="Website" defaultValue={website?.value} />
+              <TextField
+                inputRef={websiteRef}
+                title="Website"
+                defaultValue={website?.value}
+              />
 
               <TextField
                 inputRef={twitterRef}
@@ -182,7 +198,11 @@ export default function Settings() {
             </div>
 
             <div className="w-full flex justify-end">
-              <Button variant="filled" onClick={handleProfileSave} loading={loadingProfile}>
+              <Button
+                variant="filled"
+                onClick={handleProfileSave}
+                loading={loadingProfile}
+              >
                 Save
               </Button>
             </div>

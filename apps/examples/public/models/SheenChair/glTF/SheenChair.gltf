@@ -210,7 +210,11 @@
     }
   },
   "extensionsRequired": ["KHR_texture_transform"],
-  "extensionsUsed": ["KHR_texture_transform", "KHR_materials_sheen", "KHR_materials_variants"],
+  "extensionsUsed": [
+    "KHR_texture_transform",
+    "KHR_materials_sheen",
+    "KHR_materials_variants"
+  ],
   "images": [
     {
       "uri": "./chair_fabric_normal.png"

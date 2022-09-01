@@ -173,7 +173,8 @@ async function start() {
       try {
         const { dtlsParameters } = ConnectTransportDataSchema.parse(data);
 
-        if (!player.producer.transport) throw new Error("audioProducerTransport is required");
+        if (!player.producer.transport)
+          throw new Error("audioProducerTransport is required");
 
         await player.producer.transport.connect({
           dtlsParameters,
@@ -194,7 +195,8 @@ async function start() {
       try {
         const { dtlsParameters } = ConnectTransportDataSchema.parse(data);
 
-        if (!player.consumer.transport) throw new Error("audioConsumerTransport is required");
+        if (!player.consumer.transport)
+          throw new Error("audioConsumerTransport is required");
 
         await player.consumer.transport.connect({
           dtlsParameters,

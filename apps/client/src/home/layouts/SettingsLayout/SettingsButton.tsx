@@ -4,7 +4,12 @@ interface Props extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
 }
 
-export default function SettingsButton({ icon, selected, children, ...rest }: Props) {
+export default function SettingsButton({
+  icon,
+  selected,
+  children,
+  ...rest
+}: Props) {
   const selectedClass = selected
     ? "bg-primaryContainer text-onPrimaryContainer"
     : "hover:bg-surfaceVariant";

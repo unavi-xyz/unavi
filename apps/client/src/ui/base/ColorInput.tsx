@@ -5,7 +5,12 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   defaultValue?: string;
 }
 
-export default function ColorInput({ inputRef, defaultValue, onChange, ...rest }: Props) {
+export default function ColorInput({
+  inputRef,
+  defaultValue,
+  onChange,
+  ...rest
+}: Props) {
   const displayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -11,7 +11,8 @@ export interface IClientContext {
 }
 
 export const initialClientContext: IClientContext = { client: defaultClient };
-export const ClientContext = createContext<IClientContext>(initialClientContext);
+export const ClientContext =
+  createContext<IClientContext>(initialClientContext);
 
 interface Props {
   children: React.ReactNode;
@@ -31,7 +32,9 @@ export function ClientProvider({ children }: Props) {
     function getAccessToken() {
       if (!address) return;
 
-      const accessToken = localStorage.getItem(`${LocalStorage.AccessToken}${address}`);
+      const accessToken = localStorage.getItem(
+        `${LocalStorage.AccessToken}${address}`
+      );
 
       return accessToken;
     }

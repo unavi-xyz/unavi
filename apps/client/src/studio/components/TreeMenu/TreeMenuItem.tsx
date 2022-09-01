@@ -143,7 +143,8 @@ export default function TreeMenuItem({ id = ROOT }: Props) {
               onClick={() => setOpen((prev) => !prev)}
               className="w-5 text-outline hover:text-inherit transition"
             >
-              {hasChildren && (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
+              {hasChildren &&
+                (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
             </div>
 
             <div>{object.name}</div>

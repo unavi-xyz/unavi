@@ -10,7 +10,8 @@ export function useTransformControls() {
   // Update selected object when user clicks on an object
   useEffect(() => {
     if (!engine) return;
-    engine.renderThread.onObjectClick = (id) => useStudioStore.setState({ selectedId: id });
+    engine.renderThread.onObjectClick = (id) =>
+      useStudioStore.setState({ selectedId: id });
     engine.renderThread.onSetTransform = (id, position, rotation, scale) => {
       const { tree } = useStudioStore.getState();
       const entity = tree[id];

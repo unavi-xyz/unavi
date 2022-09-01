@@ -13,7 +13,12 @@ interface Props {
   setSettings?: (settings: Settings) => void;
 }
 
-export default function PanelPage({ animations, info, settings, setSettings }: Props) {
+export default function PanelPage({
+  animations,
+  info,
+  settings,
+  setSettings,
+}: Props) {
   const [selected, setSelected] = useState("Stats");
 
   const hasAnimations = animations && animations.length > 0;
@@ -22,14 +27,24 @@ export default function PanelPage({ animations, info, settings, setSettings }: P
     <div className="space-y-4">
       <div className="flex space-x-2">
         {hasAnimations && (
-          <PanelTab title="Animations" selected={selected} setSelected={setSelected} />
+          <PanelTab
+            title="Animations"
+            selected={selected}
+            setSelected={setSelected}
+          />
         )}
         <PanelTab title="Stats" selected={selected} setSelected={setSelected} />
-        <PanelTab title="Settings" selected={selected} setSelected={setSelected} />
+        <PanelTab
+          title="Settings"
+          selected={selected}
+          setSelected={setSelected}
+        />
       </div>
 
       <div>
-        {selected === "Animations" && hasAnimations && <AnimationsPage animations={animations} />}
+        {selected === "Animations" && hasAnimations && (
+          <AnimationsPage animations={animations} />
+        )}
         {selected === "Stats" && info && <StatsPage info={info} />}
         {selected === "Settings" && settings && setSettings && (
           <SettingsPage settings={settings} setSettings={setSettings} />

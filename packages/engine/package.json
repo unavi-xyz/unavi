@@ -30,7 +30,7 @@
     "@types/three": "^0.140.0",
     "@wired-xr/tsconfig": "*",
     "eslint": "^8.22.0",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-custom": "*",
     "jest": "^28.1.3",
     "jest-environment-jsdom": "^28.1.3",
     "ts-jest": "^28.0.7",

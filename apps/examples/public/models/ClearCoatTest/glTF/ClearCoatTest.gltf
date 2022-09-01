@@ -467,7 +467,9 @@
       "emissiveFactor": [0, 0, 0],
       "name": "Partial_Base",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1],
+        "baseColorFactor": [
+          0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.4399999976158142
       }
@@ -476,7 +478,9 @@
       "emissiveFactor": [0, 0, 0],
       "name": "Partial_Coated",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1],
+        "baseColorFactor": [
+          0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.4399999976158142
       },
@@ -508,7 +512,9 @@
       "emissiveFactor": [0, 0, 0],
       "name": "RoughVariations_Base",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1],
+        "baseColorFactor": [
+          0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.6000000238418579
       }
@@ -517,7 +523,9 @@
       "emissiveFactor": [0, 0, 0],
       "name": "RoughVariations_Coated",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1],
+        "baseColorFactor": [
+          0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.6000000238418579
       },
@@ -552,7 +560,9 @@
         "texCoord": 0
       },
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1],
+        "baseColorFactor": [
+          0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.4399999976158142
       }
@@ -565,7 +575,9 @@
         "texCoord": 0
       },
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.012848637998104095, 0.021861059591174126, 0.11068868637084961, 1],
+        "baseColorFactor": [
+          0.012848637998104095, 0.021861059591174126, 0.11068868637084961, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.4399999976158142
       },
@@ -589,7 +601,9 @@
       "emissiveFactor": [0, 0, 0],
       "name": "CoatNorm_Base",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1],
+        "baseColorFactor": [
+          0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.4399999976158142
       }
@@ -598,7 +612,9 @@
       "emissiveFactor": [0, 0, 0],
       "name": "CoatNorm_Coated",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1],
+        "baseColorFactor": [
+          0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.4399999976158142
       },
@@ -635,7 +651,9 @@
         "texCoord": 0
       },
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1],
+        "baseColorFactor": [
+          0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.4399999976158142
       }
@@ -648,7 +666,9 @@
         "texCoord": 0
       },
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1],
+        "baseColorFactor": [
+          0.012983020395040512, 0.022173883393406868, 0.10946174710988998, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.4399999976158142
       },

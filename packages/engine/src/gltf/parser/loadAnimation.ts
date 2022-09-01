@@ -39,7 +39,11 @@ export async function loadAnimation(
     const inputPromise = loadAccessor(sampler.input);
     const outputPromise = loadAccessor(sampler.output);
 
-    const [node, input, output] = await Promise.all([nodePromise, inputPromise, outputPromise]);
+    const [node, input, output] = await Promise.all([
+      nodePromise,
+      inputPromise,
+      outputPromise,
+    ]);
 
     if (!output) {
       throw new Error(`Animation output has no output`);
@@ -110,22 +114,29 @@ export async function loadAnimation(
       // The built in three.js cubic interpolation does not work with glTF
       if (sampler.interpolation === "CUBICSPLINE") {
         // @ts-ignore
-        track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline(result) {
-          // A CUBICSPLINE keyframe in glTF has three output values for each input value,
-          // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
-          // must be divided by three to get the interpolant's sampleSize argument.
+        track.createInterpolant =
+          function InterpolantFactoryMethodGLTFCubicSpline(result) {
+            // A CUBICSPLINE keyframe in glTF has three output values for each input value,
+            // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
+            // must be divided by three to get the interpolant's sampleSize argument.
 
-          const interpolantType =
-            this instanceof QuaternionKeyframeTrack
-              ? GLTFCubicSplineQuaternionInterpolant
-              : GLTFCubicSplineInterpolant;
+            const interpolantType =
+              this instanceof QuaternionKeyframeTrack
+                ? GLTFCubicSplineQuaternionInterpolant
+                : GLTFCubicSplineInterpolant;
 
-          return new interpolantType(this.times, this.values, this.getValueSize() / 3, result);
-        };
+            return new interpolantType(
+              this.times,
+              this.values,
+              this.getValueSize() / 3,
+              result
+            );
+          };
 
         // Mark as CUBICSPLINE. `track.getInterpolation()` doesn't support custom interpolants.
         // @ts-ignore
-        track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline = true;
+        track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline =
+          true;
       }
 
       return track;

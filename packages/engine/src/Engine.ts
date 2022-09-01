@@ -11,8 +11,16 @@ export class Engine {
   // loaderThread = new LoaderThread();
 
   constructor(canvas: HTMLCanvasElement, options?: EngineOptions) {
-    const { skyboxPath, camera = "player", enableTransformControls } = { ...options };
-    this.renderThread = new RenderThread(canvas, { skyboxPath, camera, enableTransformControls });
+    const {
+      skyboxPath,
+      camera = "player",
+      enableTransformControls,
+    } = { ...options };
+    this.renderThread = new RenderThread(canvas, {
+      skyboxPath,
+      camera,
+      enableTransformControls,
+    });
     this.start();
   }
 

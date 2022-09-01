@@ -8,11 +8,17 @@ import {
 import { ATTRIBUTES, AttributeName } from "../constants";
 import { MeshPrimitive } from "../schemaTypes";
 
-export type PrimitiveResult = [MeshPrimitive, BufferGeometry, MeshStandardMaterial];
+export type PrimitiveResult = [
+  MeshPrimitive,
+  BufferGeometry,
+  MeshStandardMaterial
+];
 
 export async function loadPrimitive(
   primitiveDef: MeshPrimitive,
-  loadAccessor: (index: number) => Promise<BufferAttribute | InterleavedBufferAttribute | null>,
+  loadAccessor: (
+    index: number
+  ) => Promise<BufferAttribute | InterleavedBufferAttribute | null>,
   loadMaterial: (index: number) => Promise<MeshStandardMaterial>
 ): Promise<PrimitiveResult> {
   const geometry = new BufferGeometry();
@@ -83,44 +89,46 @@ export async function loadPrimitive(
   // Morph targets
   if (primitiveDef.targets !== undefined) {
     const targetPromises = primitiveDef.targets.map((target) => {
-      const entryPromises = Object.entries(target).map(async ([name, accessorId]) => {
-        const accessor = await loadAccessor(accessorId);
+      const entryPromises = Object.entries(target).map(
+        async ([name, accessorId]) => {
+          const accessor = await loadAccessor(accessorId);
 
-        if (accessor === null) {
-          throw new Error(`Target ${name} not found`);
+          if (accessor === null) {
+            throw new Error(`Target ${name} not found`);
+          }
+
+          switch (name) {
+            case "POSITION":
+              if (geometry.morphAttributes.position === undefined) {
+                geometry.morphAttributes.position = [];
+              }
+
+              geometry.morphAttributes.position.push(accessor);
+              break;
+            case "NORMAL":
+              if (geometry.morphAttributes.normal === undefined) {
+                geometry.morphAttributes.normal = [];
+              }
+
+              geometry.morphAttributes.normal.push(accessor);
+              break;
+            case "TANGENT":
+              if (geometry.morphAttributes.tangent === undefined) {
+                geometry.morphAttributes.tangent = [];
+              }
+
+              geometry.morphAttributes.tangent.push(accessor);
+              break;
+            case "COLOR_0":
+              if (geometry.morphAttributes.color === undefined) {
+                geometry.morphAttributes.color = [];
+              }
+
+              geometry.morphAttributes.color.push(accessor);
+              break;
+          }
         }
-
-        switch (name) {
-          case "POSITION":
-            if (geometry.morphAttributes.position === undefined) {
-              geometry.morphAttributes.position = [];
-            }
-
-            geometry.morphAttributes.position.push(accessor);
-            break;
-          case "NORMAL":
-            if (geometry.morphAttributes.normal === undefined) {
-              geometry.morphAttributes.normal = [];
-            }
-
-            geometry.morphAttributes.normal.push(accessor);
-            break;
-          case "TANGENT":
-            if (geometry.morphAttributes.tangent === undefined) {
-              geometry.morphAttributes.tangent = [];
-            }
-
-            geometry.morphAttributes.tangent.push(accessor);
-            break;
-          case "COLOR_0":
-            if (geometry.morphAttributes.color === undefined) {
-              geometry.morphAttributes.color = [];
-            }
-
-            geometry.morphAttributes.color.push(accessor);
-            break;
-        }
-      });
+      );
 
       return Promise.all(entryPromises);
     });

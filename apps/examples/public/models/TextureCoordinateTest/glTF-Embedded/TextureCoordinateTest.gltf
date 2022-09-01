@@ -294,7 +294,9 @@
       "name": "BackPlaneMat",
       "doubleSided": true,
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.16000001668930075, 0.16000001668930075, 0.16000001668930075, 1],
+        "baseColorFactor": [
+          0.16000001668930075, 0.16000001668930075, 0.16000001668930075, 1
+        ],
         "metallicFactor": 0
       }
     },

@@ -60,7 +60,9 @@ export default function SpaceLayout({
                   <div className="font-bold flex space-x-1 justify-center md:justify-start">
                     <div className="text-outline">By</div>
                     <Link href={`/user/${author}`}>
-                      <a className="hover:underline cursor-pointer">@{author}</a>
+                      <a className="hover:underline cursor-pointer">
+                        @{author}
+                      </a>
                     </Link>
                   </div>
 
@@ -93,7 +95,9 @@ export default function SpaceLayout({
             <div className="flex space-x-4">
               <NavigationTab href={`/space/${id}`} text="About" />
 
-              {isAuthor && <NavigationTab href={`/space/${id}/settings`} text="Settings" />}
+              {isAuthor && (
+                <NavigationTab href={`/space/${id}/settings`} text="Settings" />
+              )}
             </div>
 
             <div>{children}</div>

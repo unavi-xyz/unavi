@@ -1,10 +1,22 @@
-import { BufferAttribute, InterleavedBuffer, InterleavedBufferAttribute } from "three";
+import {
+  BufferAttribute,
+  InterleavedBuffer,
+  InterleavedBufferAttribute,
+} from "three";
 
-import { ComponentType, TypeSize, WEBGL_COMPONENT_TYPES, WEBGL_TYPE_SIZES } from "../constants";
+import {
+  ComponentType,
+  TypeSize,
+  WEBGL_COMPONENT_TYPES,
+  WEBGL_TYPE_SIZES,
+} from "../constants";
 import { BufferViewResult } from "../loader/loadBufferView";
 import { BufferView, GLTF } from "../schemaTypes";
 
-export type AccessorResult = BufferAttribute | InterleavedBufferAttribute | null;
+export type AccessorResult =
+  | BufferAttribute
+  | InterleavedBufferAttribute
+  | null;
 
 export async function loadAccessor(
   index: number,
@@ -18,7 +30,10 @@ export async function loadAccessor(
 
   const accessorDef = json.accessors[index];
 
-  if (accessorDef.bufferView === undefined && accessorDef.sparse === undefined) {
+  if (
+    accessorDef.bufferView === undefined &&
+    accessorDef.sparse === undefined
+  ) {
     // Ignore empty accessors, which may be used to declare runtime
     // information about attributes coming from another source (e.g. Draco
     // compression extension).
@@ -26,7 +41,10 @@ export async function loadAccessor(
   }
 
   // Load buffer views
-  const views: ({ bufferViewDef: BufferView; bufferView: ArrayBuffer } | null)[] = [];
+  const views: ({
+    bufferViewDef: BufferView;
+    bufferView: ArrayBuffer;
+  } | null)[] = [];
 
   if (accessorDef.bufferView !== undefined) {
     const bufferView = await bufferViews[accessorDef.bufferView];
@@ -82,7 +100,10 @@ export async function loadAccessor(
         (accessorDef.count * byteStride) / elementBytes
       );
       // console.log("🙆‍♀️", array);
-      interleavedBuffer = new InterleavedBuffer(array, byteStride / elementBytes);
+      interleavedBuffer = new InterleavedBuffer(
+        array,
+        byteStride / elementBytes
+      );
 
       interleavedBuffers.set(cacheKey, interleavedBuffer);
     }
@@ -103,16 +124,25 @@ export async function loadAccessor(
     if (bufferView === null) {
       array = new TypedArray(accessorDef.count * itemSize);
     } else {
-      array = new TypedArray(bufferView, byteOffset, accessorDef.count * itemSize);
+      array = new TypedArray(
+        bufferView,
+        byteOffset,
+        accessorDef.count * itemSize
+      );
     }
 
     bufferAttribute = new BufferAttribute(array, itemSize, normalized);
   }
 
   // Sparse
-  if (accessorDef.sparse !== undefined && views[1] !== null && views[2] !== null) {
+  if (
+    accessorDef.sparse !== undefined &&
+    views[1] !== null &&
+    views[2] !== null
+  ) {
     const itemSizeIndices = WEBGL_TYPE_SIZES.SCALAR;
-    const indicesComponentType = accessorDef.sparse.indices.componentType as ComponentType;
+    const indicesComponentType = accessorDef.sparse.indices
+      .componentType as ComponentType;
 
     if (indicesComponentType in WEBGL_COMPONENT_TYPES === false) {
       throw new Error(`Invalid component type: ${accessorDef.componentType}`);
@@ -145,10 +175,14 @@ export async function loadAccessor(
 
     sparseIndices.forEach((index, i) => {
       bufferAttribute.setX(index, sparseValues[i * itemSize]);
-      if (itemSize >= 2) bufferAttribute.setY(index, sparseValues[i * itemSize + 1]);
-      if (itemSize >= 3) bufferAttribute.setZ(index, sparseValues[i * itemSize + 2]);
-      if (itemSize >= 4) bufferAttribute.setW(index, sparseValues[i * itemSize + 3]);
-      if (itemSize >= 5) throw new Error("Unsupported itemSize in sparse BufferAttribute.");
+      if (itemSize >= 2)
+        bufferAttribute.setY(index, sparseValues[i * itemSize + 1]);
+      if (itemSize >= 3)
+        bufferAttribute.setZ(index, sparseValues[i * itemSize + 2]);
+      if (itemSize >= 4)
+        bufferAttribute.setW(index, sparseValues[i * itemSize + 3]);
+      if (itemSize >= 5)
+        throw new Error("Unsupported itemSize in sparse BufferAttribute.");
     });
   }
 

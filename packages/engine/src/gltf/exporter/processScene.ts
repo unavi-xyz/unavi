@@ -2,7 +2,11 @@ import { Object3D, Scene } from "three";
 
 import { GLTF, Scene as SceneDef } from "../schemaTypes";
 
-export function processScene(scene: Scene, json: GLTF, processNode: (node: Object3D) => number) {
+export function processScene(
+  scene: Scene,
+  json: GLTF,
+  processNode: (node: Object3D) => number
+) {
   const sceneDef: SceneDef = {};
   if (scene.name) sceneDef.name = scene.name;
 

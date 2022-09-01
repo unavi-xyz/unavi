@@ -874,7 +874,9 @@
     {
       "name": "Material",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.800000011920929, 0.800000011920929, 0.800000011920929, 1],
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.5
       }
@@ -882,7 +884,9 @@
     {
       "name": "Material.001",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.800000011920929, 0.800000011920929, 0.800000011920929, 1],
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.5
       }
@@ -890,7 +894,9 @@
     {
       "name": "Material.002",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.800000011920929, 0.800000011920929, 0.800000011920929, 1],
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.5
       }
@@ -898,7 +904,9 @@
     {
       "name": "Material.007",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.800000011920929, 0.800000011920929, 0.800000011920929, 1],
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.5
       }
@@ -906,7 +914,9 @@
     {
       "name": "Material.006",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.800000011920929, 0.800000011920929, 0.800000011920929, 1],
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.5
       }
@@ -914,7 +924,9 @@
     {
       "name": "Material.008",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.800000011920929, 0.800000011920929, 0.800000011920929, 1],
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.5
       }
@@ -922,7 +934,9 @@
     {
       "name": "Material.004",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.800000011920929, 0.800000011920929, 0.800000011920929, 1],
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.5
       }
@@ -930,7 +944,9 @@
     {
       "name": "Material.005",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.800000011920929, 0.800000011920929, 0.800000011920929, 1],
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.5
       }
@@ -938,7 +954,9 @@
     {
       "name": "Material.003",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0.800000011920929, 0.800000011920929, 0.800000011920929, 1],
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
         "metallicFactor": 0,
         "roughnessFactor": 0.5
       }
@@ -1105,7 +1123,8 @@
     {
       "name": "Light",
       "rotation": [
-        0.16907575726509094, 0.7558802962303162, -0.27217137813568115, 0.570947527885437
+        0.16907575726509094, 0.7558802962303162, -0.27217137813568115,
+        0.570947527885437
       ],
       "scale": [1, 1, 0.9999999403953552],
       "translation": [0.18540644645690918, 5.903861999511719, 8.732584953308105]
@@ -1114,7 +1133,9 @@
       "name": "Camera",
       "rotation": [0.6819981932640076, 0, 0, 0.7313538193702698],
       "scale": [1, 0.39365354180336, 1],
-      "translation": [0.31374117732048035, 4.958309173583984, 29.236623764038086]
+      "translation": [
+        0.31374117732048035, 4.958309173583984, 29.236623764038086
+      ]
     },
     {
       "mesh": 1,

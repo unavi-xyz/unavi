@@ -1,4 +1,10 @@
-import { ColliderDesc, RigidBody, RigidBodyDesc, Vector, World } from "@dimforge/rapier3d";
+import {
+  ColliderDesc,
+  RigidBody,
+  RigidBodyDesc,
+  Vector,
+  World,
+} from "@dimforge/rapier3d";
 
 import { FromGameMessage } from "../types";
 
@@ -31,13 +37,19 @@ export class GameWorker {
   initPlayer() {
     // Create player body
     const playerCollider = ColliderDesc.capsule(0.5, 0.5);
-    this.#playerBody = this.#world.createRigidBody(RigidBodyDesc.kinematicVelocityBased());
+    this.#playerBody = this.#world.createRigidBody(
+      RigidBodyDesc.kinematicVelocityBased()
+    );
     this.#world.createCollider(playerCollider, this.#playerBody);
     this.#playerBody.setTranslation({ x: 0, y: 1, z: 5 }, true);
 
     // Create shared array buffers
-    const positionBuffer = new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * 3);
-    const velocityBuffer = new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * 2);
+    const positionBuffer = new SharedArrayBuffer(
+      Float32Array.BYTES_PER_ELEMENT * 3
+    );
+    const velocityBuffer = new SharedArrayBuffer(
+      Float32Array.BYTES_PER_ELEMENT * 2
+    );
     this.#playerPosition = new Float32Array(positionBuffer);
     this.#playerVelocity = new Float32Array(velocityBuffer);
 

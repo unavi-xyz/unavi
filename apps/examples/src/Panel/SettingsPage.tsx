@@ -14,7 +14,9 @@ export default function SettingsPage({ settings, setSettings }: Props) {
           <input
             type="checkbox"
             checked={settings.testThree}
-            onChange={(e) => setSettings({ ...settings, testThree: e.target.checked })}
+            onChange={(e) =>
+              setSettings({ ...settings, testThree: e.target.checked })
+            }
           />
         </div>
       </div>
@@ -25,7 +27,9 @@ export default function SettingsPage({ settings, setSettings }: Props) {
           <input
             type="checkbox"
             checked={settings.testExport}
-            onChange={(e) => setSettings({ ...settings, testExport: e.target.checked })}
+            onChange={(e) =>
+              setSettings({ ...settings, testExport: e.target.checked })
+            }
           />
         </div>
       </div>

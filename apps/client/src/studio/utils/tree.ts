@@ -22,6 +22,7 @@ export function moveToSibling(
 
 export function findChildren(id: string) {
   const tree = useStudioStore.getState().tree;
-  if (id === "root") return Object.keys(tree).filter((key) => tree[key].parent === null);
+  if (id === "root")
+    return Object.keys(tree).filter((key) => tree[key].parent === null);
   return Object.keys(tree).filter((key) => tree[key].parent === id);
 }

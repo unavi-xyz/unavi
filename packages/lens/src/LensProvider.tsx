@@ -1,6 +1,11 @@
 import { createContext, useContext } from "react";
 
-import { AuthContext, AuthProvider, IAuthContext, initialAuthContext } from "./AuthProvider";
+import {
+  AuthContext,
+  AuthProvider,
+  IAuthContext,
+  initialAuthContext,
+} from "./AuthProvider";
 import {
   ClientContext,
   ClientProvider,

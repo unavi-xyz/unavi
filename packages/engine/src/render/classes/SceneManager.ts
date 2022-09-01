@@ -45,7 +45,9 @@ export class SceneManager {
   }
 
   addEntity(entity: Entity) {
-    const parent = entity.parent ? this.#objectMap.get(entity.parent) : this.root;
+    const parent = entity.parent
+      ? this.#objectMap.get(entity.parent)
+      : this.root;
     if (!parent) throw new Error("Parent not found");
 
     this.#entities.set(entity.id, entity);
@@ -72,7 +74,11 @@ export class SceneManager {
         break;
       case "Sphere":
         const sphere = new Mesh(
-          new SphereBufferGeometry(entity.radius, entity.widthSegments, entity.heightSegments),
+          new SphereBufferGeometry(
+            entity.radius,
+            entity.widthSegments,
+            entity.heightSegments
+          ),
           this.#defaultMaterial
         );
         copyTransform(sphere, entity);
@@ -138,7 +144,9 @@ export class SceneManager {
     parent.add(object);
 
     // Restore object transform
-    const inverseParentRotation = parent.getWorldQuaternion(new Quaternion()).invert();
+    const inverseParentRotation = parent
+      .getWorldQuaternion(new Quaternion())
+      .invert();
     object.position.copy(parent.worldToLocal(position));
     object.quaternion.multiplyQuaternions(rotation, inverseParentRotation);
   }

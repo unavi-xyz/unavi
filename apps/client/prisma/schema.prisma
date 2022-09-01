@@ -3,12 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DB_URL")
+  provider = "postgres"
+  url      = env("DATABASE_URL")
 }
 
 model Project {
-  id Int @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 
   owner String
 
@@ -16,9 +18,5 @@ model Project {
   description String?
   image       String?
 
-  scene       String?
   studioState String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
 }

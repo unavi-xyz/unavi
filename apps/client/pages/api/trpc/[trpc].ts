@@ -114,7 +114,6 @@ export const appRouter = trpc
           name,
           description,
           image: null,
-          scene: null,
           studioState: null,
         },
       });

@@ -36,15 +36,10 @@ export default function auth(req: NextApiRequest, res: NextApiResponse) {
           const { host, nonce } = parseAuthMessage(credentials.message);
 
           // Verify host
-          if (
-            host !== process.env.HOST &&
-            host !== process.env.VERCEL_URL &&
-            host !== "localhost:3000"
-          ) {
+          if (host !== req.headers.host) {
             log.warn("Invalid host", {
               host,
-              env_host: process.env.HOST,
-              env_vercel: process.env.VERCEL_URL,
+              request: req.headers.host,
             });
             return null;
           }

@@ -18,8 +18,7 @@
         "$S3_SECRET",
         "$DATABASE_URL",
         "$NODE_ENV",
-        "$VERCEL_URL",
-        "$HOST"
+        "$VERCEL_URL"
       ],
       "outputs": [".next/**"]
     },

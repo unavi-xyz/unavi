@@ -1,10 +1,6 @@
 import Head from "next/head";
 
-//host url needs to be set in .env file for image meta tags to work
-const rawHost = process.env.HOST ?? "";
-
-//add http if not already there
-const host = rawHost.includes("http") ? rawHost : `https://${rawHost}`;
+const origin = `https://${process.env.VERCEL_URL}`;
 
 interface Props {
   title?: string;
@@ -23,7 +19,7 @@ export default function MetaTags({
 
   //if image is an external url, fetch it through next
   const localImage = image.startsWith("http")
-    ? `${host}/_next/image/?url=${image}&w=${width}&q=75`
+    ? `${origin}/_next/image/?url=${image}&w=${width}&q=75`
     : image;
 
   return (

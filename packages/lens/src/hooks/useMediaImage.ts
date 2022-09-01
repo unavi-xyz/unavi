@@ -1,6 +1,6 @@
 import { useFetchData } from "@wired-xr/ipfs";
 
-import { ProfileMedia } from "../../generated/graphql";
+import { ProfileMedia } from "../..";
 
 export function useMediaImage(picture: ProfileMedia | null | undefined) {
   const uri =

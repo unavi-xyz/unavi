@@ -1,4 +1,4 @@
-import { useGetProfilesQuery } from "../../generated/graphql";
+import { useGetProfilesQuery } from "../..";
 
 export function useProfilesByAddress(address: string | undefined) {
   const [{ data, fetching }] = useGetProfilesQuery({

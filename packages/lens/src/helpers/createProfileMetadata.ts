@@ -6,7 +6,7 @@ import {
   ProfileMetadata,
 } from "@wired-xr/lens";
 
-import { Profile } from "../../generated/graphql";
+import { Profile } from "../..";
 
 export function createProfileMetadata(profile: Profile) {
   const cover_picture =

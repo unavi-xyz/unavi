@@ -1,6 +1,6 @@
 import { getIpfsUrlSSR } from "@wired-xr/ipfs";
 
-import { ProfileMedia } from "../../generated/graphql";
+import { ProfileMedia } from "../..";
 
 export function getMediaImageSSR(picture: ProfileMedia | null | undefined) {
   if (!picture) return null;

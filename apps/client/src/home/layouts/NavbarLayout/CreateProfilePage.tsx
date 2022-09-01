@@ -6,7 +6,7 @@ import {
   CreateProfileDocument,
   CreateProfileMutation,
   CreateProfileMutationVariables,
-} from "@wired-xr/lens/generated/graphql";
+} from "@wired-xr/lens";
 
 import Button from "../../../ui/base/Button";
 import ErrorBox from "../../../ui/base/ErrorBox";

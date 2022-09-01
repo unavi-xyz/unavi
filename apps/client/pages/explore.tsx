@@ -14,7 +14,7 @@ import {
   Post,
   PublicationSortCriteria,
   PublicationTypes,
-} from "@wired-xr/lens/generated/graphql";
+} from "@wired-xr/lens";
 
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
 import AvatarCard from "../src/home/lens/AvatarCard";

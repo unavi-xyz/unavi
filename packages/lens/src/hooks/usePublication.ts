@@ -1,4 +1,4 @@
-import { useGetPublicationQuery } from "../../generated/graphql";
+import { useGetPublicationQuery } from "../..";
 
 export function usePublication(publicationId: string | undefined) {
   const [{ data }] = useGetPublicationQuery({

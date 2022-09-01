@@ -1,7 +1,7 @@
 import { useContext } from "react";
 
 import { HANDLE_ENDING, LensContext, useMediaImage } from "@wired-xr/lens";
-import { useGetProfileQuery } from "@wired-xr/lens/generated/graphql";
+import { useGetProfileQuery } from "@wired-xr/lens";
 
 import ProfilePicture from "./ProfilePicture";
 

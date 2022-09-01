@@ -1,4 +1,4 @@
-import { Profile, useGetProfileQuery } from "../../generated/graphql";
+import { Profile, useGetProfileQuery } from "../..";
 import { HANDLE_ENDING } from "../constants";
 
 export function useProfileByHandle(handle: string | undefined) {

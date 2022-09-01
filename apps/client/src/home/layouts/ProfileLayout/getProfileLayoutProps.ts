@@ -4,7 +4,7 @@ import {
   GetProfileQuery,
   GetProfileQueryVariables,
   Profile,
-} from "@wired-xr/lens/generated/graphql";
+} from "@wired-xr/lens";
 
 import { lensClient } from "../../../lib/lens/client";
 import { PageMetadata } from "../../../types";

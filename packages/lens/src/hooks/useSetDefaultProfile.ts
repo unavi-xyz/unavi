@@ -9,8 +9,8 @@ import {
   removeTypename,
 } from "@wired-xr/lens";
 
+import { useCreateSetDefaultProfileTypedDataMutation } from "../..";
 import { LensHub__factory } from "../../contracts";
-import { useCreateSetDefaultProfileTypedDataMutation } from "../../generated/graphql";
 
 export function useSetDefaultProfile() {
   const [, createTypedData] = useCreateSetDefaultProfileTypedDataMutation();

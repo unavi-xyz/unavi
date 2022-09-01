@@ -4,7 +4,7 @@ import {
   GetPublicationQuery,
   GetPublicationQueryVariables,
   Publication,
-} from "@wired-xr/lens/generated/graphql";
+} from "@wired-xr/lens";
 
 import { PageMetadata } from "../../types";
 import { lensClient } from "./client";

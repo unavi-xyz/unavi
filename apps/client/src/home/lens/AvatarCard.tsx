@@ -1,4 +1,4 @@
-import { Post } from "@wired-xr/lens/generated/graphql";
+import { Post } from "@wired-xr/lens";
 
 import Card from "../../ui/base/Card";
 

@@ -4,7 +4,7 @@ import {
   HasTxHashBeenIndexedDocument,
   HasTxHashBeenIndexedQuery,
   HasTxHashBeenIndexedQueryVariables,
-} from "../generated/graphql";
+} from "..";
 import { HANDLE_ENDING } from "./constants";
 
 export function removeTypename(obj: any) {

@@ -8,7 +8,7 @@ import {
   GetPublicationsQueryVariables,
   Post,
   PublicationTypes,
-} from "@wired-xr/lens/generated/graphql";
+} from "@wired-xr/lens";
 
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
 import ProfileLayout from "../../../src/home/layouts/ProfileLayout/ProfileLayout";

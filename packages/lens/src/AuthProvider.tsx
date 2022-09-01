@@ -11,7 +11,7 @@ import {
   RefreshDocument,
   RefreshMutation,
   RefreshMutationVariables,
-} from "../generated/graphql";
+} from "..";
 import { ClientContext } from "./ClientProvider";
 import { LocalStorage, SessionStorage } from "./constants";
 

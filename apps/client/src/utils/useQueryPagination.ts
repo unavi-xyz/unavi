@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { PaginatedResultInfo } from "@wired-xr/lens/generated/graphql";
+import { PaginatedResultInfo } from "@wired-xr/lens";
 
 interface Props {
   pageSize: number;

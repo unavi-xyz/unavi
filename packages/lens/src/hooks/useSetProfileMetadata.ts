@@ -11,8 +11,8 @@ import {
   removeTypename,
 } from "@wired-xr/lens";
 
+import { useCreateSetProfileMetadataTypedDataMutation } from "../..";
 import { LensPeriphery__factory } from "../../contracts";
-import { useCreateSetProfileMetadataTypedDataMutation } from "../../generated/graphql";
 
 export function useSetProfileMetadata(profileId: string) {
   const [, createTypedData] = useCreateSetProfileMetadataTypedDataMutation();

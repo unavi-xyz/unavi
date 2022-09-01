@@ -1,4 +1,4 @@
-import { Profile } from "../../generated/graphql";
+import { Profile } from "../..";
 import { usePublication } from "./usePublication";
 
 export function useAvatarUrlFromProfile(profile: Profile | undefined) {

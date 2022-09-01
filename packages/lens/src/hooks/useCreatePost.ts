@@ -11,8 +11,8 @@ import {
   removeTypename,
 } from "@wired-xr/lens";
 
+import { useCreatePostTypedDataMutation } from "../..";
 import { LensHub__factory } from "../../contracts";
-import { useCreatePostTypedDataMutation } from "../../generated/graphql";
 
 export function useCreatePost(profileId: string) {
   const [, createTypedData] = useCreatePostTypedDataMutation();

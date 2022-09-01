@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useContext, useEffect, useState } from "react";
 
 import { LensContext } from "@wired-xr/lens";
-import { useHidePublicationMutation } from "@wired-xr/lens/generated/graphql";
+import { useHidePublicationMutation } from "@wired-xr/lens";
 
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
 import SpaceLayout from "../../../src/home/layouts/SpaceLayout/SpaceLayout";

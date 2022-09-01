@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { HANDLE_ENDING } from "@wired-xr/lens";
 
-import { useGetProfileQuery } from "../../generated/graphql";
+import { useGetProfileQuery } from "../..";
 
 export function useValidateHandle(handle: string) {
   const [valid, setValid] = useState(false);

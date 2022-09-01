@@ -10,8 +10,8 @@ import {
   removeTypename,
 } from "@wired-xr/lens";
 
+import { useCreateSetProfileImageTypedDataMutation } from "../..";
 import { LensHub__factory } from "../../contracts";
-import { useCreateSetProfileImageTypedDataMutation } from "../../generated/graphql";
 
 export function useSetProfileImage(profileId: string) {
   const { uploadFileToIpfs } = useContext(IpfsContext);

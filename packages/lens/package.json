@@ -25,7 +25,6 @@
     "@graphql-codegen/typescript-operations": "2.5.3",
     "@graphql-codegen/typescript-urql": "^3.6.4",
     "@typechain/ethers-v5": "^10.1.0",
-    "@types/graphql": "^14.5.0",
     "@types/react": "18.0.17",
     "@types/react-dom": "^18.0.6",
     "@wired-xr/tsconfig": "*",

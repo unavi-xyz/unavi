@@ -29,7 +29,7 @@ export default function Preview() {
     // Start engine
     const engine = new Engine(canvas, {
       skyboxPath: "/images/skybox/",
-      player: true,
+      camera: "player",
     });
     useStudioStore.setState({ engine });
 

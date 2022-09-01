@@ -35,7 +35,7 @@ export class RenderThread {
       );
       const offscreen = canvas.transferControlToOffscreen();
       this.#worker = new Worker(
-        new URL("./workers/Render.worker.ts", import.meta.url),
+        new URL("../workers/Render.worker.ts", import.meta.url),
         {
           type: "module",
         }

@@ -4207,10 +4207,10 @@
     cannon-es "^0.19.0"
     cannon-es-debugger "^1.0.0"
 
-"@react-three/fiber@^8.3.1":
-  version "8.3.1"
-  resolved "https://registry.yarnpkg.com/@react-three/fiber/-/fiber-8.3.1.tgz#83379ba5bf5d21a130023ed6de651b0bf467e14a"
-  integrity sha512-5I1fcnE/3Y89MBNtC58N4ZEm962NqlFwBChhS09AVBz9PmD51uwY0z4y6WPMoVVKhUG39CS6iSbTPQwZygkerA==
+"@react-three/fiber@^8.6.2":
+  version "8.6.2"
+  resolved "https://registry.yarnpkg.com/@react-three/fiber/-/fiber-8.6.2.tgz#32dea1781e1b2217d99696511b9e1e757fafcd49"
+  integrity sha512-M9Ghgg+YBrHHPqPqCHvehzIyI8TM3uLcQ9AOpFr0x5S9k13qw+aoIkd0gLyU3d5JDh/UWdx7tdP+ZiZNL3kTyA==
   dependencies:
     "@babel/runtime" "^7.17.8"
     "@types/react-reconciler" "^0.26.7"

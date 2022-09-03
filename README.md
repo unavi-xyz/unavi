@@ -3,7 +3,7 @@
     <img src="./assets/Hero.png" />
   </p>
 
-  <p>A web-based virtual worlds platform done right.</p>
+<i>"It's just an advanced medium for communication. Don't get it confused with the real world."</i>
 
   <img alt="Discord" src="https://img.shields.io/discord/918705784311939134?label=discord">
   <img alt="GitHub" src="https://img.shields.io/github/license/wired-xr/wired">

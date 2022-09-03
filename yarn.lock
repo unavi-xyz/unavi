@@ -4637,11 +4637,6 @@
   dependencies:
     "@types/node" "*"
 
-"@types/component-emitter@^1.2.10":
-  version "1.2.11"
-  resolved "https://registry.yarnpkg.com/@types/component-emitter/-/component-emitter-1.2.11.tgz#50d47d42b347253817a39709fef03ce66a108506"
-  integrity sha512-SRXjM+tfsSlA9VuG8hGO2nft2p8zjXCK1VcC6N4NXbBbYbSia9kzCChYQajIjzIqOOOuh5Ock6MmV2oux4jDZQ==
-
 "@types/connect-history-api-fallback@^1.3.5":
   version "1.3.5"
   resolved "https://registry.yarnpkg.com/@types/connect-history-api-fallback/-/connect-history-api-fallback-1.3.5.tgz#d1f7a8a09d0ed5a57aee5ae9c18ab9b803205dae"
@@ -7057,11 +7052,6 @@ commondir@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/commondir/-/commondir-1.0.1.tgz#ddd800da0c66127393cca5950ea968a3aaf1253b"
   integrity sha512-W9pAhw0ja1Edb5GVdIF1mjZw/ASI0AlShXM83UUGe2DVr5TdAPEA1OA8m/g8zWp9x6On7gqufY+FatDbC3MDQg==
-
-component-emitter@~1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/component-emitter/-/component-emitter-1.3.0.tgz#16e4070fba8ae29b679f2215853ee181ab2eabc0"
-  integrity sha512-Rd3se6QB+sO1TwqZjscQrurpEPIfO0/yYnSin6Q/rD3mOutHvUrCAhJub3r90uNb+SESBuE0QYoB90YdfatsRg==
 
 compressible@~2.0.16:
   version "2.0.18"
@@ -15050,15 +15040,6 @@ socket.io-client@^4.5.1:
     engine.io-client "~6.2.1"
     socket.io-parser "~4.2.0"
 
-socket.io-parser@~4.0.4:
-  version "4.0.5"
-  resolved "https://registry.yarnpkg.com/socket.io-parser/-/socket.io-parser-4.0.5.tgz#cb404382c32324cc962f27f3a44058cf6e0552df"
-  integrity sha512-sNjbT9dX63nqUFIOv95tTVm6elyIU4RvB1m8dOeZt+IgWwcWklFDOdmGcfo3zSiRsnR/3pJkjY5lfoGqEe4Eig==
-  dependencies:
-    "@types/component-emitter" "^1.2.10"
-    component-emitter "~1.3.0"
-    debug "~4.3.1"
-
 socket.io-parser@~4.2.0:
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/socket.io-parser/-/socket.io-parser-4.2.1.tgz#01c96efa11ded938dcb21cbe590c26af5eff65e5"
@@ -15067,17 +15048,17 @@ socket.io-parser@~4.2.0:
     "@socket.io/component-emitter" "~3.1.0"
     debug "~4.3.1"
 
-socket.io@^4.5.1:
-  version "4.5.1"
-  resolved "https://registry.yarnpkg.com/socket.io/-/socket.io-4.5.1.tgz#aa7e73f8a6ce20ee3c54b2446d321bbb6b1a9029"
-  integrity sha512-0y9pnIso5a9i+lJmsCdtmTTgJFFSvNQKDnPQRz28mGNnxbmqYg2QPtJTLFxhymFZhAIn50eHAKzJeiNaKr+yUQ==
+socket.io@^4.5.2:
+  version "4.5.2"
+  resolved "https://registry.yarnpkg.com/socket.io/-/socket.io-4.5.2.tgz#1eb25fd380ab3d63470aa8279f8e48d922d443ac"
+  integrity sha512-6fCnk4ARMPZN448+SQcnn1u8OHUC72puJcNtSgg2xS34Cu7br1gQ09YKkO1PFfDn/wyUE9ZgMAwosJed003+NQ==
   dependencies:
     accepts "~1.3.4"
     base64id "~2.0.0"
     debug "~4.3.2"
     engine.io "~6.2.0"
     socket.io-adapter "~2.4.0"
-    socket.io-parser "~4.0.4"
+    socket.io-parser "~4.2.0"
 
 sockjs@^0.3.24:
   version "0.3.24"

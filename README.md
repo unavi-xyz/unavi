@@ -3,7 +3,7 @@
     <img src="./assets/Hero.png" />
   </p>
 
-  <p>An open and decentralized 3d social platform</p>
+  <p>A web-based virtual worlds platform done right.</p>
 
   <img alt="Discord" src="https://img.shields.io/discord/918705784311939134?label=discord">
   <img alt="GitHub" src="https://img.shields.io/github/license/wired-xr/wired">

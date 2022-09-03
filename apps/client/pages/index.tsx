@@ -43,31 +43,26 @@ export default function Index() {
             <div className="w-full h-full flex flex-col justify-center">
               <div className="text-8xl font-black">The Wired</div>
 
-              <div className="text-3xl pt-0.5">
-                An open and decentralized 3d social platform.
+              <div className="text-3xl pt-2">
+                A web-based virtual worlds platform <strong>done right</strong>.
               </div>
 
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
+              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
                 <div className="w-full md:w-fit">
                   <Button
                     variant="filled"
-                    squared="small"
+                    squared="large"
                     fullWidth
                     onClick={handlePlay}
                   >
-                    <div className="px-1">Play Now</div>
+                    <div className="px-2 py-1">Play Now</div>
                   </Button>
                 </div>
 
                 <div className="w-full md:w-fit">
-                  <Button variant="text" squared="small" fullWidth>
-                    <a
-                      href={DOCS_URL}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-1"
-                    >
-                      Learn More
+                  <Button variant="text" squared="large" fullWidth>
+                    <a href={DOCS_URL} target="_blank" rel="noreferrer">
+                      <div className="px-2 py-1">Learn More</div>
                     </a>
                   </Button>
                 </div>
@@ -108,7 +103,7 @@ export default function Index() {
 
             <div className="w-full space-y-2">
               <div
-                className="text-6xl font-black rounded-xl p-2 w-fit
+                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
                          text-onPrimaryContainer bg-primaryContainer"
               >
                 Create
@@ -124,11 +119,11 @@ export default function Index() {
                 has you covered.
               </div>
 
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
+              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
                 <div className="w-fit">
-                  <Button variant="filled" squared="small">
+                  <Button variant="filled" squared="large">
                     <Link href="/create" passHref>
-                      <a className="px-1">Start Creating</a>
+                      <div className="px-2 py-1">Start Creating</div>
                     </Link>
                   </Button>
                 </div>
@@ -139,7 +134,7 @@ export default function Index() {
           <div className="h-screen snap-center flex items-center">
             <div className="w-full space-y-2">
               <div
-                className="text-6xl font-black rounded-xl p-2 w-fit
+                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
                          text-onPrimaryContainer bg-primaryContainer"
               >
                 Explore
@@ -154,10 +149,10 @@ export default function Index() {
                 {"'"}ll find.
               </div>
 
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
-                <Button variant="filled" squared="small">
+              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
+                <Button variant="filled" squared="large">
                   <Link href="/explore" passHref>
-                    <a className="px-1">Start Exploring</a>
+                    <div className="px-2 py-1">Start Exploring</div>
                   </Link>
                 </Button>
               </div>
@@ -191,7 +186,7 @@ export default function Index() {
 
             <div className="w-full space-y-2">
               <div
-                className="text-6xl font-black rounded-xl p-2 w-fit
+                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
                          text-onPrimaryContainer bg-primaryContainer"
               >
                 Open
@@ -207,15 +202,10 @@ export default function Index() {
                 top of it.
               </div>
 
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
-                <Button variant="filled" squared="small">
-                  <a
-                    href={DOCS_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-1"
-                  >
-                    Learn More
+              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
+                <Button variant="filled" squared="large">
+                  <a href={DOCS_URL} target="_blank" rel="noreferrer">
+                    <div className="px-2 py-1">Learn More</div>
                   </a>
                 </Button>
               </div>
@@ -237,7 +227,7 @@ export default function Index() {
 
             <div className="w-full space-y-2">
               <div
-                className="text-6xl font-black rounded-xl p-2 w-fit
+                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
                          text-onPrimaryContainer bg-primaryContainer"
               >
                 Links

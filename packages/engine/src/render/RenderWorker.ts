@@ -58,7 +58,7 @@ export class RenderWorker {
     this.#scene.add(this.#sceneManager.root);
   }
 
-  onmessage(event: MessageEvent<ToRenderMessage>) {
+  onmessage = (event: MessageEvent<ToRenderMessage>) => {
     this.#plugins.forEach((plugin) => plugin.onmessage(event));
     this.#sceneManager.onmessage(event);
 
@@ -86,7 +86,7 @@ export class RenderWorker {
         this.#updateCanvasSize(data.width, data.height);
         break;
     }
-  }
+  };
 
   async init({
     pixelRatio,

@@ -25,13 +25,13 @@ export class RenderThread {
     this.#canvas = canvas;
 
     // Render in a worker if browser supports OffscreenCanvas
-    // Unless we're in development mode, which causes issues with transferControlToOffscreen()
+    // (unless we're in development mode. React 18 dev mode causes issues with transferControlToOffscreen)
     if (
       typeof OffscreenCanvas !== "undefined" &&
       process.env.NODE_ENV !== "development"
     ) {
-      console.log(
-        "🖥️ Browser supports OffscreenCanvas. Rendering on worker thread."
+      console.info(
+        "✅ Browser supports OffscreenCanvas. Rendering a in worker..."
       );
       const offscreen = canvas.transferControlToOffscreen();
       this.#worker = new Worker(
@@ -45,8 +45,8 @@ export class RenderThread {
         offscreen,
       ]);
     } else {
-      console.log(
-        "🖥️ Browser does not support OffscreenCanvas. Rendering on main thread."
+      console.info(
+        "😔 Browser does not support OffscreenCanvas. Rendering in main thread..."
       );
       // Otherwise, render in a fake worker on the main thread
       this.#worker = new FakeWorker();

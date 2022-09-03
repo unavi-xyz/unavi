@@ -590,7 +590,6 @@ export class OrbitControls extends EventDispatcher {
 
     function handleKeyDown(event: FakeKeyDownEvent) {
       let needsUpdate = false;
-      console.log("👵", event.detail.code);
       switch (event.detail.code) {
         case scope.keys.UP:
           pan(0, scope.keyPanSpeed);

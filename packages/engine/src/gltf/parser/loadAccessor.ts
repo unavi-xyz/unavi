@@ -99,7 +99,6 @@ export async function loadAccessor(
         slice * byteStride,
         (accessorDef.count * byteStride) / elementBytes
       );
-      // console.log("🙆‍♀️", array);
       interleavedBuffer = new InterleavedBuffer(
         array,
         byteStride / elementBytes

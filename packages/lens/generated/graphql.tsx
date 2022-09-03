@@ -2560,7 +2560,7 @@ export type QueryPublicationsArgs = {
 };
 
 export type QueryRecommendedProfilesArgs = {
-  recommendedProfileOptions?: InputMaybe<RecommendedProfileOptions>;
+  options?: InputMaybe<RecommendedProfileOptions>;
 };
 
 export type QueryRelArgs = {

@@ -3,11 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "license": "GPL-3.0-or-later",
-  "type": "module",
   "main": "./index.ts",
   "types": "./index.ts",
   "scripts": {
-    "codegen": "graphql-codegen --config codegen.yml && typechain --target ethers-v5 --out-dir contracts '**/abis/*.json'"
+    "codegen": "graphql-codegen --config codegen.yml && typechain --target ethers-v5 --out-dir contracts '**/abis/*.json'",
+    "lint": "eslint src"
   },
   "dependencies": {
     "@wired-xr/ipfs": "*",

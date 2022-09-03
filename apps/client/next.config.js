@@ -1,14 +1,15 @@
-import { withAxiom } from "next-axiom";
-import withPWA from "next-pwa";
-import runtimeCaching from "next-pwa/cache.js";
-import createTM from "next-transpile-modules";
-
-const withTM = createTM([
+const { withAxiom } = require("next-axiom");
+const runtimeCaching = require("next-pwa/cache.js");
+const withTM = require("next-transpile-modules")([
   "three",
   "@wired-xr/engine",
   "@wired-xr/ipfs",
   "@wired-xr/lens",
 ]);
+const withPWA = require("next-pwa")({
+  dest: "public",
+  runtimeCaching,
+});
 
 /**
  * Don't be scared of the generics here.
@@ -66,10 +67,6 @@ const config = withAxiom(
           },
         ];
       },
-      pwa: {
-        dest: "public",
-        runtimeCaching,
-      },
       webpack: function (config) {
         config.experiments = {
           ...config.experiments,
@@ -82,6 +79,5 @@ const config = withAxiom(
   )
 );
 
-export default process.env.NODE_ENV === "development"
-  ? config
-  : withPWA(config);
+module.exports =
+  process.env.NODE_ENV === "development" ? config : withPWA(config);

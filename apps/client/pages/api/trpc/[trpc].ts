@@ -26,7 +26,7 @@ const s3Client = new S3Client({
   },
 });
 
-async function uploadWorld(world: any, id: number) {
+async function uploadWorld(world: any, id: string) {
   const data = await s3Client.send(
     new PutObjectCommand({
       Bucket: BUCKET_NAME,
@@ -38,7 +38,7 @@ async function uploadWorld(world: any, id: number) {
   return data;
 }
 
-async function getWorld(id: number) {
+async function getWorld(id: string) {
   try {
     const { Body } = await s3Client.send(
       new GetObjectCommand({
@@ -79,7 +79,7 @@ export const appRouter = trpc
   })
   .query("project", {
     input: z.object({
-      id: z.number(),
+      id: z.string(),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       const project = await prisma.project.findFirst({
@@ -90,7 +90,7 @@ export const appRouter = trpc
   })
   .query("world", {
     input: z.object({
-      id: z.number(),
+      id: z.string(),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       const project = await prisma.project.findFirst({
@@ -123,7 +123,7 @@ export const appRouter = trpc
   })
   .mutation("save-project", {
     input: z.object({
-      id: z.number(),
+      id: z.string(),
       name: z.string().max(255).optional(),
       description: z.string().max(2040).optional(),
       image: z.string().optional(),

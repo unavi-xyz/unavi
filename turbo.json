@@ -31,10 +31,13 @@
       "dependsOn": ["^build"]
     },
     "test": {
-      "dependsOn": ["build", "codegen"]
+      "dependsOn": ["build"]
     },
     "dev": {
       "cache": false
+    },
+    "deploy": {
+      "dependsOn": ["build"]
     }
   }
 }

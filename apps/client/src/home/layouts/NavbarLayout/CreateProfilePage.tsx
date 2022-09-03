@@ -1,12 +1,12 @@
 import { useRouter } from "next/router";
 import { useContext, useEffect, useState } from "react";
 
-import { LensContext, useValidateHandle } from "@wired-xr/lens";
+import { LensContext, useValidateHandle } from "@wired-labs/lens";
 import {
   CreateProfileDocument,
   CreateProfileMutation,
   CreateProfileMutationVariables,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import Button from "../../../ui/base/Button";
 import ErrorBox from "../../../ui/base/ErrorBox";

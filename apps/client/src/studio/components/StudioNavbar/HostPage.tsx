@@ -6,7 +6,7 @@ import {
   createProfileMetadata,
   useProfileByHandle,
   useSetProfileMetadata,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import Button from "../../../ui/base/Button";
 import TextField from "../../../ui/base/TextField";

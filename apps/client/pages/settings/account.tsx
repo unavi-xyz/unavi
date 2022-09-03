@@ -5,7 +5,7 @@ import {
   trimHandle,
   useProfilesByAddress,
   useSetDefaultProfile,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
 import MetaTags from "../../src/ui/MetaTags";

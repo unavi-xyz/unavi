@@ -1,4 +1,4 @@
 {
   "exclude": ["dist", "build", "node_modules"],
-  "extends": "@wired-xr/tsconfig/react-library.json"
+  "extends": "@wired-labs/tsconfig/react-library.json"
 }

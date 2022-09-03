@@ -7,7 +7,7 @@ import {
   SessionStorage,
   trimHandle,
   useProfilesByAddress,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import { wagmiClient } from "../../pages/_app";
 import CreateProfilePage from "../home/layouts/NavbarLayout/CreateProfilePage";

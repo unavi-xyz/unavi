@@ -1,4 +1,4 @@
-import { getIpfsUrlSSR } from "@wired-xr/ipfs";
+import { getIpfsUrlSSR } from "@wired-labs/ipfs";
 
 import { ProfileMedia } from "../..";
 

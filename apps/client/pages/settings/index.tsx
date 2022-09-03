@@ -1,7 +1,7 @@
 import Image from "next/future/image";
 import { useContext, useEffect, useRef, useState } from "react";
 
-import { IpfsContext } from "@wired-xr/ipfs";
+import { IpfsContext } from "@wired-labs/ipfs";
 import {
   LensContext,
   createProfileMetadata,
@@ -9,7 +9,7 @@ import {
   useProfileByHandle,
   useSetProfileImage,
   useSetProfileMetadata,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
 import MetaTags from "../../src/ui/MetaTags";

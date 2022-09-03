@@ -1,4 +1,4 @@
-import { Entity } from "@wired-xr/engine";
+import { Entity } from "@wired-labs/engine";
 
 import { useStudioStore } from "../store";
 import { updateTree } from "../utils/tree";

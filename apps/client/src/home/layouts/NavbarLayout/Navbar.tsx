@@ -2,7 +2,7 @@ import Image from "next/future/image";
 import Link from "next/link";
 import { useContext } from "react";
 
-import { LensContext } from "@wired-xr/lens";
+import { LensContext } from "@wired-labs/lens";
 
 import LoginButton from "./LoginButton";
 import NavbarTab from "./NavbarTab";

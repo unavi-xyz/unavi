@@ -1,10 +1,10 @@
-import { AppId, getMediaImageUri } from "@wired-xr/lens";
+import { AppId, getMediaImageUri } from "@wired-labs/lens";
 import {
   GetPublicationDocument,
   GetPublicationQuery,
   GetPublicationQueryVariables,
   Publication,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import { PageMetadata } from "../../types";
 import { parseUri } from "../../utils/parseUri";

@@ -3,7 +3,7 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
 
-import { Engine } from "@wired-xr/engine";
+import { Engine } from "@wired-labs/engine";
 
 import StudioNavbar from "../../../src/studio/components/StudioNavbar/StudioNavbar";
 import TreeMenu from "../../../src/studio/components/TreeMenu/TreeMenu";

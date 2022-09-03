@@ -12,8 +12,8 @@ import { WagmiConfig, chain, configureChains, createClient } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
-import { IpfsProvider } from "@wired-xr/ipfs";
-import { LensProvider } from "@wired-xr/lens";
+import { IpfsProvider } from "@wired-labs/ipfs";
+import { LensProvider } from "@wired-labs/lens";
 
 import LoginProvider from "../src/login/LoginProvider";
 import { theme } from "../src/login/theme";

@@ -2,13 +2,13 @@ import {
   HANDLE_ENDING,
   getMediaImageSSR,
   getMediaImageUri,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 import {
   GetProfileDocument,
   GetProfileQuery,
   GetProfileQueryVariables,
   Profile,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import { lensClient } from "../../../lib/lens/client";
 import { PageMetadata } from "../../../types";

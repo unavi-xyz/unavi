@@ -1,4 +1,4 @@
-# @wired-xr/client
+# @wired-labs/client
 
 A [Next.js](https://nextjs.org/) website used to access the Wired.
 

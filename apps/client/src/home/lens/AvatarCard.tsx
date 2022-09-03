@@ -1,4 +1,4 @@
-import { Post } from "@wired-xr/lens";
+import { Post } from "@wired-labs/lens";
 
 import Card from "../../ui/base/Card";
 

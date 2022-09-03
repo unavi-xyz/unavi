@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react";
 
-import { LensContext } from "@wired-xr/lens";
+import { LensContext } from "@wired-labs/lens";
 
 import { useAppStore } from "../store";
 

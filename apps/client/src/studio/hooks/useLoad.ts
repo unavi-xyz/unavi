@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
-import { Entity } from "@wired-xr/engine";
+import { Entity } from "@wired-labs/engine";
 
 import { trpc } from "../../login/trpc";
 import { addEntity } from "../actions/AddEntityAction";

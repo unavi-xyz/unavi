@@ -1,4 +1,4 @@
-import { IChatMessage } from "@wired-xr/engine";
+import { IChatMessage } from "@wired-labs/engine";
 
 import { GameManager } from "./GameManager";
 import { Player } from "./Player";

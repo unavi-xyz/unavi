@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useContext } from "react";
 
-import { LensContext, trimHandle } from "@wired-xr/lens";
+import { LensContext, trimHandle } from "@wired-labs/lens";
 
 import MetaTags from "../../../ui/MetaTags";
 import Button from "../../../ui/base/Button";

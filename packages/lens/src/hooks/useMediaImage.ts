@@ -1,4 +1,4 @@
-import { useFetchData } from "@wired-xr/ipfs";
+import { useFetchData } from "@wired-labs/ipfs";
 
 import { ProfileMedia } from "../..";
 

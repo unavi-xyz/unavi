@@ -1,6 +1,6 @@
 {
   "exclude": ["node_modules"],
-  "extends": "@wired-xr/tsconfig/nextjs.json",
+  "extends": "@wired-labs/tsconfig/nextjs.json",
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "references": [
     {

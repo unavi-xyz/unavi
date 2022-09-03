@@ -7,7 +7,7 @@ import {
   LensContext,
   pollUntilIndexed,
   removeTypename,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import { useCreateSetDefaultProfileTypedDataMutation } from "../..";
 import { LensHub__factory } from "../../contracts";

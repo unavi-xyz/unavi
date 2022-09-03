@@ -1,4 +1,4 @@
-# @wired-xr/host
+# @wired-labs/host
 
 A dockerized node http server for hosting spaces. Uses express, socket.io, and mediasoup.
 

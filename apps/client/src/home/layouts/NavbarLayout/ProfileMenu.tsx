@@ -7,7 +7,11 @@ import {
 } from "react-icons/md";
 import { useAccount } from "wagmi";
 
-import { LensContext, trimHandle, useProfilesByAddress } from "@wired-xr/lens";
+import {
+  LensContext,
+  trimHandle,
+  useProfilesByAddress,
+} from "@wired-labs/lens";
 
 import { LoginContext } from "../../../login/LoginProvider";
 import ProfileMenuButton from "./ProfileMenuButton";

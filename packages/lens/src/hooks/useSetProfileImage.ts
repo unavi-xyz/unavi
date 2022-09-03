@@ -2,13 +2,13 @@ import { utils } from "ethers";
 import { useContext } from "react";
 import { useSignTypedData, useSigner } from "wagmi";
 
-import { IpfsContext } from "@wired-xr/ipfs";
+import { IpfsContext } from "@wired-labs/ipfs";
 import {
   ContractAddress,
   LensContext,
   pollUntilIndexed,
   removeTypename,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import { useCreateSetProfileImageTypedDataMutation } from "../..";
 import { LensHub__factory } from "../../contracts";

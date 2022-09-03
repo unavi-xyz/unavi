@@ -6,7 +6,7 @@ services:
       context: ../../
       dockerfile: apps/host/Dockerfile
       args:
-        - SCOPE=@wired-xr/host
+        - SCOPE=@wired-labs/host
         - RTC_MIN_PORT=${RTC_MIN_PORT}
         - RTC_MAX_PORT=${RTC_MAX_PORT}
     image: host

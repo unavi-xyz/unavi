@@ -2,9 +2,9 @@ const { withAxiom } = require("next-axiom");
 const runtimeCaching = require("next-pwa/cache.js");
 const withTM = require("next-transpile-modules")([
   "three",
-  "@wired-xr/engine",
-  "@wired-xr/ipfs",
-  "@wired-xr/lens",
+  "@wired-labs/engine",
+  "@wired-labs/ipfs",
+  "@wired-labs/lens",
 ]);
 const withPWA = require("next-pwa")({
   dest: "public",

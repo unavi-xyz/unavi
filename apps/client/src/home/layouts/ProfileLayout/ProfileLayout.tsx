@@ -5,7 +5,7 @@ import { useContext } from "react";
 import { FaTwitter } from "react-icons/fa";
 import { MdAdd, MdLink, MdOutlineLocationOn } from "react-icons/md";
 
-import { LensContext } from "@wired-xr/lens";
+import { LensContext } from "@wired-labs/lens";
 
 import MetaTags from "../../../ui/MetaTags";
 import Button from "../../../ui/base/Button";

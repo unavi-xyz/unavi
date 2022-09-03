@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 
-import { BaseObject, Box, Cylinder, Sphere } from "@wired-xr/engine";
+import { BaseObject, Box, Cylinder, Sphere } from "@wired-labs/engine";
 
 import { addEntity } from "../../actions/AddEntityAction";
 

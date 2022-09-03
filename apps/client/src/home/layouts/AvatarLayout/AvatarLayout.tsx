@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useContext, useState } from "react";
 
-import { useFetchData } from "@wired-xr/ipfs";
+import { useFetchData } from "@wired-labs/ipfs";
 import {
   AttributeData,
   LensContext,
@@ -11,8 +11,8 @@ import {
   ProfileMetadata,
   trimHandle,
   useSetProfileMetadata,
-} from "@wired-xr/lens";
-import { useProfileByHandle } from "@wired-xr/lens";
+} from "@wired-labs/lens";
+import { useProfileByHandle } from "@wired-labs/lens";
 
 import { PublicationProps } from "../../../lib/lens/getPublicationProps";
 import MetaTags from "../../../ui/MetaTags";

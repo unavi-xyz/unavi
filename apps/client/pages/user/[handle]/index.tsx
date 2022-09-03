@@ -1,14 +1,14 @@
 import { NextPageContext } from "next";
 import Link from "next/link";
 
-import { AppId, HIDDEN_MESSAGE, getMediaImageSSR } from "@wired-xr/lens";
+import { AppId, HIDDEN_MESSAGE, getMediaImageSSR } from "@wired-labs/lens";
 import {
   GetPublicationsDocument,
   GetPublicationsQuery,
   GetPublicationsQueryVariables,
   Post,
   PublicationTypes,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
 import ProfileLayout from "../../../src/home/layouts/ProfileLayout/ProfileLayout";

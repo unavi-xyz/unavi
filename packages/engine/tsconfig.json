@@ -5,6 +5,6 @@
     "lib": ["ESNext", "DOM"],
     "composite": true
   },
-  "extends": "@wired-xr/tsconfig/base.json",
+  "extends": "@wired-labs/tsconfig/base.json",
   "include": ["src/**/*.ts"]
 }

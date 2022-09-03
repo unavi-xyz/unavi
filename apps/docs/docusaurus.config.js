@@ -30,7 +30,7 @@ const config = {
 
         docs: {
           sidebarPath: require.resolve("./sidebars.js"),
-          editUrl: "https://github.com/wired-xr/wired/tree/main/apps/docs",
+          editUrl: "https://github.com/wired-labs/wired/tree/main/apps/docs",
           routeBasePath: "/",
         },
 
@@ -61,7 +61,7 @@ const config = {
         },
         items: [
           {
-            href: "https://github.com/wired-xr/wired",
+            href: "https://github.com/wired-labs/wired",
             position: "right",
             className: "header-github-link",
             "aria-label": "GitHub repository",

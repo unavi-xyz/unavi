@@ -2,8 +2,8 @@ import { NextPageContext } from "next";
 import { useRouter } from "next/router";
 import { useContext, useEffect, useState } from "react";
 
-import { LensContext } from "@wired-xr/lens";
-import { useHidePublicationMutation } from "@wired-xr/lens";
+import { LensContext } from "@wired-labs/lens";
+import { useHidePublicationMutation } from "@wired-labs/lens";
 
 import AvatarLayout from "../../../src/home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";

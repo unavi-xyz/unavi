@@ -7,7 +7,7 @@ import {
   MdOutlinePersonOutline,
 } from "react-icons/md";
 
-import { LensContext, useProfileByHandle } from "@wired-xr/lens";
+import { LensContext, useProfileByHandle } from "@wired-labs/lens";
 
 import Dialog from "../../../ui/base/Dialog";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";

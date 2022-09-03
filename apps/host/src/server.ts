@@ -11,7 +11,7 @@ import {
   ProduceAudioDataSchema,
   ProduceDataDataSchema,
   SendChatMessageDataSchema,
-} from "@wired-xr/engine";
+} from "@wired-labs/engine";
 
 import { GameManager } from "./classes/GameManager";
 import { createMediasoupRouter, createWebRtcTransport } from "./mediasoup";

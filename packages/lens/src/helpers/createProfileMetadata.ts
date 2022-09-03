@@ -4,7 +4,7 @@ import {
   AttributeData,
   MetadataVersions,
   ProfileMetadata,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import { Profile } from "../..";
 

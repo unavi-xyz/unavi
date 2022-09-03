@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { Engine } from "@wired-xr/engine";
+import { Engine } from "@wired-labs/engine";
 
 export interface RenderInfo {
   load: {

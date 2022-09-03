@@ -7,7 +7,8 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula");
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "The Wired Docs",
-  tagline: "Docs for the Wired - An open and decentralized 3d social platform",
+  tagline:
+    "Docs for the Wired - A web-based virtual worlds platform done right",
   url: "https://docs.thewired.space",
   baseUrl: "/",
   onBrokenLinks: "throw",

@@ -26,14 +26,14 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 
 ### Apps
 
-- [client](apps/client): a website used to access The Wired
+- [client](apps/client): a website used to access the Wired
 - [examples](apps/examples): a simple website for testing the engine
 - [docs](apps/docs): a documentation website
 - [host](apps/host): a dockerized server for hosting spaces
 
 ### Packages
 
-- [engine](packages/engine): a 3d game engine
+- [engine](packages/engine): a 3D game engine
 - [eslint-config-custom](packages/eslint-config-custom): a custom eslint config used throughout the repo
 - [ipfs](packages/ipfs): helpers for interacting with IPFS
 - [lens](packages/lens): helpers for interacting with Lens

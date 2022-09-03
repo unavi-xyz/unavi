@@ -16,7 +16,7 @@
 - Decentralized data storage / fetching over [IPFS](https://ipfs.io/)
 - Open backend, anyone can run their own [host](apps/host) server
 - Custom multi-threaded, glTF-based [game engine](pakacges/engine)
-- 3D rendering using [Threejs](https://github.com/mrdoob/three.js)
+- 3D rendering using [Three.js](https://github.com/mrdoob/three.js)
 - Physics using [Rapier](https://rapier.rs/)
 - VRM avatars using [Three VRM](https://github.com/pixiv/three-vrm)
 

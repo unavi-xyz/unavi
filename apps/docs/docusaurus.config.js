@@ -7,7 +7,7 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula");
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "The Wired Docs",
-  tagline: "Docs for The Wired - An open and decentralized 3d social platform",
+  tagline: "Docs for the Wired - An open and decentralized 3d social platform",
   url: "https://docs.thewired.space",
   baseUrl: "/",
   onBrokenLinks: "throw",
@@ -47,13 +47,13 @@ const config = {
         id: "discord",
         content:
           '🎉 The Wired has entered early alpha! Join our discord <a target="_blank" rel="noopener noreferrer" href="https://discord.gg/VCsAEneUMn">here</a>.',
-        backgroundColor: "#52DAFF",
+        backgroundColor: "#52daff",
         textColor: "#000000",
         isCloseable: true,
       },
 
       navbar: {
-        title: "The Wired",
+        title: "The Wired Docs",
         logo: {
           alt: "The Wired Logo",
           src: "img/Logo-Maskable.png",
@@ -61,8 +61,9 @@ const config = {
         items: [
           {
             href: "https://github.com/wired-xr/wired",
-            label: "GitHub",
             position: "right",
+            className: "header-github-link",
+            "aria-label": "GitHub repository",
           },
         ],
       },

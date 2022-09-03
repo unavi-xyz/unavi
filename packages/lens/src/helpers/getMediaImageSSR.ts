@@ -2,9 +2,9 @@ import { getIpfsUrlSSR } from "@wired-xr/ipfs";
 
 import { ProfileMedia } from "../..";
 
-export function getMediaImageSSR(picture: ProfileMedia | null | undefined) {
-  if (picture?.__typename === "MediaSet")
-    return getIpfsUrlSSR(picture.original.url);
-  if (picture?.__typename === "NftImage") return getIpfsUrlSSR(picture.uri);
+export function getMediaImageSSR(image: ProfileMedia | null | undefined) {
+  if (image?.__typename === "MediaSet")
+    return getIpfsUrlSSR(image.original.url);
+  if (image?.__typename === "NftImage") return getIpfsUrlSSR(image.uri);
   return null;
 }

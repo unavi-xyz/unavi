@@ -1,6 +1,4 @@
-import { log } from "next-axiom";
-
-import { AppId, getMediaImageSSR, getMediaImageUri } from "@wired-xr/lens";
+import { AppId, getMediaImageUri } from "@wired-xr/lens";
 import {
   GetPublicationDocument,
   GetPublicationQuery,
@@ -21,8 +19,6 @@ export interface PublicationProps {
 export async function getPublicationProps(
   publicationId: string
 ): Promise<PublicationProps> {
-  log.info(`Fetching publication ${publicationId}`);
-
   const { data } = await lensClient
     .query<GetPublicationQuery, GetPublicationQueryVariables>(
       GetPublicationDocument,
@@ -41,28 +37,23 @@ export async function getPublicationProps(
       ? "Space"
       : publication?.appId === AppId.Avatar
       ? "Avatar"
-      : "";
+      : undefined;
 
   const description =
     publication?.metadata.description ?? publication?.profile.handle
       ? `${publicationType} by @${publication?.profile.handle}`
-      : "";
-
-  const metadataImage = getMediaImageSSR(publication?.metadata.media[0]) ?? "";
-
-  const metadata: PageMetadata = {
-    title,
-    description,
-    image: metadataImage,
-  };
+      : undefined;
 
   const image = publication
     ? parseUri(getMediaImageUri(publication.metadata.media[0]))
     : undefined;
 
+  const metadata: PageMetadata = {
+    title,
+    description,
+    image,
+  };
+
   const props: PublicationProps = { metadata, publication, image };
-
-  log.info(`Fetched publication data for ${publicationId}`, props);
-
   return props;
 }

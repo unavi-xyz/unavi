@@ -1,51 +1,21 @@
 version: "3"
 
 services:
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
+  host:
+    build:
+      context: ../../
+      dockerfile: apps/host/Dockerfile
+      args:
+        - SCOPE=@wired-xr/host
+        - RTC_MIN_PORT=${RTC_MIN_PORT}
+        - RTC_MAX_PORT=${RTC_MAX_PORT}
+    image: host
+    container_name: host
+    restart: unless-stopped
     ports:
       - "80:80"
-    volumes:
-      - certbot-var:/var/www/certbot
-      - certbot-etc:/etc/letsencrypt
-    command: >
-      certonly --agree-tos --force-renewal --standalone -d ${HOSTNAME}
-
-  elixir:
-    build:
-      context: elixir
-      dockerfile: Dockerfile
-    image: elixir
-    container_name: elixir
-    restart: unless-stopped
-    networks:
-      - app-network
-
-  nginx:
-    build:
-      context: nginx
-      dockerfile: Dockerfile
-      args:
-        - HOSTNAME=${HOSTNAME}
-    image: nginx
-    container_name: nginx
-    restart: unless-stopped
-    ports:
       - "443:443"
+      - "${RTC_MIN_PORT}-${RTC_MAX_PORT}:${RTC_MIN_PORT}-${RTC_MAX_PORT}/tcp"
+      - "${RTC_MIN_PORT}-${RTC_MAX_PORT}:${RTC_MIN_PORT}-${RTC_MAX_PORT}/udp"
     volumes:
-      - certbot-var:/var/www/certbot
-      - certbot-etc:/etc/letsencrypt
-    depends_on:
-      - certbot
-      - elixir
-    networks:
-      - app-network
-
-volumes:
-  certbot-etc:
-  certbot-var:
-
-networks:
-  app-network:
-    driver: bridge
+      - ./src:/src

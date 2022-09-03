@@ -1,25 +1,24 @@
 import { NextPageContext } from "next";
 import Link from "next/link";
 
-import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
-import ProfileLayout from "../../../src/components/layouts/ProfileLayout/ProfileLayout";
-import {
-  ProfileLayoutProps,
-  getProfileLayoutProps,
-} from "../../../src/components/layouts/ProfileLayout/getProfileLayoutProps";
-import AvatarCard from "../../../src/components/lens/AvatarCard";
-import SpaceCard from "../../../src/components/lens/SpaceCard";
+import { AppId, HIDDEN_MESSAGE, getMediaImageSSR } from "@wired-xr/lens";
 import {
   GetPublicationsDocument,
   GetPublicationsQuery,
   GetPublicationsQueryVariables,
   Post,
   PublicationTypes,
-} from "../../../src/generated/graphql";
-import { lensClient } from "../../../src/helpers/lens/client";
-import { HIDDEN_MESSAGE } from "../../../src/helpers/lens/constants";
-import { getMediaImageSSR } from "../../../src/helpers/lens/hooks/useMediaImage";
-import { AppId } from "../../../src/helpers/lens/types";
+} from "@wired-xr/lens";
+
+import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
+import ProfileLayout from "../../../src/home/layouts/ProfileLayout/ProfileLayout";
+import {
+  ProfileLayoutProps,
+  getProfileLayoutProps,
+} from "../../../src/home/layouts/ProfileLayout/getProfileLayoutProps";
+import AvatarCard from "../../../src/home/lens/AvatarCard";
+import SpaceCard from "../../../src/home/lens/SpaceCard";
+import { lensClient } from "../../../src/lib/lens/client";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
@@ -41,7 +40,7 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
       {
         request: {
           profileId: props.profile.id,
-          sources: [AppId.space, AppId.avatar],
+          sources: [AppId.Space, AppId.Avatar],
           publicationTypes: [PublicationTypes.Post],
         },
       }
@@ -74,26 +73,26 @@ export default function User({ publications, ...rest }: Props) {
       {publications && publications.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4">
           {publications?.map((publication) => {
-            if (publication.appId === AppId.space) {
+            if (publication.appId === AppId.Space) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 
               return (
                 <div key={publication.id} className="w-full md:col-span-2 p-1">
                   <Link href={`/space/${publication.id}`} passHref>
                     <a>
-                      <SpaceCard space={publication} />
+                      <SpaceCard space={publication} sizes="49vw" />
                     </a>
                   </Link>
                 </div>
               );
-            } else if (publication.appId === AppId.avatar) {
+            } else if (publication.appId === AppId.Avatar) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 
               return (
                 <div key={publication.id} className="w-full p-1">
                   <Link href={`/avatar/${publication.id}`} passHref>
                     <a>
-                      <AvatarCard avatar={publication} />
+                      <AvatarCard avatar={publication} sizes="24vw" />
                     </a>
                   </Link>
                 </div>

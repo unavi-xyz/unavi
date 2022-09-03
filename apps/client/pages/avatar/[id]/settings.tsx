@@ -1,17 +1,17 @@
 import { NextPageContext } from "next";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
-import Button from "../../../src/components/base/Button";
-import AvatarLayout from "../../../src/components/layouts/AvatarLayout/AvatarLayout";
-import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
-import { useHidePublicationMutation } from "../../../src/generated/graphql";
-import { authenticate } from "../../../src/helpers/lens/authentication";
+import { LensContext } from "@wired-xr/lens";
+import { useHidePublicationMutation } from "@wired-xr/lens";
+
+import AvatarLayout from "../../../src/home/layouts/AvatarLayout/AvatarLayout";
+import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
 import {
   PublicationProps,
   getPublicationProps,
-} from "../../../src/helpers/lens/getPublicationProps";
-import { useLensStore } from "../../../src/helpers/lens/store";
+} from "../../../src/lib/lens/getPublicationProps";
+import Button from "../../../src/ui/base/Button";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
@@ -27,9 +27,10 @@ export default function Settings(props: PublicationProps) {
   const router = useRouter();
   const id = router.query.id;
 
-  const handle = useLensStore((state) => state.handle);
   const [loading, setLoading] = useState(false);
   const [, hidePublication] = useHidePublicationMutation();
+
+  const { handle, authenticate } = useContext(LensContext);
 
   useEffect(() => {
     if (!handle && id) router.push(`/space/${id}`);
@@ -43,7 +44,9 @@ export default function Settings(props: PublicationProps) {
     try {
       await authenticate();
       await hidePublication({
-        publicationId: id,
+        request: {
+          publicationId: id as string,
+        },
       });
       router.push(`/user/${handle}`);
     } catch (err) {

@@ -1,25 +1,16 @@
-import { Physics } from "@react-three/cannon";
-import { useContextBridge } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
 import { NextPageContext } from "next";
-import { Context } from "urql";
+import { useEffect } from "react";
 
-import { InstancedScene } from "@wired-xr/scene";
-
-import Chat from "../../src/components/app/Chat";
-import Player from "../../src/components/app/Player";
-import PlayerManager from "../../src/components/app/PlayerManager";
-import SpaceProvider, {
-  SpaceContext,
-} from "../../src/components/app/SpaceProvider";
-import MetaTags from "../../src/components/ui/MetaTags";
-import { useAppHotkeys } from "../../src/helpers/app/hooks/useAppHotkeys";
-import { useLoadAssets } from "../../src/helpers/app/hooks/useLoadAssets";
-import { useSetIdentity } from "../../src/helpers/app/hooks/useSetIdentity";
+import Chat from "../../src/app/Chat";
+import { useAppHotkeys } from "../../src/app/hooks/useAppHotkeys";
+import { useSetIdentity } from "../../src/app/hooks/useSetIdentity";
 import {
   PublicationProps,
   getPublicationProps,
-} from "../../src/helpers/lens/getPublicationProps";
+} from "../../src/lib/lens/getPublicationProps";
+import MetaTags from "../../src/ui/MetaTags";
+
+export const DEFAULT_HOST = "wss://host.thewired.space";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
@@ -40,10 +31,28 @@ interface Props extends PublicationProps {
 }
 
 export default function App({ id, metadata, publication }: Props) {
-  const { loadedScene, spawn } = useLoadAssets(publication?.metadata.content);
+  // const ownerHost = publication?.profile.attributes?.find(
+  //   (item) => item.key === "host"
+  // )?.value;
 
-  useAppHotkeys();
-  useSetIdentity();
+  // const host =
+  //   process.env.NODE_ENV === "development"
+  //     ? "ws://localhost:4000"
+  //     : ownerHost
+  //     ? `wss://${ownerHost}`
+  //     : DEFAULT_HOST;
+
+  // useAppHotkeys();
+  // useSetIdentity();
+
+  // useEffect(() => {
+  //   //send an analytics event when the user joins the room
+  //   //so we can show popular spaces on the explore page
+  //   //idk if this is a good way to do it but it works for now
+  //   if (process.env.NODE_ENV === "production") {
+  //     // fetch(`/api/space/${id}/add-view`);
+  //   }
+  // }, [id]);
 
   return (
     <>
@@ -54,33 +63,23 @@ export default function App({ id, metadata, publication }: Props) {
         card="summary_large_image"
       />
 
-      {loadedScene && publication && (
-        <SpaceProvider space={publication}>
-          <div className="h-full">
-            <div className="crosshair" />
+      <div className="h-full">
+        <div className="crosshair" />
 
+        {/* <NetworkingProvider spaceId={id} host={host}>
             <Chat />
 
-            <CanvasBridge>
-              <Physics>
-                <InstancedScene scene={loadedScene} />
-                <PlayerManager />
+            <EngineCanvas>
+              <Player spawn={spawn} />
+              <Scene scene={loadedScene} />
 
-                <Player spawn={spawn} />
-              </Physics>
-            </CanvasBridge>
-          </div>
-        </SpaceProvider>
-      )}
+              <PlayerManager
+                animationsUrl="/models/animations.fbx"
+                defaultAvatarUrl="/models/avatar.vrm"
+              />
+            </EngineCanvas>
+          </NetworkingProvider> */}
+      </div>
     </>
-  );
-}
-
-function CanvasBridge({ children }: { children: React.ReactNode }) {
-  const ContextBridge = useContextBridge(SpaceContext, Context);
-  return (
-    <Canvas shadows>
-      <ContextBridge>{children}</ContextBridge>
-    </Canvas>
   );
 }

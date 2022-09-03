@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* tailwindcss */
 html {
   font-family: "Lato", sans-serif;
   @apply bg-background text-onBackground;

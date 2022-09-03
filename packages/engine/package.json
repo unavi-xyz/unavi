@@ -1,0 +1,39 @@
+{
+  "name": "@wired-xr/engine",
+  "version": "0.1.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint src",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --watch"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d": "^0.9.0",
+    "@gltf-transform/core": "^2.3.0",
+    "@gltf-transform/extensions": "^2.3.0",
+    "@gltf-transform/functions": "^2.3.0",
+    "@pixiv/three-vrm": "^1.0.0-beta.18",
+    "@types/draco3d": "^1.4.1",
+    "bitecs": "^0.3.38",
+    "mediasoup-client": "^3.6.55",
+    "meshoptimizer": "^0.18.1",
+    "nanoid": "^4.0.0",
+    "socket.io-client": "^4.5.1",
+    "three": "^0.140.2",
+    "ts-loader": "^9.3.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^28.1.6",
+    "@types/three": "^0.140.0",
+    "@wired-xr/tsconfig": "*",
+    "eslint": "^8.22.0",
+    "eslint-config-custom": "*",
+    "jest": "^28.1.3",
+    "jest-environment-jsdom": "^28.1.3",
+    "ts-jest": "^28.0.7",
+    "typescript": "^4.7.4"
+  }
+}

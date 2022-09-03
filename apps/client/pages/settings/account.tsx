@@ -1,17 +1,21 @@
 import { ChangeEvent, useEffect, useState } from "react";
+import { useAccount } from "wagmi";
 
-import Button from "../../src/components/base/Button";
-import Select from "../../src/components/base/Select";
-import { getSettingsLayout } from "../../src/components/layouts/SettingsLayout/SettingsLayout";
-import MetaTags from "../../src/components/ui/MetaTags";
-import { useEthersStore } from "../../src/helpers/ethers/store";
-import { useProfilesByAddress } from "../../src/helpers/lens/hooks/useProfilesByAddress";
-import { useSetDefaultProfile } from "../../src/helpers/lens/hooks/useSetDefaultProfile";
-import { trimHandle } from "../../src/helpers/lens/utils";
+import {
+  trimHandle,
+  useProfilesByAddress,
+  useSetDefaultProfile,
+} from "@wired-xr/lens";
+
+import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
+import MetaTags from "../../src/ui/MetaTags";
+import Button from "../../src/ui/base/Button";
+import Select from "../../src/ui/base/Select";
 
 export default function Account() {
-  const address = useEthersStore((state) => state.address);
-  const profiles = useProfilesByAddress(address);
+  const { address } = useAccount();
+
+  const { profiles } = useProfilesByAddress(address);
   const defaultProfile = profiles?.find((profile) => profile.isDefault);
 
   const [options, setOptions] = useState<string[]>([]);

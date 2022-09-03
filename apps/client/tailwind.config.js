@@ -4,13 +4,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#fac213",
-        primaryContainer: "#fff0b5",
+        primary: "#52DAFF",
+        primaryContainer: "#C5E8F5",
         onPrimary: "#000000",
         onPrimaryContainer: "#000000",
 
         surface: "#ffffff",
-        surfaceVariant: "#e7e7e7",
+        surfaceVariant: "#E2E9EC",
         onSurface: "#000000",
         onSurfaceVariant: "#000000",
 

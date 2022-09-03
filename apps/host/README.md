@@ -1,6 +1,6 @@
 # @wired-xr/host
 
-A dockerized [Elixir](https://elixir-lang.org/) server for hosting spaces over WebSockets.
+A dockerized node http server for hosting spaces. Uses express, socket.io, and mediasoup.
 
 ## About
 

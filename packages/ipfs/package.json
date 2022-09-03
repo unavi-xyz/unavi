@@ -1,0 +1,26 @@
+{
+  "name": "@wired-xr/ipfs",
+  "version": "0.0.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "ipfs-http-client": "^57.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "18.0.17",
+    "@types/react-dom": "^18.0.6",
+    "@wired-xr/tsconfig": "*",
+    "eslint": "^8.22.0",
+    "eslint-config-custom": "*",
+    "typescript": "^4.7.4"
+  },
+  "peerDependencies": {
+    "react": ">=18.0",
+    "react-dom": ">=18.0"
+  }
+}

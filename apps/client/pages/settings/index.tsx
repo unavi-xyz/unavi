@@ -1,26 +1,23 @@
-import { nanoid } from "nanoid";
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import Image from "next/future/image";
+import { useContext, useEffect, useRef, useState } from "react";
 
-import Button from "../../src/components/base/Button";
-import FileUpload from "../../src/components/base/FileUpload";
-import TextArea from "../../src/components/base/TextArea";
-import TextField from "../../src/components/base/TextField";
-import { getSettingsLayout } from "../../src/components/layouts/SettingsLayout/SettingsLayout";
-import MetaTags from "../../src/components/ui/MetaTags";
-import { uploadFileToIpfs } from "../../src/helpers/ipfs/fetch";
-import { createProfileMetadata } from "../../src/helpers/lens/createProfileMetadata";
-import { useMediaImage } from "../../src/helpers/lens/hooks/useMediaImage";
-import { useProfileByHandle } from "../../src/helpers/lens/hooks/useProfileByHandle";
-import { useSetProfileMetadata } from "../../src/helpers/lens/hooks/useSetProfileMetadata";
-import { useSetProfilePicture } from "../../src/helpers/lens/hooks/useSetProfilePicture";
-import { useLensStore } from "../../src/helpers/lens/store";
+import { IpfsContext } from "@wired-xr/ipfs";
 import {
-  AttributeData,
-  MetadataVersions,
-  ProfileMetadata,
-} from "../../src/helpers/lens/types";
-import { crop } from "../../src/helpers/utils/crop";
+  LensContext,
+  createProfileMetadata,
+  useMediaImage,
+  useProfileByHandle,
+  useSetProfileImage,
+  useSetProfileMetadata,
+} from "@wired-xr/lens";
+
+import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
+import MetaTags from "../../src/ui/MetaTags";
+import Button from "../../src/ui/base/Button";
+import FileUpload from "../../src/ui/base/FileUpload";
+import TextArea from "../../src/ui/base/TextArea";
+import TextField from "../../src/ui/base/TextField";
+import { crop } from "../../src/utils/crop";
 
 export default function Settings() {
   const nameRef = useRef<HTMLInputElement>(null);
@@ -38,13 +35,15 @@ export default function Settings() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingProfilePicture, setLoadingProfilePicture] = useState(false);
 
-  const handle = useLensStore((state) => state.handle);
+  const { uploadFileToIpfs } = useContext(IpfsContext);
+  const { handle } = useContext(LensContext);
+
   const profile = useProfileByHandle(handle);
   const pfpMediaUrl = useMediaImage(profile?.picture);
   const coverMediaUrl = useMediaImage(profile?.coverPicture);
 
   const setProfileMetadata = useSetProfileMetadata(profile?.id);
-  const setProfilePicture = useSetProfilePicture(profile?.id);
+  const setProfileImage = useSetProfileImage(profile?.id);
 
   useEffect(() => {
     setPfpUrl(pfpMediaUrl);
@@ -80,7 +79,7 @@ export default function Settings() {
 
     if (coverFile) {
       const uri = await uploadFileToIpfs(coverFile);
-      metadata.cover_picture = uri;
+      if (uri) metadata.cover_picture = uri;
     }
 
     updateAttribute("location", locationRef.current?.value);
@@ -106,7 +105,7 @@ export default function Settings() {
     setLoadingProfilePicture(true);
 
     try {
-      await setProfilePicture(pfpFile);
+      await setProfileImage(pfpFile);
     } catch (err) {
       console.error(err);
     }
@@ -171,10 +170,10 @@ export default function Settings() {
                     <div className="relative object-cover w-full h-full">
                       <Image
                         src={coverUrl}
-                        layout="fill"
+                        fill
+                        sizes="49vw"
                         alt="cover picture preview"
-                        objectFit="cover"
-                        className="rounded-xl h-full w-full"
+                        className="rounded-xl h-full w-full object-cover"
                       />
                     </div>
                   </div>
@@ -218,20 +217,20 @@ export default function Settings() {
                   <div className="relative w-full h-full aspect-square">
                     <Image
                       src={pfpUrl}
-                      layout="fill"
+                      fill
+                      sizes="24vw"
                       alt="profile picture preview square"
-                      objectFit="cover"
-                      className="rounded-xl h-full w-full"
+                      className="rounded-xl h-full w-full object-cover"
                     />
                   </div>
 
                   <div className="relative w-full h-full aspect-square">
                     <Image
                       src={pfpUrl}
-                      layout="fill"
+                      fill
+                      sizes="24vw"
                       alt="profile picture preview circle"
-                      objectFit="cover"
-                      className="rounded-full h-full w-full"
+                      className="rounded-full h-full w-full object-cover"
                     />
                   </div>
                 </div>

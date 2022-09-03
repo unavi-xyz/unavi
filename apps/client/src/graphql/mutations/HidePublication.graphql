@@ -1,3 +1,0 @@
-mutation HidePublication($publicationId: InternalPublicationId!) {
-  hidePublication(request: { publicationId: $publicationId })
-}

@@ -1,63 +1,78 @@
+import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useState } from "react";
-import { MdArrowBackIosNew } from "react-icons/md";
+import { useEffect, useState } from "react";
+import { MdAdd } from "react-icons/md";
+import { useAccount } from "wagmi";
 
-import Button from "../src/components/base/Button";
-import Dialog from "../src/components/base/Dialog";
-import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
-import AvatarUploadPage from "../src/components/lens/AvatarUploadPage";
-import MetaTags from "../src/components/ui/MetaTags";
+import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
+import { trpc } from "../src/login/trpc";
+import CreateProjectPage from "../src/ui/CreateProjectPage";
+import MetaTags from "../src/ui/MetaTags";
+import Button from "../src/ui/base/Button";
+import Card from "../src/ui/base/Card";
+import Dialog from "../src/ui/base/Dialog";
 
 export default function Create() {
-  const [openAvatar, setOpenAvatar] = useState(false);
+  const [openCreateProject, setOpenCreateProject] = useState(false);
+
+  const { status: authState } = useSession();
+  const { status: accountStatus } = useAccount();
+  const utils = trpc.useContext();
+
+  const { data, status, refetch } = trpc.useQuery(["projects"], {
+    enabled: authState === "authenticated",
+  });
+
+  useEffect(() => {
+    if (authState !== "authenticated" || accountStatus !== "connected") return;
+    utils.invalidateQueries(["projects"]);
+    refetch();
+  }, [utils, refetch, authState, accountStatus]);
 
   return (
     <>
       <MetaTags title="Create" />
 
-      <Dialog open={openAvatar} onClose={() => setOpenAvatar(false)}>
-        <AvatarUploadPage />
+      <Dialog
+        open={openCreateProject}
+        onClose={() => setOpenCreateProject(false)}
+      >
+        <CreateProjectPage />
       </Dialog>
 
       <div className="flex justify-center py-8 mx-4">
         <div className="max-w space-y-8">
           <div className="flex justify-center font-black text-3xl">Create</div>
 
-          <div className="space-y-2">
-            <Link href="/studio">
-              <a>
-                <Button variant="tonal" fullWidth squared="large">
-                  <div className="p-2 flex items-center justify-between text-lg">
-                    <div>
-                      <div className="flex">Studio</div>
-                      <div className="flex font-normal">
-                        A visual editor for creating spaces
-                      </div>
-                    </div>
-
-                    <MdArrowBackIosNew className="rotate-180" />
-                  </div>
+          <div className="flex items-center justify-between">
+            <div className="text-2xl font-bold">Projects</div>
+            <div>
+              {authState === "authenticated" && (
+                <Button
+                  variant="outlined"
+                  squared="small"
+                  onClick={() => setOpenCreateProject(true)}
+                >
+                  <MdAdd className="text-lg" />
                 </Button>
-              </a>
-            </Link>
+              )}
+            </div>
+          </div>
 
-            <Button
-              variant="tonal"
-              squared="large"
-              fullWidth
-              onClick={() => setOpenAvatar(true)}
-            >
-              <div className="p-2 flex items-center justify-between text-lg">
-                <div>
-                  <div className="flex">Avatars</div>
-                  <div className="flex font-normal">
-                    Upload a VRM avatar and mint it as an NFT
+          {status === "error" && <div className="text-center">Error</div>}
+          {status === "loading" && (
+            <div className="text-center">Loading...</div>
+          )}
+
+          <div className="grid grid-cols-3 gap-2">
+            {authState === "authenticated" &&
+              data?.map(({ id, name, image }) => (
+                <Link key={id} href={`/project/${id}`}>
+                  <div>
+                    <Card text={name ?? ""} image={image ?? ""} />
                   </div>
-                </div>
-
-                <MdArrowBackIosNew className="rotate-180" />
-              </div>
-            </Button>
+                </Link>
+              ))}
           </div>
         </div>
       </div>

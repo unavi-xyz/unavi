@@ -1,18 +1,14 @@
 import { NextPageContext } from "next";
 
-import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
-import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
+import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
+import SpaceLayout from "../../../src/home/layouts/SpaceLayout/SpaceLayout";
 import {
   SpaceLayoutProps,
   getSpaceLayoutProps,
-} from "../../../src/components/layouts/SpaceLayout/getSpaceLayoutProps";
+} from "../../../src/home/layouts/SpaceLayout/getSpaceLayoutProps";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=10");
-
-  const host = res?.req.headers.host;
-  const hostUrl = `https://${host}`;
-  console.log("👬", hostUrl);
+  res?.setHeader("Cache-Control", "s-maxage=30");
 
   const props = await getSpaceLayoutProps(query.id as string);
 

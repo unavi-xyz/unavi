@@ -1,32 +1,41 @@
-import Image from "next/image";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
+import Image from "next/future/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { useContext } from "react";
 import { FaBook, FaDiscord } from "react-icons/fa";
 import { MdArrowDownward } from "react-icons/md";
 import { VscGithubInverted, VscTwitter } from "react-icons/vsc";
 
-import Button from "../src/components/base/Button";
-import Dialog from "../src/components/base/Dialog";
-import LoginPage from "../src/components/layouts/NavbarLayout/LoginPage";
-import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
-import MetaTags from "../src/components/ui/MetaTags";
+import { LensContext } from "@wired-xr/lens";
+
 import {
   DISCORD_URL,
   DOCS_URL,
   GITHUB_URL,
   TWITTER_URL,
-} from "../src/helpers/constants";
+} from "../src/constants";
+import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
+import MetaTags from "../src/ui/MetaTags";
+import Button from "../src/ui/base/Button";
 
 export default function Index() {
-  const [open, setOpen] = useState(false);
+  const { handle } = useContext(LensContext);
+  const { openConnectModal } = useConnectModal();
+  const router = useRouter();
+
+  function handlePlay() {
+    if (!handle && openConnectModal) {
+      openConnectModal();
+      return;
+    }
+
+    router.push("/explore");
+  }
 
   return (
     <>
       <MetaTags />
-
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <LoginPage />
-      </Dialog>
 
       <div className="flex justify-center">
         <div className="max-w mx-4 snap-mandatory snap-y">
@@ -34,25 +43,27 @@ export default function Index() {
             <div className="w-full h-full flex flex-col justify-center">
               <div className="text-8xl font-black">The Wired</div>
 
-              <div className="text-3xl pt-0.5">
-                An open and decentralized 3d social platform.
+              <div className="text-3xl pt-2">
+                A web-based virtual worlds platform <strong>done right</strong>.
               </div>
 
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
+              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
                 <div className="w-full md:w-fit">
                   <Button
                     variant="filled"
-                    squared="small"
+                    squared="large"
                     fullWidth
-                    onClick={() => setOpen(true)}
+                    onClick={handlePlay}
                   >
-                    <div className="px-1">Get Started</div>
+                    <div className="px-2 py-1">Play Now</div>
                   </Button>
                 </div>
 
                 <div className="w-full md:w-fit">
-                  <Button variant="text" squared="small" fullWidth>
-                    <div className="px-1">Learn More</div>
+                  <Button variant="text" squared="large" fullWidth>
+                    <a href={DOCS_URL} target="_blank" rel="noreferrer">
+                      <div className="px-2 py-1">Learn More</div>
+                    </a>
                   </Button>
                 </div>
               </div>
@@ -62,10 +73,10 @@ export default function Index() {
               <Image
                 src="/images/jump.png"
                 priority
-                layout="fill"
+                fill
+                sizes="24vw"
                 alt="Wired-chan"
-                objectFit="contain"
-                className="select-none"
+                className="select-none object-contain"
               />
             </div>
           </div>
@@ -82,17 +93,17 @@ export default function Index() {
               <div className="relative w-full h-full">
                 <Image
                   src="/images/Create.png"
-                  layout="fill"
+                  fill
+                  sizes="24vw"
                   alt="Wired-chan"
-                  objectFit="contain"
-                  className="select-none"
+                  className="select-none object-contain"
                 />
               </div>
             </div>
 
             <div className="w-full space-y-2">
               <div
-                className="text-6xl font-black rounded-xl p-2 w-fit
+                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
                          text-onPrimaryContainer bg-primaryContainer"
               >
                 Create
@@ -108,11 +119,11 @@ export default function Index() {
                 has you covered.
               </div>
 
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
+              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
                 <div className="w-fit">
-                  <Button variant="filled" squared="small">
+                  <Button variant="filled" squared="large">
                     <Link href="/create" passHref>
-                      <a className="px-1">Start Creating</a>
+                      <div className="px-2 py-1">Start Creating</div>
                     </Link>
                   </Button>
                 </div>
@@ -123,7 +134,7 @@ export default function Index() {
           <div className="h-screen snap-center flex items-center">
             <div className="w-full space-y-2">
               <div
-                className="text-6xl font-black rounded-xl p-2 w-fit
+                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
                          text-onPrimaryContainer bg-primaryContainer"
               >
                 Explore
@@ -138,10 +149,10 @@ export default function Index() {
                 {"'"}ll find.
               </div>
 
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
-                <Button variant="filled" squared="small">
+              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
+                <Button variant="filled" squared="large">
                   <Link href="/explore" passHref>
-                    <a className="px-1">Start Exploring</a>
+                    <div className="px-2 py-1">Start Exploring</div>
                   </Link>
                 </Button>
               </div>
@@ -151,10 +162,10 @@ export default function Index() {
               <div className="relative w-full h-full">
                 <Image
                   src="/images/Explore.png"
-                  layout="fill"
+                  fill
+                  sizes="24vw"
                   alt="Wired-chan"
-                  objectFit="contain"
-                  className="select-none"
+                  className="select-none object-contain"
                 />
               </div>
             </div>
@@ -165,17 +176,17 @@ export default function Index() {
               <div className="relative w-full h-full">
                 <Image
                   src="/images/Open.png"
-                  layout="fill"
+                  fill
+                  sizes="24vw"
                   alt="Wired-chan"
-                  objectFit="contain"
-                  className="select-none"
+                  className="select-none object-contain"
                 />
               </div>
             </div>
 
             <div className="w-full space-y-2">
               <div
-                className="text-6xl font-black rounded-xl p-2 w-fit
+                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
                          text-onPrimaryContainer bg-primaryContainer"
               >
                 Open
@@ -191,9 +202,11 @@ export default function Index() {
                 top of it.
               </div>
 
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-lg">
-                <Button variant="filled" squared="small">
-                  <div className="px-1">Learn More</div>
+              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
+                <Button variant="filled" squared="large">
+                  <a href={DOCS_URL} target="_blank" rel="noreferrer">
+                    <div className="px-2 py-1">Learn More</div>
+                  </a>
                 </Button>
               </div>
             </div>
@@ -204,17 +217,17 @@ export default function Index() {
               <div className="relative w-full h-full">
                 <Image
                   src="/images/sitting.png"
-                  layout="fill"
+                  fill
+                  sizes="24vw"
                   alt="Wired-chan"
-                  objectFit="contain"
-                  className="select-none"
+                  className="select-none object-contain"
                 />
               </div>
             </div>
 
             <div className="w-full space-y-2">
               <div
-                className="text-6xl font-black rounded-xl p-2 w-fit
+                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
                          text-onPrimaryContainer bg-primaryContainer"
               >
                 Links
@@ -259,6 +272,8 @@ export default function Index() {
 
                 <a
                   href={DOCS_URL}
+                  target="_blank"
+                  rel="noreferrer"
                   className="transition hover:ring-1 hover:ring-outline rounded-full px-4 py-0.5"
                 >
                   <div className="flex items-center space-x-2">

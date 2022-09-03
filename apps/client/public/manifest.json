@@ -6,19 +6,15 @@
   "display": "fullscreen",
   "icons": [
     {
-      "src": "images/Logo-Maskable.png",
+      "src": "images/Logo-Icon-Maskable.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
     },
     {
-      "src": "images/Logo-Circle.png",
+      "src": "images/Logo-Icon.png",
       "type": "image/png",
       "sizes": "512x512"
-    },
-    {
-      "src": "images/Logo-Circle.ico",
-      "sizes": "any"
     }
   ],
   "name": "The Wired",

@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./build",
+    "jsx": "react-jsx"
+  },
+  "exclude": ["node_modules", "build"],
+  "extends": "@wired-xr/tsconfig/base.json"
+}

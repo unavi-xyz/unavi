@@ -1,17 +1,17 @@
 import { NextPageContext } from "next";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
-import Button from "../../../src/components/base/Button";
-import { getNavbarLayout } from "../../../src/components/layouts/NavbarLayout/NavbarLayout";
-import SpaceLayout from "../../../src/components/layouts/SpaceLayout/SpaceLayout";
+import { LensContext } from "@wired-xr/lens";
+import { useHidePublicationMutation } from "@wired-xr/lens";
+
+import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
+import SpaceLayout from "../../../src/home/layouts/SpaceLayout/SpaceLayout";
 import {
   SpaceLayoutProps,
   getSpaceLayoutProps,
-} from "../../../src/components/layouts/SpaceLayout/getSpaceLayoutProps";
-import { useHidePublicationMutation } from "../../../src/generated/graphql";
-import { authenticate } from "../../../src/helpers/lens/authentication";
-import { useLensStore } from "../../../src/helpers/lens/store";
+} from "../../../src/home/layouts/SpaceLayout/getSpaceLayoutProps";
+import Button from "../../../src/ui/base/Button";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=10");
@@ -27,9 +27,10 @@ export default function Settings(props: SpaceLayoutProps) {
   const router = useRouter();
   const id = router.query.id;
 
-  const handle = useLensStore((state) => state.handle);
   const [loading, setLoading] = useState(false);
   const [, hidePublication] = useHidePublicationMutation();
+
+  const { handle, authenticate } = useContext(LensContext);
 
   useEffect(() => {
     if (!handle && id) router.push(`/space/${id}`);
@@ -43,7 +44,9 @@ export default function Settings(props: SpaceLayoutProps) {
     try {
       await authenticate();
       await hidePublication({
-        publicationId: id,
+        request: {
+          publicationId: id,
+        },
       });
       router.push(`/user/${handle}`);
     } catch (err) {
@@ -55,7 +58,7 @@ export default function Settings(props: SpaceLayoutProps) {
 
   return (
     <SpaceLayout {...props}>
-      <div className="bg-primaryContainer text-onPrimaryContainer rounded-2xl p-8 space-y-4">
+      <div className="bg-errorContainer text-onErrorContainer rounded-2xl p-8 space-y-4">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">
@@ -66,7 +69,7 @@ export default function Settings(props: SpaceLayoutProps) {
 
         <Button
           variant="filled"
-          color="primary"
+          color="error"
           squared="large"
           loading={loading}
           onClick={handleDelete}

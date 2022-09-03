@@ -1,7 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
-    "composite": false,
+    "target": "ESNext",
+    "module": "ESNext",
+    "incremental": true,
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
@@ -13,8 +15,10 @@
     "noUnusedParameters": false,
     "preserveWatchOutput": true,
     "skipLibCheck": true,
-    "strict": true
+    "strict": true,
+    "sourceMap": true,
+    "resolveJsonModule": true
   },
   "display": "Default",
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "build", "dist", ".turbo"]
 }

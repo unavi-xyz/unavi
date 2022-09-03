@@ -1,110 +1,85 @@
-import {
-  Append,
-  Count,
-  Distinct,
-  Index,
-  Lambda,
-  Map,
-  Match,
-  Paginate,
-  Select,
-  Var,
-} from "faunadb";
 import { NextPageContext } from "next";
 import Link from "next/link";
 import { useState } from "react";
 
-import Carousel from "../src/components/base/Carousel";
-import { getNavbarLayout } from "../src/components/layouts/NavbarLayout/NavbarLayout";
-import AvatarCard from "../src/components/lens/AvatarCard";
-import SpaceCard from "../src/components/lens/SpaceCard";
-import MetaTags from "../src/components/ui/MetaTags";
+import { AppId } from "@wired-xr/lens";
 import {
   ExplorePublicationsDocument,
   ExplorePublicationsQuery,
   ExplorePublicationsQueryVariables,
-  GetPublicationsDocument,
-  GetPublicationsQuery,
-  GetPublicationsQueryVariables,
   PaginatedResultInfo,
   Post,
   PublicationSortCriteria,
   PublicationTypes,
-} from "../src/generated/graphql";
-import { client } from "../src/helpers/faunadb/client";
-import { lensClient } from "../src/helpers/lens/client";
-import { getMediaImageSSR } from "../src/helpers/lens/hooks/useMediaImage";
-import { AppId } from "../src/helpers/lens/types";
-import { useIsMobile } from "../src/helpers/utils/useIsMobile";
-import { useQueryPagination } from "../src/helpers/utils/useQueryPagination";
+} from "@wired-xr/lens";
+
+import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
+import AvatarCard from "../src/home/lens/AvatarCard";
+import SpaceCard from "../src/home/lens/SpaceCard";
+import { lensClient } from "../src/lib/lens/client";
+import MetaTags from "../src/ui/MetaTags";
+import Carousel from "../src/ui/base/Carousel";
+import { parseUri } from "../src/utils/parseUri";
+import { useIsMobile } from "../src/utils/useIsMobile";
+import { useQueryPagination } from "../src/utils/useQueryPagination";
 
 const HOT_SPACES_LIMIT = 6;
 
-async function fetchHotSpaces() {
-  try {
-    //get hot spaces
-    const doc = await client.query(
-      Select(
-        "data",
-        Map(
-          Distinct(Paginate(Match(Index("Space-View-Event-Ids")))),
-          Lambda(
-            "id",
-            Append(
-              [Var("id")],
-              [
-                Count(
-                  Select(
-                    "data",
-                    Paginate(Match(Index("Space-View-Events-By-Id"), Var("id")))
-                  )
-                ),
-              ]
-            )
-          )
-        )
-      )
-    );
+// async function fetchHotSpaces() {
+//   try {
+//     //get hot spaces
+//     const doc = await client.query(
+//       Select(
+//         "data",
+//         Map(
+//           Distinct(Paginate(Match(Index("Space-View-Event-Ids")))),
+//           Lambda(
+//             "id",
+//             Append(
+//               [Var("id")],
+//               [Count(Select("data", Paginate(Match(Index("Space-View-Events-By-Id"), Var("id")))))]
+//             )
+//           )
+//         )
+//       )
+//     );
 
-    const spaceViews = doc as Array<[number, string]>;
+//     const spaceViews = doc as Array<[number, string]>;
 
-    //only take the top spaces
-    const topSpaceViews = spaceViews.slice(0, HOT_SPACES_LIMIT);
+//     //only take the top spaces
+//     const topSpaceViews = spaceViews.slice(0, HOT_SPACES_LIMIT);
 
-    ///get space publications
-    const spacesQuery = await lensClient
-      .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
-        GetPublicationsDocument,
-        {
-          request: {
-            publicationIds: topSpaceViews.map(([_, id]) => id),
-          },
-        }
-      )
-      .toPromise();
+//     ///get space publications
+//     const spacesQuery = await lensClient
+//       .query<GetPublicationsQuery, GetPublicationsQueryVariables>(GetPublicationsDocument, {
+//         request: {
+//           publicationIds: topSpaceViews.map(([_, id]) => id),
+//         },
+//       })
+//       .toPromise();
 
-    const items = (spacesQuery.data?.publications.items as Post[]) ?? [];
-    const sortedItems = items.sort((a, b) => {
-      const aViews = topSpaceViews.find(([_, id]) => id === a.id)?.[0] ?? 0;
-      const bViews = topSpaceViews.find(([_, id]) => id === b.id)?.[0] ?? 0;
+//     const items = (spacesQuery.data?.publications.items as Post[]) ?? [];
+//     const sortedItems = items.sort((a, b) => {
+//       const aViews = topSpaceViews.find(([_, id]) => id === a.id)?.[0] ?? 0;
+//       const bViews = topSpaceViews.find(([_, id]) => id === b.id)?.[0] ?? 0;
 
-      return bViews - aViews;
-    });
+//       return bViews - aViews;
+//     });
 
-    //fetch media images
-    const fetchedItems = sortedItems.map((item) => {
-      if (!item.metadata.media[0]) return item;
-      const newItem = { ...item };
-      newItem.metadata.image = getMediaImageSSR(item.metadata.media[0]);
-      return newItem;
-    });
+//     //fetch media images
+//     const fetchedItems = sortedItems.map((item) => {
+//       if (!item.metadata.media[0]) return item;
+//       const newItem = { ...item };
+//       newItem.metadata.image = getMediaImageSSR(item.metadata.media[0]);
+//       return newItem;
+//     });
 
-    return fetchedItems;
-  } catch (error) {
-    console.log(error);
-    return [];
-  }
-}
+//     return fetchedItems;
+//   } catch (error) {
+//     console.error(error);
+//     return [];
+//   }
+// }
 
 async function fetchLatestSpaces(pageInfo?: PaginatedResultInfo, limit = 3) {
   const latestAvatarsQuery = await lensClient
@@ -112,7 +87,7 @@ async function fetchLatestSpaces(pageInfo?: PaginatedResultInfo, limit = 3) {
       ExplorePublicationsDocument,
       {
         request: {
-          sources: [AppId.space],
+          sources: [AppId.Space],
           sortCriteria: PublicationSortCriteria.Latest,
           publicationTypes: [PublicationTypes.Post],
           limit,
@@ -130,7 +105,7 @@ async function fetchLatestSpaces(pageInfo?: PaginatedResultInfo, limit = 3) {
   const fetchedItems = items.map((item) => {
     if (!item.metadata.media[0]) return item;
     const newItem = { ...item };
-    newItem.metadata.image = getMediaImageSSR(item.metadata.media[0]);
+    newItem.metadata.image = parseUri(item.metadata.media[0].original.url);
     return newItem;
   });
 
@@ -146,7 +121,7 @@ async function fetchLatestAvatars(pageInfo?: PaginatedResultInfo, limit = 5) {
       ExplorePublicationsDocument,
       {
         request: {
-          sources: [AppId.avatar],
+          sources: [AppId.Avatar],
           sortCriteria: PublicationSortCriteria.Latest,
           publicationTypes: [PublicationTypes.Post],
           limit,
@@ -164,7 +139,7 @@ async function fetchLatestAvatars(pageInfo?: PaginatedResultInfo, limit = 5) {
   const fetchedItems = items.map((item) => {
     if (!item.metadata.media[0]) return item;
     const newItem = { ...item };
-    newItem.metadata.image = getMediaImageSSR(item.metadata.media[0]);
+    newItem.metadata.image = parseUri(item.metadata.media[0].original.url);
     return newItem;
   });
 
@@ -185,15 +160,21 @@ export async function getServerSideProps({ res }: NextPageContext) {
   };
 
   //fetch the first page
-  const firstLatestSpaces = await fetchLatestSpaces(pageInfo);
-  const firstLatestAvatars = await fetchLatestAvatars(pageInfo);
+  const firstLatestSpacesPromise = fetchLatestSpaces(pageInfo);
+  const firstLatestAvatarsPromise = fetchLatestAvatars(pageInfo);
+
+  const firstLatestSpaces = await firstLatestSpacesPromise;
+  const firstLatestAvatars = await firstLatestAvatarsPromise;
 
   //also fetch the next page
-  const secondPageSpaces = await fetchLatestSpaces(firstLatestSpaces.info);
-  const secondPageAvatars = await fetchLatestAvatars(firstLatestAvatars.info);
+  const secondPageSpacesPromise = fetchLatestSpaces(firstLatestSpaces.info);
+  const secondPageAvatarsPromise = fetchLatestAvatars(firstLatestAvatars.info);
+
+  const secondPageSpaces = await secondPageSpacesPromise;
+  const secondPageAvatars = await secondPageAvatarsPromise;
 
   //fetch hot spaces
-  const hotSpaces = await fetchHotSpaces();
+  // const hotSpaces = await fetchHotSpaces();
 
   const props: Props = {
     initialLatestSpaces: [
@@ -206,7 +187,7 @@ export async function getServerSideProps({ res }: NextPageContext) {
       ...secondPageAvatars.items,
     ],
     initialLatestAvatarsInfo: secondPageAvatars.info,
-    hotSpaces: hotSpaces ?? [],
+    hotSpaces: [],
   };
 
   return {
@@ -315,7 +296,7 @@ export default function Explore({
                       }%))`,
                     }}
                   >
-                    <SpaceCard space={space} />
+                    <SpaceCard space={space} sizes="227px" />
                   </a>
                 </Link>
               ))}
@@ -344,7 +325,7 @@ export default function Explore({
                       }%))`,
                     }}
                   >
-                    <AvatarCard avatar={avatar} />
+                    <AvatarCard avatar={avatar} sizes="140px" />
                   </a>
                 </Link>
               ))}

@@ -1,5 +1,3 @@
-import { log } from "next-axiom";
-
 import { DEFAULT_HOST } from "../../../../pages/app/[id]";
 import {
   PublicationProps,
@@ -15,8 +13,6 @@ export interface SpaceLayoutProps extends PublicationProps {
 }
 
 export async function getSpaceLayoutProps(id: string) {
-  log.debug("getSpaceLayoutProps", { id });
-
   // Fetch publication data
   const publicationProps = await getPublicationProps(id as string);
 

@@ -5,7 +5,7 @@ const origin = `https://${process.env.VERCEL_URL}`;
 interface Props {
   title?: string;
   description?: string;
-  image?: string;
+  image?: string | null;
   card?: "summary" | "summary_large_image";
 }
 
@@ -17,10 +17,12 @@ export default function MetaTags({
 }: Props) {
   const width = card === "summary_large_image" ? "1200" : "256";
 
-  //if image is an external url, fetch it through next
-  const localImage = image.startsWith("http")
-    ? `${origin}/_next/image/?url=${image}&w=${width}&q=75`
-    : image;
+  // If image is an external url, fetch it through next
+  const localImage = image
+    ? image.startsWith("http")
+      ? `${origin}/_next/image/?url=${image}&w=${width}&q=75`
+      : image
+    : null;
 
   return (
     <Head>
@@ -32,19 +34,19 @@ export default function MetaTags({
 
       <meta name="name" content={title} />
       <meta name="description" content={description} />
-      <meta name="image" content={localImage} />
+      {localImage && <meta name="image" content={localImage} />}
 
       {/* open graph */}
       <meta property="og:site_name" content="The Wired" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={localImage} />
+      {localImage && <meta property="og:image" content={localImage} />}
 
       {/* twitter */}
       <meta name="twitter:card" content={card} />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={localImage} />
+      {localImage && <meta name="twitter:image" content={localImage} />}
       <meta name="twitter:site" content="@TheWiredXR" />
 
       {/* apple */}

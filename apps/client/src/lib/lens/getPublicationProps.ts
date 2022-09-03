@@ -12,8 +12,8 @@ import { lensClient } from "./client";
 
 export interface PublicationProps {
   metadata: PageMetadata;
-  publication: Publication | undefined;
-  image: string | undefined;
+  publication: Publication | null;
+  image: string | null;
 }
 
 export async function getPublicationProps(
@@ -28,7 +28,7 @@ export async function getPublicationProps(
     )
     .toPromise();
 
-  const publication = data?.publication as Publication | undefined;
+  const publication = (data?.publication as Publication | undefined) ?? null;
 
   const title = `${publication?.metadata.name ?? publicationId}`;
 
@@ -37,16 +37,16 @@ export async function getPublicationProps(
       ? "Space"
       : publication?.appId === AppId.Avatar
       ? "Avatar"
-      : undefined;
+      : "";
 
   const description =
     publication?.metadata.description ?? publication?.profile.handle
       ? `${publicationType} by @${publication?.profile.handle}`
-      : undefined;
+      : "";
 
   const image = publication
     ? parseUri(getMediaImageUri(publication.metadata.media[0]))
-    : undefined;
+    : null;
 
   const metadata: PageMetadata = {
     title,

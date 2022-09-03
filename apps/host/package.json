@@ -5,9 +5,8 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "build": "atsc",
-    "dev": "anodemon ./src/server.ts",
-    "start": "anode --experimental-specifier-resolution=node ./build/server.js"
+    "_dev": "nodemon ./src/server.ts",
+    "_start": "node --experimental-specifier-resolution=node ./build/server.js"
   },
   "dependencies": {
     "@react-three/cannon": "^6.3.0",

@@ -13,30 +13,37 @@
 ## Tech Stack
 
 - Decentralized identity / social graph using [Lens Protocol](https://lens.dev/)
-- Decentralized data storage using [IPFS](https://ipfs.io/)
+- Decentralized data storage / fetching over [IPFS](https://ipfs.io/)
 - Open backend, anyone can run their own [host](apps/host) server
-- 3d rendering using [Threejs](https://github.com/mrdoob/three.js)
-- VRM avatar support using [Three VRM](https://github.com/pixiv/three-vrm)
-- glTF-based scene structure
+- Custom multi-threaded, glTF-based [game engine](pakacges/engine)
+- 3D rendering using [Threejs](https://github.com/mrdoob/three.js)
+- Physics using [Rapier](https://rapier.rs/)
+- VRM avatars using [Three VRM](https://github.com/pixiv/three-vrm)
 
-## Development
+## What's inside?
 
-This turborepo uses Yarn as a package manager. It includes the following apps/packages:
+This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com/lang/en/) as a package manager. It includes the following apps / packages:
 
 ### Apps
 
 - [client](apps/client): a website used to access The Wired
-- [client-db](apps/client-db): a database for the client
-- [examples](apps/examples): examples for testing the engine
+- [examples](apps/examples): a simple website for testing the engine
 - [docs](apps/docs): a documentation website
-- [host](apps/host): a server for hosting spaces
+- [host](apps/host): a dockerized server for hosting spaces
 
 ### Packages
 
 - [engine](packages/engine): a 3d game engine
+- [eslint-config-custom](packages/eslint-config-custom): a custom eslint config used throughout the repo
 - [ipfs](packages/ipfs): helpers for interacting with IPFS
 - [lens](packages/lens): helpers for interacting with Lens
 - [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
+
+### Utilities
+
+- [TypeScript](https://www.typescriptlang.org/) for static type checking
+- [ESLint](https://eslint.org/) for code linting
+- [Prettier](https://prettier.io) for code formatting
 
 ### Install
 

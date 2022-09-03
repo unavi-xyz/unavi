@@ -1,3 +1,3 @@
 # @wired-xr/ipfs
 
-Contains react helpers for [IPFS](https://ipfs.io/).
+Contains helpers for using [IPFS](https://ipfs.io/).

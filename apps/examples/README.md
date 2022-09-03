@@ -2,8 +2,6 @@
 
 Examples for the engine.
 
-Note: When run in development mode, memory usage will be increased significantly. If you are looking for accurate stats, run the examples in production mode (`yarn build && yarn start` as opposed to `yarn dev`).
-
 Models taken from [glTF-Sample-Models](https://github.com/KhronosGroup/glTF-Sample-Models).
 
 ## Showcase

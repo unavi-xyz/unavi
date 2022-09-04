@@ -5,7 +5,6 @@
   "scripts": {
     "build": "docusaurus build",
     "clear": "docusaurus clear",
-    "deploy": "docusaurus deploy",
     "dev": "docusaurus start --port 3100 --no-open",
     "docusaurus": "docusaurus",
     "serve": "docusaurus serve",

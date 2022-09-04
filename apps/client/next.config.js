@@ -13,7 +13,9 @@ const withPWA = require("next-pwa")({
   runtimeCaching,
 });
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
-  enabled: process.env.BUNDLE_ANALYZE === "true",
+  enabled:
+    process.env.BUNDLE_ANALYZE === "true" &&
+    process.env.NODE_ENV === "production",
 });
 
 /**

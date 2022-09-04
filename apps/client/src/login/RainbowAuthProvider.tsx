@@ -12,7 +12,7 @@ interface Props {
   enabled?: boolean;
 }
 
-export function RainbowAuthProvider({ children, enabled }: Props) {
+export default function RainbowAuthProvider({ children, enabled }: Props) {
   const { status } = useSession();
   const adapter = useMemo(
     () =>

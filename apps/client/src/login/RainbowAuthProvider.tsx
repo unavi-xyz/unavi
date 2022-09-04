@@ -2,10 +2,11 @@ import {
   RainbowKitAuthenticationProvider,
   createAuthenticationAdapter,
 } from "@rainbow-me/rainbowkit";
-import { getCsrfToken, signIn, signOut, useSession } from "next-auth/react";
-import React, { ReactNode, useMemo } from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
+import { ReactNode, useMemo } from "react";
+import { useAccount } from "wagmi";
 
-import { createAuthMessage } from "./authMessage";
+import { useChallenge } from "./useChallenge";
 
 interface Props {
   children?: ReactNode;
@@ -14,44 +15,36 @@ interface Props {
 
 export default function RainbowAuthProvider({ children, enabled }: Props) {
   const { status } = useSession();
+  const { address } = useAccount();
+  const challenge = useChallenge(address);
+
   const adapter = useMemo(
     () =>
       createAuthenticationAdapter({
-        createMessage: ({ address, chainId, nonce }) => {
-          const message = createAuthMessage(
-            address,
-            window.location.host,
-            window.location.origin,
-            chainId,
-            nonce
-          );
-
+        createMessage: () => {
+          const message = challenge ?? "";
           return message;
         },
 
         getMessageBody: ({ message }) => message,
 
-        getNonce: async () => {
-          const nonce = await getCsrfToken();
-          if (!nonce) throw new Error();
-          return nonce;
-        },
+        getNonce: async () => "dummy",
 
         signOut: async () => {
           await signOut({ redirect: false });
         },
 
-        verify: async ({ message, signature }) => {
+        verify: async ({ signature }) => {
           const response = await signIn("credentials", {
-            message: JSON.stringify(message),
-            redirect: false,
+            address,
             signature,
+            redirect: false,
           });
 
           return response?.ok ?? false;
         },
       }),
-    []
+    [challenge, address]
   );
 
   return (

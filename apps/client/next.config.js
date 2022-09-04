@@ -1,14 +1,19 @@
+const withPlugins = require("next-compose-plugins");
 const { withAxiom } = require("next-axiom");
-const runtimeCaching = require("next-pwa/cache.js");
 const withTM = require("next-transpile-modules")([
   "three",
   "@wired-labs/engine",
   "@wired-labs/ipfs",
   "@wired-labs/lens",
 ]);
+const runtimeCaching = require("next-pwa/cache.js");
 const withPWA = require("next-pwa")({
   dest: "public",
+  disable: process.env.NODE_ENV === "development",
   runtimeCaching,
+});
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.BUNDLE_ANALYZE === "true",
 });
 
 /**
@@ -23,61 +28,59 @@ function defineConfig(config) {
   return config;
 }
 
-const config = withAxiom(
-  withTM(
-    defineConfig({
-      reactStrictMode: true,
-      swcMinify: true,
-      experimental: {
-        images: {
-          allowFutureImage: true,
-        },
+const config = defineConfig({
+  reactStrictMode: true,
+  swcMinify: true,
+  experimental: {
+    images: {
+      allowFutureImage: true,
+    },
+  },
+  images: {
+    domains: [process.env.NEXT_PUBLIC_IPFS_GATEWAY, "avatar.tobi.sh"],
+  },
+  async redirects() {
+    return [
+      {
+        source: "/app",
+        destination: "/",
+        permanent: false,
       },
-      images: {
-        domains: [process.env.NEXT_PUBLIC_IPFS_GATEWAY, "avatar.tobi.sh"],
+      {
+        source: "/studio",
+        destination: "/create",
+        permanent: false,
       },
-      async redirects() {
-        return [
+    ];
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
           {
-            source: "/app",
-            destination: "/",
-            permanent: false,
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
           },
           {
-            source: "/studio",
-            destination: "/create",
-            permanent: false,
+            key: "Cross-Origin-Embedder-Policy",
+            value: "require-corp",
           },
-        ];
+        ],
       },
-      async headers() {
-        return [
-          {
-            source: "/:path*",
-            headers: [
-              {
-                key: "Cross-Origin-Opener-Policy",
-                value: "same-origin",
-              },
-              {
-                key: "Cross-Origin-Embedder-Policy",
-                value: "require-corp",
-              },
-            ],
-          },
-        ];
-      },
-      webpack: function (config) {
-        config.experiments = {
-          ...config.experiments,
-          asyncWebAssembly: true,
-          syncWebAssembly: true,
-        };
-        return config;
-      },
-    })
-  )
-);
+    ];
+  },
+  webpack: function (config) {
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      syncWebAssembly: true,
+    };
+    return config;
+  },
+});
 
-module.exports =
-  process.env.NODE_ENV === "development" ? config : withPWA(config);
+module.exports = withPlugins(
+  [withBundleAnalyzer, withAxiom, withTM, withPWA],
+  config
+);

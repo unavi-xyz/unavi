@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.159.0",
+    "@next/bundle-analyzer": "^12.2.5",
     "@prisma/client": "^4.3.0",
     "@rainbow-me/rainbowkit": "^0.5.1",
     "@trpc/client": "^9.27.0",
@@ -29,6 +30,7 @@
     "next": "^12.2.5",
     "next-auth": "^4.10.3",
     "next-axiom": "^0.14.0",
+    "next-compose-plugins": "^2.2.1",
     "next-pwa": "^5.6.0",
     "react": "^18.2.0",
     "react-dnd": "^16.0.1",

@@ -5,4 +5,5 @@ export const theme: Theme = lightTheme({
   accentColorForeground: "#000000",
   fontStack: "system",
   borderRadius: "large",
+  overlayBlur: "small",
 });

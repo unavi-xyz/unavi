@@ -9,10 +9,9 @@ import {
   useProfilesByAddress,
 } from "@wired-labs/lens";
 
-import { wagmiClient } from "../../pages/_app";
 import CreateProfilePage from "../home/layouts/NavbarLayout/CreateProfilePage";
 import Dialog from "../ui/base/Dialog";
-import { useAuthenticate } from "./useAuthenticate";
+import { wagmiClient } from "./wagmi";
 
 export const LoginContext = createContext({
   logout: () => {},
@@ -31,8 +30,6 @@ export default function LoginProvider({ children }: Props) {
   const { disconnect } = useDisconnect();
   const { profiles, fetching } = useProfilesByAddress(address);
   const { status: sessionStatus, data: session } = useSession();
-
-  useAuthenticate();
 
   // Auto connect wallet if already authenticated
   useEffect(() => {

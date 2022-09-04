@@ -1,66 +1,24 @@
-import {
-  RainbowKitProvider,
-  connectorsForWallets,
-  wallet,
-} from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
 import "@rainbow-me/rainbowkit/styles.css";
 import { withTRPC } from "@trpc/next";
 import { SessionProvider } from "next-auth/react";
 import Head from "next/head";
 import React from "react";
-import { WagmiConfig, chain, configureChains, createClient } from "wagmi";
-import { alchemyProvider } from "wagmi/providers/alchemy";
-import { publicProvider } from "wagmi/providers/public";
+import { WagmiConfig } from "wagmi";
 
 import { IpfsProvider } from "@wired-labs/ipfs";
 import { LensProvider } from "@wired-labs/lens";
 
 import LoginProvider from "../src/login/LoginProvider";
+import { RainbowAuthProvider } from "../src/login/RainbowAuthProvider";
 import { theme } from "../src/login/theme";
+import { chains, wagmiClient } from "../src/login/wagmi";
 import "../styles/globals.css";
 import { AppRouter } from "./api/trpc/[trpc]";
 
 // Export web vitals
 export { reportWebVitals } from "next-axiom";
-
-// RainbowKit / Wagmi
-const apiKey = process.env.ALCHEMY_ID;
-
-const { chains, provider } = configureChains(
-  [chain.polygonMumbai],
-  [alchemyProvider({ apiKey }), publicProvider()]
-);
-
-const needsInjectedWalletFallback =
-  typeof window !== "undefined" &&
-  window.ethereum &&
-  !window.ethereum.isMetaMask &&
-  !window.ethereum.isCoinbaseWallet;
-
-const connectors = connectorsForWallets([
-  {
-    groupName: "Popular",
-    wallets: [
-      wallet.metaMask({ chains }),
-      wallet.rainbow({ chains }),
-      wallet.coinbase({ chains, appName: "The Wired" }),
-    ],
-  },
-  {
-    groupName: "More",
-    wallets: [
-      wallet.argent({ chains }),
-      wallet.ledger({ chains }),
-      wallet.walletConnect({ chains }),
-      ...(needsInjectedWalletFallback ? [wallet.injected({ chains })] : []),
-    ],
-  },
-]);
-
-export const wagmiClient: any = createClient({
-  connectors,
-  provider,
-});
 
 // App
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
@@ -75,21 +33,23 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
         <meta name="theme-color" content="#ffffff" />
       </Head>
 
-      <SessionProvider session={session}>
-        <WagmiConfig client={wagmiClient}>
-          <RainbowKitProvider theme={theme} chains={chains}>
-            <IpfsProvider>
-              <LensProvider>
-                <LoginProvider>
-                  <div className="w-full h-screen">
-                    {getLayout(<Component {...pageProps} />)}
-                  </div>
-                </LoginProvider>
-              </LensProvider>
-            </IpfsProvider>
-          </RainbowKitProvider>
-        </WagmiConfig>
-      </SessionProvider>
+      <WagmiConfig client={wagmiClient}>
+        <SessionProvider session={session}>
+          <RainbowAuthProvider>
+            <RainbowKitProvider theme={theme} chains={chains}>
+              <IpfsProvider>
+                <LensProvider>
+                  <LoginProvider>
+                    <div className="w-full h-screen">
+                      {getLayout(<Component {...pageProps} />)}
+                    </div>
+                  </LoginProvider>
+                </LensProvider>
+              </IpfsProvider>
+            </RainbowKitProvider>
+          </RainbowAuthProvider>
+        </SessionProvider>
+      </WagmiConfig>
     </>
   );
 }

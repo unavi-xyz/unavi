@@ -2,8 +2,8 @@ import { NextPageContext } from "next";
 import Link from "next/link";
 import { useState } from "react";
 
-import { AppId } from "@wired-xr/lens";
 import {
+  AppId,
   ExplorePublicationsDocument,
   ExplorePublicationsQuery,
   ExplorePublicationsQueryVariables,
@@ -11,7 +11,7 @@ import {
   Post,
   PublicationSortCriteria,
   PublicationTypes,
-} from "@wired-xr/lens";
+} from "@wired-labs/lens";
 
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
 import AvatarCard from "../src/home/lens/AvatarCard";

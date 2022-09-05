@@ -5,7 +5,7 @@ import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLa
 import {
   PublicationProps,
   getPublicationProps,
-} from "../../../src/lib/lens/getPublicationProps";
+} from "../../../src/lib/lens/utils/getPublicationProps";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");

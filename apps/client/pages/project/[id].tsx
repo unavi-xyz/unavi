@@ -9,14 +9,11 @@ import Button from "../../src/ui/base/Button";
 
 export default function Project() {
   const router = useRouter();
-  const id = router.query.id;
+  const id = router.query.id as string;
 
-  const { data, isFetched } = trpc.useQuery(
-    ["project", { id: parseInt(id as string) }],
-    {
-      enabled: id !== undefined,
-    }
-  );
+  const { data, isFetched } = trpc.useQuery(["project", { id }], {
+    enabled: id !== undefined,
+  });
 
   if (!isFetched || !data) return null;
 

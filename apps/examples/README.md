@@ -1,4 +1,4 @@
-# @wired-xr/examples
+# @wired-labs/examples
 
 Examples for the engine.
 

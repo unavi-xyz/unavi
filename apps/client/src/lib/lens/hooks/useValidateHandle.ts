@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { HANDLE_ENDING } from "@wired-xr/lens";
+import { useGetProfileQuery } from "@wired-labs/lens";
 
-import { useGetProfileQuery } from "../..";
+import { HANDLE_ENDING } from "../constants";
 
 export function useValidateHandle(handle: string) {
   const [valid, setValid] = useState(false);

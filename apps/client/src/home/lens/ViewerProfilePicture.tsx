@@ -1,8 +1,8 @@
-import { useContext } from "react";
+import { useGetProfileQuery } from "@wired-labs/lens";
 
-import { HANDLE_ENDING, LensContext, useMediaImage } from "@wired-xr/lens";
-import { useGetProfileQuery } from "@wired-xr/lens";
-
+import { HANDLE_ENDING } from "../../lib/lens/constants";
+import { useLens } from "../../lib/lens/hooks/useLens";
+import { getMediaURL } from "../../lib/lens/utils/getMediaURL";
 import ProfilePicture from "./ProfilePicture";
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function ViewerProfilePicture({ circle, draggable }: Props) {
-  const { handle } = useContext(LensContext);
+  const { handle } = useLens();
 
   const [{ data }] = useGetProfileQuery({
     variables: { request: { handles: [handle?.concat(HANDLE_ENDING)] } },
@@ -20,7 +20,7 @@ export default function ViewerProfilePicture({ circle, draggable }: Props) {
 
   const profile = data?.profiles.items[0];
   const src =
-    useMediaImage(profile?.picture) ?? `https://avatar.tobi.sh/${handle}`;
+    getMediaURL(profile?.picture) ?? `https://avatar.tobi.sh/${handle}`;
 
   return <ProfilePicture circle={circle} draggable={draggable} src={src} />;
 }

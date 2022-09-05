@@ -1,4 +1,4 @@
-const withTM = require("next-transpile-modules")(["@wired-xr/engine"]);
+const withTM = require("next-transpile-modules")(["@wired-labs/engine"]);
 
 module.exports = withTM({
   reactStrictMode: true,

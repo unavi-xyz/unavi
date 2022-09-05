@@ -1,11 +1,10 @@
 {
-  "name": "@wired-xr/docs",
+  "name": "@wired-labs/docs",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "build": "docusaurus build",
     "clear": "docusaurus clear",
-    "deploy": "docusaurus deploy",
     "dev": "docusaurus start --port 3100 --no-open",
     "docusaurus": "docusaurus",
     "serve": "docusaurus serve",

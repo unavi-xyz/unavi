@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { PaginatedResultInfo } from "@wired-xr/lens";
+import { PaginatedResultInfo } from "@wired-labs/lens";
 
 interface Props {
   pageSize: number;

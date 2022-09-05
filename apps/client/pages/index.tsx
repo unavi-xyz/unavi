@@ -1,13 +1,8 @@
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import Image from "next/future/image";
 import Link from "next/link";
-import { useRouter } from "next/router";
-import { useContext } from "react";
 import { FaBook, FaDiscord } from "react-icons/fa";
 import { MdArrowDownward } from "react-icons/md";
 import { VscGithubInverted, VscTwitter } from "react-icons/vsc";
-
-import { LensContext } from "@wired-xr/lens";
 
 import {
   DISCORD_URL,
@@ -20,19 +15,6 @@ import MetaTags from "../src/ui/MetaTags";
 import Button from "../src/ui/base/Button";
 
 export default function Index() {
-  const { handle } = useContext(LensContext);
-  const { openConnectModal } = useConnectModal();
-  const router = useRouter();
-
-  function handlePlay() {
-    if (!handle && openConnectModal) {
-      openConnectModal();
-      return;
-    }
-
-    router.push("/explore");
-  }
-
   return (
     <>
       <MetaTags />
@@ -49,14 +31,13 @@ export default function Index() {
 
               <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
                 <div className="w-full md:w-fit">
-                  <Button
-                    variant="filled"
-                    squared="large"
-                    fullWidth
-                    onClick={handlePlay}
-                  >
-                    <div className="px-2 py-1">Play Now</div>
-                  </Button>
+                  <Link href="/explore" passHref>
+                    <div>
+                      <Button variant="filled" squared="large" fullWidth>
+                        <div className="px-2 py-1">Play Now</div>
+                      </Button>
+                    </div>
+                  </Link>
                 </div>
 
                 <div className="w-full md:w-fit">

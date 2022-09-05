@@ -1,15 +1,3 @@
-export enum SessionStorage {
-  AutoLogin = "auto_login",
-}
-
-export enum LocalStorage {
-  PreviousHandle = "prev_handle_",
-  AccessToken = "access_token_",
-  AccessExpire = "access_expire_",
-  RefreshToken = "refresh_token_",
-  RefreshExpire = "refresh_expire_",
-}
-
 export enum ContractAddress {
   Zero = "0x0000000000000000000000000000000000000000",
   LensPeriphery = "0xD5037d72877808cdE7F669563e9389930AF404E8",

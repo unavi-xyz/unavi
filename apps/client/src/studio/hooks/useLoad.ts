@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
-import { Entity } from "@wired-xr/engine";
+import { Entity } from "@wired-labs/engine";
 
 import { trpc } from "../../login/trpc";
 import { addEntity } from "../actions/AddEntityAction";
@@ -9,23 +9,17 @@ import { useStudioStore } from "../store";
 
 export function useLoad() {
   const router = useRouter();
-  const id = router.query.id;
+  const id = router.query.id as string;
 
-  const { data: project } = trpc.useQuery(
-    ["project", { id: parseInt(id as string) }],
-    {
-      enabled: id !== undefined,
-      cacheTime: 0,
-    }
-  );
+  const { data: project } = trpc.useQuery(["project", { id }], {
+    enabled: id !== undefined,
+    cacheTime: 0,
+  });
 
-  const { data: world } = trpc.useQuery(
-    ["world", { id: parseInt(id as string) }],
-    {
-      enabled: id !== undefined,
-      cacheTime: 0,
-    }
-  );
+  const { data: world } = trpc.useQuery(["world", { id }], {
+    enabled: id !== undefined,
+    cacheTime: 0,
+  });
 
   const engine = useStudioStore((state) => state.engine);
 

@@ -1,6 +1,6 @@
 import create from "zustand";
 
-import { Engine, Entity } from "@wired-xr/engine";
+import { Engine, Entity } from "@wired-labs/engine";
 
 import { Tool } from "./types";
 

@@ -1,13 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
 
-import { Engine } from "@wired-xr/engine";
-
 import StudioNavbar from "../../../src/studio/components/StudioNavbar/StudioNavbar";
 import TreeMenu from "../../../src/studio/components/TreeMenu/TreeMenu";
-import { useAutosave } from "../../../src/studio/hooks/useAutosave";
 import { useLoad } from "../../../src/studio/hooks/useLoad";
 import { useStudioHotkeys } from "../../../src/studio/hooks/useStudioHotkeys";
 import { useTransformControls } from "../../../src/studio/hooks/useTransformControls";
@@ -18,29 +15,41 @@ export default function Studio() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const engine = useStudioStore((state) => state.engine);
+
   useLoad();
   // useAutosave();
   useTransformControls();
   useStudioHotkeys();
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) throw new Error("Canvas not found");
+    async function initEngine() {
+      const canvas = canvasRef.current;
+      if (!canvas) throw new Error("Canvas not found");
 
-    // Create engine
-    const engine = new Engine(canvas, {
-      skyboxPath: "/images/skybox/",
-      camera: "orbit",
-      enableTransformControls: true,
-    });
+      const { Engine } = await import("@wired-labs/engine");
 
-    useStudioStore.setState({ engine });
+      // Create engine
+      const engine = new Engine(canvas, {
+        skyboxPath: "/images/skybox/",
+        camera: "orbit",
+        enableTransformControls: true,
+      });
+
+      useStudioStore.setState({ engine });
+    }
+
+    initEngine();
+  }, []);
+
+  useEffect(() => {
+    if (!engine) return;
 
     return () => {
       engine.destroy();
       useStudioStore.setState({ engine: null });
     };
-  }, []);
+  }, [engine]);
 
   useEffect(() => {
     // Set initial canvas size

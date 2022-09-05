@@ -1,5 +1,5 @@
 {
-  "name": "@wired-xr/engine",
+  "name": "@wired-labs/engine",
   "version": "0.1.0",
   "private": true,
   "license": "GPL-3.0-or-later",
@@ -28,7 +28,7 @@
   "devDependencies": {
     "@types/jest": "^28.1.6",
     "@types/three": "^0.140.0",
-    "@wired-xr/tsconfig": "*",
+    "@wired-labs/tsconfig": "*",
     "eslint": "^8.22.0",
     "eslint-config-custom": "*",
     "jest": "^28.1.3",

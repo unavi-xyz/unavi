@@ -11,6 +11,6 @@ Built on top of open standards and decentralized infrastructure, the Wired reima
 :::info
 
 The team hosts [thewired.space](https://thewired.space), but all code is open source and free to use
-on our [GitHub](https://github.com/wired-xr/wired).
+on our [GitHub](https://github.com/wired-labs/wired).
 
 :::

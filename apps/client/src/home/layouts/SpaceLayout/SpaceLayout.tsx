@@ -1,10 +1,9 @@
 import Image from "next/future/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useContext } from "react";
 
-import { LensContext, trimHandle } from "@wired-xr/lens";
-
+import { useLens } from "../../../lib/lens/hooks/useLens";
+import { trimHandle } from "../../../lib/lens/utils/trimHandle";
 import MetaTags from "../../../ui/MetaTags";
 import Button from "../../../ui/base/Button";
 import NavigationTab from "../../../ui/base/NavigationTab";
@@ -21,7 +20,7 @@ export default function SpaceLayout({
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { handle } = useContext(LensContext);
+  const { handle } = useLens();
   const author = trimHandle(publication?.profile.handle);
   const isAuthor = handle && handle === author;
 

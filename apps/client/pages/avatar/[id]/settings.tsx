@@ -1,16 +1,16 @@
 import { NextPageContext } from "next";
 import { useRouter } from "next/router";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { LensContext } from "@wired-xr/lens";
-import { useHidePublicationMutation } from "@wired-xr/lens";
+import { useHidePublicationMutation } from "@wired-labs/lens";
 
 import AvatarLayout from "../../../src/home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
+import { useLens } from "../../../src/lib/lens/hooks/useLens";
 import {
   PublicationProps,
   getPublicationProps,
-} from "../../../src/lib/lens/getPublicationProps";
+} from "../../../src/lib/lens/utils/getPublicationProps";
 import Button from "../../../src/ui/base/Button";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
@@ -30,7 +30,7 @@ export default function Settings(props: PublicationProps) {
   const [loading, setLoading] = useState(false);
   const [, hidePublication] = useHidePublicationMutation();
 
-  const { handle, authenticate } = useContext(LensContext);
+  const { handle } = useLens();
 
   useEffect(() => {
     if (!handle && id) router.push(`/space/${id}`);
@@ -42,7 +42,6 @@ export default function Settings(props: PublicationProps) {
     setLoading(true);
 
     try {
-      await authenticate();
       await hidePublication({
         request: {
           publicationId: id as string,

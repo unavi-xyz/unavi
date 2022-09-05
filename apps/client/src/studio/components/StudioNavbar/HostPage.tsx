@@ -1,13 +1,10 @@
 import { useSetAtom } from "jotai";
-import React, { useContext, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
-import {
-  LensContext,
-  createProfileMetadata,
-  useProfileByHandle,
-  useSetProfileMetadata,
-} from "@wired-xr/lens";
-
+import { useLens } from "../../../lib/lens/hooks/useLens";
+import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
+import { useSetProfileMetadata } from "../../../lib/lens/hooks/useSetProfileMetadata";
+import { createProfileMetadata } from "../../../lib/lens/utils/createProfileMetadata";
 import Button from "../../../ui/base/Button";
 import TextField from "../../../ui/base/TextField";
 import { didSetHostAtom } from "./PublishPage";
@@ -15,7 +12,7 @@ import { didSetHostAtom } from "./PublishPage";
 export default function HostPage() {
   const hostRef = useRef<HTMLInputElement>(null);
 
-  const { handle } = useContext(LensContext);
+  const { handle } = useLens();
   const profile = useProfileByHandle(handle);
   const setProfileMetadata = useSetProfileMetadata(profile?.id);
   const setDidSetHost = useSetAtom(didSetHostAtom);

@@ -4,15 +4,7 @@ import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useContext, useRef, useState } from "react";
 
-import { IpfsContext } from "@wired-xr/ipfs";
-import {
-  AppId,
-  LensContext,
-  Metadata,
-  MetadataVersions,
-  useCreatePost,
-} from "@wired-xr/lens";
-import { useProfileByHandle } from "@wired-xr/lens";
+import { IpfsContext } from "@wired-labs/ipfs";
 
 import { useStudioStore } from "../../../studio/store";
 import Button from "../../../ui/base/Button";

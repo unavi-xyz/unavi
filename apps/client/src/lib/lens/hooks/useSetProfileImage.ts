@@ -2,21 +2,16 @@ import { utils } from "ethers";
 import { useContext } from "react";
 import { useSignTypedData, useSigner } from "wagmi";
 
-import { IpfsContext } from "@wired-xr/ipfs";
-import {
-  ContractAddress,
-  LensContext,
-  pollUntilIndexed,
-  removeTypename,
-} from "@wired-xr/lens";
+import { IpfsContext } from "@wired-labs/ipfs";
+import { useCreateSetProfileImageTypedDataMutation } from "@wired-labs/lens";
+import { LensHub__factory } from "@wired-labs/lens/contracts";
 
-import { useCreateSetProfileImageTypedDataMutation } from "../..";
-import { LensHub__factory } from "../../contracts";
+import { ContractAddress } from "../constants";
+import { pollUntilIndexed } from "../utils/pollUntilIndexed";
+import { removeTypename } from "../utils/removeTypename";
 
 export function useSetProfileImage(profileId: string) {
   const { uploadFileToIpfs } = useContext(IpfsContext);
-  const { client, authenticate } = useContext(LensContext);
-
   const [, createTypedData] = useCreateSetProfileImageTypedDataMutation();
   const { signTypedDataAsync } = useSignTypedData();
 
@@ -24,9 +19,6 @@ export function useSetProfileImage(profileId: string) {
 
   async function setProfileImage(picture: File) {
     if (!signer) return;
-
-    //authenticate
-    await authenticate();
 
     //upload image to ipfs
     const url = await uploadFileToIpfs(picture);
@@ -74,7 +66,7 @@ export function useSetProfileImage(profileId: string) {
     await tx.wait();
 
     //wait for indexing
-    await pollUntilIndexed(client, tx.hash);
+    await pollUntilIndexed(tx.hash);
   }
 
   return setProfileImage;

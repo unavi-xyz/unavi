@@ -5,7 +5,7 @@ import { RtpCapabilities } from "mediasoup/node/lib/RtpParameters";
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { nanoid } from "nanoid";
 
-import { IChatMessage } from "@wired-xr/engine";
+import { IChatMessage } from "@wired-labs/engine";
 
 import { TypedSocket } from "../types";
 import { ConsumerTransport } from "./ConsumerTransport";

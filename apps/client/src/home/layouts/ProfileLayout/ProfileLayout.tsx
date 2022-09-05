@@ -1,12 +1,10 @@
 import Image from "next/future/image";
 import Head from "next/head";
 import Link from "next/link";
-import { useContext } from "react";
 import { FaTwitter } from "react-icons/fa";
 import { MdAdd, MdLink, MdOutlineLocationOn } from "react-icons/md";
 
-import { LensContext } from "@wired-xr/lens";
-
+import { useLens } from "../../../lib/lens/hooks/useLens";
 import MetaTags from "../../../ui/MetaTags";
 import Button from "../../../ui/base/Button";
 import ProfilePicture from "../../lens/ProfilePicture";
@@ -25,7 +23,7 @@ export default function ProfileLayout({
   coverImage,
   profileImage,
 }: Props) {
-  const { handle: viewerHandle } = useContext(LensContext);
+  const { handle: viewerHandle } = useLens();
 
   const twitter = profile?.attributes?.find((item) => item.key === "twitter");
   const website = profile?.attributes?.find((item) => item.key === "website");

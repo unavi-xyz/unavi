@@ -1,4 +1,4 @@
-import { useGetProfilesQuery } from "../..";
+import { useGetProfilesQuery } from "@wired-labs/lens";
 
 export function useProfilesByAddress(address: string | undefined) {
   const [{ data, fetching }] = useGetProfilesQuery({

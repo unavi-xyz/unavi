@@ -1,13 +1,10 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 
-import {
-  trimHandle,
-  useProfilesByAddress,
-  useSetDefaultProfile,
-} from "@wired-xr/lens";
-
 import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
+import { useProfilesByAddress } from "../../src/lib/lens/hooks/useProfilesByAddress";
+import { useSetDefaultProfile } from "../../src/lib/lens/hooks/useSetDefaultProfile";
+import { trimHandle } from "../../src/lib/lens/utils/trimHandle";
 import MetaTags from "../../src/ui/MetaTags";
 import Button from "../../src/ui/base/Button";
 import Select from "../../src/ui/base/Select";

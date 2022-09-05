@@ -7,7 +7,7 @@ import { useSetIdentity } from "../../src/app/hooks/useSetIdentity";
 import {
   PublicationProps,
   getPublicationProps,
-} from "../../src/lib/lens/getPublicationProps";
+} from "../../src/lib/lens/utils/getPublicationProps";
 import MetaTags from "../../src/ui/MetaTags";
 
 export const DEFAULT_HOST = "wss://host.thewired.space";

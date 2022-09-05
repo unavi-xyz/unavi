@@ -1,5 +1,5 @@
 {
-  "name": "@wired-xr/examples",
+  "name": "@wired-labs/examples",
   "version": "0.1.0",
   "private": true,
   "license": "GPL-3.0-or-later",
@@ -10,7 +10,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@wired-xr/engine": "*",
+    "@wired-labs/engine": "*",
     "next": "^12.2.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -24,7 +24,7 @@
     "@types/offscreencanvas": "^2019.7.0",
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
-    "@wired-xr/tsconfig": "*",
+    "@wired-labs/tsconfig": "*",
     "autoprefixer": "^10.4.8",
     "eslint": "^8.22.0",
     "eslint-config-custom": "*",

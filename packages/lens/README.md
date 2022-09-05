@@ -1,3 +1,3 @@
-# @wired-xr/lens
+# @wired-labs/lens
 
-Contains helpers for querying [Lens](https://lens.xyz/).
+Contains generated graphql queries and contract types for [Lens](https://lens.xyz/).

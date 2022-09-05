@@ -19043,6 +19043,12 @@ export type HasTxHashBeenIndexedQuery = {
       };
 };
 
+export type VerifyQueryVariables = Exact<{
+  request: VerifyRequest;
+}>;
+
+export type VerifyQuery = { __typename?: "Query"; verify: boolean };
+
 export const MediaFieldsFragmentDoc = gql`
   fragment MediaFields on Media {
     url
@@ -19942,4 +19948,18 @@ export function useHasTxHashBeenIndexedQuery(
     HasTxHashBeenIndexedQuery,
     HasTxHashBeenIndexedQueryVariables
   >({ query: HasTxHashBeenIndexedDocument, ...options });
+}
+export const VerifyDocument = gql`
+  query Verify($request: VerifyRequest!) {
+    verify(request: $request)
+  }
+`;
+
+export function useVerifyQuery(
+  options: Omit<Urql.UseQueryArgs<VerifyQueryVariables>, "query">
+) {
+  return Urql.useQuery<VerifyQuery, VerifyQueryVariables>({
+    query: VerifyDocument,
+    ...options,
+  });
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@wired-xr/lens",
+  "name": "@wired-labs/lens",
   "version": "0.0.0",
   "private": true,
   "license": "GPL-3.0-or-later",
@@ -10,7 +10,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@wired-xr/ipfs": "*",
+    "@wired-labs/ipfs": "*",
     "graphql": "^16.5.0",
     "urql": "^2.2.3",
     "wagmi": "^0.6.3"
@@ -27,7 +27,7 @@
     "@typechain/ethers-v5": "^10.1.0",
     "@types/react": "18.0.17",
     "@types/react-dom": "^18.0.6",
-    "@wired-xr/tsconfig": "*",
+    "@wired-labs/tsconfig": "*",
     "eslint": "^8.22.0",
     "eslint-config-custom": "*",
     "typechain": "^8.1.0",

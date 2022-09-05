@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useContext, useState } from "react";
+import { useState } from "react";
 import {
   MdAdd,
   MdOutlineAccountBalanceWallet,
   MdOutlinePersonOutline,
 } from "react-icons/md";
 
-import { LensContext, useProfileByHandle } from "@wired-xr/lens";
-
+import { useLens } from "../../../lib/lens/hooks/useLens";
+import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
 import Dialog from "../../../ui/base/Dialog";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
 import CreateProfilePage from "../NavbarLayout/CreateProfilePage";
@@ -21,7 +21,7 @@ interface Props {
 
 export default function SettingsLayout({ children }: Props) {
   const router = useRouter();
-  const { handle } = useContext(LensContext);
+  const { handle } = useLens();
   const profile = useProfileByHandle(handle);
 
   const [open, setOpen] = useState(false);

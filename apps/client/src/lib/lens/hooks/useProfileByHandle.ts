@@ -1,4 +1,5 @@
-import { Profile, useGetProfileQuery } from "../..";
+import { Profile, useGetProfileQuery } from "@wired-labs/lens";
+
 import { HANDLE_ENDING } from "../constants";
 
 export function useProfileByHandle(handle: string | undefined) {

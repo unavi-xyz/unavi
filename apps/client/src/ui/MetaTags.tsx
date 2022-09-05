@@ -17,8 +17,10 @@ export default function MetaTags({
 }: Props) {
   const width = card === "summary_large_image" ? "1200" : "256";
 
-  // If image is an external url, fetch it through next
-  const localImage = image
+  // If image is an external url, use the version hosted by next/image
+  // this is a bit of a hack, but not sure how else to do it
+  // we want images fetched from IPFS to be viewable on other sites without making our IPFS gateway public
+  const externalImage = image
     ? image.startsWith("http")
       ? `${origin}/_next/image/?url=${image}&w=${width}&q=75`
       : image
@@ -34,19 +36,19 @@ export default function MetaTags({
 
       <meta name="name" content={title} />
       <meta name="description" content={description} />
-      {localImage && <meta name="image" content={localImage} />}
+      {externalImage && <meta name="image" content={externalImage} />}
 
       {/* open graph */}
       <meta property="og:site_name" content="The Wired" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      {localImage && <meta property="og:image" content={localImage} />}
+      {externalImage && <meta property="og:image" content={externalImage} />}
 
       {/* twitter */}
       <meta name="twitter:card" content={card} />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      {localImage && <meta name="twitter:image" content={localImage} />}
+      {externalImage && <meta name="twitter:image" content={externalImage} />}
       <meta name="twitter:site" content="@TheWiredXR" />
 
       {/* apple */}

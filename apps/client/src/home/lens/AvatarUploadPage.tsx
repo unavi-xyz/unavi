@@ -3,15 +3,11 @@ import { useRouter } from "next/router";
 import { useContext, useRef, useState } from "react";
 
 import { IpfsContext } from "@wired-labs/ipfs";
-import {
-  AppId,
-  LensContext,
-  Metadata,
-  MetadataVersions,
-  useCreatePost,
-} from "@wired-labs/lens";
-import { useProfileByHandle } from "@wired-labs/lens";
+import { AppId, Metadata, MetadataVersions } from "@wired-labs/lens";
 
+import { useCreatePost } from "../../lib/lens/hooks/useCreatePost";
+import { useLens } from "../../lib/lens/hooks/useLens";
+import { useProfileByHandle } from "../../lib/lens/hooks/useProfileByHandle";
 import Button from "../../ui/base/Button";
 import Card from "../../ui/base/Card";
 import FileUpload from "../../ui/base/FileUpload";
@@ -29,7 +25,7 @@ export default function AvatarUploadPage() {
   const [loading, setLoading] = useState(false);
 
   const { uploadFileToIpfs } = useContext(IpfsContext);
-  const { handle } = useContext(LensContext);
+  const { handle } = useLens();
 
   const router = useRouter();
   const profile = useProfileByHandle(handle);

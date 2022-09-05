@@ -1,20 +1,20 @@
 import { nanoid } from "nanoid";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useContext, useState } from "react";
+import { useState } from "react";
 
 import { useFetchData } from "@wired-labs/ipfs";
 import {
   AttributeData,
-  LensContext,
   MetadataVersions,
   ProfileMetadata,
-  trimHandle,
-  useSetProfileMetadata,
 } from "@wired-labs/lens";
-import { useProfileByHandle } from "@wired-labs/lens";
 
-import { PublicationProps } from "../../../lib/lens/getPublicationProps";
+import { useLens } from "../../../lib/lens/hooks/useLens";
+import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
+import { useSetProfileMetadata } from "../../../lib/lens/hooks/useSetProfileMetadata";
+import { PublicationProps } from "../../../lib/lens/utils/getPublicationProps";
+import { trimHandle } from "../../../lib/lens/utils/trimHandle";
 import MetaTags from "../../../ui/MetaTags";
 import Button from "../../../ui/base/Button";
 import NavigationTab from "../../../ui/base/NavigationTab";
@@ -33,7 +33,7 @@ export default function AvatarLayout({
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { handle } = useContext(LensContext);
+  const { handle } = useLens();
   const profile = useProfileByHandle(handle);
   const avatarUrl = useFetchData(publication?.metadata.content);
   const setProfileMetadata = useSetProfileMetadata(profile?.id);

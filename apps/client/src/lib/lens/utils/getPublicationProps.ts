@@ -1,14 +1,14 @@
-import { AppId, getMediaImageUri } from "@wired-labs/lens";
 import {
+  AppId,
   GetPublicationDocument,
   GetPublicationQuery,
   GetPublicationQueryVariables,
   Publication,
 } from "@wired-labs/lens";
 
-import { PageMetadata } from "../../types";
-import { parseUri } from "../../utils/parseUri";
-import { lensClient } from "./client";
+import { PageMetadata } from "../../../types";
+import { lensClient } from "../client";
+import { getMediaURL } from "./getMediaURL";
 
 export interface PublicationProps {
   metadata: PageMetadata;
@@ -44,9 +44,7 @@ export async function getPublicationProps(
       ? `${publicationType} by @${publication?.profile.handle}`
       : "";
 
-  const image = publication
-    ? parseUri(getMediaImageUri(publication.metadata.media[0]))
-    : null;
+  const image = publication ? getMediaURL(publication.metadata.media[0]) : null;
 
   const metadata: PageMetadata = {
     title,

@@ -2,8 +2,8 @@ import { NextPageContext } from "next";
 import Link from "next/link";
 import { useState } from "react";
 
-import { AppId } from "@wired-labs/lens";
 import {
+  AppId,
   ExplorePublicationsDocument,
   ExplorePublicationsQuery,
   ExplorePublicationsQueryVariables,

@@ -1,13 +1,15 @@
 import { useRouter } from "next/router";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { LensContext, useValidateHandle } from "@wired-labs/lens";
 import {
   CreateProfileDocument,
   CreateProfileMutation,
   CreateProfileMutationVariables,
 } from "@wired-labs/lens";
 
+import { lensClient } from "../../../lib/lens/client";
+import { useLens } from "../../../lib/lens/hooks/useLens";
+import { useValidateHandle } from "../../../lib/lens/hooks/useValidateHandle";
 import Button from "../../../ui/base/Button";
 import ErrorBox from "../../../ui/base/ErrorBox";
 import TextField from "../../../ui/base/TextField";
@@ -22,11 +24,7 @@ export default function CreateProfilePage() {
 
   const { valid, error: validateError, fetching } = useValidateHandle(handle);
 
-  const {
-    setHandle: switchProfile,
-    client,
-    authenticate,
-  } = useContext(LensContext);
+  const { switchProfile } = useLens();
 
   const loading = fetching || formHandle !== handle || loadingSubmit;
   const disabled = !valid;
@@ -58,10 +56,8 @@ export default function CreateProfilePage() {
     setLoadingSubmit(true);
 
     try {
-      await authenticate();
-
       //create the profile
-      const { error } = await client
+      const { error } = await lensClient
         .mutation<CreateProfileMutation, CreateProfileMutationVariables>(
           CreateProfileDocument,
           {

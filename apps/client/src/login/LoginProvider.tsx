@@ -1,15 +1,12 @@
 import { signOut, useSession } from "next-auth/react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 
-import {
-  LensContext,
-  SessionStorage,
-  trimHandle,
-  useProfilesByAddress,
-} from "@wired-labs/lens";
-
+import { SessionStorage } from "../constants";
 import CreateProfilePage from "../home/layouts/NavbarLayout/CreateProfilePage";
+import { useLens } from "../lib/lens/hooks/useLens";
+import { useProfilesByAddress } from "../lib/lens/hooks/useProfilesByAddress";
+import { trimHandle } from "../lib/lens/utils/trimHandle";
 import Dialog from "../ui/base/Dialog";
 import { wagmiClient } from "./wagmi";
 
@@ -25,7 +22,7 @@ export default function LoginProvider({ children }: Props) {
   const [open, setOpen] = useState(false);
   const [disableAutoConnect, setDisableAutoconnect] = useState(false);
 
-  const { logout: lensLogout, setHandle } = useContext(LensContext);
+  const { logout: lensLogout, switchProfile } = useLens();
   const { address, isConnected, isDisconnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { profiles, fetching } = useProfilesByAddress(address);
@@ -65,7 +62,7 @@ export default function LoginProvider({ children }: Props) {
     );
 
     if (autoLogin && hasAutoLogin) {
-      setHandle(autoLogin);
+      switchProfile(autoLogin);
       return;
     }
 
@@ -81,8 +78,8 @@ export default function LoginProvider({ children }: Props) {
     const firstHandle = profiles[0].handle;
     const newHandle = trimHandle(defaultProfile?.handle ?? firstHandle);
 
-    setHandle(newHandle);
-  }, [address, fetching, profiles, setHandle, sessionStatus]);
+    switchProfile(newHandle);
+  }, [address, fetching, profiles, switchProfile, sessionStatus]);
 
   async function logout() {
     // Sign out of next-auth

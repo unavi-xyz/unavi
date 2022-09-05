@@ -1,17 +1,15 @@
 import dynamic from "next/dynamic";
 import Image from "next/future/image";
 import Link from "next/link";
-import { useContext } from "react";
 
-import { LensContext } from "@wired-labs/lens";
-
+import { useLens } from "../../../lib/lens/hooks/useLens";
 import NavbarTab from "./NavbarTab";
 
 const ProfileButton = dynamic(() => import("./ProfileButton"));
 const LoginButton = dynamic(() => import("./LoginButton"));
 
 export default function Navbar() {
-  const { handle } = useContext(LensContext);
+  const { handle } = useLens();
 
   return (
     <>

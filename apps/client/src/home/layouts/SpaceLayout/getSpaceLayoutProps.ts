@@ -2,7 +2,7 @@ import { DEFAULT_HOST } from "../../../../pages/app/[id]";
 import {
   PublicationProps,
   getPublicationProps,
-} from "../../../lib/lens/getPublicationProps";
+} from "../../../lib/lens/utils/getPublicationProps";
 
 const HTTP = process.env.NODE_ENV === "production" ? "https" : "http";
 

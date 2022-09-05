@@ -4,31 +4,26 @@ import { useSignTypedData, useSigner } from "wagmi";
 
 import { IpfsContext } from "@wired-labs/ipfs";
 import {
-  ContractAddress,
-  LensContext,
+  LensPeriphery__factory,
   ProfileMetadata,
-  pollUntilIndexed,
-  removeTypename,
+  useCreateSetProfileMetadataTypedDataMutation,
 } from "@wired-labs/lens";
 
-import { useCreateSetProfileMetadataTypedDataMutation } from "../..";
-import { LensPeriphery__factory } from "../../contracts";
+import { ContractAddress } from "../constants";
+import { pollUntilIndexed } from "../utils/pollUntilIndexed";
+import { removeTypename } from "../utils/removeTypename";
 
 export function useSetProfileMetadata(profileId: string) {
   const [, createTypedData] = useCreateSetProfileMetadataTypedDataMutation();
 
   const { uploadStringToIpfs } = useContext(IpfsContext);
-  const { client, authenticate } = useContext(LensContext);
-  const { data: signer } = useSigner();
   const { signTypedDataAsync } = useSignTypedData();
+  const { data: signer } = useSigner();
 
   async function setProfileMetadata(metadata: ProfileMetadata) {
     if (!signer) throw new Error("No signer");
 
     try {
-      //authenticate
-      await authenticate();
-
       //upload metdata to ipfs
       const url = await uploadStringToIpfs(JSON.stringify(metadata));
 
@@ -78,7 +73,7 @@ export function useSetProfileMetadata(profileId: string) {
       await tx.wait();
 
       //wait for indexing
-      await pollUntilIndexed(client, tx.hash);
+      await pollUntilIndexed(tx.hash);
     } catch (error) {
       console.error(error);
     }

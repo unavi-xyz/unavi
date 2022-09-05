@@ -7,17 +7,14 @@ import {
 } from "react-icons/md";
 import { useAccount } from "wagmi";
 
-import {
-  LensContext,
-  trimHandle,
-  useProfilesByAddress,
-} from "@wired-labs/lens";
-
+import { useLens } from "../../../lib/lens/hooks/useLens";
+import { useProfilesByAddress } from "../../../lib/lens/hooks/useProfilesByAddress";
+import { trimHandle } from "../../../lib/lens/utils/trimHandle";
 import { LoginContext } from "../../../login/LoginProvider";
 import ProfileMenuButton from "./ProfileMenuButton";
 
 export default function ProfileMenu() {
-  const { handle, setHandle } = useContext(LensContext);
+  const { handle, switchProfile } = useLens();
   const { address } = useAccount();
   const { logout } = useContext(LoginContext);
 
@@ -76,7 +73,7 @@ export default function ProfileMenu() {
               return (
                 <button
                   key={profile.id}
-                  onClick={() => setHandle(profileHandle)}
+                  onClick={() => switchProfile(profileHandle)}
                 >
                   <ProfileMenuButton>@{profileHandle}</ProfileMenuButton>
                 </button>

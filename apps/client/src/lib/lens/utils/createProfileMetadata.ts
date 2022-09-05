@@ -3,10 +3,9 @@ import { nanoid } from "nanoid";
 import {
   AttributeData,
   MetadataVersions,
+  Profile,
   ProfileMetadata,
 } from "@wired-labs/lens";
-
-import { Profile } from "../..";
 
 export function createProfileMetadata(profile: Profile) {
   const cover_picture =

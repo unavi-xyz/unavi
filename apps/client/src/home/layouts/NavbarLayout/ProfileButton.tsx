@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useAccount } from "wagmi";
 
-import { useProfilesByAddress } from "@wired-labs/lens";
-
+import { useProfilesByAddress } from "../../../lib/lens/hooks/useProfilesByAddress";
 import DropdownMenu from "../../../ui/base/DropdownMenu";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
 import ProfileMenu from "./ProfileMenu";

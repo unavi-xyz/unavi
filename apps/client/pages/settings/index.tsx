@@ -2,16 +2,14 @@ import Image from "next/future/image";
 import { useContext, useEffect, useRef, useState } from "react";
 
 import { IpfsContext } from "@wired-labs/ipfs";
-import {
-  LensContext,
-  createProfileMetadata,
-  useMediaImage,
-  useProfileByHandle,
-  useSetProfileImage,
-  useSetProfileMetadata,
-} from "@wired-labs/lens";
 
 import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
+import { useLens } from "../../src/lib/lens/hooks/useLens";
+import { useProfileByHandle } from "../../src/lib/lens/hooks/useProfileByHandle";
+import { useSetProfileImage } from "../../src/lib/lens/hooks/useSetProfileImage";
+import { useSetProfileMetadata } from "../../src/lib/lens/hooks/useSetProfileMetadata";
+import { createProfileMetadata } from "../../src/lib/lens/utils/createProfileMetadata";
+import { getMediaURL } from "../../src/lib/lens/utils/getMediaURL";
 import MetaTags from "../../src/ui/MetaTags";
 import Button from "../../src/ui/base/Button";
 import FileUpload from "../../src/ui/base/FileUpload";
@@ -29,18 +27,18 @@ export default function Settings() {
 
   const [pfpRawFile, setPfpRawFile] = useState<File>();
   const [pfpFile, setPfpFile] = useState<File>();
-  const [pfpUrl, setPfpUrl] = useState<string>();
+  const [pfpUrl, setPfpUrl] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File>();
-  const [coverUrl, setCoverUrl] = useState<string>();
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingProfilePicture, setLoadingProfilePicture] = useState(false);
 
   const { uploadFileToIpfs } = useContext(IpfsContext);
-  const { handle } = useContext(LensContext);
+  const { handle } = useLens();
 
   const profile = useProfileByHandle(handle);
-  const pfpMediaUrl = useMediaImage(profile?.picture);
-  const coverMediaUrl = useMediaImage(profile?.coverPicture);
+  const pfpMediaUrl = getMediaURL(profile?.picture);
+  const coverMediaUrl = getMediaURL(profile?.coverPicture);
 
   const setProfileMetadata = useSetProfileMetadata(profile?.id);
   const setProfileImage = useSetProfileImage(profile?.id);

@@ -1,29 +1,20 @@
 import { utils } from "ethers";
-import { useContext } from "react";
 import { useSignTypedData, useSigner } from "wagmi";
 
-import {
-  ContractAddress,
-  LensContext,
-  pollUntilIndexed,
-  removeTypename,
-} from "@wired-labs/lens";
+import { useCreateSetDefaultProfileTypedDataMutation } from "@wired-labs/lens";
+import { LensHub__factory } from "@wired-labs/lens";
 
-import { useCreateSetDefaultProfileTypedDataMutation } from "../..";
-import { LensHub__factory } from "../../contracts";
+import { ContractAddress } from "../constants";
+import { pollUntilIndexed } from "../utils/pollUntilIndexed";
+import { removeTypename } from "../utils/removeTypename";
 
 export function useSetDefaultProfile() {
   const [, createTypedData] = useCreateSetDefaultProfileTypedDataMutation();
-
-  const { client, authenticate } = useContext(LensContext);
   const { data: signer } = useSigner();
   const { signTypedDataAsync } = useSignTypedData();
 
   async function setDefaultProfile(profileId: string) {
     if (!signer) throw new Error("No signer");
-
-    //authenticate
-    await authenticate();
 
     //get typed data
     const { data, error } = await createTypedData({
@@ -67,7 +58,7 @@ export function useSetDefaultProfile() {
     await tx.wait();
 
     //wait for indexing
-    await pollUntilIndexed(client, tx.hash);
+    await pollUntilIndexed(tx.hash);
   }
 
   return setDefaultProfile;

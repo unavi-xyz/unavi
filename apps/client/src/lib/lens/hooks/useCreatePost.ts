@@ -3,31 +3,22 @@ import { useContext } from "react";
 import { useSignTypedData, useSigner } from "wagmi";
 
 import { IpfsContext } from "@wired-labs/ipfs";
-import {
-  ContractAddress,
-  LensContext,
-  Metadata,
-  pollUntilIndexed,
-  removeTypename,
-} from "@wired-labs/lens";
+import { Metadata } from "@wired-labs/lens";
+import { useCreatePostTypedDataMutation } from "@wired-labs/lens";
+import { LensHub__factory } from "@wired-labs/lens/contracts";
 
-import { useCreatePostTypedDataMutation } from "../..";
-import { LensHub__factory } from "../../contracts";
+import { ContractAddress } from "../constants";
+import { pollUntilIndexed } from "../utils/pollUntilIndexed";
+import { removeTypename } from "../utils/removeTypename";
 
 export function useCreatePost(profileId: string) {
   const [, createTypedData] = useCreatePostTypedDataMutation();
-
   const { uploadStringToIpfs } = useContext(IpfsContext);
-  const { client, authenticate } = useContext(LensContext);
-
   const { signTypedDataAsync } = useSignTypedData();
   const { data: signer } = useSigner();
 
   async function createPost(metadata: Metadata) {
     if (!signer) throw new Error("No signer");
-
-    //authenticate
-    await authenticate();
 
     //upload metdata to ipfs
     const contentURI = await uploadStringToIpfs(JSON.stringify(metadata));
@@ -87,7 +78,7 @@ export function useCreatePost(profileId: string) {
     await tx.wait();
 
     //wait for indexing
-    await pollUntilIndexed(client, tx.hash);
+    await pollUntilIndexed(tx.hash);
   }
 
   return createPost;

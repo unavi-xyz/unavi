@@ -1,8 +1,8 @@
 import { NextPageContext } from "next";
 import Link from "next/link";
 
-import { AppId, HIDDEN_MESSAGE, getMediaImageSSR } from "@wired-labs/lens";
 import {
+  AppId,
   GetPublicationsDocument,
   GetPublicationsQuery,
   GetPublicationsQueryVariables,
@@ -19,6 +19,8 @@ import {
 import AvatarCard from "../../../src/home/lens/AvatarCard";
 import SpaceCard from "../../../src/home/lens/SpaceCard";
 import { lensClient } from "../../../src/lib/lens/client";
+import { HIDDEN_MESSAGE } from "../../../src/lib/lens/constants";
+import { getMediaURL } from "../../../src/lib/lens/utils/getMediaURL";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
@@ -50,7 +52,7 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
   const publications = publicationsQuery.data?.publications.items.map(
     (item) => {
       const postItem = item as Post;
-      postItem.metadata.image = getMediaImageSSR(postItem.metadata.media[0]);
+      postItem.metadata.image = getMediaURL(postItem.metadata.media[0]);
       return postItem;
     }
   );

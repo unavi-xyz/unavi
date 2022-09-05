@@ -1,9 +1,4 @@
 import {
-  HANDLE_ENDING,
-  getMediaImageSSR,
-  getMediaImageUri,
-} from "@wired-labs/lens";
-import {
   GetProfileDocument,
   GetProfileQuery,
   GetProfileQueryVariables,
@@ -11,8 +6,9 @@ import {
 } from "@wired-labs/lens";
 
 import { lensClient } from "../../../lib/lens/client";
+import { HANDLE_ENDING } from "../../../lib/lens/constants";
+import { getMediaURL } from "../../../lib/lens/utils/getMediaURL";
 import { PageMetadata } from "../../../types";
-import { parseUri } from "../../../utils/parseUri";
 
 export interface ProfileLayoutProps {
   handle: string;
@@ -35,18 +31,16 @@ export async function getProfileLayoutProps(
 
   const profile = profileQuery.data?.profiles.items[0] as Profile;
   const title = profile?.name ? `${profile?.name} (@${handle})` : `@${handle}`;
+  const profileImage = profile?.picture ? getMediaURL(profile.picture) : null;
+  const coverImage = profile?.coverPicture
+    ? getMediaURL(profile.coverPicture)
+    : null;
+
   const metadata: PageMetadata = {
     title,
     description: profile?.bio ?? "",
-    image: getMediaImageSSR(profile?.picture) ?? "",
+    image: profileImage,
   };
-
-  const coverImage = profile?.coverPicture
-    ? parseUri(getMediaImageUri(profile.coverPicture))
-    : null;
-  const profileImage = profile?.picture
-    ? parseUri(getMediaImageUri(profile.picture))
-    : null;
 
   return { handle, metadata, profile, coverImage, profileImage };
 }

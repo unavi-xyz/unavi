@@ -3,9 +3,10 @@ import {
   createAuthenticationAdapter,
 } from "@rainbow-me/rainbowkit";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useEffect, useMemo } from "react";
 import { useAccount } from "wagmi";
 
+import { useLens } from "../lib/lens/hooks/useLens";
 import { useChallenge } from "./useChallenge";
 
 interface Props {
@@ -14,9 +15,16 @@ interface Props {
 }
 
 export default function RainbowAuthProvider({ children, enabled }: Props) {
-  const { status } = useSession();
+  const { status, data: session } = useSession();
   const { address } = useAccount();
   const challenge = useChallenge(address);
+  const { setAccessToken } = useLens();
+
+  useEffect(() => {
+    if (status === "authenticated" && typeof session.accessToken === "string") {
+      setAccessToken(session.accessToken);
+    }
+  }, [status, session, setAccessToken]);
 
   const adapter = useMemo(
     () =>

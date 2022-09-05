@@ -19,13 +19,13 @@ export default function ClientSideProviders({ session, children }: Props) {
   return (
     <WagmiConfig client={wagmiClient}>
       <SessionProvider session={session}>
-        <RainbowAuthProvider>
-          <RainbowKitProvider theme={theme} chains={chains}>
-            <LensProvider>
+        <LensProvider>
+          <RainbowAuthProvider>
+            <RainbowKitProvider theme={theme} chains={chains}>
               <LoginProvider>{children}</LoginProvider>
-            </LensProvider>
-          </RainbowKitProvider>
-        </RainbowAuthProvider>
+            </RainbowKitProvider>
+          </RainbowAuthProvider>
+        </LensProvider>
       </SessionProvider>
     </WagmiConfig>
   );

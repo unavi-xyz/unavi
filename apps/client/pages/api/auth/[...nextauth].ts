@@ -37,7 +37,7 @@ export default function auth(req: NextApiRequest, res: NextApiResponse) {
             const verify = await verifyJWT(accessToken);
             if (!verify) return null;
 
-            return { id: address, name: address };
+            return { id: address, accessToken, refreshToken };
           } catch {
             return null;
           }
@@ -46,6 +46,23 @@ export default function auth(req: NextApiRequest, res: NextApiResponse) {
     ],
     session: { strategy: "jwt" },
     secret: process.env.NEXT_AUTH_SECRET,
+    callbacks: {
+      async jwt({ token, user }) {
+        if (user) {
+          token.accessToken = user.accessToken;
+          token.refreshToken = user.refreshToken;
+          user.accessToken = undefined;
+          user.refreshToken = undefined;
+        }
+        return token;
+      },
+      async session({ session, token }) {
+        session.address = token.sub;
+        session.accessToken = token.accessToken;
+        session.user = { name: token.sub };
+        return session;
+      },
+    },
   };
 
   return NextAuth(req, res, config);

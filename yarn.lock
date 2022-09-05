@@ -4524,10 +4524,10 @@
     javascript-natural-sort "0.7.1"
     lodash "4.17.21"
 
-"@trpc/client@^9.27.0":
-  version "9.27.0"
-  resolved "https://registry.yarnpkg.com/@trpc/client/-/client-9.27.0.tgz#6fb2af2df051dea834173e5b9f12e74c65662af2"
-  integrity sha512-Yh+oDBiANArjDx69bSnXqIK36wjlRm8iGLQkMmrvTTFwVRt3hgfreCzjyj4PgNEd4SNX4iGrhLLPIDHeH+qlJA==
+"@trpc/client@^9.27.2":
+  version "9.27.2"
+  resolved "https://registry.yarnpkg.com/@trpc/client/-/client-9.27.2.tgz#1b4ae3c12c5666e81322fddd787d48b0901b75a1"
+  integrity sha512-rpsgJJMalOtki5VjcyheL0zdft23mDnoBHn5cJMZLf3ssymCZq2crbvCiUmCRU289lYHrqffaaZ+9PqCSsVKfg==
   dependencies:
     "@babel/runtime" "^7.9.0"
 
@@ -4546,10 +4546,10 @@
   dependencies:
     "@babel/runtime" "^7.9.0"
 
-"@trpc/server@^9.27.0":
-  version "9.27.0"
-  resolved "https://registry.yarnpkg.com/@trpc/server/-/server-9.27.0.tgz#08aef2d0b025442e93f0c6b1421ddd7e81ae0eb5"
-  integrity sha512-5A/d5U9Y8L6+4q46a9gLackTyMRUFyNubo6JlIpSxtea/wW8teR6Azux4gg/uKIM3+6+lgg/HxQHWvwkG0VOSg==
+"@trpc/server@^9.27.2":
+  version "9.27.2"
+  resolved "https://registry.yarnpkg.com/@trpc/server/-/server-9.27.2.tgz#4600a471677fc0f0560b73f32e0fc7f199146531"
+  integrity sha512-LcXCC004SYWVdHqjSZVpoKkcM0tJNwWtvmjmE2Jir36F0siY1CCbr7g2vz6LcOtA/q7Jj5G2/x1qMWzlPq/Bwg==
 
 "@trysound/sax@0.2.0":
   version "0.2.0"

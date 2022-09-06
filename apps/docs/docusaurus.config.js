@@ -44,8 +44,8 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       metadata: [
-        { property: "og:image", content: "img/Logo-Maskable.png" },
-        { name: "twitter:image", content: "img/Logo-Maskable.png" },
+        { property: "og:image", content: "/img/Logo-Maskable.png" },
+        { name: "twitter:image", content: "/img/Logo-Maskable.png" },
       ],
 
       announcementBar: {

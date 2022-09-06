@@ -35,8 +35,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 
 - [engine](packages/engine): a 3D game engine
 - [eslint-config-custom](packages/eslint-config-custom): a custom eslint config used throughout the repo
-- [ipfs](packages/ipfs): helpers for interacting with IPFS
-- [lens](packages/lens): helpers for interacting with Lens
+- [lens](packages/lens): queries and types for interacting with Lens
 - [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
 
 ### Utilities

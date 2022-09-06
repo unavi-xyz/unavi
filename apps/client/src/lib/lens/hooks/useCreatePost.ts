@@ -1,19 +1,17 @@
 import { utils } from "ethers";
-import { useContext } from "react";
 import { useSignTypedData, useSigner } from "wagmi";
 
-import { IpfsContext } from "@wired-labs/ipfs";
 import { Metadata } from "@wired-labs/lens";
 import { useCreatePostTypedDataMutation } from "@wired-labs/lens";
 import { LensHub__factory } from "@wired-labs/lens/contracts";
 
+import { uploadStringToIpfs } from "../../ipfs/uploadStringToIpfs";
 import { ContractAddress } from "../constants";
 import { pollUntilIndexed } from "../utils/pollUntilIndexed";
 import { removeTypename } from "../utils/removeTypename";
 
 export function useCreatePost(profileId: string) {
   const [, createTypedData] = useCreatePostTypedDataMutation();
-  const { uploadStringToIpfs } = useContext(IpfsContext);
   const { signTypedDataAsync } = useSignTypedData();
   const { data: signer } = useSigner();
 

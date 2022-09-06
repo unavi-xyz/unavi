@@ -3,13 +3,13 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
-import { useFetchData } from "@wired-labs/ipfs";
 import {
   AttributeData,
   MetadataVersions,
   ProfileMetadata,
 } from "@wired-labs/lens";
 
+import { useFetchData } from "../../../lib/ipfs/useFetchData";
 import { useLens } from "../../../lib/lens/hooks/useLens";
 import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
 import { useSetProfileMetadata } from "../../../lib/lens/hooks/useSetProfileMetadata";

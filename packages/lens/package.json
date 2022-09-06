@@ -10,7 +10,6 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@wired-labs/ipfs": "*",
     "graphql": "^16.5.0",
     "urql": "^2.2.3",
     "wagmi": "^0.6.3"

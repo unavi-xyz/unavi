@@ -4,8 +4,6 @@ import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useContext, useRef, useState } from "react";
 
-import { IpfsContext } from "@wired-labs/ipfs";
-
 import { useStudioStore } from "../../../studio/store";
 import Button from "../../../ui/base/Button";
 import FileUpload from "../../../ui/base/FileUpload";

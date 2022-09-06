@@ -21,11 +21,9 @@ export function useLoad() {
     cacheTime: 0,
   });
 
-  const engine = useStudioStore((state) => state.engine);
-
   // Load the project on query fetch
   useEffect(() => {
-    if (!engine || !project || !world) return;
+    if (!project) return;
 
     // Set name and description
     useStudioStore.setState({
@@ -38,10 +36,15 @@ export function useLoad() {
       const studioState = JSON.parse(project.studioState);
       useStudioStore.setState(studioState);
     }
+  }, [project]);
+
+  // Load world on query fetch
+  useEffect(() => {
+    if (!world) return;
 
     // Load the world
     Object.values(world).forEach((entity) => {
       addEntity(entity as Entity);
     });
-  }, [engine, project, world]);
+  }, [world]);
 }

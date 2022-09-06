@@ -12,12 +12,19 @@ interface Props {
 }
 
 export default function SwitchProfilePage({ onClose }: Props) {
-  const { switchProfile } = useLens();
+  const { handle, switchProfile } = useLens();
   const { address } = useAccount();
   const { profiles } = useProfilesByAddress(address);
   const [selected, setSelected] = useState<string>();
   const handles =
     profiles?.map((profile) => `@${trimHandle(profile.handle)}`) ?? [];
+
+  // Put the current handle first
+  const sortedHandles = handles.sort((a, b) => {
+    if (a === `@${handle}`) return -1;
+    if (b === `@${handle}`) return 1;
+    return 0;
+  });
 
   function handleSelect() {
     if (selected) {
@@ -35,7 +42,7 @@ export default function SwitchProfilePage({ onClose }: Props) {
 
       <Select
         title="Select profile"
-        options={handles}
+        options={sortedHandles}
         value={selected}
         onChange={(e: ChangeEvent<HTMLSelectElement>) =>
           setSelected(e.target.value)

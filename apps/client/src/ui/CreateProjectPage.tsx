@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useRef } from "react";
 
-import { trpc } from "../login/trpc";
+import { trpc } from "../auth/trpc";
 import Button from "./base/Button";
 import TextField from "./base/TextField";
 

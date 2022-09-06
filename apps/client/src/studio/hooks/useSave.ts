@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 
-import { trpc } from "../../login/trpc";
+import { trpc } from "../../auth/trpc";
 import { useStudioStore } from "../store";
 import { getStudioState } from "../utils/getStudioState";
 

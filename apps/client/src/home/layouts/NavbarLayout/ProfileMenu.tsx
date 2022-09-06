@@ -7,10 +7,10 @@ import {
 } from "react-icons/md";
 import { useAccount } from "wagmi";
 
+import { LoginContext } from "../../../auth/LoginProvider";
 import { useLens } from "../../../lib/lens/hooks/useLens";
 import { useProfilesByAddress } from "../../../lib/lens/hooks/useProfilesByAddress";
 import { trimHandle } from "../../../lib/lens/utils/trimHandle";
-import { LoginContext } from "../../../login/LoginProvider";
 import ProfileMenuButton from "./ProfileMenuButton";
 
 export default function ProfileMenu() {

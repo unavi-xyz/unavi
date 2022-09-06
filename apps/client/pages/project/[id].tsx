@@ -2,8 +2,8 @@ import Image from "next/future/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
+import { trpc } from "../../src/auth/trpc";
 import { getNavbarLayout } from "../../src/home/layouts/NavbarLayout/NavbarLayout";
-import { trpc } from "../../src/login/trpc";
 import MetaTags from "../../src/ui/MetaTags";
 import Button from "../../src/ui/base/Button";
 

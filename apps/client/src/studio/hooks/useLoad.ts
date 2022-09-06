@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import { Entity } from "@wired-labs/engine";
 
-import { trpc } from "../../login/trpc";
+import { trpc } from "../../auth/trpc";
 import { addEntity } from "../actions/AddEntityAction";
 import { useStudioStore } from "../store";
 

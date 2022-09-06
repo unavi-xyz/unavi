@@ -158,7 +158,7 @@ export default function Settings() {
               />
 
               <div className="space-y-4">
-                <div className="text-lg font-bold">Cover</div>
+                <div className="text-lg font-bold">Cover Image</div>
 
                 {coverUrl && (
                   <div className="w-full h-40">
@@ -175,7 +175,7 @@ export default function Settings() {
                 )}
 
                 <FileUpload
-                  title="Cover Picture"
+                  title="Cover Image"
                   accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];

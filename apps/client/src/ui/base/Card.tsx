@@ -19,8 +19,8 @@ export default function Card({
 
   return (
     <div
-      className={`group p-3 w-full h-full overflow-hidden rounded-2xl hover:cursor-pointer
-                  flex flex-col hover:ring-2 hover:ring-outline`}
+      className={`group p-2 w-full h-full overflow-hidden rounded-2xl hover:cursor-pointer
+                  flex flex-col hover:ring-2 hover:ring-black`}
     >
       <div
         className={`h-full overflow-hidden rounded-xl ${aspectCss} bg-primaryContainer`}
@@ -40,7 +40,7 @@ export default function Card({
         </div>
       </div>
 
-      <div className="space-y-2 pt-2">
+      <div className="space-y-2 py-1">
         {text && <div className="px-1 text-xl overflow-hidden">{text}</div>}
         {subtext && (
           <div className="px-1 text-lg overflow-hidden">{subtext}</div>

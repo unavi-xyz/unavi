@@ -1,38 +1,46 @@
 import { useState } from "react";
-import { useAccount } from "wagmi";
 
-import { useProfilesByAddress } from "../../../lib/lens/hooks/useProfilesByAddress";
+import Dialog from "../../../ui/base/Dialog";
 import DropdownMenu from "../../../ui/base/DropdownMenu";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
 import ProfileMenu from "./ProfileMenu";
+import SwitchProfilePage from "./SwitchProfilePage";
 
 export default function ProfileButton() {
-  const [open, setOpen] = useState(false);
-
-  //this is a hack to fetch the profiles before the dropdown opens
-  const { address } = useAccount();
-  useProfilesByAddress(address);
+  const [openMenu, setOpenMenu] = useState(false);
+  const [openSwitchProfile, setOpenSwitchProfile] = useState(false);
 
   return (
-    <div className="flex items-center space-x-2">
-      <div className="relative">
-        <div
-          onClick={() => setOpen((prev) => !prev)}
-          className="w-9 h-9 rounded-full cursor-pointer"
-        >
-          <ViewerProfilePicture circle draggable={false} />
-        </div>
+    <>
+      <Dialog
+        open={openSwitchProfile}
+        onClose={() => setOpenSwitchProfile(false)}
+      >
+        <SwitchProfilePage onClose={() => setOpenSwitchProfile(false)} />
+      </Dialog>
 
-        <div className="mt-1">
-          <DropdownMenu
-            placement="right"
-            open={open}
-            onClose={() => setOpen(false)}
+      <div className="flex items-center space-x-2">
+        <div className="relative">
+          <div
+            onClick={() => setOpenMenu((prev) => !prev)}
+            className="w-9 h-9 rounded-full cursor-pointer"
           >
-            <ProfileMenu />
-          </DropdownMenu>
+            <ViewerProfilePicture circle draggable={false} />
+          </div>
+
+          <div className="mt-1">
+            <DropdownMenu
+              placement="right"
+              open={openMenu}
+              onClose={() => setOpenMenu(false)}
+            >
+              <ProfileMenu
+                openSwitchProfile={() => setOpenSwitchProfile(true)}
+              />
+            </DropdownMenu>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

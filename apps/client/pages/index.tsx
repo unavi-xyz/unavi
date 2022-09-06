@@ -11,6 +11,7 @@ import {
   TWITTER_URL,
 } from "../src/constants";
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
+import LandingInfoBlock from "../src/ui/LandingInfoBlock";
 import MetaTags from "../src/ui/MetaTags";
 import Button from "../src/ui/base/Button";
 
@@ -34,7 +35,7 @@ export default function Index() {
                   <Link href="/explore" passHref>
                     <div>
                       <Button variant="filled" squared="large" fullWidth>
-                        <div className="px-2 py-1">Play Now</div>
+                        <div className="px-1.5 py-0.5">Play Now</div>
                       </Button>
                     </div>
                   </Link>
@@ -43,7 +44,7 @@ export default function Index() {
                 <div className="w-full md:w-fit">
                   <Button variant="text" squared="large" fullWidth>
                     <a href={DOCS_URL} target="_blank" rel="noreferrer">
-                      <div className="px-2 py-1">Learn More</div>
+                      <div className="px-1.5 py-0.5">Learn More</div>
                     </a>
                   </Button>
                 </div>
@@ -69,129 +70,35 @@ export default function Index() {
             />
           </div>
 
-          <div className="h-screen snap-center flex items-center">
-            <div className="md:w-1/2 md:h-1/2 md:p-8 md:mt-8">
-              <div className="relative w-full h-full">
-                <Image
-                  src="/images/Create.png"
-                  fill
-                  sizes="24vw"
-                  alt="Wired-chan"
-                  className="select-none object-contain"
-                />
-              </div>
-            </div>
+          <LandingInfoBlock
+            title="Create"
+            subtitle="Leave your mark on cyberspace"
+            body="Whether you're looking to build a digital home, start a clothing brand, or just scratch that creative itch - the Wired has you covered."
+            image="/images/Create.png"
+            imageSide="left"
+            buttonText="Start Creating"
+            buttonLink="/create"
+          />
 
-            <div className="w-full space-y-2">
-              <div
-                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
-                         text-onPrimaryContainer bg-primaryContainer"
-              >
-                Create
-              </div>
+          <LandingInfoBlock
+            title="Explore"
+            subtitle="Discover new experiences"
+            body="Go rock climbing on Ganymede, hit an underground music festival, watch the sunset on Tatooine with a group of friends - who knows what you'll find."
+            image="/images/Explore.png"
+            imageSide="right"
+            buttonText="Start Exploring"
+            buttonLink="/explore"
+          />
 
-              <div className="-ml-1 text-5xl">
-                Leave your mark on cyberspace
-              </div>
-
-              <div className="text-xl text-outline">
-                Whether you{"'"}re looking to build a digital home, start a
-                clothing brand, or just scratch that creative itch - The Wired
-                has you covered.
-              </div>
-
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
-                <div className="w-fit">
-                  <Button variant="filled" squared="large">
-                    <Link href="/create" passHref>
-                      <div className="px-2 py-1">Start Creating</div>
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="h-screen snap-center flex items-center">
-            <div className="w-full space-y-2">
-              <div
-                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
-                         text-onPrimaryContainer bg-primaryContainer"
-              >
-                Explore
-              </div>
-
-              <div className="-ml-1 text-5xl">Discover new experiences</div>
-
-              <div className="text-xl text-outline">
-                Go rock climbing on Ganymede, hit an underground music festival,
-                watch the sunset on Tatooine with a group of friends - who knows
-                what you
-                {"'"}ll find.
-              </div>
-
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
-                <Button variant="filled" squared="large">
-                  <Link href="/explore" passHref>
-                    <div className="px-2 py-1">Start Exploring</div>
-                  </Link>
-                </Button>
-              </div>
-            </div>
-
-            <div className="md:w-2/3 md:h-1/2 md:p-8 md:mt-8">
-              <div className="relative w-full h-full">
-                <Image
-                  src="/images/Explore.png"
-                  fill
-                  sizes="24vw"
-                  alt="Wired-chan"
-                  className="select-none object-contain"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="h-screen snap-center flex items-center">
-            <div className="md:w-1/2 md:h-1/2 md:p-8 md:mt-8">
-              <div className="relative w-full h-full">
-                <Image
-                  src="/images/Open.png"
-                  fill
-                  sizes="24vw"
-                  alt="Wired-chan"
-                  className="select-none object-contain"
-                />
-              </div>
-            </div>
-
-            <div className="w-full space-y-2">
-              <div
-                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
-                         text-onPrimaryContainer bg-primaryContainer"
-              >
-                Open
-              </div>
-
-              <div className="-ml-1 text-5xl">
-                Take control of your digital life
-              </div>
-
-              <div className="text-xl text-outline">
-                Above all, The Wired is an open platform. Anyone can run their
-                own game servers, modify their client, or build something new on
-                top of it.
-              </div>
-
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
-                <Button variant="filled" squared="large">
-                  <a href={DOCS_URL} target="_blank" rel="noreferrer">
-                    <div className="px-2 py-1">Learn More</div>
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </div>
+          <LandingInfoBlock
+            title="Open"
+            subtitle="Take control of your digital life"
+            body="Above all, the Wired is an open platform. Anyone can run their own game servers, modify their client, or build something new on top of it."
+            image="/images/Open.png"
+            imageSide="left"
+            buttonText="Learn More"
+            buttonLink={DOCS_URL}
+          />
 
           <div className="h-screen snap-center flex items-center">
             <div className="md:w-1/2 md:h-1/2 md:p-8 md:mt-8">
@@ -208,18 +115,18 @@ export default function Index() {
 
             <div className="w-full space-y-2">
               <div
-                className="text-6xl font-black rounded-xl px-4 py-2 w-fit
-                         text-onPrimaryContainer bg-primaryContainer"
+                className="text-6xl font-black rounded-xl px-5 py-2 w-fit
+                           text-onPrimaryContainer bg-primaryContainer"
               >
                 Links
               </div>
 
-              <div className="flex flex-col space-y-4 text-2xl pt-4">
+              <div className="flex flex-col space-y-2 text-2xl pt-4">
                 <a
                   href={DISCORD_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="transition hover:ring-1 hover:ring-outline rounded-full px-4 py-0.5"
+                  className="transition hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1"
                 >
                   <div className="flex items-center space-x-2">
                     <FaDiscord />
@@ -231,7 +138,7 @@ export default function Index() {
                   href={TWITTER_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="transition hover:ring-1 hover:ring-outline rounded-full px-4 py-0.5"
+                  className="transition hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1"
                 >
                   <div className="flex items-center space-x-2">
                     <VscTwitter />
@@ -243,7 +150,7 @@ export default function Index() {
                   href={GITHUB_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="transition hover:ring-1 hover:ring-outline rounded-full px-4 py-0.5"
+                  className="transition hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1"
                 >
                   <div className="flex items-center space-x-2">
                     <VscGithubInverted />
@@ -255,7 +162,7 @@ export default function Index() {
                   href={DOCS_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="transition hover:ring-1 hover:ring-outline rounded-full px-4 py-0.5"
+                  className="transition hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1"
                 >
                   <div className="flex items-center space-x-2">
                     <FaBook />

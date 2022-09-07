@@ -3,6 +3,7 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
 
+import InspectMenu from "../../../src/studio/components/InspectMenu/InspectMenu";
 import StudioNavbar from "../../../src/studio/components/StudioNavbar/StudioNavbar";
 import TreeMenu from "../../../src/studio/components/TreeMenu/TreeMenu";
 import { useLoad } from "../../../src/studio/hooks/useLoad";
@@ -122,7 +123,9 @@ export default function Studio() {
                   </div>
                 </div>
 
-                <div className="float-left h-full">{/* <InspectMenu /> */}</div>
+                <div className="float-left h-full">
+                  <InspectMenu />
+                </div>
               </Split>
             </div>
 

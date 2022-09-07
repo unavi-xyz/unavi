@@ -21,9 +21,11 @@ export function useLoad() {
     cacheTime: 0,
   });
 
+  const engine = useStudioStore((state) => state.engine);
+
   // Load the project on query fetch
   useEffect(() => {
-    if (!project) return;
+    if (!engine || !project) return;
 
     // Set name and description
     useStudioStore.setState({
@@ -36,15 +38,27 @@ export function useLoad() {
       const studioState = JSON.parse(project.studioState);
       useStudioStore.setState(studioState);
     }
-  }, [project]);
+  }, [engine, project]);
 
   // Load world on query fetch
   useEffect(() => {
-    if (!world) return;
+    if (!engine || !world) return;
+
+    function addToEngine(entity: Entity) {
+      addEntity(entity);
+
+      // Add Children
+      entity.children.forEach((childId) => {
+        const child = world[childId];
+        addToEngine(child);
+      });
+    }
+
+    const noParents = Object.values(world).filter(
+      (entity) => !(entity as Entity).parent
+    );
 
     // Load the world
-    Object.values(world).forEach((entity) => {
-      addEntity(entity as Entity);
-    });
-  }, [world]);
+    noParents.forEach((entity) => addToEngine(entity as Entity));
+  }, [engine, world]);
 }

@@ -166,12 +166,10 @@ export class SceneManager {
     const object = this.#objectMap.get(entityId);
     if (!object) throw new Error(`Object not found: ${entityId}`);
 
-    const children: string[] = [];
-    this.#entities.forEach((entity) => {
-      if (entity.parent === entityId) children.push(entity.id);
-    });
+    const entity = this.#entities.get(entityId);
+    if (!entity) throw new Error(`Entity not found: ${entityId}`);
 
-    return children;
+    return entity.children;
   }
 
   setTransform(id: string) {

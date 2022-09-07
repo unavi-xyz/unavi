@@ -84,7 +84,7 @@ export type BaseEntity = {
   parent: string | null;
   children: string[];
   position: [number, number, number];
-  rotation: [number, number, number, number];
+  rotation: [number, number, number];
   scale: [number, number, number];
 };
 

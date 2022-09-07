@@ -35,6 +35,9 @@ export class SceneManager {
       case "add_entity":
         this.addEntity(data);
         break;
+      case "set_entity":
+        this.setEntity(data);
+        break;
       case "remove_entity":
         this.removeEntity(data);
         break;
@@ -108,6 +111,13 @@ export class SceneManager {
     }
   }
 
+  setEntity(entity: Entity) {
+    const object = this.#objectMap.get(entity.id);
+    if (!object) throw new Error(`Object not found: ${entity.id}`);
+
+    copyTransform(object, entity);
+  }
+
   removeEntity(entityId: string) {
     const object = this.#objectMap.get(entityId);
     if (!object) throw new Error(`Object not found: ${entityId}`);
@@ -138,7 +148,7 @@ export class SceneManager {
 
     // Save object transform
     const position = object.getWorldPosition(new Vector3());
-    const rotation = object.getWorldQuaternion(new Quaternion());
+    const quaternion = object.getWorldQuaternion(new Quaternion());
 
     // Set parent
     parent.add(object);
@@ -148,7 +158,7 @@ export class SceneManager {
       .getWorldQuaternion(new Quaternion())
       .invert();
     object.position.copy(parent.worldToLocal(position));
-    object.quaternion.multiplyQuaternions(rotation, inverseParentRotation);
+    object.quaternion.multiplyQuaternions(quaternion, inverseParentRotation);
   }
 
   findId(target: Object3D): string | undefined {
@@ -198,6 +208,6 @@ export class SceneManager {
 
 function copyTransform(object: Object3D, entity: Entity) {
   object.position.fromArray(entity.position);
-  object.quaternion.fromArray(entity.rotation);
+  object.rotation.fromArray(entity.rotation);
   object.scale.fromArray(entity.scale);
 }

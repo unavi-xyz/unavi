@@ -29,7 +29,7 @@ export default function Carousel({
           </Button>
         </div>
 
-        <div className="w-full p-2 overflow-x-hidden grid grid-flow-col">
+        <div className="w-full p-2 overflow-x-hidden grid grid-flow-col gap-2">
           {children}
         </div>
 

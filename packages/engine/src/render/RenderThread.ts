@@ -110,6 +110,10 @@ export class RenderThread {
     this.#postMessage({ subject: "add_entity", data });
   }
 
+  setEntity(data: Entity) {
+    this.#postMessage({ subject: "set_entity", data });
+  }
+
   moveEntity(entityId: string, parentId: string | null) {
     this.#postMessage({
       subject: "move_entity",

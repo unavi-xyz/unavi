@@ -3,13 +3,16 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
 
+import InspectMenu from "../../../src/studio/components/InspectMenu/InspectMenu";
 import StudioNavbar from "../../../src/studio/components/StudioNavbar/StudioNavbar";
 import TreeMenu from "../../../src/studio/components/TreeMenu/TreeMenu";
+import { emptyTree } from "../../../src/studio/constants";
 import { useLoad } from "../../../src/studio/hooks/useLoad";
 import { useStudioHotkeys } from "../../../src/studio/hooks/useStudioHotkeys";
 import { useTransformControls } from "../../../src/studio/hooks/useTransformControls";
 import { useStudioStore } from "../../../src/studio/store";
 import MetaTags from "../../../src/ui/MetaTags";
+import { deepClone } from "../../../src/utils/deepClone";
 
 export default function Studio() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,7 +50,7 @@ export default function Studio() {
 
     return () => {
       engine.destroy();
-      useStudioStore.setState({ engine: null });
+      useStudioStore.setState({ engine: null, tree: deepClone(emptyTree) });
     };
   }, [engine]);
 
@@ -122,7 +125,9 @@ export default function Studio() {
                   </div>
                 </div>
 
-                <div className="float-left h-full">{/* <InspectMenu /> */}</div>
+                <div className="float-left h-full">
+                  <InspectMenu />
+                </div>
               </Split>
             </div>
 

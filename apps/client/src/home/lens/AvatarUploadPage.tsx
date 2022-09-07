@@ -1,10 +1,10 @@
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
-import { useContext, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
-import { IpfsContext } from "@wired-labs/ipfs";
 import { AppId, Metadata, MetadataVersions } from "@wired-labs/lens";
 
+import { uploadFileToIpfs } from "../../lib/ipfs/uploadFileToIpfs";
 import { useCreatePost } from "../../lib/lens/hooks/useCreatePost";
 import { useLens } from "../../lib/lens/hooks/useLens";
 import { useProfileByHandle } from "../../lib/lens/hooks/useProfileByHandle";
@@ -24,9 +24,7 @@ export default function AvatarUploadPage() {
   const [vrmFile, setVrmFile] = useState<File>();
   const [loading, setLoading] = useState(false);
 
-  const { uploadFileToIpfs } = useContext(IpfsContext);
   const { handle } = useLens();
-
   const router = useRouter();
   const profile = useProfileByHandle(handle);
   const createPost = useCreatePost(profile?.id);

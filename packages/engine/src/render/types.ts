@@ -48,6 +48,7 @@ export type ToRenderMessage =
   | WorkerMessage<"set_transform_target", string | null>
   | WorkerMessage<"set_transform_mode", "translate" | "rotate" | "scale">
   | WorkerMessage<"add_entity", Entity>
+  | WorkerMessage<"set_entity", Entity>
   | WorkerMessage<"remove_entity", string>
   | WorkerMessage<"move_entity", { entityId: string; parentId: string | null }>;
 

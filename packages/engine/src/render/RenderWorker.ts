@@ -55,7 +55,7 @@ export class RenderWorker {
     this.#canvas = canvas;
     this.#postMessage = postMessage;
     this.#sceneManager = new SceneManager(this.#postMessage);
-    this.#scene.add(this.#sceneManager.root);
+    this.#scene.add(this.#sceneManager.scene);
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {

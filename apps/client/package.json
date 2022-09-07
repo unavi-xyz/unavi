@@ -21,10 +21,10 @@
     "@trpc/react": "^9.27.0",
     "@trpc/server": "^9.27.0",
     "@wired-labs/engine": "*",
-    "@wired-labs/ipfs": "*",
     "@wired-labs/lens": "*",
     "ethers": "^5.6.9",
     "immer": "^9.0.15",
+    "ipfs-http-client": "^57.0.3",
     "jotai": "^1.7.8",
     "nanoid": "^4.0.0",
     "next": "^12.2.5",
@@ -42,7 +42,8 @@
     "sharp": "^0.30.7",
     "urql": "^2.2.3",
     "wagmi": "^0.6.3",
-    "zod": "^3.18.0"
+    "zod": "^3.18.0",
+    "zustand": "^4.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.18.10",
@@ -60,7 +61,7 @@
     "prisma": "^4.3.0",
     "tailwindcss": "^3.1.8",
     "terser-webpack-plugin": "^5.3.4",
-    "typescript": "^4.7.4",
+    "typescript": "^4.8.2",
     "webpack": "^5.74.0"
   }
 }

@@ -1,22 +1,19 @@
 import { utils } from "ethers";
-import { useContext } from "react";
 import { useSignTypedData, useSigner } from "wagmi";
 
-import { IpfsContext } from "@wired-labs/ipfs";
 import {
   LensPeriphery__factory,
   ProfileMetadata,
   useCreateSetProfileMetadataTypedDataMutation,
 } from "@wired-labs/lens";
 
+import { uploadStringToIpfs } from "../../ipfs/uploadStringToIpfs";
 import { ContractAddress } from "../constants";
 import { pollUntilIndexed } from "../utils/pollUntilIndexed";
 import { removeTypename } from "../utils/removeTypename";
 
 export function useSetProfileMetadata(profileId: string) {
   const [, createTypedData] = useCreateSetProfileMetadataTypedDataMutation();
-
-  const { uploadStringToIpfs } = useContext(IpfsContext);
   const { signTypedDataAsync } = useSignTypedData();
   const { data: signer } = useSigner();
 

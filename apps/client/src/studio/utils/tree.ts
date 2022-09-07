@@ -1,28 +1,25 @@
 import { moveEntity } from "../actions/MoveEntityAction";
 import { useStudioStore } from "../store";
 
-export function updateTree() {
-  const treeNonce = useStudioStore.getState().treeNonce;
-  useStudioStore.setState({ treeNonce: treeNonce + 1 });
-}
-
 export function moveToSibling(
   id: string,
   siblingId: string,
   placement: "above" | "below" = "below"
 ) {
   // Get parent
-  const tree = useStudioStore.getState().tree;
+  const { tree } = useStudioStore.getState();
   const sibling = tree[siblingId];
   const parentId = sibling.parent;
 
-  // Move entity
-  moveEntity(id, parentId);
-}
+  // Get target index
+  let index: number | undefined;
 
-export function findChildren(id: string) {
-  const tree = useStudioStore.getState().tree;
-  if (id === "root")
-    return Object.keys(tree).filter((key) => tree[key].parent === null);
-  return Object.keys(tree).filter((key) => tree[key].parent === id);
+  if (parentId) {
+    const parent = tree[parentId];
+    index = parent.children.indexOf(siblingId);
+    if (placement === "below") index++;
+  }
+
+  // Move entity
+  moveEntity(id, parentId, index);
 }

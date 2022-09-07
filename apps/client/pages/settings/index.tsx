@@ -1,9 +1,8 @@
 import Image from "next/future/image";
-import { useContext, useEffect, useRef, useState } from "react";
-
-import { IpfsContext } from "@wired-labs/ipfs";
+import { useEffect, useRef, useState } from "react";
 
 import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/SettingsLayout";
+import { uploadFileToIpfs } from "../../src/lib/ipfs/uploadFileToIpfs";
 import { useLens } from "../../src/lib/lens/hooks/useLens";
 import { useProfileByHandle } from "../../src/lib/lens/hooks/useProfileByHandle";
 import { useSetProfileImage } from "../../src/lib/lens/hooks/useSetProfileImage";
@@ -33,9 +32,7 @@ export default function Settings() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingProfilePicture, setLoadingProfilePicture] = useState(false);
 
-  const { uploadFileToIpfs } = useContext(IpfsContext);
   const { handle } = useLens();
-
   const profile = useProfileByHandle(handle);
   const pfpMediaUrl = getMediaURL(profile?.picture);
   const coverMediaUrl = getMediaURL(profile?.coverPicture);
@@ -161,7 +158,7 @@ export default function Settings() {
               />
 
               <div className="space-y-4">
-                <div className="text-lg font-bold">Cover</div>
+                <div className="text-lg font-bold">Cover Image</div>
 
                 {coverUrl && (
                   <div className="w-full h-40">
@@ -178,7 +175,7 @@ export default function Settings() {
                 )}
 
                 <FileUpload
-                  title="Cover Picture"
+                  title="Cover Image"
                   accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];

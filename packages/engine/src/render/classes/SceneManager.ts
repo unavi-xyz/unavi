@@ -15,7 +15,8 @@ import { disposeObject } from "../../utils/disposeObject";
 import { FromRenderMessage, ToRenderMessage } from "../types";
 
 export class SceneManager {
-  root = new Group();
+  scene = new Group();
+  #root = new Group();
 
   #entities = new Map<string, Entity>();
   #objectMap = new Map<string, Object3D>();
@@ -26,6 +27,8 @@ export class SceneManager {
 
   constructor(postMessage: PostMessage<FromRenderMessage>) {
     this.#postMessage = postMessage;
+    this.scene.add(this.#root);
+    this.#objectMap.set("root", this.#root);
   }
 
   onmessage(event: MessageEvent<ToRenderMessage>) {
@@ -34,6 +37,9 @@ export class SceneManager {
     switch (subject) {
       case "add_entity":
         this.addEntity(data);
+        break;
+      case "set_entity":
+        this.setEntity(data);
         break;
       case "remove_entity":
         this.removeEntity(data);
@@ -45,9 +51,15 @@ export class SceneManager {
   }
 
   addEntity(entity: Entity) {
+    if (entity.id === "root") {
+      this.#entities.set(entity.id, entity);
+      return;
+    }
+
     const parent = entity.parent
       ? this.#objectMap.get(entity.parent)
-      : this.root;
+      : this.#root;
+
     if (!parent) throw new Error("Parent not found");
 
     this.#entities.set(entity.id, entity);
@@ -57,7 +69,7 @@ export class SceneManager {
         const group = new Group();
         copyTransform(group, entity);
 
-        this.root.add(group);
+        this.#root.add(group);
         this.#objectMap.set(entity.id, group);
         break;
       case "Box":
@@ -108,37 +120,52 @@ export class SceneManager {
     }
   }
 
+  setEntity(entity: Entity) {
+    const object = this.#objectMap.get(entity.id);
+    if (!object) throw new Error(`Object not found: ${entity.id}`);
+
+    // Set entity
+    this.#entities.set(entity.id, entity);
+
+    // Set transform
+    copyTransform(object, entity);
+  }
+
   removeEntity(entityId: string) {
     const object = this.#objectMap.get(entityId);
     if (!object) throw new Error(`Object not found: ${entityId}`);
-
-    const parent = object.parent;
-    if (!parent) throw new Error(`Object has no parent: ${entityId}`);
 
     // Repeat for children
     const children = this.findChildren(entityId);
     children.forEach((child) => this.removeEntity(child));
 
     // Remove from scene
-    parent.remove(object);
+    object.removeFromParent();
     this.#objectMap.delete(entityId);
     this.#meshMap.delete(entityId);
     this.#entities.delete(entityId);
 
     // Dispose object
     disposeObject(object);
+
+    // Create new root if needed
+    if (entityId === "root") {
+      this.#root = new Group();
+      this.scene.add(this.#root);
+      this.#objectMap.set("root", this.#root);
+    }
   }
 
   moveEntity(entityId: string, parentId: string | null) {
     const object = this.#objectMap.get(entityId);
     if (!object) throw new Error(`Object not found: ${entityId}`);
 
-    const parent = parentId ? this.#objectMap.get(parentId) : this.root;
+    const parent = parentId ? this.#objectMap.get(parentId) : this.#root;
     if (!parent) throw new Error(`Parent not found: ${parentId}`);
 
     // Save object transform
     const position = object.getWorldPosition(new Vector3());
-    const rotation = object.getWorldQuaternion(new Quaternion());
+    const quaternion = object.getWorldQuaternion(new Quaternion());
 
     // Set parent
     parent.add(object);
@@ -148,7 +175,7 @@ export class SceneManager {
       .getWorldQuaternion(new Quaternion())
       .invert();
     object.position.copy(parent.worldToLocal(position));
-    object.quaternion.multiplyQuaternions(rotation, inverseParentRotation);
+    object.quaternion.multiplyQuaternions(quaternion, inverseParentRotation);
   }
 
   findId(target: Object3D): string | undefined {
@@ -166,12 +193,10 @@ export class SceneManager {
     const object = this.#objectMap.get(entityId);
     if (!object) throw new Error(`Object not found: ${entityId}`);
 
-    const children: string[] = [];
-    this.#entities.forEach((entity) => {
-      if (entity.parent === entityId) children.push(entity.id);
-    });
+    const entity = this.#entities.get(entityId);
+    if (!entity) throw new Error(`Entity not found: ${entityId}`);
 
-    return children;
+    return entity.children;
   }
 
   setTransform(id: string) {
@@ -200,6 +225,6 @@ export class SceneManager {
 
 function copyTransform(object: Object3D, entity: Entity) {
   object.position.fromArray(entity.position);
-  object.quaternion.fromArray(entity.rotation);
+  object.rotation.fromArray(entity.rotation);
   object.scale.fromArray(entity.scale);
 }

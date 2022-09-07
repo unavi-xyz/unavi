@@ -15,6 +15,7 @@ export function useStudioHotkeys() {
         case "Delete":
           const selectedId = useStudioStore.getState().selectedId;
           if (selectedId) {
+            useStudioStore.setState({ selectedId: null });
             removeEntity(selectedId);
           }
           break;

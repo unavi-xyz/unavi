@@ -18,16 +18,16 @@ export default function DropdownMenu({
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    //add a delay before unmounting the menu so we can show animations
+    // Add a delay before unmounting the menu so we can show animations
     const timeout = setTimeout(() => setVisible(open), 150);
 
-    //dont add the delay on open
+    // Don't add the delay on open
     if (open) {
       setVisible(true);
       clearTimeout(timeout);
     }
 
-    //open / close animations
+    // Open close animations
     if (open) {
       menuRef.current?.classList.remove("scale-75");
       menuRef.current?.classList.remove("opacity-0");
@@ -58,7 +58,7 @@ export default function DropdownMenu({
       <div
         ref={menuRef}
         className={`absolute z-10 w-full min-w-max bg-surface text-onSurface
-                    shadow rounded-lg transition ease-in-out ${placementClass}
+                    shadow-lg rounded-xl transition ease-in-out ${placementClass}
                     scale-75 opacity-0`}
       >
         {visible && children}

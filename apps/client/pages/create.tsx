@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
 import { useAccount } from "wagmi";
 
+import { trpc } from "../src/auth/trpc";
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
-import { trpc } from "../src/login/trpc";
 import CreateProjectPage from "../src/ui/CreateProjectPage";
 import MetaTags from "../src/ui/MetaTags";
 import Button from "../src/ui/base/Button";

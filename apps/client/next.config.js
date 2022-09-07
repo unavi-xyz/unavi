@@ -3,7 +3,6 @@ const { withAxiom } = require("next-axiom");
 const withTM = require("next-transpile-modules")([
   "three",
   "@wired-labs/engine",
-  "@wired-labs/ipfs",
   "@wired-labs/lens",
 ]);
 const runtimeCaching = require("next-pwa/cache.js");

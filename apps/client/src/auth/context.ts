@@ -21,14 +21,10 @@ export async function createContext({
 }: trpcNext.CreateNextContextOptions): Promise<IContext> {
   const token = await getToken({ req, secret: process.env.NEXT_AUTH_SECRET });
 
-  if (!token || !token.name) {
-    return {
-      authenticated: false,
-    };
-  }
+  if (!token || !token.sub) return { authenticated: false };
 
   return {
     authenticated: true,
-    address: token.name,
+    address: token.sub,
   };
 }

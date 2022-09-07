@@ -12,8 +12,8 @@ import {
   IAuthenticatedContext,
   IContext,
   createContext,
-} from "../../../src/login/context";
-import { prisma } from "../../../src/login/prisma";
+} from "../../../src/auth/context";
+import { prisma } from "../../../src/auth/prisma";
 
 const BUCKET_NAME = "wired";
 

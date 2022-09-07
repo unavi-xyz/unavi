@@ -81,7 +81,7 @@ export default function sButton({
   const fullWidthClass = fullWidth ? "w-full" : null;
   const squaredClass =
     squared === "small"
-      ? "rounded"
+      ? "rounded-md"
       : squared === "large"
       ? "rounded-xl"
       : "rounded-full";

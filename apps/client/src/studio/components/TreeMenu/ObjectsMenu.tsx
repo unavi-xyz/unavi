@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 
-import { BaseObject, Box, Cylinder, Sphere } from "@wired-labs/engine";
+import { BaseEntity, Box, Cylinder, Sphere } from "@wired-labs/engine";
 
 import { addEntity } from "../../actions/AddEntityAction";
 
@@ -34,12 +34,13 @@ export default function ObjectsMenu() {
 
 function createEntity(name: ObjectName) {
   const id = nanoid();
-  const base: BaseObject = {
+  const base: BaseEntity = {
     id,
     name,
-    parent: null,
+    parent: "root",
+    children: [],
     position: [0, 0, 0],
-    rotation: [0, 0, 0, 1],
+    rotation: [0, 0, 0],
     scale: [1, 1, 1],
   };
 

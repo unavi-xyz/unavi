@@ -2,6 +2,8 @@ import create from "zustand";
 
 import { Engine, Entity } from "@wired-labs/engine";
 
+import { deepClone } from "../utils/deepClone";
+import { emptyTree } from "./constants";
 import { Tool } from "./types";
 
 export interface IStudioStore {
@@ -20,7 +22,7 @@ export interface IStudioStore {
   tool: Tool;
 }
 
-export const useStudioStore = create<IStudioStore>((set, get) => ({
+export const useStudioStore = create<IStudioStore>(() => ({
   engine: null,
   canvas: null,
   name: "",
@@ -29,7 +31,7 @@ export const useStudioStore = create<IStudioStore>((set, get) => ({
   selectedId: null,
 
   treeNonce: 0,
-  tree: {},
+  tree: deepClone(emptyTree),
 
   debug: false,
   grid: false,

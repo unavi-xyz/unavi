@@ -2328,6 +2328,7 @@ export type PublicationSignatureContextInput = {
 
 /** Publication sort criteria */
 export enum PublicationSortCriteria {
+  CuratedProfiles = "CURATED_PROFILES",
   Latest = "LATEST",
   TopCollected = "TOP_COLLECTED",
   TopCommented = "TOP_COMMENTED",

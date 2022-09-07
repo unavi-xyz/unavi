@@ -1,11 +1,9 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { IpfsContext } from "./IpfsProvider";
+import { loadFromIpfs } from "./loadFromIpfs";
 
 export function useFetchData(uri: string | undefined) {
   const [url, setUrl] = useState<string>();
-
-  const { loadFromIpfs } = useContext(IpfsContext);
 
   useEffect(() => {
     async function fetchData() {
@@ -38,7 +36,7 @@ export function useFetchData(uri: string | undefined) {
     fetchData().then((fetched) => {
       setUrl(fetched);
     });
-  }, [uri, loadFromIpfs]);
+  }, [uri]);
 
   return url;
 }

@@ -1,17 +1,31 @@
 import { Entity } from "@wired-labs/engine";
 
 import { useStudioStore } from "../store";
-import { updateTree } from "../utils/tree";
+import { removeEntity } from "./RemoveEntityAction";
 
 export class AddEntityAction {
   constructor(entity: Entity) {
-    // Add the entity to the tree
     const { tree, engine } = useStudioStore.getState();
-    tree[entity.id] = entity;
-    useStudioStore.setState({ tree });
 
-    // Update UI
-    updateTree();
+    // Delete previous entity if it exists
+    if (tree[entity.id]) {
+      removeEntity(entity.id);
+    }
+
+    // Add entity
+    tree[entity.id] = entity;
+
+    // Add to parent if not already there
+    if (entity.parent) {
+      const parent = tree[entity.parent];
+      if (!parent.children.includes(entity.id)) {
+        parent.children.push(entity.id);
+        parent.children = [...parent.children];
+      }
+    }
+
+    // Update tree
+    useStudioStore.setState({ tree });
 
     // Update engine
     if (engine) engine.renderThread.addEntity(entity);

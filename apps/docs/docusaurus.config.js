@@ -7,8 +7,7 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula");
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "The Wired Docs",
-  tagline:
-    "Docs for the Wired - A web-based virtual worlds platform done right",
+  tagline: "The Wired - A web-based virtual worlds platform done right.",
   url: "https://docs.thewired.space",
   baseUrl: "/",
   onBrokenLinks: "throw",
@@ -44,6 +43,12 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      metadata: [
+        { property: "og:image", content: "/img/Logo.png" },
+        { name: "twitter:image", content: "/img/Logo.png" },
+        { name: "twitter:card", content: "summary" },
+      ],
+
       announcementBar: {
         id: "discord",
         content:
@@ -54,7 +59,7 @@ const config = {
       },
 
       navbar: {
-        title: "The Wired Docs",
+        title: "The Wired",
         logo: {
           alt: "The Wired Logo",
           src: "img/Logo-Maskable.png",

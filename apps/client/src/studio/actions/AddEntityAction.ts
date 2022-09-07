@@ -5,9 +5,12 @@ import { updateTree } from "../utils/tree";
 
 export class AddEntityAction {
   constructor(entity: Entity) {
-    // Add the entity to the tree
     const { tree, engine } = useStudioStore.getState();
+
+    // Add entity
     tree[entity.id] = entity;
+
+    // Update tree
     useStudioStore.setState({ tree });
 
     // Update UI

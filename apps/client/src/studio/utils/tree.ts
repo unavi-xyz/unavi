@@ -1,11 +1,6 @@
 import { moveEntity } from "../actions/MoveEntityAction";
 import { useStudioStore } from "../store";
 
-export function updateTree() {
-  const { treeNonce } = useStudioStore.getState();
-  useStudioStore.setState({ treeNonce: treeNonce + 1 });
-}
-
 export function moveToSibling(
   id: string,
   siblingId: string,
@@ -27,9 +22,4 @@ export function moveToSibling(
 
   // Move entity
   moveEntity(id, parentId, index);
-}
-
-export function getRootEntities() {
-  const { tree } = useStudioStore.getState();
-  return Object.values(tree).filter((entity) => !entity.parent);
 }

@@ -37,7 +37,7 @@ function createEntity(name: ObjectName) {
   const base: BaseEntity = {
     id,
     name,
-    parent: null,
+    parent: "root",
     children: [],
     position: [0, 0, 0],
     rotation: [0, 0, 0],

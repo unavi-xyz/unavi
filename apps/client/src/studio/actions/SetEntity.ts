@@ -1,7 +1,6 @@
 import { Entity } from "@wired-labs/engine";
 
 import { useStudioStore } from "../store";
-import { updateTree } from "../utils/tree";
 
 export class SetEntity {
   constructor(entity: Entity) {
@@ -12,9 +11,6 @@ export class SetEntity {
 
     // Update tree
     useStudioStore.setState({ tree });
-
-    // Update UI
-    updateTree();
 
     // Update engine
     if (engine) engine.renderThread.setEntity(entity);

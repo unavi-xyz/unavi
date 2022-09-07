@@ -18,9 +18,9 @@ interface Props {
 export default function TreeMenuItem({ id }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const selectedId = useStudioStore((state) => state.selectedId);
-  const tree = useStudioStore((state) => state.tree);
+  const name = useStudioStore((state) => state.tree[id].name);
+  const children = useStudioStore((state) => state.tree[id].children);
   const [open, setOpen] = useState(true);
-  const object = tree[id];
 
   // Create drag source
   const [{ isDragging }, drag] = useDrag(
@@ -78,7 +78,7 @@ export default function TreeMenuItem({ id }: Props) {
     [id]
   );
 
-  const hasChildren = object.children.length > 0;
+  const hasChildren = children.length > 0;
   const isSelected = selectedId === id;
   const bgClass = isSelected
     ? "bg-primaryContainer text-onPrimaryContainer"
@@ -92,13 +92,13 @@ export default function TreeMenuItem({ id }: Props) {
   drag(ref);
 
   return (
-    <div ref={ref} className="h-6">
+    <div ref={ref} className="h-full">
       <div
         onMouseDown={(e) => {
           e.stopPropagation();
           useStudioStore.setState({ selectedId: id });
         }}
-        className={`font-bold rounded-md px-2 flex items-center ${bgClass} ${opacityClass}`}
+        className={`h-6 font-bold rounded-md px-2 flex items-center ${bgClass} ${opacityClass}`}
       >
         <div
           onClick={() => setOpen((prev) => !prev)}
@@ -108,12 +108,12 @@ export default function TreeMenuItem({ id }: Props) {
             (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
         </div>
 
-        <div>{object.name}</div>
+        <div>{name}</div>
       </div>
 
       {open && hasChildren && (
         <div className={`pl-4 ${opacityClass}`}>
-          {object.children.map((child) => (
+          {children.map((child) => (
             <TreeMenuItem key={child} id={child} />
           ))}
         </div>

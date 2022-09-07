@@ -54,11 +54,13 @@ export function useLoad() {
       });
     }
 
-    const noParents = Object.values(world).filter(
-      (entity) => !(entity as Entity).parent
-    );
+    const root: Entity = world["root"];
+    if (!root) return;
 
     // Load the world
-    noParents.forEach((entity) => addToEngine(entity as Entity));
+    root.children.forEach((childId) => {
+      const child = world[childId];
+      addToEngine(child);
+    });
   }, [engine, world]);
 }

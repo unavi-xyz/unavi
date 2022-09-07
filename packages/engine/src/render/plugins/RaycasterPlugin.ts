@@ -61,7 +61,7 @@ export class RaycasterPlugin extends Plugin {
 
     // Get intersected objects
     const intersected = this.#raycaster.intersectObject(
-      this.#sceneManager.root
+      this.#sceneManager.scene
     );
 
     if (intersected.length > 0) {

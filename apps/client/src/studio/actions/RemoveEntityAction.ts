@@ -1,5 +1,4 @@
 import { useStudioStore } from "../store";
-import { updateTree } from "../utils/tree";
 
 export class RemoveEntityAction {
   constructor(entityId: string) {
@@ -10,6 +9,7 @@ export class RemoveEntityAction {
     if (entity.parent) {
       const parent = tree[entity.parent];
       parent.children = parent.children.filter((id) => id !== entityId);
+      parent.children = [...parent.children];
     }
 
     // Remove entity
@@ -17,9 +17,6 @@ export class RemoveEntityAction {
 
     // Update tree
     useStudioStore.setState({ tree });
-
-    // Update UI
-    updateTree();
 
     // Update engine
     if (engine) engine.renderThread.removeEntity(entityId);

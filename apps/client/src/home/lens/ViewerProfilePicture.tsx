@@ -13,14 +13,15 @@ interface Props {
 export default function ViewerProfilePicture({ circle, draggable }: Props) {
   const { handle } = useLens();
 
-  const [{ data }] = useGetProfileQuery({
+  const [{ data, fetching }] = useGetProfileQuery({
     variables: { request: { handles: [handle?.concat(HANDLE_ENDING)] } },
     pause: !handle,
   });
 
   const profile = data?.profiles.items[0];
-  const src =
-    getMediaURL(profile?.picture) ?? `https://avatar.tobi.sh/${handle}`;
+  const src = fetching
+    ? null
+    : getMediaURL(profile?.picture) ?? `https://avatar.tobi.sh/${handle}`;
 
   return <ProfilePicture circle={circle} draggable={draggable} src={src} />;
 }

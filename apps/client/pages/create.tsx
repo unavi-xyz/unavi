@@ -47,29 +47,24 @@ export default function Create() {
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">Projects</div>
             <div>
-              {authState === "authenticated" && (
-                <Button
-                  variant="outlined"
-                  squared="small"
-                  onClick={() => setOpenCreateProject(true)}
-                >
-                  <MdAdd className="text-lg" />
-                </Button>
-              )}
+              <Button
+                variant="outlined"
+                squared="small"
+                disabled={authState !== "authenticated"}
+                onClick={() => setOpenCreateProject(true)}
+              >
+                <MdAdd className="text-lg" />
+              </Button>
             </div>
           </div>
 
-          {status === "error" && <div className="text-center">Error</div>}
-          {status === "loading" && (
-            <div className="text-center">Loading...</div>
-          )}
-
           <div className="grid grid-cols-3 gap-2">
             {authState === "authenticated" &&
-              data?.map(({ id, name, image }) => (
-                <Link key={id} href={`/project/${id}`}>
+              status === "success" &&
+              data.map(({ id, name, image }) => (
+                <Link key={id} href={`/project/${id}`} passHref>
                   <div>
-                    <Card text={name ?? ""} image={image ?? ""} />
+                    <Card text={name} image={image} animateEnter />
                   </div>
                 </Link>
               ))}

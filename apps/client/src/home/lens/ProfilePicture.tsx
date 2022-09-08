@@ -1,7 +1,7 @@
 import Image from "next/future/image";
 
 interface Props {
-  src?: string;
+  src?: string | null;
   circle?: boolean;
   draggable?: boolean;
 }

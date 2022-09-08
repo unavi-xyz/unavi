@@ -34,10 +34,10 @@ export default function Card({
     <div
       ref={cardRef}
       className={`group p-2 w-full h-full overflow-hidden rounded-2xl hover:cursor-pointer
-                  flex flex-col hover:ring-2 hover:ring-black transition duration-300 ${opacityCss}`}
+                  flex flex-col hover:ring-2 hover:ring-black ${opacityCss}`}
     >
       <div
-        className={`h-full overflow-hidden rounded-xl ${aspectCss} bg-primaryContainer`}
+        className={`h-full overflow-hidden rounded-xl ${aspectCss} bg-primaryContainer transition duration-300 ${opacityCss}`}
       >
         <div className="relative w-full h-full">
           {image && (

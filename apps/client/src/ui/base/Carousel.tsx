@@ -9,6 +9,7 @@ interface Props {
   disableForward?: boolean;
   onBack?: () => void;
   onForward?: () => void;
+  height?: string;
 }
 
 export default function Carousel({
@@ -18,6 +19,7 @@ export default function Carousel({
   disableForward,
   onBack,
   onForward,
+  height,
 }: Props) {
   return (
     <div>
@@ -29,7 +31,9 @@ export default function Carousel({
           </Button>
         </div>
 
-        <div className="w-full p-2 overflow-x-hidden grid grid-flow-col gap-2">
+        <div
+          className={`w-full p-2 overflow-x-hidden grid grid-flow-col gap-2 ${height}`}
+        >
           {children}
         </div>
 

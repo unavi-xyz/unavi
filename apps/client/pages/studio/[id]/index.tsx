@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
@@ -50,7 +50,35 @@ export default function Studio() {
 
     return () => {
       engine.destroy();
-      useStudioStore.setState({ engine: null, tree: deepClone(emptyTree) });
+      useStudioStore.setState({
+        engine: null,
+        selectedId: null,
+        tree: deepClone(emptyTree),
+      });
+    };
+  }, [engine]);
+
+  const updateCanvasSize = useMemo(() => {
+    return () => {
+      if (typeof OffscreenCanvas !== "undefined") {
+        if (!engine) return;
+        const resize = engine.renderThread.onResize.bind(engine.renderThread);
+        resize();
+        return;
+      }
+
+      try {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const container = containerRef.current;
+        if (!container) return;
+
+        // Resize canvas
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+      } catch (e) {
+        console.error(e);
+      }
     };
   }, [engine]);
 
@@ -62,26 +90,7 @@ export default function Studio() {
     return () => {
       window.removeEventListener("resize", updateCanvasSize);
     };
-  }, []);
-
-  function updateCanvasSize() {
-    // Only run if canvas is available
-    // (canvas is not available when using OffscreenCanvas)
-    if (typeof OffscreenCanvas !== "undefined") return;
-
-    try {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const container = containerRef.current;
-      if (!container) return;
-
-      // Resize canvas
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-    } catch (e) {
-      console.error(e);
-    }
-  }
+  }, [updateCanvasSize]);
 
   return (
     <>
@@ -100,17 +109,17 @@ export default function Studio() {
             expandToMin
             gutterSize={6}
             className="h-full"
-            onDrag={updateCanvasSize}
+            onMouseUp={updateCanvasSize}
           >
             <div className="h-full">
               <Split
                 sizes={[15, 65, 20]}
-                minSize={200}
+                minSize={[200, 300, 300]}
                 direction="horizontal"
                 expandToMin
                 gutterSize={6}
                 className="h-full"
-                onDrag={updateCanvasSize}
+                onMouseUp={updateCanvasSize}
               >
                 <div className="float-left h-full">
                   <TreeMenu />

@@ -13,6 +13,7 @@ export class RaycasterPlugin extends Plugin {
   #postMessage: PostMessage<FromRenderMessage>;
   #state: PluginState;
 
+  #startMoveTime = 0;
   #moveCount = 0;
 
   constructor(
@@ -34,6 +35,7 @@ export class RaycasterPlugin extends Plugin {
 
     switch (subject) {
       case "pointerdown":
+        this.#startMoveTime = performance.now();
         this.#moveCount = 0;
         break;
       case "pointermove":
@@ -46,10 +48,15 @@ export class RaycasterPlugin extends Plugin {
   }
 
   #onPointerUp(data: PointerData) {
+    // Only fire a click if the pointer hasn't moved much, and hasn't been held down for too long
+    // This is to prevent clicks from firing when the user is dragging the camera
+    const isValidClick =
+      performance.now() - this.#startMoveTime < 1000 && this.#moveCount < 6;
+
     if (
       data.button !== 0 ||
       this.#state.usingTransformControls ||
-      this.#moveCount > 20
+      !isValidClick
     )
       return;
 

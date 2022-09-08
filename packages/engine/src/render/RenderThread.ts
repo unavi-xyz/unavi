@@ -75,7 +75,7 @@ export class RenderThread {
     });
 
     // Event listeners
-    window.addEventListener("resize", this.#onResize.bind(this));
+    window.addEventListener("resize", this.onResize.bind(this));
     canvas.addEventListener("contextmenu", this.#onContextMenu.bind(this));
     canvas.addEventListener("pointermove", this.#onPointerMove.bind(this));
     canvas.addEventListener("pointerup", this.#onPointerUp.bind(this));
@@ -110,8 +110,23 @@ export class RenderThread {
     this.#postMessage({ subject: "add_entity", data });
   }
 
-  setEntity(data: Entity) {
-    this.#postMessage({ subject: "set_entity", data });
+  setTransform(data: Entity) {
+    this.#postMessage({
+      subject: "set_transform",
+      data: {
+        id: data.id,
+        position: data.position,
+        rotation: data.rotation,
+        scale: data.scale,
+      },
+    });
+  }
+
+  setGeometry(entityId: string, geometry: number[]) {
+    this.#postMessage({
+      subject: "set_geometry",
+      data: { id: entityId, geometry },
+    });
   }
 
   moveEntity(entityId: string, parentId: string | null) {
@@ -184,7 +199,7 @@ export class RenderThread {
     this.#worker.postMessage(message, transfer);
   }
 
-  #onResize() {
+  onResize() {
     this.#postMessage({
       subject: "size",
       data: {

@@ -1,6 +1,7 @@
 import NumberInput from "../../../ui/base/NumberInput";
-import { setEntity } from "../../actions/SetEntity";
+import { setTransform } from "../../actions/SetTransform";
 import { useStudioStore } from "../../store";
+import ComponentMenu from "./ComponentMenu";
 
 interface Props {
   entityId: string;
@@ -17,15 +18,15 @@ export default function TransformComponent({ entityId }: Props) {
   const rotationX = useStudioStore((state) => state.tree[entityId].rotation[0]);
   const rotationY = useStudioStore((state) => state.tree[entityId].rotation[1]);
   const rotationZ = useStudioStore((state) => state.tree[entityId].rotation[2]);
-
   const rotation = [rotationX, rotationY, rotationZ];
+
   const scaleY = useStudioStore((state) => state.tree[entityId].scale[1]);
   const scaleZ = useStudioStore((state) => state.tree[entityId].scale[2]);
   const scaleX = useStudioStore((state) => state.tree[entityId].scale[0]);
   const scale = [scaleX, scaleY, scaleZ];
 
   return (
-    <div className="space-y-1">
+    <ComponentMenu>
       <div className="grid grid-cols-4 gap-3">
         <div>Position</div>
         {position.map((value, i) => {
@@ -49,7 +50,7 @@ export default function TransformComponent({ entityId }: Props) {
                   const num = parseFloat(value);
                   const rounded = Math.round(num * 1000) / 1000;
                   entity.position[i] = rounded;
-                  setEntity(entity);
+                  setTransform(entity);
                 }}
               />
             </div>
@@ -82,7 +83,7 @@ export default function TransformComponent({ entityId }: Props) {
                   const rounded = Math.round(num * 1000) / 1000;
                   const radians = (rounded * Math.PI) / 180;
                   entity.rotation[i] = radians;
-                  setEntity(entity);
+                  setTransform(entity);
                 }}
               />
             </div>
@@ -113,13 +114,13 @@ export default function TransformComponent({ entityId }: Props) {
                   const num = parseFloat(value);
                   const rounded = Math.round(num * 1000) / 1000;
                   entity.scale[i] = rounded;
-                  setEntity(entity);
+                  setTransform(entity);
                 }}
               />
             </div>
           );
         })}
       </div>
-    </div>
+    </ComponentMenu>
   );
 }

@@ -38,8 +38,11 @@ export class SceneManager {
       case "add_entity":
         this.addEntity(data);
         break;
-      case "set_entity":
-        this.setEntity(data);
+      case "set_transform":
+        this.setTransform(data.id, data.position, data.rotation, data.scale);
+        break;
+      case "set_geometry":
+        this.setGeometry(data.id, data.geometry);
         break;
       case "remove_entity":
         this.removeEntity(data);
@@ -120,15 +123,83 @@ export class SceneManager {
     }
   }
 
-  setEntity(entity: Entity) {
-    const object = this.#objectMap.get(entity.id);
-    if (!object) throw new Error(`Object not found: ${entity.id}`);
+  setTransform(
+    entityId: string,
+    position: number[],
+    rotation: number[],
+    scale: number[]
+  ) {
+    const object = this.#objectMap.get(entityId);
+    if (!object) throw new Error(`Object not found: ${entityId}`);
 
-    // Set entity
-    this.#entities.set(entity.id, entity);
+    const entity = this.#entities.get(entityId);
+    if (!entity) throw new Error(`Entity not found: ${entityId}`);
 
-    // Set transform
+    // Set entity transform
+    entity.position = [position[0], position[1], position[2]];
+    entity.rotation = [rotation[0], rotation[1], rotation[2]];
+    entity.scale = [scale[0], scale[1], scale[2]];
+
+    // Set object transform
     copyTransform(object, entity);
+  }
+
+  setGeometry(entityId: string, geometry: number[]) {
+    const object = this.#objectMap.get(entityId);
+    if (!object) throw new Error(`Object not found: ${entityId}`);
+
+    const entity = this.#entities.get(entityId);
+    if (!entity) throw new Error(`Entity not found: ${entityId}`);
+
+    switch (entity.type) {
+      case "Box":
+        // Update entity
+        entity.width = geometry[0];
+        entity.height = geometry[1];
+        entity.depth = geometry[2];
+
+        // Update geometry
+        const box = object as Mesh;
+        box.geometry.dispose();
+        box.geometry = new BoxBufferGeometry(
+          entity.width,
+          entity.height,
+          entity.depth
+        );
+        break;
+      case "Sphere":
+        // Update entity
+        entity.radius = geometry[0];
+        entity.widthSegments = geometry[1];
+        entity.heightSegments = geometry[2];
+
+        // Update geometry
+        const sphere = object as Mesh;
+        sphere.geometry.dispose();
+        sphere.geometry = new SphereBufferGeometry(
+          entity.radius,
+          entity.widthSegments,
+          entity.heightSegments
+        );
+        break;
+      case "Cylinder":
+        // Update entity
+        entity.radiusTop = geometry[0];
+        entity.radiusBottom = geometry[1];
+        entity.height = geometry[2];
+        entity.radialSegments = geometry[3];
+
+        // Update geometry
+        const cylinder = object as Mesh;
+        cylinder.geometry.dispose();
+        cylinder.geometry = new CylinderBufferGeometry(
+          entity.radiusTop,
+          entity.radiusBottom,
+          entity.height,
+          entity.radialSegments
+        );
+        break;
+    }
   }
 
   removeEntity(entityId: string) {
@@ -199,7 +270,7 @@ export class SceneManager {
     return entity.children;
   }
 
-  setTransform(id: string) {
+  saveTransform(id: string) {
     const object = this.findObject(id);
     if (!object) throw new Error("Object not found");
 
@@ -219,7 +290,7 @@ export class SceneManager {
 
     // Repeat for children
     const children = this.findChildren(id);
-    children.forEach((child) => this.setTransform(child));
+    children.forEach((child) => this.saveTransform(child));
   }
 }
 

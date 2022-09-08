@@ -2,7 +2,7 @@ import { Entity } from "@wired-labs/engine";
 
 import { useStudioStore } from "../store";
 
-export class SetEntity {
+export class SetTransform {
   constructor(entity: Entity) {
     const { tree, engine } = useStudioStore.getState();
 
@@ -13,10 +13,10 @@ export class SetEntity {
     useStudioStore.setState({ tree });
 
     // Update engine
-    if (engine) engine.renderThread.setEntity(entity);
+    if (engine) engine.renderThread.setTransform(entity);
   }
 }
 
-export function setEntity(entity: Entity) {
-  return new SetEntity(entity);
+export function setTransform(entity: Entity) {
+  return new SetTransform(entity);
 }

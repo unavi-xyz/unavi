@@ -129,17 +129,17 @@ Above: screenshots from [Babylon.js](https://sandbox.babylonjs.com/): JPG and PN
 
 This model has been tested in a few other non-rasterized renderers, which often require a few adjustments. E.g. emissive textures that simulate light bounce should be removed, allowing the path tracing to create more accurate bounce lighting.
 
-![model rendered in OSPRay Studio](screenshot/render_ospray.jpg)
+![model rendered in OSPRay Editor](screenshot/render_ospray.jpg)
 
-Above: ray-traced render in Intel [OSPRay Studio](https://github.com/ospray/ospray_studio).
+Above: ray-traced render in Intel [OSPRay Editor](https://github.com/ospray/ospray_editor).
 
 Below: path-traced render in Dassault Systèmes [Enterprise PBR Sample Renderer](https://github.com/DassaultSystemes-Technology/dspbr-pt).
 
-![model rendered in OSPRay Studio](screenshot/render_enterprisepbr.jpg)
+![model rendered in OSPRay Editor](screenshot/render_enterprisepbr.jpg)
 
 ## Authoring Details
 
-The model was created with [3ds Max](https://www.autodesk.com/products/3ds-max/) and exported to glTF via the [Max2Babylon](https://github.com/BabylonJS/Exporters/tree/master/3ds%20Max) exporter. The glTF file was then edited manually in [Visual Studio Code](https://code.visualstudio.com) with the [glTF Tools](https://github.com/AnalyticalGraphicsInc/gltf-vscode) extension to add KHR extensions. [KTX Software](https://gltf-transform.donmccurdy.com/cli.html) was used to compress textures into KTX2 format.
+The model was created with [3ds Max](https://www.autodesk.com/products/3ds-max/) and exported to glTF via the [Max2Babylon](https://github.com/BabylonJS/Exporters/tree/master/3ds%20Max) exporter. The glTF file was then edited manually in [Visual Editor Code](https://code.visualeditor.com) with the [glTF Tools](https://github.com/AnalyticalGraphicsInc/gltf-vscode) extension to add KHR extensions. [KTX Software](https://gltf-transform.donmccurdy.com/cli.html) was used to compress textures into KTX2 format.
 
 The textures were created from photo reference, augmented with procedural textures and hand-painted detail. The emissive textures were pre-rendered in 3ds Max using the V-Ray renderer and sphere lights, and the textures were hand-tuned to work with baseColor and transmission.
 

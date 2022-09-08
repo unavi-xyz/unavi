@@ -44,10 +44,10 @@ export default function Project() {
                 {data.name}
               </div>
 
-              <Link href={`/studio/${id}`} passHref>
+              <Link href={`/editor/${id}`} passHref>
                 <a>
                   <Button variant="filled" fullWidth>
-                    <div className="py-2">Open Studio</div>
+                    <div className="py-2">Open Editor</div>
                   </Button>
                 </a>
               </Link>

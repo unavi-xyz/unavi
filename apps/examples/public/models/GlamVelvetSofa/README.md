@@ -64,7 +64,7 @@ The normal map, enlarged and cropped to show detail.
 
 The extension [KHR_lights_punctual](https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_lights_punctual) is used to add a directional light to the model, with its Intensity set to 3. This provides better velvet illumination, as sheen responds better to punctual lights than to image-based lighting (IBL) alone.
 
-This is highly dependent on the exposure range in each IBL, however most IBLs do not capture strong exposure values for the lights unless the sun or a suitably bright light source are present. In these examples, the "studio" IBL from Babylon.js was used, which uses +2.40 stops for each light.
+This is highly dependent on the exposure range in each IBL, however most IBLs do not capture strong exposure values for the lights unless the sun or a suitably bright light source are present. In these examples, the "editor" IBL from Babylon.js was used, which uses +2.40 stops for each light.
 
 Augmented reality IBLs typically contain a low value range, as they're often created by transforming the view from the mobile device's front camera. It is hoped the addition of a punctual light can restore the benefits of strong key light to improve the sheen response.
 
@@ -74,7 +74,7 @@ Top: Punctual light improves sheen. Bottom: Disabling the punctual light.
 
 ## Authoring Details
 
-The model was created with [3ds Max](https://www.autodesk.com/products/3ds-max/) and exported to glTF via the [Max2Babylon](https://github.com/BabylonJS/Exporters/tree/master/3ds%20Max) exporter. The glTF file was then edited manually in [Visual Studio Code](https://code.visualstudio.com) with the [glTF Tools](https://github.com/AnalyticalGraphicsInc/gltf-vscode) extension to add KHR extensions and fine-tune material values.
+The model was created with [3ds Max](https://www.autodesk.com/products/3ds-max/) and exported to glTF via the [Max2Babylon](https://github.com/BabylonJS/Exporters/tree/master/3ds%20Max) exporter. The glTF file was then edited manually in [Visual Editor Code](https://code.visualeditor.com) with the [glTF Tools](https://github.com/AnalyticalGraphicsInc/gltf-vscode) extension to add KHR extensions and fine-tune material values.
 
 ## License Information
 

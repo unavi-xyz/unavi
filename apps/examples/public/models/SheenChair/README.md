@@ -4,7 +4,7 @@
 
 ![screenshot](screenshot/screenshot-large.jpg)
 
-[Babylon.JS](https://sandbox.babylonjs.com/) screenshot (above), using the Studio lighting environment.
+[Babylon.JS](https://sandbox.babylonjs.com/) screenshot (above), using the Editor lighting environment.
 
 ## Description
 
@@ -20,11 +20,11 @@ The fabric materials use the extension `KHR_materials_sheen` to reproduce velvet
 
 ![screenshot](screenshot/mango_reference.jpg)
 
-Above: real-world reference, and [Babylon.JS](https://sandbox.babylonjs.com/) screenshots using the Studio lighting environment, showing the variant "Mango Velvet" with `KHR_materials_sheen` enabled and disabled.
+Above: real-world reference, and [Babylon.JS](https://sandbox.babylonjs.com/) screenshots using the Editor lighting environment, showing the variant "Mango Velvet" with `KHR_materials_sheen` enabled and disabled.
 
 ![screenshot](screenshot/peacock_reference.jpg)
 
-Above: real-world reference, and [Babylon.JS](https://sandbox.babylonjs.com/) screenshots using the Studio lighting environment, showing the variant "Peacock Velvet" with `KHR_materials_sheen` enabled and disabled.
+Above: real-world reference, and [Babylon.JS](https://sandbox.babylonjs.com/) screenshots using the Editor lighting environment, showing the variant "Peacock Velvet" with `KHR_materials_sheen` enabled and disabled.
 
 ## Material Authoring Choices
 

@@ -114,7 +114,7 @@ export const appRouter = trpc
           name,
           description,
           image: null,
-          studioState: null,
+          editorState: null,
         },
       });
 
@@ -127,12 +127,12 @@ export const appRouter = trpc
       name: z.string().max(255).optional(),
       description: z.string().max(2040).optional(),
       image: z.string().optional(),
-      studioState: z.string().optional(),
+      editorState: z.string().optional(),
       world: z.any(),
     }),
     async resolve({
       ctx: { address },
-      input: { id, name, description, image, studioState, world },
+      input: { id, name, description, image, editorState, world },
     }) {
       // Verify that the user owns the project
       const project = await prisma.project.findFirst({
@@ -150,7 +150,7 @@ export const appRouter = trpc
           name,
           description,
           image,
-          studioState,
+          editorState,
           updatedAt: new Date(),
         },
       });

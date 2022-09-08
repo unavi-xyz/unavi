@@ -10,15 +10,13 @@
   <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/TheWiredXR?style=social">
 </div>
 
-## Tech Stack
+## Features
 
 - Decentralized identity / social graph using [Lens Protocol](https://lens.dev/)
-- Decentralized data storage / fetching over [IPFS](https://ipfs.io/)
-- Open backend, anyone can run their own [host](apps/host) server
-- Custom multi-threaded, glTF-based [game engine](pakacges/engine)
-- 3D rendering using [Three.js](https://github.com/mrdoob/three.js)
-- Physics using [Rapier](https://rapier.rs/)
-- VRM avatars using [Three VRM](https://github.com/pixiv/three-vrm)
+- Open backend, anyone can run their own servers
+- Custom multi-threaded, glTF-based game engine
+- [VRM](https://vrm.dev/) avatar support
+- Visual editor for creating spaces
 
 ## What's inside?
 

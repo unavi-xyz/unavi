@@ -4,9 +4,9 @@ sidebar_label: Overview
 title: Overview
 ---
 
-The Wired is a web-based virtual worlds platform **done right**.
+The Wired is a web-based metaverse platform.
 
-Built on top of open standards and decentralized infrastructure, the Wired reimagines the web as an interconnected network of 3D spaces, instead of 2D pages. You can access the Wired through any browser, on any device.
+Built on top of open standards and decentralized infrastructure, the Wired reimagines the web as an interconnected network of 3D user-owned spaces, instead of 2D pages. You can access the Wired through any browser, on any device.
 
 :::info
 

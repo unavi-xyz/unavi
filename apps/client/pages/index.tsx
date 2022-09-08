@@ -27,7 +27,8 @@ export default function Index() {
               <div className="text-8xl font-black">The Wired</div>
 
               <div className="text-3xl pt-2">
-                A web-based virtual worlds platform <strong>done right</strong>.
+                An <strong>open and decentralized</strong> web-based metaverse
+                platform.
               </div>
 
               <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
@@ -56,7 +57,7 @@ export default function Index() {
                 src="/images/jump.png"
                 priority
                 fill
-                sizes="24vw"
+                sizes="341px"
                 alt="Wired-chan"
                 className="select-none object-contain"
               />

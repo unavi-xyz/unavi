@@ -15,7 +15,7 @@ export default function SidebarButton({ children, href }: Props) {
   return (
     <Link href={href}>
       <div
-        className={`text-lg px-4 cursor-pointer transition-all rounded ${selected}`}
+        className={`text-lg px-4 cursor-pointer transition rounded ${selected}`}
       >
         {children}
       </div>

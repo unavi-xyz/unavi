@@ -5,8 +5,8 @@ import Button from "./Button";
 interface Props {
   children: React.ReactNode;
   title?: string;
-  back?: boolean;
-  forward?: boolean;
+  disableBack?: boolean;
+  disableForward?: boolean;
   onBack?: () => void;
   onForward?: () => void;
 }
@@ -14,8 +14,8 @@ interface Props {
 export default function Carousel({
   children,
   title,
-  back,
-  forward,
+  disableBack,
+  disableForward,
   onBack,
   onForward,
 }: Props) {
@@ -24,7 +24,7 @@ export default function Carousel({
       <div className="text-2xl font-bold">{title}</div>
       <div className="flex space-x-4 py-4">
         <div className="flex items-center justify-center">
-          <Button variant="tonal" icon disabled={!back} onClick={onBack}>
+          <Button variant="tonal" icon disabled={disableBack} onClick={onBack}>
             <IoMdArrowRoundBack className="text-lg" />
           </Button>
         </div>
@@ -34,7 +34,12 @@ export default function Carousel({
         </div>
 
         <div className="flex items-center justify-center">
-          <Button variant="tonal" icon disabled={!forward} onClick={onForward}>
+          <Button
+            variant="tonal"
+            icon
+            disabled={disableForward}
+            onClick={onForward}
+          >
             <IoMdArrowRoundForward className="text-lg" />
           </Button>
         </div>

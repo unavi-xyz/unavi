@@ -1,6 +1,6 @@
 import { ProfileMedia } from "@wired-labs/lens";
 
-import { parseUri } from "../../../utils/parseUri";
+import { parseUri } from "./parseUri";
 
 export function getMediaURL(
   image: ProfileMedia | null | undefined

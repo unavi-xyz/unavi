@@ -2,7 +2,7 @@ import { useGetProfileQuery } from "@wired-labs/lens";
 
 import { HANDLE_ENDING } from "../../lib/lens/constants";
 import { useLens } from "../../lib/lens/hooks/useLens";
-import { getMediaURL } from "../../lib/lens/utils/getMediaURL";
+import { getMediaURL } from "../../utils/getMediaURL";
 import ProfilePicture from "./ProfilePicture";
 
 interface Props {

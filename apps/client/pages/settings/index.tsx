@@ -8,13 +8,13 @@ import { useProfileByHandle } from "../../src/lib/lens/hooks/useProfileByHandle"
 import { useSetProfileImage } from "../../src/lib/lens/hooks/useSetProfileImage";
 import { useSetProfileMetadata } from "../../src/lib/lens/hooks/useSetProfileMetadata";
 import { createProfileMetadata } from "../../src/lib/lens/utils/createProfileMetadata";
-import { getMediaURL } from "../../src/lib/lens/utils/getMediaURL";
 import MetaTags from "../../src/ui/MetaTags";
 import Button from "../../src/ui/base/Button";
 import FileUpload from "../../src/ui/base/FileUpload";
 import TextArea from "../../src/ui/base/TextArea";
 import TextField from "../../src/ui/base/TextField";
 import { crop } from "../../src/utils/crop";
+import { getMediaURL } from "../../src/utils/getMediaURL";
 
 export default function Settings() {
   const nameRef = useRef<HTMLInputElement>(null);

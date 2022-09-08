@@ -26,16 +26,16 @@ export default function Dialog({
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    //add a delay before unmounting the menu so we can show animations
+    // Add a delay before unmounting the menu so we can show animations
     const timeout = setTimeout(() => setVisible(open), 200);
 
-    //dont add the delay on open
+    // Don't add the delay on open
     if (open) {
       setVisible(true);
       clearTimeout(timeout);
     }
 
-    //open / close animation
+    // Open / close animation
     if (open) {
       setTimeout(() => {
         dialogRef.current?.classList.remove("scale-75");

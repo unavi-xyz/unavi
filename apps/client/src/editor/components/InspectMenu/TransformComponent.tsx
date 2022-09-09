@@ -2,6 +2,7 @@ import NumberInput from "../../../ui/base/NumberInput";
 import { setTransform } from "../../actions/SetTransform";
 import { useEditorStore } from "../../store";
 import ComponentMenu from "./ComponentMenu";
+import MenuRows from "./MenuRows";
 
 interface Props {
   entityId: string;
@@ -27,100 +28,99 @@ export default function TransformComponent({ entityId }: Props) {
 
   return (
     <ComponentMenu>
-      <div className="grid grid-cols-4 gap-3">
-        <div>Position</div>
-        {position.map((value, i) => {
-          const letter = ["X", "Y", "Z"][i];
-          const name = `position-${letter}`;
+      <MenuRows titles={["Position", "Rotation", "Scale"]}>
+        <div className="grid grid-cols-3 gap-3">
+          {position.map((value, i) => {
+            const letter = ["X", "Y", "Z"][i];
+            const name = `position-${letter}`;
 
-          const rounded = Math.round(value * 1000) / 1000;
+            const rounded = Math.round(value * 1000) / 1000;
 
-          return (
-            <div key={name} className="flex space-x-2">
-              <label htmlFor={name}>{letter}</label>
-              <NumberInput
-                name={name}
-                value={rounded}
-                step={0.1}
-                onChange={(e) => {
-                  // @ts-ignore
-                  const value: string | null = e.target.value || null;
-                  if (value === null) return;
+            return (
+              <div key={name} className="flex space-x-2">
+                <label htmlFor={name}>{letter}</label>
+                <NumberInput
+                  name={name}
+                  value={rounded}
+                  step={0.1}
+                  onChange={(e) => {
+                    // @ts-ignore
+                    const value: string | null = e.target.value || null;
+                    if (value === null) return;
 
-                  const num = parseFloat(value);
-                  const rounded = Math.round(num * 1000) / 1000;
-                  entity.position[i] = rounded;
-                  setTransform(entity);
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
+                    const num = parseFloat(value);
+                    const rounded = Math.round(num * 1000) / 1000;
+                    entity.position[i] = rounded;
+                    setTransform(entity);
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
 
-      <div className="grid grid-cols-4 gap-3">
-        <div>Rotation</div>
-        {rotation.map((value, i) => {
-          const letter = ["X", "Y", "Z"][i];
-          const name = `rotation-${letter}`;
+        <div className="grid grid-cols-3 gap-3">
+          {rotation.map((value, i) => {
+            const letter = ["X", "Y", "Z"][i];
+            const name = `rotation-${letter}`;
 
-          const degress = Math.round((value * 180) / Math.PI);
-          const rounded = Math.round(degress * 1000) / 1000;
+            const degress = Math.round((value * 180) / Math.PI);
+            const rounded = Math.round(degress * 1000) / 1000;
 
-          return (
-            <div key={name} className="flex space-x-2">
-              <label htmlFor={name}>{letter}</label>
-              <NumberInput
-                name={name}
-                value={rounded}
-                step={1}
-                onChange={(e) => {
-                  // @ts-ignore
-                  const value: string | null = e.target.value || null;
-                  if (value === null) return;
+            return (
+              <div key={name} className="flex space-x-2">
+                <label htmlFor={name}>{letter}</label>
+                <NumberInput
+                  name={name}
+                  value={rounded}
+                  step={1}
+                  onChange={(e) => {
+                    // @ts-ignore
+                    const value: string | null = e.target.value || null;
+                    if (value === null) return;
 
-                  const num = parseFloat(value);
-                  const rounded = Math.round(num * 1000) / 1000;
-                  const radians = (rounded * Math.PI) / 180;
-                  entity.rotation[i] = radians;
-                  setTransform(entity);
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
+                    const num = parseFloat(value);
+                    const rounded = Math.round(num * 1000) / 1000;
+                    const radians = (rounded * Math.PI) / 180;
+                    entity.rotation[i] = radians;
+                    setTransform(entity);
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
 
-      <div className="grid grid-cols-4 gap-3">
-        <div>Scale</div>
-        {scale.map((value, i) => {
-          const letter = ["X", "Y", "Z"][i];
-          const name = `scale-${letter}`;
+        <div className="grid grid-cols-3 gap-3">
+          {scale.map((value, i) => {
+            const letter = ["X", "Y", "Z"][i];
+            const name = `scale-${letter}`;
 
-          const rounded = Math.round(value * 1000) / 1000;
+            const rounded = Math.round(value * 1000) / 1000;
 
-          return (
-            <div key={name} className="flex space-x-2">
-              <label htmlFor={name}>{letter}</label>
-              <NumberInput
-                name={name}
-                value={rounded}
-                step={0.1}
-                onChange={(e) => {
-                  // @ts-ignore
-                  const value: string | null = e.target.value || null;
-                  if (value === null) return;
+            return (
+              <div key={name} className="flex space-x-2">
+                <label htmlFor={name}>{letter}</label>
+                <NumberInput
+                  name={name}
+                  value={rounded}
+                  step={0.1}
+                  onChange={(e) => {
+                    // @ts-ignore
+                    const value: string | null = e.target.value || null;
+                    if (value === null) return;
 
-                  const num = parseFloat(value);
-                  const rounded = Math.round(num * 1000) / 1000;
-                  entity.scale[i] = rounded;
-                  setTransform(entity);
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
+                    const num = parseFloat(value);
+                    const rounded = Math.round(num * 1000) / 1000;
+                    entity.scale[i] = rounded;
+                    setTransform(entity);
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </MenuRows>
     </ComponentMenu>
   );
 }

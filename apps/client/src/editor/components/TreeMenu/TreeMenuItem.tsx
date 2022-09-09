@@ -98,7 +98,7 @@ export default function TreeMenuItem({ id }: Props) {
           e.stopPropagation();
           useEditorStore.setState({ selectedId: id });
         }}
-        className={`h-6 font-bold rounded-md px-2 flex items-center ${bgClass} ${opacityClass}`}
+        className={`h-6 font-bold rounded px-2 flex items-center ${bgClass} ${opacityClass}`}
       >
         <div
           onClick={() => setOpen((prev) => !prev)}

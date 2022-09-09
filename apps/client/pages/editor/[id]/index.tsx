@@ -103,44 +103,30 @@ export default function Editor() {
           </div>
 
           <Split
-            sizes={[70, 30]}
-            minSize={200}
-            direction="vertical"
+            sizes={[5, 85, 10]}
+            minSize={[250, 300, 425]}
+            direction="horizontal"
             expandToMin
             gutterSize={6}
             className="h-full"
             onMouseUp={updateCanvasSize}
           >
-            <div className="h-full">
-              <Split
-                sizes={[15, 65, 20]}
-                minSize={[200, 300, 300]}
-                direction="horizontal"
-                expandToMin
-                gutterSize={6}
-                className="h-full"
-                onMouseUp={updateCanvasSize}
-              >
-                <div className="float-left h-full">
-                  <TreeMenu />
-                </div>
-
-                <div className="float-left h-full border-x">
-                  <div
-                    ref={containerRef}
-                    className="relative w-full h-full overflow-hidden"
-                  >
-                    <canvas ref={canvasRef} className="w-full h-full" />
-                  </div>
-                </div>
-
-                <div className="float-left h-full">
-                  <InspectMenu />
-                </div>
-              </Split>
+            <div className="float-left h-full">
+              <TreeMenu />
             </div>
 
-            <div>{/* <FileBrowser /> */}</div>
+            <div className="float-left h-full border-x">
+              <div
+                ref={containerRef}
+                className="relative w-full h-full overflow-hidden"
+              >
+                <canvas ref={canvasRef} className="w-full h-full" />
+              </div>
+            </div>
+
+            <div className="float-left h-full">
+              <InspectMenu />
+            </div>
           </Split>
         </div>
       </DndProvider>

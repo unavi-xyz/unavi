@@ -33,7 +33,7 @@ export default function Card({
   return (
     <div
       ref={cardRef}
-      className={`group p-2 w-full h-full overflow-hidden rounded-2xl hover:cursor-pointer
+      className={`group p-2.5 w-full h-full overflow-hidden rounded-2xl hover:cursor-pointer
                   flex flex-col hover:ring-2 hover:ring-black ${opacityCss}`}
     >
       <div

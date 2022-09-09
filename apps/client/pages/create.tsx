@@ -41,7 +41,7 @@ export default function Create() {
       </Dialog>
 
       <div className="flex justify-center py-8 mx-4">
-        <div className="max-w space-y-8">
+        <div className="max-w-content space-y-8">
           <div className="flex justify-center font-black text-3xl">Create</div>
 
           <div className="flex items-center justify-between">

@@ -7,8 +7,8 @@ html {
   @apply bg-background text-onBackground;
 }
 
-.max-w {
-  @apply max-w-5xl w-full;
+.max-w-content {
+  @apply max-w-screen-lg w-full;
 }
 
 /* Scrollbar */

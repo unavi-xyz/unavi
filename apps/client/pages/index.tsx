@@ -21,7 +21,7 @@ export default function Index() {
       <MetaTags />
 
       <div className="flex justify-center">
-        <div className="max-w mx-4 snap-mandatory snap-y">
+        <div className="max-w-content mx-4 snap-mandatory snap-y">
           <div className="h-screen snap-center -mt-12 flex flex-col md:flex-row items-center">
             <div className="w-full h-full flex flex-col justify-center">
               <div className="text-8xl font-black">The Wired</div>

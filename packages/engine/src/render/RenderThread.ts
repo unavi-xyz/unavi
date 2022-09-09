@@ -1,6 +1,6 @@
 import { TypedArray } from "bitecs";
 
-import { Entity, Transferable } from "../types";
+import { Entity, Material, Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderWorker } from "./RenderWorker";
 import { FromRenderMessage, PointerData, ToRenderMessage } from "./types";
@@ -106,6 +106,14 @@ export class RenderThread {
     );
   }
 
+  addMaterial(material: Material) {
+    this.#postMessage({ subject: "add_material", data: material });
+  }
+
+  removeMaterial(materialId: string) {
+    this.#postMessage({ subject: "remove_material", data: materialId });
+  }
+
   addEntity(data: Entity) {
     this.#postMessage({ subject: "add_entity", data });
   }
@@ -114,7 +122,7 @@ export class RenderThread {
     this.#postMessage({
       subject: "set_transform",
       data: {
-        id: data.id,
+        entityId: data.id,
         position: data.position,
         rotation: data.rotation,
         scale: data.scale,
@@ -125,7 +133,14 @@ export class RenderThread {
   setGeometry(entityId: string, geometry: number[]) {
     this.#postMessage({
       subject: "set_geometry",
-      data: { id: entityId, geometry },
+      data: { entityId, geometry },
+    });
+  }
+
+  setMaterial(entityId: string, materialId: string | null) {
+    this.#postMessage({
+      subject: "set_material",
+      data: { entityId, materialId },
     });
   }
 

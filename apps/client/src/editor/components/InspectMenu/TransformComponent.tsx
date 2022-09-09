@@ -9,21 +9,39 @@ interface Props {
 }
 
 export default function TransformComponent({ entityId }: Props) {
-  const entity = useEditorStore((state) => state.tree[entityId]);
+  const entity = useEditorStore((state) => state.scene.entities[entityId]);
 
-  const positionX = useEditorStore((state) => state.tree[entityId].position[0]);
-  const positionY = useEditorStore((state) => state.tree[entityId].position[1]);
-  const positionZ = useEditorStore((state) => state.tree[entityId].position[2]);
+  const positionX = useEditorStore(
+    (state) => state.scene.entities[entityId].position[0]
+  );
+  const positionY = useEditorStore(
+    (state) => state.scene.entities[entityId].position[1]
+  );
+  const positionZ = useEditorStore(
+    (state) => state.scene.entities[entityId].position[2]
+  );
   const position = [positionX, positionY, positionZ];
 
-  const rotationX = useEditorStore((state) => state.tree[entityId].rotation[0]);
-  const rotationY = useEditorStore((state) => state.tree[entityId].rotation[1]);
-  const rotationZ = useEditorStore((state) => state.tree[entityId].rotation[2]);
+  const rotationX = useEditorStore(
+    (state) => state.scene.entities[entityId].rotation[0]
+  );
+  const rotationY = useEditorStore(
+    (state) => state.scene.entities[entityId].rotation[1]
+  );
+  const rotationZ = useEditorStore(
+    (state) => state.scene.entities[entityId].rotation[2]
+  );
   const rotation = [rotationX, rotationY, rotationZ];
 
-  const scaleY = useEditorStore((state) => state.tree[entityId].scale[1]);
-  const scaleZ = useEditorStore((state) => state.tree[entityId].scale[2]);
-  const scaleX = useEditorStore((state) => state.tree[entityId].scale[0]);
+  const scaleY = useEditorStore(
+    (state) => state.scene.entities[entityId].scale[1]
+  );
+  const scaleZ = useEditorStore(
+    (state) => state.scene.entities[entityId].scale[2]
+  );
+  const scaleX = useEditorStore(
+    (state) => state.scene.entities[entityId].scale[0]
+  );
   const scale = [scaleX, scaleY, scaleZ];
 
   return (

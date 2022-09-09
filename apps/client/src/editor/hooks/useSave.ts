@@ -11,7 +11,7 @@ export function useSave() {
 
   async function save() {
     const id = router.query.id as string;
-    const { name, description, engine, tree } = useEditorStore.getState();
+    const { name, description, engine, scene } = useEditorStore.getState();
     const editorState = JSON.stringify(getEditorState());
     if (!engine) return;
 
@@ -22,7 +22,7 @@ export function useSave() {
       name,
       description,
       editorState,
-      world: tree,
+      scene,
     });
   }
 

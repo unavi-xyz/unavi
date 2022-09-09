@@ -3,7 +3,7 @@ import TreeMenuRoot from "./TreeMenuRoot";
 
 export default function TreeMenu() {
   return (
-    <div className="p-2 pl-3 space-y-2">
+    <div className="h-full p-2 pl-3 space-y-2">
       <div className="h-10 flex items-center justify-center space-x-2">
         <ObjectsButton />
       </div>

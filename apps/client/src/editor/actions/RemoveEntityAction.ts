@@ -2,21 +2,21 @@ import { useEditorStore } from "../store";
 
 export class RemoveEntityAction {
   constructor(entityId: string) {
-    const { tree, engine } = useEditorStore.getState();
+    const { scene, engine } = useEditorStore.getState();
 
     // Remove from parent
-    const entity = tree[entityId];
+    const entity = scene.entities[entityId];
     if (entity.parent) {
-      const parent = tree[entity.parent];
+      const parent = scene.entities[entity.parent];
       parent.children = parent.children.filter((id) => id !== entityId);
       parent.children = [...parent.children];
     }
 
     // Remove entity
-    delete tree[entityId];
+    delete scene.entities[entityId];
 
-    // Update tree
-    useEditorStore.setState({ tree });
+    // Update scene
+    useEditorStore.setState({ scene });
 
     // Update engine
     if (engine) engine.renderThread.removeEntity(entityId);

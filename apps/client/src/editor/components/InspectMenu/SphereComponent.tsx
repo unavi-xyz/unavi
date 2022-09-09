@@ -12,15 +12,15 @@ interface Props {
 
 export default function SphereComponent({ entityId }: Props) {
   const radius = useEditorStore((state) => {
-    const entity = state.tree[entityId] as Sphere;
+    const entity = state.scene.entities[entityId] as Sphere;
     return entity.radius;
   });
   const widthSegments = useEditorStore((state) => {
-    const entity = state.tree[entityId] as Sphere;
+    const entity = state.scene.entities[entityId] as Sphere;
     return entity.widthSegments;
   });
   const heightSegments = useEditorStore((state) => {
-    const entity = state.tree[entityId] as Sphere;
+    const entity = state.scene.entities[entityId] as Sphere;
     return entity.heightSegments;
   });
 
@@ -47,8 +47,8 @@ export default function SphereComponent({ entityId }: Props) {
                 const num = parseFloat(value);
                 const rounded = Math.round(num * 1000) / 1000;
 
-                const { tree } = useEditorStore.getState();
-                const entity = tree[entityId] as Sphere;
+                const { scene } = useEditorStore.getState();
+                const entity = scene.entities[entityId] as Sphere;
                 entity[property] = rounded;
 
                 setGeometry(entity);

@@ -6,7 +6,7 @@ import Split from "react-split";
 import EditorNavbar from "../../../src/editor/components/EditorNavbar/EditorNavbar";
 import InspectMenu from "../../../src/editor/components/InspectMenu/InspectMenu";
 import TreeMenu from "../../../src/editor/components/TreeMenu/TreeMenu";
-import { emptyTree } from "../../../src/editor/constants";
+import { emptyScene } from "../../../src/editor/constants";
 import { useEditorHotkeys } from "../../../src/editor/hooks/useEditorHotkeys";
 import { useLoad } from "../../../src/editor/hooks/useLoad";
 import { useTransformControls } from "../../../src/editor/hooks/useTransformControls";
@@ -53,7 +53,7 @@ export default function Editor() {
       useEditorStore.setState({
         engine: null,
         selectedId: null,
-        tree: deepClone(emptyTree),
+        scene: deepClone(emptyScene),
       });
     };
   }, [engine]);

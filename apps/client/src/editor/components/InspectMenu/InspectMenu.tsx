@@ -1,11 +1,13 @@
 import { useEditorStore } from "../../store";
-import EntityComponent from "./EntityComponent";
+import EntityComponents from "./EntityComponents";
 import TransformComponent from "./TransformComponent";
 
 export default function InspectMenu() {
   const selectedId = useEditorStore((state) => state.selectedId);
-  const tree = useEditorStore((state) => state.tree);
-  const name = selectedId ? tree[selectedId].name : null;
+  const name = useEditorStore((state) => {
+    if (!selectedId) return null;
+    return state.scene.entities[selectedId].name;
+  });
 
   if (!selectedId || !name) return null;
 
@@ -14,7 +16,7 @@ export default function InspectMenu() {
       <div className="flex justify-center text-2xl font-bold">{name}</div>
       <div className="space-y-8">
         <TransformComponent entityId={selectedId} />
-        <EntityComponent entityId={selectedId} />
+        <EntityComponents entityId={selectedId} />
       </div>
     </div>
   );

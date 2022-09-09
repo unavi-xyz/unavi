@@ -4,13 +4,13 @@ import { useEditorStore } from "../store";
 
 export class SetGeometry {
   constructor(entity: Entity) {
-    const { tree, engine } = useEditorStore.getState();
+    const { scene, engine } = useEditorStore.getState();
 
     // Set entity
-    tree[entity.id] = entity;
+    scene.entities[entity.id] = entity;
 
-    // Update tree
-    useEditorStore.setState({ tree });
+    // Update scene
+    useEditorStore.setState({ scene });
 
     // Get geometry
     let geometry: number[] = [];

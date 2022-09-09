@@ -7,15 +7,15 @@ export function moveToSibling(
   placement: "above" | "below" = "below"
 ) {
   // Get parent
-  const { tree } = useEditorStore.getState();
-  const sibling = tree[siblingId];
+  const { scene } = useEditorStore.getState();
+  const sibling = scene.entities[siblingId];
   const parentId = sibling.parent;
 
   // Get target index
   let index: number | undefined;
 
   if (parentId) {
-    const parent = tree[parentId];
+    const parent = scene.entities[parentId];
     index = parent.children.indexOf(siblingId);
     if (placement === "below") index++;
   }

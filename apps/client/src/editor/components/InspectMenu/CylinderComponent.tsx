@@ -12,19 +12,19 @@ interface Props {
 
 export default function CylinderComponent({ entityId }: Props) {
   const radiusTop = useEditorStore((state) => {
-    const entity = state.tree[entityId] as Cylinder;
+    const entity = state.scene.entities[entityId] as Cylinder;
     return entity.radiusTop;
   });
   const radiusBottom = useEditorStore((state) => {
-    const entity = state.tree[entityId] as Cylinder;
+    const entity = state.scene.entities[entityId] as Cylinder;
     return entity.radiusBottom;
   });
   const height = useEditorStore((state) => {
-    const entity = state.tree[entityId] as Cylinder;
+    const entity = state.scene.entities[entityId] as Cylinder;
     return entity.height;
   });
   const radialSegments = useEditorStore((state) => {
-    const entity = state.tree[entityId] as Cylinder;
+    const entity = state.scene.entities[entityId] as Cylinder;
     return entity.radialSegments;
   });
 
@@ -64,8 +64,8 @@ export default function CylinderComponent({ entityId }: Props) {
                 const num = parseFloat(value);
                 const rounded = Math.round(num * 1000) / 1000;
 
-                const { tree } = useEditorStore.getState();
-                const entity = tree[entityId] as Cylinder;
+                const { scene } = useEditorStore.getState();
+                const entity = scene.entities[entityId] as Cylinder;
                 entity[property] = rounded;
 
                 setGeometry(entity);

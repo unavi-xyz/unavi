@@ -6,7 +6,7 @@ title: Overview
 
 The Wired is an **open and decentralized** web-based metaverse platform.
 
-The Wired reimagines the web as an interconnected network of 3D spaces, instead of 2D pages - all while being built on open standards and decentralized infrastructure. You can access the Wired through any browser, on any device.
+The Wired reimagines the web as an interconnected network of 3D spaces, instead of 2D pages - all while running on open standards and decentralized infrastructure. You can access the Wired through any browser, on any device.
 
 :::info
 

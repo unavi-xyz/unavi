@@ -13,12 +13,12 @@ export function useTransformControls() {
     engine.renderThread.onObjectClick = (id) =>
       useEditorStore.setState({ selectedId: id });
     engine.renderThread.onSetTransform = (id, position, rotation, scale) => {
-      const { tree } = useEditorStore.getState();
-      const entity = tree[id];
+      const { scene } = useEditorStore.getState();
+      const entity = scene.entities[id];
       entity.position = [position[0], position[1], position[2]];
       entity.rotation = [rotation[0], rotation[1], rotation[2]];
       entity.scale = [scale[0], scale[1], scale[2]];
-      useEditorStore.setState({ tree });
+      useEditorStore.setState({ scene });
     };
   }, [engine]);
 

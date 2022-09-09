@@ -1,6 +1,6 @@
 import { TypedArray } from "bitecs";
 
-import { Entity, WorkerMessage } from "../types";
+import { Entity, Material, WorkerMessage } from "../types";
 import { RenderWorkerOptions } from "./RenderWorker";
 
 export type LoadSceneData = {
@@ -51,7 +51,7 @@ export type ToRenderMessage =
   | WorkerMessage<
       "set_transform",
       {
-        id: string;
+        entityId: string;
         position: number[];
         rotation: number[];
         scale: number[];
@@ -60,10 +60,20 @@ export type ToRenderMessage =
   | WorkerMessage<
       "set_geometry",
       {
-        id: string;
+        entityId: string;
         geometry: number[];
       }
     >
+  | WorkerMessage<
+      "set_material",
+      {
+        entityId: string;
+        materialId: string | null;
+      }
+    >
+  | WorkerMessage<"add_material", Material>
+  | WorkerMessage<"edit_material", Material>
+  | WorkerMessage<"remove_material", string>
   | WorkerMessage<"remove_entity", string>
   | WorkerMessage<"move_entity", { entityId: string; parentId: string | null }>;
 

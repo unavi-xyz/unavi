@@ -18,14 +18,14 @@ interface Props {
 export default function TreeMenuItem({ id }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const selectedId = useEditorStore((state) => state.selectedId);
-  const name = useEditorStore((state) => state.tree[id].name);
-  const children = useEditorStore((state) => state.tree[id].children);
+  const name = useEditorStore((state) => state.scene.entities[id].name);
+  const children = useEditorStore((state) => state.scene.entities[id].children);
   const [open, setOpen] = useState(true);
 
   // Create drag source
   const [{ isDragging }, drag] = useDrag(
     () => ({
-      type: DND_TYPES.TreeItem,
+      type: DND_TYPES.Entity,
       item: { id },
       collect: (monitor) => ({
         isDragging: monitor.isDragging(),
@@ -37,7 +37,7 @@ export default function TreeMenuItem({ id }: Props) {
   // Create drop target
   const [{ isOver }, drop] = useDrop(
     () => ({
-      accept: DND_TYPES.TreeItem,
+      accept: DND_TYPES.Entity,
       drop({ id: droppedId }: DragItem, monitor) {
         if (droppedId !== id) {
           const didDrop = monitor.didDrop();
@@ -59,7 +59,7 @@ export default function TreeMenuItem({ id }: Props) {
   // Create drop target for below
   const [{ isOver: isOverBelow }, dropBelow] = useDrop(
     () => ({
-      accept: DND_TYPES.TreeItem,
+      accept: DND_TYPES.Entity,
       drop({ id: droppedId }: DragItem, monitor) {
         if (droppedId !== id) {
           const didDrop = monitor.didDrop();
@@ -130,12 +130,12 @@ export default function TreeMenuItem({ id }: Props) {
 }
 
 function isDeepChild(entityId: string, parentId: string) {
-  const { tree } = useEditorStore.getState();
-  const object = tree[parentId];
+  const { scene } = useEditorStore.getState();
+  const entity = scene.entities[parentId];
 
-  if (object.children.includes(entityId)) return true;
+  if (entity.children.includes(entityId)) return true;
 
-  for (const child of object.children) {
+  for (const child of entity.children) {
     if (isDeepChild(entityId, child)) return true;
   }
 

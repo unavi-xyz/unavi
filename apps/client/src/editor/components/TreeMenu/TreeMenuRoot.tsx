@@ -12,12 +12,14 @@ type DragItem = {
 
 export default function TreeMenuRoot() {
   const ref = useRef<HTMLDivElement>(null);
-  const children = useEditorStore((state) => state.tree["root"].children);
+  const children = useEditorStore(
+    (state) => state.scene.entities["root"].children
+  );
 
   // Create drop target
   const [{}, drop] = useDrop(
     () => ({
-      accept: DND_TYPES.TreeItem,
+      accept: DND_TYPES.Entity,
       drop({ id: droppedId }: DragItem, monitor) {
         const didDrop = monitor.didDrop();
         if (didDrop) return;

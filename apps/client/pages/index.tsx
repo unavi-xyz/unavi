@@ -107,7 +107,7 @@ export default function Index() {
                 <Image
                   src="/images/sitting.png"
                   fill
-                  sizes="24vw"
+                  sizes="293px"
                   alt="Wired-chan"
                   className="select-none object-contain"
                 />

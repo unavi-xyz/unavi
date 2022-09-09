@@ -1,9 +1,9 @@
 import create from "zustand";
 
-import { Engine, Entity } from "@wired-labs/engine";
+import { Engine, Scene } from "@wired-labs/engine";
 
 import { deepClone } from "../utils/deepClone";
-import { emptyTree } from "./constants";
+import { emptyScene } from "./constants";
 import { Tool } from "./types";
 
 export interface IEditorStore {
@@ -14,8 +14,7 @@ export interface IEditorStore {
   preview: boolean;
   selectedId: string | null;
 
-  treeNonce: number;
-  tree: { [id: string]: Entity };
+  scene: Scene;
 
   debug: boolean;
   grid: boolean;
@@ -30,8 +29,7 @@ export const useEditorStore = create<IEditorStore>(() => ({
   preview: false,
   selectedId: null,
 
-  treeNonce: 0,
-  tree: deepClone(emptyTree),
+  scene: deepClone(emptyScene),
 
   debug: false,
   grid: false,

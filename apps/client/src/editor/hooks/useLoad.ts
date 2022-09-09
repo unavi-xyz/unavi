@@ -1,10 +1,11 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
-import { Entity } from "@wired-labs/engine";
+import { Entity, Scene } from "@wired-labs/engine";
 
 import { trpc } from "../../auth/trpc";
 import { addEntity } from "../actions/AddEntityAction";
+import { addMaterial } from "../actions/AddMaterialAction";
 import { useEditorStore } from "../store";
 
 export function useLoad() {
@@ -16,7 +17,7 @@ export function useLoad() {
     cacheTime: 0,
   });
 
-  const { data: world } = trpc.useQuery(["world", { id }], {
+  const { data: sceneData } = trpc.useQuery(["scene", { id }], {
     enabled: id !== undefined,
     cacheTime: 0,
   });
@@ -40,27 +41,33 @@ export function useLoad() {
     }
   }, [engine, project]);
 
-  // Load world on query fetch
+  // Load scene on query fetch
   useEffect(() => {
-    if (!engine || !world) return;
+    const scene: Scene | undefined = sceneData;
+    if (!engine || !scene) return;
 
     function addToEngine(entity: Entity) {
+      if (!scene) throw new Error("Scene not found");
+
+      // Add entity
       addEntity(entity);
 
       // Add Children
       entity.children.forEach((childId) => {
-        const child = world[childId];
+        const child = scene.entities[childId];
         addToEngine(child);
       });
     }
 
-    const root: Entity = world["root"];
-    if (!root) return;
+    // Load materials
+    Object.values(scene.materials).forEach((material) => {
+      addMaterial(material);
+    });
 
-    // Load the world
-    root.children.forEach((childId) => {
-      const child = world[childId];
+    // Load entities
+    scene.entities["root"].children.forEach((childId) => {
+      const child = scene.entities[childId];
       addToEngine(child);
     });
-  }, [engine, world]);
+  }, [engine, sceneData]);
 }

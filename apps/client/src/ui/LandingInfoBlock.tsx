@@ -34,7 +34,7 @@ export default function LandingInfoBlock({
           <Image
             src={image}
             fill
-            sizes="292px"
+            sizes="293px"
             alt="Wired-chan"
             className="select-none object-contain"
           />

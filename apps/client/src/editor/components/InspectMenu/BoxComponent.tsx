@@ -12,15 +12,15 @@ interface Props {
 
 export default function BoxComponent({ entityId }: Props) {
   const width = useEditorStore((state) => {
-    const entity = state.tree[entityId] as Box;
+    const entity = state.scene.entities[entityId] as Box;
     return entity.width;
   });
   const height = useEditorStore((state) => {
-    const entity = state.tree[entityId] as Box;
+    const entity = state.scene.entities[entityId] as Box;
     return entity.height;
   });
   const depth = useEditorStore((state) => {
-    const entity = state.tree[entityId] as Box;
+    const entity = state.scene.entities[entityId] as Box;
     return entity.depth;
   });
 
@@ -45,8 +45,8 @@ export default function BoxComponent({ entityId }: Props) {
                 const num = parseFloat(value);
                 const rounded = Math.round(num * 1000) / 1000;
 
-                const { tree } = useEditorStore.getState();
-                const entity = tree[entityId] as Box;
+                const { scene } = useEditorStore.getState();
+                const entity = scene.entities[entityId] as Box;
                 entity[property] = rounded;
 
                 setGeometry(entity);

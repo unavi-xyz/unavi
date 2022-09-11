@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.13",
-    "@types/node": "^18.7.3",
+    "@types/node": "^18.7.16",
     "@wired-labs/engine": "*",
     "@wired-labs/tsconfig": "*",
     "eslint": "^8.22.0",

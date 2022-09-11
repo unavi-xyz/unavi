@@ -24,7 +24,7 @@
     "@wired-labs/lens": "*",
     "ethers": "^5.6.9",
     "immer": "^9.0.15",
-    "ipfs-http-client": "^57.0.3",
+    "ipfs-http-client": "^58.0.0",
     "jotai": "^1.7.8",
     "nanoid": "^4.0.0",
     "next": "^12.3.0",

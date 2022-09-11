@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "graphql": "^16.5.0",
-    "urql": "^2.2.3",
+    "urql": "^3.0.3",
     "wagmi": "^0.6.3"
   },
   "devDependencies": {

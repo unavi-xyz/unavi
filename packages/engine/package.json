@@ -15,7 +15,7 @@
     "@gltf-transform/core": "^2.3.0",
     "@gltf-transform/extensions": "^2.3.0",
     "@gltf-transform/functions": "^2.3.0",
-    "@pixiv/three-vrm": "^1.0.0-beta.18",
+    "@pixiv/three-vrm": "^1.0.0-beta.19",
     "@types/draco3d": "^1.4.1",
     "bitecs": "^0.3.38",
     "mediasoup-client": "^3.6.55",

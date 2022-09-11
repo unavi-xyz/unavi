@@ -29,6 +29,8 @@ export default function Create() {
     refetch();
   }, [utils, refetch, authState, accountStatus]);
 
+  const authenticated = authState === "authenticated";
+
   return (
     <>
       <MetaTags title="Create" />
@@ -50,8 +52,11 @@ export default function Create() {
               <Button
                 variant="outlined"
                 squared="small"
-                disabled={authState !== "authenticated"}
-                onClick={() => setOpenCreateProject(true)}
+                disabled={!authenticated}
+                onClick={() => {
+                  if (!authenticated) return;
+                  setOpenCreateProject(true);
+                }}
               >
                 <MdAdd className="text-lg" />
               </Button>

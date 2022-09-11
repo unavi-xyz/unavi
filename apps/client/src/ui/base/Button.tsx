@@ -9,7 +9,7 @@ export type ButtonVariant =
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
-  rgb?: "primary" | "error";
+  color?: "primary" | "error";
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -20,7 +20,7 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export default function sButton({
   variant = "text",
-  rgb: color = "primary",
+  color = "primary",
   loading = false,
   disabled = false,
   fullWidth = false,
@@ -66,7 +66,7 @@ export default function sButton({
 
   const disabledClass =
     loading || disabled
-      ? "opacity-40 cursor-not-allowed bg-surfaceVariant"
+      ? "opacity-40 cursor-not-allowed bg-surfaceVariant hover:bg-surfaceVariant hover:ring-outline"
       : variant === "text"
       ? "active:bg-opacity-75"
       : variant === "outlined"

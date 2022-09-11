@@ -68,7 +68,7 @@ export default function Settings(props: PublicationProps) {
 
         <Button
           variant="filled"
-          rgb="primary"
+          color="primary"
           squared="large"
           loading={loading}
           onClick={handleDelete}

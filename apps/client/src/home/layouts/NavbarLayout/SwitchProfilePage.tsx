@@ -50,7 +50,7 @@ export default function SwitchProfilePage({ onClose }: Props) {
       />
 
       <div className="flex justify-end">
-        <Button variant="tonal" onClick={handleSelect}>
+        <Button variant="filled" onClick={handleSelect}>
           Select
         </Button>
       </div>

@@ -47,25 +47,25 @@ export default function SettingsLayout({ children }: Props) {
           </div>
 
           <Link href="/settings" passHref>
-            <a className="block">
+            <div className="block">
               <SettingsButton
                 icon={<MdOutlinePersonOutline />}
                 selected={router.asPath === "/settings"}
               >
                 Profile
               </SettingsButton>
-            </a>
+            </div>
           </Link>
 
           <Link href="/settings/account" passHref>
-            <a className="block">
+            <div className="block">
               <SettingsButton
                 icon={<MdOutlineAccountBalanceWallet />}
                 selected={router.asPath === "/settings/account"}
               >
                 Account
               </SettingsButton>
-            </a>
+            </div>
           </Link>
 
           <SettingsButton icon={<MdAdd />} onClick={() => setOpen(true)}>

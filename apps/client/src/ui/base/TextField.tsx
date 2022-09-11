@@ -1,4 +1,4 @@
-import { ChangeEvent, RefObject, useId } from "react";
+import { RefObject, useId } from "react";
 import { MdOutlineHelpOutline } from "react-icons/md";
 
 import Tooltip from "./Tooltip";
@@ -8,7 +8,6 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   frontAdornment?: string;
   help?: string;
   inputRef?: RefObject<HTMLInputElement>;
-  onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
 export default function TextField({
@@ -40,7 +39,7 @@ export default function TextField({
         )}
       </div>
 
-      <div className="flex items-center border rounded-lg bg-surface text-onSurface">
+      <div className="flex items-center rounded-lg bg-surface text-onSurface">
         {frontAdornment && (
           <span className="pl-3 text-outline font-bold">{frontAdornment}</span>
         )}

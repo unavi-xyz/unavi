@@ -3,10 +3,9 @@
 /* tslint:disable */
 
 /* eslint-disable */
+import type { LensHub, LensHubInterface } from "../LensHub";
 import type { Provider } from "@ethersproject/providers";
 import { Contract, Signer, utils } from "ethers";
-
-import type { LensHub, LensHubInterface } from "../LensHub";
 
 const _abi = [
   {

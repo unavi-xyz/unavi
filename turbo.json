@@ -24,23 +24,15 @@
       ],
       "outputs": [".next/**"]
     },
-    "lint": {
-      "outputs": []
-    },
-    "codegen": {
-      "dependsOn": ["^build"]
-    },
-    "client#codegen": {
-      "dependsOn": ["^build", "$DATABASE_URL"]
-    },
+    "codegen": {},
+    "client#codegen": { "dependsOn": ["$DATABASE_URL"] },
     "test": {
-      "dependsOn": ["build"]
+      "dependsOn": ["build"],
+      "outputs": [],
+      "inputs": ["**/*.tsx", "**/*.ts"]
     },
-    "dev": {
-      "cache": false
-    },
-    "deploy": {
-      "dependsOn": ["build"]
-    }
+    "lint": { "outputs": [] },
+    "deploy": { "dependsOn": ["build", "lint"] },
+    "dev": { "cache": false }
   }
 }

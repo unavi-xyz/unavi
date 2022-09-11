@@ -12,7 +12,7 @@
     "codegen": "turbo run codegen",
     "deploy": "turbo run deploy",
     "dev": "turbo run dev --parallel",
-    "format": "prettier --write . --ignore-path .gitignore && npx sort-package-json",
+    "format": "prettier --write . && npx sort-package-json",
     "postinstall": "husky install && patch-package",
     "lint": "turbo run lint",
     "test": "turbo run test"

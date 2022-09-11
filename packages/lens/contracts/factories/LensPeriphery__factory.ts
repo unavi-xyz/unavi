@@ -3,10 +3,9 @@
 /* tslint:disable */
 
 /* eslint-disable */
+import type { LensPeriphery, LensPeripheryInterface } from "../LensPeriphery";
 import type { Provider } from "@ethersproject/providers";
 import { Contract, Signer, utils } from "ethers";
-
-import type { LensPeriphery, LensPeripheryInterface } from "../LensPeriphery";
 
 const _abi = [
   {

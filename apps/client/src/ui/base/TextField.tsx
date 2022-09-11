@@ -7,6 +7,7 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   title?: string;
   frontAdornment?: string;
   help?: string;
+  outline?: boolean;
   inputRef?: RefObject<HTMLInputElement>;
 }
 
@@ -15,10 +16,12 @@ export default function TextField({
   frontAdornment,
   help,
   inputRef,
-  onChange,
+  outline = false,
   ...rest
 }: Props) {
   const id = useId();
+
+  const outlineClass = outline ? "border" : "";
 
   return (
     <div className="flex flex-col space-y-1">
@@ -47,8 +50,7 @@ export default function TextField({
           ref={inputRef}
           id={id}
           type="text"
-          className="outline-none w-full h-full px-3 py-2 rounded-md"
-          onChange={onChange}
+          className={`outline-none w-full h-full px-3 py-2 rounded-md ${outlineClass}`}
           {...rest}
         />
       </div>

@@ -123,9 +123,12 @@ export class RenderWorker {
 
     // Skybox
     if (skyboxPath)
-      loadCubeTexture(skyboxPath).then(
-        (texture) => (this.#scene.background = texture)
-      );
+      loadCubeTexture(skyboxPath).then((texture) => {
+        this.#scene.background = texture;
+
+        // Ready for rendering
+        this.#postMessage({ subject: "ready", data: null });
+      });
 
     // Camera
     this.#camera = new PerspectiveCamera(
@@ -169,9 +172,6 @@ export class RenderWorker {
           this.#pluginState
         )
       );
-
-    // Ready
-    this.#postMessage({ subject: "ready", data: null });
   }
 
   start() {

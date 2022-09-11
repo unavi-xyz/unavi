@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
@@ -7,6 +7,7 @@ import EditorNavbar from "../../../src/editor/components/EditorNavbar/EditorNavb
 import InspectMenu from "../../../src/editor/components/InspectMenu/InspectMenu";
 import TreeMenu from "../../../src/editor/components/TreeMenu/TreeMenu";
 import { emptyScene } from "../../../src/editor/constants";
+import { useAutosave } from "../../../src/editor/hooks/useAutosave";
 import { useEditorHotkeys } from "../../../src/editor/hooks/useEditorHotkeys";
 import { useLoad } from "../../../src/editor/hooks/useLoad";
 import { useTransformControls } from "../../../src/editor/hooks/useTransformControls";
@@ -20,8 +21,10 @@ export default function Editor() {
 
   const engine = useEditorStore((state) => state.engine);
 
+  const [loaded, setLoaded] = useState(false);
+
   useLoad();
-  // useAutosave();
+  useAutosave();
   useTransformControls();
   useEditorHotkeys();
 
@@ -40,6 +43,11 @@ export default function Editor() {
       });
 
       useEditorStore.setState({ engine });
+
+      // Start engine
+      engine.start().then(() => {
+        setLoaded(true);
+      });
     }
 
     initEngine();
@@ -92,6 +100,8 @@ export default function Editor() {
     };
   }, [updateCanvasSize]);
 
+  const loadedClass = loaded ? "opacity-100" : "opacity-0";
+
   return (
     <>
       <MetaTags title="Editor" />
@@ -120,7 +130,10 @@ export default function Editor() {
                 ref={containerRef}
                 className="relative w-full h-full overflow-hidden"
               >
-                <canvas ref={canvasRef} className="w-full h-full" />
+                <canvas
+                  ref={canvasRef}
+                  className={`w-full h-full ${loadedClass}`}
+                />
               </div>
             </div>
 

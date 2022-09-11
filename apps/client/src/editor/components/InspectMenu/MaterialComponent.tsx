@@ -133,8 +133,6 @@ export default function MaterialComponent({ entityId }: Props) {
         </div>
       </div>
 
-      <div className="pt-1" />
-
       {materialId && color && (
         <MenuRows titles={["Color", "Roughness", "Metalness"]}>
           <div className="h-6">

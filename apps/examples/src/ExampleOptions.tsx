@@ -28,7 +28,7 @@ export default function ExampleOptions({ options }: Props) {
                   <button
                     key={href}
                     onClick={() => setGltf(href)}
-                    className={`px-4 py-1 transition-all rounded ${selected}`}
+                    className={`px-4 py-1 transition rounded ${selected}`}
                   >
                     {name}
                   </button>

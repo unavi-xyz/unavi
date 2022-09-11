@@ -36,7 +36,7 @@ export default function FileUpload({
       <label
         htmlFor={id}
         className={`group block cursor-pointer rounded-md transition
-                    hover:bg-opacity-60 active:bg-opacity-40 ${colorClass}`}
+                    hover:shadow active:shadow-md ${colorClass}`}
       >
         <div className="flex items-center">
           <div className="px-3 py-2 rounded-l-lg">Choose File</div>

@@ -10,7 +10,7 @@ module.exports = {
         onPrimaryContainer: "#000000",
 
         surface: "#ffffff",
-        surfaceVariant: "#E2E9EC",
+        surfaceVariant: "#ebeced",
         onSurface: "#000000",
         onSurfaceVariant: "#000000",
 

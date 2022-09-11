@@ -172,7 +172,7 @@ export default function AvatarLayout({
       />
 
       <div className="mx-4 h-full">
-        <div className="max-w mx-auto py-8 w-full h-full space-y-8">
+        <div className="max-w-content mx-auto py-8 w-full h-full space-y-8">
           <div className="flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8">
             <div className="w-full md:w-1/2 rounded-3xl aspect-vertical bg-primaryContainer mx-auto md:mx-0">
               {avatarUrl ? (

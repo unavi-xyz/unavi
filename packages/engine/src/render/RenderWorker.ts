@@ -1,4 +1,5 @@
 import {
+  AmbientLight,
   FogExp2,
   PMREMGenerator,
   PerspectiveCamera,
@@ -6,7 +7,6 @@ import {
   WebGLRenderer,
   sRGBEncoding,
 } from "three";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 
 import { PostMessage } from "../types";
 import { disposeObject } from "../utils/disposeObject";
@@ -112,20 +112,23 @@ export class RenderWorker {
     this.#renderer.outputEncoding = sRGBEncoding;
     this.#renderer.physicallyCorrectLights = true;
 
-    // Environment
-    const premGenerator = new PMREMGenerator(this.#renderer);
-    premGenerator.compileEquirectangularShader();
-    const environment = premGenerator.fromScene(new RoomEnvironment()).texture;
-    this.#scene.environment = environment;
-
     // Fog
     this.#scene.fog = new FogExp2(0xeefaff, 0.005);
 
     // Skybox
     if (skyboxPath)
-      loadCubeTexture(skyboxPath).then(
-        (texture) => (this.#scene.background = texture)
-      );
+      loadCubeTexture(skyboxPath).then((texture) => {
+        this.#scene.background = texture;
+        this.#scene.environment = texture;
+
+        // Generate PMREM mipmaps
+        if (!this.#renderer) throw new Error("Renderer not initialized");
+        const premGenerator = new PMREMGenerator(this.#renderer);
+        premGenerator.compileEquirectangularShader();
+
+        // Ready for rendering
+        this.#postMessage({ subject: "ready", data: null });
+      });
 
     // Camera
     this.#camera = new PerspectiveCamera(
@@ -169,9 +172,6 @@ export class RenderWorker {
           this.#pluginState
         )
       );
-
-    // Ready
-    this.#postMessage({ subject: "ready", data: null });
   }
 
   start() {

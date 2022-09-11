@@ -1,19 +1,24 @@
 import { Post } from "@wired-labs/lens";
 
 import Card from "../../ui/base/Card";
+import { getMediaURL } from "../../utils/getMediaURL";
 
 interface Props {
   avatar: Post;
   sizes?: string;
+  animateEnter?: boolean;
 }
 
-export default function AvatarCard({ avatar, sizes }: Props) {
+export default function AvatarCard({ avatar, sizes, animateEnter }: Props) {
+  const image = getMediaURL(avatar.metadata.media[0]);
+
   return (
     <Card
       text={avatar.metadata.name ?? avatar.id}
-      image={avatar.metadata.image}
+      image={image}
       aspect="vertical"
       sizes={sizes}
+      animateEnter={animateEnter}
     />
   );
 }

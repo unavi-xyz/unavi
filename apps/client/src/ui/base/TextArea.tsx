@@ -1,11 +1,9 @@
-import { ChangeEvent, RefObject, useId } from "react";
+import { RefObject, useId } from "react";
 
-interface Props {
+interface Props extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   title?: string;
   frontAdornment?: string;
   textAreaRef?: RefObject<HTMLTextAreaElement>;
-  onChange?: (e: ChangeEvent<HTMLTextAreaElement>) => void;
-  [key: string]: any;
 }
 
 export default function TextArea({
@@ -26,7 +24,7 @@ export default function TextArea({
         {title}
       </label>
 
-      <div className="flex items-center border rounded-lg">
+      <div className="flex items-center rounded-lg">
         {frontAdornment && (
           <span className="pl-2 text-primary font-bold">{frontAdornment}</span>
         )}

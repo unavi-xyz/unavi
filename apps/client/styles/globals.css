@@ -7,11 +7,36 @@ html {
   @apply bg-background text-onBackground;
 }
 
-.max-w {
-  @apply max-w-5xl w-full;
+.max-w-content {
+  @apply max-w-screen-lg w-full;
 }
 
-/* crosshair */
+/* Scrollbar */
+
+/* Width */
+::-webkit-scrollbar {
+  width: 16px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  opacity: 0;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background-color: #bbb;
+  border-radius: 16px;
+  border: 4px solid transparent;
+  background-clip: content-box;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #999;
+}
+
+/* Crosshair */
 .crosshair {
   position: fixed;
   top: 50%;
@@ -36,7 +61,7 @@ html {
   margin-left: -5px;
 }
 
-/* react-dnd */
+/* React-dnd */
 .bg-position-move {
   background-size: 200%;
   background-position: left;
@@ -47,7 +72,7 @@ html {
   background-position: right;
 }
 
-/* react-split */
+/* React-split */
 .gutter.gutter-vertical {
   cursor: row-resize;
   @apply border-t;

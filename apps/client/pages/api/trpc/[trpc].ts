@@ -26,19 +26,19 @@ const s3Client = new S3Client({
   },
 });
 
-async function uploadWorld(world: any, id: string) {
+async function uploadScene(scene: any, id: string) {
   const data = await s3Client.send(
     new PutObjectCommand({
       Bucket: BUCKET_NAME,
       Key: `${id}.json`,
-      Body: JSON.stringify(world),
+      Body: JSON.stringify(scene),
       ACL: "private",
     })
   );
   return data;
 }
 
-async function getWorld(id: string) {
+async function getScene(id: string) {
   try {
     const { Body } = await s3Client.send(
       new GetObjectCommand({
@@ -88,7 +88,7 @@ export const appRouter = trpc
       return project;
     },
   })
-  .query("world", {
+  .query("scene", {
     input: z.object({
       id: z.string(),
     }),
@@ -98,8 +98,8 @@ export const appRouter = trpc
       });
       if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
 
-      const world = await getWorld(id);
-      return world;
+      const scene = await getScene(id);
+      return scene;
     },
   })
   .mutation("create-project", {
@@ -114,7 +114,7 @@ export const appRouter = trpc
           name,
           description,
           image: null,
-          studioState: null,
+          editorState: null,
         },
       });
 
@@ -127,12 +127,12 @@ export const appRouter = trpc
       name: z.string().max(255).optional(),
       description: z.string().max(2040).optional(),
       image: z.string().optional(),
-      studioState: z.string().optional(),
-      world: z.any(),
+      editorState: z.string().optional(),
+      scene: z.any(),
     }),
     async resolve({
       ctx: { address },
-      input: { id, name, description, image, studioState, world },
+      input: { id, name, description, image, editorState, scene },
     }) {
       // Verify that the user owns the project
       const project = await prisma.project.findFirst({
@@ -140,8 +140,8 @@ export const appRouter = trpc
       });
       if (!project) throw new trpc.TRPCError({ code: "UNAUTHORIZED" });
 
-      // Upload world to S3
-      await uploadWorld(world, id);
+      // Upload scene to S3
+      await uploadScene(scene, id);
 
       // Save to database
       await prisma.project.update({
@@ -150,7 +150,7 @@ export const appRouter = trpc
           name,
           description,
           image,
-          studioState,
+          editorState,
           updatedAt: new Date(),
         },
       });

@@ -39,9 +39,9 @@ export default function sButton({
   const outlineClass =
     variant === "outlined"
       ? color === "primary"
-        ? `ring-1 ring-outline hover:ring-onPrimaryContainer
+        ? `ring-1 ring-outline
            hover:text-onPrimaryContainer hover:bg-primaryContainer`
-        : `ring-1 ring-outline hover:ring-onErrorContainer
+        : `ring-1 ring-outline
            hover:text-onErrorContainer hover:bg-errorContainer`
       : null;
 
@@ -66,7 +66,7 @@ export default function sButton({
 
   const disabledClass =
     loading || disabled
-      ? "opacity-40 cursor-not-allowed bg-surfaceVariant"
+      ? "opacity-40 cursor-not-allowed bg-surfaceVariant hover:bg-surfaceVariant"
       : variant === "text"
       ? "active:bg-opacity-75"
       : variant === "outlined"
@@ -81,7 +81,7 @@ export default function sButton({
   const fullWidthClass = fullWidth ? "w-full" : null;
   const squaredClass =
     squared === "small"
-      ? "rounded-md"
+      ? "rounded-lg"
       : squared === "large"
       ? "rounded-xl"
       : "rounded-full";

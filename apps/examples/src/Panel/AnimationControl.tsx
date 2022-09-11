@@ -27,7 +27,7 @@ export default function AnimationControl({ action }: Props) {
 
       <button
         onClick={onClick}
-        className={`${runningCss} w-full text-center hover:bg-neutral-200 rounded transition-all`}
+        className={`${runningCss} w-full text-center hover:bg-neutral-200 rounded transition`}
       >
         {running ? "Stop" : "Start"}
       </button>

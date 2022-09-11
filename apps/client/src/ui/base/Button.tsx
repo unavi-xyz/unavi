@@ -9,7 +9,7 @@ export type ButtonVariant =
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
-  color?: "primary" | "error";
+  rgb?: "primary" | "error";
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -20,7 +20,7 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export default function sButton({
   variant = "text",
-  color = "primary",
+  rgb: color = "primary",
   loading = false,
   disabled = false,
   fullWidth = false,

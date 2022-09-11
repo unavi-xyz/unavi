@@ -1,8 +1,8 @@
 import { Sphere } from "@wired-labs/engine";
 
-import NumberInput from "../../../ui/base/NumberInput";
 import { setGeometry } from "../../actions/SetGeometry";
 import { useEditorStore } from "../../store";
+import NumberInput from "../ui/NumberInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./MenuRows";
 

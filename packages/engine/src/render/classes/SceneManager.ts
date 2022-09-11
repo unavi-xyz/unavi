@@ -59,6 +59,9 @@ export class SceneManager {
       case "add_material":
         this.addMaterial(data);
         break;
+      case "edit_material":
+        this.editMaterial(data);
+        break;
       case "set_material":
         this.setMaterial(data.entityId, data.materialId);
         break;
@@ -79,6 +82,17 @@ export class SceneManager {
         metalness: material.metalness,
       })
     );
+  }
+
+  editMaterial(material: Material) {
+    const m = this.#materials.get(material.id);
+    if (!m) throw new Error("Material not found");
+
+    const color = new Color().fromArray(material.color);
+
+    m.color = color;
+    m.roughness = material.roughness;
+    m.metalness = material.metalness;
   }
 
   setMaterial(entityId: string, materialId: string | null) {

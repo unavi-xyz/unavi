@@ -15,11 +15,17 @@ export function useLoad() {
   const { data: project } = trpc.useQuery(["project", { id }], {
     enabled: id !== undefined,
     cacheTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const { data: sceneData } = trpc.useQuery(["scene", { id }], {
     enabled: id !== undefined,
     cacheTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const engine = useEditorStore((state) => state.engine);

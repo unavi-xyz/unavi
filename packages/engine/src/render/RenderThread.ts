@@ -110,6 +110,10 @@ export class RenderThread {
     this.#postMessage({ subject: "add_material", data: material });
   }
 
+  editMaterial(material: Material) {
+    this.#postMessage({ subject: "edit_material", data: material });
+  }
+
   removeMaterial(materialId: string) {
     this.#postMessage({ subject: "remove_material", data: materialId });
   }

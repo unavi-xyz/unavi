@@ -104,7 +104,7 @@ export default function Editor() {
 
           <Split
             sizes={[5, 85, 10]}
-            minSize={[250, 300, 425]}
+            minSize={[250, 300, 430]}
             direction="horizontal"
             expandToMin
             gutterSize={6}

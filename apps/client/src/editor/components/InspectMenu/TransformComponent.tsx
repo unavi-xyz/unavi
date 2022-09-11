@@ -1,6 +1,6 @@
-import NumberInput from "../../../ui/base/NumberInput";
 import { setTransform } from "../../actions/SetTransform";
 import { useEditorStore } from "../../store";
+import NumberInput from "../ui/NumberInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./MenuRows";
 

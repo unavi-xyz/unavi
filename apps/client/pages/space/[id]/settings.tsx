@@ -68,7 +68,7 @@ export default function Settings(props: SpaceLayoutProps) {
 
         <Button
           variant="filled"
-          color="error"
+          rgb="error"
           squared="large"
           loading={loading}
           onClick={handleDelete}

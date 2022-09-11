@@ -88,30 +88,54 @@ export type BaseEntity = {
   scale: [number, number, number];
 };
 
+export type Material = {
+  id: string;
+  name: string;
+  color: [number, number, number];
+  roughness: number;
+  metalness: number;
+};
+
+export type WithMaterial = {
+  material?: string;
+};
+
 export type Group = BaseEntity & {
   type: "Group";
 };
 
-export type Box = BaseEntity & {
-  type: "Box";
-  width: number;
-  height: number;
-  depth: number;
-};
+export type Box = BaseEntity &
+  WithMaterial & {
+    type: "Box";
+    width: number;
+    height: number;
+    depth: number;
+  };
 
-export type Sphere = BaseEntity & {
-  type: "Sphere";
-  radius: number;
-  widthSegments: number;
-  heightSegments: number;
-};
+export type Sphere = BaseEntity &
+  WithMaterial & {
+    type: "Sphere";
+    radius: number;
+    widthSegments: number;
+    heightSegments: number;
+  };
 
-export type Cylinder = BaseEntity & {
-  type: "Cylinder";
-  radiusTop: number;
-  radiusBottom: number;
-  height: number;
-  radialSegments: number;
-};
+export type Cylinder = BaseEntity &
+  WithMaterial & {
+    type: "Cylinder";
+    radiusTop: number;
+    radiusBottom: number;
+    height: number;
+    radialSegments: number;
+  };
 
 export type Entity = Group | Box | Sphere | Cylinder;
+
+export type Scene = {
+  entities: {
+    [id: string]: Entity;
+  };
+  materials: {
+    [id: string]: Material;
+  };
+};

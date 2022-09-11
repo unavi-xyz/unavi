@@ -7,8 +7,8 @@ import {
 
 import { lensClient } from "../../../lib/lens/client";
 import { HANDLE_ENDING } from "../../../lib/lens/constants";
-import { getMediaURL } from "../../../lib/lens/utils/getMediaURL";
 import { PageMetadata } from "../../../types";
+import { getMediaURL } from "../../../utils/getMediaURL";
 
 export interface ProfileLayoutProps {
   handle: string;

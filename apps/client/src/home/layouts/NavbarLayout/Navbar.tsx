@@ -13,7 +13,7 @@ export default function Navbar() {
 
   return (
     <div className="w-full h-full flex justify-center bg-surface">
-      <div className="max-w mx-4 grid grid-cols-3">
+      <div className="max-w-content mx-4 grid grid-cols-3">
         <div className="flex items-center">
           <Link href="/" passHref>
             <a className="cursor-pointer relative h-9 aspect-square">

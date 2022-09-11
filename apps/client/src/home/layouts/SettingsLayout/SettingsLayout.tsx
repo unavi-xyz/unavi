@@ -34,7 +34,7 @@ export default function SettingsLayout({ children }: Props) {
         <CreateProfilePage />
       </Dialog>
 
-      <div className="max-w mx-4 mb-4 flex flex-col md:flex-row">
+      <div className="max-w-content mx-4 mb-4 flex flex-col md:flex-row">
         <div className="pt-8 md:pr-8 space-y-2 w-full md:max-w-xs">
           <div className="flex space-x-4 pb-4">
             <div className="w-20 flex flex-col justify-center p-1">
@@ -47,25 +47,25 @@ export default function SettingsLayout({ children }: Props) {
           </div>
 
           <Link href="/settings" passHref>
-            <a className="block">
+            <div className="block">
               <SettingsButton
                 icon={<MdOutlinePersonOutline />}
                 selected={router.asPath === "/settings"}
               >
                 Profile
               </SettingsButton>
-            </a>
+            </div>
           </Link>
 
           <Link href="/settings/account" passHref>
-            <a className="block">
+            <div className="block">
               <SettingsButton
                 icon={<MdOutlineAccountBalanceWallet />}
                 selected={router.asPath === "/settings/account"}
               >
                 Account
               </SettingsButton>
-            </a>
+            </div>
           </Link>
 
           <SettingsButton icon={<MdAdd />} onClick={() => setOpen(true)}>

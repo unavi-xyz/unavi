@@ -10,13 +10,13 @@ Spaces are like 3D websites - instead of clicking on a link and viewing a web pa
 
 ## Creation
 
-Spaces are created using the studio - a visual editor similar to Unity. Once your space is ready, you can publish it from the studio and mint it as a [Lens Publication NFTs](https://docs.lens.xyz/docs/publication). This will export the scene as a [glTF](https://www.khronos.org/gltf/) model, and upload it to IPFS.
+Spaces are created using the editor - a visual editor similar to Unity. Once your space is ready, you can publish it from the editor as a [Lens Publication NFTs](https://docs.lens.xyz/docs/publication). This will export the scene as a [glTF](https://www.khronos.org/gltf/) model, and upload it to IPFS.
 
-The exciting thing about glTF is that its an open file format, supported by many engines. Scenes you create in the studio can be opened in 3D editors like Blender, Unity, and Unreal Engine, or other platforms like [Webaverse](https://twitter.com/webaverse).
+The exciting thing about glTF is that its an open file format, supported by many engines. Scenes you create in the editor can be opened in 3D editors like Blender, Unity, and Unreal Engine, or other platforms like [Webaverse](https://twitter.com/webaverse).
 
-It also works the other direction - you can import glTF models into the studio and use them to construct your space.
+It also works the other direction - you can import glTF models into the editor and use them to construct your space.
 
-Visit [thewired.space/create](https://www.thewired.space/studio) to get started and create a project.
+Visit [thewired.space/create](https://www.thewired.space/editor) to get started and create a project.
 
 ## Hosting
 

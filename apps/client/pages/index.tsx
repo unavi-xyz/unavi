@@ -21,13 +21,14 @@ export default function Index() {
       <MetaTags />
 
       <div className="flex justify-center">
-        <div className="max-w mx-4 snap-mandatory snap-y">
+        <div className="max-w-content mx-4 snap-mandatory snap-y">
           <div className="h-screen snap-center -mt-12 flex flex-col md:flex-row items-center">
             <div className="w-full h-full flex flex-col justify-center">
               <div className="text-8xl font-black">The Wired</div>
 
               <div className="text-3xl pt-2">
-                A web-based virtual worlds platform <strong>done right</strong>.
+                An <strong>open and decentralized</strong> web-based metaverse
+                platform.
               </div>
 
               <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
@@ -56,7 +57,7 @@ export default function Index() {
                 src="/images/jump.png"
                 priority
                 fill
-                sizes="24vw"
+                sizes="341px"
                 alt="Wired-chan"
                 className="select-none object-contain"
               />
@@ -106,7 +107,7 @@ export default function Index() {
                 <Image
                   src="/images/sitting.png"
                   fill
-                  sizes="24vw"
+                  sizes="293px"
                   alt="Wired-chan"
                   className="select-none object-contain"
                 />

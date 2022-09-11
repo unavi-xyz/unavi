@@ -48,7 +48,7 @@ const config = defineConfig({
         permanent: false,
       },
       {
-        source: "/studio",
+        source: "/editor",
         destination: "/create",
         permanent: false,
       },

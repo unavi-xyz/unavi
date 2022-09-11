@@ -1,6 +1,6 @@
 import { TypedArray } from "bitecs";
 
-import { Entity, Transferable } from "../types";
+import { Entity, Material, Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderWorker } from "./RenderWorker";
 import { FromRenderMessage, PointerData, ToRenderMessage } from "./types";
@@ -75,7 +75,7 @@ export class RenderThread {
     });
 
     // Event listeners
-    window.addEventListener("resize", this.#onResize.bind(this));
+    window.addEventListener("resize", this.onResize.bind(this));
     canvas.addEventListener("contextmenu", this.#onContextMenu.bind(this));
     canvas.addEventListener("pointermove", this.#onPointerMove.bind(this));
     canvas.addEventListener("pointerup", this.#onPointerUp.bind(this));
@@ -106,12 +106,46 @@ export class RenderThread {
     );
   }
 
+  addMaterial(material: Material) {
+    this.#postMessage({ subject: "add_material", data: material });
+  }
+
+  editMaterial(material: Material) {
+    this.#postMessage({ subject: "edit_material", data: material });
+  }
+
+  removeMaterial(materialId: string) {
+    this.#postMessage({ subject: "remove_material", data: materialId });
+  }
+
   addEntity(data: Entity) {
     this.#postMessage({ subject: "add_entity", data });
   }
 
-  setEntity(data: Entity) {
-    this.#postMessage({ subject: "set_entity", data });
+  setTransform(data: Entity) {
+    this.#postMessage({
+      subject: "set_transform",
+      data: {
+        entityId: data.id,
+        position: data.position,
+        rotation: data.rotation,
+        scale: data.scale,
+      },
+    });
+  }
+
+  setGeometry(entityId: string, geometry: number[]) {
+    this.#postMessage({
+      subject: "set_geometry",
+      data: { entityId, geometry },
+    });
+  }
+
+  setMaterial(entityId: string, materialId: string | null) {
+    this.#postMessage({
+      subject: "set_material",
+      data: { entityId, materialId },
+    });
   }
 
   moveEntity(entityId: string, parentId: string | null) {
@@ -184,7 +218,7 @@ export class RenderThread {
     this.#worker.postMessage(message, transfer);
   }
 
-  #onResize() {
+  onResize() {
     this.#postMessage({
       subject: "size",
       data: {

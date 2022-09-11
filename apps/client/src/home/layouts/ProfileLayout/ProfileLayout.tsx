@@ -47,7 +47,7 @@ export default function ProfileLayout({
       </Head>
 
       {profile ? (
-        <div className="max-w mx-auto">
+        <div className="max-w-content mx-auto">
           <div className="w-full h-48 md:h-64 bg-primaryContainer md:rounded-3xl">
             <div className="relative object-cover w-full h-full">
               {coverImage && (
@@ -76,7 +76,7 @@ export default function ProfileLayout({
 
               <div className="flex flex-col items-center">
                 <div className="text-2xl font-black">{handle}</div>
-                {/* <div className="text-lg font-bold">{profile.name}</div> */}
+                <div className="text-lg font-bold">{profile.name}</div>
               </div>
 
               <div className="w-full py-2 flex space-x-4 justify-center">

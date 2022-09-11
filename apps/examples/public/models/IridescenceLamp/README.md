@@ -8,7 +8,7 @@
 
 ## Description
 
-This model represents the real Wayfair product [Bonsell 19" Table Lamp](https://www.wayfair.com/lighting/pdp/wrought-studio-bonsell-19-table-lamp-w002337865.html) which has iridescent finishes.
+This model represents the real Wayfair product [Bonsell 19" Table Lamp](https://www.wayfair.com/lighting/pdp/wrought-editor-bonsell-19-table-lamp-w002337865.html) which has iridescent finishes.
 
 The use of real-world photographic reference is meant to help glTF developers with calibrating material features and renderer behavior, to more accurately represent e-commerce products. Additional photo reference is available on the Wayfair website.
 
@@ -36,7 +36,7 @@ The iridescence on the lamp shade uses a thickness range from 485 to 515 nanomet
 
 ## Creation Details
 
-The asset was created using [3ds Max](https://www.autodesk.com/products/3ds-max), exported to glTF using [Max2Babylon](https://github.com/BabylonJS/Exporters#babylonjs-exporters), and materials were edited in [Visual Studio Code](https://code.visualstudio.com/) with [glTF Tools](https://github.com/AnalyticalGraphicsInc/gltf-vscode#gltf-tools-extension-for-visual-studio-code).
+The asset was created using [3ds Max](https://www.autodesk.com/products/3ds-max), exported to glTF using [Max2Babylon](https://github.com/BabylonJS/Exporters#babylonjs-exporters), and materials were edited in [Visual Editor Code](https://code.visualeditor.com/) with [glTF Tools](https://github.com/AnalyticalGraphicsInc/gltf-vscode#gltf-tools-extension-for-visual-editor-code).
 
 ## License Information
 

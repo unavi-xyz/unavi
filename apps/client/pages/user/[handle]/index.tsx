@@ -20,7 +20,7 @@ import AvatarCard from "../../../src/home/lens/AvatarCard";
 import SpaceCard from "../../../src/home/lens/SpaceCard";
 import { lensClient } from "../../../src/lib/lens/client";
 import { HIDDEN_MESSAGE } from "../../../src/lib/lens/constants";
-import { getMediaURL } from "../../../src/lib/lens/utils/getMediaURL";
+import { getMediaURL } from "../../../src/utils/getMediaURL";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");

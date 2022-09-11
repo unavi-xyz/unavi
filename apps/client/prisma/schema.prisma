@@ -20,5 +20,5 @@ model Project {
   description String?
   image       String?
 
-  studioState String?
+  editorState String?
 }

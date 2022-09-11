@@ -22,7 +22,7 @@ export default function Account() {
   const setDefaultProfile = useSetDefaultProfile();
 
   const disabled =
-    selected?.slice(1) === defaultProfile?.handle && Boolean(selected);
+    selected === `@${trimHandle(defaultProfile?.handle)}` && Boolean(selected);
 
   useEffect(() => {
     const handles =

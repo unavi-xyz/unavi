@@ -37,7 +37,7 @@ export class TransformControlsPlugin extends Plugin {
       const id = this.#sceneManager.findId(object);
       if (id === undefined) throw new Error("Object id not found");
 
-      this.#sceneManager.setTransform(id);
+      this.#sceneManager.saveTransform(id);
     });
   }
 

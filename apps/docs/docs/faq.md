@@ -38,14 +38,14 @@ A Lens profile is an NFT that represents your identity across the Web3 ecosystem
 
 ### How do I create a space?
 
-Spaces are created using the studio, a visual editor similar to Unity. Visit the [thewired.space/create](https://www.thewired.space/create) to create a new project and start building.
+Spaces are created using a visual editor similar to Unity. Visit the [thewired.space/create](https://www.thewired.space/create) to create a new project and start building.
 
-Once your space is ready, you can publish it from the studio and mint it as a Lens NFT.
+Once your space is ready, you can publish it from the editor as a Lens NFT.
 
 ### How do I create an avatar?
 
-You can upload any [VRM](https://vrm.dev/) avatar to use on the Wired. You can create a VRM avatar using [VRoid Studio](https://vroid.com/studio/en), or export an avatar to the `.vrm` file format from blender using [this blender plugin](https://github.com/saturday06/VRM_Addon_for_Blender).
+You can upload any [VRM](https://vrm.dev/) avatar to use on the Wired. You can create a VRM avatar using [VRoid Editor](https://vroid.com/editor/en), or export an avatar to the `.vrm` file format from blender using [this blender plugin](https://github.com/saturday06/VRM_Addon_for_Blender).
 
-After you have the `.vrm` file, you can upload it at [thewired.space/create](https://www.thewired.space/create) and mint it as a Lens NFT.
+After you have the `.vrm` file, you can upload it at [thewired.space/create](https://www.thewired.space/create) and publish it as a Lens NFT.
 
 Alternatively, you can search for avatars other people have published at [thewired.space/explore](https://www.thewired.space/explore).

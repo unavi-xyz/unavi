@@ -13,6 +13,7 @@ jobs:
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      NEXT_PUBLIC_IPFS_GATEWAY: ${{ secrets.NEXT_PUBLIC_IPFS_GATEWAY }}
 
     steps:
       - name: Checkout

@@ -75,7 +75,8 @@ export type ToRenderMessage =
   | WorkerMessage<"edit_material", Material>
   | WorkerMessage<"remove_material", string>
   | WorkerMessage<"remove_entity", string>
-  | WorkerMessage<"move_entity", { entityId: string; parentId: string | null }>;
+  | WorkerMessage<"move_entity", { entityId: string; parentId: string | null }>
+  | WorkerMessage<"take_screenshot">;
 
 export type FromRenderMessage =
   | WorkerMessage<"ready">
@@ -88,4 +89,5 @@ export type FromRenderMessage =
         rotation: number[];
         scale: number[];
       }
-    >;
+    >
+  | WorkerMessage<"screenshot", string>;

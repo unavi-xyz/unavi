@@ -20,7 +20,7 @@ export function useLoad() {
     refetchOnMount: false,
   });
 
-  const { data: sceneData } = trpc.useQuery(["scene", { id }], {
+  const { data: scene } = trpc.useQuery(["scene", { id }], {
     enabled: id !== undefined,
     cacheTime: 0,
     refetchOnWindowFocus: false,
@@ -49,31 +49,34 @@ export function useLoad() {
 
   // Load scene on query fetch
   useEffect(() => {
-    const scene: Scene | undefined = sceneData;
-    if (!engine || !scene) return;
+    async function loadScene() {
+      if (!engine || !scene) return;
 
-    function addToEngine(entity: Entity) {
-      if (!scene) throw new Error("Scene not found");
+      function addToEngine(entity: Entity) {
+        if (!scene) throw new Error("Scene not found");
 
-      // Add entity
-      addEntity(entity);
+        // Add entity
+        addEntity(entity);
 
-      // Add Children
-      entity.children.forEach((childId) => {
+        // Add Children
+        entity.children.forEach((childId) => {
+          const child = scene.entities[childId];
+          addToEngine(child);
+        });
+      }
+
+      // Load materials
+      Object.values(scene.materials).forEach((material) => {
+        addMaterial(material);
+      });
+
+      // Load entities
+      scene.entities["root"].children.forEach((childId) => {
         const child = scene.entities[childId];
         addToEngine(child);
       });
     }
 
-    // Load materials
-    Object.values(scene.materials).forEach((material) => {
-      addMaterial(material);
-    });
-
-    // Load entities
-    scene.entities["root"].children.forEach((childId) => {
-      const child = scene.entities[childId];
-      addToEngine(child);
-    });
-  }, [engine, sceneData]);
+    loadScene();
+  }, [engine, scene]);
 }

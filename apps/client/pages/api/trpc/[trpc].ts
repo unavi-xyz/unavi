@@ -5,8 +5,11 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { MiddlewareResult } from "@trpc/server/dist/declarations/src/internals/middlewares";
 import { z } from "zod";
+
+import { Scene } from "@wired-labs/engine";
 
 import {
   IAuthenticatedContext,
@@ -38,20 +41,39 @@ async function uploadScene(scene: any, id: string) {
   return data;
 }
 
+async function uploadImage(image: any, id: string) {
+  const data = await s3Client.send(
+    new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: `${id}.jpeg`,
+      Body: image,
+      ACL: "private",
+    })
+  );
+  return data;
+}
+
 async function getScene(id: string) {
   try {
-    const { Body } = await s3Client.send(
-      new GetObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: `${id}.json`,
-      })
-    );
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: `${id}.json`,
+    });
+    const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    return url;
+  } catch (e) {
+    return null;
+  }
+}
 
-    if (!Body) return null;
-
-    // @ts-ignore
-    const buffer: string = Body.read();
-    return JSON.parse(buffer);
+async function getImage(id: string) {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: `${id}.jpeg`,
+    });
+    const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    return url;
   } catch (e) {
     return null;
   }
@@ -74,18 +96,36 @@ export const appRouter = trpc
         where: { owner: address },
         orderBy: { updatedAt: "desc" },
       });
-      return projects;
+
+      const images = await Promise.all(
+        projects.map(async (project) => await getImage(project.id))
+      );
+
+      const response = projects.map((project, index) => ({
+        ...project,
+        image: images[index],
+      }));
+      return response;
     },
   })
   .query("project", {
     input: z.object({
-      id: z.string(),
+      id: z.string().length(36),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
+      const imagePromise = getImage(id);
+
       const project = await prisma.project.findFirst({
         where: { id, owner: address },
       });
-      return project;
+      if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
+
+      const image = await imagePromise;
+
+      return {
+        ...project,
+        image,
+      };
     },
   })
   .query("scene", {
@@ -93,12 +133,17 @@ export const appRouter = trpc
       id: z.string(),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
+      // Verify the user owns the project
       const project = await prisma.project.findFirst({
         where: { id, owner: address },
       });
       if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
 
-      const scene = await getScene(id);
+      const url = await getScene(id);
+      if (!url) return null;
+
+      const res = await fetch(url);
+      const scene: Scene = await res.json();
       return scene;
     },
   })
@@ -113,7 +158,6 @@ export const appRouter = trpc
           owner: address,
           name,
           description,
-          image: null,
           editorState: null,
         },
       });
@@ -121,6 +165,7 @@ export const appRouter = trpc
       return project;
     },
   })
+
   .mutation("save-project", {
     input: z.object({
       id: z.string(),
@@ -143,13 +188,23 @@ export const appRouter = trpc
       // Upload scene to S3
       await uploadScene(scene, id);
 
+      // Upload image to S3
+      if (image) {
+        const base64str = image.split("base64,")[1]; // Remove the image type metadata.
+        const imageFile = Buffer.from(base64str, "base64");
+
+        // Limit image size to 500kb
+        if (imageFile.length < 500000) {
+          await uploadImage(imageFile, id);
+        }
+      }
+
       // Save to database
       await prisma.project.update({
         where: { id },
         data: {
           name,
           description,
-          image,
           editorState,
           updatedAt: new Date(),
         },

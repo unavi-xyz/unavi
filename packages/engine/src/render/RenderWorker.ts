@@ -1,5 +1,4 @@
 import {
-  AmbientLight,
   FogExp2,
   PMREMGenerator,
   PerspectiveCamera,
@@ -25,6 +24,7 @@ export type RenderWorkerOptions = {
   camera: "orbit" | "player";
   skyboxPath?: string;
   enableTransformControls?: boolean;
+  preserveDrawingBuffer?: boolean;
 };
 
 export type PluginState = {
@@ -85,6 +85,9 @@ export class RenderWorker {
       case "size":
         this.#updateCanvasSize(data.width, data.height);
         break;
+      case "take_screenshot":
+        this.takeScreenshot();
+        break;
     }
   };
 
@@ -95,6 +98,7 @@ export class RenderWorker {
     camera,
     skyboxPath,
     enableTransformControls = false,
+    preserveDrawingBuffer = false,
   }: RenderWorkerOptions) {
     if (!this.#canvas) throw new Error("Canvas not set");
 
@@ -106,6 +110,7 @@ export class RenderWorker {
       canvas: this.#canvas,
       antialias: pixelRatio > 1 ? false : true,
       powerPreference: "high-performance",
+      preserveDrawingBuffer,
     });
     this.#renderer.setPixelRatio(pixelRatio);
     this.#renderer.setSize(canvasWidth, canvasHeight, false);
@@ -191,6 +196,12 @@ export class RenderWorker {
     this.#plugins.forEach((plugin) => plugin.destroy());
     disposeObject(this.#scene);
     this.#renderer?.dispose();
+  }
+
+  takeScreenshot() {
+    if (!this.#renderer) throw new Error("Renderer not initialized");
+    const data = this.#renderer.domElement.toDataURL("image/jpeg", 0.75);
+    this.#postMessage({ subject: "screenshot", data });
   }
 
   loadScene(data: LoadSceneData) {

@@ -9,6 +9,7 @@ export interface RenderThreadOptions {
   camera: "orbit" | "player";
   skyboxPath?: string;
   enableTransformControls?: boolean;
+  preserveDrawingBuffer?: boolean;
 }
 
 export class RenderThread {
@@ -17,10 +18,16 @@ export class RenderThread {
   #worker: Worker | FakeWorker;
   #canvas: HTMLCanvasElement;
   #onReady: Array<() => void> = [];
+  #onScreenshot: Array<(data: string) => void> = [];
 
   constructor(
     canvas: HTMLCanvasElement,
-    { camera, skyboxPath, enableTransformControls }: RenderThreadOptions
+    {
+      camera,
+      skyboxPath,
+      enableTransformControls,
+      preserveDrawingBuffer,
+    }: RenderThreadOptions
   ) {
     this.#canvas = canvas;
 
@@ -71,6 +78,7 @@ export class RenderThread {
         camera,
         skyboxPath,
         enableTransformControls,
+        preserveDrawingBuffer,
       },
     });
 
@@ -89,6 +97,14 @@ export class RenderThread {
       if (this.ready) resolve();
       this.#onReady.push(resolve);
     });
+    return promise;
+  }
+
+  takeScreenshot() {
+    const promise = new Promise<string>((resolve) =>
+      this.#onScreenshot.push(resolve)
+    );
+    this.#postMessage({ subject: "take_screenshot", data: null });
     return promise;
   }
 
@@ -210,6 +226,10 @@ export class RenderThread {
         break;
       case "set_transform":
         this.onSetTransform(data.id, data.position, data.rotation, data.scale);
+        break;
+      case "screenshot":
+        this.#onScreenshot.forEach((resolve) => resolve(data));
+        this.#onScreenshot = [];
         break;
     }
   };

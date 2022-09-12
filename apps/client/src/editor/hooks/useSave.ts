@@ -11,16 +11,16 @@ export function useSave() {
 
   async function save() {
     const id = router.query.id as string;
-    const { name, description, engine, scene } = useEditorStore.getState();
+    const { name, description, image, engine, scene } =
+      useEditorStore.getState();
     const editorState = JSON.stringify(getEditorState());
     if (!engine) return;
-
-    // TODO: Take screenshot of the scene
 
     await mutateAsync({
       id,
       name,
       description,
+      image,
       editorState,
       scene,
     });

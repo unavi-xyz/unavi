@@ -7,17 +7,41 @@ on:
       - main
 
 jobs:
-  prettier:
-    name: "Prettier"
+  lint:
+    name: ESLint
     runs-on: ubuntu-latest
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
     steps:
-      - name: "Checkout"
+      - name: Checkout
         uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }}
 
-      - name: "Format"
-        uses: creyD/prettier_action@v4.1.1
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+          cache: "yarn"
+
+      - name: Lint
+        run: npx turbo run lint
+
+  prettier:
+    name: Prettier
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Prettify code
+        uses: creyD/prettier_action@v4.2
         with:
           prettier_options: --write .
+          only_changed: True

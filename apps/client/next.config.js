@@ -39,8 +39,8 @@ const config = defineConfig({
   },
   images: {
     domains: [
+      `${process.env.S3_BUCKET}.${process.env.S3_ENDPOINT}`,
       process.env.NEXT_PUBLIC_IPFS_GATEWAY,
-      process.env.S3_IMAGE_HOSTNAME,
       "avatar.tobi.sh",
     ],
   },

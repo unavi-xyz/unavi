@@ -18,10 +18,8 @@ import {
 } from "../../../src/auth/context";
 import { prisma } from "../../../src/auth/prisma";
 
-const BUCKET_NAME = "wired";
-
 const s3Client = new S3Client({
-  endpoint: process.env.S3_ENDPOINT ?? "",
+  endpoint: `https://${process.env.S3_ENDPOINT}` ?? "",
   region: process.env.S3_REGION ?? "",
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
@@ -32,7 +30,7 @@ const s3Client = new S3Client({
 async function uploadScene(scene: any, id: string) {
   const data = await s3Client.send(
     new PutObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: process.env.S3_BUCKET,
       Key: `${id}.json`,
       Body: JSON.stringify(scene),
       ACL: "private",
@@ -44,7 +42,7 @@ async function uploadScene(scene: any, id: string) {
 async function uploadImage(image: any, id: string) {
   const data = await s3Client.send(
     new PutObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: process.env.S3_BUCKET,
       Key: `${id}.jpeg`,
       Body: image,
       ACL: "private",
@@ -56,7 +54,7 @@ async function uploadImage(image: any, id: string) {
 async function getScene(id: string) {
   try {
     const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: process.env.S3_BUCKET,
       Key: `${id}.json`,
     });
     const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
@@ -69,7 +67,7 @@ async function getScene(id: string) {
 async function getImage(id: string) {
   try {
     const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: process.env.S3_BUCKET,
       Key: `${id}.jpeg`,
     });
     const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });

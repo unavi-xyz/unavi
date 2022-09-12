@@ -22,7 +22,7 @@
     "@types/node": "^18.7.16",
     "@wired-labs/engine": "*",
     "@wired-labs/tsconfig": "*",
-    "eslint": "^8.22.0",
+    "eslint": "^8.23.1",
     "eslint-config-custom": "*",
     "nodemon": "^2.0.19",
     "ts-node": "^10.9.1",

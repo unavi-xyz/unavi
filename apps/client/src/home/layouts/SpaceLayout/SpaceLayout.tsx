@@ -61,9 +61,9 @@ export default function SpaceLayout({
                   <div className="font-bold flex space-x-1 justify-center md:justify-start">
                     <div className="text-outline">By</div>
                     <Link href={`/user/${author}`}>
-                      <a className="hover:underline cursor-pointer">
+                      <div className="hover:underline cursor-pointer">
                         @{author}
-                      </a>
+                      </div>
                     </Link>
                   </div>
 

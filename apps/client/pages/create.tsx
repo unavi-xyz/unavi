@@ -51,7 +51,7 @@ export default function Create() {
             <div>
               <Button
                 variant="outlined"
-                squared="small"
+                rounded="small"
                 disabled={!authenticated}
                 onClick={() => {
                   if (!authenticated) return;
@@ -69,7 +69,12 @@ export default function Create() {
               data.map(({ id, name, image }) => (
                 <Link key={id} href={`/project/${id}`} passHref>
                   <div>
-                    <Card text={name} image={image} animateEnter />
+                    <Card
+                      text={name}
+                      image={image}
+                      sizes="316px"
+                      animateEnter
+                    />
                   </div>
                 </Link>
               ))}

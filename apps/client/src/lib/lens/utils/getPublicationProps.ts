@@ -13,7 +13,7 @@ import { lensClient } from "../client";
 export interface PublicationProps {
   metadata: PageMetadata;
   publication: Publication | null;
-  image: string | null;
+  image?: string;
 }
 
 export async function getPublicationProps(
@@ -44,7 +44,7 @@ export async function getPublicationProps(
       ? `${publicationType} by @${publication?.profile.handle}`
       : "";
 
-  const image = publication ? getMediaURL(publication.metadata.media[0]) : null;
+  const image = getMediaURL(publication?.metadata.media[0]) ?? undefined;
 
   const metadata: PageMetadata = {
     title,

@@ -1,6 +1,8 @@
 import * as trpc from "@trpc/server";
 import * as trpcNext from "@trpc/server/adapters/next";
 import {
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -77,6 +79,21 @@ async function getImage(id: string) {
   }
 }
 
+async function deleteFromS3(id: string) {
+  try {
+    await s3Client.send(
+      new DeleteObjectsCommand({
+        Bucket: process.env.S3_BUCKET,
+        Delete: {
+          Objects: [{ Key: `${id}.json` }, { Key: `${id}.jpeg` }],
+        },
+      })
+    );
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 export const appRouter = trpc
   .router<IContext>()
   .query("ping", {
@@ -128,7 +145,7 @@ export const appRouter = trpc
   })
   .query("scene", {
     input: z.object({
-      id: z.string(),
+      id: z.string().length(36),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify the user owns the project
@@ -163,10 +180,9 @@ export const appRouter = trpc
       return project;
     },
   })
-
   .mutation("save-project", {
     input: z.object({
-      id: z.string(),
+      id: z.string().length(36),
       name: z.string().max(255).optional(),
       description: z.string().max(2040).optional(),
       image: z.string().optional(),
@@ -211,6 +227,28 @@ export const appRouter = trpc
       return {
         success: true,
       };
+    },
+  })
+  .mutation("delete-project", {
+    input: z.object({
+      id: z.string().length(36),
+    }),
+    async resolve({ ctx: { address }, input: { id } }) {
+      // Verify that the user owns the project
+      const project = await prisma.project.findFirst({
+        where: { id, owner: address },
+      });
+      if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
+
+      // Delete from database
+      const prismaPromise = prisma.project.delete({
+        where: { id },
+      });
+
+      // Delete from S3
+      const s3Promise = deleteFromS3(id);
+
+      await Promise.all([prismaPromise, s3Promise]);
     },
   });
 

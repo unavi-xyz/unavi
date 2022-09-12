@@ -107,7 +107,7 @@ export default function ProfileLayout({
                 {handle === viewerHandle ? (
                   <Link href="/settings" passHref>
                     <a>
-                      <Button variant="outlined" squared="small">
+                      <Button variant="outlined" rounded="small">
                         <div className="px-6">Edit profile</div>
                       </Button>
                     </a>
@@ -116,7 +116,7 @@ export default function ProfileLayout({
                   <div>
                     <Button
                       variant="filled"
-                      squared="small"
+                      rounded="small"
                       disabled={!viewerHandle}
                     >
                       <div className="flex justify-center items-center space-x-1 px-6">
@@ -128,7 +128,7 @@ export default function ProfileLayout({
                 )}
 
                 {twitter && (
-                  <Button variant="outlined" squared="small">
+                  <Button variant="outlined" rounded="small">
                     <a
                       href={`https://twitter.com/${twitter.value}`}
                       target="_blank"

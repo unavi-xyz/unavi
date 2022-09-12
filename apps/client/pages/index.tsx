@@ -35,7 +35,7 @@ export default function Index() {
                 <div className="w-full md:w-fit">
                   <Link href="/explore" passHref>
                     <div>
-                      <Button variant="filled" squared="large" fullWidth>
+                      <Button variant="filled" rounded="large" fullWidth>
                         <div className="px-1.5 py-0.5">Play Now</div>
                       </Button>
                     </div>
@@ -43,7 +43,7 @@ export default function Index() {
                 </div>
 
                 <div className="w-full md:w-fit">
-                  <Button variant="text" squared="large" fullWidth>
+                  <Button variant="text" rounded="large" fullWidth>
                     <a href={DOCS_URL} target="_blank" rel="noreferrer">
                       <div className="px-1.5 py-0.5">Learn More</div>
                     </a>

@@ -9,10 +9,12 @@ import { Tool } from "./types";
 export interface IEditorStore {
   engine: Engine | null;
   canvas: HTMLCanvasElement | null;
-  name: string;
-  description: string;
   preview: boolean;
   selectedId: string | null;
+
+  name: string;
+  description: string;
+  image: string;
 
   scene: Scene;
 
@@ -24,10 +26,12 @@ export interface IEditorStore {
 export const useEditorStore = create<IEditorStore>(() => ({
   engine: null,
   canvas: null,
-  name: "",
-  description: "",
   preview: false,
   selectedId: null,
+
+  name: "",
+  description: "",
+  image: "",
 
   scene: deepClone(emptyScene),
 

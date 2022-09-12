@@ -3007,29 +3007,29 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@gltf-transform/core@^2.3.0", "@gltf-transform/core@^2.4.2":
-  version "2.4.2"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.2.tgz#98cee2b2a7fc07ff406b0630bee35ce2452efeda"
-  integrity sha512-NVO8tkmqWEXu+2msM0C5VUEpfYY714rta4CcNMcIrEbbrPxadEG9jmsuqICguNoYODIlxjuDuG2LbwgokAXdpQ==
+"@gltf-transform/core@^2.3.0", "@gltf-transform/core@^2.4.3":
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.3.tgz#4d9c18ba91abab17711e01da06cfc0892005bd92"
+  integrity sha512-Z5jr1ykrV5VdaJgkdErL0XYJrHWPVp57Z9wMWwPSY0E4Q5C81Y020egqouqXC1yE1jFADzGa9jInrYD30i7y0A==
   dependencies:
     gl-matrix "~3.4.3"
     property-graph "^0.2.6"
 
-"@gltf-transform/extensions@^2.3.0", "@gltf-transform/extensions@^2.4.2":
-  version "2.4.2"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.2.tgz#b2a73f691a73f102486d07cee340ee9efe91fd61"
-  integrity sha512-e9Uzz+TVC9/sBM2vgptDvGP+bQAetJ825L8E3r6tawrVMras9mAHwIcwS9bf7x2G3ejGTKUtu4d+I4W93ye0hw==
+"@gltf-transform/extensions@^2.3.0", "@gltf-transform/extensions@^2.4.3":
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.3.tgz#e8416bbcfb5b195910a678e7ed26387700307458"
+  integrity sha512-JMJkkmaHXZ7GN48dmsKXwpiCaBJT1GbO6vty9irhR3Q/WUlgc7AiUTJHY/Xr/jRgQYz1HpZO/cz681lj/ho6Vw==
   dependencies:
-    "@gltf-transform/core" "^2.4.2"
+    "@gltf-transform/core" "^2.4.3"
     ktx-parse "^0.4.5"
 
-"@gltf-transform/functions@^2.3.0":
-  version "2.4.2"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.4.2.tgz#10f23ddb12101841de63367f506baedbffbf0965"
-  integrity sha512-cX3jvy4XCpz3UfUFRA3V/+z+2jWkRfYMV+Q+rumYf6Ay+5BJrTTNiUYV0ARvqtLnWmugO+1eZgfG+XX5rf9m/A==
+"@gltf-transform/functions@^2.4.3":
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.4.3.tgz#f38d70654d04e37420530c54e4417a9d65a7a657"
+  integrity sha512-nzmhnxuN7jMXlO+l2kboQlYCPZAOEOhTZAwHKtoIqQ9uPwKP/Pbb1FVAbCjm+2bbBvyVraOkrW3oG4EZ+p9tbg==
   dependencies:
-    "@gltf-transform/core" "^2.4.2"
-    "@gltf-transform/extensions" "^2.4.2"
+    "@gltf-transform/core" "^2.4.3"
+    "@gltf-transform/extensions" "^2.4.3"
     gl-matrix "~3.4.3"
     ndarray "^1.0.19"
     ndarray-lanczos "^0.1.2"
@@ -5968,13 +5968,13 @@ auto-bind@~4.0.0:
   resolved "https://registry.yarnpkg.com/auto-bind/-/auto-bind-4.0.0.tgz#e3589fc6c2da8f7ca43ba9f84fa52a744fc997fb"
   integrity sha512-Hdw8qdNiqdJ8LqT0iK0sVzkFbzg6fhnQqqfWhBDxcHZvU75+B+ayzTy8x+k5Ix0Y92XOhOUlx74ps+bA6BeYMQ==
 
-autoprefixer@^10.3.7, autoprefixer@^10.4.7, autoprefixer@^10.4.8:
-  version "10.4.8"
-  resolved "https://registry.yarnpkg.com/autoprefixer/-/autoprefixer-10.4.8.tgz#92c7a0199e1cfb2ad5d9427bd585a3d75895b9e5"
-  integrity sha512-75Jr6Q/XpTqEf6D2ltS5uMewJIx5irCU1oBYJrWjFenq/m12WRRrz6g15L1EIoYvPLXTbEry7rDOwrcYNj77xw==
+autoprefixer@^10.3.7, autoprefixer@^10.4.7, autoprefixer@^10.4.9:
+  version "10.4.9"
+  resolved "https://registry.yarnpkg.com/autoprefixer/-/autoprefixer-10.4.9.tgz#40f932f7d0535264823882031f9254ea72c693e5"
+  integrity sha512-Uu67eduPEmOeA0vyJby5ghu1AAELCCNSsLAjK+lz6kYzNM5sqnBO36MqfsjhPjQF/BaJM5U/UuFYyl7PavY/wQ==
   dependencies:
     browserslist "^4.21.3"
-    caniuse-lite "^1.0.30001373"
+    caniuse-lite "^1.0.30001394"
     fraction.js "^4.2.0"
     normalize-range "^0.1.2"
     picocolors "^1.0.0"
@@ -6630,10 +6630,10 @@ caniuse-api@^3.0.0:
     lodash.memoize "^4.1.2"
     lodash.uniq "^4.5.0"
 
-caniuse-lite@^1.0.0, caniuse-lite@^1.0.30001332, caniuse-lite@^1.0.30001370, caniuse-lite@^1.0.30001373:
-  version "1.0.30001390"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001390.tgz#158a43011e7068ef7fc73590e9fd91a7cece5e7f"
-  integrity sha512-sS4CaUM+/+vqQUlCvCJ2WtDlV81aWtHhqeEVkLokVJJa3ViN4zDxAGfq9R8i1m90uGHxo99cy10Od+lvn3hf0g==
+caniuse-lite@^1.0.0, caniuse-lite@^1.0.30001332, caniuse-lite@^1.0.30001370, caniuse-lite@^1.0.30001394:
+  version "1.0.30001396"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001396.tgz#1c3ee1b7ccd60f3efd7461201740c8de9fe1025d"
+  integrity sha512-Df93cp39XVZRoOl2EoiuNp2rc4Dnsb9mDQEs4qFa7/uTx3FnfEq+jyHLf/0Ik7GVJA6wvJuAI5ZKUtUEenAm9Q==
 
 cannon-es-debugger@^1.0.0:
   version "1.0.0"

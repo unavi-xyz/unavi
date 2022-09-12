@@ -18,7 +18,6 @@ model Project {
 
   name        String?
   description String?
-  image       String?
 
   editorState String?
 }

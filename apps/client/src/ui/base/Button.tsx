@@ -14,7 +14,7 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   disabled?: boolean;
   fullWidth?: boolean;
   icon?: boolean;
-  squared?: "large" | "small" | undefined;
+  rounded?: "full" | "large" | "small";
   children: React.ReactNode;
 }
 
@@ -25,7 +25,7 @@ export default function sButton({
   disabled = false,
   fullWidth = false,
   icon = false,
-  squared,
+  rounded = "full",
   children,
   ...rest
 }: Props) {
@@ -79,10 +79,10 @@ export default function sButton({
 
   const loadingClass = loading ? "opacity-0" : null;
   const fullWidthClass = fullWidth ? "w-full" : null;
-  const squaredClass =
-    squared === "small"
+  const roundClass =
+    rounded === "small"
       ? "rounded-lg"
-      : squared === "large"
+      : rounded === "large"
       ? "rounded-xl"
       : "rounded-full";
 
@@ -91,7 +91,7 @@ export default function sButton({
   return (
     <button
       className={`relative flex items-center justify-center transition font-bold
-                  ${paddingClass} ${disabledClass} ${fullWidthClass} ${squaredClass}
+                  ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass}
                   ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
       {...rest}
     >

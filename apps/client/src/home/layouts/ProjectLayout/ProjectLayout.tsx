@@ -2,37 +2,36 @@ import Image from "next/future/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { trpc } from "../../src/auth/trpc";
-import { getNavbarLayout } from "../../src/home/layouts/NavbarLayout/NavbarLayout";
-import MetaTags from "../../src/ui/MetaTags";
-import Button from "../../src/ui/base/Button";
+import MetaTags from "../../../ui/MetaTags";
+import Button from "../../../ui/base/Button";
+import NavigationTab from "../../../ui/base/NavigationTab";
 
-export default function Project() {
+interface Props {
+  name: string | null;
+  image: string | null;
+  children: React.ReactNode;
+}
+
+export default function ProjectLayout({ name, image, children }: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data, isFetched } = trpc.useQuery(["project", { id }], {
-    enabled: id !== undefined,
-  });
-
-  if (!isFetched || !data) return null;
-
   return (
     <>
-      <MetaTags title={data.name || "Create"} />
+      <MetaTags title={name || "Project"} />
 
       <div className="mx-4 h-full">
         <div className="max-w-content mx-auto py-8 w-full h-full space-y-8">
           <div className="flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8">
             <div className="w-full h-full rounded-3xl aspect-card bg-primaryContainer">
               <div className="relative object-cover w-full h-full">
-                {data.image && (
+                {image && (
                   <Image
-                    src={data.image}
+                    src={image}
                     priority
                     fill
                     sizes="40vw"
-                    alt="project preview"
+                    alt="space preview"
                     className="rounded-3xl object-cover"
                   />
                 )}
@@ -40,8 +39,10 @@ export default function Project() {
             </div>
 
             <div className="md:w-2/3 min-w-fit flex flex-col justify-between space-y-8">
-              <div className="font-black text-3xl flex justify-center">
-                {data.name}
+              <div className="space-y-4">
+                <div className="font-black text-3xl flex justify-center">
+                  {name}
+                </div>
               </div>
 
               <Link href={`/editor/${id}`} passHref>
@@ -53,10 +54,17 @@ export default function Project() {
               </Link>
             </div>
           </div>
+
+          <div className="space-y-4 pb-4">
+            <div className="flex space-x-4">
+              <NavigationTab href={`/project/${id}`} text="About" />
+              <NavigationTab href={`/project/${id}/settings`} text="Settings" />
+            </div>
+
+            <div>{children}</div>
+          </div>
         </div>
       </div>
     </>
   );
 }
-
-Project.getLayout = getNavbarLayout;

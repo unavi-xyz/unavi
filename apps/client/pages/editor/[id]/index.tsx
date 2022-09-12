@@ -40,6 +40,7 @@ export default function Editor() {
         skyboxPath: "/images/skybox/",
         camera: "orbit",
         enableTransformControls: true,
+        preserveDrawingBuffer: true,
       });
 
       useEditorStore.setState({ engine });

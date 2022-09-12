@@ -4,6 +4,7 @@ export interface EngineOptions {
   skyboxPath?: string;
   camera?: "orbit" | "player";
   enableTransformControls?: boolean;
+  preserveDrawingBuffer?: boolean;
 }
 
 export class Engine {
@@ -15,11 +16,14 @@ export class Engine {
       skyboxPath,
       camera = "player",
       enableTransformControls,
+      preserveDrawingBuffer,
     } = { ...options };
+
     this.renderThread = new RenderThread(canvas, {
       skyboxPath,
       camera,
       enableTransformControls,
+      preserveDrawingBuffer,
     });
   }
 

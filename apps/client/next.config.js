@@ -38,7 +38,11 @@ const config = defineConfig({
     },
   },
   images: {
-    domains: [process.env.NEXT_PUBLIC_IPFS_GATEWAY, "avatar.tobi.sh"],
+    domains: [
+      `${process.env.S3_BUCKET}.${process.env.S3_ENDPOINT}`,
+      `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}`,
+      "avatar.tobi.sh",
+    ],
   },
   async redirects() {
     return [

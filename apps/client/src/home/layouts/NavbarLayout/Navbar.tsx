@@ -16,14 +16,14 @@ export default function Navbar() {
       <div className="max-w-content mx-4 grid grid-cols-3">
         <div className="flex items-center">
           <Link href="/" passHref>
-            <a className="cursor-pointer relative h-9 aspect-square">
+            <div className="cursor-pointer relative h-9 aspect-square">
               <Image
                 src="/images/Logo-Maskable.png"
                 alt="logo"
                 fill
                 sizes="36px"
               />
-            </a>
+            </div>
           </Link>
         </div>
 

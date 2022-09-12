@@ -5,7 +5,7 @@ const origin = `https://${process.env.VERCEL_URL}`;
 interface Props {
   title?: string;
   description?: string;
-  image?: string | null;
+  image?: string;
   card?: "summary" | "summary_large_image";
 }
 

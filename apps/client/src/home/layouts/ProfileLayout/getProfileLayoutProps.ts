@@ -14,8 +14,8 @@ export interface ProfileLayoutProps {
   handle: string;
   metadata: PageMetadata;
   profile: Profile | undefined;
-  coverImage: string | null;
-  profileImage: string | null;
+  coverImage?: string;
+  profileImage?: string;
 }
 
 export async function getProfileLayoutProps(
@@ -31,10 +31,8 @@ export async function getProfileLayoutProps(
 
   const profile = profileQuery.data?.profiles.items[0] as Profile;
   const title = profile?.name ? `${profile?.name} (@${handle})` : `@${handle}`;
-  const profileImage = profile?.picture ? getMediaURL(profile.picture) : null;
-  const coverImage = profile?.coverPicture
-    ? getMediaURL(profile.coverPicture)
-    : null;
+  const profileImage = getMediaURL(profile?.picture) ?? undefined;
+  const coverImage = getMediaURL(profile?.coverPicture) ?? undefined;
 
   const metadata: PageMetadata = {
     title,

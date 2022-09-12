@@ -56,14 +56,14 @@ export default function LandingInfoBlock({
         <div className="flex justify-between md:justify-start space-x-4 pt-4 text-xl">
           {isExternalLink ? (
             <a href={buttonLink} target="_blank" rel="noreferrer">
-              <Button variant="filled" squared="large">
+              <Button variant="filled" rounded="large">
                 <div className="px-1.5 py-0.5">{buttonText}</div>
               </Button>
             </a>
           ) : (
             <Link href={buttonLink} passHref>
               <div>
-                <Button variant="filled" squared="large">
+                <Button variant="filled" rounded="large">
                   <div className="px-1.5 py-0.5">{buttonText}</div>
                 </Button>
               </div>

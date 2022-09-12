@@ -34,7 +34,14 @@ export default function EditorNavbar() {
   }
 
   async function handleBack() {
+    const { engine } = useEditorStore.getState();
+    if (engine) {
+      const image = await engine?.renderThread.takeScreenshot();
+      useEditorStore.setState({ image });
+    }
+
     await save();
+
     router.push(`/project/${id}`);
   }
 
@@ -97,8 +104,6 @@ export default function EditorNavbar() {
             </div>
           </Tooltip>
         </div>
-
-        {/* <div className="pl-2">{handle ? <PublishButton /> : <LoginButton />}</div> */}
       </div>
     </div>
   );

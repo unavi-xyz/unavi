@@ -200,7 +200,7 @@ export class RenderWorker {
 
   takeScreenshot() {
     if (!this.#renderer) throw new Error("Renderer not initialized");
-    const data = this.#renderer.domElement.toDataURL("image/jpeg", 0.75);
+    const data = this.#renderer.domElement.toDataURL("image/jpeg", 1);
     this.#postMessage({ subject: "screenshot", data });
   }
 

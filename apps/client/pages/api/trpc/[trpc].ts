@@ -166,10 +166,16 @@ export const appRouter = trpc
     input: z.object({
       name: z.string().max(255),
       description: z.string().max(2040),
+      image: z.string().optional(),
     }),
-    async resolve({ ctx: { address }, input: { name, description } }) {
-      const project = await prisma.project.create({
+    async resolve({ ctx: { address }, input: { name, description, image } }) {
+      const date = new Date();
+
+      // Create project
+      const { id } = await prisma.project.create({
         data: {
+          createdAt: date,
+          updatedAt: date,
           owner: address,
           name,
           description,
@@ -177,7 +183,18 @@ export const appRouter = trpc
         },
       });
 
-      return project;
+      // Upload image to S3
+      if (image) {
+        const base64str = image.split("base64,")[1]; // Remove the image type metadata.
+        const imageFile = Buffer.from(base64str, "base64");
+
+        // Limit image size to 500kb
+        if (imageFile.length < 500000) {
+          await uploadImage(imageFile, id);
+        }
+      }
+
+      return id;
     },
   })
   .mutation("save-project", {

@@ -48,7 +48,7 @@ export default function Card({
               sizes={sizes}
               draggable={false}
               alt="card image"
-              className="group-hover:scale-110 transition duration-500 ease-in-out rounded-xl"
+              className="group-hover:scale-110 transition duration-500 ease-in-out rounded-xl object-cover"
             />
           )}
         </div>

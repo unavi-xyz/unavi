@@ -16,13 +16,19 @@ export default function CreateProjectPage() {
   async function handleCreate() {
     const name = nameRef.current?.value ?? "";
     const description = descriptionRef.current?.value ?? "";
+    const res = await fetch("/images/default-space.jpeg");
+    const blob = await res.blob();
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onload = async () => {
+      const id = await mutateAsync({
+        name,
+        description,
+        image: reader.result as string,
+      });
 
-    const { id } = await mutateAsync({
-      name,
-      description,
-    });
-
-    router.push(`/project/${id}`);
+      router.push(`/project/${id}`);
+    };
   }
 
   return (

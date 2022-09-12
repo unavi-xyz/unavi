@@ -28,7 +28,7 @@ export default function NavigationTab({ href, text }: Props) {
     <Link href={href} passHref>
       <div
         className={`w-full md:w-min md:px-16 py-1 rounded-lg text-lg font-bold
-                    flex justify-center transition ${selectedClass}`}
+                    flex justify-center transition cursor-pointer ${selectedClass}`}
       >
         {text}
       </div>

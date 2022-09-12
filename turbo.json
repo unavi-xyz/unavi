@@ -14,6 +14,7 @@
         "$NEXT_PUBLIC_IPFS_AUTH",
         "$NEXT_AUTH_SECRET",
         "$ALCHEMY_ID",
+        "$S3_BUCKET",
         "$S3_ENDPOINT",
         "$S3_REGION",
         "$S3_ACCESS_KEY_ID",
@@ -32,7 +33,7 @@
       "inputs": ["**/*.tsx", "**/*.ts"]
     },
     "lint": { "outputs": [] },
-    "deploy": { "dependsOn": ["build", "lint"] },
+    "deploy": { "outputs": [] },
     "dev": { "cache": false }
   }
 }

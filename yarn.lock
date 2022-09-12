@@ -3007,29 +3007,29 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@gltf-transform/core@^2.3.0", "@gltf-transform/core@^2.4.2":
-  version "2.4.2"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.2.tgz#98cee2b2a7fc07ff406b0630bee35ce2452efeda"
-  integrity sha512-NVO8tkmqWEXu+2msM0C5VUEpfYY714rta4CcNMcIrEbbrPxadEG9jmsuqICguNoYODIlxjuDuG2LbwgokAXdpQ==
+"@gltf-transform/core@^2.3.0", "@gltf-transform/core@^2.4.3":
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.3.tgz#4d9c18ba91abab17711e01da06cfc0892005bd92"
+  integrity sha512-Z5jr1ykrV5VdaJgkdErL0XYJrHWPVp57Z9wMWwPSY0E4Q5C81Y020egqouqXC1yE1jFADzGa9jInrYD30i7y0A==
   dependencies:
     gl-matrix "~3.4.3"
     property-graph "^0.2.6"
 
-"@gltf-transform/extensions@^2.3.0", "@gltf-transform/extensions@^2.4.2":
-  version "2.4.2"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.2.tgz#b2a73f691a73f102486d07cee340ee9efe91fd61"
-  integrity sha512-e9Uzz+TVC9/sBM2vgptDvGP+bQAetJ825L8E3r6tawrVMras9mAHwIcwS9bf7x2G3ejGTKUtu4d+I4W93ye0hw==
+"@gltf-transform/extensions@^2.3.0", "@gltf-transform/extensions@^2.4.3":
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.3.tgz#e8416bbcfb5b195910a678e7ed26387700307458"
+  integrity sha512-JMJkkmaHXZ7GN48dmsKXwpiCaBJT1GbO6vty9irhR3Q/WUlgc7AiUTJHY/Xr/jRgQYz1HpZO/cz681lj/ho6Vw==
   dependencies:
-    "@gltf-transform/core" "^2.4.2"
+    "@gltf-transform/core" "^2.4.3"
     ktx-parse "^0.4.5"
 
-"@gltf-transform/functions@^2.3.0":
-  version "2.4.2"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.4.2.tgz#10f23ddb12101841de63367f506baedbffbf0965"
-  integrity sha512-cX3jvy4XCpz3UfUFRA3V/+z+2jWkRfYMV+Q+rumYf6Ay+5BJrTTNiUYV0ARvqtLnWmugO+1eZgfG+XX5rf9m/A==
+"@gltf-transform/functions@^2.4.3":
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.4.3.tgz#f38d70654d04e37420530c54e4417a9d65a7a657"
+  integrity sha512-nzmhnxuN7jMXlO+l2kboQlYCPZAOEOhTZAwHKtoIqQ9uPwKP/Pbb1FVAbCjm+2bbBvyVraOkrW3oG4EZ+p9tbg==
   dependencies:
-    "@gltf-transform/core" "^2.4.2"
-    "@gltf-transform/extensions" "^2.4.2"
+    "@gltf-transform/core" "^2.4.3"
+    "@gltf-transform/extensions" "^2.4.3"
     gl-matrix "~3.4.3"
     ndarray "^1.0.19"
     ndarray-lanczos "^0.1.2"

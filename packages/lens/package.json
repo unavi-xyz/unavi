@@ -27,7 +27,7 @@
     "@types/react": "18.0.19",
     "@types/react-dom": "^18.0.6",
     "@wired-labs/tsconfig": "*",
-    "eslint": "^8.22.0",
+    "eslint": "^8.23.1",
     "eslint-config-custom": "*",
     "typechain": "^8.1.0",
     "typescript": "^4.8.3"

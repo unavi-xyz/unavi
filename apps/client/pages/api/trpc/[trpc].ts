@@ -1,7 +1,6 @@
 import * as trpc from "@trpc/server";
 import * as trpcNext from "@trpc/server/adapters/next";
 import {
-  DeleteObjectCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
   PutObjectCommand,
@@ -19,6 +18,8 @@ import {
   createContext,
 } from "../../../src/auth/context";
 import { prisma } from "../../../src/auth/prisma";
+import { emptyScene } from "../../../src/editor/constants";
+import { deepClone } from "../../../src/utils/deepClone";
 
 const s3Client = new S3Client({
   endpoint: `https://${process.env.S3_ENDPOINT}` ?? "",
@@ -36,6 +37,7 @@ async function uploadScene(scene: any, id: string) {
       Key: `${id}.json`,
       Body: JSON.stringify(scene),
       ACL: "private",
+      ContentType: "application/json",
     })
   );
   return data;
@@ -48,6 +50,7 @@ async function uploadImage(image: any, id: string) {
       Key: `${id}.jpeg`,
       Body: image,
       ACL: "private",
+      ContentType: "image/jpeg",
     })
   );
   return data;
@@ -186,16 +189,21 @@ export const appRouter = trpc
           },
         });
 
+        // Upload scene to S3
+        const scenePromise = uploadScene(deepClone(emptyScene), id);
+
         // Upload image to S3
         if (image) {
           const base64str = image.split("base64,")[1]; // Remove the image type metadata.
           const imageFile = Buffer.from(base64str, "base64");
 
-          // Limit image size to 500kb
-          if (imageFile.length < 500000) {
+          // Limit image size to 10MB
+          if (imageFile.length < 10000000) {
             await uploadImage(imageFile, id);
           }
         }
+
+        await scenePromise;
 
         return id;
       } catch (e) {

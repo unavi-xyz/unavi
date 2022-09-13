@@ -54,44 +54,32 @@ async function uploadImage(image: any, id: string) {
 }
 
 async function getScene(id: string) {
-  try {
-    const command = new GetObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: `${id}.json`,
-    });
-    const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-    return url;
-  } catch (e) {
-    return null;
-  }
+  const command = new GetObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: `${id}.json`,
+  });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+  return url;
 }
 
 async function getImage(id: string) {
-  try {
-    const command = new GetObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: `${id}.jpeg`,
-    });
-    const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-    return url;
-  } catch (e) {
-    return null;
-  }
+  const command = new GetObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: `${id}.jpeg`,
+  });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+  return url;
 }
 
 async function deleteFromS3(id: string) {
-  try {
-    await s3Client.send(
-      new DeleteObjectsCommand({
-        Bucket: process.env.S3_BUCKET,
-        Delete: {
-          Objects: [{ Key: `${id}.json` }, { Key: `${id}.jpeg` }],
-        },
-      })
-    );
-  } catch (e) {
-    console.error(e);
-  }
+  await s3Client.send(
+    new DeleteObjectsCommand({
+      Bucket: process.env.S3_BUCKET,
+      Delete: {
+        Objects: [{ Key: `${id}.json` }, { Key: `${id}.jpeg` }],
+      },
+    })
+  );
 }
 
 export const appRouter = trpc
@@ -107,20 +95,24 @@ export const appRouter = trpc
   })
   .query("projects", {
     async resolve({ ctx: { address } }) {
-      const projects = await prisma.project.findMany({
-        where: { owner: address },
-        orderBy: { updatedAt: "desc" },
-      });
+      try {
+        const projects = await prisma.project.findMany({
+          where: { owner: address },
+          orderBy: { updatedAt: "desc" },
+        });
 
-      const images = await Promise.all(
-        projects.map(async (project) => await getImage(project.id))
-      );
+        const images = await Promise.all(
+          projects.map(async (project) => await getImage(project.id))
+        );
 
-      const response = projects.map((project, index) => ({
-        ...project,
-        image: images[index],
-      }));
-      return response;
+        const response = projects.map((project, index) => ({
+          ...project,
+          image: images[index],
+        }));
+        return response;
+      } catch (e) {
+        throw e;
+      }
     },
   })
   .query("project", {
@@ -128,19 +120,23 @@ export const appRouter = trpc
       id: z.string().length(36),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
-      const imagePromise = getImage(id);
+      try {
+        const imagePromise = getImage(id);
 
-      const project = await prisma.project.findFirst({
-        where: { id, owner: address },
-      });
-      if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
+        const project = await prisma.project.findFirst({
+          where: { id, owner: address },
+        });
+        if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
 
-      const image = await imagePromise;
+        const image = await imagePromise;
 
-      return {
-        ...project,
-        image,
-      };
+        return {
+          ...project,
+          image,
+        };
+      } catch (e) {
+        throw e;
+      }
     },
   })
   .query("scene", {
@@ -148,18 +144,24 @@ export const appRouter = trpc
       id: z.string().length(36),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
-      // Verify the user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id, owner: address },
-      });
-      if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
+      try {
+        // Verify the user owns the project
+        const project = await prisma.project.findFirst({
+          where: { id, owner: address },
+        });
+        if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
 
-      const url = await getScene(id);
-      if (!url) return null;
+        const url = await getScene(id);
+        if (!url) return null;
 
-      const res = await fetch(url);
-      const scene: Scene = await res.json();
-      return scene;
+        const res = await fetch(url);
+        if (!res.ok) throw new trpc.TRPCError({ code: "NOT_FOUND" });
+
+        const scene: Scene = await res.json();
+        return scene;
+      } catch (e) {
+        throw e;
+      }
     },
   })
   .mutation("create-project", {
@@ -169,32 +171,36 @@ export const appRouter = trpc
       image: z.string().optional(),
     }),
     async resolve({ ctx: { address }, input: { name, description, image } }) {
-      const date = new Date();
+      try {
+        const date = new Date();
 
-      // Create project
-      const { id } = await prisma.project.create({
-        data: {
-          createdAt: date,
-          updatedAt: date,
-          owner: address,
-          name,
-          description,
-          editorState: null,
-        },
-      });
+        // Create project
+        const { id } = await prisma.project.create({
+          data: {
+            createdAt: date,
+            updatedAt: date,
+            owner: address,
+            name,
+            description,
+            editorState: null,
+          },
+        });
 
-      // Upload image to S3
-      if (image) {
-        const base64str = image.split("base64,")[1]; // Remove the image type metadata.
-        const imageFile = Buffer.from(base64str, "base64");
+        // Upload image to S3
+        if (image) {
+          const base64str = image.split("base64,")[1]; // Remove the image type metadata.
+          const imageFile = Buffer.from(base64str, "base64");
 
-        // Limit image size to 500kb
-        if (imageFile.length < 500000) {
-          await uploadImage(imageFile, id);
+          // Limit image size to 500kb
+          if (imageFile.length < 500000) {
+            await uploadImage(imageFile, id);
+          }
         }
-      }
 
-      return id;
+        return id;
+      } catch (e) {
+        throw e;
+      }
     },
   })
   .mutation("save-project", {
@@ -210,40 +216,44 @@ export const appRouter = trpc
       ctx: { address },
       input: { id, name, description, image, editorState, scene },
     }) {
-      // Verify that the user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id, owner: address },
-      });
-      if (!project) throw new trpc.TRPCError({ code: "UNAUTHORIZED" });
+      try {
+        // Verify that the user owns the project
+        const project = await prisma.project.findFirst({
+          where: { id, owner: address },
+        });
+        if (!project) throw new trpc.TRPCError({ code: "UNAUTHORIZED" });
 
-      // Upload scene to S3
-      await uploadScene(scene, id);
+        // Upload scene to S3
+        await uploadScene(scene, id);
 
-      // Upload image to S3
-      if (image) {
-        const base64str = image.split("base64,")[1]; // Remove the image type metadata.
-        const imageFile = Buffer.from(base64str, "base64");
+        // Upload image to S3
+        if (image) {
+          const base64str = image.split("base64,")[1]; // Remove the image type metadata.
+          const imageFile = Buffer.from(base64str, "base64");
 
-        // Limit image size to 500kb
-        if (imageFile.length < 500000) {
-          await uploadImage(imageFile, id);
+          // Limit image size to 500kb
+          if (imageFile.length < 500000) {
+            await uploadImage(imageFile, id);
+          }
         }
+
+        // Save to database
+        await prisma.project.update({
+          where: { id },
+          data: {
+            name,
+            description,
+            editorState,
+            updatedAt: new Date(),
+          },
+        });
+
+        return {
+          success: true,
+        };
+      } catch (e) {
+        throw e;
       }
-
-      // Save to database
-      await prisma.project.update({
-        where: { id },
-        data: {
-          name,
-          description,
-          editorState,
-          updatedAt: new Date(),
-        },
-      });
-
-      return {
-        success: true,
-      };
     },
   })
   .mutation("delete-project", {
@@ -251,21 +261,25 @@ export const appRouter = trpc
       id: z.string().length(36),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
-      // Verify that the user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id, owner: address },
-      });
-      if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
+      try {
+        // Verify that the user owns the project
+        const project = await prisma.project.findFirst({
+          where: { id, owner: address },
+        });
+        if (!project) throw new trpc.TRPCError({ code: "NOT_FOUND" });
 
-      // Delete from database
-      const prismaPromise = prisma.project.delete({
-        where: { id },
-      });
+        // Delete from database
+        const prismaPromise = prisma.project.delete({
+          where: { id },
+        });
 
-      // Delete from S3
-      const s3Promise = deleteFromS3(id);
+        // Delete from S3
+        const s3Promise = deleteFromS3(id);
 
-      await Promise.all([prismaPromise, s3Promise]);
+        await Promise.all([prismaPromise, s3Promise]);
+      } catch (e) {
+        throw e;
+      }
     },
   });
 

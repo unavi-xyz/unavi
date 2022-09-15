@@ -23,7 +23,7 @@
     "@trpc/server": "^9.27.0",
     "@wired-labs/engine": "*",
     "@wired-labs/lens": "*",
-    "ethers": "^5.6.9",
+    "ethers": "^5.7.1",
     "immer": "^9.0.15",
     "ipfs-http-client": "^57.0.3",
     "jotai": "^1.7.8",

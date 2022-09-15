@@ -38,6 +38,7 @@ jobs:
         uses: creyD/prettier_action@v4.2
         with:
           github_token: ${{ secrets.PRETTIER_TOKEN }}
+          prettier_plugins: "@trivago/prettier-plugin-sort-imports prettier-plugin-sort-json prettier-plugin-prisma"
           prettier_options: --write .
           only_changed: True
           same_commit: True

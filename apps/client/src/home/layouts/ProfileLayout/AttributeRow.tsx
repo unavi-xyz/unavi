@@ -6,8 +6,8 @@ interface Props {
 export default function AttributeRow({ icon, children }: Props) {
   return (
     <div className="flex items-center space-x-2">
-      <div className="text-xl w-5">{icon}</div>
-      <div className="font-bold text-sm md:text-base">{children}</div>
+      <div className="w-5 text-xl">{icon}</div>
+      <div className="text-sm font-bold md:text-base">{children}</div>
     </div>
   );
 }

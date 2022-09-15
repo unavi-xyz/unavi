@@ -108,8 +108,8 @@ export default function Editor() {
       <MetaTags title="Editor" />
 
       <DndProvider backend={HTML5Backend}>
-        <div className="h-full overflow-hidden flex flex-col">
-          <div className="border-b w-full h-14 z-10">
+        <div className="flex h-full flex-col overflow-hidden">
+          <div className="z-10 h-14 w-full border-b">
             <EditorNavbar />
           </div>
 
@@ -129,11 +129,11 @@ export default function Editor() {
             <div className="float-left h-full border-x">
               <div
                 ref={containerRef}
-                className="relative w-full h-full overflow-hidden"
+                className="relative h-full w-full overflow-hidden"
               >
                 <canvas
                   ref={canvasRef}
-                  className={`w-full h-full ${loadedClass}`}
+                  className={`h-full w-full ${loadedClass}`}
                 />
               </div>
             </div>

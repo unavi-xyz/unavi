@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-
 import { Engine } from "@wired-labs/engine";
+import { useEffect, useRef, useState } from "react";
 
 export interface RenderInfo {
   load: {
@@ -91,8 +90,8 @@ export default function ExampleCanvas({ uri }: Props) {
   }
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden">
-      <canvas ref={canvasRef} className="w-full h-full" />
+    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+      <canvas ref={canvasRef} className="h-full w-full" />
     </div>
   );
 }

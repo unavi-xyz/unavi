@@ -1,3 +1,3 @@
-export * from "./generated/graphql";
 export * from "./contracts";
+export * from "./generated/graphql";
 export * from "./src/types";

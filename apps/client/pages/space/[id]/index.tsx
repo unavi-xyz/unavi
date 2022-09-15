@@ -1,11 +1,11 @@
 import { NextPageContext } from "next";
 
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
-import SpaceLayout from "../../../src/home/layouts/SpaceLayout/SpaceLayout";
 import {
-  SpaceLayoutProps,
   getSpaceLayoutProps,
+  SpaceLayoutProps,
 } from "../../../src/home/layouts/SpaceLayout/getSpaceLayoutProps";
+import SpaceLayout from "../../../src/home/layouts/SpaceLayout/SpaceLayout";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=30");
@@ -22,7 +22,7 @@ export default function Space(props: SpaceLayoutProps) {
     <SpaceLayout {...props}>
       <div className="space-y-2">
         <div className="text-2xl font-bold">Description</div>
-        <div className="text-lg text-outline">
+        <div className="text-outline text-lg">
           {props.publication?.metadata.description}
         </div>
       </div>

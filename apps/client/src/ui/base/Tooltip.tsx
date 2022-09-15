@@ -24,12 +24,12 @@ export default function Tooltip({
 
       {text && (
         <div
-          className={`absolute z-20 flex flex-col items-center min-w-max scale-0
-                      group-hover:scale-100 transition duration-300 ${margin}`}
+          className={`absolute z-20 flex min-w-max scale-0 flex-col items-center
+                      transition duration-300 group-hover:scale-100 ${margin}`}
         >
           <span
-            className="relative px-3 py-2 text-xs leading-none rounded-lg w-full
-                       whitespace-no-wrap bg-surfaceDark text-onSurfaceDark shadow-lg font-bold"
+            className="whitespace-no-wrap bg-surfaceDark text-onSurfaceDark relative w-full rounded-lg px-3
+                       py-2 text-xs font-bold leading-none shadow-lg"
           >
             {text}
           </span>

@@ -28,9 +28,9 @@ export default function LandingInfoBlock({
   const isExternalLink = buttonLink.startsWith("http");
 
   return (
-    <div className={`h-screen snap-center flex items-center ${directionClass}`}>
-      <div className="md:w-1/2 md:h-1/2 md:p-8 md:mt-8">
-        <div className="relative w-full h-full">
+    <div className={`flex h-screen snap-center items-center ${directionClass}`}>
+      <div className="md:mt-8 md:h-1/2 md:w-1/2 md:p-8">
+        <div className="relative h-full w-full">
           <Image
             src={image}
             fill
@@ -43,17 +43,17 @@ export default function LandingInfoBlock({
 
       <div className="w-full space-y-3">
         <div
-          className="text-6xl font-black rounded-xl px-5 py-2 w-fit
-                     text-onPrimaryContainer bg-primaryContainer"
+          className="text-onPrimaryContainer bg-primaryContainer w-fit rounded-xl px-5 py-2
+                     text-6xl font-black"
         >
           {title}
         </div>
 
         <div className="text-5xl">{subtitle}</div>
 
-        <div className="ml-1 text-xl text-outline">{body}</div>
+        <div className="text-outline ml-1 text-xl">{body}</div>
 
-        <div className="flex justify-between md:justify-start space-x-4 pt-4 text-xl">
+        <div className="flex justify-between space-x-4 pt-4 text-xl md:justify-start">
           {isExternalLink ? (
             <a href={buttonLink} target="_blank" rel="noreferrer">
               <Button variant="filled" rounded="large">

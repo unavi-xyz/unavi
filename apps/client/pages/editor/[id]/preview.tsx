@@ -1,9 +1,8 @@
+import { Engine } from "@wired-labs/engine";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useRef } from "react";
 import { MdClose } from "react-icons/md";
-
-import { Engine } from "@wired-labs/engine";
 
 import { useLoad } from "../../../src/editor/hooks/useLoad";
 import { useEditorStore } from "../../../src/editor/store";
@@ -61,9 +60,9 @@ export default function Preview() {
       <div className="h-full">
         <div
           ref={containerRef}
-          className="relative w-full h-full overflow-hidden"
+          className="relative h-full w-full overflow-hidden"
         >
-          <canvas ref={canvasRef} className="w-full h-full" />
+          <canvas ref={canvasRef} className="h-full w-full" />
         </div>
 
         <div
@@ -71,12 +70,12 @@ export default function Preview() {
           className="fixed top-0 right-0 p-6 text-2xl"
         >
           <Link href={`/editor/${id}`} passHref>
-            <a
-              className="block cursor-pointer p-2 rounded-full bg-surface text-onSurface
-                         backdrop-blur bg-opacity-60 hover:bg-opacity-100 transition active:bg-opacity-90"
+            <div
+              className="bg-surface text-onSurface block cursor-pointer rounded-full
+                         p-2 backdrop-blur transition hover:bg-opacity-100 active:bg-opacity-90"
             >
               <MdClose />
-            </a>
+            </div>
           </Link>
         </div>
       </div>

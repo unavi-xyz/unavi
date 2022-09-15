@@ -1,4 +1,4 @@
-import { BufferAttribute, InterleavedBuffer, Vector3 } from "three";
+import { BufferAttribute, Vector3 } from "three";
 
 export function createNormalizedNormalAttribute(normal: BufferAttribute) {
   const attribute = normal.clone();

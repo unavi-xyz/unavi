@@ -1,11 +1,10 @@
-import { utils } from "ethers";
-import { useSignTypedData, useSigner } from "wagmi";
-
 import {
   LensPeriphery__factory,
   ProfileMetadata,
   useCreateSetProfileMetadataTypedDataMutation,
 } from "@wired-labs/lens";
+import { utils } from "ethers";
+import { useSigner, useSignTypedData } from "wagmi";
 
 import { uploadStringToIpfs } from "../../ipfs/uploadStringToIpfs";
 import { ContractAddress } from "../constants";

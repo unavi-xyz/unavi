@@ -33,7 +33,7 @@ export default function CreateProjectPage() {
 
   return (
     <div className="space-y-8">
-      <div className="text-3xl font-bold text-center">New Project</div>
+      <div className="text-center text-3xl font-bold">New Project</div>
 
       <TextField
         inputRef={nameRef}

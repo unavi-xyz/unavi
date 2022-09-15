@@ -1,22 +1,20 @@
-import * as trpc from "@trpc/server";
-import * as trpcNext from "@trpc/server/adapters/next";
 import {
-  DeleteObjectCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import * as trpc from "@trpc/server";
+import * as trpcNext from "@trpc/server/adapters/next";
 import { MiddlewareResult } from "@trpc/server/dist/declarations/src/internals/middlewares";
+import { Scene } from "@wired-labs/engine";
 import { z } from "zod";
 
-import { Scene } from "@wired-labs/engine";
-
 import {
+  createContext,
   IAuthenticatedContext,
   IContext,
-  createContext,
 } from "../../../src/auth/context";
 import { prisma } from "../../../src/auth/prisma";
 

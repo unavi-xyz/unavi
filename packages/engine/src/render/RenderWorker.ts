@@ -1,10 +1,10 @@
 import {
   FogExp2,
-  PMREMGenerator,
   PerspectiveCamera,
+  PMREMGenerator,
   Scene,
-  WebGLRenderer,
   sRGBEncoding,
+  WebGLRenderer,
 } from "three";
 
 import { PostMessage } from "../types";

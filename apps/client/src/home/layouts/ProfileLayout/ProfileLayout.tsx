@@ -5,8 +5,8 @@ import { FaTwitter } from "react-icons/fa";
 import { MdAdd, MdLink, MdOutlineLocationOn } from "react-icons/md";
 
 import { useLens } from "../../../lib/lens/hooks/useLens";
-import MetaTags from "../../../ui/MetaTags";
 import Button from "../../../ui/base/Button";
+import MetaTags from "../../../ui/MetaTags";
 import ProfilePicture from "../../lens/ProfilePicture";
 import AttributeRow from "./AttributeRow";
 import { ProfileLayoutProps } from "./getProfileLayoutProps";
@@ -48,8 +48,8 @@ export default function ProfileLayout({
 
       {profile ? (
         <div className="max-w-content mx-auto">
-          <div className="w-full h-48 md:h-64 bg-primaryContainer md:rounded-3xl">
-            <div className="relative object-cover w-full h-full">
+          <div className="bg-primaryContainer h-48 w-full md:h-64 md:rounded-3xl">
+            <div className="relative h-full w-full object-cover">
               {coverImage && (
                 <Image
                   src={coverImage}
@@ -57,15 +57,15 @@ export default function ProfileLayout({
                   fill
                   sizes="80vw"
                   alt="cover"
-                  className="w-full h-full object-cover md:rounded-3xl"
+                  className="h-full w-full object-cover md:rounded-3xl"
                 />
               )}
             </div>
           </div>
 
-          <div className="flex justify-center pb-4 px-4 md:px-0">
-            <div className="w-full flex flex-col items-center space-y-2">
-              <div className="w-32 rounded-full -mt-16 flex z-10 ring-4 ring-background">
+          <div className="flex justify-center px-4 pb-4 md:px-0">
+            <div className="flex w-full flex-col items-center space-y-2">
+              <div className="ring-background z-10 -mt-16 flex w-32 rounded-full ring-4">
                 {
                   <ProfilePicture
                     src={profileImage ?? `https://avatar.tobi.sh/${handle}`}
@@ -79,21 +79,21 @@ export default function ProfileLayout({
                 <div className="text-lg font-bold">{profile.name}</div>
               </div>
 
-              <div className="w-full py-2 flex space-x-4 justify-center">
-                <div className="flex flex-col md:flex-row md:space-x-1 items-center">
-                  <div className="font-black text-lg">
+              <div className="flex w-full justify-center space-x-4 py-2">
+                <div className="flex flex-col items-center md:flex-row md:space-x-1">
+                  <div className="text-lg font-black">
                     {profile.stats.totalFollowing}
                   </div>
-                  <div className="text-outline leading-5 text-lg">
+                  <div className="text-outline text-lg leading-5">
                     Following
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row md:space-x-1 items-center">
-                  <div className="font-black text-lg">
+                <div className="flex flex-col items-center md:flex-row md:space-x-1">
+                  <div className="text-lg font-black">
                     {profile.stats.totalFollowers}
                   </div>
-                  <div className="text-outline leading-5 text-lg">
+                  <div className="text-outline text-lg leading-5">
                     Followers
                   </div>
                 </div>
@@ -101,9 +101,9 @@ export default function ProfileLayout({
             </div>
           </div>
 
-          <div className="w-full flex flex-col items-center md:items-start px-4 md:px-0">
-            <div className="w-full space-y-2 flex flex-col items-center">
-              <div className="w-full flex justify-center space-x-2">
+          <div className="flex w-full flex-col items-center px-4 md:items-start md:px-0">
+            <div className="flex w-full flex-col items-center space-y-2">
+              <div className="flex w-full justify-center space-x-2">
                 {handle === viewerHandle ? (
                   <Link href="/settings" passHref>
                     <a>
@@ -119,7 +119,7 @@ export default function ProfileLayout({
                       rounded="small"
                       disabled={!viewerHandle}
                     >
-                      <div className="flex justify-center items-center space-x-1 px-6">
+                      <div className="flex items-center justify-center space-x-1 px-6">
                         <MdAdd />
                         <div>Follow</div>
                       </div>
@@ -142,12 +142,12 @@ export default function ProfileLayout({
               </div>
 
               <div className="w-full pt-2">
-                <div className="text-sm md:text-base text-center">
+                <div className="text-center text-sm md:text-base">
                   {profile.bio}
                 </div>
               </div>
 
-              <div className="flex space-x-4 flex-wrap">
+              <div className="flex flex-wrap space-x-4">
                 {location && (
                   <AttributeRow icon={<MdOutlineLocationOn />}>
                     {location.value}
@@ -173,7 +173,7 @@ export default function ProfileLayout({
           </div>
         </div>
       ) : (
-        <div className="flex justify-center text-lg pt-12">User not found.</div>
+        <div className="flex justify-center pt-12 text-lg">User not found.</div>
       )}
     </>
   );

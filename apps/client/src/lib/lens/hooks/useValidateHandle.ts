@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
-
 import { useGetProfileQuery } from "@wired-labs/lens";
+import { useEffect, useState } from "react";
 
 import { HANDLE_ENDING } from "../constants";
 

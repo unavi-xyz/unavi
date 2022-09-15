@@ -1,4 +1,4 @@
-import { UriType, parseUri } from "./parseUri";
+import { parseUri, UriType } from "./parseUri";
 
 export async function fetchUri(uri: string, baseUrl: string | null = null) {
   // Parse uri

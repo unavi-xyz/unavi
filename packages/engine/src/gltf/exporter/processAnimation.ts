@@ -5,7 +5,6 @@ import {
   InterpolateDiscrete,
   InterpolateLinear,
   Object3D,
-  SkinnedMesh,
 } from "three";
 
 import { PATH_PROPERTIES_REVERSE } from "../constants";

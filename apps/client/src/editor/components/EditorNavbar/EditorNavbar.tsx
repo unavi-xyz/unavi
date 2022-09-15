@@ -51,11 +51,11 @@ export default function EditorNavbar() {
   }
 
   return (
-    <div className="flex justify-between items-center h-full px-4 py-2">
-      <div className="w-full flex items-center space-x-4 text-lg">
+    <div className="flex h-full items-center justify-between px-4 py-2">
+      <div className="flex w-full items-center space-x-4 text-lg">
         <div
           onClick={handleBack}
-          className="cursor-pointer transition text-outline hover:text-inherit p-1"
+          className="text-outline cursor-pointer p-1 transition hover:text-inherit"
         >
           <MdArrowBackIosNew />
         </div>
@@ -63,7 +63,7 @@ export default function EditorNavbar() {
         <div>{name}</div>
       </div>
 
-      <div className="w-full h-full flex justify-center items-center space-x-2">
+      <div className="flex h-full w-full items-center justify-center space-x-2">
         <ToolButton tool="translate">
           <BiMove />
         </ToolButton>
@@ -75,8 +75,8 @@ export default function EditorNavbar() {
         </ToolButton>
       </div>
 
-      <div className="w-full h-full flex justify-end items-center space-x-2">
-        <div className="h-full aspect-square">
+      <div className="flex h-full w-full items-center justify-end space-x-2">
+        <div className="aspect-square h-full">
           <Tooltip text={`${grid ? "Hide" : "Show"} Grid`} placement="bottom">
             <IconButton selected={grid} onClick={handleToggleGrid}>
               <MdOutlineGridOn />
@@ -84,7 +84,7 @@ export default function EditorNavbar() {
           </Tooltip>
         </div>
 
-        <div className="h-full aspect-square">
+        <div className="aspect-square h-full">
           <Tooltip
             text={`${debug ? "Hide" : "Show"} Colliders`}
             placement="bottom"
@@ -95,7 +95,7 @@ export default function EditorNavbar() {
           </Tooltip>
         </div>
 
-        <div className="h-full aspect-square">
+        <div className="aspect-square h-full">
           <Tooltip text="Preview" placement="bottom">
             <div className="h-full">
               <IconButton onClick={handlePreview}>

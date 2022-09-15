@@ -23,9 +23,9 @@ export default function Select({
 
       <select
         value={value}
-        className={`outline-none pl-4 pr-3 rounded-lg w-full transition hover:shadow
-                    bg-arrow bg-no-repeat appearance-none
-                    bg-right bg-origin-content bg-surface text-onSurface ${thinCss}`}
+        className={`bg-arrow bg-surface text-onSurface w-full appearance-none rounded-lg bg-right
+                    bg-no-repeat bg-origin-content pl-4
+                    pr-3 outline-none transition hover:shadow ${thinCss}`}
         {...rest}
       >
         {options.map((option) => {

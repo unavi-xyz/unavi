@@ -11,9 +11,9 @@ import {
   TWITTER_URL,
 } from "../src/constants";
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
+import Button from "../src/ui/base/Button";
 import LandingInfoBlock from "../src/ui/LandingInfoBlock";
 import MetaTags from "../src/ui/MetaTags";
-import Button from "../src/ui/base/Button";
 
 export default function Index() {
   return (
@@ -21,17 +21,17 @@ export default function Index() {
       <MetaTags />
 
       <div className="flex justify-center">
-        <div className="max-w-content mx-4 snap-mandatory snap-y">
-          <div className="h-screen snap-center -mt-12 flex flex-col md:flex-row items-center">
-            <div className="w-full h-full flex flex-col justify-center">
+        <div className="max-w-content mx-4 snap-y snap-mandatory">
+          <div className="-mt-12 flex h-screen snap-center flex-col items-center md:flex-row">
+            <div className="flex h-full w-full flex-col justify-center">
               <div className="text-8xl font-black">The Wired</div>
 
-              <div className="text-3xl pt-2">
+              <div className="pt-2 text-3xl">
                 An <strong>open and decentralized</strong> web-based metaverse
                 platform.
               </div>
 
-              <div className="flex justify-between md:justify-start space-x-4 pt-8 text-xl">
+              <div className="flex justify-between space-x-4 pt-8 text-xl md:justify-start">
                 <div className="w-full md:w-fit">
                   <Link href="/explore" passHref>
                     <div>
@@ -64,11 +64,8 @@ export default function Index() {
             </div>
           </div>
 
-          <div className="flex justify-center -mt-14">
-            <MdArrowDownward
-              className="animate-bounce text-5xl rounded-full p-1
-                         bg-surfaceDark text-onSurfaceDark"
-            />
+          <div className="-mt-14 flex justify-center">
+            <MdArrowDownward className="bg-surfaceDark text-onSurfaceDark animate-bounce rounded-full p-1 text-5xl" />
           </div>
 
           <LandingInfoBlock
@@ -101,9 +98,9 @@ export default function Index() {
             buttonLink={DOCS_URL}
           />
 
-          <div className="h-screen snap-center flex items-center">
-            <div className="md:w-1/2 md:h-1/2 md:p-8 md:mt-8">
-              <div className="relative w-full h-full">
+          <div className="flex h-screen snap-center items-center">
+            <div className="md:mt-8 md:h-1/2 md:w-1/2 md:p-8">
+              <div className="relative h-full w-full">
                 <Image
                   src="/images/sitting.png"
                   fill
@@ -116,18 +113,18 @@ export default function Index() {
 
             <div className="w-full space-y-2">
               <div
-                className="text-6xl font-black rounded-xl px-5 py-2 w-fit
-                           text-onPrimaryContainer bg-primaryContainer"
+                className="text-onPrimaryContainer bg-primaryContainer w-fit rounded-xl px-5 py-2
+                           text-6xl font-black"
               >
                 Links
               </div>
 
-              <div className="flex flex-col space-y-2 text-2xl pt-4">
+              <div className="flex flex-col space-y-2 pt-4 text-2xl">
                 <a
                   href={DISCORD_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="transition hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1"
+                  className="hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1 transition"
                 >
                   <div className="flex items-center space-x-2">
                     <FaDiscord />
@@ -139,7 +136,7 @@ export default function Index() {
                   href={TWITTER_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="transition hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1"
+                  className="hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1 transition"
                 >
                   <div className="flex items-center space-x-2">
                     <VscTwitter />
@@ -151,7 +148,7 @@ export default function Index() {
                   href={GITHUB_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="transition hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1"
+                  className="hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1 transition"
                 >
                   <div className="flex items-center space-x-2">
                     <VscGithubInverted />
@@ -163,7 +160,7 @@ export default function Index() {
                   href={DOCS_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="transition hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1"
+                  className="hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1 transition"
                 >
                   <div className="flex items-center space-x-2">
                     <FaBook />

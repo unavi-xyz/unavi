@@ -1,8 +1,7 @@
+import { AppId, Metadata, MetadataVersions } from "@wired-labs/lens";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useRef, useState } from "react";
-
-import { AppId, Metadata, MetadataVersions } from "@wired-labs/lens";
 
 import { uploadFileToIpfs } from "../../lib/ipfs/uploadFileToIpfs";
 import { useCreatePost } from "../../lib/lens/hooks/useCreatePost";
@@ -75,8 +74,8 @@ export default function AvatarUploadPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center space-y-1">
-        <h1 className="text-3xl flex justify-center">Upload Avatar</h1>
-        <p className="text-lg flex justify-center">Mint a new avatar NFT</p>
+        <h1 className="flex justify-center text-3xl">Upload Avatar</h1>
+        <p className="flex justify-center text-lg">Mint a new avatar NFT</p>
       </div>
 
       <div className="space-y-4">

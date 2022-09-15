@@ -1,16 +1,16 @@
-import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
 import { useAccount } from "wagmi";
 
 import { trpc } from "../src/auth/trpc";
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
-import CreateProjectPage from "../src/ui/CreateProjectPage";
-import MetaTags from "../src/ui/MetaTags";
 import Button from "../src/ui/base/Button";
 import Card from "../src/ui/base/Card";
 import Dialog from "../src/ui/base/Dialog";
+import CreateProjectPage from "../src/ui/CreateProjectPage";
+import MetaTags from "../src/ui/MetaTags";
 
 export default function Create() {
   const [openCreateProject, setOpenCreateProject] = useState(false);
@@ -42,9 +42,9 @@ export default function Create() {
         <CreateProjectPage />
       </Dialog>
 
-      <div className="flex justify-center py-8 mx-4">
+      <div className="mx-4 flex justify-center py-8">
         <div className="max-w-content space-y-8">
-          <div className="flex justify-center font-black text-3xl">Create</div>
+          <div className="flex justify-center text-3xl font-black">Create</div>
 
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">Projects</div>

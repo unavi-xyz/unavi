@@ -32,13 +32,13 @@ jobs:
         run: yarn install
 
       - name: Run ESLint
-        run: yarn lint
+        run: npx eslint --fix . --ext .js,.jsx,.ts,.tsx,.json
 
       - name: Run Prettier
         uses: creyD/prettier_action@v4.2
         with:
           github_token: ${{ secrets.PRETTIER_TOKEN }}
-          prettier_plugins: "@trivago/prettier-plugin-sort-imports prettier-plugin-sort-json prettier-plugin-prisma"
+          prettier_plugins: "prettier-plugin-prisma"
           prettier_options: --write .
           only_changed: True
           same_commit: True

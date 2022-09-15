@@ -1,15 +1,14 @@
+import { useHidePublicationMutation } from "@wired-labs/lens";
 import { NextPageContext } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import { useHidePublicationMutation } from "@wired-labs/lens";
-
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
-import SpaceLayout from "../../../src/home/layouts/SpaceLayout/SpaceLayout";
 import {
-  SpaceLayoutProps,
   getSpaceLayoutProps,
+  SpaceLayoutProps,
 } from "../../../src/home/layouts/SpaceLayout/getSpaceLayoutProps";
+import SpaceLayout from "../../../src/home/layouts/SpaceLayout/SpaceLayout";
 import { useLens } from "../../../src/lib/lens/hooks/useLens";
 import Button from "../../../src/ui/base/Button";
 
@@ -57,7 +56,7 @@ export default function Settings(props: SpaceLayoutProps) {
 
   return (
     <SpaceLayout {...props}>
-      <div className="bg-errorContainer text-onErrorContainer rounded-2xl p-8 space-y-4">
+      <div className="bg-errorContainer text-onErrorContainer space-y-4 rounded-2xl p-8">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">

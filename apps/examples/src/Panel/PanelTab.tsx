@@ -10,7 +10,7 @@ export default function PanelTab({ title, selected, setSelected }: Props) {
   return (
     <button
       onClick={() => setSelected(title)}
-      className={`${selectedCss} px-3 py-1 rounded hover:bg-neutral-200 transition w-full`}
+      className={`${selectedCss} w-full rounded px-3 py-1 transition hover:bg-neutral-200`}
     >
       {title}
     </button>

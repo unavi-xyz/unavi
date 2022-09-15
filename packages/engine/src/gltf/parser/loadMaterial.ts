@@ -1,4 +1,4 @@
-import { DoubleSide, MeshStandardMaterial, Texture, sRGBEncoding } from "three";
+import { DoubleSide, MeshStandardMaterial, sRGBEncoding, Texture } from "three";
 
 import { ALPHA_MODES } from "../constants";
 import {

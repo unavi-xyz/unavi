@@ -9,7 +9,7 @@ export default function ObjectsButton() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="h-full aspect-square">
+    <div className="aspect-square h-full">
       <IconButton onClick={() => setOpen((prev) => !prev)}>
         <HiOutlineCube className="text-2xl" />
       </IconButton>

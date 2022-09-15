@@ -1,4 +1,4 @@
-import { LinearEncoding, Source, Texture, sRGBEncoding } from "three";
+import { LinearEncoding, Source, sRGBEncoding, Texture } from "three";
 
 import { getCanvas } from "./getCanvas";
 

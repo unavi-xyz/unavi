@@ -39,8 +39,8 @@ export default function FileUpload({
                     hover:shadow active:shadow-md ${colorClass}`}
       >
         <div className="flex items-center">
-          <div className="px-3 py-2 rounded-l-lg">Choose File</div>
-          <div className="px-3 py-2 break-all">
+          <div className="rounded-l-lg px-3 py-2">Choose File</div>
+          <div className="break-all px-3 py-2">
             {file ? file.name : "No file chosen"}
           </div>
         </div>

@@ -14,11 +14,11 @@ interface Props {
 export default function Panel({ loaded, ...rest }: Props) {
   return (
     <div className="absolute right-0 bottom-0 m-4">
-      <div className="bg-white rounded-md w-96 h-96 p-4">
+      <div className="h-96 w-96 rounded-md bg-white p-4">
         {loaded ? (
           <PanelPage {...rest} />
         ) : (
-          <div className="h-full flex flex-col justify-center items-center">
+          <div className="flex h-full flex-col items-center justify-center">
             <CgSpinner className="animate-spin text-lg" />
           </div>
         )}

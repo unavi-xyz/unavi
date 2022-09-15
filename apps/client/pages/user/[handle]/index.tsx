@@ -1,6 +1,3 @@
-import { NextPageContext } from "next";
-import Link from "next/link";
-
 import {
   AppId,
   GetPublicationsDocument,
@@ -9,13 +6,15 @@ import {
   Post,
   PublicationTypes,
 } from "@wired-labs/lens";
+import { NextPageContext } from "next";
+import Link from "next/link";
 
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
-import ProfileLayout from "../../../src/home/layouts/ProfileLayout/ProfileLayout";
 import {
-  ProfileLayoutProps,
   getProfileLayoutProps,
+  ProfileLayoutProps,
 } from "../../../src/home/layouts/ProfileLayout/getProfileLayoutProps";
+import ProfileLayout from "../../../src/home/layouts/ProfileLayout/ProfileLayout";
 import AvatarCard from "../../../src/home/lens/AvatarCard";
 import SpaceCard from "../../../src/home/lens/SpaceCard";
 import { lensClient } from "../../../src/lib/lens/client";
@@ -79,7 +78,7 @@ export default function User({ publications, ...rest }: Props) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 
               return (
-                <div key={publication.id} className="w-full md:col-span-2 p-1">
+                <div key={publication.id} className="w-full p-1 md:col-span-2">
                   <Link href={`/space/${publication.id}`} passHref>
                     <a>
                       <SpaceCard space={publication} sizes="49vw" />

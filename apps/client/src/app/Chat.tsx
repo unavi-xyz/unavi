@@ -1,8 +1,3 @@
-import { KeyboardEvent, useContext, useEffect, useRef } from "react";
-
-import { useAppStore } from "../app/store";
-import ChatMessage from "./ChatMessage";
-
 export default function Chat() {
   return null;
   // const chatInputRef = useRef<HTMLInputElement>(null);

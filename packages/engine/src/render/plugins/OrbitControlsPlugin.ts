@@ -1,11 +1,11 @@
 import { PerspectiveCamera } from "three";
 
-import { PluginState } from "../RenderWorker";
 import {
   FakePointerEvent,
   FakeWheelEvent,
   OrbitControls,
 } from "../classes/OrbitControls";
+import { PluginState } from "../RenderWorker";
 import { ToRenderMessage } from "../types";
 import { Plugin } from "./Plugin";
 

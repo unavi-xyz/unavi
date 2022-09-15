@@ -16,8 +16,8 @@ import {
 import { WEBGL_TYPE_SIZES } from "./constants";
 import { getPaddedArrayBuffer } from "./exporter/getPaddedArrayBuffer";
 import {
-  ProcessAccessorOptions,
   processAccessor,
+  ProcessAccessorOptions,
 } from "./exporter/processAccessor";
 import { processAnimation } from "./exporter/processAnimation";
 import { processBufferView } from "./exporter/processBufferView";

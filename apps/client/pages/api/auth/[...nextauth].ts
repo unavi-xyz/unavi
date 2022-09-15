@@ -1,7 +1,3 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import NextAuth, { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-
 import {
   AuthenticateDocument,
   AuthenticateMutation,
@@ -10,6 +6,9 @@ import {
   VerifyQuery,
   VerifyQueryVariables,
 } from "@wired-labs/lens";
+import { NextApiRequest, NextApiResponse } from "next";
+import NextAuth, { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 
 import { lensClient } from "../../../src/lib/lens/client";
 

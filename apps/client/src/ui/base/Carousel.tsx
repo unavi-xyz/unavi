@@ -32,7 +32,7 @@ export default function Carousel({
         </div>
 
         <div
-          className={`w-full p-2 overflow-x-hidden grid grid-flow-col gap-2 ${height}`}
+          className={`grid w-full grid-flow-col gap-2 overflow-x-hidden p-2 ${height}`}
         >
           {children}
         </div>

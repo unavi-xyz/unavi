@@ -5,7 +5,7 @@ export default function NumberInput(props: Props) {
     <input
       {...props}
       type="number"
-      className="bg-neutral-100 shadow-inner rounded-md focus:outline-none pl-2 w-full"
+      className="w-full rounded-md bg-neutral-100 pl-2 shadow-inner focus:outline-none"
     />
   );
 }

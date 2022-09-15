@@ -90,7 +90,7 @@ export default function sButton({
 
   return (
     <button
-      className={`relative flex items-center justify-center transition font-bold
+      className={`relative flex items-center justify-center font-bold transition
                   ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass}
                   ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
       {...rest}

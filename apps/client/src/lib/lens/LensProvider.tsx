@@ -1,5 +1,5 @@
 import { createContext, useEffect, useMemo, useState } from "react";
-import { Client, Provider, createClient } from "urql";
+import { Client, createClient, Provider } from "urql";
 import { useAccount } from "wagmi";
 
 import { SessionStorage } from "../../constants";

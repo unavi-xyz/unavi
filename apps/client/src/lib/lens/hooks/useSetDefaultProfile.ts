@@ -1,8 +1,9 @@
+import {
+  LensHub__factory,
+  useCreateSetDefaultProfileTypedDataMutation,
+} from "@wired-labs/lens";
 import { utils } from "ethers";
-import { useSignTypedData, useSigner } from "wagmi";
-
-import { useCreateSetDefaultProfileTypedDataMutation } from "@wired-labs/lens";
-import { LensHub__factory } from "@wired-labs/lens";
+import { useSigner, useSignTypedData } from "wagmi";
 
 import { ContractAddress } from "../constants";
 import { pollUntilIndexed } from "../utils/pollUntilIndexed";

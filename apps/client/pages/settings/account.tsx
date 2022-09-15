@@ -5,9 +5,9 @@ import { getSettingsLayout } from "../../src/home/layouts/SettingsLayout/Setting
 import { useProfilesByAddress } from "../../src/lib/lens/hooks/useProfilesByAddress";
 import { useSetDefaultProfile } from "../../src/lib/lens/hooks/useSetDefaultProfile";
 import { trimHandle } from "../../src/lib/lens/utils/trimHandle";
-import MetaTags from "../../src/ui/MetaTags";
 import Button from "../../src/ui/base/Button";
 import Select from "../../src/ui/base/Select";
+import MetaTags from "../../src/ui/MetaTags";
 
 export default function Account() {
   const { address } = useAccount();
@@ -61,11 +61,11 @@ export default function Account() {
       <MetaTags title="Account" />
 
       <div
-        className="space-y-8 bg-primaryContainer text-onPrimaryContainer
+        className="bg-primaryContainer text-onPrimaryContainer space-y-8
                    rounded-3xl p-8 text-lg"
       >
         <div className="space-y-2">
-          <div className="font-bold text-xl">Default Profile</div>
+          <div className="text-xl font-bold">Default Profile</div>
           <div>
             Selecting a default profile will help people discover who you are.
             You can change your default profile at any time.
@@ -92,7 +92,7 @@ export default function Account() {
           />
         </div>
 
-        <div className="w-full flex justify-end">
+        <div className="flex w-full justify-end">
           <Button
             variant="filled"
             onClick={handleSave}

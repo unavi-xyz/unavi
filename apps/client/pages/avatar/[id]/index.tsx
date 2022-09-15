@@ -3,8 +3,8 @@ import { NextPageContext } from "next";
 import AvatarLayout from "../../../src/home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
 import {
-  PublicationProps,
   getPublicationProps,
+  PublicationProps,
 } from "../../../src/lib/lens/utils/getPublicationProps";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
@@ -22,7 +22,7 @@ export default function Avatar(props: PublicationProps) {
     <AvatarLayout {...props}>
       <div className="space-y-2">
         <div className="text-2xl font-bold">Description</div>
-        <div className="text-lg text-outline">
+        <div className="text-outline text-lg">
           {props.publication?.metadata.description}
         </div>
       </div>

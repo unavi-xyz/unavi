@@ -33,13 +33,13 @@ export default function Card({
   return (
     <div
       ref={cardRef}
-      className={`group p-2.5 w-full h-full overflow-hidden rounded-2xl hover:cursor-pointer
-                  flex flex-col hover:ring-2 hover:ring-black ${opacityCss}`}
+      className={`group flex h-full w-full flex-col overflow-hidden rounded-2xl
+                  p-2.5 hover:cursor-pointer hover:ring-2 hover:ring-black ${opacityCss}`}
     >
       <div
         className={`h-full overflow-hidden rounded-xl ${aspectCss} bg-primaryContainer transition duration-300 ${opacityCss}`}
       >
-        <div className="relative w-full h-full">
+        <div className="relative h-full w-full">
           {image && (
             <Image
               src={image}
@@ -48,16 +48,16 @@ export default function Card({
               sizes={sizes}
               draggable={false}
               alt="card image"
-              className="group-hover:scale-110 transition duration-500 ease-in-out rounded-xl object-cover"
+              className="rounded-xl object-cover transition duration-500 ease-in-out group-hover:scale-110"
             />
           )}
         </div>
       </div>
 
       <div className="space-y-2 py-1">
-        {text && <div className="px-1 text-xl overflow-hidden">{text}</div>}
+        {text && <div className="overflow-hidden px-1 text-xl">{text}</div>}
         {subtext && (
-          <div className="px-1 text-lg overflow-hidden">{subtext}</div>
+          <div className="overflow-hidden px-1 text-lg">{subtext}</div>
         )}
       </div>
     </div>

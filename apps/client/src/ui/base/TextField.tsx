@@ -28,7 +28,7 @@ export default function TextField({
       <div className="flex items-center space-x-1">
         <label
           htmlFor={id}
-          className="block text-lg font-bold pointer-events-none"
+          className="pointer-events-none block text-lg font-bold"
         >
           {title}
         </label>
@@ -42,15 +42,15 @@ export default function TextField({
         )}
       </div>
 
-      <div className="flex items-center rounded-lg bg-surface text-onSurface">
+      <div className="bg-surface text-onSurface flex items-center rounded-lg">
         {frontAdornment && (
-          <span className="pl-3 text-outline font-bold">{frontAdornment}</span>
+          <span className="text-outline pl-3 font-bold">{frontAdornment}</span>
         )}
         <input
           ref={inputRef}
           id={id}
           type="text"
-          className={`outline-none w-full h-full px-3 py-2 rounded-md ${outlineClass}`}
+          className={`h-full w-full rounded-md px-3 py-2 outline-none ${outlineClass}`}
           {...rest}
         />
       </div>

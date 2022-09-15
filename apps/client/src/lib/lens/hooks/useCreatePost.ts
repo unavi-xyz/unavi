@@ -1,9 +1,7 @@
-import { utils } from "ethers";
-import { useSignTypedData, useSigner } from "wagmi";
-
-import { Metadata } from "@wired-labs/lens";
-import { useCreatePostTypedDataMutation } from "@wired-labs/lens";
+import { Metadata, useCreatePostTypedDataMutation } from "@wired-labs/lens";
 import { LensHub__factory } from "@wired-labs/lens/contracts";
+import { utils } from "ethers";
+import { useSigner, useSignTypedData } from "wagmi";
 
 import { uploadStringToIpfs } from "../../ipfs/uploadStringToIpfs";
 import { ContractAddress } from "../constants";

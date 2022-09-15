@@ -1,16 +1,4 @@
-import produce from "immer";
-import { atom, useAtomValue } from "jotai";
-import { nanoid } from "nanoid";
-import { useRouter } from "next/router";
-import { useContext, useRef, useState } from "react";
-
-import Button from "../../../ui/base/Button";
-import FileUpload from "../../../ui/base/FileUpload";
-import TextArea from "../../../ui/base/TextArea";
-import TextField from "../../../ui/base/TextField";
-import { crop } from "../../../utils/crop";
-import { useEditorStore } from "../../store";
-import HostPage from "./HostPage";
+import { atom } from "jotai";
 
 export const didSetHostAtom = atom(false);
 

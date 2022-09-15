@@ -12,11 +12,11 @@ export default function Navbar() {
   const { handle } = useLens();
 
   return (
-    <div className="w-full h-full flex justify-center bg-surface">
+    <div className="bg-surface flex h-full w-full justify-center">
       <div className="max-w-content mx-4 grid grid-cols-3">
         <div className="flex items-center">
           <Link href="/" passHref>
-            <div className="cursor-pointer relative h-9 aspect-square">
+            <div className="relative aspect-square h-9 cursor-pointer">
               <Image
                 src="/images/Logo-Maskable.png"
                 alt="logo"

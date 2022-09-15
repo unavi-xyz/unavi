@@ -1,4 +1,4 @@
-import { BufferAttribute, InterleavedBufferAttribute, Vector3 } from "three";
+import { BufferAttribute, InterleavedBufferAttribute } from "three";
 
 // Get the min and max vectors from the given attribute
 export function getMinMax(

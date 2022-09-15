@@ -23,7 +23,7 @@ export default function ProfileButton() {
         <div className="relative">
           <div
             onClick={() => setOpenMenu((prev) => !prev)}
-            className="w-9 h-9 rounded-full cursor-pointer"
+            className="h-9 w-9 cursor-pointer rounded-full"
           >
             <ViewerProfilePicture circle draggable={false} />
           </div>

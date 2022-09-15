@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@react-three/cannon": "^6.3.0",
-    "@react-three/fiber": "^8.7.3",
+    "@react-three/fiber": "^8.7.4",
     "express": "^4.18.1",
     "mediasoup": "^3.10.5",
     "nanoid": "^4.0.0",
@@ -18,8 +18,8 @@
     "socket.io": "^4.5.1"
   },
   "devDependencies": {
-    "@types/express": "^4.17.13",
-    "@types/node": "^18.7.17",
+    "@types/express": "^4.17.14",
+    "@types/node": "^18.7.18",
     "@wired-labs/engine": "*",
     "@wired-labs/tsconfig": "*",
     "eslint": "^8.23.1",

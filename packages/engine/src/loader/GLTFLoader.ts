@@ -8,17 +8,17 @@ import {
   Node as INode,
   Primitive as IPrimitive,
   PrimitiveTarget as IPrimitiveTarget,
+  Root,
   Scene as IScene,
   Skin as ISkin,
   Texture as ITexture,
-  Root,
   WebIO,
 } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import {
-  ComponentType,
   addComponent,
   addEntity,
+  ComponentType,
   createWorld,
   defineSerializer,
 } from "bitecs";
@@ -38,6 +38,7 @@ import {
   AttributeUV,
   AttributeUV2,
   ColorTexture,
+  config,
   EmissiveTexture,
   Interpolation,
   Material,
@@ -56,7 +57,6 @@ import {
   SkinJoint,
   TargetPath,
   Texture,
-  config,
 } from "../ecs/components";
 import { Assets, LoadedGLTF } from "./types";
 import { loadTextureInfo } from "./utils";

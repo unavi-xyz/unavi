@@ -13,7 +13,7 @@ const config = {
   baseUrl: "/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
-  favicon: "img/Logo-Maskable.png",
+  favicon: "img/Logo-Icon.png",
   titleDelimiter: " / ",
 
   i18n: {
@@ -45,8 +45,8 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       metadata: [
-        { property: "og:image", content: "/img/Logo.png" },
-        { name: "twitter:image", content: "/img/Logo.png" },
+        { property: "og:image", content: "/img/Logo-Maskable.png" },
+        { name: "twitter:image", content: "/img/Logo-Maskable.png" },
         { name: "twitter:card", content: "summary" },
       ],
 
@@ -63,7 +63,7 @@ const config = {
         title: "The Wired",
         logo: {
           alt: "The Wired Logo",
-          src: "img/Logo-Maskable.png",
+          src: "img/Logo-Icon.png",
         },
         items: [
           {

@@ -12,7 +12,7 @@ interface Props {
 export default function MetaTags({
   title = "The Wired",
   description = "An open and decentralized web-based metaverse platform.",
-  image = "/images/Logo.png",
+  image = "/images/Logo-Maskable.png",
   card = "summary",
 }: Props) {
   const width = card === "summary_large_image" ? "1200" : "256";

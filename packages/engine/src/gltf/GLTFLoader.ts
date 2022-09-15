@@ -1,5 +1,5 @@
 import { fetchUri } from "../utils/fetchUri";
-import { UriType, parseUri } from "../utils/parseUri";
+import { parseUri, UriType } from "../utils/parseUri";
 import { loadBuffer } from "./loader/loadBuffer";
 import { BufferViewResult, loadBufferView } from "./loader/loadBufferView";
 import { loadImage } from "./loader/loadImage";

@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-
 import {
   GetChallengeDocument,
   GetChallengeQuery,
   GetChallengeQueryVariables,
 } from "@wired-labs/lens";
+import { useEffect, useMemo, useState } from "react";
 
 import { lensClient } from "../lib/lens/client";
 

@@ -1,4 +1,4 @@
-import { Theme, lightTheme } from "@rainbow-me/rainbowkit";
+import { lightTheme, Theme } from "@rainbow-me/rainbowkit";
 
 export const theme: Theme = lightTheme({
   accentColor: "#52DAFF",

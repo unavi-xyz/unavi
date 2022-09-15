@@ -13,8 +13,6 @@ jobs:
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      S3_BUCKET: ${{ secrets.S3_BUCKET }}
-      S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
 
     steps:
       - name: Checkout
@@ -22,6 +20,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v2
@@ -33,11 +32,13 @@ jobs:
         run: yarn install
 
       - name: Run ESLint
-        run: yarn lint
+        run: npx eslint --fix . --ext .js,.jsx,.ts,.tsx,.json
 
       - name: Run Prettier
         uses: creyD/prettier_action@v4.2
         with:
+          github_token: ${{ secrets.PRETTIER_TOKEN }}
+          prettier_plugins: "prettier-plugin-prisma"
           prettier_options: --write .
           only_changed: True
           same_commit: True

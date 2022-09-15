@@ -1,9 +1,9 @@
 import { PerspectiveCamera, Scene } from "three";
 
-import { PluginState } from "../RenderWorker";
 import { FakePointerEvent } from "../classes/OrbitControls";
 import { SceneManager } from "../classes/SceneManager";
 import { TransformControls } from "../classes/TransformControls";
+import { PluginState } from "../RenderWorker";
 import { ToRenderMessage } from "../types";
 import { Plugin } from "./Plugin";
 

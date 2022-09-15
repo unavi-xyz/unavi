@@ -1,4 +1,4 @@
-import { RefObject, createRef } from "react";
+import { createRef, RefObject } from "react";
 import create from "zustand";
 
 export interface AppStore {

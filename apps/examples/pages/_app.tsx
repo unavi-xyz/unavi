@@ -1,11 +1,10 @@
-import React from "react";
+import "../styles/globals.css";
 
 import Sidebar from "../src/Sidebar";
-import "../styles/globals.css";
 
 export default function App({ Component, pageProps }: any) {
   return (
-    <div className="w-full h-screen overflow-hidden">
+    <div className="h-screen w-full overflow-hidden">
       <Sidebar>
         <Component {...pageProps} />
       </Sidebar>

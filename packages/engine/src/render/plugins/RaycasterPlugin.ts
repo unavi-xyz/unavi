@@ -1,8 +1,8 @@
 import { Camera, Raycaster } from "three";
 
 import { PostMessage } from "../../types";
-import { PluginState } from "../RenderWorker";
 import { SceneManager } from "../classes/SceneManager";
+import { PluginState } from "../RenderWorker";
 import { FromRenderMessage, PointerData, ToRenderMessage } from "../types";
 import { Plugin } from "./Plugin";
 

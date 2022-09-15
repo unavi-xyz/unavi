@@ -2,13 +2,13 @@ import {
   CubeTextureLoader,
   FogExp2,
   MathUtils,
-  PMREMGenerator,
   PerspectiveCamera,
+  PMREMGenerator,
   Scene,
+  sRGBEncoding,
   Vector2,
   Vector3,
   WebGLRenderer,
-  sRGBEncoding,
 } from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 

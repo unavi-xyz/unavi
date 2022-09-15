@@ -1,6 +1,3 @@
-import { useRef, useState } from "react";
-import { useQuery } from "urql";
-
 import {
   AppId,
   ExplorePublicationsDocument,
@@ -10,6 +7,8 @@ import {
   PublicationSortCriteria,
   PublicationTypes,
 } from "@wired-labs/lens";
+import { useRef, useState } from "react";
+import { useQuery } from "urql";
 
 export function useExploreQuery(
   pageSize: number,

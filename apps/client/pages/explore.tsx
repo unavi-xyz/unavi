@@ -1,13 +1,12 @@
-import Link from "next/link";
-
 import { AppId, Post, PublicationSortCriteria } from "@wired-labs/lens";
+import Link from "next/link";
 
 import { getNavbarLayout } from "../src/home/layouts/NavbarLayout/NavbarLayout";
 import AvatarCard from "../src/home/lens/AvatarCard";
 import SpaceCard from "../src/home/lens/SpaceCard";
 import { useExploreQuery } from "../src/lib/lens/hooks/useExploreQuery";
-import MetaTags from "../src/ui/MetaTags";
 import Carousel from "../src/ui/base/Carousel";
+import MetaTags from "../src/ui/MetaTags";
 import { useIsMobile } from "../src/utils/useIsMobile";
 
 export default function Explore() {
@@ -31,9 +30,9 @@ export default function Explore() {
     <>
       <MetaTags title="Explore" />
 
-      <div className="flex justify-center py-8 mx-4">
+      <div className="mx-4 flex justify-center py-8">
         <div className="max-w-content space-y-8">
-          <div className="flex justify-center font-black text-3xl">Explore</div>
+          <div className="flex justify-center text-3xl font-black">Explore</div>
 
           <Carousel
             title="✨ Latest Spaces"

@@ -1,15 +1,14 @@
+import { useHidePublicationMutation } from "@wired-labs/lens";
 import { NextPageContext } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-
-import { useHidePublicationMutation } from "@wired-labs/lens";
 
 import AvatarLayout from "../../../src/home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../src/home/layouts/NavbarLayout/NavbarLayout";
 import { useLens } from "../../../src/lib/lens/hooks/useLens";
 import {
-  PublicationProps,
   getPublicationProps,
+  PublicationProps,
 } from "../../../src/lib/lens/utils/getPublicationProps";
 import Button from "../../../src/ui/base/Button";
 
@@ -57,7 +56,7 @@ export default function Settings(props: PublicationProps) {
 
   return (
     <AvatarLayout {...props}>
-      <div className="bg-primaryContainer text-onPrimaryContainer rounded-2xl p-8 space-y-4">
+      <div className="bg-primaryContainer text-onPrimaryContainer space-y-4 rounded-2xl p-8">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">

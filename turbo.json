@@ -25,15 +25,26 @@
       ],
       "outputs": [".next/**"]
     },
+    "host#build": {
+      "dependsOn": ["^build", "$RTC_MIN_PORT", "$RTC_MAX_PORT"]
+    },
     "codegen": {},
-    "client#codegen": { "dependsOn": ["$DATABASE_URL"] },
+    "client#codegen": {
+      "dependsOn": ["$DATABASE_URL"]
+    },
     "test": {
       "dependsOn": ["build"],
       "outputs": [],
       "inputs": ["**/*.tsx", "**/*.ts"]
     },
-    "lint": { "outputs": [] },
-    "deploy": { "outputs": [] },
-    "dev": { "cache": false }
+    "lint": {
+      "outputs": []
+    },
+    "deploy": {
+      "outputs": []
+    },
+    "dev": {
+      "cache": false
+    }
   }
 }

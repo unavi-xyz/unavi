@@ -1,12 +1,8 @@
 import { NextPageContext } from "next";
-import { useEffect } from "react";
 
-import Chat from "../../src/app/Chat";
-import { useAppHotkeys } from "../../src/app/hooks/useAppHotkeys";
-import { useSetIdentity } from "../../src/app/hooks/useSetIdentity";
 import {
-  PublicationProps,
   getPublicationProps,
+  PublicationProps,
 } from "../../src/lib/lens/utils/getPublicationProps";
 import MetaTags from "../../src/ui/MetaTags";
 

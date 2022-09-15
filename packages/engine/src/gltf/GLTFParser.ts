@@ -13,9 +13,9 @@ import { loadAnimation } from "./parser/loadAnimation";
 import { loadMaterial } from "./parser/loadMaterial";
 import { loadMesh } from "./parser/loadMesh";
 import { loadNode } from "./parser/loadNode";
-import { PrimitiveResult, loadPrimitive } from "./parser/loadPrimitive";
-import { SceneResult, loadScene } from "./parser/loadScene";
-import { SkinResult, loadSkin } from "./parser/loadSkin";
+import { loadPrimitive, PrimitiveResult } from "./parser/loadPrimitive";
+import { loadScene, SceneResult } from "./parser/loadScene";
+import { loadSkin, SkinResult } from "./parser/loadSkin";
 import { loadTexture } from "./parser/loadTexture";
 import {
   GLTF,

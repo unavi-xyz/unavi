@@ -4,9 +4,9 @@ import { useRouter } from "next/router";
 
 import { useLens } from "../../../lib/lens/hooks/useLens";
 import { trimHandle } from "../../../lib/lens/utils/trimHandle";
-import MetaTags from "../../../ui/MetaTags";
 import Button from "../../../ui/base/Button";
 import NavigationTab from "../../../ui/base/NavigationTab";
+import MetaTags from "../../../ui/MetaTags";
 import { SpaceLayoutProps } from "./getSpaceLayoutProps";
 
 export default function SpaceLayout({
@@ -34,10 +34,10 @@ export default function SpaceLayout({
       />
 
       <div className="mx-4 h-full">
-        <div className="max-w-content mx-auto py-8 w-full h-full space-y-8">
-          <div className="flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8">
-            <div className="w-full h-full rounded-3xl aspect-card bg-primaryContainer">
-              <div className="relative object-cover w-full h-full">
+        <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
+          <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
+            <div className="aspect-card bg-primaryContainer h-full w-full rounded-3xl">
+              <div className="relative h-full w-full object-cover">
                 {image && (
                   <Image
                     src={image}
@@ -51,28 +51,28 @@ export default function SpaceLayout({
               </div>
             </div>
 
-            <div className="md:w-2/3 min-w-fit flex flex-col justify-between space-y-8">
+            <div className="flex min-w-fit flex-col justify-between space-y-8 md:w-2/3">
               <div className="space-y-4">
-                <div className="font-black text-3xl flex justify-center">
+                <div className="flex justify-center text-3xl font-black">
                   {publication?.metadata.name}
                 </div>
 
                 <div className="space-y-2">
-                  <div className="font-bold flex space-x-1 justify-center md:justify-start">
+                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-outline">By</div>
                     <Link href={`/user/${author}`}>
-                      <div className="hover:underline cursor-pointer">
+                      <div className="cursor-pointer hover:underline">
                         @{author}
                       </div>
                     </Link>
                   </div>
 
-                  <div className="font-bold flex space-x-1 justify-center md:justify-start">
+                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-outline">At</div>
                     <div>{host}</div>
                   </div>
 
-                  <div className="font-bold flex space-x-1 justify-center md:justify-start">
+                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-outline">With</div>
                     <div>{playerCount ?? "??"}</div>
                     <div className="text-outline">

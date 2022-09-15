@@ -1,7 +1,3 @@
-import express from "express";
-import { createServer } from "http";
-import { Server } from "socket.io";
-
 import {
   ConnectTransportDataSchema,
   ConsumeAudioDataSchema,
@@ -12,6 +8,9 @@ import {
   ProduceDataDataSchema,
   SendChatMessageDataSchema,
 } from "@wired-labs/engine";
+import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 import { GameManager } from "./classes/GameManager";
 import { createMediasoupRouter, createWebRtcTransport } from "./mediasoup";

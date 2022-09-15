@@ -1,7 +1,7 @@
 import {
   EventDispatcher,
-  MOUSE,
   Matrix4,
+  MOUSE,
   OrthographicCamera,
   PerspectiveCamera,
   Quaternion,

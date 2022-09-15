@@ -1,13 +1,12 @@
-import { nanoid } from "nanoid";
-import Link from "next/link";
-import { useRouter } from "next/router";
-import { useState } from "react";
-
 import {
   AttributeData,
   MetadataVersions,
   ProfileMetadata,
 } from "@wired-labs/lens";
+import { nanoid } from "nanoid";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useState } from "react";
 
 import { useFetchData } from "../../../lib/ipfs/useFetchData";
 import { useLens } from "../../../lib/lens/hooks/useLens";
@@ -15,10 +14,10 @@ import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
 import { useSetProfileMetadata } from "../../../lib/lens/hooks/useSetProfileMetadata";
 import { PublicationProps } from "../../../lib/lens/utils/getPublicationProps";
 import { trimHandle } from "../../../lib/lens/utils/trimHandle";
-import MetaTags from "../../../ui/MetaTags";
 import Button from "../../../ui/base/Button";
 import NavigationTab from "../../../ui/base/NavigationTab";
 import Spinner from "../../../ui/base/Spinner";
+import MetaTags from "../../../ui/MetaTags";
 import AvatarCanvas from "./AvatarCanvas";
 
 interface Props extends PublicationProps {
@@ -172,29 +171,29 @@ export default function AvatarLayout({
       />
 
       <div className="mx-4 h-full">
-        <div className="max-w-content mx-auto py-8 w-full h-full space-y-8">
-          <div className="flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8">
-            <div className="w-full md:w-1/2 rounded-3xl aspect-vertical bg-primaryContainer mx-auto md:mx-0">
+        <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
+          <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
+            <div className="aspect-vertical bg-primaryContainer mx-auto w-full rounded-3xl md:mx-0 md:w-1/2">
               {avatarUrl ? (
                 <AvatarCanvas url={avatarUrl} />
               ) : (
-                <div className="flex justify-center items-center h-full rounded-3xl animate-pulse bg-surfaceVariant">
+                <div className="bg-surfaceVariant flex h-full animate-pulse items-center justify-center rounded-3xl">
                   <Spinner />
                 </div>
               )}
             </div>
 
-            <div className="md:w-2/3 min-w-fit flex flex-col justify-between space-y-8">
+            <div className="flex min-w-fit flex-col justify-between space-y-8 md:w-2/3">
               <div className="space-y-4">
-                <div className="font-black text-3xl flex justify-center">
+                <div className="flex justify-center text-3xl font-black">
                   {publication?.metadata.name}
                 </div>
 
                 <div className="space-y-2">
-                  <div className="font-bold flex space-x-1 justify-center md:justify-start">
+                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div>By</div>
                     <Link href={`/user/${author}`}>
-                      <a className="hover:underline cursor-pointer">
+                      <a className="cursor-pointer hover:underline">
                         @{author}
                       </a>
                     </Link>
@@ -214,7 +213,7 @@ export default function AvatarLayout({
                     <div className="py-2 group-hover:hidden">
                       Avatar Equipped
                     </div>
-                    <div className="py-2 hidden group-hover:block">Unequip</div>
+                    <div className="hidden py-2 group-hover:block">Unequip</div>
                   </Button>
                 </div>
               ) : (

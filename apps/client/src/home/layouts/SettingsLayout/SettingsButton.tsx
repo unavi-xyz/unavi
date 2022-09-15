@@ -17,8 +17,8 @@ export default function SettingsButton({
   return (
     <div
       {...rest}
-      className={`flex items-center cursor-pointer rounded-lg w-full transition
-                  py-2 px-4 space-x-4 font-bold text-lg ${selectedClass}`}
+      className={`flex w-full cursor-pointer items-center space-x-4 rounded-lg
+                  py-2 px-4 text-lg font-bold transition ${selectedClass}`}
     >
       {icon && <div className="text-xl">{icon}</div>}
       <div>{children}</div>

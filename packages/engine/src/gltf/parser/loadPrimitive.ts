@@ -5,7 +5,7 @@ import {
   MeshStandardMaterial,
 } from "three";
 
-import { ATTRIBUTES, AttributeName } from "../constants";
+import { AttributeName, ATTRIBUTES } from "../constants";
 import { MeshPrimitive } from "../schemaTypes";
 
 export type PrimitiveResult = [

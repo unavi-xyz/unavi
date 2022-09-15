@@ -1,5 +1,5 @@
 /** @type {import('ts-jest/dist/types').InitialOptionsTsJest} */
-export default {
+const config = {
   preset: "ts-jest/presets/default-esm",
   globals: {
     "ts-jest": {
@@ -15,3 +15,5 @@ export default {
     "^.+\\.worker.[t|j]sx?$": "workerloader-jest-transformer",
   },
 };
+
+export default config;

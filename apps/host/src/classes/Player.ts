@@ -1,11 +1,10 @@
+import { IChatMessage } from "@wired-labs/engine";
 import { Consumer } from "mediasoup/node/lib/Consumer";
 import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
 import { ProducerOptions } from "mediasoup/node/lib/Producer";
 import { RtpCapabilities } from "mediasoup/node/lib/RtpParameters";
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { nanoid } from "nanoid";
-
-import { IChatMessage } from "@wired-labs/engine";
 
 import { TypedSocket } from "../types";
 import { ConsumerTransport } from "./ConsumerTransport";

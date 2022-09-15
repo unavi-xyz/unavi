@@ -1,7 +1,6 @@
+import { Entity } from "@wired-labs/engine";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
-
-import { Entity, Scene } from "@wired-labs/engine";
 
 import { trpc } from "../../auth/trpc";
 import { addEntity } from "../actions/AddEntityAction";

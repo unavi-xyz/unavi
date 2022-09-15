@@ -12,7 +12,7 @@ export default function IconButton({ children, selected, ...rest }: Props) {
 
   return (
     <button
-      className={`h-full aspect-square rounded-lg flex justify-center items-center cursor-default
+      className={`flex aspect-square h-full cursor-default items-center justify-center rounded-lg
                   text-2xl transition ${selectedClass}`}
       {...rest}
     >

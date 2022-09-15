@@ -1,11 +1,10 @@
-import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
-
 import {
   CreateProfileDocument,
   CreateProfileMutation,
   CreateProfileMutationVariables,
 } from "@wired-labs/lens";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 import { lensClient } from "../../../lib/lens/client";
 import { useLens } from "../../../lib/lens/hooks/useLens";
@@ -90,8 +89,8 @@ export default function CreateProfilePage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center space-y-1">
-        <h1 className="text-3xl flex justify-center">Create a Profile</h1>
-        <p className="text-lg flex justify-center">Mint a Lens profile NFT</p>
+        <h1 className="flex justify-center text-3xl">Create a Profile</h1>
+        <p className="flex justify-center text-lg">Mint a Lens profile NFT</p>
       </div>
 
       <div className="space-y-4">
@@ -108,7 +107,7 @@ export default function CreateProfilePage() {
           }}
         />
 
-        <div className="flex justify-end w-full">
+        <div className="flex w-full justify-end">
           <Button
             variant="filled"
             disabled={disabled}

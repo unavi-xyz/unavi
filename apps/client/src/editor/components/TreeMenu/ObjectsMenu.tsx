@@ -1,6 +1,5 @@
-import { nanoid } from "nanoid";
-
 import { BaseEntity, Box, Cylinder, Sphere } from "@wired-labs/engine";
+import { nanoid } from "nanoid";
 
 import { addEntity } from "../../actions/AddEntityAction";
 
@@ -17,13 +16,13 @@ export default function ObjectsMenu() {
   }
 
   return (
-    <div className="p-2 space-y-0.5">
+    <div className="space-y-0.5 p-2">
       {Object.values(ObjectName).map((name) => (
         <button
           key={name}
           onClick={() => addObject(name)}
-          className="w-full flex hover:bg-primaryContainer hover:text-onPrimaryContainer
-                     rounded px-4 py-0.5 transition items-center"
+          className="hover:bg-primaryContainer hover:text-onPrimaryContainer flex w-full
+                     items-center rounded px-4 py-0.5 transition"
         >
           {name}
         </button>

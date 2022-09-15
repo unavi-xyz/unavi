@@ -98,11 +98,11 @@ export default function TreeMenuItem({ id }: Props) {
           e.stopPropagation();
           useEditorStore.setState({ selectedId: id });
         }}
-        className={`h-6 font-bold rounded px-2 flex items-center ${bgClass} ${opacityClass}`}
+        className={`flex h-6 items-center rounded px-2 font-bold ${bgClass} ${opacityClass}`}
       >
         <div
           onClick={() => setOpen((prev) => !prev)}
-          className="w-5 text-outline hover:text-inherit transition"
+          className="text-outline w-5 transition hover:text-inherit"
         >
           {hasChildren &&
             (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
@@ -122,7 +122,7 @@ export default function TreeMenuItem({ id }: Props) {
       {!hasChildren && (
         <div
           ref={dropBelow}
-          className={`-mt-1 w-full h-1 rounded ${highlightBelowClass}`}
+          className={`-mt-1 h-1 w-full rounded ${highlightBelowClass}`}
         />
       )}
     </div>

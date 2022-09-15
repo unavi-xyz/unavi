@@ -1,10 +1,11 @@
 import "@rainbow-me/rainbowkit/styles.css";
+import "../styles/globals.css";
+
 import { withTRPC } from "@trpc/next";
 import dynamic from "next/dynamic";
 import Head from "next/head";
 import React from "react";
 
-import "../styles/globals.css";
 import { AppRouter } from "./api/trpc/[trpc]";
 
 // Export web vitals
@@ -25,7 +26,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
       </Head>
 
       <ClientSideProviders session={session}>
-        <div className="w-full h-screen">
+        <div className="h-screen w-full">
           {getLayout(<Component {...pageProps} />)}
         </div>
       </ClientSideProviders>

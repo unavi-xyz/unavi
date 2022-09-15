@@ -23,7 +23,7 @@ export default function ColorInput({ rgbValue, onChange, ...rest }: Props) {
     <label className="relative">
       <div
         ref={displayRef}
-        className="bg-neutral-100 shadow-inner rounded-md focus:outline-none pl-2 w-full h-full"
+        className="h-full w-full rounded-md bg-neutral-100 pl-2 shadow-inner focus:outline-none"
       />
       <input
         {...rest}
@@ -36,7 +36,7 @@ export default function ColorInput({ rgbValue, onChange, ...rest }: Props) {
           if (onChange) onChange(e);
         }}
         type="color"
-        className="absolute bottom-0 left-0 invisible"
+        className="invisible absolute bottom-0 left-0"
         defaultValue={colorHex}
       />
     </label>

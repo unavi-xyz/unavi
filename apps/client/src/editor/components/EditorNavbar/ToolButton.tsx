@@ -18,7 +18,7 @@ export default function ToolButton({ tool, children }: Props) {
   const selected = useEditorStore((state) => state.tool === tool);
 
   return (
-    <div className="h-full aspect-square">
+    <div className="aspect-square h-full">
       <Tooltip text={TOOL_TOOLTIPS[tool]} placement="bottom">
         <IconButton
           selected={selected}

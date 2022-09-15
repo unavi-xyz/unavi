@@ -1,8 +1,7 @@
+import { Material, WithMaterial } from "@wired-labs/engine";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 import { MdAdd, MdClose, MdDelete, MdOutlineFolderOpen } from "react-icons/md";
-
-import { Material, WithMaterial } from "@wired-labs/engine";
 
 import DropdownMenu from "../../../ui/base/DropdownMenu";
 import { hexToRgb } from "../../../utils/rgb";
@@ -70,18 +69,18 @@ export default function MaterialComponent({ entityId }: Props) {
 
   return (
     <ComponentMenu title="Material">
-      <div className="w-full h-7 flex justify-between space-x-4">
+      <div className="flex h-7 w-full justify-between space-x-4">
         <button
           onClick={(e) => setOpen(true)}
-          className={`h-full hover:bg-primaryContainer transition flex justify-center
-                      items-center rounded-md cursor-default w-1/3 min-w-fit space-y-1`}
+          className={`hover:bg-primaryContainer flex h-full w-1/3 min-w-fit
+                      cursor-default items-center justify-center space-y-1 rounded-md transition`}
         >
           <MdOutlineFolderOpen />
         </button>
 
         <div className="w-full">
           {materialId ? (
-            <div className="w-full h-full flex items-center justify-between bg-neutral-100 shadow-inner rounded-md">
+            <div className="flex h-full w-full items-center justify-between rounded-md bg-neutral-100 shadow-inner">
               <TextInput
                 value={name ?? ""}
                 onChange={(e) => {
@@ -94,8 +93,8 @@ export default function MaterialComponent({ entityId }: Props) {
 
               <button
                 onClick={() => setMaterial(entityId, undefined)}
-                className={`h-full flex items-center px-2 text-lg transition
-                              text-outline hover:text-black cursor-default`}
+                className={`text-outline flex h-full cursor-default items-center px-2
+                              text-lg transition hover:text-black`}
               >
                 <MdClose />
               </button>
@@ -103,8 +102,8 @@ export default function MaterialComponent({ entityId }: Props) {
           ) : (
             <button
               onClick={createMaterial}
-              className={`w-full h-full bg-neutral-100 rounded-md hover:bg-primaryContainer transition
-                          flex justify-center items-center space-x-1 cursor-default shadow-inner`}
+              className={`hover:bg-primaryContainer flex h-full w-full cursor-default items-center
+                          justify-center space-x-1 rounded-md bg-neutral-100 shadow-inner transition`}
             >
               <MdAdd className="text-lg" />
               <div>New Material</div>
@@ -112,7 +111,7 @@ export default function MaterialComponent({ entityId }: Props) {
           )}
 
           <DropdownMenu open={open} onClose={() => setOpen(false)}>
-            <div className="p-2 space-y-1 flex flex-col overflow-y-auto max-h-52">
+            <div className="flex max-h-52 flex-col space-y-1 overflow-y-auto p-2">
               {Object.values(materials).length > 0 ? (
                 Object.values(materials).map((material) => {
                   return (
@@ -213,7 +212,7 @@ function DropdownMaterialButton({
     <div className="group relative">
       <button
         onClick={onClick}
-        className={`w-full cursor-default hover:bg-primaryContainer
+        className={`hover:bg-primaryContainer w-full cursor-default
                     rounded-md transition ${selectedClass}`}
       >
         <div>{material.name || materialId}</div>
@@ -225,8 +224,8 @@ function DropdownMaterialButton({
           e.preventDefault();
           removeMaterial(materialId);
         }}
-        className={`absolute z-10 right-2 top-0 h-full flex items-center transition
-                    opacity-0 group-hover:opacity-100 text-outline hover:text-black`}
+        className={`text-outline absolute right-2 top-0 z-10 flex h-full items-center
+                    opacity-0 transition hover:text-black group-hover:opacity-100`}
       >
         <MdDelete />
       </div>

@@ -1,6 +1,5 @@
-import create from "zustand";
-
 import { Engine, Scene } from "@wired-labs/engine";
+import create from "zustand";
 
 import { deepClone } from "../utils/deepClone";
 import { emptyScene } from "./constants";

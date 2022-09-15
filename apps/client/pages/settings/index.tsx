@@ -8,11 +8,11 @@ import { useProfileByHandle } from "../../src/lib/lens/hooks/useProfileByHandle"
 import { useSetProfileImage } from "../../src/lib/lens/hooks/useSetProfileImage";
 import { useSetProfileMetadata } from "../../src/lib/lens/hooks/useSetProfileMetadata";
 import { createProfileMetadata } from "../../src/lib/lens/utils/createProfileMetadata";
-import MetaTags from "../../src/ui/MetaTags";
 import Button from "../../src/ui/base/Button";
 import FileUpload from "../../src/ui/base/FileUpload";
 import TextArea from "../../src/ui/base/TextArea";
 import TextField from "../../src/ui/base/TextField";
+import MetaTags from "../../src/ui/MetaTags";
 import { crop } from "../../src/utils/crop";
 import { getMediaURL } from "../../src/utils/getMediaURL";
 
@@ -119,8 +119,8 @@ export default function Settings() {
 
       {profile && (
         <div className="space-y-8">
-          <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
-            <div className="text-lg space-y-4">
+          <div className="bg-primaryContainer text-onPrimaryContainer space-y-8 rounded-3xl p-8">
+            <div className="space-y-4 text-lg">
               <div className="flex items-center space-x-4">
                 <div className="font-bold">Profile ID:</div>
                 <div>{profile.id}</div>
@@ -161,14 +161,14 @@ export default function Settings() {
                 <div className="text-lg font-bold">Cover Image</div>
 
                 {coverUrl && (
-                  <div className="w-full h-40">
-                    <div className="relative object-cover w-full h-full">
+                  <div className="h-40 w-full">
+                    <div className="relative h-full w-full object-cover">
                       <Image
                         src={coverUrl}
                         fill
                         sizes="49vw"
                         alt="cover picture preview"
-                        className="rounded-xl h-full w-full object-cover"
+                        className="h-full w-full rounded-xl object-cover"
                       />
                     </div>
                   </div>
@@ -192,7 +192,7 @@ export default function Settings() {
               />
             </div>
 
-            <div className="w-full flex justify-end">
+            <div className="flex w-full justify-end">
               <Button
                 variant="filled"
                 onClick={handleProfileSave}
@@ -203,29 +203,29 @@ export default function Settings() {
             </div>
           </div>
 
-          <div className="p-8 space-y-8 rounded-3xl bg-primaryContainer text-onPrimaryContainer">
+          <div className="bg-primaryContainer text-onPrimaryContainer space-y-8 rounded-3xl p-8">
             <div className="space-y-4 text-lg">
               <div className="font-bold">Profile Picture</div>
 
               {pfpUrl && (
                 <div className="grid grid-cols-2 gap-x-16">
-                  <div className="relative w-full h-full aspect-square">
+                  <div className="relative aspect-square h-full w-full">
                     <Image
                       src={pfpUrl}
                       fill
                       sizes="24vw"
                       alt="profile picture preview square"
-                      className="rounded-xl h-full w-full object-cover"
+                      className="h-full w-full rounded-xl object-cover"
                     />
                   </div>
 
-                  <div className="relative w-full h-full aspect-square">
+                  <div className="relative aspect-square h-full w-full">
                     <Image
                       src={pfpUrl}
                       fill
                       sizes="24vw"
                       alt="profile picture preview circle"
-                      className="rounded-full h-full w-full object-cover"
+                      className="h-full w-full rounded-full object-cover"
                     />
                   </div>
                 </div>
@@ -243,7 +243,7 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className="w-full flex justify-end">
+            <div className="flex w-full justify-end">
               <Button
                 variant="filled"
                 onClick={handleProfilePictureSave}

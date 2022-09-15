@@ -21,12 +21,12 @@ export default function ProfileMenu({ openSwitchProfile }: Props) {
   if (!handle) return null;
 
   return (
-    <div className="p-2 space-y-1">
+    <div className="space-y-1 p-2">
       <button
         onClick={openSwitchProfile}
-        className="flex justify-center rounded-lg
-                     w-full py-1 px-5 space-x-2 transition font-bold
-                     hover:bg-primaryContainer hover:text-onPrimaryContainer"
+        className="hover:bg-primaryContainer hover:text-onPrimaryContainer flex
+                     w-full justify-center space-x-2 rounded-lg py-1 px-5
+                     font-bold transition"
       >
         @{handle}
       </button>

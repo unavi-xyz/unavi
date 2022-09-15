@@ -36,7 +36,7 @@ export default function SwitchProfilePage({ onClose }: Props) {
 
   return (
     <div className="space-y-4" onPointerUp={(e) => e.stopPropagation()}>
-      <div className="text-3xl font-bold flex justify-center">
+      <div className="flex justify-center text-3xl font-bold">
         Switch profile
       </div>
 

@@ -35,6 +35,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
+# docusaurus
+.docusaurus
+
 # codegen
 generated
 contracts

@@ -16,13 +16,19 @@ export default function Navbar() {
       <div className="max-w-content mx-4 grid grid-cols-3">
         <div className="flex items-center">
           <Link href="/" passHref>
-            <div className="relative aspect-square h-9 cursor-pointer">
-              <Image src="/images/Logo-Icon.png" alt="logo" fill sizes="36px" />
+            <div className="relative aspect-square h-10 cursor-pointer">
+              <Image
+                src="/images/Logo-Icon.png"
+                alt="logo"
+                priority
+                fill
+                sizes="36px"
+              />
             </div>
           </Link>
         </div>
 
-        <div className="flex items-center justify-center space-x-2 md:space-x-5">
+        <div className="flex items-center justify-center space-x-3 md:space-x-5">
           <NavbarTab text="Home" href="/" />
           <NavbarTab text="Explore" href="/explore" />
           <div className="hidden md:flex">

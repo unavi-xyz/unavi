@@ -71,8 +71,8 @@ export default function Preview() {
         >
           <Link href={`/editor/${id}`} passHref>
             <div
-              className="bg-surface text-onSurface block cursor-pointer rounded-full
-                         p-2 backdrop-blur transition hover:bg-opacity-100 active:bg-opacity-90"
+              className="bg-surface text-onSurface active:bg-surface/90 block cursor-pointer
+                         rounded-full p-2 backdrop-blur transition"
             >
               <MdClose />
             </div>

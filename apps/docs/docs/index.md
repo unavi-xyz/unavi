@@ -1,7 +1,7 @@
 ---
 sidebar_position: 0
-sidebar_label: Overview
-title: Overview
+sidebar_label: About
+title: About
 ---
 
 The Wired is an **open and decentralized** web-based metaverse platform.
@@ -15,9 +15,9 @@ on our [GitHub](https://github.com/wired-labs/wired).
 
 :::
 
-### Features
+### 🔥 Features
 
-- Decentralized identity / social graph using [Lens Protocol](https://lens.dev/)
+- Decentralized identity / social graph using [Lens Protocol 🌿](https://lens.dev/)
 - Open backend, anyone can run their own servers
 - Custom multi-threaded, glTF-based game engine
 - [VRM](https://vrm.dev/) avatar support

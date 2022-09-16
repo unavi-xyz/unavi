@@ -786,6 +786,11 @@ export type CreateUnfollowBroadcastItemResult = {
   typedData: CreateBurnEip712TypedData;
 };
 
+/** The custom filters types */
+export enum CustomFiltersTypes {
+  Gardeners = 'GARDENERS'
+}
+
 export type DefaultProfileRequest = {
   ethereumAddress: Scalars['EthereumAddress'];
 };
@@ -897,6 +902,7 @@ export type ExploreProfileResult = {
 
 export type ExploreProfilesRequest = {
   cursor?: InputMaybe<Scalars['Cursor']>;
+  customFilters?: InputMaybe<Array<CustomFiltersTypes>>;
   limit?: InputMaybe<Scalars['LimitScalar']>;
   sortCriteria: ProfileSortCriteria;
   timestamp?: InputMaybe<Scalars['TimestampScalar']>;
@@ -904,6 +910,7 @@ export type ExploreProfilesRequest = {
 
 export type ExplorePublicationRequest = {
   cursor?: InputMaybe<Scalars['Cursor']>;
+  customFilters?: InputMaybe<Array<CustomFiltersTypes>>;
   /** If you wish to exclude any results for profile ids */
   excludeProfileIds?: InputMaybe<Array<Scalars['ProfileId']>>;
   limit?: InputMaybe<Scalars['LimitScalar']>;
@@ -1308,6 +1315,8 @@ export type MetadataAttributeOutput = {
 /** The metadata output */
 export type MetadataOutput = {
   __typename?: 'MetadataOutput';
+  /** The main focus of the publication */
+  animatedUrl?: Maybe<Scalars['Url']>;
   /** The attributes */
   attributes: Array<MetadataAttributeOutput>;
   /** This is the metadata content for the publication, should be markdown */
@@ -1705,6 +1714,16 @@ export type NewMirrorNotification = {
   publication: MirrorablePublication;
 };
 
+export type NewReactionNotification = {
+  __typename?: 'NewReactionNotification';
+  createdAt: Scalars['DateTime'];
+  notificationId: Scalars['NotificationId'];
+  /** The profile */
+  profile: Profile;
+  publication: Publication;
+  reaction: ReactionTypes;
+};
+
 /** The NFT image */
 export type NftImage = {
   __typename?: 'NftImage';
@@ -1745,10 +1764,11 @@ export type NftOwnershipChallengeResult = {
   timeout: Scalars['TimestampScalar'];
 };
 
-export type Notification = NewCollectNotification | NewCommentNotification | NewFollowerNotification | NewMentionNotification | NewMirrorNotification;
+export type Notification = NewCollectNotification | NewCommentNotification | NewFollowerNotification | NewMentionNotification | NewMirrorNotification | NewReactionNotification;
 
 export type NotificationRequest = {
   cursor?: InputMaybe<Scalars['Cursor']>;
+  customFilters?: InputMaybe<Array<CustomFiltersTypes>>;
   limit?: InputMaybe<Scalars['LimitScalar']>;
   metadata?: InputMaybe<PublicationMetadataFilters>;
   /** The profile id */
@@ -2412,6 +2432,7 @@ export type PublicationsQueryRequest = {
   /** The publication id you wish to get comments for */
   commentsOf?: InputMaybe<Scalars['InternalPublicationId']>;
   cursor?: InputMaybe<Scalars['Cursor']>;
+  customFilters?: InputMaybe<Array<CustomFiltersTypes>>;
   limit?: InputMaybe<Scalars['LimitScalar']>;
   metadata?: InputMaybe<PublicationMetadataFilters>;
   /** Profile id */
@@ -2793,6 +2814,7 @@ export type RevertFollowModuleSettings = {
 
 export type SearchQueryRequest = {
   cursor?: InputMaybe<Scalars['Cursor']>;
+  customFilters?: InputMaybe<Array<CustomFiltersTypes>>;
   limit?: InputMaybe<Scalars['LimitScalar']>;
   /** The search term */
   query: Scalars['Search'];

@@ -27,13 +27,14 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
   const handle = query.handle as string;
   const props = await getProfileLayoutProps(handle);
 
-  if (!props.profile)
+  if (!props.profile) {
     return {
       props: {
         ...props,
         profile: null,
       },
     };
+  }
 
   const publicationsQuery = await lensClient
     .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
@@ -92,9 +93,9 @@ export default function User({ publications, ...rest }: Props) {
               return (
                 <div key={publication.id} className="w-full p-1">
                   <Link href={`/avatar/${publication.id}`} passHref>
-                    <a>
+                    <div>
                       <AvatarCard avatar={publication} sizes="24vw" />
-                    </a>
+                    </div>
                   </Link>
                 </div>
               );

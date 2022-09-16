@@ -32,9 +32,9 @@ export default function ProfileLayout({
   return (
     <>
       <MetaTags
-        title={metadata.title}
-        description={metadata.description}
-        image={metadata.image}
+        title={metadata.title ?? handle}
+        description={metadata.description ?? undefined}
+        image={metadata.image ?? undefined}
       />
 
       <Head>

@@ -53,9 +53,9 @@ export default function App({ id, metadata, publication }: Props) {
   return (
     <>
       <MetaTags
-        title={metadata.title}
-        description={metadata.description}
-        image={metadata.image}
+        title={metadata.title ?? id}
+        description={metadata.description ?? undefined}
+        image={metadata.image ?? undefined}
         card="summary_large_image"
       />
 

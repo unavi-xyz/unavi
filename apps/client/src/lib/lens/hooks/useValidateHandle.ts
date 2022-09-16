@@ -29,7 +29,7 @@ export function useValidateHandle(handle: string) {
     }
 
     if (data.profiles.items.length === 0) {
-      //there is no profile with that handle
+      // There is no profile with that handle
       setValid(true);
       setError(undefined);
       return;

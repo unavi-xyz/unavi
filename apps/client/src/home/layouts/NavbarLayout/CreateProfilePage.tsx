@@ -1,12 +1,7 @@
-import {
-  CreateProfileDocument,
-  CreateProfileMutation,
-  CreateProfileMutationVariables,
-} from "@wired-labs/lens";
+import { useCreateProfileMutation } from "@wired-labs/lens";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import { lensClient } from "../../../lib/lens/client";
 import { useLens } from "../../../lib/lens/hooks/useLens";
 import { useValidateHandle } from "../../../lib/lens/hooks/useValidateHandle";
 import Button from "../../../ui/base/Button";
@@ -22,6 +17,7 @@ export default function CreateProfilePage() {
   const [error, setError] = useState<string>();
 
   const { valid, error: validateError, fetching } = useValidateHandle(handle);
+  const [{}, createProfile] = useCreateProfileMutation();
 
   const { switchProfile } = useLens();
 
@@ -43,7 +39,7 @@ export default function CreateProfilePage() {
       }
 
       setError(undefined);
-    }, 750);
+    }, 500);
 
     return () => {
       clearTimeout(timeout);
@@ -55,31 +51,28 @@ export default function CreateProfilePage() {
     setLoadingSubmit(true);
 
     try {
-      //create the profile
-      const { error } = await lensClient
-        .mutation<CreateProfileMutation, CreateProfileMutationVariables>(
-          CreateProfileDocument,
-          {
-            request: {
-              handle,
-              followModule: null,
-              followNFTURI: null,
-              profilePictureUri: null,
-            },
-          }
-        )
-        .toPromise();
+      // Create profile
+      const { data, error } = await createProfile({
+        request: {
+          handle,
+          followModule: null,
+          followNFTURI: null,
+          profilePictureUri: null,
+        },
+      });
 
+      if (data?.createProfile.__typename === "RelayError")
+        throw new Error(data.createProfile.reason);
       if (error) throw new Error(error.message);
 
-      //log the user in
+      // Log the user in
       switchProfile(handle);
 
-      //redirect to the profile page
+      // Redirect to the new profile page
       router.push(`/user/${handle}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError(err as any);
+      setError(err.message);
       setLoadingSubmit(false);
     }
 
@@ -99,10 +92,11 @@ export default function CreateProfilePage() {
           frontAdornment="@"
           maxLength={31}
           value={formHandle}
+          outline
           onChange={(e) => {
-            if (e.target.value.match("^[a-zA-Z0-9_.]*$")) {
-              setFormHandle(e.target.value.toLowerCase());
-              return;
+            const value = e.target.value;
+            if (value.match("^[a-zA-Z0-9_.]*$")) {
+              setFormHandle(value.toLowerCase());
             }
           }}
         />

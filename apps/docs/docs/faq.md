@@ -22,7 +22,7 @@ No! You can join spaces anonymously without an account. However, if you want to 
 
 ### What is Lens?
 
-[Lens Protocol](https://lens.xyz/) is a Web3 social graph on the Polygon blockchain. It is designed to empower creators to own the links between themselves and their community, forming a fully composable, user-owned social graph.
+[Lens Protocol 🌿](https://lens.xyz/) is a Web3 social graph on the Polygon blockchain. It is designed to empower creators to own the links between themselves and their community, forming a fully composable, user-owned social graph.
 
 To use Lens, you will need an Ethereum wallet.
 

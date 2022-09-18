@@ -76,7 +76,19 @@ export type ToRenderMessage =
   | WorkerMessage<"remove_material", string>
   | WorkerMessage<"remove_entity", string>
   | WorkerMessage<"move_entity", { entityId: string; parentId: string | null }>
-  | WorkerMessage<"take_screenshot">;
+  | WorkerMessage<"take_screenshot">
+  | WorkerMessage<
+      "set_player_buffers",
+      { position: Float32Array; velocity: Float32Array }
+    >
+  | WorkerMessage<"set_player_input_vector", number[]>
+  | WorkerMessage<
+      "mouse_move",
+      {
+        x: number;
+        y: number;
+      }
+    >;
 
 export type FromRenderMessage =
   | WorkerMessage<"ready">

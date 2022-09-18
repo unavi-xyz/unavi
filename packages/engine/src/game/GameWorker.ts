@@ -63,8 +63,8 @@ export class GameWorker {
     });
   }
 
-  setJumping(pressingJump: boolean) {
-    this.#jump = true;
+  setJumping(jump: boolean) {
+    this.#jump = jump;
   }
 
   #gameLoop() {

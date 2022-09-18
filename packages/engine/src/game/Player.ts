@@ -1,51 +1,62 @@
-import { Vector2 } from "three";
-import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
-
-import { Engine } from "../Engine";
+import { RenderThread } from "../render/RenderThread";
+import { GameThread } from "./GameThread";
 
 export class Player {
-  #engine: Engine;
   #canvas: HTMLCanvasElement;
-  #controls: PointerLockControls;
-  #direction = new Vector2();
+  #renderThread: RenderThread;
+  #gameThread: GameThread;
 
   #click = this.#onClick.bind(this);
   #keydown = this.#onKeyDown.bind(this);
   #keyup = this.#onKeyUp.bind(this);
+  #pointerlockchange = this.#onPointerlockChange.bind(this);
+  #mousemove = this.#onMouseMove.bind(this);
 
   #pressingW = false;
   #pressingS = false;
   #pressingA = false;
   #pressingD = false;
 
-  constructor(engine: Engine) {
-    this.#engine = engine;
-    this.#canvas = engine.renderManager.renderer.domElement;
+  #isLocked = false;
 
-    this.#controls = new PointerLockControls(
-      engine.renderManager.camera,
-      document.body
-    );
-    this.#controls.connect();
+  constructor(
+    canvas: HTMLCanvasElement,
+    renderThread: RenderThread,
+    gameThread: GameThread
+  ) {
+    this.#canvas = canvas;
+    this.#renderThread = renderThread;
+    this.#gameThread = gameThread;
 
     this.#canvas.addEventListener("click", this.#click);
     document.addEventListener("keydown", this.#keydown);
     document.addEventListener("keyup", this.#keyup);
-
-    this.#engine.gameThread.initPlayer();
+    document.addEventListener("pointerlockchange", this.#pointerlockchange);
+    document.addEventListener("mousemove", this.#mousemove);
   }
 
   destroy() {
     this.#canvas.removeEventListener("click", this.#click);
     document.removeEventListener("keydown", this.#keydown);
     document.removeEventListener("keyup", this.#keyup);
+    document.removeEventListener("pointerlockchange", this.#pointerlockchange);
+    document.removeEventListener("mousemove", this.#mousemove);
 
-    this.#controls.disconnect();
-    this.#controls.dispose();
+    document.exitPointerLock();
   }
 
   #onClick() {
-    this.#controls.lock();
+    this.#canvas.requestPointerLock();
+  }
+
+  #onPointerlockChange() {
+    this.#isLocked = document.pointerLockElement === this.#canvas;
+  }
+
+  #onMouseMove(event: MouseEvent) {
+    if (!this.#isLocked) return;
+    const { movementX, movementY } = event;
+    this.#renderThread.mouseMove(movementX, movementY);
   }
 
   #onKeyDown(event: KeyboardEvent) {
@@ -63,7 +74,7 @@ export class Player {
         this.#pressingD = true;
         break;
       case " ":
-        this.#engine.gameThread.jump();
+        this.#gameThread.jump();
         break;
       default:
         return;
@@ -100,9 +111,9 @@ export class Player {
     const dForce = this.#pressingD ? 1 : 0;
     const forward = wForce - sForce;
     const right = aForce - dForce;
-    this.#direction.set(right, forward).normalize();
+    const direction = [right, forward];
 
     // Send direction to render thread
-    this.#engine.renderManager.setPlayerInputVector(this.#direction);
+    this.#renderThread.setPlayerInputVector(direction);
   }
 }

@@ -175,6 +175,39 @@ export class RenderThread {
     this.#postMessage({ subject: "remove_entity", data: entityId });
   }
 
+  setPlayerBuffers({
+    position,
+    velocity,
+  }: {
+    position: Float32Array;
+    velocity: Float32Array;
+  }) {
+    this.#postMessage(
+      {
+        subject: "set_player_buffers",
+        data: {
+          position,
+          velocity,
+        },
+      },
+      [position, velocity]
+    );
+  }
+
+  setPlayerInputVector(data: number[]) {
+    this.#postMessage({
+      subject: "set_player_input_vector",
+      data,
+    });
+  }
+
+  mouseMove(x: number, y: number) {
+    this.#postMessage({
+      subject: "mouse_move",
+      data: { x, y },
+    });
+  }
+
   start() {
     this.#postMessage({ subject: "start", data: null });
   }
@@ -269,6 +302,9 @@ export class RenderThread {
   }
 
   #onPointerDown(event: PointerEvent) {
+    const isPointerLocked = document.pointerLockElement === this.#canvas;
+    if (isPointerLocked) return;
+
     this.#canvas.setPointerCapture(event.pointerId);
 
     this.#postMessage({

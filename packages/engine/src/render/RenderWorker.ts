@@ -11,6 +11,7 @@ import { PostMessage } from "../types";
 import { disposeObject } from "../utils/disposeObject";
 import { SceneManager } from "./classes/SceneManager";
 import { OrbitControlsPlugin } from "./plugins/OrbitControlsPlugin";
+import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { Plugin } from "./plugins/Plugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
 import { TransformControlsPlugin } from "./plugins/TransformControlsPlugin";
@@ -156,6 +157,7 @@ export class RenderWorker {
         );
         break;
       case "player":
+        this.#plugins.push(new PlayerPlugin(this.#camera));
         break;
       default:
         throw new Error(`Unknown camera: ${camera}`);

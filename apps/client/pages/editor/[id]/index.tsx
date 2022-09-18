@@ -133,7 +133,7 @@ export default function Editor() {
               >
                 <canvas
                   ref={canvasRef}
-                  className={`h-full w-full ${loadedClass}`}
+                  className={`h-full w-full transition ${loadedClass}`}
                 />
               </div>
             </div>

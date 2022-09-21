@@ -4229,13 +4229,14 @@
     cannon-es "^0.20.0"
     cannon-es-debugger "^1.0.0"
 
-"@react-three/fiber@^8.7.4":
-  version "8.7.4"
-  resolved "https://registry.yarnpkg.com/@react-three/fiber/-/fiber-8.7.4.tgz#f97a400512af001ae445ead3b4420485e9d9e75e"
-  integrity sha512-vT/lhYA6XyPejOtz00rJ4weqBrigc79l8a0/tu/pH0Ci73nn08C4zeJ+uTO6GGJWR5PIzsdG+dTLAJMqcu7w4Q==
+"@react-three/fiber@^8.8.1":
+  version "8.8.1"
+  resolved "https://registry.yarnpkg.com/@react-three/fiber/-/fiber-8.8.1.tgz#c4fb5a8fbd2719a3dcb669834b4803451120a21e"
+  integrity sha512-ImtV4SHkrOAgk8XIJM9QbgpUqjRNV1CuLqFM3po4YSEpI5MfliJqXipuuzDdxxQ8rr1+nz6Jkjcnhp7lscAC0Q==
   dependencies:
     "@babel/runtime" "^7.17.8"
     "@types/react-reconciler" "^0.26.7"
+    its-fine "^1.0.0"
     react-reconciler "^0.27.0"
     react-use-measure "^2.1.1"
     scheduler "^0.21.0"
@@ -4950,6 +4951,13 @@
   version "0.26.7"
   resolved "https://registry.yarnpkg.com/@types/react-reconciler/-/react-reconciler-0.26.7.tgz#0c4643f30821ae057e401b0d9037e03e8e9b2a36"
   integrity sha512-mBDYl8x+oyPX/VBb3E638N0B7xG+SPk/EAMcVPeexqus/5aTpTphQi0curhhshOqRrc9t6OPoJfEUkbymse/lQ==
+  dependencies:
+    "@types/react" "*"
+
+"@types/react-reconciler@^0.28.0":
+  version "0.28.0"
+  resolved "https://registry.yarnpkg.com/@types/react-reconciler/-/react-reconciler-0.28.0.tgz#513acbed173140e958c909041ca14eb40412077f"
+  integrity sha512-5cjk9ottZAj7eaTsqzPUIlrVbh3hBAO2YaEL1rkjHKB3xNAId7oU8GhzvAX+gfmlfoxTwJnBjPxEHyxkEA1Ffg==
   dependencies:
     "@types/react" "*"
 
@@ -10871,6 +10879,13 @@ it-to-stream@^1.0.0:
     p-defer "^3.0.0"
     p-fifo "^1.0.0"
     readable-stream "^3.6.0"
+
+its-fine@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/its-fine/-/its-fine-1.0.0.tgz#e1c17f4420a433c9e96d264330e96a82c6edc33b"
+  integrity sha512-EEVcyr+sR21lxLZg3U84HpY3Mb9aKmGYqxPsIbf/Ea4fO4qpvE/7lX5qtrkuCnljJ9RLMaSaeMq35PeLa+oM0w==
+  dependencies:
+    "@types/react-reconciler" "^0.28.0"
 
 jake@^10.8.5:
   version "10.8.5"

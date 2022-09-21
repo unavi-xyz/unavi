@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@react-three/cannon": "^6.3.0",
-    "@react-three/fiber": "^8.7.4",
+    "@react-three/fiber": "^8.8.1",
     "express": "^4.18.1",
     "mediasoup": "^3.10.5",
     "nanoid": "^4.0.0",

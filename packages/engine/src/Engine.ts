@@ -1,7 +1,7 @@
-import { GameThread } from "./game/GameThread";
-import { RenderThread } from "./render/RenderThread";
+import { Scene } from "./scene/Scene";
 
 export interface EngineOptions {
+  canvas: HTMLCanvasElement;
   skyboxPath?: string;
   camera?: "orbit" | "player";
   enableTransformControls?: boolean;
@@ -9,49 +9,13 @@ export interface EngineOptions {
 }
 
 export class Engine {
-  gameThread: GameThread;
-  renderThread: RenderThread;
+  scene = new Scene();
 
-  #cameraType: "player" | "orbit";
+  constructor({ canvas, camera = "player" }: EngineOptions) {}
 
-  constructor(canvas: HTMLCanvasElement, options?: EngineOptions) {
-    const {
-      skyboxPath,
-      camera = "player",
-      enableTransformControls,
-      preserveDrawingBuffer,
-    } = { ...options };
+  start() {}
 
-    this.#cameraType = camera;
+  stop() {}
 
-    this.renderThread = new RenderThread(canvas, {
-      skyboxPath,
-      camera,
-      enableTransformControls,
-      preserveDrawingBuffer,
-    });
-
-    this.gameThread = new GameThread(canvas, this.renderThread);
-  }
-
-  async start() {
-    // Wait for workers to be ready
-    await this.renderThread.waitForReady();
-    await this.gameThread.waitForReady();
-
-    // Init player
-    if (this.#cameraType === "player") this.gameThread.initPlayer();
-
-    // Start rendering
-    this.renderThread.start();
-  }
-
-  stop() {
-    this.renderThread.stop();
-  }
-
-  destroy() {
-    this.gameThread.destroy();
-    this.renderThread.destroy();
-  }
+  destroy() {}
 }

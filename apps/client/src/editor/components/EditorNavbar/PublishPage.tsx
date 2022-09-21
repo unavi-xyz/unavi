@@ -1,7 +1,3 @@
-import { atom } from "jotai";
-
-export const didSetHostAtom = atom(false);
-
 export default function PublishPage() {
   return null;
   // const project = useProject();

@@ -1,9 +1,10 @@
+import { Triplet } from "@wired-labs/engine";
 import { useEffect, useRef } from "react";
 
 import { rgbToHex } from "../../../utils/rgb";
 
 interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
-  rgbValue?: [number, number, number];
+  rgbValue?: Triplet;
 }
 
 export default function ColorInput({ rgbValue, onChange, ...rest }: Props) {

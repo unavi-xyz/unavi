@@ -1,5 +1,4 @@
-import { BaseEntity, Box, Cylinder, Sphere } from "@wired-labs/engine";
-import { nanoid } from "nanoid";
+import { Entity } from "@wired-labs/engine";
 
 import { addEntity } from "../../actions/AddEntityAction";
 
@@ -32,48 +31,36 @@ export default function ObjectsMenu() {
 }
 
 function createEntity(name: ObjectName) {
-  const id = nanoid();
-  const base: BaseEntity = {
-    id,
-    name,
-    parent: "root",
-    children: [],
-    position: [0, 0, 0],
-    rotation: [0, 0, 0],
-    scale: [1, 1, 1],
-  };
+  const entity = new Entity();
+  entity.name = name;
 
   // Add object component
   switch (name) {
     case ObjectName.Box:
-      const box: Box = {
-        ...base,
+      entity.mesh = {
         type: "Box",
         width: 1,
         height: 1,
         depth: 1,
       };
-      return box;
+      break;
     case ObjectName.Sphere:
-      const sphere: Sphere = {
-        ...base,
+      entity.mesh = {
         type: "Sphere",
         radius: 0.5,
-        widthSegments: 32,
-        heightSegments: 32,
       };
-      return sphere;
+      break;
     case ObjectName.Cylinder:
-      const cylinder: Cylinder = {
-        ...base,
+      entity.mesh = {
         type: "Cylinder",
-        radiusTop: 0.5,
-        radiusBottom: 0.5,
+        radius: 0.5,
         height: 1,
         radialSegments: 32,
       };
-      return cylinder;
+      break;
     default:
       throw new Error("Unknown object name");
   }
+
+  return entity;
 }

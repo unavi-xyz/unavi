@@ -36,8 +36,8 @@ export default function EditorNavbar() {
   async function handleBack() {
     const { engine } = useEditorStore.getState();
     if (engine) {
-      const image = await engine?.renderThread.takeScreenshot();
-      useEditorStore.setState({ image });
+      // const image = await engine?.renderThread.takeScreenshot();
+      // useEditorStore.setState({ image });
     }
 
     await save();

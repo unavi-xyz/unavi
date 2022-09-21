@@ -3,9 +3,10 @@ import { useDrag, useDrop } from "react-dnd";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
 import { moveEntity } from "../../actions/MoveEntityAction";
+import { useEntity } from "../../hooks/useEntity";
 import { useEditorStore } from "../../store";
 import { DND_TYPES } from "../../types";
-import { moveToSibling } from "../../utils/tree";
+import { moveToSibling } from "../../utils/moveToSibling";
 
 type DragItem = {
   id: string;
@@ -17,10 +18,10 @@ interface Props {
 
 export default function TreeMenuItem({ id }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const selectedId = useEditorStore((state) => state.selectedId);
-  const name = useEditorStore((state) => state.scene.entities[id].name);
-  const children = useEditorStore((state) => state.scene.entities[id].children);
   const [open, setOpen] = useState(true);
+  const selectedId = useEditorStore((state) => state.selectedId);
+  const name = useEntity(id, (entity) => entity.name);
+  const childrenIds = useEntity(id, (entity) => entity.childrenIds);
 
   // Create drag source
   const [{ isDragging }, drag] = useDrag(
@@ -41,9 +42,7 @@ export default function TreeMenuItem({ id }: Props) {
       drop({ id: droppedId }: DragItem, monitor) {
         if (droppedId !== id) {
           const didDrop = monitor.didDrop();
-          if (didDrop) return;
-
-          if (isDeepChild(id, droppedId)) return;
+          if (didDrop || isDeepChild(id, droppedId)) return;
 
           // Move to new parent
           moveEntity(droppedId, id);
@@ -63,9 +62,7 @@ export default function TreeMenuItem({ id }: Props) {
       drop({ id: droppedId }: DragItem, monitor) {
         if (droppedId !== id) {
           const didDrop = monitor.didDrop();
-          if (didDrop) return;
-
-          if (isDeepChild(id, droppedId)) return;
+          if (didDrop || isDeepChild(id, droppedId)) return;
 
           // Add as sibling
           moveToSibling(droppedId, id, "below");
@@ -78,7 +75,7 @@ export default function TreeMenuItem({ id }: Props) {
     [id]
   );
 
-  const hasChildren = children.length > 0;
+  const hasChildren = childrenIds && childrenIds.length > 0;
   const isSelected = selectedId === id;
   const bgClass = isSelected
     ? "bg-primaryContainer text-onPrimaryContainer"
@@ -113,8 +110,8 @@ export default function TreeMenuItem({ id }: Props) {
 
       {open && hasChildren && (
         <div className={`pl-4 ${opacityClass}`}>
-          {children.map((child) => (
-            <TreeMenuItem key={child} id={child} />
+          {childrenIds.map((childId) => (
+            <TreeMenuItem key={childId} id={childId} />
           ))}
         </div>
       )}
@@ -130,12 +127,12 @@ export default function TreeMenuItem({ id }: Props) {
 }
 
 function isDeepChild(entityId: string, parentId: string) {
-  const { scene } = useEditorStore.getState();
-  const entity = scene.entities[parentId];
+  const entity = useEditorStore.getState().getEntity(parentId);
+  if (!entity) return false;
 
-  if (entity.children.includes(entityId)) return true;
+  if (entity.childrenIds.includes(entityId)) return true;
 
-  for (const child of entity.children) {
+  for (const child of entity.childrenIds) {
     if (isDeepChild(entityId, child)) return true;
   }
 

@@ -25,8 +25,8 @@ export default function Editor() {
 
   useLoad();
   useAutosave();
-  useTransformControls();
-  useEditorHotkeys();
+  // useTransformControls();
+  // useEditorHotkeys();
 
   useEffect(() => {
     async function initEngine() {
@@ -36,7 +36,8 @@ export default function Editor() {
       const { Engine } = await import("@wired-labs/engine");
 
       // Create engine
-      const engine = new Engine(canvas, {
+      const engine = new Engine({
+        canvas,
         skyboxPath: "/images/skybox/",
         camera: "orbit",
         enableTransformControls: true,
@@ -46,9 +47,9 @@ export default function Editor() {
       useEditorStore.setState({ engine });
 
       // Start engine
-      engine.start().then(() => {
-        setLoaded(true);
-      });
+      // engine.start().then(() => {
+      setLoaded(true);
+      // });
     }
 
     initEngine();
@@ -62,7 +63,6 @@ export default function Editor() {
       useEditorStore.setState({
         engine: null,
         selectedId: null,
-        scene: deepClone(emptyScene),
       });
     };
   }, [engine]);
@@ -71,8 +71,8 @@ export default function Editor() {
     return () => {
       if (typeof OffscreenCanvas !== "undefined") {
         if (!engine) return;
-        const resize = engine.renderThread.onResize.bind(engine.renderThread);
-        resize();
+        // const resize = engine.renderThread.onResize.bind(engine.renderThread);
+        // resize();
         return;
       }
 

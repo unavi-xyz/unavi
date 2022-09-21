@@ -1,10 +1,7 @@
-import { Entity } from "@wired-labs/engine";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
 import { trpc } from "../../auth/trpc";
-import { addEntity } from "../actions/AddEntityAction";
-import { addMaterial } from "../actions/AddMaterialAction";
 import { useEditorStore } from "../store";
 
 export function useLoad() {
@@ -48,34 +45,7 @@ export function useLoad() {
 
   // Load scene on query fetch
   useEffect(() => {
-    async function loadScene() {
-      if (!engine || !scene) return;
-
-      function addToEngine(entity: Entity) {
-        if (!scene) throw new Error("Scene not found");
-
-        // Add entity
-        addEntity(entity);
-
-        // Add Children
-        entity.children.forEach((childId) => {
-          const child = scene.entities[childId];
-          addToEngine(child);
-        });
-      }
-
-      // Load materials
-      Object.values(scene.materials).forEach((material) => {
-        addMaterial(material);
-      });
-
-      // Load entities
-      scene.entities["root"].children.forEach((childId) => {
-        const child = scene.entities[childId];
-        addToEngine(child);
-      });
-    }
-
-    loadScene();
+    if (!engine || !scene) return;
+    engine.scene.loadJSON(scene);
   }, [engine, scene]);
 }

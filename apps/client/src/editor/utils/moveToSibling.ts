@@ -6,17 +6,18 @@ export function moveToSibling(
   siblingId: string,
   placement: "above" | "below" = "below"
 ) {
+  const entities = useEditorStore.getState().engine?.scene.entities;
+  if (!entities) throw new Error("Entities not found");
+
   // Get parent
-  const { scene } = useEditorStore.getState();
-  const sibling = scene.entities[siblingId];
-  const parentId = sibling.parent;
+  const parentId = entities[siblingId].parentId;
 
   // Get target index
   let index: number | undefined;
 
   if (parentId) {
-    const parent = scene.entities[parentId];
-    index = parent.children.indexOf(siblingId);
+    const parent = entities[parentId];
+    index = parent.childrenIds.indexOf(siblingId);
     if (placement === "below") index++;
   }
 

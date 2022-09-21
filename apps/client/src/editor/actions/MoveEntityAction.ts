@@ -1,42 +1,28 @@
 import { useEditorStore } from "../store";
 
 export class MoveEntityAction {
-  constructor(entityId: string, parentId: string | null, index?: number) {
-    const { scene, engine } = useEditorStore.getState();
-    const entity = scene.entities[entityId];
-
-    // Remove from old parent
-    if (entity.parent) {
-      const oldParent = scene.entities[entity.parent];
-      oldParent.children = oldParent.children.filter((id) => id !== entityId);
-
-      oldParent.children = [...oldParent.children];
-    }
+  constructor(entityId: string, parentId: string, index?: number) {
+    const { engine, getEntity } = useEditorStore.getState();
+    const entity = getEntity(entityId);
+    if (!engine) throw new Error("Engine not found");
+    if (!entity) throw new Error("Entity not found");
 
     // Set new parent
-    entity.parent = parentId;
+    engine.scene.updateEntity(entityId, { parentId });
 
-    // Add to new parent
-    if (parentId) {
-      const newParent = scene.entities[parentId];
-      if (index === undefined) newParent.children.push(entityId);
-      else newParent.children.splice(index, 0, entityId);
+    // Place entity at index
+    if (index !== undefined) {
+      const parent = getEntity(parentId);
+      if (!parent) throw new Error("Parent not found");
 
-      newParent.children = [...newParent.children];
+      const sorted = parent.childrenIds.filter((id) => id !== entityId);
+      sorted.splice(index, 0, entityId);
+
+      parent.childrenIds$.next(sorted);
     }
-
-    // Update scene
-    useEditorStore.setState({ scene });
-
-    // Update engine
-    if (engine) engine.renderThread.moveEntity(entityId, parentId);
   }
 }
 
-export function moveEntity(
-  entityId: string,
-  parentId: string | null,
-  index?: number
-) {
+export function moveEntity(entityId: string, parentId: string, index?: number) {
   return new MoveEntityAction(entityId, parentId, index);
 }

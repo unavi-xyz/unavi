@@ -1,6 +1,7 @@
-import { Box } from "@wired-labs/engine";
+import { BoxMesh } from "@wired-labs/engine";
 
-import { setGeometry } from "../../actions/SetGeometry";
+import { updateEntity } from "../../actions/UpdateEntityAction";
+import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import NumberInput from "../ui/NumberInput";
 import ComponentMenu from "./ComponentMenu";
@@ -8,21 +9,13 @@ import MenuRows from "./MenuRows";
 
 interface Props {
   entityId: string;
+  mesh: BoxMesh;
 }
 
-export default function BoxComponent({ entityId }: Props) {
-  const width = useEditorStore((state) => {
-    const entity = state.scene.entities[entityId] as Box;
-    return entity.width;
-  });
-  const height = useEditorStore((state) => {
-    const entity = state.scene.entities[entityId] as Box;
-    return entity.height;
-  });
-  const depth = useEditorStore((state) => {
-    const entity = state.scene.entities[entityId] as Box;
-    return entity.depth;
-  });
+export default function BoxComponent({ entityId, mesh }: Props) {
+  const width = useSubscribeValue(mesh.width$, 1);
+  const height = useSubscribeValue(mesh.height$, 1);
+  const depth = useSubscribeValue(mesh.depth$, 1);
 
   return (
     <ComponentMenu title="Geometry">
@@ -38,18 +31,15 @@ export default function BoxComponent({ entityId }: Props) {
               value={value}
               step={0.1}
               onChange={(e) => {
-                // @ts-ignore
-                const value: string | null = e.target.value || null;
-                if (value === null) return;
+                const value = e.target.value;
+                if (!value) return;
 
                 const num = parseFloat(value);
                 const rounded = Math.round(num * 1000) / 1000;
 
-                const { scene } = useEditorStore.getState();
-                const entity = scene.entities[entityId] as Box;
-                entity[property] = rounded;
+                mesh[property] = rounded;
 
-                setGeometry(entity);
+                updateEntity(entityId, { mesh });
               }}
             />
           );

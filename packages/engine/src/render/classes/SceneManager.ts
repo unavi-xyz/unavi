@@ -4,6 +4,7 @@ import {
   CylinderBufferGeometry,
   Group,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
   Quaternion,
@@ -18,17 +19,27 @@ import { FromRenderMessage, ToRenderMessage } from "../types";
 export class SceneManager {
   scene = new Group();
   #root = new Group();
+  #visuals = new Group();
 
   #entities = new Map<string, Entity>();
   #materials = new Map<string, MeshStandardMaterial>();
   #objects = new Map<string, Object3D>();
 
+  #showColliders: boolean = true;
+  #colliders = new Map<string, Mesh>();
+  #wireframeMaterial = new MeshBasicMaterial({
+    color: new Color(0x000000),
+    wireframe: true,
+  });
+
+  #tempVector3 = new Vector3();
   #defaultMaterial = new MeshStandardMaterial({ color: 0xffffff });
   #postMessage: PostMessage<FromRenderMessage>;
 
   constructor(postMessage: PostMessage<FromRenderMessage>) {
     this.#postMessage = postMessage;
     this.scene.add(this.#root);
+    this.#root.add(this.#visuals);
     this.#objects.set("root", this.#root);
   }
 
@@ -136,11 +147,11 @@ export class SceneManager {
     const parent = entity.parent
       ? this.#objects.get(entity.parent)
       : this.#root;
-
     if (!parent) throw new Error("Parent not found");
 
     this.#entities.set(entity.id, entity);
 
+    // Create object
     switch (entity.type) {
       case "Group":
         const group = new Group();
@@ -207,6 +218,9 @@ export class SceneManager {
       default:
         throw new Error(`Unknown entity type: ${entity}`);
     }
+
+    // Create collider
+    this.#createColliderVisual(entity.id);
   }
 
   setTransform(
@@ -228,6 +242,9 @@ export class SceneManager {
 
     // Set object transform
     copyTransform(object, entity);
+
+    // Update collider visual
+    this.#createColliderVisual(entity.id);
   }
 
   setGeometry(entityId: string, geometry: number[]) {
@@ -286,6 +303,9 @@ export class SceneManager {
         );
         break;
     }
+
+    // Update collider visual
+    this.#createColliderVisual(entity.id);
   }
 
   removeEntity(entityId: string) {
@@ -310,6 +330,9 @@ export class SceneManager {
       this.scene.add(this.#root);
       this.#objects.set("root", this.#root);
     }
+
+    // Remove collider visual
+    this.#removeColliderVisual(entityId);
   }
 
   moveEntity(entityId: string, parentId: string | null) {
@@ -332,6 +355,9 @@ export class SceneManager {
       .invert();
     object.position.copy(parent.worldToLocal(position));
     object.quaternion.multiplyQuaternions(quaternion, inverseParentRotation);
+
+    // Update collider visual
+    this.#createColliderVisual(entityId);
   }
 
   findId(target: Object3D): string | undefined {
@@ -355,8 +381,8 @@ export class SceneManager {
     return entity.children;
   }
 
-  saveTransform(id: string) {
-    const object = this.findObject(id);
+  saveTransform(entityId: string) {
+    const object = this.findObject(entityId);
     if (!object) throw new Error("Object not found");
 
     const position = object.position.toArray();
@@ -366,7 +392,7 @@ export class SceneManager {
     this.#postMessage({
       subject: "set_transform",
       data: {
-        id,
+        id: entityId,
         position,
         rotation,
         scale,
@@ -374,8 +400,70 @@ export class SceneManager {
     });
 
     // Repeat for children
-    const children = this.findChildren(id);
+    const children = this.findChildren(entityId);
     children.forEach((child) => this.saveTransform(child));
+
+    // Update collider visual
+    this.#createColliderVisual(entityId);
+  }
+
+  #removeColliderVisual(entityId: string) {
+    const collider = this.#colliders.get(entityId);
+    if (!collider) return;
+
+    this.#colliders.delete(entityId);
+    collider.removeFromParent();
+    collider.geometry.dispose();
+  }
+
+  #createColliderVisual(entityId: string) {
+    const entity = this.#entities.get(entityId);
+    if (!entity) throw new Error(`Entity not found: ${entityId}`);
+
+    let collider: Mesh | null = null;
+
+    switch (entity.collider?.type) {
+      case "box":
+        const extents = entity.collider.extents ?? [1, 1, 1];
+        collider = new Mesh(
+          new BoxBufferGeometry(...extents),
+          this.#wireframeMaterial
+        );
+        break;
+      case "sphere":
+        const radius = entity.collider.radius ?? 1;
+        collider = new Mesh(
+          new SphereBufferGeometry(radius),
+          this.#wireframeMaterial
+        );
+        break;
+      case "cylinder":
+        collider = new Mesh(
+          new CylinderBufferGeometry(
+            entity.collider.radius ?? 1,
+            entity.collider.radius ?? 1,
+            entity.collider.height ?? 1
+          ),
+          this.#wireframeMaterial
+        );
+        break;
+    }
+
+    // Remove previous collider
+    this.#removeColliderVisual(entityId);
+
+    // Add new collider
+    if (collider) {
+      const object = this.#objects.get(entityId);
+      if (!object) throw new Error("Object not found");
+
+      const position = object.getWorldPosition(this.#tempVector3);
+      collider.position.copy(position);
+      collider.userData.isVisual = true;
+
+      this.#colliders.set(entityId, collider);
+      this.#visuals.add(collider);
+    }
   }
 }
 

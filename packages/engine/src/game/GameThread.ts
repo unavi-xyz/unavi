@@ -1,6 +1,7 @@
 import { RenderThread } from "../render/RenderThread";
-import { FromGameMessage, ToGameMessage } from "../types";
+import { Entity } from "../types";
 import { Player } from "./Player";
+import { FromGameMessage, ToGameMessage } from "./types";
 
 export class GameThread {
   #worker = new Worker(new URL("../workers/Game.worker.ts", import.meta.url), {
@@ -43,12 +44,35 @@ export class GameThread {
 
   initPlayer() {
     this.#player = new Player(this.#canvas, this.#renderThread, this);
-
     this.#postMessage({ subject: "init_player", data: null });
   }
 
   jump() {
     this.#postMessage({ subject: "jumping", data: true });
+  }
+
+  setPhysics(entity: Entity) {
+    this.#postMessage({
+      subject: "set_physics",
+      data: {
+        entityId: entity.id,
+        collider: entity.collider,
+        position: entity.position,
+        rotation: entity.rotation,
+      },
+    });
+  }
+
+  removePhysics(entityId: string) {
+    this.#postMessage({
+      subject: "set_physics",
+      data: {
+        entityId,
+        collider: null,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+      },
+    });
   }
 
   destroy() {

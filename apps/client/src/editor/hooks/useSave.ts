@@ -10,11 +10,12 @@ export function useSave() {
   const { mutateAsync } = trpc.useMutation("save-project");
 
   async function save() {
-    const id = router.query.id as string;
-    const { name, description, image, engine, scene } =
-      useEditorStore.getState();
-    const editorState = JSON.stringify(getEditorState());
+    const { name, description, image, engine } = useEditorStore.getState();
     if (!engine) return;
+
+    const id = router.query.id as string;
+    const editorState = JSON.stringify(getEditorState());
+    const scene = engine.scene.toJSON();
 
     await mutateAsync({
       id,

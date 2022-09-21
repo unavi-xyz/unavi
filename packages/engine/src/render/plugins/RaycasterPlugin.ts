@@ -72,8 +72,13 @@ export class RaycasterPlugin extends Plugin {
     );
 
     if (intersected.length > 0) {
-      const object = intersected[0].object;
-      const id = this.#sceneManager.findId(object);
+      const clicked = intersected.reduce((acc, curr) => {
+        // Ignore visuals
+        if (acc.object.userData.isVisual !== true) return acc;
+        else return curr;
+      });
+
+      const id = this.#sceneManager.findId(clicked.object);
 
       if (id !== undefined) {
         this.#postMessage({ subject: "clicked_object", data: id });

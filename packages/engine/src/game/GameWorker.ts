@@ -1,4 +1,5 @@
 import {
+  Collider,
   ColliderDesc,
   RigidBody,
   RigidBodyDesc,
@@ -6,13 +7,16 @@ import {
   World,
 } from "@dimforge/rapier3d";
 
-import { FromGameMessage } from "../types";
+import { OMICollider, PostMessage, Triplet } from "../types";
+import { FromGameMessage, ToGameMessage } from "./types";
 
 const TERMINAL_VELOCITY = 50;
 const JUMP_STRENGTH = 6;
+const HZ = 60; // Game updates per second
 
 export class GameWorker {
   #world = new World({ x: 0, y: -9.81, z: 0 });
+  #postMessage: PostMessage<FromGameMessage>;
 
   #playerBody: RigidBody | null = null;
   #playerPosition: Float32Array | null = null;
@@ -22,17 +26,38 @@ export class GameWorker {
   #velocityY = 0;
   #jump = false;
 
-  constructor() {
+  #colliders = new Map<string, Collider>();
+
+  constructor(postMessage: PostMessage) {
+    this.#postMessage = postMessage;
+
     // Create ground
     const groundCollider = ColliderDesc.cuboid(10, 0.1, 10);
     const groundBody = this.#world.createRigidBody(RigidBodyDesc.fixed());
     this.#world.createCollider(groundCollider, groundBody);
 
     // Start loop
-    const hz = 60; // Game updates per second
-    const ms = 1000 / hz;
-    setInterval(this.#gameLoop.bind(this), ms);
+    setInterval(this.#gameLoop.bind(this), 1000 / HZ);
+
+    // Set ready
+    this.#postMessage({ subject: "ready", data: null });
   }
+
+  onmessage = (event: MessageEvent<ToGameMessage>) => {
+    const { subject, data } = event.data;
+
+    switch (subject) {
+      case "init_player":
+        this.initPlayer();
+        break;
+      case "jumping":
+        this.setJumping(data);
+        break;
+      case "set_physics":
+        this.setPhysics(data);
+        break;
+    }
+  };
 
   initPlayer() {
     // Create player body
@@ -65,6 +90,61 @@ export class GameWorker {
 
   setJumping(jump: boolean) {
     this.#jump = jump;
+  }
+
+  setPhysics({
+    entityId,
+    collider,
+    position,
+    rotation,
+  }: {
+    entityId: string;
+    collider: OMICollider | null;
+    position: Triplet;
+    rotation: Triplet;
+  }) {
+    // Remove existing collider
+    const previousCollider = this.#colliders.get(entityId);
+    if (previousCollider) {
+      this.#colliders.delete(entityId);
+      this.#world.removeCollider(previousCollider, true);
+      const rigidBody = previousCollider.parent();
+      if (rigidBody) this.#world.removeRigidBody(rigidBody);
+    }
+
+    if (!collider) return;
+
+    // Create collider description
+    let colliderDesc: ColliderDesc;
+    switch (collider.type) {
+      case "box":
+        const extents = collider?.extents ?? [1, 1, 1];
+        colliderDesc = ColliderDesc.cuboid(...extents);
+        break;
+      case "sphere":
+        const radius = collider?.radius ?? 1;
+        colliderDesc = ColliderDesc.ball(radius);
+        break;
+      case "cylinder":
+        const height = collider?.height ?? 1;
+        const cylinderRadius = collider?.radius ?? 1;
+        colliderDesc = ColliderDesc.cylinder(height / 2, cylinderRadius);
+        break;
+      default:
+        throw new Error(`Collider type ${collider.type} not supported`);
+    }
+
+    colliderDesc.setTranslation(...position);
+    // colliderDesc.setRotation(...rotation);
+
+    // Create rigid body
+    const newBody = this.#world.createRigidBody(RigidBodyDesc.fixed());
+
+    // Add collider to world
+    const newCollider = this.#world.createCollider(colliderDesc, newBody);
+
+    // Store reference
+    this.#colliders.set(entityId, newCollider);
   }
 
   #gameLoop() {
@@ -112,9 +192,5 @@ export class GameWorker {
       this.#playerPosition[1] = y;
       this.#playerPosition[2] = z;
     }
-  }
-
-  #postMessage(message: FromGameMessage) {
-    postMessage(message);
   }
 }

@@ -1,5 +1,5 @@
 module.exports = {
-  plugins: ["tailwindcss", "simple-import-sort", "json", "json-files"],
+  plugins: ["tailwindcss", "simple-import-sort", "json", "json-files", "tsdoc"],
   extends: [
     "next/core-web-vitals",
     "turbo",
@@ -15,5 +15,6 @@ module.exports = {
     "simple-import-sort/exports": "error",
     "json-files/require-unique-dependency-names": "error",
     "json-files/sort-package-json": "error",
+    "tsdoc/syntax": "warn",
   },
 };

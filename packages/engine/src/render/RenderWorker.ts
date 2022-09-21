@@ -37,7 +37,6 @@ export class RenderWorker {
 
   #postMessage: PostMessage<FromRenderMessage>;
   #canvas: HTMLCanvasElement | OffscreenCanvas | undefined;
-
   #scene = new Scene();
   #renderer: WebGLRenderer | null = null;
   #camera: PerspectiveCamera | null = null;

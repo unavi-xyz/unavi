@@ -2,7 +2,6 @@ import { CylinderMesh } from "@wired-labs/engine";
 
 import { updateEntity } from "../../actions/UpdateEntityAction";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
-import { useEditorStore } from "../../store";
 import NumberInput from "../ui/NumberInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./MenuRows";

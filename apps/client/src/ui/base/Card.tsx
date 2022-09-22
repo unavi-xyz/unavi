@@ -1,5 +1,5 @@
 import Image from "next/future/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Props {
   image?: string | null;

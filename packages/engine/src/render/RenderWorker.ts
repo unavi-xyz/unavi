@@ -15,7 +15,7 @@ import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { Plugin } from "./plugins/Plugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
 import { TransformControlsPlugin } from "./plugins/TransformControlsPlugin";
-import { FromRenderMessage, LoadSceneData, ToRenderMessage } from "./types";
+import { FromRenderMessage, ToRenderMessage } from "./types";
 import { loadCubeTexture } from "./utils/loadCubeTexture";
 
 export type RenderWorkerOptions = {

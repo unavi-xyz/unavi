@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 
-import { updateEntity } from "../actions/UpdateEntityAction";
 import { useEditorStore } from "../store";
 
 export function useTransformControls() {

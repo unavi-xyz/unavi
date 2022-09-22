@@ -12,19 +12,10 @@ import {
   Vector3,
 } from "three";
 
-import {
-  BoxMeshJSON,
-  Entity,
-  EntityJSON,
-  Material,
-  MaterialJSON,
-  MeshJSON,
-  Scene,
-  SceneMessage,
-} from "../../scene";
+import { Entity, Material, MeshJSON, Scene, SceneMessage } from "../../scene";
 import { PostMessage, Triplet } from "../../types";
 import { disposeMaterial, disposeObject } from "../../utils/disposeObject";
-import { FromRenderMessage, ToRenderMessage } from "../types";
+import { ToRenderMessage } from "../types";
 
 /*
  * SceneLink handles the synchronization between the {@link Scene} and Three.js.

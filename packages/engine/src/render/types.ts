@@ -1,7 +1,7 @@
 import { TypedArray } from "bitecs";
 
 import { SceneMessage } from "../scene";
-import { Triplet, WorkerMessage } from "../types";
+import { WorkerMessage } from "../types";
 import { RenderWorkerOptions } from "./RenderWorker";
 
 export type LoadSceneData = {

@@ -1,5 +1,5 @@
 import { Scene } from "../scene";
-import { Transferable, Triplet } from "../types";
+import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderWorker } from "./RenderWorker";
 import { FromRenderMessage, PointerData, ToRenderMessage } from "./types";

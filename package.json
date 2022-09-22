@@ -19,7 +19,7 @@
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",
-    "*.{js,jsx,ts,tsx,json}": "eslint --fix"
+    "*.{js,cjs,mjs,jsx,ts,tsx,json}": "eslint --fix"
   },
   "devDependencies": {
     "husky": "^8.0.1",

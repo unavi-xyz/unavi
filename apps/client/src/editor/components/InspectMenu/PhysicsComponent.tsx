@@ -1,6 +1,5 @@
 import {
   BoxCollider,
-  Collider,
   CylinderCollider,
   SphereCollider,
 } from "@wired-labs/engine";
@@ -8,7 +7,6 @@ import {
 import { updateEntity } from "../../actions/UpdateEntityAction";
 import { useEntity } from "../../hooks/useEntity";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
-import { useEditorStore } from "../../store";
 import SelectMenu from "../ui/SelectMenu";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./MenuRows";

@@ -18,7 +18,6 @@ import {
 } from "../../../src/auth/context";
 import { prisma } from "../../../src/auth/prisma";
 import { emptyScene } from "../../../src/editor/constants";
-import { deepClone } from "../../../src/utils/deepClone";
 
 const s3Client = new S3Client({
   endpoint: `https://${process.env.S3_ENDPOINT}` ?? "",

@@ -9,7 +9,7 @@ import {
 
 import { PostMessage } from "../types";
 import { disposeObject } from "../utils/disposeObject";
-import { SceneManager } from "./classes/SceneManager";
+import { SceneLink } from "./classes/SceneLink";
 import { OrbitControlsPlugin } from "./plugins/OrbitControlsPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { Plugin } from "./plugins/Plugin";
@@ -32,8 +32,12 @@ export type PluginState = {
   usingTransformControls: boolean;
 };
 
+/*
+ * RenderWorker handles scene rendering using Three.js.
+ * It can be run in a Web Worker if the browser supports OffscreenCanvas.
+ */
 export class RenderWorker {
-  #sceneManager: SceneManager;
+  #sceneLink: SceneLink;
 
   #postMessage: PostMessage<FromRenderMessage>;
   #canvas: HTMLCanvasElement | OffscreenCanvas | undefined;
@@ -54,13 +58,14 @@ export class RenderWorker {
   constructor(postMessage: PostMessage, canvas?: HTMLCanvasElement) {
     this.#canvas = canvas;
     this.#postMessage = postMessage;
-    this.#sceneManager = new SceneManager(this.#postMessage);
-    this.#scene.add(this.#sceneManager.scene);
+
+    this.#sceneLink = new SceneLink(postMessage);
+    this.#scene.add(this.#sceneLink.root);
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
     this.#plugins.forEach((plugin) => plugin.onmessage(event));
-    this.#sceneManager.onmessage(event);
+    this.#sceneLink.onmessage(event);
 
     const { subject, data } = event.data;
     switch (subject) {
@@ -78,9 +83,6 @@ export class RenderWorker {
         break;
       case "destroy":
         this.destroy();
-        break;
-      case "load_scene":
-        this.loadScene(data);
         break;
       case "size":
         this.#updateCanvasSize(data.width, data.height);
@@ -167,13 +169,13 @@ export class RenderWorker {
       this.#plugins.unshift(
         new TransformControlsPlugin(
           this.#camera,
-          this.#sceneManager,
+          this.#sceneLink,
           this.#scene,
           this.#pluginState
         ),
         new RaycasterPlugin(
           this.#camera,
-          this.#sceneManager,
+          this.#sceneLink,
           this.#postMessage,
           this.#pluginState
         )
@@ -194,6 +196,7 @@ export class RenderWorker {
 
   destroy() {
     this.stop();
+    this.#sceneLink.destroy();
     this.#plugins.forEach((plugin) => plugin.destroy());
     disposeObject(this.#scene);
     this.#renderer?.dispose();
@@ -203,45 +206,6 @@ export class RenderWorker {
     if (!this.#renderer) throw new Error("Renderer not initialized");
     const data = this.#renderer.domElement.toDataURL("image/jpeg", 1);
     this.#postMessage({ subject: "screenshot", data });
-  }
-
-  loadScene(data: LoadSceneData) {
-    // if (this.#gltf) {
-    //   this.#scene.remove(this.#gltf);
-    //   disposeObject(this.#gltf);
-    //   this.#gltf = null;
-    // }
-    // const parser = new SceneLoader();
-    // const { scene, animations } = parser.parse(data);
-    // this.#gltf = scene;
-    // this.#scene.add(this.#gltf);
-    // // Play animations
-    // if (animations.length > 0) {
-    //   this.#mixer = new AnimationMixer(this.#gltf);
-    //   for (const animation of animations) {
-    //     this.#mixer.clipAction(animation).play();
-    //   }
-    // }
-    // // Center camera on scene if orbit camera are enabled
-    // if (this.#camera && this.#orbitControls) {
-    //   const boundingBox = new Box3().setFromObject(scene);
-    //   const size = boundingBox.getSize(new Vector3());
-    //   const center = boundingBox.getCenter(new Vector3());
-    //   if (size.x === 0) size.setX(1);
-    //   if (size.y === 0) size.setY(1);
-    //   if (size.z === 0) size.setZ(1);
-    //   this.#camera.position.set(size.x, size.y, size.z * 2);
-    //   this.#camera.lookAt(center);
-    //   this.#orbitControls.target.copy(center);
-    //   const min = boundingBox.min.z === 0 ? 1 : boundingBox.min.z;
-    //   const max = boundingBox.max.z === 0 ? 1 : boundingBox.max.z;
-    //   const near = Math.abs(min) / 100;
-    //   const far = Math.max(50, Math.abs(max) * 100);
-    //   this.#scene.fog = new Fog(0xeefaff, near, far);
-    //   this.#camera.near = near;
-    //   this.#camera.far = far;
-    //   this.#camera.updateProjectionMatrix();
-    // }
   }
 
   #animate() {

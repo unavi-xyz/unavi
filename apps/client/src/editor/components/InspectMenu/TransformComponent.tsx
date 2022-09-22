@@ -16,9 +16,9 @@ export default function TransformComponent({ entityId }: Props) {
   const rotation$ = useEntity(entityId, (entity) => entity.rotation$);
   const scale$ = useEntity(entityId, (entity) => entity.scale$);
 
-  const position = useSubscribeValue<Triplet>(position$, [0, 0, 0]);
-  const rotation = useSubscribeValue<Triplet>(rotation$, [0, 0, 0]);
-  const scale = useSubscribeValue<Triplet>(scale$, [1, 1, 1]);
+  const position = useSubscribeValue<Triplet>(position$);
+  const rotation = useSubscribeValue<Triplet>(rotation$);
+  const scale = useSubscribeValue<Triplet>(scale$);
 
   return (
     <ComponentMenu>

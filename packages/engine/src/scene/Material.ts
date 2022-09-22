@@ -18,6 +18,7 @@ export class Material {
   get name() {
     return this.name$.value;
   }
+
   set name(name: string) {
     this.name$.next(name);
   }
@@ -25,22 +26,39 @@ export class Material {
   get color() {
     return this.color$.value;
   }
+
   set color(color: Triplet) {
-    this.color$.next(color);
+    const clamped: Triplet = [
+      Math.max(0, Math.min(1, color[0])),
+      Math.max(0, Math.min(1, color[1])),
+      Math.max(0, Math.min(1, color[2])),
+    ];
+    this.color$.next(clamped);
   }
 
   get roughness() {
     return this.roughness$.value;
   }
+
   set roughness(roughness: number) {
-    this.roughness$.next(roughness);
+    const clamped = Math.max(0, Math.min(1, roughness));
+    this.roughness$.next(clamped);
   }
 
   get metalness() {
     return this.metalness$.value;
   }
+
   set metalness(metalness: number) {
-    this.metalness$.next(metalness);
+    const clamped = Math.max(0, Math.min(1, metalness));
+    this.metalness$.next(clamped);
+  }
+
+  destroy() {
+    this.name$.complete();
+    this.color$.complete();
+    this.roughness$.complete();
+    this.metalness$.complete();
   }
 
   toJSON(): MaterialJSON {

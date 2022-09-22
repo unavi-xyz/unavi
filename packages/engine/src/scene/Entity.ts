@@ -13,9 +13,11 @@ import { EntityJSON, Mesh, MeshJSON } from "./types";
  */
 export class Entity {
   scene$ = new BehaviorSubject<Scene | null>(null);
+
   get scene() {
     return this.scene$.value;
   }
+
   set scene(scene: Scene | null) {
     this.scene$.next(scene);
   }
@@ -40,6 +42,7 @@ export class Entity {
   get name() {
     return this.name$.value;
   }
+
   set name(name: string) {
     this.name$.next(name);
   }
@@ -51,6 +54,7 @@ export class Entity {
   get parentId() {
     return this.parentId$.value;
   }
+
   set parentId(parentId: string) {
     // Remove from previous parent
     if (this.parent) {
@@ -87,6 +91,7 @@ export class Entity {
   get rotation() {
     return this.rotation$.value;
   }
+
   set rotation(rotation: Triplet) {
     this.rotation$.next(rotation);
   }
@@ -94,6 +99,7 @@ export class Entity {
   get scale() {
     return this.scale$.value;
   }
+
   set scale(scale: Triplet) {
     this.scale$.next(scale);
   }
@@ -101,6 +107,7 @@ export class Entity {
   get mesh() {
     return this.mesh$.value;
   }
+
   set mesh(mesh: Mesh | null) {
     this.mesh$.next(mesh);
   }
@@ -108,8 +115,26 @@ export class Entity {
   get materialId() {
     return this.materialId$.value;
   }
+
   set materialId(materialId: string | null) {
     this.materialId$.next(materialId);
+  }
+
+  get material() {
+    return this.materialId
+      ? this.scene?.materials$.value[this.materialId]
+      : null;
+  }
+
+  destroy() {
+    this.name$.complete();
+    this.parentId$.complete();
+    this.childrenIds$.complete();
+    this.position$.complete();
+    this.rotation$.complete();
+    this.scale$.complete();
+    this.mesh$.complete();
+    this.materialId$.complete();
   }
 
   toJSON(): EntityJSON {

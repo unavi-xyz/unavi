@@ -4,10 +4,9 @@ import { BehaviorSubject } from "rxjs";
 import { useSubscribe } from "./useSubscribe";
 
 export function useSubscribeValue<T>(
-  subject: BehaviorSubject<T> | undefined | null,
-  defaultValue: T | null = null
+  subject: BehaviorSubject<T> | undefined | null
 ) {
-  const [value, setValue] = useState<T | null>(defaultValue);
+  const [value, setValue] = useState<T | null>(subject?.value ?? null);
 
   useSubscribe(subject, setValue);
 

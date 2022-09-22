@@ -1,6 +1,5 @@
 import { CylinderMesh } from "@wired-labs/engine";
 
-import { setGeometry } from "../../actions/SetGeometryAction";
 import { updateEntity } from "../../actions/UpdateEntityAction";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
@@ -14,9 +13,9 @@ interface Props {
 }
 
 export default function CylinderComponent({ entityId, mesh }: Props) {
-  const radius = useSubscribeValue(mesh.radius$, 0.5);
-  const height = useSubscribeValue(mesh.height$, 1);
-  const radialSegments = useSubscribeValue(mesh.radialSegments$, 32);
+  const radius = useSubscribeValue(mesh.radius$);
+  const height = useSubscribeValue(mesh.height$);
+  const radialSegments = useSubscribeValue(mesh.radialSegments$);
 
   return (
     <ComponentMenu title="Geometry">
@@ -33,7 +32,7 @@ export default function CylinderComponent({ entityId, mesh }: Props) {
             <NumberInput
               key={name}
               name={name}
-              value={value}
+              value={value ?? 0}
               step={step}
               onChange={(e) => {
                 const value = e.target.value;
@@ -44,7 +43,7 @@ export default function CylinderComponent({ entityId, mesh }: Props) {
 
                 mesh[property] = rounded;
 
-                updateEntity(entityId, { mesh });
+                updateEntity(entityId, { mesh: mesh.toJSON() });
               }}
             />
           );

@@ -14,7 +14,8 @@ export class BoxMesh {
   }
 
   set width(width: number) {
-    this.width$.next(width);
+    const clamped = Math.max(0, width);
+    this.width$.next(clamped);
   }
 
   get height() {
@@ -22,7 +23,8 @@ export class BoxMesh {
   }
 
   set height(height: number) {
-    this.height$.next(height);
+    const clamped = Math.max(0, height);
+    this.height$.next(clamped);
   }
 
   get depth() {
@@ -30,7 +32,8 @@ export class BoxMesh {
   }
 
   set depth(depth: number) {
-    this.depth$.next(depth);
+    const clamped = Math.max(0, depth);
+    this.depth$.next(clamped);
   }
 
   toJSON(): BoxMeshJSON {

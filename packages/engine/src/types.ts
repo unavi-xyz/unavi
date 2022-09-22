@@ -10,7 +10,6 @@ export type Transferable =
   | OffscreenCanvas;
 
 export type WorkerMessage<Subject extends string = string, Data = any> = {
-  id?: number;
   subject: Subject;
   data: Data;
 };

@@ -14,7 +14,8 @@ export class CylinderMesh {
   }
 
   set radius(radius: number) {
-    this.radius$.next(radius);
+    const clamped = Math.max(0, radius);
+    this.radius$.next(clamped);
   }
 
   get height() {
@@ -22,7 +23,8 @@ export class CylinderMesh {
   }
 
   set height(height: number) {
-    this.height$.next(height);
+    const clamped = Math.max(0, height);
+    this.height$.next(clamped);
   }
 
   get radialSegments() {
@@ -30,7 +32,9 @@ export class CylinderMesh {
   }
 
   set radialSegments(radialSegments: number) {
-    this.radialSegments$.next(radialSegments);
+    const clamped = Math.max(3, radialSegments);
+    const rounded = Math.round(clamped);
+    this.radialSegments$.next(rounded);
   }
 
   toJSON(): CylinderMeshJSON {

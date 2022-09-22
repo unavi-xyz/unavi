@@ -14,7 +14,8 @@ export class SphereMesh {
   }
 
   set radius(radius: number) {
-    this.radius$.next(radius);
+    const clamped = Math.max(0, radius);
+    this.radius$.next(clamped);
   }
 
   get widthSegments() {
@@ -22,7 +23,9 @@ export class SphereMesh {
   }
 
   set widthSegments(widthSegments: number) {
-    this.widthSegments$.next(widthSegments);
+    const clamped = Math.max(3, widthSegments);
+    const rounded = Math.round(clamped);
+    this.widthSegments$.next(rounded);
   }
 
   get heightSegments() {
@@ -30,7 +33,9 @@ export class SphereMesh {
   }
 
   set heightSegments(heightSegments: number) {
-    this.heightSegments$.next(heightSegments);
+    const clamped = Math.max(3, heightSegments);
+    const rounded = Math.round(clamped);
+    this.heightSegments$.next(rounded);
   }
 
   toJSON(): SphereMeshJSON {

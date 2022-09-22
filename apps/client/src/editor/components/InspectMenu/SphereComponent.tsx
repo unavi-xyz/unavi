@@ -1,6 +1,5 @@
 import { SphereMesh } from "@wired-labs/engine";
 
-import { setGeometry } from "../../actions/SetGeometryAction";
 import { updateEntity } from "../../actions/UpdateEntityAction";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
@@ -14,9 +13,9 @@ interface Props {
 }
 
 export default function SphereComponent({ entityId, mesh }: Props) {
-  const radius = useSubscribeValue(mesh.radius$, 0.5);
-  const widthSegments = useSubscribeValue(mesh.widthSegments$, 32);
-  const heightSegments = useSubscribeValue(mesh.heightSegments$, 32);
+  const radius = useSubscribeValue(mesh.radius$);
+  const widthSegments = useSubscribeValue(mesh.widthSegments$);
+  const heightSegments = useSubscribeValue(mesh.heightSegments$);
 
   return (
     <ComponentMenu title="Geometry">
@@ -31,7 +30,7 @@ export default function SphereComponent({ entityId, mesh }: Props) {
             <NumberInput
               key={name}
               name={name}
-              value={value}
+              value={value ?? 0}
               step={step}
               onChange={(e) => {
                 const value = e.target.value;
@@ -42,7 +41,7 @@ export default function SphereComponent({ entityId, mesh }: Props) {
 
                 mesh[property] = rounded;
 
-                updateEntity(entityId, { mesh });
+                updateEntity(entityId, { mesh: mesh.toJSON() });
               }}
             />
           );

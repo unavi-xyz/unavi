@@ -1,4 +1,4 @@
-import { Triplet } from "../types";
+import { Triplet, WorkerMessage } from "../types";
 import { BoxMesh } from "./BoxMesh";
 import { CylinderMesh } from "./CylinderMesh";
 import { SphereMesh } from "./SphereMesh";
@@ -52,11 +52,6 @@ export type SceneJSON = {
 };
 
 // Messages
-type WorkerMessage<Subject extends string = string, Data = any> = {
-  subject: Subject;
-  data: Data;
-};
-
 export type SceneMessage =
   | WorkerMessage<
       "add_entity",

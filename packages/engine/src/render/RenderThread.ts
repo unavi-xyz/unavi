@@ -1,35 +1,40 @@
-import { TypedArray } from "bitecs";
-
-import { Entity, Material, Transferable } from "../types";
+import { Scene } from "../scene";
+import { Transferable, Triplet } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderWorker } from "./RenderWorker";
 import { FromRenderMessage, PointerData, ToRenderMessage } from "./types";
 
 export interface RenderThreadOptions {
+  canvas: HTMLCanvasElement;
   camera: "orbit" | "player";
-  skyboxPath?: string;
   enableTransformControls?: boolean;
   preserveDrawingBuffer?: boolean;
+  scene: Scene;
+  skyboxPath?: string;
 }
 
+/*
+ * RenderThread acts as an interface between the main thread and the {@link RenderWorker}.
+ */
 export class RenderThread {
   ready = false;
+  worker: Worker | FakeWorker;
 
-  #worker: Worker | FakeWorker;
   #canvas: HTMLCanvasElement;
+  #scene: Scene;
   #onReady: Array<() => void> = [];
   #onScreenshot: Array<(data: string) => void> = [];
 
-  constructor(
-    canvas: HTMLCanvasElement,
-    {
-      camera,
-      skyboxPath,
-      enableTransformControls,
-      preserveDrawingBuffer,
-    }: RenderThreadOptions
-  ) {
+  constructor({
+    canvas,
+    camera,
+    enableTransformControls,
+    preserveDrawingBuffer,
+    scene,
+    skyboxPath,
+  }: RenderThreadOptions) {
     this.#canvas = canvas;
+    this.#scene = scene;
 
     // Render in a worker if browser supports OffscreenCanvas
     // (unless we're in development mode. React 18 dev mode causes issues with transferControlToOffscreen)
@@ -37,39 +42,36 @@ export class RenderThread {
       typeof OffscreenCanvas !== "undefined" &&
       process.env.NODE_ENV !== "development"
     ) {
-      console.info(
-        "✅ Browser supports OffscreenCanvas. Rendering a in worker..."
-      );
+      console.info("✅ Browser supports OffscreenCanvas");
       const offscreen = canvas.transferControlToOffscreen();
-      this.#worker = new Worker(
+
+      this.worker = new Worker(
         new URL("../workers/Render.worker.ts", import.meta.url),
         {
           type: "module",
         }
       );
-      // Initialize worker
-      this.#postMessage({ subject: "set_canvas", data: offscreen }, [
-        offscreen,
-      ]);
+
+      // Send canvas
+      this.postMessage({ subject: "set_canvas", data: offscreen }, [offscreen]);
     } else {
-      console.info(
-        "😔 Browser does not support OffscreenCanvas. Rendering in main thread..."
-      );
-      // Otherwise, render in a fake worker on the main thread
-      this.#worker = new FakeWorker();
+      console.info("😔 Browser does not support OffscreenCanvas");
+
+      // Render in a fake worker on the main thread
+      this.worker = new FakeWorker();
       const renderWorker = new RenderWorker(
-        this.#worker.workerPort.postMessage.bind(this.#worker.workerPort),
+        this.worker.workerPort.postMessage.bind(this.worker.workerPort),
         canvas
       );
-      this.#worker.workerPort.onmessage =
+      this.worker.workerPort.onmessage =
         renderWorker.onmessage.bind(renderWorker);
     }
 
-    // On message from worker
-    this.#worker.onmessage = this.#onmessage.bind(this);
+    // Handle worker messages
+    this.worker.onmessage = this.#onmessage.bind(this);
 
     // Initialize worker
-    this.#postMessage({
+    this.postMessage({
       subject: "init",
       data: {
         pixelRatio: window.devicePixelRatio,
@@ -92,6 +94,39 @@ export class RenderThread {
     canvas.addEventListener("wheel", this.#onWheel.bind(this));
   }
 
+  #onmessage = (event: MessageEvent<FromRenderMessage>) => {
+    this.#scene.onmessage(event as any);
+
+    const { subject, data } = event.data;
+
+    switch (subject) {
+      case "ready":
+        this.ready = true;
+        this.#onReady.forEach((resolve) => resolve());
+        this.#onReady = [];
+        break;
+      case "clicked_object":
+        this.onObjectClick(data);
+        break;
+      case "screenshot":
+        this.#onScreenshot.forEach((resolve) => resolve(data));
+        this.#onScreenshot = [];
+        break;
+    }
+  };
+
+  postMessage(message: ToRenderMessage, transfer?: Transferable[]) {
+    this.worker.postMessage(message, transfer);
+  }
+
+  start() {
+    this.postMessage({ subject: "start", data: null });
+  }
+
+  stop() {
+    this.postMessage({ subject: "stop", data: null });
+  }
+
   waitForReady() {
     const promise = new Promise<void>((resolve) => {
       if (this.ready) resolve();
@@ -104,75 +139,8 @@ export class RenderThread {
     const promise = new Promise<string>((resolve) =>
       this.#onScreenshot.push(resolve)
     );
-    this.#postMessage({ subject: "take_screenshot", data: null });
+    this.postMessage({ subject: "take_screenshot", data: null });
     return promise;
-  }
-
-  loadScene(
-    worldBuffer: ArrayBuffer,
-    images: ImageBitmap[],
-    accessors: TypedArray[]
-  ) {
-    this.#postMessage(
-      {
-        subject: "load_scene",
-        data: { worldBuffer, images, accessors },
-      },
-      [worldBuffer, ...images, ...accessors.map((accessor) => accessor.buffer)]
-    );
-  }
-
-  addMaterial(material: Material) {
-    this.#postMessage({ subject: "add_material", data: material });
-  }
-
-  editMaterial(material: Material) {
-    this.#postMessage({ subject: "edit_material", data: material });
-  }
-
-  removeMaterial(materialId: string) {
-    this.#postMessage({ subject: "remove_material", data: materialId });
-  }
-
-  addEntity(data: Entity) {
-    this.#postMessage({ subject: "add_entity", data });
-  }
-
-  setTransform(data: Entity) {
-    this.#postMessage({
-      subject: "set_transform",
-      data: {
-        entityId: data.id,
-        position: data.position,
-        rotation: data.rotation,
-        scale: data.scale,
-      },
-    });
-  }
-
-  setGeometry(entityId: string, geometry: number[]) {
-    this.#postMessage({
-      subject: "set_geometry",
-      data: { entityId, geometry },
-    });
-  }
-
-  setMaterial(entityId: string, materialId: string | null) {
-    this.#postMessage({
-      subject: "set_material",
-      data: { entityId, materialId },
-    });
-  }
-
-  moveEntity(entityId: string, parentId: string | null) {
-    this.#postMessage({
-      subject: "move_entity",
-      data: { entityId, parentId },
-    });
-  }
-
-  removeEntity(entityId: string) {
-    this.#postMessage({ subject: "remove_entity", data: entityId });
   }
 
   setPlayerBuffers({
@@ -182,7 +150,7 @@ export class RenderThread {
     position: Float32Array;
     velocity: Float32Array;
   }) {
-    this.#postMessage(
+    this.postMessage(
       {
         subject: "set_player_buffers",
         data: {
@@ -195,30 +163,42 @@ export class RenderThread {
   }
 
   setPlayerInputVector(data: number[]) {
-    this.#postMessage({
+    this.postMessage({
       subject: "set_player_input_vector",
       data,
     });
   }
 
   mouseMove(x: number, y: number) {
-    this.#postMessage({
+    this.postMessage({
       subject: "mouse_move",
       data: { x, y },
     });
   }
 
-  start() {
-    this.#postMessage({ subject: "start", data: null });
+  setTransformTarget(target: string | null) {
+    this.postMessage({ subject: "set_transform_target", data: target });
   }
 
-  stop() {
-    this.#postMessage({ subject: "stop", data: null });
+  setTransformMode(mode: "translate" | "rotate" | "scale") {
+    this.postMessage({ subject: "set_transform_mode", data: mode });
+  }
+
+  onObjectClick(id: string | null) {}
+
+  onResize() {
+    this.postMessage({
+      subject: "size",
+      data: {
+        width: this.#canvas.clientWidth,
+        height: this.#canvas.clientHeight,
+      },
+    });
   }
 
   destroy() {
-    this.#worker.postMessage({ subject: "destroy", data: null });
-    setTimeout(() => this.#worker.terminate());
+    this.worker.postMessage({ subject: "destroy", data: null });
+    setTimeout(() => this.worker.terminate());
 
     this.#canvas.removeEventListener("contextmenu", this.#onContextMenu);
     this.#canvas.removeEventListener("pointermove", this.#onPointerMove);
@@ -228,65 +208,12 @@ export class RenderThread {
     this.#canvas.removeEventListener("wheel", this.#onWheel);
   }
 
-  setTransformTarget(target: string | null) {
-    this.#postMessage({ subject: "set_transform_target", data: target });
-  }
-
-  setTransformMode(mode: "translate" | "rotate" | "scale") {
-    this.#postMessage({ subject: "set_transform_mode", data: mode });
-  }
-
-  onObjectClick(id: string | null) {}
-
-  onSetTransform(
-    id: string,
-    position: number[],
-    rotation: number[],
-    scale: number[]
-  ) {}
-
-  #onmessage = (event: MessageEvent<FromRenderMessage>) => {
-    const { subject, data } = event.data;
-
-    switch (subject) {
-      case "ready":
-        this.ready = true;
-        this.#onReady.forEach((resolve) => resolve());
-        this.#onReady = [];
-        break;
-      case "clicked_object":
-        this.onObjectClick(data);
-        break;
-      case "set_transform":
-        this.onSetTransform(data.id, data.position, data.rotation, data.scale);
-        break;
-      case "screenshot":
-        this.#onScreenshot.forEach((resolve) => resolve(data));
-        this.#onScreenshot = [];
-        break;
-    }
-  };
-
-  #postMessage(message: ToRenderMessage, transfer?: Transferable[]) {
-    this.#worker.postMessage(message, transfer);
-  }
-
-  onResize() {
-    this.#postMessage({
-      subject: "size",
-      data: {
-        width: this.#canvas.clientWidth,
-        height: this.#canvas.clientHeight,
-      },
-    });
-  }
-
   #onContextMenu(event: Event) {
     event.preventDefault();
   }
 
   #onPointerMove(event: PointerEvent) {
-    this.#postMessage({
+    this.postMessage({
       subject: "pointermove",
       data: getPointerData(event, this.#canvas),
     });
@@ -295,7 +222,7 @@ export class RenderThread {
   #onPointerUp(event: PointerEvent) {
     this.#canvas.releasePointerCapture(event.pointerId);
 
-    this.#postMessage({
+    this.postMessage({
       subject: "pointerup",
       data: getPointerData(event, this.#canvas),
     });
@@ -307,14 +234,14 @@ export class RenderThread {
 
     this.#canvas.setPointerCapture(event.pointerId);
 
-    this.#postMessage({
+    this.postMessage({
       subject: "pointerdown",
       data: getPointerData(event, this.#canvas),
     });
   }
 
   #onPointerCancel(event: PointerEvent) {
-    this.#postMessage({
+    this.postMessage({
       subject: "pointercancel",
       data: getPointerData(event, this.#canvas),
     });
@@ -322,7 +249,7 @@ export class RenderThread {
 
   #onWheel(event: WheelEvent) {
     event.preventDefault();
-    this.#postMessage({
+    this.postMessage({
       subject: "wheel",
       data: {
         deltaY: event.deltaY,

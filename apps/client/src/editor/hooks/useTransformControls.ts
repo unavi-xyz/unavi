@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 
+import { updateEntity } from "../actions/UpdateEntityAction";
 import { useEditorStore } from "../store";
 
 export function useTransformControls() {
@@ -10,15 +11,9 @@ export function useTransformControls() {
   // Update selected object when user clicks on an object
   useEffect(() => {
     if (!engine) return;
-    engine.renderThread.onObjectClick = (id) =>
+
+    engine.renderThread.onObjectClick = (id) => {
       useEditorStore.setState({ selectedId: id });
-    engine.renderThread.onSetTransform = (id, position, rotation, scale) => {
-      const { scene } = useEditorStore.getState();
-      const entity = scene.entities[id];
-      entity.position = [position[0], position[1], position[2]];
-      entity.rotation = [rotation[0], rotation[1], rotation[2]];
-      entity.scale = [scale[0], scale[1], scale[2]];
-      useEditorStore.setState({ scene });
     };
   }, [engine]);
 

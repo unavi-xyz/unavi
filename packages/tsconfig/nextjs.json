@@ -4,10 +4,9 @@
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": true,
     "noEmit": true,
-    "resolveJsonModule": true,
     "jsx": "preserve"
   },
   "display": "Next.js",
   "extends": "./base.json",
-  "include": ["next-env.d.ts"]
+  "include": ["src", "next-env.d.ts"]
 }

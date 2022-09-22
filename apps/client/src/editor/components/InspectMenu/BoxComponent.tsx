@@ -13,9 +13,9 @@ interface Props {
 }
 
 export default function BoxComponent({ entityId, mesh }: Props) {
-  const width = useSubscribeValue(mesh.width$, 1);
-  const height = useSubscribeValue(mesh.height$, 1);
-  const depth = useSubscribeValue(mesh.depth$, 1);
+  const width = useSubscribeValue(mesh.width$);
+  const height = useSubscribeValue(mesh.height$);
+  const depth = useSubscribeValue(mesh.depth$);
 
   return (
     <ComponentMenu title="Geometry">
@@ -28,7 +28,7 @@ export default function BoxComponent({ entityId, mesh }: Props) {
             <NumberInput
               key={name}
               name={name}
-              value={value}
+              value={value ?? 0}
               step={0.1}
               onChange={(e) => {
                 const value = e.target.value;
@@ -39,7 +39,7 @@ export default function BoxComponent({ entityId, mesh }: Props) {
 
                 mesh[property] = rounded;
 
-                updateEntity(entityId, { mesh });
+                updateEntity(entityId, { mesh: mesh.toJSON() });
               }}
             />
           );

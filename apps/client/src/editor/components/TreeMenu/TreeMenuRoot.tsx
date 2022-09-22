@@ -3,6 +3,7 @@ import { useDrop } from "react-dnd";
 
 import { moveEntity } from "../../actions/MoveEntityAction";
 import { useEntity } from "../../hooks/useEntity";
+import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import { DND_TYPES } from "../../types";
 import TreeMenuItem from "./TreeMenuItem";
@@ -13,7 +14,8 @@ type DragItem = {
 
 export default function TreeMenuRoot() {
   const ref = useRef<HTMLDivElement>(null);
-  const childrenIds = useEntity("root", (entity) => entity.childrenIds);
+  const childrenIds$ = useEntity("root", (entity) => entity.childrenIds$);
+  const childrenIds = useSubscribeValue(childrenIds$);
 
   // Create drop target
   const [{}, drop] = useDrop(

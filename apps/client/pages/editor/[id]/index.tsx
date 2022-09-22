@@ -25,7 +25,7 @@ export default function Editor() {
 
   useLoad();
   useAutosave();
-  // useTransformControls();
+  useTransformControls();
   // useEditorHotkeys();
 
   useEffect(() => {
@@ -47,9 +47,9 @@ export default function Editor() {
       useEditorStore.setState({ engine });
 
       // Start engine
-      // engine.start().then(() => {
-      setLoaded(true);
-      // });
+      engine.start().then(() => {
+        setLoaded(true);
+      });
     }
 
     initEngine();

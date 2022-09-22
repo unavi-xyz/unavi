@@ -1,6 +1,6 @@
 import { OMICollider } from "@wired-labs/engine";
 
-import { setPhysics } from "../../actions/SetPhysicsAction";
+import { useEntity } from "../../hooks/useEntity";
 import { useEditorStore } from "../../store";
 import SelectMenu from "../ui/SelectMenu";
 import ComponentMenu from "./ComponentMenu";
@@ -11,10 +11,7 @@ interface Props {
 }
 
 export default function PhysicsComponent({ entityId }: Props) {
-  const collider = useEditorStore((state) => {
-    const entity = state.scene.entities[entityId];
-    return entity.collider;
-  });
+  const collider$ = useEntity(entityId, (entity) => entity.collider$);
 
   const colliderValue = colliderToOption(collider);
 

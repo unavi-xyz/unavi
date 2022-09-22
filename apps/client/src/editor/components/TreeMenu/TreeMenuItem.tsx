@@ -4,6 +4,7 @@ import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
 import { moveEntity } from "../../actions/MoveEntityAction";
 import { useEntity } from "../../hooks/useEntity";
+import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import { DND_TYPES } from "../../types";
 import { moveToSibling } from "../../utils/moveToSibling";
@@ -20,8 +21,12 @@ export default function TreeMenuItem({ id }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(true);
   const selectedId = useEditorStore((state) => state.selectedId);
-  const name = useEntity(id, (entity) => entity.name);
-  const childrenIds = useEntity(id, (entity) => entity.childrenIds);
+
+  const name$ = useEntity(id, (entity) => entity.name$);
+  const childrenIds$ = useEntity(id, (entity) => entity.childrenIds$);
+
+  const name = useSubscribeValue(name$);
+  const childrenIds = useSubscribeValue(childrenIds$);
 
   // Create drag source
   const [{ isDragging }, drag] = useDrag(

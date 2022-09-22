@@ -37,6 +37,12 @@ export class CylinderMesh {
     this.radialSegments$.next(rounded);
   }
 
+  destroy() {
+    this.radius$.complete();
+    this.height$.complete();
+    this.radialSegments$.complete();
+  }
+
   toJSON(): CylinderMeshJSON {
     return {
       type: this.type,

@@ -39,7 +39,6 @@ export class SceneLink {
   #materials = new Map<string, MeshStandardMaterial>();
   #objects = new Map<string, Object3D>();
 
-  #showColliders: boolean = true;
   #colliders = new Map<string, Mesh>();
   #wireframeMaterial = new MeshBasicMaterial({
     color: new Color(0x000000),
@@ -48,11 +47,10 @@ export class SceneLink {
 
   #tempVector3 = new Vector3();
   #defaultMaterial = new MeshStandardMaterial({ color: 0xffffff });
-  #postMessage: PostMessage<FromRenderMessage>;
 
   constructor(postMessage: PostMessage) {
-    this.#postMessage = postMessage;
     this.#scene.addThread(postMessage);
+
     this.root.add(this.visuals);
     this.root.add(this.meshes);
     this.#objects.set("root", this.meshes);
@@ -63,6 +61,13 @@ export class SceneLink {
         Object.values(entities).forEach((entity) => {
           if (!this.#objects.has(entity.id)) {
             this.addEntity(entity);
+          }
+        });
+
+        // Remove deleted entities
+        Object.keys(this.#objects).forEach((entityId) => {
+          if (!entities[entityId]) {
+            this.removeEntity(entityId);
           }
         });
       },
@@ -76,12 +81,26 @@ export class SceneLink {
             this.addMaterial(material);
           }
         });
+
+        // Remove deleted materials
+        Object.keys(this.#materials).forEach((materialId) => {
+          if (!materials[materialId]) {
+            this.removeMaterial(materialId);
+          }
+        });
       },
     });
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
     this.#scene.onmessage(event as MessageEvent<SceneMessage>);
+
+    const { subject, data } = event.data;
+    switch (subject) {
+      case "show_visuals":
+        this.visuals.visible = data.visible;
+        break;
+    }
   };
 
   addMaterial(material: Material) {
@@ -253,6 +272,12 @@ export class SceneLink {
         object.scale.fromArray(scale);
       },
     });
+
+    entity.collider$.subscribe({
+      next: () => {
+        this.#createColliderVisual(entity.id);
+      },
+    });
   }
 
   removeEntity(entityId: string) {
@@ -391,6 +416,50 @@ export class SceneLink {
     entity.childrenIds.forEach((childId) => this.saveTransform(childId));
   }
 
+  #createColliderVisual(entityId: string) {
+    const entity = this.#scene.entities[entityId];
+
+    // Remove previous collider
+    this.#removeColliderVisual(entityId);
+
+    // Create new collider
+    let collider: Mesh | null = null;
+    switch (entity.collider?.type) {
+      case "Box":
+        collider = new Mesh(
+          new BoxBufferGeometry(...entity.collider.size),
+          this.#wireframeMaterial
+        );
+        break;
+      case "Sphere":
+        collider = new Mesh(
+          new SphereBufferGeometry(entity.collider.radius),
+          this.#wireframeMaterial
+        );
+        break;
+      case "Cylinder":
+        collider = new Mesh(
+          new CylinderBufferGeometry(
+            entity.collider.radius,
+            entity.collider.radius,
+            entity.collider.height
+          ),
+          this.#wireframeMaterial
+        );
+        break;
+    }
+
+    // Add new collider
+    if (collider) {
+      const object = this.#objects.get(entityId);
+      if (!object) throw new Error("Object not found");
+      const position = object.getWorldPosition(this.#tempVector3);
+      collider.position.copy(position);
+      this.#colliders.set(entityId, collider);
+      this.visuals.add(collider);
+    }
+  }
+
   #removeColliderVisual(entityId: string) {
     const collider = this.#colliders.get(entityId);
     if (!collider) return;
@@ -398,48 +467,6 @@ export class SceneLink {
     this.#colliders.delete(entityId);
     collider.removeFromParent();
     collider.geometry.dispose();
-  }
-
-  #createColliderVisual(entityId: string) {
-    // const entity = this.#scene.entities[entityId];
-    // let collider: Mesh | null = null;
-    // switch (entity.collider?.type) {
-    //   case "box":
-    //     const extents = entity.collider.extents ?? [1, 1, 1];
-    //     collider = new Mesh(
-    //       new BoxBufferGeometry(...extents),
-    //       this.#wireframeMaterial
-    //     );
-    //     break;
-    //   case "sphere":
-    //     const radius = entity.collider.radius ?? 1;
-    //     collider = new Mesh(
-    //       new SphereBufferGeometry(radius),
-    //       this.#wireframeMaterial
-    //     );
-    //     break;
-    //   case "cylinder":
-    //     collider = new Mesh(
-    //       new CylinderBufferGeometry(
-    //         entity.collider.radius ?? 1,
-    //         entity.collider.radius ?? 1,
-    //         entity.collider.height ?? 1
-    //       ),
-    //       this.#wireframeMaterial
-    //     );
-    //     break;
-    // }
-    // // Remove previous collider
-    // this.#removeColliderVisual(entityId);
-    // // Add new collider
-    // if (collider) {
-    //   const object = this.#objects.get(entityId);
-    //   if (!object) throw new Error("Object not found");
-    //   const position = object.getWorldPosition(this.#tempVector3);
-    //   collider.position.copy(position);
-    //   this.#colliders.set(entityId, collider);
-    //   this.visuals.add(collider);
-    // }
   }
 
   destroy() {

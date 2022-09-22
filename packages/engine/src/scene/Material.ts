@@ -5,7 +5,8 @@ import { Triplet } from "../types";
 import { MaterialJSON } from "./types";
 
 export class Material {
-  id: string;
+  readonly id: string;
+
   name$ = new BehaviorSubject("New Material");
   color$ = new BehaviorSubject<Triplet>([1, 1, 1]);
   roughness$ = new BehaviorSubject(1);

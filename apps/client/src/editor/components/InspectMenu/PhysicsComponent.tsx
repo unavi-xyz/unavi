@@ -1,6 +1,13 @@
-import { OMICollider } from "@wired-labs/engine";
+import {
+  BoxCollider,
+  Collider,
+  CylinderCollider,
+  SphereCollider,
+} from "@wired-labs/engine";
 
+import { updateEntity } from "../../actions/UpdateEntityAction";
 import { useEntity } from "../../hooks/useEntity";
+import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import SelectMenu from "../ui/SelectMenu";
 import ComponentMenu from "./ComponentMenu";
@@ -12,75 +19,36 @@ interface Props {
 
 export default function PhysicsComponent({ entityId }: Props) {
   const collider$ = useEntity(entityId, (entity) => entity.collider$);
-
-  const colliderValue = colliderToOption(collider);
+  const collider = useSubscribeValue(collider$);
 
   return (
     <ComponentMenu title="Physics">
       <MenuRows titles={["Collider"]}>
         <SelectMenu
-          value={colliderValue}
+          value={collider?.type ?? "None"}
           options={["None", "Box", "Sphere", "Cylinder"]}
           onChange={(e) => {
-            const value = colliderOptionToValue(e.target.value);
-            const { scene } = useEditorStore.getState();
-            const entity = scene.entities[entityId];
+            const value = e.target.value === "None" ? null : e.target.value;
 
             switch (value) {
-              case "box":
-                entity.collider = {
-                  type: "box",
-                  extents: [1, 1, 1],
-                };
+              case "Box":
+                const boxCollider = new BoxCollider();
+                updateEntity(entityId, { collider: boxCollider.toJSON() });
                 break;
-              case "sphere":
-                entity.collider = {
-                  type: "sphere",
-                  radius: 0.5,
-                };
+              case "Sphere":
+                const sphereCollider = new SphereCollider();
+                updateEntity(entityId, { collider: sphereCollider.toJSON() });
                 break;
-              case "cylinder":
-                entity.collider = {
-                  type: "cylinder",
-                  radiusTop: 0.5,
-                  radiusBottom: 0.5,
-                  height: 1,
-                };
+              case "Cylinder":
+                const cylinderCollider = new CylinderCollider();
+                updateEntity(entityId, { collider: cylinderCollider.toJSON() });
                 break;
               default:
-                entity.collider = null;
+                updateEntity(entityId, { collider: null });
             }
-
-            setPhysics(entity);
           }}
         />
       </MenuRows>
     </ComponentMenu>
   );
-}
-
-function colliderToOption(collider: OMICollider | null) {
-  switch (collider?.type) {
-    case "box":
-      return "Box";
-    case "sphere":
-      return "Sphere";
-    case "cylinder":
-      return "Cylinder";
-    default:
-      return "None";
-  }
-}
-
-function colliderOptionToValue(option: string) {
-  switch (option) {
-    case "Box":
-      return "box";
-    case "Sphere":
-      return "sphere";
-    case "Cylinder":
-      return "cylinder";
-    default:
-      return null;
-  }
 }

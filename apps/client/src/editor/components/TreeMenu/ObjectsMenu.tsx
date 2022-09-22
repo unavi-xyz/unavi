@@ -1,4 +1,12 @@
-import { BoxMesh, CylinderMesh, Entity, SphereMesh } from "@wired-labs/engine";
+import {
+  BoxCollider,
+  BoxMesh,
+  CylinderCollider,
+  CylinderMesh,
+  Entity,
+  SphereCollider,
+  SphereMesh,
+} from "@wired-labs/engine";
 
 import { addEntity } from "../../actions/AddEntityAction";
 
@@ -38,12 +46,15 @@ function createEntity(name: ObjectName) {
   switch (name) {
     case ObjectName.Box:
       entity.mesh = new BoxMesh();
+      entity.collider = new BoxCollider();
       break;
     case ObjectName.Sphere:
       entity.mesh = new SphereMesh();
+      entity.collider = new SphereCollider();
       break;
     case ObjectName.Cylinder:
       entity.mesh = new CylinderMesh();
+      entity.collider = new CylinderCollider();
       break;
     default:
       throw new Error("Unknown object name");

@@ -2,11 +2,14 @@ import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
 import { Triplet } from "../types";
+import { BoxCollider } from "./BoxCollider";
 import { BoxMesh } from "./BoxMesh";
+import { CylinderCollider } from "./CylinderCollider";
 import { CylinderMesh } from "./CylinderMesh";
 import { Scene } from "./Scene";
+import { SphereCollider } from "./SphereCollider";
 import { SphereMesh } from "./SphereMesh";
-import { EntityJSON, Mesh, MeshJSON } from "./types";
+import { Collider, ColliderJSON, EntityJSON, Mesh, MeshJSON } from "./types";
 
 /*
  * This class represents an entity in the scene.
@@ -22,7 +25,7 @@ export class Entity {
     this.scene$.next(scene);
   }
 
-  id: string;
+  readonly id: string;
   name$ = new BehaviorSubject("Entity");
 
   parentId$ = new BehaviorSubject<string>("root");
@@ -34,6 +37,7 @@ export class Entity {
 
   mesh$ = new BehaviorSubject<Mesh | null>(null);
   materialId$ = new BehaviorSubject<string | null>(null);
+  collider$ = new BehaviorSubject<Collider | null>(null);
 
   constructor({ id }: { id?: string } = {}) {
     this.id = id ?? nanoid();
@@ -109,6 +113,7 @@ export class Entity {
   }
 
   set mesh(mesh: Mesh | null) {
+    if (this.mesh) this.mesh.destroy();
     this.mesh$.next(mesh);
   }
 
@@ -126,7 +131,19 @@ export class Entity {
       : null;
   }
 
+  get collider() {
+    return this.collider$.value;
+  }
+
+  set collider(collider: Collider | null) {
+    if (this.collider) this.collider.destroy();
+    this.collider$.next(collider);
+  }
+
   destroy() {
+    this.mesh?.destroy();
+    this.collider?.destroy();
+
     this.name$.complete();
     this.parentId$.complete();
     this.childrenIds$.complete();
@@ -139,6 +156,7 @@ export class Entity {
 
   toJSON(): EntityJSON {
     const mesh = this.mesh ? this.mesh.toJSON() : null;
+    const collider = this.collider ? this.collider.toJSON() : null;
 
     return {
       id: this.id,
@@ -149,6 +167,7 @@ export class Entity {
       scale: this.scale,
       mesh,
       materialId: this.materialId,
+      collider,
     };
   }
 
@@ -162,6 +181,8 @@ export class Entity {
 
     if (json.mesh !== undefined) this.mesh = createMesh(json.mesh);
     if (json.materialId !== undefined) this.materialId = json.materialId;
+    if (json.collider !== undefined)
+      this.collider = createCollider(json.collider);
   }
 
   static fromJSON(json: EntityJSON) {
@@ -183,5 +204,20 @@ function createMesh(json: MeshJSON | null) {
       return CylinderMesh.fromJSON(json);
     default:
       throw new Error("Unknown mesh type");
+  }
+}
+
+function createCollider(json: ColliderJSON | null) {
+  if (!json) return null;
+
+  switch (json.type) {
+    case "Box":
+      return BoxCollider.fromJSON(json);
+    case "Sphere":
+      return SphereCollider.fromJSON(json);
+    case "Cylinder":
+      return CylinderCollider.fromJSON(json);
+    default:
+      throw new Error("Unknown collider type");
   }
 }

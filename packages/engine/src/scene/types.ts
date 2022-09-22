@@ -1,6 +1,9 @@
 import { Triplet, WorkerMessage } from "../types";
+import { BoxCollider } from "./BoxCollider";
 import { BoxMesh } from "./BoxMesh";
+import { CylinderCollider } from "./CylinderCollider";
 import { CylinderMesh } from "./CylinderMesh";
+import { SphereCollider } from "./SphereCollider";
 import { SphereMesh } from "./SphereMesh";
 
 export type BoxMeshJSON = {
@@ -27,6 +30,28 @@ export type CylinderMeshJSON = {
 export type MeshJSON = BoxMeshJSON | SphereMeshJSON | CylinderMeshJSON;
 export type Mesh = BoxMesh | SphereMesh | CylinderMesh;
 
+export type BoxColliderJSON = {
+  type: "Box";
+  size: Triplet;
+};
+
+export type SphereColliderJSON = {
+  type: "Sphere";
+  radius: number;
+};
+
+export type CylinderColliderJSON = {
+  type: "Cylinder";
+  radius: number;
+  height: number;
+};
+
+export type ColliderJSON =
+  | BoxColliderJSON
+  | SphereColliderJSON
+  | CylinderColliderJSON;
+export type Collider = BoxCollider | SphereCollider | CylinderCollider;
+
 export type EntityJSON = {
   id: string;
   name: string;
@@ -36,6 +61,7 @@ export type EntityJSON = {
   scale: Triplet;
   mesh: MeshJSON | null;
   materialId: string | null;
+  collider: ColliderJSON | null;
 };
 
 export type MaterialJSON = {
@@ -53,6 +79,12 @@ export type SceneJSON = {
 
 // Messages
 export type SceneMessage =
+  | WorkerMessage<
+      "load_json",
+      {
+        scene: SceneJSON;
+      }
+    >
   | WorkerMessage<
       "add_entity",
       {

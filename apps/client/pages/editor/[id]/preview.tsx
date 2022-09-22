@@ -3,18 +3,14 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
 
-import { emptyScene } from "../../../src/editor/constants";
 import { useLoad } from "../../../src/editor/hooks/useLoad";
 import { useEditorStore } from "../../../src/editor/store";
 import MetaTags from "../../../src/ui/MetaTags";
-import { deepClone } from "../../../src/utils/deepClone";
 
 export default function Preview() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
   const engine = useEditorStore((state) => state.engine);
-
   const [loaded, setLoaded] = useState(false);
 
   const router = useRouter();
@@ -30,9 +26,10 @@ export default function Preview() {
       const { Engine } = await import("@wired-labs/engine");
 
       // Create engine
-      const engine = new Engine(canvas, {
-        skyboxPath: "/images/skybox/",
+      const engine = new Engine({
+        canvas,
         camera: "player",
+        skyboxPath: "/images/skybox/",
       });
 
       useEditorStore.setState({ engine });
@@ -54,7 +51,6 @@ export default function Preview() {
       useEditorStore.setState({
         engine: null,
         selectedId: null,
-        scene: deepClone(emptyScene),
       });
     };
   }, [engine]);

@@ -1,6 +1,6 @@
 import { useEditorStore } from "../store";
 
 export function getEditorState() {
-  const { debug, grid, tool } = useEditorStore.getState();
-  return { debug, grid, tool };
+  const { colliders, grid, tool } = useEditorStore.getState();
+  return { colliders, grid, tool };
 }

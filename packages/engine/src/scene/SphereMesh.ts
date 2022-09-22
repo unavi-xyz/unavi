@@ -38,6 +38,12 @@ export class SphereMesh {
     this.heightSegments$.next(rounded);
   }
 
+  destroy() {
+    this.radius$.complete();
+    this.widthSegments$.complete();
+    this.heightSegments$.complete();
+  }
+
   toJSON(): SphereMeshJSON {
     return {
       type: this.type,

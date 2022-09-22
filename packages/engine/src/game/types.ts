@@ -1,17 +1,12 @@
-import { OMICollider, OMIPhysicsBody, Triplet, WorkerMessage } from "../types";
+import { SceneMessage } from "../scene";
+import { WorkerMessage } from "../types";
 
 export type ToGameMessage =
+  | SceneMessage
   | WorkerMessage<"init_player">
-  | WorkerMessage<"jumping", boolean>
-  | WorkerMessage<
-      "set_physics",
-      {
-        entityId: string;
-        collider: OMICollider | null;
-        position: Triplet;
-        rotation: Triplet;
-      }
-    >;
+  | WorkerMessage<"start">
+  | WorkerMessage<"stop">
+  | WorkerMessage<"jumping", boolean>;
 
 export type FromGameMessage =
   | WorkerMessage<"ready">

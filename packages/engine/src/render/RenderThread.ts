@@ -162,7 +162,7 @@ export class RenderThread {
     );
   }
 
-  setPlayerInputVector(data: number[]) {
+  setPlayerInputVector(data: [number, number]) {
     this.postMessage({
       subject: "set_player_input_vector",
       data,

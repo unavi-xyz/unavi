@@ -62,7 +62,7 @@ export class PlayerPlugin extends Plugin {
     this.#camera.quaternion.setFromEuler(this.#tempEuler);
   }
 
-  setPlayerInputVector(input: number[]) {
+  setPlayerInputVector(input: [number, number]) {
     if (Math.sign(input[0]) !== Math.sign(this.#playerInputVector.x)) {
       this.#inputXChangeTime = Date.now();
     }

@@ -20,7 +20,7 @@ export default function EntityComponents({ entityId }: Props) {
         <>
           <BoxComponent entityId={entityId} mesh={mesh} />
           <MaterialComponent entityId={entityId} />
-          {/* <PhysicsComponent entityId={entityId} /> */}
+          <PhysicsComponent entityId={entityId} />
         </>
       );
     case "Sphere":
@@ -28,7 +28,7 @@ export default function EntityComponents({ entityId }: Props) {
         <>
           <SphereComponent entityId={entityId} mesh={mesh} />
           <MaterialComponent entityId={entityId} />
-          {/* <PhysicsComponent entityId={entityId} /> */}
+          <PhysicsComponent entityId={entityId} />
         </>
       );
     case "Cylinder":
@@ -36,10 +36,14 @@ export default function EntityComponents({ entityId }: Props) {
         <>
           <CylinderComponent entityId={entityId} mesh={mesh} />
           <MaterialComponent entityId={entityId} />
-          {/* <PhysicsComponent entityId={entityId} /> */}
+          <PhysicsComponent entityId={entityId} />
         </>
       );
     default:
-      return <>{/* <PhysicsComponent entityId={entityId} /> */}</>;
+      return (
+        <>
+          <PhysicsComponent entityId={entityId} />
+        </>
+      );
   }
 }

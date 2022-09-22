@@ -118,6 +118,7 @@ export class RenderWorker {
     this.#renderer.setSize(canvasWidth, canvasHeight, false);
     this.#renderer.outputEncoding = sRGBEncoding;
     this.#renderer.physicallyCorrectLights = true;
+    this.#renderer.shadowMap.enabled = true;
 
     // Fog
     this.#scene.fog = new FogExp2(0xeefaff, 0.005);

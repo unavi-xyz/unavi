@@ -36,6 +36,12 @@ export class BoxMesh {
     this.depth$.next(clamped);
   }
 
+  destroy() {
+    this.width$.complete();
+    this.height$.complete();
+    this.depth$.complete();
+  }
+
   toJSON(): BoxMeshJSON {
     return {
       type: this.type,

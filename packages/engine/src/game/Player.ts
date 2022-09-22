@@ -111,7 +111,7 @@ export class Player {
     const dForce = this.#pressingD ? 1 : 0;
     const forward = wForce - sForce;
     const right = aForce - dForce;
-    const direction = [right, forward];
+    const direction: [number, number] = [right, forward];
 
     // Send direction to render thread
     this.#renderThread.setPlayerInputVector(direction);

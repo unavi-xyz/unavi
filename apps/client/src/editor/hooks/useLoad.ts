@@ -40,6 +40,12 @@ export function useLoad() {
     if (project.editorState) {
       const editorState = JSON.parse(project.editorState);
       useEditorStore.setState(editorState);
+
+      const colliders = useEditorStore.getState().colliders;
+      engine.renderThread.postMessage({
+        subject: "show_visuals",
+        data: { visible: colliders },
+      });
     }
   }, [engine, project]);
 

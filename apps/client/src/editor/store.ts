@@ -16,7 +16,7 @@ export interface IEditorStore {
   description: string;
   image: string;
 
-  debug: boolean;
+  colliders: boolean;
   grid: boolean;
   tool: Tool;
 }
@@ -36,7 +36,7 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
   description: "",
   image: "",
 
-  debug: false,
+  colliders: true,
   grid: false,
   tool: "translate",
 }));

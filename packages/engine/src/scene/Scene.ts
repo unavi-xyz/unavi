@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
 import { PostMessage } from "../types";
@@ -6,12 +7,15 @@ import { Material } from "./Material";
 import { EntityJSON, SceneJSON, SceneMessage } from "./types";
 
 /*
- * This class holds the scene state.
+ * Scene stores the state of the scene.
  * A copy of this class is created on the main thread, and in worker threads.
- * State is synced between the threads using RxJS.
+ * State is synced between the threads using postMessage.
+ * State is stored using RxJS, allowing for subscriptions to state changes.
  */
 export class Scene {
   #threads: PostMessage<SceneMessage>[] = [];
+
+  #id = nanoid();
 
   entities$ = new BehaviorSubject<{ [id: string]: Entity }>({});
   materials$ = new BehaviorSubject<{ [id: string]: Material }>({});
@@ -37,8 +41,15 @@ export class Scene {
     this.#addEntity(root);
   }
 
-  addThread(postMessage: PostMessage) {
+  addThread(postMessage: PostMessage<SceneMessage>) {
     this.#threads.push(postMessage);
+
+    // Send initial state
+    const scene = this.toJSON();
+    postMessage({
+      subject: "load_json",
+      data: { scene },
+    });
   }
 
   removeThread(postMessage: PostMessage) {
@@ -53,6 +64,9 @@ export class Scene {
     const { subject, data } = event.data;
 
     switch (subject) {
+      case "load_json":
+        this.loadJSON(data.scene);
+        break;
       case "add_entity":
         this.#addEntity(Entity.fromJSON(data.entity));
         break;
@@ -74,10 +88,8 @@ export class Scene {
     }
   };
 
-  // Entities
   addEntity(entity: Entity) {
     this.#addEntity(entity);
-
     this.#broadcast({
       subject: "add_entity",
       data: { entity: entity.toJSON() },
@@ -141,7 +153,6 @@ export class Scene {
     entity.applyJSON(data);
   }
 
-  // Materials
   addMaterial(material: Material) {
     this.#addMaterial(material);
     this.#broadcast({
@@ -199,7 +210,6 @@ export class Scene {
     material.applyJSON(data);
   }
 
-  // JSON
   toJSON(): SceneJSON {
     return {
       entities: Object.values(this.entities).map((e) => e.toJSON()),

@@ -1,4 +1,3 @@
-import { useSetAtom } from "jotai";
 import { useRef, useState } from "react";
 
 import { useLens } from "../../../lib/lens/hooks/useLens";
@@ -7,7 +6,6 @@ import { useSetProfileMetadata } from "../../../lib/lens/hooks/useSetProfileMeta
 import { createProfileMetadata } from "../../../lib/lens/utils/createProfileMetadata";
 import Button from "../../../ui/base/Button";
 import TextField from "../../../ui/base/TextField";
-import { didSetHostAtom } from "./PublishPage";
 
 export default function HostPage() {
   const hostRef = useRef<HTMLInputElement>(null);
@@ -15,7 +13,6 @@ export default function HostPage() {
   const { handle } = useLens();
   const profile = useProfileByHandle(handle);
   const setProfileMetadata = useSetProfileMetadata(profile?.id);
-  const setDidSetHost = useSetAtom(didSetHostAtom);
 
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +25,7 @@ export default function HostPage() {
 
     try {
       await setProfileMetadata(metadata);
-      setDidSetHost(true);
+      // setDidSetHost(true);
     } catch (err) {
       console.error(err);
     }

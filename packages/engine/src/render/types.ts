@@ -52,12 +52,18 @@ export type ToRenderMessage =
       "set_player_buffers",
       { position: Float32Array; velocity: Float32Array }
     >
-  | WorkerMessage<"set_player_input_vector", number[]>
+  | WorkerMessage<"set_player_input_vector", [number, number]>
   | WorkerMessage<
       "mouse_move",
       {
         x: number;
         y: number;
+      }
+    >
+  | WorkerMessage<
+      "show_visuals",
+      {
+        visible: boolean;
       }
     >;
 

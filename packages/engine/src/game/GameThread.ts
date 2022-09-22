@@ -1,10 +1,17 @@
 import { RenderThread } from "../render/RenderThread";
-import { Entity } from "../types";
 import { Player } from "./Player";
 import { FromGameMessage, ToGameMessage } from "./types";
 
+export interface GameThreadOptions {
+  canvas: HTMLCanvasElement;
+  renderThread: RenderThread;
+}
+
+/*
+ * GameThread acts as an interface between the main thread and the {@link GameWorker}.
+ */
 export class GameThread {
-  #worker = new Worker(new URL("../workers/Game.worker.ts", import.meta.url), {
+  worker = new Worker(new URL("../workers/Game.worker.ts", import.meta.url), {
     type: "module",
   });
 
@@ -16,11 +23,11 @@ export class GameThread {
 
   #player: Player | null = null;
 
-  constructor(canvas: HTMLCanvasElement, renderThread: RenderThread) {
+  constructor({ canvas, renderThread }: GameThreadOptions) {
     this.#canvas = canvas;
     this.#renderThread = renderThread;
 
-    this.#worker.onmessage = (event: MessageEvent<FromGameMessage>) => {
+    this.worker.onmessage = (event: MessageEvent<FromGameMessage>) => {
       const { subject, data } = event.data;
 
       switch (subject) {
@@ -33,6 +40,14 @@ export class GameThread {
           break;
       }
     };
+  }
+
+  start() {
+    this.#postMessage({ subject: "start", data: null });
+  }
+
+  stop() {
+    this.#postMessage({ subject: "stop", data: null });
   }
 
   waitForReady() {
@@ -51,36 +66,12 @@ export class GameThread {
     this.#postMessage({ subject: "jumping", data: true });
   }
 
-  setPhysics(entity: Entity) {
-    this.#postMessage({
-      subject: "set_physics",
-      data: {
-        entityId: entity.id,
-        collider: entity.collider,
-        position: entity.position,
-        rotation: entity.rotation,
-      },
-    });
-  }
-
-  removePhysics(entityId: string) {
-    this.#postMessage({
-      subject: "set_physics",
-      data: {
-        entityId,
-        collider: null,
-        position: [0, 0, 0],
-        rotation: [0, 0, 0],
-      },
-    });
-  }
-
   destroy() {
-    this.#worker.terminate();
+    this.worker.terminate();
     if (this.#player) this.#player.destroy();
   }
 
   #postMessage = (message: ToGameMessage) => {
-    this.#worker.postMessage(message);
+    this.worker.postMessage(message);
   };
 }

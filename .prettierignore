@@ -1,16 +1,16 @@
 # dependencies
-node_modules
+node_modules/
 .pnp
 .pnp.js
 
 # testing
-coverage
+coverage/
 
 # next.js
 .next/
 out/
-build
-dist
+build/
+dist/
 
 # misc
 .DS_Store
@@ -39,8 +39,8 @@ yarn-error.log*
 .docusaurus
 
 # codegen
-generated
-contracts
+generated/
+contracts/
 
 # models
 apps/examples/public/models

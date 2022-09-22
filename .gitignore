@@ -4,13 +4,13 @@ node_modules
 .pnp.js
 
 # testing
-coverage
+coverage/
 
 # next.js
 .next/
 out/
-build
-dist
+build/
+dist/
 
 # misc
 .DS_Store

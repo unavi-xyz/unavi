@@ -13,7 +13,7 @@ export default function Navbar() {
 
   return (
     <div className="bg-surface flex h-full w-full justify-center">
-      <div className="max-w-content mx-4 grid grid-cols-3">
+      <div className="max-w-content mx-4 flex justify-between md:grid md:grid-cols-3">
         <div className="flex items-center">
           <Link href="/" passHref>
             <div className="relative aspect-square h-10 cursor-pointer">
@@ -28,7 +28,7 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <div className="flex items-center justify-center space-x-3 md:space-x-5">
+        <div className="flex items-center justify-center space-x-4 md:space-x-5">
           <NavbarTab text="Home" href="/" />
           <NavbarTab text="Explore" href="/explore" />
           <div className="hidden md:flex">

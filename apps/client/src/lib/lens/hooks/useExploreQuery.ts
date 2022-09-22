@@ -41,16 +41,19 @@ export function useExploreQuery(
     },
   });
 
+  const items = (result.data?.explorePublications?.items as Post[]) ?? [];
+  const lastCursor = Math.floor(items.length / pageSize);
+  const isLastPage = items.length < limit && cursor === lastCursor;
+
   function next() {
+    if (isLastPage) return;
     setCursor((prev) => prev + 1);
   }
 
   function back() {
+    if (cursor === 0) return;
     setCursor((prev) => prev - 1);
   }
-
-  const items = (result.data?.explorePublications?.items as Post[]) ?? [];
-  const isLastPage = items.length < limit;
 
   return {
     items,

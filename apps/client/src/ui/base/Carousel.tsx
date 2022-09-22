@@ -24,7 +24,7 @@ export default function Carousel({
   return (
     <div>
       <div className="text-2xl font-bold">{title}</div>
-      <div className="flex space-x-4 py-4">
+      <div className="flex space-x-2">
         <div className="flex items-center justify-center">
           <Button variant="tonal" icon disabled={disableBack} onClick={onBack}>
             <IoMdArrowRoundBack className="text-lg" />
@@ -32,7 +32,7 @@ export default function Carousel({
         </div>
 
         <div
-          className={`grid w-full grid-flow-col gap-2 overflow-x-hidden p-2 ${height}`}
+          className={`grid w-full grid-flow-col gap-3 overflow-x-hidden pl-2 pt-2 ${height}`}
         >
           {children}
         </div>

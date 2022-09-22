@@ -55,7 +55,7 @@ export default function Index() {
                 </div>
               </div>
 
-              <div className="h-full w-full py-4 md:h-1/2 md:w-1/2 md:p-8 md:py-0">
+              <div className="h-full w-full py-6 md:h-1/2 md:w-1/2 md:py-0">
                 <div className="relative h-full w-full">
                   <Image
                     src="/images/jump.png"

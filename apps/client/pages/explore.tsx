@@ -40,24 +40,29 @@ export default function Explore() {
             disableForward={latestSpaces.isLastPage}
             onBack={latestSpaces.back}
             onForward={latestSpaces.next}
-            height="h-44"
+            height="h-36 md:h-48"
           >
-            {latestSpaces.items.map((space) => (
-              <Link key={space.id} href={`/space/${space.id}`} passHref>
-                <div
-                  className="h-40 transition duration-500"
-                  style={{
-                    transform: `translate(calc(-${
-                      latestSpaces.cursor * spaceLimit
-                    }00% + ${
-                      spaceLimit > 1 ? Math.min(latestSpaces.cursor, 1) * 15 : 0
-                    }%))`,
-                  }}
-                >
-                  <SpaceCard space={space as Post} sizes="227px" animateEnter />
-                </div>
-              </Link>
-            ))}
+            {latestSpaces.items.map((space) => {
+              const pageOffset = `-${latestSpaces.cursor * spaceLimit}00%`;
+              const gapOffset = `-${latestSpaces.cursor * spaceLimit * 12}px`;
+
+              return (
+                <Link key={space.id} href={`/space/${space.id}`} passHref>
+                  <div
+                    className="h-32 transition duration-500 md:h-44"
+                    style={{
+                      transform: `translate(calc(${pageOffset} + ${gapOffset}))`,
+                    }}
+                  >
+                    <SpaceCard
+                      space={space as Post}
+                      sizes="293px"
+                      animateEnter
+                    />
+                  </div>
+                </Link>
+              );
+            })}
           </Carousel>
 
           <Carousel
@@ -66,26 +71,25 @@ export default function Explore() {
             disableForward={latestAvatars.isLastPage}
             onBack={latestAvatars.back}
             onForward={latestAvatars.next}
-            height="h-72"
+            height="h-72 md:h-80"
           >
-            {latestAvatars.items.map((avatar) => (
-              <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
-                <div
-                  className="h-64 transition duration-500"
-                  style={{
-                    transform: `translate(calc(-${
-                      latestAvatars.cursor * avatarLimit
-                    }00% + ${
-                      avatarLimit > 1
-                        ? Math.min(latestAvatars.cursor, 1) * 15
-                        : 0
-                    }%))`,
-                  }}
-                >
-                  <AvatarCard avatar={avatar} sizes="140px" animateEnter />
-                </div>
-              </Link>
-            ))}
+            {latestAvatars.items.map((avatar) => {
+              const pageOffset = `-${latestAvatars.cursor * avatarLimit}00%`;
+              const gapOffset = `-${latestAvatars.cursor * avatarLimit * 12}px`;
+
+              return (
+                <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
+                  <div
+                    className="h-64 transition duration-500 md:h-72"
+                    style={{
+                      transform: `translate(calc(${pageOffset} + ${gapOffset}))`,
+                    }}
+                  >
+                    <AvatarCard avatar={avatar} sizes="140px" animateEnter />
+                  </div>
+                </Link>
+              );
+            })}
           </Carousel>
         </div>
       </div>

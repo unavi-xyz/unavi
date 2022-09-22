@@ -38,6 +38,9 @@ module.exports = {
         tonal: "0 1px 3px 0 rgb(0 0 0 / 0.3)",
         filled: "0 1px 3px 0 rgb(0 0 0 / 0.3)",
       },
+      dropShadow: {
+        dark: "2px 2px 12px rgba(0, 0, 0, 0.8)",
+      },
     },
   },
   plugins: [],

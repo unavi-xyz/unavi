@@ -12,9 +12,3 @@ jobs:
         with:
           target: minor
           github-token: ${{ secrets.AUTOMERGE }}
-      - match:
-          dependency_name: typescript
-          update_type: semver:patch
-      - match:
-          dependency_name: three
-          update_type: semver:patch

@@ -7,7 +7,7 @@ import {
 
 import { HANDLE_ENDING } from "../../../lib/lens/constants";
 import { lensClient } from "../../../server/lens";
-import { PageMetadata } from "../../../types";
+import { PageMetadata } from "../../../ui/MetaTags";
 import { getMediaURL } from "../../../utils/getMediaURL";
 
 export interface ProfileLayoutProps {

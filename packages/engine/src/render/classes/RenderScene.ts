@@ -1,21 +1,22 @@
-import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
-import { PostMessage } from "../types";
-import { Entity } from "./Entity";
-import { Material } from "./Material";
-import { EntityJSON, SceneJSON, SceneMessage } from "./types";
+import { Entity, EntityJSON, Material, SceneMessage } from "../../scene";
+import { PostMessage, Triplet } from "../../types";
+import { FromRenderMessage } from "../types";
 
 /*
- * Scene stores the state of the scene.
- * A copy of this class is created on the main thread, and in worker threads.
- * State is synced between the threads using postMessage.
- * State is stored using RxJS, allowing for subscriptions to state changes.
+ * RenderScene stores the scene state needed for the {@link RenderWorker}.
+ * State is synced with the {@link MainScene}.
  */
-export class Scene {
-  #threads: PostMessage<SceneMessage>[] = [];
+export class RenderScene {
+  #toMainThread: PostMessage<FromRenderMessage>;
 
-  #id = nanoid();
+  constructor(postMessage: PostMessage<FromRenderMessage>) {
+    this.#toMainThread = postMessage;
+
+    const root = new Entity({ id: "root" });
+    this.#addEntity(root);
+  }
 
   entities$ = new BehaviorSubject<{ [id: string]: Entity }>({});
   materials$ = new BehaviorSubject<{ [id: string]: Material }>({});
@@ -36,37 +37,10 @@ export class Scene {
     this.materials$.next(materials);
   }
 
-  constructor() {
-    const root = new Entity({ id: "root" });
-    this.#addEntity(root);
-  }
-
-  addThread(postMessage: PostMessage<SceneMessage>) {
-    this.#threads.push(postMessage);
-
-    // Send initial state
-    const scene = this.toJSON();
-    postMessage({
-      subject: "load_json",
-      data: { scene },
-    });
-  }
-
-  removeThread(postMessage: PostMessage) {
-    this.#threads = this.#threads.filter((t) => t !== postMessage);
-  }
-
-  #broadcast(message: SceneMessage) {
-    this.#threads.forEach((postMessage) => postMessage(message));
-  }
-
   onmessage = (event: MessageEvent<SceneMessage>) => {
     const { subject, data } = event.data;
 
     switch (subject) {
-      case "load_json":
-        this.loadJSON(data.scene);
-        break;
       case "add_entity":
         this.#addEntity(Entity.fromJSON(data.entity));
         break;
@@ -88,17 +62,9 @@ export class Scene {
     }
   };
 
-  addEntity(entity: Entity) {
-    this.#addEntity(entity);
-    this.#broadcast({
-      subject: "add_entity",
-      data: { entity: entity.toJSON() },
-    });
-  }
-
   #addEntity(entity: Entity) {
     const previous = this.entities[entity.id];
-    if (previous) this.removeEntity(previous.id);
+    if (previous) this.#removeEntity(previous.id);
 
     // Set scene
     entity.scene = this;
@@ -114,11 +80,6 @@ export class Scene {
       ...this.entities,
       [entity.id]: entity,
     };
-  }
-
-  removeEntity(entityId: string) {
-    this.#removeEntity(entityId);
-    this.#broadcast({ subject: "remove_entity", data: { entityId } });
   }
 
   #removeEntity(entityId: string) {
@@ -143,7 +104,10 @@ export class Scene {
 
   updateEntity(entityId: string, data: Partial<EntityJSON>) {
     this.#updateEntity(entityId, data);
-    this.#broadcast({ subject: "update_entity", data: { entityId, data } });
+    this.#toMainThread({
+      subject: "update_entity",
+      data: { entityId, data },
+    });
   }
 
   #updateEntity(entityId: string, data: Partial<EntityJSON>) {
@@ -153,28 +117,41 @@ export class Scene {
     entity.applyJSON(data);
   }
 
-  addMaterial(material: Material) {
-    this.#addMaterial(material);
-    this.#broadcast({
-      subject: "add_material",
-      data: { material: material.toJSON() },
+  updateGlobalTransform(
+    entityId: string,
+    position: Triplet,
+    quaternion: [number, number, number, number]
+  ) {
+    this.#updateGlobalTransform(entityId, position, quaternion);
+    this.#toMainThread({
+      subject: "update_global_transform",
+      data: {
+        entityId,
+        position,
+        quaternion,
+      },
     });
+  }
+
+  #updateGlobalTransform(
+    entityId: string,
+    position: Triplet,
+    quaternion: [number, number, number, number]
+  ) {
+    const entity = this.entities[entityId];
+    entity.globalPosition = position;
+    entity.globalQuaternion = quaternion;
   }
 
   #addMaterial(material: Material) {
     const previous = this.materials[material.id];
-    if (previous) this.removeMaterial(previous.id);
+    if (previous) this.#removeMaterial(previous.id);
 
     // Save to materials
     this.materials = {
       ...this.materials,
       [material.id]: material,
     };
-  }
-
-  removeMaterial(materialId: string) {
-    this.#removeMaterial(materialId);
-    this.#broadcast({ subject: "remove_material", data: { materialId } });
   }
 
   #removeMaterial(materialId: string) {
@@ -198,30 +175,11 @@ export class Scene {
     );
   }
 
-  updateMaterial(materialId: string, data: Partial<Material>) {
-    this.#updateMaterial(materialId, data);
-    this.#broadcast({ subject: "update_material", data: { materialId, data } });
-  }
-
   #updateMaterial(materialId: string, data: Partial<Material>) {
     const material = this.materials[materialId];
     if (!material) throw new Error(`Material ${materialId} not found`);
 
     material.applyJSON(data);
-  }
-
-  toJSON(): SceneJSON {
-    return {
-      entities: Object.values(this.entities).map((e) => e.toJSON()),
-      materials: Object.values(this.materials).map((m) => m.toJSON()),
-    };
-  }
-
-  loadJSON(json: SceneJSON) {
-    json.materials.forEach((material) =>
-      this.addMaterial(Material.fromJSON(material))
-    );
-    json.entities.forEach((entity) => this.addEntity(Entity.fromJSON(entity)));
   }
 
   destroy() {

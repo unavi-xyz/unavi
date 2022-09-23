@@ -1,4 +1,5 @@
 import { RenderThread } from "../render/RenderThread";
+import { Transferable } from "../types";
 import { Player } from "./Player";
 import { FromGameMessage, ToGameMessage } from "./types";
 
@@ -43,11 +44,11 @@ export class GameThread {
   }
 
   start() {
-    this.#postMessage({ subject: "start", data: null });
+    this.postMessage({ subject: "start", data: null });
   }
 
   stop() {
-    this.#postMessage({ subject: "stop", data: null });
+    this.postMessage({ subject: "stop", data: null });
   }
 
   waitForReady() {
@@ -59,11 +60,11 @@ export class GameThread {
 
   initPlayer() {
     this.#player = new Player(this.#canvas, this.#renderThread, this);
-    this.#postMessage({ subject: "init_player", data: null });
+    this.postMessage({ subject: "init_player", data: null });
   }
 
   jump() {
-    this.#postMessage({ subject: "jumping", data: true });
+    this.postMessage({ subject: "jumping", data: true });
   }
 
   destroy() {
@@ -71,7 +72,7 @@ export class GameThread {
     if (this.#player) this.#player.destroy();
   }
 
-  #postMessage = (message: ToGameMessage) => {
-    this.worker.postMessage(message);
+  postMessage = (message: ToGameMessage, transfer?: Transferable[]) => {
+    this.worker.postMessage(message, transfer);
   };
 }

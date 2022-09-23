@@ -8,8 +8,9 @@ import {
 } from "@dimforge/rapier3d";
 import { Subscription } from "rxjs";
 
-import { Entity, Scene, SceneMessage } from "../scene";
+import { Entity, SceneMessage } from "../scene";
 import { PostMessage } from "../types";
+import { GameScene } from "./GameScene";
 import { FromGameMessage, ToGameMessage } from "./types";
 
 const TERMINAL_VELOCITY = 30;
@@ -20,7 +21,7 @@ const HZ = 60; // Game updates per second
  * GameWorker handles physics using Rapier.
  */
 export class GameWorker {
-  #scene = new Scene();
+  #scene: GameScene;
 
   #world = new World({ x: 0, y: -9.81, z: 0 });
   #postMessage: PostMessage<FromGameMessage>;
@@ -38,7 +39,7 @@ export class GameWorker {
 
   constructor(postMessage: PostMessage) {
     this.#postMessage = postMessage;
-    this.#scene.addThread(postMessage);
+    this.#scene = new GameScene(postMessage);
 
     // Create ground
     const groundColliderDesc = ColliderDesc.cuboid(10, 0.5, 10);
@@ -173,11 +174,36 @@ export class GameWorker {
         break;
     }
 
-    const rigidBodyDesc = RigidBodyDesc.fixed().setTranslation(
-      ...entity.position
-    );
+    const rigidBodyDesc = RigidBodyDesc.fixed();
     const rigidBody = this.#world.createRigidBody(rigidBodyDesc);
     const collider = this.#world.createCollider(colliderDesc, rigidBody);
+
+    entity.globalPosition$.subscribe({
+      next: (globalPosition) => {
+        rigidBody.setTranslation(
+          {
+            x: globalPosition[0],
+            y: globalPosition[1],
+            z: globalPosition[2],
+          },
+          true
+        );
+      },
+    });
+
+    entity.globalQuaternion$.subscribe({
+      next: (globalQuaternion) => {
+        rigidBody.setRotation(
+          {
+            w: globalQuaternion[3],
+            x: globalQuaternion[0],
+            y: globalQuaternion[1],
+            z: globalQuaternion[2],
+          },
+          true
+        );
+      },
+    });
 
     // Store reference
     this.#colliders.set(entity.id, collider);

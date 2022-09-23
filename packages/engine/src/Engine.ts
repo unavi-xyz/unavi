@@ -1,6 +1,6 @@
 import { GameThread } from "./game/GameThread";
+import { MainScene } from "./main/MainScene";
 import { RenderThread } from "./render/RenderThread";
-import { Scene } from "./scene/Scene";
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
@@ -16,9 +16,9 @@ export interface EngineOptions {
  * Scene state is stored in the {@link Scene} class.
  */
 export class Engine {
-  scene = new Scene();
   renderThread: RenderThread;
   gameThread: GameThread;
+  scene: MainScene;
 
   constructor({
     canvas,
@@ -30,16 +30,12 @@ export class Engine {
     // Create render thread
     this.renderThread = new RenderThread({
       canvas,
+      engine: this,
       camera,
       enableTransformControls,
       preserveDrawingBuffer,
-      scene: this.scene,
       skyboxPath,
     });
-
-    this.scene.addThread(
-      this.renderThread.worker.postMessage.bind(this.renderThread.worker)
-    );
 
     // Create game thread
     this.gameThread = new GameThread({
@@ -49,19 +45,24 @@ export class Engine {
 
     this.gameThread.waitForReady().then(() => {
       if (camera === "player") this.gameThread.initPlayer();
-      this.scene.addThread(
-        this.gameThread.worker.postMessage.bind(this.gameThread.worker)
-      );
+    });
+
+    this.scene = new MainScene({
+      renderThread: this.renderThread,
+      gameThread: this.gameThread,
     });
   }
 
-  async start() {
-    // Start render thread
+  async waitForReady() {
     await this.renderThread.waitForReady();
-    this.renderThread.start();
+    await this.gameThread.waitForReady();
+  }
 
-    // Start game thread
-    this.gameThread.waitForReady().then(() => this.gameThread.start());
+  async start() {
+    await this.waitForReady();
+
+    this.renderThread.start();
+    this.gameThread.start();
   }
 
   stop() {

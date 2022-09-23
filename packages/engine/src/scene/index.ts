@@ -4,7 +4,6 @@ export * from "./CylinderCollider";
 export * from "./CylinderMesh";
 export * from "./Entity";
 export * from "./Material";
-export * from "./Scene";
 export * from "./SphereCollider";
 export * from "./SphereMesh";
 export * from "./types";

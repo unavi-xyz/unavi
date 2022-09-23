@@ -12,10 +12,11 @@ import {
   Vector3,
 } from "three";
 
-import { Entity, Material, MeshJSON, Scene, SceneMessage } from "../../scene";
+import { Entity, Material, MeshJSON, SceneMessage } from "../../scene";
 import { PostMessage, Triplet } from "../../types";
 import { disposeMaterial, disposeObject } from "../../utils/disposeObject";
 import { ToRenderMessage } from "../types";
+import { RenderScene } from "./RenderScene";
 
 /*
  * SceneLink handles the synchronization between the {@link Scene} and Three.js.
@@ -25,7 +26,7 @@ export class SceneLink {
   meshes = new Group();
   visuals = new Group();
 
-  #scene = new Scene();
+  #scene: RenderScene;
 
   #materials = new Map<string, MeshStandardMaterial>();
   #objects = new Map<string, Object3D>();
@@ -37,10 +38,11 @@ export class SceneLink {
   });
 
   #tempVector3 = new Vector3();
+  #tempQuaternion = new Quaternion();
   #defaultMaterial = new MeshStandardMaterial({ color: 0xffffff });
 
   constructor(postMessage: PostMessage) {
-    this.#scene.addThread(postMessage);
+    this.#scene = new RenderScene(postMessage);
 
     this.root.add(this.visuals);
     this.root.add(this.meshes);
@@ -54,13 +56,6 @@ export class SceneLink {
             this.addEntity(entity);
           }
         });
-
-        // Remove deleted entities
-        Object.keys(this.#objects).forEach((entityId) => {
-          if (!entities[entityId]) {
-            this.removeEntity(entityId);
-          }
-        });
       },
     });
 
@@ -70,13 +65,6 @@ export class SceneLink {
         Object.values(materials).forEach((material) => {
           if (!this.#materials.has(material.id)) {
             this.addMaterial(material);
-          }
-        });
-
-        // Remove deleted materials
-        Object.keys(this.#materials).forEach((materialId) => {
-          if (!materials[materialId]) {
-            this.removeMaterial(materialId);
           }
         });
       },
@@ -107,6 +95,9 @@ export class SceneLink {
     material.color$.subscribe({
       next: (color) => {
         materialObject.color = new Color().fromArray(color);
+      },
+      complete: () => {
+        this.removeMaterial(material.id);
       },
     });
 
@@ -145,7 +136,12 @@ export class SceneLink {
     if (entity.id === "root") return;
 
     const parent = this.#objects.get(entity.parentId);
-    if (!parent) throw new Error("Parent not found");
+    if (!parent) {
+      if (!entity.parent) throw new Error("Parent not found");
+      this.addEntity(entity.parent);
+      this.addEntity(entity);
+      return;
+    }
 
     // Create object
     switch (entity.mesh?.type) {
@@ -232,6 +228,9 @@ export class SceneLink {
       next: (parentId) => {
         this.#moveEntity(entity.id, parentId);
       },
+      complete: () => {
+        this.#removeEntityObject(entity.id);
+      },
     });
 
     entity.materialId$.subscribe({
@@ -245,6 +244,8 @@ export class SceneLink {
         const object = this.#objects.get(entity.id);
         if (!object) throw new Error("Object not found");
         object.position.fromArray(position);
+
+        this.#updateGlobalTransform(entity.id);
       },
     });
 
@@ -253,6 +254,8 @@ export class SceneLink {
         const object = this.#objects.get(entity.id);
         if (!object) throw new Error("Object not found");
         object.rotation.fromArray(rotation);
+
+        this.#updateGlobalTransform(entity.id);
       },
     });
 
@@ -272,14 +275,21 @@ export class SceneLink {
   }
 
   removeEntity(entityId: string) {
+    const entity = this.#scene.entities[entityId];
+    if (!entity) throw new Error(`Entity not found: ${entityId}`);
+
+    // Repeat for children
+    entity.childrenIds.forEach((childId) => this.removeEntity(childId));
+
+    // Remove object
+    this.#removeEntityObject(entityId);
+  }
+
+  #removeEntityObject(entityId: string) {
     const object = this.#objects.get(entityId);
     if (!object) throw new Error(`Object not found: ${entityId}`);
 
-    // Repeat for children
-    const entity = this.#scene.entities[entityId];
-    if (!entity) throw new Error(`Entity not found: ${entityId}`);
-    entity.childrenIds.forEach((childId) => this.removeEntity(childId));
-
+    // Don't remove root object
     if (entityId === "root") return;
 
     // Remove from scene
@@ -297,25 +307,37 @@ export class SceneLink {
     const object = this.#objects.get(entityId);
     if (!object) throw new Error(`Object not found: ${entityId}`);
 
-    const parent = this.#objects.get(parentId);
-    if (!parent) throw new Error(`Parent not found: ${parentId}`);
+    const parentObject = this.#objects.get(parentId);
+    if (!parentObject) throw new Error(`Parent not found: ${parentId}`);
 
     // Save object transform
     const position = object.getWorldPosition(new Vector3());
     const quaternion = object.getWorldQuaternion(new Quaternion());
 
     // Set parent
-    parent.add(object);
+    parentObject.add(object);
 
     // Restore object transform
-    const inverseParentRotation = parent
+    const inverseParentRotation = parentObject
       .getWorldQuaternion(new Quaternion())
       .invert();
-    object.position.copy(parent.worldToLocal(position));
+    object.position.copy(parentObject.worldToLocal(position));
     object.quaternion.multiplyQuaternions(quaternion, inverseParentRotation);
 
-    // Update collider visual
-    this.#createColliderVisual(entityId);
+    // Subscribe to global transform changes
+    const parent = this.#scene.entities[parentId];
+
+    parent.globalPosition$.subscribe({
+      next: () => {
+        this.#updateGlobalTransform(entityId);
+      },
+    });
+
+    parent.globalQuaternion$.subscribe({
+      next: () => {
+        this.#updateGlobalTransform(entityId);
+      },
+    });
   }
 
   #setMaterial(entityId: string, materialId: string | null) {
@@ -366,9 +388,6 @@ export class SceneLink {
         );
         break;
     }
-
-    // Update collider visual
-    this.#createColliderVisual(entityId);
   }
 
   findId(target: Object3D): string | undefined {
@@ -399,9 +418,6 @@ export class SceneLink {
       rotation,
       scale,
     });
-
-    // Update collider visual
-    this.#createColliderVisual(entityId);
 
     // Repeat for children
     entity.childrenIds.forEach((childId) => this.saveTransform(childId));
@@ -440,14 +456,26 @@ export class SceneLink {
         break;
     }
 
-    // Add new collider
     if (collider) {
       const object = this.#objects.get(entityId);
       if (!object) throw new Error("Object not found");
-      const position = object.getWorldPosition(this.#tempVector3);
-      collider.position.copy(position);
+
+      // Add new collider
       this.#colliders.set(entityId, collider);
       this.visuals.add(collider);
+
+      // Subscribe to global transform changes
+      entity.globalPosition$.subscribe({
+        next: (position) => {
+          if (collider) collider.position.fromArray(position);
+        },
+      });
+
+      entity.globalQuaternion$.subscribe({
+        next: (quaternion) => {
+          if (collider) collider.quaternion.fromArray(quaternion);
+        },
+      });
     }
   }
 
@@ -458,6 +486,20 @@ export class SceneLink {
     this.#colliders.delete(entityId);
     collider.removeFromParent();
     collider.geometry.dispose();
+  }
+
+  #updateGlobalTransform(entityId: string) {
+    const object = this.#objects.get(entityId);
+    if (!object) throw new Error("Object not found");
+
+    const globalPosition = object.getWorldPosition(this.#tempVector3);
+    const globalQuaternion = object.getWorldQuaternion(this.#tempQuaternion);
+
+    this.#scene.updateGlobalTransform(
+      entityId,
+      globalPosition.toArray(),
+      globalQuaternion.toArray() as [number, number, number, number]
+    );
   }
 
   destroy() {

@@ -52,6 +52,8 @@ export function useLoad() {
   // Load scene on query fetch
   useEffect(() => {
     if (!engine || !scene) return;
-    engine.scene.loadJSON(scene);
+    engine.waitForReady().then(() => {
+      engine.scene.loadJSON(scene);
+    });
   }, [engine, scene]);
 }

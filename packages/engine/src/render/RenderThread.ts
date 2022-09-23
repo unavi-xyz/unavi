@@ -1,4 +1,5 @@
-import { Scene } from "../scene";
+import { Engine } from "../Engine";
+import { SceneMessage } from "../scene";
 import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderWorker } from "./RenderWorker";
@@ -6,10 +7,10 @@ import { FromRenderMessage, PointerData, ToRenderMessage } from "./types";
 
 export interface RenderThreadOptions {
   canvas: HTMLCanvasElement;
+  engine: Engine;
   camera: "orbit" | "player";
   enableTransformControls?: boolean;
   preserveDrawingBuffer?: boolean;
-  scene: Scene;
   skyboxPath?: string;
 }
 
@@ -21,20 +22,20 @@ export class RenderThread {
   worker: Worker | FakeWorker;
 
   #canvas: HTMLCanvasElement;
-  #scene: Scene;
+  #engine: Engine;
   #onReady: Array<() => void> = [];
   #onScreenshot: Array<(data: string) => void> = [];
 
   constructor({
     canvas,
+    engine,
     camera,
     enableTransformControls,
     preserveDrawingBuffer,
-    scene,
     skyboxPath,
   }: RenderThreadOptions) {
     this.#canvas = canvas;
-    this.#scene = scene;
+    this.#engine = engine;
 
     // Render in a worker if browser supports OffscreenCanvas
     // (unless we're in development mode. React 18 dev mode causes issues with transferControlToOffscreen)
@@ -95,7 +96,7 @@ export class RenderThread {
   }
 
   #onmessage = (event: MessageEvent<FromRenderMessage>) => {
-    this.#scene.onmessage(event as any);
+    this.#engine.scene.onmessage(event as MessageEvent<SceneMessage>);
 
     const { subject, data } = event.data;
 

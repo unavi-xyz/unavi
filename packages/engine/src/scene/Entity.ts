@@ -1,12 +1,14 @@
 import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
+import { GameScene } from "../game/GameScene";
+import { MainScene } from "../main/MainScene";
+import { RenderScene } from "../render/classes/RenderScene";
 import { Triplet } from "../types";
 import { BoxCollider } from "./BoxCollider";
 import { BoxMesh } from "./BoxMesh";
 import { CylinderCollider } from "./CylinderCollider";
 import { CylinderMesh } from "./CylinderMesh";
-import { Scene } from "./Scene";
 import { SphereCollider } from "./SphereCollider";
 import { SphereMesh } from "./SphereMesh";
 import { Collider, ColliderJSON, EntityJSON, Mesh, MeshJSON } from "./types";
@@ -15,13 +17,15 @@ import { Collider, ColliderJSON, EntityJSON, Mesh, MeshJSON } from "./types";
  * This class represents an entity in the scene.
  */
 export class Entity {
-  scene$ = new BehaviorSubject<Scene | null>(null);
+  scene$ = new BehaviorSubject<MainScene | RenderScene | GameScene | null>(
+    null
+  );
 
   get scene() {
     return this.scene$.value;
   }
 
-  set scene(scene: Scene | null) {
+  set scene(scene: MainScene | RenderScene | GameScene | null) {
     this.scene$.next(scene);
   }
 
@@ -38,6 +42,11 @@ export class Entity {
   mesh$ = new BehaviorSubject<Mesh | null>(null);
   materialId$ = new BehaviorSubject<string | null>(null);
   collider$ = new BehaviorSubject<Collider | null>(null);
+
+  globalPosition$ = new BehaviorSubject<Triplet>([0, 0, 0]);
+  globalQuaternion$ = new BehaviorSubject<[number, number, number, number]>([
+    0, 0, 0, 1,
+  ]);
 
   constructor({ id }: { id?: string } = {}) {
     this.id = id ?? nanoid();
@@ -126,6 +135,7 @@ export class Entity {
   }
 
   get material() {
+    if (this.scene instanceof GameScene) return null;
     return this.materialId
       ? this.scene?.materials$.value[this.materialId]
       : null;
@@ -138,6 +148,22 @@ export class Entity {
   set collider(collider: Collider | null) {
     if (this.collider) this.collider.destroy();
     this.collider$.next(collider);
+  }
+
+  get globalPosition() {
+    return this.globalPosition$.value;
+  }
+
+  set globalPosition(globalPosition: Triplet) {
+    this.globalPosition$.next(globalPosition);
+  }
+
+  get globalQuaternion() {
+    return this.globalQuaternion$.value;
+  }
+
+  set globalQuaternion(globalQuaternion: [number, number, number, number]) {
+    this.globalQuaternion$.next(globalQuaternion);
   }
 
   destroy() {

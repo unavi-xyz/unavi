@@ -15,14 +15,16 @@
     "@gltf-transform/core": "^2.3.0",
     "@gltf-transform/extensions": "^2.3.0",
     "@gltf-transform/functions": "^2.4.3",
-    "@pixiv/three-vrm": "^1.0.0-beta.19",
+    "@pixiv/three-vrm": "^1.0.2",
+    "@types/draco3d": "^1.4.1",
     "bitecs": "^0.3.38",
     "mediasoup-client": "^3.6.55",
     "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.0",
     "rxjs": "^7.5.6",
     "socket.io-client": "^4.5.1",
-    "three": "^0.140.2"
+    "three": "^0.140.2",
+    "ts-loader": "^9.4.1"
   },
   "devDependencies": {
     "@types/three": "^0.140.0",

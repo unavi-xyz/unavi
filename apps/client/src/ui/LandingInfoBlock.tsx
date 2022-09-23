@@ -56,7 +56,7 @@ export default function LandingInfoBlock({
               <a href={buttonLink} target="_blank" rel="noreferrer">
                 <div className="w-full md:w-fit">
                   <Button variant="filled" rounded="large" fullWidth>
-                    <div className="md:px-5 md:py-0.5">{buttonText}</div>
+                    <div className="md:px-3 md:py-0.5">{buttonText}</div>
                   </Button>
                 </div>
               </a>
@@ -64,7 +64,7 @@ export default function LandingInfoBlock({
               <Link href={buttonLink} passHref>
                 <div className="w-full md:w-fit">
                   <Button variant="filled" rounded="large" fullWidth>
-                    <div className="md:px-5 md:py-0.5">{buttonText}</div>
+                    <div className="md:px-3 md:py-0.5">{buttonText}</div>
                   </Button>
                 </div>
               </Link>

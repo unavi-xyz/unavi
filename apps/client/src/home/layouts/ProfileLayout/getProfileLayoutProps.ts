@@ -5,8 +5,8 @@ import {
   Profile,
 } from "@wired-labs/lens";
 
-import { lensClient } from "../../../lib/lens/client";
 import { HANDLE_ENDING } from "../../../lib/lens/constants";
+import { lensClient } from "../../../server/lens";
 import { PageMetadata } from "../../../types";
 import { getMediaURL } from "../../../utils/getMediaURL";
 

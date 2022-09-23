@@ -7,7 +7,7 @@ import { getEditorState } from "../utils/getEditorState";
 export function useSave() {
   const router = useRouter();
 
-  const { mutateAsync } = trpc.useMutation("save-project");
+  const { mutateAsync } = trpc.useMutation("auth.save-project");
 
   async function save() {
     const { name, description, image, engine } = useEditorStore.getState();

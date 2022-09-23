@@ -10,11 +10,13 @@ export default function Project() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data, isFetched } = trpc.useQuery(["project", { id }], {
+  const { data, isFetched } = trpc.useQuery(["auth.project", { id }], {
     enabled: id !== undefined,
   });
 
-  const { mutateAsync: deleteProject } = trpc.useMutation("delete-project");
+  const { mutateAsync: deleteProject } = trpc.useMutation(
+    "auth.delete-project"
+  );
 
   const [loading, setLoading] = useState(false);
 

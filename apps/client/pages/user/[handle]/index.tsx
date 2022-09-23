@@ -17,8 +17,8 @@ import {
 import ProfileLayout from "../../../src/home/layouts/ProfileLayout/ProfileLayout";
 import AvatarCard from "../../../src/home/lens/AvatarCard";
 import SpaceCard from "../../../src/home/lens/SpaceCard";
-import { lensClient } from "../../../src/lib/lens/client";
 import { HIDDEN_MESSAGE } from "../../../src/lib/lens/constants";
+import { lensClient } from "../../../src/server/lens";
 import { getMediaURL } from "../../../src/utils/getMediaURL";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {

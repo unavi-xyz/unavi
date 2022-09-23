@@ -11,7 +11,7 @@ export default function CreateProjectPage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
 
-  const { mutateAsync } = trpc.useMutation("create-project");
+  const { mutateAsync } = trpc.useMutation("auth.create-project");
 
   async function handleCreate() {
     const name = nameRef.current?.value ?? "";

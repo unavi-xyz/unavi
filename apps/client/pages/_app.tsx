@@ -1,19 +1,27 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/globals.css";
 
+import { httpBatchLink } from "@trpc/client/links/httpBatchLink";
+import { loggerLink } from "@trpc/client/links/loggerLink";
 import { withTRPC } from "@trpc/next";
+import { AppType } from "next/app";
 import dynamic from "next/dynamic";
 import Head from "next/head";
+import { Session } from "next-auth";
 import React from "react";
 
-import { AppRouter } from "./api/trpc/[trpc]";
+import { AppRouter } from "../src/server/router";
 
 // Export web vitals
 export { reportWebVitals } from "next-axiom";
 
 const ClientSideProviders = dynamic(() => import("../src/ClientSideProviders"));
 
-function App({ Component, pageProps: { session, ...pageProps } }: any) {
+const App: AppType<{ session: Session | null }> = ({
+  Component,
+  pageProps: { session, ...pageProps },
+}) => {
+  // @ts-ignore
   const getLayout = Component.getLayout || ((page: React.ReactNode) => page);
 
   return (
@@ -32,7 +40,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
       </ClientSideProviders>
     </>
   );
-}
+};
 
 // tRPC router
 export default withTRPC<AppRouter>({
@@ -40,6 +48,14 @@ export default withTRPC<AppRouter>({
     const url = `${getBaseUrl()}/api/trpc`;
 
     return {
+      links: [
+        loggerLink({
+          enabled: (opts) =>
+            process.env.NODE_ENV === "development" ||
+            (opts.direction === "down" && opts.result instanceof Error),
+        }),
+        httpBatchLink({ url }),
+      ],
       url,
       queryClientConfig: { defaultOptions: { queries: { staleTime: 60 } } },
     };

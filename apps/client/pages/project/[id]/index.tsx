@@ -8,7 +8,7 @@ export default function Project() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data, isFetched } = trpc.useQuery(["project", { id }], {
+  const { data, isFetched } = trpc.useQuery(["auth.project", { id }], {
     enabled: id !== undefined,
   });
 

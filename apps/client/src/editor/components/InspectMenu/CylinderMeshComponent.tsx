@@ -1,4 +1,4 @@
-import { BoxMesh } from "@wired-labs/engine";
+import { CylinderMesh } from "@wired-labs/engine";
 
 import { updateEntity } from "../../actions/UpdateEntityAction";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
@@ -8,27 +8,29 @@ import MenuRows from "./MenuRows";
 
 interface Props {
   entityId: string;
-  mesh: BoxMesh;
+  mesh: CylinderMesh;
 }
 
-export default function BoxComponent({ entityId, mesh }: Props) {
-  const width = useSubscribeValue(mesh.width$);
+export default function CylinderMeshComponent({ entityId, mesh }: Props) {
+  const radius = useSubscribeValue(mesh.radius$);
   const height = useSubscribeValue(mesh.height$);
-  const depth = useSubscribeValue(mesh.depth$);
+  const radialSegments = useSubscribeValue(mesh.radialSegments$);
 
   return (
     <ComponentMenu title="Geometry">
-      <MenuRows titles={["Width", "Height", "Depth"]}>
-        {[width, height, depth].map((value, i) => {
-          const property = i === 0 ? "width" : i === 1 ? "height" : "depth";
-          const name = ["Width", "Height", "Depth"][i];
+      <MenuRows titles={["Radius", "Height", "Radial Segments"]}>
+        {[radius, height, radialSegments].map((value, i) => {
+          const property =
+            i === 0 ? "radius" : i === 1 ? "height" : "radialSegments";
+          const name = ["Radius", "Height", "Radial Segments"][i];
+          const step = name === "Radial Segments" ? 1 : 0.1;
 
           return (
             <NumberInput
               key={name}
               name={name}
               value={value ?? 0}
-              step={0.1}
+              step={step}
               onChange={(e) => {
                 const value = e.target.value;
                 if (!value) return;

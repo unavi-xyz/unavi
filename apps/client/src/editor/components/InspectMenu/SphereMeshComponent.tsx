@@ -11,7 +11,7 @@ interface Props {
   mesh: SphereMesh;
 }
 
-export default function SphereComponent({ entityId, mesh }: Props) {
+export default function SphereMeshComponent({ entityId, mesh }: Props) {
   const radius = useSubscribeValue(mesh.radius$);
   const widthSegments = useSubscribeValue(mesh.widthSegments$);
   const heightSegments = useSubscribeValue(mesh.heightSegments$);

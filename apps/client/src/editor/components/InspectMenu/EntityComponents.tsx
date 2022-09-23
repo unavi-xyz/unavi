@@ -1,10 +1,10 @@
 import { useEntity } from "../../hooks/useEntity";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
-import BoxComponent from "./BoxComponent";
-import CylinderComponent from "./CylinderComponent";
+import BoxMeshComponent from "./BoxMeshComponent";
+import CylinderMeshComponent from "./CylinderMeshComponent";
 import MaterialComponent from "./MaterialComponent";
 import PhysicsComponent from "./PhysicsComponent";
-import SphereComponent from "./SphereComponent";
+import SphereMeshComponent from "./SphereMeshComponent";
 
 interface Props {
   entityId: string;
@@ -18,7 +18,7 @@ export default function EntityComponents({ entityId }: Props) {
     case "Box":
       return (
         <>
-          <BoxComponent entityId={entityId} mesh={mesh} />
+          <BoxMeshComponent entityId={entityId} mesh={mesh} />
           <MaterialComponent entityId={entityId} />
           <PhysicsComponent entityId={entityId} />
         </>
@@ -26,7 +26,7 @@ export default function EntityComponents({ entityId }: Props) {
     case "Sphere":
       return (
         <>
-          <SphereComponent entityId={entityId} mesh={mesh} />
+          <SphereMeshComponent entityId={entityId} mesh={mesh} />
           <MaterialComponent entityId={entityId} />
           <PhysicsComponent entityId={entityId} />
         </>
@@ -34,7 +34,7 @@ export default function EntityComponents({ entityId }: Props) {
     case "Cylinder":
       return (
         <>
-          <CylinderComponent entityId={entityId} mesh={mesh} />
+          <CylinderMeshComponent entityId={entityId} mesh={mesh} />
           <MaterialComponent entityId={entityId} />
           <PhysicsComponent entityId={entityId} />
         </>

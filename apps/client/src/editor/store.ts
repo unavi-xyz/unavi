@@ -1,12 +1,13 @@
-import { Engine, Scene } from "@wired-labs/engine";
+import { Engine, Entity } from "@wired-labs/engine";
 import create from "zustand";
 
-import { deepClone } from "../utils/deepClone";
-import { emptyScene } from "./constants";
 import { Tool } from "./types";
 
 export interface IEditorStore {
   engine: Engine | null;
+
+  getEntity: (id: string) => Entity | undefined;
+
   canvas: HTMLCanvasElement | null;
   preview: boolean;
   selectedId: string | null;
@@ -15,15 +16,18 @@ export interface IEditorStore {
   description: string;
   image: string;
 
-  scene: Scene;
-
-  debug: boolean;
+  colliders: boolean;
   grid: boolean;
   tool: Tool;
 }
 
-export const useEditorStore = create<IEditorStore>(() => ({
+export const useEditorStore = create<IEditorStore>((set, get) => ({
   engine: null,
+
+  getEntity: (id: string) => {
+    return get().engine?.scene.entities[id];
+  },
+
   canvas: null,
   preview: false,
   selectedId: null,
@@ -32,9 +36,7 @@ export const useEditorStore = create<IEditorStore>(() => ({
   description: "",
   image: "",
 
-  scene: deepClone(emptyScene),
-
-  debug: false,
+  colliders: true,
   grid: false,
   tool: "translate",
 }));

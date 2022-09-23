@@ -31,8 +31,9 @@ interface Props {
 export default function ExampleCanvas({ uri }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [engine, setEngine] = useState<Engine>();
   const initialized = useRef(false);
+  const [engine, setEngine] = useState<Engine>();
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -44,15 +45,27 @@ export default function ExampleCanvas({ uri }: Props) {
     updateCanvasSize();
     window.addEventListener("resize", updateCanvasSize);
 
-    // Create engine
-    const newEngine = new Engine(canvas, { camera: "orbit" });
+    async function initEngine() {
+      const canvas = canvasRef.current;
+      if (!canvas) throw new Error("Canvas not found");
 
-    if (engine) {
-      engine.destroy();
-      window.removeEventListener("resize", updateCanvasSize);
+      const { Engine } = await import("@wired-labs/engine");
+
+      // Create engine
+      const newEngine = new Engine({
+        canvas,
+        camera: "orbit",
+      });
+
+      setEngine(newEngine);
+
+      // Start engine
+      newEngine.start().then(() => {
+        setLoaded(true);
+      });
     }
 
-    setEngine(newEngine);
+    initEngine();
   }, [canvasRef, engine, uri]);
 
   useEffect(() => {
@@ -69,6 +82,8 @@ export default function ExampleCanvas({ uri }: Props) {
     // Load gltf
     // engine.loadGltf(uri);
   }, [engine, uri]);
+
+  const loadedClass = loaded ? "opacity-100" : "opacity-0";
 
   function updateCanvasSize() {
     // Only run if canvas is available
@@ -91,7 +106,7 @@ export default function ExampleCanvas({ uri }: Props) {
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-      <canvas ref={canvasRef} className="h-full w-full" />
+      <canvas ref={canvasRef} className={`h-full w-full ${loadedClass}`} />
     </div>
   );
 }

@@ -12,14 +12,14 @@
     "codegen": "turbo run codegen",
     "deploy": "turbo run deploy",
     "dev": "turbo run dev --parallel",
-    "format": "eslint --fix . --ext .js,.jsx,.ts,.tsx,.json && prettier --write .",
+    "format": "eslint --fix . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore && prettier --write .",
     "postinstall": "husky install && patch-package",
     "lint": "turbo run lint",
     "test": "turbo run test"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",
-    "*.{js,jsx,ts,tsx,json}": "eslint --fix"
+    "*.{js,cjs,mjs,jsx,ts,tsx,json}": "eslint --fix"
   },
   "devDependencies": {
     "husky": "^8.0.1",

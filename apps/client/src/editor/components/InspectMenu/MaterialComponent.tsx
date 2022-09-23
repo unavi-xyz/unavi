@@ -1,14 +1,16 @@
-import { Material, WithMaterial } from "@wired-labs/engine";
-import { nanoid } from "nanoid";
+import { Material, Triplet } from "@wired-labs/engine";
 import { useState } from "react";
 import { MdAdd, MdClose, MdDelete, MdOutlineFolderOpen } from "react-icons/md";
 
 import DropdownMenu from "../../../ui/base/DropdownMenu";
 import { hexToRgb } from "../../../utils/rgb";
 import { addMaterial } from "../../actions/AddMaterialAction";
-import { editMaterial } from "../../actions/EditMaterialAction";
 import { removeMaterial } from "../../actions/RemoveMaterialAction";
-import { setMaterial } from "../../actions/SetMaterial";
+import { updateEntity } from "../../actions/UpdateEntityAction";
+import { updateMaterial } from "../../actions/UpdateMaterialAction";
+import { useEntity } from "../../hooks/useEntity";
+import { useMaterial } from "../../hooks/useMaterial";
+import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import ColorInput from "../ui/ColorInput";
 import NumberInput from "../ui/NumberInput";
@@ -21,50 +23,24 @@ interface Props {
 }
 
 export default function MaterialComponent({ entityId }: Props) {
-  const materialId = useEditorStore((state) => {
-    const withMaterial = state.scene.entities[entityId] as WithMaterial;
-    return withMaterial.material;
-  });
-  const name = useEditorStore((state) => {
-    const withMaterial = state.scene.entities[entityId] as WithMaterial;
-    if (!withMaterial.material) return null;
-    const material = state.scene.materials[withMaterial.material];
-    return material.name;
-  });
-  const color = useEditorStore((state) => {
-    const withMaterial = state.scene.entities[entityId] as WithMaterial;
-    if (!withMaterial.material) return null;
-    const material = state.scene.materials[withMaterial.material];
-    return material.color;
-  });
-  const roughness = useEditorStore((state) => {
-    const withMaterial = state.scene.entities[entityId] as WithMaterial;
-    if (!withMaterial.material) return null;
-    const material = state.scene.materials[withMaterial.material];
-    return material.roughness;
-  });
-  const metalness = useEditorStore((state) => {
-    const withMaterial = state.scene.entities[entityId] as WithMaterial;
-    if (!withMaterial.material) return null;
-    const material = state.scene.materials[withMaterial.material];
-    return material.metalness;
-  });
-  const materials = useEditorStore((state) => state.scene.materials);
+  const entity = useEntity(entityId);
+  const materialId = useSubscribeValue(entity?.materialId$);
+
+  const material = useMaterial(materialId);
+  const name = useSubscribeValue(material?.name$);
+  const color = useSubscribeValue(material?.color$);
+  const roughness = useSubscribeValue(material?.roughness$);
+  const metalness = useSubscribeValue(material?.metalness$);
+
+  const materials$ = useEditorStore((state) => state.engine?.scene.materials$);
+  const materials = useSubscribeValue(materials$);
 
   const [open, setOpen] = useState(false);
 
   function createMaterial() {
-    const id = nanoid();
-    const material: Material = {
-      id,
-      name: "New Material",
-      color: [1, 1, 1],
-      roughness: 1,
-      metalness: 0,
-    };
-
-    addMaterial(material);
-    setMaterial(entityId, material.id);
+    const newMaterial = new Material();
+    addMaterial(newMaterial);
+    updateEntity(entityId, { materialId: newMaterial.id });
   }
 
   return (
@@ -84,17 +60,13 @@ export default function MaterialComponent({ entityId }: Props) {
               <TextInput
                 value={name ?? ""}
                 onChange={(e) => {
-                  const { scene } = useEditorStore.getState();
-                  const material = scene.materials[materialId];
-                  material.name = e.target.value;
-                  editMaterial(material);
+                  updateMaterial(materialId, { name: e.target.value });
                 }}
               />
 
               <button
-                onClick={() => setMaterial(entityId, undefined)}
-                className={`text-outline flex h-full cursor-default items-center px-2
-                              text-lg transition hover:text-black`}
+                onClick={() => updateEntity(entityId, { materialId: null })}
+                className="text-outline flex h-full cursor-default items-center px-2 text-lg transition hover:text-black"
               >
                 <MdClose />
               </button>
@@ -112,14 +84,16 @@ export default function MaterialComponent({ entityId }: Props) {
 
           <DropdownMenu open={open} onClose={() => setOpen(false)}>
             <div className="flex max-h-52 flex-col space-y-1 overflow-y-auto p-2">
-              {Object.values(materials).length > 0 ? (
+              {materials && Object.values(materials).length > 0 ? (
                 Object.values(materials).map((material) => {
                   return (
                     <div key={material.id}>
                       <DropdownMaterialButton
                         materialId={material.id}
                         selectedId={materialId}
-                        onClick={() => setMaterial(entityId, material.id)}
+                        onClick={() =>
+                          updateEntity(entityId, { materialId: material.id })
+                        }
                       />
                     </div>
                   );
@@ -139,18 +113,15 @@ export default function MaterialComponent({ entityId }: Props) {
               rgbValue={color}
               onChange={(e) => {
                 const value = e.target.value;
+
                 const rgb = hexToRgb(value);
-                const normalized: [number, number, number] = [
+                const normalized: Triplet = [
                   rgb[0] / 255,
                   rgb[1] / 255,
                   rgb[2] / 255,
                 ];
 
-                const { scene } = useEditorStore.getState();
-                const material = scene.materials[materialId];
-
-                material.color = normalized;
-                editMaterial(material);
+                updateMaterial(materialId, { color: normalized });
               }}
             />
           </div>
@@ -161,14 +132,12 @@ export default function MaterialComponent({ entityId }: Props) {
             max={1}
             min={0}
             onChange={(e) => {
-              const num = parseFloat(e.target.value);
+              const value = e.target.value;
+
+              const num = parseFloat(value);
               const rounded = Math.round(num * 1000) / 1000;
 
-              const { scene } = useEditorStore.getState();
-              const material = scene.materials[materialId];
-
-              material.roughness = rounded;
-              editMaterial(material);
+              updateMaterial(materialId, { roughness: rounded });
             }}
           />
 
@@ -178,14 +147,12 @@ export default function MaterialComponent({ entityId }: Props) {
             max={1}
             min={0}
             onChange={(e) => {
-              const num = parseFloat(e.target.value);
+              const value = e.target.value;
+
+              const num = parseFloat(value);
               const rounded = Math.round(num * 1000) / 1000;
 
-              const { scene } = useEditorStore.getState();
-              const material = scene.materials[materialId];
-
-              material.metalness = rounded;
-              editMaterial(material);
+              updateMaterial(materialId, { metalness: rounded });
             }}
           />
         </MenuRows>
@@ -200,10 +167,10 @@ function DropdownMaterialButton({
   onClick,
 }: {
   materialId: string;
-  selectedId: string | undefined;
+  selectedId: string | null;
   onClick: () => void;
 }) {
-  const material = useEditorStore((state) => state.scene.materials[materialId]);
+  const material = useMaterial(materialId);
   if (!material) return null;
 
   const selectedClass = materialId === selectedId ? "bg-primaryContainer" : "";

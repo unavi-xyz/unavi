@@ -1,47 +1,124 @@
 import {
+  Collider,
   ColliderDesc,
   RigidBody,
   RigidBodyDesc,
   Vector,
   World,
 } from "@dimforge/rapier3d";
+import { Subscription } from "rxjs";
 
-import { FromGameMessage } from "../types";
+import { Entity, SceneMessage } from "../scene";
+import { PostMessage } from "../types";
+import { GameScene } from "./GameScene";
+import { FromGameMessage, ToGameMessage } from "./types";
 
-const TERMINAL_VELOCITY = 50;
+const TERMINAL_VELOCITY = 30;
 const JUMP_STRENGTH = 6;
+const HZ = 60; // Game updates per second
 
+/*
+ * GameWorker handles physics using Rapier.
+ */
 export class GameWorker {
+  #scene: GameScene;
+
   #world = new World({ x: 0, y: -9.81, z: 0 });
+  #postMessage: PostMessage<FromGameMessage>;
 
   #playerBody: RigidBody | null = null;
   #playerPosition: Float32Array | null = null;
   #playerVelocity: Float32Array | null = null;
 
+  #interval: NodeJS.Timer | null = null;
   #lastUpdate = 0;
-  #velocityY = 0;
   #jump = false;
 
-  constructor() {
-    // Create ground
-    const groundCollider = ColliderDesc.cuboid(10, 0.1, 10);
-    const groundBody = this.#world.createRigidBody(RigidBodyDesc.fixed());
-    this.#world.createCollider(groundCollider, groundBody);
+  #colliders = new Map<string, Collider>();
+  subscriptions = new Map<string, Subscription>();
 
+  constructor(postMessage: PostMessage) {
+    this.#postMessage = postMessage;
+    this.#scene = new GameScene(postMessage);
+
+    // Create ground
+    const groundColliderDesc = ColliderDesc.cuboid(10, 0.5, 10);
+    const groundBodyDesc = RigidBodyDesc.fixed().setTranslation(0, -1, 0);
+    const groundBody = this.#world.createRigidBody(groundBodyDesc);
+    this.#world.createCollider(groundColliderDesc, groundBody);
+
+    // Subscriptions
+    this.#scene.entities$.subscribe({
+      next: (entities) => {
+        // Add new entities
+        Object.values(entities).forEach((entity) => {
+          if (!this.subscriptions.has(entity.id)) {
+            const subscription = entity.collider$.subscribe({
+              next: () => {
+                this.addCollider(entity);
+              },
+            });
+
+            this.subscriptions.set(entity.id, subscription);
+          }
+        });
+
+        // Remove old entities
+        this.subscriptions.forEach((subscription, id) => {
+          if (!entities[id]) {
+            subscription.unsubscribe();
+            this.subscriptions.delete(id);
+          }
+        });
+      },
+    });
+
+    // Set ready
+    this.#postMessage({ subject: "ready", data: null });
+  }
+
+  onmessage = (event: MessageEvent<ToGameMessage>) => {
+    this.#scene.onmessage(event as MessageEvent<SceneMessage>);
+
+    const { subject, data } = event.data;
+    switch (subject) {
+      case "start":
+        this.start();
+        break;
+      case "stop":
+        this.stop();
+        break;
+      case "init_player":
+        this.initPlayer();
+        break;
+      case "jumping":
+        this.setJumping(data);
+        break;
+    }
+  };
+
+  start() {
+    this.stop();
     // Start loop
-    const hz = 60; // Game updates per second
-    const ms = 1000 / hz;
-    setInterval(this.#gameLoop.bind(this), ms);
+    this.#interval = setInterval(this.#gameLoop.bind(this), 1000 / HZ);
+  }
+
+  stop() {
+    // Stop loop
+    if (this.#interval) {
+      clearInterval(this.#interval);
+      this.#interval = null;
+    }
   }
 
   initPlayer() {
     // Create player body
-    const playerCollider = ColliderDesc.capsule(0.5, 0.5);
-    this.#playerBody = this.#world.createRigidBody(
-      RigidBodyDesc.kinematicVelocityBased()
-    );
-    this.#world.createCollider(playerCollider, this.#playerBody);
-    this.#playerBody.setTranslation({ x: 0, y: 1, z: 5 }, true);
+    const playerColliderDesc = ColliderDesc.capsule(0.9, 0.2);
+    const playerBodyDesc = RigidBodyDesc.dynamic()
+      .setTranslation(0, 2, 5)
+      .lockRotations();
+    this.#playerBody = this.#world.createRigidBody(playerBodyDesc);
+    this.#world.createCollider(playerColliderDesc, this.#playerBody);
 
     // Create shared array buffers
     const positionBuffer = new SharedArrayBuffer(
@@ -63,39 +140,94 @@ export class GameWorker {
     });
   }
 
-  setJumping(pressingJump: boolean) {
-    this.#jump = true;
+  setJumping(jump: boolean) {
+    this.#jump = jump;
+  }
+
+  addCollider(entity: Entity) {
+    // Remove existing collider
+    const previousCollider = this.#colliders.get(entity.id);
+    if (previousCollider) {
+      this.#colliders.delete(entity.id);
+      this.#world.removeCollider(previousCollider, true);
+      const rigidBody = previousCollider.parent();
+      if (rigidBody) this.#world.removeRigidBody(rigidBody);
+    }
+
+    if (!entity.collider) return;
+
+    // Create collider description
+    let colliderDesc: ColliderDesc;
+    switch (entity.collider.type) {
+      case "Box":
+        const size = entity.collider.size;
+        colliderDesc = ColliderDesc.cuboid(...size);
+        break;
+      case "Sphere":
+        const radius = entity.collider.radius;
+        colliderDesc = ColliderDesc.ball(radius);
+        break;
+      case "Cylinder":
+        const height = entity.collider.height;
+        const cylinderRadius = entity.collider.radius;
+        colliderDesc = ColliderDesc.cylinder(height / 2, cylinderRadius);
+        break;
+    }
+
+    const rigidBodyDesc = RigidBodyDesc.fixed();
+    const rigidBody = this.#world.createRigidBody(rigidBodyDesc);
+    const collider = this.#world.createCollider(colliderDesc, rigidBody);
+
+    entity.globalPosition$.subscribe({
+      next: (globalPosition) => {
+        rigidBody.setTranslation(
+          {
+            x: globalPosition[0],
+            y: globalPosition[1],
+            z: globalPosition[2],
+          },
+          true
+        );
+      },
+    });
+
+    entity.globalQuaternion$.subscribe({
+      next: (globalQuaternion) => {
+        rigidBody.setRotation(
+          {
+            w: globalQuaternion[3],
+            x: globalQuaternion[0],
+            y: globalQuaternion[1],
+            z: globalQuaternion[2],
+          },
+          true
+        );
+      },
+    });
+
+    // Store reference
+    this.#colliders.set(entity.id, collider);
   }
 
   #gameLoop() {
     const delta = (performance.now() - this.#lastUpdate) / 1000;
     this.#lastUpdate = performance.now();
 
-    // Gravity
-    this.#velocityY -= 9.81 * delta;
-    this.#velocityY = Math.max(this.#velocityY, -TERMINAL_VELOCITY);
-    this.#velocityY = Math.min(this.#velocityY, TERMINAL_VELOCITY);
-
     // Jumping
-    if (this.#jump) {
-      this.#velocityY = JUMP_STRENGTH;
-      this.#jump = false;
-    }
-
-    // Ground collision
-    if (this.#playerBody) {
-      const { x, y, z } = this.#playerBody.translation();
-      if (y < 0) {
-        this.#playerBody.setTranslation({ x, y: 0, z }, true);
-        this.#velocityY = 0;
-      }
-    }
+    const jumpVelocity = this.#jump ? JUMP_STRENGTH : 0;
+    if (this.#jump) this.#jump = false;
 
     // Set player velocity
     if (this.#playerVelocity && this.#playerBody) {
+      const velocityY = this.#playerBody.linvel().y + jumpVelocity;
+      const limitedY = Math.max(
+        Math.min(velocityY, TERMINAL_VELOCITY),
+        -TERMINAL_VELOCITY
+      );
+
       const velocity: Vector = {
         x: this.#playerVelocity[0],
-        y: this.#velocityY,
+        y: limitedY,
         z: this.#playerVelocity[1],
       };
 
@@ -112,9 +244,5 @@ export class GameWorker {
       this.#playerPosition[1] = y;
       this.#playerPosition[2] = z;
     }
-  }
-
-  #postMessage(message: FromGameMessage) {
-    postMessage(message);
   }
 }

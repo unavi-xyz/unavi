@@ -1,13 +1,11 @@
+import { useEntity } from "../../hooks/useEntity";
 import { useEditorStore } from "../../store";
 import EntityComponents from "./EntityComponents";
 import TransformComponent from "./TransformComponent";
 
 export default function InspectMenu() {
   const selectedId = useEditorStore((state) => state.selectedId);
-  const name = useEditorStore((state) => {
-    if (!selectedId) return null;
-    return state.scene.entities[selectedId].name;
-  });
+  const name = useEntity(selectedId, (entity) => entity.name);
 
   if (!selectedId || !name) return null;
 

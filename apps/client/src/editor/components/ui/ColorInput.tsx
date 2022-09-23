@@ -1,22 +1,23 @@
+import { Triplet } from "@wired-labs/engine";
 import { useEffect, useRef } from "react";
 
 import { rgbToHex } from "../../../utils/rgb";
 
 interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
-  rgbValue?: [number, number, number];
+  rgbValue?: Triplet;
 }
 
 export default function ColorInput({ rgbValue, onChange, ...rest }: Props) {
   const displayRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const colorArray = rgbValue
     ? [rgbValue[0] * 255, rgbValue[1] * 255, rgbValue[2] * 255]
     : null;
   const colorHex = colorArray ? rgbToHex(colorArray) : "#000000";
 
   useEffect(() => {
-    if (displayRef.current && colorHex) {
-      displayRef.current.style.backgroundColor = colorHex;
-    }
+    if (displayRef.current) displayRef.current.style.backgroundColor = colorHex;
+    if (inputRef.current) inputRef.current.value = colorHex;
   }, [colorHex]);
 
   return (
@@ -26,7 +27,7 @@ export default function ColorInput({ rgbValue, onChange, ...rest }: Props) {
         className="h-full w-full rounded-md bg-neutral-100 pl-2 shadow-inner focus:outline-none"
       />
       <input
-        {...rest}
+        ref={inputRef}
         onChange={(e) => {
           if (displayRef.current) {
             const color = e.target.value;
@@ -38,6 +39,7 @@ export default function ColorInput({ rgbValue, onChange, ...rest }: Props) {
         type="color"
         className="invisible absolute bottom-0 left-0"
         defaultValue={colorHex}
+        {...rest}
       />
     </label>
   );

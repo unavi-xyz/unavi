@@ -1,32 +1,12 @@
 import { useEditorStore } from "../store";
-import { setMaterial } from "./SetMaterial";
 
 export class RemoveMaterialAction {
   constructor(materialId: string) {
-    const { scene, engine } = useEditorStore.getState();
-
-    // Remove from all entities
-    let didRemove = false;
-    Object.values(scene.entities).forEach((entity) => {
-      switch (entity.type) {
-        case "Box":
-        case "Sphere":
-        case "Cylinder":
-          if (entity.material === materialId) {
-            setMaterial(entity.id, undefined);
-            didRemove = true;
-          }
-      }
-    });
+    const { engine } = useEditorStore.getState();
+    if (!engine) throw new Error("Engine not found");
 
     // Remove material
-    delete scene.materials[materialId];
-
-    // Update scene
-    useEditorStore.setState({ scene });
-
-    // Update engine
-    if (engine && didRemove) engine.renderThread.removeMaterial(materialId);
+    engine.scene.removeMaterial(materialId);
   }
 }
 

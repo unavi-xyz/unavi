@@ -19,14 +19,22 @@ export default function EditorNavbar() {
   const router = useRouter();
   const id = router.query.id;
 
-  const debug = useEditorStore((state) => state.debug);
+  const colliders = useEditorStore((state) => state.colliders);
   const grid = useEditorStore((state) => state.grid);
   const name = useEditorStore((state) => state.name);
 
   const { save } = useSave();
 
-  function handleToggleDebug() {
-    useEditorStore.setState({ debug: !debug, selectedId: null });
+  function handleToggleColliders() {
+    useEditorStore.setState({ colliders: !colliders });
+
+    const { engine } = useEditorStore.getState();
+    engine?.renderThread.postMessage({
+      subject: "show_visuals",
+      data: {
+        visible: !colliders,
+      },
+    });
   }
 
   function handleToggleGrid() {
@@ -86,10 +94,10 @@ export default function EditorNavbar() {
 
         <div className="aspect-square h-full">
           <Tooltip
-            text={`${debug ? "Hide" : "Show"} Colliders`}
+            text={`${colliders ? "Hide" : "Show"} Colliders`}
             placement="bottom"
           >
-            <IconButton selected={debug} onClick={handleToggleDebug}>
+            <IconButton selected={colliders} onClick={handleToggleColliders}>
               <HiCubeTransparent />
             </IconButton>
           </Tooltip>

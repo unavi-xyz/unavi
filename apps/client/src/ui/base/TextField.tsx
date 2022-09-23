@@ -42,7 +42,9 @@ export default function TextField({
         )}
       </div>
 
-      <div className="bg-surface text-onSurface flex items-center rounded-lg">
+      <div
+        className={`bg-surface text-onSurface flex items-center rounded-lg ${outlineClass}`}
+      >
         {frontAdornment && (
           <span className="text-outline pl-3 font-bold">{frontAdornment}</span>
         )}
@@ -50,7 +52,7 @@ export default function TextField({
           ref={inputRef}
           id={id}
           type="text"
-          className={`h-full w-full rounded-md px-3 py-2 outline-none ${outlineClass}`}
+          className="h-full w-full rounded-md px-3 py-2 outline-none"
           {...rest}
         />
       </div>

@@ -1,5 +1,5 @@
 import Image from "next/future/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Props {
   image?: string | null;
@@ -18,7 +18,6 @@ export default function Card({
   aspect = "card",
   animateEnter = false,
 }: Props) {
-  const cardRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(!animateEnter);
 
   useEffect(() => {
@@ -32,12 +31,10 @@ export default function Card({
 
   return (
     <div
-      ref={cardRef}
-      className={`group flex h-full w-full flex-col overflow-hidden rounded-2xl
-                  p-2.5 hover:cursor-pointer hover:ring-2 hover:ring-black ${opacityCss}`}
+      className={`relative flex h-full w-full flex-col overflow-hidden transition hover:scale-105 hover:cursor-pointer ${opacityCss}`}
     >
       <div
-        className={`h-full overflow-hidden rounded-xl ${aspectCss} bg-primaryContainer transition duration-300 ${opacityCss}`}
+        className={`bg-primaryContainer h-full overflow-hidden rounded-2xl ${aspectCss}`}
       >
         <div className="relative h-full w-full">
           {image && (
@@ -48,16 +45,32 @@ export default function Card({
               sizes={sizes}
               draggable={false}
               alt="card image"
-              className="rounded-xl object-cover transition duration-500 ease-in-out group-hover:scale-110"
+              className="rounded-2xl object-cover"
             />
           )}
         </div>
       </div>
 
-      <div className="space-y-2 py-1">
-        {text && <div className="overflow-hidden px-1 text-xl">{text}</div>}
+      <div className="absolute top-0 left-0 flex h-full items-end px-3 pb-2 tracking-wide text-white">
+        {text && (
+          <div
+            className="drop-shadow-dark overflow-hidden text-xl font-black"
+            style={{
+              textShadow: "0 0 6px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            {text}
+          </div>
+        )}
         {subtext && (
-          <div className="overflow-hidden px-1 text-lg">{subtext}</div>
+          <div
+            className="drop-shadow-dark overflow-hidden text-lg"
+            style={{
+              textShadow: "0 0 6px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            {subtext}
+          </div>
         )}
       </div>
     </div>

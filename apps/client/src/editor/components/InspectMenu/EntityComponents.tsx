@@ -1,39 +1,49 @@
-import { useEditorStore } from "../../store";
-import BoxComponent from "./BoxComponent";
-import CylinderComponent from "./CylinderComponent";
+import { useEntity } from "../../hooks/useEntity";
+import { useSubscribeValue } from "../../hooks/useSubscribeValue";
+import BoxMeshComponent from "./BoxMeshComponent";
+import CylinderMeshComponent from "./CylinderMeshComponent";
 import MaterialComponent from "./MaterialComponent";
-import SphereComponent from "./SphereComponent";
+import PhysicsComponent from "./PhysicsComponent";
+import SphereMeshComponent from "./SphereMeshComponent";
 
 interface Props {
   entityId: string;
 }
 
 export default function EntityComponents({ entityId }: Props) {
-  const type = useEditorStore((state) => state.scene.entities[entityId].type);
+  const mesh$ = useEntity(entityId, (entity) => entity.mesh$);
+  const mesh = useSubscribeValue(mesh$);
 
-  switch (type) {
+  switch (mesh?.type) {
     case "Box":
       return (
         <>
-          <BoxComponent entityId={entityId} />
+          <BoxMeshComponent entityId={entityId} mesh={mesh} />
           <MaterialComponent entityId={entityId} />
+          <PhysicsComponent entityId={entityId} />
         </>
       );
     case "Sphere":
       return (
         <>
-          <SphereComponent entityId={entityId} />
+          <SphereMeshComponent entityId={entityId} mesh={mesh} />
           <MaterialComponent entityId={entityId} />
+          <PhysicsComponent entityId={entityId} />
         </>
       );
     case "Cylinder":
       return (
         <>
-          <CylinderComponent entityId={entityId} />
+          <CylinderMeshComponent entityId={entityId} mesh={mesh} />
           <MaterialComponent entityId={entityId} />
+          <PhysicsComponent entityId={entityId} />
         </>
       );
     default:
-      return null;
+      return (
+        <>
+          <PhysicsComponent entityId={entityId} />
+        </>
+      );
   }
 }

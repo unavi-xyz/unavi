@@ -22,25 +22,27 @@ No! You can join spaces anonymously without an account. However, if you want to 
 
 ### What is Lens?
 
-[Lens Protocol](https://lens.xyz/) is a Web3 social graph on the Polygon blockchain. It is designed to empower creators to own the links between themselves and their community, forming a fully composable, user-owned social graph.
+[Lens Protocol 🌿](https://lens.xyz/) is a Web3 social graph on the Polygon blockchain. It is designed to empower creators to own the links between themselves and their community, forming a fully composable, user-owned social graph.
 
 To use Lens, you will need an Ethereum wallet.
 
 ### I don't have an Ethereum wallet. How do I get one?
 
-There are many options available, we recommend using [Rainbow](https://rainbow.me/).
+There are many good options available, we recommend using [Rainbow 🌈](https://rainbow.me/).
 
-**However, before you do that**, it's important to understand what a wallet is and how it works. We recommend reading [this article](https://learn.rainbow.me/crypto-and-wallets) to learn more. To put it briefly, a wallet is used to cryptographically verify your identity without any third parties. You can think of it as a replacement for a username and password - so keep it safe! **Only connect your wallet to sites you trust.**
+:::caution
 
-### How do I create a Lens profile?
+It's important to understand what a wallet is and how it works. We recommend reading **[this article](https://learn.rainbow.me/crypto-and-wallets)** to learn more. To put it briefly, a wallet is used to cryptographically verify your identity without any third parties. You can think of it as a replacement for a username and password - so keep it safe! **Only connect your wallet to sites you trust.**
 
-A Lens profile is an NFT that represents your identity across the Web3 ecosystem. To create a profile, you need to mint one of these NFTs (don't worry, it's **free**). You can do this through the Wired, just visit [thewired.space](https://www.thewired.space) and connect your wallet, you will be prompted to select a handle and create your profile.
+:::
+
+### How do I get a Lens profile?
+
+A Lens profile is an NFT that represents your identity across the Web3 ecosystem. To create a profile, you need to mint one of these NFTs (don't worry, it's **free**). You can do this through the Wired, just visit [thewired.space](https://www.thewired.space) and connect your wallet, you will be prompted to select a handle and create a profile.
 
 ### How do I create a space?
 
-Spaces are created using a visual editor similar to Unity. Visit the [thewired.space/create](https://www.thewired.space/create) to create a new project and start building.
-
-Once your space is ready, you can publish it from the editor as a Lens NFT.
+Spaces are created using the editor - visit the [thewired.space/create](https://www.thewired.space/create) to create a new project and start building. Once your space is ready, you can publish it from the editor as a Lens NFT.
 
 ### How do I create an avatar?
 

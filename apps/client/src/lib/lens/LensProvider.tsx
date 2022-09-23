@@ -6,13 +6,17 @@ import { SessionStorage } from "../../constants";
 import { API_URL } from "./constants";
 
 export interface ILensContext {
+  client: Client;
   handle: string | undefined;
   switchProfile: (handle: string | undefined) => void;
   logout: () => void;
   setAccessToken: (accessToken: string) => void;
 }
 
+const defaultClient = createClient({ url: API_URL });
+
 export const initialContext: ILensContext = {
+  client: defaultClient,
   handle: undefined,
   switchProfile: () => {},
   logout: () => {},
@@ -20,8 +24,6 @@ export const initialContext: ILensContext = {
 };
 
 export const LensContext = createContext<ILensContext>(initialContext);
-
-const defaultClient = createClient({ url: API_URL });
 
 export default function LensProvider({
   children,
@@ -64,6 +66,7 @@ export default function LensProvider({
     <Provider value={client}>
       <LensContext.Provider
         value={{
+          client,
           handle,
           switchProfile: setHandle,
           logout,

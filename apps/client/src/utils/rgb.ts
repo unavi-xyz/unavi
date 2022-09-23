@@ -1,8 +1,10 @@
+import { Triplet } from "@wired-labs/engine";
+
 export function rgbToHex(rgb: number[]): string {
   return `#${rgb.map((x) => x.toString(16).padStart(2, "0")).join("")}`;
 }
 
-export function hexToRgb(hex: string): [number, number, number] {
+export function hexToRgb(hex: string): Triplet {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? [

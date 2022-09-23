@@ -27,13 +27,14 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
   const handle = query.handle as string;
   const props = await getProfileLayoutProps(handle);
 
-  if (!props.profile)
+  if (!props.profile) {
     return {
       props: {
         ...props,
         profile: null,
       },
     };
+  }
 
   const publicationsQuery = await lensClient
     .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
@@ -72,17 +73,17 @@ export default function User({ publications, ...rest }: Props) {
   return (
     <ProfileLayout {...rest}>
       {publications && publications.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           {publications?.map((publication) => {
             if (publication.appId === AppId.Space) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 
               return (
-                <div key={publication.id} className="w-full p-1 md:col-span-2">
+                <div key={publication.id} className="w-full md:col-span-2">
                   <Link href={`/space/${publication.id}`} passHref>
-                    <a>
+                    <div>
                       <SpaceCard space={publication} sizes="49vw" />
-                    </a>
+                    </div>
                   </Link>
                 </div>
               );
@@ -90,11 +91,11 @@ export default function User({ publications, ...rest }: Props) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 
               return (
-                <div key={publication.id} className="w-full p-1">
+                <div key={publication.id} className="w-full">
                   <Link href={`/avatar/${publication.id}`} passHref>
-                    <a>
+                    <div>
                       <AvatarCard avatar={publication} sizes="24vw" />
-                    </a>
+                    </div>
                   </Link>
                 </div>
               );

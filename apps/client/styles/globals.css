@@ -4,26 +4,24 @@
 
 html {
   font-family: "Lato", sans-serif;
-  @apply bg-background text-onBackground;
+  @apply bg-background text-onBackground selection:bg-primaryContainer;
 }
 
 .max-w-content {
   @apply w-full max-w-screen-lg;
 }
 
-/* Scrollbar */
-
-/* Width */
+/* Scrollbar Width */
 ::-webkit-scrollbar {
   width: 16px;
 }
 
-/* Track */
+/* Scrollbar Track */
 ::-webkit-scrollbar-track {
-  opacity: 0;
+  background-color: #fff;
 }
 
-/* Handle */
+/* Scrollbar Handle */
 ::-webkit-scrollbar-thumb {
   background-color: #bbb;
   border-radius: 16px;

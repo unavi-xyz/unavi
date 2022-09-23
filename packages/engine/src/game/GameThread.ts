@@ -1,16 +1,34 @@
-import { Engine } from "../Engine";
-import { FromGameMessage, ToGameMessage } from "../types";
+import { RenderThread } from "../render/RenderThread";
+import { Transferable } from "../types";
+import { Player } from "./Player";
+import { FromGameMessage, ToGameMessage } from "./types";
 
+export interface GameThreadOptions {
+  canvas: HTMLCanvasElement;
+  renderThread: RenderThread;
+}
+
+/*
+ * GameThread acts as an interface between the main thread and the {@link GameWorker}.
+ */
 export class GameThread {
-  #worker = new Worker(new URL("./workers/Game.worker.ts", import.meta.url), {
+  worker = new Worker(new URL("../workers/Game.worker.ts", import.meta.url), {
     type: "module",
   });
 
   ready = false;
   #readyListeners: Array<() => void> = [];
 
-  constructor(engine: Engine) {
-    this.#worker.onmessage = (event: MessageEvent<FromGameMessage>) => {
+  #canvas: HTMLCanvasElement;
+  #renderThread: RenderThread;
+
+  #player: Player | null = null;
+
+  constructor({ canvas, renderThread }: GameThreadOptions) {
+    this.#canvas = canvas;
+    this.#renderThread = renderThread;
+
+    this.worker.onmessage = (event: MessageEvent<FromGameMessage>) => {
       const { subject, data } = event.data;
 
       switch (subject) {
@@ -19,10 +37,18 @@ export class GameThread {
           this.#readyListeners.forEach((listener) => listener());
           break;
         case "player_buffers":
-          engine.renderManager.setPlayerBuffers(data);
+          renderThread.setPlayerBuffers(data);
           break;
       }
     };
+  }
+
+  start() {
+    this.postMessage({ subject: "start", data: null });
+  }
+
+  stop() {
+    this.postMessage({ subject: "stop", data: null });
   }
 
   waitForReady() {
@@ -33,18 +59,20 @@ export class GameThread {
   }
 
   initPlayer() {
-    this.#postMessage({ subject: "init_player", data: null });
+    this.#player = new Player(this.#canvas, this.#renderThread, this);
+    this.postMessage({ subject: "init_player", data: null });
   }
 
   jump() {
-    this.#postMessage({ subject: "jumping", data: true });
+    this.postMessage({ subject: "jumping", data: true });
   }
 
   destroy() {
-    this.#worker.terminate();
+    this.worker.terminate();
+    if (this.#player) this.#player.destroy();
   }
 
-  #postMessage = (message: ToGameMessage) => {
-    this.#worker.postMessage(message);
+  postMessage = (message: ToGameMessage, transfer?: Transferable[]) => {
+    this.worker.postMessage(message, transfer);
   };
 }

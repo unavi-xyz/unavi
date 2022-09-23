@@ -1,5 +1,8 @@
-import { setTransform } from "../../actions/SetTransform";
-import { useEditorStore } from "../../store";
+import { Triplet } from "@wired-labs/engine";
+
+import { updateEntity } from "../../actions/UpdateEntityAction";
+import { useEntity } from "../../hooks/useEntity";
+import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import NumberInput from "../ui/NumberInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./MenuRows";
@@ -9,46 +12,19 @@ interface Props {
 }
 
 export default function TransformComponent({ entityId }: Props) {
-  const entity = useEditorStore((state) => state.scene.entities[entityId]);
+  const position$ = useEntity(entityId, (entity) => entity.position$);
+  const rotation$ = useEntity(entityId, (entity) => entity.rotation$);
+  const scale$ = useEntity(entityId, (entity) => entity.scale$);
 
-  const positionX = useEditorStore(
-    (state) => state.scene.entities[entityId].position[0]
-  );
-  const positionY = useEditorStore(
-    (state) => state.scene.entities[entityId].position[1]
-  );
-  const positionZ = useEditorStore(
-    (state) => state.scene.entities[entityId].position[2]
-  );
-  const position = [positionX, positionY, positionZ];
-
-  const rotationX = useEditorStore(
-    (state) => state.scene.entities[entityId].rotation[0]
-  );
-  const rotationY = useEditorStore(
-    (state) => state.scene.entities[entityId].rotation[1]
-  );
-  const rotationZ = useEditorStore(
-    (state) => state.scene.entities[entityId].rotation[2]
-  );
-  const rotation = [rotationX, rotationY, rotationZ];
-
-  const scaleY = useEditorStore(
-    (state) => state.scene.entities[entityId].scale[1]
-  );
-  const scaleZ = useEditorStore(
-    (state) => state.scene.entities[entityId].scale[2]
-  );
-  const scaleX = useEditorStore(
-    (state) => state.scene.entities[entityId].scale[0]
-  );
-  const scale = [scaleX, scaleY, scaleZ];
+  const position = useSubscribeValue<Triplet>(position$);
+  const rotation = useSubscribeValue<Triplet>(rotation$);
+  const scale = useSubscribeValue<Triplet>(scale$);
 
   return (
     <ComponentMenu>
       <MenuRows titles={["Position", "Rotation", "Scale"]}>
         <div className="grid grid-cols-3 gap-3">
-          {position.map((value, i) => {
+          {position?.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
             const name = `position-${letter}`;
 
@@ -68,8 +44,13 @@ export default function TransformComponent({ entityId }: Props) {
 
                     const num = parseFloat(value);
                     const rounded = Math.round(num * 1000) / 1000;
-                    entity.position[i] = rounded;
-                    setTransform(entity);
+
+                    const newPosition: Triplet = [...position];
+                    newPosition[i] = rounded;
+
+                    updateEntity(entityId, {
+                      position: newPosition,
+                    });
                   }}
                 />
               </div>
@@ -78,7 +59,7 @@ export default function TransformComponent({ entityId }: Props) {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          {rotation.map((value, i) => {
+          {rotation?.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
             const name = `rotation-${letter}`;
 
@@ -100,8 +81,13 @@ export default function TransformComponent({ entityId }: Props) {
                     const num = parseFloat(value);
                     const rounded = Math.round(num * 1000) / 1000;
                     const radians = (rounded * Math.PI) / 180;
-                    entity.rotation[i] = radians;
-                    setTransform(entity);
+
+                    const newRotation: Triplet = [...rotation];
+                    newRotation[i] = radians;
+
+                    updateEntity(entityId, {
+                      rotation: newRotation,
+                    });
                   }}
                 />
               </div>
@@ -110,7 +96,7 @@ export default function TransformComponent({ entityId }: Props) {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          {scale.map((value, i) => {
+          {scale?.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
             const name = `scale-${letter}`;
 
@@ -130,8 +116,11 @@ export default function TransformComponent({ entityId }: Props) {
 
                     const num = parseFloat(value);
                     const rounded = Math.round(num * 1000) / 1000;
-                    entity.scale[i] = rounded;
-                    setTransform(entity);
+
+                    const newScale: Triplet = [...scale];
+                    newScale[i] = rounded;
+
+                    updateEntity(entityId, { scale: newScale });
                   }}
                 />
               </div>

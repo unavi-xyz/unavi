@@ -4,13 +4,16 @@ import {
   GetChallengeQueryVariables,
 } from "@wired-labs/lens";
 import { useEffect, useMemo, useState } from "react";
+import { Client } from "urql";
 
-import { lensClient } from "../lib/lens/client";
+import { useLens } from "../lib/lens/hooks/useLens";
 
 export function useChallenge(address: string | undefined) {
+  const { client } = useLens();
+
   const challengePromise = useMemo(
-    async () => await generateChallenge(address),
-    [address]
+    async () => await generateChallenge(address, client),
+    [address, client]
   );
 
   const [challenge, setChallenge] = useState<string>();
@@ -22,10 +25,10 @@ export function useChallenge(address: string | undefined) {
   return challenge;
 }
 
-async function generateChallenge(address: string | undefined) {
+async function generateChallenge(address: string | undefined, client: Client) {
   if (!address) return;
 
-  const { data, error } = await lensClient
+  const { data, error } = await client
     .query<GetChallengeQuery, GetChallengeQueryVariables>(
       GetChallengeDocument,
       {

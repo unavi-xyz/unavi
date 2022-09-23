@@ -6,11 +6,13 @@ interface Props {
 
 export default function NavbarLayout({ children }: Props) {
   return (
-    <div className="flex h-full snap-y snap-mandatory flex-col items-center overflow-y-scroll">
-      <div className="fixed z-30 h-14 w-full md:pr-2">
+    <div className="h-full overflow-hidden">
+      <div className="z-10 h-14 w-full">
         <Navbar />
       </div>
-      <div className="h-full w-full pt-14">{children}</div>
+      <div className="h-full w-full snap-y snap-mandatory overflow-y-scroll">
+        {children}
+      </div>
     </div>
   );
 }

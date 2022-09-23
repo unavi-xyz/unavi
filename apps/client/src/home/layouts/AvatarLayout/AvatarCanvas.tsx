@@ -1,7 +1,9 @@
+import { Triplet } from "@wired-labs/engine";
+
 interface Props {
   url: string;
   background?: boolean;
-  cameraPosition?: [number, number, number];
+  cameraPosition?: Triplet;
 }
 
 export default function AvatarCanvas({

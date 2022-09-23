@@ -58,16 +58,16 @@ export default function Dialog({
       ref={scrimRef}
       onMouseDown={onClose}
       className="fixed top-0 left-0 z-50 flex h-screen
-                 w-screen flex-col justify-center bg-black bg-opacity-30 opacity-0
+                 w-screen flex-col justify-center bg-black/30 opacity-0
                  transition-opacity duration-200 ease-in-out"
     >
       <dialog
         ref={dialogRef}
         open
         onMouseDown={(e) => e.stopPropagation()}
-        className="bg-surface text-onSurface flex w-full max-w-xl scale-75 flex-col
-                   space-y-4 rounded-3xl p-10 opacity-0 drop-shadow-lg transition
-                   duration-200 ease-in-out"
+        className="bg-surface text-onSurface flex w-full max-w-xl scale-75
+                   flex-col space-y-4 rounded-3xl p-10 opacity-0 drop-shadow-lg
+                   transition duration-200 ease-in-out"
       >
         <DialogContext.Provider value={{ close: onClose }}>
           {children}

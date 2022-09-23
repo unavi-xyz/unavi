@@ -8,7 +8,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as trpc from "@trpc/server";
 import * as trpcNext from "@trpc/server/adapters/next";
 import { MiddlewareResult } from "@trpc/server/dist/declarations/src/internals/middlewares";
-import { Scene } from "@wired-labs/engine";
+import { SceneJSON } from "@wired-labs/engine";
 import { z } from "zod";
 
 import {
@@ -18,7 +18,6 @@ import {
 } from "../../../src/auth/context";
 import { prisma } from "../../../src/auth/prisma";
 import { emptyScene } from "../../../src/editor/constants";
-import { deepClone } from "../../../src/utils/deepClone";
 
 const s3Client = new S3Client({
   endpoint: `https://${process.env.S3_ENDPOINT}` ?? "",
@@ -159,7 +158,7 @@ export const appRouter = trpc
         const res = await fetch(url);
         if (!res.ok) throw new trpc.TRPCError({ code: "NOT_FOUND" });
 
-        const scene: Scene = await res.json();
+        const scene: SceneJSON = await res.json();
         return scene;
       } catch (e) {
         throw e;
@@ -189,7 +188,7 @@ export const appRouter = trpc
         });
 
         // Upload scene to S3
-        const scenePromise = uploadScene(deepClone(emptyScene), id);
+        const scenePromise = uploadScene(emptyScene, id);
 
         // Upload image to S3
         if (image) {

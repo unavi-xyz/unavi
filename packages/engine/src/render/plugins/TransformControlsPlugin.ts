@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Scene } from "three";
 
 import { FakePointerEvent } from "../classes/OrbitControls";
-import { SceneManager } from "../classes/SceneManager";
+import { SceneLink } from "../classes/SceneLink";
 import { TransformControls } from "../classes/TransformControls";
 import { PluginState } from "../RenderWorker";
 import { ToRenderMessage } from "../types";
@@ -9,18 +9,18 @@ import { Plugin } from "./Plugin";
 
 export class TransformControlsPlugin extends Plugin {
   #target = new EventTarget();
-  #sceneManager: SceneManager;
+  #sceneLink: SceneLink;
   #transformControls: TransformControls;
 
   constructor(
     camera: PerspectiveCamera,
-    sceneManager: SceneManager,
+    sceneLink: SceneLink,
     scene: Scene,
     state: PluginState
   ) {
     super();
 
-    this.#sceneManager = sceneManager;
+    this.#sceneLink = sceneLink;
     this.#transformControls = new TransformControls(camera, this.#target);
     scene.add(this.#transformControls);
 
@@ -34,10 +34,10 @@ export class TransformControlsPlugin extends Plugin {
       // Send new transform to main thread
       const object = this.#transformControls.object;
       if (!object) throw new Error("No object found");
-      const id = this.#sceneManager.findId(object);
+      const id = this.#sceneLink.findId(object);
       if (id === undefined) throw new Error("Object id not found");
 
-      this.#sceneManager.saveTransform(id);
+      this.#sceneLink.saveTransform(id);
     });
   }
 
@@ -48,7 +48,7 @@ export class TransformControlsPlugin extends Plugin {
       case "set_transform_target":
         if (data === null) this.#transformControls.detach();
         else {
-          const object = this.#sceneManager.findObject(data);
+          const object = this.#sceneLink.findObject(data);
           if (object) this.#transformControls.attach(object);
           else throw new Error(`Object not found: ${data}`);
         }
@@ -79,10 +79,10 @@ export class TransformControlsPlugin extends Plugin {
       case "remove_entity":
         const attachedObject = this.#transformControls.object;
         if (attachedObject) {
-          const id = this.#sceneManager.findId(attachedObject);
+          const id = this.#sceneLink.findId(attachedObject);
           if (id === undefined) throw new Error("Object id not found");
           // Detach if attached object is removed
-          if (id === data) this.#transformControls.detach();
+          if (id === data.entityId) this.#transformControls.detach();
         }
     }
   }

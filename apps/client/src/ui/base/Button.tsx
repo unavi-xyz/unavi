@@ -72,9 +72,9 @@ export default function sButton({
       : variant === "outlined"
       ? "active:bg-opacity-75"
       : variant === "filled"
-      ? "hover:shadow-filled hover:bg-opacity-90 active:bg-opacity-75"
+      ? "hover:shadow-dark hover:bg-opacity-90 active:bg-opacity-75"
       : variant === "tonal"
-      ? "hover:shadow-tonal hover:bg-opacity-90 active:bg-opacity-75"
+      ? "hover:shadow-dark hover:bg-opacity-90 active:bg-opacity-75"
       : null;
 
   const loadingClass = loading ? "opacity-0" : null;

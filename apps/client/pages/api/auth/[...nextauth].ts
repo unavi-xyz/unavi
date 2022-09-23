@@ -46,7 +46,7 @@ export default function auth(req: NextApiRequest, res: NextApiResponse) {
     session: { strategy: "jwt" },
     secret: process.env.NEXT_AUTH_SECRET,
     callbacks: {
-      async jwt({ token, user }) {
+      jwt({ token, user }) {
         if (user) {
           token.accessToken = user.accessToken;
           token.refreshToken = user.refreshToken;
@@ -55,7 +55,7 @@ export default function auth(req: NextApiRequest, res: NextApiResponse) {
         }
         return token;
       },
-      async session({ session, token }) {
+      session({ session, token }) {
         session.address = token.sub;
         session.accessToken = token.accessToken;
         session.user = { name: token.sub };

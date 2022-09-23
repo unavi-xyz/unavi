@@ -1,6 +1,7 @@
 import { TypedArray } from "bitecs";
 
-import { Entity, Material, WorkerMessage } from "../types";
+import { SceneMessage } from "../scene";
+import { WorkerMessage } from "../types";
 import { RenderWorkerOptions } from "./RenderWorker";
 
 export type LoadSceneData = {
@@ -32,13 +33,12 @@ export type WheelData = {
 };
 
 export type ToRenderMessage =
+  | SceneMessage
   | WorkerMessage<"set_canvas", OffscreenCanvas>
   | WorkerMessage<"init", RenderWorkerOptions>
   | WorkerMessage<"start">
   | WorkerMessage<"stop">
   | WorkerMessage<"destroy">
-  | WorkerMessage<"load_scene", LoadSceneData>
-  | WorkerMessage<"update_scene", ArrayBuffer>
   | WorkerMessage<"size", { width: number; height: number }>
   | WorkerMessage<"pointermove", PointerData>
   | WorkerMessage<"pointerup", PointerData>
@@ -47,47 +47,28 @@ export type ToRenderMessage =
   | WorkerMessage<"wheel", WheelData>
   | WorkerMessage<"set_transform_target", string | null>
   | WorkerMessage<"set_transform_mode", "translate" | "rotate" | "scale">
-  | WorkerMessage<"add_entity", Entity>
+  | WorkerMessage<"take_screenshot">
   | WorkerMessage<
-      "set_transform",
+      "set_player_buffers",
+      { position: Float32Array; velocity: Float32Array }
+    >
+  | WorkerMessage<"set_player_input_vector", [number, number]>
+  | WorkerMessage<
+      "mouse_move",
       {
-        entityId: string;
-        position: number[];
-        rotation: number[];
-        scale: number[];
+        x: number;
+        y: number;
       }
     >
   | WorkerMessage<
-      "set_geometry",
+      "show_visuals",
       {
-        entityId: string;
-        geometry: number[];
+        visible: boolean;
       }
-    >
-  | WorkerMessage<
-      "set_material",
-      {
-        entityId: string;
-        materialId: string | null;
-      }
-    >
-  | WorkerMessage<"add_material", Material>
-  | WorkerMessage<"edit_material", Material>
-  | WorkerMessage<"remove_material", string>
-  | WorkerMessage<"remove_entity", string>
-  | WorkerMessage<"move_entity", { entityId: string; parentId: string | null }>
-  | WorkerMessage<"take_screenshot">;
+    >;
 
 export type FromRenderMessage =
+  | SceneMessage
   | WorkerMessage<"ready">
   | WorkerMessage<"clicked_object", string | null>
-  | WorkerMessage<
-      "set_transform",
-      {
-        id: string;
-        position: number[];
-        rotation: number[];
-        scale: number[];
-      }
-    >
   | WorkerMessage<"screenshot", string>;

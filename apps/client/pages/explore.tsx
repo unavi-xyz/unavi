@@ -35,7 +35,7 @@ export default function Explore() {
           <div className="flex justify-center text-3xl font-black">Explore</div>
 
           <Carousel
-            title="✨ Latest Spaces"
+            title="🌱 Latest Spaces"
             disableBack={latestSpaces.cursor === 0}
             disableForward={latestSpaces.isLastPage}
             onBack={latestSpaces.back}
@@ -66,7 +66,7 @@ export default function Explore() {
           </Carousel>
 
           <Carousel
-            title="✨ Latest Avatars"
+            title="🌱 Latest Avatars"
             disableBack={latestAvatars.cursor === 0}
             disableForward={latestAvatars.isLastPage}
             onBack={latestAvatars.back}
@@ -85,7 +85,7 @@ export default function Explore() {
                       transform: `translate(calc(${pageOffset} + ${gapOffset}))`,
                     }}
                   >
-                    <AvatarCard avatar={avatar} sizes="140px" animateEnter />
+                    <AvatarCard avatar={avatar} sizes="173px" animateEnter />
                   </div>
                 </Link>
               );

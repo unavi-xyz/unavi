@@ -56,7 +56,7 @@ export default function Card({
           <div
             className="drop-shadow-dark overflow-hidden text-xl font-black"
             style={{
-              textShadow: "0 0 5px rgba(0, 0, 0, 0.6)",
+              textShadow: "0 0 6px rgba(0, 0, 0, 0.2)",
             }}
           >
             {text}
@@ -66,7 +66,7 @@ export default function Card({
           <div
             className="drop-shadow-dark overflow-hidden text-lg"
             style={{
-              textShadow: "0 0 5px rgba(0, 0, 0, 0.6)",
+              textShadow: "0 0 6px rgba(0, 0, 0, 0.2)",
             }}
           >
             {subtext}

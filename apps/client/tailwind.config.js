@@ -39,7 +39,7 @@ module.exports = {
         filled: "0 1px 3px 0 rgb(0 0 0 / 0.3)",
       },
       dropShadow: {
-        dark: "2px 2px 12px rgba(0, 0, 0, 0.8)",
+        dark: "0 2px 16px rgba(0, 0, 0, 0.8)",
       },
     },
   },

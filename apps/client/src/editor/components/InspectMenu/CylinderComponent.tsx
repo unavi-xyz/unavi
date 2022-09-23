@@ -18,9 +18,7 @@ export default function CylinderComponent({ entityId, mesh }: Props) {
 
   return (
     <ComponentMenu title="Geometry">
-      <MenuRows
-        titles={["Radius Top", "Radius Bottom", "Height", "Radial Segments"]}
-      >
+      <MenuRows titles={["Radius", "Height", "Radial Segments"]}>
         {[radius, height, radialSegments].map((value, i) => {
           const property =
             i === 0 ? "radius" : i === 1 ? "height" : "radialSegments";

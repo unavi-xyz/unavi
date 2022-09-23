@@ -47,7 +47,7 @@ export default function Create() {
           <div className="flex justify-center text-3xl font-black">Create</div>
 
           <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold">Projects</div>
+            <div className="text-2xl font-bold">⚒️ Projects</div>
             <div>
               <Button
                 variant="outlined"
@@ -63,7 +63,7 @@ export default function Create() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {authState === "authenticated" &&
               status === "success" &&
               data.map(({ id, name, image }) => (
@@ -72,7 +72,7 @@ export default function Create() {
                     <Card
                       text={name}
                       image={image}
-                      sizes="316px"
+                      sizes="333px"
                       animateEnter
                     />
                   </div>

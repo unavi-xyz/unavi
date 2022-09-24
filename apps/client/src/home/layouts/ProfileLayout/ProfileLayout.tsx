@@ -48,7 +48,7 @@ export default function ProfileLayout({
 
       {profile ? (
         <div className="max-w-content mx-auto">
-          <div className="bg-primaryContainer h-48 w-full md:h-64 md:rounded-3xl">
+          <div className="h-48 w-full bg-primaryContainer md:h-64 md:rounded-3xl">
             <div className="relative h-full w-full object-cover">
               {coverImage && (
                 <Image
@@ -65,7 +65,7 @@ export default function ProfileLayout({
 
           <div className="flex justify-center px-4 pb-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
-              <div className="ring-background z-10 -mt-16 flex w-32 rounded-full ring-4">
+              <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-background">
                 {
                   <ProfilePicture
                     src={profileImage ?? `https://avatar.tobi.sh/${handle}`}
@@ -84,7 +84,7 @@ export default function ProfileLayout({
                   <div className="text-lg font-black">
                     {profile.stats.totalFollowing}
                   </div>
-                  <div className="text-outline text-lg leading-5">
+                  <div className="text-lg leading-5 text-outline">
                     Following
                   </div>
                 </div>
@@ -93,7 +93,7 @@ export default function ProfileLayout({
                   <div className="text-lg font-black">
                     {profile.stats.totalFollowers}
                   </div>
-                  <div className="text-outline text-lg leading-5">
+                  <div className="text-lg leading-5 text-outline">
                     Followers
                   </div>
                 </div>

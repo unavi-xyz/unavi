@@ -2,7 +2,7 @@
   "$schema": "https://turborepo.org/schema.json",
   "pipeline": {
     "build": {
-      "dependsOn": ["^build", "codegen"],
+      "dependsOn": ["^build"],
       "outputs": ["build/**", "dist/**", ".next/**"]
     },
     "client#build": {
@@ -28,16 +28,6 @@
     "host#build": {
       "dependsOn": ["^build"],
       "env": ["RTC_MIN_PORT", "RTC_MAX_PORT"]
-    },
-    "codegen": {},
-    "client#codegen": {
-      "dependsOn": [],
-      "env": ["DATABASE_URL"]
-    },
-    "test": {
-      "dependsOn": ["build"],
-      "outputs": [],
-      "inputs": ["**/*.tsx", "**/*.ts"]
     },
     "lint": {
       "outputs": []

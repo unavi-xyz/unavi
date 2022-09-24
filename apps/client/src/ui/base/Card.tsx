@@ -34,7 +34,7 @@ export default function Card({
       className={`relative flex h-full w-full flex-col overflow-hidden transition hover:scale-105 hover:cursor-pointer ${opacityCss}`}
     >
       <div
-        className={`bg-primaryContainer h-full overflow-hidden rounded-2xl ${aspectCss}`}
+        className={`h-full overflow-hidden rounded-2xl bg-primaryContainer ${aspectCss}`}
       >
         <div className="relative h-full w-full">
           {image && (
@@ -54,7 +54,7 @@ export default function Card({
       <div className="absolute top-0 left-0 flex h-full items-end px-3 pb-2 tracking-wide text-white">
         {text && (
           <div
-            className="drop-shadow-dark overflow-hidden text-xl font-black"
+            className="overflow-hidden text-xl font-black drop-shadow-dark"
             style={{
               textShadow: "0 0 6px rgba(0, 0, 0, 0.2)",
             }}
@@ -64,7 +64,7 @@ export default function Card({
         )}
         {subtext && (
           <div
-            className="drop-shadow-dark overflow-hidden text-lg"
+            className="overflow-hidden text-lg drop-shadow-dark"
             style={{
               textShadow: "0 0 6px rgba(0, 0, 0, 0.2)",
             }}

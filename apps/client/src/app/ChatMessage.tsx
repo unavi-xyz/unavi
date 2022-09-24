@@ -50,8 +50,8 @@ export default function ChatMessage({ message }: Props) {
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className={`bg-surface text-onSurface my-1 flex w-min min-w-fit items-center space-x-2
-                  rounded-lg p-2 text-sm transition duration-700${exitCss}`}
+      className={`my-1 flex w-min min-w-fit items-center space-x-2 rounded-lg bg-surface
+                  p-2 text-sm text-onSurface transition duration-700${exitCss}`}
     >
       <div className="break-normal">{senderName}:</div>
       <div className="break-words">{text}</div>

@@ -4,7 +4,7 @@ import {
   HasTxHashBeenIndexedQueryVariables,
 } from "@wired-labs/lens";
 
-import { lensClient } from "../client";
+import { lensClient } from "../../../server/lens";
 
 export async function pollUntilIndexed(txHash: string) {
   while (true) {

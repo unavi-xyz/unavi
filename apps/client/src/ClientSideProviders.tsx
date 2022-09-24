@@ -11,7 +11,7 @@ import { chains, wagmiClient } from "./auth/wagmi";
 import LensProvider from "./lib/lens/LensProvider";
 
 interface Props {
-  session: Session;
+  session: Session | null;
   children: React.ReactNode;
 }
 

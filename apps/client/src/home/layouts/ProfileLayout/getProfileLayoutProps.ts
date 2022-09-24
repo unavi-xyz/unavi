@@ -5,9 +5,9 @@ import {
   Profile,
 } from "@wired-labs/lens";
 
-import { lensClient } from "../../../lib/lens/client";
 import { HANDLE_ENDING } from "../../../lib/lens/constants";
-import { PageMetadata } from "../../../types";
+import { lensClient } from "../../../server/lens";
+import { PageMetadata } from "../../../ui/MetaTags";
 import { getMediaURL } from "../../../utils/getMediaURL";
 
 export interface ProfileLayoutProps {

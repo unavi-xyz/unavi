@@ -56,7 +56,7 @@ export default function Settings(props: PublicationProps) {
 
   return (
     <AvatarLayout {...props}>
-      <div className="bg-primaryContainer text-onPrimaryContainer space-y-4 rounded-2xl p-8">
+      <div className="space-y-4 rounded-2xl bg-primaryContainer p-8 text-onPrimaryContainer">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">

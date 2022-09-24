@@ -30,7 +30,7 @@ export default function Project() {
 
   return (
     <ProjectLayout name={data.name} image={data.image}>
-      <div className="bg-errorContainer text-onErrorContainer space-y-4 rounded-2xl p-8">
+      <div className="space-y-4 rounded-2xl bg-errorContainer p-8 text-onErrorContainer">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">

@@ -16,7 +16,6 @@ module.exports = {
   rules: {
     "@next/next/no-html-link-for-pages": "off",
     "no-console": ["warn", { allow: ["info", "warn", "error"] }],
-    "tailwindcss/no-custom-classname": "off",
     "simple-import-sort/imports": "warn",
     "simple-import-sort/exports": "warn",
     "unused-imports/no-unused-imports": "error",

@@ -36,7 +36,7 @@ export default function SpaceLayout({
       <div className="mx-4 h-full">
         <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
           <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
-            <div className="aspect-card bg-primaryContainer h-full w-full rounded-3xl">
+            <div className="aspect-card h-full w-full rounded-3xl bg-primaryContainer">
               <div className="relative h-full w-full object-cover">
                 {image && (
                   <Image

@@ -65,7 +65,7 @@ export default function Index() {
             </div>
 
             <div className="-mt-5 flex justify-center md:-mt-8">
-              <MdArrowDownward className="bg-surfaceDark text-onSurfaceDark animate-bounce rounded-full p-1 text-4xl md:text-5xl" />
+              <MdArrowDownward className="animate-bounce rounded-full bg-surfaceDark p-1 text-4xl text-onSurfaceDark md:text-5xl" />
             </div>
           </div>
 
@@ -115,8 +115,8 @@ export default function Index() {
 
               <div className="w-full space-y-2">
                 <div
-                  className="text-onPrimaryContainer bg-primaryContainer w-fit rounded-xl px-5 py-2
-                           text-6xl font-black"
+                  className="w-fit rounded-xl bg-primaryContainer px-5 py-2 text-6xl
+                           font-black text-onPrimaryContainer"
                 >
                   Links
                 </div>
@@ -126,7 +126,7 @@ export default function Index() {
                     href={DISCORD_URL}
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1 transition"
+                    className="rounded-lg px-6 py-1 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
                   >
                     <div className="flex items-center space-x-2">
                       <FaDiscord />
@@ -138,7 +138,7 @@ export default function Index() {
                     href={TWITTER_URL}
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1 transition"
+                    className="rounded-lg px-6 py-1 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
                   >
                     <div className="flex items-center space-x-2">
                       <VscTwitter />
@@ -150,7 +150,7 @@ export default function Index() {
                     href={GITHUB_URL}
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1 transition"
+                    className="rounded-lg px-6 py-1 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
                   >
                     <div className="flex items-center space-x-2">
                       <VscGithubInverted />
@@ -162,7 +162,7 @@ export default function Index() {
                     href={DOCS_URL}
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:bg-primaryContainer hover:text-onPrimaryContainer rounded-lg px-6 py-1 transition"
+                    className="rounded-lg px-6 py-1 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
                   >
                     <div className="flex items-center space-x-2">
                       <FaBook />

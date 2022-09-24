@@ -119,7 +119,7 @@ export default function Settings() {
 
       {profile && (
         <div className="space-y-8">
-          <div className="bg-primaryContainer text-onPrimaryContainer space-y-8 rounded-3xl p-8">
+          <div className="space-y-8 rounded-3xl bg-primaryContainer p-8 text-onPrimaryContainer">
             <div className="space-y-4 text-lg">
               <div className="flex items-center space-x-4">
                 <div className="font-bold">Profile ID:</div>
@@ -203,7 +203,7 @@ export default function Settings() {
             </div>
           </div>
 
-          <div className="bg-primaryContainer text-onPrimaryContainer space-y-8 rounded-3xl p-8">
+          <div className="space-y-8 rounded-3xl bg-primaryContainer p-8 text-onPrimaryContainer">
             <div className="space-y-4 text-lg">
               <div className="font-bold">Profile Picture</div>
 

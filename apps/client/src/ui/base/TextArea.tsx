@@ -26,12 +26,12 @@ export default function TextArea({
 
       <div className="flex items-center rounded-lg">
         {frontAdornment && (
-          <span className="text-primary pl-2 font-bold">{frontAdornment}</span>
+          <span className="pl-2 font-bold text-primary">{frontAdornment}</span>
         )}
         <textarea
           ref={textAreaRef}
           id={id}
-          className="bg-surface text-onSurface h-full w-full rounded-md px-3 py-2 outline-none"
+          className="h-full w-full rounded-md bg-surface px-3 py-2 text-onSurface outline-none"
           onChange={onChange}
           {...rest}
         />

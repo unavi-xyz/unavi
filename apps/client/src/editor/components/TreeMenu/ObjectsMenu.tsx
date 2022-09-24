@@ -28,8 +28,8 @@ export default function ObjectsMenu() {
         <button
           key={name}
           onClick={() => addObject(name)}
-          className="hover:bg-primaryContainer hover:text-onPrimaryContainer flex w-full
-                     items-center rounded px-4 py-0.5 transition"
+          className="flex w-full items-center rounded
+                     px-4 py-0.5 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
         >
           {name}
         </button>

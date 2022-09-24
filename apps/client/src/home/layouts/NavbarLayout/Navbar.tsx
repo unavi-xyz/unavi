@@ -12,7 +12,7 @@ export default function Navbar() {
   const { handle } = useLens();
 
   return (
-    <div className="bg-surface flex h-full w-full justify-center">
+    <div className="flex h-full w-full justify-center bg-surface">
       <div className="max-w-content mx-4 flex justify-between md:grid md:grid-cols-3">
         <div className="flex items-center">
           <Link href="/" passHref>

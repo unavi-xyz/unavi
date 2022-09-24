@@ -48,8 +48,8 @@ export default function MaterialComponent({ entityId }: Props) {
       <div className="flex h-7 w-full justify-between space-x-4">
         <button
           onClick={(e) => setOpen(true)}
-          className={`hover:bg-primaryContainer flex h-full w-1/3 min-w-fit
-                      cursor-default items-center justify-center space-y-1 rounded-md transition`}
+          className={`flex h-full w-1/3 min-w-fit cursor-default
+                      items-center justify-center space-y-1 rounded-md transition hover:bg-primaryContainer`}
         >
           <MdOutlineFolderOpen />
         </button>
@@ -66,7 +66,7 @@ export default function MaterialComponent({ entityId }: Props) {
 
               <button
                 onClick={() => updateEntity(entityId, { materialId: null })}
-                className="text-outline flex h-full cursor-default items-center px-2 text-lg transition hover:text-black"
+                className="flex h-full cursor-default items-center px-2 text-lg text-outline transition hover:text-black"
               >
                 <MdClose />
               </button>
@@ -74,8 +74,8 @@ export default function MaterialComponent({ entityId }: Props) {
           ) : (
             <button
               onClick={createMaterial}
-              className={`hover:bg-primaryContainer flex h-full w-full cursor-default items-center
-                          justify-center space-x-1 rounded-md bg-neutral-100 shadow-inner transition`}
+              className={`flex h-full w-full cursor-default items-center justify-center
+                          space-x-1 rounded-md bg-neutral-100 shadow-inner transition hover:bg-primaryContainer`}
             >
               <MdAdd className="text-lg" />
               <div>New Material</div>
@@ -179,8 +179,8 @@ function DropdownMaterialButton({
     <div className="group relative">
       <button
         onClick={onClick}
-        className={`hover:bg-primaryContainer w-full cursor-default
-                    rounded-md transition ${selectedClass}`}
+        className={`w-full cursor-default rounded-md
+                    transition hover:bg-primaryContainer ${selectedClass}`}
       >
         <div>{material.name || materialId}</div>
       </button>
@@ -191,7 +191,7 @@ function DropdownMaterialButton({
           e.preventDefault();
           removeMaterial(materialId);
         }}
-        className={`text-outline absolute right-2 top-0 z-10 flex h-full items-center
+        className={`absolute right-2 top-0 z-10 flex h-full items-center text-outline
                     opacity-0 transition hover:text-black group-hover:opacity-100`}
       >
         <MdDelete />

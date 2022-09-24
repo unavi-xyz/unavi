@@ -43,10 +43,10 @@ export default function TextField({
       </div>
 
       <div
-        className={`bg-surface text-onSurface flex items-center rounded-lg ${outlineClass}`}
+        className={`flex items-center rounded-lg bg-surface text-onSurface ${outlineClass}`}
       >
         {frontAdornment && (
-          <span className="text-outline pl-3 font-bold">{frontAdornment}</span>
+          <span className="pl-3 font-bold text-outline">{frontAdornment}</span>
         )}
         <input
           ref={inputRef}

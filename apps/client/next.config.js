@@ -1,4 +1,3 @@
-const withPlugins = require("next-compose-plugins");
 const { withAxiom } = require("next-axiom");
 const withTM = require("next-transpile-modules")([
   "three",
@@ -18,24 +17,12 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 });
 
 /**
- * Don't be scared of the generics here.
- * All they do is to give us autocompletion when using this.
- *
- * @template {import('next').NextConfig} T
- * @param {T} config - A generic parameter that flows through to the return type
- * @constraint {{import('next').NextConfig}}
+ * @type {import('next').NextConfig}
  */
-function defineConfig(config) {
-  return config;
-}
-
-const config = defineConfig({
-  reactStrictMode: true,
-  swcMinify: true,
-  experimental: {
-    images: {
-      allowFutureImage: true,
-    },
+const config = {
+  i18n: {
+    locales: ["en"],
+    defaultLocale: "en",
   },
   images: {
     domains: [
@@ -44,20 +31,8 @@ const config = defineConfig({
       "avatar.tobi.sh",
     ],
   },
-  async redirects() {
-    return [
-      {
-        source: "/app",
-        destination: "/",
-        permanent: false,
-      },
-      {
-        source: "/editor",
-        destination: "/create",
-        permanent: false,
-      },
-    ];
-  },
+  reactStrictMode: true,
+  swcMinify: true,
   async headers() {
     return [
       {
@@ -75,6 +50,20 @@ const config = defineConfig({
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/app",
+        destination: "/explore",
+        permanent: false,
+      },
+      {
+        source: "/editor",
+        destination: "/create",
+        permanent: false,
+      },
+    ];
+  },
   webpack: function (config) {
     config.experiments = {
       ...config.experiments,
@@ -83,9 +72,21 @@ const config = defineConfig({
     };
     return config;
   },
-});
+};
 
-module.exports = withPlugins(
-  [withBundleAnalyzer, withAxiom, withTM, withPWA],
-  config
-);
+module.exports = (_phase, { defaultConfig }) => {
+  // Workaround to avoid console warning spam
+  // https://github.com/vercel/next.js/issues/39161
+  delete defaultConfig.webpackDevMiddleware;
+  delete defaultConfig.configOrigin;
+  delete defaultConfig.target;
+  delete defaultConfig.webpack5;
+  delete defaultConfig.amp.canonicalBase;
+  delete defaultConfig.experimental.outputFileTracingRoot;
+
+  const plugins = [withBundleAnalyzer, withAxiom, withTM, withPWA];
+  return plugins.reduce((acc, plugin) => plugin(acc), {
+    ...defaultConfig,
+    ...config,
+  });
+};

@@ -1,5 +1,10 @@
 {
   "root": true,
   "extends": ["custom"],
-  "ignorePatterns": ["public/**/*.md"]
+  "ignorePatterns": ["public/**/*.md"],
+  "settings": {
+    "next": {
+      "rootDir": "apps/examples"
+    }
+  }
 }

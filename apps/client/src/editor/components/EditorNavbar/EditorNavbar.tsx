@@ -63,7 +63,7 @@ export default function EditorNavbar() {
       <div className="flex w-full items-center space-x-4 text-lg">
         <div
           onClick={handleBack}
-          className="text-outline cursor-pointer p-1 transition hover:text-inherit"
+          className="cursor-pointer p-1 text-outline transition hover:text-inherit"
         >
           <MdArrowBackIosNew />
         </div>

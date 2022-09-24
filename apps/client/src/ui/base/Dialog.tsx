@@ -65,8 +65,8 @@ export default function Dialog({
         ref={dialogRef}
         open
         onMouseDown={(e) => e.stopPropagation()}
-        className="bg-surface text-onSurface flex w-full max-w-xl scale-75
-                   flex-col space-y-4 rounded-3xl p-10 opacity-0 drop-shadow-lg
+        className="flex w-full max-w-xl scale-75 flex-col space-y-4
+                   rounded-3xl bg-surface p-10 text-onSurface opacity-0 drop-shadow-lg
                    transition duration-200 ease-in-out"
       >
         <DialogContext.Provider value={{ close: onClose }}>

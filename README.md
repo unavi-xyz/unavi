@@ -65,12 +65,6 @@ yarn install
 
 > ⚠️ If you run into issues installing, it's probably mediasoup. Follow the steps on their [installation guide](https://mediasoup.org/documentation/v3/mediasoup/installation/) to get it to work (pay attention to the versions very carefully). Mediasoup tends to be easier to install on Linux, so if you're on Windows, consider using [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install).
 
-Then run codegen to generate needed files:
-
-```bash
-yarn codegen
-```
-
 ### Build
 
 To build all apps and packages, run the following command:

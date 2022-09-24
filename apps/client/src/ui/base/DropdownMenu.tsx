@@ -57,8 +57,8 @@ export default function DropdownMenu({
     <div className="relative">
       <div
         ref={menuRef}
-        className={`bg-surface text-onSurface absolute z-10 w-full min-w-max
-                    rounded-xl shadow-lg transition ease-in-out ${placementClass}
+        className={`absolute z-10 w-full min-w-max rounded-xl bg-surface
+                    text-onSurface shadow-lg transition ease-in-out ${placementClass}
                     scale-75 opacity-0`}
       >
         {visible && children}

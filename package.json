@@ -9,11 +9,11 @@
   ],
   "scripts": {
     "build": "turbo run build",
-    "codegen": "turbo run codegen",
+    "codegen": "yarn workspace @wired-labs/client codegen && yarn workspace @wired-labs/lens codegen",
     "deploy": "turbo run deploy",
     "dev": "turbo run dev --parallel",
     "format": "eslint --fix . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore && prettier --write .",
-    "postinstall": "husky install && patch-package",
+    "postinstall": "husky install && patch-package && yarn codegen",
     "lint": "turbo run lint",
     "test": "turbo run test"
   },

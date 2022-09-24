@@ -2,6 +2,12 @@ import Head from "next/head";
 
 const origin = `https://${process.env.VERCEL_URL}`;
 
+export type PageMetadata = {
+  title: string | null;
+  description: string | null;
+  image: string | null;
+};
+
 interface Props {
   title?: string;
   description?: string;

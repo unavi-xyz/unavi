@@ -8,7 +8,7 @@ export function useLoad() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data: project } = trpc.useQuery(["project", { id }], {
+  const { data: project } = trpc.useQuery(["auth.project", { id }], {
     enabled: id !== undefined,
     cacheTime: 0,
     refetchOnWindowFocus: false,
@@ -16,7 +16,7 @@ export function useLoad() {
     refetchOnMount: false,
   });
 
-  const { data: scene } = trpc.useQuery(["scene", { id }], {
+  const { data: scene } = trpc.useQuery(["auth.scene", { id }], {
     enabled: id !== undefined,
     cacheTime: 0,
     refetchOnWindowFocus: false,

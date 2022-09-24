@@ -24,9 +24,9 @@ export default function ProfileMenu({ openSwitchProfile }: Props) {
     <div className="space-y-1 p-2">
       <button
         onClick={openSwitchProfile}
-        className="hover:bg-primaryContainer hover:text-onPrimaryContainer flex
-                     w-full justify-center space-x-2 rounded-lg py-1 px-5
-                     font-bold transition"
+        className="flex w-full justify-center
+                     space-x-2 rounded-lg py-1 px-5 font-bold transition
+                     hover:bg-primaryContainer hover:text-onPrimaryContainer"
       >
         @{handle}
       </button>

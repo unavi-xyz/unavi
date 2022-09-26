@@ -5,5 +5,5 @@ export const emptyScene: SceneJSON = {
   materials: [],
   accessors: [],
   images: [],
-  textures: [],
+  animations: [],
 };

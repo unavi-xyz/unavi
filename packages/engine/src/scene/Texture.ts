@@ -1,47 +1,20 @@
-import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
 import { TextureJSON } from "./types";
 
 export class Texture {
-  readonly id: string;
-
-  name$ = new BehaviorSubject("New Texture");
-  isInternal$ = new BehaviorSubject(false);
-
-  sourceId$ = new BehaviorSubject<string | null>(null);
-
+  imageId$ = new BehaviorSubject<string | null>(null);
   magFilter$ = new BehaviorSubject<number>(9729);
   minFIlters$ = new BehaviorSubject<number>(9987);
   wrapS$ = new BehaviorSubject<number>(0);
   wrapT$ = new BehaviorSubject<number>(0);
 
-  constructor({ id = nanoid() }: { id?: string } = {}) {
-    this.id = id;
+  get imageId() {
+    return this.imageId$.value;
   }
 
-  get name() {
-    return this.name$.value;
-  }
-
-  set name(name: string) {
-    this.name$.next(name);
-  }
-
-  get isInternal() {
-    return this.isInternal$.value;
-  }
-
-  set isInternal(isInternal: boolean) {
-    this.isInternal$.next(isInternal);
-  }
-
-  get sourceId() {
-    return this.sourceId$.value;
-  }
-
-  set sourceId(image: string | null) {
-    this.sourceId$.next(image);
+  set imageId(image: string | null) {
+    this.imageId$.next(image);
   }
 
   get magFilter() {
@@ -77,9 +50,7 @@ export class Texture {
   }
 
   destroy() {
-    this.name$.complete();
-    this.isInternal$.complete();
-    this.sourceId$.complete();
+    this.imageId$.complete();
     this.magFilter$.complete();
     this.minFIlters$.complete();
     this.wrapS$.complete();
@@ -88,10 +59,7 @@ export class Texture {
 
   toJSON(): TextureJSON {
     return {
-      id: this.id,
-      name: this.name,
-      isInternal: this.isInternal,
-      sourceId: this.sourceId,
+      imageId: this.imageId,
       magFilter: this.magFilter,
       minFilter: this.minFilter,
       wrapS: this.wrapS,
@@ -100,9 +68,7 @@ export class Texture {
   }
 
   applyJSON(json: Partial<TextureJSON>) {
-    if (json.name !== undefined) this.name = json.name;
-    if (json.isInternal !== undefined) this.isInternal = json.isInternal;
-    if (json.sourceId !== undefined) this.sourceId = json.sourceId;
+    if (json.imageId !== undefined) this.imageId = json.imageId;
     if (json.magFilter !== undefined) this.magFilter = json.magFilter;
     if (json.minFilter !== undefined) this.minFilter = json.minFilter;
     if (json.wrapS !== undefined) this.wrapS = json.wrapS;
@@ -110,7 +76,7 @@ export class Texture {
   }
 
   static fromJSON(json: TextureJSON) {
-    const texture = new Texture({ id: json.id });
+    const texture = new Texture();
     texture.applyJSON(json);
     return texture;
   }

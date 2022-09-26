@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
 import { Quad, Triplet } from "../types";
+import { Texture } from "./Texture";
 import { MaterialJSON } from "./types";
 
 export class Material {
@@ -22,11 +23,11 @@ export class Material {
   roughness$ = new BehaviorSubject(1);
   metalness$ = new BehaviorSubject(0);
 
-  colorTextureId$ = new BehaviorSubject<string | null>(null);
-  emissiveTextureId$ = new BehaviorSubject<string | null>(null);
-  normalTextureId$ = new BehaviorSubject<string | null>(null);
-  occlusionTextureId$ = new BehaviorSubject<string | null>(null);
-  metallicRoughnessTextureId$ = new BehaviorSubject<string | null>(null);
+  colorTexture$ = new BehaviorSubject<Texture | null>(null);
+  emissiveTexture$ = new BehaviorSubject<Texture | null>(null);
+  normalTexture$ = new BehaviorSubject<Texture | null>(null);
+  occlusionTexture$ = new BehaviorSubject<Texture | null>(null);
+  metallicRoughnessTexture$ = new BehaviorSubject<Texture | null>(null);
 
   constructor({ id = nanoid() }: { id?: string } = {}) {
     this.id = id;
@@ -145,47 +146,53 @@ export class Material {
     this.occlusionStrength$.next(clamped);
   }
 
-  get colorTextureId() {
-    return this.colorTextureId$.value;
+  get colorTexture() {
+    return this.colorTexture$.value;
   }
 
-  set colorTextureId(colorTextureId: string | null) {
-    this.colorTextureId$.next(colorTextureId);
+  set colorTexture(colorTexture: Texture | null) {
+    this.colorTexture$.next(colorTexture);
   }
 
-  get emissiveTextureId() {
-    return this.emissiveTextureId$.value;
+  get emissiveTexture() {
+    return this.emissiveTexture$.value;
   }
 
-  set emissiveTextureId(emissiveTextureId: string | null) {
-    this.emissiveTextureId$.next(emissiveTextureId);
+  set emissiveTexture(emissiveTexture: Texture | null) {
+    this.emissiveTexture$.next(emissiveTexture);
   }
 
-  get normalTextureId() {
-    return this.normalTextureId$.value;
+  get normalTexture() {
+    return this.normalTexture$.value;
   }
 
-  set normalTextureId(normalTextureId: string | null) {
-    this.normalTextureId$.next(normalTextureId);
+  set normalTexture(normalTexture: Texture | null) {
+    this.normalTexture$.next(normalTexture);
   }
 
-  get occlusionTextureId() {
-    return this.occlusionTextureId$.value;
+  get occlusionTexture() {
+    return this.occlusionTexture$.value;
   }
 
-  set occlusionTextureId(occlusionTextureId: string | null) {
-    this.occlusionTextureId$.next(occlusionTextureId);
+  set occlusionTexture(occlusionTexture: Texture | null) {
+    this.occlusionTexture$.next(occlusionTexture);
   }
 
-  get metallicRoughnessTextureId() {
-    return this.metallicRoughnessTextureId$.value;
+  get metallicRoughnessTexture() {
+    return this.metallicRoughnessTexture$.value;
   }
 
-  set metallicRoughnessTextureId(metallicRoughnessTextureId: string | null) {
-    this.metallicRoughnessTextureId$.next(metallicRoughnessTextureId);
+  set metallicRoughnessTexture(metallicRoughnessTexture: Texture | null) {
+    this.metallicRoughnessTexture$.next(metallicRoughnessTexture);
   }
 
   destroy() {
+    this.colorTexture?.destroy();
+    this.emissiveTexture?.destroy();
+    this.normalTexture?.destroy();
+    this.occlusionTexture?.destroy();
+    this.metallicRoughnessTexture?.destroy();
+
     this.name$.complete();
     this.isInternal$.complete();
     this.alpha$.complete();
@@ -198,14 +205,28 @@ export class Material {
     this.occlusionStrength$.complete();
     this.roughness$.complete();
     this.metalness$.complete();
-    this.colorTextureId$.complete();
-    this.emissiveTextureId$.complete();
-    this.normalTextureId$.complete();
-    this.occlusionTextureId$.complete();
-    this.metallicRoughnessTextureId$.complete();
+    this.colorTexture$.complete();
+    this.emissiveTexture$.complete();
+    this.normalTexture$.complete();
+    this.occlusionTexture$.complete();
+    this.metallicRoughnessTexture$.complete();
   }
 
   toJSON(): MaterialJSON {
+    const colorTexture = this.colorTexture ? this.colorTexture.toJSON() : null;
+    const emissiveTexture = this.emissiveTexture
+      ? this.emissiveTexture.toJSON()
+      : null;
+    const normalTexture = this.normalTexture
+      ? this.normalTexture.toJSON()
+      : null;
+    const occlusionTexture = this.occlusionTexture
+      ? this.occlusionTexture.toJSON()
+      : null;
+    const metallicRoughnessTexture = this.metallicRoughnessTexture
+      ? this.metallicRoughnessTexture.toJSON()
+      : null;
+
     return {
       id: this.id,
       name: this.name,
@@ -220,11 +241,11 @@ export class Material {
       alphaMode: this.alphaMode,
       normalScale: this.normalScale,
       occlusionStrength: this.occlusionStrength,
-      colorTextureId: this.colorTextureId,
-      emissiveTextureId: this.emissiveTextureId,
-      normalTextureId: this.normalTextureId,
-      occlusionTextureId: this.occlusionTextureId,
-      metallicRoughnessTextureId: this.metallicRoughnessTextureId,
+      colorTexture,
+      emissiveTexture,
+      normalTexture,
+      occlusionTexture,
+      metallicRoughnessTexture,
     };
   }
 
@@ -242,16 +263,26 @@ export class Material {
     if (json.normalScale !== undefined) this.normalScale = json.normalScale;
     if (json.occlusionStrength !== undefined)
       this.occlusionStrength = json.occlusionStrength;
-    if (json.colorTextureId !== undefined)
-      this.colorTextureId = json.colorTextureId;
-    if (json.emissiveTextureId !== undefined)
-      this.emissiveTextureId = json.emissiveTextureId;
-    if (json.normalTextureId !== undefined)
-      this.normalTextureId = json.normalTextureId;
-    if (json.occlusionTextureId !== undefined)
-      this.occlusionTextureId = json.occlusionTextureId;
-    if (json.metallicRoughnessTextureId !== undefined)
-      this.metallicRoughnessTextureId = json.metallicRoughnessTextureId;
+    if (json.colorTexture !== undefined)
+      this.colorTexture = json.colorTexture
+        ? Texture.fromJSON(json.colorTexture)
+        : null;
+    if (json.emissiveTexture !== undefined)
+      this.emissiveTexture = json.emissiveTexture
+        ? Texture.fromJSON(json.emissiveTexture)
+        : null;
+    if (json.normalTexture !== undefined)
+      this.normalTexture = json.normalTexture
+        ? Texture.fromJSON(json.normalTexture)
+        : null;
+    if (json.occlusionTexture !== undefined)
+      this.occlusionTexture = json.occlusionTexture
+        ? Texture.fromJSON(json.occlusionTexture)
+        : null;
+    if (json.metallicRoughnessTexture !== undefined)
+      this.metallicRoughnessTexture = json.metallicRoughnessTexture
+        ? Texture.fromJSON(json.metallicRoughnessTexture)
+        : null;
   }
 
   static fromJSON(json: MaterialJSON) {

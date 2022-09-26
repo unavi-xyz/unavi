@@ -2,11 +2,11 @@ import { BehaviorSubject } from "rxjs";
 
 import { Quad, Triplet } from "../types";
 import { Accessor } from "./Accessor";
+import { Animation } from "./Animation";
 import { Entity } from "./Entity";
 import { Image } from "./Image";
 import { Material } from "./Material";
-import { Texture } from "./Texture";
-import { EntityJSON, SceneJSON } from "./types";
+import { EntityJSON, MaterialJSON, SceneJSON } from "./types";
 
 /*
  * Stores the state of the scene.
@@ -15,9 +15,9 @@ import { EntityJSON, SceneJSON } from "./types";
 export class Scene {
   entities$ = new BehaviorSubject<{ [id: string]: Entity }>({});
   materials$ = new BehaviorSubject<{ [id: string]: Material }>({});
-  textures$ = new BehaviorSubject<{ [id: string]: Texture }>({});
   accessors$ = new BehaviorSubject<{ [id: string]: Accessor }>({});
   images$ = new BehaviorSubject<{ [id: string]: Image }>({});
+  animations$ = new BehaviorSubject<{ [id: string]: Animation }>({});
 
   constructor() {
     const root = new Entity({ id: "root" });
@@ -40,14 +40,6 @@ export class Scene {
     this.materials$.next(materials);
   }
 
-  get textures() {
-    return this.textures$.value;
-  }
-
-  set textures(textures: { [id: string]: Texture }) {
-    this.textures$.next(textures);
-  }
-
   get accessors() {
     return this.accessors$.value;
   }
@@ -62,6 +54,14 @@ export class Scene {
 
   set images(images: { [id: string]: Image }) {
     this.images$.next(images);
+  }
+
+  get animations() {
+    return this.animations$.value;
+  }
+
+  set animations(animations: { [id: string]: Animation }) {
+    this.animations$.next(animations);
   }
 
   addAccessor(accessor: Accessor) {
@@ -166,50 +166,11 @@ export class Scene {
     );
   }
 
-  updateMaterial(materialId: string, data: Partial<Material>) {
+  updateMaterial(materialId: string, data: Partial<MaterialJSON>) {
     const material = this.materials[materialId];
     if (!material) throw new Error(`Material ${materialId} not found`);
 
     material.applyJSON(data);
-  }
-
-  addTexture(texture: Texture) {
-    const previous = this.textures[texture.id];
-    if (previous) this.removeTexture(previous.id);
-
-    // Save to textures
-    this.textures = {
-      ...this.textures,
-      [texture.id]: texture,
-    };
-  }
-
-  removeTexture(textureId: string) {
-    const texture = this.textures[textureId];
-    if (!texture) throw new Error(`Texture ${textureId} not found`);
-
-    // Remove from all materials
-    this.materials = Object.fromEntries(
-      Object.entries(this.materials).map(([id, material]) => {
-        // if (material.textureId === textureId) material.textureId = null;
-        return [id, material];
-      })
-    );
-
-    // Destroy texture
-    texture.destroy();
-
-    // Remove from textures
-    this.textures = Object.fromEntries(
-      Object.entries(this.textures).filter(([id]) => id !== textureId)
-    );
-  }
-
-  updateTexture(textureId: string, data: Partial<Texture>) {
-    const texture = this.textures[textureId];
-    if (!texture) throw new Error(`Texture ${textureId} not found`);
-
-    texture.applyJSON(data);
   }
 
   addImage(image: Image) {
@@ -227,17 +188,30 @@ export class Scene {
     const image = this.images[imageId];
     if (!image) throw new Error(`Image ${imageId} not found`);
 
-    // Remove from all textures
-    this.textures = Object.fromEntries(
-      Object.entries(this.textures).map(([id, texture]) => {
-        if (texture.sourceId === imageId) texture.sourceId = null;
-        return [id, texture];
-      })
-    );
-
     // Remove from images
     this.images = Object.fromEntries(
       Object.entries(this.images).filter(([id]) => id !== imageId)
+    );
+  }
+
+  addAnimation(animation: Animation) {
+    const previous = this.animations[animation.id];
+    if (previous) this.removeAnimation(previous.id);
+
+    // Save to animations
+    this.animations = {
+      ...this.animations,
+      [animation.id]: animation,
+    };
+  }
+
+  removeAnimation(animationId: string) {
+    const animation = this.animations[animationId];
+    if (!animation) throw new Error(`Animation ${animationId} not found`);
+
+    // Remove from animations
+    this.animations = Object.fromEntries(
+      Object.entries(this.animations).filter(([id]) => id !== animationId)
     );
   }
 
@@ -249,15 +223,15 @@ export class Scene {
       materials: Object.values(this.materials)
         .filter((m) => (m.isInternal ? includeInternal : true))
         .map((m) => m.toJSON()),
-      textures: Object.values(this.textures)
-        .filter((t) => (t.isInternal ? includeInternal : true))
-        .map((t) => t.toJSON()),
       accessors: Object.values(this.accessors)
         .filter((a) => (a.isInternal ? includeInternal : true))
         .map((a) => a.toJSON()),
       images: Object.values(this.images)
         .filter((i) => (i.isInternal ? includeInternal : true))
         .map((i) => i.toJSON()),
+      animations: Object.values(this.animations)
+        .filter((a) => (a.isInternal ? includeInternal : true))
+        .map((a) => a.toJSON()),
     };
   }
 
@@ -266,9 +240,6 @@ export class Scene {
       this.addAccessor(Accessor.fromJSON(accessor))
     );
     json.images.forEach((image) => this.addImage(Image.fromJSON(image)));
-    json.textures.forEach((texture) =>
-      this.addTexture(Texture.fromJSON(texture))
-    );
     json.materials.forEach((material) =>
       this.addMaterial(Material.fromJSON(material))
     );
@@ -280,19 +251,23 @@ export class Scene {
       return 0;
     });
     sortedEntities.forEach((entity) => this.addEntity(Entity.fromJSON(entity)));
+
+    json.animations.forEach((animation) =>
+      this.addAnimation(Animation.fromJSON(animation))
+    );
   }
 
   destroy() {
     Object.values(this.entities).forEach((entity) => entity.destroy());
     Object.values(this.materials).forEach((material) => material.destroy());
-    Object.values(this.textures).forEach((texture) => texture.destroy());
     Object.values(this.accessors).forEach((accessor) => accessor.destroy());
     Object.values(this.images).forEach((image) => image.destroy());
+    Object.values(this.animations).forEach((animation) => animation.destroy());
 
     this.entities$.complete();
     this.materials$.complete();
-    this.textures$.complete();
     this.accessors$.complete();
     this.images$.complete();
+    this.animations$.complete();
   }
 }

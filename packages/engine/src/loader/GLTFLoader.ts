@@ -1,5 +1,8 @@
 import {
   Accessor as IAccessor,
+  Animation as IAnimation,
+  AnimationChannel as IAnimationChannel,
+  AnimationSampler as IAnimationSampler,
   Material as IMaterial,
   Mesh as IMesh,
   Node as INode,
@@ -15,8 +18,18 @@ import {
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import { nanoid } from "nanoid";
 
-import { Entity, Material, PrimitiveMesh, Scene, Texture } from "../scene";
+import {
+  AnimationChannel,
+  AnimationSampler,
+  Entity,
+  Material,
+  PrimitiveMesh,
+  Scene,
+  SkinMesh,
+  Texture,
+} from "../scene";
 import { Accessor } from "../scene/Accessor";
+import { Animation } from "../scene/Animation";
 import { Image } from "../scene/Image";
 import { quaternionToEuler } from "./quaternionToEuler";
 
@@ -34,6 +47,7 @@ export class GLTFLoader {
   #root: Root | null = null;
 
   #cache = {
+    nodes: new Map<INode, string>(),
     materials: new Map<IMaterial, Material>(),
     accessors: new Map<IAccessor, string>(),
     images: new Map<ITexture, string>(),
@@ -62,72 +76,71 @@ export class GLTFLoader {
     });
 
     // Load skins
-    // this.#loadSkins();
+    this.#loadSkins();
 
     // Load animations
-    // if (!this.#root) throw new Error("No root");
-    // this.#root.listAnimations().forEach((animation) => {
-    //   this.#loadAnimation(animation);
-    // });
+    if (!this.#root) throw new Error("No root");
+    this.#root.listAnimations().forEach((animation) => {
+      this.#loadAnimation(animation);
+    });
   }
 
-  // #loadAnimation(animation: IAnimation) {
-  //   // Create entity
-  //   const eid = addEntity(this.#world);
-  //   addComponent(this.#world, Animation, eid);
-  //   Animation.name[eid] = this.#assets.names.push(animation.getName()) - 1;
+  #loadAnimation(animation: IAnimation) {
+    // Create entity
+    const animationState = new Animation();
+    animationState.name = animation.getName();
 
-  //   // Load channels
-  //   animation.listChannels().forEach((channel) => {
-  //     this.#loadChannel(channel, eid);
-  //   });
-  // }
+    // Load channels
+    animationState.channels = animation
+      .listChannels()
+      .map((channel) => this.#loadChannel(channel));
 
-  // #loadChannel(channel: IAnimationChannel, animation: number) {
-  //   // Create entity
-  //   const eid = addEntity(this.#world);
-  //   addComponent(this.#world, AnimationChannel, eid);
-  //   AnimationChannel.animation[eid] = animation;
+    // Add to scene
+    this.#scene.addAnimation(animationState);
+  }
 
-  //   // Set target
-  //   const targetNode = channel.getTargetNode();
-  //   if (!targetNode) throw new Error("No target node");
-  //   const nodeId = this.#nodes.get(targetNode);
-  //   if (nodeId === undefined) throw new Error("No target node entity");
-  //   AnimationChannel.target[eid] = nodeId;
+  #loadChannel(channel: IAnimationChannel): AnimationChannel {
+    // Get target
+    const targetNode = channel.getTargetNode();
+    if (!targetNode) throw new Error("No target node");
 
-  //   // Set target path
-  //   const targetPath = channel.getTargetPath();
-  //   if (!targetPath) throw new Error("No target path");
-  //   AnimationChannel.targetPath[eid] = TargetPath[targetPath];
+    const targetId = this.#cache.nodes.get(targetNode);
+    if (targetId === undefined) throw new Error("No target node entity");
 
-  //   // Load sampler
-  //   const sampler = channel.getSampler();
-  //   if (!sampler) throw new Error("No sampler");
-  //   AnimationChannel.sampler[eid] = this.#loadSampler(sampler);
-  // }
+    // Load sampler
+    const sampler = channel.getSampler();
+    if (!sampler) throw new Error("No sampler");
 
-  // #loadSampler(sampler: IAnimationSampler) {
-  //   // Create entity
-  //   const eid = addEntity(this.#world);
-  //   addComponent(this.#world, AnimationSampler, eid);
+    const channelState: AnimationChannel = {
+      targetId,
+      path: channel.getTargetPath(),
+      sampler: this.#loadSampler(sampler),
+    };
+    return channelState;
+  }
 
-  //   // Set interpolation
-  //   const interpolation = sampler.getInterpolation();
-  //   AnimationSampler.interpolation[eid] = Interpolation[interpolation];
+  #loadSampler(sampler: IAnimationSampler): AnimationSampler {
+    // Get interpolation
+    const interpolation = sampler.getInterpolation();
 
-  //   // Set input
-  //   const input = sampler.getInput();
-  //   if (!input) throw new Error("No input");
-  //   AnimationSampler.input[eid] = this.#loadAccessor(input);
+    // Get input
+    const input = sampler.getInput();
+    if (!input) throw new Error("No input");
+    const inputId = this.#loadAccessor(input);
 
-  //   // Set output
-  //   const output = sampler.getOutput();
-  //   if (!output) throw new Error("No output");
-  //   AnimationSampler.output[eid] = this.#loadAccessor(output);
+    // Get output
+    const output = sampler.getOutput();
+    if (!output) throw new Error("No output");
+    const outputId = this.#loadAccessor(output);
 
-  //   return eid;
-  // }
+    const samplerState: AnimationSampler = {
+      interpolation,
+      inputId,
+      outputId,
+    };
+
+    return samplerState;
+  }
 
   #loadNode(node: INode, parentId?: string): Entity {
     // Create entity
@@ -147,21 +160,20 @@ export class GLTFLoader {
     const mesh = node.getMesh();
     if (mesh) {
       const meshEntities = this.#loadMesh(mesh);
-      // Add mesh entities as children
-      meshEntities.forEach((meshEntity) => (meshEntity.parentId = entity.id));
+
+      const nodeWeights = node.getWeights();
+      const weights = nodeWeights.length > 0 ? nodeWeights : mesh.getWeights();
+
+      meshEntities.forEach((meshEntity) => {
+        if (meshEntity.mesh?.type !== "Primitive") throw new Error("No mesh");
+
+        // Set weights
+        meshEntity.mesh.weights = weights;
+
+        // Add to node
+        meshEntity.parentId = entity.id;
+      });
     }
-
-    // Load weights
-    // const meshWeights = mesh?.getWeights();
-    // meshWeights?.forEach((value, i) => {
-    //   Node.weights[eid][i] = value;
-    // });
-
-    // Node weights overwrite mesh weights
-    // const nodeWeights = node.getWeights();
-    // nodeWeights.forEach((value, i) => {
-    //   Node.weights[eid][i] = value;
-    // });
 
     // Load children
     node.listChildren().forEach((child) => {
@@ -171,46 +183,46 @@ export class GLTFLoader {
     // Add to scene
     this.#scene.addEntity(entity);
 
+    this.#cache.nodes.set(node, entity.id);
     return entity;
   }
 
   #loadSkins() {
-    // this.#nodes.forEach((eid, node) => {
-    //   const skin = node.getSkin();
-    //   if (skin) {
-    //     addComponent(this.#world, NodeSkin, eid);
-    //     NodeSkin.skin[eid] = this.#loadSkin(skin);
-    //   }
-    // });
+    this.#cache.nodes.forEach((entityId, node) => {
+      const skin = node.getSkin();
+      if (skin) {
+        const entity = this.#scene.entities[entityId];
+        entity.mesh = this.#loadSkin(skin);
+      }
+    });
   }
 
-  #loadSkin(skin: ISkin) {
-    // // Create entity
-    // const eid = addEntity(this.#world);
-    // addComponent(this.#world, Skin, eid);
-    // const inverseBindMatrices = skin.getInverseBindMatrices();
-    // if (!inverseBindMatrices) throw new Error("No inverse bind matrices");
-    // Skin.inverseBindMatrices[eid] = this.#loadAccessor(inverseBindMatrices);
-    // // Load joints
-    // skin.listJoints().forEach((joint) => {
-    //   this.#loadJoint(joint, eid);
-    // });
-    // return eid;
+  #loadSkin(skin: ISkin): SkinMesh {
+    const inverseBindMatrices = skin.getInverseBindMatrices();
+    if (!inverseBindMatrices) throw new Error("No inverse bind matrices");
+
+    // Create mesh
+    const mesh = new SkinMesh();
+    mesh.inverseBindMatricesId = this.#loadAccessor(inverseBindMatrices);
+
+    // Load joints
+    skin.listJoints().forEach((joint) => {
+      this.#loadJoint(joint);
+    });
+
+    return mesh;
   }
 
-  #loadJoint(joint: INode, skinId: number) {
-    // // Create entity
-    // const eid = addEntity(this.#world);
-    // addComponent(this.#world, SkinJoint, eid);
-    // // Set properties
-    // SkinJoint.skin[eid] = skinId;
-    // const jointId = this.#nodes.get(joint);
-    // if (jointId === undefined) throw new Error("No joint entity");
-    // SkinJoint.bone[eid] = jointId;
+  #loadJoint(joint: INode) {
+    const jointId = this.#cache.nodes.get(joint);
+    if (jointId === undefined) throw new Error("No joint entity");
+
+    const entity = this.#scene.entities[jointId];
+    // TODO
   }
 
   #loadMesh(mesh: IMesh): Entity[] {
-    // TODO: Use instanced meshes?
+    // TODO: Use instanced meshes
     // const cached = this.#meshes.get(mesh);
     // if (cached !== undefined) return cached;
 
@@ -277,9 +289,9 @@ export class GLTFLoader {
     });
 
     // Load morph targets
-    // primitive.listTargets().forEach((target) => {
-    //   this.#loadMorphTarget(target, eid);
-    // });
+    primitive.listTargets().forEach((target) => {
+      this.#loadMorphTarget(target, mesh);
+    });
 
     // Add to scene
     this.#scene.addEntity(entity);
@@ -287,29 +299,26 @@ export class GLTFLoader {
     return entity;
   }
 
-  #loadMorphTarget(target: IPrimitiveTarget, primitive: number) {
-    // // Create entity
-    // const eid = addEntity(this.#world);
-    // addComponent(this.#world, MorphTarget, eid);
-    // MorphTarget.primitive[eid] = primitive;
-    // // Load attributes
-    // target.listSemantics().forEach((name) => {
-    //   const attribute = target.getAttribute(name);
-    //   if (!attribute) return;
-    //   switch (name) {
-    //     case "POSITION":
-    //       this.#loadAttribute(attribute, AttributePosition, eid);
-    //       break;
-    //     case "NORMAL":
-    //       this.#loadAttribute(attribute, AttributeNormal, eid);
-    //       break;
-    //     case "TANGENT":
-    //       this.#loadAttribute(attribute, AttributeTangent, eid);
-    //       break;
-    //     default:
-    //       throw new Error(`Unsupported primitive attribute: ${name}`);
-    //   }
-    // });
+  #loadMorphTarget(target: IPrimitiveTarget, mesh: PrimitiveMesh) {
+    // Load attributes
+    target.listSemantics().forEach((name) => {
+      const attribute = target.getAttribute(name);
+      if (!attribute) return;
+
+      switch (name) {
+        case "POSITION":
+          mesh.POSITION = this.#loadAccessor(attribute);
+          break;
+        case "NORMAL":
+          mesh.NORMAL = this.#loadAccessor(attribute);
+          break;
+        case "TANGENT":
+          mesh.TANGENT = this.#loadAccessor(attribute);
+          break;
+        default:
+          throw new Error(`Unsupported primitive attribute: ${name}`);
+      }
+    });
   }
 
   #loadMaterial(material: IMaterial): Material {
@@ -332,7 +341,7 @@ export class GLTFLoader {
     const colorTexture = material.getBaseColorTexture();
     const colorInfo = material.getBaseColorTextureInfo();
     if (colorTexture && colorInfo)
-      materialState.colorTextureId = this.#loadTexture(colorTexture, colorInfo);
+      materialState.colorTexture = this.#loadTexture(colorTexture, colorInfo);
 
     // Emissive
     materialState.emissive = material.getEmissiveFactor();
@@ -341,7 +350,7 @@ export class GLTFLoader {
     const emissiveTexture = material.getEmissiveTexture();
     const emissiveInfo = material.getEmissiveTextureInfo();
     if (emissiveTexture && emissiveInfo)
-      materialState.emissiveTextureId = this.#loadTexture(
+      materialState.emissiveTexture = this.#loadTexture(
         emissiveTexture,
         emissiveInfo
       );
@@ -354,7 +363,7 @@ export class GLTFLoader {
     const metallicRoughnessTexture = material.getMetallicRoughnessTexture();
     const metallicRoughnessInfo = material.getMetallicRoughnessTextureInfo();
     if (metallicRoughnessTexture && metallicRoughnessInfo)
-      materialState.metallicRoughnessTextureId = this.#loadTexture(
+      materialState.metallicRoughnessTexture = this.#loadTexture(
         metallicRoughnessTexture,
         metallicRoughnessInfo
       );
@@ -366,7 +375,7 @@ export class GLTFLoader {
     const normalTexture = material.getNormalTexture();
     const normalInfo = material.getNormalTextureInfo();
     if (normalTexture && normalInfo)
-      materialState.normalTextureId = this.#loadTexture(
+      materialState.normalTexture = this.#loadTexture(
         normalTexture,
         normalInfo
       );
@@ -378,7 +387,7 @@ export class GLTFLoader {
     const occlusionTexture = material.getOcclusionTexture();
     const occlusionInfo = material.getOcclusionTextureInfo();
     if (occlusionTexture && occlusionInfo)
-      materialState.occlusionTextureId = this.#loadTexture(
+      materialState.occlusionTexture = this.#loadTexture(
         occlusionTexture,
         occlusionInfo
       );
@@ -390,13 +399,10 @@ export class GLTFLoader {
     return materialState;
   }
 
-  #loadTexture(texture: ITexture, info: ITextureInfo): string {
+  #loadTexture(texture: ITexture, info: ITextureInfo): Texture {
     // Create texture
     const textureState = new Texture();
-    textureState.isInternal = true;
-    textureState.name = texture.getName();
-
-    textureState.sourceId = this.#loadTextureImage(texture);
+    textureState.imageId = this.#loadTextureImage(texture);
 
     const magFilter = info.getMagFilter();
     if (magFilter !== null) textureState.magFilter = magFilter;
@@ -410,10 +416,7 @@ export class GLTFLoader {
     const wrapT = info.getWrapT();
     textureState.wrapT = wrapT;
 
-    // Add to scene
-    this.#scene.addTexture(textureState);
-
-    return textureState.id;
+    return textureState;
   }
 
   #loadTextureImage(texture: ITexture): string {

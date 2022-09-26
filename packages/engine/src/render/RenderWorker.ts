@@ -213,12 +213,13 @@ export class RenderWorker {
   }
 
   #animate() {
+    const delta = this.#clock.getDelta();
     this.#animationFrameId = requestAnimationFrame(() => this.#animate());
     if (!this.#renderer || !this.#camera) return;
 
-    const delta = this.#clock.getDelta() * 1000;
-
+    this.#sceneLink.mixer.update(delta);
     this.#plugins.forEach((plugin) => plugin.animate(delta));
+
     this.#renderer.render(this.#scene, this.#camera);
   }
 

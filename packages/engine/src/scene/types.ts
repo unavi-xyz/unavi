@@ -18,10 +18,7 @@ export type EntityJSON = {
 };
 
 export type TextureJSON = {
-  id: string;
-  isInternal: boolean;
-  name: string;
-  sourceId: string | null;
+  imageId: string | null;
   magFilter: number;
   minFilter: number;
   wrapS: number;
@@ -48,11 +45,11 @@ export type MaterialJSON = {
   alphaMode: "OPAQUE" | "MASK" | "BLEND";
   normalScale: number;
   occlusionStrength: number;
-  colorTextureId: string | null;
-  emissiveTextureId: string | null;
-  normalTextureId: string | null;
-  occlusionTextureId: string | null;
-  metallicRoughnessTextureId: string | null;
+  colorTexture: TextureJSON | null;
+  emissiveTexture: TextureJSON | null;
+  normalTexture: TextureJSON | null;
+  occlusionTexture: TextureJSON | null;
+  metallicRoughnessTexture: TextureJSON | null;
 };
 
 export type AccessorJSON = {
@@ -63,12 +60,31 @@ export type AccessorJSON = {
   normalized: boolean;
 };
 
+export type AnimationSampler = {
+  interpolation: "LINEAR" | "STEP" | "CUBICSPLINE";
+  inputId: string;
+  outputId: string;
+};
+
+export type AnimationChannel = {
+  targetId: string;
+  path: string | null;
+  sampler: AnimationSampler;
+};
+
+export type AnimationJSON = {
+  id: string;
+  isInternal: boolean;
+  name: string;
+  channels: AnimationChannel[];
+};
+
 export type SceneJSON = {
   entities: EntityJSON[];
   materials: MaterialJSON[];
-  textures: TextureJSON[];
   accessors: AccessorJSON[];
   images: ImageJSON[];
+  animations: AnimationJSON[];
 };
 
 // Messages

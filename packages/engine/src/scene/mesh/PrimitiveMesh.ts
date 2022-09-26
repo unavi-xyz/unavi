@@ -5,9 +5,13 @@ import { PrimitiveMeshJSON } from "./types";
 export class PrimitiveMesh {
   readonly type = "Primitive";
 
-  name$ = new BehaviorSubject("Primitive");
   mode$ = new BehaviorSubject(4);
   indicesId$ = new BehaviorSubject<string | null>(null);
+
+  weights$ = new BehaviorSubject<number[]>([]);
+  morphPosition$ = new BehaviorSubject<number[]>([]);
+  morphNormal$ = new BehaviorSubject<number[]>([]);
+  morphTangent$ = new BehaviorSubject<number[]>([]);
 
   POSITION$ = new BehaviorSubject<string | null>(null);
   NORMAL$ = new BehaviorSubject<string | null>(null);
@@ -17,14 +21,6 @@ export class PrimitiveMesh {
   COLOR_0$ = new BehaviorSubject<string | null>(null);
   JOINTS_0$ = new BehaviorSubject<string | null>(null);
   WEIGHTS_0$ = new BehaviorSubject<string | null>(null);
-
-  get name() {
-    return this.name$.value;
-  }
-
-  set name(name: string) {
-    this.name$.next(name);
-  }
 
   get mode() {
     return this.mode$.value;
@@ -40,6 +36,14 @@ export class PrimitiveMesh {
 
   set indicesId(indicesId: string | null) {
     this.indicesId$.next(indicesId);
+  }
+
+  get weights() {
+    return this.weights$.value;
+  }
+
+  set weights(weights: number[]) {
+    this.weights$.next(weights);
   }
 
   get POSITION() {
@@ -107,9 +111,9 @@ export class PrimitiveMesh {
   }
 
   destroy() {
-    this.name$.complete();
     this.mode$.complete();
     this.indicesId$.complete();
+    this.weights$.complete();
     this.POSITION$.complete();
     this.NORMAL$.complete();
     this.TANGENT$.complete();
@@ -123,9 +127,9 @@ export class PrimitiveMesh {
   toJSON(): PrimitiveMeshJSON {
     return {
       type: this.type,
-      name: this.name,
       mode: this.mode,
       indicesId: this.indicesId,
+      weights: this.weights,
       POSITION: this.POSITION,
       NORMAL: this.NORMAL,
       TANGENT: this.TANGENT,
@@ -138,9 +142,9 @@ export class PrimitiveMesh {
   }
 
   applyJSON(json: Partial<PrimitiveMeshJSON>) {
-    if (json.name !== undefined) this.name = json.name;
     if (json.mode !== undefined) this.mode = json.mode;
     if (json.indicesId !== undefined) this.indicesId = json.indicesId;
+    if (json.weights !== undefined) this.weights = json.weights;
     if (json.POSITION !== undefined) this.POSITION = json.POSITION;
     if (json.NORMAL !== undefined) this.NORMAL = json.NORMAL;
     if (json.TANGENT !== undefined) this.TANGENT = json.TANGENT;

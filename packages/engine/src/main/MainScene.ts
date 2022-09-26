@@ -7,7 +7,12 @@ import { ToRenderMessage } from "../render/types";
 import { Entity } from "../scene/Entity";
 import { Material } from "../scene/Material";
 import { Scene } from "../scene/Scene";
-import { EntityJSON, SceneJSON, SceneMessage } from "../scene/types";
+import {
+  EntityJSON,
+  MaterialJSON,
+  SceneJSON,
+  SceneMessage,
+} from "../scene/types";
 import { PostMessage, Quad, Triplet } from "../types";
 
 /*
@@ -216,7 +221,7 @@ export class MainScene {
     this.#toRenderThread({ subject: "remove_material", data: { materialId } });
   }
 
-  updateMaterial(materialId: string, data: Partial<Material>) {
+  updateMaterial(materialId: string, data: Partial<MaterialJSON>) {
     this.#scene.updateMaterial(materialId, data);
 
     this.#toRenderThread({

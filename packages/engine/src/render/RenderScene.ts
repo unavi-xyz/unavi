@@ -66,14 +66,6 @@ export class RenderScene {
     return this.#scene.materials;
   }
 
-  get textures$() {
-    return this.#scene.textures$;
-  }
-
-  get textures() {
-    return this.#scene.textures;
-  }
-
   get accessors() {
     return this.#scene.accessors;
   }
@@ -84,6 +76,14 @@ export class RenderScene {
 
   get images() {
     return this.#scene.images;
+  }
+
+  get animations$() {
+    return this.#scene.animations$;
+  }
+
+  get animations() {
+    return this.#scene.animations;
   }
 
   updateEntity(entityId: string, data: Partial<EntityJSON>) {

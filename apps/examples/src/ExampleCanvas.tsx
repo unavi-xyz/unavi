@@ -67,7 +67,7 @@ export default function ExampleCanvas({ uri }: Props) {
     }
 
     initEngine();
-  }, [canvasRef, engine, uri]);
+  }, [canvasRef, engine]);
 
   useEffect(() => {
     if (!engine) return;
@@ -81,13 +81,18 @@ export default function ExampleCanvas({ uri }: Props) {
   useEffect(() => {
     if (!engine) return;
 
+    // Create glTF entity
     const entity = new Entity();
     const mesh = new GLTFMesh();
     mesh.uri = uri;
     entity.mesh = mesh;
 
-    // Add gltf to scene
+    // Add entity to scene
     engine.scene.addEntity(entity);
+
+    return () => {
+      engine.scene.removeEntity(entity.id);
+    };
   }, [engine, uri]);
 
   const loadedClass = loaded ? "opacity-100" : "opacity-0";

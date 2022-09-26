@@ -1,4 +1,5 @@
 import {
+  Clock,
   FogExp2,
   PerspectiveCamera,
   PMREMGenerator,
@@ -48,7 +49,7 @@ export class RenderWorker {
   #animationFrameId: number | null = null;
   #canvasWidth = 0;
   #canvasHeight = 0;
-  #lastTime = performance.now();
+  #clock = new Clock();
 
   #plugins: Plugin[] = [];
   #pluginState: PluginState = {
@@ -185,10 +186,12 @@ export class RenderWorker {
 
   start() {
     this.stop();
+    this.#clock.start();
     this.#animate();
   }
 
   stop() {
+    this.#clock.stop();
     if (this.#animationFrameId !== null) {
       cancelAnimationFrame(this.#animationFrameId);
       this.#animationFrameId = null;
@@ -213,9 +216,7 @@ export class RenderWorker {
     this.#animationFrameId = requestAnimationFrame(() => this.#animate());
     if (!this.#renderer || !this.#camera) return;
 
-    const time = performance.now();
-    const delta = time - this.#lastTime;
-    this.#lastTime = time;
+    const delta = this.#clock.getDelta() * 1000;
 
     this.#plugins.forEach((plugin) => plugin.animate(delta));
     this.#renderer.render(this.#scene, this.#camera);

@@ -74,7 +74,9 @@ export class GameThread {
   }
 
   destroy() {
-    this.#worker.terminate();
-    if (this.#player) this.#player.destroy();
+    this.stop();
+    setTimeout(() => this.#worker.terminate());
+
+    this.#player?.destroy();
   }
 }

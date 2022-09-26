@@ -196,7 +196,7 @@ export class RenderThread {
 
   destroy() {
     this.worker.postMessage({ subject: "destroy", data: null });
-    this.worker.terminate();
+    setTimeout(() => this.worker.terminate());
 
     this.#canvas.removeEventListener("contextmenu", this.#onContextMenu);
     this.#canvas.removeEventListener("pointermove", this.#onPointerMove);

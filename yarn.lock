@@ -3960,14 +3960,14 @@
     cannon-es "^0.20.0"
     cannon-es-debugger "^1.0.0"
 
-"@react-three/fiber@^8.8.2":
-  version "8.8.2"
-  resolved "https://registry.yarnpkg.com/@react-three/fiber/-/fiber-8.8.2.tgz#d91837bdf47724f159d229a632c0466cb68ccab9"
-  integrity sha512-H37RZ74n7R3/G5moGLNw464TPRDlMFIcfjkfslyXAdyYEs+oF0wmFrv29HUCKJub+WzN+/Rb8XeQq9lwdGDwwA==
+"@react-three/fiber@^8.8.4":
+  version "8.8.4"
+  resolved "https://registry.yarnpkg.com/@react-three/fiber/-/fiber-8.8.4.tgz#22880605e15921526390e765bc5557cd5169afa1"
+  integrity sha512-Jy1rRwf+NucHASE3h46jWNWhE0mJxMoAIH4msJH+9tlrth0VcWdYqg98TD7CBW+7mPfkFrUhbvV203LH21IhQA==
   dependencies:
     "@babel/runtime" "^7.17.8"
     "@types/react-reconciler" "^0.26.7"
-    its-fine "^1.0.1"
+    its-fine "^1.0.2"
     react-reconciler "^0.27.0"
     react-use-measure "^2.1.1"
     scheduler "^0.21.0"
@@ -10252,10 +10252,10 @@ it-to-stream@^1.0.0:
     p-fifo "^1.0.0"
     readable-stream "^3.6.0"
 
-its-fine@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/its-fine/-/its-fine-1.0.1.tgz#5b336ae72d221b01d8ed5d41fbacaac4c301eff5"
-  integrity sha512-E7ihBaOViboN99S9x1UkYVSrHyCguSls9ndOmLsq74wFZ6mUr+7PUSjykywVC5Ip065USSGdrjnys23nZb7xcQ==
+its-fine@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/its-fine/-/its-fine-1.0.2.tgz#0b4a861dea1d561251ac81565585aeba5893776f"
+  integrity sha512-EztmS3Wi9qH4FnhK3NkEyldMbDRKDaSJ3/4M7pH1BXG+IxF4xRV8Q5Ste5q0uJAPAGmXFqBpcsrXOTBi6DYcCQ==
   dependencies:
     "@types/react-reconciler" "^0.28.0"
 

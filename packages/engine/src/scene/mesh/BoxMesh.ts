@@ -52,9 +52,9 @@ export class BoxMesh {
   }
 
   applyJSON(json: Partial<BoxMeshJSON>) {
-    if (json.width) this.width = json.width;
-    if (json.height) this.height = json.height;
-    if (json.depth) this.depth = json.depth;
+    if (json.width !== undefined) this.width = json.width;
+    if (json.height !== undefined) this.height = json.height;
+    if (json.depth !== undefined) this.depth = json.depth;
   }
 
   static fromJSON(json: BoxMeshJSON) {

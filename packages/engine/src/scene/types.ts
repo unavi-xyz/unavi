@@ -1,59 +1,12 @@
-import { Triplet, WorkerMessage } from "../types";
-import { BoxCollider } from "./BoxCollider";
-import { BoxMesh } from "./BoxMesh";
-import { CylinderCollider } from "./CylinderCollider";
-import { CylinderMesh } from "./CylinderMesh";
-import { SphereCollider } from "./SphereCollider";
-import { SphereMesh } from "./SphereMesh";
+import { TypedArray } from "@gltf-transform/core";
 
-export type BoxMeshJSON = {
-  type: "Box";
-  width: number;
-  height: number;
-  depth: number;
-};
-
-export type SphereMeshJSON = {
-  type: "Sphere";
-  radius: number;
-  widthSegments: number;
-  heightSegments: number;
-};
-
-export type CylinderMeshJSON = {
-  type: "Cylinder";
-  radius: number;
-  height: number;
-  radialSegments: number;
-};
-
-export type MeshJSON = BoxMeshJSON | SphereMeshJSON | CylinderMeshJSON;
-export type Mesh = BoxMesh | SphereMesh | CylinderMesh;
-
-export type BoxColliderJSON = {
-  type: "Box";
-  size: Triplet;
-};
-
-export type SphereColliderJSON = {
-  type: "Sphere";
-  radius: number;
-};
-
-export type CylinderColliderJSON = {
-  type: "Cylinder";
-  radius: number;
-  height: number;
-};
-
-export type ColliderJSON =
-  | BoxColliderJSON
-  | SphereColliderJSON
-  | CylinderColliderJSON;
-export type Collider = BoxCollider | SphereCollider | CylinderCollider;
+import { Quad, Triplet, WorkerMessage } from "../types";
+import { ColliderJSON } from "./collider/types";
+import { MeshJSON } from "./mesh/types";
 
 export type EntityJSON = {
   id: string;
+  isInternal: boolean;
   name: string;
   parentId: string;
   position: Triplet;
@@ -64,17 +17,58 @@ export type EntityJSON = {
   collider: ColliderJSON | null;
 };
 
+export type TextureJSON = {
+  id: string;
+  isInternal: boolean;
+  name: string;
+  sourceId: string | null;
+  magFilter: number;
+  minFilter: number;
+  wrapS: number;
+  wrapT: number;
+};
+
+export type ImageJSON = {
+  id: string;
+  isInternal: boolean;
+  bitmap: ImageBitmap;
+};
+
 export type MaterialJSON = {
   id: string;
+  isInternal: boolean;
   name: string;
-  color: Triplet;
+  doubleSided: boolean;
+  color: Quad;
+  emissive: Triplet;
   roughness: number;
   metalness: number;
+  alpha: number;
+  alphaCutoff: number;
+  alphaMode: "OPAQUE" | "MASK" | "BLEND";
+  normalScale: number;
+  occlusionStrength: number;
+  colorTextureId: string | null;
+  emissiveTextureId: string | null;
+  normalTextureId: string | null;
+  occlusionTextureId: string | null;
+  metallicRoughnessTextureId: string | null;
+};
+
+export type AccessorJSON = {
+  id: string;
+  isInternal: boolean;
+  array: TypedArray;
+  elementSize: number;
+  normalized: boolean;
 };
 
 export type SceneJSON = {
   entities: EntityJSON[];
   materials: MaterialJSON[];
+  textures: TextureJSON[];
+  accessors: AccessorJSON[];
+  images: ImageJSON[];
 };
 
 // Messages
@@ -109,7 +103,7 @@ export type SceneMessage =
       {
         entityId: string;
         position: Triplet;
-        quaternion: [number, number, number, number];
+        quaternion: Quad;
       }
     >
   | WorkerMessage<

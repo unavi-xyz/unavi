@@ -1,8 +1,5 @@
 import {
   Accessor as IAccessor,
-  Animation as IAnimation,
-  AnimationChannel as IAnimationChannel,
-  AnimationSampler as IAnimationSampler,
   Material as IMaterial,
   Mesh as IMesh,
   Node as INode,
@@ -12,94 +9,50 @@ import {
   Scene as IScene,
   Skin as ISkin,
   Texture as ITexture,
+  TextureInfo as ITextureInfo,
   WebIO,
 } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
-import {
-  addComponent,
-  addEntity,
-  ComponentType,
-  createWorld,
-  defineSerializer,
-} from "bitecs";
+import { nanoid } from "nanoid";
 
-import {
-  AlphaMode,
-  Animation,
-  AnimationChannel,
-  AnimationSampler,
-  AttributeColor,
-  AttributeNormal,
-  AttributePosition,
-  AttributeSkinIndex,
-  AttributeSkinWeight,
-  AttributeTangent,
-  AttributeType,
-  AttributeUV,
-  AttributeUV2,
-  ColorTexture,
-  config,
-  EmissiveTexture,
-  Interpolation,
-  Material,
-  MetallicRoughnessTexture,
-  MorphTarget,
-  Node,
-  NodeMesh,
-  NodeParent,
-  NodeSkin,
-  NormalTexture,
-  OcclusionTexture,
-  Primitive,
-  PrimitiveIndices,
-  PrimitiveMaterial,
-  Skin,
-  SkinJoint,
-  TargetPath,
-  Texture,
-} from "../ecs/components";
-import { Assets, LoadedGLTF } from "./types";
-import { loadTextureInfo } from "./utils";
+import { Entity, Material, PrimitiveMesh, Scene, Texture } from "../scene";
+import { Accessor } from "../scene/Accessor";
+import { Image } from "../scene/Image";
+import { quaternionToEuler } from "./quaternionToEuler";
 
 const extensionDeps = {};
 
-// Loads a glTF asset into engine ECS format
+/*
+ * Loads a GLTF model into the engine's internal scene format.
+ */
 export class GLTFLoader {
+  #scene = new Scene();
+
   #io = new WebIO()
     .registerExtensions(ALL_EXTENSIONS)
     .registerDependencies(extensionDeps);
   #root: Root | null = null;
 
-  #nodes = new Map<INode, number>();
-  #meshes = new Map<IMesh, number>();
-  #materials = new Map<IMaterial, number>();
-  #textures = new Map<ITexture, number>();
-  #accessors = new Map<IAccessor, number>();
-
-  #imagePromises: Promise<ImageBitmap>[] = [];
-
-  #world = createWorld(config);
-  #assets: Assets = {
-    names: [],
-    images: [],
-    accessors: [],
+  #cache = {
+    materials: new Map<IMaterial, Material>(),
+    accessors: new Map<IAccessor, string>(),
+    images: new Map<ITexture, string>(),
   };
 
-  #serialize = defineSerializer(config);
+  #pending: Promise<void>[] = [];
 
-  async load(uri: string): Promise<LoadedGLTF> {
+  async load(uri: string): Promise<Scene> {
     const document = await this.#io.read(uri);
     this.#root = document.getRoot();
+
+    // Load only one scene
     const scene = this.#root.getDefaultScene() ?? this.#root.listScenes()[0];
 
     this.#loadScene(scene);
 
-    const world = this.#serialize(this.#world);
+    await Promise.all(this.#pending);
 
-    const images = await Promise.all(this.#imagePromises);
-    this.#assets.images = images;
-
-    return { world, assets: this.#assets };
+    return this.#scene;
   }
 
   #loadScene(scene: IScene) {
@@ -109,209 +62,184 @@ export class GLTFLoader {
     });
 
     // Load skins
-    this.#loadSkins();
+    // this.#loadSkins();
 
     // Load animations
-    if (!this.#root) throw new Error("No root");
-    this.#root.listAnimations().forEach((animation) => {
-      this.#loadAnimation(animation);
-    });
+    // if (!this.#root) throw new Error("No root");
+    // this.#root.listAnimations().forEach((animation) => {
+    //   this.#loadAnimation(animation);
+    // });
   }
 
-  #loadAnimation(animation: IAnimation) {
+  // #loadAnimation(animation: IAnimation) {
+  //   // Create entity
+  //   const eid = addEntity(this.#world);
+  //   addComponent(this.#world, Animation, eid);
+  //   Animation.name[eid] = this.#assets.names.push(animation.getName()) - 1;
+
+  //   // Load channels
+  //   animation.listChannels().forEach((channel) => {
+  //     this.#loadChannel(channel, eid);
+  //   });
+  // }
+
+  // #loadChannel(channel: IAnimationChannel, animation: number) {
+  //   // Create entity
+  //   const eid = addEntity(this.#world);
+  //   addComponent(this.#world, AnimationChannel, eid);
+  //   AnimationChannel.animation[eid] = animation;
+
+  //   // Set target
+  //   const targetNode = channel.getTargetNode();
+  //   if (!targetNode) throw new Error("No target node");
+  //   const nodeId = this.#nodes.get(targetNode);
+  //   if (nodeId === undefined) throw new Error("No target node entity");
+  //   AnimationChannel.target[eid] = nodeId;
+
+  //   // Set target path
+  //   const targetPath = channel.getTargetPath();
+  //   if (!targetPath) throw new Error("No target path");
+  //   AnimationChannel.targetPath[eid] = TargetPath[targetPath];
+
+  //   // Load sampler
+  //   const sampler = channel.getSampler();
+  //   if (!sampler) throw new Error("No sampler");
+  //   AnimationChannel.sampler[eid] = this.#loadSampler(sampler);
+  // }
+
+  // #loadSampler(sampler: IAnimationSampler) {
+  //   // Create entity
+  //   const eid = addEntity(this.#world);
+  //   addComponent(this.#world, AnimationSampler, eid);
+
+  //   // Set interpolation
+  //   const interpolation = sampler.getInterpolation();
+  //   AnimationSampler.interpolation[eid] = Interpolation[interpolation];
+
+  //   // Set input
+  //   const input = sampler.getInput();
+  //   if (!input) throw new Error("No input");
+  //   AnimationSampler.input[eid] = this.#loadAccessor(input);
+
+  //   // Set output
+  //   const output = sampler.getOutput();
+  //   if (!output) throw new Error("No output");
+  //   AnimationSampler.output[eid] = this.#loadAccessor(output);
+
+  //   return eid;
+  // }
+
+  #loadNode(node: INode, parentId?: string): Entity {
     // Create entity
-    const eid = addEntity(this.#world);
-    addComponent(this.#world, Animation, eid);
-    Animation.name[eid] = this.#assets.names.push(animation.getName()) - 1;
-
-    // Load channels
-    animation.listChannels().forEach((channel) => {
-      this.#loadChannel(channel, eid);
-    });
-  }
-
-  #loadChannel(channel: IAnimationChannel, animation: number) {
-    // Create entity
-    const eid = addEntity(this.#world);
-    addComponent(this.#world, AnimationChannel, eid);
-    AnimationChannel.animation[eid] = animation;
-
-    // Set target
-    const targetNode = channel.getTargetNode();
-    if (!targetNode) throw new Error("No target node");
-    const nodeId = this.#nodes.get(targetNode);
-    if (nodeId === undefined) throw new Error("No target node entity");
-    AnimationChannel.target[eid] = nodeId;
-
-    // Set target path
-    const targetPath = channel.getTargetPath();
-    if (!targetPath) throw new Error("No target path");
-    AnimationChannel.targetPath[eid] = TargetPath[targetPath];
-
-    // Load sampler
-    const sampler = channel.getSampler();
-    if (!sampler) throw new Error("No sampler");
-    AnimationChannel.sampler[eid] = this.#loadSampler(sampler);
-  }
-
-  #loadSampler(sampler: IAnimationSampler) {
-    // Create entity
-    const eid = addEntity(this.#world);
-    addComponent(this.#world, AnimationSampler, eid);
-
-    // Set interpolation
-    const interpolation = sampler.getInterpolation();
-    AnimationSampler.interpolation[eid] = Interpolation[interpolation];
-
-    // Set input
-    const input = sampler.getInput();
-    if (!input) throw new Error("No input");
-    AnimationSampler.input[eid] = this.#loadAccessor(input);
-
-    // Set output
-    const output = sampler.getOutput();
-    if (!output) throw new Error("No output");
-    AnimationSampler.output[eid] = this.#loadAccessor(output);
-
-    return eid;
-  }
-
-  #loadNode(node: INode, parent?: number) {
-    // Create entity
-    const eid = addEntity(this.#world);
-    addComponent(this.#world, Node, eid);
-    Node.name[eid] = this.#assets.names.push(node.getName()) - 1;
+    const entity = new Entity();
+    entity.isInternal = true;
+    entity.name = node.getName();
 
     // Set parent
-    if (parent !== undefined) {
-      addComponent(this.#world, NodeParent, eid);
-      NodeParent.parent[eid] = parent;
-    }
+    if (parentId !== undefined) entity.parentId = parentId;
 
     // Set transform
-    const position = node.getTranslation();
-    Node.position.x[eid] = position[0];
-    Node.position.y[eid] = position[1];
-    Node.position.z[eid] = position[2];
-
-    const rotation = node.getRotation();
-    Node.rotation.x[eid] = rotation[0];
-    Node.rotation.y[eid] = rotation[1];
-    Node.rotation.z[eid] = rotation[2];
-    Node.rotation.w[eid] = rotation[3];
-
-    const scale = node.getScale();
-    Node.scale.x[eid] = scale[0];
-    Node.scale.y[eid] = scale[1];
-    Node.scale.z[eid] = scale[2];
+    entity.position = node.getTranslation();
+    entity.rotation = quaternionToEuler(node.getRotation());
+    entity.scale = node.getScale();
 
     // Load mesh
     const mesh = node.getMesh();
     if (mesh) {
-      addComponent(this.#world, NodeMesh, eid);
-      NodeMesh.mesh[eid] = this.#loadMesh(mesh);
+      const meshEntities = this.#loadMesh(mesh);
+      // Add mesh entities as children
+      meshEntities.forEach((meshEntity) => (meshEntity.parentId = entity.id));
     }
 
     // Load weights
-    const meshWeights = mesh?.getWeights();
-    meshWeights?.forEach((value, i) => {
-      Node.weights[eid][i] = value;
-    });
+    // const meshWeights = mesh?.getWeights();
+    // meshWeights?.forEach((value, i) => {
+    //   Node.weights[eid][i] = value;
+    // });
 
     // Node weights overwrite mesh weights
-    const nodeWeights = node.getWeights();
-    nodeWeights.forEach((value, i) => {
-      Node.weights[eid][i] = value;
-    });
+    // const nodeWeights = node.getWeights();
+    // nodeWeights.forEach((value, i) => {
+    //   Node.weights[eid][i] = value;
+    // });
 
     // Load children
     node.listChildren().forEach((child) => {
-      this.#loadNode(child, eid);
+      this.#loadNode(child, entity.id);
     });
 
-    this.#nodes.set(node, eid);
+    // Add to scene
+    this.#scene.addEntity(entity);
+
+    return entity;
   }
 
   #loadSkins() {
-    this.#nodes.forEach((eid, node) => {
-      const skin = node.getSkin();
-      if (skin) {
-        addComponent(this.#world, NodeSkin, eid);
-        NodeSkin.skin[eid] = this.#loadSkin(skin);
-      }
-    });
+    // this.#nodes.forEach((eid, node) => {
+    //   const skin = node.getSkin();
+    //   if (skin) {
+    //     addComponent(this.#world, NodeSkin, eid);
+    //     NodeSkin.skin[eid] = this.#loadSkin(skin);
+    //   }
+    // });
   }
 
   #loadSkin(skin: ISkin) {
-    // Create entity
-    const eid = addEntity(this.#world);
-    addComponent(this.#world, Skin, eid);
-
-    const inverseBindMatrices = skin.getInverseBindMatrices();
-    if (!inverseBindMatrices) throw new Error("No inverse bind matrices");
-    Skin.inverseBindMatrices[eid] = this.#loadAccessor(inverseBindMatrices);
-
-    // Load joints
-    skin.listJoints().forEach((joint) => {
-      this.#loadJoint(joint, eid);
-    });
-
-    return eid;
+    // // Create entity
+    // const eid = addEntity(this.#world);
+    // addComponent(this.#world, Skin, eid);
+    // const inverseBindMatrices = skin.getInverseBindMatrices();
+    // if (!inverseBindMatrices) throw new Error("No inverse bind matrices");
+    // Skin.inverseBindMatrices[eid] = this.#loadAccessor(inverseBindMatrices);
+    // // Load joints
+    // skin.listJoints().forEach((joint) => {
+    //   this.#loadJoint(joint, eid);
+    // });
+    // return eid;
   }
 
   #loadJoint(joint: INode, skinId: number) {
-    // Create entity
-    const eid = addEntity(this.#world);
-    addComponent(this.#world, SkinJoint, eid);
-
-    // Set properties
-    SkinJoint.skin[eid] = skinId;
-    const jointId = this.#nodes.get(joint);
-    if (jointId === undefined) throw new Error("No joint entity");
-    SkinJoint.bone[eid] = jointId;
+    // // Create entity
+    // const eid = addEntity(this.#world);
+    // addComponent(this.#world, SkinJoint, eid);
+    // // Set properties
+    // SkinJoint.skin[eid] = skinId;
+    // const jointId = this.#nodes.get(joint);
+    // if (jointId === undefined) throw new Error("No joint entity");
+    // SkinJoint.bone[eid] = jointId;
   }
 
-  #loadMesh(mesh: IMesh) {
-    // TODO: Use instanced meshes
+  #loadMesh(mesh: IMesh): Entity[] {
+    // TODO: Use instanced meshes?
     // const cached = this.#meshes.get(mesh);
     // if (cached !== undefined) return cached;
 
-    // Create entity
-    const eid = addEntity(this.#world);
-
     // Load primitives
-    mesh.listPrimitives().forEach((primitive) => {
-      this.#loadPrimitive(primitive, eid);
-    });
+    const primitives = mesh
+      .listPrimitives()
+      .map((primitive) => this.#loadPrimitive(primitive));
 
-    this.#meshes.set(mesh, eid);
-    return eid;
+    return primitives;
   }
 
-  #loadPrimitive(primitive: IPrimitive, mesh: number) {
+  #loadPrimitive(primitive: IPrimitive): Entity {
     // Create entity
-    const eid = addEntity(this.#world);
-    addComponent(this.#world, Primitive, eid);
+    const entity = new Entity();
+    entity.isInternal = true;
+    entity.name = primitive.getName();
 
-    // Set primitive properties
-    Primitive.mesh[eid] = mesh;
-    Primitive.mode[eid] = primitive.getMode();
+    // Create mesh
+    const mesh = new PrimitiveMesh();
+    entity.mesh = mesh;
+    mesh.mode = primitive.getMode();
 
     // Load material
     const material = primitive.getMaterial();
-    if (material) {
-      addComponent(this.#world, PrimitiveMaterial, eid);
-      PrimitiveMaterial.material[eid] = this.#loadMaterial(material);
-    }
+    if (material) entity.materialId = this.#loadMaterial(material).id;
 
     // Load indices
     const indices = primitive.getIndices();
-    if (indices) {
-      addComponent(this.#world, PrimitiveIndices, eid);
-      PrimitiveIndices.array[eid] = this.#loadAccessor(indices);
-      PrimitiveIndices.itemSize[eid] = indices.getElementSize();
-      PrimitiveIndices.normalized[eid] = Number(indices.getNormalized());
-    }
+    if (indices) mesh.indicesId = this.#loadAccessor(indices);
 
     // Load attributes
     primitive.listSemantics().forEach((name) => {
@@ -320,28 +248,28 @@ export class GLTFLoader {
 
       switch (name) {
         case "POSITION":
-          this.#loadAttribute(attribute, AttributePosition, eid);
+          mesh.POSITION = this.#loadAccessor(attribute);
           break;
         case "NORMAL":
-          this.#loadAttribute(attribute, AttributeNormal, eid);
+          mesh.NORMAL = this.#loadAccessor(attribute);
           break;
         case "TANGENT":
-          this.#loadAttribute(attribute, AttributeTangent, eid);
+          mesh.TANGENT = this.#loadAccessor(attribute);
           break;
         case "TEXCOORD_0":
-          this.#loadAttribute(attribute, AttributeUV, eid);
+          mesh.TEXCOORD_0 = this.#loadAccessor(attribute);
           break;
         case "TEXCOORD_1":
-          this.#loadAttribute(attribute, AttributeUV2, eid);
+          mesh.TEXCOORD_1 = this.#loadAccessor(attribute);
           break;
         case "COLOR_0":
-          this.#loadAttribute(attribute, AttributeColor, eid);
+          mesh.COLOR_0 = this.#loadAccessor(attribute);
           break;
         case "JOINTS_0":
-          this.#loadAttribute(attribute, AttributeSkinIndex, eid);
+          mesh.JOINTS_0 = this.#loadAccessor(attribute);
           break;
         case "WEIGHTS_0":
-          this.#loadAttribute(attribute, AttributeSkinWeight, eid);
+          mesh.WEIGHTS_0 = this.#loadAccessor(attribute);
           break;
         default:
           throw new Error(`Unsupported primitive attribute: ${name}`);
@@ -349,175 +277,196 @@ export class GLTFLoader {
     });
 
     // Load morph targets
-    primitive.listTargets().forEach((target) => {
-      this.#loadMorphTarget(target, eid);
-    });
+    // primitive.listTargets().forEach((target) => {
+    //   this.#loadMorphTarget(target, eid);
+    // });
 
-    return eid;
+    // Add to scene
+    this.#scene.addEntity(entity);
+
+    return entity;
   }
 
   #loadMorphTarget(target: IPrimitiveTarget, primitive: number) {
-    // Create entity
-    const eid = addEntity(this.#world);
-    addComponent(this.#world, MorphTarget, eid);
-    MorphTarget.primitive[eid] = primitive;
-
-    // Load attributes
-    target.listSemantics().forEach((name) => {
-      const attribute = target.getAttribute(name);
-      if (!attribute) return;
-
-      switch (name) {
-        case "POSITION":
-          this.#loadAttribute(attribute, AttributePosition, eid);
-          break;
-        case "NORMAL":
-          this.#loadAttribute(attribute, AttributeNormal, eid);
-          break;
-        case "TANGENT":
-          this.#loadAttribute(attribute, AttributeTangent, eid);
-          break;
-        default:
-          throw new Error(`Unsupported primitive attribute: ${name}`);
-      }
-    });
+    // // Create entity
+    // const eid = addEntity(this.#world);
+    // addComponent(this.#world, MorphTarget, eid);
+    // MorphTarget.primitive[eid] = primitive;
+    // // Load attributes
+    // target.listSemantics().forEach((name) => {
+    //   const attribute = target.getAttribute(name);
+    //   if (!attribute) return;
+    //   switch (name) {
+    //     case "POSITION":
+    //       this.#loadAttribute(attribute, AttributePosition, eid);
+    //       break;
+    //     case "NORMAL":
+    //       this.#loadAttribute(attribute, AttributeNormal, eid);
+    //       break;
+    //     case "TANGENT":
+    //       this.#loadAttribute(attribute, AttributeTangent, eid);
+    //       break;
+    //     default:
+    //       throw new Error(`Unsupported primitive attribute: ${name}`);
+    //   }
+    // });
   }
 
-  #loadAttribute(
-    attribute: IAccessor,
-    component: ComponentType<typeof AttributeType>,
-    eid: number
-  ) {
-    addComponent(this.#world, component, eid);
-    component.array[eid] = this.#loadAccessor(attribute);
-    component.itemSize[eid] = attribute.getElementSize();
-    component.normalized[eid] = Number(attribute.getNormalized());
-  }
-
-  #loadMaterial(material: IMaterial) {
-    const cached = this.#materials.get(material);
+  #loadMaterial(material: IMaterial): Material {
+    const cached = this.#cache.materials.get(material);
     if (cached !== undefined) return cached;
 
     // Create entity
-    const eid = addEntity(this.#world);
-    addComponent(this.#world, Material, eid);
-    Material.name[eid] = this.#assets.names.push(material.getName()) - 1;
-
-    // Set material properties
-    Material.doubleSided[eid] = Number(material.getDoubleSided());
+    const materialState = new Material();
+    materialState.isInternal = true;
+    materialState.name = material.getName();
+    materialState.doubleSided = material.getDoubleSided();
+    materialState.color = material.getBaseColorFactor();
 
     // Alpha
-    Material.alpha[eid] = material.getAlpha();
-    Material.alphaCutoff[eid] = material.getAlphaCutoff();
-    Material.alphaMode[eid] = AlphaMode[material.getAlphaMode()];
+    materialState.alpha = material.getAlpha();
+    materialState.alphaCutoff = material.getAlphaCutoff();
+    materialState.alphaMode = material.getAlphaMode();
 
-    // Base color
-    const colorFactor = material.getBaseColorFactor();
-    Material.baseColorFactor.x[eid] = colorFactor[0];
-    Material.baseColorFactor.y[eid] = colorFactor[1];
-    Material.baseColorFactor.z[eid] = colorFactor[2];
-    Material.baseColorFactor.w[eid] = colorFactor[3];
-    Material.baseColorHex[eid] = material.getBaseColorHex();
     // Color texture
     const colorTexture = material.getBaseColorTexture();
     const colorInfo = material.getBaseColorTextureInfo();
-    if (colorTexture && colorInfo) {
-      addComponent(this.#world, ColorTexture, eid);
-      ColorTexture.texture[eid] = this.#loadTexture(colorTexture);
-      loadTextureInfo(colorInfo, ColorTexture.info, eid);
-    }
+    if (colorTexture && colorInfo)
+      materialState.colorTextureId = this.#loadTexture(colorTexture, colorInfo);
 
     // Emissive
-    const emissiveFactor = material.getEmissiveFactor();
-    Material.emissiveFactor.x[eid] = emissiveFactor[0];
-    Material.emissiveFactor.y[eid] = emissiveFactor[1];
-    Material.emissiveFactor.z[eid] = emissiveFactor[2];
-    Material.emissiveHex[eid] = material.getEmissiveHex();
+    materialState.emissive = material.getEmissiveFactor();
+
     // Emissive texture
     const emissiveTexture = material.getEmissiveTexture();
     const emissiveInfo = material.getEmissiveTextureInfo();
-    if (emissiveTexture && emissiveInfo) {
-      addComponent(this.#world, EmissiveTexture, eid);
-      EmissiveTexture.texture[eid] = this.#loadTexture(emissiveTexture);
-      loadTextureInfo(emissiveInfo, EmissiveTexture.info, eid);
-    }
+    if (emissiveTexture && emissiveInfo)
+      materialState.emissiveTextureId = this.#loadTexture(
+        emissiveTexture,
+        emissiveInfo
+      );
 
     // Metallic roughness
-    Material.metallicFactor[eid] = material.getMetallicFactor();
-    Material.roughnessFactor[eid] = material.getRoughnessFactor();
+    materialState.metalness = material.getMetallicFactor();
+    materialState.roughness = material.getRoughnessFactor();
 
     // Metallic roughness texture
     const metallicRoughnessTexture = material.getMetallicRoughnessTexture();
     const metallicRoughnessInfo = material.getMetallicRoughnessTextureInfo();
-    if (metallicRoughnessTexture && metallicRoughnessInfo) {
-      addComponent(this.#world, MetallicRoughnessTexture, eid);
-      MetallicRoughnessTexture.texture[eid] = this.#loadTexture(
-        metallicRoughnessTexture
+    if (metallicRoughnessTexture && metallicRoughnessInfo)
+      materialState.metallicRoughnessTextureId = this.#loadTexture(
+        metallicRoughnessTexture,
+        metallicRoughnessInfo
       );
-      loadTextureInfo(
-        metallicRoughnessInfo,
-        MetallicRoughnessTexture.info,
-        eid
-      );
-    }
 
-    // Normal
-    Material.normalScale[eid] = material.getNormalScale();
+    // Normal scale
+    materialState.normalScale = material.getNormalScale();
+
     // Normal texture
     const normalTexture = material.getNormalTexture();
     const normalInfo = material.getNormalTextureInfo();
-    if (normalTexture && normalInfo) {
-      addComponent(this.#world, NormalTexture, eid);
-      NormalTexture.texture[eid] = this.#loadTexture(normalTexture);
-      loadTextureInfo(normalInfo, NormalTexture.info, eid);
-    }
+    if (normalTexture && normalInfo)
+      materialState.normalTextureId = this.#loadTexture(
+        normalTexture,
+        normalInfo
+      );
 
-    // Occlusion
-    Material.occlusionStrength[eid] = material.getOcclusionStrength();
+    // Occlusion strength
+    materialState.occlusionStrength = material.getOcclusionStrength();
+
     // Occlusion texture
     const occlusionTexture = material.getOcclusionTexture();
     const occlusionInfo = material.getOcclusionTextureInfo();
-    if (occlusionTexture && occlusionInfo) {
-      addComponent(this.#world, OcclusionTexture, eid);
-      OcclusionTexture.texture[eid] = this.#loadTexture(occlusionTexture);
-      loadTextureInfo(occlusionInfo, OcclusionTexture.info, eid);
-    }
+    if (occlusionTexture && occlusionInfo)
+      materialState.occlusionTextureId = this.#loadTexture(
+        occlusionTexture,
+        occlusionInfo
+      );
 
-    this.#materials.set(material, eid);
-    return eid;
+    // Add to scene
+    this.#scene.addMaterial(materialState);
+
+    this.#cache.materials.set(material, materialState);
+    return materialState;
   }
 
-  #loadTexture(texture: ITexture) {
-    const cached = this.#textures.get(texture);
+  #loadTexture(texture: ITexture, info: ITextureInfo): string {
+    // Create texture
+    const textureState = new Texture();
+    textureState.isInternal = true;
+    textureState.name = texture.getName();
+
+    textureState.sourceId = this.#loadTextureImage(texture);
+
+    const magFilter = info.getMagFilter();
+    if (magFilter !== null) textureState.magFilter = magFilter;
+
+    const minFilter = info.getMinFilter();
+    if (minFilter !== null) textureState.minFilter = minFilter;
+
+    const wrapS = info.getWrapS();
+    textureState.wrapS = wrapS;
+
+    const wrapT = info.getWrapT();
+    textureState.wrapT = wrapT;
+
+    // Add to scene
+    this.#scene.addTexture(textureState);
+
+    return textureState.id;
+  }
+
+  #loadTextureImage(texture: ITexture): string {
+    const cached = this.#cache.images.get(texture);
     if (cached !== undefined) return cached;
 
-    // Create entity
-    const eid = addEntity(this.#world);
-    addComponent(this.#world, Texture, eid);
-    Texture.name[eid] = this.#assets.names.push(texture.getName()) - 1;
+    const id = nanoid();
 
-    // Set image
+    // Load image
     const mimeType = texture.getMimeType();
-    const image = texture.getImage();
-    if (image) {
-      const blob = new Blob([image], { type: mimeType });
-      const bitmap = createImageBitmap(blob);
-      Texture.image[eid] = this.#imagePromises.push(bitmap) - 1;
-    } else throw new Error("Texture has no image");
+    const imageArray = texture.getImage();
 
-    this.#textures.set(texture, eid);
-    return eid;
+    if (imageArray) {
+      this.#cache.images.set(texture, id);
+
+      // Create image bitmap asynchronously
+      const blob = new Blob([imageArray], { type: mimeType });
+      const promise = createImageBitmap(blob).then((bitmap) => {
+        const image = new Image({ id, bitmap });
+        image.isInternal = true;
+        this.#scene.addImage(image);
+      });
+
+      this.#pending.push(promise);
+
+      return id;
+    } else {
+      throw new Error("Texture has no image");
+    }
   }
 
-  #loadAccessor(accessor: IAccessor) {
-    const cached = this.#accessors.get(accessor);
+  #loadAccessor(accessor: IAccessor): string {
+    const cached = this.#cache.accessors.get(accessor);
     if (cached !== undefined) return cached;
 
+    // Create accessor
     const array = accessor.getArray();
     if (!array) throw new Error("Accessor array is null");
 
-    const index = this.#assets.accessors.push(array) - 1;
-    this.#accessors.set(accessor, index);
-    return index;
+    const elementSize = accessor.getElementSize();
+    const normalized = accessor.getNormalized();
+
+    const accessorState = new Accessor({
+      array,
+      elementSize,
+      normalized,
+    });
+    accessorState.isInternal = true;
+
+    // Add to scene
+    this.#scene.addAccessor(accessorState);
+
+    this.#cache.accessors.set(accessor, accessorState.id);
+    return accessorState.id;
   }
 }

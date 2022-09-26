@@ -1,19 +1,23 @@
-import { TypedArray } from "bitecs";
-
+import { SceneJSON, SceneMessage } from "../scene";
 import { WorkerMessage } from "../types";
 
-export type Assets = {
-  names: string[];
-  images: ImageBitmap[];
-  accessors: TypedArray[];
-};
+export type ToLoaderMessage =
+  | SceneMessage
+  | WorkerMessage<
+      "load_gltf",
+      {
+        id: string;
+        uri: string;
+      }
+    >;
 
-export type LoadedGLTF = {
-  world: ArrayBuffer;
-  assets: Assets;
-};
-
-export type ToLoaderMessage = WorkerMessage<"load_gltf", string>;
-
-export type FromLoaderLoadedGLTF = WorkerMessage<"gltf_loaded", LoadedGLTF>;
-export type FromLoaderMessage = WorkerMessage<"ready"> | FromLoaderLoadedGLTF;
+export type FromLoaderMessage =
+  | SceneMessage
+  | WorkerMessage<"ready">
+  | WorkerMessage<
+      "gltf_loaded",
+      {
+        id: string;
+        scene: SceneJSON;
+      }
+    >;

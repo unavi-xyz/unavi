@@ -1,4 +1,4 @@
-import { TypedArray } from "bitecs";
+import { TypedArray } from "@gltf-transform/core";
 
 import { SceneMessage } from "../scene";
 import { WorkerMessage } from "../types";

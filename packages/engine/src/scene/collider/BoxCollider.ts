@@ -1,6 +1,6 @@
 import { BehaviorSubject } from "rxjs";
 
-import { Triplet } from "../types";
+import { Triplet } from "../../types";
 import { BoxColliderJSON } from "./types";
 
 export class BoxCollider {

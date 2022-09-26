@@ -1,4 +1,4 @@
-import { Engine } from "@wired-labs/engine";
+import { Engine, Entity, GLTFMesh } from "@wired-labs/engine";
 import { useEffect, useRef, useState } from "react";
 
 export interface RenderInfo {
@@ -55,6 +55,7 @@ export default function ExampleCanvas({ uri }: Props) {
       const newEngine = new Engine({
         canvas,
         camera: "orbit",
+        skyboxPath: "/images/skybox/",
       });
 
       setEngine(newEngine);
@@ -79,8 +80,14 @@ export default function ExampleCanvas({ uri }: Props) {
 
   useEffect(() => {
     if (!engine) return;
-    // Load gltf
-    // engine.loadGltf(uri);
+
+    const entity = new Entity();
+    const mesh = new GLTFMesh();
+    mesh.uri = uri;
+    entity.mesh = mesh;
+
+    // Add gltf to scene
+    engine.scene.addEntity(entity);
   }, [engine, uri]);
 
   const loadedClass = loaded ? "opacity-100" : "opacity-0";

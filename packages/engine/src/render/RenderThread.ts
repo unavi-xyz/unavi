@@ -15,7 +15,7 @@ export interface RenderThreadOptions {
 }
 
 /*
- * RenderThread acts as an interface between the main thread and the {@link RenderWorker}.
+ * Acts as an interface between the main thread and the {@link RenderWorker}.
  */
 export class RenderThread {
   ready = false;
@@ -46,12 +46,9 @@ export class RenderThread {
       console.info("✅ Browser supports OffscreenCanvas");
       const offscreen = canvas.transferControlToOffscreen();
 
-      this.worker = new Worker(
-        new URL("../workers/Render.worker.ts", import.meta.url),
-        {
-          type: "module",
-        }
-      );
+      this.worker = new Worker(new URL("./worker.ts", import.meta.url), {
+        type: "module",
+      });
 
       // Send canvas
       this.postMessage({ subject: "set_canvas", data: offscreen }, [offscreen]);
@@ -69,7 +66,7 @@ export class RenderThread {
     }
 
     // Handle worker messages
-    this.worker.onmessage = this.#onmessage.bind(this);
+    this.worker.onmessage = this.#onmessage;
 
     // Initialize worker
     this.postMessage({
@@ -199,7 +196,7 @@ export class RenderThread {
 
   destroy() {
     this.worker.postMessage({ subject: "destroy", data: null });
-    setTimeout(() => this.worker.terminate());
+    this.worker.terminate();
 
     this.#canvas.removeEventListener("contextmenu", this.#onContextMenu);
     this.#canvas.removeEventListener("pointermove", this.#onPointerMove);

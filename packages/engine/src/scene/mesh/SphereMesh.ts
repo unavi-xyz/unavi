@@ -54,9 +54,11 @@ export class SphereMesh {
   }
 
   applyJSON(json: Partial<SphereMeshJSON>) {
-    if (json.radius) this.radius = json.radius;
-    if (json.widthSegments) this.widthSegments = json.widthSegments;
-    if (json.heightSegments) this.heightSegments = json.heightSegments;
+    if (json.radius !== undefined) this.radius = json.radius;
+    if (json.widthSegments !== undefined)
+      this.widthSegments = json.widthSegments;
+    if (json.heightSegments !== undefined)
+      this.heightSegments = json.heightSegments;
   }
 
   static fromJSON(json: SphereMeshJSON) {

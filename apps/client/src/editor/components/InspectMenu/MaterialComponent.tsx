@@ -1,4 +1,4 @@
-import { Material, Triplet } from "@wired-labs/engine";
+import { Material, Quad } from "@wired-labs/engine";
 import { useState } from "react";
 import { MdAdd, MdClose, MdDelete, MdOutlineFolderOpen } from "react-icons/md";
 
@@ -110,15 +110,16 @@ export default function MaterialComponent({ entityId }: Props) {
         <MenuRows titles={["Color", "Roughness", "Metalness"]}>
           <div className="h-6">
             <ColorInput
-              rgbValue={color}
+              rgbValue={[color[0], color[1], color[2]]}
               onChange={(e) => {
                 const value = e.target.value;
 
                 const rgb = hexToRgb(value);
-                const normalized: Triplet = [
+                const normalized: Quad = [
                   rgb[0] / 255,
                   rgb[1] / 255,
                   rgb[2] / 255,
+                  255,
                 ];
 
                 updateMaterial(materialId, { color: normalized });

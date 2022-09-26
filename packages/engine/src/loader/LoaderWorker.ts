@@ -2,38 +2,53 @@ import { PostMessage, Transferable } from "../types";
 import { GLTFLoader } from "./GLTFLoader";
 import { FromLoaderMessage, ToLoaderMessage } from "./types";
 
+/*
+ * Loads heavy assets in a separate thread, then sends them to the main thread.
+ */
 export class LoaderWorker {
   #postMessage: PostMessage<FromLoaderMessage>;
 
   constructor(postMessage: PostMessage) {
     this.#postMessage = postMessage;
-
     postMessage({ subject: "ready", data: null });
   }
 
   onmessage = (event: MessageEvent<ToLoaderMessage>) => {
-    const { subject, data, id } = event.data;
+    const { subject, data } = event.data;
 
     switch (subject) {
       case "load_gltf":
-        this.loadGltf(data, id);
+        this.loadGltf(data.id, data.uri);
         break;
     }
   };
 
-  async loadGltf(uri: string, id?: number) {
+  async loadGltf(id: string, uri: string) {
+    // Load the glTF
     const loader = new GLTFLoader();
-    const data = await loader.load(uri);
-    const transfer: Transferable[] = [data.world];
+    const scene = await loader.load(uri);
+    const sceneJSON = scene.toJSON(true);
 
-    for (const image of data.assets.images) {
-      transfer.push(image);
-    }
+    // Send to main thread
+    const buffers = new Set<ArrayBuffer>();
+    sceneJSON.accessors.forEach((accessor) => {
+      const buffer = accessor.array.buffer;
+      buffers.add(buffer);
+    });
 
-    for (const accessor of data.assets.accessors) {
-      transfer.push(accessor.buffer);
-    }
+    const bitmaps = sceneJSON.images.map((image) => image.bitmap);
 
-    this.#postMessage({ subject: "gltf_loaded", data, id }, transfer);
+    const transfer: Transferable[] = [...buffers, ...bitmaps];
+
+    this.#postMessage(
+      {
+        subject: "gltf_loaded",
+        data: {
+          id,
+          scene: sceneJSON,
+        },
+      },
+      transfer
+    );
   }
 }

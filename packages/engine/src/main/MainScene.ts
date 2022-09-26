@@ -1,54 +1,85 @@
-import { BehaviorSubject } from "rxjs";
-
 import { GameThread } from "../game/GameThread";
 import { ToGameMessage } from "../game/types";
+import { LoaderThread } from "../loader/LoaderThread";
+import { ToLoaderMessage } from "../loader/types";
 import { RenderThread } from "../render/RenderThread";
 import { ToRenderMessage } from "../render/types";
 import { Entity } from "../scene/Entity";
 import { Material } from "../scene/Material";
+import { Scene } from "../scene/Scene";
 import { EntityJSON, SceneJSON, SceneMessage } from "../scene/types";
-import { PostMessage, Triplet } from "../types";
+import { PostMessage, Quad, Triplet } from "../types";
 
 /*
- * MainScene stores the complete state of the scene.
- * Scene state is synced between the MainScene, {@link RenderScene}, and {@link GameScene}.
- * State is stored using RxJS, allowing for subscriptions to state changes.
+ * Wrapper around {@link Scene} for the main thread.
+ * Syncs state with the {@link RenderScene} and {@link GameScene}.
  */
 export class MainScene {
-  #toRenderThread: PostMessage<ToRenderMessage>;
   #toGameThread: PostMessage<ToGameMessage>;
+  #toLoaderThread: PostMessage<ToLoaderMessage>;
+  #toRenderThread: PostMessage<ToRenderMessage>;
 
-  entities$ = new BehaviorSubject<{ [id: string]: Entity }>({});
-  materials$ = new BehaviorSubject<{ [id: string]: Material }>({});
-
-  get entities() {
-    return this.entities$.value;
-  }
-
-  set entities(entities: { [id: string]: Entity }) {
-    this.entities$.next(entities);
-  }
-
-  get materials() {
-    return this.materials$.value;
-  }
-
-  set materials(materials: { [id: string]: Material }) {
-    this.materials$.next(materials);
-  }
+  #scene = new Scene();
 
   constructor({
-    renderThread,
     gameThread,
+    loaderThread,
+    renderThread,
   }: {
-    renderThread: RenderThread;
     gameThread: GameThread;
+    loaderThread: LoaderThread;
+    renderThread: RenderThread;
   }) {
-    this.#toRenderThread = renderThread.postMessage.bind(renderThread);
     this.#toGameThread = gameThread.postMessage.bind(gameThread);
+    this.#toLoaderThread = loaderThread.postMessage.bind(loaderThread);
+    this.#toRenderThread = renderThread.postMessage.bind(renderThread);
 
-    const root = new Entity({ id: "root" });
-    this.#addEntity(root);
+    loaderThread.onGltfLoaded = ({ id, scene }) => {
+      // Set the loaded scene root to the glTF entity
+      scene.entities = Object.values(scene.entities).filter((entityJSON) => {
+        if (entityJSON.parentId === "root") entityJSON.parentId = id;
+        if (entityJSON.id === "root") return false;
+        return true;
+      });
+
+      // Add loaded glTF to the scene
+      this.#scene.loadJSON(scene);
+
+      // Send stripped down glTF to game thread
+      const strippedScene: SceneJSON = {
+        ...scene,
+        // @ts-ignore
+        accessors: Object.values(scene.accessors).map((accessor) => ({
+          ...accessor,
+          array: null,
+        })),
+        // @ts-ignore
+        images: Object.values(scene.images).map((image) => ({
+          ...image,
+          bitmap: null,
+        })),
+      };
+
+      this.#toGameThread({
+        subject: "load_json",
+        data: { scene: strippedScene },
+      });
+
+      // Send glTF + transfer data to render thread
+      const bitmaps = Object.values(scene.images).map((image) => image.bitmap);
+      const accessors = Object.values(scene.accessors).map(
+        (accessor) => accessor.array.buffer
+      );
+      const transfer = [...bitmaps, ...accessors];
+
+      this.#toRenderThread(
+        {
+          subject: "load_json",
+          data: { scene },
+        },
+        transfer
+      );
+    };
   }
 
   onmessage = (event: MessageEvent<SceneMessage>) => {
@@ -59,13 +90,13 @@ export class MainScene {
         this.loadJSON(data.scene);
         break;
       case "add_entity":
-        this.#addEntity(Entity.fromJSON(data.entity));
+        this.#scene.addEntity(Entity.fromJSON(data.entity));
         break;
       case "remove_entity":
-        this.#removeEntity(data.entityId);
+        this.#scene.removeEntity(data.entityId);
         break;
       case "update_entity":
-        this.#updateEntity(data.entityId, data.data);
+        this.#scene.updateEntity(data.entityId, data.data);
         break;
       case "update_global_transform":
         this.updateGlobalTransform(
@@ -75,108 +106,88 @@ export class MainScene {
         );
         break;
       case "add_material":
-        this.#addMaterial(Material.fromJSON(data.material));
+        this.#scene.addMaterial(Material.fromJSON(data.material));
         break;
       case "remove_material":
-        this.#removeMaterial(data.materialId);
+        this.#scene.removeMaterial(data.materialId);
         break;
       case "update_material":
-        this.#updateMaterial(data.materialId, data.data);
+        this.#scene.updateMaterial(data.materialId, data.data);
         break;
     }
   };
 
+  get entities$() {
+    return this.#scene.entities$;
+  }
+
+  get materials$() {
+    return this.#scene.materials$;
+  }
+
+  get entities() {
+    return this.#scene.entities;
+  }
+
+  set entities(entities: { [id: string]: Entity }) {
+    this.#scene.entities = entities;
+  }
+
+  get materials() {
+    return this.#scene.materials;
+  }
+
+  set materials(materials: { [id: string]: Material }) {
+    this.#scene.materials = materials;
+  }
+
   addEntity(entity: Entity) {
-    this.#addEntity(entity);
+    this.#scene.addEntity(entity);
 
     const message: SceneMessage = {
       subject: "add_entity",
       data: { entity: entity.toJSON() },
     };
 
-    this.#toRenderThread(message);
     this.#toGameThread(message);
-  }
+    this.#toRenderThread(message);
 
-  #addEntity(entity: Entity) {
-    const previous = this.entities[entity.id];
-    if (previous) this.removeEntity(previous.id);
-
-    // Set scene
-    entity.scene = this;
-
-    // Add to parent
-    const parent = entity.parent;
-    if (parent) {
-      parent.childrenIds$.next([...parent.childrenIds$.value, entity.id]);
+    if (entity.mesh?.type === "glTF") {
+      const uri = entity.mesh.uri;
+      if (uri)
+        this.#toLoaderThread({
+          subject: "load_gltf",
+          data: { id: entity.id, uri },
+        });
     }
-
-    // Save to entities
-    this.entities = {
-      ...this.entities,
-      [entity.id]: entity,
-    };
   }
 
   removeEntity(entityId: string) {
-    this.#removeEntity(entityId);
+    this.#scene.removeEntity(entityId);
 
     const message: SceneMessage = {
       subject: "remove_entity",
       data: { entityId },
     };
 
-    this.#toRenderThread(message);
     this.#toGameThread(message);
-  }
-
-  #removeEntity(entityId: string) {
-    const entity = this.entities[entityId];
-    if (!entity) throw new Error(`Entity ${entityId} not found`);
-
-    // Remove from parent
-    if (entity.parent) {
-      entity.parent.childrenIds$.next(
-        entity.parent.childrenIds$.value.filter((id) => id !== entityId)
-      );
-    }
-
-    // Destroy entity
-    entity.destroy();
-
-    // Remove from entities
-    this.entities = Object.fromEntries(
-      Object.entries(this.entities).filter(([id]) => id !== entityId)
-    );
+    this.#toRenderThread(message);
   }
 
   updateEntity(entityId: string, data: Partial<EntityJSON>) {
-    this.#updateEntity(entityId, data);
+    this.#scene.updateEntity(entityId, data);
 
     const message: SceneMessage = {
       subject: "update_entity",
       data: { entityId, data },
     };
 
-    this.#toRenderThread(message);
     this.#toGameThread(message);
+    this.#toRenderThread(message);
   }
 
-  #updateEntity(entityId: string, data: Partial<EntityJSON>) {
-    const entity = this.entities[entityId];
-    if (!entity) throw new Error(`Entity ${entityId} not found`);
-
-    entity.applyJSON(data);
-  }
-
-  updateGlobalTransform(
-    entityId: string,
-    position: Triplet,
-    quaternion: [number, number, number, number]
-  ) {
-    const entity = this.entities[entityId];
-    entity.globalPosition = position;
-    entity.globalQuaternion = quaternion;
+  updateGlobalTransform(entityId: string, position: Triplet, quaternion: Quad) {
+    this.#scene.updateGlobalTransform(entityId, position, quaternion);
 
     const message: SceneMessage = {
       subject: "update_global_transform",
@@ -191,84 +202,38 @@ export class MainScene {
   }
 
   addMaterial(material: Material) {
-    this.#addMaterial(material);
+    this.#scene.addMaterial(material);
+
     this.#toRenderThread({
       subject: "add_material",
       data: { material: material.toJSON() },
     });
   }
 
-  #addMaterial(material: Material) {
-    const previous = this.materials[material.id];
-    if (previous) this.removeMaterial(previous.id);
-
-    // Save to materials
-    this.materials = {
-      ...this.materials,
-      [material.id]: material,
-    };
-  }
-
   removeMaterial(materialId: string) {
-    this.#removeMaterial(materialId);
+    this.#scene.removeMaterial(materialId);
+
     this.#toRenderThread({ subject: "remove_material", data: { materialId } });
   }
 
-  #removeMaterial(materialId: string) {
-    const material = this.materials[materialId];
-    if (!material) throw new Error(`Material ${materialId} not found`);
-
-    // Remove from all entities
-    this.entities = Object.fromEntries(
-      Object.entries(this.entities).map(([id, entity]) => {
-        if (entity.materialId === materialId) entity.materialId = null;
-        return [id, entity];
-      })
-    );
-
-    // Destroy material
-    material.destroy();
-
-    // Remove from materials
-    this.materials = Object.fromEntries(
-      Object.entries(this.materials).filter(([id]) => id !== materialId)
-    );
-  }
-
   updateMaterial(materialId: string, data: Partial<Material>) {
-    this.#updateMaterial(materialId, data);
+    this.#scene.updateMaterial(materialId, data);
+
     this.#toRenderThread({
       subject: "update_material",
       data: { materialId, data },
     });
   }
 
-  #updateMaterial(materialId: string, data: Partial<Material>) {
-    const material = this.materials[materialId];
-    if (!material) throw new Error(`Material ${materialId} not found`);
-
-    material.applyJSON(data);
-  }
-
   toJSON(): SceneJSON {
-    return {
-      entities: Object.values(this.entities).map((e) => e.toJSON()),
-      materials: Object.values(this.materials).map((m) => m.toJSON()),
-    };
+    return this.#scene.toJSON();
   }
 
   loadJSON(json: SceneJSON) {
-    json.materials.forEach((material) =>
-      this.addMaterial(Material.fromJSON(material))
-    );
-    json.entities.forEach((entity) => this.addEntity(Entity.fromJSON(entity)));
+    this.#scene.loadJSON(json);
   }
 
   destroy() {
-    Object.values(this.entities).forEach((entity) => entity.destroy());
-    Object.values(this.materials).forEach((material) => material.destroy());
-
-    this.entities$.complete();
-    this.materials$.complete();
+    this.#scene.destroy();
   }
 }

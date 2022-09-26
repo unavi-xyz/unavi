@@ -33,8 +33,8 @@ export type PluginState = {
 };
 
 /*
- * RenderWorker handles scene rendering using Three.js.
- * It can be run in a Web Worker if the browser supports OffscreenCanvas.
+ * Renders the scene using Three.js.
+ * Can only be run in a Web Worker if the browser supports OffscreenCanvas.
  */
 export class RenderWorker {
   #sceneLink: SceneLink;

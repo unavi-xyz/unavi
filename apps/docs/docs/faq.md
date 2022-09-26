@@ -6,7 +6,7 @@ title: FAQ
 
 ### What is the Wired?
 
-The Wired is a virtual worlds platform that runs in the browser. Anyone can create a space for free and invite others to join them.
+The Wired is an **open and decentralized** web-based metaverse platform. Anyone can create a space for free and invite others to join them through a link.
 
 ### What platforms do you support?
 

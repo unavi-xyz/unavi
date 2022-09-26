@@ -1,6 +1,13 @@
 # @wired-labs/host
 
-A dockerized node http server for hosting spaces. Uses express, socket.io, and mediasoup.
+A dockerized node http server for hosting spaces.
+
+## Tech Stack
+
+- [Node.js](https://nodejs.org/)
+- [Express](https://expressjs.com/)
+- [Mediasoup](https://mediasoup.org/)
+- [Socket.io](https://socket.io/)
 
 ## About
 

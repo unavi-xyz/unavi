@@ -12,7 +12,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "~3.171.0",
+    "@aws-sdk/client-s3": "~3.180.0",
     "@aws-sdk/s3-request-presigner": "~3.171.0",
     "@next/bundle-analyzer": "^12.3.1",
     "@prisma/client": "^4.3.0",

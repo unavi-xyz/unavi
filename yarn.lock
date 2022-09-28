@@ -10865,15 +10865,15 @@ mediasoup-client@^3.6.55:
     sdp-transform "^2.14.1"
     supports-color "^9.2.2"
 
-mediasoup@^3.10.5:
-  version "3.10.6"
-  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.10.6.tgz#2ca7eaa6e56536c354063d59731c713f6362a6e7"
-  integrity sha512-1BLos5XhLhujD9S4Vquoyv+2Ap74bVgOogf4CtymCYWZiwtHKGDOZm6SQIMCRqGcyw+uORZpgeoLS4VyNTscmw==
+mediasoup@^3.10.7:
+  version "3.10.7"
+  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.10.7.tgz#b182e607adc6d1d135689dcaa7bbb364a24e9e9c"
+  integrity sha512-/JjwX2655SCAqEbW9r2Xz1uNHtnoiYkjesFAbhKun/kpX5izF3CqzaqvAlKwunFENSis9eNvAqGxiYwuK5Iphg==
   dependencies:
     "@types/node" "^16.11.10"
     debug "^4.3.4"
     h264-profile-level-id "^1.0.1"
-    supports-color "^9.2.2"
+    supports-color "^9.2.3"
     uuid "^8.3.2"
 
 memfs@^3.1.2, memfs@^3.4.3:
@@ -14263,10 +14263,10 @@ supports-color@^8.0.0:
   dependencies:
     has-flag "^4.0.0"
 
-supports-color@^9.2.2:
-  version "9.2.2"
-  resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-9.2.2.tgz#502acaf82f2b7ee78eb7c83dcac0f89694e5a7bb"
-  integrity sha512-XC6g/Kgux+rJXmwokjm9ECpD6k/smUoS5LKlUCcsYr4IY3rW0XyAympon2RmxGrlnZURMpg5T18gWDP9CsHXFA==
+supports-color@^9.2.2, supports-color@^9.2.3:
+  version "9.2.3"
+  resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-9.2.3.tgz#a6e2c97fc20c80abecd69e50aebe4783ff77d45a"
+  integrity sha512-aszYUX/DVK/ed5rFLb/dDinVJrQjG/vmU433wtqVSD800rYsJNWxh2R3USV90aLSU+UsyQkbNeffVLzc6B6foA==
 
 supports-preserve-symlinks-flag@^1.0.0:
   version "1.0.0"

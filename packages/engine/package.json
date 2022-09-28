@@ -6,18 +6,15 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "lint": "eslint src",
-    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --watch"
+    "lint": "eslint src"
   },
   "dependencies": {
     "@dimforge/rapier3d": "^0.9.0",
-    "@gltf-transform/core": "^2.3.0",
-    "@gltf-transform/extensions": "^2.3.0",
+    "@gltf-transform/core": "2.4.3",
+    "@gltf-transform/extensions": "2.4.3",
     "@gltf-transform/functions": "^2.4.3",
     "@pixiv/three-vrm": "^1.0.2",
     "@types/draco3d": "^1.4.1",
-    "bitecs": "^0.3.38",
     "mediasoup-client": "^3.6.55",
     "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.0",
@@ -27,10 +24,11 @@
     "ts-loader": "^9.4.1"
   },
   "devDependencies": {
+    "@types/offscreencanvas": "^2019.7.0",
     "@types/three": "^0.140.0",
     "@wired-labs/tsconfig": "*",
     "eslint": "^8.23.1",
     "eslint-config-custom": "*",
-    "typescript": "^4.8.3"
+    "typescript": "~4.8.3"
   }
 }

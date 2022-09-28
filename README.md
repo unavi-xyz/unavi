@@ -25,7 +25,7 @@
 
 - Decentralized identity / social graph using [Lens Protocol 🌿](https://lens.dev/)
 - Open backend, anyone can run their own servers
-- Custom multi-threaded, glTF-based game engine
+- Custom multi-threaded, [glTF](https://github.com/KhronosGroup/glTF)-based game engine
 - [VRM](https://vrm.dev/) avatar support
 - Visual editor for creating spaces
 
@@ -35,15 +35,15 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 
 ### Apps
 
-- [client](apps/client): a website used to access the Wired
-- [examples](apps/examples): a simple website for testing the engine
-- [docs](apps/docs): a documentation website
-- [host](apps/host): a dockerized server for hosting spaces
+- [client](apps/client): the main website used to access the Wired.
+- [examples](apps/examples): models for testing the engine
+- [docs](apps/docs): documentation website
+- [host](apps/host): dockerized server for hosting spaces
 
 ### Packages
 
-- [engine](packages/engine): a 3D game engine
-- [eslint-config-custom](packages/eslint-config-custom): a custom eslint config used throughout the repo
+- [engine](packages/engine): a multi-threaded 3D game engine
+- [eslint-config-custom](packages/eslint-config-custom): custom eslint config used throughout the repo
 - [lens](packages/lens): queries and types for interacting with Lens
 - [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
 

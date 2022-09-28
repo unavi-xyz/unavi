@@ -1,7 +1,7 @@
 import { Camera, Raycaster } from "three";
 
 import { PostMessage } from "../../types";
-import { SceneLink } from "../classes/SceneLink";
+import { SceneLoader } from "../loader/SceneLoader";
 import { PluginState } from "../RenderWorker";
 import { FromRenderMessage, PointerData, ToRenderMessage } from "../types";
 import { Plugin } from "./Plugin";
@@ -9,7 +9,7 @@ import { Plugin } from "./Plugin";
 export class RaycasterPlugin extends Plugin {
   #raycaster = new Raycaster();
   #camera: Camera;
-  #sceneLink: SceneLink;
+  #sceneLoader: SceneLoader;
   #postMessage: PostMessage<FromRenderMessage>;
   #state: PluginState;
 
@@ -18,14 +18,14 @@ export class RaycasterPlugin extends Plugin {
 
   constructor(
     camera: Camera,
-    sceneLink: SceneLink,
+    sceneLoader: SceneLoader,
     postMessage: PostMessage<FromRenderMessage>,
     state: PluginState
   ) {
     super();
 
     this.#camera = camera;
-    this.#sceneLink = sceneLink;
+    this.#sceneLoader = sceneLoader;
     this.#postMessage = postMessage;
     this.#state = state;
   }
@@ -67,10 +67,12 @@ export class RaycasterPlugin extends Plugin {
     );
 
     // Get intersected objects
-    const intersected = this.#raycaster.intersectObject(this.#sceneLink.meshes);
+    const intersected = this.#raycaster.intersectObject(
+      this.#sceneLoader.contents
+    );
 
     if (intersected[0]) {
-      const id = this.#sceneLink.findId(intersected[0].object);
+      const id = this.#sceneLoader.findId(intersected[0].object);
 
       if (id !== undefined) {
         this.#postMessage({ subject: "clicked_object", data: id });

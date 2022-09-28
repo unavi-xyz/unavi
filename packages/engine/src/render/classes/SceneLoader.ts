@@ -1,11 +1,4 @@
-import {
-  ComponentType,
-  createWorld,
-  defineDeserializer,
-  defineQuery,
-  DESERIALIZE_MODE,
-  TypedArray,
-} from "bitecs";
+import { TypedArray } from "@gltf-transform/core";
 import {
   AnimationClip,
   Bone,

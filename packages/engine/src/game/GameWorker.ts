@@ -18,7 +18,8 @@ const JUMP_STRENGTH = 6;
 const HZ = 60; // Game updates per second
 
 /*
- * GameWorker handles physics using Rapier.
+ * Runs the physics loop.
+ * Uses the Rapier physics engine.
  */
 export class GameWorker {
   #scene: GameScene;

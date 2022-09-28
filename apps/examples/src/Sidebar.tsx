@@ -9,16 +9,16 @@ interface Props {
 export default function Sidebar({ children }: Props) {
   return (
     <div className="flex h-full">
-      <div className="z-40 h-full w-96 shrink-0 space-y-4 overflow-y-scroll bg-white px-8 py-6">
+      <div className="z-40 h-full shrink-0 space-y-2 overflow-y-scroll bg-white p-6 pt-4">
         <Link href="/">
-          <div className="cursor-pointer text-center text-3xl font-bold">
+          <div className="cursor-pointer text-center text-2xl font-bold">
             Examples
           </div>
         </Link>
 
-        <div className="text-xl font-bold">Showcase</div>
+        <div className="text-xl font-bold">✨ Showcase</div>
 
-        <div className="space-y-2">
+        <div>
           <SidebarButton href="/example/AntiqueCamera">
             Antique Camera
           </SidebarButton>
@@ -44,9 +44,9 @@ export default function Sidebar({ children }: Props) {
           </SidebarButton>
         </div>
 
-        <div className="text-xl font-bold">Standard</div>
+        <div className="text-xl font-bold">🏡 Standard</div>
 
-        <div className="space-y-2">
+        <div>
           <SidebarButton href="/example/Box">Box</SidebarButton>
           <SidebarButton href="/example/BoxInterleaved">
             Box Interleaved
@@ -102,9 +102,9 @@ export default function Sidebar({ children }: Props) {
           </SidebarButton>
         </div>
 
-        <div className="text-xl font-bold">Feature Tests</div>
+        <div className="text-xl font-bold">🎨 Feature Tests</div>
 
-        <div className="space-y-2">
+        <div>
           <SidebarButton href="/example/AlphaBlendModeTest">
             Alpha Blend Mode Test
           </SidebarButton>
@@ -152,9 +152,9 @@ export default function Sidebar({ children }: Props) {
           </SidebarButton>
         </div>
 
-        <div className="text-xl font-bold">Minimal Tests</div>
+        <div className="text-xl font-bold">⚙️ Minimal Tests</div>
 
-        <div className="space-y-2">
+        <div>
           <SidebarButton href="/example/TriangleWithoutIndices">
             Triangle Without Indices
           </SidebarButton>

@@ -1,4 +1,5 @@
 import { GameThread } from "./game/GameThread";
+import { LoaderThread } from "./loader/LoaderThread";
 import { MainScene } from "./main/MainScene";
 import { RenderThread } from "./render/RenderThread";
 
@@ -11,13 +12,14 @@ export interface EngineOptions {
 }
 
 /*
- * Engine is a multi-threaded 3D game engine.
- * It uses a {@link GameThread} to run the game logic and a {@link RenderThread} to render the scene.
- * Scene state is stored in the {@link Scene} class.
+ * A multi-threaded 3D game engine.
+ * Uses Web Workers to offload heavy tasks to separate threads.
  */
 export class Engine {
-  renderThread: RenderThread;
   gameThread: GameThread;
+  loaderThread: LoaderThread;
+  renderThread: RenderThread;
+
   scene: MainScene;
 
   constructor({
@@ -27,7 +29,6 @@ export class Engine {
     preserveDrawingBuffer,
     skyboxPath,
   }: EngineOptions) {
-    // Create render thread
     this.renderThread = new RenderThread({
       canvas,
       engine: this,
@@ -37,42 +38,47 @@ export class Engine {
       skyboxPath,
     });
 
-    // Create game thread
+    this.loaderThread = new LoaderThread();
+
     this.gameThread = new GameThread({
       canvas,
       renderThread: this.renderThread,
     });
 
-    this.gameThread.waitForReady().then(() => {
-      if (camera === "player") this.gameThread.initPlayer();
+    this.scene = new MainScene({
+      gameThread: this.gameThread,
+      loaderThread: this.loaderThread,
+      renderThread: this.renderThread,
     });
 
-    this.scene = new MainScene({
-      renderThread: this.renderThread,
-      gameThread: this.gameThread,
+    // Init the player once ready
+    this.gameThread.waitForReady().then(() => {
+      if (camera === "player") this.gameThread.initPlayer();
     });
   }
 
   async waitForReady() {
-    await this.renderThread.waitForReady();
     await this.gameThread.waitForReady();
+    await this.loaderThread.waitForReady();
+    await this.renderThread.waitForReady();
   }
 
   async start() {
     await this.waitForReady();
 
-    this.renderThread.start();
     this.gameThread.start();
+    this.renderThread.start();
   }
 
   stop() {
-    this.renderThread.stop();
     this.gameThread.stop();
+    this.renderThread.stop();
   }
 
   destroy() {
-    this.scene.destroy();
-    this.renderThread.destroy();
     this.gameThread.destroy();
+    this.loaderThread.destroy();
+    this.renderThread.destroy();
+    this.scene.destroy();
   }
 }

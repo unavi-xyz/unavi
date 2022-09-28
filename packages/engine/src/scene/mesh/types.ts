@@ -36,6 +36,9 @@ export type PrimitiveMeshJSON = {
   mode: number;
   indicesId: string | null;
   weights: number[];
+  morphPositionIds: string[];
+  morphNormalIds: string[];
+  morphTangentIds: string[];
   POSITION: string | null;
   NORMAL: string | null;
   TANGENT: string | null;
@@ -49,6 +52,21 @@ export type PrimitiveMeshJSON = {
 export type SkinMeshJSON = {
   type: "Skin";
   inverseBindMatricesId: string | null;
+  jointIds: string[];
+  mode: number;
+  indicesId: string | null;
+  weights: number[];
+  morphPositionIds: string[];
+  morphNormalIds: string[];
+  morphTangentIds: string[];
+  POSITION: string | null;
+  NORMAL: string | null;
+  TANGENT: string | null;
+  TEXCOORD_0: string | null;
+  TEXCOORD_1: string | null;
+  COLOR_0: string | null;
+  JOINTS_0: string | null;
+  WEIGHTS_0: string | null;
 };
 
 export type MeshJSON =

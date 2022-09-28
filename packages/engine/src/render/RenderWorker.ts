@@ -10,7 +10,7 @@ import {
 
 import { PostMessage } from "../types";
 import { disposeObject } from "../utils/disposeObject";
-import { SceneLink } from "./classes/SceneLink";
+import { SceneLoader } from "./loader/SceneLoader";
 import { OrbitControlsPlugin } from "./plugins/OrbitControlsPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { Plugin } from "./plugins/Plugin";
@@ -38,7 +38,7 @@ export type PluginState = {
  * Can only be run in a Web Worker if the browser supports OffscreenCanvas.
  */
 export class RenderWorker {
-  #sceneLink: SceneLink;
+  #sceneLoader: SceneLoader;
 
   #postMessage: PostMessage<FromRenderMessage>;
   #canvas: HTMLCanvasElement | OffscreenCanvas | undefined;
@@ -60,13 +60,13 @@ export class RenderWorker {
     this.#canvas = canvas;
     this.#postMessage = postMessage;
 
-    this.#sceneLink = new SceneLink(postMessage);
-    this.#scene.add(this.#sceneLink.root);
+    this.#sceneLoader = new SceneLoader(postMessage);
+    this.#scene.add(this.#sceneLoader.root);
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
     this.#plugins.forEach((plugin) => plugin.onmessage(event));
-    this.#sceneLink.onmessage(event);
+    this.#sceneLoader.onmessage(event);
 
     const { subject, data } = event.data;
     switch (subject) {
@@ -171,13 +171,13 @@ export class RenderWorker {
       this.#plugins.unshift(
         new TransformControlsPlugin(
           this.#camera,
-          this.#sceneLink,
+          this.#sceneLoader,
           this.#scene,
           this.#pluginState
         ),
         new RaycasterPlugin(
           this.#camera,
-          this.#sceneLink,
+          this.#sceneLoader,
           this.#postMessage,
           this.#pluginState
         )
@@ -200,7 +200,7 @@ export class RenderWorker {
 
   destroy() {
     this.stop();
-    this.#sceneLink.destroy();
+    this.#sceneLoader.destroy();
     this.#plugins.forEach((plugin) => plugin.destroy());
     disposeObject(this.#scene);
     this.#renderer?.dispose();
@@ -217,7 +217,7 @@ export class RenderWorker {
     this.#animationFrameId = requestAnimationFrame(() => this.#animate());
     if (!this.#renderer || !this.#camera) return;
 
-    this.#sceneLink.mixer.update(delta);
+    this.#sceneLoader.mixer.update(delta);
     this.#plugins.forEach((plugin) => plugin.animate(delta));
 
     this.#renderer.render(this.#scene, this.#camera);

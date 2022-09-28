@@ -10,7 +10,6 @@ import {
   PrimitiveTarget as IPrimitiveTarget,
   Root,
   Scene as IScene,
-  Skin as ISkin,
   Texture as ITexture,
   TextureInfo as ITextureInfo,
   WebIO,
@@ -74,9 +73,6 @@ export class GLTFLoader {
     scene.listChildren().forEach((child) => {
       this.#loadNode(child);
     });
-
-    // Load skins
-    this.#loadSkins();
 
     // Load animations
     if (!this.#root) throw new Error("No root");
@@ -180,45 +176,30 @@ export class GLTFLoader {
       this.#loadNode(child, entity.id);
     });
 
+    // Load skin
+    const skin = node.getSkin();
+
+    if (skin) {
+      const inverseBindMatrices = skin.getInverseBindMatrices();
+      if (!inverseBindMatrices) throw new Error("No inverse bind matrices");
+
+      // Create mesh
+      const mesh = new SkinMesh();
+      mesh.inverseBindMatricesId = this.#loadAccessor(inverseBindMatrices);
+
+      // Load joints
+      skin.listJoints().forEach((joint) => {
+        const entityId = this.#cache.nodes.get(joint);
+        if (entityId === undefined) throw new Error("No joint entity");
+        mesh.jointIds = [...mesh.jointIds, entityId];
+      });
+    }
+
     // Add to scene
     this.#scene.addEntity(entity);
 
     this.#cache.nodes.set(node, entity.id);
     return entity;
-  }
-
-  #loadSkins() {
-    this.#cache.nodes.forEach((entityId, node) => {
-      const skin = node.getSkin();
-      if (skin) {
-        const entity = this.#scene.entities[entityId];
-        entity.mesh = this.#loadSkin(skin);
-      }
-    });
-  }
-
-  #loadSkin(skin: ISkin): SkinMesh {
-    const inverseBindMatrices = skin.getInverseBindMatrices();
-    if (!inverseBindMatrices) throw new Error("No inverse bind matrices");
-
-    // Create mesh
-    const mesh = new SkinMesh();
-    mesh.inverseBindMatricesId = this.#loadAccessor(inverseBindMatrices);
-
-    // Load joints
-    skin.listJoints().forEach((joint) => {
-      this.#loadJoint(joint);
-    });
-
-    return mesh;
-  }
-
-  #loadJoint(joint: INode) {
-    const jointId = this.#cache.nodes.get(joint);
-    if (jointId === undefined) throw new Error("No joint entity");
-
-    const entity = this.#scene.entities[jointId];
-    // TODO
   }
 
   #loadMesh(mesh: IMesh): Entity[] {
@@ -305,15 +286,17 @@ export class GLTFLoader {
       const attribute = target.getAttribute(name);
       if (!attribute) return;
 
+      const accessorId = this.#loadAccessor(attribute);
+
       switch (name) {
         case "POSITION":
-          mesh.POSITION = this.#loadAccessor(attribute);
+          mesh.morphPositionIds = [...mesh.morphPositionIds, accessorId];
           break;
         case "NORMAL":
-          mesh.NORMAL = this.#loadAccessor(attribute);
+          mesh.morphNormalIds = [...mesh.morphNormalIds, accessorId];
           break;
         case "TANGENT":
-          mesh.TANGENT = this.#loadAccessor(attribute);
+          mesh.morphTangentIds = [...mesh.morphTangentIds, accessorId];
           break;
         default:
           throw new Error(`Unsupported primitive attribute: ${name}`);

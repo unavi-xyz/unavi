@@ -245,11 +245,7 @@ export class Scene {
     );
 
     // Sort entities by parent, so that parents are created before children
-    const sortedEntities = json.entities.sort((a, b) => {
-      if (a.parentId === b.id) return 1;
-      if (b.parentId === a.id) return -1;
-      return 0;
-    });
+    const sortedEntities = sortEntitiesByDepth(json.entities);
     sortedEntities.forEach((entity) => this.addEntity(Entity.fromJSON(entity)));
 
     json.animations.forEach((animation) =>
@@ -270,4 +266,19 @@ export class Scene {
     this.images$.complete();
     this.animations$.complete();
   }
+}
+
+function entityDepth(entities: EntityJSON[], entity: EntityJSON): number {
+  if (entity.parentId === "root") return 0;
+  const parent = entities.find((e) => e.id === entity.parentId);
+  if (!parent) return 0;
+  return entityDepth(entities, parent) + 1;
+}
+
+function sortEntitiesByDepth(entities: EntityJSON[]) {
+  return entities.sort((a, b) => {
+    const aDepth = entityDepth(entities, a);
+    const bDepth = entityDepth(entities, b);
+    return aDepth - bDepth;
+  });
 }

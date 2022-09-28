@@ -41,4 +41,4 @@ jobs:
           prettier_plugins: "prettier-plugin-prisma"
           prettier_options: --write .
           only_changed: True
-          same_commit: True
+          commit_message: "prettier: format files"

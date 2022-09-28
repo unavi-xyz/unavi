@@ -11,4 +11,5 @@
     update_type: semver:patch
 
 - match:
+    dependency_type: all
     update_type: semver:minor

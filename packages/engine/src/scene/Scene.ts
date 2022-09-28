@@ -7,6 +7,7 @@ import { Entity } from "./Entity";
 import { Image } from "./Image";
 import { Material } from "./Material";
 import { EntityJSON, MaterialJSON, SceneJSON } from "./types";
+import { sortEntities } from "./utils/sortEntities";
 
 /*
  * Stores the state of the scene.
@@ -236,18 +237,26 @@ export class Scene {
   }
 
   loadJSON(json: SceneJSON) {
+    // Add accessors
     json.accessors.forEach((accessor) =>
       this.addAccessor(Accessor.fromJSON(accessor))
     );
+
+    // Add images
     json.images.forEach((image) => this.addImage(Image.fromJSON(image)));
+
+    // Add materials
     json.materials.forEach((material) =>
       this.addMaterial(Material.fromJSON(material))
     );
 
-    // Sort entities by parent, so that parents are created before children
-    const sortedEntities = sortEntitiesByDepth(json.entities);
+    // Sort entities
+    const sortedEntities = sortEntities(json.entities);
+
+    // Add entities
     sortedEntities.forEach((entity) => this.addEntity(Entity.fromJSON(entity)));
 
+    // Add animations
     json.animations.forEach((animation) =>
       this.addAnimation(Animation.fromJSON(animation))
     );
@@ -266,19 +275,4 @@ export class Scene {
     this.images$.complete();
     this.animations$.complete();
   }
-}
-
-function entityDepth(entities: EntityJSON[], entity: EntityJSON): number {
-  if (entity.parentId === "root") return 0;
-  const parent = entities.find((e) => e.id === entity.parentId);
-  if (!parent) return 0;
-  return entityDepth(entities, parent) + 1;
-}
-
-function sortEntitiesByDepth(entities: EntityJSON[]) {
-  return entities.sort((a, b) => {
-    const aDepth = entityDepth(entities, a);
-    const bDepth = entityDepth(entities, b);
-    return aDepth - bDepth;
-  });
 }

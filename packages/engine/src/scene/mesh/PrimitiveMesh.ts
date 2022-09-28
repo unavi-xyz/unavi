@@ -22,6 +22,11 @@ export class PrimitiveMesh {
   JOINTS_0$ = new BehaviorSubject<string | null>(null);
   WEIGHTS_0$ = new BehaviorSubject<string | null>(null);
 
+  skin: null | {
+    inverseBindMatricesId: string;
+    jointIds: string[];
+  } = null;
+
   get mode() {
     return this.mode$.value;
   }
@@ -168,6 +173,7 @@ export class PrimitiveMesh {
       COLOR_0: this.COLOR_0,
       JOINTS_0: this.JOINTS_0,
       WEIGHTS_0: this.WEIGHTS_0,
+      skin: this.skin,
     };
   }
 
@@ -189,6 +195,7 @@ export class PrimitiveMesh {
     if (json.COLOR_0 !== undefined) this.COLOR_0 = json.COLOR_0;
     if (json.JOINTS_0 !== undefined) this.JOINTS_0 = json.JOINTS_0;
     if (json.WEIGHTS_0 !== undefined) this.WEIGHTS_0 = json.WEIGHTS_0;
+    if (json.skin !== undefined) this.skin = json.skin;
   }
 
   static fromJSON(json: PrimitiveMeshJSON) {

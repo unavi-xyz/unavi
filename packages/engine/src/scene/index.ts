@@ -11,7 +11,6 @@ export * from "./mesh/BoxMesh";
 export * from "./mesh/CylinderMesh";
 export * from "./mesh/GLTFMesh";
 export * from "./mesh/PrimitiveMesh";
-export * from "./mesh/SkinMesh";
 export * from "./mesh/SphereMesh";
 export * from "./mesh/types";
 export * from "./Scene";

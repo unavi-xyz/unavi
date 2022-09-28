@@ -11,7 +11,6 @@ import { BoxMesh } from "./mesh/BoxMesh";
 import { CylinderMesh } from "./mesh/CylinderMesh";
 import { GLTFMesh } from "./mesh/GLTFMesh";
 import { PrimitiveMesh } from "./mesh/PrimitiveMesh";
-import { SkinMesh } from "./mesh/SkinMesh";
 import { SphereMesh } from "./mesh/SphereMesh";
 import { Mesh, MeshJSON } from "./mesh/types";
 import { Scene } from "./Scene";
@@ -245,8 +244,6 @@ function createMesh(json: MeshJSON | null) {
       return GLTFMesh.fromJSON(json);
     case "Primitive":
       return PrimitiveMesh.fromJSON(json);
-    case "Skin":
-      return SkinMesh.fromJSON(json);
     default:
       throw new Error("Unknown mesh type");
   }

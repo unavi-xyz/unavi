@@ -1,29 +1,13 @@
-import {
-  Bone,
-  Group,
-  Line,
-  LineLoop,
-  LineSegments,
-  Matrix4,
-  Mesh,
-  Points,
-  Skeleton,
-  SkinnedMesh,
-} from "three";
+import { Bone, Group } from "three";
 
 import { Entity } from "../../scene";
-import { WEBGL_CONSTANTS } from "../constants";
 import { RenderScene } from "../RenderScene";
-import { defaultMaterial } from "./constants";
-import { copyTransform } from "./copyTransform";
 import { createColliderVisual } from "./createColliderVisual";
-import { createMeshGeometry } from "./createMeshGeometry";
+import { createMesh } from "./createMesh";
 import { moveEntity } from "./moveEntity";
-import { removeEntityObject } from "./removeEntityObject";
 import { SceneMap } from "./SceneMap";
 import { setMaterial } from "./setMaterial";
 import { updateGlobalTransform } from "./updateGlobalTransform";
-import { updateMesh } from "./updateMesh";
 
 export function createEntity(
   entity: Entity,
@@ -33,164 +17,39 @@ export function createEntity(
 ) {
   if (entity.id === "root") return;
 
-  const parent = map.objects.get(entity.parentId);
-  if (!parent) {
+  const parentObject = map.objects.get(entity.parentId);
+
+  // If no parent, create parent first
+  if (!parentObject) {
     if (!entity.parent) throw new Error("Parent not found");
     createEntity(entity.parent, map, scene, visuals);
-    createEntity(entity, map, scene, visuals);
-    return;
   }
 
-  // Create object
-  switch (entity.mesh?.type) {
-    case "Box":
-    case "Sphere":
-    case "Cylinder":
-      // Get material
-      const material = entity.materialId
-        ? map.materials.get(entity.materialId)
-        : defaultMaterial;
-      if (!material) throw new Error("Material not found");
+  // If skinned mesh, load all joints first
+  if (entity.mesh?.type === "Primitive" && entity.mesh.skin !== null) {
+    entity.mesh.skin.jointIds.forEach((jointId) => {
+      const joint = scene.entities[jointId];
+      if (!joint) throw new Error("Joint not found");
 
-      // Create geometry
-      const geometry = createMeshGeometry(entity.mesh, map, scene);
-
-      // Create mesh
-      const mesh = new Mesh(geometry, material);
-
-      // Add to scene
-      map.objects.set(entity.id, mesh);
-      copyTransform(mesh, entity);
-      parent.add(mesh);
-      break;
-    case "Primitive":
-    case "Skin":
-      // Get material
-      const primitiveMaterial = entity.materialId
-        ? map.materials.get(entity.materialId)
-        : defaultMaterial;
-      if (!primitiveMaterial) throw new Error("Material not found");
-
-      // Create geometry
-      const primitiveGeometry = createMeshGeometry(
-        entity.mesh.toJSON(),
-        map,
-        scene
-      );
-
-      let primitiveMesh:
-        | Mesh
-        | SkinnedMesh
-        | LineSegments
-        | LineLoop
-        | Line
-        | Points;
-      switch (entity.mesh.mode) {
-        case WEBGL_CONSTANTS.TRIANGLES:
-        case WEBGL_CONSTANTS.TRIANGLE_STRIP:
-        case WEBGL_CONSTANTS.TRIANGLE_FAN:
-          const isSkin = entity.mesh.type === "Skin";
-          primitiveMesh = isSkin
-            ? new SkinnedMesh(primitiveGeometry, primitiveMaterial)
-            : new Mesh(primitiveGeometry, primitiveMaterial);
-
-          if (primitiveMesh instanceof SkinnedMesh) {
-            const normalized =
-              primitiveMesh.geometry.attributes.skinWeight.normalized;
-            if (!normalized) primitiveMesh.normalizeSkinWeights();
-          }
-          break;
-        case WEBGL_CONSTANTS.LINES:
-          primitiveMesh = new LineSegments(
-            primitiveGeometry,
-            primitiveMaterial
-          );
-          break;
-        case WEBGL_CONSTANTS.LINE_STRIP:
-          primitiveMesh = new Line(primitiveGeometry, primitiveMaterial);
-          break;
-        case WEBGL_CONSTANTS.LINE_LOOP:
-          primitiveMesh = new LineLoop(primitiveGeometry, primitiveMaterial);
-          break;
-        case WEBGL_CONSTANTS.POINTS:
-          primitiveMesh = new Points(primitiveGeometry, primitiveMaterial);
-          break;
-        default:
-          throw new Error(`Unknown primitive mode: ${entity.mesh.mode}`);
-      }
-
-      // Add to scene
-      map.objects.set(entity.id, primitiveMesh);
-      copyTransform(primitiveMesh, entity);
-      parent.add(primitiveMesh);
-      break;
-    default:
-      // Check if joint
-      let skinParent: Entity | undefined;
-      Object.values(scene.entities).forEach((entity) => {
-        if (
-          entity.mesh?.type === "Skin" &&
-          entity.mesh.jointIds.includes(entity.id)
-        )
-          skinParent = entity;
-      });
-
-      // Create object
-      const object = skinParent ? new Bone() : new Group();
-
-      if (skinParent) {
-        const skinObject = map.objects.get(skinParent.id);
-        if (!skinObject) throw new Error("Skin not found");
-
-        // Create skeleton
-        skinObject.traverse((child) => {
-          if (!(child instanceof SkinnedMesh)) return;
-
-          const bones: Bone[] = [];
-          const boneInverses: Matrix4[] = [];
-
-          if (entity.mesh?.type !== "Skin") throw new Error("Mesh not skin");
-          if (!entity.mesh.inverseBindMatricesId)
-            throw new Error("No inverse bind matrices");
-
-          const inverseBindMatrices =
-            scene.accessors[entity.mesh.inverseBindMatricesId].array;
-
-          entity.mesh.jointIds.forEach((jointId, i) => {
-            const bone = map.objects.get(jointId);
-            if (!bone) throw new Error("Joint not found");
-            if (!(bone instanceof Bone)) throw new Error("Joint is not a bone");
-
-            const matrix = new Matrix4();
-            matrix.fromArray(inverseBindMatrices, i * 16);
-
-            bones.push(bone);
-            boneInverses.push(matrix);
-          });
-
-          child.bind(new Skeleton(bones, boneInverses), child.matrixWorld);
-        });
-      }
-
-      // Add to scene
-      map.objects.set(entity.id, object);
-      copyTransform(object, entity);
-      parent.add(object);
+      const jointObject = map.objects.get(jointId);
+      if (!jointObject)
+        createMesh(jointId, joint.mesh?.toJSON(), map, scene, visuals);
+      if (!(jointObject instanceof Bone))
+        createEntity(joint, map, scene, visuals);
+    });
   }
 
-  // Create collider visual
-  createColliderVisual(entity.id, map, scene, visuals);
+  createMesh(entity.id, entity.mesh?.toJSON(), map, scene, visuals);
 
   // Subscribe to entity updates
   entity.mesh$.subscribe({
     next: (mesh) => {
-      if (!mesh?.type || mesh.type === "glTF") return;
-      updateMesh(entity.id, mesh?.toJSON(), map, scene);
+      createMesh(entity.id, mesh?.toJSON(), map, scene, visuals);
     },
     complete: () => {
       // Remove object when entity is removed
       // Nothing special about this callback, could be added to any of these subscriptions
-      removeEntityObject(entity.id, map);
+      // removeEntityObject(entity.id, map);
     },
   });
 

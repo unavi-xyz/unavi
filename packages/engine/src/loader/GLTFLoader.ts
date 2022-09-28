@@ -24,7 +24,6 @@ import {
   Material,
   PrimitiveMesh,
   Scene,
-  SkinMesh,
   Texture,
 } from "../scene";
 import { Accessor } from "../scene/Accessor";
@@ -45,8 +44,9 @@ export class GLTFLoader {
     .registerDependencies(extensionDeps);
   #root: Root | null = null;
 
-  #cache = {
+  #map = {
     nodes: new Map<INode, string>(),
+    meshes: new Map<IMesh, Entity[]>(),
     materials: new Map<IMaterial, Material>(),
     accessors: new Map<IAccessor, string>(),
     images: new Map<ITexture, string>(),
@@ -72,6 +72,42 @@ export class GLTFLoader {
     // Load nodes
     scene.listChildren().forEach((child) => {
       this.#loadNode(child);
+    });
+
+    // Load skin data
+    this.#map.nodes.forEach((_, node) => {
+      const skin = node.getSkin();
+
+      if (skin) {
+        const mesh = node.getMesh();
+        if (!mesh) throw new Error("No mesh");
+
+        const meshEntities = this.#map.meshes.get(mesh);
+        if (!meshEntities) throw new Error("No mesh entities");
+
+        meshEntities.forEach((meshEntity) => {
+          if (meshEntity.mesh?.type !== "Primitive")
+            throw new Error("Wrong mesh");
+
+          // Load inverse bind matrices
+          const inverseBindMatrices = skin.getInverseBindMatrices();
+          if (!inverseBindMatrices) throw new Error("No inverse bind matrices");
+          const inverseBindMatricesId = this.#loadAccessor(inverseBindMatrices);
+
+          // Load joints
+          const jointIds = skin.listJoints().map((joint) => {
+            const entityId = this.#map.nodes.get(joint);
+            if (entityId === undefined) throw new Error("No joint entity");
+            return entityId;
+          });
+
+          // Set skin data
+          meshEntity.mesh.skin = {
+            inverseBindMatricesId,
+            jointIds,
+          };
+        });
+      }
     });
 
     // Load animations
@@ -100,7 +136,7 @@ export class GLTFLoader {
     const targetNode = channel.getTargetNode();
     if (!targetNode) throw new Error("No target node");
 
-    const targetId = this.#cache.nodes.get(targetNode);
+    const targetId = this.#map.nodes.get(targetNode);
     if (targetId === undefined) throw new Error("No target node entity");
 
     // Load sampler
@@ -176,35 +212,16 @@ export class GLTFLoader {
       this.#loadNode(child, entity.id);
     });
 
-    // Load skin
-    const skin = node.getSkin();
-
-    if (skin) {
-      const inverseBindMatrices = skin.getInverseBindMatrices();
-      if (!inverseBindMatrices) throw new Error("No inverse bind matrices");
-
-      // Create mesh
-      const mesh = new SkinMesh();
-      mesh.inverseBindMatricesId = this.#loadAccessor(inverseBindMatrices);
-
-      // Load joints
-      skin.listJoints().forEach((joint) => {
-        const entityId = this.#cache.nodes.get(joint);
-        if (entityId === undefined) throw new Error("No joint entity");
-        mesh.jointIds = [...mesh.jointIds, entityId];
-      });
-    }
-
     // Add to scene
     this.#scene.addEntity(entity);
 
-    this.#cache.nodes.set(node, entity.id);
+    this.#map.nodes.set(node, entity.id);
     return entity;
   }
 
   #loadMesh(mesh: IMesh): Entity[] {
-    // TODO: Use instanced meshes
-    // const cached = this.#meshes.get(mesh);
+    // TODO: Support instanced meshes
+    // const cached = this.#map.meshes.get(mesh);
     // if (cached !== undefined) return cached;
 
     // Load primitives
@@ -212,6 +229,7 @@ export class GLTFLoader {
       .listPrimitives()
       .map((primitive) => this.#loadPrimitive(primitive));
 
+    this.#map.meshes.set(mesh, primitives);
     return primitives;
   }
 
@@ -305,7 +323,7 @@ export class GLTFLoader {
   }
 
   #loadMaterial(material: IMaterial): Material {
-    const cached = this.#cache.materials.get(material);
+    const cached = this.#map.materials.get(material);
     if (cached !== undefined) return cached;
 
     // Create entity
@@ -378,7 +396,7 @@ export class GLTFLoader {
     // Add to scene
     this.#scene.addMaterial(materialState);
 
-    this.#cache.materials.set(material, materialState);
+    this.#map.materials.set(material, materialState);
     return materialState;
   }
 
@@ -403,7 +421,7 @@ export class GLTFLoader {
   }
 
   #loadTextureImage(texture: ITexture): string {
-    const cached = this.#cache.images.get(texture);
+    const cached = this.#map.images.get(texture);
     if (cached !== undefined) return cached;
 
     const id = nanoid();
@@ -413,7 +431,7 @@ export class GLTFLoader {
     const imageArray = texture.getImage();
 
     if (imageArray) {
-      this.#cache.images.set(texture, id);
+      this.#map.images.set(texture, id);
 
       // Create image bitmap asynchronously
       const blob = new Blob([imageArray], { type: mimeType });
@@ -432,7 +450,7 @@ export class GLTFLoader {
   }
 
   #loadAccessor(accessor: IAccessor): string {
-    const cached = this.#cache.accessors.get(accessor);
+    const cached = this.#map.accessors.get(accessor);
     if (cached !== undefined) return cached;
 
     // Create accessor
@@ -452,7 +470,7 @@ export class GLTFLoader {
     // Add to scene
     this.#scene.addAccessor(accessorState);
 
-    this.#cache.accessors.set(accessor, accessorState.id);
+    this.#map.accessors.set(accessor, accessorState.id);
     return accessorState.id;
   }
 }

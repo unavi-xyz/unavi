@@ -53,7 +53,6 @@ export function createMeshGeometry(
         json.radialSegments
       );
     case "Primitive":
-    case "Skin":
       const primitiveGeometry = new BufferGeometry();
       primitiveGeometry.morphTargetsRelative = true;
 

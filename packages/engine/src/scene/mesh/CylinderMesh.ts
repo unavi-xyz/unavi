@@ -53,9 +53,10 @@ export class CylinderMesh {
   }
 
   applyJSON(json: Partial<CylinderMeshJSON>) {
-    if (json.radius) this.radius = json.radius;
-    if (json.height) this.height = json.height;
-    if (json.radialSegments) this.radialSegments = json.radialSegments;
+    if (json.radius !== undefined) this.radius = json.radius;
+    if (json.height !== undefined) this.height = json.height;
+    if (json.radialSegments !== undefined)
+      this.radialSegments = json.radialSegments;
   }
 
   static fromJSON(json: CylinderMeshJSON) {

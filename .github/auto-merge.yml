@@ -9,3 +9,6 @@
 - match:
     dependency_name: aws-sdk
     update_type: semver:patch
+
+- match:
+    update_type: semver:minor

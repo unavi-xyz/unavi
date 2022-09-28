@@ -8,14 +8,14 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo build --no-daemon",
     "codegen": "yarn workspace @wired-labs/client codegen && yarn workspace @wired-labs/lens codegen",
-    "deploy": "turbo run deploy",
-    "dev": "turbo run dev --parallel",
+    "deploy": "turbo deploy --no-daemon",
+    "dev": "turbo dev --parallel --no-daemon",
     "format": "eslint --fix . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore && prettier --write .",
     "postinstall": "husky install && patch-package && yarn codegen",
-    "lint": "turbo run lint",
-    "test": "turbo run test"
+    "lint": "turbo lint --no-daemon",
+    "test": "turbo test --no-daemon"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",
@@ -29,7 +29,7 @@
     "prettier": "^2.7.1",
     "prettier-plugin-prisma": "^4.1.0",
     "turbo": "latest",
-    "typescript": "^4.8.3"
+    "typescript": "~4.8.4"
   },
   "packageManager": "yarn@1.22.19",
   "engines": {

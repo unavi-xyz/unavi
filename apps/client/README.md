@@ -1,5 +1,12 @@
 # @wired-labs/client
 
-A [Next.js](https://nextjs.org/) website used to access the Wired.
+The main website used to access the Wired.
 
-Contains the main Three.js app, a editor for creating spaces, and various pages for viewing spaces, profiles, etc.
+## Tech Stack
+
+- [Next.js](https://nextjs.org/)
+- [tRPC](https://trpc.io/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Prisma](https://www.prisma.io/)
+- [NextAuth](https://next-auth.js.org/)
+- [Wagmi](https://wagmi.sh/) / [Rainbow Kit](https://www.rainbowkit.com/)

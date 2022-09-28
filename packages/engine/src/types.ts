@@ -15,3 +15,4 @@ export type WorkerMessage<Subject extends string = string, Data = any> = {
 };
 
 export type Triplet = [number, number, number];
+export type Quad = [number, number, number, number];

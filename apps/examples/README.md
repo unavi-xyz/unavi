@@ -1,6 +1,6 @@
 # @wired-labs/examples
 
-Examples for the engine.
+Example models for testing the engine.
 
 Models taken from [glTF-Sample-Models](https://github.com/KhronosGroup/glTF-Sample-Models).
 

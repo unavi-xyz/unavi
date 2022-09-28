@@ -24,14 +24,13 @@
     "@wired-labs/engine": "*",
     "@wired-labs/lens": "*",
     "ethers": "^5.7.1",
-    "immer": "^9.0.15",
     "ipfs-http-client": "^57.0.3",
-    "jotai": "^1.8.4",
     "nanoid": "^4.0.0",
     "next": "^12.3.1",
     "next-auth": "^4.10.3",
     "next-axiom": "^0.14.0",
     "next-pwa": "^5.6.0",
+    "next-transpile-modules": "^9.0.0",
     "react": "^18.2.0",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
@@ -47,21 +46,16 @@
     "zustand": "^4.1.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.19.1",
-    "@babel/preset-env": "^7.19.1",
-    "@babel/preset-react": "^7.18.6",
-    "@types/babel__core": "^7.1.19",
+    "@types/offscreencanvas": "^2019.7.0",
     "@types/react": "^18.0.21",
     "@types/react-dom": "^18.0.6",
     "@wired-labs/tsconfig": "*",
     "autoprefixer": "^10.4.12",
     "eslint": "^8.23.1",
     "eslint-config-custom": "*",
-    "next-transpile-modules": "^9.0.0",
     "postcss": "^8.4.16",
     "prisma": "^4.3.0",
     "tailwindcss": "^3.1.8",
-    "typescript": "^4.8.3",
-    "webpack": "^5.74.0"
+    "typescript": "~4.8.4"
   }
 }

@@ -2,35 +2,38 @@ import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
 import { GameScene } from "../game/GameScene";
-import { MainScene } from "../main/MainScene";
-import { RenderScene } from "../render/classes/RenderScene";
-import { Triplet } from "../types";
-import { BoxCollider } from "./BoxCollider";
-import { BoxMesh } from "./BoxMesh";
-import { CylinderCollider } from "./CylinderCollider";
-import { CylinderMesh } from "./CylinderMesh";
-import { SphereCollider } from "./SphereCollider";
-import { SphereMesh } from "./SphereMesh";
-import { Collider, ColliderJSON, EntityJSON, Mesh, MeshJSON } from "./types";
+import { Quad, Triplet } from "../types";
+import { BoxCollider } from "./collider/BoxCollider";
+import { CylinderCollider } from "./collider/CylinderCollider";
+import { SphereCollider } from "./collider/SphereCollider";
+import { Collider, ColliderJSON } from "./collider/types";
+import { BoxMesh } from "./mesh/BoxMesh";
+import { CylinderMesh } from "./mesh/CylinderMesh";
+import { GLTFMesh } from "./mesh/GLTFMesh";
+import { PrimitiveMesh } from "./mesh/PrimitiveMesh";
+import { SphereMesh } from "./mesh/SphereMesh";
+import { Mesh, MeshJSON } from "./mesh/types";
+import { Scene } from "./Scene";
+import { EntityJSON } from "./types";
 
 /*
- * This class represents an entity in the scene.
+ * Represents an entity in the scene.
  */
 export class Entity {
-  scene$ = new BehaviorSubject<MainScene | RenderScene | GameScene | null>(
-    null
-  );
+  readonly id: string;
+
+  scene$ = new BehaviorSubject<Scene | null>(null);
 
   get scene() {
     return this.scene$.value;
   }
 
-  set scene(scene: MainScene | RenderScene | GameScene | null) {
+  set scene(scene: Scene | null) {
     this.scene$.next(scene);
   }
 
-  readonly id: string;
   name$ = new BehaviorSubject("Entity");
+  isInternal$ = new BehaviorSubject(false);
 
   parentId$ = new BehaviorSubject<string>("root");
   childrenIds$ = new BehaviorSubject<string[]>([]);
@@ -44,12 +47,10 @@ export class Entity {
   collider$ = new BehaviorSubject<Collider | null>(null);
 
   globalPosition$ = new BehaviorSubject<Triplet>([0, 0, 0]);
-  globalQuaternion$ = new BehaviorSubject<[number, number, number, number]>([
-    0, 0, 0, 1,
-  ]);
+  globalQuaternion$ = new BehaviorSubject<Quad>([0, 0, 0, 1]);
 
-  constructor({ id }: { id?: string } = {}) {
-    this.id = id ?? nanoid();
+  constructor({ id = nanoid() }: { id?: string } = {}) {
+    this.id = id;
   }
 
   get name() {
@@ -58,6 +59,14 @@ export class Entity {
 
   set name(name: string) {
     this.name$.next(name);
+  }
+
+  get isInternal() {
+    return this.isInternal$.value;
+  }
+
+  set isInternal(isInternal: boolean) {
+    this.isInternal$.next(isInternal);
   }
 
   get parent() {
@@ -162,7 +171,7 @@ export class Entity {
     return this.globalQuaternion$.value;
   }
 
-  set globalQuaternion(globalQuaternion: [number, number, number, number]) {
+  set globalQuaternion(globalQuaternion: Quad) {
     this.globalQuaternion$.next(globalQuaternion);
   }
 
@@ -171,6 +180,7 @@ export class Entity {
     this.collider?.destroy();
 
     this.name$.complete();
+    this.isInternal$.complete();
     this.parentId$.complete();
     this.childrenIds$.complete();
     this.position$.complete();
@@ -186,8 +196,9 @@ export class Entity {
 
     return {
       id: this.id,
-      parentId: this.parentId,
       name: this.name,
+      isInternal: this.isInternal,
+      parentId: this.parentId,
       position: this.position,
       rotation: this.rotation,
       scale: this.scale,
@@ -199,8 +210,9 @@ export class Entity {
 
   applyJSON(json: Partial<EntityJSON>) {
     if (json.name !== undefined) this.name = json.name;
-    if (json.parentId !== undefined) this.parentId = json.parentId;
+    if (json.isInternal !== undefined) this.isInternal = json.isInternal;
 
+    if (json.parentId !== undefined) this.parentId = json.parentId;
     if (json.position !== undefined) this.position = json.position;
     if (json.rotation !== undefined) this.rotation = json.rotation;
     if (json.scale !== undefined) this.scale = json.scale;
@@ -228,6 +240,10 @@ function createMesh(json: MeshJSON | null) {
       return SphereMesh.fromJSON(json);
     case "Cylinder":
       return CylinderMesh.fromJSON(json);
+    case "glTF":
+      return GLTFMesh.fromJSON(json);
+    case "Primitive":
+      return PrimitiveMesh.fromJSON(json);
     default:
       throw new Error("Unknown mesh type");
   }

@@ -9,10 +9,10 @@ export interface GameThreadOptions {
 }
 
 /*
- * GameThread acts as an interface between the main thread and the {@link GameWorker}.
+ * Acts as an interface between the main thread and the {@link GameWorker}.
  */
 export class GameThread {
-  worker = new Worker(new URL("../workers/Game.worker.ts", import.meta.url), {
+  #worker = new Worker(new URL("./worker.ts", import.meta.url), {
     type: "module",
   });
 
@@ -28,20 +28,26 @@ export class GameThread {
     this.#canvas = canvas;
     this.#renderThread = renderThread;
 
-    this.worker.onmessage = (event: MessageEvent<FromGameMessage>) => {
-      const { subject, data } = event.data;
-
-      switch (subject) {
-        case "ready":
-          this.ready = true;
-          this.#readyListeners.forEach((listener) => listener());
-          break;
-        case "player_buffers":
-          renderThread.setPlayerBuffers(data);
-          break;
-      }
-    };
+    this.#worker.onmessage = this.#onmessage;
   }
+
+  #onmessage = (event: MessageEvent<FromGameMessage>) => {
+    const { subject, data } = event.data;
+
+    switch (subject) {
+      case "ready":
+        this.ready = true;
+        this.#readyListeners.forEach((listener) => listener());
+        break;
+      case "player_buffers":
+        this.#renderThread.setPlayerBuffers(data);
+        break;
+    }
+  };
+
+  postMessage = (message: ToGameMessage, transfer?: Transferable[]) => {
+    this.#worker.postMessage(message, transfer);
+  };
 
   start() {
     this.postMessage({ subject: "start", data: null });
@@ -68,11 +74,9 @@ export class GameThread {
   }
 
   destroy() {
-    this.worker.terminate();
-    if (this.#player) this.#player.destroy();
-  }
+    this.stop();
+    setTimeout(() => this.#worker.terminate());
 
-  postMessage = (message: ToGameMessage, transfer?: Transferable[]) => {
-    this.worker.postMessage(message, transfer);
-  };
+    this.#player?.destroy();
+  }
 }

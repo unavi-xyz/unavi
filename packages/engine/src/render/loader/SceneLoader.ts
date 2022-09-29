@@ -1,7 +1,7 @@
 import { AnimationMixer, Group, Object3D } from "three";
 
 import { SceneMessage } from "../../scene";
-import { PostMessage, Triplet } from "../../types";
+import { PostMessage, Quad } from "../../types";
 import { RenderScene } from "../RenderScene";
 import { ToRenderMessage } from "../types";
 import { createAnimation } from "./createAnimation";
@@ -93,9 +93,15 @@ export class SceneLoader {
     if (!object) throw new Error("Object not found");
 
     const position = object.position.toArray();
+    const quaternion = object.quaternion.toArray();
     const scale = object.scale.toArray();
-    const euler = object.rotation.toArray();
-    const rotation = [euler[0], euler[1], euler[2]] as Triplet;
+
+    const rotation: Quad = [
+      quaternion[0],
+      quaternion[1],
+      quaternion[2],
+      quaternion[3],
+    ];
 
     this.#scene.updateEntity(entityId, {
       position,

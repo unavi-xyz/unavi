@@ -39,7 +39,7 @@ export class Entity {
   childrenIds$ = new BehaviorSubject<string[]>([]);
 
   position$ = new BehaviorSubject<Triplet>([0, 0, 0]);
-  rotation$ = new BehaviorSubject<Triplet>([0, 0, 0]);
+  rotation$ = new BehaviorSubject<Quad>([0, 0, 0, 1]);
   scale$ = new BehaviorSubject<Triplet>([1, 1, 1]);
 
   mesh$ = new BehaviorSubject<Mesh | null>(null);
@@ -114,7 +114,7 @@ export class Entity {
     return this.rotation$.value;
   }
 
-  set rotation(rotation: Triplet) {
+  set rotation(rotation: Quad) {
     this.rotation$.next(rotation);
   }
 

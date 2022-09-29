@@ -1,8 +1,9 @@
-import { Triplet } from "@wired-labs/engine";
+import { Quad, Triplet } from "@wired-labs/engine";
 
 import { updateEntity } from "../../actions/UpdateEntityAction";
 import { useEntity } from "../../hooks/useEntity";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
+import { eulerToQuaternion } from "../../utils/eulerToQuaternion";
 import NumberInput from "../ui/NumberInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./MenuRows";
@@ -17,7 +18,7 @@ export default function TransformComponent({ entityId }: Props) {
   const scale$ = useEntity(entityId, (entity) => entity.scale$);
 
   const position = useSubscribeValue<Triplet>(position$);
-  const rotation = useSubscribeValue<Triplet>(rotation$);
+  const rotation = useSubscribeValue<Quad>(rotation$);
   const scale = useSubscribeValue<Triplet>(scale$);
 
   return (
@@ -82,7 +83,10 @@ export default function TransformComponent({ entityId }: Props) {
                     const rounded = Math.round(num * 1000) / 1000;
                     const radians = (rounded * Math.PI) / 180;
 
-                    const newRotation: Triplet = [...rotation];
+                    const euler = [...rotation];
+                    euler[i] = radians;
+
+                    const newRotation = eulerToQuaternion(euler);
                     newRotation[i] = radians;
 
                     updateEntity(entityId, {

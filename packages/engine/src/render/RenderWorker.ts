@@ -118,7 +118,6 @@ export class RenderWorker {
     this.#renderer.setPixelRatio(pixelRatio);
     this.#renderer.setSize(canvasWidth, canvasHeight, false);
     this.#renderer.outputEncoding = sRGBEncoding;
-    this.#renderer.physicallyCorrectLights = true;
     this.#renderer.shadowMap.enabled = true;
 
     // Fog
@@ -127,6 +126,8 @@ export class RenderWorker {
     // Skybox
     if (skyboxPath)
       loadCubeTexture(skyboxPath).then((texture) => {
+        texture.encoding = sRGBEncoding;
+
         this.#scene.background = texture;
         this.#scene.environment = texture;
 

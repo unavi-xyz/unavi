@@ -25,6 +25,11 @@ export function createMaterial(
     next: (alpha) => {
       materialObject.opacity = alpha;
     },
+    complete: () => {
+      // Remove three material when material is removed
+      // Nothing special about this callback, could be added to any of these subscriptions
+      removeMaterial(material.id, map);
+    },
   });
 
   material.alphaMode$.subscribe({
@@ -75,9 +80,6 @@ export function createMaterial(
     next: (color) => {
       materialObject.color = new Color().fromArray(color);
     },
-    complete: () => {
-      removeMaterial(material.id, map);
-    },
   });
 
   material.roughness$.subscribe({
@@ -103,17 +105,21 @@ export function createMaterial(
 
   material.normalTexture$.subscribe({
     next: (normalTexture) => {
-      materialObject.normalMap = normalTexture
+      const texture = normalTexture
         ? createTexture(normalTexture, scene)
         : null;
+
+      materialObject.normalMap = texture;
     },
   });
 
   material.occlusionTexture$.subscribe({
     next: (occlusionTexture) => {
-      materialObject.aoMap = occlusionTexture
+      const texture = occlusionTexture
         ? createTexture(occlusionTexture, scene)
         : null;
+
+      materialObject.aoMap = texture;
     },
   });
 
@@ -130,12 +136,12 @@ export function createMaterial(
 
   material.metallicRoughnessTexture$.subscribe({
     next: (metallicRoughnessTexture) => {
-      materialObject.metalnessMap = metallicRoughnessTexture
+      const texture = metallicRoughnessTexture
         ? createTexture(metallicRoughnessTexture, scene)
         : null;
-      materialObject.roughnessMap = metallicRoughnessTexture
-        ? createTexture(metallicRoughnessTexture, scene)
-        : null;
+
+      materialObject.metalnessMap = texture;
+      materialObject.roughnessMap = texture;
     },
   });
 }

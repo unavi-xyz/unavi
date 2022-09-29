@@ -9,7 +9,6 @@ import {
 } from "three";
 
 import { PostMessage } from "../types";
-import { disposeObject } from "../utils/disposeObject";
 import { OrbitControlsPlugin } from "./plugins/OrbitControlsPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { Plugin } from "./plugins/Plugin";
@@ -17,6 +16,7 @@ import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
 import { TransformControlsPlugin } from "./plugins/TransformControlsPlugin";
 import { SceneLoader } from "./SceneLoader/SceneLoader";
 import { FromRenderMessage, ToRenderMessage } from "./types";
+import { disposeObject } from "./utils/disposeObject";
 import { loadCubeTexture } from "./utils/loadCubeTexture";
 
 export type RenderWorkerOptions = {

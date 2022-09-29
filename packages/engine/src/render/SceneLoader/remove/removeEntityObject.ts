@@ -1,4 +1,4 @@
-import { disposeObject } from "../../../utils/disposeObject";
+import { disposeObject } from "../../utils/disposeObject";
 import { SceneMap } from "../types";
 import { removeColliderVisual } from "./removeColliderVisual";
 

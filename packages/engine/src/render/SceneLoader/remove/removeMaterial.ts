@@ -1,6 +1,6 @@
 import { Mesh } from "three";
 
-import { disposeMaterial } from "../../../utils/disposeObject";
+import { disposeMaterial } from "../../utils/disposeObject";
 import { defaultMaterial } from "../constants";
 import { SceneMap } from "../types";
 

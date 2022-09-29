@@ -31,6 +31,10 @@ export function createMesh(
   const parent = map.objects.get(entity.parentId);
   if (!parent) throw new Error("Parent not found");
 
+  // Remove old object
+  const oldObject = map.objects.get(entityId);
+  if (oldObject) removeEntityObject(entityId, map);
+
   // Create object
   switch (json?.type) {
     case "Box":

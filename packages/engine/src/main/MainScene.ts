@@ -48,32 +48,7 @@ export class MainScene {
       });
 
       // Add loaded glTF to the scene
-      this.#scene.loadJSON(scene);
-
-      // Send stripped down glTF to game thread
-      const strippedScene: Partial<SceneJSON> = {
-        entities: scene.entities,
-      };
-
-      this.#toGameThread({
-        subject: "load_json",
-        data: { scene: strippedScene },
-      });
-
-      // Send glTF + transfer data to render thread
-      const bitmaps = Object.values(scene.images).map((image) => image.bitmap);
-      const accessors = Object.values(scene.accessors).map(
-        (accessor) => accessor.array.buffer
-      );
-      const transfer = [...bitmaps, ...accessors];
-
-      this.#toRenderThread(
-        {
-          subject: "load_json",
-          data: { scene },
-        },
-        transfer
-      );
+      this.loadJSON(scene);
     };
   }
 
@@ -226,6 +201,34 @@ export class MainScene {
 
   loadJSON(json: Partial<SceneJSON>) {
     this.#scene.loadJSON(json);
+
+    // Send stripped down scene to game thread
+    const strippedScene: Partial<SceneJSON> = {
+      entities: json.entities,
+    };
+
+    this.#toGameThread({
+      subject: "load_json",
+      data: { scene: strippedScene },
+    });
+
+    // Send full scene + transfer data to render thread
+    const bitmaps = json.images
+      ? Object.values(json.images).map((image) => image.bitmap)
+      : [];
+    const accessors = json.accessors
+      ? Object.values(json.accessors).map((accessor) => accessor.array.buffer)
+      : [];
+
+    const transfer = [...bitmaps, ...accessors];
+
+    this.#toRenderThread(
+      {
+        subject: "load_json",
+        data: { scene: json },
+      },
+      transfer
+    );
   }
 
   destroy() {

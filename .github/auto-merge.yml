@@ -1,4 +1,8 @@
 - match:
+    dependency_type: all
+    update_type: semver:minor
+
+- match:
     dependency_name: typescript
     update_type: semver:patch
 
@@ -9,7 +13,3 @@
 - match:
     dependency_name: aws-sdk
     update_type: semver:patch
-
-- match:
-    dependency_type: all
-    update_type: semver:minor

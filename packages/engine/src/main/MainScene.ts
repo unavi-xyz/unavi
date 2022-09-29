@@ -51,18 +51,8 @@ export class MainScene {
       this.#scene.loadJSON(scene);
 
       // Send stripped down glTF to game thread
-      const strippedScene: SceneJSON = {
-        ...scene,
-        // @ts-ignore
-        accessors: Object.values(scene.accessors).map((accessor) => ({
-          ...accessor,
-          array: null,
-        })),
-        // @ts-ignore
-        images: Object.values(scene.images).map((image) => ({
-          ...image,
-          bitmap: null,
-        })),
+      const strippedScene: Partial<SceneJSON> = {
+        entities: scene.entities,
       };
 
       this.#toGameThread({
@@ -234,7 +224,7 @@ export class MainScene {
     return this.#scene.toJSON();
   }
 
-  loadJSON(json: SceneJSON) {
+  loadJSON(json: Partial<SceneJSON>) {
     this.#scene.loadJSON(json);
   }
 

@@ -236,30 +236,42 @@ export class Scene {
     };
   }
 
-  loadJSON(json: SceneJSON) {
+  loadJSON(json: Partial<SceneJSON>) {
     // Add accessors
-    json.accessors.forEach((accessor) =>
-      this.addAccessor(Accessor.fromJSON(accessor))
-    );
+    if (json.accessors) {
+      json.accessors.forEach((accessor) =>
+        this.addAccessor(Accessor.fromJSON(accessor))
+      );
+    }
 
     // Add images
-    json.images.forEach((image) => this.addImage(Image.fromJSON(image)));
+    if (json.images) {
+      json.images.forEach((image) => this.addImage(Image.fromJSON(image)));
+    }
 
     // Add materials
-    json.materials.forEach((material) =>
-      this.addMaterial(Material.fromJSON(material))
-    );
+    if (json.materials) {
+      json.materials.forEach((material) =>
+        this.addMaterial(Material.fromJSON(material))
+      );
+    }
 
     // Sort entities
-    const sortedEntities = sortEntities(json.entities);
+    if (json.entities) {
+      const sortedEntities = sortEntities(json.entities);
 
-    // Add entities
-    sortedEntities.forEach((entity) => this.addEntity(Entity.fromJSON(entity)));
+      // Add entities
+      sortedEntities.forEach((entity) =>
+        this.addEntity(Entity.fromJSON(entity))
+      );
+    }
 
     // Add animations
-    json.animations.forEach((animation) =>
-      this.addAnimation(Animation.fromJSON(animation))
-    );
+    if (json.animations) {
+      json.animations.forEach((animation) =>
+        this.addAnimation(Animation.fromJSON(animation))
+      );
+    }
   }
 
   destroy() {

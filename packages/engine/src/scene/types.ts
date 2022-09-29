@@ -92,7 +92,7 @@ export type SceneMessage =
   | WorkerMessage<
       "load_json",
       {
-        scene: SceneJSON;
+        scene: Partial<SceneJSON>;
       }
     >
   | WorkerMessage<

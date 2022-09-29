@@ -6,7 +6,7 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "lint": "eslint src"
+    "lint": "eslint --fix src"
   },
   "dependencies": {
     "@dimforge/rapier3d": "^0.9.0",

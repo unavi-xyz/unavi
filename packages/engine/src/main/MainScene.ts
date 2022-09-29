@@ -26,6 +26,11 @@ export class MainScene {
 
   #scene = new Scene();
 
+  #map = {
+    loadedGltfUris: new Map<string, string | null>(),
+    glTFRootEntities: new Map<string, string[]>(),
+  };
+
   constructor({
     gameThread,
     loaderThread,
@@ -39,17 +44,72 @@ export class MainScene {
     this.#toLoaderThread = loaderThread.postMessage.bind(loaderThread);
     this.#toRenderThread = renderThread.postMessage.bind(renderThread);
 
+    // Handle glTF loads
     loaderThread.onGltfLoaded = ({ id, scene }) => {
-      // Set the loaded scene root to the glTF entity
-      scene.entities = Object.values(scene.entities).filter((entityJSON) => {
-        if (entityJSON.parentId === "root") entityJSON.parentId = id;
+      // Remove previous loaded glTF entity
+      const rootEntities = this.#map.glTFRootEntities.get(id);
+      if (rootEntities) {
+        rootEntities.forEach((entityId) => this.removeEntity(entityId));
+        this.#map.glTFRootEntities.delete(id);
+      }
+
+      scene.entities = scene.entities.filter((entityJSON) => {
+        // Filter out root entity
         if (entityJSON.id === "root") return false;
+
+        // Add top level entities to the roots map
+        if (entityJSON.parentId === "root") {
+          entityJSON.parentId = id;
+          const roots = this.#map.glTFRootEntities.get(id) ?? [];
+          roots.push(entityJSON.id);
+          this.#map.glTFRootEntities.set(id, roots);
+        }
+
         return true;
       });
 
       // Add loaded glTF to the scene
       this.loadJSON(scene);
     };
+
+    // Load glTFs when added to the scene
+    this.#scene.entities$.subscribe((entities) => {
+      Object.values(entities).forEach((entity) => {
+        entity.mesh$.subscribe((mesh) => {
+          if (mesh?.type === "glTF") {
+            mesh.uri$.subscribe((uri) => {
+              const loadedURI = this.#map.loadedGltfUris.get(entity.id);
+              if (uri !== loadedURI) {
+                this.#map.loadedGltfUris.set(entity.id, uri);
+
+                if (uri === null) {
+                  // Remove loaded glTF
+                  const rootEntities = this.#map.glTFRootEntities.get(
+                    entity.id
+                  );
+                  if (rootEntities) {
+                    rootEntities.forEach((entityId) =>
+                      this.removeEntity(entityId)
+                    );
+                    this.#map.glTFRootEntities.delete(entity.id);
+                  }
+                  return;
+                }
+
+                // Load glTF
+                this.#toLoaderThread({
+                  subject: "load_gltf",
+                  data: {
+                    id: entity.id,
+                    uri,
+                  },
+                });
+              }
+            });
+          }
+        });
+      });
+    });
   }
 
   onmessage = (event: MessageEvent<SceneMessage>) => {
@@ -200,7 +260,8 @@ export class MainScene {
   }
 
   loadJSON(json: Partial<SceneJSON>) {
-    this.#scene.loadJSON(json);
+    // Remove root entity
+    json.entities = json.entities?.filter((entity) => entity.id !== "root");
 
     // Send stripped down scene to game thread
     const strippedScene: Partial<SceneJSON> = {
@@ -229,6 +290,9 @@ export class MainScene {
       },
       transfer
     );
+
+    // Load scene
+    this.#scene.loadJSON(json);
   }
 
   destroy() {

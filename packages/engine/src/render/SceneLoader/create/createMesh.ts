@@ -12,6 +12,7 @@ import {
 import { MeshJSON } from "../../../scene";
 import { WEBGL_CONSTANTS } from "../../constants";
 import { RenderScene } from "../../RenderScene";
+import { disposeObject } from "../../utils/disposeObject";
 import { defaultMaterial } from "../constants";
 import { removeEntityObject } from "../remove/removeEntityObject";
 import { SceneMap } from "../types";
@@ -31,9 +32,9 @@ export function createMesh(
   const parent = map.objects.get(entity.parentId);
   if (!parent) throw new Error("Parent not found");
 
-  // Remove old object
+  // Remove existing object
   const oldObject = map.objects.get(entityId);
-  if (oldObject) removeEntityObject(entityId, map);
+  const children = oldObject?.children;
 
   // Create object
   switch (json?.type) {
@@ -169,5 +170,19 @@ export function createMesh(
 
       // Update skeletons
       if (isJoint) createSkeletons(scene, map);
+  }
+
+  // Restore children
+  if (children && children.length > 0) {
+    const newObject = map.objects.get(entityId);
+    if (!newObject) throw new Error("Object not found");
+
+    newObject.add(...children);
+  }
+
+  // Remove old object
+  if (oldObject) {
+    oldObject.removeFromParent();
+    disposeObject(oldObject);
   }
 }

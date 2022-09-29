@@ -9,11 +9,11 @@ import { updateEntity } from "../../actions/UpdateEntityAction";
 import { useEntity } from "../../hooks/useEntity";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import SelectMenu from "../ui/SelectMenu";
-import BoxColliderComponent from "./BoxColliderComponent";
+import BoxColliderComponent from "./collider/BoxColliderComponent";
+import CylinderColliderComponent from "./collider/CylinderColliderComponent";
+import SphereColliderComponent from "./collider/SphereColliderComponent";
 import ComponentMenu from "./ComponentMenu";
-import CylinderColliderComponent from "./CylinderColliderComponent";
 import MenuRows from "./MenuRows";
-import SphereColliderComponent from "./SphereColliderComponent";
 
 interface Props {
   entityId: string;

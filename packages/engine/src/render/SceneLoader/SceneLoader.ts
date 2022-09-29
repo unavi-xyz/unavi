@@ -95,6 +95,10 @@ export class SceneLoader {
     return undefined;
   }
 
+  getEntity(id: string) {
+    return this.#scene.entities[id];
+  }
+
   findObject(entityId: string): Object3D | undefined {
     return this.#map.objects.get(entityId);
   }

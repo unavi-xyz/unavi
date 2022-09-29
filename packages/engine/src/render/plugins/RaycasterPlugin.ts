@@ -1,4 +1,4 @@
-import { Camera, Raycaster } from "three";
+import { Camera, Object3D, Raycaster } from "three";
 
 import { PostMessage } from "../../types";
 import { PluginState } from "../RenderWorker";
@@ -67,12 +67,20 @@ export class RaycasterPlugin extends Plugin {
     );
 
     // Get intersected objects
-    const intersected = this.#raycaster.intersectObject(
+    const intersections = this.#raycaster.intersectObject(
       this.#sceneLoader.contents
     );
 
-    if (intersected[0]) {
-      const id = this.#sceneLoader.findId(intersected[0].object);
+    // Step through parents until we find a valid object
+    let intersected: Object3D | undefined;
+
+    intersections.forEach((intersection) => {
+      if (intersected) return;
+      intersected = findValidObject(intersection.object, this.#sceneLoader);
+    });
+
+    if (intersected) {
+      const id = this.#sceneLoader.findId(intersected);
 
       if (id !== undefined) {
         this.#postMessage({ subject: "clicked_object", data: id });
@@ -82,4 +90,22 @@ export class RaycasterPlugin extends Plugin {
 
     this.#postMessage({ subject: "clicked_object", data: null });
   }
+}
+
+/*
+ * Step through an object's parents to find a non-internal entity
+ */
+function findValidObject(
+  object: Object3D,
+  sceneLoader: SceneLoader
+): Object3D | undefined {
+  const entityId = sceneLoader.findId(object);
+
+  if (entityId) {
+    const entity = sceneLoader.getEntity(entityId);
+    if (!entity.isInternal) return object;
+  }
+
+  // Try parent
+  if (object.parent) return findValidObject(object.parent, sceneLoader);
 }

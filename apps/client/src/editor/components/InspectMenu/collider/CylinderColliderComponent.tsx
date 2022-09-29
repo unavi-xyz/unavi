@@ -1,9 +1,9 @@
 import { CylinderCollider } from "@wired-labs/engine";
 
-import { updateEntity } from "../../actions/UpdateEntityAction";
-import { useSubscribeValue } from "../../hooks/useSubscribeValue";
-import NumberInput from "../ui/NumberInput";
-import MenuRows from "./MenuRows";
+import { updateEntity } from "../../../actions/UpdateEntityAction";
+import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
+import NumberInput from "../../ui/NumberInput";
+import MenuRows from "../MenuRows";
 
 interface Props {
   entityId: string;

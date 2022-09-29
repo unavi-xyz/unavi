@@ -27,6 +27,7 @@ export type CylinderMeshJSON = {
 
 export type GLTFMeshJSON = {
   type: "glTF";
+  name: string | null;
   uri: string | null;
 };
 

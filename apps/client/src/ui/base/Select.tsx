@@ -1,10 +1,8 @@
-interface Props {
+interface Props extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options: string[];
   inputAdornment?: string;
   title?: string;
-  value?: string;
-  thin?: boolean;
-  [key: string]: any;
+  outline?: boolean;
 }
 
 export default function Select({
@@ -12,20 +10,16 @@ export default function Select({
   inputAdornment,
   title,
   value,
-  thin,
+  outline = false,
   ...rest
 }: Props) {
-  const thinCss = thin ? undefined : "py-2";
+  const outlineClass = outline ? "border" : "";
 
   return (
     <div className="w-full space-y-2">
       <div className="text-lg font-bold">{title}</div>
-
       <select
-        value={value}
-        className={`w-full appearance-none rounded-lg bg-surface bg-arrow bg-right bg-no-repeat
-                    bg-origin-content pl-4 pr-3
-                    text-onSurface outline-none transition hover:shadow ${thinCss}`}
+        className={`w-full appearance-none rounded-lg bg-surface bg-arrow bg-right bg-no-repeat bg-origin-content py-2 pl-4 pr-3 text-onSurface outline-none transition hover:shadow ${outlineClass}`}
         {...rest}
       >
         {options.map((option) => {

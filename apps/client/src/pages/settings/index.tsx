@@ -118,7 +118,7 @@ export default function Settings() {
       <MetaTags title="Settings" />
 
       {profile && (
-        <div className="space-y-8">
+        <div className="mb-24 space-y-8">
           <div className="space-y-8 rounded-3xl bg-primaryContainer p-8 text-onPrimaryContainer">
             <div className="space-y-4 text-lg">
               <div className="flex items-center space-x-4">
@@ -183,13 +183,6 @@ export default function Settings() {
                   }}
                 />
               </div>
-
-              <TextField
-                inputRef={hostRef}
-                title="Host Server"
-                help="Host server for your spaces. Can be ignored if you don't have any spaces."
-                defaultValue={host?.value}
-              />
             </div>
 
             <div className="flex w-full justify-end">

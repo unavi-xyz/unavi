@@ -31,6 +31,11 @@ export default function Create() {
 
   const authenticated = authState === "authenticated";
 
+  function handleCreateProject() {
+    if (!authenticated) return;
+    setOpenCreateProject(true);
+  }
+
   return (
     <>
       <MetaTags title="Create" />
@@ -53,10 +58,7 @@ export default function Create() {
                 variant="outlined"
                 rounded="small"
                 disabled={!authenticated}
-                onClick={() => {
-                  if (!authenticated) return;
-                  setOpenCreateProject(true);
-                }}
+                onClick={handleCreateProject}
               >
                 <MdAdd className="text-lg" />
               </Button>
@@ -64,20 +66,35 @@ export default function Create() {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            {authState === "authenticated" &&
-              status === "success" &&
-              data.map(({ id, name, image }) => (
-                <Link key={id} href={`/project/${id}`} passHref>
-                  <div>
-                    <Card
-                      text={name}
-                      image={image}
-                      sizes="333px"
-                      animateEnter
-                    />
-                  </div>
-                </Link>
-              ))}
+            {authState === "authenticated" ? (
+              status === "success" && data.length > 0 ? (
+                data.map(({ id, name, image }) => (
+                  <Link key={id} href={`/project/${id}`} passHref>
+                    <div>
+                      <Card
+                        text={name}
+                        image={image}
+                        sizes="333px"
+                        animateEnter
+                      />
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div>
+                  No projects found.{" "}
+                  <button
+                    onClick={handleCreateProject}
+                    className="cursor-pointer font-bold text-primary decoration-2 hover:underline"
+                  >
+                    Click here
+                  </button>{" "}
+                  to create one.
+                </div>
+              )
+            ) : (
+              <div>You need to be logged in to create a project.</div>
+            )}
           </div>
         </div>
       </div>

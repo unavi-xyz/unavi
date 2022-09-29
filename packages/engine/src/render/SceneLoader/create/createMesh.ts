@@ -106,30 +106,6 @@ export function createMesh(
           throw new Error(`Unknown primitive mode: ${json.mode}`);
       }
 
-      // Occlusion map needs a second set of UVs
-      if (
-        primitiveMesh.material.aoMap &&
-        primitiveMesh.geometry.attributes.uv &&
-        !primitiveMesh.geometry.attributes.uv2
-      ) {
-        primitiveMesh.geometry.setAttribute(
-          "uv2",
-          primitiveMesh.geometry.attributes.uv
-        );
-      }
-
-      // Enable flat shading if no normal attribute
-      if (!primitiveMesh.geometry.attributes.normal)
-        primitiveMesh.material.flatShading = true;
-
-      // Enable vertex colors if color attribute
-      if (primitiveMesh.geometry.attributes.color)
-        primitiveMesh.material.vertexColors = true;
-
-      // If three.js needs to generate tangents, flip normal map y
-      if (!primitiveMesh.geometry.attributes.tangent)
-        primitiveMesh.material.normalScale.y *= -1;
-
       // Set weights
       primitiveMesh.updateMorphTargets();
       primitiveMesh.morphTargetInfluences = [...json.weights];

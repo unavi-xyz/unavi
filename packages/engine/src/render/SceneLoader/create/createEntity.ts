@@ -114,6 +114,43 @@ export function createEntity(
 
       // Set material
       object.material = material;
+
+      // Update material on certain mesh changes
+      // TODO: Create a new material if the mesh needs to modify it
+      entity.mesh$.subscribe({
+        next: (mesh) => {
+          if (mesh?.type !== "Primitive") return;
+
+          const meshObject = map.objects.get(entity.id);
+          if (!meshObject) throw new Error("Mesh not found");
+          if (!(meshObject instanceof Mesh))
+            throw new Error("Object is not a mesh");
+
+          // Occlusion map needs a second set of UVs
+          if (
+            meshObject.material.aoMap &&
+            meshObject.geometry.attributes.uv &&
+            !meshObject.geometry.attributes.uv2
+          ) {
+            meshObject.geometry.setAttribute(
+              "uv2",
+              meshObject.geometry.attributes.uv
+            );
+          }
+
+          // Enable flat shading if no normal attribute
+          if (!meshObject.geometry.attributes.normal)
+            meshObject.material.flatShading = true;
+
+          // Enable vertex colors if color attribute
+          if (meshObject.geometry.attributes.color)
+            meshObject.material.vertexColors = true;
+
+          // If three.js needs to generate tangents, flip normal map y
+          if (!meshObject.geometry.attributes.tangent)
+            meshObject.material.normalScale.y *= -1;
+        },
+      });
     },
   });
 

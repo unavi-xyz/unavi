@@ -13,17 +13,10 @@
     "deploy": "turbo deploy --no-daemon",
     "dev": "turbo dev --parallel --no-daemon",
     "format": "eslint --fix . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore && prettier --write .",
-    "postinstall": "husky install && patch-package && yarn codegen",
-    "lint": "turbo lint --no-daemon",
-    "test": "turbo test --no-daemon"
-  },
-  "lint-staged": {
-    "*": "prettier --write --ignore-unknown",
-    "*.{js,cjs,mjs,jsx,ts,tsx,json}": "eslint --fix"
+    "postinstall": "patch-package && yarn codegen",
+    "lint": "turbo lint --no-daemon"
   },
   "devDependencies": {
-    "husky": "^8.0.1",
-    "lint-staged": "^13.0.3",
     "patch-package": "^6.4.7",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.7.1",

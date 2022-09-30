@@ -10,18 +10,24 @@ import {
 } from "three";
 
 import { EntityJSON } from "../../../scene";
+import { PostMessage } from "../../../types";
 import { WEBGL_CONSTANTS } from "../../constants";
+import { FromRenderMessage } from "../../types";
 import { disposeObject } from "../../utils/disposeObject";
 import { defaultMaterial } from "../constants";
 import { SceneMap } from "../types";
 import { copyTransform } from "../utils/copyTransform";
 import { createMeshGeometry } from "./createMeshGeometry";
+import { createSkeletons } from "./createSkeletons";
+import { removeEntityObject } from "./removeEntityObject";
+import { updateEntity } from "./updateEntity";
 import { updateMeshMaterial } from "./updateMeshMaterial";
 
 export function createObject(
   entity: EntityJSON,
   map: SceneMap,
-  visuals: Group
+  visuals: Group,
+  postMessage: PostMessage<FromRenderMessage>
 ) {
   const parent = map.objects.get(entity.parentId);
   if (!parent) throw new Error("Parent not found");
@@ -84,23 +90,27 @@ export function createObject(
               primitiveMesh.geometry.attributes.skinWeight.normalized;
             if (!normalized) primitiveMesh.normalizeSkinWeights();
           }
-
           break;
+
         case WEBGL_CONSTANTS.LINES:
           primitiveMesh = new LineSegments(
             primitiveGeometry,
             primitiveMaterial
           );
           break;
+
         case WEBGL_CONSTANTS.LINE_STRIP:
           primitiveMesh = new Line(primitiveGeometry, primitiveMaterial);
           break;
+
         case WEBGL_CONSTANTS.LINE_LOOP:
           primitiveMesh = new LineLoop(primitiveGeometry, primitiveMaterial);
           break;
+
         case WEBGL_CONSTANTS.POINTS:
           primitiveMesh = new Points(primitiveGeometry, primitiveMaterial);
           break;
+
         default:
           throw new Error(`Unknown primitive mode: ${entity.mesh.mode}`);
       }
@@ -114,53 +124,51 @@ export function createObject(
       copyTransform(primitiveMesh, entity);
       parent.add(primitiveMesh);
 
-      // Update mesh material
-      updateMeshMaterial(entity.id, entity.mesh, map);
+      if (isSkin) {
+        // Convert all joints to bones
+        entity.mesh.skin?.jointIds.forEach((jointId) => {
+          const jointEntity = map.entities.get(jointId);
+          if (!jointEntity) throw new Error(`Entity not found: ${jointId}`);
 
-      // if (isSkin) {
-      //   // Convert all joints to bones
-      //   entity.mesh.skin?.jointIds.forEach((jointId) => {
-      //     const jointObject = map.objects.get(jointId);
-      //     if (jointObject instanceof Bone) return;
+          const jointObject = map.objects.get(jointId);
+          if (!jointObject) {
+            updateEntity(
+              jointEntity.id,
+              jointEntity,
+              map,
+              visuals,
+              postMessage
+            );
+            return;
+          }
 
-      //     if (!jointObject) {
-      //       const jointEntity = scene.entities[jointId];
-      //       if (!jointEntity) throw new Error(`Entity not found: ${jointId}`);
+          removeEntityObject(jointId, map);
 
-      //       addEntity(jointEntity, map, scene, visuals);
-      //       return;
-      //     }
+          const bone = new Bone();
 
-      //     removeEntityObject(jointId, map);
+          // Add to scene
+          map.objects.set(jointId, bone);
+          copyTransform(bone, jointEntity);
+          parent.add(bone);
+        });
+      }
 
-      //     const bone = new Bone();
-
-      //     // Add to scene
-      //     const joint = scene.entities[jointId];
-      //     if (!joint) throw new Error(`Entity not found: ${jointId}`);
-
-      //     map.objects.set(jointId, bone);
-      //     copyTransform(bone, joint);
-      //     parent.add(bone);
-      //   });
-      // }
-
-      // // Create skeletons
-      // createSkeletons(scene, map);
+      // Create skeletons
+      createSkeletons(map);
       break;
     }
     default: {
       // Check if joint
-      const isJoint = false;
+      let isJoint = false;
 
-      // Object.values(scene.entities).forEach((e) => {
-      //   if (
-      //     e.mesh?.type === "Primitive" &&
-      //     e.mesh.skin?.jointIds.includes(entity.id)
-      //   ) {
-      //     isJoint = true;
-      //   }
-      // });
+      map.entities.forEach((e) => {
+        if (
+          e.mesh?.type === "Primitive" &&
+          e.mesh.skin?.jointIds.includes(entity.id)
+        ) {
+          isJoint = true;
+        }
+      });
 
       // Create object
       const object = isJoint ? new Bone() : new Group();
@@ -171,15 +179,21 @@ export function createObject(
       parent.add(object);
 
       // Update skeletons
-      // if (isJoint) createSkeletons(scene, map);
+      if (isJoint) createSkeletons(map);
     }
   }
 
+  const newObject = map.objects.get(entity.id);
+  if (!newObject) throw new Error("Object not found");
+
+  // Update mesh material
+  updateMeshMaterial(entity.id, entity.mesh, map);
+
+  // Set name
+  newObject.name = entity.name || entity.id;
+
   // Restore children
   if (children && children.length > 0) {
-    const newObject = map.objects.get(entity.id);
-    if (!newObject) throw new Error("Object not found");
-
     newObject.add(...children);
   }
 

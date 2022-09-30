@@ -9,8 +9,11 @@ import {
 } from "three";
 
 import { AccessorJSON, EntityJSON } from "../../scene";
+import { sortEntities } from "../../scene/utils/sortEntities";
 import { PostMessage, Quad } from "../../types";
 import { FromRenderMessage, ToRenderMessage } from "../types";
+import { addAnimation } from "./animation/addAnimation";
+import { addEntity } from "./entity/addEntity";
 import { removeEntity } from "./entity/removeEntity";
 import { updateEntity } from "./entity/updateEntity";
 import { addMaterial } from "./material/addMaterial";
@@ -57,14 +60,7 @@ export class SceneLoader {
         this.visuals.visible = data.visible;
         break;
       case "add_entity":
-        this.#map.entities.set(data.entity.id, data.entity);
-        updateEntity(
-          data.entity.id,
-          data.entity,
-          this.#map,
-          this.visuals,
-          this.#postMessage
-        );
+        addEntity(data.entity, this.#map, this.visuals, this.#postMessage);
         break;
       case "remove_entity":
         removeEntity(data.entityId, this.#map);
@@ -88,22 +84,33 @@ export class SceneLoader {
         updateMaterial(data.materialId, data.data, this.#map);
         break;
       case "load_json":
+        // Add accessors
+        if (data.scene.accessors)
+          data.scene.accessors.forEach((a) => this.#map.accessors.set(a.id, a));
+
+        // Add images
         if (data.scene.images)
           data.scene.images.forEach((i) =>
             this.#map.images.set(i.id, i.bitmap)
           );
-        if (data.scene.accessors)
-          data.scene.accessors.forEach((a) => this.#map.accessors.set(a.id, a));
+
+        // Add materials
         if (data.scene.materials)
           data.scene.materials.forEach((m) => addMaterial(m, this.#map));
+
+        // Add entities
         if (data.scene.entities) {
-          data.scene.entities.forEach((e) => {
+          const sortedEntities = sortEntities(data.scene.entities);
+          sortedEntities.forEach((e) => {
             this.#map.entities.set(e.id, e);
             updateEntity(e.id, e, this.#map, this.visuals, this.#postMessage);
           });
         }
-        // if (data.scene.animations)
-        //   data.scene.animations.forEach((a) =>  this.#map.animations.set(a.id, a));
+
+        if (data.scene.animations)
+          data.scene.animations.forEach((a) => {
+            addAnimation(a, this.#map, this.mixer);
+          });
         break;
     }
   };

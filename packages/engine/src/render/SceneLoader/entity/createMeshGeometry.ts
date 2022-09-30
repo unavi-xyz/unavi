@@ -32,49 +32,49 @@ export function createMeshGeometry(json: MeshJSON, map: SceneMap) {
   }
 
   switch (json.type) {
-    case "Box": {
+    case "Box":
       return new BoxBufferGeometry(json.width, json.height, json.depth);
-    }
-    case "Sphere": {
+
+    case "Sphere":
       return new SphereBufferGeometry(
         json.radius,
         json.widthSegments,
         json.heightSegments
       );
-    }
-    case "Cylinder": {
+
+    case "Cylinder":
       return new CylinderBufferGeometry(
         json.radius,
         json.radius,
         json.height,
         json.radialSegments
       );
-    }
+
     case "Primitive": {
-      const primitiveGeometry = new BufferGeometry();
-      primitiveGeometry.morphTargetsRelative = true;
+      const geometry = new BufferGeometry();
+      geometry.morphTargetsRelative = true;
 
       // Set indices
       if (json.indicesId) {
         const attribute = createAttribute(json.indicesId, map);
-        primitiveGeometry.setIndex(attribute);
+        geometry.setIndex(attribute);
       }
 
       // Set attributes
-      setAttribute(primitiveGeometry, "position", json.POSITION);
-      setAttribute(primitiveGeometry, "normal", json.NORMAL);
-      setAttribute(primitiveGeometry, "uv", json.TEXCOORD_0);
-      setAttribute(primitiveGeometry, "uv2", json.TEXCOORD_1);
-      setAttribute(primitiveGeometry, "color", json.COLOR_0);
-      setAttribute(primitiveGeometry, "skinIndex", json.JOINTS_0);
-      setAttribute(primitiveGeometry, "skinWeight", json.WEIGHTS_0);
+      setAttribute(geometry, "position", json.POSITION);
+      setAttribute(geometry, "normal", json.NORMAL);
+      setAttribute(geometry, "uv", json.TEXCOORD_0);
+      setAttribute(geometry, "uv2", json.TEXCOORD_1);
+      setAttribute(geometry, "color", json.COLOR_0);
+      setAttribute(geometry, "skinIndex", json.JOINTS_0);
+      setAttribute(geometry, "skinWeight", json.WEIGHTS_0);
 
       // Set morph targets
-      setMorphAttribute(primitiveGeometry, "position", json.morphPositionIds);
-      setMorphAttribute(primitiveGeometry, "normal", json.morphNormalIds);
-      setMorphAttribute(primitiveGeometry, "tangent", json.morphTangentIds);
+      setMorphAttribute(geometry, "position", json.morphPositionIds);
+      setMorphAttribute(geometry, "normal", json.morphNormalIds);
+      setMorphAttribute(geometry, "tangent", json.morphTangentIds);
 
-      return primitiveGeometry;
+      return geometry;
     }
   }
 }

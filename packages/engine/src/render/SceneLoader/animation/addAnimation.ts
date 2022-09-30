@@ -8,18 +8,16 @@ import {
   VectorKeyframeTrack,
 } from "three";
 
-import { Animation } from "../../../scene";
-import { RenderScene } from "../../RenderScene";
+import { AnimationJSON } from "../../../scene";
 import { SceneMap } from "../types";
 import {
   GLTFCubicSplineInterpolant,
   GLTFCubicSplineQuaternionInterpolant,
 } from "./CubicSplineInterpolation";
 
-export function createAnimation(
-  animation: Animation,
+export function addAnimation(
+  animation: AnimationJSON,
   map: SceneMap,
-  scene: RenderScene,
   mixer: AnimationMixer
 ) {
   const tracks: Array<
@@ -78,8 +76,8 @@ export function createAnimation(
     // Get input and output data
     const inputId = channel.sampler.inputId;
     const outputId = channel.sampler.outputId;
-    const input = scene.accessors[inputId];
-    const output = scene.accessors[outputId];
+    const input = map.accessors.get(inputId);
+    const output = map.accessors.get(outputId);
     if (!input || !output) throw new Error("Accessor not found");
     const inputArray = Array.from(input.array);
     const outputArray = Array.from(output.array);

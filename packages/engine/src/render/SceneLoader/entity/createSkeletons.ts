@@ -1,10 +1,9 @@
 import { Bone, Matrix4, Skeleton, SkinnedMesh } from "three";
 
-import { RenderScene } from "../../RenderScene";
 import { SceneMap } from "../types";
 
-export function createSkeletons(scene: RenderScene, map: SceneMap) {
-  Object.values(scene.entities).forEach((e) => {
+export function createSkeletons(map: SceneMap) {
+  map.entities.forEach((e) => {
     const isSkin = e.mesh?.type === "Primitive" && e.mesh.skin !== null;
     if (!isSkin) return;
 
@@ -22,8 +21,9 @@ export function createSkeletons(scene: RenderScene, map: SceneMap) {
       if (!e.mesh.skin?.inverseBindMatricesId)
         throw new Error("No inverse bind matrices");
 
-      const inverseBindMatrices =
-        scene.accessors[e.mesh.skin.inverseBindMatricesId];
+      const inverseBindMatrices = map.accessors.get(
+        e.mesh.skin.inverseBindMatricesId
+      );
       if (!inverseBindMatrices) throw new Error("Accessor not found");
 
       e.mesh.skin.jointIds.forEach((jointId, i) => {

@@ -81,7 +81,7 @@ export class GameWorker {
       }
       case "set_global_transform": {
         const rigidBody = this.#rigidBodies.get(data.entityId);
-        if (!rigidBody) throw new Error("RigidBody not found");
+        if (!rigidBody) break;
 
         rigidBody.setTranslation(
           {

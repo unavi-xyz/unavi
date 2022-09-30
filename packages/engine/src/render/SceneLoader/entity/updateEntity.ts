@@ -24,41 +24,14 @@ export function updateEntity(
   const entity = map.entities.get(entityId);
   if (!entity) throw new Error("Entity not found");
 
+  const newEntity = { ...entity, ...data };
+  map.entities.set(entityId, newEntity);
+
   // Update object
-  if (data.mesh !== undefined) createObject(entity, map, visuals);
+  if (data.mesh !== undefined) createObject(entity, map, visuals, postMessage);
 
   const object = map.objects.get(entityId);
   if (!object) throw new Error("Object not found");
-
-  // Update name
-  if (data.name !== undefined) object.name = data.name;
-
-  // Update transform
-  if (data.position !== undefined) object.position.fromArray(data.position);
-  if (data.scale !== undefined) object.scale.fromArray(data.scale);
-  if (data.rotation !== undefined) object.quaternion.fromArray(data.rotation);
-  if (
-    data.position !== undefined ||
-    data.scale !== undefined ||
-    data.rotation !== undefined
-  )
-    updateGlobalTransform(entityId, map, postMessage);
-
-  // Update material
-  if (data.materialId !== undefined) {
-    if (!(object instanceof Mesh)) {
-      if (data.materialId !== null) throw new Error("Object is not a mesh");
-    } else {
-      const material = data.materialId
-        ? map.materials.get(data.materialId)
-        : defaultMaterial;
-      if (!material) throw new Error("Material not found");
-
-      object.material = material;
-
-      updateMeshMaterial(entityId, entity.mesh, map);
-    }
-  }
 
   // Update parent
   if (data.parentId !== undefined) {
@@ -78,8 +51,39 @@ export function updateEntity(
       .invert();
     object.position.copy(parentObject.worldToLocal(position));
     object.quaternion.multiplyQuaternions(quaternion, inverseParentRotation);
+
+    // Update global transform
+    updateGlobalTransform(entityId, map, postMessage);
+  }
+
+  // Update name
+  if (data.name !== undefined) object.name = data.name || entityId;
+
+  // Update transform
+  if (data.position !== undefined) object.position.fromArray(data.position);
+  if (data.rotation !== undefined) object.quaternion.fromArray(data.rotation);
+  if (data.scale !== undefined) object.scale.fromArray(data.scale);
+
+  if (data.position !== undefined || data.rotation !== undefined) {
+    updateGlobalTransform(entityId, map, postMessage);
+  }
+
+  // Update material
+  if (data.materialId !== undefined) {
+    if (!(object instanceof Mesh)) {
+      if (data.materialId !== null) throw new Error("Object is not a mesh");
+    } else {
+      const material = data.materialId
+        ? map.materials.get(data.materialId)
+        : defaultMaterial;
+      if (!material) throw new Error("Material not found");
+
+      object.material = material;
+
+      updateMeshMaterial(entityId, entity.mesh, map);
+    }
   }
 
   // Update collider visual
-  if (data.collider) createColliderVisual(entity.id, map, visuals);
+  if (data.collider) createColliderVisual(entityId, map, visuals);
 }

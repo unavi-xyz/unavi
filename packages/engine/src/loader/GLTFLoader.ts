@@ -59,6 +59,7 @@ export class GLTFLoader {
 
     // Load only one scene
     const scene = this.#root.getDefaultScene() ?? this.#root.listScenes()[0];
+    if (!scene) throw new Error("No scene");
 
     this.#loadScene(scene);
 

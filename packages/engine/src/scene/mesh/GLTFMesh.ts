@@ -25,6 +25,7 @@ export class GLTFMesh {
   }
 
   destroy() {
+    this.name$.complete();
     this.uri$.complete();
   }
 

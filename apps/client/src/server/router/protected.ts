@@ -6,8 +6,10 @@ import { emptyScene } from "../../editor/constants";
 import { prisma } from "../prisma";
 import {
   deleteProjectFromS3,
+  getFileBlobFromS3,
   getImageFromS3,
   getSceneFromS3,
+  uploadFileBlobToS3 as uploadFileBlobToS3,
   uploadImageToS3,
   uploadSceneToS3,
 } from "../s3";
@@ -72,6 +74,7 @@ export const protectedRouter = createProtectedRouter()
         });
         if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
+        // Get the scene from S3
         const url = await getSceneFromS3(id);
         if (!url) return null;
 
@@ -79,7 +82,35 @@ export const protectedRouter = createProtectedRouter()
         if (!res.ok) throw new TRPCError({ code: "NOT_FOUND" });
 
         const scene: SceneJSON = await res.json();
-        return scene;
+
+        // Get files from S3
+        const uris: {
+          id: string;
+          uri: string;
+        }[] = [];
+
+        scene.entities.forEach((entity) => {
+          if (entity.mesh?.type === "glTF") {
+            const uri = entity.mesh.uri;
+            if (uri)
+              uris.push({
+                id: entity.id,
+                uri,
+              });
+          }
+        });
+
+        const files = await Promise.all(
+          uris.map(async (uri) => {
+            const url = await getFileBlobFromS3(uri.id, id);
+            const res = await fetch(url);
+            if (!res.ok) throw new TRPCError({ code: "NOT_FOUND" });
+            const text = await res.text();
+            return { id: uri.id, text };
+          })
+        );
+
+        return { scene, files };
       } catch (e) {
         throw e;
       }
@@ -137,10 +168,16 @@ export const protectedRouter = createProtectedRouter()
       image: z.string().optional(),
       editorState: z.string().optional(),
       scene: z.any(),
+      files: z.array(
+        z.object({
+          id: z.string(),
+          text: z.any(),
+        })
+      ),
     }),
     async resolve({
       ctx: { address },
-      input: { id, name, description, image, editorState, scene },
+      input: { id, name, description, image, editorState, scene, files },
     }) {
       try {
         // Verify that the user owns the project
@@ -148,6 +185,11 @@ export const protectedRouter = createProtectedRouter()
           where: { id, owner: address },
         });
         if (!project) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+        // Upload file blobs to S3
+        await Promise.all(
+          files.map((file) => uploadFileBlobToS3(file.text, file.id, id))
+        );
 
         // Upload scene to S3
         await uploadSceneToS3(scene, id);

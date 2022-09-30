@@ -59,6 +59,7 @@ export class GLTFLoader {
 
     // Load only one scene
     const scene = this.#root.getDefaultScene() ?? this.#root.listScenes()[0];
+    if (!scene) throw new Error("No scene");
 
     this.#loadScene(scene);
 
@@ -119,6 +120,7 @@ export class GLTFLoader {
   #loadAnimation(animation: IAnimation) {
     // Create entity
     const animationState = new Animation();
+    animationState.isInternal = true;
     animationState.name = animation.getName();
 
     // Load channels

@@ -10,13 +10,16 @@ export function moveToSibling(
   if (!entities) throw new Error("Entities not found");
 
   // Get parent
-  const parentId = entities[siblingId].parentId;
+  const sibling = entities[siblingId];
+  if (!sibling) throw new Error("Sibling not found");
+  const parentId = sibling.parentId;
 
   // Get target index
   let index: number | undefined;
 
   if (parentId) {
     const parent = entities[parentId];
+    if (!parent) throw new Error("Parent not found");
     index = parent.childrenIds.indexOf(siblingId);
     if (placement === "below") index++;
   }

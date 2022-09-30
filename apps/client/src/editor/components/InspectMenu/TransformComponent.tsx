@@ -86,7 +86,7 @@ export default function TransformComponent({ entityId }: Props) {
                     const rounded = Math.round(num * 1000) / 1000;
                     const radians = (rounded * Math.PI) / 180;
 
-                    const newEuler = [...euler];
+                    const newEuler: Triplet = [...euler];
                     newEuler[i] = radians;
 
                     const newRotation = eulerToQuaternion(newEuler);

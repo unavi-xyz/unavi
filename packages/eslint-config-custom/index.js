@@ -3,10 +3,7 @@ module.exports = {
   plugins: [
     "@typescript-eslint",
     "json-files",
-    "json",
-    "prettier",
     "simple-import-sort",
-    "tailwindcss",
     "unused-imports",
   ],
   extends: [

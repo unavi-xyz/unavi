@@ -32,7 +32,7 @@ jobs:
         run: yarn install
 
       - name: Run ESLint
-        run: npx eslint --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore
+        run: yarn lint
 
       - name: Run Prettier
         uses: creyD/prettier_action@v4.2

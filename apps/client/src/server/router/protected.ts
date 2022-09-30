@@ -131,6 +131,7 @@ export const protectedRouter = createProtectedRouter()
       // Upload image to S3
       if (image) {
         const base64str = image.split("base64,")[1]; // Remove the image type metadata.
+        if (!base64str) throw new TRPCError({ code: "BAD_REQUEST" });
         const imageFile = Buffer.from(base64str, "base64");
 
         // Limit image size to 10MB
@@ -180,6 +181,7 @@ export const protectedRouter = createProtectedRouter()
       // Upload image to S3
       if (image) {
         const base64str = image.split("base64,")[1]; // Remove the image type metadata.
+        if (!base64str) throw new TRPCError({ code: "BAD_REQUEST" });
         const imageFile = Buffer.from(base64str, "base64");
 
         // Limit image size to 500kb

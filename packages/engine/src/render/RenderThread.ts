@@ -1,5 +1,4 @@
 import { Engine } from "../Engine";
-import { SceneMessage } from "../scene";
 import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderWorker } from "./RenderWorker";
@@ -93,7 +92,7 @@ export class RenderThread {
   }
 
   #onmessage = (event: MessageEvent<FromRenderMessage>) => {
-    this.#engine.scene.onmessage(event as MessageEvent<SceneMessage>);
+    this.#engine.scene.onmessage(event);
 
     const { subject, data } = event.data;
 

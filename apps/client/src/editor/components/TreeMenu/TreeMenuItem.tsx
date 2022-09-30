@@ -86,7 +86,7 @@ export default function TreeMenuItem({ id }: Props) {
     [id]
   );
 
-  const allChildrenInternal = children?.every((child) => child.isInternal);
+  const allChildrenInternal = children?.every((child) => child?.isInternal);
   const hasChildren =
     childrenIds && childrenIds.length > 0 && !allChildrenInternal;
   const isSelected = selectedId === id;

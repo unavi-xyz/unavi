@@ -75,7 +75,7 @@ export default function LoginProvider({ children }: Props) {
     // Get default profile
     // If no default profile, get first profile
     const defaultProfile = profiles.find((profile) => profile.isDefault);
-    const firstHandle = profiles[0].handle;
+    const firstHandle = profiles[0]?.handle;
     const newHandle = trimHandle(defaultProfile?.handle ?? firstHandle);
 
     switchProfile(newHandle);

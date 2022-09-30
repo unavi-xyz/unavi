@@ -38,8 +38,10 @@ export function useSave() {
     const fileText = await Promise.all(fileResponses.map((r) => r?.text()));
 
     const files = fileText.map((text, i) => {
-      const { id } = uris[i];
-      return { id, text };
+      const uri = uris[i];
+      if (!uri) throw new Error("URI not found");
+
+      return { id: uri.id, text };
     });
 
     await mutateAsync({

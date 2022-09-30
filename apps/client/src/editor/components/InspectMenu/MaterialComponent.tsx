@@ -180,8 +180,7 @@ function DropdownMaterialButton({
     <div className="group relative">
       <button
         onClick={onClick}
-        className={`w-full cursor-default rounded-md
-                    transition hover:bg-primaryContainer ${selectedClass}`}
+        className={`w-full cursor-default rounded-md transition hover:bg-primaryContainer ${selectedClass}`}
       >
         <div>{material.name || materialId}</div>
       </button>
@@ -192,8 +191,7 @@ function DropdownMaterialButton({
           e.preventDefault();
           removeMaterial(materialId);
         }}
-        className={`absolute right-2 top-0 z-10 flex h-full items-center text-outline
-                    opacity-0 transition hover:text-black group-hover:opacity-100`}
+        className="absolute right-2 top-0 z-10 flex h-full items-center text-outline opacity-0 transition hover:text-black group-hover:opacity-100"
       >
         <MdDelete />
       </div>

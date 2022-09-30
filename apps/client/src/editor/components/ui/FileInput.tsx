@@ -29,8 +29,8 @@ export default function FileInput({
         className="group block cursor-pointer rounded-md transition hover:shadow active:shadow-md"
       >
         <div className="flex items-center">
-          <div className="rounded-l-lg px-3 py-2">Choose File</div>
-          <div className="break-all px-3 py-2">
+          <div className="select-none rounded-l-lg px-3 py-2">Choose File</div>
+          <div className="select-none break-all px-3 py-2">
             {displayName ?? (file ? file.name : "No file chosen")}
           </div>
         </div>

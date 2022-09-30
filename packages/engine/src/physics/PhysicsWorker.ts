@@ -6,41 +6,36 @@ import {
   Vector,
   World,
 } from "@dimforge/rapier3d";
-import { Subscription } from "rxjs";
 
-import { Entity, SceneMessage } from "../scene";
+import { EntityJSON } from "../scene";
 import { PostMessage } from "../types";
-import { GameScene } from "./GameScene";
-import { FromGameMessage, ToGameMessage } from "./types";
+import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
 const TERMINAL_VELOCITY = 30;
 const JUMP_STRENGTH = 6;
-const HZ = 60; // Game updates per second
+const HZ = 60; // Physics updates per second
 
 /*
  * Runs the physics loop.
  * Uses the Rapier physics engine.
  */
-export class GameWorker {
-  #scene: GameScene;
-
+export class PhysicsWorker {
   #world = new World({ x: 0, y: -9.81, z: 0 });
-  #postMessage: PostMessage<FromGameMessage>;
+  #postMessage: PostMessage<FromPhysicsMessage>;
 
   #playerBody: RigidBody | null = null;
   #playerPosition: Float32Array | null = null;
   #playerVelocity: Float32Array | null = null;
 
   #interval: NodeJS.Timer | null = null;
-  #lastUpdate = 0;
   #jump = false;
 
+  #entities = new Map<string, EntityJSON>();
+  #rigidBodies = new Map<string, RigidBody>();
   #colliders = new Map<string, Collider>();
-  subscriptions = new Map<string, Subscription>();
 
   constructor(postMessage: PostMessage) {
     this.#postMessage = postMessage;
-    this.#scene = new GameScene(postMessage);
 
     // Create ground
     const groundColliderDesc = ColliderDesc.cuboid(10, 0.5, 10);
@@ -48,39 +43,11 @@ export class GameWorker {
     const groundBody = this.#world.createRigidBody(groundBodyDesc);
     this.#world.createCollider(groundColliderDesc, groundBody);
 
-    // Subscriptions
-    this.#scene.entities$.subscribe({
-      next: (entities) => {
-        // Add new entities
-        Object.values(entities).forEach((entity) => {
-          if (!this.subscriptions.has(entity.id)) {
-            const subscription = entity.collider$.subscribe({
-              next: () => {
-                this.addCollider(entity);
-              },
-            });
-
-            this.subscriptions.set(entity.id, subscription);
-          }
-        });
-
-        // Remove old entities
-        this.subscriptions.forEach((subscription, id) => {
-          if (!entities[id]) {
-            subscription.unsubscribe();
-            this.subscriptions.delete(id);
-          }
-        });
-      },
-    });
-
     // Set ready
     this.#postMessage({ subject: "ready", data: null });
   }
 
-  onmessage = (event: MessageEvent<ToGameMessage>) => {
-    this.#scene.onmessage(event as MessageEvent<SceneMessage>);
-
+  onmessage = (event: MessageEvent<ToPhysicsMessage>) => {
     const { subject, data } = event.data;
     switch (subject) {
       case "start":
@@ -95,13 +62,64 @@ export class GameWorker {
       case "jumping":
         this.setJumping(data);
         break;
+      case "add_entity":
+        this.#entities.set(data.entity.id, data.entity);
+        this.addCollider(data.entity);
+        break;
+      case "remove_entity":
+        this.#entities.delete(data.entityId);
+        this.removeCollider(data.entityId);
+        break;
+      case "update_entity": {
+        const entity = this.#entities.get(data.entityId);
+        if (!entity) throw new Error("Entity not found");
+        const updatedEntity = { ...entity, ...data.data };
+        this.#entities.set(data.entityId, updatedEntity);
+
+        this.addCollider(updatedEntity);
+        break;
+      }
+      case "set_global_transform": {
+        const rigidBody = this.#rigidBodies.get(data.entityId);
+        if (!rigidBody) break;
+
+        rigidBody.setTranslation(
+          {
+            x: data.position[0],
+            y: data.position[1],
+            z: data.position[2],
+          },
+          true
+        );
+
+        rigidBody.setRotation(
+          {
+            w: data.rotation[3],
+            x: data.rotation[0],
+            y: data.rotation[1],
+            z: data.rotation[2],
+          },
+          true
+        );
+        break;
+      }
+      case "load_json": {
+        // Load entities from JSON
+        const entities = data.scene.entities;
+        if (entities)
+          entities.forEach((entity) => {
+            this.#entities.set(entity.id, entity);
+            this.addCollider(entity);
+          });
+        break;
+      }
     }
   };
 
   start() {
     this.stop();
     // Start loop
-    this.#interval = setInterval(this.#gameLoop.bind(this), 1000 / HZ);
+    this.#interval = setInterval(this.#physicsLoop.bind(this), 1000 / HZ);
   }
 
   stop() {
@@ -145,16 +163,11 @@ export class GameWorker {
     this.#jump = jump;
   }
 
-  addCollider(entity: Entity) {
+  addCollider(entity: EntityJSON) {
     // Remove existing collider
-    const previousCollider = this.#colliders.get(entity.id);
-    if (previousCollider) {
-      this.#colliders.delete(entity.id);
-      this.#world.removeCollider(previousCollider, true);
-      const rigidBody = previousCollider.parent();
-      if (rigidBody) this.#world.removeRigidBody(rigidBody);
-    }
+    this.removeCollider(entity.id);
 
+    // If entity has no collider, return
     if (!entity.collider) return;
 
     // Create collider description
@@ -182,46 +195,34 @@ export class GameWorker {
     const rigidBody = this.#world.createRigidBody(rigidBodyDesc);
     const collider = this.#world.createCollider(colliderDesc, rigidBody);
 
-    entity.globalPosition$.subscribe({
-      next: (globalPosition) => {
-        rigidBody.setTranslation(
-          {
-            x: globalPosition[0],
-            y: globalPosition[1],
-            z: globalPosition[2],
-          },
-          true
-        );
-      },
-    });
-
-    entity.globalQuaternion$.subscribe({
-      next: (globalQuaternion) => {
-        rigidBody.setRotation(
-          {
-            w: globalQuaternion[3],
-            x: globalQuaternion[0],
-            y: globalQuaternion[1],
-            z: globalQuaternion[2],
-          },
-          true
-        );
-      },
-    });
-
     // Store reference
+    this.#rigidBodies.set(entity.id, rigidBody);
     this.#colliders.set(entity.id, collider);
   }
 
-  #gameLoop() {
-    this.#lastUpdate = performance.now();
+  removeCollider(entityId: string) {
+    const rigidBody = this.#rigidBodies.get(entityId);
+    const collider = this.#colliders.get(entityId);
 
+    if (rigidBody) this.#world.removeRigidBody(rigidBody);
+    if (collider) this.#world.removeCollider(collider, true);
+
+    this.#rigidBodies.delete(entityId);
+    this.#colliders.delete(entityId);
+  }
+
+  #physicsLoop() {
     // Jumping
     const jumpVelocity = this.#jump ? JUMP_STRENGTH : 0;
     if (this.#jump) this.#jump = false;
 
     // Set player velocity
-    if (this.#playerVelocity && this.#playerBody) {
+    if (
+      this.#playerVelocity &&
+      this.#playerVelocity[0] !== undefined &&
+      this.#playerVelocity[1] !== undefined &&
+      this.#playerBody
+    ) {
       const velocityY = this.#playerBody.linvel().y + jumpVelocity;
       const limitedY = Math.max(
         Math.min(velocityY, TERMINAL_VELOCITY),

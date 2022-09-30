@@ -12,17 +12,19 @@ import {
   Texture as ThreeTexture,
 } from "three";
 
-import { Texture } from "../../../scene";
+import { TextureJSON } from "../../../scene";
 import { WEBGL_CONSTANTS } from "../../constants";
-import { RenderScene } from "../../RenderScene";
+import { SceneMap } from "../types";
 
 export function createTexture(
-  { imageId, magFilter, minFilter, wrapS, wrapT }: Texture,
-  scene: RenderScene
+  { imageId, magFilter, minFilter, wrapS, wrapT }: TextureJSON,
+  map: SceneMap
 ): ThreeTexture {
   if (imageId === null) throw new Error("Texture source not found");
 
-  const image = scene.images[imageId].bitmap;
+  const image = map.images.get(imageId);
+  if (!image) throw new Error("Image not found");
+
   const threeTexture = new CanvasTexture(image);
   threeTexture.needsUpdate = true;
 

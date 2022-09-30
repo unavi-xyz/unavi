@@ -115,14 +115,6 @@ export type SceneMessage =
       }
     >
   | WorkerMessage<
-      "update_global_transform",
-      {
-        entityId: string;
-        position: Triplet;
-        quaternion: Quad;
-      }
-    >
-  | WorkerMessage<
       "add_material",
       {
         material: MaterialJSON;

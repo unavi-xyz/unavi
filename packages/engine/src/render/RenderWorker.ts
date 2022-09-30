@@ -122,23 +122,6 @@ export class RenderWorker {
     // Fog
     this.#scene.fog = new FogExp2(0xeefaff, 0.005);
 
-    // Skybox
-    if (skyboxPath)
-      loadCubeTexture(skyboxPath).then((texture) => {
-        texture.encoding = sRGBEncoding;
-
-        this.#scene.background = texture;
-        this.#scene.environment = texture;
-
-        // Generate PMREM mipmaps
-        if (!this.#renderer) throw new Error("Renderer not initialized");
-        const premGenerator = new PMREMGenerator(this.#renderer);
-        premGenerator.compileEquirectangularShader();
-
-        // Ready for rendering
-        this.#postMessage({ subject: "ready", data: null });
-      });
-
     // Camera
     this.#camera = new PerspectiveCamera(
       75,
@@ -167,7 +150,7 @@ export class RenderWorker {
     }
 
     // Transform Controls
-    if (enableTransformControls)
+    if (enableTransformControls) {
       this.#plugins.unshift(
         new TransformControlsPlugin(
           this.#camera,
@@ -182,6 +165,34 @@ export class RenderWorker {
           this.#pluginState
         )
       );
+    }
+
+    // Skybox
+    if (skyboxPath) {
+      loadCubeTexture(skyboxPath).then((texture) => {
+        texture.encoding = sRGBEncoding;
+
+        this.#scene.background = texture;
+        this.#scene.environment = texture;
+
+        // Generate PMREM mipmaps
+        if (!this.#renderer) throw new Error("Renderer not initialized");
+        const premGenerator = new PMREMGenerator(this.#renderer);
+        premGenerator.compileEquirectangularShader();
+
+        setTimeout(() => {
+          this.#postMessage({ subject: "ready", data: null });
+        }, 500);
+      });
+    } else {
+      // Ready for rendering
+      // Add a delay, without it sometimes the scene glitches out and turns black, idk why
+      // Still happens sometimes, but it's better
+      // TODO: Figure out why this happens
+      setTimeout(() => {
+        this.#postMessage({ subject: "ready", data: null });
+      }, 500);
+    }
   }
 
   start() {
@@ -200,7 +211,6 @@ export class RenderWorker {
 
   destroy() {
     this.stop();
-    this.#sceneLoader.destroy();
     this.#plugins.forEach((plugin) => plugin.destroy && plugin.destroy());
     disposeObject(this.#scene);
     this.#renderer?.dispose();

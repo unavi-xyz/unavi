@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function ExampleOptions({ options }: Props) {
-  const [gltf, setGltf] = useState(options[0].href);
+  const [gltf, setGltf] = useState(options[0]?.href);
 
   return (
     <>
@@ -39,7 +39,7 @@ export default function ExampleOptions({ options }: Props) {
         </div>
       )}
 
-      <ExampleCanvas uri={gltf} />
+      {gltf && <ExampleCanvas uri={gltf} />}
     </>
   );
 }

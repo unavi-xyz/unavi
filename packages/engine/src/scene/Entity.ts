@@ -1,7 +1,6 @@
 import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
-import { GameScene } from "../game/GameScene";
 import { Quad, Triplet } from "../types";
 import { BoxCollider } from "./collider/BoxCollider";
 import { CylinderCollider } from "./collider/CylinderCollider";
@@ -45,9 +44,6 @@ export class Entity {
   mesh$ = new BehaviorSubject<Mesh | null>(null);
   materialId$ = new BehaviorSubject<string | null>(null);
   collider$ = new BehaviorSubject<Collider | null>(null);
-
-  globalPosition$ = new BehaviorSubject<Triplet>([0, 0, 0]);
-  globalQuaternion$ = new BehaviorSubject<Quad>([0, 0, 0, 1]);
 
   constructor({ id = nanoid() }: { id?: string } = {}) {
     this.id = id;
@@ -144,7 +140,6 @@ export class Entity {
   }
 
   get material() {
-    if (this.scene instanceof GameScene) return null;
     return this.materialId
       ? this.scene?.materials$.value[this.materialId]
       : null;
@@ -157,22 +152,6 @@ export class Entity {
   set collider(collider: Collider | null) {
     if (this.collider) this.collider.destroy();
     this.collider$.next(collider);
-  }
-
-  get globalPosition() {
-    return this.globalPosition$.value;
-  }
-
-  set globalPosition(globalPosition: Triplet) {
-    this.globalPosition$.next(globalPosition);
-  }
-
-  get globalQuaternion() {
-    return this.globalQuaternion$.value;
-  }
-
-  set globalQuaternion(globalQuaternion: Quad) {
-    this.globalQuaternion$.next(globalQuaternion);
   }
 
   destroy() {

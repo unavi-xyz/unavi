@@ -12,7 +12,7 @@
     "codegen": "yarn workspace @wired-labs/client codegen && yarn workspace @wired-labs/lens codegen",
     "deploy": "turbo deploy --no-daemon",
     "dev": "turbo dev --parallel --no-daemon",
-    "format": "eslint --fix . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore && prettier --write .",
+    "format": "prettier --write .",
     "postinstall": "patch-package && yarn codegen",
     "lint": "turbo lint --no-daemon"
   },

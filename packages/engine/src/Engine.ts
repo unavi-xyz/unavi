@@ -1,6 +1,6 @@
-import { GameThread } from "./game/GameThread";
 import { LoaderThread } from "./loader/LoaderThread";
 import { MainScene } from "./main/MainScene";
+import { PhysicsThread } from "./physics/PhysicsThread";
 import { RenderThread } from "./render/RenderThread";
 
 export interface EngineOptions {
@@ -16,7 +16,7 @@ export interface EngineOptions {
  * Uses Web Workers to offload heavy tasks to separate threads.
  */
 export class Engine {
-  gameThread: GameThread;
+  physicsThread: PhysicsThread;
   loaderThread: LoaderThread;
   renderThread: RenderThread;
 
@@ -40,25 +40,25 @@ export class Engine {
 
     this.loaderThread = new LoaderThread();
 
-    this.gameThread = new GameThread({
+    this.physicsThread = new PhysicsThread({
       canvas,
       renderThread: this.renderThread,
     });
 
     this.scene = new MainScene({
-      gameThread: this.gameThread,
+      physicsThread: this.physicsThread,
       loaderThread: this.loaderThread,
       renderThread: this.renderThread,
     });
 
     // Init the player once ready
-    this.gameThread.waitForReady().then(() => {
-      if (camera === "player") this.gameThread.initPlayer();
+    this.physicsThread.waitForReady().then(() => {
+      if (camera === "player") this.physicsThread.initPlayer();
     });
   }
 
   async waitForReady() {
-    await this.gameThread.waitForReady();
+    await this.physicsThread.waitForReady();
     await this.loaderThread.waitForReady();
     await this.renderThread.waitForReady();
   }
@@ -66,17 +66,17 @@ export class Engine {
   async start() {
     await this.waitForReady();
 
-    this.gameThread.start();
+    this.physicsThread.start();
     this.renderThread.start();
   }
 
   stop() {
-    this.gameThread.stop();
+    this.physicsThread.stop();
     this.renderThread.stop();
   }
 
   destroy() {
-    this.gameThread.destroy();
+    this.physicsThread.destroy();
     this.loaderThread.destroy();
     this.renderThread.destroy();
     this.scene.destroy();

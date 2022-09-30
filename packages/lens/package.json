@@ -7,7 +7,7 @@
   "types": "./index.ts",
   "scripts": {
     "codegen": "graphql-codegen --config codegen.yml && typechain --target ethers-v5 --out-dir contracts '**/abis/*.json'",
-    "lint": "eslint src"
+    "lint": "cd ../.. && eslint --fix packages/lens --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
     "graphql": "^16.5.0",

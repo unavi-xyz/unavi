@@ -1,9 +1,9 @@
-import { GameThread } from "../game/GameThread";
-import { ToGameMessage } from "../game/types";
 import { LoaderThread } from "../loader/LoaderThread";
 import { ToLoaderMessage } from "../loader/types";
+import { PhysicsThread } from "../physics/PhysicsThread";
+import { ToPhysicsMessage } from "../physics/types";
 import { RenderThread } from "../render/RenderThread";
-import { ToRenderMessage } from "../render/types";
+import { FromRenderMessage, ToRenderMessage } from "../render/types";
 import { Entity } from "../scene/Entity";
 import { Material } from "../scene/Material";
 import { Scene } from "../scene/Scene";
@@ -13,14 +13,14 @@ import {
   SceneJSON,
   SceneMessage,
 } from "../scene/types";
-import { PostMessage, Quad, Triplet } from "../types";
+import { PostMessage } from "../types";
 
 /*
- * Wrapper around {@link Scene} for the main thread.
- * Syncs state with the {@link RenderScene} and {@link GameScene}.
+ * Wrapper around the {@link Scene}.
+ * Syncs state with the {@link RenderThread} and {@link PhysicsThread}.
  */
 export class MainScene {
-  #toGameThread: PostMessage<ToGameMessage>;
+  #toPhysicsThread: PostMessage<ToPhysicsMessage>;
   #toLoaderThread: PostMessage<ToLoaderMessage>;
   #toRenderThread: PostMessage<ToRenderMessage>;
 
@@ -32,15 +32,15 @@ export class MainScene {
   };
 
   constructor({
-    gameThread,
+    physicsThread,
     loaderThread,
     renderThread,
   }: {
-    gameThread: GameThread;
+    physicsThread: PhysicsThread;
     loaderThread: LoaderThread;
     renderThread: RenderThread;
   }) {
-    this.#toGameThread = gameThread.postMessage.bind(gameThread);
+    this.#toPhysicsThread = physicsThread.postMessage.bind(physicsThread);
     this.#toLoaderThread = loaderThread.postMessage.bind(loaderThread);
     this.#toRenderThread = renderThread.postMessage.bind(renderThread);
 
@@ -112,38 +112,22 @@ export class MainScene {
     });
   }
 
-  onmessage = (event: MessageEvent<SceneMessage>) => {
+  onmessage = (event: MessageEvent<FromRenderMessage>) => {
     const { subject, data } = event.data;
 
     switch (subject) {
-      case "load_json":
-        this.loadJSON(data.scene);
+      case "set_transform": {
+        this.#scene.updateEntity(data.entityId, {
+          position: data.position,
+          rotation: data.rotation,
+          scale: data.scale,
+        });
         break;
-      case "add_entity":
-        this.#scene.addEntity(Entity.fromJSON(data.entity));
+      }
+      case "set_global_transform": {
+        this.#toPhysicsThread(event.data);
         break;
-      case "remove_entity":
-        this.#scene.removeEntity(data.entityId);
-        break;
-      case "update_entity":
-        this.#scene.updateEntity(data.entityId, data.data);
-        break;
-      case "update_global_transform":
-        this.updateGlobalTransform(
-          data.entityId,
-          data.position,
-          data.quaternion
-        );
-        break;
-      case "add_material":
-        this.#scene.addMaterial(Material.fromJSON(data.material));
-        break;
-      case "remove_material":
-        this.#scene.removeMaterial(data.materialId);
-        break;
-      case "update_material":
-        this.#scene.updateMaterial(data.materialId, data.data);
-        break;
+      }
     }
   };
 
@@ -179,7 +163,7 @@ export class MainScene {
       data: { entity: entity.toJSON() },
     };
 
-    this.#toGameThread(message);
+    this.#toPhysicsThread(message);
     this.#toRenderThread(message);
 
     if (entity.mesh?.type === "glTF") {
@@ -200,7 +184,7 @@ export class MainScene {
       data: { entityId },
     };
 
-    this.#toGameThread(message);
+    this.#toPhysicsThread(message);
     this.#toRenderThread(message);
   }
 
@@ -212,23 +196,8 @@ export class MainScene {
       data: { entityId, data },
     };
 
-    this.#toGameThread(message);
+    this.#toPhysicsThread(message);
     this.#toRenderThread(message);
-  }
-
-  updateGlobalTransform(entityId: string, position: Triplet, quaternion: Quad) {
-    this.#scene.updateGlobalTransform(entityId, position, quaternion);
-
-    const message: SceneMessage = {
-      subject: "update_global_transform",
-      data: {
-        entityId,
-        position,
-        quaternion,
-      },
-    };
-
-    this.#toGameThread(message);
   }
 
   addMaterial(material: Material) {
@@ -263,12 +232,12 @@ export class MainScene {
     // Remove root entity
     json.entities = json.entities?.filter((entity) => entity.id !== "root");
 
-    // Send stripped down scene to game thread
+    // Only send entities to physics thread
     const strippedScene: Partial<SceneJSON> = {
       entities: json.entities,
     };
 
-    this.#toGameThread({
+    this.#toPhysicsThread({
       subject: "load_json",
       data: { scene: strippedScene },
     });

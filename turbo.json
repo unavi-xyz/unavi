@@ -3,7 +3,7 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["build/**", "dist/**", ".next/**"]
+      "outputs": ["build/**", "dist/**", ".next/**", ".docusaurus/**"]
     },
     "client#build": {
       "dependsOn": ["^build"],
@@ -27,6 +27,7 @@
     },
     "host#build": {
       "dependsOn": ["^build"],
+      "outputs": [],
       "env": ["RTC_MAX_PORT", "RTC_MIN_PORT"]
     },
     "lint": {

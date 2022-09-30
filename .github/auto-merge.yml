@@ -11,5 +11,9 @@
     update_type: semver:patch
 
 - match:
+    dependency_name: @rainbow-me/rainbowkit
+    update_type: semver:patch
+
+- match:
     dependency_name: aws-sdk
     update_type: semver:patch

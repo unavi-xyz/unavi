@@ -109,7 +109,12 @@ export class PlayerPlugin {
     }
 
     // Apply player position
-    if (this.#playerPosition) {
+    if (
+      this.#playerPosition &&
+      this.#playerPosition[0] !== undefined &&
+      this.#playerPosition[1] !== undefined &&
+      this.#playerPosition[2] !== undefined
+    ) {
       this.#camera.position.set(
         this.#playerPosition[0],
         this.#playerPosition[1],

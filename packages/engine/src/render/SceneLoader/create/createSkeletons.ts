@@ -23,14 +23,15 @@ export function createSkeletons(scene: RenderScene, map: SceneMap) {
         throw new Error("No inverse bind matrices");
 
       const inverseBindMatrices =
-        scene.accessors[e.mesh.skin.inverseBindMatricesId].array;
+        scene.accessors[e.mesh.skin.inverseBindMatricesId];
+      if (!inverseBindMatrices) throw new Error("Accessor not found");
 
       e.mesh.skin.jointIds.forEach((jointId, i) => {
         const bone = map.objects.get(jointId);
         if (!(bone instanceof Bone)) throw new Error("Bone not found");
 
         const matrix = new Matrix4();
-        matrix.fromArray(inverseBindMatrices, i * 16);
+        matrix.fromArray(inverseBindMatrices.array, i * 16);
 
         bones.push(bone);
         boneInverses.push(matrix);

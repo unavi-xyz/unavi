@@ -80,6 +80,7 @@ export function createAnimation(
     const outputId = channel.sampler.outputId;
     const input = scene.accessors[inputId];
     const output = scene.accessors[outputId];
+    if (!input || !output) throw new Error("Accessor not found");
     const inputArray = Array.from(input.array);
     const outputArray = Array.from(output.array);
 

@@ -22,6 +22,7 @@ export default function GLTFMeshComponent({ entityId, mesh }: Props) {
           if (!e.target.files) return;
 
           const file = e.target.files[0];
+          if (!file) return;
 
           mesh.name = file.name;
           mesh.uri = URL.createObjectURL(file);

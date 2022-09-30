@@ -22,8 +22,10 @@ export function createTexture(
 ): ThreeTexture {
   if (imageId === null) throw new Error("Texture source not found");
 
-  const image = scene.images[imageId].bitmap;
-  const threeTexture = new CanvasTexture(image);
+  const image = scene.images[imageId];
+  if (!image) throw new Error("Image not found");
+
+  const threeTexture = new CanvasTexture(image.bitmap);
   threeTexture.needsUpdate = true;
 
   switch (magFilter) {

@@ -29,6 +29,8 @@ export function createMesh(
   visuals: Group
 ) {
   const entity = scene.entities[entityId];
+  if (!entity) throw new Error(`Entity not found: ${entityId}`);
+
   const parent = map.objects.get(entity.parentId);
   if (!parent) throw new Error("Parent not found");
 
@@ -129,6 +131,8 @@ export function createMesh(
 
           if (!jointObject) {
             const jointEntity = scene.entities[jointId];
+            if (!jointEntity) throw new Error(`Entity not found: ${jointId}`);
+
             createEntity(jointEntity, map, scene, visuals);
             return;
           }
@@ -139,6 +143,8 @@ export function createMesh(
 
           // Add to scene
           const joint = scene.entities[jointId];
+          if (!joint) throw new Error(`Entity not found: ${jointId}`);
+
           map.objects.set(jointId, bone);
           copyTransform(bone, joint);
           parent.add(bone);

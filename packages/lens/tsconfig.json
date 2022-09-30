@@ -1,4 +1,6 @@
 {
-  "exclude": ["dist", "build", "node_modules"],
+  "compilerOptions": {
+    "composite": true
+  },
   "extends": "@wired-labs/tsconfig/react-library.json"
 }

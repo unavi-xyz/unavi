@@ -100,6 +100,7 @@ function findValidObject(
 
   if (entityId) {
     const entity = sceneLoader.getEntity(entityId);
+    if (!entity) throw new Error(`Entity not found: ${entityId}`);
     if (!entity.isInternal) return object;
   }
 

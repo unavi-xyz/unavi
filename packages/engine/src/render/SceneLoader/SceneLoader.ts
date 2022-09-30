@@ -111,14 +111,13 @@ export class SceneLoader {
     if (!object) throw new Error("Object not found");
 
     const position = object.position.toArray();
-    const quaternion = object.quaternion.toArray();
     const scale = object.scale.toArray();
 
     const rotation: Quad = [
-      quaternion[0],
-      quaternion[1],
-      quaternion[2],
-      quaternion[3],
+      object.quaternion.x,
+      object.quaternion.y,
+      object.quaternion.z,
+      object.quaternion.w,
     ];
 
     this.#scene.updateEntity(entityId, {

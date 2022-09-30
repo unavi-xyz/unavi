@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./build",
-    "lib": ["ESNext", "DOM"],
-    "composite": true
+    "composite": true,
+    "rootDir": "./src"
   },
   "extends": "@wired-labs/tsconfig/base.json",
   "include": ["src"]

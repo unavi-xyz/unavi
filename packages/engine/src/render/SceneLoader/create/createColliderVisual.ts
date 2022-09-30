@@ -23,6 +23,7 @@ export function createColliderVisual(
   visuals: Group
 ) {
   const entity = scene.entities[entityId];
+  if (!entity) throw new Error("Entity not found");
 
   // Remove previous collider
   removeColliderVisual(entityId, map);

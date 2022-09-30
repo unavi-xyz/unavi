@@ -1,6 +1,6 @@
-import { Quad } from "@wired-labs/engine";
+import { Quad, Triplet } from "@wired-labs/engine";
 
-export function eulerToQuaternion(euler: number[]): Quad {
+export function eulerToQuaternion(euler: Triplet): Quad {
   const c1 = Math.cos(euler[0] / 2);
   const c2 = Math.cos(euler[1] / 2);
   const c3 = Math.cos(euler[2] / 2);

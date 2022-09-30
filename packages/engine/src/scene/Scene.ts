@@ -134,6 +134,7 @@ export class Scene {
 
   updateGlobalTransform(entityId: string, position: Triplet, quaternion: Quad) {
     const entity = this.entities[entityId];
+    if (!entity) throw new Error(`Entity ${entityId} not found`);
     entity.globalPosition = position;
     entity.globalQuaternion = quaternion;
   }

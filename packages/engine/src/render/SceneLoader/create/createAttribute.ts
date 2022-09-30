@@ -12,6 +12,7 @@ export function createAttribute(
   if (created) return created;
 
   const accessor = scene.accessors[accessorId];
+  if (!accessor) throw new Error(`Accessor not found: ${accessorId}`);
 
   const attribute = new BufferAttribute(
     accessor.array,

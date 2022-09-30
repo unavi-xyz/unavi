@@ -1,24 +1,24 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "incremental": true,
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "incremental": true,
     "inlineSources": false,
     "isolatedModules": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
     "moduleResolution": "node",
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noUncheckedIndexedAccess": true,
     "preserveWatchOutput": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
-    "strict": true,
     "sourceMap": true,
-    "resolveJsonModule": true
+    "strict": true,
+    "target": "ESNext"
   },
   "display": "Default",
-  "exclude": ["node_modules", "build", "dist", ".turbo"]
+  "exclude": ["node_modules", "build", "dist", ".turbo", ".next"]
 }

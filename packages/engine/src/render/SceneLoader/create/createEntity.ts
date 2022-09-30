@@ -80,6 +80,7 @@ export function createEntity(
 
       // Subscribe to global transform changes
       const parent = scene.entities[parentId];
+      if (!parent) throw new Error("Parent not found");
 
       parent.globalPosition$.subscribe({
         next: () => {

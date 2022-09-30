@@ -6,7 +6,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev -p 3200",
-    "lint": "next lint",
+    "lint": "cd ../.. && eslint --fix apps/examples --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore",
     "start": "next start"
   },
   "dependencies": {

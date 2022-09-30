@@ -7,6 +7,7 @@
     "clear": "docusaurus clear",
     "dev": "docusaurus start --port 3100 --no-open",
     "docusaurus": "docusaurus",
+    "lint": "cd ../.. && eslint --fix apps/docs --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore",
     "serve": "docusaurus serve",
     "swizzle": "docusaurus swizzle",
     "typecheck": "tsc",

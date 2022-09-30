@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "_dev": "nodemon ./src/server.ts",
-    "_start": "node --experimental-specifier-resolution=node ./build/server.js"
+    "_start": "node --experimental-specifier-resolution=node ./build/server.js",
+    "_lint": "cd ../.. && eslint --fix apps/host --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
     "express": "^4.18.1",

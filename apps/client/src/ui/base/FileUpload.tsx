@@ -1,17 +1,13 @@
 import { ChangeEvent, useId, useState } from "react";
 
-interface Props {
+interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   title?: string;
-  accept?: string;
   color?: "Surface" | "SurfaceVariant";
   inputRef?: React.MutableRefObject<HTMLInputElement>;
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
-  [key: string]: any;
 }
 
 export default function FileUpload({
-  title,
-  accept,
   color = "Surface",
   inputRef,
   onChange,
@@ -51,7 +47,6 @@ export default function FileUpload({
           ref={inputRef}
           id={id}
           type="file"
-          accept={accept}
           className="hidden"
           onChange={handleChange}
           {...rest}

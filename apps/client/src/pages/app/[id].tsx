@@ -26,7 +26,7 @@ interface Props extends PublicationProps {
   id: string;
 }
 
-export default function App({ id, metadata, publication }: Props) {
+export default function App({ id, metadata }: Props) {
   // const ownerHost = publication?.profile.attributes?.find(
   //   (item) => item.key === "host"
   // )?.value;

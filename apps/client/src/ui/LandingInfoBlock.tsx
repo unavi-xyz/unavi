@@ -23,13 +23,13 @@ export default function LandingInfoBlock({
   imageSide,
 }: Props) {
   const directionClass =
-    imageSide === "right" ? "flex-row-reverse" : "flex-row";
+    imageSide === "right" ? "md:flex-row-reverse" : "md:flex-row";
 
   const isExternalLink = buttonLink.startsWith("http");
 
   return (
     <div className="h-screen snap-center pb-20">
-      <div className="flex h-full flex-col md:flex-row md:items-center">
+      <div className={`flex h-full flex-col md:items-center ${directionClass}`}>
         <div className="h-full w-full py-2 md:h-1/2 md:w-1/2 md:p-8 md:py-0">
           <div className="relative h-full w-full">
             <Image

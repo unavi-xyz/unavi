@@ -5,9 +5,8 @@ import { TransformControls } from "../classes/TransformControls";
 import { PluginState } from "../RenderWorker";
 import { SceneLoader } from "../SceneLoader/SceneLoader";
 import { ToRenderMessage } from "../types";
-import { Plugin } from "./Plugin";
 
-export class TransformControlsPlugin extends Plugin {
+export class TransformControlsPlugin {
   #target = new EventTarget();
   #sceneLoader: SceneLoader;
   #transformControls: TransformControls;
@@ -18,8 +17,6 @@ export class TransformControlsPlugin extends Plugin {
     scene: Scene,
     state: PluginState
   ) {
-    super();
-
     this.#sceneLoader = sceneLoader;
     this.#transformControls = new TransformControls(camera, this.#target);
     scene.add(this.#transformControls);
@@ -57,26 +54,35 @@ export class TransformControlsPlugin extends Plugin {
         this.#transformControls.mode = data;
         break;
       case "pointermove":
-        const pointerMoveEvent: FakePointerEvent = new CustomEvent(
-          "pointermove",
-          { detail: data }
-        );
-        this.#target.dispatchEvent(pointerMoveEvent);
+        {
+          const pointerMoveEvent: FakePointerEvent = new CustomEvent(
+            "pointermove",
+            { detail: data }
+          );
+          this.#target.dispatchEvent(pointerMoveEvent);
+        }
         break;
       case "pointerdown":
-        const pointerDownEvent: FakePointerEvent = new CustomEvent(
-          "pointerdown",
-          { detail: data }
-        );
-        this.#target.dispatchEvent(pointerDownEvent);
+        {
+          const pointerDownEvent: FakePointerEvent = new CustomEvent(
+            "pointerdown",
+            { detail: data }
+          );
+          this.#target.dispatchEvent(pointerDownEvent);
+        }
         break;
       case "pointerup":
-        const pointerUpEvent: FakePointerEvent = new CustomEvent("pointerup", {
-          detail: data,
-        });
-        this.#target.dispatchEvent(pointerUpEvent);
+        {
+          const pointerUpEvent: FakePointerEvent = new CustomEvent(
+            "pointerup",
+            {
+              detail: data,
+            }
+          );
+          this.#target.dispatchEvent(pointerUpEvent);
+        }
         break;
-      case "remove_entity":
+      case "remove_entity": {
         const attachedObject = this.#transformControls.object;
         if (attachedObject) {
           const id = this.#sceneLoader.findId(attachedObject);
@@ -84,6 +90,7 @@ export class TransformControlsPlugin extends Plugin {
           // Detach if attached object is removed
           if (id === data.entityId) this.#transformControls.detach();
         }
+      }
     }
   }
 

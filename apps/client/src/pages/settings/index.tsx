@@ -111,7 +111,6 @@ export default function Settings() {
   const twitter = profile?.attributes?.find((item) => item.key === "twitter");
   const website = profile?.attributes?.find((item) => item.key === "website");
   const location = profile?.attributes?.find((item) => item.key === "location");
-  const host = profile?.attributes?.find((item) => item.key === "host");
 
   return (
     <>

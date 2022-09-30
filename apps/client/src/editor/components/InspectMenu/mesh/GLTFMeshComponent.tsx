@@ -19,7 +19,9 @@ export default function GLTFMeshComponent({ entityId, mesh }: Props) {
         displayName={name}
         accept=".glb,.gltf"
         onChange={(e) => {
-          const file = e.target.files![0];
+          if (!e.target.files) return;
+
+          const file = e.target.files[0];
 
           mesh.name = file.name;
           mesh.uri = URL.createObjectURL(file);

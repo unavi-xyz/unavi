@@ -4,9 +4,8 @@ import { PostMessage } from "../../types";
 import { PluginState } from "../RenderWorker";
 import { SceneLoader } from "../SceneLoader/SceneLoader";
 import { FromRenderMessage, PointerData, ToRenderMessage } from "../types";
-import { Plugin } from "./Plugin";
 
-export class RaycasterPlugin extends Plugin {
+export class RaycasterPlugin {
   #raycaster = new Raycaster();
   #camera: Camera;
   #sceneLoader: SceneLoader;
@@ -22,8 +21,6 @@ export class RaycasterPlugin extends Plugin {
     postMessage: PostMessage<FromRenderMessage>,
     state: PluginState
   ) {
-    super();
-
     this.#camera = camera;
     this.#sceneLoader = sceneLoader;
     this.#postMessage = postMessage;

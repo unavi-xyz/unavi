@@ -15,7 +15,6 @@ export default function EditorNavbar() {
   const id = router.query.id;
 
   const colliders = useEditorStore((state) => state.colliders);
-  const grid = useEditorStore((state) => state.grid);
   const name = useEditorStore((state) => state.name);
 
   const { save } = useSave();
@@ -30,10 +29,6 @@ export default function EditorNavbar() {
         visible: !colliders,
       },
     });
-  }
-
-  function handleToggleGrid() {
-    useEditorStore.setState({ grid: !grid });
   }
 
   async function handleBack() {

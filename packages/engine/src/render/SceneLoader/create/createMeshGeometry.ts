@@ -37,22 +37,25 @@ export function createMeshGeometry(
   }
 
   switch (json.type) {
-    case "Box":
+    case "Box": {
       return new BoxBufferGeometry(json.width, json.height, json.depth);
-    case "Sphere":
+    }
+    case "Sphere": {
       return new SphereBufferGeometry(
         json.radius,
         json.widthSegments,
         json.heightSegments
       );
-    case "Cylinder":
+    }
+    case "Cylinder": {
       return new CylinderBufferGeometry(
         json.radius,
         json.radius,
         json.height,
         json.radialSegments
       );
-    case "Primitive":
+    }
+    case "Primitive": {
       const primitiveGeometry = new BufferGeometry();
       primitiveGeometry.morphTargetsRelative = true;
 
@@ -77,5 +80,6 @@ export function createMeshGeometry(
       setMorphAttribute(primitiveGeometry, "tangent", json.morphTangentIds);
 
       return primitiveGeometry;
+    }
   }
 }

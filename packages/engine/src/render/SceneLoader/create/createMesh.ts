@@ -40,7 +40,7 @@ export function createMesh(
   switch (json?.type) {
     case "Box":
     case "Sphere":
-    case "Cylinder":
+    case "Cylinder": {
       // Get material
       const material = entity.materialId
         ? map.materials.get(entity.materialId)
@@ -58,7 +58,8 @@ export function createMesh(
       copyTransform(mesh, entity);
       parent.add(mesh);
       break;
-    case "Primitive":
+    }
+    case "Primitive": {
       const isSkin = json.skin !== null;
 
       // Get material
@@ -147,7 +148,8 @@ export function createMesh(
       // Create skeletons
       createSkeletons(scene, map);
       break;
-    default:
+    }
+    default: {
       // Check if joint
       let isJoint = false;
 
@@ -170,6 +172,7 @@ export function createMesh(
 
       // Update skeletons
       if (isJoint) createSkeletons(scene, map);
+    }
   }
 
   // Restore children

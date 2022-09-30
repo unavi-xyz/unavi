@@ -7,9 +7,8 @@ import {
 } from "../classes/OrbitControls";
 import { PluginState } from "../RenderWorker";
 import { ToRenderMessage } from "../types";
-import { Plugin } from "./Plugin";
 
-export class OrbitControlsPlugin extends Plugin {
+export class OrbitControlsPlugin {
   #target = new EventTarget();
   #orbitControls: OrbitControls;
   #state: PluginState;
@@ -20,8 +19,6 @@ export class OrbitControlsPlugin extends Plugin {
     canvasHeight: number,
     state: PluginState
   ) {
-    super();
-
     this.#state = state;
     this.#orbitControls = new OrbitControls(
       camera,
@@ -45,42 +42,55 @@ export class OrbitControlsPlugin extends Plugin {
 
     switch (subject) {
       case "pointermove":
-        const pointerMoveEvent: FakePointerEvent = new CustomEvent(
-          "pointermove",
-          {
-            detail: data,
-          }
-        );
-        this.#target.dispatchEvent(pointerMoveEvent);
+        {
+          const pointerMoveEvent: FakePointerEvent = new CustomEvent(
+            "pointermove",
+            {
+              detail: data,
+            }
+          );
+          this.#target.dispatchEvent(pointerMoveEvent);
+        }
         break;
       case "pointerdown":
-        if (this.#state.usingTransformControls) return;
-        const pointerDownEvent: FakePointerEvent = new CustomEvent(
-          "pointerdown",
-          { detail: data }
-        );
-        this.#target.dispatchEvent(pointerDownEvent);
+        {
+          if (this.#state.usingTransformControls) return;
+          const pointerDownEvent: FakePointerEvent = new CustomEvent(
+            "pointerdown",
+            { detail: data }
+          );
+          this.#target.dispatchEvent(pointerDownEvent);
+        }
         break;
       case "pointerup":
-        const pointerUpEvent: FakePointerEvent = new CustomEvent("pointerup", {
-          detail: data,
-        });
-        this.#target.dispatchEvent(pointerUpEvent);
+        {
+          const pointerUpEvent: FakePointerEvent = new CustomEvent(
+            "pointerup",
+            {
+              detail: data,
+            }
+          );
+          this.#target.dispatchEvent(pointerUpEvent);
+        }
         break;
       case "pointercancel":
-        const pointerCancelEvent: FakePointerEvent = new CustomEvent(
-          "pointercancel",
-          {
-            detail: data,
-          }
-        );
-        this.#target.dispatchEvent(pointerCancelEvent);
+        {
+          const pointerCancelEvent: FakePointerEvent = new CustomEvent(
+            "pointercancel",
+            {
+              detail: data,
+            }
+          );
+          this.#target.dispatchEvent(pointerCancelEvent);
+        }
         break;
       case "wheel":
-        const wheelEvent: FakeWheelEvent = new CustomEvent("wheel", {
-          detail: data,
-        });
-        this.#target.dispatchEvent(wheelEvent);
+        {
+          const wheelEvent: FakeWheelEvent = new CustomEvent("wheel", {
+            detail: data,
+          });
+          this.#target.dispatchEvent(wheelEvent);
+        }
         break;
     }
   }

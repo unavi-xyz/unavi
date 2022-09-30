@@ -17,7 +17,7 @@ export default function CreateProfilePage() {
   const [error, setError] = useState<string>();
 
   const { valid, error: validateError, fetching } = useValidateHandle(handle);
-  const [{}, createProfile] = useCreateProfileMutation();
+  const [, createProfile] = useCreateProfileMutation();
 
   const { switchProfile } = useLens();
 

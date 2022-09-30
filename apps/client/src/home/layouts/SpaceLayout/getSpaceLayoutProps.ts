@@ -3,8 +3,6 @@ import {
   PublicationProps,
 } from "../../../lib/lens/utils/getPublicationProps";
 
-const HTTP = process.env.NODE_ENV === "production" ? "https" : "http";
-
 export interface SpaceLayoutProps extends PublicationProps {
   playerCount?: number;
   host?: string;

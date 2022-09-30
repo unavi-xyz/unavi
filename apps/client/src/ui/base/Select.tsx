@@ -9,7 +9,6 @@ export default function Select({
   options,
   inputAdornment,
   title,
-  value,
   outline = false,
   ...rest
 }: Props) {

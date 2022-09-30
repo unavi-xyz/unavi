@@ -34,20 +34,23 @@ export default function PhysicsComponent({ entityId }: Props) {
               const value = e.target.value === "None" ? null : e.target.value;
 
               switch (value) {
-                case "Box":
+                case "Box": {
                   const boxCollider = new BoxCollider();
                   updateEntity(entityId, { collider: boxCollider.toJSON() });
                   break;
-                case "Sphere":
+                }
+                case "Sphere": {
                   const sphereCollider = new SphereCollider();
                   updateEntity(entityId, { collider: sphereCollider.toJSON() });
                   break;
-                case "Cylinder":
+                }
+                case "Cylinder": {
                   const cylinderCollider = new CylinderCollider();
                   updateEntity(entityId, {
                     collider: cylinderCollider.toJSON(),
                   });
                   break;
+                }
                 default:
                   updateEntity(entityId, { collider: null });
               }

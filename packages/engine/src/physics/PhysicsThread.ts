@@ -1,17 +1,17 @@
 import { RenderThread } from "../render/RenderThread";
 import { Transferable } from "../types";
 import { Player } from "./Player";
-import { FromGameMessage, ToGameMessage } from "./types";
+import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
-export interface GameThreadOptions {
+export interface PhysicsThreadOptions {
   canvas: HTMLCanvasElement;
   renderThread: RenderThread;
 }
 
 /*
- * Acts as an interface between the main thread and the {@link GameWorker}.
+ * Acts as an interface between the main thread and the {@link PhysicsWorker}.
  */
-export class GameThread {
+export class PhysicsThread {
   #worker = new Worker(new URL("./worker.ts", import.meta.url), {
     type: "module",
   });
@@ -24,14 +24,14 @@ export class GameThread {
 
   #player: Player | null = null;
 
-  constructor({ canvas, renderThread }: GameThreadOptions) {
+  constructor({ canvas, renderThread }: PhysicsThreadOptions) {
     this.#canvas = canvas;
     this.#renderThread = renderThread;
 
     this.#worker.onmessage = this.#onmessage;
   }
 
-  #onmessage = (event: MessageEvent<FromGameMessage>) => {
+  #onmessage = (event: MessageEvent<FromPhysicsMessage>) => {
     const { subject, data } = event.data;
 
     switch (subject) {
@@ -45,7 +45,7 @@ export class GameThread {
     }
   };
 
-  postMessage = (message: ToGameMessage, transfer?: Transferable[]) => {
+  postMessage = (message: ToPhysicsMessage, transfer?: Transferable[]) => {
     this.#worker.postMessage(message, transfer);
   };
 

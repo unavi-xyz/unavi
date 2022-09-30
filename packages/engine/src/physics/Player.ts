@@ -1,10 +1,10 @@
 import { RenderThread } from "../render/RenderThread";
-import { GameThread } from "./GameThread";
+import { PhysicsThread } from "./PhysicsThread";
 
 export class Player {
   #canvas: HTMLCanvasElement;
   #renderThread: RenderThread;
-  #gameThread: GameThread;
+  #physicsThread: PhysicsThread;
 
   #click = this.#onClick.bind(this);
   #keydown = this.#onKeyDown.bind(this);
@@ -22,11 +22,11 @@ export class Player {
   constructor(
     canvas: HTMLCanvasElement,
     renderThread: RenderThread,
-    gameThread: GameThread
+    physicsThread: PhysicsThread
   ) {
     this.#canvas = canvas;
     this.#renderThread = renderThread;
-    this.#gameThread = gameThread;
+    this.#physicsThread = physicsThread;
 
     this.#canvas.addEventListener("click", this.#click);
     document.addEventListener("keydown", this.#keydown);
@@ -74,7 +74,7 @@ export class Player {
         this.#pressingD = true;
         break;
       case " ":
-        this.#gameThread.jump();
+        this.#physicsThread.jump();
         break;
       default:
         return;

@@ -1,7 +1,7 @@
-import { GameThread } from "../game/GameThread";
-import { ToGameMessage } from "../game/types";
 import { LoaderThread } from "../loader/LoaderThread";
 import { ToLoaderMessage } from "../loader/types";
+import { PhysicsThread } from "../physics/PhysicsThread";
+import { ToPhysicsMessage } from "../physics/types";
 import { RenderThread } from "../render/RenderThread";
 import { FromRenderMessage, ToRenderMessage } from "../render/types";
 import { Entity } from "../scene/Entity";
@@ -17,10 +17,10 @@ import { PostMessage } from "../types";
 
 /*
  * Wrapper around the {@link Scene}.
- * Syncs state with the {@link RenderThread} and {@link GameThread}.
+ * Syncs state with the {@link RenderThread} and {@link PhysicsThread}.
  */
 export class MainScene {
-  #toGameThread: PostMessage<ToGameMessage>;
+  #toPhysicsThread: PostMessage<ToPhysicsMessage>;
   #toLoaderThread: PostMessage<ToLoaderMessage>;
   #toRenderThread: PostMessage<ToRenderMessage>;
 
@@ -32,15 +32,15 @@ export class MainScene {
   };
 
   constructor({
-    gameThread,
+    physicsThread,
     loaderThread,
     renderThread,
   }: {
-    gameThread: GameThread;
+    physicsThread: PhysicsThread;
     loaderThread: LoaderThread;
     renderThread: RenderThread;
   }) {
-    this.#toGameThread = gameThread.postMessage.bind(gameThread);
+    this.#toPhysicsThread = physicsThread.postMessage.bind(physicsThread);
     this.#toLoaderThread = loaderThread.postMessage.bind(loaderThread);
     this.#toRenderThread = renderThread.postMessage.bind(renderThread);
 
@@ -125,7 +125,7 @@ export class MainScene {
         break;
       }
       case "set_global_transform": {
-        this.#toGameThread(event.data);
+        this.#toPhysicsThread(event.data);
         break;
       }
     }
@@ -163,7 +163,7 @@ export class MainScene {
       data: { entity: entity.toJSON() },
     };
 
-    this.#toGameThread(message);
+    this.#toPhysicsThread(message);
     this.#toRenderThread(message);
 
     if (entity.mesh?.type === "glTF") {
@@ -184,7 +184,7 @@ export class MainScene {
       data: { entityId },
     };
 
-    this.#toGameThread(message);
+    this.#toPhysicsThread(message);
     this.#toRenderThread(message);
   }
 
@@ -196,7 +196,7 @@ export class MainScene {
       data: { entityId, data },
     };
 
-    this.#toGameThread(message);
+    this.#toPhysicsThread(message);
     this.#toRenderThread(message);
   }
 
@@ -232,12 +232,12 @@ export class MainScene {
     // Remove root entity
     json.entities = json.entities?.filter((entity) => entity.id !== "root");
 
-    // Send stripped down scene to game thread
+    // Only send entities to physics thread
     const strippedScene: Partial<SceneJSON> = {
       entities: json.entities,
     };
 
-    this.#toGameThread({
+    this.#toPhysicsThread({
       subject: "load_json",
       data: { scene: strippedScene },
     });

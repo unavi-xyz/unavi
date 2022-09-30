@@ -1,7 +1,7 @@
 import { SceneMessage } from "../scene";
 import { Quad, Triplet, WorkerMessage } from "../types";
 
-export type ToGameMessage =
+export type ToPhysicsMessage =
   | SceneMessage
   | WorkerMessage<"init_player">
   | WorkerMessage<"start">
@@ -16,7 +16,7 @@ export type ToGameMessage =
       }
     >;
 
-export type FromGameMessage =
+export type FromPhysicsMessage =
   | WorkerMessage<"ready">
   | WorkerMessage<
       "player_buffers",

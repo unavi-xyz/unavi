@@ -9,19 +9,19 @@ import {
 
 import { EntityJSON } from "../scene";
 import { PostMessage } from "../types";
-import { FromGameMessage, ToGameMessage } from "./types";
+import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
 const TERMINAL_VELOCITY = 30;
 const JUMP_STRENGTH = 6;
-const HZ = 60; // Game updates per second
+const HZ = 60; // Physics updates per second
 
 /*
  * Runs the physics loop.
  * Uses the Rapier physics engine.
  */
-export class GameWorker {
+export class PhysicsWorker {
   #world = new World({ x: 0, y: -9.81, z: 0 });
-  #postMessage: PostMessage<FromGameMessage>;
+  #postMessage: PostMessage<FromPhysicsMessage>;
 
   #playerBody: RigidBody | null = null;
   #playerPosition: Float32Array | null = null;
@@ -47,7 +47,7 @@ export class GameWorker {
     this.#postMessage({ subject: "ready", data: null });
   }
 
-  onmessage = (event: MessageEvent<ToGameMessage>) => {
+  onmessage = (event: MessageEvent<ToPhysicsMessage>) => {
     const { subject, data } = event.data;
     switch (subject) {
       case "start":
@@ -119,7 +119,7 @@ export class GameWorker {
   start() {
     this.stop();
     // Start loop
-    this.#interval = setInterval(this.#gameLoop.bind(this), 1000 / HZ);
+    this.#interval = setInterval(this.#physicsLoop.bind(this), 1000 / HZ);
   }
 
   stop() {
@@ -211,7 +211,7 @@ export class GameWorker {
     this.#colliders.delete(entityId);
   }
 
-  #gameLoop() {
+  #physicsLoop() {
     // Jumping
     const jumpVelocity = this.#jump ? JUMP_STRENGTH : 0;
     if (this.#jump) this.#jump = false;

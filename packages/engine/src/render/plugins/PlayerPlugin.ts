@@ -102,7 +102,7 @@ export class PlayerPlugin {
       .rotateAround(new Vector2(0, 0), -angle)
       .multiplyScalar(PLAYER_SPEED);
 
-    // Send velocity to game thread
+    // Send velocity to physics thread
     if (this.#playerVelocity) {
       this.#playerVelocity[0] = velocity.x;
       this.#playerVelocity[1] = velocity.y;

@@ -19,6 +19,7 @@ export default function SphereColliderComponent({ entityId, collider }: Props) {
         name="Radius"
         value={radius ?? 0}
         step={0.1}
+        min={0}
         onChange={(e) => {
           const value = e.target.value;
           if (!value) return;

@@ -28,7 +28,9 @@ export function updateEntity(
   map.entities.set(entityId, newEntity);
 
   // Update object
-  if (data.mesh !== undefined) createObject(entity, map, visuals, postMessage);
+  if (data.mesh !== undefined) {
+    createObject(newEntity, map, visuals, postMessage);
+  }
 
   const object = map.objects.get(entityId);
   if (!object) throw new Error("Object not found");
@@ -85,5 +87,5 @@ export function updateEntity(
   }
 
   // Update collider visual
-  if (data.collider) createColliderVisual(entityId, map, visuals);
+  if (data.collider !== undefined) createColliderVisual(entityId, map, visuals);
 }

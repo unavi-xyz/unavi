@@ -49,13 +49,28 @@ export function createObject(
       // Create geometry
       const geometry = createMeshGeometry(entity.mesh, map);
 
-      // Create mesh
-      const mesh = new Mesh(geometry, material);
+      if (oldObject instanceof Mesh) {
+        // Update mesh
+        oldObject.geometry.dispose();
+        oldObject.geometry = geometry;
+        oldObject.material = material;
+        copyTransform(oldObject, entity);
+        parent.add(oldObject);
+      } else {
+        // Create mesh
+        const mesh = new Mesh(geometry, material);
 
-      // Add to scene
-      map.objects.set(entity.id, mesh);
-      copyTransform(mesh, entity);
-      parent.add(mesh);
+        // Add to scene
+        map.objects.set(entity.id, mesh);
+        copyTransform(mesh, entity);
+        parent.add(mesh);
+
+        // Remove old object
+        if (oldObject) {
+          oldObject.removeFromParent();
+          disposeObject(oldObject);
+        }
+      }
       break;
     }
     case "Primitive": {
@@ -195,11 +210,5 @@ export function createObject(
   // Restore children
   if (children && children.length > 0) {
     newObject.add(...children);
-  }
-
-  // Remove old object
-  if (oldObject) {
-    oldObject.removeFromParent();
-    disposeObject(oldObject);
   }
 }

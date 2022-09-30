@@ -47,7 +47,7 @@ export default function MaterialComponent({ entityId }: Props) {
     <ComponentMenu title="Material">
       <div className="flex h-7 w-full justify-between space-x-4">
         <button
-          onClick={(e) => setOpen(true)}
+          onClick={() => setOpen(true)}
           className={`flex h-full w-1/3 min-w-fit cursor-default
                       items-center justify-center space-y-1 rounded-md transition hover:bg-primaryContainer`}
         >

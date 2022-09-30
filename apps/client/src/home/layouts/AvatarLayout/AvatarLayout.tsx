@@ -175,7 +175,7 @@ export default function AvatarLayout({
           <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
             <div className="mx-auto aspect-vertical w-full rounded-3xl bg-primaryContainer md:mx-0 md:w-1/2">
               {avatarUrl ? (
-                <AvatarCanvas url={avatarUrl} />
+                <AvatarCanvas />
               ) : (
                 <div className="flex h-full animate-pulse items-center justify-center rounded-3xl bg-surfaceVariant">
                   <Spinner />

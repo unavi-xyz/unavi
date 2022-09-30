@@ -4,22 +4,28 @@ import {
   CylinderCollider,
   CylinderMesh,
   Entity,
+  GLTFMesh,
   SphereCollider,
   SphereMesh,
 } from "@wired-labs/engine";
 
 import { addEntity } from "../../actions/AddEntityAction";
+import { useEditorStore } from "../../store";
 
 enum ObjectName {
   Box = "Box",
   Sphere = "Sphere",
   Cylinder = "Cylinder",
+  glTF = "glTF Model",
 }
 
 export default function ObjectsMenu() {
   function addObject(name: ObjectName) {
     const entity = createEntity(name);
     addEntity(entity);
+
+    // Select new entity
+    useEditorStore.setState({ selectedId: entity.id });
   }
 
   return (
@@ -28,8 +34,7 @@ export default function ObjectsMenu() {
         <button
           key={name}
           onClick={() => addObject(name)}
-          className="flex w-full items-center rounded
-                     px-4 py-0.5 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
+          className="flex w-full items-center rounded-lg px-4 py-0.5 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
         >
           {name}
         </button>
@@ -55,6 +60,9 @@ function createEntity(name: ObjectName) {
     case ObjectName.Cylinder:
       entity.mesh = new CylinderMesh();
       entity.collider = new CylinderCollider();
+      break;
+    case ObjectName.glTF:
+      entity.mesh = new GLTFMesh();
       break;
     default:
       throw new Error("Unknown object name");

@@ -13,7 +13,7 @@ export class FakeWorker<To = any, From = any> {
   }
 
   #onmessage(event: MessageEvent<From>) {
-    this.onmessage(event);
+    if (this.onmessage) this.onmessage(event);
   }
 
   // Send a message to the worker
@@ -22,7 +22,7 @@ export class FakeWorker<To = any, From = any> {
   }
 
   // Receive a message from the worker
-  onmessage(event: MessageEvent<From>) {}
+  onmessage: ((event: MessageEvent<From>) => void) | null = null;
 
   // Terminate the worker
   terminate() {

@@ -104,7 +104,7 @@ export class RenderThread {
         this.#onReady = [];
         break;
       case "clicked_object":
-        this.onObjectClick(data);
+        if (this.onObjectClick) this.onObjectClick(data);
         break;
       case "screenshot":
         this.#onScreenshot.forEach((resolve) => resolve(data));
@@ -182,7 +182,7 @@ export class RenderThread {
     this.postMessage({ subject: "set_transform_mode", data: mode });
   }
 
-  onObjectClick(id: string | null) {}
+  onObjectClick: ((id: string | null) => void) | null = null;
 
   onResize() {
     this.postMessage({

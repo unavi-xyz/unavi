@@ -1,13 +1,5 @@
-import React, {
-  ReactPortal,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { ReactPortal, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-
-const DialogContext = React.createContext({ close: () => {} });
 
 interface Props {
   open: boolean;
@@ -17,7 +9,7 @@ interface Props {
 
 export default function Dialog({
   open,
-  onClose = () => {},
+  onClose,
   children,
 }: Props): ReactPortal | null {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -57,28 +49,17 @@ export default function Dialog({
     <div
       ref={scrimRef}
       onMouseDown={onClose}
-      className="fixed top-0 left-0 z-50 flex h-screen
-                 w-screen flex-col justify-center bg-black/30 opacity-0
-                 transition-opacity duration-200 ease-in-out"
+      className="fixed top-0 left-0 z-50 flex h-screen w-screen flex-col justify-center bg-black/30 opacity-0 transition-opacity duration-200 ease-in-out"
     >
       <dialog
         ref={dialogRef}
         open
         onMouseDown={(e) => e.stopPropagation()}
-        className="flex w-full max-w-xl scale-75 flex-col space-y-4
-                   rounded-3xl bg-surface p-10 text-onSurface opacity-0 drop-shadow-lg
-                   transition duration-200 ease-in-out"
+        className="flex w-full max-w-xl scale-75 flex-col space-y-4 rounded-3xl bg-surface p-10 text-onSurface opacity-0 drop-shadow-lg transition duration-200 ease-in-out"
       >
-        <DialogContext.Provider value={{ close: onClose }}>
-          {children}
-        </DialogContext.Provider>
+        {children}
       </dialog>
     </div>,
     document.body
   );
-}
-
-export function useCloseDialog() {
-  const { close } = useContext(DialogContext);
-  return close;
 }

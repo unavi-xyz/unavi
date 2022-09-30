@@ -18,7 +18,7 @@ export default function TreeMenuRoot() {
   const childrenIds = useSubscribeValue(childrenIds$);
 
   // Create drop target
-  const [{}, drop] = useDrop(
+  const [, drop] = useDrop(
     () => ({
       accept: DND_TYPES.Entity,
       drop({ id: droppedId }: DragItem, monitor) {

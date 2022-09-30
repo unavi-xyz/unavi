@@ -7,21 +7,25 @@ import {
 import { lensClient } from "../../../server/lens";
 
 export async function pollUntilIndexed(txHash: string) {
-  while (true) {
-    const { data, error } = await lensClient
-      .query<HasTxHashBeenIndexedQuery, HasTxHashBeenIndexedQueryVariables>(
-        HasTxHashBeenIndexedDocument,
-        {
-          request: {
-            txHash,
-          },
-        }
-      )
-      .toPromise();
+  return new Promise<void>((resolve, reject) => {
+    const interval = setInterval(async () => {
+      const { data, error } = await lensClient
+        .query<HasTxHashBeenIndexedQuery, HasTxHashBeenIndexedQueryVariables>(
+          HasTxHashBeenIndexedDocument,
+          {
+            request: {
+              txHash,
+            },
+          }
+        )
+        .toPromise();
 
-    if (error) throw new Error(error.message);
-    if (data?.hasTxHashBeenIndexed) return;
+      if (error) reject(error);
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
+      if (data?.hasTxHashBeenIndexed) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 1000);
+  });
 }

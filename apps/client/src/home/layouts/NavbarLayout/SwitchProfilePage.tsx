@@ -44,6 +44,7 @@ export default function SwitchProfilePage({ onClose }: Props) {
         title="Select profile"
         options={sortedHandles}
         value={selected}
+        outline
         onChange={(e: ChangeEvent<HTMLSelectElement>) =>
           setSelected(e.target.value)
         }

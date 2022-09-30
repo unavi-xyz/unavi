@@ -132,9 +132,7 @@ export default function AvatarUploadPage() {
             />
           )}
 
-          <div className="w-full">
-            {vrmFile && <AvatarCanvas url={URL.createObjectURL(vrmFile)} />}
-          </div>
+          <div className="w-full">{vrmFile && <AvatarCanvas />}</div>
         </div>
       )}
 

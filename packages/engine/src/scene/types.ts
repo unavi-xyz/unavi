@@ -10,7 +10,7 @@ export type EntityJSON = {
   name: string;
   parentId: string;
   position: Triplet;
-  rotation: Triplet;
+  rotation: Quad;
   scale: Triplet;
   mesh: MeshJSON | null;
   materialId: string | null;
@@ -92,7 +92,7 @@ export type SceneMessage =
   | WorkerMessage<
       "load_json",
       {
-        scene: SceneJSON;
+        scene: Partial<SceneJSON>;
       }
     >
   | WorkerMessage<

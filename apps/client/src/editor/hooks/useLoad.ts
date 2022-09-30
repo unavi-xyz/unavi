@@ -53,7 +53,24 @@ export function useLoad() {
   useEffect(() => {
     if (!engine || !scene) return;
     engine.waitForReady().then(() => {
-      engine.scene.loadJSON(scene);
+      const sceneJSON = scene.scene;
+
+      // Load files
+      sceneJSON.entities.forEach((entity) => {
+        if (entity.mesh?.type === "glTF") {
+          const uri = entity.mesh.uri;
+          if (uri) {
+            const file = scene.files.find((f) => f.id === entity.id);
+            if (file) {
+              const blob = new Blob([file.text], { type: "text/plain" });
+              const url = URL.createObjectURL(blob);
+              entity.mesh.uri = url;
+            }
+          }
+        }
+      });
+
+      engine.scene.loadJSON(sceneJSON);
     });
   }, [engine, scene]);
 }

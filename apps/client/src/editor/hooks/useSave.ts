@@ -17,6 +17,31 @@ export function useSave() {
     const editorState = JSON.stringify(getEditorState());
     const scene = engine.scene.toJSON();
 
+    // Get all gltf files
+    const uris: {
+      id: string;
+      uri: string;
+    }[] = [];
+
+    scene.entities.forEach((entity) => {
+      if (entity.mesh?.type === "glTF") {
+        const uri = entity.mesh.uri;
+        if (uri)
+          uris.push({
+            id: entity.id,
+            uri,
+          });
+      }
+    });
+
+    const fileResponses = await Promise.all(uris.map(({ uri }) => fetch(uri)));
+    const fileText = await Promise.all(fileResponses.map((r) => r?.text()));
+
+    const files = fileText.map((text, i) => {
+      const { id } = uris[i];
+      return { id, text };
+    });
+
     await mutateAsync({
       id,
       name,
@@ -24,6 +49,7 @@ export function useSave() {
       image,
       editorState,
       scene,
+      files,
     });
   }
 

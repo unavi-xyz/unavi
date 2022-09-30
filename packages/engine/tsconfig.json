@@ -6,5 +6,5 @@
     "composite": true
   },
   "extends": "@wired-labs/tsconfig/base.json",
-  "include": ["src/**/*.ts"]
+  "include": ["src"]
 }

@@ -2,12 +2,7 @@ import { useRouter } from "next/router";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
-import {
-  MdArrowBackIosNew,
-  MdOutlineGridOn,
-  MdPreview,
-  MdSync,
-} from "react-icons/md";
+import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
 import IconButton from "../../../ui/base/IconButton";
 import Tooltip from "../../../ui/base/Tooltip";
@@ -20,7 +15,6 @@ export default function EditorNavbar() {
   const id = router.query.id;
 
   const colliders = useEditorStore((state) => state.colliders);
-  const grid = useEditorStore((state) => state.grid);
   const name = useEditorStore((state) => state.name);
 
   const { save } = useSave();
@@ -35,10 +29,6 @@ export default function EditorNavbar() {
         visible: !colliders,
       },
     });
-  }
-
-  function handleToggleGrid() {
-    useEditorStore.setState({ grid: !grid });
   }
 
   async function handleBack() {
@@ -84,13 +74,13 @@ export default function EditorNavbar() {
       </div>
 
       <div className="flex h-full w-full items-center justify-end space-x-2">
-        <div className="aspect-square h-full">
+        {/* <div className="aspect-square h-full">
           <Tooltip text={`${grid ? "Hide" : "Show"} Grid`} placement="bottom">
             <IconButton selected={grid} onClick={handleToggleGrid}>
               <MdOutlineGridOn />
             </IconButton>
           </Tooltip>
-        </div>
+        </div> */}
 
         <div className="aspect-square h-full">
           <Tooltip

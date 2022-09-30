@@ -26,6 +26,11 @@ export class MainScene {
 
   #scene = new Scene();
 
+  #map = {
+    loadedGltfUris: new Map<string, string | null>(),
+    glTFRootEntities: new Map<string, string[]>(),
+  };
+
   constructor({
     gameThread,
     loaderThread,
@@ -39,52 +44,72 @@ export class MainScene {
     this.#toLoaderThread = loaderThread.postMessage.bind(loaderThread);
     this.#toRenderThread = renderThread.postMessage.bind(renderThread);
 
+    // Handle glTF loads
     loaderThread.onGltfLoaded = ({ id, scene }) => {
-      // Set the loaded scene root to the glTF entity
-      scene.entities = Object.values(scene.entities).filter((entityJSON) => {
-        if (entityJSON.parentId === "root") entityJSON.parentId = id;
+      // Remove previous loaded glTF entity
+      const rootEntities = this.#map.glTFRootEntities.get(id);
+      if (rootEntities) {
+        rootEntities.forEach((entityId) => this.removeEntity(entityId));
+        this.#map.glTFRootEntities.delete(id);
+      }
+
+      scene.entities = scene.entities.filter((entityJSON) => {
+        // Filter out root entity
         if (entityJSON.id === "root") return false;
+
+        // Add top level entities to the roots map
+        if (entityJSON.parentId === "root") {
+          entityJSON.parentId = id;
+          const roots = this.#map.glTFRootEntities.get(id) ?? [];
+          roots.push(entityJSON.id);
+          this.#map.glTFRootEntities.set(id, roots);
+        }
+
         return true;
       });
 
       // Add loaded glTF to the scene
-      this.#scene.loadJSON(scene);
-
-      // Send stripped down glTF to game thread
-      const strippedScene: SceneJSON = {
-        ...scene,
-        // @ts-ignore
-        accessors: Object.values(scene.accessors).map((accessor) => ({
-          ...accessor,
-          array: null,
-        })),
-        // @ts-ignore
-        images: Object.values(scene.images).map((image) => ({
-          ...image,
-          bitmap: null,
-        })),
-      };
-
-      this.#toGameThread({
-        subject: "load_json",
-        data: { scene: strippedScene },
-      });
-
-      // Send glTF + transfer data to render thread
-      const bitmaps = Object.values(scene.images).map((image) => image.bitmap);
-      const accessors = Object.values(scene.accessors).map(
-        (accessor) => accessor.array.buffer
-      );
-      const transfer = [...bitmaps, ...accessors];
-
-      this.#toRenderThread(
-        {
-          subject: "load_json",
-          data: { scene },
-        },
-        transfer
-      );
+      this.loadJSON(scene);
     };
+
+    // Load glTFs when added to the scene
+    this.#scene.entities$.subscribe((entities) => {
+      Object.values(entities).forEach((entity) => {
+        entity.mesh$.subscribe((mesh) => {
+          if (mesh?.type === "glTF") {
+            mesh.uri$.subscribe((uri) => {
+              const loadedURI = this.#map.loadedGltfUris.get(entity.id);
+              if (uri !== loadedURI) {
+                this.#map.loadedGltfUris.set(entity.id, uri);
+
+                if (uri === null) {
+                  // Remove loaded glTF
+                  const rootEntities = this.#map.glTFRootEntities.get(
+                    entity.id
+                  );
+                  if (rootEntities) {
+                    rootEntities.forEach((entityId) =>
+                      this.removeEntity(entityId)
+                    );
+                    this.#map.glTFRootEntities.delete(entity.id);
+                  }
+                  return;
+                }
+
+                // Load glTF
+                this.#toLoaderThread({
+                  subject: "load_gltf",
+                  data: {
+                    id: entity.id,
+                    uri,
+                  },
+                });
+              }
+            });
+          }
+        });
+      });
+    });
   }
 
   onmessage = (event: MessageEvent<SceneMessage>) => {
@@ -234,7 +259,39 @@ export class MainScene {
     return this.#scene.toJSON();
   }
 
-  loadJSON(json: SceneJSON) {
+  loadJSON(json: Partial<SceneJSON>) {
+    // Remove root entity
+    json.entities = json.entities?.filter((entity) => entity.id !== "root");
+
+    // Send stripped down scene to game thread
+    const strippedScene: Partial<SceneJSON> = {
+      entities: json.entities,
+    };
+
+    this.#toGameThread({
+      subject: "load_json",
+      data: { scene: strippedScene },
+    });
+
+    // Send full scene + transfer data to render thread
+    const bitmaps = json.images
+      ? Object.values(json.images).map((image) => image.bitmap)
+      : [];
+    const accessors = json.accessors
+      ? Object.values(json.accessors).map((accessor) => accessor.array.buffer)
+      : [];
+
+    const transfer = [...bitmaps, ...accessors];
+
+    this.#toRenderThread(
+      {
+        subject: "load_json",
+        data: { scene: json },
+      },
+      transfer
+    );
+
+    // Load scene
     this.#scene.loadJSON(json);
   }
 

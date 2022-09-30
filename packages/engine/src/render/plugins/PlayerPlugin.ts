@@ -1,12 +1,11 @@
 import { Euler, MathUtils, PerspectiveCamera, Vector2, Vector3 } from "three";
 
 import { ToRenderMessage } from "../types";
-import { Plugin } from "./Plugin";
 
 const DAMPEN_FACTOR = 2;
 const PLAYER_SPEED = 3;
 
-export class PlayerPlugin extends Plugin {
+export class PlayerPlugin {
   #camera: PerspectiveCamera;
 
   #playerInputVector = new Vector2();
@@ -27,7 +26,6 @@ export class PlayerPlugin extends Plugin {
   #pointerSpeed = 1.0;
 
   constructor(camera: PerspectiveCamera) {
-    super();
     this.#camera = camera;
   }
 

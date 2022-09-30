@@ -28,12 +28,13 @@ export class LoaderThread {
         this.#onReady = [];
         break;
       case "gltf_loaded":
-        this.onGltfLoaded(data);
+        if (this.onGltfLoaded) this.onGltfLoaded(data);
         break;
     }
   };
 
-  onGltfLoaded: (data: { id: string; scene: SceneJSON }) => void = () => {};
+  onGltfLoaded: ((data: { id: string; scene: SceneJSON }) => void) | null =
+    null;
 
   postMessage(message: ToLoaderMessage, transfer?: Transferable[]) {
     this.#worker.postMessage(message, transfer);

@@ -1,10 +1,11 @@
 import { useEntity } from "../../hooks/useEntity";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
-import BoxMeshComponent from "./BoxMeshComponent";
-import CylinderMeshComponent from "./CylinderMeshComponent";
 import MaterialComponent from "./MaterialComponent";
+import BoxMeshComponent from "./mesh/BoxMeshComponent";
+import CylinderMeshComponent from "./mesh/CylinderMeshComponent";
+import GLTFMeshComponent from "./mesh/GLTFMeshComponent";
+import SphereMeshComponent from "./mesh/SphereMeshComponent";
 import PhysicsComponent from "./PhysicsComponent";
-import SphereMeshComponent from "./SphereMeshComponent";
 
 interface Props {
   entityId: string;
@@ -36,6 +37,13 @@ export default function EntityComponents({ entityId }: Props) {
         <>
           <CylinderMeshComponent entityId={entityId} mesh={mesh} />
           <MaterialComponent entityId={entityId} />
+          <PhysicsComponent entityId={entityId} />
+        </>
+      );
+    case "glTF":
+      return (
+        <>
+          <GLTFMeshComponent entityId={entityId} mesh={mesh} />
           <PhysicsComponent entityId={entityId} />
         </>
       );

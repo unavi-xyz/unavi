@@ -40,7 +40,7 @@ export default function DropdownMenu({
   }, [open]);
 
   useEffect(() => {
-    //if the user clicks outside of the dropdown, close it
+    // If the user clicks outside of the dropdown, close it
     function onPointerUp() {
       if (open && onClose) onClose();
     }
@@ -57,9 +57,7 @@ export default function DropdownMenu({
     <div className="relative">
       <div
         ref={menuRef}
-        className={`absolute z-10 w-full min-w-max rounded-xl bg-surface
-                    text-onSurface shadow-lg transition ease-in-out ${placementClass}
-                    scale-75 opacity-0`}
+        className={`absolute z-10 w-full min-w-max scale-75 rounded-xl bg-surface text-onSurface opacity-0 shadow-xl transition ease-in-out ${placementClass}`}
       >
         {visible && children}
       </div>

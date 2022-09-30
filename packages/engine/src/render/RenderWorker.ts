@@ -9,14 +9,13 @@ import {
 } from "three";
 
 import { PostMessage } from "../types";
-import { disposeObject } from "../utils/disposeObject";
-import { SceneLoader } from "./loader/SceneLoader";
 import { OrbitControlsPlugin } from "./plugins/OrbitControlsPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
-import { Plugin } from "./plugins/Plugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
 import { TransformControlsPlugin } from "./plugins/TransformControlsPlugin";
-import { FromRenderMessage, ToRenderMessage } from "./types";
+import { SceneLoader } from "./SceneLoader/SceneLoader";
+import { FromRenderMessage, Plugin, ToRenderMessage } from "./types";
+import { disposeObject } from "./utils/disposeObject";
 import { loadCubeTexture } from "./utils/loadCubeTexture";
 
 export type RenderWorkerOptions = {
@@ -51,7 +50,7 @@ export class RenderWorker {
   #canvasHeight = 0;
   #clock = new Clock();
 
-  #plugins: Plugin[] = [];
+  #plugins: Plugin<ToRenderMessage>[] = [];
   #pluginState: PluginState = {
     usingTransformControls: false,
   };
@@ -118,7 +117,6 @@ export class RenderWorker {
     this.#renderer.setPixelRatio(pixelRatio);
     this.#renderer.setSize(canvasWidth, canvasHeight, false);
     this.#renderer.outputEncoding = sRGBEncoding;
-    this.#renderer.physicallyCorrectLights = true;
     this.#renderer.shadowMap.enabled = true;
 
     // Fog
@@ -127,6 +125,8 @@ export class RenderWorker {
     // Skybox
     if (skyboxPath)
       loadCubeTexture(skyboxPath).then((texture) => {
+        texture.encoding = sRGBEncoding;
+
         this.#scene.background = texture;
         this.#scene.environment = texture;
 
@@ -201,7 +201,7 @@ export class RenderWorker {
   destroy() {
     this.stop();
     this.#sceneLoader.destroy();
-    this.#plugins.forEach((plugin) => plugin.destroy());
+    this.#plugins.forEach((plugin) => plugin.destroy && plugin.destroy());
     disposeObject(this.#scene);
     this.#renderer?.dispose();
   }
@@ -218,7 +218,7 @@ export class RenderWorker {
     if (!this.#renderer || !this.#camera) return;
 
     this.#sceneLoader.mixer.update(delta);
-    this.#plugins.forEach((plugin) => plugin.animate(delta));
+    this.#plugins.forEach((plugin) => plugin.animate && plugin.animate(delta));
 
     this.#renderer.render(this.#scene, this.#camera);
   }

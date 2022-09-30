@@ -1,5 +1,4 @@
 import { RenderWorker } from "./RenderWorker";
 
-// @ts-ignore
-const renderWorker = new RenderWorker(postMessage.bind(this));
+const renderWorker = new RenderWorker(postMessage.bind(this) as any);
 onmessage = renderWorker.onmessage;

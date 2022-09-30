@@ -21,8 +21,6 @@ import {
   Vector3,
 } from "three";
 
-import { FakePointerEvent } from "./OrbitControls";
-
 // https://github.com/mrdoob/three.js/blob/dev/examples/jsm/controls/TransformControls.js
 
 const _raycaster = new Raycaster();
@@ -42,12 +40,12 @@ const _mouseUpEvent = { type: "mouseUp", mode: null };
 const _objectChangeEvent = { type: "objectChange" };
 
 class TransformControls extends Object3D {
-  domElement: EventTarget;
-  mode: "translate" | "rotate" | "scale" = "translate";
+  domElement;
+  mode;
   enabled = true;
-  object: Object3D | null = null;
+  object = null;
 
-  constructor(camera, domElement: EventTarget) {
+  constructor(camera, domElement) {
     super();
 
     this.isTransformControls = true;
@@ -63,13 +61,11 @@ class TransformControls extends Object3D {
     this._plane = _plane;
     this.add(_plane);
 
-    const scope = this;
-
     // Defined getter, setter and store for a property
     function defineProperty(propName, defaultValue) {
       let propValue = defaultValue;
 
-      Object.defineProperty(scope, propName, {
+      Object.defineProperty(this, propName, {
         get: function () {
           return propValue !== undefined ? propValue : defaultValue;
         },
@@ -80,13 +76,13 @@ class TransformControls extends Object3D {
             _plane[propName] = value;
             _gizmo[propName] = value;
 
-            scope.dispatchEvent({ type: propName + "-changed", value: value });
-            scope.dispatchEvent(_changeEvent);
+            this.dispatchEvent({ type: propName + "-changed", value: value });
+            this.dispatchEvent(_changeEvent);
           }
         },
       });
 
-      scope[propName] = defaultValue;
+      this[propName] = defaultValue;
       _plane[propName] = defaultValue;
       _gizmo[propName] = defaultValue;
     }
@@ -569,7 +565,7 @@ class TransformControls extends Object3D {
 
 // mouse / touch event handlers
 
-function onPointerHover(event: FakePointerEvent) {
+function onPointerHover(event) {
   if (!this.enabled) return;
 
   switch (event.detail.pointerType) {
@@ -580,7 +576,7 @@ function onPointerHover(event: FakePointerEvent) {
   }
 }
 
-function onPointerDown(event: FakePointerEvent) {
+function onPointerDown(event) {
   if (!this.enabled) return;
 
   this.domElement.addEventListener("pointermove", this._onPointerMove);
@@ -589,13 +585,13 @@ function onPointerDown(event: FakePointerEvent) {
   this.pointerDown(event.detail.pointer);
 }
 
-function onPointerMove(event: FakePointerEvent) {
+function onPointerMove(event) {
   if (!this.enabled) return;
 
   this.pointerMove(event.detail.pointer);
 }
 
-function onPointerUp(event: FakePointerEvent) {
+function onPointerUp(event) {
   if (!this.enabled) return;
 
   this.domElement.removeEventListener("pointermove", this._onPointerMove);

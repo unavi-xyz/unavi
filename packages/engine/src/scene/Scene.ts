@@ -14,16 +14,13 @@ import { sortEntities } from "./utils/sortEntities";
  * State is stored using RxJS, allowing for subscriptions to state changes.
  */
 export class Scene {
-  entities$ = new BehaviorSubject<{ [id: string]: Entity }>({});
+  entities$ = new BehaviorSubject<{ [id: string]: Entity }>({
+    root: new Entity({ id: "root" }),
+  });
   materials$ = new BehaviorSubject<{ [id: string]: Material }>({});
   accessors$ = new BehaviorSubject<{ [id: string]: Accessor }>({});
   images$ = new BehaviorSubject<{ [id: string]: Image }>({});
   animations$ = new BehaviorSubject<{ [id: string]: Animation }>({});
-
-  constructor() {
-    const root = new Entity({ id: "root" });
-    this.addEntity(root);
-  }
 
   get entities() {
     return this.entities$.value;
@@ -83,6 +80,8 @@ export class Scene {
   }
 
   addEntity(entity: Entity) {
+    if (entity.id === "root") throw new Error("Cannot add root entity");
+
     const previous = this.entities[entity.id];
     if (previous) this.removeEntity(previous.id);
 
@@ -103,6 +102,8 @@ export class Scene {
   }
 
   removeEntity(entityId: string) {
+    if (entityId === "root") throw new Error("Cannot remove root entity");
+
     const entity = this.entities[entityId];
     if (!entity) throw new Error(`Entity ${entityId} not found`);
 
@@ -123,6 +124,8 @@ export class Scene {
   }
 
   updateEntity(entityId: string, data: Partial<EntityJSON>) {
+    if (entityId === "root") throw new Error("Cannot update root entity");
+
     const entity = this.entities[entityId];
     if (!entity) throw new Error(`Entity ${entityId} not found`);
 
@@ -236,30 +239,42 @@ export class Scene {
     };
   }
 
-  loadJSON(json: SceneJSON) {
+  loadJSON(json: Partial<SceneJSON>) {
     // Add accessors
-    json.accessors.forEach((accessor) =>
-      this.addAccessor(Accessor.fromJSON(accessor))
-    );
+    if (json.accessors) {
+      json.accessors.forEach((accessor) =>
+        this.addAccessor(Accessor.fromJSON(accessor))
+      );
+    }
 
     // Add images
-    json.images.forEach((image) => this.addImage(Image.fromJSON(image)));
+    if (json.images) {
+      json.images.forEach((image) => this.addImage(Image.fromJSON(image)));
+    }
 
     // Add materials
-    json.materials.forEach((material) =>
-      this.addMaterial(Material.fromJSON(material))
-    );
+    if (json.materials) {
+      json.materials.forEach((material) =>
+        this.addMaterial(Material.fromJSON(material))
+      );
+    }
 
     // Sort entities
-    const sortedEntities = sortEntities(json.entities);
+    if (json.entities) {
+      const sortedEntities = sortEntities(json.entities);
 
-    // Add entities
-    sortedEntities.forEach((entity) => this.addEntity(Entity.fromJSON(entity)));
+      // Add entities
+      sortedEntities.forEach((entity) =>
+        this.addEntity(Entity.fromJSON(entity))
+      );
+    }
 
     // Add animations
-    json.animations.forEach((animation) =>
-      this.addAnimation(Animation.fromJSON(animation))
-    );
+    if (json.animations) {
+      json.animations.forEach((animation) =>
+        this.addAnimation(Animation.fromJSON(animation))
+      );
+    }
   }
 
   destroy() {

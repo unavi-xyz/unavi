@@ -31,25 +31,19 @@ export default function Card({
 
   return (
     <div
-      className={`relative flex h-full w-full flex-col overflow-hidden transition hover:scale-105 hover:cursor-pointer ${opacityCss}`}
+      className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-primaryContainer transition hover:scale-105 hover:cursor-pointer ${opacityCss} ${aspectCss}`}
     >
-      <div
-        className={`h-full overflow-hidden rounded-2xl bg-primaryContainer ${aspectCss}`}
-      >
-        <div className="relative h-full w-full">
-          {image && (
-            <Image
-              src={image}
-              priority
-              fill
-              sizes={sizes}
-              draggable={false}
-              alt="card image"
-              className="rounded-2xl object-cover"
-            />
-          )}
-        </div>
-      </div>
+      {image && (
+        <Image
+          src={image}
+          priority
+          fill
+          sizes={sizes}
+          draggable={false}
+          alt="card image"
+          className="rounded-2xl object-cover"
+        />
+      )}
 
       <div className="absolute top-0 left-0 flex h-full items-end px-3 pb-2 tracking-wide text-white">
         {text && (

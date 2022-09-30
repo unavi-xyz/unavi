@@ -29,7 +29,6 @@ import {
 import { Accessor } from "../scene/Accessor";
 import { Animation } from "../scene/Animation";
 import { Image } from "../scene/Image";
-import { quaternionToEuler } from "./quaternionToEuler";
 
 const extensionDeps = {};
 
@@ -185,7 +184,7 @@ export class GLTFLoader {
 
     // Set transform
     entity.position = node.getTranslation();
-    entity.rotation = quaternionToEuler(node.getRotation());
+    entity.rotation = node.getRotation();
     entity.scale = node.getScale();
 
     // Load mesh

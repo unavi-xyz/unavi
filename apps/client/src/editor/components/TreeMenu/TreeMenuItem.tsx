@@ -22,11 +22,17 @@ export default function TreeMenuItem({ id }: Props) {
   const [open, setOpen] = useState(true);
   const selectedId = useEditorStore((state) => state.selectedId);
 
+  const entities$ = useEditorStore((state) => state.engine?.scene.entities$);
   const name$ = useEntity(id, (entity) => entity.name$);
   const childrenIds$ = useEntity(id, (entity) => entity.childrenIds$);
+  const isInternal$ = useEntity(id, (entity) => entity.isInternal$);
 
   const name = useSubscribeValue(name$);
   const childrenIds = useSubscribeValue(childrenIds$);
+  const isInternal = useSubscribeValue(isInternal$);
+  const entities = useSubscribeValue(entities$);
+
+  const children = entities ? childrenIds?.map((id) => entities[id]) : [];
 
   // Create drag source
   const [{ isDragging }, drag] = useDrag(
@@ -80,7 +86,9 @@ export default function TreeMenuItem({ id }: Props) {
     [id]
   );
 
-  const hasChildren = childrenIds && childrenIds.length > 0;
+  const allChildrenInternal = children?.every((child) => child.isInternal);
+  const hasChildren =
+    childrenIds && childrenIds.length > 0 && !allChildrenInternal;
   const isSelected = selectedId === id;
   const bgClass = isSelected
     ? "bg-primaryContainer text-onPrimaryContainer"
@@ -89,6 +97,8 @@ export default function TreeMenuItem({ id }: Props) {
     : "hover:bg-surfaceVariant";
   const opacityClass = isDragging ? "opacity-0" : null;
   const highlightBelowClass = isOverBelow ? "bg-primary" : null;
+
+  if (isInternal) return null;
 
   drop(ref);
   drag(ref);

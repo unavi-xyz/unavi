@@ -160,19 +160,22 @@ export class GameWorker {
     // Create collider description
     let colliderDesc: ColliderDesc;
     switch (entity.collider.type) {
-      case "Box":
+      case "Box": {
         const size = entity.collider.size;
         colliderDesc = ColliderDesc.cuboid(...size);
         break;
-      case "Sphere":
+      }
+      case "Sphere": {
         const radius = entity.collider.radius;
         colliderDesc = ColliderDesc.ball(radius);
         break;
-      case "Cylinder":
+      }
+      case "Cylinder": {
         const height = entity.collider.height;
         const cylinderRadius = entity.collider.radius;
         colliderDesc = ColliderDesc.cylinder(height / 2, cylinderRadius);
         break;
+      }
     }
 
     const rigidBodyDesc = RigidBodyDesc.fixed();
@@ -211,7 +214,6 @@ export class GameWorker {
   }
 
   #gameLoop() {
-    const delta = (performance.now() - this.#lastUpdate) / 1000;
     this.#lastUpdate = performance.now();
 
     // Jumping

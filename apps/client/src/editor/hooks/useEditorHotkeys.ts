@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { removeEntity } from "../actions/RemoveEntityAction";
 import { useEditorStore } from "../store";
 
 export function useEditorHotkeys() {
-  const [copiedId, setCopiedId] = useState<string>();
+  // const [copiedId, setCopiedId] = useState<string>();
 
   useEffect(() => {
     async function handleKeyDown(e: KeyboardEvent) {
@@ -12,13 +12,14 @@ export function useEditorHotkeys() {
       if (!engine) return;
 
       switch (e.key) {
-        case "Delete":
+        case "Delete": {
           const selectedId = useEditorStore.getState().selectedId;
           if (selectedId) {
             useEditorStore.setState({ selectedId: null });
             removeEntity(selectedId);
           }
           break;
+        }
         case "w":
           useEditorStore.setState({ tool: "translate" });
           break;
@@ -54,5 +55,5 @@ export function useEditorHotkeys() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [copiedId]);
+  }, []);
 }

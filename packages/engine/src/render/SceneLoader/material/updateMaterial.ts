@@ -12,6 +12,8 @@ export function updateMaterial(
   const materialObject = map.materials.get(materialId);
   if (!materialObject) throw new Error("Material not found");
 
+  materialObject.needsUpdate = true;
+
   if (material.alpha !== undefined) materialObject.opacity = material.alpha;
 
   if (material.alphaMode !== undefined) {
@@ -87,6 +89,4 @@ export function updateMaterial(
     materialObject.metalnessMap = metallicRougnessTexture;
     materialObject.roughnessMap = metallicRougnessTexture;
   }
-
-  materialObject.needsUpdate = true;
 }

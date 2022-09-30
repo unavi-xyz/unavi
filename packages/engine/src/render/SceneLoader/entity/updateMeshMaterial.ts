@@ -36,7 +36,11 @@ export function updateMeshMaterial(
       meshObject.material.vertexColors = true;
 
     // If three.js needs to generate tangents, flip normal map y
-    if (!meshObject.geometry.attributes.tangent)
-      meshObject.material.normalScale.y *= -1;
+    if (!meshObject.geometry.attributes.tangent) {
+      const normalScale = Math.abs(meshObject.material.normalScale.y);
+      meshObject.material.normalScale.y = -normalScale;
+    }
+
+    meshObject.material.needsUpdate = true;
   }
 }

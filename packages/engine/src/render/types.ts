@@ -28,6 +28,12 @@ export type PointerData = {
   };
 };
 
+export type Plugin<T extends WorkerMessage> = {
+  onmessage: (message: MessageEvent<T>) => void;
+  animate?: (delta: number) => void;
+  destroy?: () => void;
+};
+
 export type WheelData = {
   deltaY: number;
 };

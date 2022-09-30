@@ -107,6 +107,7 @@ export class SceneLoader {
           });
         }
 
+        // Add animations
         if (data.scene.animations)
           data.scene.animations.forEach((a) => {
             addAnimation(a, this.#map, this.mixer);

@@ -120,6 +120,7 @@ export class GLTFLoader {
   #loadAnimation(animation: IAnimation) {
     // Create entity
     const animationState = new Animation();
+    animationState.isInternal = true;
     animationState.name = animation.getName();
 
     // Load channels

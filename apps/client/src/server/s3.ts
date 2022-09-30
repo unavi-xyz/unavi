@@ -48,7 +48,7 @@ export async function uploadFileBlobToS3(
   const data = await s3Client.send(
     new PutObjectCommand({
       Bucket: process.env.S3_BUCKET,
-      Key: `${projectId}-${fileId}.blob`,
+      Key: `${projectId}_${fileId}.blob`,
       Body: blob,
       ACL: "private",
       ContentType: "application/octet-stream",
@@ -78,7 +78,7 @@ export async function getImageFromS3(id: string) {
 export async function getFileBlobFromS3(fileId: string, projectId: string) {
   const command = new GetObjectCommand({
     Bucket: process.env.S3_BUCKET,
-    Key: `${projectId}-${fileId}.blob`,
+    Key: `${projectId}_${fileId}.blob`,
   });
   const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
   return url;
@@ -90,6 +90,17 @@ export async function deleteProjectFromS3(id: string) {
       Bucket: process.env.S3_BUCKET,
       Delete: {
         Objects: [{ Key: `${id}.json` }, { Key: `${id}.jpeg` }],
+      },
+    })
+  );
+}
+
+export async function deleteFileBlobFromS3(fileId: string, projectId: string) {
+  await s3Client.send(
+    new DeleteObjectsCommand({
+      Bucket: process.env.S3_BUCKET,
+      Delete: {
+        Objects: [{ Key: `${projectId}_${fileId}.blob` }],
       },
     })
   );

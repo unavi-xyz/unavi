@@ -5,6 +5,7 @@ import { z } from "zod";
 import { emptyScene } from "../../editor/constants";
 import { prisma } from "../prisma";
 import {
+  deleteFileBlobFromS3,
   deleteProjectFromS3,
   getFileBlobFromS3,
   getImageFromS3,
@@ -167,16 +168,59 @@ export const protectedRouter = createProtectedRouter()
       // Verify that the user owns the project
       const project = await prisma.project.findFirst({
         where: { id, owner: address },
+        include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "UNAUTHORIZED" });
 
+      const promises: Promise<any>[] = [];
+      const timestamp = new Date();
+
+      const previousStorageKeys = project.files.map((file) => file.storageKey);
+      const currentStorageKeys = files.map((file) => file.id);
+      const unusedStorageKeys = previousStorageKeys.filter(
+        (key) => !currentStorageKeys.includes(key)
+      );
+      const newStorageKeys = currentStorageKeys.filter(
+        (key) => !previousStorageKeys.includes(key)
+      );
+
+      // Remove unused files from S3
+      unusedStorageKeys.forEach((key) =>
+        promises.push(deleteFileBlobFromS3(key, id))
+      );
+
+      // Remove unused files from database
+      promises.push(
+        prisma.file.deleteMany({
+          where: {
+            storageKey: {
+              in: unusedStorageKeys,
+            },
+          },
+        })
+      );
+
+      // Add new files to database
+      const newFiles = newStorageKeys.map((storageKey) => ({
+        storageKey,
+        projectId: id,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      }));
+
+      promises.push(
+        prisma.file.createMany({
+          data: newFiles,
+        })
+      );
+
       // Upload file blobs to S3
-      await Promise.all(
-        files.map((file) => uploadFileBlobToS3(file.text, file.id, id))
+      files.forEach((file) =>
+        promises.push(uploadFileBlobToS3(file.text, file.id, id))
       );
 
       // Upload scene to S3
-      await uploadSceneToS3(scene, id);
+      promises.push(uploadSceneToS3(scene, id));
 
       // Upload image to S3
       if (image) {
@@ -184,22 +228,26 @@ export const protectedRouter = createProtectedRouter()
         if (!base64str) throw new TRPCError({ code: "BAD_REQUEST" });
         const imageFile = Buffer.from(base64str, "base64");
 
-        // Limit image size to 500kb
-        if (imageFile.length < 500000) {
-          await uploadImageToS3(imageFile, id);
+        // Limit image size to 5MB
+        if (imageFile.length < 5000000) {
+          promises.push(uploadImageToS3(imageFile, id));
         }
       }
 
       // Save to database
-      await prisma.project.update({
-        where: { id },
-        data: {
-          name,
-          description,
-          editorState,
-          updatedAt: new Date(),
-        },
-      });
+      promises.push(
+        prisma.project.update({
+          where: { id },
+          data: {
+            name,
+            description,
+            editorState,
+            updatedAt: timestamp,
+          },
+        })
+      );
+
+      await Promise.all(promises);
 
       return {
         success: true,
@@ -217,14 +265,31 @@ export const protectedRouter = createProtectedRouter()
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // Delete from database
-      const prismaPromise = prisma.project.delete({
-        where: { id },
-      });
+      const promises: Promise<any>[] = [];
 
-      // Delete from S3
-      const s3Promise = deleteProjectFromS3(id);
+      // Delete project from database
+      promises.push(
+        prisma.project.delete({
+          where: { id },
+        })
+      );
 
-      await Promise.all([prismaPromise, s3Promise]);
+      // Delete files from S3
+      const files = await prisma.file.findMany({ where: { projectId: id } });
+      files.forEach((file) =>
+        promises.push(deleteFileBlobFromS3(file.storageKey, id))
+      );
+
+      // Delete files from database
+      promises.push(
+        prisma.file.deleteMany({
+          where: { projectId: id },
+        })
+      );
+
+      // Delete project from S3
+      promises.push(deleteProjectFromS3(id));
+
+      await Promise.all(promises);
     },
   });

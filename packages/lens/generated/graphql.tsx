@@ -3695,7 +3695,7 @@ export const AuthenticateDocument = gql`
 
 export function useAuthenticateMutation() {
   return Urql.useMutation<AuthenticateMutation, AuthenticateMutationVariables>(AuthenticateDocument);
-}
+};
 export const CreatePostTypedDataDocument = gql`
     mutation CreatePostTypedData($request: CreatePublicPostRequest!) {
   createPostTypedData(request: $request) {
@@ -3731,7 +3731,7 @@ export const CreatePostTypedDataDocument = gql`
 
 export function useCreatePostTypedDataMutation() {
   return Urql.useMutation<CreatePostTypedDataMutation, CreatePostTypedDataMutationVariables>(CreatePostTypedDataDocument);
-}
+};
 export const CreateProfileDocument = gql`
     mutation CreateProfile($request: CreateProfileRequest!) {
   createProfile(request: $request) {
@@ -3748,7 +3748,7 @@ export const CreateProfileDocument = gql`
 
 export function useCreateProfileMutation() {
   return Urql.useMutation<CreateProfileMutation, CreateProfileMutationVariables>(CreateProfileDocument);
-}
+};
 export const CreateSetDefaultProfileTypedDataDocument = gql`
     mutation CreateSetDefaultProfileTypedData($request: CreateSetDefaultProfileRequest!) {
   createSetDefaultProfileTypedData(request: $request) {
@@ -3780,7 +3780,7 @@ export const CreateSetDefaultProfileTypedDataDocument = gql`
 
 export function useCreateSetDefaultProfileTypedDataMutation() {
   return Urql.useMutation<CreateSetDefaultProfileTypedDataMutation, CreateSetDefaultProfileTypedDataMutationVariables>(CreateSetDefaultProfileTypedDataDocument);
-}
+};
 export const CreateSetProfileImageTypedDataDocument = gql`
     mutation CreateSetProfileImageTypedData($request: UpdateProfileImageRequest!) {
   createSetProfileImageURITypedData(request: $request) {
@@ -3812,7 +3812,7 @@ export const CreateSetProfileImageTypedDataDocument = gql`
 
 export function useCreateSetProfileImageTypedDataMutation() {
   return Urql.useMutation<CreateSetProfileImageTypedDataMutation, CreateSetProfileImageTypedDataMutationVariables>(CreateSetProfileImageTypedDataDocument);
-}
+};
 export const CreateSetProfileMetadataTypedDataDocument = gql`
     mutation CreateSetProfileMetadataTypedData($request: CreatePublicSetProfileMetadataURIRequest!) {
   createSetProfileMetadataTypedData(request: $request) {
@@ -3844,7 +3844,7 @@ export const CreateSetProfileMetadataTypedDataDocument = gql`
 
 export function useCreateSetProfileMetadataTypedDataMutation() {
   return Urql.useMutation<CreateSetProfileMetadataTypedDataMutation, CreateSetProfileMetadataTypedDataMutationVariables>(CreateSetProfileMetadataTypedDataDocument);
-}
+};
 export const HidePublicationDocument = gql`
     mutation HidePublication($request: HidePublicationRequest!) {
   hidePublication(request: $request)
@@ -3853,7 +3853,7 @@ export const HidePublicationDocument = gql`
 
 export function useHidePublicationMutation() {
   return Urql.useMutation<HidePublicationMutation, HidePublicationMutationVariables>(HidePublicationDocument);
-}
+};
 export const RefreshDocument = gql`
     mutation Refresh($request: RefreshRequest!) {
   refresh(request: $request) {
@@ -3865,7 +3865,7 @@ export const RefreshDocument = gql`
 
 export function useRefreshMutation() {
   return Urql.useMutation<RefreshMutation, RefreshMutationVariables>(RefreshDocument);
-}
+};
 export const ExplorePublicationsDocument = gql`
     query ExplorePublications($request: ExplorePublicationRequest!) {
   explorePublications(request: $request) {
@@ -3894,7 +3894,7 @@ ${MirrorFieldsFragmentDoc}`;
 
 export function useExplorePublicationsQuery(options: Omit<Urql.UseQueryArgs<ExplorePublicationsQueryVariables>, 'query'>) {
   return Urql.useQuery<ExplorePublicationsQuery, ExplorePublicationsQueryVariables>({ query: ExplorePublicationsDocument, ...options });
-}
+};
 export const GetChallengeDocument = gql`
     query GetChallenge($request: ChallengeRequest!) {
   challenge(request: $request) {
@@ -3905,7 +3905,7 @@ export const GetChallengeDocument = gql`
 
 export function useGetChallengeQuery(options: Omit<Urql.UseQueryArgs<GetChallengeQueryVariables>, 'query'>) {
   return Urql.useQuery<GetChallengeQuery, GetChallengeQueryVariables>({ query: GetChallengeDocument, ...options });
-}
+};
 export const GetProfileDocument = gql`
     query GetProfile($request: ProfileQueryRequest!) {
   profiles(request: $request) {
@@ -3975,7 +3975,7 @@ export const GetProfileDocument = gql`
 
 export function useGetProfileQuery(options: Omit<Urql.UseQueryArgs<GetProfileQueryVariables>, 'query'>) {
   return Urql.useQuery<GetProfileQuery, GetProfileQueryVariables>({ query: GetProfileDocument, ...options });
-}
+};
 export const GetProfilesDocument = gql`
     query GetProfiles($request: ProfileQueryRequest!) {
   profiles(request: $request) {
@@ -4070,7 +4070,7 @@ export const GetProfilesDocument = gql`
 
 export function useGetProfilesQuery(options: Omit<Urql.UseQueryArgs<GetProfilesQueryVariables>, 'query'>) {
   return Urql.useQuery<GetProfilesQuery, GetProfilesQueryVariables>({ query: GetProfilesDocument, ...options });
-}
+};
 export const GetPublicationDocument = gql`
     query GetPublication($request: PublicationQueryRequest!) {
   publication(request: $request) {
@@ -4092,7 +4092,7 @@ ${MirrorFieldsFragmentDoc}`;
 
 export function useGetPublicationQuery(options: Omit<Urql.UseQueryArgs<GetPublicationQueryVariables>, 'query'>) {
   return Urql.useQuery<GetPublicationQuery, GetPublicationQueryVariables>({ query: GetPublicationDocument, ...options });
-}
+};
 export const GetPublicationsDocument = gql`
     query GetPublications($request: PublicationsQueryRequest!) {
   publications(request: $request) {
@@ -4121,7 +4121,7 @@ ${MirrorFieldsFragmentDoc}`;
 
 export function useGetPublicationsQuery(options: Omit<Urql.UseQueryArgs<GetPublicationsQueryVariables>, 'query'>) {
   return Urql.useQuery<GetPublicationsQuery, GetPublicationsQueryVariables>({ query: GetPublicationsDocument, ...options });
-}
+};
 export const HasTxHashBeenIndexedDocument = gql`
     query HasTxHashBeenIndexed($request: HasTxHashBeenIndexedRequest!) {
   hasTxHashBeenIndexed(request: $request) {
@@ -4200,7 +4200,7 @@ export const HasTxHashBeenIndexedDocument = gql`
 
 export function useHasTxHashBeenIndexedQuery(options: Omit<Urql.UseQueryArgs<HasTxHashBeenIndexedQueryVariables>, 'query'>) {
   return Urql.useQuery<HasTxHashBeenIndexedQuery, HasTxHashBeenIndexedQueryVariables>({ query: HasTxHashBeenIndexedDocument, ...options });
-}
+};
 export const VerifyDocument = gql`
     query Verify($request: VerifyRequest!) {
   verify(request: $request)
@@ -4209,4 +4209,4 @@ export const VerifyDocument = gql`
 
 export function useVerifyQuery(options: Omit<Urql.UseQueryArgs<VerifyQueryVariables>, 'query'>) {
   return Urql.useQuery<VerifyQuery, VerifyQueryVariables>({ query: VerifyDocument, ...options });
-}
+};

@@ -14,7 +14,7 @@ import { SceneMap } from "../types";
 import {
   GLTFCubicSplineInterpolant,
   GLTFCubicSplineQuaternionInterpolant,
-} from "../utils/CubicSplineInterpolation";
+} from "./CubicSplineInterpolation";
 
 export function createAnimation(
   animation: Animation,

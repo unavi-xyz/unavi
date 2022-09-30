@@ -6,22 +6,17 @@ import {
 } from "three";
 
 import { MeshJSON } from "../../../scene";
-import { RenderScene } from "../../RenderScene";
 import { SceneMap } from "../types";
 import { createAttribute } from "./createAttribute";
 
-export function createMeshGeometry(
-  json: MeshJSON,
-  map: SceneMap,
-  scene: RenderScene
-) {
+export function createMeshGeometry(json: MeshJSON, map: SceneMap) {
   function setMorphAttribute(
     geometry: BufferGeometry,
     threeName: string,
     accessorIds: string[]
   ) {
     if (accessorIds.length === 0) return;
-    const attributes = accessorIds.map((id) => createAttribute(id, map, scene));
+    const attributes = accessorIds.map((id) => createAttribute(id, map));
     geometry.morphAttributes[threeName] = attributes;
   }
 
@@ -32,7 +27,7 @@ export function createMeshGeometry(
   ) {
     if (accessorId === null) return;
 
-    const attribute = createAttribute(accessorId, map, scene);
+    const attribute = createAttribute(accessorId, map);
     geometry.setAttribute(threeName, attribute);
   }
 
@@ -61,7 +56,7 @@ export function createMeshGeometry(
 
       // Set indices
       if (json.indicesId) {
-        const attribute = createAttribute(json.indicesId, map, scene);
+        const attribute = createAttribute(json.indicesId, map);
         primitiveGeometry.setIndex(attribute);
       }
 

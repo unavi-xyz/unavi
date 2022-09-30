@@ -9,37 +9,28 @@ import {
   SkinnedMesh,
 } from "three";
 
-import { MeshJSON } from "../../../scene";
+import { EntityJSON } from "../../../scene";
 import { WEBGL_CONSTANTS } from "../../constants";
-import { RenderScene } from "../../RenderScene";
 import { disposeObject } from "../../utils/disposeObject";
 import { defaultMaterial } from "../constants";
-import { removeEntityObject } from "../remove/removeEntityObject";
 import { SceneMap } from "../types";
 import { copyTransform } from "../utils/copyTransform";
-import { createEntity } from "./createEntity";
 import { createMeshGeometry } from "./createMeshGeometry";
-import { createSkeletons } from "./createSkeletons";
+import { updateMeshMaterial } from "./updateMeshMaterial";
 
-export function createMesh(
-  entityId: string,
-  json: MeshJSON | undefined,
+export function createObject(
+  entity: EntityJSON,
   map: SceneMap,
-  scene: RenderScene,
   visuals: Group
 ) {
-  const entity = scene.entities[entityId];
-  if (!entity) throw new Error(`Entity not found: ${entityId}`);
-
   const parent = map.objects.get(entity.parentId);
   if (!parent) throw new Error("Parent not found");
 
-  // Remove existing object
-  const oldObject = map.objects.get(entityId);
+  const oldObject = map.objects.get(entity.id);
   const children = oldObject?.children;
 
   // Create object
-  switch (json?.type) {
+  switch (entity.mesh?.type) {
     case "Box":
     case "Sphere":
     case "Cylinder": {
@@ -50,7 +41,7 @@ export function createMesh(
       if (!material) throw new Error("Material not found");
 
       // Create geometry
-      const geometry = createMeshGeometry(json, map, scene);
+      const geometry = createMeshGeometry(entity.mesh, map);
 
       // Create mesh
       const mesh = new Mesh(geometry, material);
@@ -62,7 +53,7 @@ export function createMesh(
       break;
     }
     case "Primitive": {
-      const isSkin = json.skin !== null;
+      const isSkin = entity.mesh.skin !== null;
 
       // Get material
       const primitiveMaterial = entity.materialId
@@ -71,7 +62,7 @@ export function createMesh(
       if (!primitiveMaterial) throw new Error("Material not found");
 
       // Create geometry
-      const primitiveGeometry = createMeshGeometry(json, map, scene);
+      const primitiveGeometry = createMeshGeometry(entity.mesh, map);
 
       let primitiveMesh:
         | Mesh
@@ -80,7 +71,7 @@ export function createMesh(
         | LineLoop
         | Line
         | Points;
-      switch (json.mode) {
+      switch (entity.mesh.mode) {
         case WEBGL_CONSTANTS.TRIANGLES:
         case WEBGL_CONSTANTS.TRIANGLE_STRIP:
         case WEBGL_CONSTANTS.TRIANGLE_FAN:
@@ -111,62 +102,65 @@ export function createMesh(
           primitiveMesh = new Points(primitiveGeometry, primitiveMaterial);
           break;
         default:
-          throw new Error(`Unknown primitive mode: ${json.mode}`);
+          throw new Error(`Unknown primitive mode: ${entity.mesh.mode}`);
       }
 
       // Set weights
       primitiveMesh.updateMorphTargets();
-      primitiveMesh.morphTargetInfluences = [...json.weights];
+      primitiveMesh.morphTargetInfluences = [...entity.mesh.weights];
 
       // Add to scene
       map.objects.set(entity.id, primitiveMesh);
       copyTransform(primitiveMesh, entity);
       parent.add(primitiveMesh);
 
-      if (isSkin) {
-        // Convert all joints to bones
-        json.skin?.jointIds.forEach((jointId) => {
-          const jointObject = map.objects.get(jointId);
-          if (jointObject instanceof Bone) return;
+      // Update mesh material
+      updateMeshMaterial(entity.id, entity.mesh, map);
 
-          if (!jointObject) {
-            const jointEntity = scene.entities[jointId];
-            if (!jointEntity) throw new Error(`Entity not found: ${jointId}`);
+      // if (isSkin) {
+      //   // Convert all joints to bones
+      //   entity.mesh.skin?.jointIds.forEach((jointId) => {
+      //     const jointObject = map.objects.get(jointId);
+      //     if (jointObject instanceof Bone) return;
 
-            createEntity(jointEntity, map, scene, visuals);
-            return;
-          }
+      //     if (!jointObject) {
+      //       const jointEntity = scene.entities[jointId];
+      //       if (!jointEntity) throw new Error(`Entity not found: ${jointId}`);
 
-          removeEntityObject(jointId, map);
+      //       addEntity(jointEntity, map, scene, visuals);
+      //       return;
+      //     }
 
-          const bone = new Bone();
+      //     removeEntityObject(jointId, map);
 
-          // Add to scene
-          const joint = scene.entities[jointId];
-          if (!joint) throw new Error(`Entity not found: ${jointId}`);
+      //     const bone = new Bone();
 
-          map.objects.set(jointId, bone);
-          copyTransform(bone, joint);
-          parent.add(bone);
-        });
-      }
+      //     // Add to scene
+      //     const joint = scene.entities[jointId];
+      //     if (!joint) throw new Error(`Entity not found: ${jointId}`);
 
-      // Create skeletons
-      createSkeletons(scene, map);
+      //     map.objects.set(jointId, bone);
+      //     copyTransform(bone, joint);
+      //     parent.add(bone);
+      //   });
+      // }
+
+      // // Create skeletons
+      // createSkeletons(scene, map);
       break;
     }
     default: {
       // Check if joint
-      let isJoint = false;
+      const isJoint = false;
 
-      Object.values(scene.entities).forEach((e) => {
-        if (
-          e.mesh?.type === "Primitive" &&
-          e.mesh.skin?.jointIds.includes(entity.id)
-        ) {
-          isJoint = true;
-        }
-      });
+      // Object.values(scene.entities).forEach((e) => {
+      //   if (
+      //     e.mesh?.type === "Primitive" &&
+      //     e.mesh.skin?.jointIds.includes(entity.id)
+      //   ) {
+      //     isJoint = true;
+      //   }
+      // });
 
       // Create object
       const object = isJoint ? new Bone() : new Group();
@@ -177,13 +171,13 @@ export function createMesh(
       parent.add(object);
 
       // Update skeletons
-      if (isJoint) createSkeletons(scene, map);
+      // if (isJoint) createSkeletons(scene, map);
     }
   }
 
   // Restore children
   if (children && children.length > 0) {
-    const newObject = map.objects.get(entityId);
+    const newObject = map.objects.get(entity.id);
     if (!newObject) throw new Error("Object not found");
 
     newObject.add(...children);

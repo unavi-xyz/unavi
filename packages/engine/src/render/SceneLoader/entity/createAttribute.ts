@@ -1,17 +1,15 @@
 import { BufferAttribute } from "three";
 
-import { RenderScene } from "../../RenderScene";
 import { SceneMap } from "../types";
 
 export function createAttribute(
   accessorId: string,
-  map: SceneMap,
-  scene: RenderScene
+  map: SceneMap
 ): BufferAttribute {
   const created = map.attributes.get(accessorId);
   if (created) return created;
 
-  const accessor = scene.accessors[accessorId];
+  const accessor = map.accessors.get(accessorId);
   if (!accessor) throw new Error(`Accessor not found: ${accessorId}`);
 
   const attribute = new BufferAttribute(

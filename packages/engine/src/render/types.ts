@@ -1,7 +1,7 @@
 import { TypedArray } from "@gltf-transform/core";
 
 import { SceneMessage } from "../scene";
-import { WorkerMessage } from "../types";
+import { Quad, Triplet, WorkerMessage } from "../types";
 import { RenderWorkerOptions } from "./RenderWorker";
 
 export type LoadSceneData = {
@@ -74,7 +74,23 @@ export type ToRenderMessage =
     >;
 
 export type FromRenderMessage =
-  | SceneMessage
   | WorkerMessage<"ready">
   | WorkerMessage<"clicked_object", string | null>
-  | WorkerMessage<"screenshot", string>;
+  | WorkerMessage<"screenshot", string>
+  | WorkerMessage<
+      "set_transform",
+      {
+        entityId: string;
+        position: Triplet;
+        rotation: Quad;
+        scale: Triplet;
+      }
+    >
+  | WorkerMessage<
+      "set_global_transform",
+      {
+        entityId: string;
+        position: Triplet;
+        rotation: Quad;
+      }
+    >;

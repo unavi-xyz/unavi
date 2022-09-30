@@ -4,25 +4,28 @@ import {
   Group,
   Mesh,
   MeshBasicMaterial,
+  Quaternion,
   SphereBufferGeometry,
+  Vector3,
 } from "three";
 
-import { RenderScene } from "../../RenderScene";
-import { removeColliderVisual } from "../remove/removeColliderVisual";
 import { SceneMap } from "../types";
+import { removeColliderVisual } from "./removeColliderVisual";
 
 const wireframeMaterial = new MeshBasicMaterial({
   color: 0x000000,
   wireframe: true,
 });
 
+const tempVector3 = new Vector3();
+const tempQuaternion = new Quaternion();
+
 export function createColliderVisual(
   entityId: string,
   map: SceneMap,
-  scene: RenderScene,
   visuals: Group
 ) {
-  const entity = scene.entities[entityId];
+  const entity = map.entities.get(entityId);
   if (!entity) throw new Error("Entity not found");
 
   // Remove previous collider
@@ -63,17 +66,11 @@ export function createColliderVisual(
     map.colliders.set(entityId, collider);
     visuals.add(collider);
 
-    // Subscribe to global transform changes
-    entity.globalPosition$.subscribe({
-      next: (position) => {
-        if (collider) collider.position.fromArray(position);
-      },
-    });
+    // Update collider position
+    const globalPosition = object.getWorldPosition(tempVector3);
+    const globalQuaternion = object.getWorldQuaternion(tempQuaternion);
 
-    entity.globalQuaternion$.subscribe({
-      next: (quaternion) => {
-        if (collider) collider.quaternion.fromArray(quaternion);
-      },
-    });
+    collider.position.copy(globalPosition);
+    collider.quaternion.copy(globalQuaternion);
   }
 }

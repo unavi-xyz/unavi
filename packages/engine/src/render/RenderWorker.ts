@@ -186,7 +186,9 @@ export class RenderWorker {
       });
     } else {
       // Ready for rendering
-      // Add a 500ms delay, without it sometimes the scene glitches out and turns black, idk why
+      // Add a delay, without it sometimes the scene glitches out and turns black, idk why
+      // Still happens sometimes, but it's better
+      // TODO: Figure out why this happens
       setTimeout(() => {
         this.#postMessage({ subject: "ready", data: null });
       }, 500);
@@ -209,7 +211,6 @@ export class RenderWorker {
 
   destroy() {
     this.stop();
-    this.#sceneLoader.destroy();
     this.#plugins.forEach((plugin) => plugin.destroy && plugin.destroy());
     disposeObject(this.#scene);
     this.#renderer?.dispose();

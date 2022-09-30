@@ -113,7 +113,7 @@ export default function Preview() {
           className="fixed top-0 right-0 p-6 text-2xl"
         >
           <Link href={`/editor/${id}`} passHref>
-            <div className="block cursor-pointer rounded-full bg-surface/60 p-2 text-onSurface backdrop-blur transition hover:shadow active:opacity-80 active:shadow-sm">
+            <div className="block cursor-pointer rounded-full bg-surface/40 p-2 text-onSurface backdrop-blur transition hover:shadow active:opacity-80 active:shadow-sm">
               <MdClose />
             </div>
           </Link>

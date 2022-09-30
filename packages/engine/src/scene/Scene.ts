@@ -1,6 +1,5 @@
 import { BehaviorSubject } from "rxjs";
 
-import { Quad, Triplet } from "../types";
 import { Accessor } from "./Accessor";
 import { Animation } from "./Animation";
 import { Entity } from "./Entity";
@@ -130,13 +129,6 @@ export class Scene {
     if (!entity) throw new Error(`Entity ${entityId} not found`);
 
     entity.applyJSON(data);
-  }
-
-  updateGlobalTransform(entityId: string, position: Triplet, quaternion: Quad) {
-    const entity = this.entities[entityId];
-    if (!entity) throw new Error(`Entity ${entityId} not found`);
-    entity.globalPosition = position;
-    entity.globalQuaternion = quaternion;
   }
 
   addMaterial(material: Material) {

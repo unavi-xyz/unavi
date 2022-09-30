@@ -3,7 +3,7 @@ import { ToGameMessage } from "../game/types";
 import { LoaderThread } from "../loader/LoaderThread";
 import { ToLoaderMessage } from "../loader/types";
 import { RenderThread } from "../render/RenderThread";
-import { ToRenderMessage } from "../render/types";
+import { FromRenderMessage, ToRenderMessage } from "../render/types";
 import { Entity } from "../scene/Entity";
 import { Material } from "../scene/Material";
 import { Scene } from "../scene/Scene";
@@ -13,11 +13,11 @@ import {
   SceneJSON,
   SceneMessage,
 } from "../scene/types";
-import { PostMessage, Quad, Triplet } from "../types";
+import { PostMessage } from "../types";
 
 /*
- * Wrapper around {@link Scene} for the main thread.
- * Syncs state with the {@link RenderScene} and {@link GameScene}.
+ * Wrapper around the {@link Scene}.
+ * Syncs state with the {@link RenderThread} and {@link GameThread}.
  */
 export class MainScene {
   #toGameThread: PostMessage<ToGameMessage>;
@@ -112,38 +112,22 @@ export class MainScene {
     });
   }
 
-  onmessage = (event: MessageEvent<SceneMessage>) => {
+  onmessage = (event: MessageEvent<FromRenderMessage>) => {
     const { subject, data } = event.data;
 
     switch (subject) {
-      case "load_json":
-        this.loadJSON(data.scene);
+      case "set_transform": {
+        this.#scene.updateEntity(data.entityId, {
+          position: data.position,
+          rotation: data.rotation,
+          scale: data.scale,
+        });
         break;
-      case "add_entity":
-        this.#scene.addEntity(Entity.fromJSON(data.entity));
+      }
+      case "set_global_transform": {
+        this.#toGameThread(event.data);
         break;
-      case "remove_entity":
-        this.#scene.removeEntity(data.entityId);
-        break;
-      case "update_entity":
-        this.#scene.updateEntity(data.entityId, data.data);
-        break;
-      case "update_global_transform":
-        this.updateGlobalTransform(
-          data.entityId,
-          data.position,
-          data.quaternion
-        );
-        break;
-      case "add_material":
-        this.#scene.addMaterial(Material.fromJSON(data.material));
-        break;
-      case "remove_material":
-        this.#scene.removeMaterial(data.materialId);
-        break;
-      case "update_material":
-        this.#scene.updateMaterial(data.materialId, data.data);
-        break;
+      }
     }
   };
 
@@ -214,21 +198,6 @@ export class MainScene {
 
     this.#toGameThread(message);
     this.#toRenderThread(message);
-  }
-
-  updateGlobalTransform(entityId: string, position: Triplet, quaternion: Quad) {
-    this.#scene.updateGlobalTransform(entityId, position, quaternion);
-
-    const message: SceneMessage = {
-      subject: "update_global_transform",
-      data: {
-        entityId,
-        position,
-        quaternion,
-      },
-    };
-
-    this.#toGameThread(message);
   }
 
   addMaterial(material: Material) {

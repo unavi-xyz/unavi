@@ -3869,10 +3869,10 @@
   resolved "https://registry.yarnpkg.com/@prisma/engines/-/engines-4.4.0.tgz#6ca7d3ce8eee08dcfa82311b0a02f5ccaac7dc0c"
   integrity sha512-Fpykccxlt9MHrAs/QpPGpI2nOiRxuLA+LiApgA59ibbf24YICZIMWd3SI2YD+q0IAIso0jCGiHhirAIbxK3RyQ==
 
-"@prisma/prisma-fmt-wasm@4.2.0-33.2920a97877e12e055c1333079b8d19cee7f33826":
-  version "4.2.0-33.2920a97877e12e055c1333079b8d19cee7f33826"
-  resolved "https://registry.yarnpkg.com/@prisma/prisma-fmt-wasm/-/prisma-fmt-wasm-4.2.0-33.2920a97877e12e055c1333079b8d19cee7f33826.tgz#9f17c0abf5fd06231db63f50fb060df60ebf5313"
-  integrity sha512-xXE4vjNMlvY2T0MqyOpUwcKnuajn3SDksF23PWtd3mODP5J3rtf1QoqSk99CX1i8Opap/UN0L0VHvPwgE49O7g==
+"@prisma/prisma-fmt-wasm@4.4.0-66.f352a33b70356f46311da8b00d83386dd9f145d6":
+  version "4.4.0-66.f352a33b70356f46311da8b00d83386dd9f145d6"
+  resolved "https://registry.yarnpkg.com/@prisma/prisma-fmt-wasm/-/prisma-fmt-wasm-4.4.0-66.f352a33b70356f46311da8b00d83386dd9f145d6.tgz#d0ab2f4bac76da2767e242ced74b4257e839befe"
+  integrity sha512-Hc2i5nfAt3nLDUkQNWJcKFJaA9Avd5zz6t85w9SW7P0vGtFXScQ+xIu6znbULr9bc0pgTWejY1We2u/7EMxHWw==
 
 "@protobufjs/aspromise@^1.1.1", "@protobufjs/aspromise@^1.1.2":
   version "1.1.2"
@@ -12355,12 +12355,12 @@ prettier-linter-helpers@^1.0.0:
   dependencies:
     fast-diff "^1.1.2"
 
-prettier-plugin-prisma@^4.1.0:
-  version "4.2.0"
-  resolved "https://registry.yarnpkg.com/prettier-plugin-prisma/-/prettier-plugin-prisma-4.2.0.tgz#3cac7c9a78a8568b168d60de0c78fb2c44057f90"
-  integrity sha512-7KWA1L1p7PeSLOZJvDFKaik4z9c4SddgMGBkCzwzqUK13LhFhrIq3nyFBMZxoY3jt2gl8HfOiTT44/tCdjIBIQ==
+prettier-plugin-prisma@^4.4.0:
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/prettier-plugin-prisma/-/prettier-plugin-prisma-4.4.0.tgz#30d2681f2ad7e70c78534a71fc11bc78165eeef2"
+  integrity sha512-631zwtvHUjcuS+i83wkxE3LqizazojWie4Pkha9GL6r1UsochNUedvxfvWPCdw6Dpyawvc5UKkmxcb9aT9+xfg==
   dependencies:
-    "@prisma/prisma-fmt-wasm" "4.2.0-33.2920a97877e12e055c1333079b8d19cee7f33826"
+    "@prisma/prisma-fmt-wasm" "4.4.0-66.f352a33b70356f46311da8b00d83386dd9f145d6"
 
 prettier@^2.3.1, prettier@^2.7.1:
   version "2.7.1"

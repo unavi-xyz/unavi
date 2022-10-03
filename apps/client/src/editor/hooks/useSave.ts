@@ -19,7 +19,7 @@ export function useSave() {
   );
 
   async function save() {
-    const { name, description, image, engine } = useEditorStore.getState();
+    const { name, description, engine } = useEditorStore.getState();
     if (!engine) throw new Error("No engine");
 
     const promises: Promise<any>[] = [];
@@ -42,6 +42,9 @@ export function useSave() {
     promises.push(
       new Promise<void>((resolve, reject) => {
         async function upload() {
+          if (!engine) throw new Error("No engine");
+
+          const image = await engine.renderThread.takeScreenshot();
           const response = await fetch(image);
           const body = await response.blob();
 
@@ -53,6 +56,7 @@ export function useSave() {
               "Content-Type": "image/jpeg",
             },
           });
+
           if (res.ok) resolve();
           else reject();
         }
@@ -73,6 +77,7 @@ export function useSave() {
               "Content-Type": "application/json",
             },
           });
+
           if (res.ok) resolve();
           else reject();
         }

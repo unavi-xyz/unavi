@@ -56,6 +56,7 @@ export default function PublishPage() {
               <Image
                 src={image}
                 fill
+                sizes="496px"
                 alt="cover picture preview"
                 className="h-full w-full rounded-xl object-cover"
               />

@@ -14,7 +14,6 @@ export interface IEditorStore {
 
   name: string;
   description: string;
-  image: string;
 
   colliders: boolean;
   grid: boolean;
@@ -34,7 +33,6 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
 
   name: "",
   description: "",
-  image: "",
 
   colliders: true,
   grid: false,

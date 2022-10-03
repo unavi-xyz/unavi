@@ -38,20 +38,17 @@ export default function EditorNavbar() {
   }
 
   async function handleBack() {
-    const { engine } = useEditorStore.getState();
-    if (engine) {
-      const image = await engine?.renderThread.takeScreenshot();
-      useEditorStore.setState({ image });
-    }
-
     await save();
-
     router.push(`/project/${id}`);
   }
 
   async function handlePreview() {
     await save();
     router.push(`/editor/${id}/preview`);
+  }
+
+  function handleOpenPublish() {
+    setOpenPublishDialog(true);
   }
 
   return (
@@ -109,7 +106,7 @@ export default function EditorNavbar() {
             </Tooltip>
           </div>
 
-          <Button variant="filled" onClick={() => setOpenPublishDialog(true)}>
+          <Button variant="filled" onClick={handleOpenPublish}>
             Publish
           </Button>
         </div>

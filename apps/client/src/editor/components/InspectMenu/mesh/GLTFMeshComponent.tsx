@@ -1,8 +1,8 @@
 import { GLTFMesh } from "@wired-labs/engine";
 
+import FileInput from "../../../../ui/base/FileInput";
 import { updateEntity } from "../../../actions/UpdateEntityAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
-import FileInput from "../../ui/FileInput";
 import ComponentMenu from "../ComponentMenu";
 
 interface Props {

@@ -9,7 +9,7 @@ import { useSetProfileImage } from "../../lib/lens/hooks/useSetProfileImage";
 import { useSetProfileMetadata } from "../../lib/lens/hooks/useSetProfileMetadata";
 import { createProfileMetadata } from "../../lib/lens/utils/createProfileMetadata";
 import Button from "../../ui/base/Button";
-import FileUpload from "../../ui/base/FileUpload";
+import FileInput from "../../ui/base/FileInput";
 import TextArea from "../../ui/base/TextArea";
 import TextField from "../../ui/base/TextField";
 import MetaTags from "../../ui/MetaTags";
@@ -173,7 +173,7 @@ export default function Settings() {
                   </div>
                 )}
 
-                <FileUpload
+                <FileInput
                   title="Cover Image"
                   accept="image/*"
                   onChange={(e) => {
@@ -224,7 +224,7 @@ export default function Settings() {
               )}
 
               <div>
-                <FileUpload
+                <FileInput
                   title="Profile Picture"
                   accept="image/*"
                   onChange={(e) => {

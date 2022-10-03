@@ -10,7 +10,11 @@ export default function Project() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data, isFetched } = trpc.useQuery(["auth.project", { id }], {
+  const { data: project } = trpc.useQuery(["auth.project", { id }], {
+    enabled: id !== undefined,
+  });
+
+  const { data: imageURL } = trpc.useQuery(["auth.project-image", { id }], {
     enabled: id !== undefined,
   });
 
@@ -26,10 +30,8 @@ export default function Project() {
     router.push("/create");
   }
 
-  if (!isFetched || !data) return null;
-
   return (
-    <ProjectLayout name={data.name} image={data.image}>
+    <ProjectLayout name={project?.name} image={imageURL}>
       <div className="space-y-4 rounded-2xl bg-errorContainer p-8 text-onErrorContainer">
         <div className="text-2xl font-bold">Danger Zone</div>
 

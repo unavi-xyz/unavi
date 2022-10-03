@@ -64,18 +64,19 @@ export default function sButton({
       ? "shadow-dark bg-surface text-primary hover:bg-surfaceVariant/50"
       : null;
 
-  const disabledClass =
-    loading || disabled
-      ? "opacity-40 cursor-not-allowed bg-surfaceVariant hover:bg-surfaceVariant"
-      : variant === "text"
-      ? "active:bg-opacity-75"
-      : variant === "outlined"
-      ? "active:bg-opacity-75"
-      : variant === "filled"
-      ? "hover:shadow-dark hover:bg-opacity-90 active:bg-opacity-75"
-      : variant === "tonal"
-      ? "hover:shadow-dark hover:bg-opacity-90 active:bg-opacity-75"
-      : null;
+  const disabledClass = loading
+    ? "bg-opacity-40 cursor-not-allowed bg-surfaceVariant"
+    : disabled
+    ? "opacity-40 cursor-not-allowed bg-surfaceVariant"
+    : variant === "text"
+    ? "active:bg-opacity-75"
+    : variant === "outlined"
+    ? "active:bg-opacity-75"
+    : variant === "filled"
+    ? "hover:shadow-dark hover:bg-opacity-90 active:bg-opacity-75"
+    : variant === "tonal"
+    ? "hover:shadow-dark hover:bg-opacity-90 active:bg-opacity-75"
+    : null;
 
   const loadingClass = loading ? "opacity-0" : null;
   const fullWidthClass = fullWidth ? "w-full" : null;

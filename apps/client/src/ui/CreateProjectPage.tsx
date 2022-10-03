@@ -11,7 +11,12 @@ export default function CreateProjectPage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
 
-  const { mutateAsync } = trpc.useMutation("auth.create-project");
+  const { mutateAsync: createProject } = trpc.useMutation(
+    "auth.create-project"
+  );
+  const { mutateAsync: createImageUpload } = trpc.useMutation(
+    "auth.project-image-upload"
+  );
 
   const [loading, setLoading] = useState(false);
 
@@ -22,28 +27,32 @@ export default function CreateProjectPage() {
     const name = nameRef.current?.value ?? "";
     const description = descriptionRef.current?.value ?? "";
 
-    // Fetch default project image
-    const res = await fetch("/images/default-space.jpeg");
-    const blob = await res.blob();
-
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-
-    reader.onload = async () => {
+    try {
       // Create new project
-      const id = await mutateAsync({
+      const id = await createProject({
         name,
         description,
-        image: reader.result as string,
+      });
+
+      // Fetch default image
+      const res = await fetch("/images/default-space.jpeg");
+      const body = await res.blob();
+
+      // Upload default image
+      const imageUrl = await createImageUpload({ id });
+      await fetch(imageUrl, {
+        method: "PUT",
+        body,
+        headers: {
+          "Content-Type": "image/jpeg",
+        },
       });
 
       router.push(`/project/${id}`);
-    };
-
-    reader.onerror = (error) => {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       setLoading(false);
-    };
+    }
   }
 
   return (

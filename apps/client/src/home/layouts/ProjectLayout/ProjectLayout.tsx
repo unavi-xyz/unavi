@@ -7,8 +7,8 @@ import NavigationTab from "../../../ui/base/NavigationTab";
 import MetaTags from "../../../ui/MetaTags";
 
 interface Props {
-  name: string | null;
-  image: string | null;
+  name?: string | null;
+  image?: string | null;
   children: React.ReactNode;
 }
 

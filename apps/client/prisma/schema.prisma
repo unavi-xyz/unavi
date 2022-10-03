@@ -24,9 +24,7 @@ model Project {
 }
 
 model File {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  id Int @id @default(autoincrement())
 
   storageKey String
 

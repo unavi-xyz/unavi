@@ -14,13 +14,7 @@ export type SceneMap = {
   attributes: Map<string, BufferAttribute>;
   colliders: Map<string, Mesh>;
   entities: Map<string, EntityJSON>;
-  images: Map<
-    string,
-    {
-      array: Uint8Array;
-      mimeType: string;
-    }
-  >;
+  images: Map<string, ImageBitmap>;
   materials: Map<string, MeshStandardMaterial>;
   objects: Map<string, Object3D>;
 };

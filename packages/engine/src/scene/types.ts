@@ -29,6 +29,7 @@ export type ImageJSON = {
   id: string;
   isInternal: boolean;
   array: Uint8Array;
+  bitmap: ImageBitmap;
   mimeType: string;
 };
 

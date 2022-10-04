@@ -4,7 +4,7 @@ import { MaterialJSON } from "../../../scene";
 import { SceneMap } from "../types";
 import { createTexture } from "./createTexture";
 
-export async function updateMaterial(
+export function updateMaterial(
   materialId: string,
   material: Partial<MaterialJSON>,
   map: SceneMap
@@ -52,7 +52,7 @@ export async function updateMaterial(
 
   if (material.colorTexture !== undefined) {
     const colorTexture = material.colorTexture
-      ? await createTexture(material.colorTexture, map)
+      ? createTexture(material.colorTexture, map)
       : null;
 
     if (colorTexture) colorTexture.encoding = sRGBEncoding;
@@ -62,7 +62,7 @@ export async function updateMaterial(
 
   if (material.normalTexture !== undefined) {
     const normalTexture = material.normalTexture
-      ? await createTexture(material.normalTexture, map)
+      ? createTexture(material.normalTexture, map)
       : null;
 
     materialObject.normalMap = normalTexture;
@@ -70,7 +70,7 @@ export async function updateMaterial(
 
   if (material.occlusionTexture !== undefined) {
     const occlusionTexture = material.occlusionTexture
-      ? await createTexture(material.occlusionTexture, map)
+      ? createTexture(material.occlusionTexture, map)
       : null;
 
     materialObject.aoMap = occlusionTexture;
@@ -81,7 +81,7 @@ export async function updateMaterial(
 
   if (material.emissiveTexture !== undefined) {
     const emissiveTexture = material.emissiveTexture
-      ? await createTexture(material.emissiveTexture, map)
+      ? createTexture(material.emissiveTexture, map)
       : null;
 
     if (emissiveTexture) emissiveTexture.encoding = sRGBEncoding;
@@ -91,7 +91,7 @@ export async function updateMaterial(
 
   if (material.metallicRoughnessTexture !== undefined) {
     const metallicRougnessTexture = material.metallicRoughnessTexture
-      ? await createTexture(material.metallicRoughnessTexture, map)
+      ? createTexture(material.metallicRoughnessTexture, map)
       : null;
 
     materialObject.metalnessMap = metallicRougnessTexture;

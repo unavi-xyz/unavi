@@ -16,19 +16,16 @@ import { TextureJSON } from "../../../scene";
 import { WEBGL_CONSTANTS } from "../../constants";
 import { SceneMap } from "../types";
 
-export async function createTexture(
+export function createTexture(
   { imageId, magFilter, minFilter, wrapS, wrapT }: TextureJSON,
   map: SceneMap
-): Promise<ThreeTexture> {
+): ThreeTexture {
   if (imageId === null) throw new Error("Texture source not found");
 
   const image = map.images.get(imageId);
   if (!image) throw new Error("Image not found");
 
-  const blob = new Blob([image.array], { type: image.mimeType });
-  const bitmap = await createImageBitmap(blob);
-
-  const threeTexture = new CanvasTexture(bitmap);
+  const threeTexture = new CanvasTexture(image);
   threeTexture.needsUpdate = true;
 
   switch (magFilter) {

@@ -7,20 +7,24 @@ export class Image {
   readonly id: string;
 
   array: Uint8Array;
+  bitmap: ImageBitmap;
   mimeType: string;
   isInternal$ = new BehaviorSubject(false);
 
   constructor({
     id = nanoid(),
     array,
+    bitmap,
     mimeType,
   }: {
     id?: string;
     array: Uint8Array;
+    bitmap: ImageBitmap;
     mimeType: string;
   }) {
     this.id = id;
     this.array = array;
+    this.bitmap = bitmap;
     this.mimeType = mimeType;
   }
 
@@ -41,6 +45,7 @@ export class Image {
       id: this.id,
       isInternal: this.isInternal,
       array: this.array,
+      bitmap: this.bitmap,
       mimeType: this.mimeType,
     };
   }
@@ -53,6 +58,7 @@ export class Image {
     const texture = new Image({
       id: json.id,
       array: json.array,
+      bitmap: json.bitmap,
       mimeType: json.mimeType,
     });
     texture.applyJSON(json);

@@ -13,7 +13,7 @@ import {
   SceneJSON,
   SceneMessage,
 } from "../scene/types";
-import { PostMessage } from "../types";
+import { PostMessage, Transferable } from "../types";
 
 /*
  * Wrapper around the {@link Scene}.
@@ -243,14 +243,14 @@ export class MainScene {
     });
 
     // Send full scene + transfer data to render thread
-    const bitmaps = json.images
-      ? Object.values(json.images).map((image) => image.bitmap)
-      : [];
     const accessors = json.accessors
       ? Object.values(json.accessors).map((accessor) => accessor.array.buffer)
       : [];
+    const imageBuffers = json.images
+      ? Object.values(json.images).map((image) => image.array.buffer)
+      : [];
 
-    const transfer = [...bitmaps, ...accessors];
+    const transfer: Transferable[] = [...imageBuffers, ...accessors];
 
     this.#toRenderThread(
       {

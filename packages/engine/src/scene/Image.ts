@@ -6,21 +6,21 @@ import { ImageJSON } from "./types";
 export class Image {
   readonly id: string;
 
-  bitmap: ImageBitmap;
+  array: Uint8Array;
   mimeType: string;
   isInternal$ = new BehaviorSubject(false);
 
   constructor({
     id = nanoid(),
-    bitmap,
+    array,
     mimeType,
   }: {
     id?: string;
-    bitmap: ImageBitmap;
+    array: Uint8Array;
     mimeType: string;
   }) {
     this.id = id;
-    this.bitmap = bitmap;
+    this.array = array;
     this.mimeType = mimeType;
   }
 
@@ -40,7 +40,7 @@ export class Image {
     return {
       id: this.id,
       isInternal: this.isInternal,
-      bitmap: this.bitmap,
+      array: this.array,
       mimeType: this.mimeType,
     };
   }
@@ -52,7 +52,7 @@ export class Image {
   static fromJSON(json: ImageJSON) {
     const texture = new Image({
       id: json.id,
-      bitmap: json.bitmap,
+      array: json.array,
       mimeType: json.mimeType,
     });
     texture.applyJSON(json);

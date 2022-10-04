@@ -1,4 +1,4 @@
-import { TypedArray } from "@gltf-transform/core";
+import { GLTF, TypedArray } from "@gltf-transform/core";
 
 import { Quad, Triplet, WorkerMessage } from "../types";
 import { ColliderJSON } from "./collider/types";
@@ -19,16 +19,16 @@ export type EntityJSON = {
 
 export type TextureJSON = {
   imageId: string | null;
-  magFilter: number;
-  minFilter: number;
-  wrapS: number;
-  wrapT: number;
+  magFilter: GLTF.TextureMagFilter;
+  minFilter: GLTF.TextureMinFilter;
+  wrapS: GLTF.TextureWrapMode;
+  wrapT: GLTF.TextureWrapMode;
 };
 
 export type ImageJSON = {
   id: string;
   isInternal: boolean;
-  bitmap: ImageBitmap;
+  array: Uint8Array;
   mimeType: string;
 };
 

@@ -38,7 +38,13 @@ export class SceneLoader {
     attributes: new Map<string, BufferAttribute>(),
     colliders: new Map<string, Mesh>(),
     entities: new Map<string, EntityJSON>(),
-    images: new Map<string, ImageBitmap>(),
+    images: new Map<
+      string,
+      {
+        array: Uint8Array;
+        mimeType: string;
+      }
+    >(),
     materials: new Map<string, MeshStandardMaterial>(),
     objects: new Map<string, Object3D>(),
   };
@@ -91,7 +97,10 @@ export class SceneLoader {
         // Add images
         if (data.scene.images)
           data.scene.images.forEach((i) =>
-            this.#map.images.set(i.id, i.bitmap)
+            this.#map.images.set(i.id, {
+              array: i.array,
+              mimeType: i.mimeType,
+            })
           );
 
         // Add materials

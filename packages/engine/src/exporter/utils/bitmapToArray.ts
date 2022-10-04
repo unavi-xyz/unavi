@@ -3,10 +3,11 @@ export function bitmapToArray(image: ImageBitmap): Uint8Array {
   canvas.width = image.width;
   canvas.height = image.height;
 
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Failed to get canvas context");
-  ctx.drawImage(image, 0, 0);
-  const data = ctx.getImageData(0, 0, image.width, image.height).data;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not create canvas context");
 
-  return new Uint8Array(data);
+  context.drawImage(image, 0, 0);
+
+  const { data } = context.getImageData(0, 0, image.width, image.height);
+  return new Uint8Array(data.buffer);
 }

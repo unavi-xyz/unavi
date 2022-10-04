@@ -1,9 +1,10 @@
+import { GLTF } from "@gltf-transform/core";
+
 import { BoxMesh } from "./BoxMesh";
 import { CylinderMesh } from "./CylinderMesh";
 import { GLTFMesh } from "./GLTFMesh";
 import { PrimitiveMesh } from "./PrimitiveMesh";
 import { SphereMesh } from "./SphereMesh";
-
 export type BoxMeshJSON = {
   type: "Box";
   width: number;
@@ -33,7 +34,7 @@ export type GLTFMeshJSON = {
 
 export type PrimitiveMeshJSON = {
   type: "Primitive";
-  mode: number;
+  mode: GLTF.MeshPrimitiveMode;
   indicesId: string | null;
   weights: number[];
   morphPositionIds: string[];

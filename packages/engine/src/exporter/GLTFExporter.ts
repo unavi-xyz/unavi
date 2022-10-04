@@ -1,7 +1,6 @@
 import {
   Accessor as gltfAccessor,
   Document,
-  GLTF,
   Material as gltfMaterial,
   Node,
   Texture as gltfTexture,
@@ -17,7 +16,7 @@ import {
   SceneJSON,
   Texture,
 } from "../scene";
-import { bitmapToArray } from "./utils/bitmapToArray";
+import { setTextureInfo } from "./utils/setTextureInfo";
 
 /*
  * Exports the scene as a glTF file.
@@ -63,8 +62,6 @@ export class GLTFExporter {
     // Write to binary
     const io = new WebIO();
     const glb = await io.writeBinary(this.#doc);
-
-    // TODO: Get export working - currently pruning entire scene
 
     return glb;
   }
@@ -121,7 +118,7 @@ export class GLTFExporter {
         break;
       }
       case "Primitive": {
-        primitive.setMode(entity.mesh.mode as GLTF.MeshPrimitiveMode);
+        primitive.setMode(entity.mesh.mode);
 
         if (entity.mesh.indicesId) {
           const accessor = this.#cache.accessors.get(entity.mesh.indicesId);
@@ -202,28 +199,38 @@ export class GLTFExporter {
       gltfMaterial.setBaseColorTexture(
         this.#parseTexture(material.colorTexture)
       );
+      const info = gltfMaterial.getBaseColorTextureInfo();
+      setTextureInfo(info, material.colorTexture);
     }
 
     if (material.emissiveTexture) {
       gltfMaterial.setEmissiveTexture(
         this.#parseTexture(material.emissiveTexture)
       );
+      const info = gltfMaterial.getEmissiveTextureInfo();
+      setTextureInfo(info, material.emissiveTexture);
     }
 
     if (material.normalTexture) {
       gltfMaterial.setNormalTexture(this.#parseTexture(material.normalTexture));
+      const info = gltfMaterial.getNormalTextureInfo();
+      setTextureInfo(info, material.normalTexture);
     }
 
     if (material.occlusionTexture) {
       gltfMaterial.setOcclusionTexture(
         this.#parseTexture(material.occlusionTexture)
       );
+      const info = gltfMaterial.getOcclusionTextureInfo();
+      setTextureInfo(info, material.occlusionTexture);
     }
 
     if (material.metallicRoughnessTexture) {
       gltfMaterial.setMetallicRoughnessTexture(
         this.#parseTexture(material.metallicRoughnessTexture)
       );
+      const info = gltfMaterial.getMetallicRoughnessTextureInfo();
+      setTextureInfo(info, material.metallicRoughnessTexture);
     }
 
     this.#cache.materials.set(material.id, gltfMaterial);
@@ -236,8 +243,7 @@ export class GLTFExporter {
       const image = this.#scene.images[texture.imageId];
       if (!image) throw new Error("Image not found");
 
-      const array = bitmapToArray(image.bitmap);
-      gltfTexture.setImage(array);
+      gltfTexture.setImage(image.array);
       gltfTexture.setMimeType(image.mimeType);
     }
 

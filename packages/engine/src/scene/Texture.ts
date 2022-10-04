@@ -1,13 +1,14 @@
+import { GLTF } from "@gltf-transform/core";
 import { BehaviorSubject } from "rxjs";
 
 import { TextureJSON } from "./types";
 
 export class Texture {
   imageId$ = new BehaviorSubject<string | null>(null);
-  magFilter$ = new BehaviorSubject<number>(9729);
-  minFIlters$ = new BehaviorSubject<number>(9987);
-  wrapS$ = new BehaviorSubject<number>(0);
-  wrapT$ = new BehaviorSubject<number>(0);
+  magFilter$ = new BehaviorSubject<GLTF.TextureMagFilter>(9729);
+  minFilters$ = new BehaviorSubject<GLTF.TextureMinFilter>(9987);
+  wrapS$ = new BehaviorSubject<GLTF.TextureWrapMode>(33071);
+  wrapT$ = new BehaviorSubject<GLTF.TextureWrapMode>(33071);
 
   get imageId() {
     return this.imageId$.value;
@@ -21,23 +22,23 @@ export class Texture {
     return this.magFilter$.value;
   }
 
-  set magFilter(magFilter: number) {
+  set magFilter(magFilter: GLTF.TextureMagFilter) {
     this.magFilter$.next(magFilter);
   }
 
   get minFilter() {
-    return this.minFIlters$.value;
+    return this.minFilters$.value;
   }
 
-  set minFilter(minFilter: number) {
-    this.minFIlters$.next(minFilter);
+  set minFilter(minFilter: GLTF.TextureMinFilter) {
+    this.minFilters$.next(minFilter);
   }
 
   get wrapS() {
     return this.wrapS$.value;
   }
 
-  set wrapS(wrapS: number) {
+  set wrapS(wrapS: GLTF.TextureWrapMode) {
     this.wrapS$.next(wrapS);
   }
 
@@ -45,14 +46,14 @@ export class Texture {
     return this.wrapT$.value;
   }
 
-  set wrapT(wrapT: number) {
+  set wrapT(wrapT: GLTF.TextureWrapMode) {
     this.wrapT$.next(wrapT);
   }
 
   destroy() {
     this.imageId$.complete();
     this.magFilter$.complete();
-    this.minFIlters$.complete();
+    this.minFilters$.complete();
     this.wrapS$.complete();
     this.wrapT$.complete();
   }

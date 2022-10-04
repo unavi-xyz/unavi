@@ -47,8 +47,6 @@ export class GLTFLoader {
     images: new Map<ITexture, string>(),
   };
 
-  #pending: Promise<void>[] = [];
-
   async load(uri: string): Promise<Scene> {
     const res = await fetch(uri);
     const mimeType = res.headers.get("Content-Type");
@@ -67,8 +65,6 @@ export class GLTFLoader {
     if (!scene) throw new Error("No scene");
 
     this.#loadScene(scene);
-
-    await Promise.all(this.#pending);
 
     return this.#scene;
   }
@@ -434,20 +430,14 @@ export class GLTFLoader {
 
     // Load image
     const mimeType = texture.getMimeType();
-    const imageArray = texture.getImage();
+    const array = texture.getImage();
 
-    if (imageArray) {
+    if (array) {
       this.#map.images.set(texture, id);
 
-      // Create image bitmap asynchronously
-      const blob = new Blob([imageArray], { type: mimeType });
-      const promise = createImageBitmap(blob).then((bitmap) => {
-        const image = new Image({ id, bitmap, mimeType });
-        image.isInternal = true;
-        this.#scene.addImage(image);
-      });
-
-      this.#pending.push(promise);
+      const image = new Image({ id, array, mimeType });
+      image.isInternal = true;
+      this.#scene.addImage(image);
 
       return id;
     } else {

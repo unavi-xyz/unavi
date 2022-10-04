@@ -107,20 +107,62 @@ export class Scene {
     const entity = this.entities[entityId];
     if (!entity) throw new Error(`Entity ${entityId} not found`);
 
-    // Remove from parent
-    if (entity.parent) {
-      entity.parent.childrenIds$.next(
-        entity.parent.childrenIds$.value.filter((id) => id !== entityId)
-      );
-    }
+    // Repeat for children
+    entity.childrenIds.forEach((childId) => this.removeEntity(childId));
 
-    // Destroy entity
-    entity.destroy();
+    // Remove from parent
+    if (entity.parent) entity.parentId = "";
 
     // Remove from entities
     this.entities = Object.fromEntries(
       Object.entries(this.entities).filter(([id]) => id !== entityId)
     );
+
+    // Remove mesh accessors
+    if (entity.mesh && entity.mesh.type === "Primitive") {
+      if (entity.mesh.indicesId) this.removeAccessor(entity.mesh.indicesId);
+      if (entity.mesh.POSITION) this.removeAccessor(entity.mesh.POSITION);
+      if (entity.mesh.NORMAL) this.removeAccessor(entity.mesh.NORMAL);
+      if (entity.mesh.TEXCOORD_0) this.removeAccessor(entity.mesh.TEXCOORD_0);
+      if (entity.mesh.TANGENT) this.removeAccessor(entity.mesh.TANGENT);
+      if (entity.mesh.WEIGHTS_0) this.removeAccessor(entity.mesh.WEIGHTS_0);
+      if (entity.mesh.JOINTS_0) this.removeAccessor(entity.mesh.JOINTS_0);
+    }
+
+    // Remove material
+    if (entity.materialId) {
+      const material = this.materials[entity.materialId];
+      if (!material) throw new Error(`Material ${entity.materialId} not found`);
+
+      // Only remove internal materials
+      if (material.isInternal) {
+        // Only remove material if it's not used by any other entity
+        const otherEntity = Object.values(this.entities).find(
+          (e) => e.materialId === entity.materialId
+        );
+
+        if (!otherEntity) this.removeMaterial(entity.materialId);
+      }
+    }
+
+    // Remove animations
+    Object.values(this.animations).forEach((animation) => {
+      // Only remove internal animations
+      if (!animation.isInternal) return;
+
+      // Remove animation if it doesn't have any other entity using it
+      const targetIds = animation.channels.map((channel) => channel.targetId);
+      const isUsed = targetIds.some((targetId) => {
+        const targetEntity = this.entities[targetId];
+        if (!targetEntity) return false;
+        return true;
+      });
+
+      if (!isUsed) this.removeAnimation(animation.id);
+    });
+
+    // Destroy entity
+    entity.destroy();
   }
 
   updateEntity(entityId: string, data: Partial<EntityJSON>) {
@@ -154,6 +196,37 @@ export class Scene {
         return [id, entity];
       })
     );
+
+    // Remove images
+    [
+      material.colorTexture,
+      material.normalTexture,
+      material.occlusionTexture,
+      material.emissiveTexture,
+      material.metallicRoughnessTexture,
+    ].forEach((texture) => {
+      if (!texture) return;
+      const imageId = texture.imageId;
+      if (!imageId) return;
+      const image = this.images[imageId];
+      if (!image) throw new Error(`Image ${imageId} not found`);
+
+      // Only remove internal images
+      if (!image.isInternal) return;
+
+      // Only remove image if it's not used by any other material
+      const otherMaterial = Object.values(this.materials).find((m) =>
+        [
+          m.colorTexture,
+          m.normalTexture,
+          m.occlusionTexture,
+          m.emissiveTexture,
+          m.metallicRoughnessTexture,
+        ].some((t) => t?.imageId === imageId)
+      );
+
+      if (!otherMaterial) this.removeImage(imageId);
+    });
 
     // Destroy material
     material.destroy();

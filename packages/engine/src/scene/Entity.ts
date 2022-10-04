@@ -76,8 +76,8 @@ export class Entity {
   set parentId(parentId: string) {
     // Remove from previous parent
     if (this.parent) {
-      this.parent.childrenIds$.next(
-        this.parent.childrenIds.filter((id) => id !== this.id)
+      this.parent.childrenIds = this.parent.childrenIds.filter(
+        (id) => id !== this.id
       );
     }
 
@@ -85,9 +85,8 @@ export class Entity {
     this.parentId$.next(parentId);
 
     // Add to new parent
-    if (this.parent) {
-      this.parent.childrenIds$.next([...this.parent.childrenIds, this.id]);
-    }
+    if (this.parent)
+      this.parent.childrenIds = [...this.parent.childrenIds, this.id];
   }
 
   get children() {
@@ -102,6 +101,10 @@ export class Entity {
 
   get childrenIds() {
     return this.childrenIds$.value;
+  }
+
+  set childrenIds(childrenIds: string[]) {
+    this.childrenIds$.next(childrenIds);
   }
 
   get position() {

@@ -1,5 +1,3 @@
-import { Entity, GLTFMesh } from "@wired-labs/engine";
-
 import { useStore } from "./store";
 
 interface Props {
@@ -14,17 +12,10 @@ export default function PanelLayout({ children }: Props) {
     // Export scene as glTF
     const glb = await engine.export();
     const blob = new Blob([glb], { type: "model/gltf-binary" });
+    const uri = URL.createObjectURL(blob);
 
-    // Clear scene
-    useStore.setState({ uri: null });
-
-    // Load glTF back into engine
-    const entity = new Entity();
-    const mesh = new GLTFMesh();
-    mesh.uri = URL.createObjectURL(blob);
-    entity.mesh = mesh;
-
-    engine.scene.addEntity(entity);
+    // Load exported glTF into the engine
+    useStore.setState({ uri });
   }
 
   return (

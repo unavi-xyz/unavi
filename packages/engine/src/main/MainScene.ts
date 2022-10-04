@@ -224,8 +224,8 @@ export class MainScene {
     });
   }
 
-  toJSON(): SceneJSON {
-    return this.#scene.toJSON();
+  toJSON(includeInternal?: boolean): SceneJSON {
+    return this.#scene.toJSON(includeInternal);
   }
 
   loadJSON(json: Partial<SceneJSON>) {

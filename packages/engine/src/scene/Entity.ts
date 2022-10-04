@@ -91,7 +91,13 @@ export class Entity {
   }
 
   get children() {
-    return this.childrenIds$.value.map((id) => this.scene?.entities$.value[id]);
+    const children = this.childrenIds$.value.map(
+      (id) => this.scene?.entities$.value[id]
+    );
+    const filtered = children.filter(
+      (child) => child !== undefined
+    ) as Entity[];
+    return filtered;
   }
 
   get childrenIds() {

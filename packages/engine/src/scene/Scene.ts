@@ -9,8 +9,9 @@ import { EntityJSON, MaterialJSON, SceneJSON } from "./types";
 import { sortEntities } from "./utils/sortEntities";
 
 /*
- * Stores the state of the scene.
+ * Stores the scene in a custom internal format.
  * State is stored using RxJS, allowing for subscriptions to state changes.
+ * This is especially useful for the editor's React UI.
  */
 export class Scene {
   entities$ = new BehaviorSubject<{ [id: string]: Entity }>({
@@ -79,7 +80,7 @@ export class Scene {
   }
 
   addEntity(entity: Entity) {
-    if (entity.id === "root") throw new Error("Cannot add root entity");
+    if (entity.id === "root") return;
 
     const previous = this.entities[entity.id];
     if (previous) this.removeEntity(previous.id);
@@ -101,7 +102,7 @@ export class Scene {
   }
 
   removeEntity(entityId: string) {
-    if (entityId === "root") throw new Error("Cannot remove root entity");
+    if (entityId === "root") return;
 
     const entity = this.entities[entityId];
     if (!entity) throw new Error(`Entity ${entityId} not found`);
@@ -123,7 +124,7 @@ export class Scene {
   }
 
   updateEntity(entityId: string, data: Partial<EntityJSON>) {
-    if (entityId === "root") throw new Error("Cannot update root entity");
+    if (entityId === "root") return;
 
     const entity = this.entities[entityId];
     if (!entity) throw new Error(`Entity ${entityId} not found`);
@@ -257,9 +258,10 @@ export class Scene {
       const sortedEntities = sortEntities(json.entities);
 
       // Add entities
-      sortedEntities.forEach((entity) =>
-        this.addEntity(Entity.fromJSON(entity))
-      );
+      sortedEntities.forEach((entity) => {
+        if (entity.id === "root") return;
+        this.addEntity(Entity.fromJSON(entity));
+      });
     }
 
     // Add animations

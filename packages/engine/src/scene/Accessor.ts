@@ -2,7 +2,7 @@ import { TypedArray } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
-import { AccessorJSON } from "./types";
+import { AccessorJSON, AccessorType } from "./types";
 
 export class Accessor {
   readonly id: string;
@@ -11,22 +11,26 @@ export class Accessor {
 
   array: TypedArray;
   elementSize: number;
+  type: AccessorType;
   normalized: boolean;
 
   constructor({
     id = nanoid(),
     array,
     elementSize,
+    type,
     normalized,
   }: {
     id?: string;
     array: TypedArray;
     elementSize: number;
+    type: AccessorType;
     normalized: boolean;
   }) {
     this.id = id;
     this.array = array;
     this.elementSize = elementSize;
+    this.type = type;
     this.normalized = normalized;
   }
 
@@ -48,6 +52,7 @@ export class Accessor {
       isInternal: this.isInternal,
       array: this.array,
       elementSize: this.elementSize,
+      type: this.type,
       normalized: this.normalized,
     };
   }
@@ -61,6 +66,7 @@ export class Accessor {
       id: json.id,
       array: json.array,
       elementSize: json.elementSize,
+      type: json.type,
       normalized: json.normalized,
     });
     accessor.applyJSON(json);

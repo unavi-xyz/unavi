@@ -1,5 +1,7 @@
-import { Engine, Entity, GLTFMesh } from "@wired-labs/engine";
+import { Entity, GLTFMesh } from "@wired-labs/engine";
 import { useEffect, useRef, useState } from "react";
+
+import { useStore } from "./store";
 
 export interface RenderInfo {
   load: {
@@ -24,15 +26,14 @@ export interface Settings {
   testExport: boolean;
 }
 
-interface Props {
-  uri: string;
-}
-
-export default function ExampleCanvas({ uri }: Props) {
+export default function ExampleCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const initialized = useRef(false);
-  const [engine, setEngine] = useState<Engine>();
+
+  const engine = useStore((state) => state.engine);
+  const uri = useStore((state) => state.uri);
+
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function ExampleCanvas({ uri }: Props) {
         skyboxPath: "/images/skybox/",
       });
 
-      setEngine(newEngine);
+      useStore.setState({ engine: newEngine });
 
       // Start engine
       newEngine.start().then(() => {
@@ -79,7 +80,7 @@ export default function ExampleCanvas({ uri }: Props) {
   }, [engine]);
 
   useEffect(() => {
-    if (!engine) return;
+    if (!engine || !uri) return;
 
     // Create glTF entity
     const entity = new Entity();

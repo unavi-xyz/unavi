@@ -14,7 +14,6 @@ import {
   TextureInfo as ITextureInfo,
   WebIO,
 } from "@gltf-transform/core";
-import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import { nanoid } from "nanoid";
 
 import {
@@ -30,17 +29,14 @@ import { Accessor } from "../scene/Accessor";
 import { Animation } from "../scene/Animation";
 import { Image } from "../scene/Image";
 
-const extensionDeps = {};
-
 /*
  * Loads a GLTF model into the engine's internal scene format.
  */
 export class GLTFLoader {
   #scene = new Scene();
 
-  #io = new WebIO()
-    .registerExtensions(ALL_EXTENSIONS)
-    .registerDependencies(extensionDeps);
+  #io = new WebIO();
+
   #root: Root | null = null;
 
   #map = {
@@ -54,10 +50,19 @@ export class GLTFLoader {
   #pending: Promise<void>[] = [];
 
   async load(uri: string): Promise<Scene> {
-    const document = await this.#io.read(uri);
-    this.#root = document.getRoot();
+    const res = await fetch(uri);
+    const mimeType = res.headers.get("Content-Type");
 
-    // Load only one scene
+    if (mimeType === "model/gltf-binary") {
+      const data = await res.arrayBuffer();
+      const array = new Uint8Array(data);
+      const document = await this.#io.readBinary(array);
+      this.#root = document.getRoot();
+    } else {
+      const document = await this.#io.read(uri);
+      this.#root = document.getRoot();
+    }
+
     const scene = this.#root.getDefaultScene() ?? this.#root.listScenes()[0];
     if (!scene) throw new Error("No scene");
 
@@ -437,7 +442,7 @@ export class GLTFLoader {
       // Create image bitmap asynchronously
       const blob = new Blob([imageArray], { type: mimeType });
       const promise = createImageBitmap(blob).then((bitmap) => {
-        const image = new Image({ id, bitmap });
+        const image = new Image({ id, bitmap, mimeType });
         image.isInternal = true;
         this.#scene.addImage(image);
       });
@@ -460,12 +465,15 @@ export class GLTFLoader {
 
     const elementSize = accessor.getElementSize();
     const normalized = accessor.getNormalized();
+    const type = accessor.getType();
 
     const accessorState = new Accessor({
       array,
       elementSize,
+      type,
       normalized,
     });
+
     accessorState.isInternal = true;
 
     // Add to scene

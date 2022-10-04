@@ -79,7 +79,7 @@ export type AnimationSampler = {
 
 export type AnimationChannel = {
   targetId: string;
-  path: string | null;
+  path: GLTF.AnimationChannelTargetPath | null;
   sampler: AnimationSampler;
 };
 

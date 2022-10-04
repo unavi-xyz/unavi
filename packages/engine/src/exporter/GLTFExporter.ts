@@ -10,6 +10,7 @@ import { center, dedup, prune } from "@gltf-transform/functions";
 
 import {
   Accessor,
+  Animation,
   Entity,
   Material,
   Scene,
@@ -31,6 +32,7 @@ export class GLTFExporter {
   #cache = {
     accessors: new Map<string, gltfAccessor>(),
     materials: new Map<string, gltfMaterial>(),
+    entities: new Map<string, Node>(),
   };
 
   constructor() {
@@ -56,6 +58,11 @@ export class GLTFExporter {
     );
     rootChildren.forEach((entity) => this.#parseEntity(entity, null));
 
+    // Parse animations
+    Object.values(this.#scene.animations).forEach((animation) =>
+      this.#parseAnimation(animation)
+    );
+
     // Apply transforms
     await this.#doc.transform(dedup(), prune(), center());
 
@@ -64,6 +71,31 @@ export class GLTFExporter {
     const glb = await io.writeBinary(this.#doc);
 
     return glb;
+  }
+
+  #parseAnimation(animation: Animation) {
+    const gltfAnimation = this.#doc.createAnimation(animation.name);
+
+    animation.channels.forEach((channel) => {
+      const input = this.#cache.accessors.get(channel.sampler.inputId);
+      const output = this.#cache.accessors.get(channel.sampler.outputId);
+      if (!input || !output) throw new Error("Invalid animation channel");
+
+      const sampler = this.#doc.createAnimationSampler();
+      sampler.setInput(input);
+      sampler.setOutput(output);
+
+      const targetNode = this.#cache.entities.get(channel.targetId);
+      if (!targetNode) throw new Error("Target not found");
+
+      const gltfChannel = this.#doc.createAnimationChannel();
+      gltfChannel.setSampler(sampler);
+      gltfChannel.setTargetNode(targetNode);
+      if (channel.path) gltfChannel.setTargetPath(channel.path);
+
+      gltfAnimation.addSampler(sampler);
+      gltfAnimation.addChannel(gltfChannel);
+    });
   }
 
   #parseEntity(entity: Entity, parent: Node | null) {
@@ -86,6 +118,8 @@ export class GLTFExporter {
 
     // Add to parent
     if (parent) parent.addChild(node);
+
+    this.#cache.entities.set(entity.id, node);
   }
 
   #parseMesh(entity: Entity, node: Node) {

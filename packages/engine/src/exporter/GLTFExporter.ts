@@ -154,6 +154,8 @@ export class GLTFExporter {
       case "Primitive": {
         primitive.setMode(entity.mesh.mode);
 
+        mesh.setWeights(entity.mesh.weights);
+
         if (entity.mesh.indicesId) {
           const accessor = this.#cache.accessors.get(entity.mesh.indicesId);
           if (!accessor) throw new Error("Accessor not found");
@@ -207,6 +209,40 @@ export class GLTFExporter {
           if (!accessor) throw new Error("Accessor not found");
           primitive.setAttribute("WEIGHTS_0", accessor);
         }
+
+        if (entity.mesh.morphPositionIds) {
+          entity.mesh.morphPositionIds.forEach((morphId) => {
+            const morphPosition = this.#cache.accessors.get(morphId);
+            if (!morphPosition) throw new Error("Accessor not found");
+
+            const primitiveTarget = this.#doc.createPrimitiveTarget("POSITION");
+            primitiveTarget.setAttribute("POSITION", morphPosition);
+            primitive.addTarget(primitiveTarget);
+          });
+        }
+
+        if (entity.mesh.morphNormalIds) {
+          entity.mesh.morphNormalIds.forEach((morphId) => {
+            const morphNormal = this.#cache.accessors.get(morphId);
+            if (!morphNormal) throw new Error("Accessor not found");
+
+            const primitiveTarget = this.#doc.createPrimitiveTarget("NORMAL");
+            primitiveTarget.setAttribute("NORMAL", morphNormal);
+            primitive.addTarget(primitiveTarget);
+          });
+        }
+
+        if (entity.mesh.morphTangentIds) {
+          entity.mesh.morphTangentIds.forEach((morphId) => {
+            const morphTangent = this.#cache.accessors.get(morphId);
+            if (!morphTangent) throw new Error("Accessor not found");
+
+            const primitiveTarget = this.#doc.createPrimitiveTarget("TANGENT");
+            primitiveTarget.setAttribute("TANGENT", morphTangent);
+            primitive.addTarget(primitiveTarget);
+          });
+        }
+
         break;
       }
     }

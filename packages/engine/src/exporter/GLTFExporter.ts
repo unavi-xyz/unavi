@@ -58,6 +58,32 @@ export class GLTFExporter {
     );
     rootChildren.forEach((entity) => this.#parseEntity(entity, null));
 
+    // Parse skins
+    Object.values(this.#scene.entities).forEach((entity) => {
+      if (!entity.mesh || entity.mesh.type !== "Primitive" || !entity.mesh.skin)
+        return;
+
+      const node = this.#cache.entities.get(entity.id);
+      if (!node) throw new Error("Node not found");
+
+      const skin = this.#doc.createSkin();
+      node.setSkin(skin);
+
+      // Set inverse bind matrices
+      const accessor = this.#cache.accessors.get(
+        entity.mesh.skin.inverseBindMatricesId
+      );
+      if (!accessor) throw new Error("Accessor not found");
+      skin.setInverseBindMatrices(accessor);
+
+      // Set joints
+      entity.mesh.skin.jointIds.forEach((jointId) => {
+        const jointNode = this.#cache.entities.get(jointId);
+        if (!jointNode) throw new Error("Node not found");
+        skin.addJoint(jointNode);
+      });
+    });
+
     // Parse animations
     Object.values(this.#scene.animations).forEach((animation) =>
       this.#parseAnimation(animation)

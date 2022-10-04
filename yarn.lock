@@ -2979,15 +2979,7 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@gltf-transform/core@2.4.3":
-  version "2.4.3"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.3.tgz#4d9c18ba91abab17711e01da06cfc0892005bd92"
-  integrity sha512-Z5jr1ykrV5VdaJgkdErL0XYJrHWPVp57Z9wMWwPSY0E4Q5C81Y020egqouqXC1yE1jFADzGa9jInrYD30i7y0A==
-  dependencies:
-    gl-matrix "~3.4.3"
-    property-graph "^0.2.6"
-
-"@gltf-transform/core@^2.4.3", "@gltf-transform/core@^2.4.4":
+"@gltf-transform/core@2.4.4", "@gltf-transform/core@^2.4.3", "@gltf-transform/core@^2.4.4":
   version "2.4.4"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.4.tgz#17a4e9117102f0af70a8893daa16b7cecf705a5c"
   integrity sha512-o5GfHS+r241wdKraMWBCMC55CedHnrFQo3HtfaYhfvsgw7ccKT2b+JSZv6u/cuRUS9NxnZsm5NQSixCdkHnGSQ==

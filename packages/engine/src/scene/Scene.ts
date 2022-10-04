@@ -127,6 +127,10 @@ export class Scene {
       if (entity.mesh.TANGENT) this.removeAccessor(entity.mesh.TANGENT);
       if (entity.mesh.WEIGHTS_0) this.removeAccessor(entity.mesh.WEIGHTS_0);
       if (entity.mesh.JOINTS_0) this.removeAccessor(entity.mesh.JOINTS_0);
+
+      entity.mesh.morphPositionIds.forEach((id) => this.removeAccessor(id));
+      entity.mesh.morphNormalIds.forEach((id) => this.removeAccessor(id));
+      entity.mesh.morphTangentIds.forEach((id) => this.removeAccessor(id));
     }
 
     // Remove material
@@ -284,6 +288,12 @@ export class Scene {
     this.animations = Object.fromEntries(
       Object.entries(this.animations).filter(([id]) => id !== animationId)
     );
+
+    // Remove sampler accessors
+    animation.channels.forEach((channel) => {
+      this.removeAccessor(channel.sampler.inputId);
+      this.removeAccessor(channel.sampler.outputId);
+    });
   }
 
   toJSON(includeInternal = false): SceneJSON {

@@ -2979,7 +2979,7 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@gltf-transform/core@2.4.4", "@gltf-transform/core@^2.4.3", "@gltf-transform/core@^2.4.4":
+"@gltf-transform/core@2.4.4", "@gltf-transform/core@^2.4.4":
   version "2.4.4"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.4.tgz#17a4e9117102f0af70a8893daa16b7cecf705a5c"
   integrity sha512-o5GfHS+r241wdKraMWBCMC55CedHnrFQo3HtfaYhfvsgw7ccKT2b+JSZv6u/cuRUS9NxnZsm5NQSixCdkHnGSQ==
@@ -2987,15 +2987,7 @@
     gl-matrix "~3.4.3"
     property-graph "^0.2.6"
 
-"@gltf-transform/extensions@2.4.3":
-  version "2.4.3"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.3.tgz#e8416bbcfb5b195910a678e7ed26387700307458"
-  integrity sha512-JMJkkmaHXZ7GN48dmsKXwpiCaBJT1GbO6vty9irhR3Q/WUlgc7AiUTJHY/Xr/jRgQYz1HpZO/cz681lj/ho6Vw==
-  dependencies:
-    "@gltf-transform/core" "^2.4.3"
-    ktx-parse "^0.4.5"
-
-"@gltf-transform/extensions@^2.4.4":
+"@gltf-transform/extensions@2.4.4", "@gltf-transform/extensions@^2.4.4":
   version "2.4.4"
   resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.4.tgz#06f71dded20e81201f2e3e559c696f541ff152bd"
   integrity sha512-kVoNQ36L5slzxe4oTBLtNIV6ROHctOIG2uGdNXv2InAawU2fNVtYKUMGP0ARcV0tmXGvTYdoa27zSgtdyK/iJg==

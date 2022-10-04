@@ -18,7 +18,7 @@
     "@prisma/client": "^4.4.0",
     "@rainbow-me/rainbowkit": "^0.6.2",
     "@trpc/client": "^9.27.4",
-    "@trpc/next": "^9.27.0",
+    "@trpc/next": "^9.27.4",
     "@trpc/react": "^9.27.4",
     "@trpc/server": "^9.27.4",
     "@wired-labs/engine": "*",

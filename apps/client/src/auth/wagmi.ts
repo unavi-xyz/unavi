@@ -1,4 +1,13 @@
-import { connectorsForWallets, wallet } from "@rainbow-me/rainbowkit";
+import { connectorsForWallets } from "@rainbow-me/rainbowkit";
+import {
+  argentWallet,
+  coinbaseWallet,
+  injectedWallet,
+  ledgerWallet,
+  metaMaskWallet,
+  rainbowWallet,
+  walletConnectWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 import { chain, configureChains, createClient } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
@@ -22,23 +31,20 @@ const connectors = connectorsForWallets([
   {
     groupName: "Popular",
     wallets: [
-      wallet.metaMask({ chains }),
-      wallet.rainbow({ chains }),
-      wallet.coinbase({ chains, appName: "The Wired" }),
+      metaMaskWallet({ chains }),
+      rainbowWallet({ chains }),
+      coinbaseWallet({ chains, appName: "The Wired" }),
     ],
   },
   {
     groupName: "More",
     wallets: [
-      wallet.argent({ chains }),
-      wallet.ledger({ chains }),
-      wallet.walletConnect({ chains }),
-      ...(needsInjectedWalletFallback ? [wallet.injected({ chains })] : []),
+      argentWallet({ chains }),
+      ledgerWallet({ chains }),
+      walletConnectWallet({ chains }),
+      ...(needsInjectedWalletFallback ? [injectedWallet({ chains })] : []),
     ],
   },
 ]);
 
-export const wagmiClient: any = createClient({
-  connectors,
-  provider,
-});
+export const wagmiClient = createClient({ connectors, provider });

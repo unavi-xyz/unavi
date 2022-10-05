@@ -6,8 +6,9 @@ import {
   Texture as gltfTexture,
   WebIO,
 } from "@gltf-transform/core";
-import { center, dedup, prune } from "@gltf-transform/functions";
+import { dedup, prune } from "@gltf-transform/functions";
 
+import { RenderExport } from "../render/types";
 import {
   Accessor,
   Animation,
@@ -26,6 +27,7 @@ export class GLTFExporter {
   #doc = new Document();
   #scene = new Scene();
   #gltfScene = this.#doc.createScene("Scene");
+  #renderData: RenderExport | null = null;
 
   #buffer = this.#doc.createBuffer();
 
@@ -39,8 +41,10 @@ export class GLTFExporter {
     this.#doc.getRoot().setDefaultScene(this.#gltfScene);
   }
 
-  async parse(json: SceneJSON) {
+  async parse(json: SceneJSON, renderData?: RenderExport) {
     this.#scene.loadJSON(json);
+
+    if (renderData) this.#renderData = renderData;
 
     // Parse accessors
     Object.values(this.#scene.accessors).forEach((accessor) =>
@@ -90,7 +94,7 @@ export class GLTFExporter {
     );
 
     // Apply transforms
-    await this.#doc.transform(dedup(), prune(), center());
+    await this.#doc.transform(dedup(), prune());
 
     // Write to binary
     const io = new WebIO();
@@ -173,7 +177,23 @@ export class GLTFExporter {
       case "Sphere": {
         primitive.setMode(4); // TRIANGLES
 
-        // TODO get indices + attributes from three.js
+        if (!this.#renderData) throw new Error("Render data not found");
+
+        this.#renderData.forEach(
+          ({ entityId, attributeName, array, normalized, type }) => {
+            if (entityId !== entity.id) return;
+
+            const gltfAccessor = this.#doc.createAccessor();
+
+            gltfAccessor.setArray(array);
+            gltfAccessor.setNormalized(normalized);
+            gltfAccessor.setType(type);
+            gltfAccessor.setBuffer(this.#buffer);
+
+            if (attributeName === "indices") primitive.setIndices(gltfAccessor);
+            else primitive.setAttribute(attributeName, gltfAccessor);
+          }
+        );
 
         break;
       }

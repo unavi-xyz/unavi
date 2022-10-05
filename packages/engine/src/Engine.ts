@@ -77,11 +77,14 @@ export class Engine {
   }
 
   async export() {
+    // Get the scene
     const json = this.scene.toJSON(true);
+    const data = await this.renderThread.export();
 
+    // Export the scene
     const exporter = new GLTFExporter();
+    const glb = await exporter.parse(json, data);
 
-    const glb = await exporter.parse(json);
     return glb;
   }
 

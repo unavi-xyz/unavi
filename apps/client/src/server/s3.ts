@@ -16,15 +16,15 @@ const s3Client = new S3Client({
 });
 
 function imageKey(projectId: string) {
-  return `${projectId}/image.jpg`;
+  return `projects/${projectId}/image.jpg`;
 }
 
 function sceneKey(projectId: string) {
-  return `${projectId}/scene.json`;
+  return `projects/${projectId}/scene.json`;
 }
 
 function fileKey(projectId: string, fileId: string) {
-  return `${projectId}/files/${fileId}`;
+  return `projects/${projectId}/files/${fileId}`;
 }
 
 export async function createSceneUploadURL(projectId: string) {

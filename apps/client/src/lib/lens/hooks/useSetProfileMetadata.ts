@@ -20,10 +20,10 @@ export function useSetProfileMetadata(profileId: string) {
     if (!signer) throw new Error("No signer");
 
     try {
-      //upload metdata to ipfs
+      // Upload metdata to ipfs
       const url = await uploadStringToIpfs(JSON.stringify(metadata));
 
-      //create typed data
+      // Create typed data
       const { data, error } = await createTypedData({
         request: {
           profileId,
@@ -36,7 +36,7 @@ export function useSetProfileMetadata(profileId: string) {
 
       const typedData = data.createSetProfileMetadataTypedData.typedData;
 
-      //sign typed data
+      // Sign typed data
       const domain = removeTypename(typedData.domain);
       const types = removeTypename(typedData.types);
       const value = removeTypename(typedData.value);
@@ -49,7 +49,7 @@ export function useSetProfileMetadata(profileId: string) {
 
       const { v, r, s } = utils.splitSignature(signature);
 
-      //send transaction
+      // Send transaction
       const contract = LensPeriphery__factory.connect(
         ContractAddress.LensPeriphery,
         signer
@@ -65,10 +65,10 @@ export function useSetProfileMetadata(profileId: string) {
         },
       });
 
-      //wait for transaction
+      // Wait for transaction
       await tx.wait();
 
-      //wait for indexing
+      // Wait for indexing
       await pollUntilIndexed(tx.hash);
     } catch (error) {
       console.error(error);

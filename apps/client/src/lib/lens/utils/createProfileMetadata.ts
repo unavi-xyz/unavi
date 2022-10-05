@@ -1,8 +1,8 @@
 import {
   AttributeData,
-  MetadataVersions,
   Profile,
   ProfileMetadata,
+  ProfileMetadataVersions,
 } from "@wired-labs/lens";
 import { nanoid } from "nanoid";
 
@@ -26,7 +26,7 @@ export function createProfileMetadata(profile: Profile) {
     }) ?? [];
 
   const metadata: ProfileMetadata = {
-    version: MetadataVersions.one,
+    version: ProfileMetadataVersions.one,
     metadata_id: nanoid(),
     name: profile.name ?? null,
     bio: profile.bio ?? null,

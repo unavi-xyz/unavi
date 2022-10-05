@@ -1,4 +1,8 @@
-import { AppId, Metadata, MetadataVersions } from "@wired-labs/lens";
+import {
+  AppId,
+  ProfileMetadata,
+  ProfileMetadataVersions,
+} from "@wired-labs/lens";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useRef, useState } from "react";
@@ -45,8 +49,8 @@ export default function AvatarUploadPage() {
       const vrmURI = await uploadFileToIpfs(vrmFile);
 
       //create metadata
-      const metadata: Metadata = {
-        version: MetadataVersions.one,
+      const metadata: ProfileMetadata = {
+        version: ProfileMetadataVersions.one,
         metadata_id: nanoid(),
         name,
         description: descriptionRef.current?.value ?? "",

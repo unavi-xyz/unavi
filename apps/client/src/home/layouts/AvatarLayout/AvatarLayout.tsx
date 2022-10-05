@@ -1,7 +1,7 @@
 import {
   AttributeData,
-  MetadataVersions,
   ProfileMetadata,
+  ProfileMetadataVersions,
 } from "@wired-labs/lens";
 import { nanoid } from "nanoid";
 import Link from "next/link";
@@ -95,7 +95,7 @@ export default function AvatarLayout({
     addAttribute("avatar", id);
 
     const metadata: ProfileMetadata = {
-      version: MetadataVersions.one,
+      version: ProfileMetadataVersions.one,
       metadata_id: nanoid(),
       name: profile?.name ?? null,
       bio: profile?.bio ?? null,

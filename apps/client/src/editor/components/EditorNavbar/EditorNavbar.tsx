@@ -57,7 +57,8 @@ export default function EditorNavbar() {
     router.push(`/editor/${id}/preview`);
   }
 
-  function handleOpenPublish() {
+  async function handleOpenPublish() {
+    await save();
     setOpenPublishDialog(true);
   }
 

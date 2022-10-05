@@ -27,6 +27,18 @@ function fileKey(projectId: string, fileId: string) {
   return `projects/${projectId}/files/${fileId}`;
 }
 
+function publishedModelKey(projectId: string) {
+  return `published/${projectId}/model.glb`;
+}
+
+function publishedImageKey(projectId: string) {
+  return `published/${projectId}/image.jpg`;
+}
+
+function publishedMetadataKey(projectId: string) {
+  return `published/${projectId}/metadata.json`;
+}
+
 export async function createSceneUploadURL(projectId: string) {
   const command = new PutObjectCommand({
     Bucket: process.env.S3_BUCKET,
@@ -53,6 +65,42 @@ export async function createFileUploadURL(projectId: string, fileId: string) {
   const command = new PutObjectCommand({
     Bucket: process.env.S3_BUCKET,
     Key: fileKey(projectId, fileId),
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+}
+
+export async function createPublishedModelUploadURL(projectId: string) {
+  const command = new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: publishedModelKey(projectId),
+    ContentType: "model/gltf-binary",
+    ACL: "public-read",
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+}
+
+export async function createPublishedImageUploadURL(projectId: string) {
+  const command = new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: publishedImageKey(projectId),
+    ContentType: "image/jpeg",
+    ACL: "public-read",
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+}
+
+export async function createPublishedMetadataUploadURL(projectId: string) {
+  const command = new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: publishedMetadataKey(projectId),
+    ContentType: "application/json",
+    ACL: "public-read",
   });
 
   const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });

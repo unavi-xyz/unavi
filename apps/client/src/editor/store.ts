@@ -8,6 +8,8 @@ export interface IEditorStore {
 
   getEntity: (id: string) => Entity | undefined;
 
+  exportedScene: Uint8Array | null;
+
   canvas: HTMLCanvasElement | null;
   preview: boolean;
   selectedId: string | null;
@@ -26,6 +28,8 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
   getEntity: (id: string) => {
     return get().engine?.scene.entities[id];
   },
+
+  exportedScene: null,
 
   canvas: null,
   preview: false,

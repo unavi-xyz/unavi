@@ -43,7 +43,17 @@ export default function EditorNavbar() {
   }
 
   async function handlePreview() {
+    const { engine } = useEditorStore.getState();
+    if (!engine) throw new Error("Engine not found");
+
+    // Save scene
     await save();
+
+    // Export scene to glTF
+    const exportedScene = await engine.export();
+    useEditorStore.setState({ exportedScene });
+
+    // Navigate to preview page
     router.push(`/editor/${id}/preview`);
   }
 

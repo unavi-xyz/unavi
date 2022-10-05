@@ -1,9 +1,9 @@
+import { Entity, GLTFMesh } from "@wired-labs/engine";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
 
-import { useLoad } from "../../../editor/hooks/useLoad";
 import { useEditorStore } from "../../../editor/store";
 import MetaTags from "../../../ui/MetaTags";
 
@@ -11,12 +11,11 @@ export default function Preview() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engine = useEditorStore((state) => state.engine);
+  const exportedScene = useEditorStore((state) => state.exportedScene);
   const [loaded, setLoaded] = useState(false);
 
   const router = useRouter();
   const id = router.query.id;
-
-  useLoad();
 
   useEffect(() => {
     async function initEngine() {
@@ -54,6 +53,27 @@ export default function Preview() {
       });
     };
   }, [engine]);
+
+  useEffect(() => {
+    if (!engine || !exportedScene || !loaded) return;
+
+    // Load exported scene
+    const blob = new Blob([exportedScene], { type: "model/gltf-binary" });
+    const url = URL.createObjectURL(blob);
+
+    // Create glTF entity
+    const entity = new Entity();
+    const mesh = new GLTFMesh();
+    mesh.uri = url;
+    entity.mesh = mesh;
+
+    // Add entity to scene
+    engine.scene.addEntity(entity);
+
+    return () => {
+      engine.scene.removeEntity(entity.id);
+    };
+  }, [engine, exportedScene, loaded]);
 
   const updateCanvasSize = useMemo(() => {
     return () => {

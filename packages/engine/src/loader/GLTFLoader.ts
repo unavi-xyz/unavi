@@ -53,15 +53,26 @@ export class GLTFLoader {
     const res = await fetch(uri);
     const mimeType = res.headers.get("Content-Type");
 
-    if (mimeType === "model/gltf-binary") {
-      const data = await res.arrayBuffer();
-      const array = new Uint8Array(data);
+    const readBinary = async () => {
+      const buffer = await res.arrayBuffer();
+      const array = new Uint8Array(buffer);
       const document = await this.#io.readBinary(array);
       this.#root = document.getRoot();
+    };
+
+    if (mimeType === "model/gltf-binary") {
+      await readBinary();
     } else {
-      const document = await this.#io.read(uri);
-      this.#root = document.getRoot();
+      try {
+        const document = await this.#io.read(uri);
+        this.#root = document.getRoot();
+      } catch (e) {
+        console.warn(e);
+        await readBinary();
+      }
     }
+
+    if (!this.#root) throw new Error("Failed to load file");
 
     const scene = this.#root.getDefaultScene() ?? this.#root.listScenes()[0];
     if (!scene) throw new Error("No scene");

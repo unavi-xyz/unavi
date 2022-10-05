@@ -9,7 +9,7 @@ import { useLens } from "../../lib/lens/hooks/useLens";
 import { useProfileByHandle } from "../../lib/lens/hooks/useProfileByHandle";
 import Button from "../../ui/base/Button";
 import Card from "../../ui/base/Card";
-import FileUpload from "../../ui/base/FileUpload";
+import FileInput from "../../ui/base/FileInput";
 import TextArea from "../../ui/base/TextArea";
 import TextField from "../../ui/base/TextField";
 import { crop } from "../../utils/crop";
@@ -96,7 +96,7 @@ export default function AvatarUploadPage() {
         <div className="space-y-4">
           <div className="text-lg font-bold">Image</div>
 
-          <FileUpload
+          <FileInput
             color="SurfaceVariant"
             title="Image"
             accept="image/*"
@@ -110,7 +110,7 @@ export default function AvatarUploadPage() {
         <div className="space-y-4">
           <div className="text-lg font-bold">VRM File</div>
 
-          <FileUpload
+          <FileInput
             color="SurfaceVariant"
             title="VRM"
             accept=".vrm"

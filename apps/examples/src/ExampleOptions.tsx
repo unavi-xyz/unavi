@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import ExampleCanvas from "./ExampleCanvas";
+import PanelLayout from "./PanelLayout";
+import { useStore } from "./store";
 
 export type FileOption = {
   name: string;
@@ -14,8 +16,12 @@ interface Props {
 export default function ExampleOptions({ options }: Props) {
   const [gltf, setGltf] = useState(options[0]?.href);
 
+  useEffect(() => {
+    useStore.setState({ uri: gltf });
+  }, [gltf]);
+
   return (
-    <>
+    <PanelLayout>
       {options.length > 1 && (
         <div className="absolute top-0 left-0 z-20 w-full pl-48 text-center">
           <div className="mt-2 flex justify-center">
@@ -39,7 +45,7 @@ export default function ExampleOptions({ options }: Props) {
         </div>
       )}
 
-      {gltf && <ExampleCanvas uri={gltf} />}
-    </>
+      <ExampleCanvas />
+    </PanelLayout>
   );
 }

@@ -7,8 +7,8 @@ import NavigationTab from "../../../ui/base/NavigationTab";
 import MetaTags from "../../../ui/MetaTags";
 
 interface Props {
-  name: string | null;
-  image: string | null;
+  name?: string | null;
+  image?: string | null;
   children: React.ReactNode;
 }
 
@@ -46,11 +46,11 @@ export default function ProjectLayout({ name, image, children }: Props) {
               </div>
 
               <Link href={`/editor/${id}`} passHref>
-                <a>
+                <div className="w-full">
                   <Button variant="filled" fullWidth>
                     <div className="py-2">Open Editor</div>
                   </Button>
-                </a>
+                </div>
               </Link>
             </div>
           </div>

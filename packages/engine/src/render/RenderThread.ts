@@ -2,7 +2,12 @@ import { Engine } from "../Engine";
 import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderWorker } from "./RenderWorker";
-import { FromRenderMessage, PointerData, ToRenderMessage } from "./types";
+import {
+  FromRenderMessage,
+  PointerData,
+  RenderExport,
+  ToRenderMessage,
+} from "./types";
 
 export interface RenderThreadOptions {
   canvas: HTMLCanvasElement;
@@ -24,6 +29,7 @@ export class RenderThread {
   #engine: Engine;
   #onReady: Array<() => void> = [];
   #onScreenshot: Array<(data: string) => void> = [];
+  #onExport: Array<(data: RenderExport) => void> = [];
 
   constructor({
     canvas,
@@ -109,6 +115,10 @@ export class RenderThread {
         this.#onScreenshot.forEach((resolve) => resolve(data));
         this.#onScreenshot = [];
         break;
+      case "export":
+        this.#onExport.forEach((resolve) => resolve(data));
+        this.#onExport = [];
+        break;
     }
   };
 
@@ -129,6 +139,14 @@ export class RenderThread {
       if (this.ready) resolve();
       this.#onReady.push(resolve);
     });
+    return promise;
+  }
+
+  export() {
+    const promise = new Promise<RenderExport>((resolve) => {
+      this.#onExport.push(resolve);
+    });
+    this.postMessage({ subject: "prepare_export", data: null });
     return promise;
   }
 

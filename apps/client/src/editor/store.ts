@@ -8,13 +8,14 @@ export interface IEditorStore {
 
   getEntity: (id: string) => Entity | undefined;
 
+  exportedScene: Uint8Array | null;
+
   canvas: HTMLCanvasElement | null;
   preview: boolean;
   selectedId: string | null;
 
   name: string;
   description: string;
-  image: string;
 
   colliders: boolean;
   grid: boolean;
@@ -28,13 +29,14 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
     return get().engine?.scene.entities[id];
   },
 
+  exportedScene: null,
+
   canvas: null,
   preview: false,
   selectedId: null,
 
   name: "",
   description: "",
-  image: "",
 
   colliders: true,
   grid: false,

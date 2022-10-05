@@ -12,8 +12,6 @@ export function updateMaterial(
   const materialObject = map.materials.get(materialId);
   if (!materialObject) throw new Error("Material not found");
 
-  materialObject.needsUpdate = true;
-
   if (material.alpha !== undefined) materialObject.opacity = material.alpha;
 
   if (material.alphaMode !== undefined) {
@@ -56,7 +54,9 @@ export function updateMaterial(
     const colorTexture = material.colorTexture
       ? createTexture(material.colorTexture, map)
       : null;
+
     if (colorTexture) colorTexture.encoding = sRGBEncoding;
+
     materialObject.map = colorTexture;
   }
 
@@ -64,6 +64,7 @@ export function updateMaterial(
     const normalTexture = material.normalTexture
       ? createTexture(material.normalTexture, map)
       : null;
+
     materialObject.normalMap = normalTexture;
   }
 
@@ -71,14 +72,20 @@ export function updateMaterial(
     const occlusionTexture = material.occlusionTexture
       ? createTexture(material.occlusionTexture, map)
       : null;
+
     materialObject.aoMap = occlusionTexture;
+
+    if (material.occlusionStrength !== undefined)
+      materialObject.aoMapIntensity = material.occlusionStrength;
   }
 
   if (material.emissiveTexture !== undefined) {
     const emissiveTexture = material.emissiveTexture
       ? createTexture(material.emissiveTexture, map)
       : null;
+
     if (emissiveTexture) emissiveTexture.encoding = sRGBEncoding;
+
     materialObject.emissiveMap = emissiveTexture;
   }
 
@@ -86,7 +93,10 @@ export function updateMaterial(
     const metallicRougnessTexture = material.metallicRoughnessTexture
       ? createTexture(material.metallicRoughnessTexture, map)
       : null;
+
     materialObject.metalnessMap = metallicRougnessTexture;
     materialObject.roughnessMap = metallicRougnessTexture;
   }
+
+  materialObject.needsUpdate = true;
 }

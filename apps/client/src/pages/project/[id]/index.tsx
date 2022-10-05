@@ -8,15 +8,17 @@ export default function Project() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data, isFetched } = trpc.useQuery(["auth.project", { id }], {
+  const { data: project } = trpc.useQuery(["auth.project", { id }], {
     enabled: id !== undefined,
   });
 
-  if (!isFetched || !data) return null;
+  const { data: imageURL } = trpc.useQuery(["auth.project-image", { id }], {
+    enabled: id !== undefined,
+  });
 
   return (
-    <ProjectLayout name={data.name} image={data.image}>
-      <div>{data.description}</div>
+    <ProjectLayout name={project?.name} image={imageURL}>
+      <div>{project?.description}</div>
     </ProjectLayout>
   );
 }

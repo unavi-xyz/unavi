@@ -15,82 +15,111 @@ const s3Client = new S3Client({
   },
 });
 
-export async function uploadSceneToS3(scene: any, id: string) {
-  const data = await s3Client.send(
-    new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: `${id}.json`,
-      Body: JSON.stringify(scene),
-      ACL: "private",
-      ContentType: "application/json",
-    })
-  );
-  return data;
+function imageKey(projectId: string) {
+  return `${projectId}/image.jpg`;
 }
 
-export async function uploadImageToS3(image: any, id: string) {
-  const data = await s3Client.send(
-    new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: `${id}.jpeg`,
-      Body: image,
-      ACL: "private",
-      ContentType: "image/jpeg",
-    })
-  );
-  return data;
+function sceneKey(projectId: string) {
+  return `${projectId}/scene.json`;
 }
-export async function uploadFileBlobToS3(
-  blob: any,
-  fileId: string,
-  projectId: string
+
+function fileKey(projectId: string, fileId: string) {
+  return `${projectId}/files/${fileId}`;
+}
+
+export async function createSceneUploadURL(projectId: string) {
+  const command = new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: sceneKey(projectId),
+    ContentType: "application/json",
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+}
+
+export async function createImageUploadURL(projectId: string) {
+  const command = new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: imageKey(projectId),
+    ContentType: "image/jpeg",
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+}
+
+export async function createFileUploadURL(projectId: string, fileId: string) {
+  const command = new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: fileKey(projectId, fileId),
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+}
+
+export async function getSceneURL(projectId: string) {
+  const command = new GetObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: sceneKey(projectId),
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+}
+
+export async function getImageURL(projectId: string) {
+  const command = new GetObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: imageKey(projectId),
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+}
+
+export async function getFileURL(projectId: string, fileId: string) {
+  const command = new GetObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: fileKey(projectId, fileId),
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+}
+
+export async function deleteProjectFromS3(
+  projectId: string,
+  fileIds: string[]
 ) {
-  const data = await s3Client.send(
-    new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: `${projectId}-${fileId}.blob`,
-      Body: blob,
-      ACL: "private",
-      ContentType: "application/octet-stream",
-    })
-  );
-  return data;
-}
+  const fileKeys = fileIds.map((fileId) => ({
+    Key: fileKey(projectId, fileId),
+  }));
 
-export async function getSceneFromS3(id: string) {
-  const command = new GetObjectCommand({
-    Bucket: process.env.S3_BUCKET,
-    Key: `${id}.json`,
-  });
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-  return url;
-}
-
-export async function getImageFromS3(id: string) {
-  const command = new GetObjectCommand({
-    Bucket: process.env.S3_BUCKET,
-    Key: `${id}.jpeg`,
-  });
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-  return url;
-}
-
-export async function getFileBlobFromS3(fileId: string, projectId: string) {
-  const command = new GetObjectCommand({
-    Bucket: process.env.S3_BUCKET,
-    Key: `${projectId}-${fileId}.blob`,
-  });
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-  return url;
-}
-
-export async function deleteProjectFromS3(id: string) {
   await s3Client.send(
     new DeleteObjectsCommand({
       Bucket: process.env.S3_BUCKET,
       Delete: {
-        Objects: [{ Key: `${id}.json` }, { Key: `${id}.jpeg` }],
+        Objects: [
+          { Key: sceneKey(projectId) },
+          { Key: imageKey(projectId) },
+          ...fileKeys,
+        ],
       },
+    })
+  );
+}
+
+export async function deleteFilesFromS3(projectId: string, fileIds: string[]) {
+  const fileKeys = fileIds.map((fileId) => ({
+    Key: fileKey(projectId, fileId),
+  }));
+
+  await s3Client.send(
+    new DeleteObjectsCommand({
+      Bucket: process.env.S3_BUCKET,
+      Delete: { Objects: fileKeys },
     })
   );
 }

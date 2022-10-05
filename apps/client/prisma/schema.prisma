@@ -18,6 +18,16 @@ model Project {
 
   name        String?
   description String?
-
   editorState String?
+
+  files File[]
+}
+
+model File {
+  id Int @id @default(autoincrement())
+
+  storageKey String
+
+  projectId String?
+  Project   Project? @relation(fields: [projectId], references: [id])
 }

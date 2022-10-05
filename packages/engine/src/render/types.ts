@@ -1,4 +1,4 @@
-import { TypedArray } from "@gltf-transform/core";
+import { GLTF, TypedArray } from "@gltf-transform/core";
 
 import { SceneMessage } from "../scene";
 import { Quad, Triplet, WorkerMessage } from "../types";
@@ -38,6 +38,14 @@ export type WheelData = {
   deltaY: number;
 };
 
+export type RenderExport = Array<{
+  entityId: string;
+  attributeName: string;
+  array: TypedArray;
+  normalized: boolean;
+  type: GLTF.AccessorType;
+}>;
+
 export type ToRenderMessage =
   | SceneMessage
   | WorkerMessage<"set_canvas", OffscreenCanvas>
@@ -54,6 +62,7 @@ export type ToRenderMessage =
   | WorkerMessage<"set_transform_target", string | null>
   | WorkerMessage<"set_transform_mode", "translate" | "rotate" | "scale">
   | WorkerMessage<"take_screenshot">
+  | WorkerMessage<"prepare_export">
   | WorkerMessage<
       "set_player_buffers",
       { position: Float32Array; velocity: Float32Array }
@@ -77,6 +86,7 @@ export type FromRenderMessage =
   | WorkerMessage<"ready">
   | WorkerMessage<"clicked_object", string | null>
   | WorkerMessage<"screenshot", string>
+  | WorkerMessage<"export", RenderExport>
   | WorkerMessage<
       "set_transform",
       {

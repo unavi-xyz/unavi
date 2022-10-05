@@ -1,3 +1,4 @@
+import { GLTFExporter } from "./exporter/GLTFExporter";
 import { LoaderThread } from "./loader/LoaderThread";
 import { MainScene } from "./main/MainScene";
 import { PhysicsThread } from "./physics/PhysicsThread";
@@ -73,6 +74,18 @@ export class Engine {
   stop() {
     this.physicsThread.stop();
     this.renderThread.stop();
+  }
+
+  async export() {
+    // Get the scene
+    const json = this.scene.toJSON(true);
+    const data = await this.renderThread.export();
+
+    // Export the scene
+    const exporter = new GLTFExporter();
+    const glb = await exporter.parse(json, data);
+
+    return glb;
   }
 
   destroy() {

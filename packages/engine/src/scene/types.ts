@@ -1,4 +1,4 @@
-import { TypedArray } from "@gltf-transform/core";
+import { GLTF, TypedArray } from "@gltf-transform/core";
 
 import { Quad, Triplet, WorkerMessage } from "../types";
 import { ColliderJSON } from "./collider/types";
@@ -19,16 +19,18 @@ export type EntityJSON = {
 
 export type TextureJSON = {
   imageId: string | null;
-  magFilter: number;
-  minFilter: number;
-  wrapS: number;
-  wrapT: number;
+  magFilter: GLTF.TextureMagFilter;
+  minFilter: GLTF.TextureMinFilter;
+  wrapS: GLTF.TextureWrapMode;
+  wrapT: GLTF.TextureWrapMode;
 };
 
 export type ImageJSON = {
   id: string;
   isInternal: boolean;
+  array: Uint8Array;
   bitmap: ImageBitmap;
+  mimeType: string;
 };
 
 export type MaterialJSON = {
@@ -52,11 +54,21 @@ export type MaterialJSON = {
   metallicRoughnessTexture: TextureJSON | null;
 };
 
+export type AccessorType =
+  | "SCALAR"
+  | "VEC2"
+  | "VEC3"
+  | "VEC4"
+  | "MAT2"
+  | "MAT3"
+  | "MAT4";
+
 export type AccessorJSON = {
   id: string;
   isInternal: boolean;
   array: TypedArray;
   elementSize: number;
+  type: AccessorType;
   normalized: boolean;
 };
 
@@ -68,7 +80,7 @@ export type AnimationSampler = {
 
 export type AnimationChannel = {
   targetId: string;
-  path: string | null;
+  path: GLTF.AnimationChannelTargetPath | null;
   sampler: AnimationSampler;
 };
 

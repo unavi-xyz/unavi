@@ -36,9 +36,8 @@ export class LoaderWorker {
       buffers.add(buffer);
     });
 
-    const bitmaps = sceneJSON.images.map((image) => image.bitmap);
-
-    const transfer: Transferable[] = [...buffers, ...bitmaps];
+    const imageBuffers = sceneJSON.images.map((image) => image.array.buffer);
+    const transfer: Transferable[] = [...buffers, ...imageBuffers];
 
     this.#postMessage(
       {

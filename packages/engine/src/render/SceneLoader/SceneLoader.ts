@@ -1,7 +1,9 @@
+import type { GLTF } from "@gltf-transform/core";
 import {
   AnimationClip,
   AnimationMixer,
   BufferAttribute,
+  BufferGeometry,
   Group,
   Mesh,
   MeshStandardMaterial,
@@ -11,7 +13,7 @@ import {
 import { AccessorJSON, EntityJSON } from "../../scene";
 import { sortEntities } from "../../scene/utils/sortEntities";
 import { PostMessage, Quad } from "../../types";
-import { FromRenderMessage, ToRenderMessage } from "../types";
+import { FromRenderMessage, RenderExport, ToRenderMessage } from "../types";
 import { addAnimation } from "./animation/addAnimation";
 import { addEntity } from "./entity/addEntity";
 import { removeEntity } from "./entity/removeEntity";
@@ -113,8 +115,79 @@ export class SceneLoader {
             addAnimation(a, this.#map, this.mixer);
           });
         break;
+      case "prepare_export":
+        this.prepareExport();
+        break;
     }
   };
+
+  prepareExport() {
+    const exportData: RenderExport = [];
+
+    function exportAttribute(
+      entityId: string,
+      attributeName: string,
+      threeName: string,
+      mesh: Mesh<BufferGeometry, MeshStandardMaterial>
+    ) {
+      const attribute =
+        attributeName === "indices"
+          ? mesh.geometry.getIndex()
+          : mesh.geometry.getAttribute(threeName);
+
+      if (!attribute) return;
+
+      const types = {
+        1: "SCALAR",
+        2: "VEC2",
+        3: "VEC3",
+        4: "VEC4",
+        16: "MAT4",
+      } as const;
+
+      const itemSize: keyof typeof types = attribute.itemSize as any;
+      const type: GLTF.AccessorType = types[itemSize];
+
+      exportData.push({
+        entityId,
+        attributeName,
+        array: attribute.array as any,
+        normalized: attribute.normalized,
+        type,
+      });
+    }
+
+    this.#map.entities.forEach((entity) => {
+      switch (entity.mesh?.type) {
+        case "Box":
+        case "Sphere":
+        case "Cylinder": {
+          const object = this.findObject(entity.id);
+          if (!object) throw new Error("Object not found");
+          if (!(object instanceof Mesh))
+            throw new Error("Object is not a mesh");
+
+          const mesh = object as Mesh<BufferGeometry, MeshStandardMaterial>;
+
+          exportAttribute(entity.id, "indices", "indices", mesh);
+          exportAttribute(entity.id, "POSITION", "position", mesh);
+          exportAttribute(entity.id, "NORMAL", "normal", mesh);
+          exportAttribute(entity.id, "TANGENT", "tangent", mesh);
+          exportAttribute(entity.id, "TEXCOORD_0", "uv", mesh);
+          exportAttribute(entity.id, "TEXCOORD_1", "tangent", mesh);
+          exportAttribute(entity.id, "COLOR_0", "color", mesh);
+          break;
+        }
+        default:
+          return;
+      }
+    });
+
+    this.#postMessage({
+      subject: "export",
+      data: exportData,
+    });
+  }
 
   findId(target: Object3D): string | undefined {
     for (const [id, object] of this.#map.objects) {

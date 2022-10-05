@@ -1,3 +1,4 @@
+import { SceneJSON } from "@wired-labs/engine";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
@@ -16,7 +17,15 @@ export function useLoad() {
     refetchOnMount: false,
   });
 
-  const { data: scene } = trpc.useQuery(["auth.scene", { id }], {
+  const { data: sceneURL } = trpc.useQuery(["auth.project-scene", { id }], {
+    enabled: id !== undefined,
+    cacheTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  });
+
+  const { data: fileURLs } = trpc.useQuery(["auth.project-files", { id }], {
     enabled: id !== undefined,
     cacheTime: 0,
     refetchOnWindowFocus: false,
@@ -51,26 +60,32 @@ export function useLoad() {
 
   // Load scene on query fetch
   useEffect(() => {
-    if (!engine || !scene) return;
-    engine.waitForReady().then(() => {
-      const sceneJSON = scene.scene;
+    if (!engine || !sceneURL || !fileURLs) return;
+
+    engine.waitForReady().then(async () => {
+      const sceneResponse = await fetch(sceneURL);
+      const scene: SceneJSON = await sceneResponse.json();
 
       // Load files
-      sceneJSON.entities.forEach((entity) => {
-        if (entity.mesh?.type === "glTF") {
-          const uri = entity.mesh.uri;
-          if (uri) {
-            const file = scene.files.find((f) => f.id === entity.id);
-            if (file) {
-              const blob = new Blob([file.text], { type: "text/plain" });
-              const url = URL.createObjectURL(blob);
-              entity.mesh.uri = url;
-            }
-          }
+      const filePromises = scene.entities.map(async (entity) => {
+        if (entity.mesh?.type !== "glTF") return;
+
+        if (entity.mesh.uri) {
+          const file = fileURLs.find((f) => f.id === entity.id);
+          if (!file) throw new Error("File not found");
+
+          const fileResponse = await fetch(file.uri);
+          const fileBlob = await fileResponse.blob();
+          const url = URL.createObjectURL(fileBlob);
+
+          entity.mesh.uri = url;
         }
       });
 
-      engine.scene.loadJSON(sceneJSON);
+      await Promise.all(filePromises);
+
+      // Load scene
+      engine.scene.loadJSON(scene);
     });
-  }, [engine, scene]);
+  }, [engine, sceneURL, fileURLs]);
 }

@@ -1,3 +1,4 @@
+import { GLTF } from "@gltf-transform/core";
 import { BehaviorSubject } from "rxjs";
 
 import { PrimitiveMeshJSON } from "./types";
@@ -5,7 +6,7 @@ import { PrimitiveMeshJSON } from "./types";
 export class PrimitiveMesh {
   readonly type = "Primitive";
 
-  mode$ = new BehaviorSubject(4);
+  mode$ = new BehaviorSubject<GLTF.MeshPrimitiveMode>(4);
   indicesId$ = new BehaviorSubject<string | null>(null);
 
   weights$ = new BehaviorSubject<number[]>([]);
@@ -31,7 +32,7 @@ export class PrimitiveMesh {
     return this.mode$.value;
   }
 
-  set mode(mode: number) {
+  set mode(mode: GLTF.MeshPrimitiveMode) {
     this.mode$.next(mode);
   }
 

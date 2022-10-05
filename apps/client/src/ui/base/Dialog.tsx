@@ -49,7 +49,7 @@ export default function Dialog({
     <div
       ref={scrimRef}
       onMouseDown={onClose}
-      className="fixed top-0 left-0 z-50 flex h-screen w-screen flex-col justify-center bg-black/30 opacity-0 transition-opacity duration-200 ease-in-out"
+      className="fixed top-0 left-0 z-50 flex h-screen w-screen flex-col justify-center bg-black/30 opacity-0 backdrop-blur-sm transition-opacity duration-200 ease-in-out"
     >
       <dialog
         ref={dialogRef}

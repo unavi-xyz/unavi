@@ -16,7 +16,7 @@
     "@aws-sdk/s3-request-presigner": "~3.171.0",
     "@next/bundle-analyzer": "^12.3.1",
     "@prisma/client": "^4.4.0",
-    "@rainbow-me/rainbowkit": "^0.6.2",
+    "@rainbow-me/rainbowkit": "^0.7.1",
     "@trpc/client": "^9.27.4",
     "@trpc/next": "^9.27.4",
     "@trpc/react": "^9.27.4",

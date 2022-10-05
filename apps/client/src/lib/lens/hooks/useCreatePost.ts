@@ -1,9 +1,8 @@
-import { Metadata, useCreatePostTypedDataMutation } from "@wired-labs/lens";
+import { useCreatePostTypedDataMutation } from "@wired-labs/lens";
 import { LensHub__factory } from "@wired-labs/lens/contracts";
 import { utils } from "ethers";
 import { useSigner, useSignTypedData } from "wagmi";
 
-import { uploadStringToIpfs } from "../../ipfs/uploadStringToIpfs";
 import { ContractAddress } from "../constants";
 import { pollUntilIndexed } from "../utils/pollUntilIndexed";
 import { removeTypename } from "../utils/removeTypename";
@@ -13,13 +12,10 @@ export function useCreatePost(profileId: string) {
   const { signTypedDataAsync } = useSignTypedData();
   const { data: signer } = useSigner();
 
-  async function createPost(metadata: Metadata) {
+  async function createPost(contentURI: string) {
     if (!signer) throw new Error("No signer");
 
-    //upload metdata to ipfs
-    const contentURI = await uploadStringToIpfs(JSON.stringify(metadata));
-
-    //get typed data
+    // Get typed data
     const { data, error } = await createTypedData({
       request: {
         profileId,
@@ -40,7 +36,7 @@ export function useCreatePost(profileId: string) {
 
     const typedData = data.createPostTypedData.typedData;
 
-    //sign typed data
+    // Sign typed data
     const domain = removeTypename(typedData.domain);
     const types = removeTypename(typedData.types);
     const value = removeTypename(typedData.value);
@@ -53,7 +49,7 @@ export function useCreatePost(profileId: string) {
 
     const { v, r, s } = utils.splitSignature(signature);
 
-    //send transaction
+    // Send transaction
     const contract = LensHub__factory.connect(ContractAddress.LensHub, signer);
     const tx = await contract.postWithSig({
       profileId: typedData.value.profileId,
@@ -70,10 +66,10 @@ export function useCreatePost(profileId: string) {
       },
     });
 
-    //wait for transaction
+    // Wait for transaction
     await tx.wait();
 
-    //wait for indexing
+    // Wait for indexing
     await pollUntilIndexed(tx.hash);
   }
 

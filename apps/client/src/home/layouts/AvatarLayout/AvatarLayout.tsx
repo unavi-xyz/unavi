@@ -142,7 +142,7 @@ export default function AvatarLayout({
         : null;
 
     const metadata: ProfileMetadata = {
-      version: MetadataVersions.one,
+      version: ProfileMetadataVersions.one,
       metadata_id: nanoid(),
       name: profile?.name ?? null,
       bio: profile?.bio ?? null,

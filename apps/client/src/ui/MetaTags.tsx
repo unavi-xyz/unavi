@@ -1,6 +1,8 @@
 import Head from "next/head";
 
-const origin = `https://${process.env.VERCEL_URL}`;
+import { getBaseUrl } from "../utils/getBaseUrl";
+
+const origin = getBaseUrl();
 
 export type PageMetadata = {
   title: string | null;

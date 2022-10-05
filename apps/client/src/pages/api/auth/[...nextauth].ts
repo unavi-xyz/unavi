@@ -1,6 +1,7 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+import { env } from "../../../env/server.mjs";
 import { authenticate, verifyJWT } from "../../../server/jwt";
 
 export const authOptions: NextAuthOptions = {
@@ -50,7 +51,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  secret: process.env.NEXT_AUTH_SECRET,
+  secret: env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
 };
 

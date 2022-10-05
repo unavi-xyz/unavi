@@ -12,7 +12,9 @@ import { chain, configureChains, createClient } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
-const apiKey = process.env.ALCHEMY_ID;
+import { env } from "../env/client.mjs";
+
+const apiKey = env.NEXT_PUBLIC_ALCHEMY_ID;
 
 export const CHAIN_IDS = [chain.polygonMumbai.id];
 

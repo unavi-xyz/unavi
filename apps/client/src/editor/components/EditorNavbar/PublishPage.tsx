@@ -1,24 +1,19 @@
 import {
-  LensHub__factory,
   PublicationMainFocus,
   PublicationMetadata,
   PublicationMetadataMedia,
   PublicationMetadataVersions,
-  useCreatePostTypedDataMutation,
 } from "@wired-labs/lens";
-import { utils } from "ethers";
 import { nanoid } from "nanoid";
 import Image from "next/future/image";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import { useSigner, useSignTypedData } from "wagmi";
 
 import { trpc } from "../../../auth/trpc";
-import { ContractAddress } from "../../../lib/lens/constants";
+import { env } from "../../../env/client.mjs";
+import { useCreatePost } from "../../../lib/lens/hooks/useCreatePost";
 import { useLens } from "../../../lib/lens/hooks/useLens";
 import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
-import { pollUntilIndexed } from "../../../lib/lens/utils/pollUntilIndexed";
-import { removeTypename } from "../../../lib/lens/utils/removeTypename";
 import Button from "../../../ui/base/Button";
 import FileInput from "../../../ui/base/FileInput";
 import TextArea from "../../../ui/base/TextArea";
@@ -26,15 +21,15 @@ import TextField from "../../../ui/base/TextField";
 import { useEditorStore } from "../../store";
 
 function cdnModelURL(projectId: string) {
-  return `https://${process.env.S3_BUCKET}.${process.env.S3_CDN_ENDPOINT}/published/${projectId}/model.glb`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${projectId}/model.glb`;
 }
 
 function cdnImageURL(projectId: string) {
-  return `https://${process.env.S3_BUCKET}.${process.env.S3_CDN_ENDPOINT}/published/${projectId}/image.jpg`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${projectId}/image.jpg`;
 }
 
 function cdnMetadataURL(projectId: string) {
-  return `https://${process.env.S3_BUCKET}.${process.env.S3_CDN_ENDPOINT}/published/${projectId}/metadata.json`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${projectId}/metadata.json`;
 }
 
 export default function PublishPage() {
@@ -46,6 +41,7 @@ export default function PublishPage() {
 
   const { handle } = useLens();
   const profile = useProfileByHandle(handle);
+  const createPost = useCreatePost(profile.id);
 
   const { data: imageURL } = trpc.useQuery(["auth.project-image", { id }], {
     enabled: id !== undefined,
@@ -63,17 +59,10 @@ export default function PublishPage() {
     "auth.published-metadata-upload"
   );
 
-  const [, createPostTypedData] = useCreatePostTypedDataMutation();
-
-  const { signTypedDataAsync } = useSignTypedData();
-  const { data: signer } = useSigner();
-
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
 
   async function handlePublish() {
-    if (!signer) throw new Error("No signer");
-
     setLoading(true);
 
     const promises: Promise<void>[] = [];
@@ -194,59 +183,7 @@ export default function PublishPage() {
     const contentURI = cdnMetadataURL(id);
 
     // Create lens publication
-
-    const { data, error } = await createPostTypedData({
-      request: {
-        profileId: profile.id,
-        collectModule: {
-          freeCollectModule: {
-            followerOnly: false,
-          },
-        },
-        contentURI,
-      },
-    });
-
-    if (error) throw new Error(error.message);
-    if (!data) throw new Error("No typed data returned");
-
-    const typedData = data.createPostTypedData.typedData;
-
-    // Sign typed data
-    const domain = removeTypename(typedData.domain);
-    const types = removeTypename(typedData.types);
-    const value = removeTypename(typedData.value);
-
-    const signature = await signTypedDataAsync({
-      domain,
-      types,
-      value,
-    });
-
-    const { v, r, s } = utils.splitSignature(signature);
-
-    // Send transaction
-    const contract = LensHub__factory.connect(ContractAddress.LensHub, signer);
-    const tx = await contract.postWithSig({
-      profileId: typedData.value.profileId,
-      contentURI: typedData.value.contentURI,
-      collectModule: typedData.value.collectModule,
-      collectModuleInitData: typedData.value.collectModuleInitData,
-      referenceModule: typedData.value.referenceModule,
-      referenceModuleInitData: typedData.value.referenceModuleInitData,
-      sig: {
-        v,
-        r,
-        s,
-        deadline: typedData.value.deadline,
-      },
-    });
-
-    // Wait for transaction
-    await tx.wait();
-
-    // Wait for indexing
-    await pollUntilIndexed(tx.hash);
+    await createPost(contentURI);
 
     setLoading(false);
   }

@@ -104,11 +104,15 @@ export function useSave() {
     // Upload files to S3
     const fileUploads = uris.map(async ({ fileId, uri }) => {
       const uriResponse = await fetch(uri);
-      const text = await uriResponse.text();
+      const buffer = await uriResponse.arrayBuffer();
+      const array = new Uint8Array(buffer);
       const url = await getFileUpload({ id, fileId });
       const response = await fetch(url, {
         method: "PUT",
-        body: text,
+        body: array,
+        headers: {
+          "Content-Type": "application/octet-stream",
+        },
       });
       if (!response.ok) throw new Error("Failed to upload file");
     });

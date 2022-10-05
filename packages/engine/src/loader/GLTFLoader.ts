@@ -53,6 +53,11 @@ export class GLTFLoader {
     const res = await fetch(uri);
     const mimeType = res.headers.get("Content-Type");
 
+    const readJSON = async () => {
+      const document = await this.#io.read(uri);
+      this.#root = document.getRoot();
+    };
+
     const readBinary = async () => {
       const buffer = await res.arrayBuffer();
       const array = new Uint8Array(buffer);
@@ -60,15 +65,22 @@ export class GLTFLoader {
       this.#root = document.getRoot();
     };
 
-    if (mimeType === "model/gltf-binary") {
-      await readBinary();
-    } else {
-      try {
-        const document = await this.#io.read(uri);
-        this.#root = document.getRoot();
-      } catch (e) {
-        console.warn(e);
+    switch (mimeType) {
+      case "model/gltf+json": {
+        await readJSON();
+        break;
+      }
+      case "model/gltf-binary": {
         await readBinary();
+        break;
+      }
+      default: {
+        // If no mime type is provided, try to read as json first, then binary
+        try {
+          await readJSON();
+        } catch (e) {
+          await readBinary();
+        }
       }
     }
 

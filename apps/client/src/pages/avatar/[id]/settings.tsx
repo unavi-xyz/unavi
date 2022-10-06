@@ -3,14 +3,14 @@ import { NextPageContext } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import AvatarLayout from "../../../home/layouts/AvatarLayout/AvatarLayout";
-import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
-import { useLens } from "../../../lib/lens/hooks/useLens";
+import { useLens } from "../../../client/lens/hooks/useLens";
 import {
   getPublicationProps,
   PublicationProps,
-} from "../../../lib/lens/utils/getPublicationProps";
-import Button from "../../../ui/base/Button";
+} from "../../../client/lens/utils/getPublicationProps";
+import AvatarLayout from "../../../home/layouts/AvatarLayout/AvatarLayout";
+import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
+import Button from "../../../ui/Button";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");

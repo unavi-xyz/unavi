@@ -5,10 +5,10 @@ import {
   Profile,
 } from "@wired-labs/lens";
 
-import { HANDLE_ENDING } from "../../../lib/lens/constants";
+import { HANDLE_ENDING } from "../../../client/lens/constants";
 import { lensClient } from "../../../server/lens";
-import { PageMetadata } from "../../../ui/MetaTags";
 import { getMediaURL } from "../../../utils/getMediaURL";
+import { PageMetadata } from "../../MetaTags";
 
 export interface ProfileLayoutProps {
   handle: string;

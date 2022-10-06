@@ -23,6 +23,7 @@ module.exports = {
     "@typescript-eslint/no-empty-function": "off",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-var-requires": "off",
+    "@typescript-eslint/no-unused-imports": "off",
     "json-files/require-unique-dependency-names": "error",
     "json-files/sort-package-json": "warn",
     "no-console": ["warn", { allow: ["info", "warn", "error"] }],

@@ -1,18 +1,14 @@
-import { AppId, Metadata, MetadataVersions } from "@wired-labs/lens";
-import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useRef, useState } from "react";
 
-import { uploadFileToIpfs } from "../../lib/ipfs/uploadFileToIpfs";
-import { useCreatePost } from "../../lib/lens/hooks/useCreatePost";
-import { useLens } from "../../lib/lens/hooks/useLens";
-import { useProfileByHandle } from "../../lib/lens/hooks/useProfileByHandle";
-import Button from "../../ui/base/Button";
-import Card from "../../ui/base/Card";
-import FileInput from "../../ui/base/FileInput";
-import TextArea from "../../ui/base/TextArea";
-import TextField from "../../ui/base/TextField";
-import { crop } from "../../utils/crop";
+import { useCreatePost } from "../../client/lens/hooks/useCreatePost";
+import { useLens } from "../../client/lens/hooks/useLens";
+import { useProfileByHandle } from "../../client/lens/hooks/useProfileByHandle";
+import Button from "../../ui/Button";
+import Card from "../../ui/Card";
+import FileInput from "../../ui/FileInput";
+import TextArea from "../../ui/TextArea";
+import TextField from "../../ui/TextField";
 import AvatarCanvas from "../layouts/AvatarLayout/AvatarCanvas";
 
 export default function AvatarUploadPage() {
@@ -36,34 +32,30 @@ export default function AvatarUploadPage() {
     setLoading(true);
 
     try {
-      //upload image to IPFS
-      const cropped = await crop(URL.createObjectURL(imageFile), 3 / 5);
-      const imageURI = await uploadFileToIpfs(cropped);
-      if (!imageURI) throw new Error("Failed to upload image");
-
-      //upload vrm to IPFS
-      const vrmURI = await uploadFileToIpfs(vrmFile);
-
-      //create metadata
-      const metadata: Metadata = {
-        version: MetadataVersions.one,
-        metadata_id: nanoid(),
-        name,
-        description: descriptionRef.current?.value ?? "",
-        content: vrmURI,
-        image: imageURI,
-        imageMimeType: imageFile.type,
-        attributes: [],
-        animation_url: undefined,
-        external_url: "https://thewired.space",
-        media: [{ item: imageURI, type: imageFile.type }],
-        appId: AppId.Avatar,
-      };
-
-      //create post
-      await createPost(metadata);
-
-      router.push(`/user/${handle}`);
+      // //upload image to IPFS
+      // const cropped = await crop(URL.createObjectURL(imageFile), 3 / 5);
+      // const imageURI = await uploadFileToIpfs(cropped);
+      // if (!imageURI) throw new Error("Failed to upload image");
+      // //upload vrm to IPFS
+      // const vrmURI = await uploadFileToIpfs(vrmFile);
+      // //create metadata
+      // const metadata: P = {
+      //   version: ProfileMetadataVersions.one,
+      //   metadata_id: nanoid(),
+      //   name,
+      //   biodescription: descriptionRef.current?.value ?? "",
+      //   content: vrmURI,
+      //   image: imageURI,
+      //   imageMimeType: imageFile.type,
+      //   attributes: [],
+      //   animation_url: undefined,
+      //   external_url: "https://thewired.space",
+      //   media: [{ item: imageURI, type: imageFile.type }],
+      //   appId: AppId.Avatar,
+      // };
+      // //create post
+      // await createPost(metadata);
+      // router.push(`/user/${handle}`);
     } catch (error) {
       console.error(error);
     }

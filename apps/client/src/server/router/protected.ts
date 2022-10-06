@@ -6,6 +6,9 @@ import { prisma } from "../prisma";
 import {
   createFileUploadURL,
   createImageUploadURL,
+  createPublishedImageUploadURL,
+  createPublishedMetadataUploadURL,
+  createPublishedModelUploadURL,
   createSceneUploadURL,
   deleteProjectFromS3,
   getFileURL,
@@ -267,5 +270,60 @@ export const protectedRouter = createProtectedRouter()
       promises.push(deleteProjectFromS3(id, fileIds));
 
       await Promise.all(promises);
+    },
+  })
+  .mutation("published-model-upload", {
+    input: z.object({
+      id: z.string().length(36),
+    }),
+    async resolve({ ctx: { address }, input: { id } }) {
+      // Verify that user owns the project
+      const project = await prisma.project.findFirst({
+        where: { id, owner: address },
+        include: { files: true },
+      });
+      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Get model upload URL from S3
+      const url = await createPublishedModelUploadURL(id);
+
+      return url;
+    },
+  })
+  .mutation("published-image-upload", {
+    input: z.object({
+      id: z.string().length(36),
+    }),
+    async resolve({ ctx: { address }, input: { id } }) {
+      // Verify that user owns the project
+      const project = await prisma.project.findFirst({
+        where: { id, owner: address },
+        include: { files: true },
+      });
+      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Get image upload URL from S3
+      const url = await createPublishedImageUploadURL(id);
+
+      return url;
+    },
+  })
+
+  .mutation("published-metadata-upload", {
+    input: z.object({
+      id: z.string().length(36),
+    }),
+    async resolve({ ctx: { address }, input: { id } }) {
+      // Verify that user owns the project
+      const project = await prisma.project.findFirst({
+        where: { id, owner: address },
+        include: { files: true },
+      });
+      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Get metadata upload URL from S3
+      const url = await createPublishedMetadataUploadURL(id);
+
+      return url;
     },
   });

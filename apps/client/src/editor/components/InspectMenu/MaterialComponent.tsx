@@ -2,7 +2,7 @@ import { Material, Quad } from "@wired-labs/engine";
 import { useState } from "react";
 import { MdAdd, MdClose, MdDelete, MdOutlineFolderOpen } from "react-icons/md";
 
-import DropdownMenu from "../../../ui/base/DropdownMenu";
+import DropdownMenu from "../../../ui/DropdownMenu";
 import { hexToRgb } from "../../../utils/rgb";
 import { addMaterial } from "../../actions/AddMaterialAction";
 import { removeMaterial } from "../../actions/RemoveMaterialAction";

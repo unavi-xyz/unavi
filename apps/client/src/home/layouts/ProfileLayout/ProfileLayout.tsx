@@ -4,10 +4,10 @@ import Link from "next/link";
 import { FaTwitter } from "react-icons/fa";
 import { MdAdd, MdLink, MdOutlineLocationOn } from "react-icons/md";
 
-import { useLens } from "../../../lib/lens/hooks/useLens";
-import Button from "../../../ui/base/Button";
-import MetaTags from "../../../ui/MetaTags";
+import { useLens } from "../../../client/lens/hooks/useLens";
+import Button from "../../../ui/Button";
 import ProfilePicture from "../../lens/ProfilePicture";
+import MetaTags from "../../MetaTags";
 import AttributeRow from "./AttributeRow";
 import { ProfileLayoutProps } from "./getProfileLayoutProps";
 

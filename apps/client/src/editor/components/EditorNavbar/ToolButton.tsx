@@ -1,5 +1,5 @@
-import IconButton from "../../../ui/base/IconButton";
-import Tooltip from "../../../ui/base/Tooltip";
+import IconButton from "../../../ui/IconButton";
+import Tooltip from "../../../ui/Tooltip";
 import { useEditorStore } from "../../store";
 import { Tool } from "../../types";
 

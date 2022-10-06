@@ -9,6 +9,7 @@ import {
 import { NextPageContext } from "next";
 import Link from "next/link";
 
+import { HIDDEN_MESSAGE } from "../../../client/lens/constants";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import {
   getProfileLayoutProps,
@@ -17,13 +18,10 @@ import {
 import ProfileLayout from "../../../home/layouts/ProfileLayout/ProfileLayout";
 import AvatarCard from "../../../home/lens/AvatarCard";
 import SpaceCard from "../../../home/lens/SpaceCard";
-import { HIDDEN_MESSAGE } from "../../../lib/lens/constants";
 import { lensClient } from "../../../server/lens";
 import { getMediaURL } from "../../../utils/getMediaURL";
 
-export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=120");
-
+export async function getServerSideProps({ query }: NextPageContext) {
   const handle = query.handle as string;
   const props = await getProfileLayoutProps(handle);
 

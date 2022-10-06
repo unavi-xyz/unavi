@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
 
-import { useLens } from "../../../lib/lens/hooks/useLens";
-import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
-import { useSetProfileMetadata } from "../../../lib/lens/hooks/useSetProfileMetadata";
-import { createProfileMetadata } from "../../../lib/lens/utils/createProfileMetadata";
-import Button from "../../../ui/base/Button";
-import TextField from "../../../ui/base/TextField";
+import { useLens } from "../../../client/lens/hooks/useLens";
+import { useProfileByHandle } from "../../../client/lens/hooks/useProfileByHandle";
+import { useSetProfileMetadata } from "../../../client/lens/hooks/useSetProfileMetadata";
+import { createProfileMetadata } from "../../../client/lens/utils/createProfileMetadata";
+import Button from "../../../ui/Button";
+import TextField from "../../../ui/TextField";
 
 export default function HostPage() {
   const hostRef = useRef<HTMLInputElement>(null);

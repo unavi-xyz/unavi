@@ -1,18 +1,18 @@
 import Image from "next/future/image";
 import { useEffect, useRef, useState } from "react";
 
+import { uploadFileToIpfs } from "../../client/ipfs/uploadFileToIpfs";
+import { useLens } from "../../client/lens/hooks/useLens";
+import { useProfileByHandle } from "../../client/lens/hooks/useProfileByHandle";
+import { useSetProfileImage } from "../../client/lens/hooks/useSetProfileImage";
+import { useSetProfileMetadata } from "../../client/lens/hooks/useSetProfileMetadata";
+import { createProfileMetadata } from "../../client/lens/utils/createProfileMetadata";
 import { getSettingsLayout } from "../../home/layouts/SettingsLayout/SettingsLayout";
-import { uploadFileToIpfs } from "../../lib/ipfs/uploadFileToIpfs";
-import { useLens } from "../../lib/lens/hooks/useLens";
-import { useProfileByHandle } from "../../lib/lens/hooks/useProfileByHandle";
-import { useSetProfileImage } from "../../lib/lens/hooks/useSetProfileImage";
-import { useSetProfileMetadata } from "../../lib/lens/hooks/useSetProfileMetadata";
-import { createProfileMetadata } from "../../lib/lens/utils/createProfileMetadata";
-import Button from "../../ui/base/Button";
-import FileInput from "../../ui/base/FileInput";
-import TextArea from "../../ui/base/TextArea";
-import TextField from "../../ui/base/TextField";
-import MetaTags from "../../ui/MetaTags";
+import MetaTags from "../../home/MetaTags";
+import Button from "../../ui/Button";
+import FileInput from "../../ui/FileInput";
+import TextArea from "../../ui/TextArea";
+import TextField from "../../ui/TextField";
 import { crop } from "../../utils/crop";
 import { getMediaURL } from "../../utils/getMediaURL";
 

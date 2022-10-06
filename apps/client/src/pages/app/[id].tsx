@@ -3,8 +3,8 @@ import { NextPageContext } from "next";
 import {
   getPublicationProps,
   PublicationProps,
-} from "../../lib/lens/utils/getPublicationProps";
-import MetaTags from "../../ui/MetaTags";
+} from "../../client/lens/utils/getPublicationProps";
+import MetaTags from "../../home/MetaTags";
 
 export const DEFAULT_HOST = "wss://host.thewired.space";
 

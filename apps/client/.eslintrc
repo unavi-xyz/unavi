@@ -9,7 +9,7 @@
       "rootDir": "apps/client"
     },
     "tailwindcss": {
-      "config": "apps/client/tailwind.config.js"
+      "config": "apps/client/tailwind.config.cjs"
     }
   }
 }

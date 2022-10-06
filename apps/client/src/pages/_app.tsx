@@ -11,11 +11,14 @@ import { Session } from "next-auth";
 import React from "react";
 
 import { AppRouter } from "../server/router";
+import { getBaseUrl } from "../utils/getBaseUrl";
 
 // Export web vitals
 export { reportWebVitals } from "next-axiom";
 
-const ClientSideProviders = dynamic(() => import("../ClientSideProviders"));
+const ClientSideProviders = dynamic(
+  () => import("../client/ClientSideProviders")
+);
 
 const App: AppType<{ session: Session | null }> = ({
   Component,
@@ -61,9 +64,3 @@ export default withTRPC<AppRouter>({
     };
   },
 })(App);
-
-const getBaseUrl = () => {
-  if (typeof window !== "undefined") return ""; // browser should use relative url
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`; // SSR should use vercel url
-  return `http://localhost:3000`; // dev SSR should use localhost
-};

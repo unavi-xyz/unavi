@@ -28,7 +28,6 @@ export class RenderThread {
   #canvas: HTMLCanvasElement;
   #engine: Engine;
   #onReady: Array<() => void> = [];
-  #onScreenshot: Array<(data: string) => void> = [];
   #onExport: Array<(data: RenderExport) => void> = [];
 
   constructor({
@@ -43,11 +42,7 @@ export class RenderThread {
     this.#engine = engine;
 
     // Render in a worker if browser supports OffscreenCanvas
-    // (unless we're in development mode. React 18 dev mode causes issues with transferControlToOffscreen)
-    if (
-      typeof OffscreenCanvas !== "undefined" &&
-      process.env.NODE_ENV !== "development"
-    ) {
+    if (typeof OffscreenCanvas !== "undefined") {
       console.info("✅ Browser supports OffscreenCanvas");
       const offscreen = canvas.transferControlToOffscreen();
 
@@ -111,10 +106,6 @@ export class RenderThread {
       case "clicked_object":
         if (this.onObjectClick) this.onObjectClick(data);
         break;
-      case "screenshot":
-        this.#onScreenshot.forEach((resolve) => resolve(data));
-        this.#onScreenshot = [];
-        break;
       case "export":
         this.#onExport.forEach((resolve) => resolve(data));
         this.#onExport = [];
@@ -135,26 +126,23 @@ export class RenderThread {
   }
 
   waitForReady() {
-    const promise = new Promise<void>((resolve) => {
-      if (this.ready) resolve();
+    return new Promise<void>((resolve) => {
+      if (this.ready) {
+        resolve();
+        return;
+      }
+
       this.#onReady.push(resolve);
     });
-    return promise;
   }
 
   export() {
     const promise = new Promise<RenderExport>((resolve) => {
       this.#onExport.push(resolve);
     });
-    this.postMessage({ subject: "prepare_export", data: null });
-    return promise;
-  }
 
-  takeScreenshot() {
-    const promise = new Promise<string>((resolve) =>
-      this.#onScreenshot.push(resolve)
-    );
-    this.postMessage({ subject: "take_screenshot", data: null });
+    this.postMessage({ subject: "prepare_export", data: null });
+
     return promise;
   }
 
@@ -165,16 +153,13 @@ export class RenderThread {
     position: Float32Array;
     velocity: Float32Array;
   }) {
-    this.postMessage(
-      {
-        subject: "set_player_buffers",
-        data: {
-          position,
-          velocity,
-        },
+    this.postMessage({
+      subject: "set_player_buffers",
+      data: {
+        position,
+        velocity,
       },
-      [position, velocity]
-    );
+    });
   }
 
   setPlayerInputVector(data: [number, number]) {

@@ -2,11 +2,11 @@ import { useCreateProfileMutation } from "@wired-labs/lens";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import { useLens } from "../../../lib/lens/hooks/useLens";
-import { useValidateHandle } from "../../../lib/lens/hooks/useValidateHandle";
-import Button from "../../../ui/base/Button";
-import ErrorBox from "../../../ui/base/ErrorBox";
-import TextField from "../../../ui/base/TextField";
+import { useLens } from "../../../client/lens/hooks/useLens";
+import { useValidateHandle } from "../../../client/lens/hooks/useValidateHandle";
+import Button from "../../../ui/Button";
+import ErrorBox from "../../../ui/ErrorBox";
+import TextField from "../../../ui/TextField";
 
 export default function CreateProfilePage() {
   const router = useRouter();

@@ -1,10 +1,10 @@
 import { useRouter } from "next/router";
 import { useState } from "react";
 
-import { trpc } from "../../../auth/trpc";
+import { trpc } from "../../../client/trpc";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import ProjectLayout from "../../../home/layouts/ProjectLayout/ProjectLayout";
-import Button from "../../../ui/base/Button";
+import Button from "../../../ui/Button";
 
 export default function Project() {
   const router = useRouter();

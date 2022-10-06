@@ -1,11 +1,11 @@
 import { ChangeEvent, useState } from "react";
 import { useAccount } from "wagmi";
 
-import { useLens } from "../../../lib/lens/hooks/useLens";
-import { useProfilesByAddress } from "../../../lib/lens/hooks/useProfilesByAddress";
-import { trimHandle } from "../../../lib/lens/utils/trimHandle";
-import Button from "../../../ui/base/Button";
-import Select from "../../../ui/base/Select";
+import { useLens } from "../../../client/lens/hooks/useLens";
+import { useProfilesByAddress } from "../../../client/lens/hooks/useProfilesByAddress";
+import { trimHandle } from "../../../client/lens/utils/trimHandle";
+import Button from "../../../ui/Button";
+import Select from "../../../ui/Select";
 
 interface Props {
   onClose: () => void;

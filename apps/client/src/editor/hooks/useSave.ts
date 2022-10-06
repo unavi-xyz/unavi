@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 
-import { trpc } from "../../auth/trpc";
+import { trpc } from "../../client/trpc";
 import { useEditorStore } from "../store";
 import { getEditorState } from "../utils/getEditorState";
 
@@ -19,7 +19,7 @@ export function useSave() {
   );
 
   async function save() {
-    const { name, description, engine } = useEditorStore.getState();
+    const { name, description, engine, canvas } = useEditorStore.getState();
     if (!engine) throw new Error("No engine");
 
     const promises: Promise<any>[] = [];
@@ -42,9 +42,9 @@ export function useSave() {
     promises.push(
       new Promise<void>((resolve, reject) => {
         async function upload() {
-          if (!engine) throw new Error("No engine");
+          if (!engine || !canvas) throw new Error("No engine");
 
-          const image = await engine.renderThread.takeScreenshot();
+          const image = canvas.toDataURL("image/jpeg");
           const response = await fetch(image);
           const body = await response.blob();
 
@@ -104,11 +104,15 @@ export function useSave() {
     // Upload files to S3
     const fileUploads = uris.map(async ({ fileId, uri }) => {
       const uriResponse = await fetch(uri);
-      const text = await uriResponse.text();
+      const buffer = await uriResponse.arrayBuffer();
+      const array = new Uint8Array(buffer);
       const url = await getFileUpload({ id, fileId });
       const response = await fetch(url, {
         method: "PUT",
-        body: text,
+        body: array,
+        headers: {
+          "Content-Type": "application/octet-stream",
+        },
       });
       if (!response.ok) throw new Error("Failed to upload file");
     });

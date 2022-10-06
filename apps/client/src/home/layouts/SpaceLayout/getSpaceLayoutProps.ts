@@ -1,7 +1,7 @@
 import {
   getPublicationProps,
   PublicationProps,
-} from "../../../lib/lens/utils/getPublicationProps";
+} from "../../../client/lens/utils/getPublicationProps";
 
 export interface SpaceLayoutProps extends PublicationProps {
   playerCount?: number;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import Dialog from "../../../ui/base/Dialog";
-import DropdownMenu from "../../../ui/base/DropdownMenu";
+import Dialog from "../../../ui/Dialog";
+import DropdownMenu from "../../../ui/DropdownMenu";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
 import ProfileMenu from "./ProfileMenu";
 import SwitchProfilePage from "./SwitchProfilePage";

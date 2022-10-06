@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
@@ -11,13 +11,14 @@ import { useEditorHotkeys } from "../../../editor/hooks/useEditorHotkeys";
 import { useLoad } from "../../../editor/hooks/useLoad";
 import { useTransformControls } from "../../../editor/hooks/useTransformControls";
 import { useEditorStore } from "../../../editor/store";
-import MetaTags from "../../../ui/MetaTags";
+import MetaTags from "../../../home/MetaTags";
 
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const createdEngine = useRef(false);
+
   const engine = useEditorStore((state) => state.engine);
-  const [loaded, setLoaded] = useState(false);
 
   useLoad();
   useAutosave();
@@ -25,6 +26,9 @@ export default function Editor() {
   useEditorHotkeys();
 
   useEffect(() => {
+    if (createdEngine.current) return;
+    createdEngine.current = true;
+
     async function initEngine() {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");
@@ -40,11 +44,9 @@ export default function Editor() {
         skyboxPath: "/images/skybox/",
       });
 
-      useEditorStore.setState({ engine });
-
       // Start engine
       engine.start().then(() => {
-        setLoaded(true);
+        useEditorStore.setState({ engine, canvas });
       });
     }
 
@@ -97,7 +99,7 @@ export default function Editor() {
     };
   }, [updateCanvasSize]);
 
-  const loadedClass = loaded ? "opacity-100" : "opacity-0";
+  const loadedClass = engine ? "opacity-100" : "opacity-0";
 
   return (
     <>

@@ -1,3 +1,5 @@
+import { env } from "../env/client.mjs";
+
 export function parseUri(uri: string) {
   const isData = uri.startsWith("data:");
   const isIPFS = uri.startsWith("ipfs://");
@@ -7,7 +9,7 @@ export function parseUri(uri: string) {
     return uri;
   } else if (isIPFS) {
     const hash = uri.split("ipfs://")[1];
-    return `https://${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/${hash}`;
+    return `https://${env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/${hash}`;
   } else if (isUrl) {
     return uri;
   } else {

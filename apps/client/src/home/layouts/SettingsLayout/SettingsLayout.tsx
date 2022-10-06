@@ -7,9 +7,9 @@ import {
   MdOutlinePersonOutline,
 } from "react-icons/md";
 
-import { useLens } from "../../../lib/lens/hooks/useLens";
-import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
-import Dialog from "../../../ui/base/Dialog";
+import { useLens } from "../../../client/lens/hooks/useLens";
+import { useProfileByHandle } from "../../../client/lens/hooks/useProfileByHandle";
+import Dialog from "../../../ui/Dialog";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
 import CreateProfilePage from "../NavbarLayout/CreateProfilePage";
 import { getNavbarLayout } from "../NavbarLayout/NavbarLayout";

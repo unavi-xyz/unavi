@@ -50,21 +50,19 @@ export default defineNextConfig({
   reactStrictMode: true,
   swcMinify: true,
   async headers() {
-    return [
-      {
-        source: "/_next/static/chunks/:path*",
-        headers: [
-          {
-            key: "Cross-Origin-Opener-Policy",
-            value: "same-origin",
-          },
-          {
-            key: "Cross-Origin-Embedder-Policy",
-            value: "require-corp",
-          },
-        ],
-      },
-    ];
+    return ["/_next/static/chunks/:path*", "/:path*"].map((source) => ({
+      source,
+      headers: [
+        {
+          key: "Cross-Origin-Opener-Policy",
+          value: "same-origin",
+        },
+        {
+          key: "Cross-Origin-Embedder-Policy",
+          value: "require-corp",
+        },
+      ],
+    }));
   },
   async redirects() {
     return [

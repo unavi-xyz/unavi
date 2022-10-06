@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
@@ -19,7 +19,6 @@ export default function Editor() {
   const createdEngine = useRef(false);
 
   const engine = useEditorStore((state) => state.engine);
-  const [loaded, setLoaded] = useState(false);
 
   useLoad();
   useAutosave();
@@ -45,11 +44,9 @@ export default function Editor() {
         skyboxPath: "/images/skybox/",
       });
 
-      useEditorStore.setState({ engine, canvas });
-
       // Start engine
       engine.start().then(() => {
-        setLoaded(true);
+        useEditorStore.setState({ engine, canvas });
       });
     }
 
@@ -102,7 +99,7 @@ export default function Editor() {
     };
   }, [updateCanvasSize]);
 
-  const loadedClass = loaded ? "opacity-100" : "opacity-0";
+  const loadedClass = engine ? "opacity-100" : "opacity-0";
 
   return (
     <>

@@ -1,7 +1,7 @@
 import { Entity, GLTFMesh } from "@wired-labs/engine";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { MdClose } from "react-icons/md";
 
 import { useEditorStore } from "../../../editor/store";
@@ -14,7 +14,6 @@ export default function Preview() {
 
   const engine = useEditorStore((state) => state.engine);
   const exportedScene = useEditorStore((state) => state.exportedScene);
-  const [loaded, setLoaded] = useState(false);
 
   const router = useRouter();
   const id = router.query.id;
@@ -36,11 +35,9 @@ export default function Preview() {
         skyboxPath: "/images/skybox/",
       });
 
-      useEditorStore.setState({ engine });
-
       // Start engine
       engine.start().then(() => {
-        setLoaded(true);
+        useEditorStore.setState({ engine });
       });
     }
 
@@ -60,7 +57,7 @@ export default function Preview() {
   }, [engine]);
 
   useEffect(() => {
-    if (!engine || !exportedScene || !loaded) return;
+    if (!engine || !exportedScene) return;
 
     // Load exported scene
     const blob = new Blob([exportedScene], { type: "model/gltf-binary" });
@@ -78,7 +75,7 @@ export default function Preview() {
     return () => {
       engine.scene.removeEntity(entity.id);
     };
-  }, [engine, exportedScene, loaded]);
+  }, [engine, exportedScene]);
 
   const updateCanvasSize = useMemo(() => {
     return () => {
@@ -114,7 +111,7 @@ export default function Preview() {
     };
   }, [updateCanvasSize]);
 
-  const loadedClass = loaded ? "opacity-100" : "opacity-0";
+  const loadedClass = engine ? "opacity-100" : "opacity-0";
 
   return (
     <>

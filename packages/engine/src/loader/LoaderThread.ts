@@ -41,11 +41,14 @@ export class LoaderThread {
   }
 
   waitForReady() {
-    const promise = new Promise<void>((resolve) => {
-      if (this.ready) resolve();
+    return new Promise<void>((resolve) => {
+      if (this.ready) {
+        resolve();
+        return;
+      }
+
       this.#onReady.push(resolve);
     });
-    return promise;
   }
 
   destroy() {

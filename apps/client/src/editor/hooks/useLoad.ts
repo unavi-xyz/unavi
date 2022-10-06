@@ -60,9 +60,9 @@ export function useLoad() {
 
   // Load scene on query fetch
   useEffect(() => {
-    if (!engine || !sceneURL || !fileURLs) return;
+    async function load() {
+      if (!engine || !sceneURL || !fileURLs) return;
 
-    engine.waitForReady().then(async () => {
       const sceneResponse = await fetch(sceneURL);
       const scene: SceneJSON = await sceneResponse.json();
 
@@ -86,6 +86,8 @@ export function useLoad() {
 
       // Load scene
       engine.scene.loadJSON(scene);
-    });
+    }
+
+    load();
   }, [engine, sceneURL, fileURLs]);
 }

@@ -58,10 +58,14 @@ export class PhysicsThread {
   }
 
   waitForReady() {
-    const promise: Promise<void> = new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
+      if (this.ready) {
+        resolve();
+        return;
+      }
+
       this.#readyListeners.push(resolve);
     });
-    return promise;
   }
 
   initPlayer() {

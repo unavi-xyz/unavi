@@ -126,18 +126,23 @@ export class RenderThread {
   }
 
   waitForReady() {
-    const promise = new Promise<void>((resolve) => {
-      if (this.ready) resolve();
+    return new Promise<void>((resolve) => {
+      if (this.ready) {
+        resolve();
+        return;
+      }
+
       this.#onReady.push(resolve);
     });
-    return promise;
   }
 
   export() {
     const promise = new Promise<RenderExport>((resolve) => {
       this.#onExport.push(resolve);
     });
+
     this.postMessage({ subject: "prepare_export", data: null });
+
     return promise;
   }
 

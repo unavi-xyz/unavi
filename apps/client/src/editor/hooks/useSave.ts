@@ -19,7 +19,7 @@ export function useSave() {
   );
 
   async function save() {
-    const { name, description, engine } = useEditorStore.getState();
+    const { name, description, engine, canvas } = useEditorStore.getState();
     if (!engine) throw new Error("No engine");
 
     const promises: Promise<any>[] = [];
@@ -42,9 +42,9 @@ export function useSave() {
     promises.push(
       new Promise<void>((resolve, reject) => {
         async function upload() {
-          if (!engine) throw new Error("No engine");
+          if (!engine || !canvas) throw new Error("No engine");
 
-          const image = await engine.renderThread.takeScreenshot();
+          const image = canvas.toDataURL("image/jpeg");
           const response = await fetch(image);
           const body = await response.blob();
 

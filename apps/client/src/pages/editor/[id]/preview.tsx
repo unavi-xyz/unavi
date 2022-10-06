@@ -10,6 +10,8 @@ import MetaTags from "../../../home/MetaTags";
 export default function Preview() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const createdEngine = useRef(false);
+
   const engine = useEditorStore((state) => state.engine);
   const exportedScene = useEditorStore((state) => state.exportedScene);
   const [loaded, setLoaded] = useState(false);
@@ -18,6 +20,9 @@ export default function Preview() {
   const id = router.query.id;
 
   useEffect(() => {
+    if (createdEngine.current) return;
+    createdEngine.current = true;
+
     async function initEngine() {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");

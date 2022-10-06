@@ -61,7 +61,6 @@ export type ToRenderMessage =
   | WorkerMessage<"wheel", WheelData>
   | WorkerMessage<"set_transform_target", string | null>
   | WorkerMessage<"set_transform_mode", "translate" | "rotate" | "scale">
-  | WorkerMessage<"take_screenshot">
   | WorkerMessage<"prepare_export">
   | WorkerMessage<
       "set_player_buffers",
@@ -85,7 +84,6 @@ export type ToRenderMessage =
 export type FromRenderMessage =
   | WorkerMessage<"ready">
   | WorkerMessage<"clicked_object", string | null>
-  | WorkerMessage<"screenshot", string>
   | WorkerMessage<"export", RenderExport>
   | WorkerMessage<
       "set_transform",

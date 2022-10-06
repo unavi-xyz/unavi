@@ -16,6 +16,8 @@ import MetaTags from "../../../home/MetaTags";
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const createdEngine = useRef(false);
+
   const engine = useEditorStore((state) => state.engine);
   const [loaded, setLoaded] = useState(false);
 
@@ -25,6 +27,9 @@ export default function Editor() {
   useEditorHotkeys();
 
   useEffect(() => {
+    if (createdEngine.current) return;
+    createdEngine.current = true;
+
     async function initEngine() {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");
@@ -40,7 +45,7 @@ export default function Editor() {
         skyboxPath: "/images/skybox/",
       });
 
-      useEditorStore.setState({ engine });
+      useEditorStore.setState({ engine, canvas });
 
       // Start engine
       engine.start().then(() => {

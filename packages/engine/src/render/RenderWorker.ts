@@ -87,9 +87,6 @@ export class RenderWorker {
       case "size":
         this.#updateCanvasSize(data.width, data.height);
         break;
-      case "take_screenshot":
-        this.takeScreenshot();
-        break;
     }
   };
 
@@ -214,12 +211,6 @@ export class RenderWorker {
     this.#plugins.forEach((plugin) => plugin.destroy && plugin.destroy());
     disposeObject(this.#scene);
     this.#renderer?.dispose();
-  }
-
-  takeScreenshot() {
-    if (!this.#renderer) throw new Error("Renderer not initialized");
-    const data = this.#renderer.domElement.toDataURL("image/jpeg", 1);
-    this.#postMessage({ subject: "screenshot", data });
   }
 
   #animate() {

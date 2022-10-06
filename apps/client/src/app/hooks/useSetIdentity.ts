@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { useLens } from "../../lib/lens/hooks/useLens";
+import { useLens } from "../../client/lens/hooks/useLens";
 import { useAppStore } from "../store";
 
 export function useSetIdentity() {

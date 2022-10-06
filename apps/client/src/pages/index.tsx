@@ -5,10 +5,10 @@ import { MdArrowDownward } from "react-icons/md";
 import { VscGithubInverted, VscTwitter } from "react-icons/vsc";
 
 import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../constants";
+import LandingInfoBlock from "../home/LandingInfoBlock";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
-import Button from "../ui/base/Button";
-import LandingInfoBlock from "../ui/LandingInfoBlock";
-import MetaTags from "../ui/MetaTags";
+import MetaTags from "../home/MetaTags";
+import Button from "../ui/Button";
 
 export default function Index() {
   return (

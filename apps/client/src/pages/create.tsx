@@ -5,12 +5,12 @@ import { MdAdd } from "react-icons/md";
 import { useAccount } from "wagmi";
 
 import { trpc } from "../client/trpc";
+import CreateProjectPage from "../home/CreateProjectPage";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
-import Button from "../ui/base/Button";
-import Card from "../ui/base/Card";
-import Dialog from "../ui/base/Dialog";
-import CreateProjectPage from "../ui/CreateProjectPage";
-import MetaTags from "../ui/MetaTags";
+import MetaTags from "../home/MetaTags";
+import Button from "../ui/Button";
+import Card from "../ui/Card";
+import Dialog from "../ui/Dialog";
 
 export default function Create() {
   const [openCreateProject, setOpenCreateProject] = useState(false);

@@ -1,13 +1,13 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 
+import { useProfilesByAddress } from "../../client/lens/hooks/useProfilesByAddress";
+import { useSetDefaultProfile } from "../../client/lens/hooks/useSetDefaultProfile";
+import { trimHandle } from "../../client/lens/utils/trimHandle";
 import { getSettingsLayout } from "../../home/layouts/SettingsLayout/SettingsLayout";
-import { useProfilesByAddress } from "../../lib/lens/hooks/useProfilesByAddress";
-import { useSetDefaultProfile } from "../../lib/lens/hooks/useSetDefaultProfile";
-import { trimHandle } from "../../lib/lens/utils/trimHandle";
-import Button from "../../ui/base/Button";
-import Select from "../../ui/base/Select";
-import MetaTags from "../../ui/MetaTags";
+import MetaTags from "../../home/MetaTags";
+import Button from "../../ui/Button";
+import Select from "../../ui/Select";
 
 export default function Account() {
   const { address } = useAccount();

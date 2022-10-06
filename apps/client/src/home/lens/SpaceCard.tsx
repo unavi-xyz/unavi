@@ -1,6 +1,6 @@
 import { Post } from "@wired-labs/lens";
 
-import Card from "../../ui/base/Card";
+import Card from "../../ui/Card";
 import { getMediaURL } from "../../utils/getMediaURL";
 
 interface Props {

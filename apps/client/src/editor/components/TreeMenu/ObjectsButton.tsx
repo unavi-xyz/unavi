@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { HiOutlineCube } from "react-icons/hi";
 
-import DropdownMenu from "../../../ui/base/DropdownMenu";
-import IconButton from "../../../ui/base/IconButton";
+import DropdownMenu from "../../../ui/DropdownMenu";
+import IconButton from "../../../ui/IconButton";
 import ObjectsMenu from "./ObjectsMenu";
 
 export default function ObjectsButton() {

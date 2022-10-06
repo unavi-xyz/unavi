@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
 
 import { useEditorStore } from "../../../editor/store";
-import MetaTags from "../../../ui/MetaTags";
+import MetaTags from "../../../home/MetaTags";
 
 export default function Preview() {
   const containerRef = useRef<HTMLDivElement>(null);

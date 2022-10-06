@@ -1,6 +1,6 @@
 import { GLTFMesh } from "@wired-labs/engine";
 
-import FileInput from "../../../../ui/base/FileInput";
+import FileInput from "../../../../ui/FileInput";
 import { updateEntity } from "../../../actions/UpdateEntityAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../../store";

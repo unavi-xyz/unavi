@@ -2,8 +2,8 @@ import { useRouter } from "next/router";
 import { useRef, useState } from "react";
 
 import { trpc } from "../client/trpc";
-import Button from "./base/Button";
-import TextField from "./base/TextField";
+import Button from "../ui/Button";
+import TextField from "../ui/TextField";
 
 export default function CreateProjectPage() {
   const router = useRouter();

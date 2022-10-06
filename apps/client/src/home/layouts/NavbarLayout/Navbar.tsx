@@ -2,7 +2,7 @@ import dynamic from "next/dynamic";
 import Image from "next/future/image";
 import Link from "next/link";
 
-import { useLens } from "../../../lib/lens/hooks/useLens";
+import { useLens } from "../../../client/lens/hooks/useLens";
 import NavbarTab from "./NavbarTab";
 
 const ProfileButton = dynamic(() => import("./ProfileButton"));

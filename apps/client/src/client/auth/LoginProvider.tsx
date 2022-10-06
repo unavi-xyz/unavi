@@ -3,10 +3,10 @@ import { createContext, useEffect, useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 
 import CreateProfilePage from "../../home/layouts/NavbarLayout/CreateProfilePage";
-import { useLens } from "../../lib/lens/hooks/useLens";
-import { useProfilesByAddress } from "../../lib/lens/hooks/useProfilesByAddress";
-import { trimHandle } from "../../lib/lens/utils/trimHandle";
-import Dialog from "../../ui/base/Dialog";
+import Dialog from "../../ui/Dialog";
+import { useLens } from "../lens/hooks/useLens";
+import { useProfilesByAddress } from "../lens/hooks/useProfilesByAddress";
+import { trimHandle } from "../lens/utils/trimHandle";
 import { wagmiClient } from "../wagmi";
 import { CustomSession } from "./types";
 

@@ -7,7 +7,7 @@ import {
 } from "react-icons/md";
 
 import { LoginContext } from "../../../client/auth/LoginProvider";
-import { useLens } from "../../../lib/lens/hooks/useLens";
+import { useLens } from "../../../client/lens/hooks/useLens";
 import ProfileMenuButton from "./ProfileMenuButton";
 
 interface Props {

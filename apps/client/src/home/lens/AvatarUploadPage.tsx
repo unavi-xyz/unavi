@@ -1,16 +1,14 @@
-
-
 import { useRouter } from "next/router";
 import { useRef, useState } from "react";
 
-import { useCreatePost } from "../../lib/lens/hooks/useCreatePost";
-import { useLens } from "../../lib/lens/hooks/useLens";
-import { useProfileByHandle } from "../../lib/lens/hooks/useProfileByHandle";
-import Button from "../../ui/base/Button";
-import Card from "../../ui/base/Card";
-import FileInput from "../../ui/base/FileInput";
-import TextArea from "../../ui/base/TextArea";
-import TextField from "../../ui/base/TextField";
+import { useCreatePost } from "../../client/lens/hooks/useCreatePost";
+import { useLens } from "../../client/lens/hooks/useLens";
+import { useProfileByHandle } from "../../client/lens/hooks/useProfileByHandle";
+import Button from "../../ui/Button";
+import Card from "../../ui/Card";
+import FileInput from "../../ui/FileInput";
+import TextArea from "../../ui/TextArea";
+import TextField from "../../ui/TextField";
 import AvatarCanvas from "../layouts/AvatarLayout/AvatarCanvas";
 
 export default function AvatarUploadPage() {

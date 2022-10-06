@@ -3,14 +3,14 @@ import { NextPageContext } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
+import { useLens } from "../../../client/lens/hooks/useLens";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import {
   getSpaceLayoutProps,
   SpaceLayoutProps,
 } from "../../../home/layouts/SpaceLayout/getSpaceLayoutProps";
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
-import { useLens } from "../../../lib/lens/hooks/useLens";
-import Button from "../../../ui/base/Button";
+import Button from "../../../ui/Button";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=10");

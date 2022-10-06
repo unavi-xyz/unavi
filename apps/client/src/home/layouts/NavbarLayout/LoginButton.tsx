@@ -1,6 +1,6 @@
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 
-import Button from "../../../ui/base/Button";
+import Button from "../../../ui/Button";
 
 export default function LoginButton() {
   const { openConnectModal } = useConnectModal();

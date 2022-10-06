@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import Button from "../../../ui/base/Button";
-import Dialog from "../../../ui/base/Dialog";
+import Button from "../../../ui/Button";
+import Dialog from "../../../ui/Dialog";
 import PublishPage from "./PublishPage";
 
 export default function PublishButton() {

@@ -8,16 +8,16 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
-import { useFetchData } from "../../../lib/ipfs/useFetchData";
-import { useLens } from "../../../lib/lens/hooks/useLens";
-import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
-import { useSetProfileMetadata } from "../../../lib/lens/hooks/useSetProfileMetadata";
-import { PublicationProps } from "../../../lib/lens/utils/getPublicationProps";
-import { trimHandle } from "../../../lib/lens/utils/trimHandle";
-import Button from "../../../ui/base/Button";
-import NavigationTab from "../../../ui/base/NavigationTab";
-import Spinner from "../../../ui/base/Spinner";
-import MetaTags from "../../../ui/MetaTags";
+import { useFetchData } from "../../../client/ipfs/useFetchData";
+import { useLens } from "../../../client/lens/hooks/useLens";
+import { useProfileByHandle } from "../../../client/lens/hooks/useProfileByHandle";
+import { useSetProfileMetadata } from "../../../client/lens/hooks/useSetProfileMetadata";
+import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
+import { trimHandle } from "../../../client/lens/utils/trimHandle";
+import Button from "../../../ui/Button";
+import NavigationTab from "../../../ui/NavigationTab";
+import Spinner from "../../../ui/Spinner";
+import MetaTags from "../../MetaTags";
 import AvatarCanvas from "./AvatarCanvas";
 
 interface Props extends PublicationProps {

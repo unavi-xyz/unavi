@@ -1,12 +1,12 @@
 import { AppId, Post, PublicationSortCriteria } from "@wired-labs/lens";
 import Link from "next/link";
 
+import { useExploreQuery } from "../client/lens/hooks/useExploreQuery";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import AvatarCard from "../home/lens/AvatarCard";
 import SpaceCard from "../home/lens/SpaceCard";
-import { useExploreQuery } from "../lib/lens/hooks/useExploreQuery";
-import Carousel from "../ui/base/Carousel";
-import MetaTags from "../ui/MetaTags";
+import MetaTags from "../home/MetaTags";
+import Carousel from "../ui/Carousel";
 import { useIsMobile } from "../utils/useIsMobile";
 
 export default function Explore() {

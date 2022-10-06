@@ -5,10 +5,10 @@ import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
-import Button from "../../../ui/base/Button";
-import Dialog from "../../../ui/base/Dialog";
-import IconButton from "../../../ui/base/IconButton";
-import Tooltip from "../../../ui/base/Tooltip";
+import Button from "../../../ui/Button";
+import Dialog from "../../../ui/Dialog";
+import IconButton from "../../../ui/IconButton";
+import Tooltip from "../../../ui/Tooltip";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import PublishPage from "./PublishPage";

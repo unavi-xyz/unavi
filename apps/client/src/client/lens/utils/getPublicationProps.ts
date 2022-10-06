@@ -6,8 +6,8 @@ import {
   Publication,
 } from "@wired-labs/lens";
 
+import { PageMetadata } from "../../../home/MetaTags";
 import { lensClient } from "../../../server/lens";
-import { PageMetadata } from "../../../ui/MetaTags";
 import { getMediaURL } from "../../../utils/getMediaURL";
 
 export interface PublicationProps {

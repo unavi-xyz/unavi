@@ -11,7 +11,7 @@ import { useEditorHotkeys } from "../../../editor/hooks/useEditorHotkeys";
 import { useLoad } from "../../../editor/hooks/useLoad";
 import { useTransformControls } from "../../../editor/hooks/useTransformControls";
 import { useEditorStore } from "../../../editor/store";
-import MetaTags from "../../../ui/MetaTags";
+import MetaTags from "../../../home/MetaTags";
 
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);

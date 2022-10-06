@@ -10,15 +10,15 @@ import Image from "next/future/image";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
+import { useCreatePost } from "../../../client/lens/hooks/useCreatePost";
+import { useLens } from "../../../client/lens/hooks/useLens";
+import { useProfileByHandle } from "../../../client/lens/hooks/useProfileByHandle";
 import { trpc } from "../../../client/trpc";
 import { env } from "../../../env/client.mjs";
-import { useCreatePost } from "../../../lib/lens/hooks/useCreatePost";
-import { useLens } from "../../../lib/lens/hooks/useLens";
-import { useProfileByHandle } from "../../../lib/lens/hooks/useProfileByHandle";
-import Button from "../../../ui/base/Button";
-import FileInput from "../../../ui/base/FileInput";
-import TextArea from "../../../ui/base/TextArea";
-import TextField from "../../../ui/base/TextField";
+import Button from "../../../ui/Button";
+import FileInput from "../../../ui/FileInput";
+import TextArea from "../../../ui/TextArea";
+import TextField from "../../../ui/TextField";
 import { useEditorStore } from "../../store";
 
 function cdnModelURL(projectId: string) {

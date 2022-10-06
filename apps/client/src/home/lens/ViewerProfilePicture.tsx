@@ -1,8 +1,8 @@
 import { useGetProfileQuery } from "@wired-labs/lens";
 import { useEffect, useState } from "react";
 
-import { HANDLE_ENDING } from "../../lib/lens/constants";
-import { useLens } from "../../lib/lens/hooks/useLens";
+import { HANDLE_ENDING } from "../../client/lens/constants";
+import { useLens } from "../../client/lens/hooks/useLens";
 import { getMediaURL } from "../../utils/getMediaURL";
 import ProfilePicture from "./ProfilePicture";
 

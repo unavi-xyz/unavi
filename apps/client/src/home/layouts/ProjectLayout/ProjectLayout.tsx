@@ -2,9 +2,9 @@ import Image from "next/future/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import Button from "../../../ui/base/Button";
-import NavigationTab from "../../../ui/base/NavigationTab";
-import MetaTags from "../../../ui/MetaTags";
+import Button from "../../../ui/Button";
+import NavigationTab from "../../../ui/NavigationTab";
+import MetaTags from "../../MetaTags";
 
 interface Props {
   name?: string | null;

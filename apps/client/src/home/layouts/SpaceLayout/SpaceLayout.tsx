@@ -2,11 +2,11 @@ import Image from "next/future/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { useLens } from "../../../lib/lens/hooks/useLens";
-import { trimHandle } from "../../../lib/lens/utils/trimHandle";
-import Button from "../../../ui/base/Button";
-import NavigationTab from "../../../ui/base/NavigationTab";
-import MetaTags from "../../../ui/MetaTags";
+import { useLens } from "../../../client/lens/hooks/useLens";
+import { trimHandle } from "../../../client/lens/utils/trimHandle";
+import Button from "../../../ui/Button";
+import NavigationTab from "../../../ui/NavigationTab";
+import MetaTags from "../../MetaTags";
 import { SpaceLayoutProps } from "./getSpaceLayoutProps";
 
 export default function SpaceLayout({

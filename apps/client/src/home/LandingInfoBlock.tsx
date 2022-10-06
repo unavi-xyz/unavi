@@ -1,7 +1,7 @@
 import Image from "next/future/image";
 import Link from "next/link";
 
-import Button from "./base/Button";
+import Button from "../ui/Button";
 
 interface Props {
   title: string;

@@ -153,16 +153,13 @@ export class RenderThread {
     position: Float32Array;
     velocity: Float32Array;
   }) {
-    this.postMessage(
-      {
-        subject: "set_player_buffers",
-        data: {
-          position,
-          velocity,
-        },
+    this.postMessage({
+      subject: "set_player_buffers",
+      data: {
+        position,
+        velocity,
       },
-      [position, velocity]
-    );
+    });
   }
 
   setPlayerInputVector(data: [number, number]) {

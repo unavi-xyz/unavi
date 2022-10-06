@@ -6,7 +6,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Client } from "urql";
 
-import { useLens } from "../lib/lens/hooks/useLens";
+import { useLens } from "../../lib/lens/hooks/useLens";
 
 export function useChallenge(address: string | undefined) {
   const { client } = useLens();

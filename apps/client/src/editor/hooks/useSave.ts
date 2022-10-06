@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 
-import { trpc } from "../../auth/trpc";
+import { trpc } from "../../client/trpc";
 import { useEditorStore } from "../store";
 import { getEditorState } from "../utils/getEditorState";
 

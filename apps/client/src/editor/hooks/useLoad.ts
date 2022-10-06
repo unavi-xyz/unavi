@@ -2,7 +2,7 @@ import { SceneJSON } from "@wired-labs/engine";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
-import { trpc } from "../../auth/trpc";
+import { trpc } from "../../client/trpc";
 import { useEditorStore } from "../store";
 
 export function useLoad() {

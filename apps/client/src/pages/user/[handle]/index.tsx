@@ -21,9 +21,7 @@ import { HIDDEN_MESSAGE } from "../../../lib/lens/constants";
 import { lensClient } from "../../../server/lens";
 import { getMediaURL } from "../../../utils/getMediaURL";
 
-export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=120");
-
+export async function getServerSideProps({ query }: NextPageContext) {
   const handle = query.handle as string;
   const props = await getProfileLayoutProps(handle);
 

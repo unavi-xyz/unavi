@@ -8,11 +8,13 @@ import { useSigner, useSignTypedData } from "wagmi";
 import { ContractAddress } from "../constants";
 import { pollUntilIndexed } from "../utils/pollUntilIndexed";
 import { removeTypename } from "../utils/removeTypename";
+import { useLens } from "./useLens";
 
 export function useSetDefaultProfile() {
   const [, createTypedData] = useCreateSetDefaultProfileTypedDataMutation();
   const { data: signer } = useSigner();
   const { signTypedDataAsync } = useSignTypedData();
+  const { client } = useLens();
 
   async function setDefaultProfile(profileId: string) {
     if (!signer) throw new Error("No signer");
@@ -59,7 +61,7 @@ export function useSetDefaultProfile() {
     await tx.wait();
 
     //wait for indexing
-    await pollUntilIndexed(tx.hash);
+    await pollUntilIndexed(tx.hash, client);
   }
 
   return setDefaultProfile;

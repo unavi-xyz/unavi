@@ -6,7 +6,7 @@ import {
   MdOutlineSettings,
 } from "react-icons/md";
 
-import { LoginContext } from "../../../auth/LoginProvider";
+import { LoginContext } from "../../../client/auth/LoginProvider";
 import { useLens } from "../../../lib/lens/hooks/useLens";
 import ProfileMenuButton from "./ProfileMenuButton";
 

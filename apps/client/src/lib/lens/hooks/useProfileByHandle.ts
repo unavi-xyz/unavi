@@ -11,5 +11,5 @@ export function useProfileByHandle(handle: string | undefined) {
   });
 
   const profile = data?.profiles.items[0];
-  return profile as Profile;
+  return profile as Profile | undefined;
 }

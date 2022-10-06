@@ -9,6 +9,9 @@ import {
 
 import { lensClient } from "./lens";
 
+/*
+ * Authenticate with lens
+ */
 export async function authenticate(address: string, signature: string) {
   const { data, error } = await lensClient
     .mutation<AuthenticateMutation, AuthenticateMutationVariables>(

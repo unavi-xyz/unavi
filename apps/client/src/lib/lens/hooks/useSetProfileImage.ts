@@ -7,12 +7,13 @@ import { uploadFileToIpfs } from "../../ipfs/uploadFileToIpfs";
 import { ContractAddress } from "../constants";
 import { pollUntilIndexed } from "../utils/pollUntilIndexed";
 import { removeTypename } from "../utils/removeTypename";
+import { useLens } from "./useLens";
 
 export function useSetProfileImage(profileId: string) {
   const [, createTypedData] = useCreateSetProfileImageTypedDataMutation();
   const { signTypedDataAsync } = useSignTypedData();
-
   const { data: signer } = useSigner();
+  const { client } = useLens();
 
   async function setProfileImage(picture: File) {
     if (!signer) return;
@@ -63,7 +64,7 @@ export function useSetProfileImage(profileId: string) {
     await tx.wait();
 
     //wait for indexing
-    await pollUntilIndexed(tx.hash);
+    await pollUntilIndexed(tx.hash, client);
   }
 
   return setProfileImage;

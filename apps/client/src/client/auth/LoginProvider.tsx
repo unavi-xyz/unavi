@@ -2,13 +2,13 @@ import { signOut, useSession } from "next-auth/react";
 import { createContext, useEffect, useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 
-import { SessionStorage } from "../constants";
-import CreateProfilePage from "../home/layouts/NavbarLayout/CreateProfilePage";
-import { useLens } from "../lib/lens/hooks/useLens";
-import { useProfilesByAddress } from "../lib/lens/hooks/useProfilesByAddress";
-import { trimHandle } from "../lib/lens/utils/trimHandle";
-import Dialog from "../ui/base/Dialog";
-import { wagmiClient } from "./wagmi";
+import CreateProfilePage from "../../home/layouts/NavbarLayout/CreateProfilePage";
+import { useLens } from "../../lib/lens/hooks/useLens";
+import { useProfilesByAddress } from "../../lib/lens/hooks/useProfilesByAddress";
+import { trimHandle } from "../../lib/lens/utils/trimHandle";
+import Dialog from "../../ui/base/Dialog";
+import { wagmiClient } from "../wagmi";
+import { CustomSession } from "./types";
 
 export const LoginContext = createContext({
   logout: () => {},
@@ -22,11 +22,18 @@ export default function LoginProvider({ children }: Props) {
   const [open, setOpen] = useState(false);
   const [disableAutoConnect, setDisableAutoconnect] = useState(false);
 
-  const { logout: lensLogout, switchProfile } = useLens();
-  const { address, isConnected, isDisconnected } = useAccount();
+  const { switchProfile, setAccessToken } = useLens();
+  const {
+    address: connectedAddress,
+    isConnected,
+    isDisconnected,
+  } = useAccount();
   const { disconnect } = useDisconnect();
-  const { profiles, fetching } = useProfilesByAddress(address);
-  const { status: sessionStatus, data: session } = useSession();
+  const { status: sessionStatus, data: _session } = useSession();
+  const session = _session as CustomSession | null;
+  const sessionAddress = session?.address;
+
+  const { profiles, fetching } = useProfilesByAddress(sessionAddress);
 
   // Auto connect wallet if already authenticated
   useEffect(() => {
@@ -35,36 +42,27 @@ export default function LoginProvider({ children }: Props) {
     if (isDisconnected && sessionStatus === "authenticated") {
       // Try to auto connect wallet
       wagmiClient?.autoConnect();
+      setDisableAutoconnect(true);
     }
   }, [isDisconnected, sessionStatus, disableAutoConnect]);
 
-  // Sign out from authentication if address changes
+  // Sign out from authentication if connected address changes
   useEffect(() => {
     if (isConnected && sessionStatus === "authenticated") {
-      const authenticatedAddress = session?.user?.name;
-
-      if (authenticatedAddress !== address) {
+      if (sessionAddress !== connectedAddress) {
         // Sign out of next-auth
         signOut({ redirect: false });
       }
     }
-  }, [isConnected, address, session, sessionStatus]);
+  }, [isConnected, sessionAddress, connectedAddress, session, sessionStatus]);
 
-  // Set handle on authentication
+  // Set handle + lens access token on authentication
   useEffect(() => {
-    if (!address || !profiles || fetching || sessionStatus !== "authenticated")
+    if (!profiles || fetching || sessionStatus !== "authenticated" || !session)
       return;
 
-    // If auto login is set, login with that handle
-    const autoLogin = sessionStorage.getItem(SessionStorage.AutoLogin);
-    const hasAutoLogin = profiles.find(
-      (profile) => trimHandle(profile.handle) === autoLogin
-    );
-
-    if (autoLogin && hasAutoLogin) {
-      switchProfile(autoLogin);
-      return;
-    }
+    // console.log("SETTING HANDLE:", session);
+    setAccessToken(session.accessToken);
 
     // If no profiles, prompt user to create one
     if (profiles.length === 0) {
@@ -79,15 +77,25 @@ export default function LoginProvider({ children }: Props) {
     const newHandle = trimHandle(defaultProfile?.handle ?? firstHandle);
 
     switchProfile(newHandle);
-  }, [address, fetching, profiles, switchProfile, sessionStatus]);
+  }, [
+    fetching,
+    profiles,
+    session,
+    sessionStatus,
+    setAccessToken,
+    switchProfile,
+  ]);
 
   async function logout() {
     // Sign out of next-auth
     signOut({ redirect: false });
+
     // Disconnect wallet
     disconnect();
+
     // Clear lens handle
-    lensLogout();
+    switchProfile(undefined);
+
     // Stop auto connect
     setDisableAutoconnect(true);
   }

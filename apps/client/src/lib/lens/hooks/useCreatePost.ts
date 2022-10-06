@@ -6,11 +6,13 @@ import { useSigner, useSignTypedData } from "wagmi";
 import { ContractAddress } from "../constants";
 import { pollUntilIndexed } from "../utils/pollUntilIndexed";
 import { removeTypename } from "../utils/removeTypename";
+import { useLens } from "./useLens";
 
 export function useCreatePost(profileId: string) {
   const [, createTypedData] = useCreatePostTypedDataMutation();
   const { signTypedDataAsync } = useSignTypedData();
   const { data: signer } = useSigner();
+  const { client } = useLens();
 
   async function createPost(contentURI: string) {
     if (!signer) throw new Error("No signer");
@@ -70,7 +72,7 @@ export function useCreatePost(profileId: string) {
     await tx.wait();
 
     // Wait for indexing
-    await pollUntilIndexed(tx.hash);
+    await pollUntilIndexed(tx.hash, client);
   }
 
   return createPost;

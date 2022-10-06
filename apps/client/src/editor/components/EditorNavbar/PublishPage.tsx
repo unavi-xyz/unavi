@@ -1,4 +1,5 @@
 import {
+  AppId,
   PublicationMainFocus,
   PublicationMetadata,
   PublicationMetadataMedia,
@@ -9,7 +10,7 @@ import Image from "next/future/image";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
-import { trpc } from "../../../auth/trpc";
+import { trpc } from "../../../client/trpc";
 import { env } from "../../../env/client.mjs";
 import { useCreatePost } from "../../../lib/lens/hooks/useCreatePost";
 import { useLens } from "../../../lib/lens/hooks/useLens";
@@ -39,9 +40,11 @@ export default function PublishPage() {
   const name = useEditorStore((state) => state.name);
   const description = useEditorStore((state) => state.description);
 
+  const { mutateAsync: saveProject } = trpc.useMutation("auth.save-project");
+
   const { handle } = useLens();
   const profile = useProfileByHandle(handle);
-  const createPost = useCreatePost(profile.id);
+  const createPost = useCreatePost(profile?.id);
 
   const { data: imageURL } = trpc.useQuery(["auth.project-image", { id }], {
     enabled: id !== undefined,
@@ -64,8 +67,16 @@ export default function PublishPage() {
 
   async function handlePublish() {
     setLoading(true);
-
     const promises: Promise<void>[] = [];
+
+    // Save name and description
+    promises.push(
+      saveProject({
+        id,
+        name,
+        description,
+      })
+    );
 
     // Upload model to S3
     promises.push(
@@ -138,6 +149,11 @@ export default function PublishPage() {
 
           const media: PublicationMetadataMedia[] = [
             {
+              item: imageURL,
+              type: "image/jpeg",
+              altTag: "preview image",
+            },
+            {
               item: modelURL,
               type: "model/gltf-binary",
               altTag: "model",
@@ -151,12 +167,13 @@ export default function PublishPage() {
             locale: "en-US",
             tags: ["3d", "wired", "space"],
             mainContentFocus: PublicationMainFocus.Image,
-            external_url: "https://thewired.space/explore",
+            external_url: `https://thewired.space/user/${handle}`,
             name,
             image: imageURL,
             imageMimeType: "image/jpeg",
             media,
             attributes: [],
+            appId: AppId.Space,
           };
 
           // Upload to S3
@@ -185,6 +202,9 @@ export default function PublishPage() {
     // Create lens publication
     await createPost(contentURI);
 
+    // Redirect to profile
+    router.push(`/user/${handle}`);
+
     setLoading(false);
   }
 
@@ -198,9 +218,21 @@ export default function PublishPage() {
       </div>
 
       <div className="space-y-4">
-        <TextField title="Name" outline defaultValue={name} />
+        <TextField
+          onChange={(e) => {
+            const value = e.target.value;
+            useEditorStore.setState({ name: value });
+          }}
+          title="Name"
+          outline
+          defaultValue={name}
+        />
 
         <TextArea
+          onChange={(e) => {
+            const value = e.target.value;
+            useEditorStore.setState({ description: value });
+          }}
           autoComplete="off"
           title="Description"
           outline

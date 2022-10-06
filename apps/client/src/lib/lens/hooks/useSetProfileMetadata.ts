@@ -10,11 +10,13 @@ import { uploadStringToIpfs } from "../../ipfs/uploadStringToIpfs";
 import { ContractAddress } from "../constants";
 import { pollUntilIndexed } from "../utils/pollUntilIndexed";
 import { removeTypename } from "../utils/removeTypename";
+import { useLens } from "./useLens";
 
 export function useSetProfileMetadata(profileId: string) {
   const [, createTypedData] = useCreateSetProfileMetadataTypedDataMutation();
   const { signTypedDataAsync } = useSignTypedData();
   const { data: signer } = useSigner();
+  const { client } = useLens();
 
   async function setProfileMetadata(metadata: ProfileMetadata) {
     if (!signer) throw new Error("No signer");
@@ -69,7 +71,7 @@ export function useSetProfileMetadata(profileId: string) {
       await tx.wait();
 
       // Wait for indexing
-      await pollUntilIndexed(tx.hash);
+      await pollUntilIndexed(tx.hash, client);
     } catch (error) {
       console.error(error);
     }

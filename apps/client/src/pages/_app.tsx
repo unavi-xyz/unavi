@@ -16,7 +16,9 @@ import { getBaseUrl } from "../utils/getBaseUrl";
 // Export web vitals
 export { reportWebVitals } from "next-axiom";
 
-const ClientSideProviders = dynamic(() => import("../ClientSideProviders"));
+const ClientSideProviders = dynamic(
+  () => import("../client/ClientSideProviders")
+);
 
 const App: AppType<{ session: Session | null }> = ({
   Component,

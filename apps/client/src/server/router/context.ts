@@ -24,6 +24,7 @@ export function createProtectedRouter() {
     if (!ctx.token || !ctx.token.sub) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
+
     return next({
       ctx: {
         ...ctx,

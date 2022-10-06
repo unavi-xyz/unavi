@@ -4,11 +4,11 @@ import { SessionProvider } from "next-auth/react";
 import React from "react";
 import { WagmiConfig } from "wagmi";
 
+import LensProvider from "../lib/lens/LensProvider";
 import LoginProvider from "./auth/LoginProvider";
 import RainbowAuthProvider from "./auth/RainbowAuthProvider";
-import { theme } from "./auth/theme";
-import { chains, wagmiClient } from "./auth/wagmi";
-import LensProvider from "./lib/lens/LensProvider";
+import { theme } from "./theme";
+import { chains, wagmiClient } from "./wagmi";
 
 interface Props {
   session: Session | null;

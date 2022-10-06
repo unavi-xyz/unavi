@@ -6,16 +6,16 @@ import {
 } from "@wired-labs/lens";
 import { nanoid } from "nanoid";
 
-export function createProfileMetadata(profile: Profile) {
+export function createProfileMetadata(profile: Profile | undefined) {
   const cover_picture =
-    profile.coverPicture?.__typename === "MediaSet"
-      ? profile.coverPicture.original.url
-      : profile.coverPicture?.__typename === "NftImage"
-      ? profile.coverPicture.uri
+    profile?.coverPicture?.__typename === "MediaSet"
+      ? profile?.coverPicture.original.url
+      : profile?.coverPicture?.__typename === "NftImage"
+      ? profile?.coverPicture.uri
       : null;
 
   const attributes =
-    profile.attributes?.map((attribute) => {
+    profile?.attributes?.map((attribute) => {
       const data: AttributeData = {
         key: attribute.key,
         value: attribute.value,
@@ -28,8 +28,8 @@ export function createProfileMetadata(profile: Profile) {
   const metadata: ProfileMetadata = {
     version: ProfileMetadataVersions.one,
     metadata_id: nanoid(),
-    name: profile.name ?? null,
-    bio: profile.bio ?? null,
+    name: profile?.name ?? null,
+    bio: profile?.bio ?? null,
     cover_picture,
     attributes,
   };

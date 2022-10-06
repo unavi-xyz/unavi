@@ -45,7 +45,7 @@ export default function SpaceLayout({
                     fill
                     sizes="40vw"
                     alt="space preview"
-                    className="rounded-3xl"
+                    className="rounded-3xl object-cover"
                   />
                 )}
               </div>

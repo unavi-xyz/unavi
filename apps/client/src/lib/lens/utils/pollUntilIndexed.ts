@@ -3,13 +3,12 @@ import {
   HasTxHashBeenIndexedQuery,
   HasTxHashBeenIndexedQueryVariables,
 } from "@wired-labs/lens";
+import { Client } from "urql";
 
-import { lensClient } from "../../../server/lens";
-
-export async function pollUntilIndexed(txHash: string) {
+export async function pollUntilIndexed(txHash: string, client: Client) {
   return new Promise<void>((resolve, reject) => {
     const interval = setInterval(async () => {
-      const { data, error } = await lensClient
+      const { data, error } = await client
         .query<HasTxHashBeenIndexedQuery, HasTxHashBeenIndexedQueryVariables>(
           HasTxHashBeenIndexedDocument,
           {
@@ -26,6 +25,6 @@ export async function pollUntilIndexed(txHash: string) {
         clearInterval(interval);
         resolve();
       }
-    }, 1000);
+    }, 2000);
   });
 }

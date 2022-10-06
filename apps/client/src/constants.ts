@@ -5,7 +5,3 @@ export const DOCS_URL =
   process.env.NODE_ENV === "development"
     ? "http://localhost:3100"
     : "https://docs.thewired.space";
-
-export enum SessionStorage {
-  AutoLogin = "auto_login",
-}

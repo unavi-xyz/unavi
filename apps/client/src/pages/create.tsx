@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
 import { useAccount } from "wagmi";
 
-import { trpc } from "../auth/trpc";
+import { trpc } from "../client/trpc";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import Button from "../ui/base/Button";
 import Card from "../ui/base/Card";

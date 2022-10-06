@@ -52,7 +52,7 @@ export default defineNextConfig({
   async headers() {
     return [
       {
-        source: "/editor/:id*",
+        source: "/:path*",
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",

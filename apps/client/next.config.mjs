@@ -1,22 +1,22 @@
-import withRawBundleAnalyzer from "@next/bundle-analyzer";
+import createBundleAnalyzer from "@next/bundle-analyzer";
 import { withAxiom } from "next-axiom";
-import withRawPWA from "next-pwa";
+import createPWA from "next-pwa";
 import runtimeCaching from "next-pwa/cache.js";
-import withRawTM from "next-transpile-modules";
+import createTM from "next-transpile-modules";
 
 import { env } from "./src/env/server.mjs";
 
-const withBundleAnalyzer = withRawBundleAnalyzer({
+const withBundleAnalyzer = createBundleAnalyzer({
   enabled: env.BUNDLE_ANALYZE === "true" && env.NODE_ENV === "production",
 });
 
-const withPWA = withRawPWA({
+const withPWA = createPWA({
   dest: "public",
   disable: env.NODE_ENV === "development",
   runtimeCaching,
 });
 
-const withTM = withRawTM(["three", "@wired-labs/engine", "@wired-labs/lens"]);
+const withTM = createTM(["three", "@wired-labs/engine", "@wired-labs/lens"]);
 
 /**
  * Don't be scared of the generics here.
@@ -28,9 +28,7 @@ const withTM = withRawTM(["three", "@wired-labs/engine", "@wired-labs/lens"]);
  */
 function defineNextConfig(config) {
   const plugins = [withBundleAnalyzer, withAxiom, withTM, withPWA];
-  return plugins.reduce((acc, plugin) => plugin(acc), {
-    ...config,
-  });
+  return plugins.reduce((acc, plugin) => plugin(acc), config);
 }
 
 export default defineNextConfig({
@@ -44,8 +42,8 @@ export default defineNextConfig({
   images: {
     domains: [
       `${env.S3_BUCKET}.${env.S3_ENDPOINT}`,
-      `${env.NEXT_PUBLIC_IPFS_GATEWAY}`,
-      `${env.NEXT_PUBLIC_CDN_ENDPOINT}`,
+      env.NEXT_PUBLIC_IPFS_GATEWAY,
+      env.NEXT_PUBLIC_CDN_ENDPOINT,
       "avatar.tobi.sh",
     ],
   },
@@ -54,7 +52,7 @@ export default defineNextConfig({
   async headers() {
     return [
       {
-        source: "/:path*",
+        source: "/_next/static/chunks/:path*",
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",

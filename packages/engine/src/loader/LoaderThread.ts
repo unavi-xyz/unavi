@@ -10,6 +10,7 @@ export class LoaderThread {
 
   #worker = new Worker(new URL("./worker.ts", import.meta.url), {
     type: "module",
+    name: "loader",
   });
 
   #onReady: Array<() => void> = [];

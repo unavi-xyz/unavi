@@ -29,7 +29,7 @@
     "host#build": {
       "dependsOn": ["^build"],
       "outputs": [],
-      "env": ["RTC_MAX_PORT", "RTC_MIN_PORT"]
+      "env": ["PORT", "SSL_CERT", "SSL_KEY"]
     },
     "lint": {
       "outputs": []

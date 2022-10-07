@@ -3,17 +3,17 @@ import uWS from "uWebSockets.js";
 
 import { Players } from "./Players";
 
-const PORT = 4000;
+const PORT = parseInt(process.env.PORT || "4000");
 const textDecoder = new TextDecoder();
 
 // Create WebSocket server
 const server =
-  process.env.NODE_ENV === "production"
-    ? uWS.SSLApp({
-        key_file_name: "misc/key.pem",
-        cert_file_name: "misc/cert.pem",
-      })
-    : uWS.App();
+  process.env.NODE_ENV === "development"
+    ? uWS.App()
+    : uWS.SSLApp({
+        key_file_name: process.env.SSL_KEY,
+        cert_file_name: process.env.SSL_CERT,
+      });
 
 // Create player manager
 const players = new Players(server);

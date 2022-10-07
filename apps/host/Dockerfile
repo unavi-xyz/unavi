@@ -35,4 +35,9 @@ RUN adduser --system --uid 1001 nodejs
 USER nodejs
 COPY --from=installer /app .
 
+ENV NODE_ENV=production
+ENV PORT=4000
+ENV SSL_CERT=cert.pem
+ENV SSL_KEY=key.pem
+
 CMD node --experimental-specifier-resolution=node apps/host/build/server.js

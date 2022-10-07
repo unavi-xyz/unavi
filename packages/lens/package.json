@@ -28,6 +28,7 @@
     "@wired-labs/tsconfig": "*",
     "eslint": "^8.24.0",
     "eslint-config-custom": "*",
+    "ethers": "^5.7.1",
     "typechain": "^8.1.0",
     "typescript": "~4.8.4"
   },

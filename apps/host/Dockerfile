@@ -1,49 +1,38 @@
-FROM node:16 as base
+FROM node:18 AS builder
+WORKDIR /app
+# Set working directory
+RUN yarn global add turbo
+COPY . .
+RUN turbo prune --scope=@wired-labs/host --docker
 
-ARG SCOPE
-ENV SCOPE=${SCOPE}
-ENV YARN_CACHE_FOLDER=.yarn-cache
+# Add lockfile and package.json's of isolated subworkspace
+FROM node:18 AS installer
+WORKDIR /app
 
-# install mediasoup dependencies
+# Install mediasoup dependencies
 RUN \
 	set -x \
 	&& apt-get update \
 	&& apt-get install -y net-tools build-essential python3 python3-pip valgrind
 
-FROM base AS pruner
-# turborepo combines everything into a single lock file
-# we need to run turbo prune to remove all deps we dont need
-RUN yarn global add turbo
-COPY . .
-RUN turbo prune --scope=${SCOPE} --docker
+# First install the dependencies (as they change less often)
+COPY .gitignore .gitignore
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/yarn.lock ./yarn.lock
+RUN yarn install --ignore-scripts --frozen-lockfile
 
-FROM base AS dev-deps
-COPY --from=pruner /out/json/ .
-COPY --from=pruner /out/yarn.lock ./yarn.lock
-RUN yarn install --frozen-lockfile
+# Build the project and its dependencies
+COPY --from=builder /app/out/full/ .
+COPY turbo.json turbo.json
+RUN yarn turbo run build --filter=@wired-labs/host...
 
-FROM base AS prod-deps
-COPY --from=pruner /out/json/ .
-COPY --from=pruner /out/yarn.lock ./yarn.lock
-COPY --from=dev-deps /${YARN_CACHE_FOLDER} /${YARN_CACHE_FOLDER}
-RUN yarn install --frozen-lockfile --production --prefer-offline --ignore-scripts
-RUN rm -rf /${YARN_CACHE_FOLDER}
+FROM node:18 AS runner
+WORKDIR /app
 
-FROM base AS builder
-COPY --from=dev-deps . .
-COPY --from=pruner /out/full/ .
-RUN yarn turbo run build --filter=${SCOPE}...
-RUN find . -name node_modules | xargs rm -rf
+# Don't run production as root
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+USER nodejs
+COPY --from=installer /app .
 
-FROM base AS runner
-COPY --from=dev-deps . .
-COPY --from=prod-deps . .
-COPY --from=builder . .
-
-ARG RTC_MIN_PORT
-ENV RTC_MIN_PORT=${RTC_MIN_PORT}
-
-ARG RTC_MAX_PORT
-ENV RTC_MAX_PORT=${RTC_MAX_PORT}
-
-CMD yarn workspace ${SCOPE} start
+CMD node --experimental-specifier-resolution=node apps/host/build/server.js

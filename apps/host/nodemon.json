@@ -2,6 +2,6 @@
   "execMap": {
     "ts": "ts-node-esm --experimentalSpecifierResolution node ./src/server.ts"
   },
-  "ext": "ts, json",
+  "ext": "ts",
   "watch": ["src"]
 }

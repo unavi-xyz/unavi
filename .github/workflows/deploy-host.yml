@@ -1,0 +1,21 @@
+name: deploy-host
+
+runs-on: host
+
+on:
+  registry_package:
+    types: [published]
+
+jobs:
+  deploy-host:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH remote commands
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.HOST_HOST }}
+          username: ${{ secrets.HOST_USERNAME }}
+          key: ${{ secrets.HOST_KEY }}
+          port: ${{ secrets.HOST_PORT }}
+          script: sh /home/deploy.sh

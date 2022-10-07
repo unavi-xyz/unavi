@@ -10,6 +10,7 @@ import {
 
 import { PostMessage } from "../types";
 import { OrbitControlsPlugin } from "./plugins/OrbitControlsPlugin";
+import { OtherPlayersPlugin } from "./plugins/OtherPlayersPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
 import { TransformControlsPlugin } from "./plugins/TransformControlsPlugin";
@@ -61,6 +62,8 @@ export class RenderWorker {
 
     this.#sceneLoader = new SceneLoader(postMessage);
     this.#scene.add(this.#sceneLoader.root);
+
+    this.#plugins.push(new OtherPlayersPlugin(this.#scene));
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {

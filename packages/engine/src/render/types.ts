@@ -79,6 +79,15 @@ export type ToRenderMessage =
       {
         visible: boolean;
       }
+    >
+  | WorkerMessage<"player_joined", string>
+  | WorkerMessage<"player_left", string>
+  | WorkerMessage<
+      "set_player_location",
+      {
+        playerId: string;
+        location: [number, number, number, number, number, number, number];
+      }
     >;
 
 export type FromRenderMessage =

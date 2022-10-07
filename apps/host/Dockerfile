@@ -39,5 +39,7 @@ ENV NODE_ENV=production
 ENV PORT=4000
 ENV SSL_CERT=cert.pem
 ENV SSL_KEY=key.pem
+ENV RTC_MIN_PORT=40000
+ENV RTC_MAX_PORT=40100
 
 CMD node --experimental-specifier-resolution=node apps/host/build/server.js

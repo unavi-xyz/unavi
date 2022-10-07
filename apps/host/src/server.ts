@@ -3,9 +3,8 @@ import uWS from "uWebSockets.js";
 
 import { Players } from "./Players";
 
-const PORT = parseInt(process.env.PORT || "4000");
 const textDecoder = new TextDecoder();
-
+const PORT = parseInt(process.env.PORT || "4000");
 const cert_file_name = process.env.SSL_CERT;
 const key_file_name = process.env.SSL_KEY;
 
@@ -13,10 +12,7 @@ const key_file_name = process.env.SSL_KEY;
 // Use SSL if cert and key are provided
 const server =
   cert_file_name && key_file_name
-    ? uWS.SSLApp({
-        key_file_name: process.env.SSL_KEY,
-        cert_file_name: process.env.SSL_CERT,
-      })
+    ? uWS.SSLApp({ key_file_name, cert_file_name })
     : uWS.App();
 
 // Create player manager
@@ -40,8 +36,14 @@ server.ws("/*", {
         players.joinSpace(ws, message.data);
         break;
       }
+
       case "leave": {
         players.leaveSpace(ws);
+        break;
+      }
+
+      case "location": {
+        players.publishLocation(ws, message.data);
         break;
       }
     }

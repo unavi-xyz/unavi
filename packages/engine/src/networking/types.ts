@@ -10,18 +10,19 @@ export type ToHostMessage =
         spaceId: string;
       }
     >
-  | GenericWebSocketMessage<"leave", null>;
+  | GenericWebSocketMessage<"leave", null>
+  | GenericWebSocketMessage<
+      "location",
+      [number, number, number, number, number, number, number]
+    >;
 
 export type FromHostMessage =
+  | GenericWebSocketMessage<"player_joined", string>
+  | GenericWebSocketMessage<"player_left", string>
   | GenericWebSocketMessage<
-      "player_joined",
+      "player_location",
       {
         playerId: string;
-      }
-    >
-  | GenericWebSocketMessage<
-      "player_left",
-      {
-        playerId: string;
+        location: [number, number, number, number, number, number, number];
       }
     >;

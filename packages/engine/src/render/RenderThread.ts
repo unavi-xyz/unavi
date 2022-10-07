@@ -44,6 +44,7 @@ export class RenderThread {
     // Render in a worker if browser supports OffscreenCanvas
     if (typeof OffscreenCanvas !== "undefined") {
       console.info("✅ Browser supports OffscreenCanvas");
+
       const offscreen = canvas.transferControlToOffscreen();
 
       this.worker = new Worker(new URL("./worker.ts", import.meta.url), {
@@ -54,7 +55,7 @@ export class RenderThread {
       // Send canvas
       this.postMessage({ subject: "set_canvas", data: offscreen }, [offscreen]);
     } else {
-      console.info("😔 Browser does not support OffscreenCanvas");
+      console.info("❌ Browser does not support OffscreenCanvas");
 
       // Render in a fake worker on the main thread
       this.worker = new FakeWorker();

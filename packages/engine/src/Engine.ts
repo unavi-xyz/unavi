@@ -45,10 +45,7 @@ export class Engine {
     });
 
     // Create physics thread
-    this.physicsThread = new PhysicsThread({
-      canvas,
-      renderThread: this.renderThread,
-    });
+    this.physicsThread = new PhysicsThread({ canvas, engine: this });
 
     // Create loader thread
     this.loaderThread = new LoaderThread();
@@ -61,7 +58,10 @@ export class Engine {
     });
 
     // Create networking interface
-    this.networkingInterface = new NetworkingInterface({ scene: this.scene });
+    this.networkingInterface = new NetworkingInterface({
+      scene: this.scene,
+      renderThread: this.renderThread,
+    });
 
     // Once the threads are ready, create the player
     const createPlayer = async () => {

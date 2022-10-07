@@ -1,4 +1,8 @@
-const withTM = require("next-transpile-modules")(["@wired-labs/engine"]);
+const withTM = require("next-transpile-modules")([
+  "three",
+  "@wired-labs/engine",
+  "@wired-labs/lens",
+]);
 
 /**
  * @type {import('next').NextConfig}

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "composite": true,
+    "jsx": "preserve",
     "rootDir": "./src"
   },
   "extends": "@wired-labs/tsconfig/base.json",

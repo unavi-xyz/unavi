@@ -39,20 +39,15 @@ export default function App({ id, metadata, publication }: Props) {
   const modelURL: string | undefined =
     publication?.metadata.media[1]?.original.url;
 
-  const spaceHost = null; // TODO: get from metadata
-
-  const host =
-    process.env.NODE_ENV === "development"
-      ? "ws://localhost:4000"
-      : spaceHost
-      ? `wss://${spaceHost}`
-      : DEFAULT_HOST;
-
   useEffect(() => {
     if (!engine) return;
 
-    // TODO connect to host via WebSockets
-  }, [engine, host]);
+    engine.joinSpace(id);
+
+    return () => {
+      engine.leaveSpace();
+    };
+  }, [engine, id]);
 
   useEffect(() => {
     if (!modelURL || !engine) return;

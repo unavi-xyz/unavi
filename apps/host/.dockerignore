@@ -4,12 +4,13 @@ node_modules
 .pnp.js
 
 # testing
-coverage
+coverage/
 
 # next.js
 .next/
 out/
-build
+build/
+dist/
 
 # misc
 .DS_Store
@@ -27,7 +28,8 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-*.local*
-
 # turbo
 .turbo
+
+# typescript
+*.tsbuildinfo

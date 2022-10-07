@@ -1,6 +1,7 @@
 import { GLTFExporter } from "./exporter/GLTFExporter";
 import { LoaderThread } from "./loader/LoaderThread";
 import { MainScene } from "./main/MainScene";
+import { NetworkingInterface } from "./networking/NetworkingInterface";
 import { PhysicsThread } from "./physics/PhysicsThread";
 import { RenderThread } from "./render/RenderThread";
 
@@ -22,6 +23,9 @@ export class Engine {
   renderThread: RenderThread;
 
   scene: MainScene;
+  networkingInterface: NetworkingInterface;
+
+  running = false;
 
   constructor({
     canvas,
@@ -30,6 +34,7 @@ export class Engine {
     preserveDrawingBuffer,
     skyboxPath,
   }: EngineOptions) {
+    // Create render thread
     this.renderThread = new RenderThread({
       canvas,
       engine: this,
@@ -39,49 +44,68 @@ export class Engine {
       skyboxPath,
     });
 
-    this.loaderThread = new LoaderThread();
-
+    // Create physics thread
     this.physicsThread = new PhysicsThread({
       canvas,
       renderThread: this.renderThread,
     });
 
+    // Create loader thread
+    this.loaderThread = new LoaderThread();
+
+    // Create scene
     this.scene = new MainScene({
       physicsThread: this.physicsThread,
       loaderThread: this.loaderThread,
       renderThread: this.renderThread,
     });
 
-    // Init the player once ready
-    this.physicsThread.waitForReady().then(() => {
-      if (camera === "player") this.physicsThread.initPlayer();
-    });
+    // Create networking interface
+    this.networkingInterface = new NetworkingInterface({ scene: this.scene });
+
+    // Once the threads are ready, create the player
+    const createPlayer = async () => {
+      await this.renderThread.waitForReady();
+      await this.physicsThread.waitForReady();
+      this.physicsThread.initPlayer();
+    };
+
+    if (camera === "player") createPlayer();
   }
 
-  async waitForReady() {
-    await this.physicsThread.waitForReady();
-    await this.loaderThread.waitForReady();
-    await this.renderThread.waitForReady();
+  joinSpace(spaceId: string) {
+    if (!this.running) throw new Error("Engine is not running");
+    this.networkingInterface.joinSpace(spaceId);
+  }
+
+  leaveSpace() {
+    this.networkingInterface.leaveSpace();
   }
 
   async start() {
-    await this.waitForReady();
+    await this.physicsThread.waitForReady();
+    await this.loaderThread.waitForReady();
+    await this.renderThread.waitForReady();
 
     this.physicsThread.start();
     this.renderThread.start();
+
+    this.running = true;
   }
 
   stop() {
     this.physicsThread.stop();
     this.renderThread.stop();
+
+    this.running = false;
   }
 
   async export() {
-    // Get the scene
+    // Get scene
     const json = this.scene.toJSON(true);
     const data = await this.renderThread.export();
 
-    // Export the scene
+    // Export as glb
     const exporter = new GLTFExporter();
     const glb = await exporter.parse(json, data);
 

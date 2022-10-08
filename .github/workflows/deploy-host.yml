@@ -1,7 +1,5 @@
 name: deploy-host
 
-runs-on: host
-
 on:
   registry_package:
     types: [published]

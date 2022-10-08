@@ -17,7 +17,7 @@ export default function Index() {
 
       <div className="flex justify-center">
         <div className="max-w-content mx-4 snap-y snap-mandatory space-y-12">
-          <div className="h-screen snap-center pb-20">
+          <div className="h-screen snap-center pb-24">
             <div className="flex h-full flex-col-reverse md:flex-row md:items-center">
               <div className="flex h-full w-full flex-col space-y-4 md:justify-center">
                 <div className="text-center text-6xl font-black md:text-left md:text-8xl">

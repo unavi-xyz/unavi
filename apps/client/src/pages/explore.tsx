@@ -1,9 +1,9 @@
 import { AppId, Post, PublicationSortCriteria } from "@wired-labs/lens";
 import Link from "next/link";
+import { useState } from "react";
 
 import { useExploreQuery } from "../client/lens/hooks/useExploreQuery";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
-import AvatarCard from "../home/lens/AvatarCard";
 import SpaceCard from "../home/lens/SpaceCard";
 import MetaTags from "../home/MetaTags";
 import Carousel from "../ui/Carousel";
@@ -12,19 +12,23 @@ import { useIsMobile } from "../utils/useIsMobile";
 export default function Explore() {
   const isMobile = useIsMobile();
   const spaceLimit = isMobile ? 1 : 3;
-  const avatarLimit = isMobile ? 1 : 5;
+  // const avatarLimit = isMobile ? 1 : 5;
+
+  const [monthAgo] = useState(Date.now() - 1000 * 60 * 60 * 24 * 30);
 
   const latestSpaces = useExploreQuery(
     spaceLimit,
     [AppId.Space],
-    PublicationSortCriteria.Latest
+    PublicationSortCriteria.Latest,
+    monthAgo
   );
 
-  const latestAvatars = useExploreQuery(
-    avatarLimit,
-    [AppId.Avatar],
-    PublicationSortCriteria.Latest
-  );
+  // const latestAvatars = useExploreQuery(
+  //   avatarLimit,
+  //   [AppId.Avatar],
+  //   PublicationSortCriteria.Latest,
+  //   monthAgo
+  // );
 
   return (
     <>
@@ -65,7 +69,7 @@ export default function Explore() {
             })}
           </Carousel>
 
-          <Carousel
+          {/* <Carousel
             title="🌱 Latest Avatars"
             disableBack={latestAvatars.cursor === 0}
             disableForward={latestAvatars.isLastPage}
@@ -90,7 +94,7 @@ export default function Explore() {
                 </Link>
               );
             })}
-          </Carousel>
+          </Carousel> */}
         </div>
       </div>
     </>

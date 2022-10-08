@@ -3,7 +3,7 @@
   "background_color": "#ffffff",
   "categories": ["social", "games", "entertainment"],
   "description": "An open and decentralized web-based metaverse platform.",
-  "display": "fullscreen",
+  "display": "minimal-ui",
   "icons": [
     {
       "src": "images/Logo.png",
@@ -22,5 +22,5 @@
   "short_name": "Wired",
   "splash_pages": null,
   "start_url": "/",
-  "theme_color": "#ffffff"
+  "theme_color": "#52daff"
 }

@@ -1,279 +1,61 @@
-import {
-  ConnectTransportDataSchema,
-  ConsumeAudioDataSchema,
-  IdentityDataSchema,
-  JoinSpaceDataSchema,
-  LeaveSpaceDataSchema,
-  ProduceAudioDataSchema,
-  ProduceDataDataSchema,
-  SendChatMessageDataSchema,
-} from "@wired-labs/engine";
-import express from "express";
-import { createServer } from "http";
-import { Server } from "socket.io";
+import { ToHostMessage } from "@wired-labs/engine";
+import uWS from "uWebSockets.js";
 
-import { GameManager } from "./classes/GameManager";
-import { createMediasoupRouter, createWebRtcTransport } from "./mediasoup";
-import { TypedSocket } from "./types";
+import { Players } from "./Players";
 
-const PORT = 4000;
-const HOST = "0.0.0.0";
+const textDecoder = new TextDecoder();
+const PORT = parseInt(process.env.PORT || "4000");
+const cert_file_name = process.env.SSL_CERT;
+const key_file_name = process.env.SSL_KEY;
 
-start();
+// Create WebSocket server
+// Use SSL if cert and key are provided
+const server =
+  cert_file_name && key_file_name
+    ? uWS.SSLApp({ key_file_name, cert_file_name })
+    : uWS.App();
 
-async function start() {
-  //create express server
-  const app = express();
+// Create player manager
+const players = new Players(server);
 
-  //create http server
-  const httpServer = createServer(app);
+// Handle WebSocket connections
+server.ws("/*", {
+  compression: uWS.SHARED_COMPRESSOR,
+  idleTimeout: 60,
 
-  //create socket server
-  const io = new Server(httpServer, {
-    cors: {
-      origin: "*",
-    },
-  });
+  open: (ws) => {
+    players.addPlayer(ws);
+  },
 
-  //create mediasoup router
-  const router = await createMediasoupRouter();
+  message: (ws, buffer) => {
+    const text = textDecoder.decode(buffer);
+    const message: ToHostMessage = JSON.parse(text);
 
-  //create game manager
-  const manager = new GameManager(router);
+    switch (message.subject) {
+      case "join": {
+        players.joinSpace(ws, message.data);
+        break;
+      }
 
-  //handle express requests
-  app.get("/space/:id/player_count", (req, res) => {
-    const id = req.params.id;
+      case "leave": {
+        players.leaveSpace(ws);
+        break;
+      }
 
-    const space = manager.getSpace(id);
-    if (!space) {
-      res.send("0");
-      return;
+      case "location": {
+        players.publishLocation(ws, message.data);
+        break;
+      }
     }
+  },
 
-    const playerCount = space.playercount;
-    res.send(`${playerCount}`);
-  });
+  close: (ws) => {
+    players.removePlayer(ws);
+  },
+});
 
-  //handle socket connections
-  io.on("connection", (socket: TypedSocket) => {
-    const player = manager.createPlayer(socket);
-
-    socket.on("join_space", async (data, callback) => {
-      try {
-        const { spaceId } = JoinSpaceDataSchema.parse(data);
-
-        player.joinSpace(spaceId);
-
-        callback({
-          success: true,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("leave_space", async (data, callback) => {
-      try {
-        const { spaceId } = LeaveSpaceDataSchema.parse(data);
-
-        player.leaveSpace(spaceId);
-
-        callback({
-          success: true,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("set_identity", async (data, callback) => {
-      try {
-        const { handle } = IdentityDataSchema.parse(data);
-
-        player.handle = handle;
-
-        callback({
-          success: true,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("send_chat_message", async (data, callback) => {
-      try {
-        const { message } = SendChatMessageDataSchema.parse(data);
-
-        player.sendChatMessage(message);
-
-        callback({
-          success: true,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("get_router_rtp_capabilities", (callback) => {
-      callback({
-        success: true,
-        routerRtpCapabilities: router.rtpCapabilities,
-      });
-    });
-
-    socket.on("create_producer_transport", async (callback) => {
-      try {
-        const { transport, params } = await createWebRtcTransport(router);
-        player.producer.transport = transport;
-
-        callback({
-          success: true,
-          params,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("create_consumer_transport", async (callback) => {
-      try {
-        const { transport, params } = await createWebRtcTransport(router);
-        player.consumer.transport = transport;
-
-        callback({
-          success: true,
-          params,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("connect_producer_transport", async (data, callback) => {
-      try {
-        const { dtlsParameters } = ConnectTransportDataSchema.parse(data);
-
-        if (!player.producer.transport)
-          throw new Error("audioProducerTransport is required");
-
-        await player.producer.transport.connect({
-          dtlsParameters,
-        });
-
-        callback({
-          success: true,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("connect_consumer_transport", async (data, callback) => {
-      try {
-        const { dtlsParameters } = ConnectTransportDataSchema.parse(data);
-
-        if (!player.consumer.transport)
-          throw new Error("audioConsumerTransport is required");
-
-        await player.consumer.transport.connect({
-          dtlsParameters,
-        });
-
-        callback({
-          success: true,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("produce_audio", async (data, callback) => {
-      try {
-        const { kind, rtpParameters } = ProduceAudioDataSchema.parse(data);
-
-        const id = await player.produceAudio({
-          kind,
-          rtpParameters,
-        });
-
-        callback({
-          success: true,
-          id,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("consume_audio", (data, callback) => {
-      try {
-        const { rtpCapabilities } = ConsumeAudioDataSchema.parse(data);
-
-        player.rtpCapabilities = rtpCapabilities;
-
-        callback({
-          success: true,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("produce_data", async (data, callback) => {
-      try {
-        const { sctpStreamParameters } = ProduceDataDataSchema.parse(data);
-
-        const id = await player.produceData(sctpStreamParameters);
-
-        callback({
-          success: true,
-          id,
-        });
-      } catch (error) {
-        console.error(error);
-        callback({
-          success: false,
-        });
-      }
-    });
-
-    socket.on("disconnect", () => {
-      //clean up player
-      player.disconnect();
-    });
-  });
-
-  //start http server
-  httpServer.listen(PORT, HOST);
-}
+// Start server
+server.listen(PORT, (listenSocket) => {
+  if (listenSocket) console.info(`✅ Listening to port ${PORT}`);
+  else console.error(`❌ Failed to listen to port ${PORT}`);
+});

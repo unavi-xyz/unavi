@@ -1,10 +1,12 @@
 {
-  "exclude": ["node_modules"],
   "extends": "@wired-labs/tsconfig/nextjs.json",
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.js"],
   "references": [
     {
       "path": "../../packages/engine"
+    },
+    {
+      "path": "../../packages/lens"
     }
   ]
 }

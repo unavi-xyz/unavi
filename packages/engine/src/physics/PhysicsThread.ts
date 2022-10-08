@@ -1,11 +1,11 @@
-import { RenderThread } from "../render/RenderThread";
+import { Engine } from "../Engine";
 import { Transferable } from "../types";
 import { Player } from "./Player";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
 export interface PhysicsThreadOptions {
   canvas: HTMLCanvasElement;
-  renderThread: RenderThread;
+  engine: Engine;
 }
 
 /*
@@ -14,19 +14,20 @@ export interface PhysicsThreadOptions {
 export class PhysicsThread {
   #worker = new Worker(new URL("./worker.ts", import.meta.url), {
     type: "module",
+    name: "physics",
   });
 
   ready = false;
   #readyListeners: Array<() => void> = [];
 
   #canvas: HTMLCanvasElement;
-  #renderThread: RenderThread;
+  #engine: Engine;
 
   #player: Player | null = null;
 
-  constructor({ canvas, renderThread }: PhysicsThreadOptions) {
+  constructor({ canvas, engine }: PhysicsThreadOptions) {
     this.#canvas = canvas;
-    this.#renderThread = renderThread;
+    this.#engine = engine;
 
     this.#worker.onmessage = this.#onmessage;
   }
@@ -40,7 +41,8 @@ export class PhysicsThread {
         this.#readyListeners.forEach((listener) => listener());
         break;
       case "player_buffers":
-        this.#renderThread.setPlayerBuffers(data);
+        this.#engine.renderThread.setPlayerBuffers(data);
+        this.#engine.networkingInterface.setPlayerPositionBuffer(data.position);
         break;
     }
   };
@@ -69,7 +71,7 @@ export class PhysicsThread {
   }
 
   initPlayer() {
-    this.#player = new Player(this.#canvas, this.#renderThread, this);
+    this.#player = new Player(this.#canvas, this.#engine.renderThread, this);
     this.postMessage({ subject: "init_player", data: null });
   }
 

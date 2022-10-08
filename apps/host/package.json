@@ -5,21 +5,24 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "_dev": "nodemon ./src/server.ts",
-    "_start": "node --experimental-specifier-resolution=node ./build/server.js",
-    "_lint": "cd ../.. && eslint --fix apps/host --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
+    "build": "tsc --build tsconfig.json",
+    "dev": "nodemon ./src/server.ts",
+    "deploy": "yarn docker:build && docker push ghcr.io/wired-labs/host",
+    "docker:build": "yarn docker:clean && cd ../.. && docker build -t ghcr.io/wired-labs/host -f apps/host/Dockerfile .",
+    "docker:clean": "yarn docker:stop && docker rmi ghcr.io/wired-labs/host || true",
+    "docker:start": "yarn docker:stop && docker run -e NODE_ENV=development -p 4000:4000 --name wired-host ghcr.io/wired-labs/host",
+    "docker:stop": "docker stop wired-host && docker rm wired-host || true",
+    "lint": "cd ../.. && eslint --fix apps/host --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore",
+    "start": "node --experimental-specifier-resolution=node ./build/server.js"
   },
   "dependencies": {
-    "express": "^4.18.1",
+    "@wired-labs/engine": "*",
     "mediasoup": "^3.10.8",
     "nanoid": "^4.0.0",
-    "react": "^18.2.0",
-    "socket.io": "^4.5.1"
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.10.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.14",
     "@types/node": "^18.8.2",
-    "@wired-labs/engine": "*",
     "@wired-labs/tsconfig": "*",
     "eslint": "^8.24.0",
     "eslint-config-custom": "*",

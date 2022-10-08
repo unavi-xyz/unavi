@@ -71,7 +71,7 @@ export default function User({ publications, ...rest }: Props) {
   return (
     <ProfileLayout {...rest}>
       {publications && publications.length > 0 && (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           {publications?.map((publication) => {
             if (publication.appId === AppId.Space) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;

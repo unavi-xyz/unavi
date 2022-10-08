@@ -14,6 +14,7 @@ export function useExploreQuery(
   pageSize: number,
   sources: AppId[],
   sortCriteria: PublicationSortCriteria,
+  timestamp: number | null = null,
   publicationTypes: PublicationTypes[] = [PublicationTypes.Post],
   randomize = false,
   extraSize = 1
@@ -35,6 +36,7 @@ export function useExploreQuery(
         sortCriteria,
         publicationTypes,
         limit,
+        timestamp,
         cursor: cursor * pageSize,
         noRandomize: !randomize,
       },

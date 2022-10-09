@@ -24,7 +24,7 @@
   "devDependencies": {
     "@types/node": "^18.8.2",
     "@wired-labs/tsconfig": "*",
-    "eslint": "^8.24.0",
+    "eslint": "^8.25.0",
     "eslint-config-custom": "*",
     "nodemon": "^2.0.20",
     "ts-node": "^10.9.1",

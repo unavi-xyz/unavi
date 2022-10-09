@@ -14,7 +14,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "~3.171.0",
     "@aws-sdk/s3-request-presigner": "~3.171.0",
-    "@next-auth/prisma-adapter": "^1.0.4",
+    "@next-auth/prisma-adapter": "^1.0.5",
     "@next/bundle-analyzer": "^12.3.1",
     "@prisma/client": "^4.4.0",
     "@rainbow-me/rainbowkit": "^0.7.1",
@@ -42,9 +42,9 @@
     "rxjs": "^7.5.7",
     "sharp": "^0.31.1",
     "urql": "^3.0.3",
-    "wagmi": "^0.6.7",
+    "wagmi": "^0.6.8",
     "zod": "^3.19.1",
-    "zustand": "^4.1.1"
+    "zustand": "^4.1.2"
   },
   "devDependencies": {
     "@types/offscreencanvas": "^2019.7.0",
@@ -53,7 +53,7 @@
     "@wired-labs/tsconfig": "*",
     "autoprefixer": "^10.4.12",
     "dotenv-cli": "^6.0.0",
-    "eslint": "^8.24.0",
+    "eslint": "^8.25.0",
     "eslint-config-custom": "*",
     "postcss": "^8.4.17",
     "prisma": "^4.4.0",

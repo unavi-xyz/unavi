@@ -1,4 +1,4 @@
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { createContext, useEffect, useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 
@@ -8,7 +8,7 @@ import { useLens } from "../lens/hooks/useLens";
 import { useProfilesByAddress } from "../lens/hooks/useProfilesByAddress";
 import { trimHandle } from "../lens/utils/trimHandle";
 import { wagmiClient } from "../wagmi";
-import { CustomSession } from "./types";
+import { useSession } from "./useSession";
 
 export const LoginContext = createContext({
   logout: () => {},
@@ -29,8 +29,7 @@ export default function LoginProvider({ children }: Props) {
     isDisconnected,
   } = useAccount();
   const { disconnect } = useDisconnect();
-  const { status: sessionStatus, data: _session } = useSession();
-  const session = _session as CustomSession | null;
+  const { status, session } = useSession();
   const sessionAddress = session?.address;
 
   const { profiles, fetching } = useProfilesByAddress(sessionAddress);
@@ -39,29 +38,33 @@ export default function LoginProvider({ children }: Props) {
   useEffect(() => {
     if (disableAutoConnect) return;
 
-    if (isDisconnected && sessionStatus === "authenticated") {
+    if (isDisconnected && status === "authenticated") {
       // Try to auto connect wallet
       wagmiClient?.autoConnect();
       setDisableAutoconnect(true);
     }
-  }, [isDisconnected, sessionStatus, disableAutoConnect]);
+  }, [isDisconnected, status, disableAutoConnect]);
 
   // Sign out from authentication if connected address changes
   useEffect(() => {
-    if (isConnected && sessionStatus === "authenticated") {
+    if (isConnected && status === "authenticated") {
       if (sessionAddress !== connectedAddress) {
         // Sign out of next-auth
         signOut({ redirect: false });
       }
     }
-  }, [isConnected, sessionAddress, connectedAddress, session, sessionStatus]);
+  }, [isConnected, sessionAddress, connectedAddress, session, status]);
 
   // Set handle + lens access token on authentication
   useEffect(() => {
-    if (!profiles || fetching || sessionStatus !== "authenticated" || !session)
+    if (
+      !profiles ||
+      fetching ||
+      status !== "authenticated" ||
+      !session?.accessToken
+    )
       return;
 
-    // console.log("SETTING HANDLE:", session);
     setAccessToken(session.accessToken);
 
     // If no profiles, prompt user to create one
@@ -77,14 +80,7 @@ export default function LoginProvider({ children }: Props) {
     const newHandle = trimHandle(defaultProfile?.handle ?? firstHandle);
 
     switchProfile(newHandle);
-  }, [
-    fetching,
-    profiles,
-    session,
-    sessionStatus,
-    setAccessToken,
-    switchProfile,
-  ]);
+  }, [fetching, profiles, session, status, setAccessToken, switchProfile]);
 
   async function logout() {
     // Sign out of next-auth

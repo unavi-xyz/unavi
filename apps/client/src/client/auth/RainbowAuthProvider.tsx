@@ -2,11 +2,12 @@ import {
   createAuthenticationAdapter,
   RainbowKitAuthenticationProvider,
 } from "@rainbow-me/rainbowkit";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { ReactNode, useMemo } from "react";
 import { useAccount } from "wagmi";
 
 import { useChallenge } from "./useChallenge";
+import { useSession } from "./useSession";
 
 interface Props {
   children?: ReactNode;

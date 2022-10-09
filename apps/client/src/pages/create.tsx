@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
 import { useAccount } from "wagmi";
 
+import { useSession } from "../client/auth/useSession";
 import { trpc } from "../client/trpc";
 import CreateProjectPage from "../home/CreateProjectPage";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";

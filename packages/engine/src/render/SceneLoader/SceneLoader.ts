@@ -178,6 +178,7 @@ export class SceneLoader {
           exportAttribute(entity.id, "COLOR_0", "color", mesh);
           break;
         }
+
         default:
           return;
       }

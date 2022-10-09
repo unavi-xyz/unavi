@@ -3,7 +3,7 @@ import { BehaviorSubject } from "rxjs";
 import { SphereColliderJSON } from "./types";
 
 export class SphereCollider {
-  readonly type = "Sphere";
+  readonly type = "sphere";
   radius$ = new BehaviorSubject(0.5);
 
   get radius() {

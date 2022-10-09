@@ -224,14 +224,19 @@ function createMesh(json: MeshJSON | null) {
   switch (json.type) {
     case "Box":
       return BoxMesh.fromJSON(json);
+
     case "Sphere":
       return SphereMesh.fromJSON(json);
+
     case "Cylinder":
       return CylinderMesh.fromJSON(json);
+
     case "glTF":
       return GLTFMesh.fromJSON(json);
+
     case "Primitive":
       return PrimitiveMesh.fromJSON(json);
+
     default:
       throw new Error("Unknown mesh type");
   }
@@ -241,12 +246,15 @@ function createCollider(json: ColliderJSON | null) {
   if (!json) return null;
 
   switch (json.type) {
-    case "Box":
+    case "box":
       return BoxCollider.fromJSON(json);
-    case "Sphere":
+
+    case "sphere":
       return SphereCollider.fromJSON(json);
-    case "Cylinder":
+
+    case "cylinder":
       return CylinderCollider.fromJSON(json);
+
     default:
       throw new Error("Unknown collider type");
   }

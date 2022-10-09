@@ -73,6 +73,7 @@ export function createObject(
       }
       break;
     }
+
     case "Primitive": {
       const isSkin = entity.mesh.skin !== null;
 

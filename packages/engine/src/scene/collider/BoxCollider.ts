@@ -4,7 +4,7 @@ import { Triplet } from "../../types";
 import { BoxColliderJSON } from "./types";
 
 export class BoxCollider {
-  readonly type = "Box";
+  readonly type = "box";
   size$ = new BehaviorSubject<Triplet>([1, 1, 1]);
 
   get size() {

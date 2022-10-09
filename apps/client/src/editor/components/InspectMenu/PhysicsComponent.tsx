@@ -39,11 +39,13 @@ export default function PhysicsComponent({ entityId }: Props) {
                   updateEntity(entityId, { collider: boxCollider.toJSON() });
                   break;
                 }
+
                 case "Sphere": {
                   const sphereCollider = new SphereCollider();
                   updateEntity(entityId, { collider: sphereCollider.toJSON() });
                   break;
                 }
+
                 case "Cylinder": {
                   const cylinderCollider = new CylinderCollider();
                   updateEntity(entityId, {
@@ -51,6 +53,7 @@ export default function PhysicsComponent({ entityId }: Props) {
                   });
                   break;
                 }
+
                 default:
                   updateEntity(entityId, { collider: null });
               }
@@ -72,16 +75,19 @@ function ColliderComponent({
   collider: Collider | null;
 }) {
   switch (collider?.type) {
-    case "Box":
+    case "box":
       return <BoxColliderComponent entityId={entityId} collider={collider} />;
-    case "Sphere":
+
+    case "sphere":
       return (
         <SphereColliderComponent entityId={entityId} collider={collider} />
       );
-    case "Cylinder":
+
+    case "cylinder":
       return (
         <CylinderColliderComponent entityId={entityId} collider={collider} />
       );
+
     default:
       return null;
   }

@@ -173,17 +173,19 @@ export class PhysicsWorker {
     // Create collider description
     let colliderDesc: ColliderDesc;
     switch (entity.collider.type) {
-      case "Box": {
+      case "box": {
         const size = entity.collider.size;
         colliderDesc = ColliderDesc.cuboid(...size);
         break;
       }
-      case "Sphere": {
+
+      case "sphere": {
         const radius = entity.collider.radius;
         colliderDesc = ColliderDesc.ball(radius);
         break;
       }
-      case "Cylinder": {
+
+      case "cylinder": {
         const height = entity.collider.height;
         const cylinderRadius = entity.collider.radius;
         colliderDesc = ColliderDesc.cylinder(height / 2, cylinderRadius);

@@ -8,6 +8,7 @@ import {
 import { updateEntity } from "../../actions/UpdateEntityAction";
 import { useEntity } from "../../hooks/useEntity";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
+import { capitalize } from "../../utils/capitalize";
 import SelectMenu from "../ui/SelectMenu";
 import BoxColliderComponent from "./collider/BoxColliderComponent";
 import CylinderColliderComponent from "./collider/CylinderColliderComponent";
@@ -28,7 +29,7 @@ export default function PhysicsComponent({ entityId }: Props) {
       <>
         <MenuRows titles={["Collider"]}>
           <SelectMenu
-            value={collider?.type ?? "None"}
+            value={collider?.type ? capitalize(collider.type) : "None"}
             options={["None", "Box", "Sphere", "Cylinder"]}
             onChange={(e) => {
               const value = e.target.value === "None" ? null : e.target.value;

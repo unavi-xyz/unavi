@@ -129,6 +129,7 @@ export class MainScene {
         });
         break;
       }
+
       case "set_global_transform": {
         this.#toPhysicsThread(event.data);
         break;

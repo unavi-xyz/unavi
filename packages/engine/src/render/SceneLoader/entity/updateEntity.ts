@@ -29,7 +29,21 @@ export function updateEntity(
 
   // Update object
   if (data.mesh !== undefined) {
+    const oldObject = map.objects.get(entityId);
+    const position = oldObject ? oldObject.position.clone() : new Vector3();
+    const quaternion = oldObject
+      ? oldObject.quaternion.clone()
+      : new Quaternion();
+    const scale = oldObject ? oldObject.scale.clone() : new Vector3(1, 1, 1);
+
     createObject(newEntity, map, visuals, postMessage);
+
+    const object = map.objects.get(entityId);
+    if (!object) throw new Error("Object not found");
+
+    object.position.copy(position);
+    object.quaternion.copy(quaternion);
+    object.scale.copy(scale);
   }
 
   const object = map.objects.get(entityId);

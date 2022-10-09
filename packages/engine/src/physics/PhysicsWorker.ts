@@ -92,6 +92,7 @@ export class PhysicsWorker {
       case "update_entity": {
         const entity = this.#entities.get(data.entityId);
         if (!entity) throw new Error("Entity not found");
+
         const updatedEntity = { ...entity, ...data.data };
         this.#entities.set(data.entityId, updatedEntity);
 

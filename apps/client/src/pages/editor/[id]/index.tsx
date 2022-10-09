@@ -48,6 +48,8 @@ export default function Editor() {
         skyboxPath: "/images/skybox/",
       });
 
+      await engine.waitForReady();
+
       useEditorStore.setState({ engine, canvas });
     }
 

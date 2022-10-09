@@ -38,7 +38,7 @@ jobs:
         uses: creyD/prettier_action@v4.2
         with:
           github_token: ${{ secrets.PRETTIER_TOKEN }}
-          prettier_plugins: "prettier-plugin-prisma"
+          prettier_plugins: "prettier-plugin-prisma prettier-plugin-packagejson"
           prettier_options: --write .
           only_changed: True
           commit_message: "prettier: format files"

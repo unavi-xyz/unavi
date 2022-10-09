@@ -1,11 +1,6 @@
 module.exports = {
   parser: "@typescript-eslint/parser",
-  plugins: [
-    "@typescript-eslint",
-    "json-files",
-    "simple-import-sort",
-    "unused-imports",
-  ],
+  plugins: ["@typescript-eslint", "simple-import-sort", "unused-imports"],
   extends: [
     "eslint:recommended",
     "next/core-web-vitals",
@@ -24,8 +19,6 @@ module.exports = {
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/no-unused-imports": "off",
-    "json-files/require-unique-dependency-names": "error",
-    "json-files/sort-package-json": "warn",
     "no-console": ["warn", { allow: ["info", "warn", "error"] }],
     "simple-import-sort/exports": "warn",
     "simple-import-sort/imports": "warn",

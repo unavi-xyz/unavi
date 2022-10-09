@@ -52,9 +52,7 @@ export default function TransformComponent({ entityId }: Props) {
                     const newPosition: Triplet = [...position];
                     newPosition[i] = rounded;
 
-                    updateEntity(entityId, {
-                      position: newPosition,
-                    });
+                    updateEntity(entityId, { position: newPosition });
                   }}
                 />
               </div>
@@ -90,11 +88,8 @@ export default function TransformComponent({ entityId }: Props) {
                     newEuler[i] = radians;
 
                     const newRotation = eulerToQuaternion(newEuler);
-                    newRotation[i] = radians;
 
-                    updateEntity(entityId, {
-                      rotation: newRotation,
-                    });
+                    updateEntity(entityId, { rotation: newRotation });
                   }}
                 />
               </div>

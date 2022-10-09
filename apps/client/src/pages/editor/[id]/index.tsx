@@ -12,6 +12,7 @@ import { useLoad } from "../../../editor/hooks/useLoad";
 import { useTransformControls } from "../../../editor/hooks/useTransformControls";
 import { useEditorStore } from "../../../editor/store";
 import MetaTags from "../../../home/MetaTags";
+import Spinner from "../../../ui/Spinner";
 
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -129,6 +130,14 @@ export default function Editor() {
                 ref={containerRef}
                 className="relative h-full w-full overflow-hidden"
               >
+                {!engine && (
+                  <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+                    <div className="flex h-full  flex-col items-center justify-center">
+                      <Spinner />
+                    </div>
+                  </div>
+                )}
+
                 <canvas
                   ref={canvasRef}
                   className={`h-full w-full transition ${loadedClass}`}

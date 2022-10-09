@@ -78,7 +78,7 @@ export default function PublishPage() {
       })
     );
 
-    // Upload model to S3
+    // Export scene and upload to S3
     promises.push(
       new Promise((resolve, reject) => {
         async function upload() {

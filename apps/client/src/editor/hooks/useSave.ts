@@ -18,8 +18,30 @@ export function useSave() {
     "auth.project-scene-upload"
   );
 
+  async function saveImage() {
+    const { engine, canvas } = useEditorStore.getState();
+    if (!engine || !canvas) throw new Error("No engine");
+
+    const id = router.query.id as string;
+
+    const image = canvas.toDataURL("image/jpeg");
+    const response = await fetch(image);
+    const body = await response.blob();
+
+    const url = await getImageUpload({ id });
+    const res = await fetch(url, {
+      method: "PUT",
+      body,
+      headers: {
+        "Content-Type": "image/jpeg",
+      },
+    });
+
+    if (!res.ok) throw new Error("Failed to upload image");
+  }
+
   async function save() {
-    const { name, description, engine, canvas } = useEditorStore.getState();
+    const { name, description, engine } = useEditorStore.getState();
     if (!engine) throw new Error("No engine");
 
     const promises: Promise<any>[] = [];
@@ -39,31 +61,7 @@ export function useSave() {
     );
 
     // Upload image to S3
-    promises.push(
-      new Promise<void>((resolve, reject) => {
-        async function upload() {
-          if (!engine || !canvas) throw new Error("No engine");
-
-          const image = canvas.toDataURL("image/jpeg");
-          const response = await fetch(image);
-          const body = await response.blob();
-
-          const url = await getImageUpload({ id });
-          const res = await fetch(url, {
-            method: "PUT",
-            body,
-            headers: {
-              "Content-Type": "image/jpeg",
-            },
-          });
-
-          if (res.ok) resolve();
-          else reject();
-        }
-
-        upload();
-      })
-    );
+    promises.push(saveImage());
 
     // Upload scene to S3
     promises.push(
@@ -122,5 +120,5 @@ export function useSave() {
     await Promise.all(promises);
   }
 
-  return { save };
+  return { save, saveImage };
 }

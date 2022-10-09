@@ -23,7 +23,7 @@ export default function EditorNavbar() {
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
-  const { save } = useSave();
+  const { save, saveImage } = useSave();
 
   function handleToggleColliders() {
     useEditorStore.setState({ colliders: !colliders });
@@ -58,7 +58,7 @@ export default function EditorNavbar() {
   }
 
   async function handleOpenPublish() {
-    await save();
+    await saveImage();
     setOpenPublishDialog(true);
   }
 

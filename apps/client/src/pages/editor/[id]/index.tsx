@@ -117,14 +117,14 @@ export default function Editor() {
             direction="horizontal"
             expandToMin
             gutterSize={6}
-            className="h-full"
+            className="flex h-full"
             onMouseUp={updateCanvasSize}
           >
-            <div className="float-left h-full">
+            <div className="h-full">
               <TreeMenu />
             </div>
 
-            <div className="float-left h-full border-x">
+            <div className="h-full border-x">
               <div
                 ref={containerRef}
                 className="relative h-full w-full overflow-hidden"
@@ -136,7 +136,7 @@ export default function Editor() {
               </div>
             </div>
 
-            <div className="float-left h-full">
+            <div className="h-full">
               <InspectMenu />
             </div>
           </Split>
@@ -145,4 +145,3 @@ export default function Editor() {
     </>
   );
 }
-//

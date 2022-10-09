@@ -44,8 +44,8 @@ export function useExploreQuery(
   });
 
   const items = (result.data?.explorePublications?.items as Post[]) ?? [];
-  const lastCursor = Math.floor(items.length / pageSize);
-  const isLastPage = items.length < limit && cursor === lastCursor;
+  const lastCursor = Math.floor(items.length / pageSize) - 1;
+  const isLastPage = items.length <= limit && cursor === lastCursor;
 
   function next() {
     if (isLastPage) return;

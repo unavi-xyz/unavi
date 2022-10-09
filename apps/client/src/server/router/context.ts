@@ -28,7 +28,7 @@ export function createProtectedRouter() {
     return next({
       ctx: {
         ...ctx,
-        address: ctx.token.address,
+        address: ctx.token.address as string,
       },
     });
   });

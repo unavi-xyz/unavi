@@ -49,10 +49,6 @@ export default function EditorNavbar() {
     // Save scene
     await save();
 
-    // Export scene to glTF
-    const exportedScene = await engine.export();
-    useEditorStore.setState({ exportedScene });
-
     // Navigate to preview page
     router.push(`/editor/${id}/preview`);
   }

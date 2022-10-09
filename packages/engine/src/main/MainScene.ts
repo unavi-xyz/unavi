@@ -252,6 +252,18 @@ export class MainScene {
     this.#scene.loadJSON(json);
   }
 
+  clear() {
+    // Remove all entities
+    Object.values(this.#scene.entities).forEach((entity) => {
+      if (entity.parentId === "root") this.removeEntity(entity.id);
+    });
+
+    // Remove all materials
+    Object.values(this.#scene.materials).forEach((material) =>
+      this.removeMaterial(material.id)
+    );
+  }
+
   destroy() {
     this.#scene.destroy();
   }

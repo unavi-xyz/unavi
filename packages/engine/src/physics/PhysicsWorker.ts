@@ -177,7 +177,8 @@ export class PhysicsWorker {
     switch (entity.collider.type) {
       case "box": {
         const size = entity.collider.size;
-        colliderDesc = ColliderDesc.cuboid(...size);
+        const halfSize: Triplet = [size[0] / 2, size[1] / 2, size[2] / 2];
+        colliderDesc = ColliderDesc.cuboid(...halfSize);
         break;
       }
 

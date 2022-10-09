@@ -56,10 +56,16 @@ export default function Preview() {
 
       // Start engine
       engine.start().then(() => {
-        // Load scene
-        engine.scene;
-
         useEditorStore.setState({ engine });
+
+        // Set collider visibility
+        const { colliders } = useEditorStore.getState();
+        engine.renderThread.postMessage({
+          subject: "show_visuals",
+          data: {
+            visible: colliders,
+          },
+        });
       });
     }
 

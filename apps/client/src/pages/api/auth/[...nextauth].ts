@@ -1,8 +1,15 @@
+import {
+  RefreshDocument,
+  RefreshMutation,
+  RefreshMutationVariables,
+} from "@wired-labs/lens";
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 import { env } from "../../../env/server.mjs";
 import { authenticate, verifyJWT } from "../../../server/jwt";
+import { lensClient } from "../../../server/lens";
+import { parseJWT } from "../../../utils/parseJWT";
 
 export const authOptions: NextAuthOptions = {
   callbacks: {
@@ -15,7 +22,35 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-    session({ session, token }) {
+    async session({ session, token }) {
+      const { exp } = parseJWT(token.accessToken as string);
+      const seconds = exp - Math.floor(Date.now() / 1000);
+      const minutes = seconds / 60;
+
+      // If token has expired, user needs to re-authenticate
+      if (minutes < 0) {
+        session.user = undefined;
+        session.address = undefined;
+        session.accessToken = undefined;
+        return session;
+      }
+
+      // Refresh lens JWT token
+      const { data, error } = await lensClient
+        .mutation<RefreshMutation, RefreshMutationVariables>(RefreshDocument, {
+          request: {
+            refreshToken: token.refreshToken,
+          },
+        })
+        .toPromise();
+
+      if (error) throw error;
+
+      if (data) {
+        token.accessToken = data.refresh.accessToken;
+        token.refreshToken = data.refresh.refreshToken;
+      }
+
       session.address = token.sub;
       session.accessToken = token.accessToken;
       session.user = { name: token.sub };

@@ -36,14 +36,17 @@ export class PhysicsThread {
     const { subject, data } = event.data;
 
     switch (subject) {
-      case "ready":
+      case "ready": {
         this.ready = true;
         this.#readyListeners.forEach((listener) => listener());
         break;
-      case "player_buffers":
+      }
+
+      case "player_buffers": {
         this.#engine.renderThread.setPlayerBuffers(data);
-        this.#engine.networkingInterface.setPlayerPositionBuffer(data.position);
+        this.#engine.networkingInterface.setPlayerPosition(data.position);
         break;
+      }
     }
   };
 

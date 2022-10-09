@@ -17,6 +17,11 @@ import {
 } from "../s3";
 import { createProtectedRouter } from "./context";
 
+const UUID_LENGTH = 36;
+const NANOID_LENGTH = 21;
+const PROJECT_NAME_LENGTH = 70;
+const PROJECT_DESCRIPTION_LENGTH = 2000;
+
 export const protectedRouter = createProtectedRouter()
   .query("projects", {
     async resolve({ ctx: { address } }) {
@@ -36,9 +41,10 @@ export const protectedRouter = createProtectedRouter()
       return response;
     },
   })
+
   .query("project", {
     input: z.object({
-      id: z.string().length(36),
+      id: z.string().length(UUID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify user owns the project
@@ -51,9 +57,10 @@ export const protectedRouter = createProtectedRouter()
       return project;
     },
   })
+
   .query("project-scene", {
     input: z.object({
-      id: z.string().length(36),
+      id: z.string().length(UUID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify user owns the project
@@ -68,9 +75,10 @@ export const protectedRouter = createProtectedRouter()
       return url;
     },
   })
+
   .query("project-image", {
     input: z.object({
-      id: z.string().length(36),
+      id: z.string().length(UUID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify user owns the project
@@ -85,9 +93,10 @@ export const protectedRouter = createProtectedRouter()
       return url;
     },
   })
+
   .query("project-files", {
     input: z.object({
-      id: z.string().length(36),
+      id: z.string().length(UUID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify user owns the project
@@ -117,9 +126,10 @@ export const protectedRouter = createProtectedRouter()
       return response;
     },
   })
+
   .mutation("project-scene-upload", {
     input: z.object({
-      id: z.string().length(36),
+      id: z.string().length(UUID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify user owns the project
@@ -134,9 +144,10 @@ export const protectedRouter = createProtectedRouter()
       return url;
     },
   })
+
   .mutation("project-image-upload", {
     input: z.object({
-      id: z.string().length(36),
+      id: z.string().length(UUID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify user owns the project
@@ -151,10 +162,11 @@ export const protectedRouter = createProtectedRouter()
       return url;
     },
   })
+
   .mutation("project-file-upload", {
     input: z.object({
-      id: z.string().length(36),
-      fileId: z.string(),
+      id: z.string().length(UUID_LENGTH),
+      fileId: z.string().length(NANOID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id, fileId } }) {
       // Verify user owns the project
@@ -180,12 +192,12 @@ export const protectedRouter = createProtectedRouter()
       return url;
     },
   })
+
   .mutation("create-project", {
     input: z.object({
-      name: z.string().max(255),
-      description: z.string().max(2040),
+      name: z.string().max(PROJECT_NAME_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { name, description } }) {
+    async resolve({ ctx: { address }, input: { name } }) {
       const date = new Date();
 
       // Create project
@@ -195,8 +207,6 @@ export const protectedRouter = createProtectedRouter()
           updatedAt: date,
           owner: address,
           name,
-          description,
-          editorState: null,
         },
       });
 
@@ -213,12 +223,17 @@ export const protectedRouter = createProtectedRouter()
       return id;
     },
   })
+
   .mutation("save-project", {
     input: z.object({
-      id: z.string().length(36),
-      name: z.string().max(255).optional(),
-      description: z.string().max(2040).optional(),
-      editorState: z.string().optional(),
+      id: z.string().length(UUID_LENGTH),
+      name: z.string().max(PROJECT_NAME_LENGTH).optional(),
+      description: z.string().max(PROJECT_DESCRIPTION_LENGTH).optional(),
+      editorState: z
+        .object({
+          colliders: z.boolean(),
+        })
+        .optional(),
     }),
     async resolve({
       ctx: { address },
@@ -237,15 +252,16 @@ export const protectedRouter = createProtectedRouter()
         data: {
           name,
           description,
-          editorState,
+          editorState: JSON.stringify(editorState),
           updatedAt: new Date(),
         },
       });
     },
   })
+
   .mutation("delete-project", {
     input: z.object({
-      id: z.string().length(36),
+      id: z.string().length(UUID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify that user owns the project
@@ -272,9 +288,10 @@ export const protectedRouter = createProtectedRouter()
       await Promise.all(promises);
     },
   })
+
   .mutation("published-model-upload", {
     input: z.object({
-      id: z.string().length(36),
+      id: z.string().length(UUID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify that user owns the project
@@ -290,9 +307,10 @@ export const protectedRouter = createProtectedRouter()
       return url;
     },
   })
+
   .mutation("published-image-upload", {
     input: z.object({
-      id: z.string().length(36),
+      id: z.string().length(UUID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify that user owns the project
@@ -311,7 +329,7 @@ export const protectedRouter = createProtectedRouter()
 
   .mutation("published-metadata-upload", {
     input: z.object({
-      id: z.string().length(36),
+      id: z.string().length(UUID_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { id } }) {
       // Verify that user owns the project

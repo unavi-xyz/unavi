@@ -1,6 +1,9 @@
 import { RenderThread } from "../render/RenderThread";
 import { PhysicsThread } from "./PhysicsThread";
 
+/*
+ * Handles user input for the player.
+ */
 export class Player {
   #canvas: HTMLCanvasElement;
   #renderThread: RenderThread;
@@ -17,6 +20,8 @@ export class Player {
   #pressingA = false;
   #pressingD = false;
 
+  #jumpInterval: NodeJS.Timeout | null = null;
+
   #isLocked = false;
 
   constructor(
@@ -28,11 +33,15 @@ export class Player {
     this.#renderThread = renderThread;
     this.#physicsThread = physicsThread;
 
-    this.#canvas.addEventListener("click", this.#click);
-    document.addEventListener("keydown", this.#keydown);
-    document.addEventListener("keyup", this.#keyup);
-    document.addEventListener("pointerlockchange", this.#pointerlockchange);
-    document.addEventListener("mousemove", this.#mousemove);
+    this.#canvas.addEventListener("click", this.#click.bind(this));
+    document.addEventListener("keydown", this.#keydown.bind(this));
+    document.addEventListener("keyup", this.#keyup.bind(this));
+    document.addEventListener(
+      "pointerlockchange",
+      this.#pointerlockchange.bind(this)
+    );
+    document.addEventListener("mousemove", this.#mousemove.bind(this));
+    document.addEventListener("blur", this.#onBlur.bind(this));
   }
 
   destroy() {
@@ -41,6 +50,7 @@ export class Player {
     document.removeEventListener("keyup", this.#keyup);
     document.removeEventListener("pointerlockchange", this.#pointerlockchange);
     document.removeEventListener("mousemove", this.#mousemove);
+    document.removeEventListener("blur", this.#onBlur);
 
     document.exitPointerLock();
   }
@@ -61,47 +71,92 @@ export class Player {
 
   #onKeyDown(event: KeyboardEvent) {
     switch (event.key) {
-      case "w":
+      case "w": {
         this.#pressingW = true;
+        this.#updateVelocity();
         break;
-      case "s":
-        this.#pressingS = true;
-        break;
-      case "a":
-        this.#pressingA = true;
-        break;
-      case "d":
-        this.#pressingD = true;
-        break;
-      case " ":
-        this.#physicsThread.jump();
-        break;
-      default:
-        return;
-    }
+      }
 
-    this.#updateVelocity();
+      case "s": {
+        this.#pressingS = true;
+        this.#updateVelocity();
+        break;
+      }
+
+      case "a": {
+        this.#pressingA = true;
+        this.#updateVelocity();
+        break;
+      }
+
+      case "d": {
+        this.#pressingD = true;
+        this.#updateVelocity();
+        break;
+      }
+
+      case " ": {
+        if (!this.#jumpInterval) {
+          // Jump now
+          this.#physicsThread.jump();
+
+          // Send a jump command on an interval while the spacebar is held down
+          this.#jumpInterval = setInterval(() => {
+            this.#physicsThread.jump();
+          }, 200);
+        }
+        break;
+      }
+    }
   }
 
   #onKeyUp(event: KeyboardEvent) {
     switch (event.key) {
-      case "w":
+      case "w": {
         this.#pressingW = false;
+        this.#updateVelocity();
         break;
-      case "s":
-        this.#pressingS = false;
-        break;
-      case "a":
-        this.#pressingA = false;
-        break;
-      case "d":
-        this.#pressingD = false;
-        break;
-      default:
-        return;
-    }
+      }
 
+      case "s": {
+        this.#pressingS = false;
+        this.#updateVelocity();
+        break;
+      }
+
+      case "a": {
+        this.#pressingA = false;
+        this.#updateVelocity();
+        break;
+      }
+
+      case "d": {
+        this.#pressingD = false;
+        this.#updateVelocity();
+        break;
+      }
+
+      case " ": {
+        if (this.#jumpInterval !== null) {
+          clearInterval(this.#jumpInterval);
+          this.#jumpInterval = null;
+        }
+        break;
+      }
+    }
+  }
+
+  #onBlur() {
+    this.#pressingW = false;
+    this.#pressingS = false;
+    this.#pressingA = false;
+    this.#pressingD = false;
     this.#updateVelocity();
+
+    if (this.#jumpInterval !== null) {
+      clearInterval(this.#jumpInterval);
+      this.#jumpInterval = null;
+    }
   }
 
   #updateVelocity() {

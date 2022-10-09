@@ -73,6 +73,7 @@ export function createObject(
       }
       break;
     }
+
     case "Primitive": {
       const isSkin = entity.mesh.skin !== null;
 
@@ -95,7 +96,7 @@ export function createObject(
       switch (entity.mesh.mode) {
         case WEBGL_CONSTANTS.TRIANGLES:
         case WEBGL_CONSTANTS.TRIANGLE_STRIP:
-        case WEBGL_CONSTANTS.TRIANGLE_FAN:
+        case WEBGL_CONSTANTS.TRIANGLE_FAN: {
           primitiveMesh = isSkin
             ? new SkinnedMesh(primitiveGeometry, primitiveMaterial)
             : new Mesh(primitiveGeometry, primitiveMaterial);
@@ -106,25 +107,30 @@ export function createObject(
             if (!normalized) primitiveMesh.normalizeSkinWeights();
           }
           break;
+        }
 
-        case WEBGL_CONSTANTS.LINES:
+        case WEBGL_CONSTANTS.LINES: {
           primitiveMesh = new LineSegments(
             primitiveGeometry,
             primitiveMaterial
           );
           break;
+        }
 
-        case WEBGL_CONSTANTS.LINE_STRIP:
+        case WEBGL_CONSTANTS.LINE_STRIP: {
           primitiveMesh = new Line(primitiveGeometry, primitiveMaterial);
           break;
+        }
 
-        case WEBGL_CONSTANTS.LINE_LOOP:
+        case WEBGL_CONSTANTS.LINE_LOOP: {
           primitiveMesh = new LineLoop(primitiveGeometry, primitiveMaterial);
           break;
+        }
 
-        case WEBGL_CONSTANTS.POINTS:
+        case WEBGL_CONSTANTS.POINTS: {
           primitiveMesh = new Points(primitiveGeometry, primitiveMaterial);
           break;
+        }
 
         default:
           throw new Error(`Unknown primitive mode: ${entity.mesh.mode}`);
@@ -172,6 +178,7 @@ export function createObject(
       createSkeletons(map);
       break;
     }
+
     default: {
       // Check if joint
       let isJoint = false;

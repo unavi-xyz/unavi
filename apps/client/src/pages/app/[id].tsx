@@ -1,15 +1,16 @@
 import { Entity, GLTFMesh } from "@wired-labs/engine";
 import { NextPageContext } from "next";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import ChatBox from "../../app/ChatBox";
 import { useAppStore } from "../../app/store";
+import { useAppHotkeys } from "../../app/useAppHotkeys";
 import {
   getPublicationProps,
   PublicationProps,
 } from "../../client/lens/utils/getPublicationProps";
 import MetaTags from "../../home/MetaTags";
-
-export const DEFAULT_HOST = "wss://host.thewired.space";
+import Spinner from "../../ui/Spinner";
 
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
@@ -33,16 +34,23 @@ export default function App({ id, metadata, publication }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const createdEngine = useRef(false);
+  const [engineStarted, setEngineStarted] = useState(false);
 
   const engine = useAppStore((state) => state.engine);
 
   const modelURL: string | undefined =
     publication?.metadata.media[1]?.original.url;
 
+  useAppHotkeys();
+
   useEffect(() => {
     if (!engine) return;
 
-    engine.joinSpace(id);
+    engine.joinSpace(id).then(() => {
+      // Start engine
+      engine.start();
+      setEngineStarted(true);
+    });
 
     return () => {
       engine.leaveSpace();
@@ -83,10 +91,9 @@ export default function App({ id, metadata, publication }: Props) {
         skyboxPath: "/images/skybox/",
       });
 
-      // Start engine
-      engine.start().then(() => {
-        useAppStore.setState({ engine });
-      });
+      await engine.waitForReady();
+
+      useAppStore.setState({ engine });
     }
 
     initEngine();
@@ -113,6 +120,7 @@ export default function App({ id, metadata, publication }: Props) {
       try {
         const canvas = canvasRef.current;
         if (!canvas) return;
+
         const container = containerRef.current;
         if (!container) return;
 
@@ -135,7 +143,7 @@ export default function App({ id, metadata, publication }: Props) {
     };
   }, [updateCanvasSize]);
 
-  const loadedClass = engine ? "opacity-100" : "opacity-0";
+  const loadedClass = engineStarted ? "opacity-100" : "opacity-0";
 
   return (
     <>
@@ -147,7 +155,15 @@ export default function App({ id, metadata, publication }: Props) {
       />
 
       <div className="h-full">
-        <div className="crosshair" />
+        {engineStarted ? (
+          <div className="crosshair" />
+        ) : (
+          <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+            <div className="flex h-full flex-col items-center justify-center">
+              <Spinner />
+            </div>
+          </div>
+        )}
 
         <div
           ref={containerRef}
@@ -158,6 +174,10 @@ export default function App({ id, metadata, publication }: Props) {
             className={`h-full w-full transition ${loadedClass}`}
           />
         </div>
+      </div>
+
+      <div className="absolute left-0 bottom-0 m-4">
+        <ChatBox />
       </div>
     </>
   );

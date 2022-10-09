@@ -3,7 +3,7 @@ import { BehaviorSubject } from "rxjs";
 import { CylinderColliderJSON } from "./types";
 
 export class CylinderCollider {
-  readonly type = "Cylinder";
+  readonly type = "cylinder";
   radius$ = new BehaviorSubject(0.5);
   height$ = new BehaviorSubject(1);
 

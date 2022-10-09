@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc --build tsconfig.json",
-    "dev": "nodemon ./src/server.ts",
     "deploy": "yarn docker:build && docker push ghcr.io/wired-labs/host",
+    "dev": "nodemon ./src/server.ts",
     "docker:build": "yarn docker:clean && cd ../.. && docker build -t ghcr.io/wired-labs/host -f apps/host/Dockerfile .",
     "docker:clean": "yarn docker:stop && docker rmi ghcr.io/wired-labs/host || true",
     "docker:start": "yarn docker:stop && docker run -e NODE_ENV=development -p 4000:4000 --name wired-host ghcr.io/wired-labs/host",

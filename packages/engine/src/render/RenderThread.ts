@@ -100,18 +100,28 @@ export class RenderThread {
     const { subject, data } = event.data;
 
     switch (subject) {
-      case "ready":
+      case "ready": {
         this.ready = true;
         this.#onReady.forEach((resolve) => resolve());
         this.#onReady = [];
         break;
-      case "clicked_object":
+      }
+
+      case "clicked_object": {
         if (this.onObjectClick) this.onObjectClick(data);
         break;
-      case "export":
+      }
+
+      case "export": {
         this.#onExport.forEach((resolve) => resolve(data));
         this.#onExport = [];
         break;
+      }
+
+      case "set_player_rotation_buffer": {
+        this.#engine.networkingInterface.setPlayerRotation(data);
+        break;
+      }
     }
   };
 
@@ -152,8 +162,8 @@ export class RenderThread {
     position,
     velocity,
   }: {
-    position: Float32Array;
-    velocity: Float32Array;
+    position: Int32Array;
+    velocity: Int32Array;
   }) {
     this.postMessage({
       subject: "set_player_buffers",

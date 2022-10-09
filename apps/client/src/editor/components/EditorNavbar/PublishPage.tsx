@@ -78,7 +78,7 @@ export default function PublishPage() {
       })
     );
 
-    // Upload model to S3
+    // Export scene and upload to S3
     promises.push(
       new Promise((resolve, reject) => {
         async function upload() {
@@ -165,7 +165,7 @@ export default function PublishPage() {
             metadata_id: nanoid(),
             description,
             locale: "en-US",
-            tags: ["3d", "wired", "space"],
+            tags: ["3d", "gltf", "wired", "space"],
             mainContentFocus: PublicationMainFocus.Image,
             external_url: `https://thewired.space/user/${handle}`,
             name,

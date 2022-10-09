@@ -46,12 +46,29 @@ server.ws("/*", {
         players.publishLocation(ws, message.data);
         break;
       }
+
+      case "message": {
+        players.publishMessage(ws, message.data);
+        break;
+      }
     }
   },
 
   close: (ws) => {
     players.removePlayer(ws);
   },
+});
+
+// Handle HTTP requests
+server.get("/playercount/*", (res, req) => {
+  const id = String(req.getUrl().slice(13));
+  const playerCount = players.getPlayerCount(id);
+
+  console.info(`🔢 Player count for ${id}: ${playerCount}`);
+
+  res.write(String(playerCount));
+  res.writeStatus("200 OK");
+  res.end();
 });
 
 // Start server

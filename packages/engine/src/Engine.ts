@@ -74,18 +74,27 @@ export class Engine {
   }
 
   joinSpace(spaceId: string) {
-    if (!this.running) throw new Error("Engine is not running");
-    this.networkingInterface.joinSpace(spaceId);
+    return this.networkingInterface.joinSpace(spaceId);
   }
 
   leaveSpace() {
     this.networkingInterface.leaveSpace();
   }
 
+  sendChatMessage(message: string) {
+    this.networkingInterface.sendChatMessage(message);
+  }
+
+  waitForReady() {
+    return Promise.all([
+      this.physicsThread.waitForReady(),
+      this.loaderThread.waitForReady(),
+      this.renderThread.waitForReady(),
+    ]);
+  }
+
   async start() {
-    await this.physicsThread.waitForReady();
-    await this.loaderThread.waitForReady();
-    await this.renderThread.waitForReady();
+    await this.waitForReady();
 
     this.physicsThread.start();
     this.renderThread.start();

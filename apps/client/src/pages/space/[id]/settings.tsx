@@ -1,28 +1,30 @@
 import { useHidePublicationMutation } from "@wired-labs/lens";
-import { NextPageContext } from "next";
+import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import { useLens } from "../../../client/lens/hooks/useLens";
+import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
-import {
-  getSpaceLayoutProps,
-  SpaceLayoutProps,
-} from "../../../home/layouts/SpaceLayout/getSpaceLayoutProps";
+import { getSpaceLayoutProps } from "../../../home/layouts/SpaceLayout/getSpaceLayoutProps";
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
 import Button from "../../../ui/Button";
 
-export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=10");
+export const getServerSideProps: GetServerSideProps<
+  PublicationProps & { host: string; playerCount: number | null }
+> = async ({ res, query }) => {
+  res?.setHeader("Cache-Control", "s-maxage=30");
 
   const props = await getSpaceLayoutProps(query.id as string);
 
   return {
     props,
   };
-}
+};
 
-export default function Settings(props: SpaceLayoutProps) {
+export default function Settings(
+  props: InferGetServerSidePropsType<typeof getServerSideProps>
+) {
   const router = useRouter();
   const id = router.query.id;
 

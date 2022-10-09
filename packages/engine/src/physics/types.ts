@@ -21,7 +21,7 @@ export type FromPhysicsMessage =
   | WorkerMessage<
       "player_buffers",
       {
-        position: Float32Array;
-        velocity: Float32Array;
+        position: Int32Array;
+        velocity: Int32Array;
       }
     >;

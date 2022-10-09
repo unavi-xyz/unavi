@@ -1,3 +1,10 @@
+export type IChatMessage = {
+  id: string;
+  playerId: string;
+  message: string;
+  timestamp: number;
+};
+
 type GenericWebSocketMessage<S extends string, D> = {
   subject: S;
   data: D;
@@ -14,7 +21,8 @@ export type ToHostMessage =
   | GenericWebSocketMessage<
       "location",
       [number, number, number, number, number, number, number]
-    >;
+    >
+  | GenericWebSocketMessage<"message", string>;
 
 export type FromHostMessage =
   | GenericWebSocketMessage<"player_joined", string>
@@ -25,4 +33,5 @@ export type FromHostMessage =
         playerId: string;
         location: [number, number, number, number, number, number, number];
       }
-    >;
+    >
+  | GenericWebSocketMessage<"player_message", IChatMessage>;

@@ -19,11 +19,8 @@ export function useEntity<T = Entity>(
         const entity = entities[id];
         if (!entity) return;
 
-        if (callback) {
-          setValue(callback(entity));
-        } else {
-          setValue(entity as T);
-        }
+        if (callback) setValue(callback(entity));
+        else setValue(entity as T);
       },
     });
 

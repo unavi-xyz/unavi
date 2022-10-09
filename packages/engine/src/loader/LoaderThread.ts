@@ -23,14 +23,17 @@ export class LoaderThread {
     const { subject, data } = event.data;
 
     switch (subject) {
-      case "ready":
+      case "ready": {
         this.ready = true;
         this.#onReady.forEach((resolve) => resolve());
         this.#onReady = [];
         break;
-      case "gltf_loaded":
+      }
+
+      case "gltf_loaded": {
         if (this.onGltfLoaded) this.onGltfLoaded(data);
         break;
+      }
     }
   };
 

@@ -72,24 +72,35 @@ export class RenderWorker {
 
     const { subject, data } = event.data;
     switch (subject) {
-      case "set_canvas":
+      case "set_canvas": {
         this.#canvas = data;
         break;
-      case "init":
+      }
+
+      case "init": {
         this.init(data);
         break;
-      case "start":
+      }
+
+      case "start": {
         this.start();
         break;
-      case "stop":
+      }
+
+      case "stop": {
         this.stop();
         break;
-      case "destroy":
+      }
+
+      case "destroy": {
         this.destroy();
         break;
-      case "size":
+      }
+
+      case "size": {
         this.#updateCanvasSize(data.width, data.height);
         break;
+      }
     }
   };
 
@@ -132,7 +143,7 @@ export class RenderWorker {
 
     // Camera
     switch (camera) {
-      case "orbit":
+      case "orbit": {
         this.#plugins.push(
           new OrbitControlsPlugin(
             this.#camera,
@@ -142,11 +153,12 @@ export class RenderWorker {
           )
         );
         break;
-      case "player":
-        this.#plugins.push(new PlayerPlugin(this.#camera));
+      }
+
+      case "player": {
+        this.#plugins.push(new PlayerPlugin(this.#camera, this.#postMessage));
         break;
-      default:
-        throw new Error(`Unknown camera: ${camera}`);
+      }
     }
 
     // Transform Controls

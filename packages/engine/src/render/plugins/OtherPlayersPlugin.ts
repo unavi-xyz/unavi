@@ -14,8 +14,8 @@ export class OtherPlayersPlugin {
     this.#scene.add(this.#playerGroup);
   }
 
-  animate() {
-    this.#players.forEach((player) => player.animate());
+  animate(delta: number) {
+    this.#players.forEach((player) => player.animate(delta));
   }
 
   onmessage(event: MessageEvent<ToRenderMessage>) {

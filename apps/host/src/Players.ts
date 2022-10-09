@@ -117,4 +117,34 @@ export class Players {
 
     ws.publish(spaceTopic(spaceId), JSON.stringify(locationMessage));
   }
+
+  publishMessage(ws: uWS.WebSocket, message: string) {
+    const playerId = this.playerIds.get(ws);
+    if (!playerId) throw new Error("Player not found");
+
+    // If not in a space, do nothing
+    const spaceId = this.spaceIds.get(ws);
+    if (!spaceId) return;
+
+    const id = nanoid();
+    const timestamp = Date.now();
+
+    // Tell everyone in the space about this player's message
+    const messageMessage: FromHostMessage = {
+      subject: "player_message",
+      data: { id, playerId, message, timestamp },
+    };
+
+    this.#server.publish(spaceTopic(spaceId), JSON.stringify(messageMessage));
+  }
+
+  getPlayerCount(spaceId: string): number {
+    let count = 0;
+
+    this.spaceIds.forEach((otherSpaceId) => {
+      if (otherSpaceId === spaceId) count++;
+    });
+
+    return count;
+  }
 }

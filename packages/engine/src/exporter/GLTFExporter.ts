@@ -8,6 +8,8 @@ import {
 } from "@gltf-transform/core";
 import { dedup, prune } from "@gltf-transform/functions";
 
+import { extensions } from "../gltf/constants";
+import { ColliderExtension } from "../gltf/extensions/Collider/ColliderExtension";
 import { RenderExport } from "../render/types";
 import {
   Accessor,
@@ -25,6 +27,10 @@ import { setTextureInfo } from "./utils/setTextureInfo";
  */
 export class GLTFExporter {
   #doc = new Document();
+  #extensions = {
+    collider: this.#doc.createExtension(ColliderExtension),
+  };
+
   #scene = new Scene();
   #gltfScene = this.#doc.createScene("Scene");
   #renderData: RenderExport | null = null;
@@ -97,7 +103,7 @@ export class GLTFExporter {
     await this.#doc.transform(dedup(), prune());
 
     // Write to binary
-    const io = new WebIO();
+    const io = new WebIO().registerExtensions(extensions);
     const glb = await io.writeBinary(this.#doc);
 
     return glb;
@@ -149,6 +155,32 @@ export class GLTFExporter {
     // Add to parent
     if (parent) parent.addChild(node);
 
+    // Set collider
+    if (entity.collider) {
+      const collider = this.#extensions.collider.createCollider();
+      collider.setType(entity.collider.type);
+
+      switch (entity.collider.type) {
+        case "box": {
+          collider.setSize(entity.collider.size);
+          break;
+        }
+
+        case "sphere": {
+          collider.setRadius(entity.collider.radius);
+          break;
+        }
+
+        case "cylinder": {
+          collider.setRadius(entity.collider.radius);
+          collider.setHeight(entity.collider.height);
+          break;
+        }
+      }
+
+      node.setExtension(collider.extensionName, collider);
+    }
+
     this.#cache.entities.set(entity.id, node);
   }
 
@@ -197,6 +229,7 @@ export class GLTFExporter {
 
         break;
       }
+
       case "Primitive": {
         primitive.setMode(entity.mesh.mode);
 

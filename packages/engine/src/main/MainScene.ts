@@ -13,7 +13,7 @@ import {
   SceneJSON,
   SceneMessage,
 } from "../scene/types";
-import { PostMessage, Transferable } from "../types";
+import { PostMessage } from "../types";
 
 /*
  * Wrapper around the {@link Scene}.
@@ -30,6 +30,8 @@ export class MainScene {
     loadedGltfUris: new Map<string, string | null>(),
     glTFRootEntities: new Map<string, string[]>(),
   };
+
+  #gltfLoadCallbacks: Array<(id: string) => void> = [];
 
   constructor({
     physicsThread,
@@ -70,6 +72,9 @@ export class MainScene {
 
       // Add loaded glTF to the scene
       this.loadJSON(scene);
+
+      // Call glTF load callbacks
+      this.#gltfLoadCallbacks.forEach((callback) => callback(id));
     };
 
     // Load glTFs when added to the scene
@@ -124,6 +129,7 @@ export class MainScene {
         });
         break;
       }
+
       case "set_global_transform": {
         this.#toPhysicsThread(event.data);
         break;
@@ -228,7 +234,7 @@ export class MainScene {
     return this.#scene.toJSON(includeInternal);
   }
 
-  loadJSON(json: Partial<SceneJSON>) {
+  async loadJSON(json: Partial<SceneJSON>) {
     // Remove root entity
     json.entities = json.entities?.filter((entity) => entity.id !== "root");
 
@@ -242,26 +248,49 @@ export class MainScene {
       data: { scene: strippedScene },
     });
 
-    // Send full scene + transfer data to render thread
-    const accessors = json.accessors
-      ? Object.values(json.accessors).map((accessor) => accessor.array.buffer)
-      : [];
-    const imageBuffers = json.images
-      ? Object.values(json.images).map((image) => image.array.buffer)
-      : [];
-
-    const transfer: Transferable[] = [...imageBuffers, ...accessors];
-
-    this.#toRenderThread(
-      {
-        subject: "load_json",
-        data: { scene: json },
-      },
-      transfer
-    );
+    // Send full scene to render thread
+    this.#toRenderThread({
+      subject: "load_json",
+      data: { scene: json },
+    });
 
     // Load scene
     this.#scene.loadJSON(json);
+
+    // Wait for all glTFs to load
+    if (json.entities) {
+      const glTFs = json.entities.filter(
+        (entity) => entity.mesh?.type === "glTF"
+      );
+
+      await Promise.all(
+        glTFs.map(
+          (entity) =>
+            new Promise<void>((resolve) => {
+              const index = this.#gltfLoadCallbacks.push((id) => {
+                if (id === entity.id) {
+                  resolve();
+
+                  // Remove callback
+                  this.#gltfLoadCallbacks.splice(index, 1);
+                }
+              });
+            })
+        )
+      );
+    }
+  }
+
+  clear() {
+    // Remove all entities
+    Object.values(this.#scene.entities).forEach((entity) => {
+      if (entity.parentId === "root") this.removeEntity(entity.id);
+    });
+
+    // Remove all materials
+    Object.values(this.#scene.materials).forEach((material) =>
+      this.removeMaterial(material.id)
+    );
   }
 
   destroy() {

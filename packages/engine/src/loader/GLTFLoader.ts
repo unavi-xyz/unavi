@@ -16,13 +16,19 @@ import {
 } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
+import { extensions } from "../gltf/constants";
+import { Collider } from "../gltf/extensions/Collider/Collider";
+import { ColliderExtension } from "../gltf/extensions/Collider/ColliderExtension";
 import {
   AnimationChannel,
   AnimationSampler,
+  BoxCollider,
+  CylinderCollider,
   Entity,
   Material,
   PrimitiveMesh,
   Scene,
+  SphereCollider,
   Texture,
 } from "../scene";
 import { Accessor } from "../scene/Accessor";
@@ -35,7 +41,7 @@ import { Image } from "../scene/Image";
 export class GLTFLoader {
   #scene = new Scene();
 
-  #io = new WebIO();
+  #io = new WebIO().registerExtensions(extensions);
 
   #root: Root | null = null;
 
@@ -234,6 +240,38 @@ export class GLTFLoader {
         // Add to node
         meshEntity.parentId = entity.id;
       });
+    }
+
+    // Load collider
+    const collider = node.getExtension(ColliderExtension.EXTENSION_NAME);
+    if (collider instanceof Collider) {
+      switch (collider.getType()) {
+        case "box": {
+          const box = new BoxCollider();
+          box.size = collider.getSize() ?? [1, 1, 1];
+          entity.collider = box;
+          break;
+        }
+
+        case "sphere": {
+          const sphere = new SphereCollider();
+          sphere.radius = collider.getRadius() ?? 0.5;
+          entity.collider = sphere;
+          break;
+        }
+
+        case "cylinder": {
+          const cylinder = new CylinderCollider();
+          cylinder.radius = collider.getRadius() ?? 0.5;
+          cylinder.height = collider.getHeight() ?? 1;
+          entity.collider = cylinder;
+          break;
+        }
+
+        default: {
+          console.warn(`Collider type ${collider.getType()} not supported`);
+        }
+      }
     }
 
     // Load children

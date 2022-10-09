@@ -21,14 +21,14 @@ export const createRouter = () => router<Context>();
  */
 export function createProtectedRouter() {
   return createRouter().middleware(({ ctx, next }) => {
-    if (!ctx.token || !ctx.token.sub) {
+    if (!ctx.token || !ctx.token.address) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
 
     return next({
       ctx: {
         ...ctx,
-        address: ctx.token.sub,
+        address: ctx.token.address as string,
       },
     });
   });

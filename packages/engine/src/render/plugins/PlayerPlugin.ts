@@ -1,16 +1,21 @@
 import { Euler, MathUtils, PerspectiveCamera, Vector2, Vector3 } from "three";
 
-import { ToRenderMessage } from "../types";
+import { PostMessage } from "../../types";
+import { FromRenderMessage, ToRenderMessage } from "../types";
 
 const DAMPEN_FACTOR = 2;
 const PLAYER_SPEED = 3;
 
 export class PlayerPlugin {
   #camera: PerspectiveCamera;
+  #postMessage: PostMessage<FromRenderMessage>;
 
   #playerInputVector = new Vector2();
-  #playerPosition: Float32Array | null = null;
-  #playerVelocity: Float32Array | null = null;
+
+  #playerPosition: Int32Array | null = null;
+  #playerRotation: Int32Array | null = null;
+  #playerVelocity: Int32Array | null = null;
+
   #inputMomentum = new Vector2();
   #inputYChangeTime = 0;
   #inputXChangeTime = 0;
@@ -25,24 +30,47 @@ export class PlayerPlugin {
 
   #pointerSpeed = 1.0;
 
-  constructor(camera: PerspectiveCamera) {
+  constructor(
+    camera: PerspectiveCamera,
+    postMessage: PostMessage<FromRenderMessage>
+  ) {
     this.#camera = camera;
+    this.#postMessage = postMessage;
   }
 
   onmessage(event: MessageEvent<ToRenderMessage>) {
     const { subject, data } = event.data;
 
     switch (subject) {
-      case "set_player_buffers":
+      case "set_player_buffers": {
         this.#playerPosition = data.position;
         this.#playerVelocity = data.velocity;
+
+        // Create shared array buffer
+        const rotationBuffer = new SharedArrayBuffer(
+          Int32Array.BYTES_PER_ELEMENT * 4
+        );
+
+        this.#playerRotation = new Int32Array(rotationBuffer);
+
+        // Send back to main thread
+        this.#postMessage({
+          subject: "set_player_rotation_buffer",
+          data: this.#playerRotation,
+        });
+
         break;
-      case "set_player_input_vector":
+      }
+
+      case "set_player_input_vector": {
         this.setPlayerInputVector(data);
         break;
-      case "mouse_move":
+      }
+
+      case "mouse_move": {
         this.mouseMove(data.x, data.y);
         break;
+      }
     }
   }
 
@@ -102,23 +130,27 @@ export class PlayerPlugin {
       .rotateAround(new Vector2(0, 0), -angle)
       .multiplyScalar(PLAYER_SPEED);
 
-    // Send velocity to physics thread
+    // Send velocity
     if (this.#playerVelocity) {
-      this.#playerVelocity[0] = velocity.x;
-      this.#playerVelocity[1] = velocity.y;
+      Atomics.store(this.#playerVelocity, 0, velocity.x * 1000);
+      Atomics.store(this.#playerVelocity, 1, velocity.y * 1000);
+    }
+
+    // Send player rotation
+    if (this.#playerRotation) {
+      const rotation = this.#camera.quaternion;
+      Atomics.store(this.#playerRotation, 0, rotation.x * 100000);
+      Atomics.store(this.#playerRotation, 1, rotation.y * 100000);
+      Atomics.store(this.#playerRotation, 2, rotation.z * 100000);
+      Atomics.store(this.#playerRotation, 3, rotation.w * 100000);
     }
 
     // Apply player position
-    if (
-      this.#playerPosition &&
-      this.#playerPosition[0] !== undefined &&
-      this.#playerPosition[1] !== undefined &&
-      this.#playerPosition[2] !== undefined
-    ) {
+    if (this.#playerPosition) {
       this.#camera.position.set(
-        this.#playerPosition[0],
-        this.#playerPosition[1],
-        this.#playerPosition[2]
+        Atomics.load(this.#playerPosition, 0) / 1000,
+        Atomics.load(this.#playerPosition, 1) / 1000,
+        Atomics.load(this.#playerPosition, 2) / 1000
       );
     }
   }

@@ -23,7 +23,7 @@ export default function EditorNavbar() {
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
-  const { save } = useSave();
+  const { save, saveImage } = useSave();
 
   function handleToggleColliders() {
     useEditorStore.setState({ colliders: !colliders });
@@ -49,16 +49,12 @@ export default function EditorNavbar() {
     // Save scene
     await save();
 
-    // Export scene to glTF
-    const exportedScene = await engine.export();
-    useEditorStore.setState({ exportedScene });
-
     // Navigate to preview page
     router.push(`/editor/${id}/preview`);
   }
 
   async function handleOpenPublish() {
-    await save();
+    await saveImage();
     setOpenPublishDialog(true);
   }
 

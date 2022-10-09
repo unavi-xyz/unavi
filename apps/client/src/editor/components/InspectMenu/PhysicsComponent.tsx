@@ -8,6 +8,7 @@ import {
 import { updateEntity } from "../../actions/UpdateEntityAction";
 import { useEntity } from "../../hooks/useEntity";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
+import { capitalize } from "../../utils/capitalize";
 import SelectMenu from "../ui/SelectMenu";
 import BoxColliderComponent from "./collider/BoxColliderComponent";
 import CylinderColliderComponent from "./collider/CylinderColliderComponent";
@@ -28,7 +29,7 @@ export default function PhysicsComponent({ entityId }: Props) {
       <>
         <MenuRows titles={["Collider"]}>
           <SelectMenu
-            value={collider?.type ?? "None"}
+            value={collider?.type ? capitalize(collider.type) : "None"}
             options={["None", "Box", "Sphere", "Cylinder"]}
             onChange={(e) => {
               const value = e.target.value === "None" ? null : e.target.value;
@@ -39,11 +40,13 @@ export default function PhysicsComponent({ entityId }: Props) {
                   updateEntity(entityId, { collider: boxCollider.toJSON() });
                   break;
                 }
+
                 case "Sphere": {
                   const sphereCollider = new SphereCollider();
                   updateEntity(entityId, { collider: sphereCollider.toJSON() });
                   break;
                 }
+
                 case "Cylinder": {
                   const cylinderCollider = new CylinderCollider();
                   updateEntity(entityId, {
@@ -51,6 +54,7 @@ export default function PhysicsComponent({ entityId }: Props) {
                   });
                   break;
                 }
+
                 default:
                   updateEntity(entityId, { collider: null });
               }
@@ -72,16 +76,19 @@ function ColliderComponent({
   collider: Collider | null;
 }) {
   switch (collider?.type) {
-    case "Box":
+    case "box":
       return <BoxColliderComponent entityId={entityId} collider={collider} />;
-    case "Sphere":
+
+    case "sphere":
       return (
         <SphereColliderComponent entityId={entityId} collider={collider} />
       );
-    case "Cylinder":
+
+    case "cylinder":
       return (
         <CylinderColliderComponent entityId={entityId} collider={collider} />
       );
+
     default:
       return null;
   }

@@ -12,6 +12,7 @@ import { useLoad } from "../../../editor/hooks/useLoad";
 import { useTransformControls } from "../../../editor/hooks/useTransformControls";
 import { useEditorStore } from "../../../editor/store";
 import MetaTags from "../../../home/MetaTags";
+import Spinner from "../../../ui/Spinner";
 
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -19,6 +20,7 @@ export default function Editor() {
   const createdEngine = useRef(false);
 
   const engine = useEditorStore((state) => state.engine);
+  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
 
   useLoad();
   useAutosave();
@@ -33,6 +35,8 @@ export default function Editor() {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");
 
+      useEditorStore.setState({ sceneLoaded: false });
+
       const { Engine } = await import("@wired-labs/engine");
 
       // Create engine
@@ -44,10 +48,9 @@ export default function Editor() {
         skyboxPath: "/images/skybox/",
       });
 
-      // Start engine
-      engine.start().then(() => {
-        useEditorStore.setState({ engine, canvas });
-      });
+      await engine.waitForReady();
+
+      useEditorStore.setState({ engine, canvas });
     }
 
     initEngine();
@@ -99,7 +102,7 @@ export default function Editor() {
     };
   }, [updateCanvasSize]);
 
-  const loadedClass = engine ? "opacity-100" : "opacity-0";
+  const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
 
   return (
     <>
@@ -117,18 +120,26 @@ export default function Editor() {
             direction="horizontal"
             expandToMin
             gutterSize={6}
-            className="h-full"
+            className="flex h-full"
             onMouseUp={updateCanvasSize}
           >
-            <div className="float-left h-full">
+            <div className="h-full">
               <TreeMenu />
             </div>
 
-            <div className="float-left h-full border-x">
+            <div className="h-full border-x">
               <div
                 ref={containerRef}
                 className="relative h-full w-full overflow-hidden"
               >
+                {!sceneLoaded && (
+                  <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+                    <div className="flex h-full  flex-col items-center justify-center">
+                      <Spinner />
+                    </div>
+                  </div>
+                )}
+
                 <canvas
                   ref={canvasRef}
                   className={`h-full w-full transition ${loadedClass}`}
@@ -136,7 +147,7 @@ export default function Editor() {
               </div>
             </div>
 
-            <div className="float-left h-full">
+            <div className="h-full">
               <InspectMenu />
             </div>
           </Split>
@@ -145,4 +156,3 @@ export default function Editor() {
     </>
   );
 }
-//

@@ -183,7 +183,7 @@ export default function Preview() {
 
       <div className="h-full">
         {exportedScene ? (
-          <div className={`crosshair transition ${loadedClass}`} />
+          <div className="crosshair" />
         ) : (
           <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
             <div className="flex h-full flex-col items-center justify-center">

@@ -8,6 +8,7 @@ import {
   PublicationProps,
 } from "../../client/lens/utils/getPublicationProps";
 import MetaTags from "../../home/MetaTags";
+import Spinner from "../../ui/Spinner";
 
 export const DEFAULT_HOST = "wss://host.thewired.space";
 
@@ -147,7 +148,15 @@ export default function App({ id, metadata, publication }: Props) {
       />
 
       <div className="h-full">
-        <div className="crosshair" />
+        {engine ? (
+          <div className="crosshair" />
+        ) : (
+          <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+            <div className="flex h-full flex-col items-center justify-center">
+              <Spinner />
+            </div>
+          </div>
+        )}
 
         <div
           ref={containerRef}

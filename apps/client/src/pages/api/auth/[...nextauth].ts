@@ -4,9 +4,14 @@ import {
   RefreshMutation,
   RefreshMutationVariables,
 } from "@wired-labs/lens";
-import NextAuth, { NextAuthOptions } from "next-auth";
+import NextAuth, { Account, NextAuthOptions, Profile } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+import {
+  CustomSession,
+  CustomToken,
+  CustomUser,
+} from "../../../client/auth/types";
 import { env } from "../../../env/server.mjs";
 import { authenticate, verifyJWT } from "../../../server/jwt";
 import { lensClient } from "../../../server/lens";
@@ -16,7 +21,16 @@ import { parseJWT } from "../../../utils/parseJWT";
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({
+      token,
+      user,
+    }: {
+      token: CustomToken;
+      user?: CustomUser;
+      account?: Account | null;
+      profile?: Profile;
+      isNewUser?: boolean;
+    }): Promise<CustomToken> {
       // Initial sign in
       if (user) {
         return {
@@ -35,9 +49,9 @@ export const authOptions: NextAuthOptions = {
 
       // Log user out if refresh token is expired
       if (refreshExpired) {
-        token.address = null;
-        token.accessToken = null;
-        token.refreshToken = null;
+        token.address = undefined;
+        token.accessToken = undefined;
+        token.refreshToken = undefined;
       }
 
       // Refresh JWT token if it expires soon
@@ -63,7 +77,13 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    session({ session, token }) {
+    session({
+      session,
+      token,
+    }: {
+      session: CustomSession;
+      token: CustomToken;
+    }) {
       session.address = token.address;
       session.accessToken = token.accessToken;
       return session;

@@ -9,7 +9,6 @@ export default function CreateProjectPage() {
   const router = useRouter();
 
   const nameRef = useRef<HTMLInputElement>(null);
-  const descriptionRef = useRef<HTMLInputElement>(null);
 
   const { mutateAsync: createProject } = trpc.useMutation(
     "auth.create-project"
@@ -25,14 +24,10 @@ export default function CreateProjectPage() {
     setLoading(true);
 
     const name = nameRef.current?.value ?? "";
-    const description = descriptionRef.current?.value ?? "";
 
     try {
       // Create new project
-      const id = await createProject({
-        name,
-        description,
-      });
+      const id = await createProject({ name });
 
       // Fetch default image
       const res = await fetch("/images/default-space.jpeg");
@@ -65,8 +60,6 @@ export default function CreateProjectPage() {
         defaultValue="New Project"
         outline
       />
-
-      <TextField inputRef={descriptionRef} title="Description" outline />
 
       <div className="flex justify-end">
         <Button

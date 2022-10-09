@@ -25,7 +25,7 @@ export function useSave() {
     const promises: Promise<any>[] = [];
 
     const id = router.query.id as string;
-    const editorState = JSON.stringify(getEditorState());
+    const editorState = getEditorState();
     const scene = engine.scene.toJSON();
 
     // Save project

@@ -16,7 +16,7 @@ import {
 } from "./groups";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
-const TERMINAL_VELOCITY = 50;
+const TERMINAL_VELOCITY = 40;
 const VOID_HEIGHT = -100;
 const JUMP_VELOCITY = 6;
 const JUMP_COOLDOWN_SECONDS = 0.2;
@@ -250,13 +250,14 @@ export class PhysicsWorker {
     if (this.#playerBody) {
       const playerPosition = this.#playerBody.translation();
       const playerRotation = this.#playerBody.rotation();
-      const velocity = this.#playerBody.linvel();
 
       // If player is in the void, reset position
       if (playerPosition.y < VOID_HEIGHT) {
         this.#playerBody.setTranslation(SPAWN, true);
         this.#playerBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
       }
+
+      const velocity = this.#playerBody.linvel();
 
       // Jumping
       const groundedCollision = this.#world.castShape(

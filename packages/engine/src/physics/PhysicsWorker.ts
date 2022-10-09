@@ -16,10 +16,13 @@ import {
 } from "./groups";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
-const TERMINAL_VELOCITY = 30;
+const TERMINAL_VELOCITY = 50;
+const VOID_HEIGHT = -100;
 const JUMP_VELOCITY = 6;
 const JUMP_COOLDOWN_SECONDS = 0.2;
 const HZ = 60; // Physics updates per second
+
+const SPAWN = { x: 0, y: 3, z: 0 };
 
 const playerShape = new Capsule(0.8, 0.2);
 
@@ -157,7 +160,7 @@ export class PhysicsWorker {
     playerColliderDesc.setCollisionGroups(playerCollisionGroup);
 
     const playerBodyDesc = RigidBodyDesc.dynamic()
-      .setTranslation(0, 3, 0)
+      .setTranslation(SPAWN.x, SPAWN.y, SPAWN.z)
       .lockRotations();
 
     this.#playerBody = this.#world.createRigidBody(playerBodyDesc);
@@ -245,12 +248,17 @@ export class PhysicsWorker {
     const delta = this.#world.timestep;
 
     if (this.#playerBody) {
-      const velocity = this.#playerBody.linvel();
-
-      // Jumping
       const playerPosition = this.#playerBody.translation();
       const playerRotation = this.#playerBody.rotation();
+      const velocity = this.#playerBody.linvel();
 
+      // If player is in the void, reset position
+      if (playerPosition.y < VOID_HEIGHT) {
+        this.#playerBody.setTranslation(SPAWN, true);
+        this.#playerBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      }
+
+      // Jumping
       const groundedCollision = this.#world.castShape(
         playerPosition,
         playerRotation,

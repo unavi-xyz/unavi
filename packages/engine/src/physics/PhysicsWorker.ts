@@ -1,19 +1,27 @@
 import {
+  Capsule,
   Collider,
   ColliderDesc,
   RigidBody,
   RigidBodyDesc,
-  Vector,
   World,
 } from "@dimforge/rapier3d";
 
 import { EntityJSON } from "../scene";
-import { PostMessage } from "../types";
+import { PostMessage, Triplet } from "../types";
+import {
+  playerCollisionGroup,
+  playerShapeCastCollisionGroup,
+  staticCollisionGroup,
+} from "./groups";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
 const TERMINAL_VELOCITY = 30;
-const JUMP_STRENGTH = 6;
+const JUMP_VELOCITY = 6;
+const JUMP_COOLDOWN_SECONDS = 0.2;
 const HZ = 60; // Physics updates per second
+
+const playerShape = new Capsule(0.8, 0.2);
 
 /*
  * Runs the physics loop.
@@ -30,6 +38,7 @@ export class PhysicsWorker {
 
   #interval: NodeJS.Timer | null = null;
   #jump = false;
+  #lastJumpTime = 0;
 
   #entities = new Map<string, EntityJSON>();
   #rigidBodies = new Map<string, RigidBody>();
@@ -45,26 +54,38 @@ export class PhysicsWorker {
   onmessage = (event: MessageEvent<ToPhysicsMessage>) => {
     const { subject, data } = event.data;
     switch (subject) {
-      case "start":
+      case "start": {
         this.start();
         break;
-      case "stop":
+      }
+
+      case "stop": {
         this.stop();
         break;
-      case "init_player":
+      }
+
+      case "init_player": {
         this.initPlayer();
         break;
-      case "jumping":
+      }
+
+      case "jumping": {
         this.setJumping(data);
         break;
-      case "add_entity":
+      }
+
+      case "add_entity": {
         this.#entities.set(data.entity.id, data.entity);
         this.addCollider(data.entity);
         break;
-      case "remove_entity":
+      }
+
+      case "remove_entity": {
         this.#entities.delete(data.entityId);
         this.removeCollider(data.entityId);
         break;
+      }
+
       case "update_entity": {
         const entity = this.#entities.get(data.entityId);
         if (!entity) throw new Error("Entity not found");
@@ -74,6 +95,7 @@ export class PhysicsWorker {
         this.addCollider(updatedEntity);
         break;
       }
+
       case "set_global_transform": {
         const rigidBody = this.#rigidBodies.get(data.entityId);
         if (!rigidBody) break;
@@ -98,6 +120,7 @@ export class PhysicsWorker {
         );
         break;
       }
+
       case "load_json": {
         // Load entities from JSON
         const entities = data.scene.entities;
@@ -127,10 +150,16 @@ export class PhysicsWorker {
 
   initPlayer() {
     // Create player body
-    const playerColliderDesc = ColliderDesc.capsule(0.9, 0.2);
+    const playerColliderDesc = ColliderDesc.capsule(
+      playerShape.halfHeight,
+      playerShape.radius
+    );
+    playerColliderDesc.setCollisionGroups(playerCollisionGroup);
+
     const playerBodyDesc = RigidBodyDesc.dynamic()
-      .setTranslation(0, 2, 5)
+      .setTranslation(0, 3, 0)
       .lockRotations();
+
     this.#playerBody = this.#world.createRigidBody(playerBodyDesc);
     this.#world.createCollider(playerColliderDesc, this.#playerBody);
 
@@ -190,6 +219,8 @@ export class PhysicsWorker {
       }
     }
 
+    colliderDesc.setCollisionGroups(staticCollisionGroup);
+
     const rigidBodyDesc = RigidBodyDesc.fixed();
     const rigidBody = this.#world.createRigidBody(rigidBodyDesc);
     const collider = this.#world.createCollider(colliderDesc, rigidBody);
@@ -211,23 +242,51 @@ export class PhysicsWorker {
   }
 
   #physicsLoop() {
-    // Jumping
-    const jumpVelocity = this.#jump ? JUMP_STRENGTH : 0;
-    if (this.#jump) this.#jump = false;
+    const delta = this.#world.timestep;
 
-    // Set player velocity
-    if (this.#playerVelocity && this.#playerBody) {
-      const velocityY = this.#playerBody.linvel().y + jumpVelocity;
-      const limitedY = Math.max(
-        Math.min(velocityY, TERMINAL_VELOCITY),
-        -TERMINAL_VELOCITY
+    if (this.#playerBody) {
+      const velocity = this.#playerBody.linvel();
+
+      // Jumping
+      const playerPosition = this.#playerBody.translation();
+      const playerRotation = this.#playerBody.rotation();
+
+      const groundedCollision = this.#world.castShape(
+        playerPosition,
+        playerRotation,
+        this.#world.gravity,
+        playerShape,
+        delta,
+        playerShapeCastCollisionGroup,
+        playerShapeCastCollisionGroup
       );
 
-      const velocity: Vector = {
-        x: Atomics.load(this.#playerVelocity, 0) / 1000,
-        y: limitedY,
-        z: Atomics.load(this.#playerVelocity, 1) / 1000,
-      };
+      const isGrounded = Boolean(groundedCollision);
+
+      const tryJump = this.#jump && isGrounded;
+      if (this.#jump) this.#jump = false;
+
+      const time = performance.now();
+      const deltaJump = time - this.#lastJumpTime;
+      const jumpCooldownActive = deltaJump < JUMP_COOLDOWN_SECONDS * 1000;
+
+      const doJump = tryJump && !jumpCooldownActive;
+      if (doJump) {
+        velocity.y = JUMP_VELOCITY;
+        this.#lastJumpTime = time;
+      }
+
+      // Apply input
+      if (this.#playerVelocity) {
+        velocity.x = Atomics.load(this.#playerVelocity, 0) / 1000;
+        velocity.z = Atomics.load(this.#playerVelocity, 1) / 1000;
+      }
+
+      // Cap y velocity to prevent going too fast
+      velocity.y = Math.max(
+        Math.min(velocity.y, TERMINAL_VELOCITY),
+        -TERMINAL_VELOCITY
+      );
 
       this.#playerBody.setLinvel(velocity, true);
     }

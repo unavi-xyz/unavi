@@ -53,21 +53,30 @@ export class SceneLoader {
     this.root.add(this.visuals);
     this.root.add(this.contents);
     this.#map.objects.set("root", this.contents);
+
+    this.visuals.visible = false;
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
     const { subject, data } = event.data;
+
     switch (subject) {
-      case "show_visuals":
+      case "show_visuals": {
         this.visuals.visible = data.visible;
         break;
-      case "add_entity":
+      }
+
+      case "add_entity": {
         addEntity(data.entity, this.#map, this.visuals, this.#postMessage);
         break;
-      case "remove_entity":
+      }
+
+      case "remove_entity": {
         removeEntity(data.entityId, this.#map);
         break;
-      case "update_entity":
+      }
+
+      case "update_entity": {
         updateEntity(
           data.entityId,
           data.data,
@@ -76,16 +85,24 @@ export class SceneLoader {
           this.#postMessage
         );
         break;
-      case "add_material":
+      }
+
+      case "add_material": {
         addMaterial(data.material, this.#map);
         break;
-      case "remove_material":
+      }
+
+      case "remove_material": {
         removeMaterial(data.materialId, this.#map);
         break;
-      case "update_material":
+      }
+
+      case "update_material": {
         updateMaterial(data.materialId, data.data, this.#map);
         break;
-      case "load_json":
+      }
+
+      case "load_json": {
         // Add accessors
         if (data.scene.accessors)
           data.scene.accessors.forEach((a) => this.#map.accessors.set(a.id, a));
@@ -115,9 +132,12 @@ export class SceneLoader {
             addAnimation(a, this.#map, this.mixer);
           });
         break;
-      case "prepare_export":
+      }
+
+      case "prepare_export": {
         this.prepareExport();
         break;
+      }
     }
   };
 
@@ -178,9 +198,6 @@ export class SceneLoader {
           exportAttribute(entity.id, "COLOR_0", "color", mesh);
           break;
         }
-
-        default:
-          return;
       }
     });
 

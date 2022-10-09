@@ -34,19 +34,23 @@ export function createColliderVisual(
   // Create new collider
   let collider: Mesh | null = null;
   switch (entity.collider?.type) {
-    case "box":
+    case "box": {
       collider = new Mesh(
         new BoxBufferGeometry(...entity.collider.size),
         wireframeMaterial
       );
       break;
-    case "sphere":
+    }
+
+    case "sphere": {
       collider = new Mesh(
         new SphereBufferGeometry(entity.collider.radius),
         wireframeMaterial
       );
       break;
-    case "cylinder":
+    }
+
+    case "cylinder": {
       collider = new Mesh(
         new CylinderBufferGeometry(
           entity.collider.radius,
@@ -56,6 +60,7 @@ export function createColliderVisual(
         wireframeMaterial
       );
       break;
+    }
   }
 
   if (collider) {

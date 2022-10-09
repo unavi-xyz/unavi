@@ -6,7 +6,7 @@
   "scripts": {
     "build": "next build",
     "codegen": "prisma generate",
-    "deploy": "prisma db push",
+    "deploy": "dotenv -e .env.local prisma db push",
     "dev": "next dev",
     "lint": "cd ../.. && eslint --fix apps/client --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore",
     "start": "next start"
@@ -14,6 +14,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "~3.171.0",
     "@aws-sdk/s3-request-presigner": "~3.171.0",
+    "@next-auth/prisma-adapter": "^1.0.4",
     "@next/bundle-analyzer": "^12.3.1",
     "@prisma/client": "^4.4.0",
     "@rainbow-me/rainbowkit": "^0.7.1",
@@ -51,6 +52,7 @@
     "@types/react-dom": "^18.0.6",
     "@wired-labs/tsconfig": "*",
     "autoprefixer": "^10.4.12",
+    "dotenv-cli": "^6.0.0",
     "eslint": "^8.24.0",
     "eslint-config-custom": "*",
     "postcss": "^8.4.17",

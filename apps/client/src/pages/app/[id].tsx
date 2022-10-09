@@ -1,6 +1,6 @@
 import { Entity, GLTFMesh } from "@wired-labs/engine";
 import { NextPageContext } from "next";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppStore } from "../../app/store";
 import {
@@ -34,6 +34,7 @@ export default function App({ id, metadata, publication }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const createdEngine = useRef(false);
+  const [engineStarted, setEngineStarted] = useState(false);
 
   const engine = useAppStore((state) => state.engine);
 
@@ -43,7 +44,11 @@ export default function App({ id, metadata, publication }: Props) {
   useEffect(() => {
     if (!engine) return;
 
-    engine.joinSpace(id);
+    engine.joinSpace(id).then(() => {
+      // Start engine
+      engine.start();
+      setEngineStarted(true);
+    });
 
     return () => {
       engine.leaveSpace();
@@ -84,10 +89,9 @@ export default function App({ id, metadata, publication }: Props) {
         skyboxPath: "/images/skybox/",
       });
 
-      // Start engine
-      engine.start().then(() => {
-        useAppStore.setState({ engine });
-      });
+      await engine.waitForReady();
+
+      useAppStore.setState({ engine });
     }
 
     initEngine();
@@ -114,6 +118,7 @@ export default function App({ id, metadata, publication }: Props) {
       try {
         const canvas = canvasRef.current;
         if (!canvas) return;
+
         const container = containerRef.current;
         if (!container) return;
 
@@ -136,7 +141,7 @@ export default function App({ id, metadata, publication }: Props) {
     };
   }, [updateCanvasSize]);
 
-  const loadedClass = engine ? "opacity-100" : "opacity-0";
+  const loadedClass = engineStarted ? "opacity-100" : "opacity-0";
 
   return (
     <>
@@ -148,7 +153,7 @@ export default function App({ id, metadata, publication }: Props) {
       />
 
       <div className="h-full">
-        {engine ? (
+        {engineStarted ? (
           <div className="crosshair" />
         ) : (
           <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">

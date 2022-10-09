@@ -85,7 +85,12 @@ export function useLoad() {
       await Promise.all(filePromises);
 
       // Load scene
-      engine.scene.loadJSON(scene);
+      await engine.scene.loadJSON(scene);
+
+      // Start engine
+      engine.start();
+
+      useEditorStore.setState({ sceneLoaded: true });
     }
 
     load();

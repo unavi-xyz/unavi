@@ -5,10 +5,9 @@ import { Tool } from "./types";
 
 export interface IEditorStore {
   engine: Engine | null;
+  sceneLoaded: boolean;
 
   getEntity: (id: string) => Entity | undefined;
-
-  exportedScene: Uint8Array | null;
 
   canvas: HTMLCanvasElement | null;
   preview: boolean;
@@ -18,18 +17,16 @@ export interface IEditorStore {
   description: string;
 
   colliders: boolean;
-  grid: boolean;
   tool: Tool;
 }
 
 export const useEditorStore = create<IEditorStore>((set, get) => ({
   engine: null,
+  sceneLoaded: false,
 
   getEntity: (id: string) => {
     return get().engine?.scene.entities[id];
   },
-
-  exportedScene: null,
 
   canvas: null,
   preview: false,
@@ -38,7 +35,6 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
   name: "",
   description: "",
 
-  colliders: true,
-  grid: false,
+  colliders: false,
   tool: "translate",
 }));

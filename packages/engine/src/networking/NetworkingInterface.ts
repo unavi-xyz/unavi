@@ -73,7 +73,9 @@ export class NetworkingInterface {
     entity.mesh = mesh;
 
     // Add to scene
-    this.#scene.addEntity(entity);
+    await this.#scene.loadJSON({
+      entities: [entity.toJSON()],
+    });
 
     // Get host server
     const spaceHost = null; // TODO: get from metadata

@@ -54,19 +54,18 @@ export default function Preview() {
         skyboxPath: "/images/skybox/",
       });
 
-      // Start engine
-      engine.start().then(() => {
-        useEditorStore.setState({ engine });
+      await engine.waitForReady();
 
-        // Set collider visibility
-        const { colliders } = useEditorStore.getState();
-        engine.renderThread.postMessage({
-          subject: "show_visuals",
-          data: {
-            visible: colliders,
-          },
-        });
+      // Set collider visibility
+      const { colliders } = useEditorStore.getState();
+      engine.renderThread.postMessage({
+        subject: "show_visuals",
+        data: {
+          visible: colliders,
+        },
       });
+
+      useEditorStore.setState({ engine });
     }
 
     initEngine();
@@ -99,7 +98,7 @@ export default function Preview() {
       await Promise.all(filePromises);
 
       // Load scene
-      engine.scene.loadJSON(scene);
+      await engine.scene.loadJSON(scene);
 
       // Export scene as GLB
       const glb = await engine.export();
@@ -140,7 +139,14 @@ export default function Preview() {
     entity.mesh = mesh;
 
     // Add entity to scene
-    engine.scene.addEntity(entity);
+    engine.scene
+      .loadJSON({
+        entities: [entity.toJSON()],
+      })
+      .then(() => {
+        // Start engine
+        engine.start();
+      });
 
     return () => {
       engine.scene.removeEntity(entity.id);

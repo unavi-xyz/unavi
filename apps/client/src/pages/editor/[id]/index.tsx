@@ -20,6 +20,7 @@ export default function Editor() {
   const createdEngine = useRef(false);
 
   const engine = useEditorStore((state) => state.engine);
+  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
 
   useLoad();
   useAutosave();
@@ -34,6 +35,8 @@ export default function Editor() {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");
 
+      useEditorStore.setState({ sceneLoaded: false });
+
       const { Engine } = await import("@wired-labs/engine");
 
       // Create engine
@@ -45,10 +48,7 @@ export default function Editor() {
         skyboxPath: "/images/skybox/",
       });
 
-      // Start engine
-      engine.start().then(() => {
-        useEditorStore.setState({ engine, canvas });
-      });
+      useEditorStore.setState({ engine, canvas });
     }
 
     initEngine();
@@ -100,7 +100,7 @@ export default function Editor() {
     };
   }, [updateCanvasSize]);
 
-  const loadedClass = engine ? "opacity-100" : "opacity-0";
+  const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
 
   return (
     <>
@@ -130,7 +130,7 @@ export default function Editor() {
                 ref={containerRef}
                 className="relative h-full w-full overflow-hidden"
               >
-                {!engine && (
+                {!sceneLoaded && (
                   <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
                     <div className="flex h-full  flex-col items-center justify-center">
                       <Spinner />

@@ -31,6 +31,8 @@ export class MainScene {
     glTFRootEntities: new Map<string, string[]>(),
   };
 
+  #gltfLoadCallbacks: Array<(id: string) => void> = [];
+
   constructor({
     physicsThread,
     loaderThread,
@@ -70,6 +72,9 @@ export class MainScene {
 
       // Add loaded glTF to the scene
       this.loadJSON(scene);
+
+      // Call glTF load callbacks
+      this.#gltfLoadCallbacks.forEach((callback) => callback(id));
     };
 
     // Load glTFs when added to the scene
@@ -228,7 +233,7 @@ export class MainScene {
     return this.#scene.toJSON(includeInternal);
   }
 
-  loadJSON(json: Partial<SceneJSON>) {
+  async loadJSON(json: Partial<SceneJSON>) {
     // Remove root entity
     json.entities = json.entities?.filter((entity) => entity.id !== "root");
 
@@ -250,6 +255,29 @@ export class MainScene {
 
     // Load scene
     this.#scene.loadJSON(json);
+
+    // Wait for all glTFs to load
+    if (json.entities) {
+      const glTFs = json.entities.filter(
+        (entity) => entity.mesh?.type === "glTF"
+      );
+
+      await Promise.all(
+        glTFs.map(
+          (entity) =>
+            new Promise<void>((resolve) => {
+              const index = this.#gltfLoadCallbacks.push((id) => {
+                if (id === entity.id) {
+                  resolve();
+
+                  // Remove callback
+                  this.#gltfLoadCallbacks.splice(index, 1);
+                }
+              });
+            })
+        )
+      );
+    }
   }
 
   clear() {

@@ -64,7 +64,7 @@ export type ToRenderMessage =
   | WorkerMessage<"prepare_export">
   | WorkerMessage<
       "set_player_buffers",
-      { position: Float32Array; velocity: Float32Array }
+      { position: Int32Array; velocity: Int32Array }
     >
   | WorkerMessage<"set_player_input_vector", [number, number]>
   | WorkerMessage<
@@ -110,4 +110,5 @@ export type FromRenderMessage =
         position: Triplet;
         rotation: Quad;
       }
-    >;
+    >
+  | WorkerMessage<"set_player_rotation_buffer", Int32Array>;

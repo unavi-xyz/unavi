@@ -24,8 +24,9 @@ export class PhysicsWorker {
   #postMessage: PostMessage<FromPhysicsMessage>;
 
   #playerBody: RigidBody | null = null;
-  #playerPosition: Float32Array | null = null;
-  #playerVelocity: Float32Array | null = null;
+
+  #playerPosition: Int32Array | null = null;
+  #playerVelocity: Int32Array | null = null;
 
   #interval: NodeJS.Timer | null = null;
   #jump = false;
@@ -141,13 +142,14 @@ export class PhysicsWorker {
 
     // Create shared array buffers
     const positionBuffer = new SharedArrayBuffer(
-      Float32Array.BYTES_PER_ELEMENT * 3
+      Int32Array.BYTES_PER_ELEMENT * 3
     );
     const velocityBuffer = new SharedArrayBuffer(
-      Float32Array.BYTES_PER_ELEMENT * 2
+      Int32Array.BYTES_PER_ELEMENT * 2
     );
-    this.#playerPosition = new Float32Array(positionBuffer);
-    this.#playerVelocity = new Float32Array(velocityBuffer);
+
+    this.#playerPosition = new Int32Array(positionBuffer);
+    this.#playerVelocity = new Int32Array(velocityBuffer);
 
     // Send buffers to render thread
     this.#postMessage({
@@ -219,12 +221,7 @@ export class PhysicsWorker {
     if (this.#jump) this.#jump = false;
 
     // Set player velocity
-    if (
-      this.#playerVelocity &&
-      this.#playerVelocity[0] !== undefined &&
-      this.#playerVelocity[1] !== undefined &&
-      this.#playerBody
-    ) {
+    if (this.#playerVelocity && this.#playerBody) {
       const velocityY = this.#playerBody.linvel().y + jumpVelocity;
       const limitedY = Math.max(
         Math.min(velocityY, TERMINAL_VELOCITY),
@@ -232,9 +229,9 @@ export class PhysicsWorker {
       );
 
       const velocity: Vector = {
-        x: this.#playerVelocity[0],
+        x: Atomics.load(this.#playerVelocity, 0) / 1000,
         y: limitedY,
-        z: this.#playerVelocity[1],
+        z: Atomics.load(this.#playerVelocity, 1) / 1000,
       };
 
       this.#playerBody.setLinvel(velocity, true);
@@ -245,10 +242,10 @@ export class PhysicsWorker {
 
     // Send player position to render thread
     if (this.#playerPosition && this.#playerBody) {
-      const { x, y, z } = this.#playerBody.translation();
-      this.#playerPosition[0] = x;
-      this.#playerPosition[1] = y;
-      this.#playerPosition[2] = z;
+      const position = this.#playerBody.translation();
+      Atomics.store(this.#playerPosition, 0, position.x * 1000);
+      Atomics.store(this.#playerPosition, 1, position.y * 1000);
+      Atomics.store(this.#playerPosition, 2, position.z * 1000);
     }
   }
 }

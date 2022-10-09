@@ -9,12 +9,11 @@ import { createClient } from "urql";
 import { MainScene } from "../main/MainScene";
 import { RenderThread } from "../render/RenderThread";
 import { Entity, GLTFMesh } from "../scene";
-import { Triplet } from "../types";
 import { LENS_API } from "./constants";
 import { FromHostMessage, ToHostMessage } from "./types";
 
 const DEFAULT_HOST = "wss://host.thewired.space";
-const PUBLISH_HZ = 10;
+const PUBLISH_HZ = 20; // X times per second
 
 /*
  * Acts as an interface for all networking functionality.
@@ -31,7 +30,8 @@ export class NetworkingInterface {
   #hostServer: string | null = null;
   #reconnectCount = 0;
 
-  #playerPositionBuffer: Float32Array | null = null;
+  #playerPosition: Int32Array | null = null;
+  #playerRotation: Int32Array | null = null;
 
   constructor({
     scene,
@@ -111,18 +111,19 @@ export class NetworkingInterface {
 
       // Start broadcasting position
       this.#broadcastInterval = setInterval(() => {
-        if (!this.#playerPositionBuffer) return;
+        if (!this.#playerPosition || !this.#playerRotation) return;
 
-        const position: Triplet = [
-          this.#playerPositionBuffer[0] ?? 0,
-          this.#playerPositionBuffer[1] ?? 0,
-          this.#playerPositionBuffer[2] ?? 0,
+        const data: [number, number, number, number, number, number, number] = [
+          Atomics.load(this.#playerPosition, 0) / 1000,
+          Atomics.load(this.#playerPosition, 1) / 1000,
+          Atomics.load(this.#playerPosition, 2) / 1000,
+          Atomics.load(this.#playerRotation, 0) / 100000,
+          Atomics.load(this.#playerRotation, 1) / 100000,
+          Atomics.load(this.#playerRotation, 2) / 100000,
+          Atomics.load(this.#playerRotation, 3) / 100000,
         ];
 
-        send({
-          subject: "location",
-          data: [position[0], position[1], position[2], 0, 0, 0, 1],
-        });
+        send({ subject: "location", data });
       }, 1000 / PUBLISH_HZ);
     };
 
@@ -203,7 +204,11 @@ export class NetworkingInterface {
     }
   }
 
-  setPlayerPositionBuffer(position: Float32Array) {
-    this.#playerPositionBuffer = position;
+  setPlayerPosition(position: Int32Array) {
+    this.#playerPosition = position;
+  }
+
+  setPlayerRotation(rotation: Int32Array) {
+    this.#playerRotation = rotation;
   }
 }

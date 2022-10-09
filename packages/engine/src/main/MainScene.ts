@@ -13,7 +13,7 @@ import {
   SceneJSON,
   SceneMessage,
 } from "../scene/types";
-import { PostMessage, Transferable } from "../types";
+import { PostMessage } from "../types";
 
 /*
  * Wrapper around the {@link Scene}.
@@ -242,23 +242,11 @@ export class MainScene {
       data: { scene: strippedScene },
     });
 
-    // Send full scene + transfer data to render thread
-    const accessors = json.accessors
-      ? Object.values(json.accessors).map((accessor) => accessor.array.buffer)
-      : [];
-    const imageBuffers = json.images
-      ? Object.values(json.images).map((image) => image.array.buffer)
-      : [];
-
-    const transfer: Transferable[] = [...imageBuffers, ...accessors];
-
-    this.#toRenderThread(
-      {
-        subject: "load_json",
-        data: { scene: json },
-      },
-      transfer
-    );
+    // Send full scene to render thread
+    this.#toRenderThread({
+      subject: "load_json",
+      data: { scene: json },
+    });
 
     // Load scene
     this.#scene.loadJSON(json);

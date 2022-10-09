@@ -38,12 +38,6 @@ export class PhysicsWorker {
   constructor(postMessage: PostMessage) {
     this.#postMessage = postMessage;
 
-    // Create ground
-    const groundColliderDesc = ColliderDesc.cuboid(10, 0.5, 10);
-    const groundBodyDesc = RigidBodyDesc.fixed().setTranslation(0, -1, 0);
-    const groundBody = this.#world.createRigidBody(groundBodyDesc);
-    this.#world.createCollider(groundColliderDesc, groundBody);
-
     // Set ready
     this.#postMessage({ subject: "ready", data: null });
   }

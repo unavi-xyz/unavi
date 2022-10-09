@@ -1,13 +1,13 @@
-import { NextPageContext } from "next";
+import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 
+import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
-import {
-  getSpaceLayoutProps,
-  SpaceLayoutProps,
-} from "../../../home/layouts/SpaceLayout/getSpaceLayoutProps";
+import { getSpaceLayoutProps } from "../../../home/layouts/SpaceLayout/getSpaceLayoutProps";
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
 
-export async function getServerSideProps({ res, query }: NextPageContext) {
+export const getServerSideProps: GetServerSideProps<
+  PublicationProps & { host: string; playerCount: number | null }
+> = async ({ res, query }) => {
   res?.setHeader("Cache-Control", "s-maxage=30");
 
   const props = await getSpaceLayoutProps(query.id as string);
@@ -15,9 +15,11 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
   return {
     props,
   };
-}
+};
 
-export default function Space(props: SpaceLayoutProps) {
+export default function Space(
+  props: InferGetServerSidePropsType<typeof getServerSideProps>
+) {
   return (
     <SpaceLayout {...props}>
       <div className="space-y-2">

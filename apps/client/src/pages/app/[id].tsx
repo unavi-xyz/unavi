@@ -10,8 +10,6 @@ import {
 import MetaTags from "../../home/MetaTags";
 import Spinner from "../../ui/Spinner";
 
-export const DEFAULT_HOST = "wss://host.thewired.space";
-
 export async function getServerSideProps({ res, query }: NextPageContext) {
   res?.setHeader("Cache-Control", "s-maxage=120");
 

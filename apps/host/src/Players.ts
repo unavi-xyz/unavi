@@ -117,4 +117,15 @@ export class Players {
 
     ws.publish(spaceTopic(spaceId), JSON.stringify(locationMessage));
   }
+
+  getPlayerCount(spaceId: string): number {
+    let count = 0;
+
+    this.spaceIds.forEach((otherSpaceId) => {
+      if (otherSpaceId !== spaceId) return;
+      count++;
+    });
+
+    return count;
+  }
 }

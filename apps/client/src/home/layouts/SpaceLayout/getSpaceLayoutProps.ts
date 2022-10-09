@@ -1,45 +1,41 @@
-import {
-  getPublicationProps,
-  PublicationProps,
-} from "../../../client/lens/utils/getPublicationProps";
-
-export interface SpaceLayoutProps extends PublicationProps {
-  playerCount?: number;
-  host?: string;
-  children: React.ReactNode;
-}
+import { getPublicationProps } from "../../../client/lens/utils/getPublicationProps";
 
 export async function getSpaceLayoutProps(id: string) {
+  const host =
+    process.env.NODE_ENV === "development"
+      ? "localhost:4000"
+      : "host.thewired.space";
+
+  const hostURL =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:4000"
+      : "https://host.thewired.space";
+
   // Fetch publication data
-  const publicationProps = await getPublicationProps(id as string);
+  const publicationPromise = getPublicationProps(id as string);
 
-  return publicationProps;
+  // Fetch player count
+  try {
+    const response = await fetch(`${hostURL}/playercount/${id}`);
+    const playerCountText = await response.text();
+    const playerCount = parseInt(playerCountText);
 
-  // // Fetch player count
-  // ! Causes issues if cant reach server, ping player count from client
-  // const host =
-  //   process.env.NODE_ENV === "production"
-  //     ? publicationProps.publication?.profile.attributes?.find(
-  //         (item) => item.key === "host"
-  //       )?.value ?? DEFAULT_HOST
-  //     : "localhost:4000";
+    const publicationProps = await publicationPromise;
 
-  // try {
-  //   const playerCountRes = await fetch(
-  //     `${HTTP}://${host}/space/${id}/player_count`
-  //   );
-  //   const playerCount = await playerCountRes.json();
+    return {
+      ...publicationProps,
+      host,
+      playerCount,
+    };
+  } catch (error) {
+    console.error(error);
 
-  //   return {
-  //     ...publicationProps,
-  //     host,
-  //     playerCount,
-  //   };
-  // } catch {
-  //   return {
-  //     ...publicationProps,
-  //     host,
-  //     playerCount: null,
-  //   };
-  // }
+    const publicationProps = await publicationPromise;
+
+    return {
+      ...publicationProps,
+      host,
+      playerCount: null,
+    };
+  }
 }

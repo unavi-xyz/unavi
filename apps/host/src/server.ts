@@ -54,6 +54,18 @@ server.ws("/*", {
   },
 });
 
+// Handle HTTP requests
+server.get("/playercount/*", (res, req) => {
+  const id = String(req.getUrl().slice(13));
+  const playerCount = players.getPlayerCount(id);
+
+  console.info(`🔢 Player count for ${id}: ${playerCount}`);
+
+  res.write(String(playerCount));
+  res.writeStatus("200 OK");
+  res.end();
+});
+
 // Start server
 server.listen(PORT, (listenSocket) => {
   if (listenSocket) console.info(`✅ Listening to port ${PORT}`);

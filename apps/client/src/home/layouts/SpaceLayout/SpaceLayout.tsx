@@ -3,11 +3,17 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 
 import { useLens } from "../../../client/lens/hooks/useLens";
+import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { trimHandle } from "../../../client/lens/utils/trimHandle";
 import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
 import MetaTags from "../../MetaTags";
-import { SpaceLayoutProps } from "./getSpaceLayoutProps";
+
+export interface SpaceLayoutProps extends PublicationProps {
+  playerCount: number | null;
+  host: string;
+  children: React.ReactNode;
+}
 
 export default function SpaceLayout({
   children,
@@ -73,7 +79,6 @@ export default function SpaceLayout({
                   </div>
 
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                    <div className="text-outline">With</div>
                     <div>{playerCount ?? "??"}</div>
                     <div className="text-outline">
                       connected player{playerCount === 1 ? null : "s"}

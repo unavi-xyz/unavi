@@ -2,7 +2,9 @@ import { Entity, GLTFMesh } from "@wired-labs/engine";
 import { NextPageContext } from "next";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import ChatBox from "../../app/ChatBox";
 import { useAppStore } from "../../app/store";
+import { useAppHotkeys } from "../../app/useAppHotkeys";
 import {
   getPublicationProps,
   PublicationProps,
@@ -38,6 +40,8 @@ export default function App({ id, metadata, publication }: Props) {
 
   const modelURL: string | undefined =
     publication?.metadata.media[1]?.original.url;
+
+  useAppHotkeys();
 
   useEffect(() => {
     if (!engine) return;
@@ -170,6 +174,10 @@ export default function App({ id, metadata, publication }: Props) {
             className={`h-full w-full transition ${loadedClass}`}
           />
         </div>
+      </div>
+
+      <div className="absolute left-0 bottom-0 m-4">
+        <ChatBox />
       </div>
     </>
   );

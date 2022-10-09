@@ -81,6 +81,10 @@ export class Engine {
     this.networkingInterface.leaveSpace();
   }
 
+  sendChatMessage(message: string) {
+    this.networkingInterface.sendChatMessage(message);
+  }
+
   waitForReady() {
     return Promise.all([
       this.physicsThread.waitForReady(),

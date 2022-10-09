@@ -4,13 +4,14 @@ import {
   GetPublicationQueryVariables,
   Publication,
 } from "@wired-labs/lens";
+import { BehaviorSubject } from "rxjs";
 import { createClient } from "urql";
 
 import { MainScene } from "../main/MainScene";
 import { RenderThread } from "../render/RenderThread";
 import { Entity, GLTFMesh } from "../scene";
 import { LENS_API } from "./constants";
-import { FromHostMessage, ToHostMessage } from "./types";
+import { FromHostMessage, IChatMessage, ToHostMessage } from "./types";
 
 const DEFAULT_HOST = "wss://host.thewired.space";
 const PUBLISH_HZ = 20; // X times per second
@@ -32,6 +33,8 @@ export class NetworkingInterface {
 
   #playerPosition: Int32Array | null = null;
   #playerRotation: Int32Array | null = null;
+
+  chatMessages$ = new BehaviorSubject<IChatMessage[]>([]);
 
   constructor({
     scene,
@@ -152,6 +155,19 @@ export class NetworkingInterface {
           });
           break;
         }
+
+        case "player_message": {
+          const newChatMessages = this.chatMessages$.value.concat(data);
+
+          // Sort by timestamp
+          newChatMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+          // Limit to 25 messages
+          newChatMessages.splice(0, newChatMessages.length - 25);
+
+          this.chatMessages$.next(newChatMessages);
+          break;
+        }
       }
     };
 
@@ -204,6 +220,17 @@ export class NetworkingInterface {
       this.#scene.removeEntity(this.#spaceEntityId);
       this.#spaceEntityId = null;
     }
+  }
+
+  sendChatMessage(data: string) {
+    if (!this.#ws) return;
+
+    const message: ToHostMessage = {
+      subject: "message",
+      data,
+    };
+
+    this.#ws.send(JSON.stringify(message));
   }
 
   setPlayerPosition(position: Int32Array) {

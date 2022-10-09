@@ -46,6 +46,11 @@ server.ws("/*", {
         players.publishLocation(ws, message.data);
         break;
       }
+
+      case "message": {
+        players.publishMessage(ws, message.data);
+        break;
+      }
     }
   },
 

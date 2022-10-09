@@ -20,23 +20,32 @@ export function useEditorHotkeys() {
           }
           break;
         }
-        case "w":
+
+        case "w": {
           useEditorStore.setState({ tool: "translate" });
           break;
-        case "e":
+        }
+
+        case "e": {
           useEditorStore.setState({ tool: "rotate" });
           break;
-        case "r":
+        }
+
+        case "r": {
           useEditorStore.setState({ tool: "scale" });
           break;
-        case "c":
+        }
+
+        case "c": {
           // // Copy
           // if (e.ctrlKey) {
           //   const selectedId = useEditorStore.getState().selectedId;
           //   if (selectedId) setCopiedId(selectedId);
           // }
           break;
-        case "v":
+        }
+
+        case "v": {
           // // Paste
           // if (e.ctrlKey) {
           //   if (!copiedId) return;
@@ -48,6 +57,7 @@ export function useEditorHotkeys() {
           //   addItemAsSibling(clone, object, "above");
           // }
           break;
+        }
       }
     }
 

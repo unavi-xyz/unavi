@@ -41,7 +41,10 @@ export class Player {
       this.#pointerlockchange.bind(this)
     );
     document.addEventListener("mousemove", this.#mousemove.bind(this));
-    document.addEventListener("blur", this.#onBlur.bind(this));
+    document.addEventListener(
+      "pointerlockchange",
+      this.#onPointerLockChange.bind(this)
+    );
   }
 
   destroy() {
@@ -50,7 +53,10 @@ export class Player {
     document.removeEventListener("keyup", this.#keyup);
     document.removeEventListener("pointerlockchange", this.#pointerlockchange);
     document.removeEventListener("mousemove", this.#mousemove);
-    document.removeEventListener("blur", this.#onBlur);
+    document.removeEventListener(
+      "pointerlockchange",
+      this.#onPointerLockChange
+    );
 
     document.exitPointerLock();
   }
@@ -70,7 +76,9 @@ export class Player {
   }
 
   #onKeyDown(event: KeyboardEvent) {
-    switch (event.key) {
+    const key = event.key.toLowerCase();
+
+    switch (key) {
       case "w": {
         this.#pressingW = true;
         this.#updateVelocity();
@@ -111,7 +119,9 @@ export class Player {
   }
 
   #onKeyUp(event: KeyboardEvent) {
-    switch (event.key) {
+    const key = event.key.toLowerCase();
+
+    switch (key) {
       case "w": {
         this.#pressingW = false;
         this.#updateVelocity();
@@ -146,7 +156,10 @@ export class Player {
     }
   }
 
-  #onBlur() {
+  #onPointerLockChange() {
+    const isLocked = document.pointerLockElement === this.#canvas;
+    if (isLocked) return;
+
     this.#pressingW = false;
     this.#pressingS = false;
     this.#pressingA = false;

@@ -11,6 +11,7 @@ export interface EngineOptions {
   enableTransformControls?: boolean;
   preserveDrawingBuffer?: boolean;
   skyboxPath?: string;
+  avatarPath?: string;
 }
 
 /*
@@ -33,6 +34,7 @@ export class Engine {
     enableTransformControls,
     preserveDrawingBuffer,
     skyboxPath,
+    avatarPath,
   }: EngineOptions) {
     // Create render thread
     this.renderThread = new RenderThread({
@@ -42,6 +44,7 @@ export class Engine {
       enableTransformControls,
       preserveDrawingBuffer,
       skyboxPath,
+      avatarPath,
     });
 
     // Create physics thread

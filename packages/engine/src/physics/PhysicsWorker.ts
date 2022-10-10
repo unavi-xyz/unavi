@@ -8,6 +8,7 @@ import {
   World,
 } from "@dimforge/rapier3d";
 
+import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../constants";
 import { EntityJSON } from "../scene";
 import { PostMessage, Triplet } from "../types";
 import {
@@ -23,9 +24,6 @@ const JUMP_VELOCITY = 6;
 const JUMP_COOLDOWN_SECONDS = 0.2;
 const HZ = 60; // Physics updates per second
 const SPAWN = { x: 0, y: 3, z: 0 };
-
-const PLAYER_HEIGHT = 1.6;
-const PLAYER_RADIUS = 0.2;
 
 const groundCollisionShape = new Capsule(
   PLAYER_HEIGHT / 2,
@@ -327,8 +325,9 @@ export class PhysicsWorker {
     // Send player position to render thread
     if (this.#playerPosition && this.#playerBody) {
       const position = this.#playerBody.translation();
+      const playerFeet = position.y - PLAYER_HEIGHT / 2 - PLAYER_RADIUS;
       Atomics.store(this.#playerPosition, 0, position.x * 1000);
-      Atomics.store(this.#playerPosition, 1, position.y * 1000);
+      Atomics.store(this.#playerPosition, 1, playerFeet * 1000);
       Atomics.store(this.#playerPosition, 2, position.z * 1000);
     }
   }

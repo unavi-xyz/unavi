@@ -1,8 +1,8 @@
 import {
-  BoxBufferGeometry,
+  BoxGeometry,
   BufferGeometry,
-  CylinderBufferGeometry,
-  SphereBufferGeometry,
+  CylinderGeometry,
+  SphereGeometry,
 } from "three";
 
 import { MeshJSON } from "../../../scene";
@@ -33,17 +33,17 @@ export function createMeshGeometry(json: MeshJSON, map: SceneMap) {
 
   switch (json.type) {
     case "Box":
-      return new BoxBufferGeometry(json.width, json.height, json.depth);
+      return new BoxGeometry(json.width, json.height, json.depth);
 
     case "Sphere":
-      return new SphereBufferGeometry(
+      return new SphereGeometry(
         json.radius,
         json.widthSegments,
         json.heightSegments
       );
 
     case "Cylinder":
-      return new CylinderBufferGeometry(
+      return new CylinderGeometry(
         json.radius,
         json.radius,
         json.height,

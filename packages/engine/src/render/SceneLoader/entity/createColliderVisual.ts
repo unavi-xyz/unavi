@@ -1,11 +1,11 @@
 import {
-  BoxBufferGeometry,
-  CylinderBufferGeometry,
+  BoxGeometry,
+  CylinderGeometry,
   Group,
   Mesh,
   MeshBasicMaterial,
   Quaternion,
-  SphereBufferGeometry,
+  SphereGeometry,
   Vector3,
 } from "three";
 
@@ -36,7 +36,7 @@ export function createColliderVisual(
   switch (entity.collider?.type) {
     case "box": {
       collider = new Mesh(
-        new BoxBufferGeometry(...entity.collider.size),
+        new BoxGeometry(...entity.collider.size),
         wireframeMaterial
       );
       break;
@@ -44,7 +44,7 @@ export function createColliderVisual(
 
     case "sphere": {
       collider = new Mesh(
-        new SphereBufferGeometry(entity.collider.radius),
+        new SphereGeometry(entity.collider.radius),
         wireframeMaterial
       );
       break;
@@ -52,7 +52,7 @@ export function createColliderVisual(
 
     case "cylinder": {
       collider = new Mesh(
-        new CylinderBufferGeometry(
+        new CylinderGeometry(
           entity.collider.radius,
           entity.collider.radius,
           entity.collider.height

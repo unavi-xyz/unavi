@@ -21,10 +21,6 @@ export default function ChatBox() {
       inputRef.current.focus();
       document.exitPointerLock();
     }
-
-    inputRef.current.onblur = () => {
-      useAppStore.setState({ chatBoxFocused: false });
-    };
   }, [chatBoxFocused]);
 
   const focusedClass = chatBoxFocused
@@ -53,6 +49,8 @@ export default function ChatBox() {
               useAppStore.getState().engine?.sendChatMessage(value);
             }
           }}
+          onFocus={() => useAppStore.setState({ chatBoxFocused: true })}
+          onBlur={() => useAppStore.setState({ chatBoxFocused: false })}
           type="text"
           placeholder="Send a message..."
           className={`h-full w-full rounded-md px-4 py-2 text-white outline-none drop-shadow backdrop-blur-2xl transition placeholder:text-white/80 placeholder:drop-shadow ${focusedClass}`}

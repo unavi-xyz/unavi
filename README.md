@@ -7,6 +7,9 @@
 <br />
 
 <div align="center">
+  <a href="https://docs.thewired.space">
+    <img src="https://img.shields.io/badge/docs-read-informational" alt="Docs">
+  </a>
   <a href="https://thewired.space">
     <img src="https://therealsujitk-vercel-badge.vercel.app/?app=client-wired" alt="Vercel">
   </a>

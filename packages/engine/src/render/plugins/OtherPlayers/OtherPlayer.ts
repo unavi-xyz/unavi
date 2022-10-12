@@ -5,6 +5,7 @@ import {
   AnimationMixer,
   BoxGeometry,
   Group,
+  LoopOnce,
   Mesh,
   MeshStandardMaterial,
   Quaternion,
@@ -28,6 +29,7 @@ export class OtherPlayer {
   #mixer: AnimationMixer | null = null;
   #actions = new Map<AnimationName, AnimationAction>();
 
+  #velocity = new Vector3();
   #targetPosition = new Vector3();
   #targetRotation = new Quaternion();
 
@@ -112,11 +114,17 @@ export class OtherPlayer {
       animations.forEach((clip, name) => {
         if (!this.#mixer) throw new Error("Mixer not created");
         const action = this.#mixer.clipAction(clip);
+        action.setEffectiveWeight(0);
         this.#actions.set(name, action);
       });
 
-      // Play idle animation
       this.#actions.get(AnimationName.Idle)?.play();
+      this.#actions.get(AnimationName.Walk)?.play();
+
+      this.#actions
+        .get(AnimationName.Jump)
+        ?.setLoop(LoopOnce, 1)
+        .setEffectiveTimeScale(1.5);
     }
 
     console.info(`💃 Loaded ${this.playerId}'s avatar`);
@@ -144,6 +152,29 @@ export class OtherPlayer {
     this.group.quaternion.x = 0;
     this.group.quaternion.z = 0;
     this.group.quaternion.normalize();
+
+    // Calculate velocity
+    const velocity = this.#velocity
+      .copy(this.#targetPosition)
+      .sub(this.group.position)
+      .divideScalar(delta);
+
+    // Set animation weights
+    const jumpWeight = velocity.y > 0.5 ? 1 : 0;
+    const isJumping = this.#actions.get(AnimationName.Jump)?.isRunning();
+
+    const walkWeight = isJumping ? 0 : Math.min(velocity.length() / 0.5, 1);
+    const idleWeight = 1 - walkWeight - jumpWeight;
+
+    if (jumpWeight && !isJumping) {
+      // this.#actions.get(AnimationName.Jump)?.reset().play();
+    } else if (!jumpWeight && isJumping) {
+      // this.#actions.get(AnimationName.Jump)?.stop();
+    }
+
+    this.#actions.get(AnimationName.Walk)?.setEffectiveWeight(walkWeight);
+    this.#actions.get(AnimationName.Jump)?.setEffectiveWeight(jumpWeight);
+    this.#actions.get(AnimationName.Idle)?.setEffectiveWeight(idleWeight);
 
     // Update animations
     if (this.#mixer) this.#mixer.update(delta);

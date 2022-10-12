@@ -1,7 +1,6 @@
 import {
   AmbientLight,
   Clock,
-  DirectionalLight,
   FogExp2,
   PCFSoftShadowMap,
   PerspectiveCamera,
@@ -143,22 +142,6 @@ export class RenderWorker {
     // Lights
     const ambientLight = new AmbientLight(0xffffff, 0.02);
     this.#scene.add(ambientLight);
-
-    const directionalLight = new DirectionalLight(0xfff0db, 0.98);
-    directionalLight.position.set(10, 50, 30);
-    directionalLight.castShadow = true;
-    this.#scene.add(directionalLight);
-
-    directionalLight.shadow.camera.far = 100;
-    directionalLight.shadow.mapSize.width = 4096;
-    directionalLight.shadow.mapSize.height = 4096;
-
-    // TODO: Set these based on the scene
-    const SHADOW_RADIUS = 30;
-    directionalLight.shadow.camera.left = -SHADOW_RADIUS;
-    directionalLight.shadow.camera.right = SHADOW_RADIUS;
-    directionalLight.shadow.camera.top = SHADOW_RADIUS;
-    directionalLight.shadow.camera.bottom = -SHADOW_RADIUS;
 
     // Fog
     this.#scene.fog = new FogExp2(0xeefaff, 0.005);

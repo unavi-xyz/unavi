@@ -2,12 +2,15 @@ import type { GLTF } from "@gltf-transform/core";
 import {
   AnimationClip,
   AnimationMixer,
+  Box3,
   BufferAttribute,
   BufferGeometry,
+  DirectionalLight,
   Group,
   Mesh,
   MeshStandardMaterial,
   Object3D,
+  Vector3,
 } from "three";
 
 import { AccessorJSON, EntityJSON } from "../../scene";
@@ -34,6 +37,8 @@ export class SceneLoader {
   visuals = new Group();
   mixer = new AnimationMixer(this.root);
 
+  #sun = new DirectionalLight(0xfff0db, 0.98);
+
   #map: SceneMap = {
     accessors: new Map<string, AccessorJSON>(),
     animations: new Map<string, AnimationClip>(),
@@ -55,6 +60,13 @@ export class SceneLoader {
     this.#map.objects.set("root", this.contents);
 
     this.visuals.visible = false;
+
+    this.#sun.castShadow = true;
+    this.#sun.position.set(10, 50, 30);
+    this.root.add(this.#sun);
+
+    this.#sun.shadow.mapSize.width = 4096;
+    this.#sun.shadow.mapSize.height = 4096;
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
@@ -68,11 +80,13 @@ export class SceneLoader {
 
       case "add_entity": {
         addEntity(data.entity, this.#map, this.visuals, this.#postMessage);
+        this.#updateShadowMap();
         break;
       }
 
       case "remove_entity": {
         removeEntity(data.entityId, this.#map);
+        this.#updateShadowMap();
         break;
       }
 
@@ -84,6 +98,7 @@ export class SceneLoader {
           this.visuals,
           this.#postMessage
         );
+        this.#updateShadowMap();
         break;
       }
 
@@ -131,6 +146,8 @@ export class SceneLoader {
           data.scene.animations.forEach((a) => {
             addAnimation(a, this.#map, this.mixer);
           });
+
+        this.#updateShadowMap();
         break;
       }
 
@@ -255,5 +272,27 @@ export class SceneLoader {
     // Repeat for children
     const children = getChildren(entity.id, this.#map);
     children.forEach((child) => this.saveTransform(child.id));
+
+    this.#updateShadowMap();
+  }
+
+  #updateShadowMap() {
+    const sceneBounds = new Box3();
+    this.contents.traverse((object) => {
+      if (object instanceof Mesh) {
+        sceneBounds.expandByObject(object);
+      }
+    });
+
+    const size = sceneBounds.getSize(new Vector3());
+
+    const y = size.y + 20;
+    this.#sun.position.set(0, y, 0);
+    this.#sun.shadow.camera.far = y * 2;
+
+    this.#sun.shadow.camera.left = -size.x / 2;
+    this.#sun.shadow.camera.right = size.x / 2;
+    this.#sun.shadow.camera.top = size.z / 2;
+    this.#sun.shadow.camera.bottom = -size.z / 2;
   }
 }

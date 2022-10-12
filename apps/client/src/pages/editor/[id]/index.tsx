@@ -65,6 +65,7 @@ export default function Editor() {
         engine: null,
         selectedId: null,
       });
+      if (process.env.NODE_ENV === "development") window.location.reload();
     };
   }, [engine]);
 

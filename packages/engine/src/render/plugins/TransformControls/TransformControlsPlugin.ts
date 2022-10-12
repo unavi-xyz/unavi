@@ -42,7 +42,7 @@ export class TransformControlsPlugin {
     const { subject, data } = event.data;
 
     switch (subject) {
-      case "set_transform_target":
+      case "set_transform_target": {
         if (data === null) this.#transformControls.detach();
         else {
           const object = this.#sceneLoader.findObject(data);
@@ -50,38 +50,39 @@ export class TransformControlsPlugin {
           else throw new Error(`Object not found: ${data}`);
         }
         break;
-      case "set_transform_mode":
+      }
+
+      case "set_transform_mode": {
         this.#transformControls.mode = data;
         break;
-      case "pointermove":
-        {
-          const pointerMoveEvent: FakePointerEvent = new CustomEvent(
-            "pointermove",
-            { detail: data }
-          );
-          this.#target.dispatchEvent(pointerMoveEvent);
-        }
+      }
+
+      case "pointermove": {
+        const pointerMoveEvent: FakePointerEvent = new CustomEvent(
+          "pointermove",
+          { detail: data }
+        );
+        this.#target.dispatchEvent(pointerMoveEvent);
         break;
-      case "pointerdown":
-        {
-          const pointerDownEvent: FakePointerEvent = new CustomEvent(
-            "pointerdown",
-            { detail: data }
-          );
-          this.#target.dispatchEvent(pointerDownEvent);
-        }
+      }
+
+      case "pointerdown": {
+        const pointerDownEvent: FakePointerEvent = new CustomEvent(
+          "pointerdown",
+          { detail: data }
+        );
+        this.#target.dispatchEvent(pointerDownEvent);
         break;
-      case "pointerup":
-        {
-          const pointerUpEvent: FakePointerEvent = new CustomEvent(
-            "pointerup",
-            {
-              detail: data,
-            }
-          );
-          this.#target.dispatchEvent(pointerUpEvent);
-        }
+      }
+
+      case "pointerup": {
+        const pointerUpEvent: FakePointerEvent = new CustomEvent("pointerup", {
+          detail: data,
+        });
+        this.#target.dispatchEvent(pointerUpEvent);
         break;
+      }
+
       case "remove_entity": {
         const attachedObject = this.#transformControls.object;
         if (attachedObject) {
@@ -90,6 +91,7 @@ export class TransformControlsPlugin {
           // Detach if attached object is removed
           if (id === data.entityId) this.#transformControls.detach();
         }
+        break;
       }
     }
   }

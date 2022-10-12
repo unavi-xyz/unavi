@@ -46,30 +46,30 @@ export class RenderThread {
     this.#engine = engine;
 
     // Render in a worker if browser supports OffscreenCanvas
-    if (typeof OffscreenCanvas !== "undefined") {
-      console.info("✅ Browser supports OffscreenCanvas");
+    // if (typeof OffscreenCanvas !== "undefined") {
+    //   console.info("✅ Browser supports OffscreenCanvas");
 
-      const offscreen = canvas.transferControlToOffscreen();
+    //   const offscreen = canvas.transferControlToOffscreen();
 
-      this.worker = new Worker(new URL("./worker.ts", import.meta.url), {
-        type: "module",
-        name: "render",
-      });
+    //   this.worker = new Worker(new URL("./worker.ts", import.meta.url), {
+    //     type: "module",
+    //     name: "render",
+    //   });
 
-      // Send canvas
-      this.postMessage({ subject: "set_canvas", data: offscreen }, [offscreen]);
-    } else {
-      console.info("❌ Browser does not support OffscreenCanvas");
+    //   // Send canvas
+    //   this.postMessage({ subject: "set_canvas", data: offscreen }, [offscreen]);
+    // } else {
+    // console.info("❌ Browser does not support OffscreenCanvas");
 
-      // Render in a fake worker on the main thread
-      this.worker = new FakeWorker();
-      const renderWorker = new RenderWorker(
-        this.worker.workerPort.postMessage.bind(this.worker.workerPort),
-        canvas
-      );
-      this.worker.workerPort.onmessage =
-        renderWorker.onmessage.bind(renderWorker);
-    }
+    // Render in a fake worker on the main thread
+    this.worker = new FakeWorker();
+    const renderWorker = new RenderWorker(
+      this.worker.workerPort.postMessage.bind(this.worker.workerPort),
+      canvas
+    );
+    this.worker.workerPort.onmessage =
+      renderWorker.onmessage.bind(renderWorker);
+    // }
 
     // Handle worker messages
     this.worker.onmessage = this.#onmessage;

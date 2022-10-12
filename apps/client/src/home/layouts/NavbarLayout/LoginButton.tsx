@@ -7,7 +7,7 @@ export default function LoginButton() {
 
   return (
     <Button variant="filled" onClick={openConnectModal}>
-      Login
+      Sign in
     </Button>
   );
 }

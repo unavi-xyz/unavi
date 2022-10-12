@@ -24,4 +24,4 @@ Just like websites, spaces need servers to host them.
 
 The host server acts like a traditional game server - it manages player connections to your space, handles communication between them, and acts as as a source of truth for the state of the space.
 
-The team runs a host server that is used by default for spaces created at [thewired.space](https://thewired.space), but you can always change it to your own. Importantly, travel between spaces is not limited to the host server - you can travel between spaces hosted on different servers. Self-hosting spaces is one of the core principles of the Wired - every layer is open for others to build on.
+The team runs a host server that is used by default for spaces created at [thewired.space](https://thewired.space), but you can always change it to your own. Importantly, travel between spaces is not limited to the host server - you can travel between spaces hosted on different servers just like websites. Self-hosting spaces is one of the core principles of the Wired - every layer is open for others to build on.

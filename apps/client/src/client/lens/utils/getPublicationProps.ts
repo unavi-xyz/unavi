@@ -9,6 +9,7 @@ import {
 import { PageMetadata } from "../../../home/MetaTags";
 import { lensClient } from "../../../server/lens";
 import { getMediaURL } from "../../../utils/getMediaURL";
+import { trimHandle } from "./trimHandle";
 
 export interface PublicationProps {
   metadata: PageMetadata;
@@ -41,7 +42,7 @@ export async function getPublicationProps(
 
   const description =
     publication?.metadata.description ?? publication?.profile.handle
-      ? `${publicationType} by @${publication?.profile.handle}`
+      ? `${publicationType} by @${trimHandle(publication?.profile.handle)}`
       : "";
 
   const image = getMediaURL(publication?.metadata.media[0]);

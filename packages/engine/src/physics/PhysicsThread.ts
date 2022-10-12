@@ -47,6 +47,10 @@ export class PhysicsThread {
         this.#engine.networkingInterface.setPlayerPosition(data.position);
         break;
       }
+
+      case "player_falling": {
+        this.#engine.networkingInterface.setFallState(data);
+      }
     }
   };
 

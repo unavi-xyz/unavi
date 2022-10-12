@@ -1,5 +1,6 @@
 import {
   Capsule,
+  CoefficientCombineRule,
   Collider,
   ColliderDesc,
   RigidBody,
@@ -7,6 +8,7 @@ import {
   World,
 } from "@dimforge/rapier3d";
 
+import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../constants";
 import { EntityJSON } from "../scene";
 import { PostMessage, Triplet } from "../types";
 import {
@@ -21,10 +23,13 @@ const VOID_HEIGHT = -100;
 const JUMP_VELOCITY = 6;
 const JUMP_COOLDOWN_SECONDS = 0.2;
 const HZ = 60; // Physics updates per second
-
 const SPAWN = { x: 0, y: 3, z: 0 };
 
-const playerShape = new Capsule(0.8, 0.2);
+const groundCollisionShape = new Capsule(
+  PLAYER_HEIGHT / 2,
+  PLAYER_RADIUS - 0.05 // Slightly smaller radius to avoid sticking to walls
+);
+const PLAYER_FRICTION = 0.5;
 
 /*
  * Runs the physics loop.
@@ -35,6 +40,7 @@ export class PhysicsWorker {
   #postMessage: PostMessage<FromPhysicsMessage>;
 
   #playerBody: RigidBody | null = null;
+  #playerCollider: Collider | null = null;
 
   #playerPosition: Int32Array | null = null;
   #playerVelocity: Int32Array | null = null;
@@ -42,6 +48,7 @@ export class PhysicsWorker {
   #interval: NodeJS.Timer | null = null;
   #jump = false;
   #lastJumpTime = 0;
+  #isGrounded = false;
 
   #entities = new Map<string, EntityJSON>();
   #rigidBodies = new Map<string, RigidBody>();
@@ -155,17 +162,22 @@ export class PhysicsWorker {
   initPlayer() {
     // Create player body
     const playerColliderDesc = ColliderDesc.capsule(
-      playerShape.halfHeight,
-      playerShape.radius
+      PLAYER_HEIGHT / 2,
+      PLAYER_RADIUS
     );
     playerColliderDesc.setCollisionGroups(playerCollisionGroup);
+    playerColliderDesc.setFriction(PLAYER_FRICTION);
+    playerColliderDesc.setFrictionCombineRule(CoefficientCombineRule.Min);
 
     const playerBodyDesc = RigidBodyDesc.dynamic()
       .setTranslation(SPAWN.x, SPAWN.y, SPAWN.z)
       .lockRotations();
 
     this.#playerBody = this.#world.createRigidBody(playerBodyDesc);
-    this.#world.createCollider(playerColliderDesc, this.#playerBody);
+    this.#playerCollider = this.#world.createCollider(
+      playerColliderDesc,
+      this.#playerBody
+    );
 
     // Create shared array buffers
     const positionBuffer = new SharedArrayBuffer(
@@ -246,9 +258,7 @@ export class PhysicsWorker {
   }
 
   #physicsLoop() {
-    const delta = this.#world.timestep;
-
-    if (this.#playerBody) {
+    if (this.#playerBody && this.#playerCollider) {
       const playerPosition = this.#playerBody.translation();
       const playerRotation = this.#playerBody.rotation();
 
@@ -260,19 +270,36 @@ export class PhysicsWorker {
 
       const velocity = this.#playerBody.linvel();
 
-      // Jumping
       const groundedCollision = this.#world.castShape(
         playerPosition,
         playerRotation,
         this.#world.gravity,
-        playerShape,
-        delta,
+        groundCollisionShape,
+        this.#world.timestep,
         playerShapeCastCollisionGroup,
         playerShapeCastCollisionGroup
       );
 
       const isGrounded = Boolean(groundedCollision);
 
+      if (isGrounded !== this.#isGrounded) {
+        this.#isGrounded = isGrounded;
+        this.#postMessage({
+          subject: "player_falling",
+          data: !isGrounded,
+        });
+      }
+
+      // Set player friction to 0 in air
+      const friction = this.#playerCollider.friction();
+
+      if (isGrounded && friction !== PLAYER_FRICTION) {
+        this.#playerCollider.setFriction(PLAYER_FRICTION);
+      } else if (!isGrounded && friction !== 0) {
+        this.#playerCollider.setFriction(0);
+      }
+
+      // Jumping
       const tryJump = this.#jump && isGrounded;
       if (this.#jump) this.#jump = false;
 
@@ -307,8 +334,9 @@ export class PhysicsWorker {
     // Send player position to render thread
     if (this.#playerPosition && this.#playerBody) {
       const position = this.#playerBody.translation();
+      const playerFeet = position.y - PLAYER_HEIGHT / 2 - PLAYER_RADIUS;
       Atomics.store(this.#playerPosition, 0, position.x * 1000);
-      Atomics.store(this.#playerPosition, 1, position.y * 1000);
+      Atomics.store(this.#playerPosition, 1, playerFeet * 1000);
       Atomics.store(this.#playerPosition, 2, position.z * 1000);
     }
   }

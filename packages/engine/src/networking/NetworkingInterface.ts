@@ -11,7 +11,7 @@ import { MainScene } from "../main/MainScene";
 import { RenderThread } from "../render/RenderThread";
 import { Entity, GLTFMesh } from "../scene";
 import { LENS_API } from "./constants";
-import { FromHostMessage, IChatMessage, ToHostMessage } from "./types";
+import { FromHostMessage, InternalChatMessage, ToHostMessage } from "./types";
 
 const DEFAULT_HOST = "wss://host.thewired.space";
 const PUBLISH_HZ = 20; // X times per second
@@ -34,7 +34,10 @@ export class NetworkingInterface {
   #playerPosition: Int32Array | null = null;
   #playerRotation: Int32Array | null = null;
 
-  chatMessages$ = new BehaviorSubject<IChatMessage[]>([]);
+  #playerNames = new Map<string, string>();
+
+  playerId$ = new BehaviorSubject<string | null>(null);
+  chatMessages$ = new BehaviorSubject<InternalChatMessage[]>([]);
 
   constructor({
     scene,
@@ -136,6 +139,11 @@ export class NetworkingInterface {
       const { subject, data }: FromHostMessage = JSON.parse(event.data);
 
       switch (subject) {
+        case "join_successful": {
+          this.playerId$.next(data.playerId);
+          break;
+        }
+
         case "player_joined": {
           console.info(`👋 Player ${data} joined`);
           this.#renderThread.postMessage({ subject: "player_joined", data });
@@ -157,7 +165,14 @@ export class NetworkingInterface {
         }
 
         case "player_message": {
-          const newChatMessages = this.chatMessages$.value.concat(data);
+          // Get player name
+          let username = this.#playerNames.get(data.playerId);
+          if (username === undefined)
+            username = `Guest ${data.playerId.slice(0, 4)}`;
+
+          // Add message to chat
+          const message: InternalChatMessage = { ...data, username };
+          const newChatMessages = this.chatMessages$.value.concat(message);
 
           // Sort by timestamp
           newChatMessages.sort((a, b) => a.timestamp - b.timestamp);
@@ -166,6 +181,21 @@ export class NetworkingInterface {
           newChatMessages.splice(0, newChatMessages.length - 25);
 
           this.chatMessages$.next(newChatMessages);
+          break;
+        }
+
+        case "player_falling_state": {
+          this.#renderThread.postMessage({
+            subject: "set_player_falling_state",
+            data,
+          });
+          break;
+        }
+
+        case "player_name": {
+          console.info(`📇 Player ${data.playerId} is now ${data.name}`);
+
+          this.#playerNames.set(data.playerId, data.name);
           break;
         }
       }
@@ -239,5 +269,27 @@ export class NetworkingInterface {
 
   setPlayerRotation(rotation: Int32Array) {
     this.#playerRotation = rotation;
+  }
+
+  setFallState(falling: boolean) {
+    if (!this.#ws) return;
+
+    const message: ToHostMessage = {
+      subject: "falling_state",
+      data: falling,
+    };
+
+    this.#ws.send(JSON.stringify(message));
+  }
+
+  setName(name: string | null) {
+    if (!this.#ws) return;
+
+    const message: ToHostMessage = {
+      subject: "set_name",
+      data: name ?? `Guest ${this.playerId$.value?.slice(0, 4)}`,
+    };
+
+    this.#ws.send(JSON.stringify(message));
   }
 }

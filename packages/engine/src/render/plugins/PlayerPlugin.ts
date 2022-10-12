@@ -1,5 +1,6 @@
 import { Euler, MathUtils, PerspectiveCamera, Vector2, Vector3 } from "three";
 
+import { CAMERA_HEIGHT } from "../../constants";
 import { PostMessage } from "../../types";
 import { FromRenderMessage, ToRenderMessage } from "../types";
 
@@ -149,7 +150,7 @@ export class PlayerPlugin {
     if (this.#playerPosition) {
       this.#camera.position.set(
         Atomics.load(this.#playerPosition, 0) / 1000,
-        Atomics.load(this.#playerPosition, 1) / 1000,
+        Atomics.load(this.#playerPosition, 1) / 1000 + CAMERA_HEIGHT,
         Atomics.load(this.#playerPosition, 2) / 1000
       );
     }

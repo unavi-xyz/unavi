@@ -2,9 +2,10 @@ import { Entity, GLTFMesh } from "@wired-labs/engine";
 import { NextPageContext } from "next";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import ChatBox from "../../app/ChatBox";
+import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useAppStore } from "../../app/store";
-import { useAppHotkeys } from "../../app/useAppHotkeys";
+import ChatBox from "../../app/ui/ChatBox";
+import UserButton from "../../app/ui/UserButton";
 import {
   getPublicationProps,
   PublicationProps,
@@ -89,6 +90,8 @@ export default function App({ id, metadata, publication }: Props) {
         canvas,
         camera: "player",
         skyboxPath: "/images/skybox/",
+        avatarPath: "/models/Wired-chan.vrm",
+        avatarAnimationsPath: "/models/",
       });
 
       await engine.waitForReady();
@@ -105,6 +108,7 @@ export default function App({ id, metadata, publication }: Props) {
     return () => {
       engine.destroy();
       useAppStore.setState({ engine: null });
+      if (process.env.NODE_ENV === "development") window.location.reload();
     };
   }, [engine]);
 
@@ -154,6 +158,10 @@ export default function App({ id, metadata, publication }: Props) {
         card="summary_large_image"
       />
 
+      <div className="absolute inset-x-0 top-0 z-10 mx-auto mt-4 w-96">
+        <UserButton />
+      </div>
+
       <div className="h-full">
         {engineStarted ? (
           <div className="crosshair" />
@@ -176,7 +184,7 @@ export default function App({ id, metadata, publication }: Props) {
         </div>
       </div>
 
-      <div className="absolute left-0 bottom-0 m-4">
+      <div className="absolute left-0 bottom-0 z-10 m-4">
         <ChatBox />
       </div>
     </>

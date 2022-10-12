@@ -16,6 +16,8 @@ export interface RenderThreadOptions {
   enableTransformControls?: boolean;
   preserveDrawingBuffer?: boolean;
   skyboxPath?: string;
+  avatarPath?: string;
+  avatarAnimationsPath?: string;
 }
 
 /*
@@ -37,6 +39,8 @@ export class RenderThread {
     enableTransformControls,
     preserveDrawingBuffer,
     skyboxPath,
+    avatarPath,
+    avatarAnimationsPath,
   }: RenderThreadOptions) {
     this.#canvas = canvas;
     this.#engine = engine;
@@ -77,10 +81,12 @@ export class RenderThread {
         pixelRatio: window.devicePixelRatio,
         canvasWidth: canvas.clientWidth,
         canvasHeight: canvas.clientHeight,
+        avatarAnimationsPath,
+        avatarPath,
         camera,
-        skyboxPath,
         enableTransformControls,
         preserveDrawingBuffer,
+        skyboxPath,
       },
     });
 

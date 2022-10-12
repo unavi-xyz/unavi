@@ -1,6 +1,9 @@
 import {
+  AmbientLight,
   Clock,
+  DirectionalLight,
   FogExp2,
+  PCFSoftShadowMap,
   PerspectiveCamera,
   PMREMGenerator,
   Scene,
@@ -9,11 +12,11 @@ import {
 } from "three";
 
 import { PostMessage } from "../types";
-import { OrbitControlsPlugin } from "./plugins/OrbitControlsPlugin";
-import { OtherPlayersPlugin } from "./plugins/OtherPlayersPlugin";
+import { OrbitControlsPlugin } from "./plugins/OrbitControls/OrbitControlsPlugin";
+import { OtherPlayersPlugin } from "./plugins/OtherPlayers/OtherPlayersPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
-import { TransformControlsPlugin } from "./plugins/TransformControlsPlugin";
+import { TransformControlsPlugin } from "./plugins/TransformControls/TransformControlsPlugin";
 import { SceneLoader } from "./SceneLoader/SceneLoader";
 import { FromRenderMessage, Plugin, ToRenderMessage } from "./types";
 import { disposeObject } from "./utils/disposeObject";
@@ -23,10 +26,12 @@ export type RenderWorkerOptions = {
   pixelRatio: number;
   canvasWidth: number;
   canvasHeight: number;
+  avatarAnimationsPath?: string;
+  avatarPath?: string;
   camera: "orbit" | "player";
-  skyboxPath?: string;
   enableTransformControls?: boolean;
   preserveDrawingBuffer?: boolean;
+  skyboxPath?: string;
 };
 
 export type PluginState = {
@@ -62,8 +67,6 @@ export class RenderWorker {
 
     this.#sceneLoader = new SceneLoader(postMessage);
     this.#scene.add(this.#sceneLoader.root);
-
-    this.#plugins.push(new OtherPlayersPlugin(this.#scene));
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
@@ -108,12 +111,18 @@ export class RenderWorker {
     pixelRatio,
     canvasWidth,
     canvasHeight,
+    avatarAnimationsPath,
+    avatarPath,
     camera,
-    skyboxPath,
     enableTransformControls = false,
     preserveDrawingBuffer = false,
+    skyboxPath,
   }: RenderWorkerOptions) {
     if (!this.#canvas) throw new Error("Canvas not set");
+
+    this.#plugins.push(
+      new OtherPlayersPlugin(this.#scene, avatarPath, avatarAnimationsPath)
+    );
 
     this.#canvasWidth = canvasWidth;
     this.#canvasHeight = canvasHeight;
@@ -129,6 +138,27 @@ export class RenderWorker {
     this.#renderer.setSize(canvasWidth, canvasHeight, false);
     this.#renderer.outputEncoding = sRGBEncoding;
     this.#renderer.shadowMap.enabled = true;
+    this.#renderer.shadowMap.type = PCFSoftShadowMap;
+
+    // Lights
+    const ambientLight = new AmbientLight(0xffffff, 0.02);
+    this.#scene.add(ambientLight);
+
+    const directionalLight = new DirectionalLight(0xfff0db, 0.98);
+    directionalLight.position.set(10, 50, 30);
+    directionalLight.castShadow = true;
+    this.#scene.add(directionalLight);
+
+    directionalLight.shadow.camera.far = 100;
+    directionalLight.shadow.mapSize.width = 4096;
+    directionalLight.shadow.mapSize.height = 4096;
+
+    // TODO: Set these based on the scene
+    const SHADOW_RADIUS = 30;
+    directionalLight.shadow.camera.left = -SHADOW_RADIUS;
+    directionalLight.shadow.camera.right = SHADOW_RADIUS;
+    directionalLight.shadow.camera.top = SHADOW_RADIUS;
+    directionalLight.shadow.camera.bottom = -SHADOW_RADIUS;
 
     // Fog
     this.#scene.fog = new FogExp2(0xeefaff, 0.005);
@@ -192,18 +222,10 @@ export class RenderWorker {
         const premGenerator = new PMREMGenerator(this.#renderer);
         premGenerator.compileEquirectangularShader();
 
-        setTimeout(() => {
-          this.#postMessage({ subject: "ready", data: null });
-        }, 500);
+        this.#postMessage({ subject: "ready", data: null });
       });
     } else {
-      // Ready for rendering
-      // Add a delay, without it sometimes the scene glitches out and turns black, idk why
-      // Still happens sometimes, but it's better
-      // TODO: Figure out why this happens
-      setTimeout(() => {
-        this.#postMessage({ subject: "ready", data: null });
-      }, 500);
+      this.#postMessage({ subject: "ready", data: null });
     }
   }
 

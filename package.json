@@ -8,13 +8,13 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "turbo build --no-daemon",
+    "build": "turbo build",
     "codegen": "yarn workspace @wired-labs/client codegen && yarn workspace @wired-labs/lens codegen",
-    "deploy": "turbo deploy --no-daemon",
-    "dev": "turbo dev --parallel --no-daemon",
+    "deploy": "turbo deploy",
+    "dev": "turbo dev --parallel",
     "format": "prettier --write .",
     "postinstall": "patch-package && yarn codegen",
-    "lint": "turbo lint --no-daemon"
+    "lint": "turbo lint"
   },
   "devDependencies": {
     "patch-package": "^6.4.7",

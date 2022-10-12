@@ -51,6 +51,16 @@ server.ws("/*", {
         players.publishMessage(ws, message.data);
         break;
       }
+
+      case "falling_state": {
+        players.publishFallingState(ws, message.data);
+        break;
+      }
+
+      case "set_name": {
+        players.publishName(ws, message.data);
+        break;
+      }
     }
   },
 

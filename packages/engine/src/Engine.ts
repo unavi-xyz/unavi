@@ -11,6 +11,8 @@ export interface EngineOptions {
   enableTransformControls?: boolean;
   preserveDrawingBuffer?: boolean;
   skyboxPath?: string;
+  avatarPath?: string;
+  avatarAnimationsPath?: string;
 }
 
 /*
@@ -33,6 +35,8 @@ export class Engine {
     enableTransformControls,
     preserveDrawingBuffer,
     skyboxPath,
+    avatarPath,
+    avatarAnimationsPath,
   }: EngineOptions) {
     // Create render thread
     this.renderThread = new RenderThread({
@@ -42,6 +46,8 @@ export class Engine {
       enableTransformControls,
       preserveDrawingBuffer,
       skyboxPath,
+      avatarPath,
+      avatarAnimationsPath,
     });
 
     // Create physics thread
@@ -83,6 +89,10 @@ export class Engine {
 
   sendChatMessage(message: string) {
     this.networkingInterface.sendChatMessage(message);
+  }
+
+  setName(name: string | null) {
+    this.networkingInterface.setName(name);
   }
 
   waitForReady() {

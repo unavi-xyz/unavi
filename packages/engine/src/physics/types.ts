@@ -24,4 +24,5 @@ export type FromPhysicsMessage =
         position: Int32Array;
         velocity: Int32Array;
       }
-    >;
+    >
+  | WorkerMessage<"player_falling", boolean>;

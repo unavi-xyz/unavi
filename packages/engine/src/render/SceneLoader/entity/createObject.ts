@@ -60,6 +60,9 @@ export function createObject(
         // Create mesh
         const mesh = new Mesh(geometry, material);
 
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+
         // Add to scene
         map.objects.set(entity.id, mesh);
         copyTransform(mesh, entity);
@@ -135,6 +138,9 @@ export function createObject(
         default:
           throw new Error(`Unknown primitive mode: ${entity.mesh.mode}`);
       }
+
+      primitiveMesh.castShadow = true;
+      primitiveMesh.receiveShadow = true;
 
       // Set weights
       primitiveMesh.updateMorphTargets();

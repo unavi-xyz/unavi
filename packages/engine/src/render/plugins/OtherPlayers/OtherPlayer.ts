@@ -25,14 +25,19 @@ export class OtherPlayer {
   readonly group = new Group();
 
   isFalling = false;
-  #fallingWeight = 0;
 
   #vrm: VRM | null = null;
 
   #mixer: AnimationMixer | null = null;
   #actions = new Map<AnimationName, AnimationAction>();
 
+  #fallWeight = 0;
+  #leftWeight = 0;
+  #rightWeight = 0;
+  #forwardWeight = 0;
+
   #velocity = new Vector3();
+  #tempQuat = new Quaternion();
   #targetPosition = new Vector3();
   #targetRotation = new Quaternion();
 
@@ -123,6 +128,9 @@ export class OtherPlayer {
 
       this.#actions.get(AnimationName.Idle)?.play();
       this.#actions.get(AnimationName.Walk)?.play();
+      this.#actions.get(AnimationName.LeftWalk)?.play();
+      this.#actions.get(AnimationName.RightWalk)?.play();
+
       this.#actions
         .get(AnimationName.Falling)
         ?.play()
@@ -155,32 +163,70 @@ export class OtherPlayer {
     this.group.quaternion.z = 0;
     this.group.quaternion.normalize();
 
-    // Calculate velocity
+    // Calculate velocity relative to player rotation
     const velocity = this.#velocity
       .copy(this.#targetPosition)
       .sub(this.group.position)
-      .divideScalar(delta);
+      .divideScalar(delta)
+      .applyQuaternion(this.#tempQuat.copy(this.group.quaternion).invert());
 
-    // Set animation weights
-    this.#fallingWeight = Math.max(
-      Math.min(
-        this.isFalling
-          ? this.#fallingWeight + delta * 4
-          : this.#fallingWeight - delta * 4,
-        1
-      ),
-      0
+    // Falling
+    this.#fallWeight = clamp(
+      this.isFalling
+        ? this.#fallWeight + delta * 4
+        : this.#fallWeight - delta * 4
     );
 
-    const walkWeight =
-      Math.min(velocity.length() / 0.5, 1) - this.#fallingWeight;
-    const idleWeight = 1 - walkWeight;
-
-    this.#actions.get(AnimationName.Idle)?.setEffectiveWeight(idleWeight);
-    this.#actions.get(AnimationName.Walk)?.setEffectiveWeight(walkWeight);
     this.#actions
       .get(AnimationName.Falling)
-      ?.setEffectiveWeight(this.#fallingWeight);
+      ?.setEffectiveWeight(this.#fallWeight);
+
+    // Walking
+    const leftVelocity = velocity.x < 0 ? -velocity.x : 0;
+    const rightVelocity = velocity.x > 0 ? velocity.x : 0;
+    const forwardVelocity = Math.abs(velocity.z);
+    const isBackwards = velocity.z > 0;
+
+    this.#leftWeight = clamp(
+      leftVelocity > 1 && !this.isFalling
+        ? this.#leftWeight + delta * 4
+        : this.#leftWeight - delta * 4
+    );
+
+    this.#rightWeight = clamp(
+      rightVelocity > 1 && !this.isFalling
+        ? this.#rightWeight + delta * 4
+        : this.#rightWeight - delta * 4
+    );
+
+    this.#forwardWeight = clamp(
+      forwardVelocity > 1 && !this.isFalling
+        ? this.#forwardWeight + delta * 4
+        : this.#forwardWeight - delta * 4
+    );
+
+    this.#actions
+      .get(AnimationName.LeftWalk)
+      ?.setEffectiveWeight(this.#leftWeight);
+
+    this.#actions
+      .get(AnimationName.RightWalk)
+      ?.setEffectiveWeight(this.#rightWeight);
+
+    this.#actions
+      .get(AnimationName.Walk)
+      ?.setEffectiveWeight(this.#forwardWeight)
+      .setEffectiveTimeScale(isBackwards ? -1 : 1);
+
+    // Idle
+    const idleWeight =
+      1 -
+      this.#leftWeight -
+      this.#rightWeight -
+      this.#forwardWeight -
+      this.#fallWeight;
+
+    this.#actions.get(AnimationName.Idle)?.setEffectiveWeight(idleWeight);
 
     // Update animations
     if (this.#mixer) this.#mixer.update(delta);
@@ -192,4 +238,8 @@ export class OtherPlayer {
   destroy() {
     disposeObject(this.group);
   }
+}
+
+function clamp(value: number) {
+  return Math.max(Math.min(value, 1), 0);
 }

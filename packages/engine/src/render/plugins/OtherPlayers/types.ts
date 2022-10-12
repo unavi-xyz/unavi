@@ -1,5 +1,7 @@
 export enum AnimationName {
-  Idle = "Idle",
-  Walk = "Walk",
   Falling = "Falling",
+  Idle = "Idle",
+  LeftWalk = "LeftWalk",
+  RightWalk = "RightWalk",
+  Walk = "Walk",
 }

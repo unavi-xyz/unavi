@@ -1,7 +1,6 @@
 import { Engine } from "../Engine";
 import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
-import { PhysicsWorker } from "./PhysicsWorker";
 import { Player } from "./Player";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
@@ -31,6 +30,12 @@ export class PhysicsThread {
   constructor({ canvas, engine }: PhysicsThreadOptions) {
     this.#canvas = canvas;
     this.#engine = engine;
+
+    this.createWorker();
+  }
+
+  async createWorker() {
+    const { PhysicsWorker } = await import("./PhysicsWorker");
 
     const physicsWorker = new PhysicsWorker(
       this.#worker.workerPort.postMessage.bind(this.#worker.workerPort)

@@ -89,7 +89,8 @@ export default function App({ id, metadata, publication }: Props) {
         canvas,
         camera: "player",
         skyboxPath: "/images/skybox/",
-        avatarPath: "/models/avatar.vrm",
+        avatarPath: "/models/Wired-chan.vrm",
+        avatarAnimationsPath: "/models/",
       });
 
       await engine.waitForReady();

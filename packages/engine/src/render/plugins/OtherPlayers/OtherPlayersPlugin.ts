@@ -4,15 +4,22 @@ import { ToRenderMessage } from "../../types";
 import { OtherPlayer } from "./OtherPlayer";
 
 export class OtherPlayersPlugin {
-  #avatarPath?: string;
   #scene: Scene;
-  #players = new Map<string, OtherPlayer>();
+  #avatarPath?: string;
+  #avatarAnimationsPath?: string;
 
+  #players = new Map<string, OtherPlayer>();
   #playerGroup = new Group();
 
-  constructor(scene: Scene, avatarPath?: string) {
+  constructor(
+    scene: Scene,
+    avatarPath?: string,
+    avatarAnimationsPath?: string
+  ) {
     this.#scene = scene;
     this.#avatarPath = avatarPath;
+    this.#avatarAnimationsPath = avatarAnimationsPath;
+
     this.#scene.add(this.#playerGroup);
   }
 
@@ -42,7 +49,12 @@ export class OtherPlayersPlugin {
   }
 
   addPlayer(playerId: string) {
-    const player = new OtherPlayer(playerId, this.#avatarPath);
+    const player = new OtherPlayer(
+      playerId,
+      this.#avatarPath,
+      this.#avatarAnimationsPath
+    );
+
     this.#players.set(playerId, player);
     this.#playerGroup.add(player.group);
   }

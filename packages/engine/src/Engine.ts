@@ -12,6 +12,7 @@ export interface EngineOptions {
   preserveDrawingBuffer?: boolean;
   skyboxPath?: string;
   avatarPath?: string;
+  avatarAnimationsPath?: string;
 }
 
 /*
@@ -35,6 +36,7 @@ export class Engine {
     preserveDrawingBuffer,
     skyboxPath,
     avatarPath,
+    avatarAnimationsPath,
   }: EngineOptions) {
     // Create render thread
     this.renderThread = new RenderThread({
@@ -45,6 +47,7 @@ export class Engine {
       preserveDrawingBuffer,
       skyboxPath,
       avatarPath,
+      avatarAnimationsPath,
     });
 
     // Create physics thread

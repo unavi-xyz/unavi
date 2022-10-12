@@ -4,7 +4,7 @@ sidebar_label: 💃 Avatars
 title: Avatars
 ---
 
-Any VRM file can be used as an avatar in the Wired.
+You can upload your own VRM avatar to use in the Wired. The Wired supports both the VRM 0.0 and 1.0 standard.
 
 ## 🤔 VRM
 

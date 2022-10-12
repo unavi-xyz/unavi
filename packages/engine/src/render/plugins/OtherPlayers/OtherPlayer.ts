@@ -1,5 +1,8 @@
 import { VRM, VRMLoaderPlugin } from "@pixiv/three-vrm";
 import {
+  AnimationAction,
+  AnimationClip,
+  AnimationMixer,
   BoxGeometry,
   Group,
   Mesh,
@@ -11,6 +14,8 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../../../constants";
 import { disposeObject } from "../../utils/disposeObject";
+import { loadMixamoAnimation } from "./loadMixamoAnimation";
+import { AnimationName } from "./types";
 
 const LERP_FACTOR = 0.000001;
 
@@ -18,12 +23,21 @@ export class OtherPlayer {
   readonly playerId: string;
   readonly group = new Group();
 
+  #vrm: VRM | null = null;
+
+  #mixer: AnimationMixer | null = null;
+  #actions = new Map<AnimationName, AnimationAction>();
+
   #targetPosition = new Vector3();
   #targetRotation = new Quaternion();
 
   #loader = new GLTFLoader();
 
-  constructor(playerId: string, avatarPath?: string) {
+  constructor(
+    playerId: string,
+    avatarPath?: string,
+    avatarAnimationsPath?: string
+  ) {
     this.playerId = playerId;
 
     if (!avatarPath) {
@@ -42,30 +56,70 @@ export class OtherPlayer {
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
     // Load VRM model
-    this.#loader.load(
-      avatarPath,
-      (gltf) => {
-        const vrm = gltf.userData.vrm as VRM;
-        this.group.add(vrm.scene);
+    try {
+      this.#loadModel(avatarPath, avatarAnimationsPath);
+    } catch (error) {
+      console.error(error);
+      console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
+    }
+  }
 
-        vrm.scene.traverse((object) => {
-          if (object instanceof Mesh) {
-            object.castShadow = true;
-          }
-        });
-      },
+  async #loadModel(avatarPath: string, avatarAnimationsPath?: string) {
+    const gltf = await this.#loader.loadAsync(avatarPath);
+    const vrm = gltf.userData.vrm as VRM;
+    this.#vrm = vrm;
 
-      (progress) => {
-        const percent = (progress.loaded / progress.total) * 100;
-        console.info(
-          `Loading ${playerId}'s avatar: %c${percent.toFixed(2)}`,
-          "color: #52DAFF",
-          "%"
-        );
-      },
+    // Add model to the scene
+    this.group.add(vrm.scene);
 
-      (error) => console.error(error)
-    );
+    // Process vrm scene
+    vrm.scene.traverse((object) => {
+      object.frustumCulled = false;
+
+      if (object instanceof Mesh) {
+        object.castShadow = true;
+      }
+    });
+
+    if (avatarAnimationsPath) {
+      // Create mixer
+      this.#mixer = new AnimationMixer(vrm.scene);
+
+      // Load animations
+      const animations = new Map<AnimationName, AnimationClip>();
+
+      const clipPromises = Object.values(AnimationName).map(async (name) => {
+        if (!this.#vrm) throw new Error("VRM not loaded");
+        if (!this.#mixer) throw new Error("Mixer not created");
+
+        const path = `${avatarAnimationsPath}${name}.fbx`;
+
+        try {
+          const clips = await loadMixamoAnimation(path, this.#vrm);
+          const clip = clips[0];
+          if (!clip) throw new Error(`No clip found for ${name}`);
+
+          animations.set(name, clip);
+        } catch (error) {
+          console.error(`🚨 Failed to load ${name} animation`);
+          console.error(error);
+        }
+      });
+
+      await Promise.all(clipPromises);
+
+      // Create actions
+      animations.forEach((clip, name) => {
+        if (!this.#mixer) throw new Error("Mixer not created");
+        const action = this.#mixer.clipAction(clip);
+        this.#actions.set(name, action);
+      });
+
+      // Play idle animation
+      this.#actions.get(AnimationName.Idle)?.play();
+    }
+
+    console.info(`💃 Loaded ${this.playerId}'s avatar`);
   }
 
   setLocation(
@@ -85,6 +139,17 @@ export class OtherPlayer {
 
     this.group.position.lerp(this.#targetPosition, K);
     this.group.quaternion.slerp(this.#targetRotation, K);
+
+    // Only rotate on Y axis
+    this.group.quaternion.x = 0;
+    this.group.quaternion.z = 0;
+    this.group.quaternion.normalize();
+
+    // Update animations
+    if (this.#mixer) this.#mixer.update(delta);
+
+    // Update VRM
+    if (this.#vrm) this.#vrm.update(delta);
   }
 
   destroy() {

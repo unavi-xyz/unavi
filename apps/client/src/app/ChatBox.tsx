@@ -25,7 +25,7 @@ export default function ChatBox() {
 
   const focusedClass = chatBoxFocused
     ? "bg-neutral-700/70"
-    : "bg-neutral-700/10";
+    : "bg-neutral-700/20";
 
   return (
     <div className="flex w-96 flex-col space-y-1">

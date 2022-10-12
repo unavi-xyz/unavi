@@ -26,11 +26,12 @@ export type RenderWorkerOptions = {
   pixelRatio: number;
   canvasWidth: number;
   canvasHeight: number;
-  camera: "orbit" | "player";
-  skyboxPath?: string;
+  avatarAnimationsPath?: string;
   avatarPath?: string;
+  camera: "orbit" | "player";
   enableTransformControls?: boolean;
   preserveDrawingBuffer?: boolean;
+  skyboxPath?: string;
 };
 
 export type PluginState = {
@@ -110,15 +111,18 @@ export class RenderWorker {
     pixelRatio,
     canvasWidth,
     canvasHeight,
-    camera,
-    skyboxPath,
+    avatarAnimationsPath,
     avatarPath,
+    camera,
     enableTransformControls = false,
     preserveDrawingBuffer = false,
+    skyboxPath,
   }: RenderWorkerOptions) {
     if (!this.#canvas) throw new Error("Canvas not set");
 
-    this.#plugins.push(new OtherPlayersPlugin(this.#scene, avatarPath));
+    this.#plugins.push(
+      new OtherPlayersPlugin(this.#scene, avatarPath, avatarAnimationsPath)
+    );
 
     this.#canvasWidth = canvasWidth;
     this.#canvasHeight = canvasHeight;
@@ -140,7 +144,7 @@ export class RenderWorker {
     const ambientLight = new AmbientLight(0xffffff, 0.02);
     this.#scene.add(ambientLight);
 
-    const directionalLight = new DirectionalLight(0xfff0db, 0.8);
+    const directionalLight = new DirectionalLight(0xfff0db, 0.98);
     directionalLight.position.set(10, 50, 30);
     directionalLight.castShadow = true;
     this.#scene.add(directionalLight);

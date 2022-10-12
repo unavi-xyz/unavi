@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 
-import { useSubscribeValue } from "../editor/hooks/useSubscribeValue";
+import { useSubscribeValue } from "../../editor/hooks/useSubscribeValue";
+import { useAppStore } from "../store";
 import ChatMessage from "./ChatMessage";
-import { useAppStore } from "./store";
 
 export default function ChatBox() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -24,14 +24,14 @@ export default function ChatBox() {
   }, [chatBoxFocused]);
 
   const focusedClass = chatBoxFocused
-    ? "bg-neutral-700/70"
-    : "bg-neutral-700/20";
+    ? "bg-surfaceDark/80"
+    : "bg-surfaceDark/20 hover:bg-surfaceDark/30";
 
   return (
     <div className="flex w-96 flex-col space-y-1">
       <div className="h-full space-y-1">
-        {chatMessages?.map(({ id, playerId, message }) => (
-          <ChatMessage key={id} playerId={playerId} message={message} />
+        {chatMessages?.map((message) => (
+          <ChatMessage key={message.id} message={message} />
         ))}
       </div>
 

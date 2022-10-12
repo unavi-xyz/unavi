@@ -91,6 +91,10 @@ export class Engine {
     this.networkingInterface.sendChatMessage(message);
   }
 
+  setName(name: string | null) {
+    this.networkingInterface.setName(name);
+  }
+
   waitForReady() {
     return Promise.all([
       this.physicsThread.waitForReady(),

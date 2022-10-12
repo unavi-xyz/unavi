@@ -5,7 +5,7 @@ import {
   AnimationMixer,
   BoxGeometry,
   Group,
-  LoopOnce,
+  LoopPingPong,
   Mesh,
   MeshStandardMaterial,
   Quaternion,
@@ -23,6 +23,9 @@ const LERP_FACTOR = 0.000001;
 export class OtherPlayer {
   readonly playerId: string;
   readonly group = new Group();
+
+  isFalling = false;
+  #fallingWeight = 0;
 
   #vrm: VRM | null = null;
 
@@ -120,11 +123,10 @@ export class OtherPlayer {
 
       this.#actions.get(AnimationName.Idle)?.play();
       this.#actions.get(AnimationName.Walk)?.play();
-
       this.#actions
-        .get(AnimationName.Jump)
-        ?.setLoop(LoopOnce, 1)
-        .setEffectiveTimeScale(1.5);
+        .get(AnimationName.Falling)
+        ?.play()
+        .setLoop(LoopPingPong, Infinity);
     }
 
     console.info(`💃 Loaded ${this.playerId}'s avatar`);
@@ -160,21 +162,25 @@ export class OtherPlayer {
       .divideScalar(delta);
 
     // Set animation weights
-    const jumpWeight = velocity.y > 0.5 ? 1 : 0;
-    const isJumping = this.#actions.get(AnimationName.Jump)?.isRunning();
+    this.#fallingWeight = Math.max(
+      Math.min(
+        this.isFalling
+          ? this.#fallingWeight + delta * 4
+          : this.#fallingWeight - delta * 4,
+        1
+      ),
+      0
+    );
 
-    const walkWeight = isJumping ? 0 : Math.min(velocity.length() / 0.5, 1);
-    const idleWeight = 1 - walkWeight - jumpWeight;
+    const walkWeight =
+      Math.min(velocity.length() / 0.5, 1) - this.#fallingWeight;
+    const idleWeight = 1 - walkWeight;
 
-    if (jumpWeight && !isJumping) {
-      // this.#actions.get(AnimationName.Jump)?.reset().play();
-    } else if (!jumpWeight && isJumping) {
-      // this.#actions.get(AnimationName.Jump)?.stop();
-    }
-
-    this.#actions.get(AnimationName.Walk)?.setEffectiveWeight(walkWeight);
-    this.#actions.get(AnimationName.Jump)?.setEffectiveWeight(jumpWeight);
     this.#actions.get(AnimationName.Idle)?.setEffectiveWeight(idleWeight);
+    this.#actions.get(AnimationName.Walk)?.setEffectiveWeight(walkWeight);
+    this.#actions
+      .get(AnimationName.Falling)
+      ?.setEffectiveWeight(this.#fallingWeight);
 
     // Update animations
     if (this.#mixer) this.#mixer.update(delta);

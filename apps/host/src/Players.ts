@@ -138,6 +138,23 @@ export class Players {
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(messageMessage));
   }
 
+  publishFallingState(ws: uWS.WebSocket, isFalling: boolean) {
+    const playerId = this.playerIds.get(ws);
+    if (!playerId) throw new Error("Player not found");
+
+    // If not in a space, do nothing
+    const spaceId = this.spaceIds.get(ws);
+    if (!spaceId) return;
+
+    // Tell everyone in the space about this player's jump state
+    const jumpStateMessage: FromHostMessage = {
+      subject: "player_falling_state",
+      data: { playerId, isFalling },
+    };
+
+    ws.publish(spaceTopic(spaceId), JSON.stringify(jumpStateMessage));
+  }
+
   getPlayerCount(spaceId: string): number {
     let count = 0;
 

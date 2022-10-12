@@ -22,7 +22,8 @@ export type ToHostMessage =
       "location",
       [number, number, number, number, number, number, number]
     >
-  | GenericWebSocketMessage<"message", string>;
+  | GenericWebSocketMessage<"message", string>
+  | GenericWebSocketMessage<"falling_state", boolean>;
 
 export type FromHostMessage =
   | GenericWebSocketMessage<"player_joined", string>
@@ -34,4 +35,11 @@ export type FromHostMessage =
         location: [number, number, number, number, number, number, number];
       }
     >
-  | GenericWebSocketMessage<"player_message", IChatMessage>;
+  | GenericWebSocketMessage<"player_message", IChatMessage>
+  | GenericWebSocketMessage<
+      "player_falling_state",
+      {
+        playerId: string;
+        isFalling: boolean;
+      }
+    >;

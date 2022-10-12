@@ -88,6 +88,13 @@ export type ToRenderMessage =
         playerId: string;
         location: [number, number, number, number, number, number, number];
       }
+    >
+  | WorkerMessage<
+      "set_player_falling_state",
+      {
+        playerId: string;
+        isFalling: boolean;
+      }
     >;
 
 export type FromRenderMessage =

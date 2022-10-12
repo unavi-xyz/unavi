@@ -45,6 +45,12 @@ export class OtherPlayersPlugin {
         this.setPlayerLocation(data.playerId, data.location);
         break;
       }
+
+      case "set_player_falling_state": {
+        const player = this.#players.get(data.playerId);
+        if (player) player.isFalling = data.isFalling;
+        break;
+      }
     }
   }
 

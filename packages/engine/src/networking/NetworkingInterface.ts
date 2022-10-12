@@ -168,6 +168,14 @@ export class NetworkingInterface {
           this.chatMessages$.next(newChatMessages);
           break;
         }
+
+        case "player_falling_state": {
+          this.#renderThread.postMessage({
+            subject: "set_player_falling_state",
+            data,
+          });
+          break;
+        }
       }
     };
 
@@ -239,5 +247,16 @@ export class NetworkingInterface {
 
   setPlayerRotation(rotation: Int32Array) {
     this.#playerRotation = rotation;
+  }
+
+  setFallState(falling: boolean) {
+    if (!this.#ws) return;
+
+    const message: ToHostMessage = {
+      subject: "falling_state",
+      data: falling,
+    };
+
+    this.#ws.send(JSON.stringify(message));
   }
 }

@@ -48,6 +48,7 @@ export class PhysicsWorker {
   #interval: NodeJS.Timer | null = null;
   #jump = false;
   #lastJumpTime = 0;
+  #isGrounded = false;
 
   #entities = new Map<string, EntityJSON>();
   #rigidBodies = new Map<string, RigidBody>();
@@ -280,6 +281,14 @@ export class PhysicsWorker {
       );
 
       const isGrounded = Boolean(groundedCollision);
+
+      if (isGrounded !== this.#isGrounded) {
+        this.#isGrounded = isGrounded;
+        this.#postMessage({
+          subject: "player_falling",
+          data: !isGrounded,
+        });
+      }
 
       // Set player friction to 0 in air
       const friction = this.#playerCollider.friction();

@@ -158,9 +158,11 @@ export default function App({ id, metadata, publication }: Props) {
         card="summary_large_image"
       />
 
-      <div className="absolute inset-x-0 top-0 z-10 mx-auto mt-4 w-96">
-        <UserButton />
-      </div>
+      {engineStarted && (
+        <div className="absolute inset-x-0 top-0 z-10 mx-auto mt-4 w-96">
+          <UserButton />
+        </div>
+      )}
 
       <div className="h-full">
         {engineStarted ? (
@@ -184,9 +186,11 @@ export default function App({ id, metadata, publication }: Props) {
         </div>
       </div>
 
-      <div className="absolute left-0 bottom-0 z-10 m-4">
-        <ChatBox />
-      </div>
+      {engineStarted && (
+        <div className="absolute left-0 bottom-0 z-10 m-4">
+          <ChatBox />
+        </div>
+      )}
     </>
   );
 }

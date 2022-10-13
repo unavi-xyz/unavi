@@ -24,6 +24,8 @@ const JUMP_VELOCITY = 6;
 const JUMP_COOLDOWN_SECONDS = 0.2;
 const HZ = 60; // Physics updates per second
 const SPAWN = { x: 0, y: 3, z: 0 };
+const WALK_SPEED = 1;
+const SPRINT_SPEED = 1.6;
 
 const groundCollisionShape = new Capsule(
   PLAYER_HEIGHT / 2,
@@ -49,6 +51,7 @@ export class PhysicsWorker {
   #jump = false;
   #lastJumpTime = 0;
   #isGrounded = false;
+  #isSprinting = false;
 
   #entities = new Map<string, EntityJSON>();
   #rigidBodies = new Map<string, RigidBody>();
@@ -140,6 +143,11 @@ export class PhysicsWorker {
             this.#entities.set(entity.id, entity);
             this.addCollider(entity);
           });
+        break;
+      }
+
+      case "sprinting": {
+        this.#isSprinting = data;
         break;
       }
     }
@@ -315,8 +323,9 @@ export class PhysicsWorker {
 
       // Apply input
       if (this.#playerVelocity) {
-        velocity.x = Atomics.load(this.#playerVelocity, 0) / 1000;
-        velocity.z = Atomics.load(this.#playerVelocity, 1) / 1000;
+        const speed = this.#isSprinting ? SPRINT_SPEED : WALK_SPEED;
+        velocity.x = (Atomics.load(this.#playerVelocity, 0) / 1000) * speed;
+        velocity.z = (Atomics.load(this.#playerVelocity, 1) / 1000) * speed;
       }
 
       // Cap y velocity to prevent going too fast

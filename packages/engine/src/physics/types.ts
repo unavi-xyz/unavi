@@ -14,7 +14,8 @@ export type ToPhysicsMessage =
         position: Triplet;
         rotation: Quad;
       }
-    >;
+    >
+  | WorkerMessage<"sprinting", boolean>;
 
 export type FromPhysicsMessage =
   | WorkerMessage<"ready">

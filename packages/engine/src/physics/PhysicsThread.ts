@@ -90,6 +90,10 @@ export class PhysicsThread {
     this.postMessage({ subject: "jumping", data: true });
   }
 
+  setSprinting(sprinting: boolean) {
+    this.postMessage({ subject: "sprinting", data: sprinting });
+  }
+
   destroy() {
     this.stop();
     setTimeout(() => this.#worker.terminate());

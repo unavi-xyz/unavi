@@ -23,7 +23,10 @@ export default function UserPage() {
           outline
           value={displayName ?? `Guest ${userId?.slice(0, 4)}`}
           onChange={(e) => {
-            useAppStore.setState({ displayName: e.target.value });
+            useAppStore.setState({
+              displayName: e.target.value,
+              didChangeName: true,
+            });
           }}
         />
       </div>

@@ -14,9 +14,11 @@
     "dev": "turbo dev --parallel",
     "format": "prettier --write .",
     "postinstall": "patch-package && yarn codegen",
-    "lint": "turbo lint"
+    "lint": "turbo lint",
+    "publish-packages": "turbo lint build && changeset version"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.25.0",
     "patch-package": "^6.4.7",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.7.1",

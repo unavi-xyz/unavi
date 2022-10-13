@@ -80,7 +80,13 @@ export type ToRenderMessage =
         visible: boolean;
       }
     >
-  | WorkerMessage<"player_joined", string>
+  | WorkerMessage<
+      "player_joined",
+      {
+        playerId: string;
+        avatar: string | null;
+      }
+    >
   | WorkerMessage<"player_left", string>
   | WorkerMessage<
       "set_player_location",

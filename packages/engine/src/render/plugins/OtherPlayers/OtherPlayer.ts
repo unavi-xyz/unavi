@@ -47,18 +47,19 @@ export class OtherPlayer {
 
   constructor(
     playerId: string,
-    avatarPath?: string,
+    avatar: string | null,
+    defaultAvatarPath?: string,
     avatarAnimationsPath?: string
   ) {
     this.playerId = playerId;
-    this.#defaultAvatarPath = avatarPath;
+    this.#defaultAvatarPath = defaultAvatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
     // Load VRM model
     try {
-      this.#loadModel(avatarPath, avatarAnimationsPath);
+      this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath);
     } catch (error) {
       console.error(error);
       console.error(`🚨 Failed to load ${this.playerId}'s avatar`);

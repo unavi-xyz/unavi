@@ -42,7 +42,14 @@ export type FromHostMessage =
         playerId: string;
       }
     >
-  | GenericWebSocketMessage<"player_joined", string>
+  | GenericWebSocketMessage<
+      "player_joined",
+      {
+        playerId: string;
+        name: string | null;
+        avatar: string | null;
+      }
+    >
   | GenericWebSocketMessage<"player_left", string>
   | GenericWebSocketMessage<
       "player_location",

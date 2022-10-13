@@ -117,6 +117,10 @@ export class NetworkingInterface {
       console.info("✅ Connected to host");
       this.#reconnectCount = 0;
 
+      // Set player name and avatar
+      if (this.#myName) this.#sendName();
+      if (this.#myAvatar) this.#sendAvatar();
+
       // Join space
       send({ subject: "join", data: { spaceId } });
 
@@ -145,20 +149,20 @@ export class NetworkingInterface {
         case "join_successful": {
           this.playerId$.next(data.playerId);
 
-          // Set player name and avatar
-          if (this.#myName) this.#sendName();
-          if (this.#myAvatar) this.#sendAvatar();
           break;
         }
 
         case "player_joined": {
-          console.info(`👋 Player ${data} joined`);
+          console.info(`👋 Player ${data.playerId} joined`);
+
+          if (data.name) this.#playerNames.set(data.playerId, data.name);
           this.#renderThread.postMessage({ subject: "player_joined", data });
           break;
         }
 
         case "player_left": {
           console.info(`👋 Player ${data} left`);
+
           this.#renderThread.postMessage({ subject: "player_left", data });
           break;
         }

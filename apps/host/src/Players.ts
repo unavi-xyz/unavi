@@ -51,10 +51,17 @@ export class Players {
 
     console.info(`🌍 Player ${playerId} joined space ${spaceId}`);
 
+    const name = this.names.get(ws) ?? null;
+    const avatar = this.avatars.get(ws) ?? null;
+
     // Tell everyone that this player joined
     const joinMessage: FromHostMessage = {
       subject: "player_joined",
-      data: playerId,
+      data: {
+        playerId,
+        name,
+        avatar,
+      },
     };
 
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(joinMessage));
@@ -69,29 +76,18 @@ export class Players {
       const otherPlayerId = this.playerIds.get(otherWs);
       if (!otherPlayerId) throw new Error("Player not found");
 
+      const otherName = this.names.get(otherWs) ?? null;
+      const otherAvatar = this.avatars.get(otherWs) ?? null;
+
       // Send player joined message
       send(ws, {
         subject: "player_joined",
-        data: otherPlayerId,
+        data: {
+          playerId: otherPlayerId,
+          name: otherName,
+          avatar: otherAvatar,
+        },
       });
-
-      // Send name
-      const otherName = this.names.get(otherWs);
-      if (otherName) {
-        send(ws, {
-          subject: "player_name",
-          data: { playerId: otherPlayerId, name: otherName },
-        });
-      }
-
-      // Send avatar
-      const otherAvatar = this.avatars.get(otherWs);
-      if (otherAvatar) {
-        send(ws, {
-          subject: "player_avatar",
-          data: { playerId: otherPlayerId, avatar: otherAvatar },
-        });
-      }
     });
 
     // Save space id

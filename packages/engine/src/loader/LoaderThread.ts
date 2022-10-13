@@ -1,7 +1,5 @@
 import { SceneJSON } from "../scene";
 import { Transferable } from "../types";
-import { FakeWorker } from "../utils/FakeWorker";
-import { LoaderWorker } from "./LoaderWorker";
 import { FromLoaderMessage, ToLoaderMessage } from "./types";
 
 /*
@@ -10,21 +8,14 @@ import { FromLoaderMessage, ToLoaderMessage } from "./types";
 export class LoaderThread {
   ready = false;
 
-  #worker = new FakeWorker();
-  // #worker = new Worker(new URL("./worker.ts", import.meta.url), {
-  //   type: "module",
-  //   name: "loader",
-  // });
+  #worker = new Worker(new URL("./worker.ts", import.meta.url), {
+    type: "module",
+    name: "loader",
+  });
 
   #onReady: Array<() => void> = [];
 
   constructor() {
-    const loaderWorker = new LoaderWorker(
-      this.#worker.workerPort.postMessage.bind(this.#worker.workerPort)
-    );
-    this.#worker.workerPort.onmessage =
-      loaderWorker.onmessage.bind(loaderWorker);
-
     this.#worker.onmessage = this.#onmessage;
   }
 

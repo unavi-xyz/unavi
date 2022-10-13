@@ -35,9 +35,11 @@ export class NetworkingInterface {
   #playerRotation: Int32Array | null = null;
 
   #playerNames = new Map<string, string>();
+  #playerHandles = new Map<string, string>();
 
   #myName: string | null = null;
   #myAvatar: string | null = null;
+  #myHandle: string | null = null;
 
   playerId$ = new BehaviorSubject<string | null>(null);
   chatMessages$ = new BehaviorSubject<InternalChatMessage[]>([]);
@@ -120,6 +122,7 @@ export class NetworkingInterface {
       // Set player name and avatar
       this.#sendName();
       this.#sendAvatar();
+      this.#sendHandle();
 
       // Join space
       send({ subject: "join", data: { spaceId } });
@@ -151,6 +154,11 @@ export class NetworkingInterface {
           if (this.#myName) this.#playerNames.set(data.playerId, this.#myName);
           else this.#playerNames.delete(data.playerId);
 
+          // Set your handle
+          if (this.#myHandle)
+            this.#playerHandles.set(data.playerId, this.#myHandle);
+          else this.#playerHandles.delete(data.playerId);
+
           // Save player id
           this.playerId$.next(data.playerId);
           break;
@@ -163,6 +171,11 @@ export class NetworkingInterface {
           if (data.name) this.#playerNames.set(data.playerId, data.name);
           else this.#playerNames.delete(data.playerId);
 
+          // Set handle
+          if (data.handle) this.#playerHandles.set(data.playerId, data.handle);
+          else this.#playerHandles.delete(data.playerId);
+
+          // Add player to scene
           this.#renderThread.postMessage({ subject: "player_joined", data });
           break;
         }
@@ -187,12 +200,22 @@ export class NetworkingInterface {
 
         case "player_message": {
           // Get player name
-          let username = this.#playerNames.get(data.playerId);
+          const handle = this.#playerHandles.get(data.playerId);
+          const isHandle = Boolean(handle);
+
+          let username = isHandle
+            ? `@${handle}`
+            : this.#playerNames.get(data.playerId);
+
           if (username === undefined)
             username = `Guest ${data.playerId.slice(0, 4)}`;
 
           // Add message to chat
-          const message: InternalChatMessage = { ...data, username };
+          const message: InternalChatMessage = {
+            ...data,
+            username,
+            isHandle,
+          };
           const newChatMessages = this.chatMessages$.value.concat(message);
 
           // Sort by timestamp
@@ -228,6 +251,15 @@ export class NetworkingInterface {
             subject: "set_player_avatar",
             data,
           });
+          break;
+        }
+
+        case "player_handle": {
+          console.info(`🌿 Player ${data.playerId} is now @${data.handle}`);
+
+          if (data.handle) this.#playerHandles.set(data.playerId, data.handle);
+          else this.#playerHandles.delete(data.playerId);
+          break;
         }
       }
     };
@@ -284,7 +316,7 @@ export class NetworkingInterface {
   }
 
   sendChatMessage(data: string) {
-    if (!this.#ws) return;
+    if (!this.#ws?.OPEN) return;
 
     const message: ToHostMessage = {
       subject: "message",
@@ -303,7 +335,7 @@ export class NetworkingInterface {
   }
 
   setFallState(falling: boolean) {
-    if (!this.#ws) return;
+    if (!this.#ws?.OPEN) return;
 
     const message: ToHostMessage = {
       subject: "falling_state",
@@ -319,7 +351,7 @@ export class NetworkingInterface {
   }
 
   #sendName() {
-    if (!this.#ws) return;
+    if (!this.#ws?.OPEN) return;
 
     const message: ToHostMessage = {
       subject: "set_name",
@@ -335,11 +367,27 @@ export class NetworkingInterface {
   }
 
   #sendAvatar() {
-    if (!this.#ws) return;
+    if (!this.#ws?.OPEN) return;
 
     const message: ToHostMessage = {
       subject: "set_avatar",
       data: this.#myAvatar,
+    };
+
+    this.#ws.send(JSON.stringify(message));
+  }
+
+  setHandle(handle: string | null) {
+    this.#myHandle = handle;
+    this.#sendHandle();
+  }
+
+  #sendHandle() {
+    if (!this.#ws?.OPEN) return;
+
+    const message: ToHostMessage = {
+      subject: "set_handle",
+      data: this.#myHandle,
     };
 
     this.#ws.send(JSON.stringify(message));

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { IoMdPerson } from "react-icons/io";
 
+import { useLens } from "../../client/lens/hooks/useLens";
 import { trpc } from "../../client/trpc";
 import { env } from "../../env/client.mjs";
 import Dialog from "../../ui/Dialog";
@@ -17,6 +18,7 @@ export default function UserButton() {
   const [openUserPage, setOpenUserPage] = useState(false);
 
   const isPointerLocked = usePointerLocked();
+  const { handle } = useLens();
 
   const { mutateAsync: createTempUpload } = trpc.useMutation(
     "public.get-temp-upload"
@@ -31,8 +33,8 @@ export default function UserButton() {
     const { displayName, customAvatar, didChangeName, didChangeAvatar } =
       useAppStore.getState();
 
-    // Name
-    if (didChangeName) {
+    // If no lens handle, use name
+    if (!handle && didChangeName) {
       useAppStore.setState({ didChangeName: false });
 
       // Publish display name

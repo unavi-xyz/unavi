@@ -66,6 +66,11 @@ server.ws("/*", {
         players.publishAvatar(ws, message.data);
         break;
       }
+
+      case "set_handle": {
+        players.publishHandle(ws, message.data);
+        break;
+      }
     }
   },
 

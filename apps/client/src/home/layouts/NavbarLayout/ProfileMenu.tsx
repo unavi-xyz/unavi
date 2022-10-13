@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useContext } from "react";
+import { HiOutlineSwitchHorizontal } from "react-icons/hi";
 import {
   MdLogout,
   MdOutlinePersonOutline,
@@ -22,13 +23,10 @@ export default function ProfileMenu({ openSwitchProfile }: Props) {
 
   return (
     <div className="space-y-1 p-2">
-      <button
-        onClick={openSwitchProfile}
-        className="flex w-full justify-center
-                     space-x-2 rounded-lg py-1 px-5 font-bold transition
-                     hover:bg-primaryContainer hover:text-onPrimaryContainer"
-      >
-        @{handle}
+      <button onClick={openSwitchProfile} className="w-full">
+        <ProfileMenuButton icon={<HiOutlineSwitchHorizontal />}>
+          Switch Profile
+        </ProfileMenuButton>
       </button>
 
       <Link href={`/user/${handle}`} passHref>

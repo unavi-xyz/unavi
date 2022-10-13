@@ -6,6 +6,7 @@ import { env } from "../../env/client.mjs";
 import Dialog from "../../ui/Dialog";
 import { usePointerLocked } from "../hooks/usePointerLocked";
 import { useAppStore } from "../store";
+import { LocalStorageKey } from "./constants";
 import UserPage from "./UserPage";
 
 function getAvatarURL(fileId: string) {
@@ -27,13 +28,18 @@ export default function UserButton() {
     const engine = useAppStore.getState().engine;
     if (!engine) throw new Error("Engine not found");
 
-    const { displayName, customAvatar } = useAppStore.getState();
+    const { displayName, customAvatar, didChangeAvatar } =
+      useAppStore.getState();
 
     // Publish display name
     engine.setName(displayName);
 
+    // Save to local storage
+    if (displayName) localStorage.setItem(LocalStorageKey.Name, displayName);
+    else localStorage.removeItem(LocalStorageKey.Name);
+
     // Upload avatar to s3
-    if (customAvatar) {
+    if (didChangeAvatar && customAvatar) {
       const body = await fetch(customAvatar).then((res) => res.blob());
 
       const { url, fileId } = await createTempUpload();
@@ -52,6 +58,14 @@ export default function UserButton() {
       // Publish avatar
       const avatarURL = getAvatarURL(fileId);
       engine.setAvatar(avatarURL);
+
+      useAppStore.setState({ didChangeAvatar: false });
+
+      // Save to local storage
+      localStorage.setItem(LocalStorageKey.Avatar, avatarURL);
+    } else if (didChangeAvatar) {
+      engine.setAvatar(null);
+      localStorage.removeItem(LocalStorageKey.Avatar);
     }
   }
 

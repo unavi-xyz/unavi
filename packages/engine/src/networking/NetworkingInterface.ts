@@ -36,6 +36,9 @@ export class NetworkingInterface {
 
   #playerNames = new Map<string, string>();
 
+  #myName: string | null = null;
+  #myAvatar: string | null = null;
+
   playerId$ = new BehaviorSubject<string | null>(null);
   chatMessages$ = new BehaviorSubject<InternalChatMessage[]>([]);
 
@@ -141,6 +144,10 @@ export class NetworkingInterface {
       switch (subject) {
         case "join_successful": {
           this.playerId$.next(data.playerId);
+
+          // Set player name and avatar
+          if (this.#myName) this.#sendName();
+          if (this.#myAvatar) this.#sendAvatar();
           break;
         }
 
@@ -292,22 +299,32 @@ export class NetworkingInterface {
   }
 
   setName(name: string | null) {
+    this.#myName = name;
+    this.#sendName();
+  }
+
+  #sendName() {
     if (!this.#ws) return;
 
     const message: ToHostMessage = {
       subject: "set_name",
-      data: name ?? `Guest ${this.playerId$.value?.slice(0, 4)}`,
+      data: this.#myName ?? `Guest ${this.playerId$.value?.slice(0, 4)}`,
     };
 
     this.#ws.send(JSON.stringify(message));
   }
 
-  async setAvatar(url: string | null) {
+  setAvatar(url: string | null) {
+    this.#myAvatar = url;
+    this.#sendAvatar();
+  }
+
+  #sendAvatar() {
     if (!this.#ws) return;
 
     const message: ToHostMessage = {
       subject: "set_avatar",
-      data: url,
+      data: this.#myAvatar,
     };
 
     this.#ws.send(JSON.stringify(message));

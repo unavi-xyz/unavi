@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
+import { useLoadUser } from "../../app/ui/useLoadUser";
 import UserButton from "../../app/ui/UserButton";
 import {
   getPublicationProps,
@@ -42,6 +43,7 @@ export default function App({ id, metadata, publication }: Props) {
   const modelURL: string | undefined =
     publication?.metadata.media[1]?.original.url;
 
+  useLoadUser();
   useAppHotkeys();
 
   useEffect(() => {

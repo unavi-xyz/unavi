@@ -37,7 +37,7 @@ export default function UserPage() {
             const blob = new Blob([file], { type: "model/gltf-binary" });
             const url = URL.createObjectURL(blob);
 
-            useAppStore.setState({ customAvatar: url });
+            useAppStore.setState({ customAvatar: url, didChangeAvatar: true });
           }}
         />
       </div>

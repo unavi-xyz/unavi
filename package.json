@@ -15,7 +15,7 @@
     "format": "prettier --write .",
     "postinstall": "patch-package && yarn codegen",
     "lint": "turbo lint",
-    "publish-packages": "turbo lint build && changeset version"
+    "release": "turbo lint build && changeset version && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.25.0",

@@ -14,6 +14,8 @@ function spaceTopic(spaceId: string) {
 export class Players {
   readonly playerIds = new Map<uWS.WebSocket, string>();
   readonly spaceIds = new Map<uWS.WebSocket, string>();
+  readonly names = new Map<uWS.WebSocket, string>();
+  readonly avatars = new Map<uWS.WebSocket, string>();
 
   #server: uWS.TemplatedApp;
 
@@ -39,6 +41,8 @@ export class Players {
 
     this.playerIds.delete(ws);
     this.spaceIds.delete(ws);
+    this.names.delete(ws);
+    this.avatars.delete(ws);
   }
 
   joinSpace(ws: uWS.WebSocket, { spaceId }: { spaceId: string }) {
@@ -65,10 +69,29 @@ export class Players {
       const otherPlayerId = this.playerIds.get(otherWs);
       if (!otherPlayerId) throw new Error("Player not found");
 
+      // Send player joined message
       send(ws, {
         subject: "player_joined",
         data: otherPlayerId,
       });
+
+      // Send name
+      const otherName = this.names.get(otherWs);
+      if (otherName) {
+        send(ws, {
+          subject: "player_name",
+          data: { playerId: otherPlayerId, name: otherName },
+        });
+      }
+
+      // Send avatar
+      const otherAvatar = this.avatars.get(otherWs);
+      if (otherAvatar) {
+        send(ws, {
+          subject: "player_avatar",
+          data: { playerId: otherPlayerId, avatar: otherAvatar },
+        });
+      }
     });
 
     // Save space id
@@ -167,6 +190,9 @@ export class Players {
     const playerId = this.playerIds.get(ws);
     if (!playerId) throw new Error("Player not found");
 
+    // Save name
+    this.names.set(ws, name);
+
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
     if (!spaceId) return;
@@ -178,6 +204,27 @@ export class Players {
     };
 
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(nameMessage));
+  }
+
+  publishAvatar(ws: uWS.WebSocket, avatar: string | null) {
+    const playerId = this.playerIds.get(ws);
+    if (!playerId) throw new Error("Player not found");
+
+    // Save avatar
+    if (avatar) this.avatars.set(ws, avatar);
+    else this.avatars.delete(ws);
+
+    // If not in a space, do nothing
+    const spaceId = this.spaceIds.get(ws);
+    if (!spaceId) return;
+
+    // Tell everyone in the space about this player's avatar
+    const avatarMessage: FromHostMessage = {
+      subject: "player_avatar",
+      data: { playerId, avatar },
+    };
+
+    ws.publish(spaceTopic(spaceId), JSON.stringify(avatarMessage));
   }
 
   getPlayerCount(spaceId: string): number {

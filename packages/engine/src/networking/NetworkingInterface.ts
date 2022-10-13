@@ -198,6 +198,15 @@ export class NetworkingInterface {
           this.#playerNames.set(data.playerId, data.name);
           break;
         }
+
+        case "player_avatar": {
+          console.info(`💃 Got custom avatar for ${data.playerId}`);
+
+          this.#renderThread.postMessage({
+            subject: "set_player_avatar",
+            data,
+          });
+        }
       }
     };
 
@@ -288,6 +297,17 @@ export class NetworkingInterface {
     const message: ToHostMessage = {
       subject: "set_name",
       data: name ?? `Guest ${this.playerId$.value?.slice(0, 4)}`,
+    };
+
+    this.#ws.send(JSON.stringify(message));
+  }
+
+  async setAvatar(url: string | null) {
+    if (!this.#ws) return;
+
+    const message: ToHostMessage = {
+      subject: "set_avatar",
+      data: url,
     };
 
     this.#ws.send(JSON.stringify(message));

@@ -5,10 +5,12 @@ export interface AppStore {
   engine: Engine | null;
   chatBoxFocused: boolean;
   displayName: string | null;
+  customAvatar: string | null;
 }
 
 export const useAppStore = create<AppStore>(() => ({
   engine: null,
   chatBoxFocused: false,
   displayName: null,
+  customAvatar: null,
 }));

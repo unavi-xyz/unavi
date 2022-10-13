@@ -28,6 +28,8 @@ export class OtherPlayer {
 
   #vrm: VRM | null = null;
 
+  #defaultAvatarPath?: string;
+  #avatarAnimationsPath?: string;
   #mixer: AnimationMixer | null = null;
   #actions = new Map<AnimationName, AnimationAction>();
 
@@ -49,7 +51,21 @@ export class OtherPlayer {
     avatarAnimationsPath?: string
   ) {
     this.playerId = playerId;
+    this.#defaultAvatarPath = avatarPath;
+    this.#avatarAnimationsPath = avatarAnimationsPath;
 
+    this.#loader.register((parser) => new VRMLoaderPlugin(parser));
+
+    // Load VRM model
+    try {
+      this.#loadModel(avatarPath, avatarAnimationsPath);
+    } catch (error) {
+      console.error(error);
+      console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
+    }
+  }
+
+  async #loadModel(avatarPath?: string, avatarAnimationsPath?: string) {
     if (!avatarPath) {
       const geometry = new BoxGeometry(
         PLAYER_RADIUS * 2,
@@ -63,20 +79,24 @@ export class OtherPlayer {
       return;
     }
 
-    this.#loader.register((parser) => new VRMLoaderPlugin(parser));
-
-    // Load VRM model
-    try {
-      this.#loadModel(avatarPath, avatarAnimationsPath);
-    } catch (error) {
-      console.error(error);
-      console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
-    }
-  }
-
-  async #loadModel(avatarPath: string, avatarAnimationsPath?: string) {
     const gltf = await this.#loader.loadAsync(avatarPath);
     const vrm = gltf.userData.vrm as VRM;
+
+    // Remove previous VRM model
+    if (this.#vrm) {
+      this.#vrm.scene.removeFromParent();
+      disposeObject(this.#vrm.scene);
+      this.#vrm = null;
+    }
+
+    // Remove previous mixer
+    if (this.#mixer) {
+      this.#mixer.stopAllAction();
+      this.#actions.clear();
+      this.#mixer = null;
+    }
+
+    // Set VRM model
     this.#vrm = vrm;
 
     // Add model to the scene
@@ -138,6 +158,13 @@ export class OtherPlayer {
     }
 
     console.info(`💃 Loaded ${this.playerId}'s avatar`);
+  }
+
+  setAvatar(avatarPath: string | null) {
+    this.#loadModel(
+      avatarPath ?? this.#defaultAvatarPath,
+      this.#avatarAnimationsPath
+    );
   }
 
   setLocation(

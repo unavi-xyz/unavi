@@ -95,6 +95,13 @@ export type ToRenderMessage =
         playerId: string;
         isFalling: boolean;
       }
+    >
+  | WorkerMessage<
+      "set_player_avatar",
+      {
+        playerId: string;
+        avatar: string | null;
+      }
     >;
 
 export type FromRenderMessage =

@@ -32,7 +32,8 @@ export type ToHostMessage =
     >
   | GenericWebSocketMessage<"message", string>
   | GenericWebSocketMessage<"falling_state", boolean>
-  | GenericWebSocketMessage<"set_name", string>;
+  | GenericWebSocketMessage<"set_name", string>
+  | GenericWebSocketMessage<"set_avatar", string | null>;
 
 export type FromHostMessage =
   | GenericWebSocketMessage<
@@ -58,4 +59,8 @@ export type FromHostMessage =
         isFalling: boolean;
       }
     >
-  | GenericWebSocketMessage<"player_name", { playerId: string; name: string }>;
+  | GenericWebSocketMessage<"player_name", { playerId: string; name: string }>
+  | GenericWebSocketMessage<
+      "player_avatar",
+      { playerId: string; avatar: string | null }
+    >;

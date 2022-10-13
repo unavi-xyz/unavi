@@ -51,6 +51,11 @@ export class OtherPlayersPlugin {
         if (player) player.isFalling = data.isFalling;
         break;
       }
+
+      case "set_player_avatar": {
+        const player = this.#players.get(data.playerId);
+        if (player) player.setAvatar(data.avatar);
+      }
     }
   }
 

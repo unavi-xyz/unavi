@@ -13,9 +13,13 @@ import ProfileMenuButton from "./ProfileMenuButton";
 
 interface Props {
   openSwitchProfile: () => void;
+  includeExternal?: boolean;
 }
 
-export default function ProfileMenu({ openSwitchProfile }: Props) {
+export default function ProfileMenu({
+  openSwitchProfile,
+  includeExternal = true,
+}: Props) {
   const { handle } = useLens();
   const { logout } = useContext(LoginContext);
 
@@ -29,21 +33,25 @@ export default function ProfileMenu({ openSwitchProfile }: Props) {
         </ProfileMenuButton>
       </button>
 
-      <Link href={`/user/${handle}`} passHref>
-        <div>
-          <ProfileMenuButton icon={<MdOutlinePersonOutline />}>
-            Your Profile
-          </ProfileMenuButton>
-        </div>
-      </Link>
+      {includeExternal && (
+        <Link href={`/user/${handle}`} passHref>
+          <div>
+            <ProfileMenuButton icon={<MdOutlinePersonOutline />}>
+              Your Profile
+            </ProfileMenuButton>
+          </div>
+        </Link>
+      )}
 
-      <Link href="/settings" passHref>
-        <div>
-          <ProfileMenuButton icon={<MdOutlineSettings />}>
-            Settings
-          </ProfileMenuButton>
-        </div>
-      </Link>
+      {includeExternal && (
+        <Link href="/settings" passHref>
+          <div>
+            <ProfileMenuButton icon={<MdOutlineSettings />}>
+              Settings
+            </ProfileMenuButton>
+          </div>
+        </Link>
+      )}
 
       <button onClick={logout} className="w-full">
         <ProfileMenuButton icon={<MdLogout />}>Log Out</ProfileMenuButton>

@@ -25,7 +25,7 @@ export default function ButtonFileInput({
   }
 
   return (
-    <div className="flex flex-col space-y-1">
+    <div className="flex flex-col">
       <label htmlFor={id}>
         <Button labelId={id} fullWidth rounded="large">
           {displayText ?? file?.name}

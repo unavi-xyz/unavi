@@ -19,7 +19,7 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
 }
 
-export default function sButton({
+export default function Button({
   variant = "text",
   color = "primary",
   loading = false,

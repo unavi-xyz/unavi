@@ -118,8 +118,8 @@ export class NetworkingInterface {
       this.#reconnectCount = 0;
 
       // Set player name and avatar
-      if (this.#myName) this.#sendName();
-      if (this.#myAvatar) this.#sendAvatar();
+      this.#sendName();
+      this.#sendAvatar();
 
       // Join space
       send({ subject: "join", data: { spaceId } });
@@ -147,21 +147,31 @@ export class NetworkingInterface {
 
       switch (subject) {
         case "join_successful": {
-          this.playerId$.next(data.playerId);
+          // Set your name
+          if (this.#myName) this.#playerNames.set(data.playerId, this.#myName);
+          else this.#playerNames.delete(data.playerId);
 
+          // Save player id
+          this.playerId$.next(data.playerId);
           break;
         }
 
         case "player_joined": {
           console.info(`👋 Player ${data.playerId} joined`);
 
+          // Set name
           if (data.name) this.#playerNames.set(data.playerId, data.name);
+          else this.#playerNames.delete(data.playerId);
+
           this.#renderThread.postMessage({ subject: "player_joined", data });
           break;
         }
 
         case "player_left": {
           console.info(`👋 Player ${data} left`);
+
+          // Delete name
+          this.#playerNames.delete(data);
 
           this.#renderThread.postMessage({ subject: "player_left", data });
           break;
@@ -312,7 +322,7 @@ export class NetworkingInterface {
 
     const message: ToHostMessage = {
       subject: "set_name",
-      data: this.#myName ?? `Guest ${this.playerId$.value?.slice(0, 4)}`,
+      data: this.#myName,
     };
 
     this.#ws.send(JSON.stringify(message));

@@ -32,7 +32,7 @@ export type ToHostMessage =
     >
   | GenericWebSocketMessage<"message", string>
   | GenericWebSocketMessage<"falling_state", boolean>
-  | GenericWebSocketMessage<"set_name", string>
+  | GenericWebSocketMessage<"set_name", string | null>
   | GenericWebSocketMessage<"set_avatar", string | null>;
 
 export type FromHostMessage =

@@ -41,6 +41,10 @@ function publishedMetadataKey(projectId: string) {
   return `published/${projectId}/metadata.json`;
 }
 
+function tempFileKey(fileId: string) {
+  return `temp/${fileId}`;
+}
+
 export async function createSceneUploadURL(projectId: string) {
   const command = new PutObjectCommand({
     Bucket: env.S3_BUCKET,
@@ -102,6 +106,17 @@ export async function createPublishedMetadataUploadURL(projectId: string) {
     Bucket: env.S3_BUCKET,
     Key: publishedMetadataKey(projectId),
     ContentType: "application/json",
+    ACL: "public-read",
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+}
+
+export async function createTempFileUploadURL(fileId: string) {
+  const command = new PutObjectCommand({
+    Bucket: env.S3_BUCKET,
+    Key: tempFileKey(fileId),
     ACL: "public-read",
   });
 

@@ -95,6 +95,10 @@ export class Engine {
     this.networkingInterface.setName(name);
   }
 
+  setAvatar(url: string | null) {
+    this.networkingInterface.setAvatar(url);
+  }
+
   waitForReady() {
     return Promise.all([
       this.physicsThread.waitForReady(),

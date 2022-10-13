@@ -15,6 +15,7 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
   icon?: boolean;
   rounded?: "full" | "large" | "small";
+  labelId?: string;
   children: React.ReactNode;
 }
 
@@ -26,6 +27,7 @@ export default function sButton({
   fullWidth = false,
   icon = false,
   rounded = "full",
+  labelId,
   children,
   ...rest
 }: Props) {
@@ -89,11 +91,25 @@ export default function sButton({
 
   const paddingClass = icon ? "p-2.5" : "px-5 py-1.5";
 
+  if (labelId) {
+    return (
+      <label
+        htmlFor={labelId}
+        className={`relative flex cursor-pointer items-center justify-center text-center font-bold transition ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass} ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
+      >
+        <div className={`w-full ${loadingClass}`}>{children}</div>
+        {loading && (
+          <div className="absolute">
+            <Spinner />
+          </div>
+        )}
+      </label>
+    );
+  }
+
   return (
     <button
-      className={`relative flex items-center justify-center font-bold transition
-                  ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass}
-                  ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
+      className={`relative flex items-center justify-center font-bold transition ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass} ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
       {...rest}
     >
       <div className={`w-full ${loadingClass}`}>{children}</div>

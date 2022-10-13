@@ -32,7 +32,7 @@ export class OtherPlayersPlugin {
 
     switch (subject) {
       case "player_joined": {
-        this.addPlayer(data);
+        this.addPlayer(data.playerId, data.avatar);
         break;
       }
 
@@ -51,12 +51,18 @@ export class OtherPlayersPlugin {
         if (player) player.isFalling = data.isFalling;
         break;
       }
+
+      case "set_player_avatar": {
+        const player = this.#players.get(data.playerId);
+        if (player) player.setAvatar(data.avatar);
+      }
     }
   }
 
-  addPlayer(playerId: string) {
+  addPlayer(playerId: string, avatar: string | null) {
     const player = new OtherPlayer(
       playerId,
+      avatar,
       this.#avatarPath,
       this.#avatarAnimationsPath
     );

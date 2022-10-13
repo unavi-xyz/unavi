@@ -1,6 +1,5 @@
 import { Engine } from "../Engine";
 import { Transferable } from "../types";
-import { FakeWorker } from "../utils/FakeWorker";
 import { Player } from "./Player";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
@@ -13,11 +12,10 @@ export interface PhysicsThreadOptions {
  * Acts as an interface between the main thread and the {@link PhysicsWorker}.
  */
 export class PhysicsThread {
-  #worker = new FakeWorker();
-  // #worker = new Worker(new URL("./worker.ts", import.meta.url), {
-  //   type: "module",
-  //   name: "physics",
-  // });
+  #worker = new Worker(new URL("./worker.ts", import.meta.url), {
+    type: "module",
+    name: "physics",
+  });
 
   ready = false;
   #readyListeners: Array<() => void> = [];
@@ -35,14 +33,6 @@ export class PhysicsThread {
   }
 
   async createWorker() {
-    const { PhysicsWorker } = await import("./PhysicsWorker");
-
-    const physicsWorker = new PhysicsWorker(
-      this.#worker.workerPort.postMessage.bind(this.#worker.workerPort)
-    );
-    this.#worker.workerPort.onmessage =
-      physicsWorker.onmessage.bind(physicsWorker);
-
     this.#worker.onmessage = this.#onmessage;
   }
 

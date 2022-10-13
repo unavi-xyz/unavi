@@ -32,7 +32,8 @@ export type ToHostMessage =
     >
   | GenericWebSocketMessage<"message", string>
   | GenericWebSocketMessage<"falling_state", boolean>
-  | GenericWebSocketMessage<"set_name", string>;
+  | GenericWebSocketMessage<"set_name", string>
+  | GenericWebSocketMessage<"set_avatar", string | null>;
 
 export type FromHostMessage =
   | GenericWebSocketMessage<
@@ -41,7 +42,14 @@ export type FromHostMessage =
         playerId: string;
       }
     >
-  | GenericWebSocketMessage<"player_joined", string>
+  | GenericWebSocketMessage<
+      "player_joined",
+      {
+        playerId: string;
+        name: string | null;
+        avatar: string | null;
+      }
+    >
   | GenericWebSocketMessage<"player_left", string>
   | GenericWebSocketMessage<
       "player_location",
@@ -58,4 +66,8 @@ export type FromHostMessage =
         isFalling: boolean;
       }
     >
-  | GenericWebSocketMessage<"player_name", { playerId: string; name: string }>;
+  | GenericWebSocketMessage<"player_name", { playerId: string; name: string }>
+  | GenericWebSocketMessage<
+      "player_avatar",
+      { playerId: string; avatar: string | null }
+    >;

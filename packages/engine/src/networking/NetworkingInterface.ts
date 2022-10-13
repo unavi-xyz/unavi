@@ -36,6 +36,9 @@ export class NetworkingInterface {
 
   #playerNames = new Map<string, string>();
 
+  #myName: string | null = null;
+  #myAvatar: string | null = null;
+
   playerId$ = new BehaviorSubject<string | null>(null);
   chatMessages$ = new BehaviorSubject<InternalChatMessage[]>([]);
 
@@ -114,6 +117,10 @@ export class NetworkingInterface {
       console.info("✅ Connected to host");
       this.#reconnectCount = 0;
 
+      // Set player name and avatar
+      if (this.#myName) this.#sendName();
+      if (this.#myAvatar) this.#sendAvatar();
+
       // Join space
       send({ subject: "join", data: { spaceId } });
 
@@ -141,17 +148,21 @@ export class NetworkingInterface {
       switch (subject) {
         case "join_successful": {
           this.playerId$.next(data.playerId);
+
           break;
         }
 
         case "player_joined": {
-          console.info(`👋 Player ${data} joined`);
+          console.info(`👋 Player ${data.playerId} joined`);
+
+          if (data.name) this.#playerNames.set(data.playerId, data.name);
           this.#renderThread.postMessage({ subject: "player_joined", data });
           break;
         }
 
         case "player_left": {
           console.info(`👋 Player ${data} left`);
+
           this.#renderThread.postMessage({ subject: "player_left", data });
           break;
         }
@@ -197,6 +208,15 @@ export class NetworkingInterface {
 
           this.#playerNames.set(data.playerId, data.name);
           break;
+        }
+
+        case "player_avatar": {
+          console.info(`💃 Got custom avatar for ${data.playerId}`);
+
+          this.#renderThread.postMessage({
+            subject: "set_player_avatar",
+            data,
+          });
         }
       }
     };
@@ -283,11 +303,32 @@ export class NetworkingInterface {
   }
 
   setName(name: string | null) {
+    this.#myName = name;
+    this.#sendName();
+  }
+
+  #sendName() {
     if (!this.#ws) return;
 
     const message: ToHostMessage = {
       subject: "set_name",
-      data: name ?? `Guest ${this.playerId$.value?.slice(0, 4)}`,
+      data: this.#myName ?? `Guest ${this.playerId$.value?.slice(0, 4)}`,
+    };
+
+    this.#ws.send(JSON.stringify(message));
+  }
+
+  setAvatar(url: string | null) {
+    this.#myAvatar = url;
+    this.#sendAvatar();
+  }
+
+  #sendAvatar() {
+    if (!this.#ws) return;
+
+    const message: ToHostMessage = {
+      subject: "set_avatar",
+      data: this.#myAvatar,
     };
 
     this.#ws.send(JSON.stringify(message));

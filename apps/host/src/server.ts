@@ -61,6 +61,11 @@ server.ws("/*", {
         players.publishName(ws, message.data);
         break;
       }
+
+      case "set_avatar": {
+        players.publishAvatar(ws, message.data);
+        break;
+      }
     }
   },
 

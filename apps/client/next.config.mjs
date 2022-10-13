@@ -67,10 +67,6 @@ export default defineNextConfig({
   eslint: {
     ignoreDuringBuilds: true,
   },
-  i18n: {
-    locales: ["en"],
-    defaultLocale: "en",
-  },
   images: {
     domains: [
       `${env.S3_BUCKET}.${env.S3_ENDPOINT}`,

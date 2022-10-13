@@ -37,8 +37,11 @@ export class OtherPlayer {
   #leftWeight = 0;
   #rightWeight = 0;
   #forwardWeight = 0;
+  #sprintWeight = 0;
 
   #velocity = new Vector3();
+  #averageVelocity = new Vector3();
+
   #tempQuat = new Quaternion();
   #targetPosition = new Vector3();
   #targetRotation = new Quaternion();
@@ -151,6 +154,7 @@ export class OtherPlayer {
       this.#actions.get(AnimationName.Walk)?.play();
       this.#actions.get(AnimationName.LeftWalk)?.play();
       this.#actions.get(AnimationName.RightWalk)?.play();
+      this.#actions.get(AnimationName.Sprint)?.play();
 
       this.#actions
         .get(AnimationName.Falling)
@@ -192,11 +196,13 @@ export class OtherPlayer {
     this.group.quaternion.normalize();
 
     // Calculate velocity relative to player rotation
-    const velocity = this.#velocity
+    this.#velocity
       .copy(this.#targetPosition)
       .sub(this.group.position)
       .divideScalar(delta)
       .applyQuaternion(this.#tempQuat.copy(this.group.quaternion).invert());
+
+    const velocity = this.#averageVelocity.lerp(this.#velocity, K);
 
     // Falling
     this.#fallWeight = clamp(
@@ -217,20 +223,26 @@ export class OtherPlayer {
 
     this.#leftWeight = clamp(
       leftVelocity > 1 && !this.isFalling
-        ? this.#leftWeight + delta * 4
-        : this.#leftWeight - delta * 4
+        ? this.#leftWeight + delta * 3
+        : this.#leftWeight - delta * 6
     );
 
     this.#rightWeight = clamp(
       rightVelocity > 1 && !this.isFalling
-        ? this.#rightWeight + delta * 4
-        : this.#rightWeight - delta * 4
+        ? this.#rightWeight + delta * 3
+        : this.#rightWeight - delta * 6
+    );
+
+    this.#sprintWeight = clamp(
+      forwardVelocity > 25 && !this.isFalling
+        ? this.#sprintWeight + delta * 6
+        : this.#sprintWeight - delta * 4
     );
 
     this.#forwardWeight = clamp(
       forwardVelocity > 1 && !this.isFalling
-        ? this.#forwardWeight + delta * 4
-        : this.#forwardWeight - delta * 4
+        ? this.#forwardWeight + delta * 6
+        : this.#forwardWeight - delta * 8
     );
 
     this.#actions
@@ -243,7 +255,12 @@ export class OtherPlayer {
 
     this.#actions
       .get(AnimationName.Walk)
-      ?.setEffectiveWeight(this.#forwardWeight)
+      ?.setEffectiveWeight(this.#forwardWeight - this.#sprintWeight)
+      .setEffectiveTimeScale(isBackwards ? -1 : 1);
+
+    this.#actions
+      .get(AnimationName.Sprint)
+      ?.setEffectiveWeight(this.#sprintWeight)
       .setEffectiveTimeScale(isBackwards ? -1 : 1);
 
     // Idle
@@ -268,6 +285,6 @@ export class OtherPlayer {
   }
 }
 
-function clamp(value: number) {
-  return Math.max(Math.min(value, 1), 0);
+function clamp(value: number, min = 0, max = 1) {
+  return Math.max(Math.min(value, max), min);
 }

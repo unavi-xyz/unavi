@@ -4,6 +4,7 @@ export type InternalChatMessage = {
   username: string;
   message: string;
   timestamp: number;
+  isHandle: boolean;
 };
 
 export type IChatMessage = {
@@ -32,8 +33,9 @@ export type ToHostMessage =
     >
   | GenericWebSocketMessage<"message", string>
   | GenericWebSocketMessage<"falling_state", boolean>
-  | GenericWebSocketMessage<"set_name", string>
-  | GenericWebSocketMessage<"set_avatar", string | null>;
+  | GenericWebSocketMessage<"set_name", string | null>
+  | GenericWebSocketMessage<"set_avatar", string | null>
+  | GenericWebSocketMessage<"set_handle", string | null>;
 
 export type FromHostMessage =
   | GenericWebSocketMessage<
@@ -48,6 +50,7 @@ export type FromHostMessage =
         playerId: string;
         name: string | null;
         avatar: string | null;
+        handle: string | null;
       }
     >
   | GenericWebSocketMessage<"player_left", string>
@@ -66,8 +69,15 @@ export type FromHostMessage =
         isFalling: boolean;
       }
     >
-  | GenericWebSocketMessage<"player_name", { playerId: string; name: string }>
+  | GenericWebSocketMessage<
+      "player_name",
+      { playerId: string; name: string | null }
+    >
   | GenericWebSocketMessage<
       "player_avatar",
       { playerId: string; avatar: string | null }
+    >
+  | GenericWebSocketMessage<
+      "player_handle",
+      { playerId: string; handle: string | null }
     >;

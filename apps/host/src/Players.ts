@@ -16,6 +16,7 @@ export class Players {
   readonly spaceIds = new Map<uWS.WebSocket, string>();
   readonly names = new Map<uWS.WebSocket, string>();
   readonly avatars = new Map<uWS.WebSocket, string>();
+  readonly handles = new Map<uWS.WebSocket, string>();
 
   #server: uWS.TemplatedApp;
 
@@ -43,6 +44,7 @@ export class Players {
     this.spaceIds.delete(ws);
     this.names.delete(ws);
     this.avatars.delete(ws);
+    this.handles.delete(ws);
   }
 
   joinSpace(ws: uWS.WebSocket, { spaceId }: { spaceId: string }) {
@@ -53,6 +55,7 @@ export class Players {
 
     const name = this.names.get(ws) ?? null;
     const avatar = this.avatars.get(ws) ?? null;
+    const handle = this.handles.get(ws) ?? null;
 
     // Tell everyone that this player joined
     const joinMessage: FromHostMessage = {
@@ -61,6 +64,7 @@ export class Players {
         playerId,
         name,
         avatar,
+        handle,
       },
     };
 
@@ -78,6 +82,7 @@ export class Players {
 
       const otherName = this.names.get(otherWs) ?? null;
       const otherAvatar = this.avatars.get(otherWs) ?? null;
+      const otherHandle = this.handles.get(otherWs) ?? null;
 
       // Send player joined message
       send(ws, {
@@ -86,6 +91,7 @@ export class Players {
           playerId: otherPlayerId,
           name: otherName,
           avatar: otherAvatar,
+          handle: otherHandle,
         },
       });
     });
@@ -182,12 +188,13 @@ export class Players {
     ws.publish(spaceTopic(spaceId), JSON.stringify(jumpStateMessage));
   }
 
-  publishName(ws: uWS.WebSocket, name: string) {
+  publishName(ws: uWS.WebSocket, name: string | null) {
     const playerId = this.playerIds.get(ws);
     if (!playerId) throw new Error("Player not found");
 
     // Save name
-    this.names.set(ws, name);
+    if (name) this.names.set(ws, name);
+    else this.names.delete(ws);
 
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
@@ -221,6 +228,27 @@ export class Players {
     };
 
     ws.publish(spaceTopic(spaceId), JSON.stringify(avatarMessage));
+  }
+
+  publishHandle(ws: uWS.WebSocket, handle: string | null) {
+    const playerId = this.playerIds.get(ws);
+    if (!playerId) throw new Error("Player not found");
+
+    // Save handle
+    if (handle) this.handles.set(ws, handle);
+    else this.handles.delete(ws);
+
+    // If not in a space, do nothing
+    const spaceId = this.spaceIds.get(ws);
+    if (!spaceId) return;
+
+    // Tell everyone in the space about this player's handle
+    const handleMessage: FromHostMessage = {
+      subject: "player_handle",
+      data: { playerId, handle },
+    };
+
+    this.#server.publish(spaceTopic(spaceId), JSON.stringify(handleMessage));
   }
 
   getPlayerCount(spaceId: string): number {

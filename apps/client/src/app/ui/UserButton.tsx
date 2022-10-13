@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { IoMdPerson } from "react-icons/io";
 
+import { useLens } from "../../client/lens/hooks/useLens";
 import { trpc } from "../../client/trpc";
 import { env } from "../../env/client.mjs";
 import Dialog from "../../ui/Dialog";
@@ -17,6 +18,7 @@ export default function UserButton() {
   const [openUserPage, setOpenUserPage] = useState(false);
 
   const isPointerLocked = usePointerLocked();
+  const { handle } = useLens();
 
   const { mutateAsync: createTempUpload } = trpc.useMutation(
     "public.get-temp-upload"
@@ -28,22 +30,30 @@ export default function UserButton() {
     const engine = useAppStore.getState().engine;
     if (!engine) throw new Error("Engine not found");
 
-    const { displayName, customAvatar, didChangeAvatar } =
+    const { displayName, customAvatar, didChangeName, didChangeAvatar } =
       useAppStore.getState();
 
-    // Publish display name
-    engine.setName(displayName);
+    // If no lens handle, use name
+    if (!handle && didChangeName) {
+      useAppStore.setState({ didChangeName: false });
 
-    // Save to local storage
-    if (displayName) localStorage.setItem(LocalStorageKey.Name, displayName);
-    else localStorage.removeItem(LocalStorageKey.Name);
+      // Publish display name
+      engine.setName(displayName);
 
-    // Upload avatar to s3
+      // Save to local storage
+      if (displayName) localStorage.setItem(LocalStorageKey.Name, displayName);
+      else localStorage.removeItem(LocalStorageKey.Name);
+    }
+
+    // Avatar
     if (didChangeAvatar && customAvatar) {
-      const body = await fetch(customAvatar).then((res) => res.blob());
+      useAppStore.setState({ didChangeAvatar: false });
 
+      // Get avatar file
+      const body = await fetch(customAvatar).then((res) => res.blob());
       const { url, fileId } = await createTempUpload();
 
+      // Upload to S3
       const res = await fetch(url, {
         method: "PUT",
         body,
@@ -58,8 +68,6 @@ export default function UserButton() {
       // Publish avatar
       const avatarURL = getAvatarURL(fileId);
       engine.setAvatar(avatarURL);
-
-      useAppStore.setState({ didChangeAvatar: false });
 
       // Save to local storage
       localStorage.setItem(LocalStorageKey.Avatar, avatarURL);

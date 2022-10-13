@@ -71,12 +71,13 @@ export class Player {
 
   #onMouseMove(event: MouseEvent) {
     if (!this.#isLocked) return;
-    const { movementX, movementY } = event;
-    this.#renderThread.mouseMove(movementX, movementY);
+    this.#renderThread.mouseMove(event.movementX, event.movementY);
   }
 
   #onKeyDown(event: KeyboardEvent) {
     const key = event.key.toLowerCase();
+
+    if (event.shiftKey) this.#physicsThread.setSprinting(true);
 
     switch (key) {
       case "w": {
@@ -120,6 +121,8 @@ export class Player {
 
   #onKeyUp(event: KeyboardEvent) {
     const key = event.key.toLowerCase();
+
+    if (!event.shiftKey) this.#physicsThread.setSprinting(false);
 
     switch (key) {
       case "w": {
@@ -165,6 +168,8 @@ export class Player {
     this.#pressingA = false;
     this.#pressingD = false;
     this.#updateVelocity();
+
+    this.#physicsThread.setSprinting(false);
 
     if (this.#jumpInterval !== null) {
       clearInterval(this.#jumpInterval);

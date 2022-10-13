@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useContext } from "react";
+import { HiOutlineSwitchHorizontal } from "react-icons/hi";
 import {
   MdLogout,
   MdOutlinePersonOutline,
@@ -12,9 +13,13 @@ import ProfileMenuButton from "./ProfileMenuButton";
 
 interface Props {
   openSwitchProfile: () => void;
+  includeExternal?: boolean;
 }
 
-export default function ProfileMenu({ openSwitchProfile }: Props) {
+export default function ProfileMenu({
+  openSwitchProfile,
+  includeExternal = true,
+}: Props) {
   const { handle } = useLens();
   const { logout } = useContext(LoginContext);
 
@@ -22,30 +27,31 @@ export default function ProfileMenu({ openSwitchProfile }: Props) {
 
   return (
     <div className="space-y-1 p-2">
-      <button
-        onClick={openSwitchProfile}
-        className="flex w-full justify-center
-                     space-x-2 rounded-lg py-1 px-5 font-bold transition
-                     hover:bg-primaryContainer hover:text-onPrimaryContainer"
-      >
-        @{handle}
+      <button onClick={openSwitchProfile} className="w-full">
+        <ProfileMenuButton icon={<HiOutlineSwitchHorizontal />}>
+          Switch Profile
+        </ProfileMenuButton>
       </button>
 
-      <Link href={`/user/${handle}`} passHref>
-        <div>
-          <ProfileMenuButton icon={<MdOutlinePersonOutline />}>
-            Your Profile
-          </ProfileMenuButton>
-        </div>
-      </Link>
+      {includeExternal && (
+        <Link href={`/user/${handle}`} passHref>
+          <div>
+            <ProfileMenuButton icon={<MdOutlinePersonOutline />}>
+              Your Profile
+            </ProfileMenuButton>
+          </div>
+        </Link>
+      )}
 
-      <Link href="/settings" passHref>
-        <div>
-          <ProfileMenuButton icon={<MdOutlineSettings />}>
-            Settings
-          </ProfileMenuButton>
-        </div>
-      </Link>
+      {includeExternal && (
+        <Link href="/settings" passHref>
+          <div>
+            <ProfileMenuButton icon={<MdOutlineSettings />}>
+              Settings
+            </ProfileMenuButton>
+          </div>
+        </Link>
+      )}
 
       <button onClick={logout} className="w-full">
         <ProfileMenuButton icon={<MdLogout />}>Log Out</ProfileMenuButton>

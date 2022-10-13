@@ -7,7 +7,9 @@ interface Props {
   message: InternalChatMessage;
 }
 
-export default function ChatMessage({ message: { message, username } }: Props) {
+export default function ChatMessage({
+  message: { message, username, isHandle },
+}: Props) {
   const isPointerLocked = usePointerLocked();
 
   const [visible, setVisible] = useState(false);
@@ -30,11 +32,13 @@ export default function ChatMessage({ message: { message, username } }: Props) {
     ? "opacity-100"
     : "opacity-0";
 
+  const boldClass = isHandle ? "font-bold" : null;
+
   return (
     <div
       className={`w-fit rounded-lg bg-surface px-4 py-1 transition duration-500 ${visibleClass}`}
     >
-      <span className="font-bold">{username}</span>: {message}
+      <span className={`${boldClass}`}>{username}</span>: {message}
     </div>
   );
 }

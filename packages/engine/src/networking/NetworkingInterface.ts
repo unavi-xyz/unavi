@@ -216,7 +216,8 @@ export class NetworkingInterface {
         case "player_name": {
           console.info(`📇 Player ${data.playerId} is now ${data.name}`);
 
-          this.#playerNames.set(data.playerId, data.name);
+          if (data.name) this.#playerNames.set(data.playerId, data.name);
+          else this.#playerNames.delete(data.playerId);
           break;
         }
 

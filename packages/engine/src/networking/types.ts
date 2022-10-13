@@ -66,7 +66,10 @@ export type FromHostMessage =
         isFalling: boolean;
       }
     >
-  | GenericWebSocketMessage<"player_name", { playerId: string; name: string }>
+  | GenericWebSocketMessage<
+      "player_name",
+      { playerId: string; name: string | null }
+    >
   | GenericWebSocketMessage<
       "player_avatar",
       { playerId: string; avatar: string | null }

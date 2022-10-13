@@ -182,12 +182,13 @@ export class Players {
     ws.publish(spaceTopic(spaceId), JSON.stringify(jumpStateMessage));
   }
 
-  publishName(ws: uWS.WebSocket, name: string) {
+  publishName(ws: uWS.WebSocket, name: string | null) {
     const playerId = this.playerIds.get(ws);
     if (!playerId) throw new Error("Player not found");
 
     // Save name
-    this.names.set(ws, name);
+    if (name) this.names.set(ws, name);
+    else this.names.delete(ws);
 
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);

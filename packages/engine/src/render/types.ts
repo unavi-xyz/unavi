@@ -108,7 +108,8 @@ export type ToRenderMessage =
         playerId: string;
         avatar: string | null;
       }
-    >;
+    >
+  | WorkerMessage<"set_avatar", string | null>;
 
 export type FromRenderMessage =
   | WorkerMessage<"ready">

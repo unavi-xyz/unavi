@@ -335,7 +335,15 @@ export class NetworkingInterface {
   }
 
   setFallState(falling: boolean) {
-    if (!this.#ws?.OPEN) return;
+    if (!this.#ws || !this.#isWsOpen()) return;
+
+    this.#renderThread.postMessage({
+      subject: "set_player_falling_state",
+      data: {
+        playerId: "user",
+        isFalling: falling,
+      },
+    });
 
     const message: ToHostMessage = {
       subject: "falling_state",
@@ -351,7 +359,7 @@ export class NetworkingInterface {
   }
 
   #sendName() {
-    if (!this.#ws?.OPEN) return;
+    if (!this.#ws || !this.#isWsOpen()) return;
 
     const message: ToHostMessage = {
       subject: "set_name",
@@ -363,11 +371,12 @@ export class NetworkingInterface {
 
   setAvatar(url: string | null) {
     this.#myAvatar = url;
+    this.#renderThread.postMessage({ subject: "set_avatar", data: url });
     this.#sendAvatar();
   }
 
   #sendAvatar() {
-    if (!this.#ws?.OPEN) return;
+    if (!this.#ws || !this.#isWsOpen()) return;
 
     const message: ToHostMessage = {
       subject: "set_avatar",
@@ -383,7 +392,7 @@ export class NetworkingInterface {
   }
 
   #sendHandle() {
-    if (!this.#ws?.OPEN) return;
+    if (!this.#ws || !this.#isWsOpen()) return;
 
     const message: ToHostMessage = {
       subject: "set_handle",
@@ -391,5 +400,9 @@ export class NetworkingInterface {
     };
 
     this.#ws.send(JSON.stringify(message));
+  }
+
+  #isWsOpen() {
+    return this.#ws && this.#ws.readyState === this.#ws.OPEN;
   }
 }

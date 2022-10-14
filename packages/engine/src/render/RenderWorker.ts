@@ -169,7 +169,14 @@ export class RenderWorker {
       }
 
       case "player": {
-        this.#plugins.push(new PlayerPlugin(this.#camera, this.#postMessage));
+        const plugin = new PlayerPlugin(
+          this.#camera,
+          this.#postMessage,
+          avatarPath,
+          avatarAnimationsPath
+        );
+        this.#plugins.push(plugin);
+        this.#scene.add(plugin.group);
         break;
       }
     }

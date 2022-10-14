@@ -1,15 +1,29 @@
-import { Euler, MathUtils, PerspectiveCamera, Vector2, Vector3 } from "three";
+import {
+  Euler,
+  Group,
+  MathUtils,
+  PerspectiveCamera,
+  Vector2,
+  Vector3,
+} from "three";
 
 import { CAMERA_HEIGHT } from "../../constants";
 import { PostMessage } from "../../types";
 import { FromRenderMessage, ToRenderMessage } from "../types";
+import { PlayerAvatar } from "./OtherPlayers/PlayerAvatar";
 
 const DAMPEN_FACTOR = 2;
 const PLAYER_SPEED = 3;
 
 export class PlayerPlugin {
+  readonly group = new Group();
+
   #camera: PerspectiveCamera;
   #postMessage: PostMessage<FromRenderMessage>;
+  #avatarPath?: string;
+  #avatarAnimationsPath?: string;
+
+  #avatar: PlayerAvatar | null = null;
 
   #playerInputVector = new Vector2();
 
@@ -33,10 +47,14 @@ export class PlayerPlugin {
 
   constructor(
     camera: PerspectiveCamera,
-    postMessage: PostMessage<FromRenderMessage>
+    postMessage: PostMessage<FromRenderMessage>,
+    avatarPath?: string,
+    avatarAnimationsPath?: string
   ) {
     this.#camera = camera;
     this.#postMessage = postMessage;
+    this.#avatarPath = avatarPath;
+    this.#avatarAnimationsPath = avatarAnimationsPath;
   }
 
   onmessage(event: MessageEvent<ToRenderMessage>) {
@@ -72,6 +90,30 @@ export class PlayerPlugin {
         this.mouseMove(data.x, data.y);
         break;
       }
+
+      case "set_avatar": {
+        if (this.#avatar) {
+          this.#avatar.group.removeFromParent();
+          this.#avatar.destroy();
+        }
+
+        this.#avatar = new PlayerAvatar(
+          "user",
+          data,
+          this.#avatarPath,
+          this.#avatarAnimationsPath,
+          this.#camera
+        );
+
+        this.group.add(this.#avatar.group);
+        break;
+      }
+
+      case "set_player_falling_state": {
+        if (data.playerId === "user" && this.#avatar) {
+          this.#avatar.isFalling = data.isFalling;
+        }
+      }
     }
   }
 
@@ -101,11 +143,11 @@ export class PlayerPlugin {
     this.#playerInputVector.set(input[0], input[1]);
   }
 
-  animate() {
+  animate(delta: number) {
+    // Dampen input
     const deltaX = Date.now() - this.#inputXChangeTime;
     const deltaY = Date.now() - this.#inputYChangeTime;
 
-    // Dampen input
     this.#inputMomentum.x = MathUtils.damp(
       this.#inputMomentum.x,
       this.#playerInputVector.x,
@@ -153,6 +195,22 @@ export class PlayerPlugin {
         Atomics.load(this.#playerPosition, 1) / 1000 + CAMERA_HEIGHT,
         Atomics.load(this.#playerPosition, 2) / 1000
       );
+    }
+
+    // Update avatar
+    if (this.#avatar) {
+      this.#avatar.group.quaternion.copy(this.#camera.quaternion);
+      this.#avatar.group.position.copy(this.#camera.position);
+      this.#avatar.group.position.y -= CAMERA_HEIGHT;
+
+      this.#avatar.animate(delta);
+    }
+  }
+
+  destroy() {
+    if (this.#avatar) {
+      this.#avatar.group.removeFromParent();
+      this.#avatar.destroy();
     }
   }
 }

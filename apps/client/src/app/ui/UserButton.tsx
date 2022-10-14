@@ -1,8 +1,11 @@
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { useState } from "react";
-import { IoMdPerson } from "react-icons/io";
+import { IoMdArrowRoundBack, IoMdPerson } from "react-icons/io";
 
 import { useLens } from "../../client/lens/hooks/useLens";
 import Dialog from "../../ui/Dialog";
+import Tooltip from "../../ui/Tooltip";
 import { LocalStorageKey } from "../constants";
 import { usePointerLocked } from "../hooks/usePointerLocked";
 import { useSetAvatar } from "../hooks/useSetAvatar";
@@ -10,6 +13,9 @@ import { useAppStore } from "../store";
 import UserPage from "./UserPage";
 
 export default function UserButton() {
+  const router = useRouter();
+  const id = router.query.id as string;
+
   const [openUserPage, setOpenUserPage] = useState(false);
 
   const isPointerLocked = usePointerLocked();
@@ -56,14 +62,24 @@ export default function UserButton() {
       </Dialog>
 
       <div
-        className={`flex items-center justify-center transition ${opacityClass}`}
+        className={`flex items-center justify-center space-x-4 transition ${opacityClass}`}
       >
-        <button
-          onClick={() => setOpenUserPage(true)}
-          className="aspect-square rounded-full bg-surface p-3 text-3xl shadow transition hover:shadow-lg"
-        >
-          <IoMdPerson />
-        </button>
+        <Tooltip text="Leave">
+          <Link href={`/space/${id}`}>
+            <div className="aspect-square cursor-pointer rounded-full bg-surface p-3 text-2xl shadow transition hover:shadow-lg">
+              <IoMdArrowRoundBack />
+            </div>
+          </Link>
+        </Tooltip>
+
+        <Tooltip text="Identity">
+          <button
+            onClick={() => setOpenUserPage(true)}
+            className="aspect-square rounded-full bg-surface p-3 text-2xl shadow transition hover:shadow-lg"
+          >
+            <IoMdPerson />
+          </button>
+        </Tooltip>
       </div>
     </>
   );

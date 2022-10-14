@@ -20,6 +20,7 @@ import { loadMixamoAnimation } from "./loadMixamoAnimation";
 import { AnimationName } from "./types";
 
 const LERP_FACTOR = 0.000001;
+const CAMERA_OFFSET = new Vector3(0, 0.1, -0.05);
 
 export class PlayerAvatar {
   readonly playerId: string;
@@ -112,10 +113,6 @@ export class PlayerAvatar {
       vrm.firstPerson.setup();
       this.#camera.layers.enable(vrm.firstPerson.firstPersonOnlyLayer);
       this.#camera.layers.disable(vrm.firstPerson.thirdPersonOnlyLayer);
-
-      // Update camera frustum
-      this.#camera.near = 0.4;
-      this.#camera.updateProjectionMatrix();
     }
 
     // Set VRM model
@@ -208,10 +205,22 @@ export class PlayerAvatar {
       this.group.quaternion.slerp(this.#targetRotation, K);
     }
 
+    if (this.#camera && this.#vrm) {
+      this.group.quaternion.copy(this.#camera.quaternion);
+    }
+
     // Only rotate on Y axis
     this.group.quaternion.x = 0;
     this.group.quaternion.z = 0;
     this.group.quaternion.normalize();
+
+    // Copy head position to camera
+    if (this.#vrm && this.#camera) {
+      const head = this.#vrm.humanoid.humanBones.head.node;
+      head.position.add(CAMERA_OFFSET);
+      head.getWorldPosition(this.#camera.position);
+      head.position.sub(CAMERA_OFFSET);
+    }
 
     // Calculate velocity relative to player rotation
     this.#velocity

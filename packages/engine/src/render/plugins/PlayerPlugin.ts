@@ -7,7 +7,6 @@ import {
   Vector3,
 } from "three";
 
-import { CAMERA_HEIGHT } from "../../constants";
 import { PostMessage } from "../../types";
 import { FromRenderMessage, ToRenderMessage } from "../types";
 import { PlayerAvatar } from "./OtherPlayers/PlayerAvatar";
@@ -189,22 +188,16 @@ export class PlayerPlugin {
     }
 
     // Apply player position
-    if (this.#playerPosition) {
-      this.#camera.position.set(
+    if (this.#playerPosition && this.#avatar) {
+      this.#avatar.group.position.set(
         Atomics.load(this.#playerPosition, 0) / 1000,
-        Atomics.load(this.#playerPosition, 1) / 1000 + CAMERA_HEIGHT,
+        Atomics.load(this.#playerPosition, 1) / 1000,
         Atomics.load(this.#playerPosition, 2) / 1000
       );
     }
 
     // Update avatar
-    if (this.#avatar) {
-      this.#avatar.group.quaternion.copy(this.#camera.quaternion);
-      this.#avatar.group.position.copy(this.#camera.position);
-      this.#avatar.group.position.y -= CAMERA_HEIGHT;
-
-      this.#avatar.animate(delta);
-    }
+    if (this.#avatar) this.#avatar.animate(delta);
   }
 
   destroy() {

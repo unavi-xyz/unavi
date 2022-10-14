@@ -337,14 +337,6 @@ export class NetworkingInterface {
   setFallState(falling: boolean) {
     if (!this.#ws || !this.#isWsOpen()) return;
 
-    this.#renderThread.postMessage({
-      subject: "set_player_falling_state",
-      data: {
-        playerId: "user",
-        isFalling: falling,
-      },
-    });
-
     const message: ToHostMessage = {
       subject: "falling_state",
       data: falling,

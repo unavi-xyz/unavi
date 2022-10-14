@@ -20,7 +20,7 @@ import { loadMixamoAnimation } from "./loadMixamoAnimation";
 import { AnimationName } from "./types";
 
 const LERP_FACTOR = 0.000001;
-const CAMERA_OFFSET = new Vector3(0, 0.1, -0.05);
+const CAMERA_OFFSET = new Vector3(0, 0.1, -0.03);
 
 export class PlayerAvatar {
   readonly playerId: string;

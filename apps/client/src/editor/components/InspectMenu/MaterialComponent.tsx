@@ -34,7 +34,10 @@ export default function MaterialComponent({ entityId }: Props) {
   const alpha = useSubscribeValue(material?.alpha$);
 
   const materials$ = useEditorStore((state) => state.engine?.scene.materials$);
-  const materials = useSubscribeValue(materials$);
+  const _materials = useSubscribeValue(materials$);
+  const materials = Object.values(_materials ?? {}).filter(
+    (m) => !m.isInternal
+  );
 
   const [open, setOpen] = useState(false);
 
@@ -85,8 +88,8 @@ export default function MaterialComponent({ entityId }: Props) {
 
           <DropdownMenu open={open} onClose={() => setOpen(false)}>
             <div className="flex max-h-52 flex-col space-y-1 overflow-y-auto p-2">
-              {materials && Object.values(materials).length > 0 ? (
-                Object.values(materials).map((material) => {
+              {materials.length > 0 ? (
+                materials.map((material) => {
                   return (
                     <div key={material.id}>
                       <DropdownMaterialButton

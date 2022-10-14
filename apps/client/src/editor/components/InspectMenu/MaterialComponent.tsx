@@ -25,12 +25,13 @@ interface Props {
 export default function MaterialComponent({ entityId }: Props) {
   const entity = useEntity(entityId);
   const materialId = useSubscribeValue(entity?.materialId$);
-
   const material = useMaterial(materialId);
+
   const name = useSubscribeValue(material?.name$);
   const color = useSubscribeValue(material?.color$);
   const roughness = useSubscribeValue(material?.roughness$);
   const metalness = useSubscribeValue(material?.metalness$);
+  const alpha = useSubscribeValue(material?.alpha$);
 
   const materials$ = useEditorStore((state) => state.engine?.scene.materials$);
   const materials = useSubscribeValue(materials$);
@@ -107,7 +108,7 @@ export default function MaterialComponent({ entityId }: Props) {
       </div>
 
       {materialId && color && (
-        <MenuRows titles={["Color", "Roughness", "Metalness"]}>
+        <MenuRows titles={["Color", "Roughness", "Metalness", "Alpha"]}>
           <div className="h-6">
             <ColorInput
               rgbValue={[color[0], color[1], color[2]]}
@@ -154,6 +155,26 @@ export default function MaterialComponent({ entityId }: Props) {
               const rounded = Math.round(num * 1000) / 1000;
 
               updateMaterial(materialId, { metalness: rounded });
+            }}
+          />
+
+          <NumberInput
+            value={alpha ?? 1}
+            step={0.01}
+            max={1}
+            min={0}
+            onChange={(e) => {
+              const value = e.target.value;
+
+              const num = parseFloat(value);
+              const rounded = Math.round(num * 1000) / 1000;
+
+              const alphaMode = rounded === 1 ? "OPAQUE" : "BLEND";
+
+              updateMaterial(materialId, {
+                alpha: rounded,
+                alphaMode,
+              });
             }}
           />
         </MenuRows>

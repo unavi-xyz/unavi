@@ -2,17 +2,12 @@ import { useState } from "react";
 import { IoMdPerson } from "react-icons/io";
 
 import { useLens } from "../../client/lens/hooks/useLens";
-import { trpc } from "../../client/trpc";
-import { env } from "../../env/client.mjs";
 import Dialog from "../../ui/Dialog";
+import { LocalStorageKey } from "../constants";
 import { usePointerLocked } from "../hooks/usePointerLocked";
+import { useSetAvatar } from "../hooks/useSetAvatar";
 import { useAppStore } from "../store";
-import { LocalStorageKey } from "./constants";
 import UserPage from "./UserPage";
-
-function getAvatarURL(fileId: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/temp/${fileId}`;
-}
 
 export default function UserButton() {
   const [openUserPage, setOpenUserPage] = useState(false);
@@ -20,9 +15,7 @@ export default function UserButton() {
   const isPointerLocked = usePointerLocked();
   const { handle } = useLens();
 
-  const { mutateAsync: createTempUpload } = trpc.useMutation(
-    "public.get-temp-upload"
-  );
+  const setAvatar = useSetAvatar();
 
   async function handleClose() {
     setOpenUserPage(false);
@@ -47,30 +40,7 @@ export default function UserButton() {
 
     // Avatar
     if (didChangeAvatar && customAvatar) {
-      useAppStore.setState({ didChangeAvatar: false });
-
-      // Get avatar file
-      const body = await fetch(customAvatar).then((res) => res.blob());
-      const { url, fileId } = await createTempUpload();
-
-      // Upload to S3
-      const res = await fetch(url, {
-        method: "PUT",
-        body,
-        headers: {
-          "Content-Type": body.type,
-          "x-amz-acl": "public-read",
-        },
-      });
-
-      if (!res.ok) throw new Error("Failed to upload avatar");
-
-      // Publish avatar
-      const avatarURL = getAvatarURL(fileId);
-      engine.setAvatar(avatarURL);
-
-      // Save to local storage
-      localStorage.setItem(LocalStorageKey.Avatar, avatarURL);
+      setAvatar(customAvatar);
     } else if (didChangeAvatar) {
       engine.setAvatar(null);
       localStorage.removeItem(LocalStorageKey.Avatar);

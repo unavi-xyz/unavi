@@ -15,3 +15,9 @@ The Wired reimagines the web as an **interconnected network of 3D spaces**, inst
 - Custom multi-threaded, [glTF](https://github.com/KhronosGroup/glTF)-based game engine
 - [VRM](https://vrm.dev/) avatar support
 - Visual editor for creating spaces
+
+:::info
+
+Currently, the Wired only supports Lens Protocol on the **Polygon Mumbai Testnet**. You can visit the [Polygon Faucet](https://faucet.polygon.technology/) to get some free testnet MATIC.
+
+:::

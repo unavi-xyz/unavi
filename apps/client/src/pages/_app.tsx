@@ -37,7 +37,7 @@ const App: AppType<{ session: Session | null }> = ({
       </Head>
 
       <ClientSideProviders session={session}>
-        <div className="h-screen w-full">
+        <div className="h-screen w-full snap-y snap-mandatory overflow-y-scroll">
           {getLayout(<Component {...pageProps} />)}
         </div>
       </ClientSideProviders>

@@ -207,8 +207,7 @@ export class NetworkingInterface {
             ? `@${handle}`
             : this.#playerNames.get(data.playerId);
 
-          if (username === undefined)
-            username = `Guest ${data.playerId.slice(0, 4)}`;
+          if (!username) username = `Guest ${data.playerId.slice(0, 4)}`;
 
           // Add message to chat
           const message: InternalChatMessage = {

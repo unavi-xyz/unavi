@@ -7,10 +7,11 @@ interface Props {
 export default function NavbarLayout({ children }: Props) {
   return (
     <div className="h-full overflow-hidden">
-      <div className="z-10 h-14 w-full">
+      <div className="absolute top-0 z-10 h-14 w-full">
         <Navbar />
       </div>
-      <div className="h-full w-full snap-y snap-mandatory overflow-y-scroll">
+
+      <div className="mt-14 h-full w-full snap-y snap-mandatory overflow-y-scroll">
         {children}
       </div>
     </div>

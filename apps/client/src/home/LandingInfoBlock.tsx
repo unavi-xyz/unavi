@@ -28,7 +28,7 @@ export default function LandingInfoBlock({
   const isExternalLink = buttonLink.startsWith("http");
 
   return (
-    <div className="h-screen snap-center pb-40 md:pb-20">
+    <div className="h-screen snap-center pb-20">
       <div className={`flex h-full flex-col md:items-center ${directionClass}`}>
         <div className="h-full w-full py-2 md:h-1/2 md:w-1/2 md:p-8 md:py-0">
           <div className="relative h-full w-full">

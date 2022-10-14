@@ -52,9 +52,13 @@ export default function Preview() {
         canvas,
         camera: "player",
         skyboxPath: "/images/skybox/",
+        avatarPath: "/models/Wired-chan.vrm",
+        avatarAnimationsPath: "/models/",
       });
 
       await engine.waitForReady();
+
+      engine.setAvatar(null);
 
       // Set collider visibility
       const { colliders } = useEditorStore.getState();
@@ -122,6 +126,7 @@ export default function Preview() {
         engine: null,
         selectedId: null,
       });
+      if (process.env.NODE_ENV === "development") window.location.reload();
     };
   }, [engine]);
 

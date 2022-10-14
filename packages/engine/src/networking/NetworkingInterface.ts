@@ -207,8 +207,7 @@ export class NetworkingInterface {
             ? `@${handle}`
             : this.#playerNames.get(data.playerId);
 
-          if (username === undefined)
-            username = `Guest ${data.playerId.slice(0, 4)}`;
+          if (!username) username = `Guest ${data.playerId.slice(0, 4)}`;
 
           // Add message to chat
           const message: InternalChatMessage = {
@@ -335,7 +334,7 @@ export class NetworkingInterface {
   }
 
   setFallState(falling: boolean) {
-    if (!this.#ws?.OPEN) return;
+    if (!this.#ws || !this.#isWsOpen()) return;
 
     const message: ToHostMessage = {
       subject: "falling_state",
@@ -351,7 +350,7 @@ export class NetworkingInterface {
   }
 
   #sendName() {
-    if (!this.#ws?.OPEN) return;
+    if (!this.#ws || !this.#isWsOpen()) return;
 
     const message: ToHostMessage = {
       subject: "set_name",
@@ -363,11 +362,12 @@ export class NetworkingInterface {
 
   setAvatar(url: string | null) {
     this.#myAvatar = url;
+    this.#renderThread.postMessage({ subject: "set_avatar", data: url });
     this.#sendAvatar();
   }
 
   #sendAvatar() {
-    if (!this.#ws?.OPEN) return;
+    if (!this.#ws || !this.#isWsOpen()) return;
 
     const message: ToHostMessage = {
       subject: "set_avatar",
@@ -383,7 +383,7 @@ export class NetworkingInterface {
   }
 
   #sendHandle() {
-    if (!this.#ws?.OPEN) return;
+    if (!this.#ws || !this.#isWsOpen()) return;
 
     const message: ToHostMessage = {
       subject: "set_handle",
@@ -391,5 +391,9 @@ export class NetworkingInterface {
     };
 
     this.#ws.send(JSON.stringify(message));
+  }
+
+  #isWsOpen() {
+    return this.#ws && this.#ws.readyState === this.#ws.OPEN;
   }
 }

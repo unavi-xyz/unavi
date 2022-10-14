@@ -1,28 +1,27 @@
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { useState } from "react";
-import { IoMdPerson } from "react-icons/io";
+import { IoMdArrowRoundBack, IoMdPerson } from "react-icons/io";
 
 import { useLens } from "../../client/lens/hooks/useLens";
-import { trpc } from "../../client/trpc";
-import { env } from "../../env/client.mjs";
 import Dialog from "../../ui/Dialog";
+import Tooltip from "../../ui/Tooltip";
+import { LocalStorageKey } from "../constants";
 import { usePointerLocked } from "../hooks/usePointerLocked";
+import { useSetAvatar } from "../hooks/useSetAvatar";
 import { useAppStore } from "../store";
-import { LocalStorageKey } from "./constants";
 import UserPage from "./UserPage";
 
-function getAvatarURL(fileId: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/temp/${fileId}`;
-}
-
 export default function UserButton() {
+  const router = useRouter();
+  const id = router.query.id as string;
+
   const [openUserPage, setOpenUserPage] = useState(false);
 
   const isPointerLocked = usePointerLocked();
   const { handle } = useLens();
 
-  const { mutateAsync: createTempUpload } = trpc.useMutation(
-    "public.get-temp-upload"
-  );
+  const setAvatar = useSetAvatar();
 
   async function handleClose() {
     setOpenUserPage(false);
@@ -47,30 +46,7 @@ export default function UserButton() {
 
     // Avatar
     if (didChangeAvatar && customAvatar) {
-      useAppStore.setState({ didChangeAvatar: false });
-
-      // Get avatar file
-      const body = await fetch(customAvatar).then((res) => res.blob());
-      const { url, fileId } = await createTempUpload();
-
-      // Upload to S3
-      const res = await fetch(url, {
-        method: "PUT",
-        body,
-        headers: {
-          "Content-Type": body.type,
-          "x-amz-acl": "public-read",
-        },
-      });
-
-      if (!res.ok) throw new Error("Failed to upload avatar");
-
-      // Publish avatar
-      const avatarURL = getAvatarURL(fileId);
-      engine.setAvatar(avatarURL);
-
-      // Save to local storage
-      localStorage.setItem(LocalStorageKey.Avatar, avatarURL);
+      setAvatar(customAvatar);
     } else if (didChangeAvatar) {
       engine.setAvatar(null);
       localStorage.removeItem(LocalStorageKey.Avatar);
@@ -86,14 +62,24 @@ export default function UserButton() {
       </Dialog>
 
       <div
-        className={`flex items-center justify-center transition ${opacityClass}`}
+        className={`flex items-center justify-center space-x-4 transition ${opacityClass}`}
       >
-        <button
-          onClick={() => setOpenUserPage(true)}
-          className="aspect-square rounded-full bg-surface p-3 text-3xl shadow transition hover:shadow-lg"
-        >
-          <IoMdPerson />
-        </button>
+        <Tooltip text="Leave">
+          <Link href={`/space/${id}`}>
+            <div className="aspect-square cursor-pointer rounded-full bg-surface p-3 text-2xl shadow transition hover:shadow-lg">
+              <IoMdArrowRoundBack />
+            </div>
+          </Link>
+        </Tooltip>
+
+        <Tooltip text="Identity">
+          <button
+            onClick={() => setOpenUserPage(true)}
+            className="aspect-square rounded-full bg-surface p-3 text-2xl shadow transition hover:shadow-lg"
+          >
+            <IoMdPerson />
+          </button>
+        </Tooltip>
       </div>
     </>
   );

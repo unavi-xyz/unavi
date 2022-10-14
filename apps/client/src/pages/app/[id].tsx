@@ -3,9 +3,10 @@ import { NextPageContext } from "next";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
+import { useLoadUser } from "../../app/hooks/useLoadUser";
+import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
-import { useLoadUser } from "../../app/ui/useLoadUser";
 import UserButton from "../../app/ui/UserButton";
 import {
   getPublicationProps,
@@ -39,6 +40,8 @@ export default function App({ id, metadata, publication }: Props) {
   const [engineStarted, setEngineStarted] = useState(false);
 
   const engine = useAppStore((state) => state.engine);
+
+  const setAvatar = useSetAvatar();
 
   const modelURL: string | undefined =
     publication?.metadata.media[1]?.original.url;
@@ -160,39 +163,63 @@ export default function App({ id, metadata, publication }: Props) {
         card="summary_large_image"
       />
 
-      {engineStarted && (
-        <div className="absolute inset-x-0 top-0 z-10 mx-auto mt-4 w-96">
-          <UserButton />
-        </div>
-      )}
+      <div
+        className="h-full w-full"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          const { engine } = useAppStore.getState();
+          if (!engine) return;
 
-      <div className="h-full">
-        {engineStarted ? (
-          <div className="crosshair" />
-        ) : (
-          <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
-            <div className="flex h-full flex-col items-center justify-center">
-              <Spinner />
-            </div>
+          e.preventDefault();
+          const item = e.dataTransfer.items[0];
+
+          if (item?.kind !== "file") return;
+
+          const file = item.getAsFile();
+          if (!file) return;
+
+          const isVRM = file.name.endsWith(".vrm");
+          if (!isVRM) return;
+
+          // Set avatar
+          const url = URL.createObjectURL(file);
+          setAvatar(url);
+        }}
+      >
+        {engineStarted && (
+          <div className="absolute inset-x-0 top-0 z-10 mx-auto mt-4 w-96">
+            <UserButton />
           </div>
         )}
 
-        <div
-          ref={containerRef}
-          className="relative h-full w-full overflow-hidden"
-        >
-          <canvas
-            ref={canvasRef}
-            className={`h-full w-full transition ${loadedClass}`}
-          />
-        </div>
-      </div>
+        <div className="h-full">
+          {engineStarted ? (
+            <div className="crosshair" />
+          ) : (
+            <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+              <div className="flex h-full flex-col items-center justify-center">
+                <Spinner />
+              </div>
+            </div>
+          )}
 
-      {engineStarted && (
-        <div className="absolute left-0 bottom-0 z-10 m-4">
-          <ChatBox />
+          <div
+            ref={containerRef}
+            className="relative h-full w-full overflow-hidden"
+          >
+            <canvas
+              ref={canvasRef}
+              className={`h-full w-full transition ${loadedClass}`}
+            />
+          </div>
         </div>
-      )}
+
+        {engineStarted && (
+          <div className="absolute left-0 bottom-0 z-10 m-4">
+            <ChatBox />
+          </div>
+        )}
+      </div>
     </>
   );
 }

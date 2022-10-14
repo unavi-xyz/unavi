@@ -4,15 +4,12 @@ import { useLens } from "../../client/lens/hooks/useLens";
 import LoginButton from "../../home/layouts/NavbarLayout/LoginButton";
 import Button from "../../ui/Button";
 import ButtonFileInput from "../../ui/ButtonFileInput";
-import TextField from "../../ui/TextField";
-import { useUserId } from "../hooks/useUserId";
 import { useAppStore } from "../store";
 import UserIdentityButton from "./UserIdentityButton";
 
 export default function UserPage() {
   const displayName = useAppStore((state) => state.displayName);
   const customAvatar = useAppStore((state) => state.customAvatar);
-  const userId = useUserId();
   const { handle } = useLens();
 
   return (
@@ -33,17 +30,17 @@ export default function UserPage() {
 
       {!handle && (
         <div className="space-y-1">
-          <div className="text-center text-lg font-bold">Name</div>
-
-          <TextField
-            outline
-            value={displayName ?? `Guest ${userId?.slice(0, 4)}`}
+          <input
+            type="text"
+            placeholder="Enter your name..."
+            value={displayName ?? ""}
             onChange={(e) => {
               useAppStore.setState({
                 displayName: e.target.value,
                 didChangeName: true,
               });
             }}
+            className="h-full w-full rounded-xl px-3 py-2 text-center outline-none ring-1 ring-outline/80 hover:bg-surfaceVariant/70 focus:bg-surfaceVariant"
           />
         </div>
       )}

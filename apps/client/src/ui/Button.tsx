@@ -95,7 +95,7 @@ export default function Button({
     return (
       <label
         htmlFor={labelId}
-        className={`relative flex cursor-pointer items-center justify-center text-center font-bold transition ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass} ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
+        className={`relative flex cursor-pointer select-none items-center justify-center text-center font-bold transition ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass} ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
       >
         <div className={`w-full ${loadingClass}`}>{children}</div>
         {loading && (
@@ -109,7 +109,7 @@ export default function Button({
 
   return (
     <button
-      className={`relative flex items-center justify-center font-bold transition ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass} ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
+      className={`relative flex select-none items-center justify-center font-bold transition ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass} ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
       {...rest}
     >
       <div className={`w-full ${loadingClass}`}>{children}</div>

@@ -53,7 +53,17 @@ export class PhysicsThread {
       }
 
       case "player_falling": {
+        // Publish to network
         this.#engine.networkingInterface.setFallState(data);
+
+        // Send to render thread
+        this.#engine.renderThread.postMessage({
+          subject: "set_player_falling_state",
+          data: {
+            playerId: "user",
+            isFalling: data,
+          },
+        });
       }
     }
   };

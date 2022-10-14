@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
 import { useLens } from "../../client/lens/hooks/useLens";
+import { LocalStorageKey } from "../constants";
 import { useAppStore } from "../store";
-import { LocalStorageKey } from "./constants";
 
 export function useLoadUser() {
   const engine = useAppStore((state) => state.engine);

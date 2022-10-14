@@ -8,6 +8,7 @@ import {
   LoopPingPong,
   Mesh,
   MeshStandardMaterial,
+  PerspectiveCamera,
   Quaternion,
   Vector3,
 } from "three";
@@ -19,14 +20,17 @@ import { loadMixamoAnimation } from "./loadMixamoAnimation";
 import { AnimationName } from "./types";
 
 const LERP_FACTOR = 0.000001;
+const CAMERA_OFFSET = new Vector3(0, 0.1, -0.03);
 
-export class OtherPlayer {
+export class PlayerAvatar {
   readonly playerId: string;
   readonly group = new Group();
 
   isFalling = false;
+  #isUser = false;
 
   #vrm: VRM | null = null;
+  #camera?: PerspectiveCamera;
 
   #defaultAvatarPath?: string;
   #avatarAnimationsPath?: string;
@@ -43,6 +47,7 @@ export class OtherPlayer {
   #averageVelocity = new Vector3();
 
   #tempQuat = new Quaternion();
+  #prevPosition = new Vector3();
   #targetPosition = new Vector3();
   #targetRotation = new Quaternion();
 
@@ -52,11 +57,14 @@ export class OtherPlayer {
     playerId: string,
     avatar: string | null,
     defaultAvatarPath?: string,
-    avatarAnimationsPath?: string
+    avatarAnimationsPath?: string,
+    camera?: PerspectiveCamera
   ) {
     this.playerId = playerId;
     this.#defaultAvatarPath = defaultAvatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
+    this.#camera = camera;
+    this.#isUser = Boolean(camera);
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
@@ -100,6 +108,13 @@ export class OtherPlayer {
       this.#mixer = null;
     }
 
+    // Enable first-person view if it's the user
+    if (this.#camera && vrm.firstPerson) {
+      vrm.firstPerson.setup();
+      this.#camera.layers.enable(vrm.firstPerson.firstPersonOnlyLayer);
+      this.#camera.layers.disable(vrm.firstPerson.thirdPersonOnlyLayer);
+    }
+
     // Set VRM model
     this.#vrm = vrm;
 
@@ -108,8 +123,6 @@ export class OtherPlayer {
 
     // Process vrm scene
     vrm.scene.traverse((object) => {
-      object.frustumCulled = false;
-
       if (object instanceof Mesh) {
         object.castShadow = true;
       }
@@ -187,20 +200,36 @@ export class OtherPlayer {
   animate(delta: number) {
     const K = 1 - Math.pow(LERP_FACTOR, delta);
 
-    this.group.position.lerp(this.#targetPosition, K);
-    this.group.quaternion.slerp(this.#targetRotation, K);
+    if (!this.#isUser) {
+      this.group.position.lerp(this.#targetPosition, K);
+      this.group.quaternion.slerp(this.#targetRotation, K);
+    }
+
+    if (this.#camera && this.#vrm) {
+      this.group.quaternion.copy(this.#camera.quaternion);
+    }
 
     // Only rotate on Y axis
     this.group.quaternion.x = 0;
     this.group.quaternion.z = 0;
     this.group.quaternion.normalize();
 
+    // Copy head position to camera
+    if (this.#vrm && this.#camera) {
+      const head = this.#vrm.humanoid.humanBones.head.node;
+      head.position.add(CAMERA_OFFSET);
+      head.getWorldPosition(this.#camera.position);
+      head.position.sub(CAMERA_OFFSET);
+    }
+
     // Calculate velocity relative to player rotation
     this.#velocity
-      .copy(this.#targetPosition)
+      .copy(this.#prevPosition)
       .sub(this.group.position)
       .divideScalar(delta)
       .applyQuaternion(this.#tempQuat.copy(this.group.quaternion).invert());
+
+    this.#prevPosition.copy(this.group.position);
 
     const velocity = this.#averageVelocity.lerp(this.#velocity, K);
 
@@ -216,8 +245,8 @@ export class OtherPlayer {
       ?.setEffectiveWeight(this.#fallWeight);
 
     // Walking
-    const leftVelocity = velocity.x < 0 ? -velocity.x : 0;
-    const rightVelocity = velocity.x > 0 ? velocity.x : 0;
+    const leftVelocity = velocity.x > 0 ? velocity.x : 0;
+    const rightVelocity = velocity.x < 0 ? -velocity.x : 0;
     const forwardVelocity = Math.abs(velocity.z);
     const isBackwards = velocity.z > 0;
 
@@ -234,7 +263,7 @@ export class OtherPlayer {
     );
 
     this.#sprintWeight = clamp(
-      forwardVelocity > 25 && !this.isFalling
+      forwardVelocity > 4 && !this.isFalling
         ? this.#sprintWeight + delta * 6
         : this.#sprintWeight - delta * 4
     );

@@ -3,7 +3,7 @@
   "background_color": "#ffffff",
   "categories": ["social", "games", "entertainment"],
   "description": "An open and decentralized web-based metaverse platform.",
-  "display": "fullscreen",
+  "display": "minimal-ui",
   "icons": [
     {
       "src": "images/Logo.png",

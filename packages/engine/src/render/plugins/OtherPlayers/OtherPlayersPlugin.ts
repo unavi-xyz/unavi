@@ -1,14 +1,14 @@
 import { Group, Scene } from "three";
 
 import { ToRenderMessage } from "../../types";
-import { OtherPlayer } from "./OtherPlayer";
+import { PlayerAvatar } from "./PlayerAvatar";
 
 export class OtherPlayersPlugin {
   #scene: Scene;
   #avatarPath?: string;
   #avatarAnimationsPath?: string;
 
-  #players = new Map<string, OtherPlayer>();
+  #players = new Map<string, PlayerAvatar>();
   #playerGroup = new Group();
 
   constructor(
@@ -60,7 +60,7 @@ export class OtherPlayersPlugin {
   }
 
   addPlayer(playerId: string, avatar: string | null) {
-    const player = new OtherPlayer(
+    const player = new PlayerAvatar(
       playerId,
       avatar,
       this.#avatarPath,

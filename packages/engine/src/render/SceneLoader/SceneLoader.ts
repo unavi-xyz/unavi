@@ -135,10 +135,9 @@ export class SceneLoader {
         // Add entities
         if (data.scene.entities) {
           const sortedEntities = sortEntities(data.scene.entities);
-          sortedEntities.forEach((e) => {
-            this.#map.entities.set(e.id, e);
-            updateEntity(e.id, e, this.#map, this.visuals, this.#postMessage);
-          });
+          sortedEntities.forEach((e) =>
+            addEntity(e, this.#map, this.visuals, this.#postMessage)
+          );
         }
 
         // Add animations

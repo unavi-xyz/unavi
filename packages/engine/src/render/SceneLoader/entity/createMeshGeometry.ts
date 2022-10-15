@@ -32,23 +32,26 @@ export function createMeshGeometry(json: MeshJSON, map: SceneMap) {
   }
 
   switch (json.type) {
-    case "Box":
+    case "Box": {
       return new BoxGeometry(json.width, json.height, json.depth);
+    }
 
-    case "Sphere":
+    case "Sphere": {
       return new SphereGeometry(
         json.radius,
         json.widthSegments,
         json.heightSegments
       );
+    }
 
-    case "Cylinder":
+    case "Cylinder": {
       return new CylinderGeometry(
         json.radius,
         json.radius,
         json.height,
         json.radialSegments
       );
+    }
 
     case "Primitive": {
       const geometry = new BufferGeometry();

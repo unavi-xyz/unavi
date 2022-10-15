@@ -4,6 +4,7 @@ import { useLens } from "../../../client/lens/hooks/useLens";
 import Button from "../../../ui/Button";
 import Dialog from "../../../ui/Dialog";
 import DropdownMenu from "../../../ui/DropdownMenu";
+import { useIsMobile } from "../../../utils/useIsMobile";
 import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
 import ProfileMenu from "./ProfileMenu";
 import SwitchProfilePage from "./SwitchProfilePage";
@@ -13,6 +14,7 @@ export default function ProfileButton() {
   const [openSwitchProfile, setOpenSwitchProfile] = useState(false);
 
   const { handle } = useLens();
+  const isMobile = useIsMobile();
 
   return (
     <>
@@ -24,9 +26,13 @@ export default function ProfileButton() {
       </Dialog>
 
       <div className="relative">
-        <Button rounded="large" fullWidth onClick={() => setOpenMenu(true)}>
+        <Button
+          rounded={isMobile ? "full" : "large"}
+          icon={isMobile}
+          onClick={() => setOpenMenu(true)}
+        >
           <div className="flex items-center justify-center space-x-4">
-            <div>@{handle}</div>
+            {!isMobile && <div>@{handle}</div>}
 
             <div className="h-9 w-9 rounded-full">
               <ViewerProfilePicture circle draggable={false} />

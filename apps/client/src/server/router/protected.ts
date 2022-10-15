@@ -198,13 +198,9 @@ export const protectedRouter = createProtectedRouter()
       name: z.string().max(PROJECT_NAME_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { name } }) {
-      const date = new Date();
-
       // Create project
       const { id } = await prisma.project.create({
         data: {
-          createdAt: date,
-          updatedAt: date,
           owner: address,
           name,
         },
@@ -253,7 +249,6 @@ export const protectedRouter = createProtectedRouter()
           name,
           description,
           editorState: JSON.stringify(editorState),
-          updatedAt: new Date(),
         },
       });
     },

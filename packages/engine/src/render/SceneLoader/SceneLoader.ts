@@ -293,5 +293,9 @@ export class SceneLoader {
     this.#sun.shadow.camera.right = size.x / 2;
     this.#sun.shadow.camera.top = size.z / 2;
     this.#sun.shadow.camera.bottom = -size.z / 2;
+
+    this.#sun.shadow.bias = -0.0005;
+
+    this.#sun.shadow.camera.updateProjectionMatrix();
   }
 }

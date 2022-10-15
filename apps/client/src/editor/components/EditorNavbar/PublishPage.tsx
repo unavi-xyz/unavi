@@ -200,10 +200,10 @@ export default function PublishPage() {
     const contentURI = cdnMetadataURL(id);
 
     // Create lens publication
-    await createPost(contentURI);
+    const success = await createPost(contentURI);
 
     // Redirect to profile
-    router.push(`/user/${handle}`);
+    if (success) router.push(`/user/${handle}`);
 
     setLoading(false);
   }

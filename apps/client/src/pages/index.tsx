@@ -82,7 +82,7 @@ export default function Index() {
           <LandingInfoBlock
             title="Explore"
             subtitle="Discover new experiences"
-            body="Go rock climbing on Ganymede, hit an underground music festival, watch the sunset on Tatooine with a group of friends - who knows what you'll find."
+            body="Go rock climbing on Ganymede, hit an underground music festival, watch the sunset with a group of friends - who knows what you'll find."
             image="/images/Explore.png"
             imageSide="right"
             buttonText="Start Exploring"

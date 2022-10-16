@@ -93,7 +93,7 @@ export default function Create() {
                 </div>
               )
             ) : (
-              <div>You need to be logged in to create a project.</div>
+              <div>You need to be signed in to create a project.</div>
             )}
           </div>
         </div>

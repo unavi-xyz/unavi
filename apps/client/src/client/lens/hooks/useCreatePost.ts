@@ -1,3 +1,4 @@
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useCreatePostTypedDataMutation } from "@wired-labs/lens";
 import { LensHub__factory } from "@wired-labs/lens/contracts";
 import { utils } from "ethers";
@@ -13,9 +14,14 @@ export function useCreatePost(profileId: string) {
   const { signTypedDataAsync } = useSignTypedData();
   const { data: signer } = useSigner();
   const { client } = useLens();
+  const { openConnectModal } = useConnectModal();
 
-  async function createPost(contentURI: string) {
-    if (!signer) throw new Error("No signer");
+  async function createPost(contentURI: string): Promise<boolean> {
+    if (!signer) {
+      if (openConnectModal) openConnectModal();
+      else throw new Error("No signer");
+      return false;
+    }
 
     // Get typed data
     const { data, error } = await createTypedData({
@@ -73,6 +79,8 @@ export function useCreatePost(profileId: string) {
 
     // Wait for indexing
     await pollUntilIndexed(tx.hash, client);
+
+    return true;
   }
 
   return createPost;

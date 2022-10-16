@@ -45,12 +45,12 @@ export default function Card({
         />
       )}
 
-      <div className="absolute top-0 left-0 flex h-full items-end px-3 pb-2 tracking-wide text-white">
+      <div className="absolute flex h-full w-full items-end px-3 pb-2 tracking-wide text-white">
         {text && (
           <div
-            className="overflow-hidden text-xl font-black drop-shadow-dark"
+            className="w-full overflow-hidden text-xl font-black drop-shadow-dark"
             style={{
-              textShadow: "0 0 6px rgba(0, 0, 0, 0.2)",
+              textShadow: "0 0 6px rgba(0, 0, 0, 0.4)",
             }}
           >
             {text}
@@ -60,7 +60,7 @@ export default function Card({
           <div
             className="overflow-hidden text-lg drop-shadow-dark"
             style={{
-              textShadow: "0 0 6px rgba(0, 0, 0, 0.2)",
+              textShadow: "0 0 6px rgba(0, 0, 0, 0.4)",
             }}
           >
             {subtext}

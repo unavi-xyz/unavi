@@ -26,11 +26,11 @@ export default function NavbarTab({ href, text }: Props) {
 
   return (
     <Link href={href} passHref>
-      <div
+      <button
         className={`cursor-pointer rounded-lg px-4 py-1 font-bold transition ${selectedClass}`}
       >
         {text}
-      </div>
+      </button>
     </Link>
   );
 }

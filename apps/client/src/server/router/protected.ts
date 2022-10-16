@@ -198,13 +198,9 @@ export const protectedRouter = createProtectedRouter()
       name: z.string().max(PROJECT_NAME_LENGTH),
     }),
     async resolve({ ctx: { address }, input: { name } }) {
-      const date = new Date();
-
       // Create project
       const { id } = await prisma.project.create({
         data: {
-          createdAt: date,
-          updatedAt: date,
           owner: address,
           name,
         },
@@ -253,7 +249,6 @@ export const protectedRouter = createProtectedRouter()
           name,
           description,
           editorState: JSON.stringify(editorState),
-          updatedAt: new Date(),
         },
       });
     },
@@ -343,5 +338,55 @@ export const protectedRouter = createProtectedRouter()
       const url = await createPublishedMetadataUploadURL(id);
 
       return url;
+    },
+  })
+
+  .mutation("space-view", {
+    input: z.object({
+      spaceId: z.string(),
+    }),
+    async resolve({ input: { spaceId } }) {
+      // Update space view count
+      await prisma.space.upsert({
+        create: { publicationId: spaceId, viewsCount: 1 },
+        where: { publicationId: spaceId },
+        update: {
+          viewsCount: {
+            increment: 1,
+          },
+        },
+      });
+
+      // Create space view event
+      await prisma.spaceViewEvent.create({
+        data: {
+          spaceId,
+        },
+      });
+    },
+  })
+
+  .mutation("avatar-view", {
+    input: z.object({
+      avatarId: z.string(),
+    }),
+    async resolve({ input: { avatarId } }) {
+      // Update avatar view count
+      await prisma.avatar.upsert({
+        create: { publicationId: avatarId, viewsCount: 1 },
+        where: { publicationId: avatarId },
+        update: {
+          viewsCount: {
+            increment: 1,
+          },
+        },
+      });
+
+      // Create avatar view event
+      await prisma.avatarViewEvent.create({
+        data: {
+          avatarId,
+        },
+      });
     },
   });

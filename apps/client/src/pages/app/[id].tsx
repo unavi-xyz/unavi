@@ -2,6 +2,7 @@ import { Entity, GLTFMesh } from "@wired-labs/engine";
 import { NextPageContext } from "next";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useAnalytics } from "../../app/hooks/useAnalytics";
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useLoadUser } from "../../app/hooks/useLoadUser";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
@@ -48,6 +49,7 @@ export default function App({ id, metadata, publication }: Props) {
 
   useLoadUser();
   useAppHotkeys();
+  useAnalytics();
 
   useEffect(() => {
     if (!engine) return;

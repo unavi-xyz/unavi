@@ -76,6 +76,7 @@ export default function ExampleCanvas() {
     return () => {
       engine.destroy();
       window.removeEventListener("resize", updateCanvasSize);
+      if (process.env.NODE_ENV === "development") window.location.reload();
     };
   }, [engine]);
 

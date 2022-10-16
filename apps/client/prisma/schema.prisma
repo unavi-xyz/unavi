@@ -9,10 +9,50 @@ datasource db {
   referentialIntegrity = "prisma"
 }
 
+// Analytics
+model SpaceViewEvent {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  Space   Space  @relation(fields: [spaceId], references: [publicationId])
+  spaceId String
+}
+
+model Space {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  publicationId String @unique
+
+  views      SpaceViewEvent[]
+  viewsCount Int              @default(0)
+}
+
+model AvatarViewEvent {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  Avatar   Avatar @relation(fields: [avatarId], references: [publicationId])
+  avatarId String
+}
+
+model Avatar {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  publicationId String @unique
+
+  views      AvatarViewEvent[]
+  viewsCount Int               @default(0)
+}
+
+// Projects
 model Project {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   owner String
 
@@ -28,7 +68,7 @@ model File {
 
   storageKey String
 
-  projectId String?
+  projectId String
   Project   Project? @relation(fields: [projectId], references: [id])
 }
 

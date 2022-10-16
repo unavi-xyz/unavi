@@ -16,7 +16,7 @@ export default function EntityComponents({ entityId }: Props) {
   const mesh = useSubscribeValue(mesh$);
 
   switch (mesh?.type) {
-    case "Box":
+    case "Box": {
       return (
         <>
           <BoxMeshComponent entityId={entityId} mesh={mesh} />
@@ -24,7 +24,9 @@ export default function EntityComponents({ entityId }: Props) {
           <PhysicsComponent entityId={entityId} />
         </>
       );
-    case "Sphere":
+    }
+
+    case "Sphere": {
       return (
         <>
           <SphereMeshComponent entityId={entityId} mesh={mesh} />
@@ -32,7 +34,9 @@ export default function EntityComponents({ entityId }: Props) {
           <PhysicsComponent entityId={entityId} />
         </>
       );
-    case "Cylinder":
+    }
+
+    case "Cylinder": {
       return (
         <>
           <CylinderMeshComponent entityId={entityId} mesh={mesh} />
@@ -40,18 +44,32 @@ export default function EntityComponents({ entityId }: Props) {
           <PhysicsComponent entityId={entityId} />
         </>
       );
-    case "glTF":
+    }
+
+    case "glTF": {
       return (
         <>
           <GLTFMeshComponent entityId={entityId} mesh={mesh} />
           <PhysicsComponent entityId={entityId} />
         </>
       );
-    default:
+    }
+
+    case "Primitive": {
+      return (
+        <>
+          <MaterialComponent entityId={entityId} />
+          <PhysicsComponent entityId={entityId} />
+        </>
+      );
+    }
+
+    default: {
       return (
         <>
           <PhysicsComponent entityId={entityId} />
         </>
       );
+    }
   }
 }

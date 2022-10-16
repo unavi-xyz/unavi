@@ -1,3 +1,4 @@
+import { Entity, GLTFMesh } from "@wired-labs/engine";
 import { useEffect, useMemo, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -110,7 +111,40 @@ export default function Editor() {
       <MetaTags title="Editor" />
 
       <DndProvider backend={HTML5Backend}>
-        <div className="flex h-full flex-col overflow-hidden">
+        <div
+          className="flex h-full flex-col overflow-hidden"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            const { engine } = useEditorStore.getState();
+            if (!engine) return;
+
+            e.preventDefault();
+
+            const item = e.dataTransfer.items[0];
+            if (item?.kind !== "file") return;
+
+            const file = item.getAsFile();
+            if (!file) return;
+
+            const isGLTF =
+              file.name.endsWith(".gltf") || file.name.endsWith(".glb");
+            if (!isGLTF) return;
+
+            // Create entity
+            const mesh = new GLTFMesh();
+            mesh.name = file.name;
+            mesh.uri = URL.createObjectURL(file);
+
+            const entity = new Entity();
+            entity.mesh = mesh;
+
+            const name = file.name.split(".").slice(0, -1).join(".");
+            entity.name = name;
+
+            // Add entity to scene
+            engine.scene.addEntity(entity);
+          }}
+        >
           <div className="z-10 h-14 w-full border-b">
             <EditorNavbar />
           </div>

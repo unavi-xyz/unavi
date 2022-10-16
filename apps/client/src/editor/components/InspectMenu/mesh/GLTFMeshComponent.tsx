@@ -25,9 +25,8 @@ export default function GLTFMeshComponent({ entityId, mesh }: Props) {
           const file = e.target.files[0];
           if (!file) return;
 
-          const fileExtension = file.name.split(".").pop();
-          const type =
-            fileExtension === "glb" ? "model/gltf-binary" : "model/gltf+json";
+          const isGlb = file.name.endsWith(".glb");
+          const type = isGlb ? "model/gltf-binary" : "model/gltf+json";
           const blob = new Blob([file], { type });
 
           mesh.name = file.name;

@@ -339,4 +339,54 @@ export const protectedRouter = createProtectedRouter()
 
       return url;
     },
+  })
+
+  .mutation("space-view", {
+    input: z.object({
+      spaceId: z.string(),
+    }),
+    async resolve({ input: { spaceId } }) {
+      // Update space view count
+      await prisma.space.upsert({
+        create: { publicationId: spaceId, viewsCount: 1 },
+        where: { publicationId: spaceId },
+        update: {
+          viewsCount: {
+            increment: 1,
+          },
+        },
+      });
+
+      // Create space view event
+      await prisma.spaceViewEvent.create({
+        data: {
+          spaceId,
+        },
+      });
+    },
+  })
+
+  .mutation("avatar-view", {
+    input: z.object({
+      avatarId: z.string(),
+    }),
+    async resolve({ input: { avatarId } }) {
+      // Update avatar view count
+      await prisma.avatar.upsert({
+        create: { publicationId: avatarId, viewsCount: 1 },
+        where: { publicationId: avatarId },
+        update: {
+          viewsCount: {
+            increment: 1,
+          },
+        },
+      });
+
+      // Create avatar view event
+      await prisma.avatarViewEvent.create({
+        data: {
+          avatarId,
+        },
+      });
+    },
   });

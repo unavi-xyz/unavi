@@ -6,9 +6,9 @@ interface Props {
   children: React.ReactNode;
   title?: string;
   disableBack?: boolean;
-  disableForward?: boolean;
+  disableNext?: boolean;
   onBack?: () => void;
-  onForward?: () => void;
+  onNext?: () => void;
   height?: string;
 }
 
@@ -16,9 +16,9 @@ export default function Carousel({
   children,
   title,
   disableBack,
-  disableForward,
+  disableNext,
   onBack,
-  onForward,
+  onNext,
   height,
 }: Props) {
   return (
@@ -38,12 +38,7 @@ export default function Carousel({
         </div>
 
         <div className="flex items-center justify-center">
-          <Button
-            variant="tonal"
-            icon
-            disabled={disableForward}
-            onClick={onForward}
-          >
+          <Button variant="tonal" icon disabled={disableNext} onClick={onNext}>
             <IoMdArrowRoundForward className="text-lg" />
           </Button>
         </div>

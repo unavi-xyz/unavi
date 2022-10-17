@@ -7,7 +7,6 @@ import {
 } from "@wired-labs/engine";
 
 import { updateEntity } from "../../../actions/UpdateEntityAction";
-import { useEditorStore } from "../../../store";
 import SelectMenu from "../../ui/SelectMenu";
 import ComponentMenu from "../ComponentMenu";
 import MenuRows from "../MenuRows";
@@ -32,12 +31,7 @@ export default function MeshComponent({ entityId, mesh }: Props) {
   return (
     <ComponentMenu
       title="Mesh"
-      onRemove={() => {
-        useEditorStore.setState({ selectedId: null });
-        setTimeout(() => useEditorStore.setState({ selectedId: entityId }));
-
-        updateEntity(entityId, { mesh: null });
-      }}
+      onRemove={() => updateEntity(entityId, { mesh: null })}
     >
       <MenuRows titles={["Type"]}>
         <SelectMenu
@@ -45,9 +39,6 @@ export default function MeshComponent({ entityId, mesh }: Props) {
           options={Object.values(MeshType)}
           onChange={(e) => {
             const type = e.target.value;
-
-            useEditorStore.setState({ selectedId: null });
-            setTimeout(() => useEditorStore.setState({ selectedId: entityId }));
 
             switch (type) {
               case MeshType.Box: {

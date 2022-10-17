@@ -69,9 +69,7 @@ export default function InspectMenu() {
                           key={type}
                           onClick={() => {
                             const mesh = new BoxMesh();
-                            updateEntity(selectedId, {
-                              mesh: mesh.toJSON(),
-                            });
+                            updateEntity(selectedId, { mesh: mesh.toJSON() });
                           }}
                         >
                           Mesh

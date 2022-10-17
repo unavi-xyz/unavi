@@ -268,6 +268,11 @@ export const protectedRouter = createProtectedRouter()
 
       const promises: Promise<any>[] = [];
 
+      // Delete files from database
+      await prisma.file.deleteMany({
+        where: { projectId: id },
+      });
+
       // Delete project from database
       promises.push(
         prisma.project.delete({

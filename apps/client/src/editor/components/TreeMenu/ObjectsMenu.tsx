@@ -17,6 +17,7 @@ enum ObjectName {
   Sphere = "Sphere",
   Cylinder = "Cylinder",
   glTF = "glTF Model",
+  Group = "Group",
 }
 
 export default function ObjectsMenu() {
@@ -49,21 +50,33 @@ function createEntity(name: ObjectName) {
 
   // Add object component
   switch (name) {
-    case ObjectName.Box:
+    case ObjectName.Box: {
       entity.mesh = new BoxMesh();
       entity.collider = new BoxCollider();
       break;
-    case ObjectName.Sphere:
+    }
+
+    case ObjectName.Sphere: {
       entity.mesh = new SphereMesh();
       entity.collider = new SphereCollider();
       break;
-    case ObjectName.Cylinder:
+    }
+
+    case ObjectName.Cylinder: {
       entity.mesh = new CylinderMesh();
       entity.collider = new CylinderCollider();
       break;
-    case ObjectName.glTF:
+    }
+
+    case ObjectName.glTF: {
       entity.mesh = new GLTFMesh();
       break;
+    }
+
+    case ObjectName.Group: {
+      break;
+    }
+
     default:
       throw new Error("Unknown object name");
   }

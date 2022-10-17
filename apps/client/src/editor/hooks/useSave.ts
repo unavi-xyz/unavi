@@ -2,10 +2,13 @@ import { useRouter } from "next/router";
 
 import { trpc } from "../../client/trpc";
 import { useEditorStore } from "../store";
+import { SavedSceneJSON } from "../types";
+import { imageStorageKey, modelStorageKey } from "../utils/fileStorage";
 import { getEditorState } from "../utils/getEditorState";
 
 export function useSave() {
   const router = useRouter();
+  const id = router.query.id as string;
 
   const { mutateAsync: saveProject } = trpc.useMutation("auth.save-project");
   const { mutateAsync: getFileUpload } = trpc.useMutation(
@@ -21,8 +24,6 @@ export function useSave() {
   async function saveImage() {
     const { engine, canvas } = useEditorStore.getState();
     if (!engine || !canvas) throw new Error("No engine");
-
-    const id = router.query.id as string;
 
     const image = canvas.toDataURL("image/jpeg");
     const response = await fetch(image);
@@ -40,13 +41,59 @@ export function useSave() {
     if (!res.ok) throw new Error("Failed to upload image");
   }
 
+  async function uploadFile(
+    uri: string,
+    fileId: string,
+    type: "model" | "image"
+  ) {
+    const uriResponse = await fetch(uri);
+    const buffer = await uriResponse.arrayBuffer();
+    const array = new Uint8Array(buffer);
+
+    const storageKey =
+      type === "model" ? modelStorageKey(fileId) : imageStorageKey(fileId);
+
+    const url = await getFileUpload({ id, fileId: storageKey });
+
+    const response = await fetch(url, {
+      method: "PUT",
+      body: array,
+      headers: {
+        "Content-Type": "application/octet-stream",
+      },
+    });
+
+    if (!response.ok) throw new Error("Failed to upload file");
+  }
+
+  async function uploadImageFile(imageId: string) {
+    const { engine } = useEditorStore.getState();
+    if (!engine) throw new Error("No engine");
+
+    const image = engine.scene.images[imageId];
+    if (!image) throw new Error("No image");
+
+    if (!image.isInternal) {
+      const url = await getFileUpload({ id, fileId: imageStorageKey(imageId) });
+
+      const response = await fetch(url, {
+        method: "PUT",
+        body: image.array,
+        headers: {
+          "Content-Type": image.mimeType,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to upload file");
+    }
+  }
+
   async function save() {
     const { name, description, engine } = useEditorStore.getState();
     if (!engine) throw new Error("No engine");
 
     const promises: Promise<any>[] = [];
 
-    const id = router.query.id as string;
     const editorState = getEditorState();
     const scene = engine.scene.toJSON();
 
@@ -68,9 +115,20 @@ export function useSave() {
       new Promise<void>((resolve, reject) => {
         async function upload() {
           const url = await getSceneUpload({ id });
+
+          const savedScene: SavedSceneJSON = {
+            ...scene,
+            images: scene.images.map((image) => ({
+              id: image.id,
+              mimeType: image.mimeType,
+            })),
+          };
+
+          const body = JSON.stringify(savedScene);
+
           const res = await fetch(url, {
             method: "PUT",
-            body: JSON.stringify(scene),
+            body,
             headers: {
               "Content-Type": "application/json",
             },
@@ -84,38 +142,23 @@ export function useSave() {
       })
     );
 
-    // Get all files
-    const uris: { fileId: string; uri: string }[] = [];
+    // Upload files to S3
     scene.entities.forEach((entity) => {
+      // glTF models
       if (entity.mesh?.type === "glTF") {
         const uri = entity.mesh.uri;
+        if (uri) promises.push(uploadFile(uri, entity.id, "model"));
+      }
 
-        if (uri) {
-          uris.push({
-            fileId: entity.id,
-            uri,
-          });
-        }
+      // Images
+      if (entity.materialId) {
+        const material = engine.scene.materials[entity.materialId];
+        if (!material) throw new Error("No material");
+
+        const colorTextureId = material.colorTexture?.imageId;
+        if (colorTextureId) promises.push(uploadImageFile(colorTextureId));
       }
     });
-
-    // Upload files to S3
-    const fileUploads = uris.map(async ({ fileId, uri }) => {
-      const uriResponse = await fetch(uri);
-      const buffer = await uriResponse.arrayBuffer();
-      const array = new Uint8Array(buffer);
-      const url = await getFileUpload({ id, fileId });
-      const response = await fetch(url, {
-        method: "PUT",
-        body: array,
-        headers: {
-          "Content-Type": "application/octet-stream",
-        },
-      });
-      if (!response.ok) throw new Error("Failed to upload file");
-    });
-
-    promises.push(...fileUploads);
 
     await Promise.all(promises);
   }

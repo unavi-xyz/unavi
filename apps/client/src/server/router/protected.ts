@@ -166,7 +166,7 @@ export const protectedRouter = createProtectedRouter()
   .mutation("project-file-upload", {
     input: z.object({
       id: z.string().length(UUID_LENGTH),
-      fileId: z.string().length(NANOID_LENGTH),
+      fileId: z.string(),
     }),
     async resolve({ ctx: { address }, input: { id, fileId } }) {
       // Verify user owns the project
@@ -350,11 +350,7 @@ export const protectedRouter = createProtectedRouter()
       await prisma.space.upsert({
         create: { publicationId: spaceId, viewsCount: 1 },
         where: { publicationId: spaceId },
-        update: {
-          viewsCount: {
-            increment: 1,
-          },
-        },
+        update: { viewsCount: { increment: 1 } },
       });
 
       // Create space view event
@@ -375,11 +371,7 @@ export const protectedRouter = createProtectedRouter()
       await prisma.avatar.upsert({
         create: { publicationId: avatarId, viewsCount: 1 },
         where: { publicationId: avatarId },
-        update: {
-          viewsCount: {
-            increment: 1,
-          },
-        },
+        update: { viewsCount: { increment: 1 } },
       });
 
       // Create avatar view event

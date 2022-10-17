@@ -149,7 +149,7 @@ export class MainScene {
     return this.#scene.entities;
   }
 
-  set entities(entities: { [id: string]: Entity }) {
+  set entities(entities: typeof Scene.prototype.entities) {
     this.#scene.entities = entities;
   }
 
@@ -157,8 +157,16 @@ export class MainScene {
     return this.#scene.materials;
   }
 
-  set materials(materials: { [id: string]: Material }) {
+  set materials(materials: typeof Scene.prototype.materials) {
     this.#scene.materials = materials;
+  }
+
+  get images() {
+    return this.#scene.images;
+  }
+
+  set images(images: typeof Scene.prototype.images) {
+    this.#scene.images = images;
   }
 
   addEntity(entity: Entity) {

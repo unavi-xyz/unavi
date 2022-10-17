@@ -6,6 +6,11 @@ import { MdClose } from "react-icons/md";
 
 import { trpc } from "../../../client/trpc";
 import { useEditorStore } from "../../../editor/store";
+import { SavedSceneJSON } from "../../../editor/types";
+import {
+  imageStorageKey,
+  modelStorageKey,
+} from "../../../editor/utils/fileStorage";
 import MetaTags from "../../../home/MetaTags";
 import Spinner from "../../../ui/Spinner";
 
@@ -81,25 +86,55 @@ export default function Preview() {
       if (!engine || !sceneURL || !fileURLs) return;
 
       const sceneResponse = await fetch(sceneURL);
-      const scene: SceneJSON = await sceneResponse.json();
+      const savedScene: SavedSceneJSON = await sceneResponse.json();
 
-      // Load files
-      const filePromises = scene.entities.map(async (entity) => {
-        if (entity.mesh?.type !== "glTF") return;
+      const scene: SceneJSON = {
+        accessors: savedScene.accessors,
+        animations: savedScene.animations,
+        entities: savedScene.entities,
+        materials: savedScene.materials,
+        images: [],
+      };
 
-        if (entity.mesh.uri) {
-          const file = fileURLs.find((f) => f.id === entity.id);
+      // Load glTF models
+      const modelPromises = savedScene.entities.map(async (entity) => {
+        if (entity.mesh?.type === "glTF" && entity.mesh.uri) {
+          const file = fileURLs.find(
+            (f) => f.id === modelStorageKey(entity.id)
+          );
           if (!file) throw new Error("File not found");
 
-          const fileResponse = await fetch(file.uri);
-          const fileBlob = await fileResponse.blob();
-          const url = URL.createObjectURL(fileBlob);
+          const response = await fetch(file.uri);
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
 
           entity.mesh.uri = url;
         }
       });
 
-      await Promise.all(filePromises);
+      // Load images
+      const imagePromises = savedScene.images.map(async (image) => {
+        const file = fileURLs.find((f) => f.id === imageStorageKey(image.id));
+        if (!file) throw new Error("File not found");
+
+        const response = await fetch(file.uri);
+        const buffer = await response.arrayBuffer();
+        const array = new Uint8Array(buffer);
+
+        const blob = new Blob([array], { type: image.mimeType });
+        const bitmap = await createImageBitmap(blob);
+
+        scene.images.push({
+          id: image.id,
+          isInternal: false,
+          mimeType: image.mimeType,
+          array,
+          bitmap,
+        });
+      });
+
+      await Promise.all(modelPromises);
+      await Promise.all(imagePromises);
 
       // Load scene
       await engine.scene.loadJSON(scene);

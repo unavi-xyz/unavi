@@ -48,7 +48,6 @@ export default function UserPage() {
       <div className="space-y-1">
         <ButtonFileInput
           accept=".vrm"
-          displayText={customAvatar ? "Change Avatar" : "Upload Avatar"}
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (!file) return;
@@ -61,7 +60,9 @@ export default function UserPage() {
               didChangeAvatar: true,
             });
           }}
-        />
+        >
+          {customAvatar ? "Change Avatar" : "Upload Avatar"}
+        </ButtonFileInput>
 
         {customAvatar && (
           <Button

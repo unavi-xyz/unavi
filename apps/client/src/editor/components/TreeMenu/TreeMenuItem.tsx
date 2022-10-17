@@ -110,7 +110,7 @@ export default function TreeMenuItem({ id }: Props) {
           e.stopPropagation();
           useEditorStore.setState({ selectedId: id });
         }}
-        className={`flex h-6 items-center rounded px-2 font-bold ${bgClass} ${opacityClass}`}
+        className={`flex h-6 items-center rounded-md px-2 font-bold ${bgClass} ${opacityClass}`}
       >
         <div
           onClick={() => setOpen((prev) => !prev)}
@@ -134,7 +134,7 @@ export default function TreeMenuItem({ id }: Props) {
       {!hasChildren && (
         <div
           ref={dropBelow}
-          className={`-mt-1 h-1 w-full rounded ${highlightBelowClass}`}
+          className={`-mt-1 h-1 w-full rounded-md ${highlightBelowClass}`}
         />
       )}
     </div>

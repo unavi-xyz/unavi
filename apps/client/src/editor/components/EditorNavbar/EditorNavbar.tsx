@@ -68,7 +68,7 @@ export default function EditorNavbar() {
       </Dialog>
 
       <div className="flex h-full items-center justify-between px-4 py-2">
-        <div className="flex w-full items-center space-x-4 text-lg">
+        <div className="flex w-full items-center space-x-2 text-lg">
           <div
             onClick={handleBack}
             className="cursor-pointer p-1 text-outline transition hover:text-inherit"
@@ -76,7 +76,12 @@ export default function EditorNavbar() {
             <MdArrowBackIosNew />
           </div>
 
-          <div>{name}</div>
+          <input
+            type="text"
+            value={name ?? ""}
+            onChange={(e) => useEditorStore.setState({ name: e.target.value })}
+            className="rounded-lg py-0.5 pl-3 transition hover:bg-neutral-100 hover:shadow-inner"
+          />
         </div>
 
         <div className="flex h-full w-full items-center justify-center space-x-2">

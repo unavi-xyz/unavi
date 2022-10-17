@@ -37,7 +37,7 @@
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.2.0",
-    "react-icons": "^4.4.0",
+    "react-icons": "^4.6.0",
     "react-query": "~3.39.2",
     "react-split": "^2.0.14",
     "rxjs": "^7.5.7",

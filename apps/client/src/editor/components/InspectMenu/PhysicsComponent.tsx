@@ -24,13 +24,18 @@ export default function PhysicsComponent({ entityId }: Props) {
   const collider$ = useEntity(entityId, (entity) => entity.collider$);
   const collider = useSubscribeValue(collider$);
 
+  if (!collider) return null;
+
   return (
-    <ComponentMenu title="Physics">
+    <ComponentMenu
+      title="Physics"
+      onRemove={() => updateEntity(entityId, { collider: null })}
+    >
       <>
         <MenuRows titles={["Collider"]}>
           <SelectMenu
-            value={collider?.type ? capitalize(collider.type) : "None"}
-            options={["None", "Box", "Sphere", "Cylinder"]}
+            value={capitalize(collider.type)}
+            options={["Box", "Sphere", "Cylinder"]}
             onChange={(e) => {
               const value = e.target.value === "None" ? null : e.target.value;
 
@@ -54,9 +59,6 @@ export default function PhysicsComponent({ entityId }: Props) {
                   });
                   break;
                 }
-
-                default:
-                  updateEntity(entityId, { collider: null });
               }
             }}
           />

@@ -25,7 +25,7 @@ export default function TransformComponent({ entityId }: Props) {
   const euler = rotation ? quaternionToEuler(rotation) : null;
 
   return (
-    <ComponentMenu>
+    <ComponentMenu removeable={false}>
       <MenuRows titles={["Position", "Rotation", "Scale"]}>
         <div className="grid grid-cols-3 gap-3">
           {position?.map((value, i) => {

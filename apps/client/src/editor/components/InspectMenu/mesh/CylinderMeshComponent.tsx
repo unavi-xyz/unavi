@@ -3,7 +3,7 @@ import { CylinderMesh } from "@wired-labs/engine";
 import { updateEntity } from "../../../actions/UpdateEntityAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import NumberInput from "../../ui/NumberInput";
-import ComponentMenu from "../ComponentMenu";
+import MaterialComponent from "../MaterialComponent";
 import MenuRows from "../MenuRows";
 
 interface Props {
@@ -17,7 +17,7 @@ export default function CylinderMeshComponent({ entityId, mesh }: Props) {
   const radialSegments = useSubscribeValue(mesh.radialSegments$);
 
   return (
-    <ComponentMenu title="Geometry">
+    <>
       <MenuRows titles={["Radius", "Height", "Radial Segments"]}>
         {[radius, height, radialSegments].map((value, i) => {
           const property =
@@ -46,6 +46,8 @@ export default function CylinderMeshComponent({ entityId, mesh }: Props) {
           );
         })}
       </MenuRows>
-    </ComponentMenu>
+
+      <MaterialComponent entityId={entityId} />
+    </>
   );
 }

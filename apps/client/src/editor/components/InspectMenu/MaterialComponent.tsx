@@ -17,7 +17,6 @@ import { useEditorStore } from "../../store";
 import ColorInput from "../ui/ColorInput";
 import NumberInput from "../ui/NumberInput";
 import TextInput from "../ui/TextInput";
-import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./MenuRows";
 
 interface Props {
@@ -51,7 +50,11 @@ export default function MaterialComponent({ entityId }: Props) {
   }
 
   return (
-    <ComponentMenu title="Material">
+    <>
+      <div className="pt-10 text-xl font-bold">
+        <div>Material</div>
+      </div>
+
       <div className="flex h-7 w-full justify-between space-x-4">
         <button
           onClick={() => setOpen(true)}
@@ -256,7 +259,7 @@ export default function MaterialComponent({ entityId }: Props) {
           </div>
         </MenuRows>
       )}
-    </ComponentMenu>
+    </>
   );
 }
 

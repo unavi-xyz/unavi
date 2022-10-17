@@ -120,7 +120,7 @@ export default function TreeMenuItem({ id }: Props) {
             (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
         </div>
 
-        <div>{name || id.slice(0, 8)}</div>
+        <div>{name}</div>
       </div>
 
       {open && hasChildren && (

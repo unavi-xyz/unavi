@@ -36,8 +36,15 @@ export default function InspectMenu() {
 
   return (
     <div className="pr-2" key={selectedId}>
-      <div className="flex justify-center pt-4 pb-2 text-2xl font-bold">
-        {name || selectedId.slice(0, 8)}
+      <div className="flex w-full items-center justify-center pt-4">
+        <input
+          type="text"
+          value={name ?? ""}
+          onChange={(e) => {
+            updateEntity(selectedId, { name: e.target.value });
+          }}
+          className="rounded-lg py-0.5 text-center text-2xl font-bold transition hover:bg-neutral-100 hover:shadow-inner"
+        />
       </div>
 
       <div className="space-y-4">

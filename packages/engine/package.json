@@ -13,7 +13,7 @@
     "@gltf-transform/core": "2.4.4",
     "@gltf-transform/extensions": "2.4.4",
     "@gltf-transform/functions": "^2.4.4",
-    "@pixiv/three-vrm": "^1.0.3",
+    "@pixiv/three-vrm": "^1.0.4",
     "@types/draco3d": "^1.4.1",
     "@wired-labs/lens": "*",
     "mediasoup-client": "^3.6.55",

@@ -55,7 +55,8 @@ export function createColliderVisual(
         new CylinderGeometry(
           entity.collider.radius,
           entity.collider.radius,
-          entity.collider.height
+          entity.collider.height,
+          32
         ),
         wireframeMaterial
       );

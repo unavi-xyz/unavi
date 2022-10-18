@@ -227,7 +227,8 @@ export const protectedRouter = createProtectedRouter()
       description: z.string().max(PROJECT_DESCRIPTION_LENGTH).optional(),
       editorState: z
         .object({
-          colliders: z.boolean(),
+          visuals: z.boolean(),
+          tool: z.string(),
         })
         .optional(),
     }),

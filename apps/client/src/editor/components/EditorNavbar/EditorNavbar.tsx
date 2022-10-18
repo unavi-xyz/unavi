@@ -18,7 +18,7 @@ export default function EditorNavbar() {
   const router = useRouter();
   const id = router.query.id;
 
-  const colliders = useEditorStore((state) => state.colliders);
+  const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
@@ -26,13 +26,13 @@ export default function EditorNavbar() {
   const { save, saveImage } = useSave();
 
   function handleToggleColliders() {
-    useEditorStore.setState({ colliders: !colliders });
+    useEditorStore.setState({ visuals: !visuals });
 
     const { engine } = useEditorStore.getState();
     engine?.renderThread.postMessage({
       subject: "show_visuals",
       data: {
-        visible: !colliders,
+        visible: !visuals,
       },
     });
   }
@@ -99,10 +99,10 @@ export default function EditorNavbar() {
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <div className="aspect-square h-full">
             <Tooltip
-              text={`${colliders ? "Hide" : "Show"} Colliders`}
+              text={`${visuals ? "Show" : "Hide"} Visuals`}
               placement="bottom"
             >
-              <IconButton selected={colliders} onClick={handleToggleColliders}>
+              <IconButton selected={visuals} onClick={handleToggleColliders}>
                 <HiCubeTransparent />
               </IconButton>
             </Tooltip>

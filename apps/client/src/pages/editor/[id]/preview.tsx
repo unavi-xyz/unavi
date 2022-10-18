@@ -26,6 +26,14 @@ export default function Preview() {
   const router = useRouter();
   const id = router.query.id as string;
 
+  const { data: project } = trpc.useQuery(["auth.project", { id }], {
+    enabled: id !== undefined,
+    cacheTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  });
+
   const { data: sceneURL } = trpc.useQuery(["auth.project-scene", { id }], {
     enabled: id !== undefined,
     cacheTime: 0,
@@ -41,6 +49,18 @@ export default function Preview() {
     refetchOnReconnect: false,
     refetchOnMount: false,
   });
+
+  useEffect(() => {
+    if (!engine || !project?.editorState) return;
+
+    const editorState = JSON.parse(project.editorState);
+    if (!editorState) return;
+
+    engine.renderThread.postMessage({
+      subject: "show_visuals",
+      data: { visible: editorState.visuals },
+    });
+  }, [engine, project]);
 
   useEffect(() => {
     if (createdEngine.current) return;
@@ -66,11 +86,11 @@ export default function Preview() {
       engine.setAvatar(null);
 
       // Set collider visibility
-      const { colliders } = useEditorStore.getState();
+      const { visuals } = useEditorStore.getState();
       engine.renderThread.postMessage({
         subject: "show_visuals",
         data: {
-          visible: colliders,
+          visible: visuals,
         },
       });
 

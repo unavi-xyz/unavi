@@ -52,10 +52,10 @@ export function useLoad() {
       const editorState = JSON.parse(project.editorState);
       useEditorStore.setState(editorState);
 
-      const colliders = useEditorStore.getState().colliders;
+      const visuals = useEditorStore.getState().visuals;
       engine.renderThread.postMessage({
         subject: "show_visuals",
-        data: { visible: colliders },
+        data: { visible: visuals },
       });
     }
   }, [engine, project]);

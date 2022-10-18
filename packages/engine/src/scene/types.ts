@@ -93,7 +93,7 @@ export type AnimationJSON = {
 };
 
 export interface SceneJSON {
-  spawn: Triplet;
+  spawn: Triplet | null;
 
   entities: EntityJSON[];
   materials: MaterialJSON[];

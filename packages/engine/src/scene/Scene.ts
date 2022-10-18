@@ -23,13 +23,13 @@ export class Scene {
   images$ = new BehaviorSubject<{ [id: string]: Image }>({});
   animations$ = new BehaviorSubject<{ [id: string]: Animation }>({});
 
-  spawn$ = new BehaviorSubject<Triplet>([0, 0, 0]);
+  spawn$ = new BehaviorSubject<Triplet | null>(null);
 
   get spawn() {
     return this.spawn$.value;
   }
 
-  set spawn(spawn: Triplet) {
+  set spawn(spawn: Triplet | null) {
     this.spawn$.next(spawn);
   }
 

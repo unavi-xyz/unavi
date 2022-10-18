@@ -55,11 +55,13 @@ export class GLTFExporter {
     if (renderData) this.#renderData = renderData;
 
     // Parse spawn
-    const spawn = this.#extensions.spawnPoint.createSpawnPoint();
-    const spawnNode = this.#doc.createNode("Spawn");
-    spawnNode.setTranslation(this.#scene.spawn);
-    spawnNode.setExtension(spawn.extensionName, spawn);
-    this.#gltfScene.addChild(spawnNode);
+    if (this.#scene.spawn) {
+      const spawn = this.#extensions.spawnPoint.createSpawnPoint();
+      const spawnNode = this.#doc.createNode("Spawn");
+      spawnNode.setTranslation(this.#scene.spawn);
+      spawnNode.setExtension(spawn.extensionName, spawn);
+      this.#gltfScene.addChild(spawnNode);
+    }
 
     // Parse accessors
     Object.values(this.#scene.accessors).forEach((accessor) =>

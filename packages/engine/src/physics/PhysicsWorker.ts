@@ -139,6 +139,7 @@ export class PhysicsWorker {
         // Save spawn
         if (data.scene.spawn) {
           this.#spawn = data.scene.spawn;
+          this.#spawn[1] += PLAYER_HEIGHT / 2;
 
           // Set player position
           if (this.#playerBody) {

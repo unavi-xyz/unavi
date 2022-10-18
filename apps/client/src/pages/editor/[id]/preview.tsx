@@ -89,6 +89,7 @@ export default function Preview() {
       const savedScene: SavedSceneJSON = await sceneResponse.json();
 
       const scene: SceneJSON = {
+        spawn: savedScene.spawn,
         accessors: savedScene.accessors,
         animations: savedScene.animations,
         entities: savedScene.entities,
@@ -161,7 +162,6 @@ export default function Preview() {
         engine: null,
         selectedId: null,
       });
-      if (process.env.NODE_ENV === "development") window.location.reload();
     };
   }, [engine]);
 

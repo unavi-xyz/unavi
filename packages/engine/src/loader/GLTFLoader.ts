@@ -19,6 +19,7 @@ import { nanoid } from "nanoid";
 import { extensions } from "../gltf/constants";
 import { Collider } from "../gltf/extensions/Collider/Collider";
 import { ColliderExtension } from "../gltf/extensions/Collider/ColliderExtension";
+import { SpawnPointExtension } from "../gltf/extensions/SpawnPoint/SpawnPointExtension";
 import {
   AnimationChannel,
   AnimationSampler,
@@ -34,15 +35,14 @@ import {
 import { Accessor } from "../scene/Accessor";
 import { Animation } from "../scene/Animation";
 import { Image } from "../scene/Image";
+import { Triplet } from "../types";
 
 /*
  * Loads a GLTF model into the engine's internal scene format.
  */
 export class GLTFLoader {
   #scene = new Scene();
-
   #io = new WebIO().registerExtensions(extensions);
-
   #root: Root | null = null;
 
   #map = {
@@ -54,6 +54,8 @@ export class GLTFLoader {
   };
 
   #pending: Promise<void>[] = [];
+
+  #spawn: Triplet | null = null;
 
   async load(uri: string): Promise<Scene> {
     const res = await fetch(uri);
@@ -76,12 +78,14 @@ export class GLTFLoader {
         await readJSON();
         break;
       }
+
       case "model/gltf-binary": {
         await readBinary();
         break;
       }
+
       default: {
-        // If no mime type is provided, try to read as json first, then binary
+        // If no mime type is provided, try to read as json first, then binary if it fails
         try {
           await readJSON();
         } catch (e) {
@@ -98,6 +102,8 @@ export class GLTFLoader {
     this.#loadScene(scene);
 
     await Promise.all(this.#pending);
+
+    if (this.#spawn) this.#scene.spawn = this.#spawn;
 
     return this.#scene;
   }
@@ -273,6 +279,10 @@ export class GLTFLoader {
         }
       }
     }
+
+    // Load spawn
+    const spawn = node.getExtension(SpawnPointExtension.EXTENSION_NAME);
+    if (spawn) this.#spawn = node.getTranslation();
 
     // Load children
     node.listChildren().forEach((child) => {

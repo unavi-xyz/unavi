@@ -69,10 +69,7 @@ export function useLoad() {
       const savedScene: SavedSceneJSON = await sceneResponse.json();
 
       const scene: SceneJSON = {
-        accessors: savedScene.accessors,
-        animations: savedScene.animations,
-        entities: savedScene.entities,
-        materials: savedScene.materials,
+        ...savedScene,
         images: [],
       };
 

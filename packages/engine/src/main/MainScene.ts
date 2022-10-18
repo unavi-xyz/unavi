@@ -115,6 +115,27 @@ export class MainScene {
         });
       });
     });
+
+    // Handle spawn changes
+    this.#scene.spawn$.subscribe((spawn) => {
+      this.#toRenderThread({
+        subject: "load_json",
+        data: {
+          scene: {
+            spawn,
+          },
+        },
+      });
+
+      this.#toPhysicsThread({
+        subject: "load_json",
+        data: {
+          scene: {
+            spawn,
+          },
+        },
+      });
+    });
   }
 
   onmessage = (event: MessageEvent<FromRenderMessage>) => {
@@ -136,6 +157,18 @@ export class MainScene {
       }
     }
   };
+
+  get spawn$() {
+    return this.#scene.spawn$;
+  }
+
+  get spawn() {
+    return this.#scene.spawn;
+  }
+
+  set spawn(spawn: typeof Scene.prototype.spawn) {
+    this.#scene.spawn = spawn;
+  }
 
   get entities$() {
     return this.#scene.entities$;
@@ -248,6 +281,7 @@ export class MainScene {
 
     // Only send entities to physics thread
     const strippedScene: Partial<SceneJSON> = {
+      spawn: json.spawn,
       entities: json.entities,
     };
 
@@ -290,6 +324,8 @@ export class MainScene {
   }
 
   clear() {
+    this.spawn = [0, 0, 0];
+
     // Remove all entities
     Object.values(this.#scene.entities).forEach((entity) => {
       if (entity.parentId === "root") this.removeEntity(entity.id);

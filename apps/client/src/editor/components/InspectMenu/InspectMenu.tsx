@@ -9,6 +9,7 @@ import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import MeshComponent from "./mesh/MeshComponent";
 import PhysicsComponent from "./PhysicsComponent";
+import SceneComponent from "./SceneComponent";
 import TransformComponent from "./TransformComponent";
 
 enum ComponentType {
@@ -26,7 +27,16 @@ export default function InspectMenu() {
 
   const [open, setOpen] = useState(false);
 
-  if (!selectedId) return null;
+  if (!selectedId)
+    return (
+      <div className="pr-2">
+        <div className="mt-0.5 w-full pt-4 text-center text-2xl font-bold">
+          Scene
+        </div>
+
+        <SceneComponent />
+      </div>
+    );
 
   const otherComponents = Object.values(ComponentType).filter((type) => {
     if (mesh && type === ComponentType.Mesh) return false;
@@ -35,7 +45,7 @@ export default function InspectMenu() {
   });
 
   return (
-    <div className="pr-2" key={selectedId}>
+    <div className="pr-2">
       <div className="flex w-full items-center justify-center pt-4">
         <input
           type="text"

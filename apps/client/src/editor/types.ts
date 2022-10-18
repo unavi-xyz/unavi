@@ -1,4 +1,4 @@
-import { SceneJSON } from "@wired-labs/engine";
+import { SceneJSON, Triplet } from "@wired-labs/engine";
 
 export type Tool = "translate" | "rotate" | "scale";
 
@@ -12,6 +12,7 @@ export type SavedImageJSON = {
 };
 
 export type SavedSceneJSON = {
+  spawn: Triplet;
   accessors: SceneJSON["accessors"];
   animations: SceneJSON["animations"];
   entities: SceneJSON["entities"];

@@ -5,9 +5,11 @@ import {
   Box3,
   BufferAttribute,
   BufferGeometry,
+  CylinderGeometry,
   DirectionalLight,
   Group,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
   Vector3,
@@ -38,6 +40,10 @@ export class SceneLoader {
   mixer = new AnimationMixer(this.root);
 
   #sun = new DirectionalLight(0xfff0db, 0.98);
+  #spawn = new Mesh(
+    new CylinderGeometry(0.5, 0.5, 1.6, 8),
+    new MeshBasicMaterial({ wireframe: true })
+  );
 
   #map: SceneMap = {
     accessors: new Map<string, AccessorJSON>(),
@@ -60,6 +66,7 @@ export class SceneLoader {
     this.#map.objects.set("root", this.contents);
 
     this.visuals.visible = false;
+    this.visuals.add(this.#spawn);
 
     this.#sun.castShadow = true;
     this.#sun.position.set(10, 50, 30);
@@ -118,6 +125,12 @@ export class SceneLoader {
       }
 
       case "load_json": {
+        // Set spawn
+        if (data.scene.spawn) {
+          this.#spawn.position.fromArray(data.scene.spawn);
+          this.#spawn.position.y += 0.8;
+        }
+
         // Add accessors
         if (data.scene.accessors)
           data.scene.accessors.forEach((a) => this.#map.accessors.set(a.id, a));

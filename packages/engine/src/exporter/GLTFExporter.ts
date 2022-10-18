@@ -10,6 +10,7 @@ import { dedup, prune } from "@gltf-transform/functions";
 
 import { extensions } from "../gltf/constants";
 import { ColliderExtension } from "../gltf/extensions/Collider/ColliderExtension";
+import { SpawnPointExtension } from "../gltf/extensions/SpawnPoint/SpawnPointExtension";
 import { RenderExport } from "../render/types";
 import {
   Accessor,
@@ -29,6 +30,7 @@ export class GLTFExporter {
   #doc = new Document();
   #extensions = {
     collider: this.#doc.createExtension(ColliderExtension),
+    spawnPoint: this.#doc.createExtension(SpawnPointExtension),
   };
 
   #scene = new Scene();
@@ -51,6 +53,13 @@ export class GLTFExporter {
     this.#scene.loadJSON(json);
 
     if (renderData) this.#renderData = renderData;
+
+    // Parse spawn
+    const spawn = this.#extensions.spawnPoint.createSpawnPoint();
+    const spawnNode = this.#doc.createNode("Spawn");
+    spawnNode.setTranslation(this.#scene.spawn);
+    spawnNode.setExtension(spawn.extensionName, spawn);
+    this.#gltfScene.addChild(spawnNode);
 
     // Parse accessors
     Object.values(this.#scene.accessors).forEach((accessor) =>

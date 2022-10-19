@@ -118,6 +118,7 @@ export function useSave() {
 
           const savedScene: SavedSceneJSON = {
             ...scene,
+            spawn: scene.spawn ?? [0, 0, 0],
             images: scene.images.map((image) => ({
               id: image.id,
               mimeType: image.mimeType,

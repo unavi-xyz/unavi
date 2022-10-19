@@ -1,5 +1,6 @@
 import { BehaviorSubject } from "rxjs";
 
+import { Triplet } from "../types";
 import { Accessor } from "./Accessor";
 import { Animation } from "./Animation";
 import { Entity } from "./Entity";
@@ -21,6 +22,16 @@ export class Scene {
   accessors$ = new BehaviorSubject<{ [id: string]: Accessor }>({});
   images$ = new BehaviorSubject<{ [id: string]: Image }>({});
   animations$ = new BehaviorSubject<{ [id: string]: Animation }>({});
+
+  spawn$ = new BehaviorSubject<Triplet | null>(null);
+
+  get spawn() {
+    return this.spawn$.value;
+  }
+
+  set spawn(spawn: Triplet | null) {
+    this.spawn$.next(spawn);
+  }
 
   get entities() {
     return this.entities$.value;
@@ -298,18 +309,24 @@ export class Scene {
 
   toJSON(includeInternal = false): SceneJSON {
     return {
+      spawn: this.spawn,
+
       entities: Object.values(this.entities)
         .filter((e) => (e.isInternal ? includeInternal : true))
         .map((e) => e.toJSON()),
+
       materials: Object.values(this.materials)
         .filter((m) => (m.isInternal ? includeInternal : true))
         .map((m) => m.toJSON()),
+
       accessors: Object.values(this.accessors)
         .filter((a) => (a.isInternal ? includeInternal : true))
         .map((a) => a.toJSON()),
+
       images: Object.values(this.images)
         .filter((i) => (i.isInternal ? includeInternal : true))
         .map((i) => i.toJSON()),
+
       animations: Object.values(this.animations)
         .filter((a) => (a.isInternal ? includeInternal : true))
         .map((a) => a.toJSON()),
@@ -317,6 +334,8 @@ export class Scene {
   }
 
   loadJSON(json: Partial<SceneJSON>) {
+    if (json.spawn) this.spawn = json.spawn;
+
     // Add accessors
     if (json.accessors) {
       json.accessors.forEach((accessor) =>

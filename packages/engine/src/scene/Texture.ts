@@ -4,11 +4,21 @@ import { BehaviorSubject } from "rxjs";
 import { TextureJSON } from "./types";
 
 export class Texture {
+  name$ = new BehaviorSubject<string>("New Texture");
+
   imageId$ = new BehaviorSubject<string | null>(null);
   magFilter$ = new BehaviorSubject<GLTF.TextureMagFilter>(9729);
   minFilters$ = new BehaviorSubject<GLTF.TextureMinFilter>(9987);
   wrapS$ = new BehaviorSubject<GLTF.TextureWrapMode>(33071);
   wrapT$ = new BehaviorSubject<GLTF.TextureWrapMode>(33071);
+
+  get name() {
+    return this.name$.value;
+  }
+
+  set name(name: string) {
+    this.name$.next(name);
+  }
 
   get imageId() {
     return this.imageId$.value;
@@ -60,6 +70,7 @@ export class Texture {
 
   toJSON(): TextureJSON {
     return {
+      name: this.name,
       imageId: this.imageId,
       magFilter: this.magFilter,
       minFilter: this.minFilter,
@@ -69,6 +80,7 @@ export class Texture {
   }
 
   applyJSON(json: Partial<TextureJSON>) {
+    if (json.name !== undefined) this.name = json.name;
     if (json.imageId !== undefined) this.imageId = json.imageId;
     if (json.magFilter !== undefined) this.magFilter = json.magFilter;
     if (json.minFilter !== undefined) this.minFilter = json.minFilter;

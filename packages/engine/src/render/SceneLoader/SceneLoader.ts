@@ -5,9 +5,11 @@ import {
   Box3,
   BufferAttribute,
   BufferGeometry,
+  CylinderGeometry,
   DirectionalLight,
   Group,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
   Vector3,
@@ -19,6 +21,7 @@ import { PostMessage, Quad } from "../../types";
 import { FromRenderMessage, RenderExport, ToRenderMessage } from "../types";
 import { addAnimation } from "./animation/addAnimation";
 import { addEntity } from "./entity/addEntity";
+import { createColliderVisual } from "./entity/createColliderVisual";
 import { removeEntity } from "./entity/removeEntity";
 import { updateEntity } from "./entity/updateEntity";
 import { addMaterial } from "./material/addMaterial";
@@ -38,12 +41,16 @@ export class SceneLoader {
   mixer = new AnimationMixer(this.root);
 
   #sun = new DirectionalLight(0xfff0db, 0.98);
+  #spawn = new Mesh(
+    new CylinderGeometry(0.5, 0.5, 1.6, 8),
+    new MeshBasicMaterial({ wireframe: true })
+  );
 
   #map: SceneMap = {
     accessors: new Map<string, AccessorJSON>(),
     animations: new Map<string, AnimationClip>(),
     attributes: new Map<string, BufferAttribute>(),
-    colliders: new Map<string, Mesh>(),
+    colliders: new Map<string, Group>(),
     entities: new Map<string, EntityJSON>(),
     images: new Map<string, ImageBitmap>(),
     materials: new Map<string, MeshStandardMaterial>(),
@@ -60,6 +67,7 @@ export class SceneLoader {
     this.#map.objects.set("root", this.contents);
 
     this.visuals.visible = false;
+    this.visuals.add(this.#spawn);
 
     this.#sun.castShadow = true;
     this.#sun.position.set(10, 50, 30);
@@ -118,6 +126,12 @@ export class SceneLoader {
       }
 
       case "load_json": {
+        // Set spawn
+        if (data.scene.spawn) {
+          this.#spawn.position.fromArray(data.scene.spawn);
+          this.#spawn.position.y += 0.8;
+        }
+
         // Add accessors
         if (data.scene.accessors)
           data.scene.accessors.forEach((a) => this.#map.accessors.set(a.id, a));
@@ -135,9 +149,21 @@ export class SceneLoader {
         // Add entities
         if (data.scene.entities) {
           const sortedEntities = sortEntities(data.scene.entities);
+
           sortedEntities.forEach((e) =>
             addEntity(e, this.#map, this.visuals, this.#postMessage)
           );
+
+          // Hull collider visuals require all children to be added
+          this.#map.entities.forEach((e) => {
+            if (e.collider?.type === "hull" || e.collider?.type === "mesh")
+              createColliderVisual(
+                e.id,
+                this.#map,
+                this.visuals,
+                this.#postMessage
+              );
+          });
         }
 
         // Add animations

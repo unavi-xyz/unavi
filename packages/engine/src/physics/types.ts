@@ -15,7 +15,15 @@ export type ToPhysicsMessage =
         rotation: Quad;
       }
     >
-  | WorkerMessage<"sprinting", boolean>;
+  | WorkerMessage<"sprinting", boolean>
+  | WorkerMessage<
+      "set_collider_geometry",
+      {
+        entityId: string;
+        positions: Float32Array;
+        indices?: Uint32Array;
+      }
+    >;
 
 export type FromPhysicsMessage =
   | WorkerMessage<"ready">

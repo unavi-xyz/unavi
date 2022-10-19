@@ -64,7 +64,6 @@ export class RenderThread {
       // Render in a fake worker on the main thread
       this.worker = new FakeWorker();
 
-      // TODO: Dynamically import RenderWorker?
       const renderWorker = new RenderWorker(
         this.worker.workerPort.postMessage.bind(this.worker.workerPort),
         canvas
@@ -128,6 +127,20 @@ export class RenderThread {
 
       case "set_player_rotation_buffer": {
         this.#engine.networkingInterface.setPlayerRotation(data);
+        break;
+      }
+
+      case "set_collider_geometry": {
+        const transfer: Transferable[] = [data.positions.buffer];
+        if (data.indices) transfer.push(data.indices.buffer);
+
+        this.#engine.physicsThread.postMessage(
+          {
+            subject: "set_collider_geometry",
+            data,
+          },
+          transfer
+        );
         break;
       }
     }

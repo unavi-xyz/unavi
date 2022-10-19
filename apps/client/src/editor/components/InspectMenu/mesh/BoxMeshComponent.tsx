@@ -3,7 +3,7 @@ import { BoxMesh } from "@wired-labs/engine";
 import { updateEntity } from "../../../actions/UpdateEntityAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import NumberInput from "../../ui/NumberInput";
-import ComponentMenu from "../ComponentMenu";
+import MaterialComponent from "../MaterialComponent";
 import MenuRows from "../MenuRows";
 
 interface Props {
@@ -17,7 +17,7 @@ export default function BoxMeshComponent({ entityId, mesh }: Props) {
   const depth = useSubscribeValue(mesh.depth$);
 
   return (
-    <ComponentMenu title="Geometry">
+    <>
       <MenuRows titles={["Width", "Height", "Depth"]}>
         {[width, height, depth].map((value, i) => {
           const property = i === 0 ? "width" : i === 1 ? "height" : "depth";
@@ -44,6 +44,8 @@ export default function BoxMeshComponent({ entityId, mesh }: Props) {
           );
         })}
       </MenuRows>
-    </ComponentMenu>
+
+      <MaterialComponent entityId={entityId} />
+    </>
   );
 }

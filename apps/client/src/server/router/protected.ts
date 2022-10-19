@@ -166,7 +166,7 @@ export const protectedRouter = createProtectedRouter()
   .mutation("project-file-upload", {
     input: z.object({
       id: z.string().length(UUID_LENGTH),
-      fileId: z.string().length(NANOID_LENGTH),
+      fileId: z.string(),
     }),
     async resolve({ ctx: { address }, input: { id, fileId } }) {
       // Verify user owns the project
@@ -227,7 +227,8 @@ export const protectedRouter = createProtectedRouter()
       description: z.string().max(PROJECT_DESCRIPTION_LENGTH).optional(),
       editorState: z
         .object({
-          colliders: z.boolean(),
+          visuals: z.boolean(),
+          tool: z.string(),
         })
         .optional(),
     }),
@@ -267,6 +268,11 @@ export const protectedRouter = createProtectedRouter()
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       const promises: Promise<any>[] = [];
+
+      // Delete files from database
+      await prisma.file.deleteMany({
+        where: { projectId: id },
+      });
 
       // Delete project from database
       promises.push(
@@ -350,11 +356,7 @@ export const protectedRouter = createProtectedRouter()
       await prisma.space.upsert({
         create: { publicationId: spaceId, viewsCount: 1 },
         where: { publicationId: spaceId },
-        update: {
-          viewsCount: {
-            increment: 1,
-          },
-        },
+        update: { viewsCount: { increment: 1 } },
       });
 
       // Create space view event
@@ -375,11 +377,7 @@ export const protectedRouter = createProtectedRouter()
       await prisma.avatar.upsert({
         create: { publicationId: avatarId, viewsCount: 1 },
         where: { publicationId: avatarId },
-        update: {
-          viewsCount: {
-            increment: 1,
-          },
-        },
+        update: { viewsCount: { increment: 1 } },
       });
 
       // Create avatar view event

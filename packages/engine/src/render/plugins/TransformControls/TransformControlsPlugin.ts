@@ -31,6 +31,7 @@ export class TransformControlsPlugin {
       // Send new transform to main thread
       const object = this.#transformControls.object;
       if (!object) throw new Error("No object found");
+
       const id = this.#sceneLoader.findId(object);
       if (id === undefined) throw new Error("Object id not found");
 

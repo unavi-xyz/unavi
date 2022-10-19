@@ -67,17 +67,17 @@ export function createObject(
         map.objects.set(entity.id, mesh);
         copyTransform(mesh, entity);
         parent.add(mesh);
-
-        // Remove old object
-        if (oldObject) {
-          oldObject.removeFromParent();
-          disposeObject(oldObject);
-        }
       }
       break;
     }
 
     case "Primitive": {
+      // Remove old object
+      if (oldObject) {
+        oldObject.removeFromParent();
+        disposeObject(oldObject);
+      }
+
       const isSkin = entity.mesh.skin !== null;
 
       // Get material
@@ -186,6 +186,12 @@ export function createObject(
     }
 
     default: {
+      // Remove old object
+      if (oldObject) {
+        oldObject.removeFromParent();
+        disposeObject(oldObject);
+      }
+
       // Check if joint
       let isJoint = false;
 

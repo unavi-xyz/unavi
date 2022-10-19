@@ -31,7 +31,7 @@ export class MainScene {
     glTFRootEntities: new Map<string, string[]>(),
   };
 
-  #gltfLoadCallbacks: Array<(id: string) => void> = [];
+  #gltfLoadCallbacks = new Map<string, () => void>();
 
   constructor({
     physicsThread,
@@ -74,7 +74,8 @@ export class MainScene {
       this.loadJSON(scene);
 
       // Call glTF load callbacks
-      this.#gltfLoadCallbacks.forEach((callback) => callback(id));
+      const callback = this.#gltfLoadCallbacks.get(id);
+      if (callback) callback();
     };
 
     // Load glTFs when added to the scene
@@ -115,6 +116,27 @@ export class MainScene {
         });
       });
     });
+
+    // Handle spawn changes
+    this.#scene.spawn$.subscribe((spawn) => {
+      this.#toRenderThread({
+        subject: "load_json",
+        data: {
+          scene: {
+            spawn,
+          },
+        },
+      });
+
+      this.#toPhysicsThread({
+        subject: "load_json",
+        data: {
+          scene: {
+            spawn,
+          },
+        },
+      });
+    });
   }
 
   onmessage = (event: MessageEvent<FromRenderMessage>) => {
@@ -137,6 +159,18 @@ export class MainScene {
     }
   };
 
+  get spawn$() {
+    return this.#scene.spawn$;
+  }
+
+  get spawn() {
+    return this.#scene.spawn;
+  }
+
+  set spawn(spawn: typeof Scene.prototype.spawn) {
+    this.#scene.spawn = spawn;
+  }
+
   get entities$() {
     return this.#scene.entities$;
   }
@@ -149,7 +183,7 @@ export class MainScene {
     return this.#scene.entities;
   }
 
-  set entities(entities: { [id: string]: Entity }) {
+  set entities(entities: typeof Scene.prototype.entities) {
     this.#scene.entities = entities;
   }
 
@@ -157,8 +191,16 @@ export class MainScene {
     return this.#scene.materials;
   }
 
-  set materials(materials: { [id: string]: Material }) {
+  set materials(materials: typeof Scene.prototype.materials) {
     this.#scene.materials = materials;
+  }
+
+  get images() {
+    return this.#scene.images;
+  }
+
+  set images(images: typeof Scene.prototype.images) {
+    this.#scene.images = images;
   }
 
   addEntity(entity: Entity) {
@@ -238,8 +280,9 @@ export class MainScene {
     // Remove root entity
     json.entities = json.entities?.filter((entity) => entity.id !== "root");
 
-    // Only send entities to physics thread
+    // Send stripped down scene to physics thread
     const strippedScene: Partial<SceneJSON> = {
+      spawn: json.spawn,
       entities: json.entities,
     };
 
@@ -264,24 +307,21 @@ export class MainScene {
       );
 
       await Promise.all(
-        glTFs.map(
-          (entity) =>
-            new Promise<void>((resolve) => {
-              const index = this.#gltfLoadCallbacks.push((id) => {
-                if (id === entity.id) {
-                  resolve();
-
-                  // Remove callback
-                  this.#gltfLoadCallbacks.splice(index, 1);
-                }
-              });
-            })
-        )
+        glTFs.map((entity) => {
+          return new Promise<void>((resolve) => {
+            this.#gltfLoadCallbacks.set(entity.id, () => {
+              this.#gltfLoadCallbacks.delete(entity.id);
+              resolve();
+            });
+          });
+        })
       );
     }
   }
 
   clear() {
+    this.spawn = [0, 0, 0];
+
     // Remove all entities
     Object.values(this.#scene.entities).forEach((entity) => {
       if (entity.parentId === "root") this.removeEntity(entity.id);

@@ -132,4 +132,8 @@ export type FromRenderMessage =
         rotation: Quad;
       }
     >
-  | WorkerMessage<"set_player_rotation_buffer", Int32Array>;
+  | WorkerMessage<"set_player_rotation_buffer", Int32Array>
+  | WorkerMessage<
+      "set_collider_geometry",
+      { entityId: string; positions: Float32Array; indices?: Uint32Array }
+    >;

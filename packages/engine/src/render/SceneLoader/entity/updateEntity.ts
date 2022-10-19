@@ -101,5 +101,6 @@ export function updateEntity(
   }
 
   // Update collider visual
-  if (data.collider !== undefined) createColliderVisual(entityId, map, visuals);
+  if (data.mesh || data.collider)
+    createColliderVisual(entityId, map, visuals, postMessage);
 }

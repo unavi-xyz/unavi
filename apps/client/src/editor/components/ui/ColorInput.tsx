@@ -24,7 +24,7 @@ export default function ColorInput({ rgbValue, onChange, ...rest }: Props) {
     <label className="relative">
       <div
         ref={displayRef}
-        className="h-full w-full rounded-md bg-neutral-100 pl-2 shadow-inner focus:outline-none"
+        className="h-full w-full rounded-md bg-neutral-100 pl-2 shadow-inner ring-1 ring-neutral-100 focus:outline-none"
       />
       <input
         ref={inputRef}

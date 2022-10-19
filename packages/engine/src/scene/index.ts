@@ -2,6 +2,8 @@ export * from "./Accessor";
 export * from "./Animation";
 export * from "./collider/BoxCollider";
 export * from "./collider/CylinderCollider";
+export * from "./collider/HullCollider";
+export * from "./collider/MeshCollider";
 export * from "./collider/SphereCollider";
 export * from "./collider/types";
 export * from "./Entity";

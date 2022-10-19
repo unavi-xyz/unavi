@@ -6,6 +6,11 @@ import { MdClose } from "react-icons/md";
 
 import { trpc } from "../../../client/trpc";
 import { useEditorStore } from "../../../editor/store";
+import { SavedSceneJSON } from "../../../editor/types";
+import {
+  imageStorageKey,
+  modelStorageKey,
+} from "../../../editor/utils/fileStorage";
 import MetaTags from "../../../home/MetaTags";
 import Spinner from "../../../ui/Spinner";
 
@@ -20,6 +25,14 @@ export default function Preview() {
 
   const router = useRouter();
   const id = router.query.id as string;
+
+  const { data: project } = trpc.useQuery(["auth.project", { id }], {
+    enabled: id !== undefined,
+    cacheTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  });
 
   const { data: sceneURL } = trpc.useQuery(["auth.project-scene", { id }], {
     enabled: id !== undefined,
@@ -36,6 +49,18 @@ export default function Preview() {
     refetchOnReconnect: false,
     refetchOnMount: false,
   });
+
+  useEffect(() => {
+    if (!engine || !project?.editorState) return;
+
+    const editorState = JSON.parse(project.editorState);
+    if (!editorState) return;
+
+    engine.renderThread.postMessage({
+      subject: "show_visuals",
+      data: { visible: editorState.visuals },
+    });
+  }, [engine, project]);
 
   useEffect(() => {
     if (createdEngine.current) return;
@@ -61,11 +86,11 @@ export default function Preview() {
       engine.setAvatar(null);
 
       // Set collider visibility
-      const { colliders } = useEditorStore.getState();
+      const { visuals } = useEditorStore.getState();
       engine.renderThread.postMessage({
         subject: "show_visuals",
         data: {
-          visible: colliders,
+          visible: visuals,
         },
       });
 
@@ -81,25 +106,56 @@ export default function Preview() {
       if (!engine || !sceneURL || !fileURLs) return;
 
       const sceneResponse = await fetch(sceneURL);
-      const scene: SceneJSON = await sceneResponse.json();
+      const savedScene: SavedSceneJSON = await sceneResponse.json();
 
-      // Load files
-      const filePromises = scene.entities.map(async (entity) => {
-        if (entity.mesh?.type !== "glTF") return;
+      const scene: SceneJSON = {
+        spawn: savedScene.spawn,
+        accessors: savedScene.accessors,
+        animations: savedScene.animations,
+        entities: savedScene.entities,
+        materials: savedScene.materials,
+        images: [],
+      };
 
-        if (entity.mesh.uri) {
-          const file = fileURLs.find((f) => f.id === entity.id);
+      // Load glTF models
+      const modelPromises = savedScene.entities.map(async (entity) => {
+        if (entity.mesh?.type === "glTF" && entity.mesh.uri) {
+          const file = fileURLs.find(
+            (f) => f.id === modelStorageKey(entity.id)
+          );
           if (!file) throw new Error("File not found");
 
-          const fileResponse = await fetch(file.uri);
-          const fileBlob = await fileResponse.blob();
-          const url = URL.createObjectURL(fileBlob);
+          const response = await fetch(file.uri);
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
 
           entity.mesh.uri = url;
         }
       });
 
-      await Promise.all(filePromises);
+      // Load images
+      const imagePromises = savedScene.images.map(async (image) => {
+        const file = fileURLs.find((f) => f.id === imageStorageKey(image.id));
+        if (!file) throw new Error("File not found");
+
+        const response = await fetch(file.uri);
+        const buffer = await response.arrayBuffer();
+        const array = new Uint8Array(buffer);
+
+        const blob = new Blob([array], { type: image.mimeType });
+        const bitmap = await createImageBitmap(blob);
+
+        scene.images.push({
+          id: image.id,
+          isInternal: false,
+          mimeType: image.mimeType,
+          array,
+          bitmap,
+        });
+      });
+
+      await Promise.all(modelPromises);
+      await Promise.all(imagePromises);
 
       // Load scene
       await engine.scene.loadJSON(scene);
@@ -126,7 +182,6 @@ export default function Preview() {
         engine: null,
         selectedId: null,
       });
-      if (process.env.NODE_ENV === "development") window.location.reload();
     };
   }, [engine]);
 
@@ -224,7 +279,7 @@ export default function Preview() {
           className="fixed top-0 right-0 p-6 text-2xl"
         >
           <Link href={`/editor/${id}`} passHref>
-            <button className="rounded-full bg-surface p-2 text-onSurface shadow transition hover:shadow-lg active:shadow">
+            <button className="rounded-full bg-surface p-2 text-onSurface shadow transition hover:shadow-md active:shadow">
               <MdClose />
             </button>
           </Link>

@@ -23,7 +23,6 @@ const VOID_HEIGHT = -100;
 const JUMP_VELOCITY = 6;
 const JUMP_COOLDOWN_SECONDS = 0.2;
 const HZ = 60; // Physics updates per second
-const SPAWN = { x: 0, y: 3, z: 0 };
 const WALK_SPEED = 1;
 const SPRINT_SPEED = 1.6;
 
@@ -56,6 +55,9 @@ export class PhysicsWorker {
   #entities = new Map<string, EntityJSON>();
   #rigidBodies = new Map<string, RigidBody>();
   #colliders = new Map<string, Collider>();
+  #spawn: Triplet = [0, 0, 0];
+  #geometryPositions = new Map<string, Float32Array>();
+  #geometryIndices = new Map<string, Uint32Array>();
 
   constructor(postMessage: PostMessage) {
     this.#postMessage = postMessage;
@@ -136,6 +138,25 @@ export class PhysicsWorker {
       }
 
       case "load_json": {
+        // Save spawn
+        if (data.scene.spawn) {
+          this.#spawn = data.scene.spawn;
+          this.#spawn[1] += PLAYER_HEIGHT / 2;
+
+          // Set player position
+          if (this.#playerBody) {
+            this.#playerBody.setTranslation(
+              {
+                x: this.#spawn[0],
+                y: this.#spawn[1],
+                z: this.#spawn[2],
+              },
+              true
+            );
+            this.#playerBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+          }
+        }
+
         // Load entities from JSON
         const entities = data.scene.entities;
         if (entities)
@@ -148,6 +169,19 @@ export class PhysicsWorker {
 
       case "sprinting": {
         this.#isSprinting = data;
+        break;
+      }
+
+      case "set_collider_geometry": {
+        this.#geometryPositions.set(data.entityId, data.positions);
+
+        if (data.indices)
+          this.#geometryIndices.set(data.entityId, data.indices);
+
+        const entity = this.#entities.get(data.entityId);
+        if (!entity) throw new Error("Entity not found");
+
+        this.addCollider(entity);
         break;
       }
     }
@@ -178,7 +212,7 @@ export class PhysicsWorker {
     playerColliderDesc.setFrictionCombineRule(CoefficientCombineRule.Min);
 
     const playerBodyDesc = RigidBodyDesc.dynamic()
-      .setTranslation(SPAWN.x, SPAWN.y, SPAWN.z)
+      .setTranslation(...this.#spawn)
       .lockRotations();
 
     this.#playerBody = this.#world.createRigidBody(playerBodyDesc);
@@ -220,7 +254,8 @@ export class PhysicsWorker {
     if (!entity.collider) return;
 
     // Create collider description
-    let colliderDesc: ColliderDesc;
+    let colliderDesc: ColliderDesc | null = null;
+
     switch (entity.collider.type) {
       case "box": {
         const size = entity.collider.size;
@@ -241,7 +276,28 @@ export class PhysicsWorker {
         colliderDesc = ColliderDesc.cylinder(height / 2, cylinderRadius);
         break;
       }
+
+      case "hull": {
+        const positions = this.#geometryPositions.get(entity.id);
+        if (!positions) break;
+
+        colliderDesc = ColliderDesc.convexHull(positions);
+        break;
+      }
+
+      case "mesh": {
+        const positions = this.#geometryPositions.get(entity.id);
+        if (!positions) break;
+
+        const indices = this.#geometryIndices.get(entity.id);
+        if (!indices) break;
+
+        colliderDesc = ColliderDesc.trimesh(positions, indices);
+        break;
+      }
     }
+
+    if (!colliderDesc) return;
 
     colliderDesc.setCollisionGroups(staticCollisionGroup);
 
@@ -272,7 +328,14 @@ export class PhysicsWorker {
 
       // If player is in the void, reset position
       if (playerPosition.y < VOID_HEIGHT) {
-        this.#playerBody.setTranslation(SPAWN, true);
+        this.#playerBody.setTranslation(
+          {
+            x: this.#spawn[0],
+            y: this.#spawn[1],
+            z: this.#spawn[2],
+          },
+          true
+        );
         this.#playerBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
       }
 

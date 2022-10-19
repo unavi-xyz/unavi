@@ -3,7 +3,7 @@ import { SphereMesh } from "@wired-labs/engine";
 import { updateEntity } from "../../../actions/UpdateEntityAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import NumberInput from "../../ui/NumberInput";
-import ComponentMenu from "../ComponentMenu";
+import MaterialComponent from "../MaterialComponent";
 import MenuRows from "../MenuRows";
 
 interface Props {
@@ -17,7 +17,7 @@ export default function SphereMeshComponent({ entityId, mesh }: Props) {
   const heightSegments = useSubscribeValue(mesh.heightSegments$);
 
   return (
-    <ComponentMenu title="Geometry">
+    <>
       <MenuRows titles={["Radius", "Width Segments", "Height Segments"]}>
         {[radius, widthSegments, heightSegments].map((value, i) => {
           const property =
@@ -46,6 +46,8 @@ export default function SphereMeshComponent({ entityId, mesh }: Props) {
           );
         })}
       </MenuRows>
-    </ComponentMenu>
+
+      <MaterialComponent entityId={entityId} />
+    </>
   );
 }

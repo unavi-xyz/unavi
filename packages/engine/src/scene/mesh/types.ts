@@ -34,6 +34,7 @@ export type GLTFMeshJSON = {
 
 export type PrimitiveMeshJSON = {
   type: "Primitive";
+  gltfId: string | null;
   mode: GLTF.MeshPrimitiveMode;
   indicesId: string | null;
   weights: number[];

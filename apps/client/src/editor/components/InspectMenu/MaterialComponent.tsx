@@ -1,7 +1,9 @@
-import { Material, Quad } from "@wired-labs/engine";
+import { Image, Material, Quad, Texture } from "@wired-labs/engine";
 import { useState } from "react";
+import { BiImageAdd } from "react-icons/bi";
 import { MdAdd, MdClose, MdDelete, MdOutlineFolderOpen } from "react-icons/md";
 
+import ButtonFileInput from "../../../ui/ButtonFileInput";
 import DropdownMenu from "../../../ui/DropdownMenu";
 import { hexToRgb } from "../../../utils/rgb";
 import { addMaterial } from "../../actions/AddMaterialAction";
@@ -15,7 +17,6 @@ import { useEditorStore } from "../../store";
 import ColorInput from "../ui/ColorInput";
 import NumberInput from "../ui/NumberInput";
 import TextInput from "../ui/TextInput";
-import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./MenuRows";
 
 interface Props {
@@ -29,6 +30,7 @@ export default function MaterialComponent({ entityId }: Props) {
 
   const name = useSubscribeValue(material?.name$);
   const color = useSubscribeValue(material?.color$);
+  const colorTexture = useSubscribeValue(material?.colorTexture$);
   const roughness = useSubscribeValue(material?.roughness$);
   const metalness = useSubscribeValue(material?.metalness$);
   const alpha = useSubscribeValue(material?.alpha$);
@@ -48,7 +50,11 @@ export default function MaterialComponent({ entityId }: Props) {
   }
 
   return (
-    <ComponentMenu title="Material">
+    <>
+      <div className="pt-10 text-xl font-bold">
+        <div>Material</div>
+      </div>
+
       <div className="flex h-7 w-full justify-between space-x-4">
         <button
           onClick={() => setOpen(true)}
@@ -78,8 +84,7 @@ export default function MaterialComponent({ entityId }: Props) {
           ) : (
             <button
               onClick={createMaterial}
-              className={`flex h-full w-full cursor-default items-center justify-center
-                          space-x-1 rounded-md bg-neutral-100 shadow-inner transition hover:bg-primaryContainer`}
+              className={`flex h-full w-full cursor-default items-center justify-center space-x-1 rounded-md bg-neutral-100 shadow-inner transition hover:bg-primaryContainer`}
             >
               <MdAdd className="text-lg" />
               <div>New Material</div>
@@ -111,24 +116,26 @@ export default function MaterialComponent({ entityId }: Props) {
       </div>
 
       {materialId && color && (
-        <MenuRows titles={["Color", "Roughness", "Metalness", "Alpha"]}>
-          <div className="h-6">
-            <ColorInput
-              rgbValue={[color[0], color[1], color[2]]}
-              onChange={(e) => {
-                const value = e.target.value;
+        <MenuRows titles={["Color", "Roughness", "Metalness", "Opacity"]}>
+          <div className="flex h-6 space-x-2">
+            <div className="w-full">
+              <ColorInput
+                rgbValue={[color[0], color[1], color[2]]}
+                onChange={(e) => {
+                  const value = e.target.value;
 
-                const rgb = hexToRgb(value);
-                const normalized: Quad = [
-                  rgb[0] / 255,
-                  rgb[1] / 255,
-                  rgb[2] / 255,
-                  255,
-                ];
+                  const rgb = hexToRgb(value);
+                  const normalized: Quad = [
+                    rgb[0] / 255,
+                    rgb[1] / 255,
+                    rgb[2] / 255,
+                    255,
+                  ];
 
-                updateMaterial(materialId, { color: normalized });
-              }}
-            />
+                  updateMaterial(materialId, { color: normalized });
+                }}
+              />
+            </div>
           </div>
 
           <NumberInput
@@ -182,7 +189,77 @@ export default function MaterialComponent({ entityId }: Props) {
           />
         </MenuRows>
       )}
-    </ComponentMenu>
+
+      {materialId && (
+        <MenuRows titles={["Color Texture"]}>
+          <div className="h-6">
+            {colorTexture ? (
+              <div className="flex h-full w-full items-center justify-between rounded-md bg-neutral-100 shadow-inner">
+                <TextInput
+                  value={colorTexture.name}
+                  onChange={(e) => {
+                    const json = colorTexture.toJSON();
+
+                    updateMaterial(materialId, {
+                      colorTexture: {
+                        ...json,
+                        name: e.target.value,
+                      },
+                    });
+                  }}
+                />
+
+                <button
+                  onClick={() =>
+                    updateMaterial(materialId, { colorTexture: null })
+                  }
+                  className="flex h-full cursor-default items-center px-2 text-lg text-outline transition hover:text-black"
+                >
+                  <MdClose />
+                </button>
+              </div>
+            ) : (
+              <ButtonFileInput
+                rounded="small"
+                accept="image/*"
+                onChange={async (e) => {
+                  const { engine } = useEditorStore.getState();
+                  if (!engine) return;
+
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  const buffer = await file.arrayBuffer();
+                  const array = new Uint8Array(buffer);
+
+                  const bitmap = await createImageBitmap(new Blob([array]));
+
+                  const image = new Image({
+                    array,
+                    mimeType: file.type,
+                    bitmap,
+                  });
+
+                  engine.scene.loadJSON({
+                    images: [image.toJSON()],
+                  });
+
+                  const texture = new Texture();
+                  texture.imageId = image.id;
+                  texture.name = file.name;
+
+                  updateMaterial(materialId, {
+                    colorTexture: texture.toJSON(),
+                  });
+                }}
+              >
+                <BiImageAdd />
+              </ButtonFileInput>
+            )}
+          </div>
+        </MenuRows>
+      )}
+    </>
   );
 }
 

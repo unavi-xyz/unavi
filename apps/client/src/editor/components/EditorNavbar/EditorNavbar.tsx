@@ -18,7 +18,7 @@ export default function EditorNavbar() {
   const router = useRouter();
   const id = router.query.id;
 
-  const colliders = useEditorStore((state) => state.colliders);
+  const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
@@ -26,13 +26,13 @@ export default function EditorNavbar() {
   const { save, saveImage } = useSave();
 
   function handleToggleColliders() {
-    useEditorStore.setState({ colliders: !colliders });
+    useEditorStore.setState({ visuals: !visuals });
 
     const { engine } = useEditorStore.getState();
     engine?.renderThread.postMessage({
       subject: "show_visuals",
       data: {
-        visible: !colliders,
+        visible: !visuals,
       },
     });
   }
@@ -68,7 +68,7 @@ export default function EditorNavbar() {
       </Dialog>
 
       <div className="flex h-full items-center justify-between px-4 py-2">
-        <div className="flex w-full items-center space-x-4 text-lg">
+        <div className="flex w-full items-center space-x-2 text-lg">
           <div
             onClick={handleBack}
             className="cursor-pointer p-1 text-outline transition hover:text-inherit"
@@ -76,7 +76,12 @@ export default function EditorNavbar() {
             <MdArrowBackIosNew />
           </div>
 
-          <div>{name}</div>
+          <input
+            type="text"
+            value={name ?? ""}
+            onChange={(e) => useEditorStore.setState({ name: e.target.value })}
+            className="rounded-lg py-0.5 pl-3 transition hover:bg-neutral-100 hover:shadow-inner"
+          />
         </div>
 
         <div className="flex h-full w-full items-center justify-center space-x-2">
@@ -94,10 +99,10 @@ export default function EditorNavbar() {
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <div className="aspect-square h-full">
             <Tooltip
-              text={`${colliders ? "Hide" : "Show"} Colliders`}
+              text={`${visuals ? "Show" : "Hide"} Visuals`}
               placement="bottom"
             >
-              <IconButton selected={colliders} onClick={handleToggleColliders}>
+              <IconButton selected={visuals} onClick={handleToggleColliders}>
                 <HiCubeTransparent />
               </IconButton>
             </Tooltip>

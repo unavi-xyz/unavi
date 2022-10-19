@@ -19,13 +19,16 @@ import { nanoid } from "nanoid";
 import { extensions } from "../gltf/constants";
 import { Collider } from "../gltf/extensions/Collider/Collider";
 import { ColliderExtension } from "../gltf/extensions/Collider/ColliderExtension";
+import { SpawnPointExtension } from "../gltf/extensions/SpawnPoint/SpawnPointExtension";
 import {
   AnimationChannel,
   AnimationSampler,
   BoxCollider,
   CylinderCollider,
   Entity,
+  HullCollider,
   Material,
+  MeshCollider,
   PrimitiveMesh,
   Scene,
   SphereCollider,
@@ -34,15 +37,14 @@ import {
 import { Accessor } from "../scene/Accessor";
 import { Animation } from "../scene/Animation";
 import { Image } from "../scene/Image";
+import { Triplet } from "../types";
 
 /*
  * Loads a GLTF model into the engine's internal scene format.
  */
 export class GLTFLoader {
   #scene = new Scene();
-
   #io = new WebIO().registerExtensions(extensions);
-
   #root: Root | null = null;
 
   #map = {
@@ -54,6 +56,8 @@ export class GLTFLoader {
   };
 
   #pending: Promise<void>[] = [];
+
+  #spawn: Triplet | null = null;
 
   async load(uri: string): Promise<Scene> {
     const res = await fetch(uri);
@@ -76,12 +80,14 @@ export class GLTFLoader {
         await readJSON();
         break;
       }
+
       case "model/gltf-binary": {
         await readBinary();
         break;
       }
+
       default: {
-        // If no mime type is provided, try to read as json first, then binary
+        // If no mime type is provided, try to read as json first, then binary if it fails
         try {
           await readJSON();
         } catch (e) {
@@ -98,6 +104,8 @@ export class GLTFLoader {
     this.#loadScene(scene);
 
     await Promise.all(this.#pending);
+
+    if (this.#spawn) this.#scene.spawn = this.#spawn;
 
     return this.#scene;
   }
@@ -209,7 +217,7 @@ export class GLTFLoader {
     return samplerState;
   }
 
-  #loadNode(node: INode, parentId?: string): Entity {
+  #loadNode(node: INode, parentId?: string, hullRootId?: string): Entity {
     // Create entity
     const entity = new Entity();
     entity.isInternal = true;
@@ -223,27 +231,10 @@ export class GLTFLoader {
     entity.rotation = node.getRotation();
     entity.scale = node.getScale();
 
-    // Load mesh
-    const mesh = node.getMesh();
-    if (mesh) {
-      const meshEntities = this.#loadMesh(mesh);
-
-      const nodeWeights = node.getWeights();
-      const weights = nodeWeights.length > 0 ? nodeWeights : mesh.getWeights();
-
-      meshEntities.forEach((meshEntity) => {
-        if (meshEntity.mesh?.type !== "Primitive") throw new Error("No mesh");
-
-        // Set weights
-        meshEntity.mesh.weights = weights;
-
-        // Add to node
-        meshEntity.parentId = entity.id;
-      });
-    }
-
     // Load collider
     const collider = node.getExtension(ColliderExtension.EXTENSION_NAME);
+    let isHull = false;
+
     if (collider instanceof Collider) {
       switch (collider.getType()) {
         case "box": {
@@ -268,15 +259,53 @@ export class GLTFLoader {
           break;
         }
 
+        case "hull": {
+          isHull = true;
+          const hull = new HullCollider();
+          entity.collider = hull;
+          break;
+        }
+
+        case "mesh": {
+          isHull = true;
+          const mesh = new MeshCollider();
+          entity.collider = mesh;
+          break;
+        }
+
         default: {
           console.warn(`Collider type ${collider.getType()} not supported`);
         }
       }
     }
 
+    const hullId = isHull ? entity.id : hullRootId;
+
+    // Load mesh
+    const mesh = node.getMesh();
+    if (mesh) {
+      const meshEntities = this.#loadMesh(mesh);
+
+      const nodeWeights = node.getWeights();
+      const weights = nodeWeights.length > 0 ? nodeWeights : mesh.getWeights();
+
+      meshEntities.forEach((meshEntity) => {
+        if (meshEntity.mesh?.type !== "Primitive") throw new Error("No mesh");
+
+        meshEntity.mesh.weights = weights;
+        meshEntity.parentId = entity.id;
+
+        if (hullId) meshEntity.mesh.gltfId = hullId;
+      });
+    }
+
+    // Load spawn
+    const spawn = node.getExtension(SpawnPointExtension.EXTENSION_NAME);
+    if (spawn) this.#spawn = node.getTranslation();
+
     // Load children
     node.listChildren().forEach((child) => {
-      this.#loadNode(child, entity.id);
+      this.#loadNode(child, entity.id, hullId);
     });
 
     // Add to scene

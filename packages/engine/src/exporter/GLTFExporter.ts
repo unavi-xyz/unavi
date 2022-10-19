@@ -2,6 +2,7 @@ import {
   Accessor as gltfAccessor,
   Document,
   Material as gltfMaterial,
+  Mesh,
   Node,
   Texture as gltfTexture,
   WebIO,
@@ -10,6 +11,7 @@ import { dedup, prune } from "@gltf-transform/functions";
 
 import { extensions } from "../gltf/constants";
 import { ColliderExtension } from "../gltf/extensions/Collider/ColliderExtension";
+import { SpawnPointExtension } from "../gltf/extensions/SpawnPoint/SpawnPointExtension";
 import { RenderExport } from "../render/types";
 import {
   Accessor,
@@ -29,6 +31,7 @@ export class GLTFExporter {
   #doc = new Document();
   #extensions = {
     collider: this.#doc.createExtension(ColliderExtension),
+    spawnPoint: this.#doc.createExtension(SpawnPointExtension),
   };
 
   #scene = new Scene();
@@ -39,6 +42,7 @@ export class GLTFExporter {
 
   #cache = {
     accessors: new Map<string, gltfAccessor>(),
+    colliderMeshes: new Map<string, Mesh>(),
     materials: new Map<string, gltfMaterial>(),
     entities: new Map<string, Node>(),
   };
@@ -51,6 +55,15 @@ export class GLTFExporter {
     this.#scene.loadJSON(json);
 
     if (renderData) this.#renderData = renderData;
+
+    // Parse spawn
+    if (this.#scene.spawn) {
+      const spawn = this.#extensions.spawnPoint.createSpawnPoint();
+      const spawnNode = this.#doc.createNode("Spawn");
+      spawnNode.setTranslation(this.#scene.spawn);
+      spawnNode.setExtension(spawn.extensionName, spawn);
+      this.#gltfScene.addChild(spawnNode);
+    }
 
     // Parse accessors
     Object.values(this.#scene.accessors).forEach((accessor) =>
@@ -147,10 +160,7 @@ export class GLTFExporter {
     node.setScale(entity.scale);
 
     // Parse mesh
-    this.#parseMesh(entity, node);
-
-    // Parse children
-    entity.children.forEach((child) => this.#parseEntity(child, node));
+    const mesh = this.#parseMesh(entity, node);
 
     // Add to parent
     if (parent) parent.addChild(node);
@@ -176,10 +186,26 @@ export class GLTFExporter {
           collider.setHeight(entity.collider.height);
           break;
         }
+
+        case "mesh": {
+          let colliderMesh = mesh;
+          if (!colliderMesh) {
+            colliderMesh = this.#doc.createMesh(entity.name);
+            node.setMesh(colliderMesh);
+          }
+
+          collider.setMesh(colliderMesh);
+
+          this.#cache.colliderMeshes.set(entity.id, colliderMesh);
+          break;
+        }
       }
 
       node.setExtension(collider.extensionName, collider);
     }
+
+    // Parse children
+    entity.children.forEach((child) => this.#parseEntity(child, node));
 
     this.#cache.entities.set(entity.id, node);
   }
@@ -188,8 +214,12 @@ export class GLTFExporter {
     if (!entity.mesh || entity.mesh.type === "glTF") return;
 
     // Create mesh
-    const mesh = this.#doc.createMesh(entity.mesh.type);
-    node.setMesh(mesh);
+    const colliderMesh =
+      entity.mesh.type === "Primitive" && entity.mesh.gltfId
+        ? this.#cache.colliderMeshes.get(entity.mesh.gltfId)
+        : null;
+    const mesh = colliderMesh ?? this.#doc.createMesh(entity.mesh.type);
+    if (!colliderMesh) node.setMesh(mesh);
 
     // Create primitive
     const primitive = this.#doc.createPrimitive();
@@ -325,6 +355,8 @@ export class GLTFExporter {
         break;
       }
     }
+
+    return mesh;
   }
 
   #parseMaterial(material: Material) {

@@ -18,6 +18,7 @@ export type EntityJSON = {
 };
 
 export type TextureJSON = {
+  name: string;
   imageId: string | null;
   magFilter: GLTF.TextureMagFilter;
   minFilter: GLTF.TextureMinFilter;
@@ -91,13 +92,15 @@ export type AnimationJSON = {
   channels: AnimationChannel[];
 };
 
-export type SceneJSON = {
+export interface SceneJSON {
+  spawn: Triplet | null;
+
   entities: EntityJSON[];
   materials: MaterialJSON[];
   accessors: AccessorJSON[];
   images: ImageJSON[];
   animations: AnimationJSON[];
-};
+}
 
 // Messages
 export type SceneMessage =

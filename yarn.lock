@@ -14679,10 +14679,9 @@ typical@^5.2.0:
   resolved "https://registry.yarnpkg.com/typical/-/typical-5.2.0.tgz#4daaac4f2b5315460804f0acf6cb69c52bb93066"
   integrity sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==
 
-uWebSockets.js@uNetworking/uWebSockets.js#v20.12.0:
-  version "20.11.0"
-  uid eb49fdd75b66df5a1549a0cba4125811e1905c2f
-  resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/eb49fdd75b66df5a1549a0cba4125811e1905c2f"
+uWebSockets.js@uNetworking/uWebSockets.js#v20.13.0:
+  version "20.13.0"
+  resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/b34b1ae76fbbfc76c3193484fdf73dfec0df8a96"
 
 ua-parser-js@^0.7.30:
   version "0.7.31"

@@ -31,7 +31,7 @@ export class MainScene {
     glTFRootEntities: new Map<string, string[]>(),
   };
 
-  #gltfLoadCallbacks: Array<(id: string) => void> = [];
+  #gltfLoadCallbacks = new Map<string, () => void>();
 
   constructor({
     physicsThread,
@@ -74,7 +74,8 @@ export class MainScene {
       this.loadJSON(scene);
 
       // Call glTF load callbacks
-      this.#gltfLoadCallbacks.forEach((callback) => callback(id));
+      const callback = this.#gltfLoadCallbacks.get(id);
+      if (callback) callback();
     };
 
     // Load glTFs when added to the scene
@@ -279,7 +280,7 @@ export class MainScene {
     // Remove root entity
     json.entities = json.entities?.filter((entity) => entity.id !== "root");
 
-    // Only send entities to physics thread
+    // Send stripped down scene to physics thread
     const strippedScene: Partial<SceneJSON> = {
       spawn: json.spawn,
       entities: json.entities,
@@ -306,19 +307,14 @@ export class MainScene {
       );
 
       await Promise.all(
-        glTFs.map(
-          (entity) =>
-            new Promise<void>((resolve) => {
-              const index = this.#gltfLoadCallbacks.push((id) => {
-                if (id === entity.id) {
-                  resolve();
-
-                  // Remove callback
-                  this.#gltfLoadCallbacks.splice(index, 1);
-                }
-              });
-            })
-        )
+        glTFs.map((entity) => {
+          return new Promise<void>((resolve) => {
+            this.#gltfLoadCallbacks.set(entity.id, () => {
+              this.#gltfLoadCallbacks.delete(entity.id);
+              resolve();
+            });
+          });
+        })
       );
     }
   }

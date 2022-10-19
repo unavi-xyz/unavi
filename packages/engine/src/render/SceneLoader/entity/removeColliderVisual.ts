@@ -1,3 +1,5 @@
+import { Mesh } from "three";
+
 import { SceneMap } from "../types";
 
 export function removeColliderVisual(entityId: string, map: SceneMap) {
@@ -6,5 +8,7 @@ export function removeColliderVisual(entityId: string, map: SceneMap) {
 
   map.colliders.delete(entityId);
   collider.removeFromParent();
-  collider.geometry.dispose();
+  collider.traverse((child) => {
+    if (child instanceof Mesh) child.geometry.dispose();
+  });
 }

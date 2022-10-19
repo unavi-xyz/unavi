@@ -21,6 +21,7 @@ import { PostMessage, Quad } from "../../types";
 import { FromRenderMessage, RenderExport, ToRenderMessage } from "../types";
 import { addAnimation } from "./animation/addAnimation";
 import { addEntity } from "./entity/addEntity";
+import { createColliderVisual } from "./entity/createColliderVisual";
 import { removeEntity } from "./entity/removeEntity";
 import { updateEntity } from "./entity/updateEntity";
 import { addMaterial } from "./material/addMaterial";
@@ -49,7 +50,7 @@ export class SceneLoader {
     accessors: new Map<string, AccessorJSON>(),
     animations: new Map<string, AnimationClip>(),
     attributes: new Map<string, BufferAttribute>(),
-    colliders: new Map<string, Mesh>(),
+    colliders: new Map<string, Group>(),
     entities: new Map<string, EntityJSON>(),
     images: new Map<string, ImageBitmap>(),
     materials: new Map<string, MeshStandardMaterial>(),
@@ -148,9 +149,21 @@ export class SceneLoader {
         // Add entities
         if (data.scene.entities) {
           const sortedEntities = sortEntities(data.scene.entities);
+
           sortedEntities.forEach((e) =>
             addEntity(e, this.#map, this.visuals, this.#postMessage)
           );
+
+          // Hull collider visuals require all children to be added
+          this.#map.entities.forEach((e) => {
+            if (e.collider?.type === "hull" || e.collider?.type === "mesh")
+              createColliderVisual(
+                e.id,
+                this.#map,
+                this.visuals,
+                this.#postMessage
+              );
+          });
         }
 
         // Add animations

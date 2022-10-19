@@ -13,6 +13,9 @@ export function updateGlobalTransform(
   map: SceneMap,
   postMessage: PostMessage<FromRenderMessage>
 ) {
+  const entity = map.entities.get(entityId);
+  if (!entity) throw new Error("Entity not found");
+
   const object = map.objects.get(entityId);
   if (!object) throw new Error("Object not found");
 
@@ -43,9 +46,6 @@ export function updateGlobalTransform(
   });
 
   // Repeat for children
-  const entity = map.entities.get(entityId);
-  if (!entity) throw new Error("Entity not found");
-
   const children = getChildren(entityId, map);
   children.forEach((child) =>
     updateGlobalTransform(child.id, map, postMessage)

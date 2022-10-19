@@ -4,6 +4,8 @@ import { BehaviorSubject } from "rxjs";
 import { Quad, Triplet } from "../types";
 import { BoxCollider } from "./collider/BoxCollider";
 import { CylinderCollider } from "./collider/CylinderCollider";
+import { HullCollider } from "./collider/HullCollider";
+import { MeshCollider } from "./collider/MeshCollider";
 import { SphereCollider } from "./collider/SphereCollider";
 import { Collider, ColliderJSON } from "./collider/types";
 import { BoxMesh } from "./mesh/BoxMesh";
@@ -222,23 +224,29 @@ function createMesh(json: MeshJSON | null) {
   if (!json) return null;
 
   switch (json.type) {
-    case "Box":
+    case "Box": {
       return BoxMesh.fromJSON(json);
+    }
 
-    case "Sphere":
+    case "Sphere": {
       return SphereMesh.fromJSON(json);
+    }
 
-    case "Cylinder":
+    case "Cylinder": {
       return CylinderMesh.fromJSON(json);
+    }
 
-    case "glTF":
+    case "glTF": {
       return GLTFMesh.fromJSON(json);
+    }
 
-    case "Primitive":
+    case "Primitive": {
       return PrimitiveMesh.fromJSON(json);
+    }
 
-    default:
+    default: {
       throw new Error("Unknown mesh type");
+    }
   }
 }
 
@@ -246,16 +254,28 @@ function createCollider(json: ColliderJSON | null) {
   if (!json) return null;
 
   switch (json.type) {
-    case "box":
+    case "box": {
       return BoxCollider.fromJSON(json);
+    }
 
-    case "sphere":
+    case "sphere": {
       return SphereCollider.fromJSON(json);
+    }
 
-    case "cylinder":
+    case "cylinder": {
       return CylinderCollider.fromJSON(json);
+    }
 
-    default:
+    case "hull": {
+      return new HullCollider();
+    }
+
+    case "mesh": {
+      return new MeshCollider();
+    }
+
+    default: {
       throw new Error("Unknown collider type");
+    }
   }
 }

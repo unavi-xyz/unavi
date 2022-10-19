@@ -2,6 +2,8 @@ import { ColliderType } from "../../gltf/extensions/Collider/types";
 import { Triplet } from "../../types";
 import { BoxCollider } from "./BoxCollider";
 import { CylinderCollider } from "./CylinderCollider";
+import { HullCollider } from "./HullCollider";
+import { MeshCollider } from "./MeshCollider";
 import { SphereCollider } from "./SphereCollider";
 
 interface BaseColliderJSON {
@@ -24,9 +26,24 @@ export interface CylinderColliderJSON extends BaseColliderJSON {
   height: number;
 }
 
+export interface HullColliderJSON extends BaseColliderJSON {
+  type: "hull";
+}
+
+export interface MeshColliderJSON extends BaseColliderJSON {
+  type: "mesh";
+}
+
 export type ColliderJSON =
   | BoxColliderJSON
   | SphereColliderJSON
-  | CylinderColliderJSON;
+  | CylinderColliderJSON
+  | HullColliderJSON
+  | MeshColliderJSON;
 
-export type Collider = BoxCollider | SphereCollider | CylinderCollider;
+export type Collider =
+  | BoxCollider
+  | SphereCollider
+  | CylinderCollider
+  | HullCollider
+  | MeshCollider;

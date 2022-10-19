@@ -2,6 +2,7 @@ import {
   Accessor as gltfAccessor,
   Document,
   Material as gltfMaterial,
+  Mesh,
   Node,
   Texture as gltfTexture,
   WebIO,
@@ -41,6 +42,7 @@ export class GLTFExporter {
 
   #cache = {
     accessors: new Map<string, gltfAccessor>(),
+    colliderMeshes: new Map<string, Mesh>(),
     materials: new Map<string, gltfMaterial>(),
     entities: new Map<string, Node>(),
   };
@@ -158,10 +160,7 @@ export class GLTFExporter {
     node.setScale(entity.scale);
 
     // Parse mesh
-    this.#parseMesh(entity, node);
-
-    // Parse children
-    entity.children.forEach((child) => this.#parseEntity(child, node));
+    const mesh = this.#parseMesh(entity, node);
 
     // Add to parent
     if (parent) parent.addChild(node);
@@ -187,10 +186,26 @@ export class GLTFExporter {
           collider.setHeight(entity.collider.height);
           break;
         }
+
+        case "mesh": {
+          let colliderMesh = mesh;
+          if (!colliderMesh) {
+            colliderMesh = this.#doc.createMesh(entity.name);
+            node.setMesh(colliderMesh);
+          }
+
+          collider.setMesh(colliderMesh);
+
+          this.#cache.colliderMeshes.set(entity.id, colliderMesh);
+          break;
+        }
       }
 
       node.setExtension(collider.extensionName, collider);
     }
+
+    // Parse children
+    entity.children.forEach((child) => this.#parseEntity(child, node));
 
     this.#cache.entities.set(entity.id, node);
   }
@@ -199,8 +214,12 @@ export class GLTFExporter {
     if (!entity.mesh || entity.mesh.type === "glTF") return;
 
     // Create mesh
-    const mesh = this.#doc.createMesh(entity.mesh.type);
-    node.setMesh(mesh);
+    const colliderMesh =
+      entity.mesh.type === "Primitive" && entity.mesh.gltfId
+        ? this.#cache.colliderMeshes.get(entity.mesh.gltfId)
+        : null;
+    const mesh = colliderMesh ?? this.#doc.createMesh(entity.mesh.type);
+    if (!colliderMesh) node.setMesh(mesh);
 
     // Create primitive
     const primitive = this.#doc.createPrimitive();
@@ -336,6 +355,8 @@ export class GLTFExporter {
         break;
       }
     }
+
+    return mesh;
   }
 
   #parseMaterial(material: Material) {

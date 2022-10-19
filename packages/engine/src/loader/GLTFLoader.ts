@@ -26,7 +26,9 @@ import {
   BoxCollider,
   CylinderCollider,
   Entity,
+  HullCollider,
   Material,
+  MeshCollider,
   PrimitiveMesh,
   Scene,
   SphereCollider,
@@ -215,7 +217,7 @@ export class GLTFLoader {
     return samplerState;
   }
 
-  #loadNode(node: INode, parentId?: string): Entity {
+  #loadNode(node: INode, parentId?: string, hullRootId?: string): Entity {
     // Create entity
     const entity = new Entity();
     entity.isInternal = true;
@@ -229,27 +231,10 @@ export class GLTFLoader {
     entity.rotation = node.getRotation();
     entity.scale = node.getScale();
 
-    // Load mesh
-    const mesh = node.getMesh();
-    if (mesh) {
-      const meshEntities = this.#loadMesh(mesh);
-
-      const nodeWeights = node.getWeights();
-      const weights = nodeWeights.length > 0 ? nodeWeights : mesh.getWeights();
-
-      meshEntities.forEach((meshEntity) => {
-        if (meshEntity.mesh?.type !== "Primitive") throw new Error("No mesh");
-
-        // Set weights
-        meshEntity.mesh.weights = weights;
-
-        // Add to node
-        meshEntity.parentId = entity.id;
-      });
-    }
-
     // Load collider
     const collider = node.getExtension(ColliderExtension.EXTENSION_NAME);
+    let isHull = false;
+
     if (collider instanceof Collider) {
       switch (collider.getType()) {
         case "box": {
@@ -274,10 +259,44 @@ export class GLTFLoader {
           break;
         }
 
+        case "hull": {
+          isHull = true;
+          const hull = new HullCollider();
+          entity.collider = hull;
+          break;
+        }
+
+        case "mesh": {
+          isHull = true;
+          const mesh = new MeshCollider();
+          entity.collider = mesh;
+          break;
+        }
+
         default: {
           console.warn(`Collider type ${collider.getType()} not supported`);
         }
       }
+    }
+
+    const hullId = isHull ? entity.id : hullRootId;
+
+    // Load mesh
+    const mesh = node.getMesh();
+    if (mesh) {
+      const meshEntities = this.#loadMesh(mesh);
+
+      const nodeWeights = node.getWeights();
+      const weights = nodeWeights.length > 0 ? nodeWeights : mesh.getWeights();
+
+      meshEntities.forEach((meshEntity) => {
+        if (meshEntity.mesh?.type !== "Primitive") throw new Error("No mesh");
+
+        meshEntity.mesh.weights = weights;
+        meshEntity.parentId = entity.id;
+
+        if (hullId) meshEntity.mesh.gltfId = hullId;
+      });
     }
 
     // Load spawn
@@ -286,7 +305,7 @@ export class GLTFLoader {
 
     // Load children
     node.listChildren().forEach((child) => {
-      this.#loadNode(child, entity.id);
+      this.#loadNode(child, entity.id, hullId);
     });
 
     // Add to scene

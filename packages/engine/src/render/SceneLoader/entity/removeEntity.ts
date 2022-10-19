@@ -7,6 +7,9 @@ export function removeEntity(entityId: string, map: SceneMap) {
   const children = getChildren(entityId, map);
   children.forEach((child) => removeEntity(child.id, map));
 
+  // Remove entity
+  map.entities.delete(entityId);
+
   // Remove object
   removeEntityObject(entityId, map);
 }

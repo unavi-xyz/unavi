@@ -6,6 +6,8 @@ import { PrimitiveMeshJSON } from "./types";
 export class PrimitiveMesh {
   readonly type = "Primitive";
 
+  gltfId: string | null = null;
+
   mode$ = new BehaviorSubject<GLTF.MeshPrimitiveMode>(4);
   indicesId$ = new BehaviorSubject<string | null>(null);
 
@@ -159,6 +161,7 @@ export class PrimitiveMesh {
 
   toJSON(): PrimitiveMeshJSON {
     return {
+      gltfId: this.gltfId,
       type: this.type,
       mode: this.mode,
       indicesId: this.indicesId,
@@ -179,6 +182,7 @@ export class PrimitiveMesh {
   }
 
   applyJSON(json: Partial<PrimitiveMeshJSON>) {
+    if (json.gltfId !== undefined) this.gltfId = json.gltfId;
     if (json.mode !== undefined) this.mode = json.mode;
     if (json.indicesId !== undefined) this.indicesId = json.indicesId;
     if (json.weights !== undefined) this.weights = json.weights;

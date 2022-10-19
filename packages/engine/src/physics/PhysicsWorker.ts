@@ -56,6 +56,8 @@ export class PhysicsWorker {
   #rigidBodies = new Map<string, RigidBody>();
   #colliders = new Map<string, Collider>();
   #spawn: Triplet = [0, 0, 0];
+  #geometryPositions = new Map<string, Float32Array>();
+  #geometryIndices = new Map<string, Uint32Array>();
 
   constructor(postMessage: PostMessage) {
     this.#postMessage = postMessage;
@@ -169,6 +171,19 @@ export class PhysicsWorker {
         this.#isSprinting = data;
         break;
       }
+
+      case "set_collider_geometry": {
+        this.#geometryPositions.set(data.entityId, data.positions);
+
+        if (data.indices)
+          this.#geometryIndices.set(data.entityId, data.indices);
+
+        const entity = this.#entities.get(data.entityId);
+        if (!entity) throw new Error("Entity not found");
+
+        this.addCollider(entity);
+        break;
+      }
     }
   };
 
@@ -239,7 +254,8 @@ export class PhysicsWorker {
     if (!entity.collider) return;
 
     // Create collider description
-    let colliderDesc: ColliderDesc;
+    let colliderDesc: ColliderDesc | null = null;
+
     switch (entity.collider.type) {
       case "box": {
         const size = entity.collider.size;
@@ -260,7 +276,28 @@ export class PhysicsWorker {
         colliderDesc = ColliderDesc.cylinder(height / 2, cylinderRadius);
         break;
       }
+
+      case "hull": {
+        const positions = this.#geometryPositions.get(entity.id);
+        if (!positions) break;
+
+        colliderDesc = ColliderDesc.convexHull(positions);
+        break;
+      }
+
+      case "mesh": {
+        const positions = this.#geometryPositions.get(entity.id);
+        if (!positions) break;
+
+        const indices = this.#geometryIndices.get(entity.id);
+        if (!indices) break;
+
+        colliderDesc = ColliderDesc.trimesh(positions, indices);
+        break;
+      }
     }
+
+    if (!colliderDesc) return;
 
     colliderDesc.setCollisionGroups(staticCollisionGroup);
 

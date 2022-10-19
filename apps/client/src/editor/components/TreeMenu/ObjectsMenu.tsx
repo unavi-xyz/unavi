@@ -5,6 +5,7 @@ import {
   CylinderMesh,
   Entity,
   GLTFMesh,
+  MeshCollider,
   SphereCollider,
   SphereMesh,
 } from "@wired-labs/engine";
@@ -70,6 +71,7 @@ function createEntity(name: ObjectName) {
 
     case ObjectName.glTF: {
       entity.mesh = new GLTFMesh();
+      entity.collider = new MeshCollider();
       break;
     }
 

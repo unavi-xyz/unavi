@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { IoMdArrowRoundBack, IoMdPerson } from "react-icons/io";
+import { MdMic, MdMicOff } from "react-icons/md";
 
 import { useLens } from "../../client/lens/hooks/useLens";
 import Dialog from "../../ui/Dialog";
@@ -17,6 +18,7 @@ export default function UserButton() {
   const id = router.query.id as string;
 
   const [openUserPage, setOpenUserPage] = useState(false);
+  const [muted, setMuted] = useState(true);
 
   const isPointerLocked = usePointerLocked();
   const { handle } = useLens();
@@ -53,6 +55,10 @@ export default function UserButton() {
     }
   }
 
+  function handleMic() {
+    setMuted((prev) => !prev);
+  }
+
   const opacityClass = isPointerLocked ? "opacity-0" : "opacity-100";
 
   return (
@@ -78,6 +84,15 @@ export default function UserButton() {
             className="aspect-square rounded-full bg-surface p-3 text-2xl shadow transition hover:shadow-lg"
           >
             <IoMdPerson />
+          </button>
+        </Tooltip>
+
+        <Tooltip text={muted ? "Unmute" : "Mute"}>
+          <button
+            onClick={handleMic}
+            className="aspect-square rounded-full bg-surface p-3 text-2xl shadow transition hover:shadow-lg"
+          >
+            {muted ? <MdMicOff /> : <MdMic />}
           </button>
         </Tooltip>
       </div>

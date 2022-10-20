@@ -1,3 +1,10 @@
+import {
+  RtpCapabilities,
+  RtpParameters,
+} from "mediasoup-client/lib/RtpParameters";
+import { SctpStreamParameters } from "mediasoup-client/lib/SctpParameters";
+import { TransportOptions } from "mediasoup-client/lib/Transport";
+
 export type InternalChatMessage = {
   id: string;
   playerId: string;
@@ -35,7 +42,39 @@ export type ToHostMessage =
   | GenericWebSocketMessage<"falling_state", boolean>
   | GenericWebSocketMessage<"set_name", string | null>
   | GenericWebSocketMessage<"set_avatar", string | null>
-  | GenericWebSocketMessage<"set_handle", string | null>;
+  | GenericWebSocketMessage<"set_handle", string | null>
+  | GenericWebSocketMessage<"get_router_rtp_capabilities", null>
+  | GenericWebSocketMessage<
+      "create_transport",
+      {
+        type: "producer" | "consumer";
+      }
+    >
+  | GenericWebSocketMessage<
+      "connect_transport",
+      {
+        dtlsParameters: TransportOptions["dtlsParameters"];
+        type: "producer" | "consumer";
+      }
+    >
+  | GenericWebSocketMessage<
+      "produce",
+      {
+        rtpParameters: RtpParameters;
+      }
+    >
+  | GenericWebSocketMessage<
+      "produce_data",
+      {
+        sctpStreamParameters: SctpStreamParameters;
+      }
+    >
+  | GenericWebSocketMessage<
+      "set_rtp_capabilities",
+      {
+        rtpCapabilities: RtpCapabilities;
+      }
+    >;
 
 export type FromHostMessage =
   | GenericWebSocketMessage<
@@ -80,4 +119,27 @@ export type FromHostMessage =
   | GenericWebSocketMessage<
       "player_handle",
       { playerId: string; handle: string | null }
+    >
+  | GenericWebSocketMessage<"router_rtp_capabilities", RtpCapabilities>
+  | GenericWebSocketMessage<
+      "transport_created",
+      {
+        type: "producer" | "consumer";
+        options: TransportOptions;
+      }
+    >
+  | GenericWebSocketMessage<
+      "create_consumer",
+      {
+        producerId: string;
+        rtpParameters: RtpParameters;
+      }
+    >
+  | GenericWebSocketMessage<
+      "create_data_consumer",
+      {
+        id: string;
+        dataProducerId: string;
+        sctpStreamParameters: SctpStreamParameters;
+      }
     >;

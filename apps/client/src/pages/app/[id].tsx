@@ -115,7 +115,6 @@ export default function App({ id, metadata, publication }: Props) {
     return () => {
       engine.destroy();
       useAppStore.setState({ engine: null });
-      if (process.env.NODE_ENV === "development") window.location.reload();
     };
   }, [engine]);
 

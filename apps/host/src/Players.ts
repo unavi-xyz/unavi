@@ -1,4 +1,12 @@
 import { FromHostMessage } from "@wired-labs/engine";
+import { Consumer } from "mediasoup/node/lib/Consumer";
+import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
+import { DataProducer } from "mediasoup/node/lib/DataProducer";
+import { Producer } from "mediasoup/node/lib/Producer";
+import { RtpParameters } from "mediasoup/node/lib/RtpParameters";
+import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
+import { Transport } from "mediasoup/node/lib/Transport";
+import { RtpCapabilities } from "mediasoup-client/lib/RtpParameters";
 import { nanoid } from "nanoid";
 import uWS from "uWebSockets.js";
 
@@ -17,6 +25,13 @@ export class Players {
   readonly names = new Map<uWS.WebSocket, string>();
   readonly avatars = new Map<uWS.WebSocket, string>();
   readonly handles = new Map<uWS.WebSocket, string>();
+  readonly rtpCapabilities = new Map<uWS.WebSocket, RtpCapabilities>();
+  readonly producerTransports = new Map<uWS.WebSocket, Transport>();
+  readonly consumerTransports = new Map<uWS.WebSocket, Transport>();
+  readonly producers = new Map<uWS.WebSocket, Producer>();
+  readonly consumers = new Map<uWS.WebSocket, Consumer>();
+  readonly dataProducers = new Map<uWS.WebSocket, DataProducer>();
+  readonly dataConsumers = new Map<uWS.WebSocket, DataConsumer>();
 
   #server: uWS.TemplatedApp;
 
@@ -45,6 +60,13 @@ export class Players {
     this.names.delete(ws);
     this.avatars.delete(ws);
     this.handles.delete(ws);
+    this.rtpCapabilities.delete(ws);
+    this.producerTransports.delete(ws);
+    this.consumerTransports.delete(ws);
+    this.producers.delete(ws);
+    this.consumers.delete(ws);
+    this.dataProducers.delete(ws);
+    this.dataConsumers.delete(ws);
   }
 
   joinSpace(ws: uWS.WebSocket, { spaceId }: { spaceId: string }) {
@@ -94,6 +116,10 @@ export class Players {
           handle: otherHandle,
         },
       });
+
+      // Create consumers
+      this.createConsumer(ws, otherWs);
+      this.createDataConsumer(ws, otherWs);
     });
 
     // Save space id
@@ -106,6 +132,10 @@ export class Players {
         playerId,
       },
     });
+
+    // Publish WebRTC producers
+    this.publishProducer(ws);
+    this.publishDataProducer(ws);
   }
 
   leaveSpace(ws: uWS.WebSocket, isOpen = true) {
@@ -259,5 +289,128 @@ export class Players {
     });
 
     return count;
+  }
+
+  setTransport(
+    ws: uWS.WebSocket,
+    transport: Transport,
+    type: "producer" | "consumer"
+  ) {
+    if (type === "producer") this.producerTransports.set(ws, transport);
+    else this.consumerTransports.set(ws, transport);
+  }
+
+  async produce(ws: uWS.WebSocket, rtpParameters: RtpParameters) {
+    const transport = this.producerTransports.get(ws);
+    if (!transport) throw new Error("Producer transport not found");
+
+    const producer = await transport.produce({ kind: "audio", rtpParameters });
+    this.producers.set(ws, producer);
+
+    this.publishProducer(ws);
+  }
+
+  async produceData(
+    ws: uWS.WebSocket,
+    sctpStreamParameters: SctpStreamParameters
+  ) {
+    const transport = this.producerTransports.get(ws);
+    if (!transport) return;
+
+    const dataProducer = await transport.produceData({ sctpStreamParameters });
+    this.dataProducers.set(ws, dataProducer);
+
+    this.publishDataProducer(ws);
+  }
+
+  async setRtpCapabilities(
+    ws: uWS.WebSocket,
+    rtpCapabilities: RtpCapabilities
+  ) {
+    this.rtpCapabilities.set(ws, rtpCapabilities);
+  }
+
+  publishProducer(ws: uWS.WebSocket) {
+    const playerId = this.playerIds.get(ws);
+    if (!playerId) throw new Error("Player not found");
+
+    // If not in a space, do nothing
+    const spaceId = this.spaceIds.get(ws);
+    if (!spaceId) return;
+
+    // Create a consumer for each player in the space
+    this.spaceIds.forEach((otherSpaceId, otherWs) => {
+      if (otherSpaceId !== spaceId) return;
+      this.createConsumer(otherWs, ws);
+    });
+  }
+
+  publishDataProducer(ws: uWS.WebSocket) {
+    const playerId = this.playerIds.get(ws);
+    if (!playerId) throw new Error("Player not found");
+
+    // If not in a space, do nothing
+    const spaceId = this.spaceIds.get(ws);
+    if (!spaceId) return;
+
+    // Create a data consumer for each player in the space
+    this.spaceIds.forEach((otherSpaceId, otherWs) => {
+      if (otherSpaceId !== spaceId) return;
+      this.createDataConsumer(otherWs, ws);
+    });
+  }
+
+  async createConsumer(ws: uWS.WebSocket, otherWs: uWS.WebSocket) {
+    const producer = this.producers.get(otherWs);
+    if (!producer) return;
+
+    const existingConsumer = this.consumers.get(ws);
+    if (existingConsumer) return;
+
+    const otherTransport = this.consumerTransports.get(ws);
+    if (!otherTransport) return;
+
+    const rtpCapabilities = this.rtpCapabilities.get(ws);
+    if (!rtpCapabilities) return;
+
+    const consumer = await otherTransport.consume({
+      producerId: producer.id,
+      rtpCapabilities,
+    });
+    this.consumers.set(ws, consumer);
+
+    send(ws, {
+      subject: "create_consumer",
+      data: {
+        producerId: producer.id,
+        rtpParameters: consumer.rtpParameters,
+      },
+    });
+  }
+
+  async createDataConsumer(ws: uWS.WebSocket, otherWs: uWS.WebSocket) {
+    const dataProducer = this.dataProducers.get(otherWs);
+    if (!dataProducer) return;
+
+    const existingConsumer = this.dataConsumers.get(ws);
+    if (existingConsumer) return;
+
+    const otherTransport = this.consumerTransports.get(ws);
+    if (!otherTransport) return;
+
+    const dataConsumer = await otherTransport.consumeData({
+      dataProducerId: dataProducer.id,
+    });
+    if (!dataConsumer.sctpStreamParameters) return;
+    this.dataConsumers.set(ws, dataConsumer);
+
+    send(ws, {
+      subject: "create_data_consumer",
+      data: {
+        id: dataConsumer.id,
+        dataProducerId: dataProducer.id,
+        sctpStreamParameters: dataConsumer.sctpStreamParameters,
+      },
+    });
   }
 }

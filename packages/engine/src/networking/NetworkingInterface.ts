@@ -12,9 +12,9 @@ import { RenderThread } from "../render/RenderThread";
 import { Entity, GLTFMesh } from "../scene";
 import { LENS_API } from "./constants";
 import { FromHostMessage, InternalChatMessage, ToHostMessage } from "./types";
+import { WebRTC } from "./WebRTC";
 
 const DEFAULT_HOST = "wss://host.thewired.space";
-const PUBLISH_HZ = 20; // X times per second
 
 /*
  * Acts as an interface for all networking functionality.
@@ -24,7 +24,9 @@ export class NetworkingInterface {
   #scene: MainScene;
   #renderThread: RenderThread;
 
+  #webRTC: WebRTC | null = null;
   #ws: WebSocket | null = null;
+
   #lensClient = createClient({ url: LENS_API });
   #spaceEntityId: string | null = null;
   #broadcastInterval: NodeJS.Timeout | null = null;
@@ -124,28 +126,34 @@ export class NetworkingInterface {
       this.#sendAvatar();
       this.#sendHandle();
 
+      // Start WebRTC connection
+      this.#webRTC = new WebRTC(ws);
+      this.#webRTC.connect();
+
       // Join space
       send({ subject: "join", data: { spaceId } });
 
       // Start broadcasting position
-      this.#broadcastInterval = setInterval(() => {
-        if (!this.#playerPosition || !this.#playerRotation) return;
+      // this.#broadcastInterval = setInterval(() => {
+      //   if (!this.#playerPosition || !this.#playerRotation) return;
 
-        const data: [number, number, number, number, number, number, number] = [
-          Atomics.load(this.#playerPosition, 0) / 1000,
-          Atomics.load(this.#playerPosition, 1) / 1000,
-          Atomics.load(this.#playerPosition, 2) / 1000,
-          Atomics.load(this.#playerRotation, 0) / 100000,
-          Atomics.load(this.#playerRotation, 1) / 100000,
-          Atomics.load(this.#playerRotation, 2) / 100000,
-          Atomics.load(this.#playerRotation, 3) / 100000,
-        ];
+      //   const data: [number, number, number, number, number, number, number] = [
+      //     Atomics.load(this.#playerPosition, 0) / 1000,
+      //     Atomics.load(this.#playerPosition, 1) / 1000,
+      //     Atomics.load(this.#playerPosition, 2) / 1000,
+      //     Atomics.load(this.#playerRotation, 0) / 100000,
+      //     Atomics.load(this.#playerRotation, 1) / 100000,
+      //     Atomics.load(this.#playerRotation, 2) / 100000,
+      //     Atomics.load(this.#playerRotation, 3) / 100000,
+      //   ];
 
-        send({ subject: "location", data });
-      }, 1000 / PUBLISH_HZ);
+      //   send({ subject: "location", data });
+      // }, 1000 / PUBLISH_HZ);
     };
 
     ws.onmessage = (event: MessageEvent<string>) => {
+      this.#webRTC?.onmessage(JSON.parse(event.data));
+
       const { subject, data }: FromHostMessage = JSON.parse(event.data);
 
       switch (subject) {

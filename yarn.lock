@@ -10875,7 +10875,7 @@ media-typer@0.3.0:
   resolved "https://registry.yarnpkg.com/media-typer/-/media-typer-0.3.0.tgz#8710d7af0aa626f8fffa1ce00168545263255748"
   integrity sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==
 
-mediasoup-client@^3.6.55:
+mediasoup-client@^3.6.57:
   version "3.6.57"
   resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.57.tgz#c87dd3db39a7dd06f10c3862f0934d10d8704d91"
   integrity sha512-/DHOpgyebCgNIFZ8ZmOZXMPXklyFxTPJa3IoVybG7cghMetMeqvGiOhzgR5i/uoMZ1CMGsOCBF9+604gyBzt4w==
@@ -10891,10 +10891,10 @@ mediasoup-client@^3.6.55:
     sdp-transform "^2.14.1"
     supports-color "^9.2.2"
 
-mediasoup@^3.10.8:
-  version "3.10.8"
-  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.10.8.tgz#536bbcba4dc52bb571dd09353402081acacb9433"
-  integrity sha512-Wg+A1iUDf5g1bew92n/r5I4EEksUNkW5MEitm56eoB05gT7NOxmAg4HDo+KwvRS/riAsrJ2+/7efFFbdASZuNg==
+mediasoup@^3.10.10:
+  version "3.10.10"
+  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.10.10.tgz#254288ff1fb484897d1816740450372fd1d9bca3"
+  integrity sha512-59wtdtso40y8xtIPNK/aL1TI+A8BvvlJW2Ui5c1p84hjuzLQjR53YXhZGn4t7Uwksi0fzBBWAsEw7eLUE+ic4Q==
   dependencies:
     "@types/node" "^16.11.10"
     debug "^4.3.4"

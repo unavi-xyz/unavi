@@ -9,8 +9,10 @@ export class WebRTC {
   #ws: WebSocket;
 
   #device: Device | null = null;
-
   #consumerTransport: Transport | null = null;
+
+  #onProducerId: ({ id }: { id: string }) => void = () => {};
+  #onDataProducerId: ({ id }: { id: string }) => void = () => {};
 
   constructor(ws: WebSocket) {
     this.#ws = ws;
@@ -79,8 +81,10 @@ export class WebRTC {
         });
 
         if (data.type === "producer") {
-          transport.on("produce", async ({ kind, rtpParameters }) => {
+          transport.on("produce", async ({ kind, rtpParameters }, callback) => {
             if (kind === "video") throw new Error("Video not supported");
+
+            this.#onProducerId = callback;
 
             this.#send({
               subject: "produce",
@@ -88,12 +92,17 @@ export class WebRTC {
             });
           });
 
-          transport.on("producedata", async ({ sctpStreamParameters }) => {
-            this.#send({
-              subject: "produce_data",
-              data: { sctpStreamParameters },
-            });
-          });
+          transport.on(
+            "producedata",
+            async ({ sctpStreamParameters }, callback) => {
+              this.#onDataProducerId = callback;
+
+              this.#send({
+                subject: "produce_data",
+                data: { sctpStreamParameters },
+              });
+            }
+          );
 
           const dataProducer = await transport.produceData({
             ordered: false,
@@ -113,18 +122,23 @@ export class WebRTC {
       case "create_consumer": {
         if (!this.#consumerTransport)
           throw new Error("Consumer transport not initialized");
+        if (this.#consumerTransport.closed)
+          throw new Error("Consumer transport closed");
 
         const consumer = await this.#consumerTransport.consume({
+          id: data.id,
           producerId: data.producerId,
           rtpParameters: data.rtpParameters,
+          kind: "audio",
         });
-
         break;
       }
 
       case "create_data_consumer": {
         if (!this.#consumerTransport)
           throw new Error("Consumer transport not initialized");
+        if (this.#consumerTransport.closed)
+          throw new Error("Consumer transport closed");
 
         const dataConsumer = await this.#consumerTransport.consumeData({
           id: data.id,
@@ -132,6 +146,20 @@ export class WebRTC {
           sctpStreamParameters: data.sctpStreamParameters,
         });
 
+        dataConsumer.on("message", (message) => {
+          console.log("Message:", message);
+        });
+
+        break;
+      }
+
+      case "producer_id": {
+        this.#onProducerId(data);
+        break;
+      }
+
+      case "data_producer_id": {
+        this.#onDataProducerId(data);
         break;
       }
     }

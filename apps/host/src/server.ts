@@ -110,8 +110,25 @@ server.ws("/*", {
         break;
       }
 
+      case "connect_transport": {
+        const transport =
+          data.type === "producer"
+            ? players.producerTransports.get(ws)
+            : players.consumerTransports.get(ws);
+        if (!transport) break;
+
+        transport.connect({ dtlsParameters: data.dtlsParameters });
+
+        break;
+      }
+
       case "produce": {
-        players.produce(ws, data.rtpParameters);
+        const id = await players.produce(ws, data.rtpParameters);
+
+        send(ws, {
+          subject: "producer_id",
+          data: { id },
+        });
         break;
       }
 
@@ -121,7 +138,15 @@ server.ws("/*", {
           break;
         }
 
-        players.produceData(ws, data.sctpStreamParameters as any);
+        const id = await players.produceData(
+          ws,
+          data.sctpStreamParameters as any
+        );
+
+        send(ws, {
+          subject: "data_producer_id",
+          data: { id },
+        });
         break;
       }
 

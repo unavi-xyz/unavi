@@ -308,6 +308,8 @@ export class Players {
     this.producers.set(ws, producer);
 
     this.publishProducer(ws);
+
+    return producer.id;
   }
 
   async produceData(
@@ -315,12 +317,14 @@ export class Players {
     sctpStreamParameters: SctpStreamParameters
   ) {
     const transport = this.producerTransports.get(ws);
-    if (!transport) return;
+    if (!transport) throw new Error("Producer transport not found");
 
     const dataProducer = await transport.produceData({ sctpStreamParameters });
     this.dataProducers.set(ws, dataProducer);
 
     this.publishDataProducer(ws);
+
+    return dataProducer.id;
   }
 
   async setRtpCapabilities(
@@ -382,6 +386,7 @@ export class Players {
     send(ws, {
       subject: "create_consumer",
       data: {
+        id: consumer.id,
         producerId: producer.id,
         rtpParameters: consumer.rtpParameters,
       },

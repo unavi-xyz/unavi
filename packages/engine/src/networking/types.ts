@@ -131,6 +131,7 @@ export type FromHostMessage =
   | GenericWebSocketMessage<
       "create_consumer",
       {
+        id: string;
         producerId: string;
         rtpParameters: RtpParameters;
       }
@@ -141,5 +142,17 @@ export type FromHostMessage =
         id: string;
         dataProducerId: string;
         sctpStreamParameters: SctpStreamParameters;
+      }
+    >
+  | GenericWebSocketMessage<
+      "producer_id",
+      {
+        id: string;
+      }
+    >
+  | GenericWebSocketMessage<
+      "data_producer_id",
+      {
+        id: string;
       }
     >;

@@ -7,7 +7,7 @@ import { TransportOptions } from "mediasoup-client/lib/Transport";
 
 export type InternalChatMessage = {
   id: string;
-  playerId: string;
+  playerId: number;
   username: string;
   message: string;
   timestamp: number;
@@ -16,7 +16,7 @@ export type InternalChatMessage = {
 
 export type IChatMessage = {
   id: string;
-  playerId: string;
+  playerId: number;
   message: string;
   timestamp: number;
 };
@@ -74,51 +74,45 @@ export type ToHostMessage =
       {
         rtpCapabilities: RtpCapabilities;
       }
-    >;
+    >
+  | GenericWebSocketMessage<"ready_to_consume", boolean>;
 
 export type FromHostMessage =
   | GenericWebSocketMessage<
       "join_successful",
       {
-        playerId: string;
+        playerId: number;
       }
     >
   | GenericWebSocketMessage<
       "player_joined",
       {
-        playerId: string;
+        playerId: number;
         name: string | null;
         avatar: string | null;
         handle: string | null;
       }
     >
-  | GenericWebSocketMessage<"player_left", string>
-  | GenericWebSocketMessage<
-      "player_location",
-      {
-        playerId: string;
-        location: [number, number, number, number, number, number, number];
-      }
-    >
+  | GenericWebSocketMessage<"player_left", number>
   | GenericWebSocketMessage<"player_message", IChatMessage>
   | GenericWebSocketMessage<
       "player_falling_state",
       {
-        playerId: string;
+        playerId: number;
         isFalling: boolean;
       }
     >
   | GenericWebSocketMessage<
       "player_name",
-      { playerId: string; name: string | null }
+      { playerId: number; name: string | null }
     >
   | GenericWebSocketMessage<
       "player_avatar",
-      { playerId: string; avatar: string | null }
+      { playerId: number; avatar: string | null }
     >
   | GenericWebSocketMessage<
       "player_handle",
-      { playerId: string; handle: string | null }
+      { playerId: number; handle: string | null }
     >
   | GenericWebSocketMessage<"router_rtp_capabilities", RtpCapabilities>
   | GenericWebSocketMessage<

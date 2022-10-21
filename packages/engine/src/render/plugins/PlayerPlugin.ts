@@ -26,9 +26,9 @@ export class PlayerPlugin {
 
   #playerInputVector = new Vector2();
 
-  #playerPosition: Int32Array | null = null;
-  #playerRotation: Int32Array | null = null;
   #playerVelocity: Int32Array | null = null;
+  #playerPosition: Int32Array | null = null;
+  #playerRotation: Int16Array | null = null;
 
   #inputMomentum = new Vector2();
   #inputYChangeTime = 0;
@@ -69,7 +69,7 @@ export class PlayerPlugin {
           Int32Array.BYTES_PER_ELEMENT * 4
         );
 
-        this.#playerRotation = new Int32Array(rotationBuffer);
+        this.#playerRotation = new Int16Array(rotationBuffer);
 
         // Send back to main thread
         this.#postMessage({
@@ -97,7 +97,7 @@ export class PlayerPlugin {
         }
 
         this.#avatar = new PlayerAvatar(
-          "user",
+          -1,
           data,
           this.#avatarPath,
           this.#avatarAnimationsPath,
@@ -109,7 +109,7 @@ export class PlayerPlugin {
       }
 
       case "set_player_falling_state": {
-        if (data.playerId === "user" && this.#avatar) {
+        if (data.playerId === -1 && this.#avatar) {
           this.#avatar.isFalling = data.isFalling;
         }
       }
@@ -181,10 +181,10 @@ export class PlayerPlugin {
     // Send player rotation
     if (this.#playerRotation) {
       const rotation = this.#camera.quaternion;
-      Atomics.store(this.#playerRotation, 0, rotation.x * 100000);
-      Atomics.store(this.#playerRotation, 1, rotation.y * 100000);
-      Atomics.store(this.#playerRotation, 2, rotation.z * 100000);
-      Atomics.store(this.#playerRotation, 3, rotation.w * 100000);
+      Atomics.store(this.#playerRotation, 0, rotation.x * 1000);
+      Atomics.store(this.#playerRotation, 1, rotation.y * 1000);
+      Atomics.store(this.#playerRotation, 2, rotation.z * 1000);
+      Atomics.store(this.#playerRotation, 3, rotation.w * 1000);
     }
 
     // Apply player position

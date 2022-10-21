@@ -47,11 +47,6 @@ server.ws("/*", {
         break;
       }
 
-      case "location": {
-        players.publishLocation(ws, data);
-        break;
-      }
-
       case "message": {
         players.publishMessage(ws, data);
         break;
@@ -83,6 +78,11 @@ server.ws("/*", {
           subject: "router_rtp_capabilities",
           data: router.rtpCapabilities,
         });
+        break;
+      }
+
+      case "ready_to_consume": {
+        players.setReadyToConsume(ws, data);
         break;
       }
 

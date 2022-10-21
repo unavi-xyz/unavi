@@ -10,6 +10,7 @@ import { createClient } from "urql";
 import { MainScene } from "../main/MainScene";
 import { RenderThread } from "../render/RenderThread";
 import { Entity, GLTFMesh } from "../scene";
+import { toHex } from "../utils/toHex";
 import { LENS_API } from "./constants";
 import { FromHostMessage, InternalChatMessage, ToHostMessage } from "./types";
 import { WebRTC } from "./WebRTC";
@@ -33,17 +34,17 @@ export class NetworkingInterface {
   #hostServer: string | null = null;
   #reconnectCount = 0;
 
-  #playerPosition: Int32Array | null = null;
-  #playerRotation: Int32Array | null = null;
+  playerPosition: Int32Array | null = null;
+  playerRotation: Int16Array | null = null;
 
-  #playerNames = new Map<string, string>();
-  #playerHandles = new Map<string, string>();
+  #playerNames = new Map<number, string>();
+  #playerHandles = new Map<number, string>();
 
   #myName: string | null = null;
   #myAvatar: string | null = null;
   #myHandle: string | null = null;
 
-  playerId$ = new BehaviorSubject<string | null>(null);
+  playerId$ = new BehaviorSubject<number | null>(null);
   chatMessages$ = new BehaviorSubject<InternalChatMessage[]>([]);
 
   constructor({
@@ -113,6 +114,12 @@ export class NetworkingInterface {
     const ws = new WebSocket(this.#hostServer);
     this.#ws = ws;
 
+    // Create WebRTC manager
+    this.#webRTC = new WebRTC(ws, this.#renderThread);
+    this.#webRTC.playerId = this.playerId$.value;
+    this.#webRTC.playerPosition = this.playerPosition;
+    this.#webRTC.playerRotation = this.playerRotation;
+
     function send(message: ToHostMessage) {
       ws.send(JSON.stringify(message));
     }
@@ -127,28 +134,11 @@ export class NetworkingInterface {
       this.#sendHandle();
 
       // Start WebRTC connection
-      this.#webRTC = new WebRTC(ws);
+      if (!this.#webRTC) throw new Error("WebRTC not initialized");
       this.#webRTC.connect();
 
       // Join space
       send({ subject: "join", data: { spaceId } });
-
-      // Start broadcasting position
-      // this.#broadcastInterval = setInterval(() => {
-      //   if (!this.#playerPosition || !this.#playerRotation) return;
-
-      //   const data: [number, number, number, number, number, number, number] = [
-      //     Atomics.load(this.#playerPosition, 0) / 1000,
-      //     Atomics.load(this.#playerPosition, 1) / 1000,
-      //     Atomics.load(this.#playerPosition, 2) / 1000,
-      //     Atomics.load(this.#playerRotation, 0) / 100000,
-      //     Atomics.load(this.#playerRotation, 1) / 100000,
-      //     Atomics.load(this.#playerRotation, 2) / 100000,
-      //     Atomics.load(this.#playerRotation, 3) / 100000,
-      //   ];
-
-      //   send({ subject: "location", data });
-      // }, 1000 / PUBLISH_HZ);
     };
 
     ws.onmessage = (event: MessageEvent<string>) => {
@@ -169,11 +159,12 @@ export class NetworkingInterface {
 
           // Save player id
           this.playerId$.next(data.playerId);
+          if (this.#webRTC) this.#webRTC.playerId = data.playerId;
           break;
         }
 
         case "player_joined": {
-          console.info(`👋 Player ${data.playerId} joined`);
+          console.info(`👋 Player ${toHex(data.playerId)} joined`);
 
           // Set name
           if (data.name) this.#playerNames.set(data.playerId, data.name);
@@ -189,20 +180,12 @@ export class NetworkingInterface {
         }
 
         case "player_left": {
-          console.info(`👋 Player ${data} left`);
+          console.info(`👋 Player ${toHex(data)} left`);
 
           // Delete name
           this.#playerNames.delete(data);
 
           this.#renderThread.postMessage({ subject: "player_left", data });
-          break;
-        }
-
-        case "player_location": {
-          this.#renderThread.postMessage({
-            subject: "set_player_location",
-            data,
-          });
           break;
         }
 
@@ -215,7 +198,7 @@ export class NetworkingInterface {
             ? `@${handle}`
             : this.#playerNames.get(data.playerId);
 
-          if (!username) username = `Guest ${data.playerId.slice(0, 4)}`;
+          if (!username) username = `Guest ${toHex(data.playerId)}`;
 
           // Add message to chat
           const message: InternalChatMessage = {
@@ -244,7 +227,7 @@ export class NetworkingInterface {
         }
 
         case "player_name": {
-          console.info(`📇 Player ${data.playerId} is now ${data.name}`);
+          console.info(`📇 Player ${toHex(data.playerId)} is now ${data.name}`);
 
           if (data.name) this.#playerNames.set(data.playerId, data.name);
           else this.#playerNames.delete(data.playerId);
@@ -252,7 +235,7 @@ export class NetworkingInterface {
         }
 
         case "player_avatar": {
-          console.info(`💃 Got custom avatar for ${data.playerId}`);
+          console.info(`💃 Got custom avatar for ${toHex(data.playerId)}`);
 
           this.#renderThread.postMessage({
             subject: "set_player_avatar",
@@ -262,7 +245,9 @@ export class NetworkingInterface {
         }
 
         case "player_handle": {
-          console.info(`🌿 Player ${data.playerId} is now @${data.handle}`);
+          console.info(
+            `🌿 Player ${toHex(data.playerId)} is now @${data.handle}`
+          );
 
           if (data.handle) this.#playerHandles.set(data.playerId, data.handle);
           else this.#playerHandles.delete(data.playerId);
@@ -334,11 +319,13 @@ export class NetworkingInterface {
   }
 
   setPlayerPosition(position: Int32Array) {
-    this.#playerPosition = position;
+    this.playerPosition = position;
+    if (this.#webRTC) this.#webRTC.playerPosition = position;
   }
 
-  setPlayerRotation(rotation: Int32Array) {
-    this.#playerRotation = rotation;
+  setPlayerRotation(rotation: Int16Array) {
+    this.playerRotation = rotation;
+    if (this.#webRTC) this.#webRTC.playerRotation = rotation;
   }
 
   setFallState(falling: boolean) {

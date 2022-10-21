@@ -20,18 +20,25 @@ function spaceTopic(spaceId: string) {
  * Contains logic for managing connected players.
  */
 export class Players {
-  readonly playerIds = new Map<uWS.WebSocket, string>();
+  #previousPlayerId = 0;
+
+  readonly playerIds = new Map<uWS.WebSocket, number>();
   readonly spaceIds = new Map<uWS.WebSocket, string>();
   readonly names = new Map<uWS.WebSocket, string>();
   readonly avatars = new Map<uWS.WebSocket, string>();
   readonly handles = new Map<uWS.WebSocket, string>();
   readonly rtpCapabilities = new Map<uWS.WebSocket, RtpCapabilities>();
+  readonly readyToConsume = new Map<uWS.WebSocket, boolean>();
+  readonly consumeQueue = new Map<uWS.WebSocket, uWS.WebSocket[]>();
   readonly producerTransports = new Map<uWS.WebSocket, Transport>();
   readonly consumerTransports = new Map<uWS.WebSocket, Transport>();
   readonly producers = new Map<uWS.WebSocket, Producer>();
-  readonly consumers = new Map<uWS.WebSocket, Consumer>();
+  readonly consumers = new Map<uWS.WebSocket, Map<uWS.WebSocket, Consumer>>();
   readonly dataProducers = new Map<uWS.WebSocket, DataProducer>();
-  readonly dataConsumers = new Map<uWS.WebSocket, DataConsumer>();
+  readonly dataConsumers = new Map<
+    uWS.WebSocket,
+    Map<uWS.WebSocket, DataConsumer>
+  >();
 
   #server: uWS.TemplatedApp;
 
@@ -40,7 +47,25 @@ export class Players {
   }
 
   addPlayer(ws: uWS.WebSocket) {
-    const playerId = nanoid();
+    let playerId: number | null = null;
+
+    // Find an open player id
+    // Max of 256 players
+    const playerIds = Array.from(this.playerIds.values());
+    let i = 0;
+    while (playerId === null) {
+      i++;
+      this.#previousPlayerId++;
+      if (this.#previousPlayerId >= 256) this.#previousPlayerId = 0;
+
+      if (!playerIds.includes(this.#previousPlayerId))
+        playerId = this.#previousPlayerId;
+
+      if (i > 256) {
+        console.error("No open player ids");
+        return;
+      }
+    }
 
     console.info(`👋 Player ${playerId} connected`);
 
@@ -61,6 +86,8 @@ export class Players {
     this.avatars.delete(ws);
     this.handles.delete(ws);
     this.rtpCapabilities.delete(ws);
+    this.readyToConsume.delete(ws);
+    this.consumeQueue.delete(ws);
     this.producerTransports.delete(ws);
     this.consumerTransports.delete(ws);
     this.producers.delete(ws);
@@ -159,26 +186,6 @@ export class Players {
     };
 
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(leaveMessage));
-  }
-
-  publishLocation(
-    ws: uWS.WebSocket,
-    location: [number, number, number, number, number, number, number]
-  ) {
-    const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
-
-    // If not in a space, do nothing
-    const spaceId = this.spaceIds.get(ws);
-    if (!spaceId) return;
-
-    // Tell everyone in the space about this player's location
-    const locationMessage: FromHostMessage = {
-      subject: "player_location",
-      data: { playerId, location },
-    };
-
-    ws.publish(spaceTopic(spaceId), JSON.stringify(locationMessage));
   }
 
   publishMessage(ws: uWS.WebSocket, message: string) {
@@ -334,6 +341,21 @@ export class Players {
     this.rtpCapabilities.set(ws, rtpCapabilities);
   }
 
+  setReadyToConsume(ws: uWS.WebSocket, ready: boolean) {
+    this.readyToConsume.set(ws, ready);
+    if (!ready) return;
+
+    // If this player is ready to consume, consume the queue
+    const queue = this.consumeQueue.get(ws);
+    if (queue) {
+      for (const otherWs of queue) {
+        this.createConsumer(ws, otherWs);
+        this.createDataConsumer(ws, otherWs);
+      }
+      this.consumeQueue.delete(ws);
+    }
+  }
+
   publishProducer(ws: uWS.WebSocket) {
     const playerId = this.playerIds.get(ws);
     if (!playerId) throw new Error("Player not found");
@@ -365,23 +387,42 @@ export class Players {
   }
 
   async createConsumer(ws: uWS.WebSocket, otherWs: uWS.WebSocket) {
+    if (ws === otherWs) return;
+
+    // If not ready, add to queue
+    const ready = this.readyToConsume.get(ws);
+    if (!ready) {
+      let queue = this.consumeQueue.get(ws);
+      if (!queue) queue = [];
+      if (!queue.includes(otherWs)) queue.push(otherWs);
+      this.consumeQueue.set(ws, queue);
+      return;
+    }
+
     const producer = this.producers.get(otherWs);
     if (!producer) return;
 
-    const existingConsumer = this.consumers.get(ws);
+    let consumers = this.consumers.get(ws);
+    if (!consumers) {
+      consumers = new Map();
+      this.consumers.set(ws, consumers);
+    }
+
+    const existingConsumer = consumers.get(otherWs);
     if (existingConsumer) return;
 
-    const otherTransport = this.consumerTransports.get(ws);
-    if (!otherTransport) return;
+    const transport = this.consumerTransports.get(ws);
+    if (!transport) return;
 
     const rtpCapabilities = this.rtpCapabilities.get(ws);
     if (!rtpCapabilities) return;
 
-    const consumer = await otherTransport.consume({
+    const consumer = await transport.consume({
       producerId: producer.id,
       rtpCapabilities,
     });
-    this.consumers.set(ws, consumer);
+
+    consumers.set(otherWs, consumer);
 
     send(ws, {
       subject: "create_consumer",
@@ -394,20 +435,41 @@ export class Players {
   }
 
   async createDataConsumer(ws: uWS.WebSocket, otherWs: uWS.WebSocket) {
+    if (ws === otherWs) return;
+
+    // If not ready, add to queue
+    const ready = this.readyToConsume.get(ws);
+    if (!ready) {
+      let queue = this.consumeQueue.get(ws);
+      if (!queue) queue = [];
+      if (!queue.includes(otherWs)) queue.push(otherWs);
+      this.consumeQueue.set(ws, queue);
+      return;
+    }
+
     const dataProducer = this.dataProducers.get(otherWs);
     if (!dataProducer) return;
 
-    const existingConsumer = this.dataConsumers.get(ws);
-    if (existingConsumer) return;
+    let dataConsumers = this.dataConsumers.get(ws);
+    if (!dataConsumers) {
+      dataConsumers = new Map();
+      this.dataConsumers.set(ws, dataConsumers);
+    }
 
-    const otherTransport = this.consumerTransports.get(ws);
-    if (!otherTransport) return;
+    const existingDataConsumer = dataConsumers.get(otherWs);
+    if (existingDataConsumer) return;
 
-    const dataConsumer = await otherTransport.consumeData({
+    const transport = this.consumerTransports.get(ws);
+    if (!transport) return;
+
+    const dataConsumer = await transport.consumeData({
       dataProducerId: dataProducer.id,
+      ordered: false,
+      maxRetransmits: 0,
     });
     if (!dataConsumer.sctpStreamParameters) return;
-    this.dataConsumers.set(ws, dataConsumer);
+
+    dataConsumers.set(otherWs, dataConsumer);
 
     send(ws, {
       subject: "create_data_consumer",

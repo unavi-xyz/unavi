@@ -75,7 +75,8 @@ export type ToHostMessage =
         rtpCapabilities: RtpCapabilities;
       }
     >
-  | GenericWebSocketMessage<"ready_to_consume", boolean>;
+  | GenericWebSocketMessage<"ready_to_consume", boolean>
+  | GenericWebSocketMessage<"resume_audio", null>;
 
 export type FromHostMessage =
   | GenericWebSocketMessage<

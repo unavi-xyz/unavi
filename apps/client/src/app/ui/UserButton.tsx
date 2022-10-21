@@ -55,8 +55,28 @@ export default function UserButton() {
     }
   }
 
-  function handleMic() {
-    setMuted((prev) => !prev);
+  async function handleMic() {
+    const { engine } = useAppStore.getState();
+    if (!engine) throw new Error("Engine not found");
+
+    // Toggle mic
+    const isMuted = !muted;
+
+    // If no longer muted, unmute or connect to mic
+    if (!isMuted) {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
+
+      const track = stream.getAudioTracks()[0];
+      if (!track) throw new Error("No audio track found");
+
+      await engine.networkingInterface.produceAudio(track);
+    }
+
+    await engine.networkingInterface.setAudioPaused(isMuted);
+
+    setMuted(isMuted);
   }
 
   const opacityClass = isPointerLocked ? "opacity-0" : "opacity-100";

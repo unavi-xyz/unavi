@@ -3,6 +3,7 @@ import { Consumer } from "mediasoup/node/lib/Consumer";
 import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
 import { Producer } from "mediasoup/node/lib/Producer";
+import { Router } from "mediasoup/node/lib/Router";
 import { RtpParameters } from "mediasoup/node/lib/RtpParameters";
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { Transport } from "mediasoup/node/lib/Transport";
@@ -41,9 +42,11 @@ export class Players {
   >();
 
   #server: uWS.TemplatedApp;
+  #router: Router;
 
-  constructor(server: uWS.TemplatedApp) {
+  constructor(server: uWS.TemplatedApp, router: Router) {
     this.#server = server;
+    this.#router = router;
   }
 
   addPlayer(ws: uWS.WebSocket) {
@@ -417,9 +420,16 @@ export class Players {
     const rtpCapabilities = this.rtpCapabilities.get(ws);
     if (!rtpCapabilities) return;
 
+    const canConsume = this.#router.canConsume({
+      producerId: producer.id,
+      rtpCapabilities,
+    });
+    if (!canConsume) return;
+
     const consumer = await transport.consume({
       producerId: producer.id,
       rtpCapabilities,
+      paused: true,
     });
 
     consumers.set(otherWs, consumer);
@@ -478,6 +488,16 @@ export class Players {
         dataProducerId: dataProducer.id,
         sctpStreamParameters: dataConsumer.sctpStreamParameters,
       },
+    });
+  }
+
+  setAudioPaused(ws: uWS.WebSocket, paused: boolean) {
+    const consumers = this.consumers.get(ws);
+    if (!consumers) return;
+
+    consumers.forEach((consumer) => {
+      if (paused) consumer.pause();
+      else consumer.resume();
     });
   }
 }

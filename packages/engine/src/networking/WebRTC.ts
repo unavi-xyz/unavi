@@ -1,4 +1,5 @@
 import { Device } from "mediasoup-client";
+import { Producer } from "mediasoup-client/lib/Producer";
 import { Transport } from "mediasoup-client/lib/Transport";
 
 import { RenderThread } from "../render/RenderThread";
@@ -15,7 +16,10 @@ export class WebRTC {
   #renderThread: RenderThread;
 
   #device: Device | null = null;
+  #producerTransport: Transport | null = null;
   #consumerTransport: Transport | null = null;
+  #producer: Producer | null = null;
+  #paused = false;
 
   #onProducerId: ({ id }: { id: string }) => void = () => {};
   #onDataProducerId: ({ id }: { id: string }) => void = () => {};
@@ -88,6 +92,8 @@ export class WebRTC {
         });
 
         if (data.type === "producer") {
+          this.#producerTransport = transport;
+
           transport.on("produce", async ({ kind, rtpParameters }, callback) => {
             if (kind === "video") throw new Error("Video not supported");
 
@@ -166,12 +172,49 @@ export class WebRTC {
         if (this.#consumerTransport.closed)
           throw new Error("Consumer transport closed");
 
-        await this.#consumerTransport.consume({
+        const consumer = await this.#consumerTransport.consume({
           id: data.id,
           producerId: data.producerId,
           rtpParameters: data.rtpParameters,
           kind: "audio",
         });
+
+        // Start receiving audio
+        await consumer.resume();
+
+        this.#send({
+          subject: "resume_audio",
+          data: null,
+        });
+
+        // Create audio stream
+        const stream = new MediaStream([consumer.track]);
+
+        // Create audio element
+        const audio = new Audio();
+        audio.srcObject = stream;
+        audio.autoplay = true;
+
+        // TODO Add positional audio (https://developer.mozilla.org/en-US/docs/Web/API/PannerNode)
+        // - Cant just use the threejs audio listener because it's on a different thread :(
+
+        // User needs to interact with the page to play audio
+        // There is probably a better way to do this
+        try {
+          await audio.play();
+        } catch {
+          const tryToPlay = setInterval(() => {
+            audio
+              .play()
+              .then(() => {
+                clearInterval(tryToPlay);
+              })
+              .catch((error) => {
+                console.warn(error);
+              });
+          }, 5000);
+        }
+
         break;
       }
 
@@ -214,5 +257,24 @@ export class WebRTC {
 
   #send(message: ToHostMessage) {
     this.#ws.send(JSON.stringify(message));
+  }
+
+  async produceAudio(track: MediaStreamTrack) {
+    if (!this.#producerTransport)
+      throw new Error("Producer transport not initialized");
+    if (this.#producerTransport.closed)
+      throw new Error("Producer transport closed");
+
+    this.#producer = await this.#producerTransport.produce({ track });
+
+    if (this.#paused) this.#producer.pause();
+    else this.#producer.resume();
+  }
+
+  setAudioPaused(paused: boolean) {
+    this.#paused = paused;
+
+    if (this.#producer && paused) this.#producer.pause();
+    else if (this.#producer && !paused) this.#producer.resume();
   }
 }

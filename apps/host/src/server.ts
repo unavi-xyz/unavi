@@ -17,11 +17,11 @@ const server =
     ? uWS.SSLApp({ key_file_name, cert_file_name })
     : uWS.App();
 
-// Create player manager
-const players = new Players(server);
-
 // Create Mediasoup router
 const router = await createMediasoupRouter();
+
+// Create player manager
+const players = new Players(server, router);
 
 // Handle WebSocket connections
 server.ws("/*", {
@@ -83,6 +83,11 @@ server.ws("/*", {
 
       case "ready_to_consume": {
         players.setReadyToConsume(ws, data);
+        break;
+      }
+
+      case "resume_audio": {
+        players.setAudioPaused(ws, false);
         break;
       }
 

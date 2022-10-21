@@ -391,4 +391,14 @@ export class NetworkingInterface {
   #isWsOpen() {
     return this.#ws && this.#ws.readyState === this.#ws.OPEN;
   }
+
+  produceAudio(track: MediaStreamTrack) {
+    if (!this.#webRTC) throw new Error("WebRTC not initialized");
+    return this.#webRTC.produceAudio(track);
+  }
+
+  setAudioPaused(paused: boolean) {
+    if (!this.#webRTC) throw new Error("WebRTC not initialized");
+    this.#webRTC.setAudioPaused(paused);
+  }
 }

@@ -99,7 +99,7 @@ export default function EditorNavbar() {
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <div className="aspect-square h-full">
             <Tooltip
-              text={`${visuals ? "Show" : "Hide"} Visuals`}
+              text={`${visuals ? "Hide" : "Show"} Visuals`}
               placement="bottom"
             >
               <IconButton selected={visuals} onClick={handleToggleColliders}>

@@ -52,7 +52,7 @@ export default function Card({
             src={image}
             draggable={false}
             alt="card image"
-            className="rounded-2xl object-cover"
+            className="h-full w-full rounded-2xl object-cover"
             crossOrigin="anonymous"
           />
         ))}

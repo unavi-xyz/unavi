@@ -60,7 +60,7 @@ export default function SpaceLayout({
                     <img
                       src={image}
                       alt="space preview"
-                      className="rounded-3xl object-cover"
+                      className="h-full w-full rounded-3xl object-cover"
                       crossOrigin="anonymous"
                     />
                   ))}
@@ -98,11 +98,11 @@ export default function SpaceLayout({
               </div>
 
               <Link href={`/app/${id}`} passHref>
-                <a>
+                <div>
                   <Button variant="filled" fullWidth>
                     <div className="py-2">Join Space</div>
                   </Button>
-                </a>
+                </div>
               </Link>
             </div>
           </div>

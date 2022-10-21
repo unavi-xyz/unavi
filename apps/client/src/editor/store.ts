@@ -35,6 +35,6 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
   name: "",
   description: "",
 
-  visuals: false,
+  visuals: true,
   tool: "translate",
 }));

@@ -14,13 +14,16 @@ import { publicProvider } from "wagmi/providers/public";
 
 import { env } from "../env/client.mjs";
 
-const apiKey = env.NEXT_PUBLIC_ALCHEMY_ID;
-
 export const CHAIN_IDS = [chain.polygonMumbai.id];
+
+const providers = [publicProvider()];
+
+const apiKey = env.NEXT_PUBLIC_ALCHEMY_ID;
+if (apiKey) providers.push(alchemyProvider({ apiKey }));
 
 export const { chains, provider } = configureChains(
   [chain.polygonMumbai],
-  [alchemyProvider({ apiKey }), publicProvider()]
+  providers
 );
 
 const needsInjectedWalletFallback =

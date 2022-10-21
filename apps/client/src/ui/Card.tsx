@@ -1,6 +1,8 @@
 import Image from "next/future/image";
 import { useEffect, useState } from "react";
 
+import { isFromCDN } from "../utils/isFromCDN";
+
 interface Props {
   image?: string | null;
   text?: string | null;
@@ -33,17 +35,27 @@ export default function Card({
     <div
       className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-primaryContainer transition hover:scale-105 hover:cursor-pointer ${opacityCss} ${aspectCss}`}
     >
-      {image && (
-        <Image
-          src={image}
-          priority
-          fill
-          sizes={sizes}
-          draggable={false}
-          alt="card image"
-          className="rounded-2xl object-cover"
-        />
-      )}
+      {image &&
+        (isFromCDN(image) ? (
+          <Image
+            src={image}
+            priority
+            fill
+            sizes={sizes}
+            draggable={false}
+            alt="card image"
+            className="rounded-2xl object-cover"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={image}
+            draggable={false}
+            alt="card image"
+            className="h-full w-full rounded-2xl object-cover"
+            crossOrigin="anonymous"
+          />
+        ))}
 
       <div className="absolute flex h-full w-full items-end px-3 pb-2 tracking-wide text-white">
         {text && (

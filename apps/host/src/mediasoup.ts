@@ -3,8 +3,8 @@ import { Router } from "mediasoup/node/lib/Router";
 
 export async function createMediasoupRouter() {
   const worker = await mediasoup.createWorker({
-    rtcMinPort: parseInt(process.env.RTC_MIN_PORT || "40000"),
-    rtcMaxPort: parseInt(process.env.RTC_MAX_PORT || "40100"),
+    rtcMinPort: parseInt(process.env.RTC_MIN_PORT || "20000"),
+    rtcMaxPort: parseInt(process.env.RTC_MAX_PORT || "20040"),
   });
 
   worker.on("died", () => {

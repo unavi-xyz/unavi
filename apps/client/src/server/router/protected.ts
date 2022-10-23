@@ -18,7 +18,6 @@ import {
 import { createProtectedRouter } from "./context";
 
 const UUID_LENGTH = 36;
-const NANOID_LENGTH = 21;
 const PROJECT_NAME_LENGTH = 70;
 const PROJECT_DESCRIPTION_LENGTH = 2000;
 

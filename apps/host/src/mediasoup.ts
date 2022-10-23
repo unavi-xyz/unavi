@@ -54,7 +54,7 @@ export async function createWebRtcTransport(
     enableUdp: true,
     enableTcp: true,
     enableSctp: true,
-    preferUdp: true,
+    preferTcp: true,
     webRtcServer,
   });
 

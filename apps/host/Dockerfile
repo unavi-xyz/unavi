@@ -35,8 +35,4 @@ RUN adduser --system --uid 1001 nodejs
 USER nodejs
 COPY --from=installer /app .
 
-ENV PORT=${PORT:-4000}
-ENV RTC_MIN_PORT=${RTC_MIN_PORT:-20000}
-ENV RTC_MAX_PORT=${RTC_MAX_PORT:-20040}
-
 CMD node --experimental-specifier-resolution=node apps/host/build/server.js

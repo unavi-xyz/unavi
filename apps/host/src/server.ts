@@ -1,7 +1,7 @@
 import { ToHostMessage } from "@wired-labs/engine";
 import uWS from "uWebSockets.js";
 
-import { createMediasoupRouter, createWebRtcTransport } from "./mediasoup";
+import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
 import { Players } from "./Players";
 import { send } from "./utils/send";
 
@@ -18,7 +18,7 @@ const server =
     : uWS.App();
 
 // Create Mediasoup router
-const router = await createMediasoupRouter();
+const { router, webRtcServer } = await createMediasoupWorker();
 
 // Create player manager
 const players = new Players(server, router);
@@ -92,7 +92,11 @@ server.ws("/*", {
       }
 
       case "create_transport": {
-        const { transport, params } = await createWebRtcTransport(router);
+        const { transport, params } = await createWebRtcTransport(
+          router,
+          webRtcServer
+        );
+
         players.setTransport(ws, transport, data.type);
 
         const iceCandidates: any = params.iceCandidates.filter((candidate) => {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { IoMdArrowRoundBack, IoMdPerson } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
@@ -13,16 +13,16 @@ import { useSetAvatar } from "../hooks/useSetAvatar";
 import { useAppStore } from "../store";
 import UserPage from "./UserPage";
 
-export default function UserButton() {
+export default function UserButtons() {
   const router = useRouter();
   const id = router.query.id as string;
 
   const [openUserPage, setOpenUserPage] = useState(false);
   const [muted, setMuted] = useState(true);
+  const hasProducedAudio = useRef(false);
 
   const isPointerLocked = usePointerLocked();
   const { handle } = useLens();
-
   const setAvatar = useSetAvatar();
 
   async function handleClose() {
@@ -62,8 +62,8 @@ export default function UserButton() {
     // Toggle mic
     const isMuted = !muted;
 
-    // If no longer muted, unmute or connect to mic
-    if (!isMuted) {
+    // If first time using mic, request permission
+    if (!isMuted && !hasProducedAudio.current) {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
       });
@@ -72,6 +72,8 @@ export default function UserButton() {
       if (!track) throw new Error("No audio track found");
 
       await engine.networkingInterface.produceAudio(track);
+
+      hasProducedAudio.current = true;
     }
 
     await engine.networkingInterface.setAudioPaused(isMuted);

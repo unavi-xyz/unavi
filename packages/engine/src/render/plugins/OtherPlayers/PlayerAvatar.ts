@@ -97,7 +97,6 @@ export class PlayerAvatar {
 
     // Remove previous VRM model
     if (this.#vrm) {
-      this.#vrm.scene.removeFromParent();
       disposeObject(this.#vrm.scene);
       this.#vrm = null;
     }

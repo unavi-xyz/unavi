@@ -9,11 +9,10 @@ export function removeEntityObject(entityId: string, map: SceneMap) {
   // Remove collider visual
   removeColliderVisual(entityId, map);
 
+  // Remove object
   const object = map.objects.get(entityId);
   if (!object) return;
 
-  // Remove from scene
-  object.removeFromParent();
   map.objects.delete(entityId);
 
   // Dispose object

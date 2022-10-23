@@ -55,6 +55,12 @@ export class OtherPlayersPlugin {
       case "set_player_avatar": {
         const player = this.#players.get(data.playerId);
         if (player) player.setAvatar(data.avatar);
+        break;
+      }
+
+      case "clear_players": {
+        this.#players.forEach((player) => this.removePlayer(player.playerId));
+        break;
       }
     }
   }

@@ -259,6 +259,11 @@ export class NetworkingInterface {
     ws.onclose = async () => {
       console.info("❌ Disconnected from host");
 
+      // Remove all players from scene
+      this.#playerHandles.clear();
+      this.#playerNames.clear();
+      this.#renderThread.postMessage({ subject: "clear_players", data: null });
+
       if (this.#broadcastInterval) clearInterval(this.#broadcastInterval);
 
       if (!this.#hostServer || this.#reconnectCount > 0) return;

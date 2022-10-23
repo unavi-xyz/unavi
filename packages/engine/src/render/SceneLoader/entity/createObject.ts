@@ -73,10 +73,7 @@ export function createObject(
 
     case "Primitive": {
       // Remove old object
-      if (oldObject) {
-        oldObject.removeFromParent();
-        disposeObject(oldObject);
-      }
+      if (oldObject) disposeObject(oldObject);
 
       const isSkin = entity.mesh.skin !== null;
 
@@ -187,10 +184,7 @@ export function createObject(
 
     default: {
       // Remove old object
-      if (oldObject) {
-        oldObject.removeFromParent();
-        disposeObject(oldObject);
-      }
+      if (oldObject) disposeObject(oldObject);
 
       // Check if joint
       let isJoint = false;

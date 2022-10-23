@@ -1,11 +1,11 @@
 FROM node:18 AS builder
 WORKDIR /app
-# Set working directory
+
+# Prune files
 RUN yarn global add turbo
 COPY . .
 RUN turbo prune --scope=@wired-labs/host --docker
 
-# Add lockfile and package.json's of isolated subworkspace
 FROM node:18 AS installer
 WORKDIR /app
 
@@ -15,11 +15,11 @@ RUN \
 	&& apt-get update \
 	&& apt-get install -y net-tools build-essential python3 python3-pip valgrind
 
-# First install the dependencies (as they change less often)
+# Install NPM dependencies
 COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/yarn.lock ./yarn.lock
-RUN yarn install --ignore-scripts --frozen-lockfile
+RUN yarn install --frozen-lockfile
 
 # Build the project and its dependencies
 COPY --from=builder /app/out/full/ .
@@ -35,11 +35,8 @@ RUN adduser --system --uid 1001 nodejs
 USER nodejs
 COPY --from=installer /app .
 
-ENV NODE_ENV=production
-ENV PORT=4000
-ENV SSL_CERT=cert.pem
-ENV SSL_KEY=key.pem
-ENV RTC_MIN_PORT=40000
-ENV RTC_MAX_PORT=40100
+ENV PORT=${PORT:-4000}
+ENV RTC_MIN_PORT=${RTC_MIN_PORT:-20000}
+ENV RTC_MAX_PORT=${RTC_MAX_PORT:-20100}
 
 CMD node --experimental-specifier-resolution=node apps/host/build/server.js

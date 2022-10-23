@@ -20,7 +20,7 @@
     "@graphql-codegen/cli": "2.13.7",
     "@graphql-codegen/introspection": "2.2.1",
     "@graphql-codegen/typescript": "2.7.5",
-    "@graphql-codegen/typescript-operations": "2.5.4",
+    "@graphql-codegen/typescript-operations": "2.5.5",
     "@graphql-codegen/typescript-urql": "^3.7.1",
     "@typechain/ethers-v5": "^10.1.0",
     "@types/react": "18.0.21",

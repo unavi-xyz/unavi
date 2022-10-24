@@ -420,6 +420,9 @@ export class Players {
     const rtpCapabilities = this.rtpCapabilities.get(ws);
     if (!rtpCapabilities) return;
 
+    const otherPlayerId = this.playerIds.get(otherWs);
+    if (otherPlayerId === undefined) return;
+
     const canConsume = this.#router.canConsume({
       producerId: producer.id,
       rtpCapabilities,
@@ -437,6 +440,7 @@ export class Players {
     send(ws, {
       subject: "create_consumer",
       data: {
+        playerId: otherPlayerId,
         id: consumer.id,
         producerId: producer.id,
         rtpParameters: consumer.rtpParameters,
@@ -472,6 +476,9 @@ export class Players {
     const transport = this.consumerTransports.get(ws);
     if (!transport) return;
 
+    const otherPlayerId = this.playerIds.get(otherWs);
+    if (otherPlayerId === undefined) return;
+
     const dataConsumer = await transport.consumeData({
       dataProducerId: dataProducer.id,
       ordered: false,
@@ -484,6 +491,7 @@ export class Players {
     send(ws, {
       subject: "create_data_consumer",
       data: {
+        playerId: otherPlayerId,
         id: dataConsumer.id,
         dataProducerId: dataProducer.id,
         sctpStreamParameters: dataConsumer.sctpStreamParameters,

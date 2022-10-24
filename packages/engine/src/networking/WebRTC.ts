@@ -3,6 +3,7 @@ import { Producer } from "mediasoup-client/lib/Producer";
 import { Transport } from "mediasoup-client/lib/Transport";
 
 import { RenderThread } from "../render/RenderThread";
+import { quaternionToEuler } from "../render/utils/quaternionToEuler";
 import { FromHostMessage, ToHostMessage } from "./types";
 
 const PUBLISH_HZ = 15; // X times per second
@@ -15,11 +16,14 @@ export class WebRTC {
   #ws: WebSocket;
   #renderThread: RenderThread;
 
+  #audioContext = new AudioContext();
   #device: Device | null = null;
   #producerTransport: Transport | null = null;
   #consumerTransport: Transport | null = null;
   #producer: Producer | null = null;
   #paused = false;
+
+  #panners = new Map<number, PannerNode>();
 
   #onProducerId: ({ id }: { id: string }) => void = () => {};
   #onDataProducerId: ({ id }: { id: string }) => void = () => {};
@@ -44,16 +48,12 @@ export class WebRTC {
         // Create transports
         this.#send({
           subject: "create_transport",
-          data: {
-            type: "producer",
-          },
+          data: { type: "producer" },
         });
 
         this.#send({
           subject: "create_transport",
-          data: {
-            type: "consumer",
-          },
+          data: { type: "consumer" },
         });
 
         // Set rtp capabilities
@@ -139,17 +139,47 @@ export class WebRTC {
             )
               return;
 
+            // Read location
+            const posX = Atomics.load(this.playerPosition, 0);
+            const posY = Atomics.load(this.playerPosition, 1);
+            const posZ = Atomics.load(this.playerPosition, 2);
+
+            const rotX = Atomics.load(this.playerRotation, 0);
+            const rotY = Atomics.load(this.playerRotation, 1);
+            const rotZ = Atomics.load(this.playerRotation, 2);
+            const rotW = Atomics.load(this.playerRotation, 3);
+
+            // Set audio listener position
+            const listener = this.#audioContext.listener;
+
+            listener.positionX.value = posX / 1000;
+            listener.positionY.value = posY / 1000;
+            listener.positionZ.value = posZ / 1000;
+
+            const euler = quaternionToEuler(
+              rotX / 1000,
+              rotY / 1000,
+              rotZ / 1000,
+              rotW / 1000
+            );
+
+            listener.forwardX.value = -Math.sin(euler[1]);
+            listener.forwardY.value = 0;
+            listener.forwardZ.value = -Math.cos(euler[1]);
+
+            // Create buffer
             view.setUint8(0, this.playerId);
 
-            view.setInt32(1, Atomics.load(this.playerPosition, 0), true);
-            view.setInt32(5, Atomics.load(this.playerPosition, 1), true);
-            view.setInt32(9, Atomics.load(this.playerPosition, 2), true);
+            view.setInt32(1, posX, true);
+            view.setInt32(5, posY, true);
+            view.setInt32(9, posZ, true);
 
-            view.setInt16(13, Atomics.load(this.playerRotation, 0), true);
-            view.setInt16(15, Atomics.load(this.playerRotation, 1), true);
-            view.setInt16(17, Atomics.load(this.playerRotation, 2), true);
-            view.setInt16(19, Atomics.load(this.playerRotation, 3), true);
+            view.setInt16(13, rotX, true);
+            view.setInt16(15, rotY, true);
+            view.setInt16(17, rotZ, true);
+            view.setInt16(19, rotW, true);
 
+            // Publish buffer
             dataProducer.send(buffer);
           }, 1000 / PUBLISH_HZ);
         }
@@ -180,41 +210,48 @@ export class WebRTC {
         });
 
         // Start receiving audio
-        await consumer.resume();
-
         this.#send({
           subject: "resume_audio",
           data: null,
         });
 
+        await consumer.resume();
+
         // Create audio stream
-        const stream = new MediaStream([consumer.track]);
+        const stream = new MediaStream([consumer.track.clone()]);
 
         // Create audio element
         const audio = new Audio();
         audio.srcObject = stream;
-        audio.autoplay = true;
 
-        // TODO Add positional audio (https://developer.mozilla.org/en-US/docs/Web/API/PannerNode)
-        // - Cant just use the threejs audio listener because it's on a different thread :(
+        // Create audio source
+        const source = this.#audioContext.createMediaStreamSource(
+          audio.srcObject
+        );
 
-        // User needs to interact with the page to play audio
-        // There is probably a better way to do this
-        try {
-          await audio.play();
-        } catch {
-          const tryToPlay = setInterval(() => {
-            audio
-              .play()
-              .then(() => {
-                clearInterval(tryToPlay);
-              })
-              .catch((error) => {
-                console.warn(error);
-              });
-          }, 5000);
-        }
+        // Create panner
+        const panner = this.#audioContext.createPanner();
+        panner.panningModel = "HRTF";
+        panner.rolloffFactor = 0.5;
 
+        // Connect nodes
+        source.connect(panner);
+        panner.connect(this.#audioContext.destination);
+
+        if (this.#audioContext.state === "suspended")
+          this.#audioContext.resume();
+
+        // Play audio on user interaction
+        const play = async () => {
+          if (this.#audioContext.state === "suspended")
+            await this.#audioContext.resume();
+          document.removeEventListener("click", play);
+        };
+
+        document.addEventListener("click", play);
+
+        // Store panner
+        this.#panners.set(data.playerId, panner);
         break;
       }
 
@@ -231,6 +268,18 @@ export class WebRTC {
         });
 
         dataConsumer.on("message", (message) => {
+          // Apply location to audio panner
+          const view = new DataView(message);
+          const playerId = view.getUint8(0);
+
+          const panner = this.#panners.get(playerId);
+          if (panner) {
+            panner.positionX.value = view.getInt32(1, true) / 1000;
+            panner.positionY.value = view.getInt32(5, true) / 1000;
+            panner.positionZ.value = view.getInt32(9, true) / 1000;
+          }
+
+          // Send to renderThread
           this.#renderThread.postMessage(
             {
               subject: "player_location",

@@ -162,9 +162,13 @@ export class WebRTC {
             // Set audio listener position
             const listener = this.#audioContext.listener;
 
-            listener.positionX.value = posX / 1000;
-            listener.positionY.value = posY / 1000;
-            listener.positionZ.value = posZ / 1000;
+            if (listener.positionX !== undefined) {
+              listener.positionX.value = posX / 1000;
+              listener.positionY.value = posY / 1000;
+              listener.positionZ.value = posZ / 1000;
+            } else {
+              listener.setPosition(posX / 1000, posY / 1000, posZ / 1000);
+            }
 
             const euler = quaternionToEuler(
               rotX / 1000,
@@ -173,9 +177,12 @@ export class WebRTC {
               rotW / 1000
             );
 
-            listener.forwardX.value = -Math.sin(euler[1]);
-            listener.forwardY.value = 0;
-            listener.forwardZ.value = -Math.cos(euler[1]);
+            if (listener.forwardX !== undefined) {
+              listener.forwardX.value = -Math.sin(euler[1]);
+              listener.forwardZ.value = -Math.cos(euler[1]);
+            } else {
+              // TODO use setOrientation (deprecated) if forwardX is not supported
+            }
 
             // Create buffer
             view.setUint8(0, this.playerId);
@@ -284,9 +291,17 @@ export class WebRTC {
 
           const panner = this.#panners.get(playerId);
           if (panner) {
-            panner.positionX.value = view.getInt32(1, true) / 1000;
-            panner.positionY.value = view.getInt32(5, true) / 1000;
-            panner.positionZ.value = view.getInt32(9, true) / 1000;
+            if (panner.positionX !== undefined) {
+              panner.positionX.value = view.getInt32(1, true) / 1000;
+              panner.positionY.value = view.getInt32(5, true) / 1000;
+              panner.positionZ.value = view.getInt32(9, true) / 1000;
+            } else {
+              panner.setPosition(
+                view.getInt32(1, true) / 1000,
+                view.getInt32(5, true) / 1000,
+                view.getInt32(9, true) / 1000
+              );
+            }
           }
 
           // Send to renderThread

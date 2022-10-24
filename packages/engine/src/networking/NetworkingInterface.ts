@@ -33,6 +33,7 @@ export class NetworkingInterface {
   #broadcastInterval: NodeJS.Timeout | null = null;
   #hostServer: string | null = null;
   #reconnectCount = 0;
+  #producedTrack: MediaStreamTrack | null = null;
 
   playerPosition: Int32Array | null = null;
   playerRotation: Int16Array | null = null;
@@ -115,7 +116,7 @@ export class NetworkingInterface {
     this.#ws = ws;
 
     // Create WebRTC manager
-    this.#webRTC = new WebRTC(ws, this.#renderThread);
+    this.#webRTC = new WebRTC(ws, this.#renderThread, this.#producedTrack);
     this.#webRTC.playerId = this.playerId$.value;
     this.#webRTC.playerPosition = this.playerPosition;
     this.#webRTC.playerRotation = this.playerRotation;
@@ -399,6 +400,7 @@ export class NetworkingInterface {
 
   produceAudio(track: MediaStreamTrack) {
     if (!this.#webRTC) throw new Error("WebRTC not initialized");
+    this.#producedTrack = track;
     return this.#webRTC.produceAudio(track);
   }
 

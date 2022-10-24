@@ -22,15 +22,21 @@ export class WebRTC {
   #consumerTransport: Transport | null = null;
   #producer: Producer | null = null;
   #paused = false;
+  #producedTrack: MediaStreamTrack | null = null;
 
   #panners = new Map<number, PannerNode>();
 
   #onProducerId: ({ id }: { id: string }) => void = () => {};
   #onDataProducerId: ({ id }: { id: string }) => void = () => {};
 
-  constructor(ws: WebSocket, renderThread: RenderThread) {
+  constructor(
+    ws: WebSocket,
+    renderThread: RenderThread,
+    producedTrack?: MediaStreamTrack | null
+  ) {
     this.#ws = ws;
     this.#renderThread = renderThread;
+    if (producedTrack) this.#producedTrack = producedTrack;
   }
 
   connect() {
@@ -89,6 +95,10 @@ export class WebRTC {
 
         transport.on("connectionstatechange", (state) => {
           console.info(`🚀 WebRTC ${data.type}: ${state}`);
+
+          if (state === "connected" && data.type === "producer") {
+            if (this.#producedTrack) this.produceAudio(this.#producedTrack);
+          }
         });
 
         if (data.type === "producer") {
@@ -318,6 +328,8 @@ export class WebRTC {
 
     if (this.#paused) this.#producer.pause();
     else this.#producer.resume();
+
+    this.#producedTrack = track;
   }
 
   setAudioPaused(paused: boolean) {

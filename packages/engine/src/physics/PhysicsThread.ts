@@ -60,7 +60,7 @@ export class PhysicsThread {
         this.#engine.renderThread.postMessage({
           subject: "set_player_falling_state",
           data: {
-            playerId: "user",
+            playerId: -1,
             isFalling: data,
           },
         });

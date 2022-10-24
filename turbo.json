@@ -29,7 +29,15 @@
     "host#build": {
       "dependsOn": ["^build"],
       "outputs": [],
-      "env": ["PORT", "RTC_MAX_PORT", "RTC_MIN_PORT", "SSL_CERT", "SSL_KEY"]
+      "env": [
+        "MEDIASOUP_ANNOUNCED_IP",
+        "MEDIASOUP_LISTEN_IP",
+        "PORT",
+        "RTC_MAX_PORT",
+        "RTC_MIN_PORT",
+        "SSL_CERT",
+        "SSL_KEY"
+      ]
     },
     "lint": {
       "outputs": []

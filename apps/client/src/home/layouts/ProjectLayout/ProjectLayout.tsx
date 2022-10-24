@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 
 import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
+import { isFromCDN } from "../../../utils/isFromCDN";
 import MetaTags from "../../MetaTags";
 
 interface Props {
@@ -25,16 +26,25 @@ export default function ProjectLayout({ name, image, children }: Props) {
           <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
             <div className="aspect-card h-full w-full rounded-3xl bg-primaryContainer">
               <div className="relative h-full w-full object-cover">
-                {image && (
-                  <Image
-                    src={image}
-                    priority
-                    fill
-                    sizes="40vw"
-                    alt="space preview"
-                    className="rounded-3xl object-cover"
-                  />
-                )}
+                {image &&
+                  (isFromCDN(image) ? (
+                    <Image
+                      src={image}
+                      priority
+                      fill
+                      sizes="40vw"
+                      alt="space preview"
+                      className="rounded-3xl object-cover"
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={image}
+                      alt="space preview"
+                      className="h-full w-full rounded-3xl object-cover"
+                      crossOrigin="anonymous"
+                    />
+                  ))}
               </div>
             </div>
 

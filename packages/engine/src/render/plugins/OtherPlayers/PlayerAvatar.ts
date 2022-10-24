@@ -15,6 +15,7 @@ import {
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../../../constants";
+import { toHex } from "../../../utils/toHex";
 import { disposeObject } from "../../utils/disposeObject";
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
 import { AnimationName } from "./types";
@@ -23,7 +24,7 @@ const LERP_FACTOR = 0.000001;
 const CAMERA_OFFSET = new Vector3(0, 0.1, -0.03);
 
 export class PlayerAvatar {
-  readonly playerId: string;
+  readonly playerId: number;
   readonly group = new Group();
 
   isFalling = false;
@@ -54,7 +55,7 @@ export class PlayerAvatar {
   #loader = new GLTFLoader();
 
   constructor(
-    playerId: string,
+    playerId: number,
     avatar: string | null,
     defaultAvatarPath?: string,
     avatarAnimationsPath?: string,
@@ -96,7 +97,6 @@ export class PlayerAvatar {
 
     // Remove previous VRM model
     if (this.#vrm) {
-      this.#vrm.scene.removeFromParent();
       disposeObject(this.#vrm.scene);
       this.#vrm = null;
     }
@@ -175,7 +175,8 @@ export class PlayerAvatar {
         .setLoop(LoopPingPong, Infinity);
     }
 
-    console.info(`💃 Loaded ${this.playerId}'s avatar`);
+    if (this.playerId === -1) console.info(`💃 Loaded your avatar`);
+    else console.info(`💃 Loaded ${toHex(this.playerId)}'s avatar`);
   }
 
   setAvatar(avatarPath: string | null) {

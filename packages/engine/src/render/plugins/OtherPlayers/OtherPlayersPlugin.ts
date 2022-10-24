@@ -8,7 +8,7 @@ export class OtherPlayersPlugin {
   #avatarPath?: string;
   #avatarAnimationsPath?: string;
 
-  #players = new Map<string, PlayerAvatar>();
+  #players = new Map<number, PlayerAvatar>();
   #playerGroup = new Group();
 
   constructor(
@@ -41,8 +41,8 @@ export class OtherPlayersPlugin {
         break;
       }
 
-      case "set_player_location": {
-        this.setPlayerLocation(data.playerId, data.location);
+      case "player_location": {
+        this.setPlayerLocation(data);
         break;
       }
 
@@ -55,11 +55,17 @@ export class OtherPlayersPlugin {
       case "set_player_avatar": {
         const player = this.#players.get(data.playerId);
         if (player) player.setAvatar(data.avatar);
+        break;
+      }
+
+      case "clear_players": {
+        this.#players.forEach((player) => this.removePlayer(player.playerId));
+        break;
       }
     }
   }
 
-  addPlayer(playerId: string, avatar: string | null) {
+  addPlayer(playerId: number, avatar: string | null) {
     const player = new PlayerAvatar(
       playerId,
       avatar,
@@ -71,7 +77,7 @@ export class OtherPlayersPlugin {
     this.#playerGroup.add(player.group);
   }
 
-  removePlayer(playerId: string) {
+  removePlayer(playerId: number) {
     const player = this.#players.get(playerId);
     if (player) {
       this.#playerGroup.remove(player.group);
@@ -80,10 +86,24 @@ export class OtherPlayersPlugin {
     }
   }
 
-  setPlayerLocation(
-    playerId: string,
-    location: [number, number, number, number, number, number, number]
-  ) {
+  setPlayerLocation(buffer: ArrayBuffer) {
+    const view = new DataView(buffer);
+
+    const playerId = view.getUint8(0);
+
+    const location: [number, number, number, number, number, number, number] = [
+      0, 0, 0, 0, 0, 0, 0,
+    ];
+
+    location[0] = view.getInt32(1, true) / 1000;
+    location[1] = view.getInt32(5, true) / 1000;
+    location[2] = view.getInt32(9, true) / 1000;
+
+    location[3] = view.getInt16(13, true) / 1000;
+    location[4] = view.getInt16(15, true) / 1000;
+    location[5] = view.getInt16(17, true) / 1000;
+    location[6] = view.getInt16(19, true) / 1000;
+
     const player = this.#players.get(playerId);
     if (player) player.setLocation(location);
   }

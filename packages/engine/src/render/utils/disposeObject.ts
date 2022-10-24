@@ -1,6 +1,8 @@
 import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
 
 export function disposeObject(root: Object3D) {
+  root.removeFromParent();
+
   root.traverse((object) => {
     if (object instanceof Mesh) {
       const mesh = object as Mesh;

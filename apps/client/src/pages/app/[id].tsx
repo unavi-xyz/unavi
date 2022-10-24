@@ -8,7 +8,7 @@ import { useLoadUser } from "../../app/hooks/useLoadUser";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
-import UserButton from "../../app/ui/UserButton";
+import UserButton from "../../app/ui/UserButtons";
 import {
   getPublicationProps,
   PublicationProps,
@@ -115,7 +115,6 @@ export default function App({ id, metadata, publication }: Props) {
     return () => {
       engine.destroy();
       useAppStore.setState({ engine: null });
-      if (process.env.NODE_ENV === "development") window.location.reload();
     };
   }, [engine]);
 

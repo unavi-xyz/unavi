@@ -179,9 +179,7 @@ export class PhysicsWorker {
           this.#geometryIndices.set(data.entityId, data.indices);
 
         const entity = this.#entities.get(data.entityId);
-        if (!entity) throw new Error("Entity not found");
-
-        this.addCollider(entity);
+        if (entity) this.addCollider(entity);
         break;
       }
     }

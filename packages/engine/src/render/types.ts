@@ -83,33 +83,28 @@ export type ToRenderMessage =
   | WorkerMessage<
       "player_joined",
       {
-        playerId: string;
+        playerId: number;
         avatar: string | null;
       }
     >
-  | WorkerMessage<"player_left", string>
-  | WorkerMessage<
-      "set_player_location",
-      {
-        playerId: string;
-        location: [number, number, number, number, number, number, number];
-      }
-    >
+  | WorkerMessage<"player_left", number>
+  | WorkerMessage<"player_location", ArrayBuffer>
   | WorkerMessage<
       "set_player_falling_state",
       {
-        playerId: string;
+        playerId: number;
         isFalling: boolean;
       }
     >
   | WorkerMessage<
       "set_player_avatar",
       {
-        playerId: string;
+        playerId: number;
         avatar: string | null;
       }
     >
-  | WorkerMessage<"set_avatar", string | null>;
+  | WorkerMessage<"set_avatar", string | null>
+  | WorkerMessage<"clear_players">;
 
 export type FromRenderMessage =
   | WorkerMessage<"ready">
@@ -132,7 +127,7 @@ export type FromRenderMessage =
         rotation: Quad;
       }
     >
-  | WorkerMessage<"set_player_rotation_buffer", Int32Array>
+  | WorkerMessage<"set_player_rotation_buffer", Int16Array>
   | WorkerMessage<
       "set_collider_geometry",
       { entityId: string; positions: Float32Array; indices?: Uint32Array }

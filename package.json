@@ -13,7 +13,7 @@
     "deploy": "turbo deploy",
     "dev": "turbo dev --parallel",
     "format": "prettier --write .",
-    "postinstall": "patch-package && yarn codegen",
+    "postinstall": "patch-package",
     "lint": "turbo lint"
   },
   "devDependencies": {

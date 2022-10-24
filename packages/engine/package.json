@@ -16,12 +16,13 @@
     "@pixiv/three-vrm": "^1.0.4",
     "@types/draco3d": "^1.4.1",
     "@wired-labs/lens": "*",
-    "mediasoup-client": "^3.6.55",
+    "mediasoup-client": "^3.6.57",
     "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.0",
     "rxjs": "^7.5.7",
     "three": "^0.144.0",
-    "urql": "^3.0.3"
+    "urql": "^3.0.3",
+    "zod": "^3.19.1"
   },
   "devDependencies": {
     "@types/offscreencanvas": "^2019.7.0",

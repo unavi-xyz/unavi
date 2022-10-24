@@ -69,7 +69,6 @@ export default defineNextConfig({
   },
   images: {
     domains: [
-      `${env.S3_BUCKET}.${env.S3_ENDPOINT}`,
       env.NEXT_PUBLIC_IPFS_GATEWAY,
       env.NEXT_PUBLIC_CDN_ENDPOINT,
       "avatar.tobi.sh",

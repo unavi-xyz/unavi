@@ -176,7 +176,14 @@ export class WebRTC {
               listener.forwardX.value = -Math.sin(yaw);
               listener.forwardZ.value = -Math.cos(yaw);
             } else {
-              // TODO use setOrientation (deprecated) if forwardX is not supported
+              listener.setOrientation(
+                -Math.sin(yaw),
+                0,
+                -Math.cos(yaw),
+                0,
+                1,
+                0
+              );
             }
 
             // Create buffer

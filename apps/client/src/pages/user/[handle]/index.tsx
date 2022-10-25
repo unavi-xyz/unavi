@@ -78,7 +78,7 @@ export default function User({ publications, ...rest }: Props) {
 
               return (
                 <div key={publication.id} className="w-full md:col-span-2">
-                  <Link href={`/space/${publication.id}`} passHref>
+                  <Link href={`/space/${publication.id}`} passHref legacyBehavior>
                     <div>
                       <SpaceCard space={publication} sizes="49vw" />
                     </div>
@@ -90,7 +90,7 @@ export default function User({ publications, ...rest }: Props) {
 
               return (
                 <div key={publication.id} className="w-full">
-                  <Link href={`/avatar/${publication.id}`} passHref>
+                  <Link href={`/avatar/${publication.id}`} passHref legacyBehavior>
                     <div>
                       <AvatarCard avatar={publication} sizes="24vw" />
                     </div>

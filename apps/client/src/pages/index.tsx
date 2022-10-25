@@ -1,4 +1,4 @@
-import Image from "next/future/image";
+import Image from "next/image";
 import Link from "next/link";
 import { FaBook, FaDiscord } from "react-icons/fa";
 import { MdArrowDownward } from "react-icons/md";
@@ -32,11 +32,9 @@ export default function Index() {
                 <div className="flex flex-col justify-between space-y-2 text-lg md:flex-row md:justify-start md:space-y-0 md:space-x-4 md:text-xl">
                   <div className="w-full md:w-fit">
                     <Link href="/explore" passHref>
-                      <div>
-                        <Button variant="filled" rounded="large" fullWidth>
-                          <div className="md:py-0.5 md:px-4">Play Now</div>
-                        </Button>
-                      </div>
+                      <Button variant="filled" rounded="large" fullWidth>
+                        <div className="md:py-0.5 md:px-4">Play Now</div>
+                      </Button>
                     </Link>
                   </div>
 
@@ -116,7 +114,7 @@ export default function Index() {
               <div className="w-full space-y-2">
                 <div
                   className="w-fit rounded-xl bg-primaryContainer px-5 py-2 text-6xl
-                           font-black text-onPrimaryContainer"
+                         font-black text-onPrimaryContainer"
                 >
                   Links
                 </div>

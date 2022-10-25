@@ -75,7 +75,6 @@ export default defineNextConfig({
     ],
   },
   reactStrictMode: true,
-  swcMinify: true,
   async headers() {
     return [
       {

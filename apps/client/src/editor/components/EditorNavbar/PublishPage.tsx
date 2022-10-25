@@ -6,7 +6,7 @@ import {
   PublicationMetadataVersions,
 } from "@wired-labs/lens";
 import { nanoid } from "nanoid";
-import Image from "next/future/image";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState } from "react";
 

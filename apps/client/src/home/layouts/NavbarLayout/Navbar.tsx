@@ -1,12 +1,10 @@
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 
 import { useLens } from "../../../client/lens/hooks/useLens";
+import LoginButton from "./LoginButton";
 import NavbarTab from "./NavbarTab";
-
-const ProfileButton = dynamic(() => import("./ProfileButton"));
-const LoginButton = dynamic(() => import("./LoginButton"));
+import ProfileButton from "./ProfileButton";
 
 export default function Navbar() {
   const { handle } = useLens();

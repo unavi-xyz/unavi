@@ -2,7 +2,6 @@ import createBundleAnalyzer from "@next/bundle-analyzer";
 import { withAxiom } from "next-axiom";
 import createPWA from "next-pwa";
 import runtimeCaching from "next-pwa/cache.js";
-import createTM from "next-transpile-modules";
 
 import { env } from "./src/env/server.mjs";
 
@@ -15,8 +14,6 @@ const withPWA = createPWA({
   disable: env.NODE_ENV === "development",
   runtimeCaching,
 });
-
-const withTM = createTM(["three", "@wired-labs/engine", "@wired-labs/lens"]);
 
 const securityHeaders = [
   {
@@ -58,7 +55,7 @@ const securityHeaders = [
  * @constraint {{import('next').NextConfig}}
  */
 function defineNextConfig(config) {
-  const plugins = [withBundleAnalyzer, withAxiom, withTM, withPWA];
+  const plugins = [withBundleAnalyzer, withAxiom, withPWA];
   return plugins.reduce((acc, plugin) => plugin(acc), config);
 }
 
@@ -66,6 +63,9 @@ export default defineNextConfig({
   crossOrigin: "anonymous",
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  experimental: {
+    transpilePackages: ["three", "@wired-labs/engine", "@wired-labs/lens"],
   },
   images: {
     domains: [

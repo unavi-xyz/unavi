@@ -3,7 +3,7 @@ import { Producer } from "mediasoup-client/lib/Producer";
 import { Transport } from "mediasoup-client/lib/Transport";
 
 import { RenderThread } from "../render/RenderThread";
-import { quaternionToEuler } from "../render/utils/quaternionToEuler";
+import { quaternionToYaw } from "../render/utils/quaternionToYaw";
 import { FromHostMessage, ToHostMessage } from "./types";
 
 const PUBLISH_HZ = 15; // X times per second
@@ -170,16 +170,11 @@ export class WebRTC {
               listener.setPosition(posX / 1000, posY / 1000, posZ / 1000);
             }
 
-            const euler = quaternionToEuler(
-              rotX / 1000,
-              rotY / 1000,
-              rotZ / 1000,
-              rotW / 1000
-            );
+            const yaw = quaternionToYaw(rotY / 1000, rotW / 1000);
 
             if (listener.forwardX !== undefined) {
-              listener.forwardX.value = -Math.sin(euler[1]);
-              listener.forwardZ.value = -Math.cos(euler[1]);
+              listener.forwardX.value = -Math.sin(yaw);
+              listener.forwardZ.value = -Math.cos(yaw);
             } else {
               // TODO use setOrientation (deprecated) if forwardX is not supported
             }

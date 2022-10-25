@@ -286,9 +286,9 @@ export class WebRTC {
           sctpStreamParameters: data.sctpStreamParameters,
         });
 
-        dataConsumer.on("message", (message) => {
+        dataConsumer.on("message", (buffer) => {
           // Apply location to audio panner
-          const view = new DataView(message);
+          const view = new DataView(buffer);
           const playerId = view.getUint8(0);
 
           const panner = this.#panners.get(playerId);
@@ -310,9 +310,9 @@ export class WebRTC {
           this.#renderThread.postMessage(
             {
               subject: "player_location",
-              data: message,
+              data: buffer,
             },
-            [message]
+            [buffer]
           );
         });
 

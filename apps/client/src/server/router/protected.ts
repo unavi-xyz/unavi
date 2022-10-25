@@ -358,7 +358,7 @@ export const protectedRouter = router({
   spaceView: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string(),
       })
     )
     .mutation(async ({ input }) => {
@@ -376,7 +376,7 @@ export const protectedRouter = router({
   avatarView: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string(),
       })
     )
     .mutation(async ({ input }) => {

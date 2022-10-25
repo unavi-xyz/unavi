@@ -35,7 +35,7 @@ export default function Explore() {
 
   const [hotSpacesCursor, setHotSpacesCursor] = useState(0);
 
-  const { data: _hotSpaces } = trpc.useQuery(["public.hot-spaces"]);
+  const { data: _hotSpaces } = trpc.public.hotSpaces.useQuery();
   const hotSpaces = _hotSpaces ?? [];
 
   const {

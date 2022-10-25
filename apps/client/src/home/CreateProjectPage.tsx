@@ -10,12 +10,9 @@ export default function CreateProjectPage() {
 
   const nameRef = useRef<HTMLInputElement>(null);
 
-  const { mutateAsync: createProject } = trpc.useMutation(
-    "auth.create-project"
-  );
-  const { mutateAsync: createImageUpload } = trpc.useMutation(
-    "auth.project-image-upload"
-  );
+  const { mutateAsync: createProject } = trpc.auth.createProject.useMutation();
+  const { mutateAsync: createImageUpload } =
+    trpc.auth.projectImageUploadURL.useMutation();
 
   const [loading, setLoading] = useState(false);
 

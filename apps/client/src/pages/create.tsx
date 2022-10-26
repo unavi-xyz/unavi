@@ -17,17 +17,17 @@ export default function Create() {
 
   const { status: authState } = useSession();
   const { status: accountStatus } = useAccount();
-  const { invalidateQueries } = trpc.useContext();
+  const utils = trpc.useContext();
 
-  const { data, status, refetch } = trpc.useQuery(["auth.projects"], {
+  const { data, status, refetch } = trpc.auth.projects.useQuery(undefined, {
     enabled: authState === "authenticated",
   });
 
   useEffect(() => {
     if (authState !== "authenticated" || accountStatus !== "connected") return;
-    invalidateQueries(["auth.projects"]);
+    utils.auth.projects.invalidate();
     refetch();
-  }, [invalidateQueries, refetch, authState, accountStatus]);
+  }, [refetch, authState, accountStatus, utils]);
 
   const authenticated = authState === "authenticated";
 

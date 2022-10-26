@@ -8,13 +8,13 @@ export function useAnalytics() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { mutateAsync } = trpc.useMutation("auth.space-view");
+  const { mutateAsync } = trpc.auth.spaceView.useMutation();
   const { status } = useSession();
 
   useEffect(() => {
     if (!id || status !== "authenticated") return;
 
     // Send space view event
-    mutateAsync({ spaceId: id });
+    mutateAsync({ id });
   }, [mutateAsync, id, status]);
 }

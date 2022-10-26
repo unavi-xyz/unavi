@@ -1,24 +1,25 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/globals.css";
 
+import { Nunito } from "@next/font/google";
 import { httpBatchLink } from "@trpc/client/links/httpBatchLink";
 import { loggerLink } from "@trpc/client/links/loggerLink";
 import { withTRPC } from "@trpc/next";
 import { AppType } from "next/app";
-import dynamic from "next/dynamic";
 import Head from "next/head";
 import { Session } from "next-auth";
 import React from "react";
 
+import ClientSideProviders from "../client/ClientSideProviders";
 import { AppRouter } from "../server/router";
 import { getBaseUrl } from "../utils/getBaseUrl";
 
 // Export web vitals
 export { reportWebVitals } from "next-axiom";
 
-const ClientSideProviders = dynamic(
-  () => import("../client/ClientSideProviders")
-);
+const font = Nunito({
+  subsets: ["latin"],
+});
 
 const App: AppType<{ session: Session | null }> = ({
   Component,
@@ -36,11 +37,13 @@ const App: AppType<{ session: Session | null }> = ({
         <meta name="theme-color" content="#ffffff" />
       </Head>
 
-      <ClientSideProviders session={session}>
-        <div className="h-screen w-full snap-y snap-mandatory overflow-y-auto">
-          {getLayout(<Component {...pageProps} />)}
-        </div>
-      </ClientSideProviders>
+      <div className={font.className}>
+        <ClientSideProviders session={session}>
+          <div className="h-screen w-full snap-y snap-mandatory overflow-y-auto">
+            {getLayout(<Component {...pageProps} />)}
+          </div>
+        </ClientSideProviders>
+      </div>
     </>
   );
 };

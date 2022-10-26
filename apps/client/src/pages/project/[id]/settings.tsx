@@ -10,17 +10,23 @@ export default function Project() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data: project } = trpc.useQuery(["auth.project", { id }], {
-    enabled: id !== undefined,
-  });
-
-  const { data: imageURL } = trpc.useQuery(["auth.project-image", { id }], {
-    enabled: id !== undefined,
-  });
-
-  const { mutateAsync: deleteProject } = trpc.useMutation(
-    "auth.delete-project"
+  const { data: project } = trpc.auth.project.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      trpc: {},
+    }
   );
+
+  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      trpc: {},
+    }
+  );
+
+  const { mutateAsync: deleteProject } = trpc.auth.deleteProject.useMutation();
 
   const [loading, setLoading] = useState(false);
 

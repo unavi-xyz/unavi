@@ -26,29 +26,41 @@ export default function Preview() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data: project } = trpc.useQuery(["auth.project", { id }], {
-    enabled: id !== undefined,
-    cacheTime: 0,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
-  });
+  const { data: project } = trpc.auth.project.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      cacheTime: 0,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      trpc: {},
+    }
+  );
 
-  const { data: sceneURL } = trpc.useQuery(["auth.project-scene", { id }], {
-    enabled: id !== undefined,
-    cacheTime: 0,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
-  });
+  const { data: sceneURL } = trpc.auth.projectScene.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      cacheTime: 0,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      trpc: {},
+    }
+  );
 
-  const { data: fileURLs } = trpc.useQuery(["auth.project-files", { id }], {
-    enabled: id !== undefined,
-    cacheTime: 0,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
-  });
+  const { data: fileURLs } = trpc.auth.projectFiles.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      cacheTime: 0,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      trpc: {},
+    }
+  );
 
   useEffect(() => {
     if (!engine || !project?.editorState) return;

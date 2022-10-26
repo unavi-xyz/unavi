@@ -6,7 +6,7 @@ import {
   PublicationMetadataVersions,
 } from "@wired-labs/lens";
 import { nanoid } from "nanoid";
-import Image from "next/future/image";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
@@ -40,27 +40,28 @@ export default function PublishPage() {
   const name = useEditorStore((state) => state.name);
   const description = useEditorStore((state) => state.description);
 
-  const { mutateAsync: saveProject } = trpc.useMutation("auth.save-project");
+  const { mutateAsync: saveProject } = trpc.auth.saveProject.useMutation();
 
   const { handle } = useLens();
   const profile = useProfileByHandle(handle);
   const createPost = useCreatePost(profile?.id);
 
-  const { data: imageURL } = trpc.useQuery(["auth.project-image", { id }], {
-    enabled: id !== undefined,
-  });
-
-  const { mutateAsync: createModelUploadUrl } = trpc.useMutation(
-    "auth.published-model-upload"
+  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      trpc: {},
+    }
   );
 
-  const { mutateAsync: createImageUploadUrl } = trpc.useMutation(
-    "auth.published-image-upload"
-  );
+  const { mutateAsync: createModelUploadUrl } =
+    trpc.auth.publishedModelUploadURL.useMutation();
 
-  const { mutateAsync: createMetadataUploadUrl } = trpc.useMutation(
-    "auth.published-metadata-upload"
-  );
+  const { mutateAsync: createImageUploadUrl } =
+    trpc.auth.publishedImageUploadURL.useMutation();
+
+  const { mutateAsync: createMetadataUploadUrl } =
+    trpc.auth.publishedMetadataUploadURL.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);

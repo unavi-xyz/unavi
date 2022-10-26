@@ -8,9 +8,8 @@ function getAvatarURL(fileId: string) {
 }
 
 export function useSetAvatar() {
-  const { mutateAsync: createTempUpload } = trpc.useMutation(
-    "public.get-temp-upload"
-  );
+  const { mutateAsync: createTempUpload } =
+    trpc.public.tempUploadURL.useMutation();
 
   async function setAvatar(avatar: string) {
     const { engine } = useAppStore.getState();

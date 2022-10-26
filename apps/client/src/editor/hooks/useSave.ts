@@ -10,16 +10,13 @@ export function useSave() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { mutateAsync: saveProject } = trpc.useMutation("auth.save-project");
-  const { mutateAsync: getFileUpload } = trpc.useMutation(
-    "auth.project-file-upload"
-  );
-  const { mutateAsync: getImageUpload } = trpc.useMutation(
-    "auth.project-image-upload"
-  );
-  const { mutateAsync: getSceneUpload } = trpc.useMutation(
-    "auth.project-scene-upload"
-  );
+  const { mutateAsync: saveProject } = trpc.auth.saveProject.useMutation();
+  const { mutateAsync: getFileUpload } =
+    trpc.auth.projectFileUploadURL.useMutation();
+  const { mutateAsync: getImageUpload } =
+    trpc.auth.projectImageUploadURL.useMutation();
+  const { mutateAsync: getSceneUpload } =
+    trpc.auth.projectSceneUploadURL.useMutation();
 
   async function saveImage() {
     const { engine, canvas } = useEditorStore.getState();
@@ -53,7 +50,7 @@ export function useSave() {
     const storageKey =
       type === "model" ? modelStorageKey(fileId) : imageStorageKey(fileId);
 
-    const url = await getFileUpload({ id, fileId: storageKey });
+    const url = await getFileUpload({ id, storageKey });
 
     const response = await fetch(url, {
       method: "PUT",
@@ -74,7 +71,10 @@ export function useSave() {
     if (!image) throw new Error("No image");
 
     if (!image.isInternal) {
-      const url = await getFileUpload({ id, fileId: imageStorageKey(imageId) });
+      const url = await getFileUpload({
+        id,
+        storageKey: imageStorageKey(imageId),
+      });
 
       const response = await fetch(url, {
         method: "PUT",

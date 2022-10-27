@@ -27,7 +27,7 @@ export default function ProfileMenu({
 
   return (
     <div className="flex flex-col space-y-1 p-2">
-      <button onClick={openSwitchProfile}>
+      <button onClick={openSwitchProfile} className="w-full">
         <ProfileMenuButton icon={<HiOutlineSwitchHorizontal />}>
           Switch Profile
         </ProfileMenuButton>
@@ -35,7 +35,7 @@ export default function ProfileMenu({
 
       {includeExternal && (
         <Link href={`/user/${handle}`} passHref>
-          <button>
+          <button className="w-full">
             <ProfileMenuButton icon={<MdOutlinePersonOutline />}>
               Your Profile
             </ProfileMenuButton>
@@ -45,7 +45,7 @@ export default function ProfileMenu({
 
       {includeExternal && (
         <Link href="/settings" passHref>
-          <button>
+          <button className="w-full">
             <ProfileMenuButton icon={<MdOutlineSettings />}>
               Settings
             </ProfileMenuButton>
@@ -53,7 +53,7 @@ export default function ProfileMenu({
         </Link>
       )}
 
-      <button onClick={logout}>
+      <button onClick={logout} className="w-full">
         <ProfileMenuButton icon={<MdLogout />}>Log Out</ProfileMenuButton>
       </button>
     </div>

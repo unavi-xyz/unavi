@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { z } from "zod";
 
 import { prisma } from "../prisma";
 import { createTempFileUploadURL } from "../s3";
@@ -31,4 +32,40 @@ export const publicRouter = router({
     const avatarIds = avatars.map((avatar) => avatar.publicationId);
     return avatarIds;
   }),
+
+  spaceView: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Update space view count
+      await prisma.space.upsert({
+        create: { publicationId: input.id, viewsCount: 1 },
+        where: { publicationId: input.id },
+        update: { viewsCount: { increment: 1 } },
+      });
+
+      // Create space view event
+      await prisma.spaceViewEvent.create({ data: { spaceId: input.id } });
+    }),
+
+  avatarView: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Update avatar view count
+      await prisma.avatar.upsert({
+        create: { publicationId: input.id, viewsCount: 1 },
+        where: { publicationId: input.id },
+        update: { viewsCount: { increment: 1 } },
+      });
+
+      // Create avatar view event
+      await prisma.avatarViewEvent.create({ data: { avatarId: input.id } });
+    }),
 });

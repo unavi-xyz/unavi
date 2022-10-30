@@ -4911,12 +4911,12 @@
   resolved "https://registry.yarnpkg.com/@vanilla-extract/sprinkles/-/sprinkles-1.5.0.tgz#c921183ae518bb484299c2dc81f2acefd91c3dbe"
   integrity sha512-W58f2Rzz5lLmk0jbhgStVlZl5wEiPB1Ur3fRvUaBM+MrifZ3qskmFq/CiH//fEYeG5Dh9vF1qRviMMH46cX9Nw==
 
-"@wagmi/core@^0.6.3":
-  version "0.6.3"
-  resolved "https://registry.yarnpkg.com/@wagmi/core/-/core-0.6.3.tgz#2649894072840801f9c04204fcde46f9e1e90281"
-  integrity sha512-tvhYsGR4/Sgo4/E9iIuNJosPy/UZnjcylNdwk2CdXxjpf8vVbeQDsYa4Ue/We2RZlpFMt7CpPLVCVU8BKduOug==
+"@wagmi/core@^0.6.7":
+  version "0.6.7"
+  resolved "https://registry.yarnpkg.com/@wagmi/core/-/core-0.6.7.tgz#73b3f12ec1210863e6d4aaa72f34966b0ec47d03"
+  integrity sha512-l6O7pa4x4gAjvoXEX/V763mZR/YVtqCzHyVCIiVNe+NyvmdK5s30VXU9uyzrYozD6hwhAQJ+Jeow195N0Awr/A==
   dependencies:
-    abitype "^0.1.6"
+    abitype "^0.1.7"
     eventemitter3 "^4.0.7"
     zustand "^4.1.1"
 
@@ -5289,10 +5289,10 @@ abbrev@1:
   resolved "https://registry.yarnpkg.com/abbrev/-/abbrev-1.1.1.tgz#f8f2c887ad10bf67f634f005b6987fed3179aac8"
   integrity sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==
 
-abitype@^0.1.6:
-  version "0.1.6"
-  resolved "https://registry.yarnpkg.com/abitype/-/abitype-0.1.6.tgz#10d3a83ad6416ec45954e379795535c2beb01437"
-  integrity sha512-cdOzP4mi5pH/N3o5ly8wlw7HIqdFJVkS0RSw5p7BTvwB1gFXOqPlQJ/ZKTSCsGqd8EITJcpNuZ2h7hPX2mKECA==
+abitype@^0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/abitype/-/abitype-0.1.7.tgz#8a42b1845629abed715bd4975532aca43e291eda"
+  integrity sha512-mNBIrA8xbkR0PrxXSO/7p3irNhyLKO6S4VfU3YrR37cqpJIq1D63Yg8KlovOZkCVAaQ+lJkGDkOhSpv1QmMXIg==
 
 abort-controller@^3.0.0:
   version "3.0.0"
@@ -15179,18 +15179,18 @@ vscode-uri@^3.0.3:
   resolved "https://registry.yarnpkg.com/vscode-uri/-/vscode-uri-3.0.6.tgz#5e6e2e1a4170543af30151b561a41f71db1d6f91"
   integrity sha512-fmL7V1eiDBFRRnu+gfRWTzyPpNIHJTc4mWnFkwBUmO9U3KPgJAmTx7oxi2bl/Rh6HLdU7+4C9wlj0k2E4AdKFQ==
 
-wagmi@^0.7.3:
-  version "0.7.3"
-  resolved "https://registry.yarnpkg.com/wagmi/-/wagmi-0.7.3.tgz#6cc62f8115aafcf00696354009ae61fdcae6531b"
-  integrity sha512-2HWgshtByBPZ3/Px8rTKtY3K6uZPwC8kW5mPtZnFllQuHGDBPwPi1/zKWLz5yY/02/9JaGrUVlggCcIysIVq2Q==
+wagmi@^0.7.8:
+  version "0.7.8"
+  resolved "https://registry.yarnpkg.com/wagmi/-/wagmi-0.7.8.tgz#6cbe1d28fbcd5ce17ea2a889e48a7687481b663a"
+  integrity sha512-2Mpiz7oRrNkwKBwXYIJ9Xl5FL1lIHPaBAfHPxcXBACxJ4p3S+gQIszsnoFKOhlHtigFd/+7pOdXyDgC580iK7g==
   dependencies:
     "@coinbase/wallet-sdk" "^3.5.3"
     "@tanstack/query-sync-storage-persister" "^4.10.1"
     "@tanstack/react-query" "^4.10.1"
     "@tanstack/react-query-persist-client" "^4.10.1"
-    "@wagmi/core" "^0.6.3"
+    "@wagmi/core" "^0.6.7"
     "@walletconnect/ethereum-provider" "^1.8.0"
-    abitype "^0.1.6"
+    abitype "^0.1.7"
     use-sync-external-store "^1.2.0"
 
 wait-on@^6.0.1:

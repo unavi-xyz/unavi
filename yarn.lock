@@ -2974,7 +2974,7 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@gltf-transform/core@2.4.4", "@gltf-transform/core@^2.4.4":
+"@gltf-transform/core@2.4.4":
   version "2.4.4"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.4.tgz#17a4e9117102f0af70a8893daa16b7cecf705a5c"
   integrity sha512-o5GfHS+r241wdKraMWBCMC55CedHnrFQo3HtfaYhfvsgw7ccKT2b+JSZv6u/cuRUS9NxnZsm5NQSixCdkHnGSQ==
@@ -2982,12 +2982,20 @@
     gl-matrix "~3.4.3"
     property-graph "^0.2.6"
 
-"@gltf-transform/extensions@2.4.4", "@gltf-transform/extensions@^2.4.4":
-  version "2.4.4"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.4.tgz#06f71dded20e81201f2e3e559c696f541ff152bd"
-  integrity sha512-kVoNQ36L5slzxe4oTBLtNIV6ROHctOIG2uGdNXv2InAawU2fNVtYKUMGP0ARcV0tmXGvTYdoa27zSgtdyK/iJg==
+"@gltf-transform/core@^2.4.4", "@gltf-transform/core@^2.4.5":
+  version "2.4.5"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.5.tgz#6b7d16cf2d92d452d087fa23e0ba4e857150b7b7"
+  integrity sha512-cQY2iv3sQOjiUq5eO8moIkb8M7I4eD46KlR4y/+LSz3lrUulx3M6h8kd9exLcwoiJnhFiTG4R6FBSjtCVwCIdg==
   dependencies:
-    "@gltf-transform/core" "^2.4.4"
+    gl-matrix "~3.4.3"
+    property-graph "^0.2.6"
+
+"@gltf-transform/extensions@2.4.5", "@gltf-transform/extensions@^2.4.4":
+  version "2.4.5"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.5.tgz#3356747d6661a45e874253f5b6482360e5a39a37"
+  integrity sha512-vSdwVL+IgQnZzw1QETKrDHsTmifVtwi1Q2AilcpN4H3spox/rkPlHRw3EOr5Bg6V358N2C0Tqj9mro8N21YyGA==
+  dependencies:
+    "@gltf-transform/core" "^2.4.5"
     ktx-parse "^0.4.5"
 
 "@gltf-transform/functions@^2.4.4":

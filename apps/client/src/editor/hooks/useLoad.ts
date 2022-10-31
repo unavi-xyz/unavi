@@ -86,18 +86,16 @@ export function useLoad() {
       };
 
       // Load glTF models
-      const modelPromises = savedScene.entities.map(async (entity) => {
-        if (entity.mesh?.type === "glTF" && entity.mesh.uri) {
-          const file = fileURLs.find(
-            (f) => f.id === modelStorageKey(entity.id)
-          );
+      const modelPromises = savedScene.entities.map(async (node) => {
+        if (node.mesh?.type === "glTF" && node.mesh.uri) {
+          const file = fileURLs.find((f) => f.id === modelStorageKey(node.id));
           if (!file) throw new Error("File not found");
 
           const response = await fetch(file.uri);
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
 
-          entity.mesh.uri = url;
+          node.mesh.uri = url;
         }
       });
 

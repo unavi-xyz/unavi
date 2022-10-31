@@ -3,7 +3,7 @@ import { Bone, Matrix4, Skeleton, SkinnedMesh } from "three";
 import { SceneMap } from "../types";
 
 export function createSkeletons(map: SceneMap) {
-  map.entities.forEach((e) => {
+  map.nodes.forEach((e) => {
     const isSkin = e.mesh?.type === "Primitive" && e.mesh.skin !== null;
     if (!isSkin) return;
 

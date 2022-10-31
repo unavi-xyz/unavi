@@ -1,6 +1,6 @@
 import { Group, Mesh, Quaternion, Vector3 } from "three";
 
-import { EntityJSON } from "../../../scene";
+import { NodeJSON } from "../../../scene";
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
 import { defaultMaterial } from "../constants";
@@ -14,31 +14,31 @@ const tempVector = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempQuaternion2 = new Quaternion();
 
-export function updateEntity(
-  entityId: string,
-  data: Partial<EntityJSON>,
+export function updateNode(
+  nodeId: string,
+  data: Partial<NodeJSON>,
   map: SceneMap,
   visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
 ) {
-  const entity = map.entities.get(entityId);
-  if (!entity) throw new Error("Entity not found");
+  const node = map.nodes.get(nodeId);
+  if (!node) throw new Error("Node not found");
 
-  const newEntity = { ...entity, ...data };
-  map.entities.set(entityId, newEntity);
+  const newNode = { ...node, ...data };
+  map.nodes.set(nodeId, newNode);
 
   // Update object
   if (data.mesh !== undefined) {
-    const oldObject = map.objects.get(entityId);
+    const oldObject = map.objects.get(nodeId);
     const position = oldObject ? oldObject.position.clone() : new Vector3();
     const quaternion = oldObject
       ? oldObject.quaternion.clone()
       : new Quaternion();
     const scale = oldObject ? oldObject.scale.clone() : new Vector3(1, 1, 1);
 
-    createObject(newEntity, map, visuals, postMessage);
+    createObject(newNode, map, visuals, postMessage);
 
-    const object = map.objects.get(entityId);
+    const object = map.objects.get(nodeId);
     if (!object) throw new Error("Object not found");
 
     object.position.copy(position);
@@ -46,7 +46,7 @@ export function updateEntity(
     object.scale.copy(scale);
   }
 
-  const object = map.objects.get(entityId);
+  const object = map.objects.get(nodeId);
   if (!object) throw new Error("Object not found");
 
   // Update parent
@@ -69,11 +69,11 @@ export function updateEntity(
     object.quaternion.multiplyQuaternions(quaternion, inverseParentRotation);
 
     // Update global transform
-    updateGlobalTransform(entityId, map, postMessage);
+    updateGlobalTransform(nodeId, map, postMessage);
   }
 
   // Update name
-  if (data.name !== undefined) object.name = data.name || entityId;
+  if (data.name !== undefined) object.name = data.name || nodeId;
 
   // Update transform
   if (data.position !== undefined) object.position.fromArray(data.position);
@@ -81,7 +81,7 @@ export function updateEntity(
   if (data.scale !== undefined) object.scale.fromArray(data.scale);
 
   if (data.position !== undefined || data.rotation !== undefined) {
-    updateGlobalTransform(entityId, map, postMessage);
+    updateGlobalTransform(nodeId, map, postMessage);
   }
 
   // Update material
@@ -96,11 +96,11 @@ export function updateEntity(
 
       object.material = material;
 
-      updateMeshMaterial(entityId, entity.mesh, map);
+      updateMeshMaterial(nodeId, node.mesh, map);
     }
   }
 
   // Update collider visual
   if (data.mesh || data.collider)
-    createColliderVisual(entityId, map, visuals, postMessage);
+    createColliderVisual(nodeId, map, visuals, postMessage);
 }

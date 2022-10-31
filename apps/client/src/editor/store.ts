@@ -1,4 +1,4 @@
-import { Engine, Entity } from "@wired-labs/engine";
+import { Engine, Node } from "@wired-labs/engine";
 import create from "zustand";
 
 import { Tool } from "./types";
@@ -7,7 +7,7 @@ export interface IEditorStore {
   engine: Engine | null;
   sceneLoaded: boolean;
 
-  getEntity: (id: string) => Entity | undefined;
+  getNode: (id: string) => Node | undefined;
 
   canvas: HTMLCanvasElement | null;
   preview: boolean;
@@ -24,7 +24,7 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
   engine: null,
   sceneLoaded: false,
 
-  getEntity: (id: string) => {
+  getNode: (id: string) => {
     return get().engine?.scene.entities[id];
   },
 

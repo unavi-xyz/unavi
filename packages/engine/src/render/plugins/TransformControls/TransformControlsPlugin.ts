@@ -84,13 +84,13 @@ export class TransformControlsPlugin {
         break;
       }
 
-      case "remove_entity": {
+      case "remove_node": {
         const attachedObject = this.#transformControls.object;
         if (attachedObject) {
           const id = this.#sceneLoader.findId(attachedObject);
           if (id === undefined) throw new Error("Object id not found");
           // Detach if attached object is removed
-          if (id === data.entityId) this.#transformControls.detach();
+          if (id === data.nodeId) this.#transformControls.detach();
         }
         break;
       }

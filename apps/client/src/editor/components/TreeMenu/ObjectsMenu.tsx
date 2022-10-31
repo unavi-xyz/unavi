@@ -3,14 +3,14 @@ import {
   BoxMesh,
   CylinderCollider,
   CylinderMesh,
-  Entity,
   GLTFMesh,
   MeshCollider,
+  Node,
   SphereCollider,
   SphereMesh,
 } from "@wired-labs/engine";
 
-import { addEntity } from "../../actions/AddEntityAction";
+import { addNode } from "../../actions/AddNodeAction";
 import { useEditorStore } from "../../store";
 
 enum ObjectName {
@@ -23,11 +23,11 @@ enum ObjectName {
 
 export default function ObjectsMenu() {
   function addObject(name: ObjectName) {
-    const entity = createEntity(name);
-    addEntity(entity);
+    const node = createNode(name);
+    addNode(node);
 
-    // Select new entity
-    useEditorStore.setState({ selectedId: entity.id });
+    // Select new node
+    useEditorStore.setState({ selectedId: node.id });
   }
 
   return (
@@ -45,33 +45,33 @@ export default function ObjectsMenu() {
   );
 }
 
-function createEntity(name: ObjectName) {
-  const entity = new Entity();
-  entity.name = name;
+function createNode(name: ObjectName) {
+  const node = new Node();
+  node.name = name;
 
   // Add object component
   switch (name) {
     case ObjectName.Box: {
-      entity.mesh = new BoxMesh();
-      entity.collider = new BoxCollider();
+      node.mesh = new BoxMesh();
+      node.collider = new BoxCollider();
       break;
     }
 
     case ObjectName.Sphere: {
-      entity.mesh = new SphereMesh();
-      entity.collider = new SphereCollider();
+      node.mesh = new SphereMesh();
+      node.collider = new SphereCollider();
       break;
     }
 
     case ObjectName.Cylinder: {
-      entity.mesh = new CylinderMesh();
-      entity.collider = new CylinderCollider();
+      node.mesh = new CylinderMesh();
+      node.collider = new CylinderCollider();
       break;
     }
 
     case ObjectName.glTF: {
-      entity.mesh = new GLTFMesh();
-      entity.collider = new MeshCollider();
+      node.mesh = new GLTFMesh();
+      node.collider = new MeshCollider();
       break;
     }
 
@@ -83,5 +83,5 @@ function createEntity(name: ObjectName) {
       throw new Error("Unknown object name");
   }
 
-  return entity;
+  return node;
 }

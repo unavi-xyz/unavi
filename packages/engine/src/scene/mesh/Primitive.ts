@@ -1,11 +1,10 @@
 import { GLTF } from "@gltf-transform/core";
 import { BehaviorSubject } from "rxjs";
 
-import { PrimitiveMeshJSON } from "./types";
+import { BaseMesh } from "./BaseMesh";
+import { PrimitiveJSON } from "./types";
 
-export class PrimitiveMesh {
-  readonly type = "Primitive";
-
+export class Primitive extends BaseMesh {
   gltfId: string | null = null;
 
   mode$ = new BehaviorSubject<GLTF.MeshPrimitiveMode>(4);
@@ -29,6 +28,10 @@ export class PrimitiveMesh {
     inverseBindMatricesId: string;
     jointIds: string[];
   } = null;
+
+  constructor(id?: string) {
+    super(id);
+  }
 
   get mode() {
     return this.mode$.value;
@@ -143,6 +146,7 @@ export class PrimitiveMesh {
   }
 
   destroy() {
+    this.materialId$.complete();
     this.mode$.complete();
     this.indicesId$.complete();
     this.weights$.complete();
@@ -159,10 +163,11 @@ export class PrimitiveMesh {
     this.WEIGHTS_0$.complete();
   }
 
-  toJSON(): PrimitiveMeshJSON {
+  toJSON(): PrimitiveJSON {
     return {
+      id: this.id,
+      materialId: this.materialId,
       gltfId: this.gltfId,
-      type: this.type,
       mode: this.mode,
       indicesId: this.indicesId,
       weights: this.weights,
@@ -181,7 +186,8 @@ export class PrimitiveMesh {
     };
   }
 
-  applyJSON(json: Partial<PrimitiveMeshJSON>) {
+  applyJSON(json: Partial<PrimitiveJSON>) {
+    if (json.materialId !== undefined) this.materialId = json.materialId;
     if (json.gltfId !== undefined) this.gltfId = json.gltfId;
     if (json.mode !== undefined) this.mode = json.mode;
     if (json.indicesId !== undefined) this.indicesId = json.indicesId;
@@ -203,8 +209,8 @@ export class PrimitiveMesh {
     if (json.skin !== undefined) this.skin = json.skin;
   }
 
-  static fromJSON(json: PrimitiveMeshJSON) {
-    const mesh = new PrimitiveMesh();
+  static fromJSON(json: PrimitiveJSON) {
+    const mesh = new Primitive(json.id);
     mesh.applyJSON(json);
     return mesh;
   }

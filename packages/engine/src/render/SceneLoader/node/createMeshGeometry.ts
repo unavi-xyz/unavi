@@ -53,31 +53,35 @@ export function createMeshGeometry(json: MeshJSON, map: SceneMap) {
       );
     }
 
-    case "Primitive": {
-      const geometry = new BufferGeometry();
-      geometry.morphTargetsRelative = true;
+    case "Primitives": {
+      const geometries = json.primitives.map((primitive) => {
+        const geometry = new BufferGeometry();
+        geometry.morphTargetsRelative = true;
 
-      // Set indices
-      if (json.indicesId) {
-        const attribute = createAttribute(json.indicesId, map);
-        geometry.setIndex(attribute);
-      }
+        // Set indices
+        if (primitive.indicesId) {
+          const attribute = createAttribute(primitive.indicesId, map);
+          geometry.setIndex(attribute);
+        }
 
-      // Set attributes
-      setAttribute(geometry, "position", json.POSITION);
-      setAttribute(geometry, "normal", json.NORMAL);
-      setAttribute(geometry, "uv", json.TEXCOORD_0);
-      setAttribute(geometry, "uv2", json.TEXCOORD_1);
-      setAttribute(geometry, "color", json.COLOR_0);
-      setAttribute(geometry, "skinIndex", json.JOINTS_0);
-      setAttribute(geometry, "skinWeight", json.WEIGHTS_0);
+        // Set attributes
+        setAttribute(geometry, "position", primitive.POSITION);
+        setAttribute(geometry, "normal", primitive.NORMAL);
+        setAttribute(geometry, "uv", primitive.TEXCOORD_0);
+        setAttribute(geometry, "uv2", primitive.TEXCOORD_1);
+        setAttribute(geometry, "color", primitive.COLOR_0);
+        setAttribute(geometry, "skinIndex", primitive.JOINTS_0);
+        setAttribute(geometry, "skinWeight", primitive.WEIGHTS_0);
 
-      // Set morph targets
-      setMorphAttribute(geometry, "position", json.morphPositionIds);
-      setMorphAttribute(geometry, "normal", json.morphNormalIds);
-      setMorphAttribute(geometry, "tangent", json.morphTangentIds);
+        // Set morph targets
+        setMorphAttribute(geometry, "position", primitive.morphPositionIds);
+        setMorphAttribute(geometry, "normal", primitive.morphNormalIds);
+        setMorphAttribute(geometry, "tangent", primitive.morphTangentIds);
 
-      return geometry;
+        return geometry;
+      });
+
+      return geometries;
     }
   }
 }

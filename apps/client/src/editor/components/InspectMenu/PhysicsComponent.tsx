@@ -7,8 +7,8 @@ import {
   SphereCollider,
 } from "@wired-labs/engine";
 
-import { updateEntity } from "../../actions/UpdateEntityAction";
-import { useEntity } from "../../hooks/useEntity";
+import { updateNode } from "../../actions/UpdateNodeAction";
+import { useNode } from "../../hooks/useNode";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import { capitalize } from "../../utils/capitalize";
@@ -20,11 +20,11 @@ import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./MenuRows";
 
 interface Props {
-  entityId: string;
+  nodeId: string;
 }
 
-export default function PhysicsComponent({ entityId }: Props) {
-  const collider$ = useEntity(entityId, (entity) => entity.collider$);
+export default function PhysicsComponent({ nodeId }: Props) {
+  const collider$ = useNode(nodeId, (node) => node.collider$);
   const collider = useSubscribeValue(collider$);
 
   if (!collider) return null;
@@ -32,7 +32,7 @@ export default function PhysicsComponent({ entityId }: Props) {
   return (
     <ComponentMenu
       title="Physics"
-      onRemove={() => updateEntity(entityId, { collider: null })}
+      onRemove={() => updateNode(nodeId, { collider: null })}
     >
       <>
         <MenuRows titles={["Collider"]}>
@@ -45,19 +45,19 @@ export default function PhysicsComponent({ entityId }: Props) {
               switch (value) {
                 case "Box": {
                   const boxCollider = new BoxCollider();
-                  updateEntity(entityId, { collider: boxCollider.toJSON() });
+                  updateNode(nodeId, { collider: boxCollider.toJSON() });
                   break;
                 }
 
                 case "Sphere": {
                   const sphereCollider = new SphereCollider();
-                  updateEntity(entityId, { collider: sphereCollider.toJSON() });
+                  updateNode(nodeId, { collider: sphereCollider.toJSON() });
                   break;
                 }
 
                 case "Cylinder": {
                   const cylinderCollider = new CylinderCollider();
-                  updateEntity(entityId, {
+                  updateNode(nodeId, {
                     collider: cylinderCollider.toJSON(),
                   });
                   break;
@@ -68,7 +68,7 @@ export default function PhysicsComponent({ entityId }: Props) {
                   if (!engine) throw new Error("Engine not found");
 
                   const hullCollider = new HullCollider();
-                  updateEntity(entityId, {
+                  updateNode(nodeId, {
                     collider: hullCollider.toJSON(),
                   });
                   break;
@@ -79,7 +79,7 @@ export default function PhysicsComponent({ entityId }: Props) {
                   if (!engine) throw new Error("Engine not found");
 
                   const meshCollider = new MeshCollider();
-                  updateEntity(entityId, {
+                  updateNode(nodeId, {
                     collider: meshCollider.toJSON(),
                   });
                   break;
@@ -89,32 +89,28 @@ export default function PhysicsComponent({ entityId }: Props) {
           />
         </MenuRows>
 
-        <ColliderComponent entityId={entityId} collider={collider} />
+        <ColliderComponent nodeId={nodeId} collider={collider} />
       </>
     </ComponentMenu>
   );
 }
 
 function ColliderComponent({
-  entityId,
+  nodeId,
   collider,
 }: {
-  entityId: string;
+  nodeId: string;
   collider: Collider | null;
 }) {
   switch (collider?.type) {
     case "box":
-      return <BoxColliderComponent entityId={entityId} collider={collider} />;
+      return <BoxColliderComponent nodeId={nodeId} collider={collider} />;
 
     case "sphere":
-      return (
-        <SphereColliderComponent entityId={entityId} collider={collider} />
-      );
+      return <SphereColliderComponent nodeId={nodeId} collider={collider} />;
 
     case "cylinder":
-      return (
-        <CylinderColliderComponent entityId={entityId} collider={collider} />
-      );
+      return <CylinderColliderComponent nodeId={nodeId} collider={collider} />;
 
     default:
       return null;

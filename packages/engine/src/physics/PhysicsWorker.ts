@@ -9,7 +9,7 @@ import {
 } from "@dimforge/rapier3d";
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../constants";
-import { EntityJSON } from "../scene";
+import { NodeJSON } from "../scene";
 import { PostMessage, Triplet } from "../types";
 import {
   playerCollisionGroup,
@@ -52,7 +52,7 @@ export class PhysicsWorker {
   #isGrounded = false;
   #isSprinting = false;
 
-  #entities = new Map<string, EntityJSON>();
+  #entities = new Map<string, NodeJSON>();
   #rigidBodies = new Map<string, RigidBody>();
   #colliders = new Map<string, Collider>();
   #spawn: Triplet = [0, 0, 0];
@@ -89,31 +89,31 @@ export class PhysicsWorker {
         break;
       }
 
-      case "add_entity": {
-        this.#entities.set(data.entity.id, data.entity);
-        this.addCollider(data.entity);
+      case "add_node": {
+        this.#entities.set(data.node.id, data.node);
+        this.addCollider(data.node);
         break;
       }
 
-      case "remove_entity": {
-        this.#entities.delete(data.entityId);
-        this.removeCollider(data.entityId);
+      case "remove_node": {
+        this.#entities.delete(data.nodeId);
+        this.removeCollider(data.nodeId);
         break;
       }
 
-      case "update_entity": {
-        const entity = this.#entities.get(data.entityId);
-        if (!entity) throw new Error("Entity not found");
+      case "update_node": {
+        const node = this.#entities.get(data.nodeId);
+        if (!node) throw new Error("Node not found");
 
-        const updatedEntity = { ...entity, ...data.data };
-        this.#entities.set(data.entityId, updatedEntity);
+        const updatedNode = { ...node, ...data.data };
+        this.#entities.set(data.nodeId, updatedNode);
 
-        this.addCollider(updatedEntity);
+        this.addCollider(updatedNode);
         break;
       }
 
       case "set_global_transform": {
-        const rigidBody = this.#rigidBodies.get(data.entityId);
+        const rigidBody = this.#rigidBodies.get(data.nodeId);
         if (!rigidBody) break;
 
         rigidBody.setTranslation(
@@ -160,9 +160,9 @@ export class PhysicsWorker {
         // Load entities from JSON
         const entities = data.scene.entities;
         if (entities)
-          entities.forEach((entity) => {
-            this.#entities.set(entity.id, entity);
-            this.addCollider(entity);
+          entities.forEach((node) => {
+            this.#entities.set(node.id, node);
+            this.addCollider(node);
           });
         break;
       }
@@ -173,13 +173,12 @@ export class PhysicsWorker {
       }
 
       case "set_collider_geometry": {
-        this.#geometryPositions.set(data.entityId, data.positions);
+        this.#geometryPositions.set(data.nodeId, data.positions);
 
-        if (data.indices)
-          this.#geometryIndices.set(data.entityId, data.indices);
+        if (data.indices) this.#geometryIndices.set(data.nodeId, data.indices);
 
-        const entity = this.#entities.get(data.entityId);
-        if (entity) this.addCollider(entity);
+        const node = this.#entities.get(data.nodeId);
+        if (node) this.addCollider(node);
         break;
       }
     }
@@ -244,39 +243,39 @@ export class PhysicsWorker {
     this.#jump = jump;
   }
 
-  addCollider(entity: EntityJSON) {
+  addCollider(node: NodeJSON) {
     // Remove existing collider
-    this.removeCollider(entity.id);
+    this.removeCollider(node.id);
 
-    // If entity has no collider, return
-    if (!entity.collider) return;
+    // If node has no collider, return
+    if (!node.collider) return;
 
     // Create collider description
     let colliderDesc: ColliderDesc | null = null;
 
-    switch (entity.collider.type) {
+    switch (node.collider.type) {
       case "box": {
-        const size = entity.collider.size;
+        const size = node.collider.size;
         const halfSize: Triplet = [size[0] / 2, size[1] / 2, size[2] / 2];
         colliderDesc = ColliderDesc.cuboid(...halfSize);
         break;
       }
 
       case "sphere": {
-        const radius = entity.collider.radius;
+        const radius = node.collider.radius;
         colliderDesc = ColliderDesc.ball(radius);
         break;
       }
 
       case "cylinder": {
-        const height = entity.collider.height;
-        const cylinderRadius = entity.collider.radius;
+        const height = node.collider.height;
+        const cylinderRadius = node.collider.radius;
         colliderDesc = ColliderDesc.cylinder(height / 2, cylinderRadius);
         break;
       }
 
       case "hull": {
-        const positions = this.#geometryPositions.get(entity.id);
+        const positions = this.#geometryPositions.get(node.id);
         if (!positions) break;
 
         colliderDesc = ColliderDesc.convexHull(positions);
@@ -284,10 +283,10 @@ export class PhysicsWorker {
       }
 
       case "mesh": {
-        const positions = this.#geometryPositions.get(entity.id);
+        const positions = this.#geometryPositions.get(node.id);
         if (!positions) break;
 
-        const indices = this.#geometryIndices.get(entity.id);
+        const indices = this.#geometryIndices.get(node.id);
         if (!indices) break;
 
         colliderDesc = ColliderDesc.trimesh(positions, indices);
@@ -304,19 +303,19 @@ export class PhysicsWorker {
     const collider = this.#world.createCollider(colliderDesc, rigidBody);
 
     // Store reference
-    this.#rigidBodies.set(entity.id, rigidBody);
-    this.#colliders.set(entity.id, collider);
+    this.#rigidBodies.set(node.id, rigidBody);
+    this.#colliders.set(node.id, collider);
   }
 
-  removeCollider(entityId: string) {
-    const rigidBody = this.#rigidBodies.get(entityId);
-    const collider = this.#colliders.get(entityId);
+  removeCollider(nodeId: string) {
+    const rigidBody = this.#rigidBodies.get(nodeId);
+    const collider = this.#colliders.get(nodeId);
 
     if (rigidBody) this.#world.removeRigidBody(rigidBody);
     if (collider) this.#world.removeCollider(collider, true);
 
-    this.#rigidBodies.delete(entityId);
-    this.#colliders.delete(entityId);
+    this.#rigidBodies.delete(nodeId);
+    this.#colliders.delete(nodeId);
   }
 
   #physicsLoop() {

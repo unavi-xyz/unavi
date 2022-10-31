@@ -11,7 +11,7 @@ import {
 } from "three";
 import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
 
-import { EntityJSON } from "../../../scene";
+import { NodeJSON } from "../../../scene";
 import { PostMessage, Transferable } from "../../../types";
 import { FromRenderMessage } from "../../types";
 import { SceneMap } from "../types";
@@ -26,25 +26,25 @@ const tempVector3 = new Vector3();
 const tempQuaternion = new Quaternion();
 
 export function createColliderVisual(
-  entityId: string,
+  nodeId: string,
   map: SceneMap,
   visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
 ) {
-  const entity = map.entities.get(entityId);
-  if (!entity) throw new Error("Entity not found");
+  const node = map.nodes.get(nodeId);
+  if (!node) throw new Error("Node not found");
 
   // Remove previous collider
-  removeColliderVisual(entityId, map);
+  removeColliderVisual(nodeId, map);
 
   // Create new collider
   const colliderGroup = new Group();
   let collider: Mesh | null = null;
 
-  switch (entity.collider?.type) {
+  switch (node.collider?.type) {
     case "box": {
       collider = new Mesh(
-        new BoxGeometry(...entity.collider.size),
+        new BoxGeometry(...node.collider.size),
         wireframeMaterial
       );
       break;
@@ -52,7 +52,7 @@ export function createColliderVisual(
 
     case "sphere": {
       collider = new Mesh(
-        new SphereGeometry(entity.collider.radius),
+        new SphereGeometry(node.collider.radius),
         wireframeMaterial
       );
       break;
@@ -61,9 +61,9 @@ export function createColliderVisual(
     case "cylinder": {
       collider = new Mesh(
         new CylinderGeometry(
-          entity.collider.radius,
-          entity.collider.radius,
-          entity.collider.height,
+          node.collider.radius,
+          node.collider.radius,
+          node.collider.height,
           32
         ),
         wireframeMaterial
@@ -73,7 +73,7 @@ export function createColliderVisual(
 
     case "mesh":
     case "hull": {
-      const object = map.objects.get(entityId);
+      const object = map.objects.get(nodeId);
       if (!object) break;
 
       const geometries: BufferGeometry[] = [];
@@ -84,14 +84,19 @@ export function createColliderVisual(
         geometries.push(cloned);
       }
 
-      const primitives: EntityJSON[] = [];
+      const primitives: NodeJSON[] = [];
 
-      map.entities.forEach((entity) => {
-        if (
-          entity.mesh?.type === "Primitive" &&
-          entity.mesh.gltfId === entityId
-        ) {
-          primitives.push(entity);
+      map.nodes.forEach((node) => {
+        const meshId = node.meshId;
+        if (!meshId) return;
+
+        const mesh = map.meshes.get(meshId);
+        if (!mesh) throw new Error(`Mesh ${meshId} not found`);
+
+        if (mesh.type === "Primitives") {
+          mesh.primitives.forEach((primitive) => {
+            if (primitive.gltfId === nodeId) primitives.push(node);
+          });
         }
       });
 
@@ -112,7 +117,7 @@ export function createColliderVisual(
 
       const geometry = mergeBufferGeometries(geometries);
 
-      if (entity.collider?.type === "hull") {
+      if (node.collider?.type === "hull") {
         // Remove indices
         geometry.deleteAttribute("index");
       }
@@ -138,7 +143,7 @@ export function createColliderVisual(
         {
           subject: "set_collider_geometry",
           data: {
-            entityId,
+            nodeId,
             positions,
             indices,
           },
@@ -150,13 +155,13 @@ export function createColliderVisual(
   }
 
   if (collider) {
-    const object = map.objects.get(entityId);
+    const object = map.objects.get(nodeId);
     if (!object) throw new Error("Object not found");
 
     colliderGroup.add(collider);
 
     // Add new collider
-    map.colliders.set(entityId, colliderGroup);
+    map.colliders.set(nodeId, colliderGroup);
     visuals.add(colliderGroup);
 
     // Update collider position

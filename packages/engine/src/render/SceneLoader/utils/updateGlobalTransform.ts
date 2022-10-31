@@ -9,14 +9,14 @@ const tempVector3 = new Vector3();
 const tempQuaternion = new Quaternion();
 
 export function updateGlobalTransform(
-  entityId: string,
+  nodeId: string,
   map: SceneMap,
   postMessage: PostMessage<FromRenderMessage>
 ) {
-  const entity = map.entities.get(entityId);
-  if (!entity) throw new Error("Entity not found");
+  const node = map.nodes.get(nodeId);
+  if (!node) throw new Error("Node not found");
 
-  const object = map.objects.get(entityId);
+  const object = map.objects.get(nodeId);
   if (!object) throw new Error("Object not found");
 
   const globalPosition = object.getWorldPosition(tempVector3);
@@ -30,7 +30,7 @@ export function updateGlobalTransform(
   ];
 
   // Update collider transform
-  const collider = map.colliders.get(entityId);
+  const collider = map.colliders.get(nodeId);
   if (collider) {
     collider.position.copy(globalPosition);
     collider.quaternion.copy(globalQuaternion);
@@ -39,14 +39,14 @@ export function updateGlobalTransform(
   postMessage({
     subject: "set_global_transform",
     data: {
-      entityId,
+      nodeId,
       position: globalPosition.toArray(),
       rotation,
     },
   });
 
   // Repeat for children
-  const children = getChildren(entityId, map);
+  const children = getChildren(nodeId, map);
   children.forEach((child) =>
     updateGlobalTransform(child.id, map, postMessage)
   );

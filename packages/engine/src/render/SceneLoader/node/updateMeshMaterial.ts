@@ -4,14 +4,14 @@ import { MeshJSON } from "../../../scene";
 import { SceneMap } from "../types";
 
 export function updateMeshMaterial(
-  entityId: string,
+  nodeId: string,
   mesh: MeshJSON | null,
   map: SceneMap
 ) {
   // Update material according to certain mesh properties
   // TODO: Create a new material if the mesh needs to modify it
   if (mesh?.type === "Primitive") {
-    const meshObject = map.objects.get(entityId);
+    const meshObject = map.objects.get(nodeId);
     if (!meshObject) throw new Error("Mesh not found");
     if (!(meshObject instanceof Mesh)) throw new Error("Object is not a mesh");
 

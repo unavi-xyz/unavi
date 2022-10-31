@@ -4,12 +4,13 @@ import { PhysicsThread } from "../physics/PhysicsThread";
 import { ToPhysicsMessage } from "../physics/types";
 import { RenderThread } from "../render/RenderThread";
 import { FromRenderMessage, ToRenderMessage } from "../render/types";
-import { Entity } from "../scene/Entity";
+import { Mesh, MeshJSON } from "../scene";
 import { Material } from "../scene/Material";
+import { Node } from "../scene/Node";
 import { Scene } from "../scene/Scene";
 import {
-  EntityJSON,
   MaterialJSON,
+  NodeJSON,
   SceneJSON,
   SceneMessage,
 } from "../scene/types";
@@ -48,15 +49,15 @@ export class MainScene {
 
     // Handle glTF loads
     loaderThread.onGltfLoaded = ({ id, scene }) => {
-      // Remove previous loaded glTF entity
+      // Remove previous loaded glTF node
       const rootEntities = this.#map.glTFRootEntities.get(id);
       if (rootEntities) {
-        rootEntities.forEach((entityId) => this.removeEntity(entityId));
+        rootEntities.forEach((nodeId) => this.removeNode(nodeId));
         this.#map.glTFRootEntities.delete(id);
       }
 
       scene.entities = scene.entities.filter((entityJSON) => {
-        // Filter out root entity
+        // Filter out root node
         if (entityJSON.id === "root") return false;
 
         // Add top level entities to the roots map
@@ -79,25 +80,23 @@ export class MainScene {
     };
 
     // Load glTFs when added to the scene
-    this.#scene.entities$.subscribe((entities) => {
-      Object.values(entities).forEach((entity) => {
-        entity.mesh$.subscribe((mesh) => {
+    this.#scene.nodes$.subscribe((entities) => {
+      Object.values(entities).forEach((node) => {
+        node.meshId$.subscribe((meshId) => {
+          if (!meshId) return;
+          const mesh = this.#scene.meshes[meshId];
           if (mesh?.type === "glTF") {
             mesh.uri$.subscribe((uri) => {
-              const loadedURI = this.#map.loadedGltfUris.get(entity.id);
+              const loadedURI = this.#map.loadedGltfUris.get(node.id);
               if (uri !== loadedURI) {
-                this.#map.loadedGltfUris.set(entity.id, uri);
+                this.#map.loadedGltfUris.set(node.id, uri);
 
                 if (uri === null) {
                   // Remove loaded glTF
-                  const rootEntities = this.#map.glTFRootEntities.get(
-                    entity.id
-                  );
+                  const rootEntities = this.#map.glTFRootEntities.get(node.id);
                   if (rootEntities) {
-                    rootEntities.forEach((entityId) =>
-                      this.removeEntity(entityId)
-                    );
-                    this.#map.glTFRootEntities.delete(entity.id);
+                    rootEntities.forEach((nodeId) => this.removeNode(nodeId));
+                    this.#map.glTFRootEntities.delete(node.id);
                   }
                   return;
                 }
@@ -106,7 +105,7 @@ export class MainScene {
                 this.#toLoaderThread({
                   subject: "load_gltf",
                   data: {
-                    id: entity.id,
+                    id: node.id,
                     uri,
                   },
                 });
@@ -144,7 +143,7 @@ export class MainScene {
 
     switch (subject) {
       case "set_transform": {
-        this.#scene.updateEntity(data.entityId, {
+        this.#scene.updateNode(data.nodeId, {
           position: data.position,
           rotation: data.rotation,
           scale: data.scale,
@@ -159,89 +158,117 @@ export class MainScene {
     }
   };
 
-  get spawn$() {
-    return this.#scene.spawn$;
-  }
-
   get spawn() {
     return this.#scene.spawn;
   }
 
-  set spawn(spawn: typeof Scene.prototype.spawn) {
-    this.#scene.spawn = spawn;
-  }
-
-  get entities$() {
-    return this.#scene.entities$;
-  }
-
-  get materials$() {
-    return this.#scene.materials$;
+  get spawn$() {
+    return this.#scene.spawn$;
   }
 
   get entities() {
-    return this.#scene.entities;
+    return this.#scene.nodes;
   }
 
-  set entities(entities: typeof Scene.prototype.entities) {
-    this.#scene.entities = entities;
+  get entities$() {
+    return this.#scene.nodes$;
+  }
+
+  get meshes() {
+    return this.#scene.meshes;
+  }
+
+  get meshes$() {
+    return this.#scene.meshes$;
   }
 
   get materials() {
     return this.#scene.materials;
   }
 
-  set materials(materials: typeof Scene.prototype.materials) {
-    this.#scene.materials = materials;
+  get materials$() {
+    return this.#scene.materials$;
   }
 
   get images() {
     return this.#scene.images;
   }
 
-  set images(images: typeof Scene.prototype.images) {
-    this.#scene.images = images;
-  }
-
-  addEntity(entity: Entity) {
-    this.#scene.addEntity(entity);
+  addNode(node: Node) {
+    this.#scene.addNode(node);
 
     const message: SceneMessage = {
-      subject: "add_entity",
-      data: { entity: entity.toJSON() },
+      subject: "add_node",
+      data: { node: node.toJSON() },
     };
 
     this.#toPhysicsThread(message);
     this.#toRenderThread(message);
+  }
 
-    if (entity.mesh?.type === "glTF") {
-      const uri = entity.mesh.uri;
+  updateNode(nodeId: string, data: Partial<NodeJSON>) {
+    this.#scene.updateNode(nodeId, data);
+
+    const message: SceneMessage = {
+      subject: "update_node",
+      data: { nodeId, data },
+    };
+
+    this.#toPhysicsThread(message);
+    this.#toRenderThread(message);
+  }
+
+  removeNode(nodeId: string) {
+    this.#scene.removeNode(nodeId);
+
+    const message: SceneMessage = {
+      subject: "remove_node",
+      data: { nodeId },
+    };
+
+    this.#toPhysicsThread(message);
+    this.#toRenderThread(message);
+  }
+
+  addMesh(mesh: Mesh) {
+    if (mesh?.type === "glTF") {
+      const uri = mesh.uri;
       if (uri)
         this.#toLoaderThread({
           subject: "load_gltf",
-          data: { id: entity.id, uri },
+          data: { id: mesh.id, uri },
         });
     }
-  }
 
-  removeEntity(entityId: string) {
-    this.#scene.removeEntity(entityId);
+    this.#scene.addMesh(mesh);
 
     const message: SceneMessage = {
-      subject: "remove_entity",
-      data: { entityId },
+      subject: "add_mesh",
+      data: { mesh: mesh.toJSON() },
     };
 
     this.#toPhysicsThread(message);
     this.#toRenderThread(message);
   }
 
-  updateEntity(entityId: string, data: Partial<EntityJSON>) {
-    this.#scene.updateEntity(entityId, data);
+  updateMesh(meshId: string, data: Partial<MeshJSON>) {
+    this.#scene.updateMesh(meshId, data);
 
     const message: SceneMessage = {
-      subject: "update_entity",
-      data: { entityId, data },
+      subject: "update_mesh",
+      data: { meshId, data },
+    };
+
+    this.#toPhysicsThread(message);
+    this.#toRenderThread(message);
+  }
+
+  removeMesh(meshId: string) {
+    this.#scene.removeMesh(meshId);
+
+    const message: SceneMessage = {
+      subject: "remove_mesh",
+      data: { meshId },
     };
 
     this.#toPhysicsThread(message);
@@ -277,8 +304,8 @@ export class MainScene {
   }
 
   async loadJSON(json: Partial<SceneJSON>) {
-    // Remove root entity
-    json.entities = json.entities?.filter((entity) => entity.id !== "root");
+    // Remove root node
+    json.entities = json.entities?.filter((node) => node.id !== "root");
 
     // Send stripped down scene to physics thread
     const strippedScene: Partial<SceneJSON> = {
@@ -301,16 +328,14 @@ export class MainScene {
     this.#scene.loadJSON(json);
 
     // Wait for all glTFs to load
-    if (json.entities) {
-      const glTFs = json.entities.filter(
-        (entity) => entity.mesh?.type === "glTF"
-      );
+    if (json.meshes) {
+      const glTFs = json.meshes.filter((mesh) => mesh?.type === "glTF");
 
       await Promise.all(
-        glTFs.map((entity) => {
+        glTFs.map((node) => {
           return new Promise<void>((resolve) => {
-            this.#gltfLoadCallbacks.set(entity.id, () => {
-              this.#gltfLoadCallbacks.delete(entity.id);
+            this.#gltfLoadCallbacks.set(node.id, () => {
+              this.#gltfLoadCallbacks.delete(node.id);
               resolve();
             });
           });
@@ -320,11 +345,11 @@ export class MainScene {
   }
 
   clear() {
-    this.spawn = [0, 0, 0];
+    this.#scene.spawn = [0, 0, 0];
 
     // Remove all entities
-    Object.values(this.#scene.entities).forEach((entity) => {
-      if (entity.parentId === "root") this.removeEntity(entity.id);
+    Object.values(this.#scene.nodes).forEach((node) => {
+      if (node.parentId === "root") this.removeNode(node.id);
     });
 
     // Remove all materials

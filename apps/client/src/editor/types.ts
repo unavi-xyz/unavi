@@ -3,7 +3,7 @@ import { SceneJSON, Triplet } from "@wired-labs/engine";
 export type Tool = "translate" | "rotate" | "scale";
 
 export enum DND_TYPES {
-  Entity = "entity",
+  Node = "node",
 }
 
 export type SavedImageJSON = {

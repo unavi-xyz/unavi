@@ -3,10 +3,11 @@ import { BehaviorSubject } from "rxjs";
 import { Triplet } from "../types";
 import { Accessor } from "./Accessor";
 import { Animation } from "./Animation";
-import { Entity } from "./Entity";
 import { Image } from "./Image";
 import { Material } from "./Material";
-import { EntityJSON, MaterialJSON, SceneJSON } from "./types";
+import { Mesh, MeshJSON } from "./mesh/types";
+import { Node } from "./Node";
+import { MaterialJSON, NodeJSON, SceneJSON } from "./types";
 import { sortEntities } from "./utils/sortEntities";
 
 /*
@@ -15,9 +16,10 @@ import { sortEntities } from "./utils/sortEntities";
  * This is especially useful for the editor's React UI.
  */
 export class Scene {
-  entities$ = new BehaviorSubject<{ [id: string]: Entity }>({
-    root: new Entity({ id: "root" }),
+  nodes$ = new BehaviorSubject<{ [id: string]: Node }>({
+    root: new Node({ id: "root" }),
   });
+  meshes$ = new BehaviorSubject<{ [id: string]: Mesh }>({});
   materials$ = new BehaviorSubject<{ [id: string]: Material }>({});
   accessors$ = new BehaviorSubject<{ [id: string]: Accessor }>({});
   images$ = new BehaviorSubject<{ [id: string]: Image }>({});
@@ -33,12 +35,20 @@ export class Scene {
     this.spawn$.next(spawn);
   }
 
-  get entities() {
-    return this.entities$.value;
+  get nodes() {
+    return this.nodes$.value;
   }
 
-  set entities(entities: { [id: string]: Entity }) {
-    this.entities$.next(entities);
+  set nodes(nodes: { [id: string]: Node }) {
+    this.nodes$.next(nodes);
+  }
+
+  get meshes() {
+    return this.meshes$.value;
+  }
+
+  set meshes(meshes: { [id: string]: Mesh }) {
+    this.meshes$.next(meshes);
   }
 
   get materials() {
@@ -90,73 +100,96 @@ export class Scene {
     this.accessors = accessors;
   }
 
-  addEntity(entity: Entity) {
-    if (entity.id === "root") return;
+  addNode(node: Node) {
+    if (node.id === "root") return;
 
-    const previous = this.entities[entity.id];
-    if (previous) this.removeEntity(previous.id);
+    const previous = this.nodes[node.id];
+    if (previous) this.removeNode(previous.id);
 
     // Set scene
-    entity.scene = this;
+    node.scene = this;
 
     // Add to parent
-    const parent = entity.parent;
+    const parent = node.parent;
     if (parent) {
-      parent.childrenIds$.next([...parent.childrenIds$.value, entity.id]);
+      parent.childrenIds$.next([...parent.childrenIds$.value, node.id]);
     }
 
     // Save to entities
-    this.entities = {
-      ...this.entities,
-      [entity.id]: entity,
+    this.nodes = {
+      ...this.nodes,
+      [node.id]: node,
     };
   }
 
-  removeEntity(entityId: string) {
-    if (entityId === "root") return;
+  updateNode(nodeId: string, data: Partial<NodeJSON>) {
+    if (nodeId === "root") return;
 
-    const entity = this.entities[entityId];
-    if (!entity) throw new Error(`Entity ${entityId} not found`);
+    const node = this.nodes[nodeId];
+    if (!node) throw new Error(`Node ${nodeId} not found`);
+
+    node.applyJSON(data);
+  }
+
+  removeNode(nodeId: string) {
+    if (nodeId === "root") return;
+
+    const node = this.nodes[nodeId];
+    if (!node) throw new Error(`Node ${nodeId} not found`);
 
     // Repeat for children
-    entity.childrenIds.forEach((childId) => this.removeEntity(childId));
+    node.childrenIds.forEach((childId) => this.removeNode(childId));
 
     // Remove from parent
-    if (entity.parent) entity.parentId = "";
+    if (node.parent) node.parentId = "";
 
     // Remove from entities
-    this.entities = Object.fromEntries(
-      Object.entries(this.entities).filter(([id]) => id !== entityId)
+    this.nodes = Object.fromEntries(
+      Object.entries(this.nodes).filter(([id]) => id !== nodeId)
     );
 
-    // Remove mesh accessors
-    if (entity.mesh && entity.mesh.type === "Primitive") {
-      if (entity.mesh.indicesId) this.removeAccessor(entity.mesh.indicesId);
-      if (entity.mesh.POSITION) this.removeAccessor(entity.mesh.POSITION);
-      if (entity.mesh.NORMAL) this.removeAccessor(entity.mesh.NORMAL);
-      if (entity.mesh.TEXCOORD_0) this.removeAccessor(entity.mesh.TEXCOORD_0);
-      if (entity.mesh.TANGENT) this.removeAccessor(entity.mesh.TANGENT);
-      if (entity.mesh.WEIGHTS_0) this.removeAccessor(entity.mesh.WEIGHTS_0);
-      if (entity.mesh.JOINTS_0) this.removeAccessor(entity.mesh.JOINTS_0);
+    // Remove mesh if no other entities use it
+    if (node.meshId) {
+      const mesh = this.meshes[node.meshId];
+      if (!mesh) throw new Error(`Mesh ${node.meshId} not found`);
 
-      entity.mesh.morphPositionIds.forEach((id) => this.removeAccessor(id));
-      entity.mesh.morphNormalIds.forEach((id) => this.removeAccessor(id));
-      entity.mesh.morphTangentIds.forEach((id) => this.removeAccessor(id));
-    }
+      const isUsed = Object.values(this.nodes).some(
+        (node) => node.meshId === node.meshId
+      );
 
-    // Remove material
-    if (entity.materialId) {
-      const material = this.materials[entity.materialId];
-      if (!material) throw new Error(`Material ${entity.materialId} not found`);
+      if (!isUsed) {
+        if (mesh && mesh.type === "Primitive") {
+          if (mesh.indicesId) this.removeAccessor(mesh.indicesId);
+          if (mesh.POSITION) this.removeAccessor(mesh.POSITION);
+          if (mesh.NORMAL) this.removeAccessor(mesh.NORMAL);
+          if (mesh.TEXCOORD_0) this.removeAccessor(mesh.TEXCOORD_0);
+          if (mesh.TANGENT) this.removeAccessor(mesh.TANGENT);
+          if (mesh.WEIGHTS_0) this.removeAccessor(mesh.WEIGHTS_0);
+          if (mesh.JOINTS_0) this.removeAccessor(mesh.JOINTS_0);
 
-      // Only remove internal materials
-      if (material.isInternal) {
-        // Only remove material if it's not used by any other entity
-        const otherEntity = Object.values(this.entities).find(
-          (e) => e.materialId === entity.materialId
-        );
+          mesh.morphPositionIds.forEach((id) => this.removeAccessor(id));
+          mesh.morphNormalIds.forEach((id) => this.removeAccessor(id));
+          mesh.morphTangentIds.forEach((id) => this.removeAccessor(id));
+        }
 
-        if (!otherEntity) this.removeMaterial(entity.materialId);
+        // Remove material
+        if (mesh?.materialId) {
+          const material = this.materials[mesh.materialId];
+          if (!material)
+            throw new Error(`Material ${mesh.materialId} not found`);
+
+          // Only remove internal materials
+          if (material.isInternal) {
+            // Only remove material if it's not used by any other mesh
+            const otherNode = Object.values(this.nodes).find(
+              (node) =>
+                node.meshId &&
+                this.meshes[node.meshId]?.materialId === material.id
+            );
+
+            if (!otherNode) this.removeMaterial(mesh.materialId);
+          }
+        }
       }
     }
 
@@ -165,28 +198,50 @@ export class Scene {
       // Only remove internal animations
       if (!animation.isInternal) return;
 
-      // Remove animation if it doesn't have any other entity using it
+      // Remove animation if it doesn't have any other node using it
       const targetIds = animation.channels.map((channel) => channel.targetId);
       const isUsed = targetIds.some((targetId) => {
-        const targetEntity = this.entities[targetId];
-        if (!targetEntity) return false;
+        const targetNode = this.nodes[targetId];
+        if (!targetNode) return false;
         return true;
       });
 
       if (!isUsed) this.removeAnimation(animation.id);
     });
 
-    // Destroy entity
-    entity.destroy();
+    // Destroy node
+    node.destroy();
   }
 
-  updateEntity(entityId: string, data: Partial<EntityJSON>) {
-    if (entityId === "root") return;
+  addMesh(mesh: Mesh) {
+    const previous = this.meshes[mesh.id];
+    if (previous) this.removeMesh(previous.id);
 
-    const entity = this.entities[entityId];
-    if (!entity) throw new Error(`Entity ${entityId} not found`);
+    // Save to entities
+    this.meshes = {
+      ...this.meshes,
+      [mesh.id]: mesh,
+    };
+  }
 
-    entity.applyJSON(data);
+  updateMesh(meshId: string, data: Partial<MeshJSON>) {
+    const mesh = this.meshes[meshId];
+    if (!mesh) throw new Error(`Mesh ${meshId} not found`);
+
+    mesh.applyJSON(data as any);
+  }
+
+  removeMesh(meshId: string) {
+    const mesh = this.meshes[meshId];
+    if (!mesh) throw new Error(`Mesh ${meshId} not found`);
+
+    // Remove from entities
+    this.meshes = Object.fromEntries(
+      Object.entries(this.meshes).filter(([id]) => id !== meshId)
+    );
+
+    // Destroy mesh
+    mesh.destroy();
   }
 
   addMaterial(material: Material) {
@@ -204,15 +259,15 @@ export class Scene {
     const material = this.materials[materialId];
     if (!material) throw new Error(`Material ${materialId} not found`);
 
-    // Remove from all entities
-    this.entities = Object.fromEntries(
-      Object.entries(this.entities).map(([id, entity]) => {
-        if (entity.materialId === materialId) entity.materialId = null;
-        return [id, entity];
+    // Remove from all meshes
+    this.meshes = Object.fromEntries(
+      Object.entries(this.meshes).map(([id, mesh]) => {
+        if (mesh.materialId === materialId) mesh.materialId = null;
+        return [id, mesh];
       })
     );
 
-    // Remove images
+    // Remove texture images
     [
       material.colorTexture,
       material.normalTexture,
@@ -221,8 +276,10 @@ export class Scene {
       material.metallicRoughnessTexture,
     ].forEach((texture) => {
       if (!texture) return;
+
       const imageId = texture.imageId;
       if (!imageId) return;
+
       const image = this.images[imageId];
       if (!image) throw new Error(`Image ${imageId} not found`);
 
@@ -311,7 +368,11 @@ export class Scene {
     return {
       spawn: this.spawn,
 
-      entities: Object.values(this.entities)
+      meshes: Object.values(this.meshes)
+        .filter((m) => (m.isInternal ? includeInternal : true))
+        .map((m) => m.toJSON()),
+
+      entities: Object.values(this.nodes)
         .filter((e) => (e.isInternal ? includeInternal : true))
         .map((e) => e.toJSON()),
 
@@ -360,9 +421,9 @@ export class Scene {
       const sortedEntities = sortEntities(json.entities);
 
       // Add entities
-      sortedEntities.forEach((entity) => {
-        if (entity.id === "root") return;
-        this.addEntity(Entity.fromJSON(entity));
+      sortedEntities.forEach((node) => {
+        if (node.id === "root") return;
+        this.addNode(Node.fromJSON(node));
       });
     }
 
@@ -375,13 +436,13 @@ export class Scene {
   }
 
   destroy() {
-    Object.values(this.entities).forEach((entity) => entity.destroy());
+    Object.values(this.nodes).forEach((node) => node.destroy());
     Object.values(this.materials).forEach((material) => material.destroy());
     Object.values(this.accessors).forEach((accessor) => accessor.destroy());
     Object.values(this.images).forEach((image) => image.destroy());
     Object.values(this.animations).forEach((animation) => animation.destroy());
 
-    this.entities$.complete();
+    this.nodes$.complete();
     this.materials$.complete();
     this.accessors$.complete();
     this.images$.complete();

@@ -9,12 +9,12 @@ export function removeMaterial(materialId: string, map: SceneMap) {
   if (!material) throw new Error(`Material not found: ${materialId}`);
 
   // Remove material from entities
-  map.entities.forEach((entity) => {
-    if (entity.materialId === materialId) {
-      entity.materialId = null;
+  map.nodes.forEach((node) => {
+    if (node.materialId === materialId) {
+      node.materialId = null;
 
       // Remove from object
-      const object = map.objects.get(entity.id);
+      const object = map.objects.get(node.id);
       if (object instanceof Mesh) {
         object.material = defaultMaterial;
       }

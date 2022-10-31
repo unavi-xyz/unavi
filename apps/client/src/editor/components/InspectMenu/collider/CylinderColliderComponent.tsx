@@ -1,19 +1,16 @@
 import { CylinderCollider } from "@wired-labs/engine";
 
-import { updateEntity } from "../../../actions/UpdateEntityAction";
+import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import NumberInput from "../../ui/NumberInput";
 import MenuRows from "../MenuRows";
 
 interface Props {
-  entityId: string;
+  nodeId: string;
   collider: CylinderCollider;
 }
 
-export default function CylinderColliderComponent({
-  entityId,
-  collider,
-}: Props) {
+export default function CylinderColliderComponent({ nodeId, collider }: Props) {
   const radius = useSubscribeValue(collider.radius$);
   const height = useSubscribeValue(collider.height$);
 
@@ -38,7 +35,7 @@ export default function CylinderColliderComponent({
 
               collider[property] = rounded;
 
-              updateEntity(entityId, { collider: collider.toJSON() });
+              updateNode(nodeId, { collider: collider.toJSON() });
             }}
           />
         );

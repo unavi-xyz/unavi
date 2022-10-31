@@ -1,15 +1,15 @@
 import { GLTFMesh } from "@wired-labs/engine";
 
 import FileInput from "../../../../ui/FileInput";
-import { updateEntity } from "../../../actions/UpdateEntityAction";
+import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 
 interface Props {
-  entityId: string;
+  nodeId: string;
   mesh: GLTFMesh;
 }
 
-export default function GLTFMeshComponent({ entityId, mesh }: Props) {
+export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
   const name = useSubscribeValue(mesh.name$);
 
   return (
@@ -29,7 +29,7 @@ export default function GLTFMeshComponent({ entityId, mesh }: Props) {
         mesh.name = file.name;
         mesh.uri = URL.createObjectURL(blob);
 
-        updateEntity(entityId, { mesh: mesh.toJSON() });
+        updateNode(nodeId, { mesh: mesh.toJSON() });
       }}
     />
   );

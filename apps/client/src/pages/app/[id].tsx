@@ -1,4 +1,4 @@
-import { Entity, GLTFMesh } from "@wired-labs/engine";
+import { Node, GLTFMesh } from "@wired-labs/engine";
 import { NextPageContext } from "next";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -68,17 +68,17 @@ export default function App({ id, metadata, publication }: Props) {
   useEffect(() => {
     if (!modelURL || !engine) return;
 
-    // Create glTF entity
-    const entity = new Entity();
+    // Create glTF node
+    const node = new Node();
     const mesh = new GLTFMesh();
     mesh.uri = modelURL;
-    entity.mesh = mesh;
+    node.mesh = mesh;
 
-    // Add entity to scene
-    engine.scene.addEntity(entity);
+    // Add node to scene
+    engine.scene.addNode(node);
 
     return () => {
-      engine.scene.removeEntity(entity.id);
+      engine.scene.removeNode(node.id);
     };
   }, [engine, modelURL]);
 

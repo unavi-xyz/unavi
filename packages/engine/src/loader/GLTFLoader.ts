@@ -25,11 +25,11 @@ import {
   AnimationSampler,
   BoxCollider,
   CylinderCollider,
-  Entity,
   HullCollider,
   Material,
   MeshCollider,
-  PrimitiveMesh,
+  Node,
+  Primitive,
   Scene,
   SphereCollider,
   Texture,
@@ -37,6 +37,7 @@ import {
 import { Accessor } from "../scene/Accessor";
 import { Animation } from "../scene/Animation";
 import { Image } from "../scene/Image";
+import { PrimitivesMesh } from "../scene/mesh/PrimitivesMesh";
 import { Triplet } from "../types";
 
 /*
@@ -49,7 +50,7 @@ export class GLTFLoader {
 
   #map = {
     nodes: new Map<INode, string>(),
-    meshes: new Map<IMesh, Entity[]>(),
+    meshes: new Map<IMesh, PrimitivesMesh>(),
     materials: new Map<IMaterial, Material>(),
     accessors: new Map<IAccessor, string>(),
     images: new Map<ITexture, string>(),
@@ -121,16 +122,13 @@ export class GLTFLoader {
       const skin = node.getSkin();
 
       if (skin) {
-        const mesh = node.getMesh();
+        const gltfMesh = node.getMesh();
+        if (!gltfMesh) throw new Error("No mesh");
+
+        const mesh = this.#map.meshes.get(gltfMesh);
         if (!mesh) throw new Error("No mesh");
 
-        const meshEntities = this.#map.meshes.get(mesh);
-        if (!meshEntities) throw new Error("No mesh entities");
-
-        meshEntities.forEach((meshEntity) => {
-          if (meshEntity.mesh?.type !== "Primitive")
-            throw new Error("Wrong mesh");
-
+        mesh.primitives.forEach((primitive) => {
           // Load inverse bind matrices
           const inverseBindMatrices = skin.getInverseBindMatrices();
           if (!inverseBindMatrices) throw new Error("No inverse bind matrices");
@@ -138,13 +136,13 @@ export class GLTFLoader {
 
           // Load joints
           const jointIds = skin.listJoints().map((joint) => {
-            const entityId = this.#map.nodes.get(joint);
-            if (entityId === undefined) throw new Error("No joint entity");
-            return entityId;
+            const nodeId = this.#map.nodes.get(joint);
+            if (nodeId === undefined) throw new Error("No joint node");
+            return nodeId;
           });
 
           // Set skin data
-          meshEntity.mesh.skin = {
+          primitive.skin = {
             inverseBindMatricesId,
             jointIds,
           };
@@ -160,7 +158,7 @@ export class GLTFLoader {
   }
 
   #loadAnimation(animation: IAnimation) {
-    // Create entity
+    // Create node
     const animationState = new Animation();
     animationState.isInternal = true;
     animationState.name = animation.getName();
@@ -180,7 +178,7 @@ export class GLTFLoader {
     if (!targetNode) throw new Error("No target node");
 
     const targetId = this.#map.nodes.get(targetNode);
-    if (targetId === undefined) throw new Error("No target node entity");
+    if (targetId === undefined) throw new Error("No target node node");
 
     // Load sampler
     const sampler = channel.getSampler();
@@ -217,37 +215,69 @@ export class GLTFLoader {
     return samplerState;
   }
 
-  #loadNode(node: INode, parentId?: string, hullRootId?: string): Entity {
-    // Create entity
-    const entity = new Entity();
-    entity.isInternal = true;
-    entity.name = node.getName();
+  #loadNode(gltfNode: INode, parentId?: string): Node {
+    // Create node
+    const node = new Node();
+    node.isInternal = true;
+    node.name = gltfNode.getName();
 
     // Set parent
-    if (parentId !== undefined) entity.parentId = parentId;
+    if (parentId !== undefined) node.parentId = parentId;
 
     // Set transform
-    entity.position = node.getTranslation();
-    entity.rotation = node.getRotation();
-    entity.scale = node.getScale();
+    node.position = gltfNode.getTranslation();
+    node.rotation = gltfNode.getRotation();
+    node.scale = gltfNode.getScale();
+
+    // Load mesh
+    const gltfMesh = gltfNode.getMesh();
+    if (gltfMesh) {
+      const mesh = this.#loadMesh(gltfMesh);
+
+      // Set mesh
+      node.meshId = mesh.id;
+
+      // If the node has weights, apply them to the mesh
+      const nodeWeights = gltfNode.getWeights();
+      if (nodeWeights.length > 0) {
+        // If the mesh is used by multiple nodes, clone the mesh
+        const isSingleUse = gltfMesh.listParents().length === 1;
+
+        // TODO verify this works
+
+        if (isSingleUse) {
+          mesh.primitives.forEach(
+            (primitive) => (primitive.weights = nodeWeights)
+          );
+        } else {
+          const gltfMeshCopy = gltfMesh.clone();
+          const meshCopy = this.#loadMesh(gltfMeshCopy);
+          meshCopy.primitives.forEach(
+            (primitive) => (primitive.weights = nodeWeights)
+          );
+
+          // Set new mesh
+          node.meshId = meshCopy.id;
+        }
+      }
+    }
 
     // Load collider
-    const collider = node.getExtension(ColliderExtension.EXTENSION_NAME);
-    let isHull = false;
+    const collider = gltfNode.getExtension(ColliderExtension.EXTENSION_NAME);
 
     if (collider instanceof Collider) {
       switch (collider.getType()) {
         case "box": {
           const box = new BoxCollider();
           box.size = collider.getSize() ?? [1, 1, 1];
-          entity.collider = box;
+          node.collider = box;
           break;
         }
 
         case "sphere": {
           const sphere = new SphereCollider();
           sphere.radius = collider.getRadius() ?? 0.5;
-          entity.collider = sphere;
+          node.collider = sphere;
           break;
         }
 
@@ -255,21 +285,29 @@ export class GLTFLoader {
           const cylinder = new CylinderCollider();
           cylinder.radius = collider.getRadius() ?? 0.5;
           cylinder.height = collider.getHeight() ?? 1;
-          entity.collider = cylinder;
+          node.collider = cylinder;
           break;
         }
 
         case "hull": {
-          isHull = true;
-          const hull = new HullCollider();
-          entity.collider = hull;
+          if (!node.meshId) {
+            console.warn("No mesh for hull collider");
+            break;
+          }
+
+          const hull = new HullCollider(node.meshId);
+          node.collider = hull;
           break;
         }
 
         case "mesh": {
-          isHull = true;
-          const mesh = new MeshCollider();
-          entity.collider = mesh;
+          if (!node.meshId) {
+            console.warn("No mesh for mesh collider");
+            break;
+          }
+
+          const mesh = new MeshCollider(node.meshId);
+          node.collider = mesh;
           break;
         }
 
@@ -279,104 +317,86 @@ export class GLTFLoader {
       }
     }
 
-    const hullId = isHull ? entity.id : hullRootId;
-
-    // Load mesh
-    const mesh = node.getMesh();
-    if (mesh) {
-      const meshEntities = this.#loadMesh(mesh);
-
-      const nodeWeights = node.getWeights();
-      const weights = nodeWeights.length > 0 ? nodeWeights : mesh.getWeights();
-
-      meshEntities.forEach((meshEntity) => {
-        if (meshEntity.mesh?.type !== "Primitive") throw new Error("No mesh");
-
-        meshEntity.mesh.weights = weights;
-        meshEntity.parentId = entity.id;
-
-        if (hullId) meshEntity.mesh.gltfId = hullId;
-      });
-    }
-
     // Load spawn
-    const spawn = node.getExtension(SpawnPointExtension.EXTENSION_NAME);
-    if (spawn) this.#spawn = node.getTranslation();
+    const spawn = gltfNode.getExtension(SpawnPointExtension.EXTENSION_NAME);
+    if (spawn) this.#spawn = gltfNode.getTranslation();
 
     // Load children
-    node.listChildren().forEach((child) => {
-      this.#loadNode(child, entity.id, hullId);
-    });
+    gltfNode.listChildren().forEach((child) => this.#loadNode(child, node.id));
 
     // Add to scene
-    this.#scene.addEntity(entity);
+    this.#scene.addNode(node);
 
-    this.#map.nodes.set(node, entity.id);
-    return entity;
+    this.#map.nodes.set(gltfNode, node.id);
+    return node;
   }
 
-  #loadMesh(mesh: IMesh): Entity[] {
-    // TODO: Support instanced meshes
-    // const cached = this.#map.meshes.get(mesh);
-    // if (cached !== undefined) return cached;
+  #loadMesh(gltfMesh: IMesh): PrimitivesMesh {
+    const mesh = new PrimitivesMesh();
+    mesh.isInternal = true;
+    mesh.name = gltfMesh.getName();
 
     // Load primitives
-    const primitives = mesh
+    mesh.primitives = gltfMesh
       .listPrimitives()
       .map((primitive) => this.#loadPrimitive(primitive));
 
-    this.#map.meshes.set(mesh, primitives);
-    return primitives;
+    // Set weights
+    const weights = gltfMesh.getWeights();
+    mesh.primitives.forEach((primitive) => (primitive.weights = weights));
+
+    // Add to scene
+    this.#scene.addMesh(mesh);
+
+    this.#map.meshes.set(gltfMesh, mesh);
+    return mesh;
   }
 
-  #loadPrimitive(primitive: IPrimitive): Entity {
-    // Create entity
-    const entity = new Entity();
-    entity.isInternal = true;
-    entity.name = primitive.getName();
+  #loadPrimitive(gltfPrimitive: IPrimitive): Primitive {
+    // Create primitive
+    const primitive = new Primitive();
+    primitive.isInternal = true;
+    primitive.name = gltfPrimitive.getName();
 
-    // Create mesh
-    const mesh = new PrimitiveMesh();
-    entity.mesh = mesh;
-    mesh.mode = primitive.getMode();
+    primitive.mode = gltfPrimitive.getMode();
 
     // Load material
-    const material = primitive.getMaterial();
-    if (material) entity.materialId = this.#loadMaterial(material).id;
+    const material = gltfPrimitive.getMaterial();
+    if (material) primitive.materialId = this.#loadMaterial(material).id;
 
     // Load indices
-    const indices = primitive.getIndices();
-    if (indices) mesh.indicesId = this.#loadAccessor(indices);
+    const indices = gltfPrimitive.getIndices();
+    if (indices) primitive.indicesId = this.#loadAccessor(indices);
 
     // Load attributes
-    primitive.listSemantics().forEach((name) => {
-      const attribute = primitive.getAttribute(name);
+    gltfPrimitive.listSemantics().forEach((name) => {
+      const attribute = gltfPrimitive.getAttribute(name);
       if (!attribute) return;
 
       switch (name) {
         case "POSITION":
-          mesh.POSITION = this.#loadAccessor(attribute);
+          primitive.POSITION = this.#loadAccessor(attribute);
           break;
         case "NORMAL":
-          mesh.NORMAL = this.#loadAccessor(attribute);
+          primitive.NORMAL = this.#loadAccessor(attribute);
           break;
         case "TANGENT":
-          mesh.TANGENT = this.#loadAccessor(attribute);
+          primitive.TANGENT = this.#loadAccessor(attribute);
           break;
         case "TEXCOORD_0":
-          mesh.TEXCOORD_0 = this.#loadAccessor(attribute);
+          primitive.TEXCOORD_0 = this.#loadAccessor(attribute);
           break;
         case "TEXCOORD_1":
-          mesh.TEXCOORD_1 = this.#loadAccessor(attribute);
+          primitive.TEXCOORD_1 = this.#loadAccessor(attribute);
           break;
         case "COLOR_0":
-          mesh.COLOR_0 = this.#loadAccessor(attribute);
+          primitive.COLOR_0 = this.#loadAccessor(attribute);
           break;
         case "JOINTS_0":
-          mesh.JOINTS_0 = this.#loadAccessor(attribute);
+          primitive.JOINTS_0 = this.#loadAccessor(attribute);
           break;
         case "WEIGHTS_0":
-          mesh.WEIGHTS_0 = this.#loadAccessor(attribute);
+          primitive.WEIGHTS_0 = this.#loadAccessor(attribute);
           break;
         default:
           throw new Error(`Unsupported primitive attribute: ${name}`);
@@ -384,17 +404,14 @@ export class GLTFLoader {
     });
 
     // Load morph targets
-    primitive.listTargets().forEach((target) => {
-      this.#loadMorphTarget(target, mesh);
+    gltfPrimitive.listTargets().forEach((target) => {
+      this.#loadMorphTarget(target, primitive);
     });
 
-    // Add to scene
-    this.#scene.addEntity(entity);
-
-    return entity;
+    return primitive;
   }
 
-  #loadMorphTarget(target: IPrimitiveTarget, mesh: PrimitiveMesh) {
+  #loadMorphTarget(target: IPrimitiveTarget, mesh: Primitive) {
     // Load attributes
     target.listSemantics().forEach((name) => {
       const attribute = target.getAttribute(name);
@@ -422,7 +439,7 @@ export class GLTFLoader {
     const cached = this.#map.materials.get(material);
     if (cached !== undefined) return cached;
 
-    // Create entity
+    // Create node
     const materialState = new Material();
     materialState.isInternal = true;
     materialState.name = material.getName();

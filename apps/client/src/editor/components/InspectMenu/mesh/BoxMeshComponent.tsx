@@ -1,17 +1,17 @@
 import { BoxMesh } from "@wired-labs/engine";
 
-import { updateEntity } from "../../../actions/UpdateEntityAction";
+import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import NumberInput from "../../ui/NumberInput";
 import MaterialComponent from "../MaterialComponent";
 import MenuRows from "../MenuRows";
 
 interface Props {
-  entityId: string;
+  nodeId: string;
   mesh: BoxMesh;
 }
 
-export default function BoxMeshComponent({ entityId, mesh }: Props) {
+export default function BoxMeshComponent({ nodeId, mesh }: Props) {
   const width = useSubscribeValue(mesh.width$);
   const height = useSubscribeValue(mesh.height$);
   const depth = useSubscribeValue(mesh.depth$);
@@ -38,14 +38,14 @@ export default function BoxMeshComponent({ entityId, mesh }: Props) {
 
                 mesh[property] = rounded;
 
-                updateEntity(entityId, { mesh: mesh.toJSON() });
+                updateNode(nodeId, { mesh: mesh.toJSON() });
               }}
             />
           );
         })}
       </MenuRows>
 
-      <MaterialComponent entityId={entityId} />
+      <MaterialComponent nodeId={nodeId} />
     </>
   );
 }

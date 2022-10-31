@@ -15,18 +15,18 @@ import {
   Vector3,
 } from "three";
 
-import { AccessorJSON, EntityJSON } from "../../scene";
+import { AccessorJSON, MeshJSON, NodeJSON } from "../../scene";
 import { sortEntities } from "../../scene/utils/sortEntities";
 import { PostMessage, Quad } from "../../types";
 import { FromRenderMessage, RenderExport, ToRenderMessage } from "../types";
 import { addAnimation } from "./animation/addAnimation";
-import { addEntity } from "./entity/addEntity";
-import { createColliderVisual } from "./entity/createColliderVisual";
-import { removeEntity } from "./entity/removeEntity";
-import { updateEntity } from "./entity/updateEntity";
 import { addMaterial } from "./material/addMaterial";
 import { removeMaterial } from "./material/removeMaterial";
 import { updateMaterial } from "./material/updateMaterial";
+import { addNode } from "./node/addNode";
+import { createColliderVisual } from "./node/createColliderVisual";
+import { removeNode } from "./node/removeNode";
+import { updateNode } from "./node/updateNode";
 import { SceneMap } from "./types";
 import { getChildren } from "./utils/getChildren";
 import { updateGlobalTransform } from "./utils/updateGlobalTransform";
@@ -51,7 +51,8 @@ export class SceneLoader {
     animations: new Map<string, AnimationClip>(),
     attributes: new Map<string, BufferAttribute>(),
     colliders: new Map<string, Group>(),
-    entities: new Map<string, EntityJSON>(),
+    nodes: new Map<string, NodeJSON>(),
+    meshes: new Map<string, MeshJSON>(),
     images: new Map<string, ImageBitmap>(),
     materials: new Map<string, MeshStandardMaterial>(),
     objects: new Map<string, Object3D>(),
@@ -86,21 +87,21 @@ export class SceneLoader {
         break;
       }
 
-      case "add_entity": {
-        addEntity(data.entity, this.#map, this.visuals, this.#postMessage);
+      case "add_node": {
+        addNode(data.node, this.#map, this.visuals, this.#postMessage);
         this.#updateShadowMap();
         break;
       }
 
-      case "remove_entity": {
-        removeEntity(data.entityId, this.#map);
+      case "remove_node": {
+        removeNode(data.nodeId, this.#map);
         this.#updateShadowMap();
         break;
       }
 
-      case "update_entity": {
-        updateEntity(
-          data.entityId,
+      case "update_node": {
+        updateNode(
+          data.nodeId,
           data.data,
           this.#map,
           this.visuals,
@@ -151,11 +152,11 @@ export class SceneLoader {
           const sortedEntities = sortEntities(data.scene.entities);
 
           sortedEntities.forEach((e) =>
-            addEntity(e, this.#map, this.visuals, this.#postMessage)
+            addNode(e, this.#map, this.visuals, this.#postMessage)
           );
 
           // Hull collider visuals require all children to be added
-          this.#map.entities.forEach((e) => {
+          this.#map.nodes.forEach((e) => {
             if (e.collider?.type === "hull" || e.collider?.type === "mesh")
               createColliderVisual(
                 e.id,
@@ -187,7 +188,7 @@ export class SceneLoader {
     const exportData: RenderExport = [];
 
     function exportAttribute(
-      entityId: string,
+      nodeId: string,
       attributeName: string,
       threeName: string,
       mesh: Mesh<BufferGeometry, MeshStandardMaterial>
@@ -211,7 +212,7 @@ export class SceneLoader {
       const type: GLTF.AccessorType = types[itemSize];
 
       exportData.push({
-        entityId,
+        nodeId,
         attributeName,
         array: attribute.array as any,
         normalized: attribute.normalized,
@@ -219,25 +220,31 @@ export class SceneLoader {
       });
     }
 
-    this.#map.entities.forEach((entity) => {
-      switch (entity.mesh?.type) {
+    this.#map.nodes.forEach((node) => {
+      const meshId = node.meshId;
+      if (!meshId) return;
+
+      const mesh = this.#map.meshes.get(meshId);
+      if (!mesh) throw new Error(`Mesh ${meshId} not found`);
+
+      switch (mesh.type) {
         case "Box":
         case "Sphere":
         case "Cylinder": {
-          const object = this.findObject(entity.id);
+          const object = this.findObject(node.id);
           if (!object) throw new Error("Object not found");
           if (!(object instanceof Mesh))
             throw new Error("Object is not a mesh");
 
           const mesh = object as Mesh<BufferGeometry, MeshStandardMaterial>;
 
-          exportAttribute(entity.id, "indices", "indices", mesh);
-          exportAttribute(entity.id, "POSITION", "position", mesh);
-          exportAttribute(entity.id, "NORMAL", "normal", mesh);
-          exportAttribute(entity.id, "TANGENT", "tangent", mesh);
-          exportAttribute(entity.id, "TEXCOORD_0", "uv", mesh);
-          exportAttribute(entity.id, "TEXCOORD_1", "tangent", mesh);
-          exportAttribute(entity.id, "COLOR_0", "color", mesh);
+          exportAttribute(node.id, "indices", "indices", mesh);
+          exportAttribute(node.id, "POSITION", "position", mesh);
+          exportAttribute(node.id, "NORMAL", "normal", mesh);
+          exportAttribute(node.id, "TANGENT", "tangent", mesh);
+          exportAttribute(node.id, "TEXCOORD_0", "uv", mesh);
+          exportAttribute(node.id, "TEXCOORD_1", "tangent", mesh);
+          exportAttribute(node.id, "COLOR_0", "color", mesh);
           break;
         }
       }
@@ -256,19 +263,19 @@ export class SceneLoader {
     return undefined;
   }
 
-  getEntity(id: string) {
-    return this.#map.entities.get(id);
+  getNode(id: string) {
+    return this.#map.nodes.get(id);
   }
 
-  findObject(entityId: string): Object3D | undefined {
-    return this.#map.objects.get(entityId);
+  findObject(nodeId: string): Object3D | undefined {
+    return this.#map.objects.get(nodeId);
   }
 
-  saveTransform(entityId: string) {
-    const entity = this.getEntity(entityId);
-    if (!entity) throw new Error(`Entity not found: ${entityId}`);
+  saveTransform(nodeId: string) {
+    const node = this.getNode(nodeId);
+    if (!node) throw new Error(`Node not found: ${nodeId}`);
 
-    const object = this.findObject(entityId);
+    const object = this.findObject(nodeId);
     if (!object) throw new Error("Object not found");
 
     const position = object.position.toArray();
@@ -284,7 +291,7 @@ export class SceneLoader {
     this.#postMessage({
       subject: "set_transform",
       data: {
-        entityId,
+        nodeId,
         position,
         rotation,
         scale,
@@ -292,10 +299,10 @@ export class SceneLoader {
     });
 
     // Update global transform
-    updateGlobalTransform(entity.id, this.#map, this.#postMessage);
+    updateGlobalTransform(node.id, this.#map, this.#postMessage);
 
     // Repeat for children
-    const children = getChildren(entity.id, this.#map);
+    const children = getChildren(node.id, this.#map);
     children.forEach((child) => this.saveTransform(child.id));
 
     this.#updateShadowMap();

@@ -1,11 +1,11 @@
-import { Entity } from "@wired-labs/engine";
+import { Node } from "@wired-labs/engine";
 import { useEffect, useState } from "react";
 
 import { useEditorStore } from "../store";
 
-export function useEntity<T = Entity>(
+export function useNode<T = Node>(
   id: string | null,
-  callback?: (entity: Entity) => T
+  callback?: (node: Node) => T
 ) {
   const entities$ = useEditorStore((state) => state.engine?.scene.entities$);
 
@@ -16,11 +16,11 @@ export function useEntity<T = Entity>(
 
     const subscription = entities$.subscribe({
       next: (entities) => {
-        const entity = entities[id];
-        if (!entity) return;
+        const node = entities[id];
+        if (!node) return;
 
-        if (callback) setValue(callback(entity));
-        else setValue(entity as T);
+        if (callback) setValue(callback(node));
+        else setValue(node as T);
       },
     });
 

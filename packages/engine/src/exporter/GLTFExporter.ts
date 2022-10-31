@@ -1,10 +1,10 @@
 import {
-  Accessor as gltfAccessor,
+  Accessor as IAccessor,
   Document,
-  Material as gltfMaterial,
-  Mesh,
-  Node,
-  Texture as gltfTexture,
+  Material as IMaterial,
+  Mesh as IMesh,
+  Node as INode,
+  Texture as ITexture,
   WebIO,
 } from "@gltf-transform/core";
 import { dedup, prune } from "@gltf-transform/functions";
@@ -16,8 +16,8 @@ import { RenderExport } from "../render/types";
 import {
   Accessor,
   Animation,
-  Entity,
   Material,
+  Node,
   Scene,
   SceneJSON,
   Texture,
@@ -41,10 +41,10 @@ export class GLTFExporter {
   #buffer = this.#doc.createBuffer();
 
   #cache = {
-    accessors: new Map<string, gltfAccessor>(),
-    colliderMeshes: new Map<string, Mesh>(),
-    materials: new Map<string, gltfMaterial>(),
-    entities: new Map<string, Node>(),
+    accessors: new Map<string, IAccessor>(),
+    meshes: new Map<string, IMesh>(),
+    materials: new Map<string, IMaterial>(),
+    nodes: new Map<string, INode>(),
   };
 
   constructor() {
@@ -75,35 +75,40 @@ export class GLTFExporter {
       this.#parseMaterial(material)
     );
 
-    // Parse entities
-    const rootChildren = Object.values(this.#scene.entities).filter(
+    // Parse nodes
+    const rootChildren = Object.values(this.#scene.nodes).filter(
       (e) => e.parentId === "root"
     );
-    rootChildren.forEach((entity) => this.#parseEntity(entity, null));
+    rootChildren.forEach((node) => this.#parseNode(node));
 
     // Parse skins
-    Object.values(this.#scene.entities).forEach((entity) => {
-      if (!entity.mesh || entity.mesh.type !== "Primitive" || !entity.mesh.skin)
-        return;
+    Object.values(this.#scene.nodes).forEach((node) => {
+      const mesh = node.meshId ? this.#scene.meshes[node.meshId] : null;
+      if (!mesh || mesh.type !== "Primitives") return;
 
-      const node = this.#cache.entities.get(entity.id);
-      if (!node) throw new Error("Node not found");
+      const gltfNode = this.#cache.nodes.get(node.id);
+      if (!gltfNode) throw new Error("Node not found");
 
-      const skin = this.#doc.createSkin();
-      node.setSkin(skin);
+      mesh.primitives.forEach((primitive) => {
+        if (!primitive.skin) return;
 
-      // Set inverse bind matrices
-      const accessor = this.#cache.accessors.get(
-        entity.mesh.skin.inverseBindMatricesId
-      );
-      if (!accessor) throw new Error("Accessor not found");
-      skin.setInverseBindMatrices(accessor);
+        // Create skin
+        const skin = this.#doc.createSkin();
+        gltfNode.setSkin(skin);
 
-      // Set joints
-      entity.mesh.skin.jointIds.forEach((jointId) => {
-        const jointNode = this.#cache.entities.get(jointId);
-        if (!jointNode) throw new Error("Node not found");
-        skin.addJoint(jointNode);
+        // Set inverse bind matrices
+        const accessor = this.#cache.accessors.get(
+          primitive.skin.inverseBindMatricesId
+        );
+        if (!accessor) throw new Error("Accessor not found");
+        skin.setInverseBindMatrices(accessor);
+
+        // Set joints
+        primitive.skin.jointIds.forEach((jointId) => {
+          const jointNode = this.#cache.nodes.get(jointId);
+          if (!jointNode) throw new Error("Node not found");
+          skin.addJoint(jointNode);
+        });
       });
     });
 
@@ -134,7 +139,7 @@ export class GLTFExporter {
       sampler.setInput(input);
       sampler.setOutput(output);
 
-      const targetNode = this.#cache.entities.get(channel.targetId);
+      const targetNode = this.#cache.nodes.get(channel.targetId);
       if (!targetNode) throw new Error("Target not found");
 
       const gltfChannel = this.#doc.createAnimationChannel();
@@ -147,103 +152,100 @@ export class GLTFExporter {
     });
   }
 
-  #parseEntity(entity: Entity, parent: Node | null) {
+  #parseNode(node: Node) {
     // Create node
-    const node = this.#doc.createNode(entity.name);
+    const gltfNode = this.#doc.createNode(node.name);
 
     // Add to scene
-    this.#gltfScene.addChild(node);
+    this.#gltfScene.addChild(gltfNode);
 
     // Set transform
-    node.setTranslation(entity.position);
-    node.setRotation(entity.rotation);
-    node.setScale(entity.scale);
+    gltfNode.setTranslation(node.position);
+    gltfNode.setRotation(node.rotation);
+    gltfNode.setScale(node.scale);
 
     // Parse mesh
-    const mesh = this.#parseMesh(entity, node);
+    const mesh = node.meshId ? this.#parseMesh(node.meshId) : null;
+    if (mesh) gltfNode.setMesh(mesh);
 
     // Add to parent
-    if (parent) parent.addChild(node);
+    const parent =
+      node.parentId !== "root" ? this.#cache.nodes.get(node.parentId) : null;
+    if (parent) parent.addChild(gltfNode);
 
     // Set collider
-    if (entity.collider) {
+    if (node.collider) {
       const collider = this.#extensions.collider.createCollider();
-      collider.setType(entity.collider.type);
+      collider.setType(node.collider.type);
 
-      switch (entity.collider.type) {
+      switch (node.collider.type) {
         case "box": {
-          collider.setSize(entity.collider.size);
+          collider.setSize(node.collider.size);
           break;
         }
 
         case "sphere": {
-          collider.setRadius(entity.collider.radius);
+          collider.setRadius(node.collider.radius);
           break;
         }
 
         case "cylinder": {
-          collider.setRadius(entity.collider.radius);
-          collider.setHeight(entity.collider.height);
+          collider.setRadius(node.collider.radius);
+          collider.setHeight(node.collider.height);
           break;
         }
 
+        case "hull":
         case "mesh": {
-          let colliderMesh = mesh;
-          if (!colliderMesh) {
-            colliderMesh = this.#doc.createMesh(entity.name);
-            node.setMesh(colliderMesh);
-          }
+          const colliderMesh = this.#cache.meshes.get(node.collider.meshId);
+          if (!colliderMesh) throw new Error("Mesh not found");
 
           collider.setMesh(colliderMesh);
 
-          this.#cache.colliderMeshes.set(entity.id, colliderMesh);
+          this.#cache.meshes.set(node.id, colliderMesh);
           break;
         }
       }
 
-      node.setExtension(collider.extensionName, collider);
+      gltfNode.setExtension(collider.extensionName, collider);
     }
 
     // Parse children
-    entity.children.forEach((child) => this.#parseEntity(child, node));
+    node.children.forEach((child) => this.#parseNode(child));
 
-    this.#cache.entities.set(entity.id, node);
+    this.#cache.nodes.set(node.id, gltfNode);
   }
 
-  #parseMesh(entity: Entity, node: Node) {
-    if (!entity.mesh || entity.mesh.type === "glTF") return;
+  #parseMesh(meshId: string): IMesh {
+    const mesh = this.#scene.meshes[meshId];
+    if (!mesh) throw new Error("Mesh not found");
 
     // Create mesh
-    const colliderMesh =
-      entity.mesh.type === "Primitive" && entity.mesh.gltfId
-        ? this.#cache.colliderMeshes.get(entity.mesh.gltfId)
-        : null;
-    const mesh = colliderMesh ?? this.#doc.createMesh(entity.mesh.type);
-    if (!colliderMesh) node.setMesh(mesh);
-
-    // Create primitive
-    const primitive = this.#doc.createPrimitive();
-    mesh.addPrimitive(primitive);
-
-    // Set material
-    if (entity.materialId) {
-      const material = this.#cache.materials.get(entity.materialId);
-      if (!material) throw new Error("Material not found");
-      primitive.setMaterial(material);
-    }
+    const gltfMesh = this.#doc.createMesh(mesh.name ?? mesh.type);
 
     // Set attributes
-    switch (entity.mesh.type) {
+    switch (mesh.type) {
       case "Box":
       case "Cylinder":
       case "Sphere": {
-        primitive.setMode(4); // TRIANGLES
+        // Create primitive
+        const gltfPrimitive = this.#doc.createPrimitive();
+        gltfMesh.addPrimitive(gltfPrimitive);
 
-        if (!this.#renderData) throw new Error("Render data not found");
+        // Set material
+        if (mesh.materialId) {
+          const material = this.#cache.materials.get(mesh.materialId);
+          if (!material) throw new Error("Material not found");
+          gltfPrimitive.setMaterial(material);
+        }
 
-        this.#renderData.forEach(
-          ({ entityId, attributeName, array, normalized, type }) => {
-            if (entityId !== entity.id) return;
+        // Set mode
+        gltfPrimitive.setMode(4); // TRIANGLES
+
+        // Set attributes
+        this.#renderData?.forEach(
+          ({ nodeId, attributeName, array, normalized, type }) => {
+            if (nodeId !== mesh.id) return;
 
             const gltfAccessor = this.#doc.createAccessor();
 
@@ -252,111 +254,121 @@ export class GLTFExporter {
             gltfAccessor.setType(type);
             gltfAccessor.setBuffer(this.#buffer);
 
-            if (attributeName === "indices") primitive.setIndices(gltfAccessor);
-            else primitive.setAttribute(attributeName, gltfAccessor);
+            if (attributeName === "indices")
+              gltfPrimitive.setIndices(gltfAccessor);
+            else gltfPrimitive.setAttribute(attributeName, gltfAccessor);
           }
         );
 
         break;
       }
 
-      case "Primitive": {
-        primitive.setMode(entity.mesh.mode);
+      case "Primitives": {
+        mesh.primitives.forEach((primitive) => {
+          // Create primitive
+          const gltfPrimitive = this.#doc.createPrimitive();
+          gltfMesh.addPrimitive(gltfPrimitive);
 
-        mesh.setWeights(entity.mesh.weights);
+          // Set mode
+          gltfPrimitive.setMode(primitive.mode);
 
-        if (entity.mesh.indicesId) {
-          const accessor = this.#cache.accessors.get(entity.mesh.indicesId);
-          if (!accessor) throw new Error("Accessor not found");
-          primitive.setIndices(accessor);
-        }
+          // Set weights
+          gltfMesh.setWeights(primitive.weights);
 
-        if (entity.mesh.POSITION) {
-          const accessor = this.#cache.accessors.get(entity.mesh.POSITION);
-          if (!accessor) throw new Error("Accessor not found");
-          primitive.setAttribute("POSITION", accessor);
-        }
+          if (primitive.indicesId) {
+            const accessor = this.#cache.accessors.get(primitive.indicesId);
+            if (!accessor) throw new Error("Accessor not found");
+            gltfPrimitive.setIndices(accessor);
+          }
 
-        if (entity.mesh.NORMAL) {
-          const accessor = this.#cache.accessors.get(entity.mesh.NORMAL);
-          if (!accessor) throw new Error("Accessor not found");
-          primitive.setAttribute("NORMAL", accessor);
-        }
+          if (primitive.POSITION) {
+            const accessor = this.#cache.accessors.get(primitive.POSITION);
+            if (!accessor) throw new Error("Accessor not found");
+            gltfPrimitive.setAttribute("POSITION", accessor);
+          }
 
-        if (entity.mesh.TANGENT) {
-          const accessor = this.#cache.accessors.get(entity.mesh.TANGENT);
-          if (!accessor) throw new Error("Accessor not found");
-          primitive.setAttribute("TANGENT", accessor);
-        }
+          if (primitive.NORMAL) {
+            const accessor = this.#cache.accessors.get(primitive.NORMAL);
+            if (!accessor) throw new Error("Accessor not found");
+            gltfPrimitive.setAttribute("NORMAL", accessor);
+          }
 
-        if (entity.mesh.TEXCOORD_0) {
-          const accessor = this.#cache.accessors.get(entity.mesh.TEXCOORD_0);
-          if (!accessor) throw new Error("Accessor not found");
-          primitive.setAttribute("TEXCOORD_0", accessor);
-        }
+          if (primitive.TANGENT) {
+            const accessor = this.#cache.accessors.get(primitive.TANGENT);
+            if (!accessor) throw new Error("Accessor not found");
+            gltfPrimitive.setAttribute("TANGENT", accessor);
+          }
 
-        if (entity.mesh.TEXCOORD_1) {
-          const accessor = this.#cache.accessors.get(entity.mesh.TEXCOORD_1);
-          if (!accessor) throw new Error("Accessor not found");
-          primitive.setAttribute("TEXCOORD_1", accessor);
-        }
+          if (primitive.TEXCOORD_0) {
+            const accessor = this.#cache.accessors.get(primitive.TEXCOORD_0);
+            if (!accessor) throw new Error("Accessor not found");
+            gltfPrimitive.setAttribute("TEXCOORD_0", accessor);
+          }
 
-        if (entity.mesh.COLOR_0) {
-          const accessor = this.#cache.accessors.get(entity.mesh.COLOR_0);
-          if (!accessor) throw new Error("Accessor not found");
-          primitive.setAttribute("COLOR_0", accessor);
-        }
+          if (primitive.TEXCOORD_1) {
+            const accessor = this.#cache.accessors.get(primitive.TEXCOORD_1);
+            if (!accessor) throw new Error("Accessor not found");
+            gltfPrimitive.setAttribute("TEXCOORD_1", accessor);
+          }
 
-        if (entity.mesh.JOINTS_0) {
-          const accessor = this.#cache.accessors.get(entity.mesh.JOINTS_0);
-          if (!accessor) throw new Error("Accessor not found");
-          primitive.setAttribute("JOINTS_0", accessor);
-        }
+          if (primitive.COLOR_0) {
+            const accessor = this.#cache.accessors.get(primitive.COLOR_0);
+            if (!accessor) throw new Error("Accessor not found");
+            gltfPrimitive.setAttribute("COLOR_0", accessor);
+          }
 
-        if (entity.mesh.WEIGHTS_0) {
-          const accessor = this.#cache.accessors.get(entity.mesh.WEIGHTS_0);
-          if (!accessor) throw new Error("Accessor not found");
-          primitive.setAttribute("WEIGHTS_0", accessor);
-        }
+          if (primitive.JOINTS_0) {
+            const accessor = this.#cache.accessors.get(primitive.JOINTS_0);
+            if (!accessor) throw new Error("Accessor not found");
+            gltfPrimitive.setAttribute("JOINTS_0", accessor);
+          }
 
-        if (entity.mesh.morphPositionIds) {
-          entity.mesh.morphPositionIds.forEach((morphId) => {
-            const morphPosition = this.#cache.accessors.get(morphId);
-            if (!morphPosition) throw new Error("Accessor not found");
+          if (primitive.WEIGHTS_0) {
+            const accessor = this.#cache.accessors.get(primitive.WEIGHTS_0);
+            if (!accessor) throw new Error("Accessor not found");
+            gltfPrimitive.setAttribute("WEIGHTS_0", accessor);
+          }
 
-            const primitiveTarget = this.#doc.createPrimitiveTarget("POSITION");
-            primitiveTarget.setAttribute("POSITION", morphPosition);
-            primitive.addTarget(primitiveTarget);
-          });
-        }
+          if (primitive.morphPositionIds) {
+            primitive.morphPositionIds.forEach((morphId) => {
+              const morphPosition = this.#cache.accessors.get(morphId);
+              if (!morphPosition) throw new Error("Accessor not found");
 
-        if (entity.mesh.morphNormalIds) {
-          entity.mesh.morphNormalIds.forEach((morphId) => {
-            const morphNormal = this.#cache.accessors.get(morphId);
-            if (!morphNormal) throw new Error("Accessor not found");
+              const primitiveTarget =
+                this.#doc.createPrimitiveTarget("POSITION");
+              primitiveTarget.setAttribute("POSITION", morphPosition);
+              gltfPrimitive.addTarget(primitiveTarget);
+            });
+          }
 
-            const primitiveTarget = this.#doc.createPrimitiveTarget("NORMAL");
-            primitiveTarget.setAttribute("NORMAL", morphNormal);
-            primitive.addTarget(primitiveTarget);
-          });
-        }
+          if (primitive.morphNormalIds) {
+            primitive.morphNormalIds.forEach((morphId) => {
+              const morphNormal = this.#cache.accessors.get(morphId);
+              if (!morphNormal) throw new Error("Accessor not found");
 
-        if (entity.mesh.morphTangentIds) {
-          entity.mesh.morphTangentIds.forEach((morphId) => {
-            const morphTangent = this.#cache.accessors.get(morphId);
-            if (!morphTangent) throw new Error("Accessor not found");
+              const primitiveTarget = this.#doc.createPrimitiveTarget("NORMAL");
+              primitiveTarget.setAttribute("NORMAL", morphNormal);
+              gltfPrimitive.addTarget(primitiveTarget);
+            });
+          }
 
-            const primitiveTarget = this.#doc.createPrimitiveTarget("TANGENT");
-            primitiveTarget.setAttribute("TANGENT", morphTangent);
-            primitive.addTarget(primitiveTarget);
-          });
-        }
+          if (primitive.morphTangentIds) {
+            primitive.morphTangentIds.forEach((morphId) => {
+              const morphTangent = this.#cache.accessors.get(morphId);
+              if (!morphTangent) throw new Error("Accessor not found");
 
+              const primitiveTarget =
+                this.#doc.createPrimitiveTarget("TANGENT");
+              primitiveTarget.setAttribute("TANGENT", morphTangent);
+              gltfPrimitive.addTarget(primitiveTarget);
+            });
+          }
+        });
         break;
       }
     }
 
-    return mesh;
+    return gltfMesh;
   }
 
   #parseMaterial(material: Material) {
@@ -417,7 +429,7 @@ export class GLTFExporter {
     this.#cache.materials.set(material.id, gltfMaterial);
   }
 
-  #parseTexture(texture: Texture): gltfTexture {
+  #parseTexture(texture: Texture): ITexture {
     const gltfTexture = this.#doc.createTexture();
 
     if (texture.imageId) {

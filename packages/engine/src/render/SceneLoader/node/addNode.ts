@@ -1,17 +1,17 @@
 import { Group } from "three";
 
-import { EntityJSON } from "../../../scene";
+import { NodeJSON } from "../../../scene";
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
 import { SceneMap } from "../types";
-import { updateEntity } from "./updateEntity";
+import { updateNode } from "./updateNode";
 
-export function addEntity(
-  entity: EntityJSON,
+export function addNode(
+  node: NodeJSON,
   map: SceneMap,
   visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
 ) {
-  map.entities.set(entity.id, entity);
-  updateEntity(entity.id, entity, map, visuals, postMessage);
+  map.nodes.set(node.id, node);
+  updateNode(node.id, node, map, visuals, postMessage);
 }

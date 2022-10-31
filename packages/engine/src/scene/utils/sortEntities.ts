@@ -1,11 +1,11 @@
-import { EntityJSON } from "../types";
+import { NodeJSON } from "../types";
 
 /*
  * Sort entities into a loadable order.
  * Sorts by depth, so that children are added after their parents.
  * Put all skins last, so that they are added after their bones.
  */
-export function sortEntities<T extends EntityJSON>(entities: T[]) {
+export function sortEntities<T extends NodeJSON>(entities: T[]) {
   return entities.sort((a, b) => {
     const aDepth = entityDepth(entities, a);
     const bDepth = entityDepth(entities, b);
@@ -21,13 +21,13 @@ export function sortEntities<T extends EntityJSON>(entities: T[]) {
   });
 }
 
-function isSkin(e: EntityJSON) {
+function isSkin(e: NodeJSON) {
   return e.mesh?.type === "Primitive" && e.mesh.skin !== null;
 }
 
-function entityDepth<T extends EntityJSON>(entities: T[], entity: T): number {
-  if (entity.parentId === "root") return 0;
-  const parent = entities.find((e) => e.id === entity.parentId);
+function entityDepth<T extends NodeJSON>(entities: T[], node: T): number {
+  if (node.parentId === "root") return 0;
+  const parent = entities.find((e) => e.id === node.parentId);
   if (!parent) return 0;
   return entityDepth(entities, parent) + 1;
 }

@@ -9,7 +9,7 @@ import {
   SkinnedMesh,
 } from "three";
 
-import { EntityJSON } from "../../../scene";
+import { NodeJSON } from "../../../scene";
 import { PostMessage } from "../../../types";
 import { WEBGL_CONSTANTS } from "../../constants";
 import { FromRenderMessage } from "../../types";
@@ -19,42 +19,44 @@ import { SceneMap } from "../types";
 import { copyTransform } from "../utils/copyTransform";
 import { createMeshGeometry } from "./createMeshGeometry";
 import { createSkeletons } from "./createSkeletons";
-import { removeEntityObject } from "./removeEntityObject";
-import { updateEntity } from "./updateEntity";
+import { removeNodeObject } from "./removeNodeObject";
 import { updateMeshMaterial } from "./updateMeshMaterial";
+import { updateNode } from "./updateNode";
 
 export function createObject(
-  entity: EntityJSON,
+  node: NodeJSON,
   map: SceneMap,
   visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
 ) {
-  const parent = map.objects.get(entity.parentId);
+  const parent = map.objects.get(node.parentId);
   if (!parent) throw new Error("Parent not found");
 
-  const oldObject = map.objects.get(entity.id);
+  const oldObject = map.objects.get(node.id);
   const children = oldObject?.children;
 
+  const mesh = node.meshId ? map.meshes.get(node.meshId) : null;
+
   // Create object
-  switch (entity.mesh?.type) {
+  switch (mesh?.type) {
     case "Box":
     case "Sphere":
     case "Cylinder": {
       // Get material
-      const material = entity.materialId
-        ? map.materials.get(entity.materialId)
+      const material = mesh.materialId
+        ? map.materials.get(mesh.materialId)
         : defaultMaterial;
       if (!material) throw new Error("Material not found");
 
       // Create geometry
-      const geometry = createMeshGeometry(entity.mesh, map);
+      const geometry = createMeshGeometry(mesh, map);
 
       if (oldObject instanceof Mesh) {
         // Update mesh
         oldObject.geometry.dispose();
         oldObject.geometry = geometry;
         oldObject.material = material;
-        copyTransform(oldObject, entity);
+        copyTransform(oldObject, node);
         parent.add(oldObject);
       } else {
         // Create mesh
@@ -64,8 +66,8 @@ export function createObject(
         mesh.receiveShadow = true;
 
         // Add to scene
-        map.objects.set(entity.id, mesh);
-        copyTransform(mesh, entity);
+        map.objects.set(node.id, mesh);
+        copyTransform(mesh, node);
         parent.add(mesh);
       }
       break;
@@ -75,16 +77,16 @@ export function createObject(
       // Remove old object
       if (oldObject) disposeObject(oldObject);
 
-      const isSkin = entity.mesh.skin !== null;
+      const isSkin = mesh.skin !== null;
 
       // Get material
-      const primitiveMaterial = entity.materialId
-        ? map.materials.get(entity.materialId)
+      const primitiveMaterial = node.materialId
+        ? map.materials.get(node.materialId)
         : defaultMaterial;
       if (!primitiveMaterial) throw new Error("Material not found");
 
       // Create geometry
-      const primitiveGeometry = createMeshGeometry(entity.mesh, map);
+      const primitiveGeometry = createMeshGeometry(mesh, map);
 
       let primitiveMesh:
         | Mesh
@@ -93,7 +95,7 @@ export function createObject(
         | LineLoop
         | Line
         | Points;
-      switch (entity.mesh.mode) {
+      switch (mesh.mode) {
         case WEBGL_CONSTANTS.TRIANGLES:
         case WEBGL_CONSTANTS.TRIANGLE_STRIP:
         case WEBGL_CONSTANTS.TRIANGLE_FAN: {
@@ -133,7 +135,7 @@ export function createObject(
         }
 
         default:
-          throw new Error(`Unknown primitive mode: ${entity.mesh.mode}`);
+          throw new Error(`Unknown primitive mode: ${mesh.mode}`);
       }
 
       primitiveMesh.castShadow = true;
@@ -141,38 +143,32 @@ export function createObject(
 
       // Set weights
       primitiveMesh.updateMorphTargets();
-      primitiveMesh.morphTargetInfluences = [...entity.mesh.weights];
+      primitiveMesh.morphTargetInfluences = [...mesh.weights];
 
       // Add to scene
-      map.objects.set(entity.id, primitiveMesh);
-      copyTransform(primitiveMesh, entity);
+      map.objects.set(node.id, primitiveMesh);
+      copyTransform(primitiveMesh, node);
       parent.add(primitiveMesh);
 
       if (isSkin) {
         // Convert all joints to bones
-        entity.mesh.skin?.jointIds.forEach((jointId) => {
-          const jointEntity = map.entities.get(jointId);
-          if (!jointEntity) throw new Error(`Entity not found: ${jointId}`);
+        mesh.skin?.jointIds.forEach((jointId) => {
+          const jointNode = map.nodes.get(jointId);
+          if (!jointNode) throw new Error(`Node not found: ${jointId}`);
 
           const jointObject = map.objects.get(jointId);
           if (!jointObject) {
-            updateEntity(
-              jointEntity.id,
-              jointEntity,
-              map,
-              visuals,
-              postMessage
-            );
+            updateNode(jointNode.id, jointNode, map, visuals, postMessage);
             return;
           }
 
-          removeEntityObject(jointId, map);
+          removeNodeObject(jointId, map);
 
           const bone = new Bone();
 
           // Add to scene
           map.objects.set(jointId, bone);
-          copyTransform(bone, jointEntity);
+          copyTransform(bone, jointNode);
           parent.add(bone);
         });
       }
@@ -189,10 +185,10 @@ export function createObject(
       // Check if joint
       let isJoint = false;
 
-      map.entities.forEach((e) => {
+      map.nodes.forEach((e) => {
         if (
           e.mesh?.type === "Primitive" &&
-          e.mesh.skin?.jointIds.includes(entity.id)
+          e.mesh.skin?.jointIds.includes(node.id)
         ) {
           isJoint = true;
         }
@@ -202,8 +198,8 @@ export function createObject(
       const object = isJoint ? new Bone() : new Group();
 
       // Add to scene
-      map.objects.set(entity.id, object);
-      copyTransform(object, entity);
+      map.objects.set(node.id, object);
+      copyTransform(object, node);
       parent.add(object);
 
       // Update skeletons
@@ -211,14 +207,14 @@ export function createObject(
     }
   }
 
-  const newObject = map.objects.get(entity.id);
+  const newObject = map.objects.get(node.id);
   if (!newObject) throw new Error("Object not found");
 
   // Update mesh material
-  updateMeshMaterial(entity.id, entity.mesh, map);
+  updateMeshMaterial(node.id, mesh, map);
 
   // Set name
-  newObject.name = entity.name || entity.id;
+  newObject.name = node.name || node.id;
 
   // Restore children
   if (children && children.length > 0) {

@@ -1,4 +1,4 @@
-import { moveEntity } from "../actions/MoveEntityAction";
+import { moveNode } from "../actions/MoveNodeAction";
 import { useEditorStore } from "../store";
 
 export function moveToSibling(
@@ -24,6 +24,6 @@ export function moveToSibling(
     if (placement === "below") index++;
   }
 
-  // Move entity
-  moveEntity(id, parentId, index);
+  // Move node
+  moveNode(id, parentId, index);
 }

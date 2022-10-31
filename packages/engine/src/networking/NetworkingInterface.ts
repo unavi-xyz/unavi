@@ -9,7 +9,7 @@ import { createClient } from "urql";
 
 import { MainScene } from "../main/MainScene";
 import { RenderThread } from "../render/RenderThread";
-import { Entity, GLTFMesh } from "../scene";
+import { Node, GLTFMesh } from "../scene";
 import { toHex } from "../utils/toHex";
 import { LENS_API } from "./constants";
 import { FromHostMessage, InternalChatMessage, ToHostMessage } from "./types";
@@ -29,7 +29,7 @@ export class NetworkingInterface {
   #ws: WebSocket | null = null;
 
   #lensClient = createClient({ url: LENS_API });
-  #spaceEntityId: string | null = null;
+  #spaceNodeId: string | null = null;
   #broadcastInterval: NodeJS.Timeout | null = null;
   #hostServer: string | null = null;
   #reconnectCount = 0;
@@ -79,17 +79,17 @@ export class NetworkingInterface {
       publication?.metadata.media[1]?.original.url;
     if (!modelURL) throw new Error("Space model not found");
 
-    // Create glTF entity from model URL
-    const entity = new Entity();
-    this.#spaceEntityId = entity.id;
+    // Create glTF node from model URL
+    const node = new Node();
+    this.#spaceNodeId = node.id;
 
     const mesh = new GLTFMesh();
     mesh.uri = modelURL;
-    entity.mesh = mesh;
+    node.mesh = mesh;
 
     // Add to scene
     await this.#scene.loadJSON({
-      entities: [entity.toJSON()],
+      entities: [node.toJSON()],
     });
 
     // Get host server
@@ -306,10 +306,10 @@ export class NetworkingInterface {
   leaveSpace() {
     this.disconnect();
 
-    // Remove space entity from scene
-    if (this.#spaceEntityId) {
-      this.#scene.removeEntity(this.#spaceEntityId);
-      this.#spaceEntityId = null;
+    // Remove space node from scene
+    if (this.#spaceNodeId) {
+      this.#scene.removeNode(this.#spaceNodeId);
+      this.#spaceNodeId = null;
     }
   }
 

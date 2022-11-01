@@ -65,10 +65,12 @@ export function useLoad() {
       useEditorStore.setState(editorState);
 
       const visuals = useEditorStore.getState().visuals;
-      engine.renderThread.postMessage({
-        subject: "show_visuals",
-        data: { visible: visuals },
-      });
+      engine.renderThread.waitForReady().then(() =>
+        engine.renderThread.postMessage({
+          subject: "show_visuals",
+          data: { visible: visuals },
+        })
+      );
     }
   }, [engine, project]);
 

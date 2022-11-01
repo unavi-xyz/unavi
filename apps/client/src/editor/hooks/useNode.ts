@@ -7,16 +7,16 @@ export function useNode<T = Node>(
   id: string | null,
   callback?: (node: Node) => T
 ) {
-  const entities$ = useEditorStore((state) => state.engine?.scene.entities$);
+  const nodes$ = useEditorStore((state) => state.engine?.scene.nodes$);
 
   const [value, setValue] = useState<T | null>(null);
 
   useEffect(() => {
-    if (!id || !entities$) return;
+    if (!id || !nodes$) return;
 
-    const subscription = entities$.subscribe({
-      next: (entities) => {
-        const node = entities[id];
+    const subscription = nodes$.subscribe({
+      next: (nodes) => {
+        const node = nodes[id];
         if (!node) return;
 
         if (callback) setValue(callback(node));
@@ -25,7 +25,7 @@ export function useNode<T = Node>(
     });
 
     return () => subscription.unsubscribe();
-  }, [id, callback, entities$]);
+  }, [id, callback, nodes$]);
 
   return value;
 }

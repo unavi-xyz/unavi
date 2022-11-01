@@ -42,13 +42,13 @@ export interface PrimitivesMeshJSON {
   type: "Primitives";
   id: string;
   name: string | null;
+  materialId: null;
   primitives: PrimitiveJSON[];
 }
 
 export interface PrimitiveJSON {
   id: string;
   materialId: string | null;
-  gltfId: string | null;
   mode: GLTF.MeshPrimitiveMode;
   indicesId: string | null;
   weights: number[];

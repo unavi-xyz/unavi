@@ -9,7 +9,7 @@ import { createClient } from "urql";
 
 import { MainScene } from "../main/MainScene";
 import { RenderThread } from "../render/RenderThread";
-import { Node, GLTFMesh } from "../scene";
+import { GLTFMesh, Node } from "../scene";
 import { toHex } from "../utils/toHex";
 import { LENS_API } from "./constants";
 import { FromHostMessage, InternalChatMessage, ToHostMessage } from "./types";
@@ -80,16 +80,20 @@ export class NetworkingInterface {
     if (!modelURL) throw new Error("Space model not found");
 
     // Create glTF node from model URL
-    const node = new Node();
-    this.#spaceNodeId = node.id;
 
     const mesh = new GLTFMesh();
     mesh.uri = modelURL;
-    node.mesh = mesh;
+    this.#scene.addMesh(mesh);
+
+    const node = new Node();
+    node.meshId = mesh.id;
+    this.#scene.addNode(node);
+
+    this.#spaceNodeId = node.id;
 
     // Add to scene
     await this.#scene.loadJSON({
-      entities: [node.toJSON()],
+      nodes: [node.toJSON()],
     });
 
     // Get host server

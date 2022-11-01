@@ -197,6 +197,8 @@ export class GLTFExporter {
 
         case "hull":
         case "mesh": {
+          if (!node.collider.meshId) break;
+
           const colliderMesh = this.#cache.meshes.get(node.collider.meshId);
           if (!colliderMesh) throw new Error("Mesh not found");
 

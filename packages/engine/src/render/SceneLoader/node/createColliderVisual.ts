@@ -11,8 +11,7 @@ import {
 } from "three";
 import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
 
-import { NodeJSON } from "../../../scene";
-import { PostMessage, Transferable } from "../../../types";
+import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
 import { SceneMap } from "../types";
 import { removeColliderVisual } from "./removeColliderVisual";
@@ -71,85 +70,99 @@ export function createColliderVisual(
       break;
     }
 
-    case "mesh":
-    case "hull": {
+    case "hull":
+    case "mesh": {
       const object = map.objects.get(nodeId);
       if (!object) break;
 
+      if (!node.collider.meshId) break;
+      const colliderMesh = map.meshes.get(node.collider.meshId);
+      if (!colliderMesh) throw new Error("Collider mesh not found");
+
+      // Get the collider mesh geometry
       const geometries: BufferGeometry[] = [];
-
-      if (object instanceof Mesh) {
-        const cloned = object.geometry.clone();
-        cloned.applyMatrix4(object.matrixWorld);
-        geometries.push(cloned);
-      }
-
-      const primitives: NodeJSON[] = [];
-
-      map.nodes.forEach((node) => {
-        const meshId = node.meshId;
-        if (!meshId) return;
-
-        const mesh = map.meshes.get(meshId);
-        if (!mesh) throw new Error(`Mesh ${meshId} not found`);
-
-        if (mesh.type === "Primitives") {
-          mesh.primitives.forEach((primitive) => {
-            if (primitive.gltfId === nodeId) primitives.push(node);
-          });
+      switch (colliderMesh.type) {
+        case "Box": {
+          geometries.push(
+            new BoxGeometry(
+              colliderMesh.width,
+              colliderMesh.height,
+              colliderMesh.depth
+            )
+          );
+          break;
         }
-      });
 
-      primitives.forEach((primitive) => {
-        const primitiveObject = map.objects.get(primitive.id);
-        if (!primitiveObject) return;
+        case "Sphere": {
+          geometries.push(
+            new SphereGeometry(
+              colliderMesh.radius,
+              colliderMesh.widthSegments,
+              colliderMesh.heightSegments
+            )
+          );
+          break;
+        }
 
-        primitiveObject.traverse((child) => {
-          if (child instanceof Mesh) {
-            const cloned = child.geometry.clone();
-            cloned.applyMatrix4(child.matrixWorld);
-            geometries.push(cloned);
-          }
-        });
-      });
+        case "Cylinder": {
+          geometries.push(
+            new CylinderGeometry(
+              colliderMesh.radius,
+              colliderMesh.radius,
+              colliderMesh.height,
+              colliderMesh.radialSegments
+            )
+          );
+          break;
+        }
+
+        case "Primitives": {
+          colliderMesh.primitives.forEach((primitive) => {
+            const primitiveObject = map.objects.get(primitive.id);
+            if (!primitiveObject) return;
+
+            primitiveObject.traverse((child) => {
+              if (child instanceof Mesh) {
+                const cloned = child.geometry.clone();
+                cloned.applyMatrix4(child.matrixWorld);
+                geometries.push(cloned);
+              }
+            });
+          });
+          break;
+        }
+      }
 
       if (geometries.length === 0) break;
 
+      // Merge geometries
       const geometry = mergeBufferGeometries(geometries);
 
-      if (node.collider?.type === "hull") {
-        // Remove indices
-        geometry.deleteAttribute("index");
-      }
+      // Remove indices if hull
+      if (node.collider.type === "hull") geometry.deleteAttribute("index");
 
+      // Create mesh
       collider = new Mesh(geometry, wireframeMaterial);
       collider.position.sub(object.getWorldPosition(tempVector3));
       collider.quaternion.multiply(
         object.getWorldQuaternion(tempQuaternion).invert()
       );
 
-      // Send positions to physics thread
+      // Send geometry attributes to physics thread
       const attribute = geometry.getAttribute("position");
       const positions = Float32Array.from(attribute.array);
-
       const indices = geometry.index
         ? Uint32Array.from(geometry.index.array)
         : undefined;
 
-      const transfer: Transferable[] = [positions.buffer];
-      if (indices) transfer.push(indices.buffer);
-
-      postMessage(
-        {
-          subject: "set_collider_geometry",
-          data: {
-            nodeId,
-            positions,
-            indices,
-          },
+      postMessage({
+        subject: "set_collider_geometry",
+        data: {
+          nodeId,
+          positions,
+          indices,
         },
-        transfer
-      );
+      });
       break;
     }
   }
@@ -158,13 +171,12 @@ export function createColliderVisual(
     const object = map.objects.get(nodeId);
     if (!object) throw new Error("Object not found");
 
+    // Add collider to scene
     colliderGroup.add(collider);
-
-    // Add new collider
     map.colliders.set(nodeId, colliderGroup);
     visuals.add(colliderGroup);
 
-    // Update collider position
+    // Update collider group position
     const globalPosition = object.getWorldPosition(tempVector3);
     const globalQuaternion = object.getWorldQuaternion(tempQuaternion);
 

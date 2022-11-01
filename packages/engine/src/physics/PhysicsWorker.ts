@@ -52,7 +52,7 @@ export class PhysicsWorker {
   #isGrounded = false;
   #isSprinting = false;
 
-  #entities = new Map<string, NodeJSON>();
+  #nodes = new Map<string, NodeJSON>();
   #rigidBodies = new Map<string, RigidBody>();
   #colliders = new Map<string, Collider>();
   #spawn: Triplet = [0, 0, 0];
@@ -90,23 +90,23 @@ export class PhysicsWorker {
       }
 
       case "add_node": {
-        this.#entities.set(data.node.id, data.node);
+        this.#nodes.set(data.node.id, data.node);
         this.addCollider(data.node);
         break;
       }
 
       case "remove_node": {
-        this.#entities.delete(data.nodeId);
+        this.#nodes.delete(data.nodeId);
         this.removeCollider(data.nodeId);
         break;
       }
 
       case "update_node": {
-        const node = this.#entities.get(data.nodeId);
+        const node = this.#nodes.get(data.nodeId);
         if (!node) throw new Error("Node not found");
 
         const updatedNode = { ...node, ...data.data };
-        this.#entities.set(data.nodeId, updatedNode);
+        this.#nodes.set(data.nodeId, updatedNode);
 
         this.addCollider(updatedNode);
         break;
@@ -157,11 +157,11 @@ export class PhysicsWorker {
           }
         }
 
-        // Load entities from JSON
-        const entities = data.scene.entities;
-        if (entities)
-          entities.forEach((node) => {
-            this.#entities.set(node.id, node);
+        // Load nodes from JSON
+        const nodes = data.scene.nodes;
+        if (nodes)
+          nodes.forEach((node) => {
+            this.#nodes.set(node.id, node);
             this.addCollider(node);
           });
         break;
@@ -177,7 +177,7 @@ export class PhysicsWorker {
 
         if (data.indices) this.#geometryIndices.set(data.nodeId, data.indices);
 
-        const node = this.#entities.get(data.nodeId);
+        const node = this.#nodes.get(data.nodeId);
         if (node) this.addCollider(node);
         break;
       }

@@ -1,4 +1,4 @@
-import { Node, GLTFMesh } from "@wired-labs/engine";
+import { GLTFMesh, Node } from "@wired-labs/engine";
 import { useEffect, useRef, useState } from "react";
 
 import { useStore } from "./store";
@@ -84,12 +84,12 @@ export default function ExampleCanvas() {
     if (!engine || !uri) return;
 
     // Create glTF node
-    const node = new Node();
     const mesh = new GLTFMesh();
     mesh.uri = uri;
-    node.mesh = mesh;
+    engine.scene.addMesh(mesh);
 
-    // Add node to scene
+    const node = new Node();
+    node.meshId = mesh.id;
     engine.scene.addNode(node);
 
     return () => {

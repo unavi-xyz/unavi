@@ -208,11 +208,11 @@ function createCollider(json: ColliderJSON | null) {
     }
 
     case "hull": {
-      return new HullCollider();
+      return HullCollider.fromJSON(json);
     }
 
     case "mesh": {
-      return new MeshCollider();
+      return MeshCollider.fromJSON(json);
     }
 
     default: {

@@ -16,7 +16,7 @@ import {
 } from "three";
 
 import { AccessorJSON, MeshJSON, NodeJSON } from "../../scene";
-import { sortEntities } from "../../scene/utils/sortEntities";
+import { sortNodes } from "../../scene/utils/sortNodes";
 import { PostMessage, Quad } from "../../types";
 import { FromRenderMessage, RenderExport, ToRenderMessage } from "../types";
 import { addAnimation } from "./animation/addAnimation";
@@ -147,11 +147,11 @@ export class SceneLoader {
         if (data.scene.materials)
           data.scene.materials.forEach((m) => addMaterial(m, this.#map));
 
-        // Add entities
-        if (data.scene.entities) {
-          const sortedEntities = sortEntities(data.scene.entities);
+        // Add nodes
+        if (data.scene.nodes) {
+          const sortedNodes = sortNodes(data.scene);
 
-          sortedEntities.forEach((e) =>
+          sortedNodes.forEach((e) =>
             addNode(e, this.#map, this.visuals, this.#postMessage)
           );
 

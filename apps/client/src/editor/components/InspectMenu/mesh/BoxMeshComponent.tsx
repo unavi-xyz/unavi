@@ -1,6 +1,6 @@
 import { BoxMesh } from "@wired-labs/engine";
 
-import { updateNode } from "../../../actions/UpdateNodeAction";
+import { updateMesh } from "../../../actions/UpdateMeshAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import NumberInput from "../../ui/NumberInput";
 import MaterialComponent from "../MaterialComponent";
@@ -36,9 +36,7 @@ export default function BoxMeshComponent({ nodeId, mesh }: Props) {
                 const num = parseFloat(value);
                 const rounded = Math.round(num * 1000) / 1000;
 
-                mesh[property] = rounded;
-
-                updateNode(nodeId, { mesh: mesh.toJSON() });
+                updateMesh(mesh.id, { [property]: rounded });
               }}
             />
           );

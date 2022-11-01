@@ -1,5 +1,8 @@
 import {
   Bone,
+  BoxGeometry,
+  BufferGeometry,
+  CylinderGeometry,
   Group,
   Line,
   LineLoop,
@@ -7,6 +10,7 @@ import {
   Mesh,
   Points,
   SkinnedMesh,
+  SphereGeometry,
 } from "three";
 
 import { NodeJSON } from "../../../scene";
@@ -17,7 +21,7 @@ import { disposeObject } from "../../utils/disposeObject";
 import { defaultMaterial } from "../constants";
 import { SceneMap } from "../types";
 import { copyTransform } from "../utils/copyTransform";
-import { createMeshGeometry } from "./createMeshGeometry";
+import { createAttribute } from "./createAttribute";
 import { createSkeletons } from "./createSkeletons";
 import { removeNodeObject } from "./removeNodeObject";
 import { updateMeshMaterial } from "./updateMeshMaterial";
@@ -29,6 +33,27 @@ export function createObject(
   visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
 ) {
+  function setMorphAttribute(
+    geometry: BufferGeometry,
+    threeName: string,
+    accessorIds: string[]
+  ) {
+    if (accessorIds.length === 0) return;
+    const attributes = accessorIds.map((id) => createAttribute(id, map));
+    geometry.morphAttributes[threeName] = attributes;
+  }
+
+  function setAttribute(
+    geometry: BufferGeometry,
+    threeName: string,
+    accessorId: string | null
+  ) {
+    if (accessorId === null) return;
+
+    const attribute = createAttribute(accessorId, map);
+    geometry.setAttribute(threeName, attribute);
+  }
+
   const parent = map.objects.get(node.parentId);
   if (!parent) throw new Error("Parent not found");
 
@@ -42,117 +67,148 @@ export function createObject(
     case "Box":
     case "Sphere":
     case "Cylinder": {
+      // Create geometry
+      let geometry: BufferGeometry;
+
+      switch (mesh.type) {
+        case "Box": {
+          geometry = new BoxGeometry(mesh.width, mesh.height, mesh.depth);
+          break;
+        }
+
+        case "Sphere": {
+          geometry = new SphereGeometry(
+            mesh.radius,
+            mesh.widthSegments,
+            mesh.heightSegments
+          );
+          break;
+        }
+
+        case "Cylinder": {
+          geometry = new CylinderGeometry(
+            mesh.radius,
+            mesh.radius,
+            mesh.height,
+            mesh.radialSegments
+          );
+          break;
+        }
+      }
+
       // Get material
       const material = mesh.materialId
         ? map.materials.get(mesh.materialId)
         : defaultMaterial;
       if (!material) throw new Error("Material not found");
 
-      // Create geometry
-      const geometry = createMeshGeometry(mesh, map);
+      // Create mesh
+      const threeMesh = new Mesh(geometry, material);
+      threeMesh.castShadow = true;
+      threeMesh.receiveShadow = true;
 
-      if (oldObject instanceof Mesh) {
-        // Update mesh
-        oldObject.geometry.dispose();
-        oldObject.geometry = geometry;
-        oldObject.material = material;
-        copyTransform(oldObject, node);
-        parent.add(oldObject);
-      } else {
-        // Create mesh
-        const mesh = new Mesh(geometry, material);
+      // Add to scene
+      map.objects.set(node.id, threeMesh);
+      copyTransform(threeMesh, node);
+      parent.add(threeMesh);
 
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-
-        // Add to scene
-        map.objects.set(node.id, mesh);
-        copyTransform(mesh, node);
-        parent.add(mesh);
-      }
       break;
     }
 
-    case "Primitive": {
-      // Remove old object
-      if (oldObject) disposeObject(oldObject);
+    case "Primitives": {
+      mesh.primitives.map((primitive) => {
+        // Create geometry
+        const geometry = new BufferGeometry();
+        geometry.morphTargetsRelative = true;
 
-      const isSkin = mesh.skin !== null;
+        // Set indices
+        if (primitive.indicesId) {
+          const attribute = createAttribute(primitive.indicesId, map);
+          geometry.setIndex(attribute);
+        }
 
-      // Get material
-      const primitiveMaterial = node.materialId
-        ? map.materials.get(node.materialId)
-        : defaultMaterial;
-      if (!primitiveMaterial) throw new Error("Material not found");
+        // Set attributes
+        setAttribute(geometry, "position", primitive.POSITION);
+        setAttribute(geometry, "normal", primitive.NORMAL);
+        setAttribute(geometry, "uv", primitive.TEXCOORD_0);
+        setAttribute(geometry, "uv2", primitive.TEXCOORD_1);
+        setAttribute(geometry, "color", primitive.COLOR_0);
+        setAttribute(geometry, "skinIndex", primitive.JOINTS_0);
+        setAttribute(geometry, "skinWeight", primitive.WEIGHTS_0);
 
-      // Create geometry
-      const primitiveGeometry = createMeshGeometry(mesh, map);
+        // Set morph targets
+        setMorphAttribute(geometry, "position", primitive.morphPositionIds);
+        setMorphAttribute(geometry, "normal", primitive.morphNormalIds);
+        setMorphAttribute(geometry, "tangent", primitive.morphTangentIds);
 
-      let primitiveMesh:
-        | Mesh
-        | SkinnedMesh
-        | LineSegments
-        | LineLoop
-        | Line
-        | Points;
-      switch (mesh.mode) {
-        case WEBGL_CONSTANTS.TRIANGLES:
-        case WEBGL_CONSTANTS.TRIANGLE_STRIP:
-        case WEBGL_CONSTANTS.TRIANGLE_FAN: {
-          primitiveMesh = isSkin
-            ? new SkinnedMesh(primitiveGeometry, primitiveMaterial)
-            : new Mesh(primitiveGeometry, primitiveMaterial);
+        // Get material
+        const primitiveMaterial = primitive.materialId
+          ? map.materials.get(primitive.materialId)
+          : defaultMaterial;
+        if (!primitiveMaterial) throw new Error("Material not found");
 
-          if (primitiveMesh instanceof SkinnedMesh) {
-            const normalized =
-              primitiveMesh.geometry.attributes.skinWeight.normalized;
-            if (!normalized) primitiveMesh.normalizeSkinWeights();
+        let primitiveMesh:
+          | Mesh
+          | SkinnedMesh
+          | LineSegments
+          | LineLoop
+          | Line
+          | Points;
+        switch (primitive.mode) {
+          case WEBGL_CONSTANTS.TRIANGLES:
+          case WEBGL_CONSTANTS.TRIANGLE_STRIP:
+          case WEBGL_CONSTANTS.TRIANGLE_FAN: {
+            primitiveMesh = primitive.skin
+              ? new SkinnedMesh(geometry, primitiveMaterial)
+              : new Mesh(geometry, primitiveMaterial);
+
+            if (primitiveMesh instanceof SkinnedMesh) {
+              const normalized =
+                primitiveMesh.geometry.attributes.skinWeight.normalized;
+              if (!normalized) primitiveMesh.normalizeSkinWeights();
+            }
+            break;
           }
-          break;
+
+          case WEBGL_CONSTANTS.LINES: {
+            primitiveMesh = new LineSegments(geometry, primitiveMaterial);
+            break;
+          }
+
+          case WEBGL_CONSTANTS.LINE_STRIP: {
+            primitiveMesh = new Line(geometry, primitiveMaterial);
+            break;
+          }
+
+          case WEBGL_CONSTANTS.LINE_LOOP: {
+            primitiveMesh = new LineLoop(geometry, primitiveMaterial);
+            break;
+          }
+
+          case WEBGL_CONSTANTS.POINTS: {
+            primitiveMesh = new Points(geometry, primitiveMaterial);
+            break;
+          }
+
+          default: {
+            throw new Error(`Unknown primitive mode: ${primitive.mode}`);
+          }
         }
 
-        case WEBGL_CONSTANTS.LINES: {
-          primitiveMesh = new LineSegments(
-            primitiveGeometry,
-            primitiveMaterial
-          );
-          break;
-        }
+        primitiveMesh.castShadow = true;
+        primitiveMesh.receiveShadow = true;
 
-        case WEBGL_CONSTANTS.LINE_STRIP: {
-          primitiveMesh = new Line(primitiveGeometry, primitiveMaterial);
-          break;
-        }
+        // Set weights
+        primitiveMesh.updateMorphTargets();
+        primitiveMesh.morphTargetInfluences = [...primitive.weights];
 
-        case WEBGL_CONSTANTS.LINE_LOOP: {
-          primitiveMesh = new LineLoop(primitiveGeometry, primitiveMaterial);
-          break;
-        }
+        // Add to scene
+        map.objects.set(primitive.id, primitiveMesh);
+        copyTransform(primitiveMesh, node);
+        parent.add(primitiveMesh);
 
-        case WEBGL_CONSTANTS.POINTS: {
-          primitiveMesh = new Points(primitiveGeometry, primitiveMaterial);
-          break;
-        }
-
-        default:
-          throw new Error(`Unknown primitive mode: ${mesh.mode}`);
-      }
-
-      primitiveMesh.castShadow = true;
-      primitiveMesh.receiveShadow = true;
-
-      // Set weights
-      primitiveMesh.updateMorphTargets();
-      primitiveMesh.morphTargetInfluences = [...mesh.weights];
-
-      // Add to scene
-      map.objects.set(node.id, primitiveMesh);
-      copyTransform(primitiveMesh, node);
-      parent.add(primitiveMesh);
-
-      if (isSkin) {
         // Convert all joints to bones
-        mesh.skin?.jointIds.forEach((jointId) => {
+        primitive.skin?.jointIds.forEach((jointId) => {
           const jointNode = map.nodes.get(jointId);
           if (!jointNode) throw new Error(`Node not found: ${jointId}`);
 
@@ -171,7 +227,7 @@ export function createObject(
           copyTransform(bone, jointNode);
           parent.add(bone);
         });
-      }
+      });
 
       // Create skeletons
       createSkeletons(map);
@@ -184,14 +240,13 @@ export function createObject(
 
       // Check if joint
       let isJoint = false;
+      map.nodes.forEach((node) => {
+        const mesh = node.meshId ? map.meshes.get(node.meshId) : null;
+        if (mesh?.type !== "Primitives") return;
+        if (!mesh.primitives.some((p) => p.skin?.jointIds.includes(node.id)))
+          return;
 
-      map.nodes.forEach((e) => {
-        if (
-          e.mesh?.type === "Primitive" &&
-          e.mesh.skin?.jointIds.includes(node.id)
-        ) {
-          isJoint = true;
-        }
+        isJoint = true;
       });
 
       // Create object
@@ -211,7 +266,7 @@ export function createObject(
   if (!newObject) throw new Error("Object not found");
 
   // Update mesh material
-  updateMeshMaterial(node.id, mesh, map);
+  updateMeshMaterial(node.id, map);
 
   // Set name
   newObject.name = node.name || node.id;
@@ -220,4 +275,7 @@ export function createObject(
   if (children && children.length > 0) {
     newObject.add(...children);
   }
+
+  // Remove old object
+  if (oldObject) disposeObject(oldObject);
 }

@@ -5,10 +5,11 @@ import { Accessor } from "./Accessor";
 import { Animation } from "./Animation";
 import { Image } from "./Image";
 import { Material } from "./Material";
+import { Primitive } from "./mesh/Primitive";
 import { Mesh, MeshJSON } from "./mesh/types";
 import { Node } from "./Node";
 import { MaterialJSON, NodeJSON, SceneJSON } from "./types";
-import { sortEntities } from "./utils/sortEntities";
+import { sortNodes } from "./utils/sortNodes";
 
 /*
  * Stores the scene in a custom internal format.
@@ -115,11 +116,8 @@ export class Scene {
       parent.childrenIds$.next([...parent.childrenIds$.value, node.id]);
     }
 
-    // Save to entities
-    this.nodes = {
-      ...this.nodes,
-      [node.id]: node,
-    };
+    // Save to nodes
+    this.nodes = { ...this.nodes, [node.id]: node };
   }
 
   updateNode(nodeId: string, data: Partial<NodeJSON>) {
@@ -143,12 +141,12 @@ export class Scene {
     // Remove from parent
     if (node.parent) node.parentId = "";
 
-    // Remove from entities
+    // Remove from nodes
     this.nodes = Object.fromEntries(
       Object.entries(this.nodes).filter(([id]) => id !== nodeId)
     );
 
-    // Remove mesh if no other entities use it
+    // Remove mesh if no other nodes use it
     if (node.meshId) {
       const mesh = this.meshes[node.meshId];
       if (!mesh) throw new Error(`Mesh ${node.meshId} not found`);
@@ -158,38 +156,59 @@ export class Scene {
       );
 
       if (!isUsed) {
-        if (mesh && mesh.type === "Primitive") {
-          if (mesh.indicesId) this.removeAccessor(mesh.indicesId);
-          if (mesh.POSITION) this.removeAccessor(mesh.POSITION);
-          if (mesh.NORMAL) this.removeAccessor(mesh.NORMAL);
-          if (mesh.TEXCOORD_0) this.removeAccessor(mesh.TEXCOORD_0);
-          if (mesh.TANGENT) this.removeAccessor(mesh.TANGENT);
-          if (mesh.WEIGHTS_0) this.removeAccessor(mesh.WEIGHTS_0);
-          if (mesh.JOINTS_0) this.removeAccessor(mesh.JOINTS_0);
+        const materialMeshes: (Mesh | Primitive)[] = [];
 
-          mesh.morphPositionIds.forEach((id) => this.removeAccessor(id));
-          mesh.morphNormalIds.forEach((id) => this.removeAccessor(id));
-          mesh.morphTangentIds.forEach((id) => this.removeAccessor(id));
+        if (mesh.type === "Primitives") {
+          // Remove primitive accessors
+          mesh.primitives.forEach((primitive) => {
+            if (primitive.indicesId) this.removeAccessor(primitive.indicesId);
+            if (primitive.POSITION) this.removeAccessor(primitive.POSITION);
+            if (primitive.NORMAL) this.removeAccessor(primitive.NORMAL);
+            if (primitive.TEXCOORD_0) this.removeAccessor(primitive.TEXCOORD_0);
+            if (primitive.TANGENT) this.removeAccessor(primitive.TANGENT);
+            if (primitive.WEIGHTS_0) this.removeAccessor(primitive.WEIGHTS_0);
+            if (primitive.JOINTS_0) this.removeAccessor(primitive.JOINTS_0);
+
+            primitive.morphPositionIds.forEach((id) => this.removeAccessor(id));
+            primitive.morphNormalIds.forEach((id) => this.removeAccessor(id));
+            primitive.morphTangentIds.forEach((id) => this.removeAccessor(id));
+
+            materialMeshes.push(primitive);
+          });
+        } else {
+          materialMeshes.push(mesh);
         }
 
-        // Remove material
-        if (mesh?.materialId) {
-          const material = this.materials[mesh.materialId];
-          if (!material)
-            throw new Error(`Material ${mesh.materialId} not found`);
+        // Remove materials
+        materialMeshes.forEach((mesh) => {
+          if (mesh.materialId) {
+            // Remove material
+            if (mesh.materialId) {
+              const material = this.materials[mesh.materialId];
+              if (!material) throw new Error(`Material not found`);
 
-          // Only remove internal materials
-          if (material.isInternal) {
-            // Only remove material if it's not used by any other mesh
-            const otherNode = Object.values(this.nodes).find(
-              (node) =>
-                node.meshId &&
-                this.meshes[node.meshId]?.materialId === material.id
-            );
+              // Only remove internal materials
+              if (material.isInternal) {
+                // Only remove material if it's not used by any other mesh
+                const isUsed = Object.values(this.nodes).some((node) => {
+                  if (!node.meshId) return false;
 
-            if (!otherNode) this.removeMaterial(mesh.materialId);
+                  const mesh = this.meshes[node.meshId];
+                  if (!mesh) return false;
+
+                  if (mesh.type === "Primitives")
+                    return mesh.primitives.some(
+                      (primitive) => primitive.materialId === material.id
+                    );
+
+                  return mesh.materialId === material.id;
+                });
+
+                if (!isUsed) this.removeMaterial(mesh.materialId);
+              }
+            }
           }
-        }
+        });
       }
     }
 
@@ -217,7 +236,7 @@ export class Scene {
     const previous = this.meshes[mesh.id];
     if (previous) this.removeMesh(previous.id);
 
-    // Save to entities
+    // Save to nodes
     this.meshes = {
       ...this.meshes,
       [mesh.id]: mesh,
@@ -235,7 +254,7 @@ export class Scene {
     const mesh = this.meshes[meshId];
     if (!mesh) throw new Error(`Mesh ${meshId} not found`);
 
-    // Remove from entities
+    // Remove from nodes
     this.meshes = Object.fromEntries(
       Object.entries(this.meshes).filter(([id]) => id !== meshId)
     );
@@ -372,7 +391,7 @@ export class Scene {
         .filter((m) => (m.isInternal ? includeInternal : true))
         .map((m) => m.toJSON()),
 
-      entities: Object.values(this.nodes)
+      nodes: Object.values(this.nodes)
         .filter((e) => (e.isInternal ? includeInternal : true))
         .map((e) => e.toJSON()),
 
@@ -416,12 +435,12 @@ export class Scene {
       );
     }
 
-    // Sort entities
-    if (json.entities) {
-      const sortedEntities = sortEntities(json.entities);
+    // Sort nodes
+    if (json.nodes) {
+      const sortedNodes = sortNodes(json);
 
-      // Add entities
-      sortedEntities.forEach((node) => {
+      // Add nodes
+      sortedNodes.forEach((node) => {
         if (node.id === "root") return;
         this.addNode(Node.fromJSON(node));
       });

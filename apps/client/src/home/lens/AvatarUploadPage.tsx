@@ -1,9 +1,6 @@
-import { useRouter } from "next/router";
 import { useRef, useState } from "react";
 
-import { useCreatePost } from "../../client/lens/hooks/useCreatePost";
 import { useLens } from "../../client/lens/hooks/useLens";
-import { useProfileByHandle } from "../../client/lens/hooks/useProfileByHandle";
 import Button from "../../ui/Button";
 import Card from "../../ui/Card";
 import FileInput from "../../ui/FileInput";
@@ -20,9 +17,9 @@ export default function AvatarUploadPage() {
   const [loading, setLoading] = useState(false);
 
   const { handle } = useLens();
-  const router = useRouter();
-  const profile = useProfileByHandle(handle);
-  const createPost = useCreatePost(profile?.id);
+  // const router = useRouter();
+  // const profile = useProfileByHandle(handle);
+  // const createPost = useCreatePost(profile?.id);
 
   const disableSubmit = !imageFile || !vrmFile || !handle;
 

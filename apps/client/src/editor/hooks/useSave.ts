@@ -144,16 +144,16 @@ export function useSave() {
     );
 
     // Upload files to S3
-    scene.entities.forEach((node) => {
+    scene.meshes.forEach((mesh) => {
       // glTF models
-      if (node.mesh?.type === "glTF") {
-        const uri = node.mesh.uri;
-        if (uri) promises.push(uploadFile(uri, node.id, "model"));
+      if (mesh?.type === "glTF") {
+        const uri = mesh.uri;
+        if (uri) promises.push(uploadFile(uri, id, "model"));
       }
 
       // Images
-      if (node.materialId) {
-        const material = engine.scene.materials[node.materialId];
+      if (mesh.materialId) {
+        const material = engine.scene.materials[mesh.materialId];
         if (!material) throw new Error("No material");
 
         const colorTextureId = material.colorTexture?.imageId;

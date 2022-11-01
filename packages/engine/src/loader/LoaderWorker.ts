@@ -29,12 +29,6 @@ export class LoaderWorker {
     const scene = await loader.load(uri);
     const sceneJSON = scene.toJSON(true);
 
-    // Mark primitives
-    Object.values(sceneJSON.entities).forEach((node) => {
-      if (node.mesh?.type === "Primitive" && !node.mesh.gltfId)
-        node.mesh.gltfId = id;
-    });
-
     // Send to main thread
     const buffers = new Set<ArrayBuffer>();
     sceneJSON.accessors.forEach((accessor) => {

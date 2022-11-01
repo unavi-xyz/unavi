@@ -5,8 +5,6 @@ import { BaseMesh } from "./BaseMesh";
 import { PrimitiveJSON } from "./types";
 
 export class Primitive extends BaseMesh {
-  gltfId: string | null = null;
-
   mode$ = new BehaviorSubject<GLTF.MeshPrimitiveMode>(4);
   indicesId$ = new BehaviorSubject<string | null>(null);
 
@@ -167,7 +165,6 @@ export class Primitive extends BaseMesh {
     return {
       id: this.id,
       materialId: this.materialId,
-      gltfId: this.gltfId,
       mode: this.mode,
       indicesId: this.indicesId,
       weights: this.weights,
@@ -188,7 +185,6 @@ export class Primitive extends BaseMesh {
 
   applyJSON(json: Partial<PrimitiveJSON>) {
     if (json.materialId !== undefined) this.materialId = json.materialId;
-    if (json.gltfId !== undefined) this.gltfId = json.gltfId;
     if (json.mode !== undefined) this.mode = json.mode;
     if (json.indicesId !== undefined) this.indicesId = json.indicesId;
     if (json.weights !== undefined) this.weights = json.weights;

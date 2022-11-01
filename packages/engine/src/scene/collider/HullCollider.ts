@@ -3,11 +3,7 @@ import { HullColliderJSON } from "./types";
 export class HullCollider {
   readonly type = "hull";
 
-  meshId: string;
-
-  constructor(meshId: string) {
-    this.meshId = meshId;
-  }
+  meshId: string | null = null;
 
   destroy() {}
 
@@ -16,5 +12,15 @@ export class HullCollider {
       type: this.type,
       meshId: this.meshId,
     };
+  }
+
+  applyJSON(json: Partial<HullColliderJSON>) {
+    if (json.meshId !== undefined) this.meshId = json.meshId;
+  }
+
+  static fromJSON(json: HullColliderJSON) {
+    const collider = new HullCollider();
+    collider.applyJSON(json);
+    return collider;
   }
 }

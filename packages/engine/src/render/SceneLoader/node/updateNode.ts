@@ -28,7 +28,7 @@ export function updateNode(
   map.nodes.set(nodeId, newNode);
 
   // Update object
-  if (data.mesh !== undefined) {
+  if (data.meshId) {
     const oldObject = map.objects.get(nodeId);
     const position = oldObject ? oldObject.position.clone() : new Vector3();
     const quaternion = oldObject
@@ -44,6 +44,25 @@ export function updateNode(
     object.position.copy(position);
     object.quaternion.copy(quaternion);
     object.scale.copy(scale);
+
+    // Update material
+    const mesh = map.meshes.get(data.meshId);
+    if (!mesh) throw new Error("Mesh not found");
+
+    if (mesh.materialId) {
+      if (!(object instanceof Mesh)) {
+        if (mesh.materialId !== null) throw new Error("Object is not a mesh");
+      } else {
+        const material = mesh.materialId
+          ? map.materials.get(mesh.materialId)
+          : defaultMaterial;
+        if (!material) throw new Error("Material not found");
+
+        object.material = material;
+
+        updateMeshMaterial(nodeId, map);
+      }
+    }
   }
 
   const object = map.objects.get(nodeId);
@@ -84,23 +103,7 @@ export function updateNode(
     updateGlobalTransform(nodeId, map, postMessage);
   }
 
-  // Update material
-  if (data.materialId !== undefined) {
-    if (!(object instanceof Mesh)) {
-      if (data.materialId !== null) throw new Error("Object is not a mesh");
-    } else {
-      const material = data.materialId
-        ? map.materials.get(data.materialId)
-        : defaultMaterial;
-      if (!material) throw new Error("Material not found");
-
-      object.material = material;
-
-      updateMeshMaterial(nodeId, node.mesh, map);
-    }
-  }
-
   // Update collider visual
-  if (data.mesh || data.collider)
+  if (data.meshId || data.collider)
     createColliderVisual(nodeId, map, visuals, postMessage);
 }

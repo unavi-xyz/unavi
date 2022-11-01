@@ -1,15 +1,14 @@
 import { GLTFMesh } from "@wired-labs/engine";
 
 import FileInput from "../../../../ui/FileInput";
-import { updateNode } from "../../../actions/UpdateNodeAction";
+import { updateMesh } from "../../../actions/UpdateMeshAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 
 interface Props {
-  nodeId: string;
   mesh: GLTFMesh;
 }
 
-export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
+export default function GLTFMeshComponent({ mesh }: Props) {
   const name = useSubscribeValue(mesh.name$);
 
   return (
@@ -26,10 +25,10 @@ export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
         const type = isGlb ? "model/gltf-binary" : "model/gltf+json";
         const blob = new Blob([file], { type });
 
-        mesh.name = file.name;
-        mesh.uri = URL.createObjectURL(blob);
-
-        updateNode(nodeId, { mesh: mesh.toJSON() });
+        updateMesh(mesh.id, {
+          name: file.name,
+          uri: URL.createObjectURL(blob),
+        });
       }}
     />
   );

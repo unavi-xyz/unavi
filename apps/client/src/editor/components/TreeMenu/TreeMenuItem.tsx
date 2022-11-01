@@ -22,7 +22,7 @@ export default function TreeMenuItem({ id }: Props) {
   const [open, setOpen] = useState(true);
   const selectedId = useEditorStore((state) => state.selectedId);
 
-  const entities$ = useEditorStore((state) => state.engine?.scene.entities$);
+  const nodes$ = useEditorStore((state) => state.engine?.scene.nodes$);
   const name$ = useNode(id, (node) => node.name$);
   const childrenIds$ = useNode(id, (node) => node.childrenIds$);
   const isInternal$ = useNode(id, (node) => node.isInternal$);
@@ -30,9 +30,9 @@ export default function TreeMenuItem({ id }: Props) {
   const name = useSubscribeValue(name$);
   const childrenIds = useSubscribeValue(childrenIds$);
   const isInternal = useSubscribeValue(isInternal$);
-  const entities = useSubscribeValue(entities$);
+  const nodes = useSubscribeValue(nodes$);
 
-  const children = entities ? childrenIds?.map((id) => entities[id]) : [];
+  const children = nodes ? childrenIds?.map((id) => nodes[id]) : [];
 
   // Create drag source
   const [{ isDragging }, drag] = useDrag(

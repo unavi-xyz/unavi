@@ -1,4 +1,4 @@
-import { Node, GLTFMesh, SceneJSON } from "@wired-labs/engine";
+import { GLTFMesh, Node, SceneJSON } from "@wired-labs/engine";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -124,22 +124,23 @@ export default function Preview() {
         spawn: savedScene.spawn,
         accessors: savedScene.accessors,
         animations: savedScene.animations,
-        entities: savedScene.entities,
-        materials: savedScene.materials,
         images: [],
+        materials: savedScene.materials,
+        meshes: savedScene.meshes,
+        nodes: savedScene.nodes,
       };
 
       // Load glTF models
-      const modelPromises = savedScene.entities.map(async (node) => {
-        if (node.mesh?.type === "glTF" && node.mesh.uri) {
-          const file = fileURLs.find((f) => f.id === modelStorageKey(node.id));
+      const modelPromises = savedScene.meshes.map(async (mesh) => {
+        if (mesh?.type === "glTF" && mesh.uri) {
+          const file = fileURLs.find((f) => f.id === modelStorageKey(mesh.id));
           if (!file) throw new Error("File not found");
 
           const response = await fetch(file.uri);
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
 
-          node.mesh.uri = url;
+          mesh.uri = url;
         }
       });
 
@@ -203,15 +204,17 @@ export default function Preview() {
     const url = URL.createObjectURL(blob);
 
     // Create glTF node
-    const node = new Node();
     const mesh = new GLTFMesh();
     mesh.uri = url;
-    node.mesh = mesh;
+
+    const node = new Node();
+    node.meshId = mesh.id;
 
     // Add node to scene
     engine.scene
       .loadJSON({
-        entities: [node.toJSON()],
+        nodes: [node.toJSON()],
+        meshes: [mesh.toJSON()],
       })
       .then(() => {
         // Start engine

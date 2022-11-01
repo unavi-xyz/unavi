@@ -25,7 +25,7 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
   sceneLoaded: false,
 
   getNode: (id: string) => {
-    return get().engine?.scene.entities[id];
+    return get().engine?.scene.nodes[id];
   },
 
   canvas: null,

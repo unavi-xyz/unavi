@@ -93,12 +93,12 @@ export type AnimationJSON = {
 
 export interface SceneJSON {
   spawn: Triplet | null;
-  entities: NodeJSON[];
-  meshes: MeshJSON[];
-  materials: MaterialJSON[];
   accessors: AccessorJSON[];
-  images: ImageJSON[];
   animations: AnimationJSON[];
+  images: ImageJSON[];
+  materials: MaterialJSON[];
+  meshes: MeshJSON[];
+  nodes: NodeJSON[];
 }
 
 // Messages

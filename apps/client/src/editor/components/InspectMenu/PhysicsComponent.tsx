@@ -10,7 +10,6 @@ import {
 import { updateNode } from "../../actions/UpdateNodeAction";
 import { useNode } from "../../hooks/useNode";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
-import { useEditorStore } from "../../store";
 import { capitalize } from "../../utils/capitalize";
 import SelectMenu from "../ui/SelectMenu";
 import BoxColliderComponent from "./collider/BoxColliderComponent";
@@ -24,8 +23,9 @@ interface Props {
 }
 
 export default function PhysicsComponent({ nodeId }: Props) {
-  const collider$ = useNode(nodeId, (node) => node.collider$);
-  const collider = useSubscribeValue(collider$);
+  const node = useNode(nodeId);
+  const collider = useSubscribeValue(node?.collider$);
+  const meshId = useSubscribeValue(node?.meshId$);
 
   if (!collider) return null;
 
@@ -57,31 +57,23 @@ export default function PhysicsComponent({ nodeId }: Props) {
 
                 case "Cylinder": {
                   const cylinderCollider = new CylinderCollider();
-                  updateNode(nodeId, {
-                    collider: cylinderCollider.toJSON(),
-                  });
+                  updateNode(nodeId, { collider: cylinderCollider.toJSON() });
                   break;
                 }
 
                 case "Hull": {
-                  const { engine } = useEditorStore.getState();
-                  if (!engine) throw new Error("Engine not found");
-
+                  if (!meshId) break;
                   const hullCollider = new HullCollider();
-                  updateNode(nodeId, {
-                    collider: hullCollider.toJSON(),
-                  });
+                  hullCollider.meshId = meshId;
+                  updateNode(nodeId, { collider: hullCollider.toJSON() });
                   break;
                 }
 
                 case "Mesh": {
-                  const { engine } = useEditorStore.getState();
-                  if (!engine) throw new Error("Engine not found");
-
+                  if (!meshId) break;
                   const meshCollider = new MeshCollider();
-                  updateNode(nodeId, {
-                    collider: meshCollider.toJSON(),
-                  });
+                  meshCollider.meshId = meshId;
+                  updateNode(nodeId, { collider: meshCollider.toJSON() });
                   break;
                 }
               }

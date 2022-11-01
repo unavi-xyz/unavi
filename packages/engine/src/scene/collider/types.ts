@@ -28,12 +28,12 @@ export interface CylinderColliderJSON extends BaseColliderJSON {
 
 export interface HullColliderJSON extends BaseColliderJSON {
   type: "hull";
-  meshId: string;
+  meshId: string | null;
 }
 
 export interface MeshColliderJSON extends BaseColliderJSON {
   type: "mesh";
-  meshId: string;
+  meshId: string | null;
 }
 
 export type ColliderJSON =

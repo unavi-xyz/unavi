@@ -3,41 +3,44 @@ import { Bone, Matrix4, Skeleton, SkinnedMesh } from "three";
 import { SceneMap } from "../types";
 
 export function createSkeletons(map: SceneMap) {
-  map.nodes.forEach((e) => {
-    const isSkin = e.mesh?.type === "Primitive" && e.mesh.skin !== null;
-    if (!isSkin) return;
+  map.meshes.forEach((mesh) => {
+    if (mesh.type !== "Primitives") return;
 
-    const skinObject = map.objects.get(e.id);
-    if (!skinObject) return;
+    mesh.primitives.forEach((primitive) => {
+      if (!primitive.skin) return;
 
-    // Create skeleton for skin and all child skins
-    skinObject.traverse((child) => {
-      if (!(child instanceof SkinnedMesh)) return;
+      const skinObject = map.objects.get(primitive.id);
+      if (!skinObject) return;
 
-      const bones: Bone[] = [];
-      const boneInverses: Matrix4[] = [];
+      // Create skeleton for skin and all child skins
+      skinObject.traverse((child) => {
+        if (!primitive.skin) return;
+        if (!(child instanceof SkinnedMesh)) return;
 
-      if (e.mesh?.type !== "Primitive") throw new Error("Mesh not primitive");
-      if (!e.mesh.skin?.inverseBindMatricesId)
-        throw new Error("No inverse bind matrices");
+        const bones: Bone[] = [];
+        const boneInverses: Matrix4[] = [];
 
-      const inverseBindMatrices = map.accessors.get(
-        e.mesh.skin.inverseBindMatricesId
-      );
-      if (!inverseBindMatrices) throw new Error("Accessor not found");
+        if (!primitive.skin.inverseBindMatricesId)
+          throw new Error("No inverse bind matrices");
 
-      e.mesh.skin.jointIds.forEach((jointId, i) => {
-        const bone = map.objects.get(jointId);
-        if (!(bone instanceof Bone)) throw new Error("Bone not found");
+        const inverseBindMatrices = map.accessors.get(
+          primitive.skin.inverseBindMatricesId
+        );
+        if (!inverseBindMatrices) throw new Error("Accessor not found");
 
-        const matrix = new Matrix4();
-        matrix.fromArray(inverseBindMatrices.array, i * 16);
+        primitive.skin.jointIds.forEach((jointId, i) => {
+          const bone = map.objects.get(jointId);
+          if (!(bone instanceof Bone)) throw new Error("Bone not found");
 
-        bones.push(bone);
-        boneInverses.push(matrix);
+          const matrix = new Matrix4();
+          matrix.fromArray(inverseBindMatrices.array, i * 16);
+
+          bones.push(bone);
+          boneInverses.push(matrix);
+        });
+
+        child.bind(new Skeleton(bones, boneInverses), child.matrixWorld);
       });
-
-      child.bind(new Skeleton(bones, boneInverses), child.matrixWorld);
     });
   });
 }

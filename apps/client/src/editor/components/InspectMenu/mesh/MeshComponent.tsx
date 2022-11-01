@@ -6,6 +6,7 @@ import {
   SphereMesh,
 } from "@wired-labs/engine";
 
+import { addMesh } from "../../../actions/AddMeshAction";
 import { updateNode } from "../../../actions/UpdateNodeAction";
 import SelectMenu from "../../ui/SelectMenu";
 import ComponentMenu from "../ComponentMenu";
@@ -31,7 +32,7 @@ export default function MeshComponent({ nodeId, mesh }: Props) {
   return (
     <ComponentMenu
       title="Mesh"
-      onRemove={() => updateNode(nodeId, { mesh: null })}
+      onRemove={() => updateNode(nodeId, { meshId: null })}
     >
       <MenuRows titles={["Type"]}>
         <SelectMenu
@@ -43,25 +44,29 @@ export default function MeshComponent({ nodeId, mesh }: Props) {
             switch (type) {
               case MeshType.Box: {
                 const mesh = new BoxMesh();
-                updateNode(nodeId, { mesh: mesh.toJSON() });
+                addMesh(mesh);
+                updateNode(nodeId, { meshId: mesh.id });
                 break;
               }
 
               case MeshType.Sphere: {
                 const mesh = new SphereMesh();
-                updateNode(nodeId, { mesh: mesh.toJSON() });
+                addMesh(mesh);
+                updateNode(nodeId, { meshId: mesh.id });
                 break;
               }
 
               case MeshType.Cylinder: {
                 const mesh = new CylinderMesh();
-                updateNode(nodeId, { mesh: mesh.toJSON() });
+                addMesh(mesh);
+                updateNode(nodeId, { meshId: mesh.id });
                 break;
               }
 
               case MeshType.glTF: {
                 const mesh = new GLTFMesh();
-                updateNode(nodeId, { mesh: mesh.toJSON() });
+                addMesh(mesh);
+                updateNode(nodeId, { meshId: mesh.id });
                 break;
               }
             }
@@ -76,7 +81,7 @@ export default function MeshComponent({ nodeId, mesh }: Props) {
       ) : mesh.type === "Cylinder" ? (
         <CylinderMeshComponent nodeId={nodeId} mesh={mesh} />
       ) : mesh.type === "glTF" ? (
-        <GLTFMeshComponent nodeId={nodeId} mesh={mesh} />
+        <GLTFMeshComponent mesh={mesh} />
       ) : null}
     </ComponentMenu>
   );

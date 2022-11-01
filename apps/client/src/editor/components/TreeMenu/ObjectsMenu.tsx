@@ -10,6 +10,7 @@ import {
   SphereMesh,
 } from "@wired-labs/engine";
 
+import { addMesh } from "../../actions/AddMeshAction";
 import { addNode } from "../../actions/AddNodeAction";
 import { useEditorStore } from "../../store";
 
@@ -23,11 +24,11 @@ enum ObjectName {
 
 export default function ObjectsMenu() {
   function addObject(name: ObjectName) {
-    const node = createNode(name);
-    addNode(node);
+    // Create node
+    const selectedId = createNode(name);
 
     // Select new node
-    useEditorStore.setState({ selectedId: node.id });
+    useEditorStore.setState({ selectedId });
   }
 
   return (
@@ -49,39 +50,46 @@ function createNode(name: ObjectName) {
   const node = new Node();
   node.name = name;
 
-  // Add object component
   switch (name) {
     case ObjectName.Box: {
-      node.mesh = new BoxMesh();
+      const mesh = new BoxMesh();
+      addMesh(mesh);
+
+      node.meshId = mesh.id;
       node.collider = new BoxCollider();
       break;
     }
 
     case ObjectName.Sphere: {
-      node.mesh = new SphereMesh();
+      const mesh = new SphereMesh();
+      addMesh(mesh);
+
+      node.meshId = mesh.id;
       node.collider = new SphereCollider();
       break;
     }
 
     case ObjectName.Cylinder: {
-      node.mesh = new CylinderMesh();
+      const mesh = new CylinderMesh();
+      addMesh(mesh);
+
+      node.meshId = mesh.id;
       node.collider = new CylinderCollider();
       break;
     }
 
     case ObjectName.glTF: {
-      node.mesh = new GLTFMesh();
+      const mesh = new GLTFMesh();
+      addMesh(mesh);
+
+      node.meshId = mesh.id;
       node.collider = new MeshCollider();
+      node.collider.meshId = mesh.id;
       break;
     }
-
-    case ObjectName.Group: {
-      break;
-    }
-
-    default:
-      throw new Error("Unknown object name");
   }
 
-  return node;
+  addNode(node);
+
+  return node.id;
 }

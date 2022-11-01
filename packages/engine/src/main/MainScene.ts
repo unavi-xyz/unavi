@@ -29,7 +29,7 @@ export class MainScene {
 
   #map = {
     loadedGltfUris: new Map<string, string | null>(),
-    glTFRootEntities: new Map<string, string[]>(),
+    glTFRootNodes: new Map<string, string[]>(),
   };
 
   #gltfLoadCallbacks = new Map<string, () => void>();
@@ -50,22 +50,22 @@ export class MainScene {
     // Handle glTF loads
     loaderThread.onGltfLoaded = ({ id, scene }) => {
       // Remove previous loaded glTF node
-      const rootEntities = this.#map.glTFRootEntities.get(id);
-      if (rootEntities) {
-        rootEntities.forEach((nodeId) => this.removeNode(nodeId));
-        this.#map.glTFRootEntities.delete(id);
+      const rootNodes = this.#map.glTFRootNodes.get(id);
+      if (rootNodes) {
+        rootNodes.forEach((nodeId) => this.removeNode(nodeId));
+        this.#map.glTFRootNodes.delete(id);
       }
 
-      scene.entities = scene.entities.filter((entityJSON) => {
+      scene.nodes = scene.nodes.filter((entityJSON) => {
         // Filter out root node
         if (entityJSON.id === "root") return false;
 
-        // Add top level entities to the roots map
+        // Add top level nodes to the roots map
         if (entityJSON.parentId === "root") {
           entityJSON.parentId = id;
-          const roots = this.#map.glTFRootEntities.get(id) ?? [];
+          const roots = this.#map.glTFRootNodes.get(id) ?? [];
           roots.push(entityJSON.id);
-          this.#map.glTFRootEntities.set(id, roots);
+          this.#map.glTFRootNodes.set(id, roots);
         }
 
         return true;
@@ -80,8 +80,8 @@ export class MainScene {
     };
 
     // Load glTFs when added to the scene
-    this.#scene.nodes$.subscribe((entities) => {
-      Object.values(entities).forEach((node) => {
+    this.#scene.nodes$.subscribe((nodes) => {
+      Object.values(nodes).forEach((node) => {
         node.meshId$.subscribe((meshId) => {
           if (!meshId) return;
           const mesh = this.#scene.meshes[meshId];
@@ -93,10 +93,10 @@ export class MainScene {
 
                 if (uri === null) {
                   // Remove loaded glTF
-                  const rootEntities = this.#map.glTFRootEntities.get(node.id);
-                  if (rootEntities) {
-                    rootEntities.forEach((nodeId) => this.removeNode(nodeId));
-                    this.#map.glTFRootEntities.delete(node.id);
+                  const rootNodes = this.#map.glTFRootNodes.get(node.id);
+                  if (rootNodes) {
+                    rootNodes.forEach((nodeId) => this.removeNode(nodeId));
+                    this.#map.glTFRootNodes.delete(node.id);
                   }
                   return;
                 }
@@ -166,11 +166,11 @@ export class MainScene {
     return this.#scene.spawn$;
   }
 
-  get entities() {
+  get nodes() {
     return this.#scene.nodes;
   }
 
-  get entities$() {
+  get nodes$() {
     return this.#scene.nodes$;
   }
 
@@ -305,12 +305,12 @@ export class MainScene {
 
   async loadJSON(json: Partial<SceneJSON>) {
     // Remove root node
-    json.entities = json.entities?.filter((node) => node.id !== "root");
+    json.nodes = json.nodes?.filter((node) => node.id !== "root");
 
     // Send stripped down scene to physics thread
     const strippedScene: Partial<SceneJSON> = {
       spawn: json.spawn,
-      entities: json.entities,
+      nodes: json.nodes,
     };
 
     this.#toPhysicsThread({
@@ -347,7 +347,7 @@ export class MainScene {
   clear() {
     this.#scene.spawn = [0, 0, 0];
 
-    // Remove all entities
+    // Remove all nodes
     Object.values(this.#scene.nodes).forEach((node) => {
       if (node.parentId === "root") this.removeNode(node.id);
     });

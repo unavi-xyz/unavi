@@ -11,6 +11,7 @@ export class PrimitivesMesh {
   isInternal = false;
 
   name$ = new BehaviorSubject<string | null>(null);
+  materialId$ = new BehaviorSubject<string | null>(null);
 
   primitives: Primitive[] = [];
 
@@ -26,6 +27,14 @@ export class PrimitivesMesh {
     this.name$.next(name);
   }
 
+  get materialId() {
+    return this.materialId$.value;
+  }
+
+  set materialId(materialId: string | null) {
+    this.materialId$.next(materialId);
+  }
+
   destroy() {
     this.name$.complete();
   }
@@ -36,6 +45,7 @@ export class PrimitivesMesh {
       type: this.type,
       id: this.id,
       name: this.name,
+      materialId: null,
       primitives,
     };
   }

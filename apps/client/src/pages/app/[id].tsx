@@ -1,4 +1,4 @@
-import { Node, GLTFMesh } from "@wired-labs/engine";
+import { GLTFMesh, Node } from "@wired-labs/engine";
 import { NextPageContext } from "next";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -69,12 +69,12 @@ export default function App({ id, metadata, publication }: Props) {
     if (!modelURL || !engine) return;
 
     // Create glTF node
-    const node = new Node();
     const mesh = new GLTFMesh();
     mesh.uri = modelURL;
-    node.mesh = mesh;
+    engine.scene.addMesh(mesh);
 
-    // Add node to scene
+    const node = new Node();
+    node.meshId = mesh.id;
     engine.scene.addNode(node);
 
     return () => {

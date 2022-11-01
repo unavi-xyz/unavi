@@ -193,9 +193,9 @@ export default function AvatarLayout({
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div>By</div>
                     <Link href={`/user/${author}`}>
-                      <a className="cursor-pointer hover:underline">
+                      <div className="cursor-pointer hover:underline">
                         @{author}
-                      </a>
+                      </div>
                     </Link>
                   </div>
                 </div>

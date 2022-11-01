@@ -13,22 +13,21 @@ import {
   SphereGeometry,
 } from "three";
 
-import { NodeJSON } from "../../../scene";
 import { PostMessage } from "../../../types";
 import { WEBGL_CONSTANTS } from "../../constants";
 import { FromRenderMessage } from "../../types";
 import { disposeObject } from "../../utils/disposeObject";
 import { defaultMaterial } from "../constants";
+import { removeNodeObject } from "../node/removeNodeObject";
+import { updateNode } from "../node/updateNode";
 import { SceneMap } from "../types";
 import { copyTransform } from "../utils/copyTransform";
 import { createAttribute } from "./createAttribute";
 import { createSkeletons } from "./createSkeletons";
-import { removeNodeObject } from "./removeNodeObject";
 import { updateMeshMaterial } from "./updateMeshMaterial";
-import { updateNode } from "./updateNode";
 
 export function createObject(
-  node: NodeJSON,
+  meshId: string,
   map: SceneMap,
   visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
@@ -54,13 +53,10 @@ export function createObject(
     geometry.setAttribute(threeName, attribute);
   }
 
-  const parent = map.objects.get(node.parentId);
-  if (!parent) throw new Error("Parent not found");
+  const mesh = map.meshes.get(meshId);
+  if (!mesh) throw new Error("Mesh not found");
 
-  const oldObject = map.objects.get(node.id);
-  const children = oldObject?.children;
-
-  const mesh = node.meshId ? map.meshes.get(node.meshId) : null;
+  const oldObject = map.objects.get(mesh.id);
 
   // Create object
   switch (mesh?.type) {
@@ -107,11 +103,8 @@ export function createObject(
       threeMesh.castShadow = true;
       threeMesh.receiveShadow = true;
 
-      // Add to scene
-      map.objects.set(node.id, threeMesh);
-      copyTransform(threeMesh, node);
-      parent.add(threeMesh);
-
+      map.objects.set(mesh.id, threeMesh);
+      oldObject?.parent?.add(threeMesh);
       break;
     }
 
@@ -204,8 +197,7 @@ export function createObject(
 
         // Add to scene
         map.objects.set(primitive.id, primitiveMesh);
-        copyTransform(primitiveMesh, node);
-        parent.add(primitiveMesh);
+        oldObject?.parent?.add(primitiveMesh);
 
         // Convert all joints to bones
         primitive.skin?.jointIds.forEach((jointId) => {
@@ -221,11 +213,8 @@ export function createObject(
           removeNodeObject(jointId, map);
 
           const bone = new Bone();
-
-          // Add to scene
           map.objects.set(jointId, bone);
           copyTransform(bone, jointNode);
-          parent.add(bone);
         });
       });
 
@@ -235,9 +224,6 @@ export function createObject(
     }
 
     default: {
-      // Remove old object
-      if (oldObject) disposeObject(oldObject);
-
       // Check if joint
       let isJoint = false;
       map.nodes.forEach((node) => {
@@ -251,30 +237,16 @@ export function createObject(
 
       // Create object
       const object = isJoint ? new Bone() : new Group();
-
-      // Add to scene
-      map.objects.set(node.id, object);
-      copyTransform(object, node);
-      parent.add(object);
+      oldObject?.parent?.add(object);
+      map.objects.set(mesh.id, object);
 
       // Update skeletons
       if (isJoint) createSkeletons(map);
     }
   }
 
-  const newObject = map.objects.get(node.id);
-  if (!newObject) throw new Error("Object not found");
-
   // Update mesh material
-  updateMeshMaterial(node.id, map);
-
-  // Set name
-  newObject.name = node.name || node.id;
-
-  // Restore children
-  if (children && children.length > 0) {
-    newObject.add(...children);
-  }
+  updateMeshMaterial(mesh.id, map);
 
   // Remove old object
   if (oldObject) disposeObject(oldObject);

@@ -100,8 +100,7 @@ function findValidObject(
 
   if (nodeId) {
     const node = sceneLoader.getNode(nodeId);
-    if (!node) throw new Error(`Node not found: ${nodeId}`);
-    if (!node.isInternal) return object;
+    if (node && !node.isInternal) return object;
   }
 
   // Try parent

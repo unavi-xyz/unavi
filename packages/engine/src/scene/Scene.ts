@@ -5,7 +5,12 @@ import { Accessor } from "./Accessor";
 import { Animation } from "./Animation";
 import { Image } from "./Image";
 import { Material } from "./Material";
+import { BoxMesh } from "./mesh/BoxMesh";
+import { CylinderMesh } from "./mesh/CylinderMesh";
+import { GLTFMesh } from "./mesh/GLTFMesh";
 import { Primitive } from "./mesh/Primitive";
+import { PrimitivesMesh } from "./mesh/PrimitivesMesh";
+import { SphereMesh } from "./mesh/SphereMesh";
 import { Mesh, MeshJSON } from "./mesh/types";
 import { Node } from "./Node";
 import { MaterialJSON, NodeJSON, SceneJSON } from "./types";
@@ -112,9 +117,8 @@ export class Scene {
 
     // Add to parent
     const parent = node.parent;
-    if (parent) {
+    if (parent)
       parent.childrenIds$.next([...parent.childrenIds$.value, node.id]);
-    }
 
     // Save to nodes
     this.nodes = { ...this.nodes, [node.id]: node };
@@ -433,6 +437,37 @@ export class Scene {
       json.materials.forEach((material) =>
         this.addMaterial(Material.fromJSON(material))
       );
+    }
+
+    // Add meshes
+    if (json.meshes) {
+      json.meshes.forEach((mesh) => {
+        switch (mesh.type) {
+          case "Box": {
+            this.addMesh(BoxMesh.fromJSON(mesh));
+            break;
+          }
+
+          case "Sphere": {
+            this.addMesh(SphereMesh.fromJSON(mesh));
+            break;
+          }
+
+          case "Cylinder": {
+            this.addMesh(CylinderMesh.fromJSON(mesh));
+            break;
+          }
+
+          case "Primitives": {
+            this.addMesh(PrimitivesMesh.fromJSON(mesh));
+            break;
+          }
+
+          case "glTF": {
+            this.addMesh(GLTFMesh.fromJSON(mesh));
+          }
+        }
+      });
     }
 
     // Sort nodes

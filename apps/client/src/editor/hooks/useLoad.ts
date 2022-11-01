@@ -129,7 +129,7 @@ export function useLoad() {
       await engine.scene.loadJSON(scene);
 
       // Start engine
-      engine.start();
+      await engine.start();
 
       useEditorStore.setState({ sceneLoaded: true });
     }

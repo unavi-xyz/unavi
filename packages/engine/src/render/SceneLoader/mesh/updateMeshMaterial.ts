@@ -2,16 +2,13 @@ import { Mesh } from "three";
 
 import { SceneMap } from "../types";
 
-export function updateMeshMaterial(nodeId: string, map: SceneMap) {
-  const node = map.nodes.get(nodeId);
-  if (!node) throw new Error("Node not found");
-
-  const mesh = node.meshId ? map.meshes.get(node.meshId) : null;
+export function updateMeshMaterial(meshId: string, map: SceneMap) {
+  const mesh = map.meshes.get(meshId);
 
   // Update material according to certain mesh properties
   // TODO: Create a new material if the mesh needs to modify it
   if (mesh?.type === "Primitives") {
-    const meshObject = map.objects.get(nodeId);
+    const meshObject = map.objects.get(meshId);
     if (!meshObject) throw new Error("Mesh not found");
     if (!(meshObject instanceof Mesh)) throw new Error("Object is not a mesh");
 

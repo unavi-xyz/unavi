@@ -1,14 +1,11 @@
-import { Group, Mesh, Quaternion, Vector3 } from "three";
+import { Group, Quaternion, Vector3 } from "three";
 
 import { NodeJSON } from "../../../scene";
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
-import { defaultMaterial } from "../constants";
 import { SceneMap } from "../types";
 import { updateGlobalTransform } from "../utils/updateGlobalTransform";
 import { createColliderVisual } from "./createColliderVisual";
-import { createObject } from "./createObject";
-import { updateMeshMaterial } from "./updateMeshMaterial";
 
 const tempVector = new Vector3();
 const tempQuaternion = new Quaternion();
@@ -27,46 +24,11 @@ export function updateNode(
   const newNode = { ...node, ...data };
   map.nodes.set(nodeId, newNode);
 
-  // Update object
-  if (data.meshId) {
-    const oldObject = map.objects.get(nodeId);
-    const position = oldObject ? oldObject.position.clone() : new Vector3();
-    const quaternion = oldObject
-      ? oldObject.quaternion.clone()
-      : new Quaternion();
-    const scale = oldObject ? oldObject.scale.clone() : new Vector3(1, 1, 1);
-
-    createObject(newNode, map, visuals, postMessage);
-
-    const object = map.objects.get(nodeId);
-    if (!object) throw new Error("Object not found");
-
-    object.position.copy(position);
-    object.quaternion.copy(quaternion);
-    object.scale.copy(scale);
-
-    // Update material
-    const mesh = map.meshes.get(data.meshId);
-    if (!mesh) throw new Error("Mesh not found");
-
-    if (mesh.materialId) {
-      if (!(object instanceof Mesh)) {
-        if (mesh.materialId !== null) throw new Error("Object is not a mesh");
-      } else {
-        const material = mesh.materialId
-          ? map.materials.get(mesh.materialId)
-          : defaultMaterial;
-        if (!material) throw new Error("Material not found");
-
-        object.material = material;
-
-        updateMeshMaterial(nodeId, map);
-      }
-    }
+  let object = map.objects.get(nodeId);
+  if (!object) {
+    object = new Group();
+    map.objects.set(nodeId, object);
   }
-
-  const object = map.objects.get(nodeId);
-  if (!object) throw new Error("Object not found");
 
   // Update parent
   if (data.parentId !== undefined) {
@@ -103,7 +65,32 @@ export function updateNode(
     updateGlobalTransform(nodeId, map, postMessage);
   }
 
+  // Mesh
+  if (data.meshId !== undefined) {
+    let meshGroup = map.objects.get(meshKey(nodeId));
+    if (!meshGroup) {
+      meshGroup = new Group();
+      map.objects.set(meshKey(nodeId), meshGroup);
+      object.add(meshGroup);
+    }
+
+    if (data.meshId) {
+      // Add mesh as child
+      const meshObject = map.objects.get(data.meshId);
+      if (!meshObject) throw new Error("Mesh not found");
+
+      meshGroup.add(meshObject);
+    } else {
+      // Remove mesh
+      meshGroup.remove(...meshGroup.children);
+    }
+  }
+
   // Update collider visual
-  if (data.meshId || data.collider)
+  if (data.meshId !== undefined || data.collider !== undefined)
     createColliderVisual(nodeId, map, visuals, postMessage);
+}
+
+function meshKey(nodeId: string) {
+  return `mesh-${nodeId}`;
 }

@@ -7,9 +7,9 @@ export function disposeObject(root: Object3D) {
     if (object instanceof Mesh) {
       const mesh = object as Mesh;
 
+      // Dispose material
       const materials =
         mesh.material instanceof Array ? mesh.material : [mesh.material];
-
       materials.forEach(disposeMaterial);
 
       // Dispose geometry
@@ -30,6 +30,5 @@ export function disposeMaterial(material: Material) {
     if (material.envMap) material.envMap.dispose();
   }
 
-  // Dispose material
   material.dispose();
 }

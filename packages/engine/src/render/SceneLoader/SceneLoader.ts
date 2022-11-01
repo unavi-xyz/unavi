@@ -23,6 +23,9 @@ import { addAnimation } from "./animation/addAnimation";
 import { addMaterial } from "./material/addMaterial";
 import { removeMaterial } from "./material/removeMaterial";
 import { updateMaterial } from "./material/updateMaterial";
+import { addMesh } from "./mesh/addMesh";
+import { removeMesh } from "./mesh/removeMesh";
+import { updateMesh } from "./mesh/updateMesh";
 import { addNode } from "./node/addNode";
 import { createColliderVisual } from "./node/createColliderVisual";
 import { removeNode } from "./node/removeNode";
@@ -111,6 +114,27 @@ export class SceneLoader {
         break;
       }
 
+      case "add_mesh": {
+        addMesh(data.mesh, this.#map, this.visuals, this.#postMessage);
+        break;
+      }
+
+      case "update_mesh": {
+        updateMesh(
+          data.meshId,
+          data.data,
+          this.#map,
+          this.visuals,
+          this.#postMessage
+        );
+        break;
+      }
+
+      case "remove_mesh": {
+        removeMesh(data.meshId, this.#map);
+        break;
+      }
+
       case "add_material": {
         addMaterial(data.material, this.#map);
         break;
@@ -146,6 +170,12 @@ export class SceneLoader {
         // Add materials
         if (data.scene.materials)
           data.scene.materials.forEach((m) => addMaterial(m, this.#map));
+
+        // Add meshes
+        if (data.scene.meshes)
+          data.scene.meshes.forEach((m) =>
+            addMesh(m, this.#map, this.visuals, this.#postMessage)
+          );
 
         // Add nodes
         if (data.scene.nodes) {

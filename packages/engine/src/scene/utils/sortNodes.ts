@@ -11,8 +11,8 @@ export function sortNodes(scene: Partial<SceneJSON>): NodeJSON[] {
   const meshes = scene.meshes || [];
 
   return nodes.sort((a, b) => {
-    const aDepth = entityDepth(nodes, a);
-    const bDepth = entityDepth(nodes, b);
+    const aDepth = nodeDepth(nodes, a);
+    const bDepth = nodeDepth(nodes, b);
 
     const aSkin = hasSkin(a, meshes);
     const bSkin = hasSkin(b, meshes);
@@ -30,11 +30,11 @@ function hasSkin(node: NodeJSON, meshes: MeshJSON[]) {
   return mesh?.type === "Primitives" && mesh.primitives.some((p) => p.skin);
 }
 
-function entityDepth(nodes: NodeJSON[], node: NodeJSON): number {
+function nodeDepth(nodes: NodeJSON[], node: NodeJSON): number {
   if (node.parentId === "root") return 0;
 
   const parent = nodes.find((e) => e.id === node.parentId);
   if (!parent) return 0;
 
-  return entityDepth(nodes, parent) + 1;
+  return nodeDepth(nodes, parent) + 1;
 }

@@ -48,7 +48,7 @@ export class MainScene {
     this.#toRenderThread = renderThread.postMessage.bind(renderThread);
 
     // Handle glTF loads
-    loaderThread.onGltfLoaded = ({ id, scene }) => {
+    loaderThread.onGltfLoaded = async ({ id, scene }) => {
       // Remove previous loaded glTF node
       const rootNodes = this.#map.glTFRootNodes.get(id);
       if (rootNodes) {
@@ -56,15 +56,15 @@ export class MainScene {
         this.#map.glTFRootNodes.delete(id);
       }
 
-      scene.nodes = scene.nodes.filter((entityJSON) => {
+      scene.nodes = scene.nodes.filter((nodeJSON) => {
         // Filter out root node
-        if (entityJSON.id === "root") return false;
+        if (nodeJSON.id === "root") return false;
 
         // Add top level nodes to the roots map
-        if (entityJSON.parentId === "root") {
-          entityJSON.parentId = id;
+        if (nodeJSON.parentId === "root") {
+          nodeJSON.parentId = id;
           const roots = this.#map.glTFRootNodes.get(id) ?? [];
-          roots.push(entityJSON.id);
+          roots.push(nodeJSON.id);
           this.#map.glTFRootNodes.set(id, roots);
         }
 
@@ -72,7 +72,7 @@ export class MainScene {
       });
 
       // Add loaded glTF to the scene
-      this.loadJSON(scene);
+      await this.loadJSON(scene);
 
       // Call glTF load callbacks
       const callback = this.#gltfLoadCallbacks.get(id);
@@ -105,7 +105,7 @@ export class MainScene {
                 this.#toLoaderThread({
                   subject: "load_gltf",
                   data: {
-                    id: node.id,
+                    id: mesh.id,
                     uri,
                   },
                 });
@@ -324,10 +324,10 @@ export class MainScene {
       const glTFs = json.meshes.filter((mesh) => mesh?.type === "glTF");
 
       await Promise.all(
-        glTFs.map((node) => {
+        glTFs.map((mesh) => {
           return new Promise<void>((resolve) => {
-            this.#gltfLoadCallbacks.set(node.id, () => {
-              this.#gltfLoadCallbacks.delete(node.id);
+            this.#gltfLoadCallbacks.set(mesh.id, () => {
+              this.#gltfLoadCallbacks.delete(mesh.id);
               resolve();
             });
           });

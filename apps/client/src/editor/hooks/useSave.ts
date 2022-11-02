@@ -148,7 +148,7 @@ export function useSave() {
       // glTF models
       if (mesh?.type === "glTF") {
         const uri = mesh.uri;
-        if (uri) promises.push(uploadFile(uri, id, "model"));
+        if (uri) promises.push(uploadFile(uri, mesh.id, "model"));
       }
 
       // Images

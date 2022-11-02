@@ -51,6 +51,11 @@ export default function Editor() {
 
       await engine.waitForReady();
 
+      engine.renderThread.postMessage({
+        subject: "show_visuals",
+        data: { visible: useEditorStore.getState().visuals },
+      });
+
       useEditorStore.setState({ engine, canvas });
     }
 

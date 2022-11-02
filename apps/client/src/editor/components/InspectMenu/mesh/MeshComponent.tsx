@@ -7,6 +7,7 @@ import {
 } from "@wired-labs/engine";
 
 import { addMesh } from "../../../actions/AddMeshAction";
+import { removeMesh } from "../../../actions/RemoveMeshAction";
 import { updateNode } from "../../../actions/UpdateNodeAction";
 import SelectMenu from "../../ui/SelectMenu";
 import ComponentMenu from "../ComponentMenu";
@@ -32,7 +33,10 @@ export default function MeshComponent({ nodeId, mesh }: Props) {
   return (
     <ComponentMenu
       title="Mesh"
-      onRemove={() => updateNode(nodeId, { meshId: null })}
+      onRemove={() => {
+        updateNode(nodeId, { meshId: null });
+        removeMesh(mesh.id);
+      }}
     >
       <MenuRows titles={["Type"]}>
         <SelectMenu
@@ -43,30 +47,34 @@ export default function MeshComponent({ nodeId, mesh }: Props) {
 
             switch (type) {
               case MeshType.Box: {
-                const mesh = new BoxMesh();
-                addMesh(mesh);
-                updateNode(nodeId, { meshId: mesh.id });
+                const newMesh = new BoxMesh();
+                addMesh(newMesh);
+                updateNode(nodeId, { meshId: newMesh.id });
+                removeMesh(mesh.id);
                 break;
               }
 
               case MeshType.Sphere: {
-                const mesh = new SphereMesh();
-                addMesh(mesh);
-                updateNode(nodeId, { meshId: mesh.id });
+                const newMesh = new SphereMesh();
+                addMesh(newMesh);
+                updateNode(nodeId, { meshId: newMesh.id });
+                removeMesh(mesh.id);
                 break;
               }
 
               case MeshType.Cylinder: {
-                const mesh = new CylinderMesh();
-                addMesh(mesh);
-                updateNode(nodeId, { meshId: mesh.id });
+                const newMesh = new CylinderMesh();
+                addMesh(newMesh);
+                updateNode(nodeId, { meshId: newMesh.id });
+                removeMesh(mesh.id);
                 break;
               }
 
               case MeshType.glTF: {
-                const mesh = new GLTFMesh();
-                addMesh(mesh);
-                updateNode(nodeId, { meshId: mesh.id });
+                const newMesh = new GLTFMesh();
+                addMesh(newMesh);
+                updateNode(nodeId, { meshId: newMesh.id });
+                removeMesh(mesh.id);
                 break;
               }
             }

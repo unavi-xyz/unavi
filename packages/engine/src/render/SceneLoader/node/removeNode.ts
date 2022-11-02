@@ -7,7 +7,7 @@ export function removeNode(nodeId: string, map: SceneMap) {
   const children = getChildren(nodeId, map);
   children.forEach((child) => removeNode(child.id, map));
 
-  // Remove node
+  // Remove from map
   map.nodes.delete(nodeId);
 
   // Remove object

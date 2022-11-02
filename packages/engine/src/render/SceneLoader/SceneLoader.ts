@@ -27,7 +27,6 @@ import { addMesh } from "./mesh/addMesh";
 import { removeMesh } from "./mesh/removeMesh";
 import { updateMesh } from "./mesh/updateMesh";
 import { addNode } from "./node/addNode";
-import { createColliderVisual } from "./node/createColliderVisual";
 import { removeNode } from "./node/removeNode";
 import { updateNode } from "./node/updateNode";
 import { SceneMap } from "./types";
@@ -184,17 +183,6 @@ export class SceneLoader {
           sortedNodes.forEach((e) =>
             addNode(e, this.#map, this.visuals, this.#postMessage)
           );
-
-          // Hull collider visuals require all children to be added
-          this.#map.nodes.forEach((e) => {
-            if (e.collider?.type === "hull" || e.collider?.type === "mesh")
-              createColliderVisual(
-                e.id,
-                this.#map,
-                this.visuals,
-                this.#postMessage
-              );
-          });
         }
 
         // Add animations
@@ -261,20 +249,20 @@ export class SceneLoader {
         case "Box":
         case "Sphere":
         case "Cylinder": {
-          const object = this.findObject(node.id);
+          const object = this.findObject(meshId);
           if (!object) throw new Error("Object not found");
           if (!(object instanceof Mesh))
             throw new Error("Object is not a mesh");
 
           const mesh = object as Mesh<BufferGeometry, MeshStandardMaterial>;
 
-          exportAttribute(node.id, "indices", "indices", mesh);
-          exportAttribute(node.id, "POSITION", "position", mesh);
-          exportAttribute(node.id, "NORMAL", "normal", mesh);
-          exportAttribute(node.id, "TANGENT", "tangent", mesh);
-          exportAttribute(node.id, "TEXCOORD_0", "uv", mesh);
-          exportAttribute(node.id, "TEXCOORD_1", "tangent", mesh);
-          exportAttribute(node.id, "COLOR_0", "color", mesh);
+          exportAttribute(meshId, "indices", "indices", mesh);
+          exportAttribute(meshId, "POSITION", "position", mesh);
+          exportAttribute(meshId, "NORMAL", "normal", mesh);
+          exportAttribute(meshId, "TANGENT", "tangent", mesh);
+          exportAttribute(meshId, "TEXCOORD_0", "uv", mesh);
+          exportAttribute(meshId, "TEXCOORD_1", "tangent", mesh);
+          exportAttribute(meshId, "COLOR_0", "color", mesh);
           break;
         }
       }

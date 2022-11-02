@@ -156,7 +156,7 @@ export class Scene {
       if (!mesh) throw new Error(`Mesh ${node.meshId} not found`);
 
       const isUsed = Object.values(this.nodes).some(
-        (node) => node.meshId === node.meshId
+        (n) => n.meshId === node.meshId
       );
 
       if (!isUsed) {

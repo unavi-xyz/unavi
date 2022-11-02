@@ -24,7 +24,6 @@ import { SceneMap } from "../types";
 import { copyTransform } from "../utils/copyTransform";
 import { createAttribute } from "./createAttribute";
 import { createSkeletons } from "./createSkeletons";
-import { updateMeshMaterial } from "./updateMeshMaterial";
 
 export function createObject(
   meshId: string,
@@ -224,6 +223,7 @@ export function createObject(
     }
 
     default: {
+      // TODO: move this to node, not mesh
       // Check if joint
       let isJoint = false;
       map.nodes.forEach((node) => {
@@ -244,9 +244,6 @@ export function createObject(
       if (isJoint) createSkeletons(map);
     }
   }
-
-  // Update mesh material
-  updateMeshMaterial(mesh.id, map);
 
   // Remove old object
   if (oldObject) disposeObject(oldObject);

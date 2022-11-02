@@ -15,6 +15,11 @@ export function updateMesh(
   visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
 ) {
+  const mesh = map.meshes.get(meshId);
+  if (!mesh) throw new Error("Mesh not found");
+
+  Object.assign(mesh, data);
+
   const oldObject = map.objects.get(meshId);
   const position = oldObject ? oldObject.position.clone() : new Vector3();
   const quaternion = oldObject
@@ -30,10 +35,6 @@ export function updateMesh(
   object.position.copy(position);
   object.quaternion.copy(quaternion);
   object.scale.copy(scale);
-
-  // Update material
-  const mesh = map.meshes.get(meshId);
-  if (!mesh) throw new Error("Mesh not found");
 
   if (object instanceof Mesh) {
     const material = mesh.materialId

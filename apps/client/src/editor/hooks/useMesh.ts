@@ -12,7 +12,10 @@ export function useMesh<T = Mesh>(
   const [value, setValue] = useState<T | null>(null);
 
   useEffect(() => {
-    if (!id || !meshes$) return;
+    if (!meshes$ || !id) {
+      setValue(null);
+      return;
+    }
 
     const subscription = meshes$.subscribe({
       next: (meshes) => {

@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import Button from "../../../ui/Button";
 import DropdownMenu from "../../../ui/DropdownMenu";
-import { updateMesh } from "../../actions/UpdateMeshAction";
+import { addMesh } from "../../actions/AddMeshAction";
 import { updateNode } from "../../actions/UpdateNodeAction";
 import { useMesh } from "../../hooks/useMesh";
 import { useNode } from "../../hooks/useNode";
@@ -83,7 +83,8 @@ export default function InspectMenu() {
                           key={type}
                           onClick={() => {
                             const mesh = new BoxMesh();
-                            updateMesh(selectedId, mesh.toJSON());
+                            addMesh(mesh);
+                            updateNode(selectedId, { meshId: mesh.id });
                           }}
                         >
                           Mesh

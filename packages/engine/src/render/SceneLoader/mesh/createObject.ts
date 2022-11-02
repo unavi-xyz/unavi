@@ -108,6 +108,10 @@ export function createObject(
     }
 
     case "Primitives": {
+      const primitivesGroup = new Group();
+      map.objects.set(mesh.id, primitivesGroup);
+      oldObject?.parent?.add(primitivesGroup);
+
       mesh.primitives.map((primitive) => {
         // Create geometry
         const geometry = new BufferGeometry();
@@ -194,9 +198,8 @@ export function createObject(
         primitiveMesh.updateMorphTargets();
         primitiveMesh.morphTargetInfluences = [...primitive.weights];
 
-        // Add to scene
-        map.objects.set(primitive.id, primitiveMesh);
-        oldObject?.parent?.add(primitiveMesh);
+        // Add to group
+        primitivesGroup.add(primitiveMesh);
 
         // Convert all joints to bones
         primitive.skin?.jointIds.forEach((jointId) => {

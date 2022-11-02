@@ -43,6 +43,7 @@ export class PrimitivesMesh {
     const primitives = this.primitives.map((primitive) => primitive.toJSON());
     return {
       type: this.type,
+      isInternal: this.isInternal,
       id: this.id,
       name: this.name,
       materialId: null,
@@ -52,6 +53,8 @@ export class PrimitivesMesh {
 
   applyJSON(json: Partial<PrimitivesMeshJSON>) {
     if (json.name !== undefined) this.name = json.name;
+    if (json.isInternal !== undefined) this.isInternal = json.isInternal;
+    if (json.materialId !== undefined) this.materialId = json.materialId;
     if (json.primitives !== undefined)
       this.primitives = json.primitives.map((primitiveJSON) => {
         const primitive = new Primitive();

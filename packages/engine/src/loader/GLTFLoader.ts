@@ -243,8 +243,6 @@ export class GLTFLoader {
         // If the mesh is used by multiple nodes, clone the mesh
         const isSingleUse = gltfMesh.listParents().length === 1;
 
-        // TODO verify this works
-
         if (isSingleUse) {
           mesh.primitives.forEach(
             (primitive) => (primitive.weights = nodeWeights)
@@ -295,7 +293,8 @@ export class GLTFLoader {
             break;
           }
 
-          const hull = new HullCollider(node.meshId);
+          const hull = new HullCollider();
+          hull.meshId = node.meshId;
           node.collider = hull;
           break;
         }
@@ -306,7 +305,8 @@ export class GLTFLoader {
             break;
           }
 
-          const mesh = new MeshCollider(node.meshId);
+          const mesh = new MeshCollider();
+          mesh.meshId = node.meshId;
           node.collider = mesh;
           break;
         }

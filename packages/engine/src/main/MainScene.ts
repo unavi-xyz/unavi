@@ -120,20 +120,12 @@ export class MainScene {
     this.#scene.spawn$.subscribe((spawn) => {
       this.#toRenderThread({
         subject: "load_json",
-        data: {
-          scene: {
-            spawn,
-          },
-        },
+        data: { scene: { spawn } },
       });
 
       this.#toPhysicsThread({
         subject: "load_json",
-        data: {
-          scene: {
-            spawn,
-          },
-        },
+        data: { scene: { spawn } },
       });
     });
   }

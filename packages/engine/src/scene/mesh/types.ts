@@ -40,6 +40,7 @@ export interface GLTFMeshJSON extends BaseMeshJSON {
 
 export interface PrimitivesMeshJSON {
   type: "Primitives";
+  isInternal: boolean;
   id: string;
   name: string | null;
   materialId: null;

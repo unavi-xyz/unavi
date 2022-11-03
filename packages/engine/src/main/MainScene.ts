@@ -29,7 +29,6 @@ export class MainScene {
 
   #map = {
     loadedGltfUris: new Map<string, string | null>(),
-    glTFRootNodes: new Map<string, string[]>(),
   };
 
   #gltfLoadCallbacks = new Map<string, () => void>();
@@ -49,24 +48,17 @@ export class MainScene {
 
     // Handle glTF loads
     loaderThread.onGltfLoaded = async ({ id, scene }) => {
-      // Remove previous loaded glTF node
-      const rootNodes = this.#map.glTFRootNodes.get(id);
-      if (rootNodes) {
-        rootNodes.forEach((nodeId) => this.removeNode(nodeId));
-        this.#map.glTFRootNodes.delete(id);
-      }
+      const parentNode = Object.values(this.#scene.nodes).find(
+        (node) => node.meshId === id
+      );
+      if (!parentNode) return;
 
+      // Attach nodes to parent
       scene.nodes = scene.nodes.filter((nodeJSON) => {
         // Filter out root node
         if (nodeJSON.id === "root") return false;
 
-        // Add top level nodes to the roots map
-        if (nodeJSON.parentId === "root") {
-          nodeJSON.parentId = id;
-          const roots = this.#map.glTFRootNodes.get(id) ?? [];
-          roots.push(nodeJSON.id);
-          this.#map.glTFRootNodes.set(id, roots);
-        }
+        if (nodeJSON.parentId === "root") nodeJSON.parentId = parentNode.id;
 
         return true;
       });
@@ -88,18 +80,8 @@ export class MainScene {
           if (mesh?.type === "glTF") {
             mesh.uri$.subscribe((uri) => {
               const loadedURI = this.#map.loadedGltfUris.get(node.id);
-              if (uri !== loadedURI) {
+              if (uri && uri !== loadedURI) {
                 this.#map.loadedGltfUris.set(node.id, uri);
-
-                if (uri === null) {
-                  // Remove loaded glTF
-                  const rootNodes = this.#map.glTFRootNodes.get(node.id);
-                  if (rootNodes) {
-                    rootNodes.forEach((nodeId) => this.removeNode(nodeId));
-                    this.#map.glTFRootNodes.delete(node.id);
-                  }
-                  return;
-                }
 
                 // Load glTF
                 this.#toLoaderThread({

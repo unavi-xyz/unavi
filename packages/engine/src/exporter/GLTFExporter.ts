@@ -155,6 +155,7 @@ export class GLTFExporter {
   #parseNode(node: Node) {
     // Create node
     const gltfNode = this.#doc.createNode(node.name);
+    this.#cache.nodes.set(node.id, gltfNode);
 
     // Add to scene
     this.#gltfScene.addChild(gltfNode);
@@ -214,8 +215,6 @@ export class GLTFExporter {
 
     // Parse children
     node.children.forEach((child) => this.#parseNode(child));
-
-    this.#cache.nodes.set(node.id, gltfNode);
   }
 
   #parseMesh(meshId: string): IMesh {
@@ -270,6 +269,13 @@ export class GLTFExporter {
           // Create primitive
           const gltfPrimitive = this.#doc.createPrimitive();
           gltfMesh.addPrimitive(gltfPrimitive);
+
+          // Set material
+          if (primitive.materialId) {
+            const material = this.#cache.materials.get(primitive.materialId);
+            if (!material) throw new Error("Material not found");
+            gltfPrimitive.setMaterial(material);
+          }
 
           // Set mode
           gltfPrimitive.setMode(primitive.mode);

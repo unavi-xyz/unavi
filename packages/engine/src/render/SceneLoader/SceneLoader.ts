@@ -41,6 +41,7 @@ export class SceneLoader {
   contents = new Group();
   mixer = new AnimationMixer(this.root);
 
+  #showVisuals = false;
   #sun = new DirectionalLight(0xfff0db, 0.98);
   #spawn = new Mesh(
     new CylinderGeometry(0.5, 0.5, 1.6, 8),
@@ -83,9 +84,7 @@ export class SceneLoader {
 
     switch (subject) {
       case "show_visuals": {
-        this.root.traverse((object) => {
-          if (object.name === ObjectName.Visual) object.visible = data.visible;
-        });
+        this.#showVisuals = data.visible;
         break;
       }
 
@@ -186,8 +185,15 @@ export class SceneLoader {
       }
     }
 
+    this.#updateVisuals();
     this.#updateShadowMap();
   };
+
+  #updateVisuals() {
+    this.root.traverse((object) => {
+      if (object.name === ObjectName.Visual) object.visible = this.#showVisuals;
+    });
+  }
 
   prepareExport() {
     const exportData: RenderExport = [];

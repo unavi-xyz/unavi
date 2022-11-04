@@ -92,9 +92,7 @@ export default function ExampleCanvas() {
     node.meshId = mesh.id;
     engine.scene.addNode(node);
 
-    return () => {
-      engine.scene.removeNode(node.id);
-    };
+    return () => engine.scene.removeNode(node.id);
   }, [engine, uri]);
 
   const loadedClass = loaded ? "opacity-100" : "opacity-0";
@@ -119,7 +117,7 @@ export default function ExampleCanvas() {
   }
 
   return (
-    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+    <div ref={containerRef} className="relative h-screen w-full">
       <canvas ref={canvasRef} className={`h-full w-full ${loadedClass}`} />
     </div>
   );

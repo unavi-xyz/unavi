@@ -2,14 +2,10 @@ import Link from "next/link";
 
 import SidebarButton from "./SidebarButton";
 
-interface Props {
-  children: React.ReactNode;
-}
-
-export default function Sidebar({ children }: Props) {
+export default function Sidebar() {
   return (
-    <div className="flex h-full">
-      <div className="z-40 h-full shrink-0 space-y-2 overflow-y-scroll bg-white p-6 pt-4">
+    <div className="absolute left-0 z-40 h-full overflow-y-auto bg-white">
+      <div className="shrink-0 space-y-2 p-6 pt-4">
         <Link href="/">
           <div className="cursor-pointer text-center text-2xl font-bold">
             Examples
@@ -186,8 +182,6 @@ export default function Sidebar({ children }: Props) {
           </SidebarButton>
         </div>
       </div>
-
-      <div className="w-full">{children}</div>
     </div>
   );
 }

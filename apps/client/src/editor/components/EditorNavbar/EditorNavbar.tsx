@@ -43,13 +43,7 @@ export default function EditorNavbar() {
   }
 
   async function handlePreview() {
-    const { engine } = useEditorStore.getState();
-    if (!engine) throw new Error("Engine not found");
-
-    // Save scene
     await save();
-
-    // Navigate to preview page
     router.push(`/editor/${id}/preview`);
   }
 

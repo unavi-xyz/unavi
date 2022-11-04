@@ -1,4 +1,4 @@
-import { Entity, GLTFMesh } from "@wired-labs/engine";
+import { GLTFMesh, Node } from "@wired-labs/engine";
 import { useEffect, useMemo, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -50,6 +50,11 @@ export default function Editor() {
       });
 
       await engine.waitForReady();
+
+      engine.renderThread.postMessage({
+        subject: "show_visuals",
+        data: { visible: useEditorStore.getState().visuals },
+      });
 
       useEditorStore.setState({ engine, canvas });
     }
@@ -129,19 +134,20 @@ export default function Editor() {
               file.name.endsWith(".gltf") || file.name.endsWith(".glb");
             if (!isGLTF) return;
 
-            // Create entity
+            // Create mesh
             const mesh = new GLTFMesh();
             mesh.name = file.name;
             mesh.uri = URL.createObjectURL(file);
 
-            const entity = new Entity();
-            entity.mesh = mesh;
+            // Create node
+            const node = new Node();
+            node.meshId = mesh.id;
 
             const name = file.name.split(".").slice(0, -1).join(".");
-            entity.name = name;
+            node.name = name;
 
-            // Add entity to scene
-            engine.scene.addEntity(entity);
+            // Add node to scene
+            engine.scene.addNode(node);
           }}
         >
           <div className="z-10 h-14 w-full border-b">

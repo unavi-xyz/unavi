@@ -1,8 +1,8 @@
 import { useRef } from "react";
 import { useDrop } from "react-dnd";
 
-import { moveEntity } from "../../actions/MoveEntityAction";
-import { useEntity } from "../../hooks/useEntity";
+import { moveNode } from "../../actions/MoveNodeAction";
+import { useNode } from "../../hooks/useNode";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import { DND_TYPES } from "../../types";
@@ -14,19 +14,19 @@ type DragItem = {
 
 export default function TreeMenuRoot() {
   const ref = useRef<HTMLDivElement>(null);
-  const childrenIds$ = useEntity("root", (entity) => entity.childrenIds$);
+  const childrenIds$ = useNode("root", (node) => node.childrenIds$);
   const childrenIds = useSubscribeValue(childrenIds$);
 
   // Create drop target
   const [, drop] = useDrop(
     () => ({
-      accept: DND_TYPES.Entity,
+      accept: DND_TYPES.Node,
       drop({ id: droppedId }: DragItem, monitor) {
         const didDrop = monitor.didDrop();
         if (didDrop) return;
 
         // Move to root
-        moveEntity(droppedId, "root");
+        moveNode(droppedId, "root");
       },
       collect: () => ({}),
     }),

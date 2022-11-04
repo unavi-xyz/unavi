@@ -4,7 +4,7 @@ import { Quad, Triplet, WorkerMessage } from "../types";
 import { ColliderJSON } from "./collider/types";
 import { MeshJSON } from "./mesh/types";
 
-export type EntityJSON = {
+export type NodeJSON = {
   id: string;
   isInternal: boolean;
   name: string;
@@ -12,8 +12,7 @@ export type EntityJSON = {
   position: Triplet;
   rotation: Quad;
   scale: Triplet;
-  mesh: MeshJSON | null;
-  materialId: string | null;
+  meshId: string | null;
   collider: ColliderJSON | null;
 };
 
@@ -94,12 +93,12 @@ export type AnimationJSON = {
 
 export interface SceneJSON {
   spawn: Triplet | null;
-
-  entities: EntityJSON[];
-  materials: MaterialJSON[];
   accessors: AccessorJSON[];
-  images: ImageJSON[];
   animations: AnimationJSON[];
+  images: ImageJSON[];
+  materials: MaterialJSON[];
+  meshes: MeshJSON[];
+  nodes: NodeJSON[];
 }
 
 // Messages
@@ -111,22 +110,41 @@ export type SceneMessage =
       }
     >
   | WorkerMessage<
-      "add_entity",
+      "add_node",
       {
-        entity: EntityJSON;
+        node: NodeJSON;
       }
     >
   | WorkerMessage<
-      "remove_entity",
+      "update_node",
       {
-        entityId: string;
+        nodeId: string;
+        data: Partial<NodeJSON>;
       }
     >
   | WorkerMessage<
-      "update_entity",
+      "remove_node",
       {
-        entityId: string;
-        data: Partial<EntityJSON>;
+        nodeId: string;
+      }
+    >
+  | WorkerMessage<
+      "add_mesh",
+      {
+        mesh: MeshJSON;
+      }
+    >
+  | WorkerMessage<
+      "update_mesh",
+      {
+        meshId: string;
+        data: Partial<MeshJSON>;
+      }
+    >
+  | WorkerMessage<
+      "remove_mesh",
+      {
+        meshId: string;
       }
     >
   | WorkerMessage<
@@ -136,15 +154,15 @@ export type SceneMessage =
       }
     >
   | WorkerMessage<
-      "remove_material",
-      {
-        materialId: string;
-      }
-    >
-  | WorkerMessage<
       "update_material",
       {
         materialId: string;
         data: Partial<MaterialJSON>;
+      }
+    >
+  | WorkerMessage<
+      "remove_material",
+      {
+        materialId: string;
       }
     >;

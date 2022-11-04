@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import {
   AppId,
   PublicationMainFocus,
@@ -6,9 +7,8 @@ import {
   PublicationMetadataVersions,
 } from "@wired-labs/lens";
 import { nanoid } from "nanoid";
-import Image from "next/image";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useCreatePost } from "../../../client/lens/hooks/useCreatePost";
 import { useLens } from "../../../client/lens/hooks/useLens";
@@ -65,6 +65,17 @@ export default function PublishPage() {
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (imageFile || !imageURL) return;
+
+    fetch(imageURL)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const file = new File([blob], "image.jpg", { type: blob.type });
+        setImageFile(file);
+      });
+  }, [imageFile, imageURL]);
 
   async function handlePublish() {
     setLoading(true);
@@ -205,11 +216,10 @@ export default function PublishPage() {
 
     // Redirect to profile
     if (success) router.push(`/user/${handle}`);
-
-    setLoading(false);
+    else setLoading(false);
   }
 
-  const image = imageFile ? URL.createObjectURL(imageFile) : imageURL;
+  const image = imageFile ? URL.createObjectURL(imageFile) : null;
 
   return (
     <div className="space-y-8">
@@ -245,11 +255,9 @@ export default function PublishPage() {
 
           {image && (
             <div className="relative aspect-card h-full w-full rounded-xl bg-primaryContainer">
-              <Image
+              <img
                 src={image}
-                fill
-                sizes="496px"
-                alt="cover picture preview"
+                alt="picture preview"
                 className="h-full w-full rounded-xl object-cover"
               />
             </div>

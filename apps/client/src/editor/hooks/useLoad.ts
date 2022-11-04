@@ -6,6 +6,7 @@ import { trpc } from "../../client/trpc";
 import { useEditorStore } from "../store";
 import { SavedSceneJSON } from "../types";
 import { imageStorageKey, modelStorageKey } from "../utils/fileStorage";
+import { updateGltfColliders } from "../utils/updateGltfColliders";
 
 export function useLoad() {
   const router = useRouter();
@@ -65,10 +66,12 @@ export function useLoad() {
       useEditorStore.setState(editorState);
 
       const visuals = useEditorStore.getState().visuals;
-      engine.renderThread.postMessage({
-        subject: "show_visuals",
-        data: { visible: visuals },
-      });
+      engine.renderThread.waitForReady().then(() =>
+        engine.renderThread.postMessage({
+          subject: "show_visuals",
+          data: { visible: visuals },
+        })
+      );
     }
   }, [engine, project]);
 
@@ -86,18 +89,16 @@ export function useLoad() {
       };
 
       // Load glTF models
-      const modelPromises = savedScene.entities.map(async (entity) => {
-        if (entity.mesh?.type === "glTF" && entity.mesh.uri) {
-          const file = fileURLs.find(
-            (f) => f.id === modelStorageKey(entity.id)
-          );
+      const modelPromises = savedScene.meshes.map(async (mesh) => {
+        if (mesh.type === "glTF" && mesh.uri) {
+          const file = fileURLs.find((f) => f.id === modelStorageKey(mesh.id));
           if (!file) throw new Error("File not found");
 
           const response = await fetch(file.uri);
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
 
-          entity.mesh.uri = url;
+          mesh.uri = url;
         }
       });
 
@@ -129,7 +130,12 @@ export function useLoad() {
       await engine.scene.loadJSON(scene);
 
       // Start engine
-      engine.start();
+      await engine.start();
+
+      // Update colliders
+      Object.keys(engine.scene.nodes).forEach((nodeId) =>
+        updateGltfColliders(nodeId)
+      );
 
       useEditorStore.setState({ sceneLoaded: true });
     }

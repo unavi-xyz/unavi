@@ -106,11 +106,11 @@ export default function ProfileLayout({
               <div className="flex w-full justify-center space-x-2">
                 {handle === viewerHandle ? (
                   <Link href="/settings" passHref>
-                    <a>
+                    <div>
                       <Button variant="outlined" rounded="small">
                         <div className="px-6">Edit profile</div>
                       </Button>
-                    </a>
+                    </div>
                   </Link>
                 ) : (
                   <div>

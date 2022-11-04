@@ -1,17 +1,17 @@
 import { CylinderMesh } from "@wired-labs/engine";
 
-import { updateEntity } from "../../../actions/UpdateEntityAction";
+import { updateMesh } from "../../../actions/UpdateMeshAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import NumberInput from "../../ui/NumberInput";
 import MaterialComponent from "../MaterialComponent";
 import MenuRows from "../MenuRows";
 
 interface Props {
-  entityId: string;
+  nodeId: string;
   mesh: CylinderMesh;
 }
 
-export default function CylinderMeshComponent({ entityId, mesh }: Props) {
+export default function CylinderMeshComponent({ nodeId, mesh }: Props) {
   const radius = useSubscribeValue(mesh.radius$);
   const height = useSubscribeValue(mesh.height$);
   const radialSegments = useSubscribeValue(mesh.radialSegments$);
@@ -38,16 +38,14 @@ export default function CylinderMeshComponent({ entityId, mesh }: Props) {
                 const num = parseFloat(value);
                 const rounded = Math.round(num * 1000) / 1000;
 
-                mesh[property] = rounded;
-
-                updateEntity(entityId, { mesh: mesh.toJSON() });
+                updateMesh(mesh.id, { [property]: rounded });
               }}
             />
           );
         })}
       </MenuRows>
 
-      <MaterialComponent entityId={entityId} />
+      <MaterialComponent nodeId={nodeId} />
     </>
   );
 }

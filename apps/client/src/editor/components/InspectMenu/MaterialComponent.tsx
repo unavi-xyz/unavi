@@ -8,10 +8,11 @@ import DropdownMenu from "../../../ui/DropdownMenu";
 import { hexToRgb } from "../../../utils/rgb";
 import { addMaterial } from "../../actions/AddMaterialAction";
 import { removeMaterial } from "../../actions/RemoveMaterialAction";
-import { updateEntity } from "../../actions/UpdateEntityAction";
 import { updateMaterial } from "../../actions/UpdateMaterialAction";
-import { useEntity } from "../../hooks/useEntity";
+import { updateMesh } from "../../actions/UpdateMeshAction";
 import { useMaterial } from "../../hooks/useMaterial";
+import { useMesh } from "../../hooks/useMesh";
+import { useNode } from "../../hooks/useNode";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import ColorInput from "../ui/ColorInput";
@@ -20,12 +21,14 @@ import TextInput from "../ui/TextInput";
 import MenuRows from "./MenuRows";
 
 interface Props {
-  entityId: string;
+  nodeId: string;
 }
 
-export default function MaterialComponent({ entityId }: Props) {
-  const entity = useEntity(entityId);
-  const materialId = useSubscribeValue(entity?.materialId$);
+export default function MaterialComponent({ nodeId }: Props) {
+  const node = useNode(nodeId);
+  const meshId = useSubscribeValue(node?.meshId$);
+  const mesh = useMesh(meshId);
+  const materialId = useSubscribeValue(mesh?.materialId$);
   const material = useMaterial(materialId);
 
   const name = useSubscribeValue(material?.name$);
@@ -44,10 +47,13 @@ export default function MaterialComponent({ entityId }: Props) {
   const [open, setOpen] = useState(false);
 
   function createMaterial() {
+    if (!mesh) throw new Error("Mesh not found");
     const newMaterial = new Material();
     addMaterial(newMaterial);
-    updateEntity(entityId, { materialId: newMaterial.id });
+    updateMesh(mesh.id, { materialId: newMaterial.id });
   }
+
+  if (!mesh) return null;
 
   return (
     <>
@@ -75,7 +81,7 @@ export default function MaterialComponent({ entityId }: Props) {
               />
 
               <button
-                onClick={() => updateEntity(entityId, { materialId: null })}
+                onClick={() => updateMesh(mesh.id, { materialId: null })}
                 className="flex h-full cursor-default items-center px-2 text-lg text-outline transition hover:text-black"
               >
                 <MdClose />
@@ -101,7 +107,7 @@ export default function MaterialComponent({ entityId }: Props) {
                         materialId={material.id}
                         selectedId={materialId}
                         onClick={() =>
-                          updateEntity(entityId, { materialId: material.id })
+                          updateMesh(mesh.id, { materialId: material.id })
                         }
                       />
                     </div>

@@ -1,4 +1,4 @@
-import { Entity, GLTFMesh } from "@wired-labs/engine";
+import { GLTFMesh, Node } from "@wired-labs/engine";
 import { useEffect, useRef, useState } from "react";
 
 import { useStore } from "./store";
@@ -62,9 +62,7 @@ export default function ExampleCanvas() {
       useStore.setState({ engine: newEngine });
 
       // Start engine
-      newEngine.start().then(() => {
-        setLoaded(true);
-      });
+      newEngine.start().then(() => setLoaded(true));
     }
 
     initEngine();
@@ -76,24 +74,24 @@ export default function ExampleCanvas() {
     return () => {
       engine.destroy();
       window.removeEventListener("resize", updateCanvasSize);
-      if (process.env.NODE_ENV === "development") window.location.reload();
     };
   }, [engine]);
 
   useEffect(() => {
     if (!engine || !uri) return;
 
-    // Create glTF entity
-    const entity = new Entity();
+    // Create glTF
     const mesh = new GLTFMesh();
     mesh.uri = uri;
-    entity.mesh = mesh;
+    engine.scene.addMesh(mesh);
 
-    // Add entity to scene
-    engine.scene.addEntity(entity);
+    const node = new Node();
+    node.meshId = mesh.id;
+    engine.scene.addNode(node);
 
     return () => {
-      engine.scene.removeEntity(entity.id);
+      engine.scene.removeMesh(mesh.id);
+      engine.scene.removeNode(node.id);
     };
   }, [engine, uri]);
 
@@ -119,7 +117,7 @@ export default function ExampleCanvas() {
   }
 
   return (
-    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+    <div ref={containerRef} className="relative h-screen w-full">
       <canvas ref={canvasRef} className={`h-full w-full ${loadedClass}`} />
     </div>
   );

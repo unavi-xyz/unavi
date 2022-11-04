@@ -10,7 +10,7 @@ export type ToPhysicsMessage =
   | WorkerMessage<
       "set_global_transform",
       {
-        entityId: string;
+        nodeId: string;
         position: Triplet;
         rotation: Quad;
       }
@@ -19,7 +19,7 @@ export type ToPhysicsMessage =
   | WorkerMessage<
       "set_collider_geometry",
       {
-        entityId: string;
+        nodeId: string;
         positions: Float32Array;
         indices?: Uint32Array;
       }

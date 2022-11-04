@@ -3,38 +3,53 @@ import { GLTF } from "@gltf-transform/core";
 import { BoxMesh } from "./BoxMesh";
 import { CylinderMesh } from "./CylinderMesh";
 import { GLTFMesh } from "./GLTFMesh";
-import { PrimitiveMesh } from "./PrimitiveMesh";
+import { PrimitivesMesh } from "./PrimitivesMesh";
 import { SphereMesh } from "./SphereMesh";
-export type BoxMeshJSON = {
+
+export interface BaseMeshJSON {
+  id: string;
+  materialId: string | null;
+}
+
+export interface BoxMeshJSON extends BaseMeshJSON {
   type: "Box";
   width: number;
   height: number;
   depth: number;
-};
+}
 
-export type SphereMeshJSON = {
+export interface SphereMeshJSON extends BaseMeshJSON {
   type: "Sphere";
   radius: number;
   widthSegments: number;
   heightSegments: number;
-};
+}
 
-export type CylinderMeshJSON = {
+export interface CylinderMeshJSON extends BaseMeshJSON {
   type: "Cylinder";
   radius: number;
   height: number;
   radialSegments: number;
-};
+}
 
-export type GLTFMeshJSON = {
+export interface GLTFMeshJSON extends BaseMeshJSON {
   type: "glTF";
   name: string | null;
   uri: string | null;
-};
+}
 
-export type PrimitiveMeshJSON = {
-  type: "Primitive";
-  gltfId: string | null;
+export interface PrimitivesMeshJSON {
+  type: "Primitives";
+  isInternal: boolean;
+  id: string;
+  name: string | null;
+  materialId: null;
+  primitives: PrimitiveJSON[];
+}
+
+export interface PrimitiveJSON {
+  id: string;
+  materialId: string | null;
   mode: GLTF.MeshPrimitiveMode;
   indicesId: string | null;
   weights: number[];
@@ -53,18 +68,18 @@ export type PrimitiveMeshJSON = {
     inverseBindMatricesId: string;
     jointIds: string[];
   };
-};
+}
 
 export type MeshJSON =
   | BoxMeshJSON
   | SphereMeshJSON
   | CylinderMeshJSON
   | GLTFMeshJSON
-  | PrimitiveMeshJSON;
+  | PrimitivesMeshJSON;
 
 export type Mesh =
   | BoxMesh
   | SphereMesh
   | CylinderMesh
   | GLTFMesh
-  | PrimitiveMesh;
+  | PrimitivesMesh;

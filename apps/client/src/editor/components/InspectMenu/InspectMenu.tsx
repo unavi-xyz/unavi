@@ -3,8 +3,10 @@ import { useState } from "react";
 
 import Button from "../../../ui/Button";
 import DropdownMenu from "../../../ui/DropdownMenu";
-import { updateEntity } from "../../actions/UpdateEntityAction";
-import { useEntity } from "../../hooks/useEntity";
+import { addMesh } from "../../actions/AddMeshAction";
+import { updateNode } from "../../actions/UpdateNodeAction";
+import { useMesh } from "../../hooks/useMesh";
+import { useNode } from "../../hooks/useNode";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import MeshComponent from "./mesh/MeshComponent";
@@ -19,11 +21,13 @@ enum ComponentType {
 
 export default function InspectMenu() {
   const selectedId = useEditorStore((state) => state.selectedId);
-  const entity = useEntity(selectedId);
+  const node = useNode(selectedId);
 
-  const name = useSubscribeValue(entity?.name$);
-  const mesh = useSubscribeValue(entity?.mesh$);
-  const collider = useSubscribeValue(entity?.collider$);
+  const name = useSubscribeValue(node?.name$);
+  const meshId = useSubscribeValue(node?.meshId$);
+  const collider = useSubscribeValue(node?.collider$);
+
+  const mesh = useMesh(meshId);
 
   const [open, setOpen] = useState(false);
 
@@ -51,17 +55,17 @@ export default function InspectMenu() {
           type="text"
           value={name ?? ""}
           onChange={(e) => {
-            updateEntity(selectedId, { name: e.target.value });
+            updateNode(selectedId, { name: e.target.value });
           }}
           className="rounded-lg py-0.5 text-center text-2xl font-bold transition hover:bg-neutral-100 hover:shadow-inner"
         />
       </div>
 
       <div className="space-y-4">
-        <TransformComponent entityId={selectedId} />
+        <TransformComponent nodeId={selectedId} />
 
-        {mesh && <MeshComponent entityId={selectedId} mesh={mesh} />}
-        {collider && <PhysicsComponent entityId={selectedId} />}
+        {mesh && <MeshComponent nodeId={selectedId} mesh={mesh} />}
+        {collider && <PhysicsComponent nodeId={selectedId} />}
 
         {otherComponents.length > 0 && (
           <div className="px-5">
@@ -79,7 +83,8 @@ export default function InspectMenu() {
                           key={type}
                           onClick={() => {
                             const mesh = new BoxMesh();
-                            updateEntity(selectedId, { mesh: mesh.toJSON() });
+                            addMesh(mesh);
+                            updateNode(selectedId, { meshId: mesh.id });
                           }}
                         >
                           Mesh
@@ -92,7 +97,7 @@ export default function InspectMenu() {
                         <ComponentButton
                           key={type}
                           onClick={() => {
-                            updateEntity(selectedId, {
+                            updateNode(selectedId, {
                               collider: {
                                 type: "box",
                                 size: [1, 1, 1],

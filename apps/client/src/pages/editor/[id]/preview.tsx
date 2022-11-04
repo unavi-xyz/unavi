@@ -1,4 +1,4 @@
-import { Entity, GLTFMesh, SceneJSON } from "@wired-labs/engine";
+import { GLTFMesh, Node, SceneJSON } from "@wired-labs/engine";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -11,6 +11,7 @@ import {
   imageStorageKey,
   modelStorageKey,
 } from "../../../editor/utils/fileStorage";
+import { updateGltfColliders } from "../../../editor/utils/updateGltfColliders";
 import MetaTags from "../../../home/MetaTags";
 import Spinner from "../../../ui/Spinner";
 
@@ -26,29 +27,41 @@ export default function Preview() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data: project } = trpc.useQuery(["auth.project", { id }], {
-    enabled: id !== undefined,
-    cacheTime: 0,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
-  });
+  const { data: project } = trpc.auth.project.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      cacheTime: 0,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      trpc: {},
+    }
+  );
 
-  const { data: sceneURL } = trpc.useQuery(["auth.project-scene", { id }], {
-    enabled: id !== undefined,
-    cacheTime: 0,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
-  });
+  const { data: sceneURL } = trpc.auth.projectScene.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      cacheTime: 0,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      trpc: {},
+    }
+  );
 
-  const { data: fileURLs } = trpc.useQuery(["auth.project-files", { id }], {
-    enabled: id !== undefined,
-    cacheTime: 0,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
-  });
+  const { data: fileURLs } = trpc.auth.projectFiles.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      cacheTime: 0,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      trpc: {},
+    }
+  );
 
   useEffect(() => {
     if (!engine || !project?.editorState) return;
@@ -112,24 +125,23 @@ export default function Preview() {
         spawn: savedScene.spawn,
         accessors: savedScene.accessors,
         animations: savedScene.animations,
-        entities: savedScene.entities,
-        materials: savedScene.materials,
         images: [],
+        materials: savedScene.materials,
+        meshes: savedScene.meshes,
+        nodes: savedScene.nodes,
       };
 
       // Load glTF models
-      const modelPromises = savedScene.entities.map(async (entity) => {
-        if (entity.mesh?.type === "glTF" && entity.mesh.uri) {
-          const file = fileURLs.find(
-            (f) => f.id === modelStorageKey(entity.id)
-          );
+      const modelPromises = savedScene.meshes.map(async (mesh) => {
+        if (mesh?.type === "glTF" && mesh.uri) {
+          const file = fileURLs.find((f) => f.id === modelStorageKey(mesh.id));
           if (!file) throw new Error("File not found");
 
           const response = await fetch(file.uri);
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
 
-          entity.mesh.uri = url;
+          mesh.uri = url;
         }
       });
 
@@ -159,6 +171,9 @@ export default function Preview() {
 
       // Load scene
       await engine.scene.loadJSON(scene);
+
+      // Update colliders
+      scene.nodes.forEach((node) => updateGltfColliders(node.id));
 
       // Export scene as GLB
       const glb = await engine.export();
@@ -192,25 +207,25 @@ export default function Preview() {
     const blob = new Blob([exportedScene], { type: "model/gltf-binary" });
     const url = URL.createObjectURL(blob);
 
-    // Create glTF entity
-    const entity = new Entity();
+    // Create glTF node
     const mesh = new GLTFMesh();
     mesh.uri = url;
-    entity.mesh = mesh;
 
-    // Add entity to scene
+    const node = new Node();
+    node.meshId = mesh.id;
+
+    // Add node to scene
     engine.scene
       .loadJSON({
-        entities: [entity.toJSON()],
+        nodes: [node.toJSON()],
+        meshes: [mesh.toJSON()],
       })
       .then(() => {
         // Start engine
         engine.start();
       });
 
-    return () => {
-      engine.scene.removeEntity(entity.id);
-    };
+    return () => engine.scene.removeNode(node.id);
   }, [engine, exportedScene]);
 
   const updateCanvasSize = useMemo(() => {

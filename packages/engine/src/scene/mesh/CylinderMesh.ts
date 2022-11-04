@@ -1,13 +1,18 @@
 import { BehaviorSubject } from "rxjs";
 
+import { BaseMesh } from "./BaseMesh";
 import { CylinderMeshJSON } from "./types";
 
-export class CylinderMesh {
+export class CylinderMesh extends BaseMesh {
   readonly type = "Cylinder";
 
   radius$ = new BehaviorSubject(0.5);
   height$ = new BehaviorSubject(1);
   radialSegments$ = new BehaviorSubject(32);
+
+  constructor(id?: string) {
+    super(id);
+  }
 
   get radius() {
     return this.radius$.value;
@@ -38,6 +43,8 @@ export class CylinderMesh {
   }
 
   destroy() {
+    this.name$.complete();
+    this.materialId$.complete();
     this.radius$.complete();
     this.height$.complete();
     this.radialSegments$.complete();
@@ -45,6 +52,8 @@ export class CylinderMesh {
 
   toJSON(): CylinderMeshJSON {
     return {
+      id: this.id,
+      materialId: this.materialId,
       type: this.type,
       radius: this.radius$.value,
       height: this.height$.value,
@@ -53,6 +62,7 @@ export class CylinderMesh {
   }
 
   applyJSON(json: Partial<CylinderMeshJSON>) {
+    if (json.materialId !== undefined) this.materialId = json.materialId;
     if (json.radius !== undefined) this.radius = json.radius;
     if (json.height !== undefined) this.height = json.height;
     if (json.radialSegments !== undefined)
@@ -60,7 +70,7 @@ export class CylinderMesh {
   }
 
   static fromJSON(json: CylinderMeshJSON) {
-    const mesh = new CylinderMesh();
+    const mesh = new CylinderMesh(json.id);
     mesh.applyJSON(json);
     return mesh;
   }

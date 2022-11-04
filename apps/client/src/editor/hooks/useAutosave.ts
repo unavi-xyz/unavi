@@ -9,8 +9,6 @@ export function useAutosave() {
     // Save every 30 seconds
     const interval = setInterval(save, 30000);
 
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [save]);
 }

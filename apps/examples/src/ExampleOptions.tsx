@@ -21,7 +21,9 @@ export default function ExampleOptions({ options }: Props) {
   }, [gltf]);
 
   return (
-    <PanelLayout>
+    <>
+      <PanelLayout />
+
       {options.length > 1 && (
         <div className="absolute top-0 left-0 z-20 w-full pl-48 text-center">
           <div className="mt-2 flex justify-center">
@@ -46,6 +48,6 @@ export default function ExampleOptions({ options }: Props) {
       )}
 
       <ExampleCanvas />
-    </PanelLayout>
+    </>
   );
 }

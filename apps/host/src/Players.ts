@@ -83,6 +83,28 @@ export class Players {
 
     this.leaveSpace(ws, false);
 
+    // Close transports
+    const producerTransport = this.producerTransports.get(ws);
+    if (producerTransport) producerTransport.close();
+
+    const consumerTransport = this.consumerTransports.get(ws);
+    if (consumerTransport) consumerTransport.close();
+
+    // Close producers
+    const producer = this.producers.get(ws);
+    if (producer) producer.close();
+
+    const dataProducer = this.dataProducers.get(ws);
+    if (dataProducer) dataProducer.close();
+
+    // Close consumers
+    const consumers = this.consumers.get(ws);
+    if (consumers) consumers.forEach((c) => c.close());
+
+    const dataConsumers = this.dataConsumers.get(ws);
+    if (dataConsumers) dataConsumers.forEach((c) => c.close());
+
+    // Clean up
     this.playerIds.delete(ws);
     this.spaceIds.delete(ws);
     this.names.delete(ws);

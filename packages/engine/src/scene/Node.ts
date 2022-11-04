@@ -8,19 +8,13 @@ import { HullCollider } from "./collider/HullCollider";
 import { MeshCollider } from "./collider/MeshCollider";
 import { SphereCollider } from "./collider/SphereCollider";
 import { Collider, ColliderJSON } from "./collider/types";
-import { BoxMesh } from "./mesh/BoxMesh";
-import { CylinderMesh } from "./mesh/CylinderMesh";
-import { GLTFMesh } from "./mesh/GLTFMesh";
-import { PrimitiveMesh } from "./mesh/PrimitiveMesh";
-import { SphereMesh } from "./mesh/SphereMesh";
-import { Mesh, MeshJSON } from "./mesh/types";
 import { Scene } from "./Scene";
-import { EntityJSON } from "./types";
+import { NodeJSON } from "./types";
 
 /*
- * Represents an entity in the scene.
+ * Represents an node in the scene.
  */
-export class Entity {
+export class Node {
   readonly id: string;
 
   scene$ = new BehaviorSubject<Scene | null>(null);
@@ -33,7 +27,7 @@ export class Entity {
     this.scene$.next(scene);
   }
 
-  name$ = new BehaviorSubject("Entity");
+  name$ = new BehaviorSubject("Node");
   isInternal$ = new BehaviorSubject(false);
 
   parentId$ = new BehaviorSubject<string>("root");
@@ -43,8 +37,7 @@ export class Entity {
   rotation$ = new BehaviorSubject<Quad>([0, 0, 0, 1]);
   scale$ = new BehaviorSubject<Triplet>([1, 1, 1]);
 
-  mesh$ = new BehaviorSubject<Mesh | null>(null);
-  materialId$ = new BehaviorSubject<string | null>(null);
+  meshId$ = new BehaviorSubject<string | null>(null);
   collider$ = new BehaviorSubject<Collider | null>(null);
 
   constructor({ id = nanoid() }: { id?: string } = {}) {
@@ -68,7 +61,7 @@ export class Entity {
   }
 
   get parent() {
-    return this.scene?.entities$.value[this.parentId$.value];
+    return this.scene?.nodes$.value[this.parentId$.value];
   }
 
   get parentId() {
@@ -93,11 +86,9 @@ export class Entity {
 
   get children() {
     const children = this.childrenIds$.value.map(
-      (id) => this.scene?.entities$.value[id]
+      (id) => this.scene?.nodes$.value[id]
     );
-    const filtered = children.filter(
-      (child) => child !== undefined
-    ) as Entity[];
+    const filtered = children.filter((child) => child !== undefined) as Node[];
     return filtered;
   }
 
@@ -133,27 +124,12 @@ export class Entity {
     this.scale$.next(scale);
   }
 
-  get mesh() {
-    return this.mesh$.value;
+  get meshId() {
+    return this.meshId$.value;
   }
 
-  set mesh(mesh: Mesh | null) {
-    if (this.mesh) this.mesh.destroy();
-    this.mesh$.next(mesh);
-  }
-
-  get materialId() {
-    return this.materialId$.value;
-  }
-
-  set materialId(materialId: string | null) {
-    this.materialId$.next(materialId);
-  }
-
-  get material() {
-    return this.materialId
-      ? this.scene?.materials$.value[this.materialId]
-      : null;
+  set meshId(meshId: string | null) {
+    this.meshId$.next(meshId);
   }
 
   get collider() {
@@ -166,7 +142,6 @@ export class Entity {
   }
 
   destroy() {
-    this.mesh?.destroy();
     this.collider?.destroy();
 
     this.name$.complete();
@@ -176,12 +151,10 @@ export class Entity {
     this.position$.complete();
     this.rotation$.complete();
     this.scale$.complete();
-    this.mesh$.complete();
-    this.materialId$.complete();
+    this.meshId$.complete();
   }
 
-  toJSON(): EntityJSON {
-    const mesh = this.mesh ? this.mesh.toJSON() : null;
+  toJSON(): NodeJSON {
     const collider = this.collider ? this.collider.toJSON() : null;
 
     return {
@@ -192,13 +165,12 @@ export class Entity {
       position: this.position,
       rotation: this.rotation,
       scale: this.scale,
-      mesh,
-      materialId: this.materialId,
+      meshId: this.meshId,
       collider,
     };
   }
 
-  applyJSON(json: Partial<EntityJSON>) {
+  applyJSON(json: Partial<NodeJSON>) {
     if (json.name !== undefined) this.name = json.name;
     if (json.isInternal !== undefined) this.isInternal = json.isInternal;
 
@@ -207,46 +179,15 @@ export class Entity {
     if (json.rotation !== undefined) this.rotation = json.rotation;
     if (json.scale !== undefined) this.scale = json.scale;
 
-    if (json.mesh !== undefined) this.mesh = createMesh(json.mesh);
-    if (json.materialId !== undefined) this.materialId = json.materialId;
+    if (json.meshId !== undefined) this.meshId = json.meshId;
     if (json.collider !== undefined)
       this.collider = createCollider(json.collider);
   }
 
-  static fromJSON(json: EntityJSON) {
-    const entity = new Entity({ id: json.id });
-    entity.applyJSON(json);
-    return entity;
-  }
-}
-
-function createMesh(json: MeshJSON | null) {
-  if (!json) return null;
-
-  switch (json.type) {
-    case "Box": {
-      return BoxMesh.fromJSON(json);
-    }
-
-    case "Sphere": {
-      return SphereMesh.fromJSON(json);
-    }
-
-    case "Cylinder": {
-      return CylinderMesh.fromJSON(json);
-    }
-
-    case "glTF": {
-      return GLTFMesh.fromJSON(json);
-    }
-
-    case "Primitive": {
-      return PrimitiveMesh.fromJSON(json);
-    }
-
-    default: {
-      throw new Error("Unknown mesh type");
-    }
+  static fromJSON(json: NodeJSON) {
+    const node = new Node({ id: json.id });
+    node.applyJSON(json);
+    return node;
   }
 }
 
@@ -267,11 +208,11 @@ function createCollider(json: ColliderJSON | null) {
     }
 
     case "hull": {
-      return new HullCollider();
+      return HullCollider.fromJSON(json);
     }
 
     case "mesh": {
-      return new MeshCollider();
+      return MeshCollider.fromJSON(json);
     }
 
     default: {

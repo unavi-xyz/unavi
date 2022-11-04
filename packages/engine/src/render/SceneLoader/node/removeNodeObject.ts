@@ -2,18 +2,18 @@ import { disposeObject } from "../../utils/disposeObject";
 import { SceneMap } from "../types";
 import { removeColliderVisual } from "./removeColliderVisual";
 
-export function removeEntityObject(entityId: string, map: SceneMap) {
+export function removeNodeObject(nodeId: string, map: SceneMap) {
   // Don't remove root object
-  if (entityId === "root") return;
+  if (nodeId === "root") return;
 
   // Remove collider visual
-  removeColliderVisual(entityId, map);
+  removeColliderVisual(nodeId, map);
 
   // Remove object
-  const object = map.objects.get(entityId);
+  const object = map.objects.get(nodeId);
   if (!object) return;
 
-  map.objects.delete(entityId);
+  map.objects.delete(nodeId);
 
   // Dispose object
   disposeObject(object);

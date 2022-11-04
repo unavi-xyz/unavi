@@ -6,7 +6,9 @@ import {
   SphereMesh,
 } from "@wired-labs/engine";
 
-import { updateEntity } from "../../../actions/UpdateEntityAction";
+import { addMesh } from "../../../actions/AddMeshAction";
+import { removeMesh } from "../../../actions/RemoveMeshAction";
+import { updateNode } from "../../../actions/UpdateNodeAction";
 import SelectMenu from "../../ui/SelectMenu";
 import ComponentMenu from "../ComponentMenu";
 import MenuRows from "../MenuRows";
@@ -23,15 +25,20 @@ enum MeshType {
 }
 
 interface Props {
-  entityId: string;
+  nodeId: string;
   mesh: Mesh;
 }
 
-export default function MeshComponent({ entityId, mesh }: Props) {
+export default function MeshComponent({ nodeId, mesh }: Props) {
+  if (mesh.type === "Primitives") return null;
+
   return (
     <ComponentMenu
       title="Mesh"
-      onRemove={() => updateEntity(entityId, { mesh: null })}
+      onRemove={() => {
+        updateNode(nodeId, { meshId: null });
+        removeMesh(mesh.id);
+      }}
     >
       <MenuRows titles={["Type"]}>
         <SelectMenu
@@ -42,26 +49,34 @@ export default function MeshComponent({ entityId, mesh }: Props) {
 
             switch (type) {
               case MeshType.Box: {
-                const mesh = new BoxMesh();
-                updateEntity(entityId, { mesh: mesh.toJSON() });
+                const newMesh = new BoxMesh();
+                addMesh(newMesh);
+                updateNode(nodeId, { meshId: newMesh.id });
+                removeMesh(mesh.id);
                 break;
               }
 
               case MeshType.Sphere: {
-                const mesh = new SphereMesh();
-                updateEntity(entityId, { mesh: mesh.toJSON() });
+                const newMesh = new SphereMesh();
+                addMesh(newMesh);
+                updateNode(nodeId, { meshId: newMesh.id });
+                removeMesh(mesh.id);
                 break;
               }
 
               case MeshType.Cylinder: {
-                const mesh = new CylinderMesh();
-                updateEntity(entityId, { mesh: mesh.toJSON() });
+                const newMesh = new CylinderMesh();
+                addMesh(newMesh);
+                updateNode(nodeId, { meshId: newMesh.id });
+                removeMesh(mesh.id);
                 break;
               }
 
               case MeshType.glTF: {
-                const mesh = new GLTFMesh();
-                updateEntity(entityId, { mesh: mesh.toJSON() });
+                const newMesh = new GLTFMesh();
+                addMesh(newMesh);
+                updateNode(nodeId, { meshId: newMesh.id });
+                removeMesh(mesh.id);
                 break;
               }
             }
@@ -70,13 +85,13 @@ export default function MeshComponent({ entityId, mesh }: Props) {
       </MenuRows>
 
       {mesh.type === "Box" ? (
-        <BoxMeshComponent entityId={entityId} mesh={mesh} />
+        <BoxMeshComponent nodeId={nodeId} mesh={mesh} />
       ) : mesh.type === "Sphere" ? (
-        <SphereMeshComponent entityId={entityId} mesh={mesh} />
+        <SphereMeshComponent nodeId={nodeId} mesh={mesh} />
       ) : mesh.type === "Cylinder" ? (
-        <CylinderMeshComponent entityId={entityId} mesh={mesh} />
+        <CylinderMeshComponent nodeId={nodeId} mesh={mesh} />
       ) : mesh.type === "glTF" ? (
-        <GLTFMeshComponent entityId={entityId} mesh={mesh} />
+        <GLTFMeshComponent nodeId={nodeId} mesh={mesh} />
       ) : null}
     </ComponentMenu>
   );

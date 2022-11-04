@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import {
   AppId,
   PublicationMainFocus,
@@ -6,9 +7,8 @@ import {
   PublicationMetadataVersions,
 } from "@wired-labs/lens";
 import { nanoid } from "nanoid";
-import Image from "next/future/image";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useCreatePost } from "../../../client/lens/hooks/useCreatePost";
 import { useLens } from "../../../client/lens/hooks/useLens";
@@ -40,30 +40,42 @@ export default function PublishPage() {
   const name = useEditorStore((state) => state.name);
   const description = useEditorStore((state) => state.description);
 
-  const { mutateAsync: saveProject } = trpc.useMutation("auth.save-project");
+  const { mutateAsync: saveProject } = trpc.auth.saveProject.useMutation();
 
   const { handle } = useLens();
   const profile = useProfileByHandle(handle);
   const createPost = useCreatePost(profile?.id);
 
-  const { data: imageURL } = trpc.useQuery(["auth.project-image", { id }], {
-    enabled: id !== undefined,
-  });
-
-  const { mutateAsync: createModelUploadUrl } = trpc.useMutation(
-    "auth.published-model-upload"
+  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      trpc: {},
+    }
   );
 
-  const { mutateAsync: createImageUploadUrl } = trpc.useMutation(
-    "auth.published-image-upload"
-  );
+  const { mutateAsync: createModelUploadUrl } =
+    trpc.auth.publishedModelUploadURL.useMutation();
 
-  const { mutateAsync: createMetadataUploadUrl } = trpc.useMutation(
-    "auth.published-metadata-upload"
-  );
+  const { mutateAsync: createImageUploadUrl } =
+    trpc.auth.publishedImageUploadURL.useMutation();
+
+  const { mutateAsync: createMetadataUploadUrl } =
+    trpc.auth.publishedMetadataUploadURL.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (imageFile || !imageURL) return;
+
+    fetch(imageURL)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const file = new File([blob], "image.jpg", { type: blob.type });
+        setImageFile(file);
+      });
+  }, [imageFile, imageURL]);
 
   async function handlePublish() {
     setLoading(true);
@@ -204,11 +216,10 @@ export default function PublishPage() {
 
     // Redirect to profile
     if (success) router.push(`/user/${handle}`);
-
-    setLoading(false);
+    else setLoading(false);
   }
 
-  const image = imageFile ? URL.createObjectURL(imageFile) : imageURL;
+  const image = imageFile ? URL.createObjectURL(imageFile) : null;
 
   return (
     <div className="space-y-8">
@@ -244,11 +255,9 @@ export default function PublishPage() {
 
           {image && (
             <div className="relative aspect-card h-full w-full rounded-xl bg-primaryContainer">
-              <Image
+              <img
                 src={image}
-                fill
-                sizes="496px"
-                alt="cover picture preview"
+                alt="picture preview"
                 className="h-full w-full rounded-xl object-cover"
               />
             </div>

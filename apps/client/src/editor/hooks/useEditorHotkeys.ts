@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { removeEntity } from "../actions/RemoveEntityAction";
+import { removeNode } from "../actions/RemoveNodeAction";
 import { useEditorStore } from "../store";
 
 export function useEditorHotkeys() {
@@ -16,7 +16,7 @@ export function useEditorHotkeys() {
           const selectedId = useEditorStore.getState().selectedId;
           if (selectedId) {
             useEditorStore.setState({ selectedId: null });
-            removeEntity(selectedId);
+            removeNode(selectedId);
           }
           break;
         }

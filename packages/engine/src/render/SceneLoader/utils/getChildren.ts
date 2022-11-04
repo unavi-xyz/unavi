@@ -1,11 +1,11 @@
-import { EntityJSON } from "../../../scene";
+import { NodeJSON } from "../../../scene";
 import { SceneMap } from "../types";
 
-export function getChildren(entityId: string, map: SceneMap) {
-  const children: EntityJSON[] = [];
+export function getChildren(nodeId: string, map: SceneMap) {
+  const children: NodeJSON[] = [];
 
-  map.entities.forEach((e) => {
-    if (e.parentId === entityId) children.push(e);
+  map.nodes.forEach((e) => {
+    if (e.parentId === nodeId) children.push(e);
   });
 
   return children;

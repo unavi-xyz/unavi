@@ -1,5 +1,5 @@
-import Image from "next/future/image";
 import Head from "next/head";
+import Image from "next/image";
 import Link from "next/link";
 import { FaTwitter } from "react-icons/fa";
 import { MdAdd, MdLink, MdOutlineLocationOn } from "react-icons/md";
@@ -106,11 +106,11 @@ export default function ProfileLayout({
               <div className="flex w-full justify-center space-x-2">
                 {handle === viewerHandle ? (
                   <Link href="/settings" passHref>
-                    <a>
+                    <div>
                       <Button variant="outlined" rounded="small">
                         <div className="px-6">Edit profile</div>
                       </Button>
-                    </a>
+                    </div>
                   </Link>
                 ) : (
                   <div>

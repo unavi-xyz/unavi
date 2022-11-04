@@ -1,4 +1,4 @@
-import Image from "next/future/image";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { uploadFileToIpfs } from "../../client/ipfs/uploadFileToIpfs";

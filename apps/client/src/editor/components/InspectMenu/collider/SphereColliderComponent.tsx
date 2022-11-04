@@ -1,16 +1,16 @@
 import { SphereCollider } from "@wired-labs/engine";
 
-import { updateEntity } from "../../../actions/UpdateEntityAction";
+import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import NumberInput from "../../ui/NumberInput";
 import MenuRows from "../MenuRows";
 
 interface Props {
-  entityId: string;
+  nodeId: string;
   collider: SphereCollider;
 }
 
-export default function SphereColliderComponent({ entityId, collider }: Props) {
+export default function SphereColliderComponent({ nodeId, collider }: Props) {
   const radius = useSubscribeValue(collider.radius$);
 
   return (
@@ -29,7 +29,7 @@ export default function SphereColliderComponent({ entityId, collider }: Props) {
 
           collider.radius = rounded;
 
-          updateEntity(entityId, { collider: collider.toJSON() });
+          updateNode(nodeId, { collider: collider.toJSON() });
         }}
       />
     </MenuRows>

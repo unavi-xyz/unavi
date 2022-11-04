@@ -3,14 +3,15 @@ import {
   BoxMesh,
   CylinderCollider,
   CylinderMesh,
-  Entity,
   GLTFMesh,
   MeshCollider,
+  Node,
   SphereCollider,
   SphereMesh,
 } from "@wired-labs/engine";
 
-import { addEntity } from "../../actions/AddEntityAction";
+import { addMesh } from "../../actions/AddMeshAction";
+import { addNode } from "../../actions/AddNodeAction";
 import { useEditorStore } from "../../store";
 
 enum ObjectName {
@@ -23,11 +24,11 @@ enum ObjectName {
 
 export default function ObjectsMenu() {
   function addObject(name: ObjectName) {
-    const entity = createEntity(name);
-    addEntity(entity);
+    // Create node
+    const selectedId = createNode(name);
 
-    // Select new entity
-    useEditorStore.setState({ selectedId: entity.id });
+    // Select new node
+    useEditorStore.setState({ selectedId });
   }
 
   return (
@@ -45,43 +46,50 @@ export default function ObjectsMenu() {
   );
 }
 
-function createEntity(name: ObjectName) {
-  const entity = new Entity();
-  entity.name = name;
+function createNode(name: ObjectName) {
+  const node = new Node();
+  node.name = name;
 
-  // Add object component
   switch (name) {
     case ObjectName.Box: {
-      entity.mesh = new BoxMesh();
-      entity.collider = new BoxCollider();
+      const mesh = new BoxMesh();
+      addMesh(mesh);
+
+      node.meshId = mesh.id;
+      node.collider = new BoxCollider();
       break;
     }
 
     case ObjectName.Sphere: {
-      entity.mesh = new SphereMesh();
-      entity.collider = new SphereCollider();
+      const mesh = new SphereMesh();
+      addMesh(mesh);
+
+      node.meshId = mesh.id;
+      node.collider = new SphereCollider();
       break;
     }
 
     case ObjectName.Cylinder: {
-      entity.mesh = new CylinderMesh();
-      entity.collider = new CylinderCollider();
+      const mesh = new CylinderMesh();
+      addMesh(mesh);
+
+      node.meshId = mesh.id;
+      node.collider = new CylinderCollider();
       break;
     }
 
     case ObjectName.glTF: {
-      entity.mesh = new GLTFMesh();
-      entity.collider = new MeshCollider();
+      const mesh = new GLTFMesh();
+      addMesh(mesh);
+
+      node.meshId = mesh.id;
+      node.collider = new MeshCollider();
+      node.collider.meshId = mesh.id;
       break;
     }
-
-    case ObjectName.Group: {
-      break;
-    }
-
-    default:
-      throw new Error("Unknown object name");
   }
 
-  return entity;
+  addNode(node);
+
+  return node.id;
 }

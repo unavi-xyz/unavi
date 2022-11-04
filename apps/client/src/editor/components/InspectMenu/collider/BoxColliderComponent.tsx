@@ -1,16 +1,16 @@
 import { BoxCollider, Triplet } from "@wired-labs/engine";
 
-import { updateEntity } from "../../../actions/UpdateEntityAction";
+import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import NumberInput from "../../ui/NumberInput";
 import MenuRows from "../MenuRows";
 
 interface Props {
-  entityId: string;
+  nodeId: string;
   collider: BoxCollider;
 }
 
-export default function BoxColliderComponent({ entityId, collider }: Props) {
+export default function BoxColliderComponent({ nodeId, collider }: Props) {
   const size = useSubscribeValue(collider.size$);
 
   return (
@@ -35,7 +35,7 @@ export default function BoxColliderComponent({ entityId, collider }: Props) {
               newSize[i] = rounded;
               collider.size = newSize;
 
-              updateEntity(entityId, { collider: collider.toJSON() });
+              updateNode(nodeId, { collider: collider.toJSON() });
             }}
           />
         );

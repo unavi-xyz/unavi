@@ -39,7 +39,7 @@ export type WheelData = {
 };
 
 export type RenderExport = Array<{
-  entityId: string;
+  nodeId: string;
   attributeName: string;
   array: TypedArray;
   normalized: boolean;
@@ -113,7 +113,7 @@ export type FromRenderMessage =
   | WorkerMessage<
       "set_transform",
       {
-        entityId: string;
+        nodeId: string;
         position: Triplet;
         rotation: Quad;
         scale: Triplet;
@@ -122,7 +122,7 @@ export type FromRenderMessage =
   | WorkerMessage<
       "set_global_transform",
       {
-        entityId: string;
+        nodeId: string;
         position: Triplet;
         rotation: Quad;
       }
@@ -130,5 +130,5 @@ export type FromRenderMessage =
   | WorkerMessage<"set_player_rotation_buffer", Int16Array>
   | WorkerMessage<
       "set_collider_geometry",
-      { entityId: string; positions: Float32Array; indices?: Uint32Array }
+      { nodeId: string; positions: Float32Array; indices?: Uint32Array }
     >;

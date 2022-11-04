@@ -1,13 +1,18 @@
 import { BehaviorSubject } from "rxjs";
 
+import { BaseMesh } from "./BaseMesh";
 import { BoxMeshJSON } from "./types";
 
-export class BoxMesh {
+export class BoxMesh extends BaseMesh {
   readonly type = "Box";
 
   width$ = new BehaviorSubject(1);
   height$ = new BehaviorSubject(1);
   depth$ = new BehaviorSubject(1);
+
+  constructor(id?: string) {
+    super(id);
+  }
 
   get width() {
     return this.width$.value;
@@ -37,6 +42,8 @@ export class BoxMesh {
   }
 
   destroy() {
+    this.name$.complete();
+    this.materialId$.complete();
     this.width$.complete();
     this.height$.complete();
     this.depth$.complete();
@@ -44,21 +51,24 @@ export class BoxMesh {
 
   toJSON(): BoxMeshJSON {
     return {
+      id: this.id,
+      materialId: this.materialId,
       type: this.type,
-      width: this.width$.value,
-      height: this.height$.value,
-      depth: this.depth$.value,
+      width: this.width,
+      height: this.height,
+      depth: this.depth,
     };
   }
 
   applyJSON(json: Partial<BoxMeshJSON>) {
+    if (json.materialId !== undefined) this.materialId = json.materialId;
     if (json.width !== undefined) this.width = json.width;
     if (json.height !== undefined) this.height = json.height;
     if (json.depth !== undefined) this.depth = json.depth;
   }
 
   static fromJSON(json: BoxMeshJSON) {
-    const mesh = new BoxMesh();
+    const mesh = new BoxMesh(json.id);
     mesh.applyJSON(json);
     return mesh;
   }

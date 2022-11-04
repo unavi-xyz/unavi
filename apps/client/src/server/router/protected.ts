@@ -15,99 +15,104 @@ import {
   getImageURL,
   getSceneURL,
 } from "../s3";
-import { createProtectedRouter } from "./context";
+import { protectedProcedure } from "./context";
+import { router } from "./trpc";
 
 const UUID_LENGTH = 36;
 const PROJECT_NAME_LENGTH = 70;
 const PROJECT_DESCRIPTION_LENGTH = 2000;
 
-export const protectedRouter = createProtectedRouter()
-  .query("projects", {
-    async resolve({ ctx: { address } }) {
-      const projects = await prisma.project.findMany({
-        where: { owner: address },
-        orderBy: { updatedAt: "desc" },
-      });
+export const protectedRouter = router({
+  projects: protectedProcedure.query(async ({ ctx }) => {
+    const projects = await prisma.project.findMany({
+      where: { owner: ctx.address },
+      orderBy: { updatedAt: "desc" },
+    });
 
-      const images = await Promise.all(
-        projects.map(async (project) => await getImageURL(project.id))
-      );
+    const images = await Promise.all(
+      projects.map(async (project) => await getImageURL(project.id))
+    );
 
-      const response = projects.map((project, index) => ({
-        ...project,
-        image: images[index],
-      }));
-      return response;
-    },
-  })
+    const response = projects.map((project, index) => ({
+      ...project,
+      image: images[index],
+    }));
 
-  .query("project", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
-    }),
-    async resolve({ ctx: { address }, input: { id } }) {
+    return response;
+  }),
+
+  project: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       // Verify user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       return project;
-    },
-  })
-
-  .query("project-scene", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { id } }) {
+
+  projectScene: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       // Verify user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get scene url from S3
-      const url = await getSceneURL(id);
+      const url = await getSceneURL(input.id);
 
       return url;
-    },
-  })
-
-  .query("project-image", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { id } }) {
+
+  projectImage: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       // Verify user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get image url from S3
-      const url = await getImageURL(id);
+      const url = await getImageURL(input.id);
 
       return url;
-    },
-  })
-
-  .query("project-files", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { id } }) {
+
+  projectFiles: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       // Verify user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get file urls from S3
       const urlPromises = project.files.map((file) =>
-        getFileURL(id, file.storageKey)
+        getFileURL(input.id, file.storageKey)
       );
 
       const urls = await Promise.all(urlPromises);
@@ -123,85 +128,88 @@ export const protectedRouter = createProtectedRouter()
       });
 
       return response;
-    },
-  })
-
-  .mutation("project-scene-upload", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { id } }) {
+
+  projectSceneUploadURL: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       // Verify user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get scene upload URL from S3
-      const url = await createSceneUploadURL(id);
+      const url = await createSceneUploadURL(input.id);
 
       return url;
-    },
-  })
-
-  .mutation("project-image-upload", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { id } }) {
+
+  projectImageUploadURL: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       // Verify user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get image upload URL from S3
-      const url = await createImageUploadURL(id);
+      const url = await createImageUploadURL(input.id);
 
       return url;
-    },
-  })
-
-  .mutation("project-file-upload", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
-      fileId: z.string(),
     }),
-    async resolve({ ctx: { address }, input: { id, fileId } }) {
+
+  projectFileUploadURL: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+        storageKey: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       // Verify user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Add file to database if it doesn't exist
-      if (!project.files.find((file) => file.storageKey === fileId)) {
+      if (!project.files.find((file) => file.storageKey === input.storageKey)) {
         await prisma.file.create({
           data: {
-            storageKey: fileId,
-            projectId: id,
+            storageKey: input.storageKey,
+            projectId: input.id,
           },
         });
       }
 
       // Get file upload URL from S3
-      const url = await createFileUploadURL(id, fileId);
-
+      const url = await createFileUploadURL(input.id, input.storageKey);
       return url;
-    },
-  })
-
-  .mutation("create-project", {
-    input: z.object({
-      name: z.string().max(PROJECT_NAME_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { name } }) {
+
+  createProject: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().max(PROJECT_NAME_LENGTH),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       // Create project
       const { id } = await prisma.project.create({
         data: {
-          owner: address,
-          name,
+          owner: ctx.address,
+          name: input.name,
         },
       });
 
@@ -216,52 +224,51 @@ export const protectedRouter = createProtectedRouter()
       });
 
       return id;
-    },
-  })
-
-  .mutation("save-project", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
-      name: z.string().max(PROJECT_NAME_LENGTH).optional(),
-      description: z.string().max(PROJECT_DESCRIPTION_LENGTH).optional(),
-      editorState: z
-        .object({
-          visuals: z.boolean(),
-          tool: z.string(),
-        })
-        .optional(),
     }),
-    async resolve({
-      ctx: { address },
-      input: { id, name, description, editorState },
-    }) {
+
+  saveProject: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+        name: z.string().max(PROJECT_NAME_LENGTH).optional(),
+        description: z.string().max(PROJECT_DESCRIPTION_LENGTH).optional(),
+        editorState: z
+          .object({
+            visuals: z.boolean(),
+            tool: z.string(),
+          })
+          .optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       // Verify that user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       // Update database
       await prisma.project.update({
-        where: { id },
+        where: { id: input.id },
         data: {
-          name,
-          description,
-          editorState: JSON.stringify(editorState),
+          name: input.name,
+          description: input.description,
+          editorState: JSON.stringify(input.editorState),
         },
       });
-    },
-  })
-
-  .mutation("delete-project", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { id } }) {
+
+  deleteProject: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       // Verify that user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
@@ -270,120 +277,81 @@ export const protectedRouter = createProtectedRouter()
 
       // Delete files from database
       await prisma.file.deleteMany({
-        where: { projectId: id },
+        where: { projectId: input.id },
       });
 
       // Delete project from database
       promises.push(
         prisma.project.delete({
-          where: { id },
+          where: { id: input.id },
           include: { files: true },
         })
       );
 
       // Delete project from S3
-      const fileIds = project.files.map((file) => file.storageKey);
-      promises.push(deleteProjectFromS3(id, fileIds));
+      const storageKeys = project.files.map((file) => file.storageKey);
+      promises.push(deleteProjectFromS3(input.id, storageKeys));
 
       await Promise.all(promises);
-    },
-  })
-
-  .mutation("published-model-upload", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { id } }) {
+
+  publishedModelUploadURL: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       // Verify that user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get model upload URL from S3
-      const url = await createPublishedModelUploadURL(id);
+      const url = await createPublishedModelUploadURL(input.id);
 
       return url;
-    },
-  })
-
-  .mutation("published-image-upload", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { id } }) {
+
+  publishedImageUploadURL: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       // Verify that user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get image upload URL from S3
-      const url = await createPublishedImageUploadURL(id);
+      const url = await createPublishedImageUploadURL(input.id);
 
       return url;
-    },
-  })
-
-  .mutation("published-metadata-upload", {
-    input: z.object({
-      id: z.string().length(UUID_LENGTH),
     }),
-    async resolve({ ctx: { address }, input: { id } }) {
+
+  publishedMetadataUploadURL: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(UUID_LENGTH),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
       // Verify that user owns the project
       const project = await prisma.project.findFirst({
-        where: { id, owner: address },
+        where: { id: input.id, owner: ctx.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get metadata upload URL from S3
-      const url = await createPublishedMetadataUploadURL(id);
+      const url = await createPublishedMetadataUploadURL(input.id);
 
       return url;
-    },
-  })
-
-  .mutation("space-view", {
-    input: z.object({
-      spaceId: z.string(),
     }),
-    async resolve({ input: { spaceId } }) {
-      // Update space view count
-      await prisma.space.upsert({
-        create: { publicationId: spaceId, viewsCount: 1 },
-        where: { publicationId: spaceId },
-        update: { viewsCount: { increment: 1 } },
-      });
-
-      // Create space view event
-      await prisma.spaceViewEvent.create({
-        data: {
-          spaceId,
-        },
-      });
-    },
-  })
-
-  .mutation("avatar-view", {
-    input: z.object({
-      avatarId: z.string(),
-    }),
-    async resolve({ input: { avatarId } }) {
-      // Update avatar view count
-      await prisma.avatar.upsert({
-        create: { publicationId: avatarId, viewsCount: 1 },
-        where: { publicationId: avatarId },
-        update: { viewsCount: { increment: 1 } },
-      });
-
-      // Create avatar view event
-      await prisma.avatarViewEvent.create({
-        data: {
-          avatarId,
-        },
-      });
-    },
-  });
+});

@@ -1,7 +1,7 @@
 import { Quad, Triplet } from "@wired-labs/engine";
 
-import { updateEntity } from "../../actions/UpdateEntityAction";
-import { useEntity } from "../../hooks/useEntity";
+import { updateNode } from "../../actions/UpdateNodeAction";
+import { useNode } from "../../hooks/useNode";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { eulerToQuaternion } from "../../utils/eulerToQuaternion";
 import { quaternionToEuler } from "../../utils/quaternionToEuler";
@@ -10,13 +10,13 @@ import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./MenuRows";
 
 interface Props {
-  entityId: string;
+  nodeId: string;
 }
 
-export default function TransformComponent({ entityId }: Props) {
-  const position$ = useEntity(entityId, (entity) => entity.position$);
-  const rotation$ = useEntity(entityId, (entity) => entity.rotation$);
-  const scale$ = useEntity(entityId, (entity) => entity.scale$);
+export default function TransformComponent({ nodeId }: Props) {
+  const position$ = useNode(nodeId, (node) => node.position$);
+  const rotation$ = useNode(nodeId, (node) => node.rotation$);
+  const scale$ = useNode(nodeId, (node) => node.scale$);
 
   const position = useSubscribeValue<Triplet>(position$);
   const rotation = useSubscribeValue<Quad>(rotation$);
@@ -52,7 +52,7 @@ export default function TransformComponent({ entityId }: Props) {
                     const newPosition: Triplet = [...position];
                     newPosition[i] = rounded;
 
-                    updateEntity(entityId, { position: newPosition });
+                    updateNode(nodeId, { position: newPosition });
                   }}
                 />
               </div>
@@ -89,7 +89,7 @@ export default function TransformComponent({ entityId }: Props) {
 
                     const newRotation = eulerToQuaternion(newEuler);
 
-                    updateEntity(entityId, { rotation: newRotation });
+                    updateNode(nodeId, { rotation: newRotation });
                   }}
                 />
               </div>
@@ -122,7 +122,7 @@ export default function TransformComponent({ entityId }: Props) {
                     const newScale: Triplet = [...scale];
                     newScale[i] = rounded;
 
-                    updateEntity(entityId, { scale: newScale });
+                    updateNode(nodeId, { scale: newScale });
                   }}
                 />
               </div>

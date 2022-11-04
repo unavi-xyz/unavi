@@ -1,13 +1,10 @@
 import { GLTF } from "@gltf-transform/core";
 import { BehaviorSubject } from "rxjs";
 
-import { PrimitiveMeshJSON } from "./types";
+import { BaseMesh } from "./BaseMesh";
+import { PrimitiveJSON } from "./types";
 
-export class PrimitiveMesh {
-  readonly type = "Primitive";
-
-  gltfId: string | null = null;
-
+export class Primitive extends BaseMesh {
   mode$ = new BehaviorSubject<GLTF.MeshPrimitiveMode>(4);
   indicesId$ = new BehaviorSubject<string | null>(null);
 
@@ -29,6 +26,10 @@ export class PrimitiveMesh {
     inverseBindMatricesId: string;
     jointIds: string[];
   } = null;
+
+  constructor(id?: string) {
+    super(id);
+  }
 
   get mode() {
     return this.mode$.value;
@@ -143,6 +144,7 @@ export class PrimitiveMesh {
   }
 
   destroy() {
+    this.materialId$.complete();
     this.mode$.complete();
     this.indicesId$.complete();
     this.weights$.complete();
@@ -159,10 +161,10 @@ export class PrimitiveMesh {
     this.WEIGHTS_0$.complete();
   }
 
-  toJSON(): PrimitiveMeshJSON {
+  toJSON(): PrimitiveJSON {
     return {
-      gltfId: this.gltfId,
-      type: this.type,
+      id: this.id,
+      materialId: this.materialId,
       mode: this.mode,
       indicesId: this.indicesId,
       weights: this.weights,
@@ -181,8 +183,8 @@ export class PrimitiveMesh {
     };
   }
 
-  applyJSON(json: Partial<PrimitiveMeshJSON>) {
-    if (json.gltfId !== undefined) this.gltfId = json.gltfId;
+  applyJSON(json: Partial<PrimitiveJSON>) {
+    if (json.materialId !== undefined) this.materialId = json.materialId;
     if (json.mode !== undefined) this.mode = json.mode;
     if (json.indicesId !== undefined) this.indicesId = json.indicesId;
     if (json.weights !== undefined) this.weights = json.weights;
@@ -203,8 +205,8 @@ export class PrimitiveMesh {
     if (json.skin !== undefined) this.skin = json.skin;
   }
 
-  static fromJSON(json: PrimitiveMeshJSON) {
-    const mesh = new PrimitiveMesh();
+  static fromJSON(json: PrimitiveJSON) {
+    const mesh = new Primitive(json.id);
     mesh.applyJSON(json);
     return mesh;
   }

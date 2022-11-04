@@ -90,18 +90,17 @@ export class RaycasterPlugin {
 }
 
 /*
- * Step through an object's parents to find a non-internal entity
+ * Step through an object's parents to find a non-internal node
  */
 function findValidObject(
   object: Object3D,
   sceneLoader: SceneLoader
 ): Object3D | undefined {
-  const entityId = sceneLoader.findId(object);
+  const nodeId = sceneLoader.findId(object);
 
-  if (entityId) {
-    const entity = sceneLoader.getEntity(entityId);
-    if (!entity) throw new Error(`Entity not found: ${entityId}`);
-    if (!entity.isInternal) return object;
+  if (nodeId) {
+    const node = sceneLoader.getNode(nodeId);
+    if (node && !node.isInternal) return object;
   }
 
   // Try parent

@@ -1,17 +1,17 @@
 import { SphereMesh } from "@wired-labs/engine";
 
-import { updateEntity } from "../../../actions/UpdateEntityAction";
+import { updateMesh } from "../../../actions/UpdateMeshAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import NumberInput from "../../ui/NumberInput";
 import MaterialComponent from "../MaterialComponent";
 import MenuRows from "../MenuRows";
 
 interface Props {
-  entityId: string;
+  nodeId: string;
   mesh: SphereMesh;
 }
 
-export default function SphereMeshComponent({ entityId, mesh }: Props) {
+export default function SphereMeshComponent({ nodeId, mesh }: Props) {
   const radius = useSubscribeValue(mesh.radius$);
   const widthSegments = useSubscribeValue(mesh.widthSegments$);
   const heightSegments = useSubscribeValue(mesh.heightSegments$);
@@ -38,16 +38,14 @@ export default function SphereMeshComponent({ entityId, mesh }: Props) {
                 const num = parseFloat(value);
                 const rounded = Math.round(num * 1000) / 1000;
 
-                mesh[property] = rounded;
-
-                updateEntity(entityId, { mesh: mesh.toJSON() });
+                updateMesh(mesh.id, { [property]: rounded });
               }}
             />
           );
         })}
       </MenuRows>
 
-      <MaterialComponent entityId={entityId} />
+      <MaterialComponent nodeId={nodeId} />
     </>
   );
 }

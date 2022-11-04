@@ -3,8 +3,7 @@
 @tailwind utilities;
 
 html {
-  font-family: "Lato", sans-serif;
-  @apply bg-background text-onBackground selection:bg-primaryContainer;
+  @apply bg-background text-onBackground selection:bg-primaryContainer antialiased;
 }
 
 .max-w-content {

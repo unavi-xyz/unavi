@@ -1,13 +1,18 @@
 import { BehaviorSubject } from "rxjs";
 
+import { BaseMesh } from "./BaseMesh";
 import { SphereMeshJSON } from "./types";
 
-export class SphereMesh {
+export class SphereMesh extends BaseMesh {
   readonly type = "Sphere";
 
   radius$ = new BehaviorSubject(0.5);
   widthSegments$ = new BehaviorSubject(32);
   heightSegments$ = new BehaviorSubject(32);
+
+  constructor(id?: string) {
+    super(id);
+  }
 
   get radius() {
     return this.radius$.value;
@@ -39,6 +44,8 @@ export class SphereMesh {
   }
 
   destroy() {
+    this.name$.complete();
+    this.materialId$.complete();
     this.radius$.complete();
     this.widthSegments$.complete();
     this.heightSegments$.complete();
@@ -46,6 +53,8 @@ export class SphereMesh {
 
   toJSON(): SphereMeshJSON {
     return {
+      id: this.id,
+      materialId: this.materialId,
       type: this.type,
       radius: this.radius$.value,
       widthSegments: this.widthSegments$.value,
@@ -54,6 +63,7 @@ export class SphereMesh {
   }
 
   applyJSON(json: Partial<SphereMeshJSON>) {
+    if (json.materialId !== undefined) this.materialId = json.materialId;
     if (json.radius !== undefined) this.radius = json.radius;
     if (json.widthSegments !== undefined)
       this.widthSegments = json.widthSegments;
@@ -62,7 +72,7 @@ export class SphereMesh {
   }
 
   static fromJSON(json: SphereMeshJSON) {
-    const mesh = new SphereMesh();
+    const mesh = new SphereMesh(json.id);
     mesh.applyJSON(json);
     return mesh;
   }

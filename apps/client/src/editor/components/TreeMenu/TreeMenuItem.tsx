@@ -2,8 +2,8 @@ import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
-import { moveEntity } from "../../actions/MoveEntityAction";
-import { useEntity } from "../../hooks/useEntity";
+import { moveNode } from "../../actions/MoveNodeAction";
+import { useNode } from "../../hooks/useNode";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import { DND_TYPES } from "../../types";
@@ -22,22 +22,22 @@ export default function TreeMenuItem({ id }: Props) {
   const [open, setOpen] = useState(true);
   const selectedId = useEditorStore((state) => state.selectedId);
 
-  const entities$ = useEditorStore((state) => state.engine?.scene.entities$);
-  const name$ = useEntity(id, (entity) => entity.name$);
-  const childrenIds$ = useEntity(id, (entity) => entity.childrenIds$);
-  const isInternal$ = useEntity(id, (entity) => entity.isInternal$);
+  const nodes$ = useEditorStore((state) => state.engine?.scene.nodes$);
+  const name$ = useNode(id, (node) => node.name$);
+  const childrenIds$ = useNode(id, (node) => node.childrenIds$);
+  const isInternal$ = useNode(id, (node) => node.isInternal$);
 
   const name = useSubscribeValue(name$);
   const childrenIds = useSubscribeValue(childrenIds$);
   const isInternal = useSubscribeValue(isInternal$);
-  const entities = useSubscribeValue(entities$);
+  const nodes = useSubscribeValue(nodes$);
 
-  const children = entities ? childrenIds?.map((id) => entities[id]) : [];
+  const children = nodes ? childrenIds?.map((id) => nodes[id]) : [];
 
   // Create drag source
   const [{ isDragging }, drag] = useDrag(
     () => ({
-      type: DND_TYPES.Entity,
+      type: DND_TYPES.Node,
       item: { id },
       collect: (monitor) => ({
         isDragging: monitor.isDragging(),
@@ -49,14 +49,14 @@ export default function TreeMenuItem({ id }: Props) {
   // Create drop target
   const [{ isOver }, drop] = useDrop(
     () => ({
-      accept: DND_TYPES.Entity,
+      accept: DND_TYPES.Node,
       drop({ id: droppedId }: DragItem, monitor) {
         if (droppedId !== id) {
           const didDrop = monitor.didDrop();
           if (didDrop || isDeepChild(id, droppedId)) return;
 
           // Move to new parent
-          moveEntity(droppedId, id);
+          moveNode(droppedId, id);
         }
       },
       collect: (monitor) => ({
@@ -69,7 +69,7 @@ export default function TreeMenuItem({ id }: Props) {
   // Create drop target for below
   const [{ isOver: isOverBelow }, dropBelow] = useDrop(
     () => ({
-      accept: DND_TYPES.Entity,
+      accept: DND_TYPES.Node,
       drop({ id: droppedId }: DragItem, monitor) {
         if (droppedId !== id) {
           const didDrop = monitor.didDrop();
@@ -141,14 +141,14 @@ export default function TreeMenuItem({ id }: Props) {
   );
 }
 
-function isDeepChild(entityId: string, parentId: string) {
-  const entity = useEditorStore.getState().getEntity(parentId);
-  if (!entity) return false;
+function isDeepChild(nodeId: string, parentId: string) {
+  const node = useEditorStore.getState().getNode(parentId);
+  if (!node) return false;
 
-  if (entity.childrenIds.includes(entityId)) return true;
+  if (node.childrenIds.includes(nodeId)) return true;
 
-  for (const child of entity.childrenIds) {
-    if (isDeepChild(entityId, child)) return true;
+  for (const child of node.childrenIds) {
+    if (isDeepChild(nodeId, child)) return true;
   }
 
   return false;

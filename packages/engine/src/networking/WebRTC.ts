@@ -3,7 +3,7 @@ import { Producer } from "mediasoup-client/lib/Producer";
 import { Transport } from "mediasoup-client/lib/Transport";
 
 import { RenderThread } from "../render/RenderThread";
-import { quaternionToEuler } from "../render/utils/quaternionToEuler";
+import { quaternionToYaw } from "../render/utils/quaternionToYaw";
 import { FromHostMessage, ToHostMessage } from "./types";
 
 const PUBLISH_HZ = 15; // X times per second
@@ -41,6 +41,12 @@ export class WebRTC {
 
   connect() {
     this.#send({ subject: "get_router_rtp_capabilities", data: null });
+  }
+
+  disconnect() {
+    this.#producer?.close();
+    this.#producerTransport?.close();
+    this.#consumerTransport?.close();
   }
 
   async onmessage({ subject, data }: FromHostMessage) {
@@ -170,18 +176,20 @@ export class WebRTC {
               listener.setPosition(posX / 1000, posY / 1000, posZ / 1000);
             }
 
-            const euler = quaternionToEuler(
-              rotX / 1000,
-              rotY / 1000,
-              rotZ / 1000,
-              rotW / 1000
-            );
+            const yaw = quaternionToYaw(rotY / 1000, rotW / 1000);
 
             if (listener.forwardX !== undefined) {
-              listener.forwardX.value = -Math.sin(euler[1]);
-              listener.forwardZ.value = -Math.cos(euler[1]);
+              listener.forwardX.value = -Math.sin(yaw);
+              listener.forwardZ.value = -Math.cos(yaw);
             } else {
-              // TODO use setOrientation (deprecated) if forwardX is not supported
+              listener.setOrientation(
+                -Math.sin(yaw),
+                0,
+                -Math.cos(yaw),
+                0,
+                1,
+                0
+              );
             }
 
             // Create buffer
@@ -284,9 +292,9 @@ export class WebRTC {
           sctpStreamParameters: data.sctpStreamParameters,
         });
 
-        dataConsumer.on("message", (message) => {
+        dataConsumer.on("message", (buffer) => {
           // Apply location to audio panner
-          const view = new DataView(message);
+          const view = new DataView(buffer);
           const playerId = view.getUint8(0);
 
           const panner = this.#panners.get(playerId);
@@ -308,9 +316,9 @@ export class WebRTC {
           this.#renderThread.postMessage(
             {
               subject: "player_location",
-              data: message,
+              data: buffer,
             },
-            [message]
+            [buffer]
           );
         });
 

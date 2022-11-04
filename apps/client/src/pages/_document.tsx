@@ -10,18 +10,6 @@ export default function Document() {
         <link rel="icon" href="/images/Logo-Icon.png" />
         <link rel="shortcut icon" href="/images/Logo-Icon.png" />
         <link rel="apple-touch-icon" href="/images/Logo-Icon.png" />
-
-        {/* fonts */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap"
-          rel="stylesheet"
-        />
       </Head>
 
       <body>

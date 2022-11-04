@@ -1,10 +1,6 @@
 import { useStore } from "./store";
 
-interface Props {
-  children: React.ReactNode;
-}
-
-export default function PanelLayout({ children }: Props) {
+export default function PanelLayout() {
   async function handleExport() {
     const engine = useStore.getState().engine;
     if (!engine) return;
@@ -19,19 +15,17 @@ export default function PanelLayout({ children }: Props) {
   }
 
   return (
-    <>
-      <div className="absolute bottom-0 right-0 z-10 m-4 h-80 w-80 rounded-2xl bg-white p-6">
-        <div className="flex w-full justify-center">
-          <button
-            onClick={handleExport}
-            className="rounded-lg bg-sky-200 px-4 py-1 transition hover:shadow active:bg-sky-100"
-          >
-            Test Export
-          </button>
-        </div>
-      </div>
+    <div className="absolute bottom-0 right-0 z-10 m-4 h-80 w-80 space-y-4 rounded-2xl bg-white p-6">
+      <div className="text-center text-xl">Controls</div>
 
-      <div className="h-full w-full">{children}</div>
-    </>
+      <div className="flex w-full justify-center">
+        <button
+          onClick={handleExport}
+          className="rounded-lg bg-sky-200 px-4 py-1 transition hover:shadow active:bg-sky-100"
+        >
+          Test Export
+        </button>
+      </div>
+    </div>
   );
 }

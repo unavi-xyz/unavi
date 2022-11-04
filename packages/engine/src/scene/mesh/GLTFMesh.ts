@@ -6,7 +6,6 @@ import { GLTFMeshJSON } from "./types";
 export class GLTFMesh extends BaseMesh {
   readonly type = "glTF";
 
-  name$ = new BehaviorSubject<string | null>(null);
   uri$ = new BehaviorSubject<string | null>(null);
 
   constructor(id?: string) {
@@ -30,8 +29,8 @@ export class GLTFMesh extends BaseMesh {
   }
 
   destroy() {
-    this.materialId$.complete();
     this.name$.complete();
+    this.materialId$.complete();
     this.uri$.complete();
   }
 

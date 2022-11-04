@@ -42,6 +42,7 @@ export class BoxMesh extends BaseMesh {
   }
 
   destroy() {
+    this.name$.complete();
     this.materialId$.complete();
     this.width$.complete();
     this.height$.complete();

@@ -44,6 +44,7 @@ export class SphereMesh extends BaseMesh {
   }
 
   destroy() {
+    this.name$.complete();
     this.materialId$.complete();
     this.radius$.complete();
     this.widthSegments$.complete();

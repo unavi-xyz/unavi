@@ -1,22 +1,14 @@
-import { nanoid } from "nanoid";
-import { BehaviorSubject } from "rxjs";
-
+import { BaseMesh } from "./BaseMesh";
 import { Primitive } from "./Primitive";
 import { PrimitivesMeshJSON } from "./types";
 
-export class PrimitivesMesh {
+export class PrimitivesMesh extends BaseMesh {
   readonly type = "Primitives";
-
-  id = nanoid();
-  isInternal = false;
-
-  name$ = new BehaviorSubject<string | null>(null);
-  materialId$ = new BehaviorSubject<string | null>(null);
 
   primitives: Primitive[] = [];
 
   constructor(id?: string) {
-    if (id) this.id = id;
+    super(id);
   }
 
   get name() {
@@ -37,6 +29,7 @@ export class PrimitivesMesh {
 
   destroy() {
     this.name$.complete();
+    this.materialId$.complete();
   }
 
   toJSON(): PrimitivesMeshJSON {

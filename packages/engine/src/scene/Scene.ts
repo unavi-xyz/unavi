@@ -142,77 +142,25 @@ export class Scene {
     // Repeat for children
     node.childrenIds.forEach((childId) => this.removeNode(childId));
 
-    // Remove from parent
-    if (node.parent) node.parentId = "";
-
     // Remove from nodes
     this.nodes = Object.fromEntries(
       Object.entries(this.nodes).filter(([id]) => id !== nodeId)
     );
+
+    // Remove from parent
+    if (node.parent) node.parentId = "";
 
     // Remove mesh if no other nodes use it
     if (node.meshId) {
       const mesh = this.meshes[node.meshId];
       if (!mesh) throw new Error(`Mesh ${node.meshId} not found`);
 
-      const isUsed = Object.values(this.nodes).some(
-        (n) => n.meshId === node.meshId
-      );
+      if (mesh.isInternal) {
+        const isUsed = Object.values(this.nodes).some(
+          (n) => n.meshId === node.meshId
+        );
 
-      if (!isUsed) {
-        const materialMeshes: (Mesh | Primitive)[] = [];
-
-        if (mesh.type === "Primitives") {
-          // Remove primitive accessors
-          mesh.primitives.forEach((primitive) => {
-            if (primitive.indicesId) this.removeAccessor(primitive.indicesId);
-            if (primitive.POSITION) this.removeAccessor(primitive.POSITION);
-            if (primitive.NORMAL) this.removeAccessor(primitive.NORMAL);
-            if (primitive.TEXCOORD_0) this.removeAccessor(primitive.TEXCOORD_0);
-            if (primitive.TANGENT) this.removeAccessor(primitive.TANGENT);
-            if (primitive.WEIGHTS_0) this.removeAccessor(primitive.WEIGHTS_0);
-            if (primitive.JOINTS_0) this.removeAccessor(primitive.JOINTS_0);
-
-            primitive.morphPositionIds.forEach((id) => this.removeAccessor(id));
-            primitive.morphNormalIds.forEach((id) => this.removeAccessor(id));
-            primitive.morphTangentIds.forEach((id) => this.removeAccessor(id));
-
-            materialMeshes.push(primitive);
-          });
-        } else {
-          materialMeshes.push(mesh);
-        }
-
-        // Remove materials
-        materialMeshes.forEach((mesh) => {
-          if (mesh.materialId) {
-            // Remove material
-            if (mesh.materialId) {
-              const material = this.materials[mesh.materialId];
-              if (!material) throw new Error(`Material not found`);
-
-              // Only remove internal materials
-              if (material.isInternal) {
-                // Only remove material if it's not used by any other mesh
-                const isUsed = Object.values(this.nodes).some((node) => {
-                  if (!node.meshId) return false;
-
-                  const mesh = this.meshes[node.meshId];
-                  if (!mesh) return false;
-
-                  if (mesh.type === "Primitives")
-                    return mesh.primitives.some(
-                      (primitive) => primitive.materialId === material.id
-                    );
-
-                  return mesh.materialId === material.id;
-                });
-
-                if (!isUsed) this.removeMaterial(mesh.materialId);
-              }
-            }
-          }
-        });
+        if (!isUsed) this.removeMesh(node.meshId);
       }
     }
 
@@ -258,10 +206,69 @@ export class Scene {
     const mesh = this.meshes[meshId];
     if (!mesh) throw new Error(`Mesh ${meshId} not found`);
 
-    // Remove from nodes
+    // Remove from meshes
     this.meshes = Object.fromEntries(
       Object.entries(this.meshes).filter(([id]) => id !== meshId)
     );
+
+    // Remove from nodes
+    Object.values(this.nodes).forEach((node) => {
+      if (node.meshId === meshId) node.meshId = null;
+    });
+
+    const materialMeshes: (Mesh | Primitive)[] = [];
+
+    if (mesh.type === "Primitives") {
+      // Remove primitive accessors
+      mesh.primitives.forEach((primitive) => {
+        if (primitive.indicesId) this.removeAccessor(primitive.indicesId);
+        if (primitive.POSITION) this.removeAccessor(primitive.POSITION);
+        if (primitive.NORMAL) this.removeAccessor(primitive.NORMAL);
+        if (primitive.TEXCOORD_0) this.removeAccessor(primitive.TEXCOORD_0);
+        if (primitive.TANGENT) this.removeAccessor(primitive.TANGENT);
+        if (primitive.WEIGHTS_0) this.removeAccessor(primitive.WEIGHTS_0);
+        if (primitive.JOINTS_0) this.removeAccessor(primitive.JOINTS_0);
+
+        primitive.morphPositionIds.forEach((id) => this.removeAccessor(id));
+        primitive.morphNormalIds.forEach((id) => this.removeAccessor(id));
+        primitive.morphTangentIds.forEach((id) => this.removeAccessor(id));
+
+        materialMeshes.push(primitive);
+      });
+    } else {
+      materialMeshes.push(mesh);
+    }
+
+    // Remove materials
+    materialMeshes.forEach((mesh) => {
+      if (mesh.materialId) {
+        // Remove material
+        if (mesh.materialId) {
+          const material = this.materials[mesh.materialId];
+          if (!material) throw new Error(`Material not found`);
+
+          // Only remove internal materials
+          if (material.isInternal) {
+            // Only remove material if it's not used by any other mesh
+            const isUsed = Object.values(this.nodes).some((node) => {
+              if (!node.meshId) return false;
+
+              const mesh = this.meshes[node.meshId];
+              if (!mesh) return false;
+
+              if (mesh.type === "Primitives")
+                return mesh.primitives.some(
+                  (primitive) => primitive.materialId === material.id
+                );
+
+              return mesh.materialId === material.id;
+            });
+
+            if (!isUsed) this.removeMaterial(mesh.materialId);
+          }
+        }
+      }
+    });
 
     // Destroy mesh
     mesh.destroy();
@@ -294,8 +301,8 @@ export class Scene {
     [
       material.colorTexture,
       material.normalTexture,
-      material.occlusionTexture,
       material.emissiveTexture,
+      material.occlusionTexture,
       material.metallicRoughnessTexture,
     ].forEach((texture) => {
       if (!texture) return;
@@ -304,21 +311,22 @@ export class Scene {
       if (!imageId) return;
 
       const image = this.images[imageId];
-      if (!image) throw new Error(`Image ${imageId} not found`);
+      if (!image) return;
 
       // Only remove internal images
       if (!image.isInternal) return;
 
       // Only remove image if it's not used by any other material
-      const otherMaterial = Object.values(this.materials).find((m) =>
-        [
-          m.colorTexture,
-          m.normalTexture,
-          m.occlusionTexture,
-          m.emissiveTexture,
-          m.metallicRoughnessTexture,
-        ].some((t) => t?.imageId === imageId)
-      );
+      const otherMaterial = Object.values(this.materials).find((m) => {
+        m.id !== material.id &&
+          [
+            m.colorTexture,
+            m.normalTexture,
+            m.occlusionTexture,
+            m.emissiveTexture,
+            m.metallicRoughnessTexture,
+          ].some((t) => t?.imageId === imageId);
+      });
 
       if (!otherMaterial) this.removeImage(imageId);
     });

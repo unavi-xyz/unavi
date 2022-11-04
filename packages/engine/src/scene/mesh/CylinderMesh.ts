@@ -43,6 +43,7 @@ export class CylinderMesh extends BaseMesh {
   }
 
   destroy() {
+    this.name$.complete();
     this.materialId$.complete();
     this.radius$.complete();
     this.height$.complete();

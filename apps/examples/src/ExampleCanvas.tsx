@@ -80,7 +80,7 @@ export default function ExampleCanvas() {
   useEffect(() => {
     if (!engine || !uri) return;
 
-    // Create glTF node
+    // Create glTF
     const mesh = new GLTFMesh();
     mesh.uri = uri;
     engine.scene.addMesh(mesh);
@@ -89,7 +89,10 @@ export default function ExampleCanvas() {
     node.meshId = mesh.id;
     engine.scene.addNode(node);
 
-    return () => engine.scene.removeNode(node.id);
+    return () => {
+      engine.scene.removeMesh(mesh.id);
+      engine.scene.removeNode(node.id);
+    };
   }, [engine, uri]);
 
   const loadedClass = loaded ? "opacity-100" : "opacity-0";

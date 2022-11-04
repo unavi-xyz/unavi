@@ -1,5 +1,6 @@
 import { Post, useGetPublicationQuery } from "@wired-labs/lens";
 
+import { HIDDEN_MESSAGE } from "../../client/lens/constants";
 import SpaceCard from "./SpaceCard";
 
 interface Props {
@@ -21,7 +22,8 @@ export default function SpaceIdCard({
     },
   });
 
-  if (!data) return null;
+  if (!data || data.publication?.metadata.content === HIDDEN_MESSAGE)
+    return null;
 
   return (
     <SpaceCard

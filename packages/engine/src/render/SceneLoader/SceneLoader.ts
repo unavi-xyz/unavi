@@ -64,10 +64,11 @@ export class SceneLoader {
   constructor(postMessage: PostMessage<FromRenderMessage>) {
     this.#postMessage = postMessage;
 
+    this.#spawn.name = ObjectName.Visual;
+    this.root.add(this.#spawn);
+
     this.root.add(this.contents);
     this.#map.objects.set("root", this.contents);
-
-    this.#spawn.name = ObjectName.Visual;
 
     this.#sun.castShadow = true;
     this.#sun.position.set(10, 50, 30);

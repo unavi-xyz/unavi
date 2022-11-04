@@ -62,9 +62,7 @@ export default function ExampleCanvas() {
       useStore.setState({ engine: newEngine });
 
       // Start engine
-      newEngine.start().then(() => {
-        setLoaded(true);
-      });
+      newEngine.start().then(() => setLoaded(true));
     }
 
     initEngine();
@@ -76,7 +74,6 @@ export default function ExampleCanvas() {
     return () => {
       engine.destroy();
       window.removeEventListener("resize", updateCanvasSize);
-      if (process.env.NODE_ENV === "development") window.location.reload();
     };
   }, [engine]);
 

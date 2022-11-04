@@ -11,6 +11,7 @@ import {
   imageStorageKey,
   modelStorageKey,
 } from "../../../editor/utils/fileStorage";
+import { updateGltfColliders } from "../../../editor/utils/updateGltfColliders";
 import MetaTags from "../../../home/MetaTags";
 import Spinner from "../../../ui/Spinner";
 
@@ -171,6 +172,9 @@ export default function Preview() {
       // Load scene
       await engine.scene.loadJSON(scene);
 
+      // Update colliders
+      scene.nodes.forEach((node) => updateGltfColliders(node.id));
+
       // Export scene as GLB
       const glb = await engine.export();
 
@@ -221,9 +225,7 @@ export default function Preview() {
         engine.start();
       });
 
-    return () => {
-      engine.scene.removeNode(node.id);
-    };
+    return () => engine.scene.removeNode(node.id);
   }, [engine, exportedScene]);
 
   const updateCanvasSize = useMemo(() => {

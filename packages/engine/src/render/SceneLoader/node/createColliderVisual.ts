@@ -109,13 +109,48 @@ export function createColliderVisual(
         }
 
         case "Primitives": {
+          const globalGeometries: BufferGeometry[] = [];
+
           colliderMesh.primitives.forEach((primitive) => {
             const primitiveObject = map.objects.get(primitive.id);
             if (!primitiveObject) throw new Error("Primitive not found");
 
             primitiveObject.traverse((child) => {
-              if (child instanceof Mesh) geometries.push(child.geometry);
+              if (child instanceof Mesh) {
+                const geometry = child.geometry as BufferGeometry;
+
+                geometries.push(geometry);
+
+                const cloned = geometry.clone();
+                cloned.applyMatrix4(child.matrixWorld);
+                globalGeometries.push(cloned);
+              }
             });
+          });
+
+          if (globalGeometries.length === 0) break;
+
+          // Merge global geometries
+          const geometry = mergeBufferGeometries(globalGeometries);
+          geometry.applyMatrix4(object.matrixWorld);
+
+          // Remove indices if hull
+          if (node.collider?.type === "hull") geometry.deleteAttribute("index");
+
+          // Send geometry attributes to physics thread
+          const attribute = geometry.getAttribute("position");
+          const positions = Float32Array.from(attribute.array);
+          const indices = geometry.index
+            ? Uint32Array.from(geometry.index.array)
+            : undefined;
+
+          postMessage({
+            subject: "set_collider_geometry",
+            data: {
+              nodeId,
+              positions,
+              indices,
+            },
           });
           break;
         }
@@ -131,22 +166,6 @@ export function createColliderVisual(
 
       // Create mesh
       collider = new Mesh(geometry, wireframeMaterial);
-
-      // Send geometry attributes to physics thread
-      const attribute = geometry.getAttribute("position");
-      const positions = Float32Array.from(attribute.array);
-      const indices = geometry.index
-        ? Uint32Array.from(geometry.index.array)
-        : undefined;
-
-      postMessage({
-        subject: "set_collider_geometry",
-        data: {
-          nodeId,
-          positions,
-          indices,
-        },
-      });
       break;
     }
   }

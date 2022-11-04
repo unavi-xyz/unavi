@@ -42,7 +42,7 @@ export function updateMesh(
     if (!material) throw new Error("Material not found");
 
     object.material = material;
-
-    updateMeshMaterial(meshId, map);
   }
+
+  updateMeshMaterial(meshId, map);
 }

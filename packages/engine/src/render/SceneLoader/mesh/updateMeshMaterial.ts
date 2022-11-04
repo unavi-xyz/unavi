@@ -8,36 +8,34 @@ export function updateMeshMaterial(meshId: string, map: SceneMap) {
   // Update material according to certain mesh properties
   // TODO: Create a new material if the mesh needs to modify it
   if (mesh?.type === "Primitives") {
-    const meshObject = map.objects.get(meshId);
-    if (!meshObject) throw new Error("Mesh not found");
-    if (!(meshObject instanceof Mesh)) throw new Error("Object is not a mesh");
+    mesh.primitives.forEach((primitive) => {
+      const object = map.objects.get(primitive.id);
+      if (!object) throw new Error("Object not found");
+      if (!(object instanceof Mesh)) throw new Error("Object is not a mesh");
 
-    // Occlusion map needs a second set of UVs
-    if (
-      meshObject.material.aoMap &&
-      meshObject.geometry.attributes.uv &&
-      !meshObject.geometry.attributes.uv2
-    ) {
-      meshObject.geometry.setAttribute(
-        "uv2",
-        meshObject.geometry.attributes.uv
-      );
-    }
+      // Occlusion map needs a second set of UVs
+      if (
+        object.material.aoMap &&
+        object.geometry.attributes.uv &&
+        !object.geometry.attributes.uv2
+      ) {
+        object.geometry.setAttribute("uv2", object.geometry.attributes.uv);
+      }
 
-    // Enable flat shading if no normal attribute
-    if (!meshObject.geometry.attributes.normal)
-      meshObject.material.flatShading = true;
+      // Enable flat shading if no normal attribute
+      if (!object.geometry.attributes.normal)
+        object.material.flatShading = true;
 
-    // Enable vertex colors if color attribute
-    if (meshObject.geometry.attributes.color)
-      meshObject.material.vertexColors = true;
+      // Enable vertex colors if color attribute
+      if (object.geometry.attributes.color) object.material.vertexColors = true;
 
-    // If three.js needs to generate tangents, flip normal map y
-    if (!meshObject.geometry.attributes.tangent) {
-      const normalScale = Math.abs(meshObject.material.normalScale.y);
-      meshObject.material.normalScale.y = -normalScale;
-    }
+      // If three.js needs to generate tangents, flip normal map y
+      if (!object.geometry.attributes.tangent) {
+        const normalScale = Math.abs(object.material.normalScale.y);
+        object.material.normalScale.y = -normalScale;
+      }
 
-    meshObject.material.needsUpdate = true;
+      object.material.needsUpdate = true;
+    });
   }
 }

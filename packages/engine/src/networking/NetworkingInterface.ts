@@ -298,6 +298,9 @@ export class NetworkingInterface {
   }
 
   disconnect() {
+    // Close WebRTC connection
+    if (this.#webRTC) this.#webRTC.disconnect();
+
     // Close WebSocket connection
     if (this.#ws) this.#ws.close();
     this.#ws = null;

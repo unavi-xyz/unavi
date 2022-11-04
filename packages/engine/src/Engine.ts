@@ -140,6 +140,7 @@ export class Engine {
   }
 
   destroy() {
+    this.networkingInterface.disconnect();
     this.physicsThread.destroy();
     this.loaderThread.destroy();
     this.renderThread.destroy();

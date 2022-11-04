@@ -43,6 +43,12 @@ export class WebRTC {
     this.#send({ subject: "get_router_rtp_capabilities", data: null });
   }
 
+  disconnect() {
+    this.#producer?.close();
+    this.#producerTransport?.close();
+    this.#consumerTransport?.close();
+  }
+
   async onmessage({ subject, data }: FromHostMessage) {
     switch (subject) {
       case "router_rtp_capabilities": {

@@ -39,11 +39,11 @@ export default function Index() {
                   </div>
 
                   <div className="w-full md:w-fit">
-                    <Button variant="text" rounded="large" fullWidth>
-                      <a href={DOCS_URL} target="_blank" rel="noreferrer">
+                    <a href={DOCS_URL} target="_blank" rel="noreferrer">
+                      <Button variant="text" rounded="large" fullWidth>
                         <div className="md:py-0.5 md:px-4">Read Docs</div>
-                      </a>
-                    </Button>
+                      </Button>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -104,6 +104,7 @@ export default function Index() {
                   <Image
                     src="/images/sitting.png"
                     fill
+                    loading="eager"
                     sizes="293px"
                     alt="Wired-chan"
                     className="select-none object-contain"

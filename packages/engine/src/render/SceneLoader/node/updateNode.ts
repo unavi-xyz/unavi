@@ -1,8 +1,9 @@
-import { Group, Quaternion, Vector3 } from "three";
+import { Bone, Group, Quaternion, Vector3 } from "three";
 
 import { NodeJSON } from "../../../scene";
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
+import { createSkeletons } from "../mesh/createSkeletons";
 import { SceneMap } from "../types";
 import { updateGlobalTransform } from "../utils/updateGlobalTransform";
 import { createColliderVisual } from "./createColliderVisual";
@@ -25,8 +26,23 @@ export function updateNode(
 
   let object = map.objects.get(nodeId);
   if (!object) {
-    object = new Group();
+    // Check if joint
+    let isJoint = false;
+
+    map.meshes.forEach((mesh) => {
+      if (mesh?.type !== "Primitives") return;
+      if (!mesh.primitives.some((p) => p.skin?.jointIds.includes(nodeId)))
+        return;
+
+      isJoint = true;
+    });
+
+    // Create object
+    object = isJoint ? new Bone() : new Group();
     map.objects.set(nodeId, object);
+
+    // Update skeletons
+    if (isJoint) createSkeletons(map);
   }
 
   // Update parent

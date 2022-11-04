@@ -204,7 +204,7 @@ export function createObject(
         // Convert all joints to bones
         primitive.skin?.jointIds.forEach((jointId) => {
           const jointNode = map.nodes.get(jointId);
-          if (!jointNode) throw new Error(`Node not found: ${jointId}`);
+          if (!jointNode) return;
 
           const jointObject = map.objects.get(jointId);
           if (!jointObject) {
@@ -226,25 +226,10 @@ export function createObject(
     }
 
     default: {
-      // TODO: move this to node, not mesh
-      // Check if joint
-      let isJoint = false;
-      map.nodes.forEach((node) => {
-        const mesh = node.meshId ? map.meshes.get(node.meshId) : null;
-        if (mesh?.type !== "Primitives") return;
-        if (!mesh.primitives.some((p) => p.skin?.jointIds.includes(node.id)))
-          return;
-
-        isJoint = true;
-      });
-
-      // Create object
-      const object = isJoint ? new Bone() : new Group();
+      // Create empty object
+      const object = new Group();
       oldObject?.parent?.add(object);
       map.objects.set(mesh.id, object);
-
-      // Update skeletons
-      if (isJoint) createSkeletons(map);
     }
   }
 

@@ -30,7 +30,7 @@ export function createSkeletons(map: SceneMap) {
 
         primitive.skin.jointIds.forEach((jointId, i) => {
           const bone = map.objects.get(jointId);
-          if (!(bone instanceof Bone)) throw new Error("Bone not found");
+          if (!(bone instanceof Bone)) return;
 
           const matrix = new Matrix4();
           matrix.fromArray(inverseBindMatrices.array, i * 16);

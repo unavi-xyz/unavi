@@ -30,6 +30,8 @@ interface Props {
 }
 
 export default function MeshComponent({ nodeId, mesh }: Props) {
+  if (mesh.type === "Primitives") return null;
+
   return (
     <ComponentMenu
       title="Mesh"
@@ -89,7 +91,7 @@ export default function MeshComponent({ nodeId, mesh }: Props) {
       ) : mesh.type === "Cylinder" ? (
         <CylinderMeshComponent nodeId={nodeId} mesh={mesh} />
       ) : mesh.type === "glTF" ? (
-        <GLTFMeshComponent mesh={mesh} />
+        <GLTFMeshComponent nodeId={nodeId} mesh={mesh} />
       ) : null}
     </ComponentMenu>
   );

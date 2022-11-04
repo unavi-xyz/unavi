@@ -1,4 +1,4 @@
-import { Group, Mesh, Quaternion, Vector3 } from "three";
+import { Mesh, Quaternion, Vector3 } from "three";
 
 import { MeshJSON } from "../../../scene";
 import { PostMessage } from "../../../types";
@@ -12,7 +12,6 @@ export function updateMesh(
   meshId: string,
   data: Partial<MeshJSON>,
   map: SceneMap,
-  visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
 ) {
   const mesh = map.meshes.get(meshId);
@@ -27,7 +26,7 @@ export function updateMesh(
     : new Quaternion();
   const scale = oldObject ? oldObject.scale.clone() : new Vector3(1, 1, 1);
 
-  createObject(meshId, map, visuals, postMessage);
+  createObject(meshId, map, postMessage);
 
   const object = map.objects.get(meshId);
   if (!object) throw new Error("Error creating object");

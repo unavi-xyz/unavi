@@ -75,6 +75,11 @@ export class GLTFExporter {
       this.#parseMaterial(material)
     );
 
+    // Parse meshes
+    Object.values(this.#scene.meshes).forEach((mesh) =>
+      this.#parseMesh(mesh.id)
+    );
+
     // Parse nodes
     const rootChildren = Object.values(this.#scene.nodes).filter(
       (e) => e.parentId === "root"
@@ -166,7 +171,7 @@ export class GLTFExporter {
     gltfNode.setScale(node.scale);
 
     // Parse mesh
-    const mesh = node.meshId ? this.#parseMesh(node.meshId) : null;
+    const mesh = node.meshId ? this.#cache.meshes.get(node.meshId) : null;
     if (mesh) gltfNode.setMesh(mesh);
 
     // Add to parent
@@ -204,8 +209,6 @@ export class GLTFExporter {
           if (!colliderMesh) throw new Error("Mesh not found");
 
           collider.setMesh(colliderMesh);
-
-          this.#cache.meshes.set(node.id, colliderMesh);
           break;
         }
       }
@@ -375,6 +378,8 @@ export class GLTFExporter {
         break;
       }
     }
+
+    this.#cache.meshes.set(mesh.id, gltfMesh);
 
     return gltfMesh;
   }

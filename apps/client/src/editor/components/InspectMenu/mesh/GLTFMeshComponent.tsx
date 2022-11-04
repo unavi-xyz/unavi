@@ -3,12 +3,14 @@ import { GLTFMesh } from "@wired-labs/engine";
 import FileInput from "../../../../ui/FileInput";
 import { updateMesh } from "../../../actions/UpdateMeshAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
+import { updateGltfColliders } from "../../../utils/updateGltfColliders";
 
 interface Props {
+  nodeId: string;
   mesh: GLTFMesh;
 }
 
-export default function GLTFMeshComponent({ mesh }: Props) {
+export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
   const name = useSubscribeValue(mesh.name$);
 
   return (
@@ -29,6 +31,10 @@ export default function GLTFMeshComponent({ mesh }: Props) {
           name: file.name,
           uri: URL.createObjectURL(blob),
         });
+
+        setTimeout(() => {
+          updateGltfColliders(nodeId);
+        }, 1000);
       }}
     />
   );

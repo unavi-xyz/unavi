@@ -2,18 +2,15 @@ import {
   BoxGeometry,
   BufferGeometry,
   CylinderGeometry,
-  Group,
   Mesh,
   MeshBasicMaterial,
-  Quaternion,
   SphereGeometry,
-  Vector3,
 } from "three";
 import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
 
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
-import { SceneMap } from "../types";
+import { ObjectName, SceneMap } from "../types";
 import { removeColliderVisual } from "./removeColliderVisual";
 
 const wireframeMaterial = new MeshBasicMaterial({
@@ -21,13 +18,9 @@ const wireframeMaterial = new MeshBasicMaterial({
   wireframe: true,
 });
 
-const tempVector3 = new Vector3();
-const tempQuaternion = new Quaternion();
-
 export function createColliderVisual(
   nodeId: string,
   map: SceneMap,
-  visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
 ) {
   const node = map.nodes.get(nodeId);
@@ -37,7 +30,6 @@ export function createColliderVisual(
   removeColliderVisual(nodeId, map);
 
   // Create new collider
-  const colliderGroup = new Group();
   let collider: Mesh | null = null;
 
   switch (node.collider?.type) {
@@ -119,14 +111,10 @@ export function createColliderVisual(
         case "Primitives": {
           colliderMesh.primitives.forEach((primitive) => {
             const primitiveObject = map.objects.get(primitive.id);
-            if (!primitiveObject) return;
+            if (!primitiveObject) throw new Error("Primitive not found");
 
             primitiveObject.traverse((child) => {
-              if (child instanceof Mesh) {
-                const cloned = child.geometry.clone();
-                cloned.applyMatrix4(child.matrixWorld);
-                geometries.push(cloned);
-              }
+              if (child instanceof Mesh) geometries.push(child.geometry);
             });
           });
           break;
@@ -143,10 +131,6 @@ export function createColliderVisual(
 
       // Create mesh
       collider = new Mesh(geometry, wireframeMaterial);
-      collider.position.sub(object.getWorldPosition(tempVector3));
-      collider.quaternion.multiply(
-        object.getWorldQuaternion(tempQuaternion).invert()
-      );
 
       // Send geometry attributes to physics thread
       const attribute = geometry.getAttribute("position");
@@ -171,16 +155,11 @@ export function createColliderVisual(
     const object = map.objects.get(nodeId);
     if (!object) throw new Error("Object not found");
 
+    // Set collider
+    collider.name = ObjectName.Visual;
+    map.colliders.set(nodeId, collider);
+
     // Add collider to scene
-    colliderGroup.add(collider);
-    map.colliders.set(nodeId, colliderGroup);
-    visuals.add(colliderGroup);
-
-    // Update collider group position
-    const globalPosition = object.getWorldPosition(tempVector3);
-    const globalQuaternion = object.getWorldQuaternion(tempQuaternion);
-
-    colliderGroup.position.copy(globalPosition);
-    colliderGroup.quaternion.copy(globalQuaternion);
+    object.add(collider);
   }
 }

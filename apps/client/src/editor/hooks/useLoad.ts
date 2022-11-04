@@ -6,6 +6,7 @@ import { trpc } from "../../client/trpc";
 import { useEditorStore } from "../store";
 import { SavedSceneJSON } from "../types";
 import { imageStorageKey, modelStorageKey } from "../utils/fileStorage";
+import { updateGltfColliders } from "../utils/updateGltfColliders";
 
 export function useLoad() {
   const router = useRouter();
@@ -130,6 +131,11 @@ export function useLoad() {
 
       // Start engine
       await engine.start();
+
+      // Update colliders
+      Object.keys(engine.scene.nodes).forEach((nodeId) =>
+        updateGltfColliders(nodeId)
+      );
 
       useEditorStore.setState({ sceneLoaded: true });
     }

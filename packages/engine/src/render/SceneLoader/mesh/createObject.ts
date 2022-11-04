@@ -28,7 +28,6 @@ import { createSkeletons } from "./createSkeletons";
 export function createObject(
   meshId: string,
   map: SceneMap,
-  visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
 ) {
   function setMorphAttribute(
@@ -200,6 +199,7 @@ export function createObject(
 
         // Add to group
         primitivesGroup.add(primitiveMesh);
+        map.objects.set(primitive.id, primitiveMesh);
 
         // Convert all joints to bones
         primitive.skin?.jointIds.forEach((jointId) => {
@@ -208,7 +208,7 @@ export function createObject(
 
           const jointObject = map.objects.get(jointId);
           if (!jointObject) {
-            updateNode(jointNode.id, jointNode, map, visuals, postMessage);
+            updateNode(jointNode.id, jointNode, map, postMessage);
             return;
           }
 

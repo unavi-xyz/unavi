@@ -11,6 +11,7 @@ import { updateNode } from "../../actions/UpdateNodeAction";
 import { useNode } from "../../hooks/useNode";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { capitalize } from "../../utils/capitalize";
+import { updateGltfColliders } from "../../utils/updateGltfColliders";
 import SelectMenu from "../ui/SelectMenu";
 import BoxColliderComponent from "./collider/BoxColliderComponent";
 import CylinderColliderComponent from "./collider/CylinderColliderComponent";
@@ -38,7 +39,7 @@ export default function PhysicsComponent({ nodeId }: Props) {
         <MenuRows titles={["Collider"]}>
           <SelectMenu
             value={capitalize(collider.type)}
-            options={["Box", "Sphere", "Cylinder", "Hull", "Mesh"]}
+            options={["Box", "Sphere", "Cylinder", "Mesh"]}
             onChange={(e) => {
               const value = e.target.value === "None" ? null : e.target.value;
 
@@ -77,6 +78,8 @@ export default function PhysicsComponent({ nodeId }: Props) {
                   break;
                 }
               }
+
+              updateGltfColliders(nodeId);
             }}
           />
         </MenuRows>

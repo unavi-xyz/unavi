@@ -15,7 +15,6 @@ export function updateNode(
   nodeId: string,
   data: Partial<NodeJSON>,
   map: SceneMap,
-  visuals: Group,
   postMessage: PostMessage<FromRenderMessage>
 ) {
   const node = map.nodes.get(nodeId);
@@ -88,7 +87,7 @@ export function updateNode(
 
   // Update collider visual
   if (data.meshId !== undefined || data.collider !== undefined)
-    createColliderVisual(nodeId, map, visuals, postMessage);
+    createColliderVisual(nodeId, map, postMessage);
 }
 
 function meshKey(nodeId: string) {

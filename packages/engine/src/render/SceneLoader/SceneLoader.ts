@@ -29,7 +29,7 @@ import { updateMesh } from "./mesh/updateMesh";
 import { addNode } from "./node/addNode";
 import { removeNode } from "./node/removeNode";
 import { updateNode } from "./node/updateNode";
-import { SceneMap } from "./types";
+import { ObjectName, SceneMap } from "./types";
 import { getChildren } from "./utils/getChildren";
 import { updateGlobalTransform } from "./utils/updateGlobalTransform";
 
@@ -39,7 +39,6 @@ import { updateGlobalTransform } from "./utils/updateGlobalTransform";
 export class SceneLoader {
   root = new Group();
   contents = new Group();
-  visuals = new Group();
   mixer = new AnimationMixer(this.root);
 
   #sun = new DirectionalLight(0xfff0db, 0.98);
@@ -65,12 +64,10 @@ export class SceneLoader {
   constructor(postMessage: PostMessage<FromRenderMessage>) {
     this.#postMessage = postMessage;
 
-    this.root.add(this.visuals);
     this.root.add(this.contents);
     this.#map.objects.set("root", this.contents);
 
-    this.visuals.visible = false;
-    this.visuals.add(this.#spawn);
+    this.#spawn.name = ObjectName.Visual;
 
     this.#sun.castShadow = true;
     this.#sun.position.set(10, 50, 30);
@@ -85,12 +82,14 @@ export class SceneLoader {
 
     switch (subject) {
       case "show_visuals": {
-        this.visuals.visible = data.visible;
+        this.root.traverse((object) => {
+          if (object.name === ObjectName.Visual) object.visible = data.visible;
+        });
         break;
       }
 
       case "add_node": {
-        addNode(data.node, this.#map, this.visuals, this.#postMessage);
+        addNode(data.node, this.#map, this.#postMessage);
         this.#updateShadowMap();
         break;
       }
@@ -102,30 +101,18 @@ export class SceneLoader {
       }
 
       case "update_node": {
-        updateNode(
-          data.nodeId,
-          data.data,
-          this.#map,
-          this.visuals,
-          this.#postMessage
-        );
+        updateNode(data.nodeId, data.data, this.#map, this.#postMessage);
         this.#updateShadowMap();
         break;
       }
 
       case "add_mesh": {
-        addMesh(data.mesh, this.#map, this.visuals, this.#postMessage);
+        addMesh(data.mesh, this.#map, this.#postMessage);
         break;
       }
 
       case "update_mesh": {
-        updateMesh(
-          data.meshId,
-          data.data,
-          this.#map,
-          this.visuals,
-          this.#postMessage
-        );
+        updateMesh(data.meshId, data.data, this.#map, this.#postMessage);
         break;
       }
 
@@ -173,16 +160,14 @@ export class SceneLoader {
         // Add meshes
         if (data.scene.meshes)
           data.scene.meshes.forEach((m) =>
-            addMesh(m, this.#map, this.visuals, this.#postMessage)
+            addMesh(m, this.#map, this.#postMessage)
           );
 
         // Add nodes
         if (data.scene.nodes) {
           const sortedNodes = sortNodes(data.scene);
 
-          sortedNodes.forEach((e) =>
-            addNode(e, this.#map, this.visuals, this.#postMessage)
-          );
+          sortedNodes.forEach((e) => addNode(e, this.#map, this.#postMessage));
         }
 
         // Add animations
@@ -191,7 +176,6 @@ export class SceneLoader {
             addAnimation(a, this.#map, this.mixer);
           });
 
-        this.#updateShadowMap();
         break;
       }
 
@@ -200,6 +184,8 @@ export class SceneLoader {
         break;
       }
     }
+
+    this.#updateShadowMap();
   };
 
   prepareExport() {

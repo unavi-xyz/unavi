@@ -29,13 +29,6 @@ export function updateGlobalTransform(
     globalQuaternion.w,
   ];
 
-  // Update collider transform
-  const collider = map.colliders.get(nodeId);
-  if (collider) {
-    collider.position.copy(globalPosition);
-    collider.quaternion.copy(globalQuaternion);
-  }
-
   postMessage({
     subject: "set_global_transform",
     data: {

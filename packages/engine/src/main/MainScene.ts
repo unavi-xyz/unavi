@@ -57,9 +57,7 @@ export class MainScene {
       scene.nodes = scene.nodes.filter((nodeJSON) => {
         // Filter out root node
         if (nodeJSON.id === "root") return false;
-
         if (nodeJSON.parentId === "root") nodeJSON.parentId = parentNode.id;
-
         return true;
       });
 

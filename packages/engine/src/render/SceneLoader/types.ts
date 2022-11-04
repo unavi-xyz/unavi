@@ -1,7 +1,6 @@
 import {
   AnimationClip,
   BufferAttribute,
-  Group,
   MeshStandardMaterial,
   Object3D,
 } from "three";
@@ -12,10 +11,14 @@ export type SceneMap = {
   accessors: Map<string, AccessorJSON>;
   animations: Map<string, AnimationClip>;
   attributes: Map<string, BufferAttribute>;
-  colliders: Map<string, Group>;
+  colliders: Map<string, Object3D>;
   nodes: Map<string, NodeJSON>;
   meshes: Map<string, MeshJSON>;
   images: Map<string, ImageBitmap>;
   materials: Map<string, MeshStandardMaterial>;
   objects: Map<string, Object3D>;
 };
+
+export enum ObjectName {
+  Visual = "visual",
+}

@@ -106,7 +106,7 @@ export class NetworkingInterface {
         ? `wss://${spaceHost}`
         : DEFAULT_HOST;
 
-    this.#hostServer = host;
+    this.#hostServer = DEFAULT_HOST;
 
     // Connect to host server
     this.connectToHost(spaceId);

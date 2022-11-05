@@ -292,7 +292,10 @@ export class WebRTC {
           sctpStreamParameters: data.sctpStreamParameters,
         });
 
-        dataConsumer.on("message", (buffer) => {
+        dataConsumer.on("message", async (data: ArrayBuffer | Blob) => {
+          const buffer =
+            data instanceof ArrayBuffer ? data : await data.arrayBuffer();
+
           // Apply location to audio panner
           const view = new DataView(buffer);
           const playerId = view.getUint8(0);
@@ -313,13 +316,10 @@ export class WebRTC {
           }
 
           // Send to renderThread
-          this.#renderThread.postMessage(
-            {
-              subject: "player_location",
-              data: buffer,
-            },
-            [buffer]
-          );
+          this.#renderThread.postMessage({
+            subject: "player_location",
+            data: buffer,
+          });
         });
 
         break;

@@ -1,5 +1,5 @@
 import { GLTFMesh, Node } from "@wired-labs/engine";
-import { NextPageContext } from "next";
+import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAnalytics } from "../../app/hooks/useAnalytics";
@@ -16,8 +16,15 @@ import {
 import MetaTags from "../../home/MetaTags";
 import Spinner from "../../ui/Spinner";
 
-export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=120");
+interface Props extends PublicationProps {
+  id: string;
+}
+
+export const getServerSideProps: GetServerSideProps<Props> = async ({
+  res,
+  query,
+}) => {
+  res.setHeader("Cache-Control", "public, s-maxage=120");
 
   const id = query.id as string;
   const props = await getPublicationProps(id);
@@ -28,13 +35,13 @@ export async function getServerSideProps({ res, query }: NextPageContext) {
       id,
     },
   };
-}
+};
 
-interface Props extends PublicationProps {
-  id: string;
-}
-
-export default function App({ id, metadata, publication }: Props) {
+export default function App({
+  id,
+  metadata,
+  publication,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const createdEngine = useRef(false);

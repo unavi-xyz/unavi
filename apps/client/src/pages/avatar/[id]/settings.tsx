@@ -1,5 +1,5 @@
 import { useHidePublicationMutation } from "@wired-labs/lens";
-import { NextPageContext } from "next";
+import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
@@ -12,17 +12,25 @@ import AvatarLayout from "../../../home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import Button from "../../../ui/Button";
 
-export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=120");
+export const getServerSideProps: GetServerSideProps<PublicationProps> = async ({
+  res,
+  query,
+}) => {
+  res.setHeader(
+    "Cache-Control",
+    "public, s-maxage=30, stale-while-revalidate=600"
+  );
 
   const props = await getPublicationProps(query.id as string);
 
   return {
     props,
   };
-}
+};
 
-export default function Settings(props: PublicationProps) {
+export default function Settings(
+  props: InferGetServerSidePropsType<typeof getServerSideProps>
+) {
   const router = useRouter();
   const id = router.query.id;
 

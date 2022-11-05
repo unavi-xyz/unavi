@@ -6,7 +6,7 @@ import {
   Post,
   PublicationTypes,
 } from "@wired-labs/lens";
-import { NextPageContext } from "next";
+import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import Link from "next/link";
 
 import { HIDDEN_MESSAGE } from "../../../client/lens/constants";
@@ -21,7 +21,15 @@ import SpaceCard from "../../../home/lens/SpaceCard";
 import { lensClient } from "../../../server/lens";
 import { getMediaURL } from "../../../utils/getMediaURL";
 
-export async function getServerSideProps({ query }: NextPageContext) {
+export const getServerSideProps: GetServerSideProps<Props> = async ({
+  res,
+  query,
+}) => {
+  res.setHeader(
+    "Cache-Control",
+    "public, s-maxage=60, stale-while-revalidate=600"
+  );
+
   const handle = query.handle as string;
   const props = await getProfileLayoutProps(handle);
 
@@ -61,13 +69,16 @@ export async function getServerSideProps({ query }: NextPageContext) {
       publications,
     },
   };
-}
+};
 
 interface Props extends ProfileLayoutProps {
   publications?: Post[];
 }
 
-export default function User({ publications, ...rest }: Props) {
+export default function User({
+  publications,
+  ...rest
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <ProfileLayout {...rest}>
       {publications && publications.length > 0 && (

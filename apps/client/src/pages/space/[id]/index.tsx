@@ -8,7 +8,10 @@ import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
 export const getServerSideProps: GetServerSideProps<
   PublicationProps & { host: string; playerCount: number | null }
 > = async ({ res, query }) => {
-  res?.setHeader("Cache-Control", "s-maxage=30");
+  res.setHeader(
+    "Cache-Control",
+    "public, s-maxage=60, stale-while-revalidate=600"
+  );
 
   const props = await getSpaceLayoutProps(query.id as string);
 

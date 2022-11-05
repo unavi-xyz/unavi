@@ -1,4 +1,4 @@
-import { NextPageContext } from "next";
+import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 
 import {
   getPublicationProps,
@@ -7,17 +7,25 @@ import {
 import AvatarLayout from "../../../home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 
-export async function getServerSideProps({ res, query }: NextPageContext) {
-  res?.setHeader("Cache-Control", "s-maxage=120");
+export const getServerSideProps: GetServerSideProps<PublicationProps> = async ({
+  res,
+  query,
+}) => {
+  res.setHeader(
+    "Cache-Control",
+    "public, s-maxage=60, stale-while-revalidate=600"
+  );
 
   const props = await getPublicationProps(query.id as string);
 
   return {
     props,
   };
-}
+};
 
-export default function Avatar(props: PublicationProps) {
+export default function Avatar(
+  props: InferGetServerSidePropsType<typeof getServerSideProps>
+) {
   return (
     <AvatarLayout {...props}>
       <div className="space-y-2">

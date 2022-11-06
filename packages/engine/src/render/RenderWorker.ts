@@ -120,7 +120,12 @@ export class RenderWorker {
     if (!this.#canvas) throw new Error("Canvas not set");
 
     this.#plugins.push(
-      new OtherPlayersPlugin(this.#scene, avatarPath, avatarAnimationsPath)
+      new OtherPlayersPlugin(
+        this.#scene,
+        this.#postMessage,
+        avatarPath,
+        avatarAnimationsPath
+      )
     );
 
     this.#canvasWidth = canvasWidth;

@@ -1,10 +1,12 @@
 import { Group, Scene } from "three";
 
-import { ToRenderMessage } from "../../types";
+import { PostMessage } from "../../../types";
+import { FromRenderMessage, ToRenderMessage } from "../../types";
 import { PlayerAvatar } from "./PlayerAvatar";
 
 export class OtherPlayersPlugin {
   #scene: Scene;
+  #postMessage: PostMessage<FromRenderMessage>;
   #avatarPath?: string;
   #avatarAnimationsPath?: string;
 
@@ -13,10 +15,12 @@ export class OtherPlayersPlugin {
 
   constructor(
     scene: Scene,
+    postMessage: PostMessage<FromRenderMessage>,
     avatarPath?: string,
     avatarAnimationsPath?: string
   ) {
     this.#scene = scene;
+    this.#postMessage = postMessage;
     this.#avatarPath = avatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
 
@@ -69,6 +73,7 @@ export class OtherPlayersPlugin {
     const player = new PlayerAvatar(
       playerId,
       avatar,
+      this.#postMessage,
       this.#avatarPath,
       this.#avatarAnimationsPath
     );

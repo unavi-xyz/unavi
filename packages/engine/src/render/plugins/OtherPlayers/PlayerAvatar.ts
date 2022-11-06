@@ -15,7 +15,9 @@ import {
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../../../constants";
+import { PostMessage } from "../../../types";
 import { toHex } from "../../../utils/toHex";
+import { FromRenderMessage } from "../../types";
 import { disposeObject } from "../../utils/disposeObject";
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
 import { AnimationName } from "./types";
@@ -37,6 +39,7 @@ export class PlayerAvatar {
   #avatarAnimationsPath?: string;
   #mixer: AnimationMixer | null = null;
   #actions = new Map<AnimationName, AnimationAction>();
+  #postMessage: PostMessage<FromRenderMessage>;
 
   #fallWeight = 0;
   #leftWeight = 0;
@@ -57,11 +60,13 @@ export class PlayerAvatar {
   constructor(
     playerId: number,
     avatar: string | null,
+    postMessage: PostMessage<FromRenderMessage>,
     defaultAvatarPath?: string,
     avatarAnimationsPath?: string,
     camera?: PerspectiveCamera
   ) {
     this.playerId = playerId;
+    this.#postMessage = postMessage;
     this.#defaultAvatarPath = defaultAvatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
     this.#camera = camera;
@@ -177,6 +182,11 @@ export class PlayerAvatar {
 
     if (this.playerId === -1) console.info(`💃 Loaded your avatar`);
     else console.info(`💃 Loaded ${toHex(this.playerId)}'s avatar`);
+
+    this.#postMessage({
+      subject: "player_loaded",
+      data: this.playerId,
+    });
   }
 
   setAvatar(avatarPath: string | null) {

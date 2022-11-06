@@ -143,6 +143,11 @@ export class RenderThread {
         );
         break;
       }
+
+      case "player_loaded": {
+        this.#engine.networkingInterface.setPlayerLoaded(data);
+        break;
+      }
     }
   };
 

@@ -38,6 +38,8 @@ export class NetworkingInterface {
   playerPosition: Int32Array | null = null;
   playerRotation: Int16Array | null = null;
 
+  #connectedPlayers = new Set<number>([-1]);
+  #loadedPlayers = new Set<number>();
   #playerNames = new Map<number, string>();
   #playerHandles = new Map<number, string>();
 
@@ -47,6 +49,12 @@ export class NetworkingInterface {
 
   playerId$ = new BehaviorSubject<number | null>(null);
   chatMessages$ = new BehaviorSubject<InternalChatMessage[]>([]);
+
+  spaceJoinStatus = {
+    spaceId: "",
+    wsConnected: false,
+    rtcConnected: false,
+  };
 
   constructor({
     scene,
@@ -61,6 +69,12 @@ export class NetworkingInterface {
 
   async joinSpace(spaceId: string) {
     this.#reconnectCount = 0;
+
+    this.spaceJoinStatus = {
+      spaceId,
+      wsConnected: false,
+      rtcConnected: false,
+    };
 
     // Fetch space publication from lens
     const { data } = await this.#lensClient
@@ -79,20 +93,6 @@ export class NetworkingInterface {
       publication?.metadata.media[1]?.original.url;
     if (!modelURL) throw new Error("Space model not found");
 
-    // Create glTF node from model URL
-    const mesh = new GLTFMesh();
-    mesh.uri = modelURL;
-    this.#scene.addMesh(mesh);
-
-    const node = new Node();
-    node.meshId = mesh.id;
-    this.#scene.addNode(node);
-
-    this.#spaceNodeId = node.id;
-
-    // Add to scene
-    await this.#scene.loadJSON({ nodes: [node.toJSON()] });
-
     // Get host server
     const spaceHost = null; // TODO: get from metadata
 
@@ -107,6 +107,40 @@ export class NetworkingInterface {
 
     // Connect to host server
     this.connectToHost(spaceId);
+
+    // Create glTF mesh
+    const mesh = new GLTFMesh();
+    mesh.uri = modelURL;
+    this.#scene.addMesh(mesh);
+
+    const node = new Node();
+    node.meshId = mesh.id;
+    this.#scene.addNode(node);
+
+    this.#spaceNodeId = node.id;
+
+    // Load glTF
+    await this.#scene.loadJSON({ nodes: [node.toJSON()] });
+
+    // Wait for space to load
+    await new Promise((resolve, reject) => {
+      const interval = setInterval(() => {
+        if (this.spaceJoinStatus.spaceId !== spaceId) {
+          clearInterval(interval);
+          reject();
+          return;
+        }
+
+        if (
+          this.spaceJoinStatus.wsConnected &&
+          this.spaceJoinStatus.rtcConnected &&
+          this.#loadedPlayers.size === this.#connectedPlayers.size
+        ) {
+          clearInterval(interval);
+          resolve(null);
+        }
+      }, 100);
+    });
   }
 
   connectToHost(spaceId: string) {
@@ -117,7 +151,12 @@ export class NetworkingInterface {
     this.#ws = ws;
 
     // Create WebRTC manager
-    this.#webRTC = new WebRTC(ws, this.#renderThread, this.#producedTrack);
+    this.#webRTC = new WebRTC(
+      ws,
+      this,
+      this.#renderThread,
+      this.#producedTrack
+    );
     this.#webRTC.playerId = this.playerId$.value;
     this.#webRTC.playerPosition = this.playerPosition;
     this.#webRTC.playerRotation = this.playerRotation;
@@ -129,6 +168,7 @@ export class NetworkingInterface {
     ws.onopen = () => {
       console.info("✅ Connected to host");
       this.#reconnectCount = 0;
+      this.spaceJoinStatus.wsConnected = true;
 
       // Set player name and avatar
       this.#sendName();
@@ -168,6 +208,8 @@ export class NetworkingInterface {
         case "player_joined": {
           console.info(`👋 Player ${toHex(data.playerId)} joined`);
 
+          this.#connectedPlayers.add(data.playerId);
+
           // Set name
           if (data.name) this.#playerNames.set(data.playerId, data.name);
           else this.#playerNames.delete(data.playerId);
@@ -183,6 +225,9 @@ export class NetworkingInterface {
 
         case "player_left": {
           console.info(`👋 Player ${toHex(data)} left`);
+
+          this.#connectedPlayers.delete(data);
+          this.#loadedPlayers.delete(data);
 
           // Delete name
           this.#playerNames.delete(data);
@@ -238,6 +283,8 @@ export class NetworkingInterface {
 
         case "player_avatar": {
           console.info(`💃 Got custom avatar for ${toHex(data.playerId)}`);
+
+          this.#loadedPlayers.delete(data.playerId);
 
           this.#renderThread.postMessage({
             subject: "set_player_avatar",
@@ -411,5 +458,9 @@ export class NetworkingInterface {
   setAudioPaused(paused: boolean) {
     if (!this.#webRTC) throw new Error("WebRTC not initialized");
     this.#webRTC.setAudioPaused(paused);
+  }
+
+  setPlayerLoaded(playerId: number) {
+    if (this.#connectedPlayers.has(playerId)) this.#loadedPlayers.add(playerId);
   }
 }

@@ -61,9 +61,9 @@ export default function App({
   useEffect(() => {
     if (!engine) return;
 
-    engine.joinSpace(id).then(() => {
+    engine.joinSpace(id).then(async () => {
       // Start engine
-      engine.start();
+      await engine.start();
       setEngineStarted(true);
     });
 

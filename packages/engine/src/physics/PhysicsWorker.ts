@@ -19,7 +19,7 @@ import {
 import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
 const TERMINAL_VELOCITY = 40;
-const VOID_HEIGHT = -100;
+const VOID_HEIGHT = -50;
 const JUMP_VELOCITY = 6;
 const JUMP_COOLDOWN_SECONDS = 0.2;
 const HZ = 60; // Physics updates per second

@@ -20,6 +20,7 @@ enum ComponentType {
 }
 
 export default function InspectMenu() {
+  const spawnId = useEditorStore((state) => state.engine?.scene.spawnId);
   const selectedId = useEditorStore((state) => state.selectedId);
   const node = useNode(selectedId);
 
@@ -42,7 +43,10 @@ export default function InspectMenu() {
       </div>
     );
 
+  const isSpawn = selectedId === spawnId;
+
   const otherComponents = Object.values(ComponentType).filter((type) => {
+    if (isSpawn) return false;
     if (mesh && type === ComponentType.Mesh) return false;
     if (collider && type === ComponentType.Physics) return false;
     return true;

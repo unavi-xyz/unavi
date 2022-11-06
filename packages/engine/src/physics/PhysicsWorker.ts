@@ -138,9 +138,19 @@ export class PhysicsWorker {
       }
 
       case "load_json": {
+        // Load nodes from JSON
+        const nodes = data.scene.nodes;
+        if (nodes)
+          nodes.forEach((node) => {
+            this.#nodes.set(node.id, node);
+            this.addCollider(node);
+          });
+
         // Save spawn
-        if (data.scene.spawn) {
-          this.#spawn = data.scene.spawn;
+        if (data.scene.spawnId) {
+          const spawnNode = this.#nodes.get(data.scene.spawnId);
+          if (spawnNode) this.#spawn = spawnNode.position;
+
           this.#spawn[1] += PLAYER_HEIGHT / 2;
 
           // Set player position
@@ -156,14 +166,6 @@ export class PhysicsWorker {
             this.#playerBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
           }
         }
-
-        // Load nodes from JSON
-        const nodes = data.scene.nodes;
-        if (nodes)
-          nodes.forEach((node) => {
-            this.#nodes.set(node.id, node);
-            this.addCollider(node);
-          });
         break;
       }
 

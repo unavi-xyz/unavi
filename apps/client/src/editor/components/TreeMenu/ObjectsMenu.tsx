@@ -19,7 +19,7 @@ enum ObjectName {
   Sphere = "Sphere",
   Cylinder = "Cylinder",
   glTF = "glTF Model",
-  Group = "Group",
+  Empty = "Empty",
 }
 
 export default function ObjectsMenu() {

@@ -1,4 +1,5 @@
 import ObjectsButton from "./ObjectsButton";
+import SpecialsButton from "./SpecialsButton";
 import TreeMenuRoot from "./TreeMenuRoot";
 
 export default function TreeMenu() {
@@ -6,6 +7,7 @@ export default function TreeMenu() {
     <div className="h-full space-y-2 p-2 pl-3">
       <div className="flex h-10 items-center justify-center space-x-2">
         <ObjectsButton />
+        <SpecialsButton />
       </div>
 
       <div className="h-full w-full overflow-y-auto overflow-x-hidden">

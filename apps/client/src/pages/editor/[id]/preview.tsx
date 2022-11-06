@@ -124,13 +124,8 @@ export default function Preview() {
       const savedScene: SavedSceneJSON = await sceneResponse.json();
 
       const scene: SceneJSON = {
-        spawn: savedScene.spawn,
-        accessors: savedScene.accessors,
-        animations: savedScene.animations,
+        ...savedScene,
         images: [],
-        materials: savedScene.materials,
-        meshes: savedScene.meshes,
-        nodes: savedScene.nodes,
       };
 
       // Load glTF models

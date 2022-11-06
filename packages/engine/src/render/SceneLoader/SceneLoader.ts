@@ -45,7 +45,7 @@ export class SceneLoader {
   #sun = new DirectionalLight(0xfff0db, 0.98);
   #spawn = new Mesh(
     new CylinderGeometry(0.5, 0.5, 1.6, 8),
-    new MeshBasicMaterial({ wireframe: false })
+    new MeshBasicMaterial({ wireframe: true })
   );
 
   #map: SceneMap = {
@@ -138,9 +138,12 @@ export class SceneLoader {
 
       case "load_json": {
         // Set spawn
-        if (data.scene.spawn) {
-          this.#spawn.position.fromArray(data.scene.spawn);
-          this.#spawn.position.y += 0.8;
+        if (data.scene.spawnId) {
+          const spawnNode = this.#map.nodes.get(data.scene.spawnId);
+          if (spawnNode) {
+            const spawnObject = this.#map.objects.get(data.scene.spawnId);
+            if (spawnObject) spawnObject.add(this.#spawn);
+          }
         }
 
         // Add accessors

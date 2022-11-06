@@ -10,7 +10,7 @@ import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUt
 
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
-import { ObjectName, SceneMap } from "../types";
+import { SceneMap, UserData } from "../types";
 import { removeColliderVisual } from "./removeColliderVisual";
 
 const wireframeMaterial = new MeshBasicMaterial({
@@ -175,7 +175,7 @@ export function createColliderVisual(
     if (!object) throw new Error("Object not found");
 
     // Set collider
-    collider.name = ObjectName.Visual;
+    collider.userData[UserData.isVisual] = true;
     map.colliders.set(nodeId, collider);
 
     // Add collider to scene

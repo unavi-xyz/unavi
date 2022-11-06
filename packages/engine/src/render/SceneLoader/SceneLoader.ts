@@ -29,7 +29,7 @@ import { updateMesh } from "./mesh/updateMesh";
 import { addNode } from "./node/addNode";
 import { removeNode } from "./node/removeNode";
 import { updateNode } from "./node/updateNode";
-import { ObjectName, SceneMap } from "./types";
+import { SceneMap, UserData } from "./types";
 import { getChildren } from "./utils/getChildren";
 import { updateGlobalTransform } from "./utils/updateGlobalTransform";
 
@@ -45,7 +45,7 @@ export class SceneLoader {
   #sun = new DirectionalLight(0xfff0db, 0.98);
   #spawn = new Mesh(
     new CylinderGeometry(0.5, 0.5, 1.6, 8),
-    new MeshBasicMaterial({ wireframe: true })
+    new MeshBasicMaterial({ wireframe: false })
   );
 
   #map: SceneMap = {
@@ -65,7 +65,7 @@ export class SceneLoader {
   constructor(postMessage: PostMessage<FromRenderMessage>) {
     this.#postMessage = postMessage;
 
-    this.#spawn.name = ObjectName.Visual;
+    this.#spawn.userData[UserData.isVisual] = true;
     this.root.add(this.#spawn);
 
     this.root.add(this.contents);
@@ -191,7 +191,8 @@ export class SceneLoader {
 
   #updateVisuals() {
     this.root.traverse((object) => {
-      if (object.name === ObjectName.Visual) object.visible = this.#showVisuals;
+      if (object.userData[UserData.isVisual])
+        object.visible = this.#showVisuals;
     });
   }
 

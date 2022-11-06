@@ -19,6 +19,6 @@ export type SceneMap = {
   objects: Map<string, Object3D>;
 };
 
-export enum ObjectName {
-  Visual = "visual",
+export enum UserData {
+  isVisual = "isVisual",
 }

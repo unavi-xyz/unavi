@@ -17,8 +17,8 @@ export default function Index() {
 
       <div className="flex justify-center pt-64">
         <div className="max-w-content mx-4 snap-y snap-mandatory space-y-12">
-          <div className="h-screen snap-center pt-14 pb-8">
-            <div className="flex h-full flex-col-reverse md:flex-row md:items-center">
+          <div className="h-screen snap-center pt-14 pb-12">
+            <div className="flex h-full flex-col-reverse pb-8 md:flex-row md:items-center">
               <div className="flex h-full w-full flex-col space-y-4 md:justify-center">
                 <div className="text-center text-6xl font-black md:text-left md:text-8xl">
                   The Wired
@@ -97,7 +97,7 @@ export default function Index() {
             buttonLink={DOCS_URL}
           />
 
-          <div className="h-screen snap-center py-16">
+          <div className="h-screen snap-center py-24">
             <div className="flex h-full flex-col md:flex-row md:items-center">
               <div className="h-full w-full py-4 md:h-1/2 md:w-1/2 md:p-8 md:py-0">
                 <div className="relative h-full w-full">
@@ -113,10 +113,7 @@ export default function Index() {
               </div>
 
               <div className="w-full space-y-2">
-                <div
-                  className="w-fit rounded-xl bg-primaryContainer px-5 py-2 text-6xl
-                         font-black text-onPrimaryContainer"
-                >
+                <div className="w-fit rounded-xl bg-primaryContainer px-5 py-2 text-6xl font-black text-onPrimaryContainer">
                   Links
                 </div>
 

@@ -89,6 +89,7 @@ export default function App({
     engine.scene.addNode(node);
 
     return () => {
+      engine.scene.removeMesh(mesh.id);
       engine.scene.removeNode(node.id);
     };
   }, [engine, modelURL]);

@@ -499,12 +499,14 @@ export class Scene {
 
   destroy() {
     Object.values(this.nodes).forEach((node) => node.destroy());
+    Object.values(this.meshes).forEach((mesh) => mesh.destroy());
     Object.values(this.materials).forEach((material) => material.destroy());
     Object.values(this.accessors).forEach((accessor) => accessor.destroy());
     Object.values(this.images).forEach((image) => image.destroy());
     Object.values(this.animations).forEach((animation) => animation.destroy());
 
     this.nodes$.complete();
+    this.meshes$.complete();
     this.materials$.complete();
     this.accessors$.complete();
     this.images$.complete();

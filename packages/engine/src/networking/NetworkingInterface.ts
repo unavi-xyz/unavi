@@ -111,16 +111,17 @@ export class NetworkingInterface {
     // Create glTF mesh
     const mesh = new GLTFMesh();
     mesh.uri = modelURL;
-    this.#scene.addMesh(mesh);
 
     const node = new Node();
     node.meshId = mesh.id;
-    this.#scene.addNode(node);
 
     this.#spaceNodeId = node.id;
 
     // Load glTF
-    await this.#scene.loadJSON({ nodes: [node.toJSON()] });
+    await this.#scene.loadJSON({
+      nodes: [node.toJSON()],
+      meshes: [mesh.toJSON()],
+    });
 
     // Wait for space to load
     await new Promise((resolve, reject) => {

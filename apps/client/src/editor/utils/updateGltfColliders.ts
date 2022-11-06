@@ -4,7 +4,7 @@ import { useEditorStore } from "../store";
 
 export function updateGltfColliders(nodeId: string) {
   const { engine } = useEditorStore.getState();
-  if (!engine) throw new Error("Engine not found");
+  if (!engine) return;
 
   const node = engine.scene.nodes[nodeId];
 

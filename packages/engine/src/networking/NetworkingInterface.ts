@@ -80,7 +80,6 @@ export class NetworkingInterface {
     if (!modelURL) throw new Error("Space model not found");
 
     // Create glTF node from model URL
-
     const mesh = new GLTFMesh();
     mesh.uri = modelURL;
     this.#scene.addMesh(mesh);
@@ -92,9 +91,7 @@ export class NetworkingInterface {
     this.#spaceNodeId = node.id;
 
     // Add to scene
-    await this.#scene.loadJSON({
-      nodes: [node.toJSON()],
-    });
+    await this.#scene.loadJSON({ nodes: [node.toJSON()] });
 
     // Get host server
     const spaceHost = null; // TODO: get from metadata
@@ -106,7 +103,7 @@ export class NetworkingInterface {
         ? `wss://${spaceHost}`
         : DEFAULT_HOST;
 
-    this.#hostServer = DEFAULT_HOST;
+    this.#hostServer = host;
 
     // Connect to host server
     this.connectToHost(spaceId);

@@ -15,11 +15,7 @@ export default function SpaceIdCard({
   animateEnter = false,
 }: Props) {
   const [{ data }] = useGetPublicationQuery({
-    variables: {
-      request: {
-        publicationId: spaceId,
-      },
-    },
+    variables: { request: { publicationId: spaceId } },
   });
 
   if (!data || data.publication?.metadata.content === HIDDEN_MESSAGE)

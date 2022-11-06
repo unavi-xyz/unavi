@@ -149,14 +149,14 @@ export class RenderWorker {
     this.#scene.add(ambientLight);
 
     // Fog
-    this.#scene.fog = new FogExp2(0xeefaff, 0.005);
+    this.#scene.fog = new FogExp2(0xeefaff, 0.004);
 
     // Camera
     this.#camera = new PerspectiveCamera(
       75,
       canvasWidth / canvasHeight,
       0.14,
-      1000
+      750
     );
 
     // Camera

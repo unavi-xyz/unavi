@@ -69,9 +69,11 @@ export default function Preview() {
     const editorState = JSON.parse(project.editorState);
     if (!editorState) return;
 
-    engine.renderThread.postMessage({
-      subject: "show_visuals",
-      data: { visible: editorState.visuals },
+    engine.waitForReady().then(() => {
+      engine.renderThread.postMessage({
+        subject: "show_visuals",
+        data: { visible: editorState.visuals },
+      });
     });
   }, [engine, project]);
 

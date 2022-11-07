@@ -2,17 +2,14 @@ import type { GLTF } from "@gltf-transform/core";
 import {
   AnimationClip,
   AnimationMixer,
-  Box3,
   BufferAttribute,
   BufferGeometry,
   CylinderGeometry,
-  DirectionalLight,
   Group,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
-  Vector3,
 } from "three";
 
 import { AccessorJSON, MeshJSON, NodeJSON } from "../../scene";
@@ -42,7 +39,6 @@ export class SceneLoader {
   mixer = new AnimationMixer(this.root);
 
   #showVisuals = false;
-  #sun = new DirectionalLight(0xfff0db, 0.98);
   #spawn = new Mesh(
     new CylinderGeometry(0.5, 0.5, 1.6, 8),
     new MeshBasicMaterial({ wireframe: true })
@@ -65,18 +61,12 @@ export class SceneLoader {
   constructor(postMessage: PostMessage<FromRenderMessage>) {
     this.#postMessage = postMessage;
 
-    this.#spawn.userData[UserData.isVisual] = true;
-    this.root.add(this.#spawn);
-
     this.root.add(this.contents);
     this.#map.objects.set("root", this.contents);
 
-    this.#sun.castShadow = true;
-    this.#sun.position.set(10, 50, 30);
-    this.root.add(this.#sun);
-
-    this.#sun.shadow.mapSize.width = 4096;
-    this.#sun.shadow.mapSize.height = 4096;
+    // Add spawn
+    this.#spawn.userData[UserData.isVisual] = true;
+    this.root.add(this.#spawn);
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
@@ -90,19 +80,16 @@ export class SceneLoader {
 
       case "add_node": {
         addNode(data.node, this.#map, this.#postMessage);
-        this.#updateShadowMap();
         break;
       }
 
       case "remove_node": {
         removeNode(data.nodeId, this.#map);
-        this.#updateShadowMap();
         break;
       }
 
       case "update_node": {
         updateNode(data.nodeId, data.data, this.#map, this.#postMessage);
-        this.#updateShadowMap();
         break;
       }
 
@@ -189,7 +176,6 @@ export class SceneLoader {
     }
 
     this.#updateVisuals();
-    this.#updateShadowMap();
   };
 
   #updateVisuals() {
@@ -319,31 +305,5 @@ export class SceneLoader {
     // Repeat for children
     const children = getChildren(node.id, this.#map);
     children.forEach((child) => this.saveTransform(child.id));
-
-    this.#updateShadowMap();
-  }
-
-  #updateShadowMap() {
-    const sceneBounds = new Box3();
-    this.contents.traverse((object) => {
-      if (object instanceof Mesh) {
-        sceneBounds.expandByObject(object);
-      }
-    });
-
-    const size = sceneBounds.getSize(new Vector3());
-
-    const y = size.y + 20;
-    this.#sun.position.set(0, y, 0);
-    this.#sun.shadow.camera.far = y * 2;
-
-    this.#sun.shadow.camera.left = -size.x / 2;
-    this.#sun.shadow.camera.right = size.x / 2;
-    this.#sun.shadow.camera.top = size.z / 2;
-    this.#sun.shadow.camera.bottom = -size.z / 2;
-
-    this.#sun.shadow.bias = -0.0005;
-
-    this.#sun.shadow.camera.updateProjectionMatrix();
   }
 }

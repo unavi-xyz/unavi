@@ -1,6 +1,7 @@
 import {
   AmbientLight,
   Clock,
+  DirectionalLight,
   FogExp2,
   PCFSoftShadowMap,
   PerspectiveCamera,
@@ -20,6 +21,8 @@ import { SceneLoader } from "./SceneLoader/SceneLoader";
 import { FromRenderMessage, Plugin, ToRenderMessage } from "./types";
 import { disposeObject } from "./utils/disposeObject";
 import { loadCubeTexture } from "./utils/loadCubeTexture";
+
+const SHADOW_VIEW_DISTANCE = 60;
 
 export type RenderWorkerOptions = {
   pixelRatio: number;
@@ -49,6 +52,7 @@ export class RenderWorker {
   #scene = new Scene();
   #renderer: WebGLRenderer | null = null;
   #camera: PerspectiveCamera | null = null;
+  #sun = new DirectionalLight(0xfff0db, 0.98);
 
   #animationFrameId: number | null = null;
   #canvasWidth = 0;
@@ -66,6 +70,15 @@ export class RenderWorker {
 
     this.#sceneLoader = new SceneLoader(postMessage);
     this.#scene.add(this.#sceneLoader.root);
+
+    // Add sun
+    this.#sun.castShadow = true;
+    this.#sun.position.set(0, 200, 0);
+    this.#scene.add(this.#sun);
+
+    this.#sun.shadow.mapSize.width = 2048;
+    this.#sun.shadow.mapSize.height = 2048;
+    this.#sun.shadow.bias = -0.0005;
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
@@ -155,11 +168,10 @@ export class RenderWorker {
     this.#camera = new PerspectiveCamera(
       75,
       canvasWidth / canvasHeight,
-      0.14,
+      0.17,
       750
     );
 
-    // Camera
     switch (camera) {
       case "orbit": {
         this.#plugins.push(
@@ -253,6 +265,8 @@ export class RenderWorker {
     this.#sceneLoader.mixer.update(delta);
     this.#plugins.forEach((plugin) => plugin.animate && plugin.animate(delta));
 
+    this.#updateShadowMap();
+
     this.#renderer.render(this.#scene, this.#camera);
   }
 
@@ -266,5 +280,18 @@ export class RenderWorker {
     this.#renderer.setSize(width, height, false);
     this.#camera.aspect = width / height;
     this.#camera.updateProjectionMatrix();
+  }
+
+  #updateShadowMap() {
+    if (!this.#camera) return;
+
+    const { x, z } = this.#camera.position;
+
+    this.#sun.shadow.camera.left = -SHADOW_VIEW_DISTANCE + x;
+    this.#sun.shadow.camera.right = SHADOW_VIEW_DISTANCE + x;
+    this.#sun.shadow.camera.top = -SHADOW_VIEW_DISTANCE - z;
+    this.#sun.shadow.camera.bottom = SHADOW_VIEW_DISTANCE - z;
+
+    this.#sun.shadow.camera.updateProjectionMatrix();
   }
 }

@@ -4,6 +4,7 @@ import {
   GetPublicationQueryVariables,
   Publication,
 } from "@wired-labs/lens";
+import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 import { createClient } from "urql";
 
@@ -221,6 +222,28 @@ export class NetworkingInterface {
 
           // Add player to scene
           this.#renderThread.postMessage({ subject: "player_joined", data });
+
+          // Get player name
+          const handle = this.#playerHandles.get(data.playerId);
+          const isHandle = Boolean(handle);
+
+          let username = isHandle
+            ? `@${handle}`
+            : this.#playerNames.get(data.playerId);
+
+          if (!username) username = `Guest ${toHex(data.playerId)}`;
+
+          // Add message to chat if they joined after you
+          if (!data.beforeYou)
+            this.#addChatMessage({
+              type: "system",
+              variant: "player_joined",
+              id: nanoid(),
+              timestamp: Date.now(),
+              playerId: data.playerId,
+              username,
+              isHandle,
+            });
           break;
         }
 
@@ -234,6 +257,25 @@ export class NetworkingInterface {
           this.#playerNames.delete(data);
 
           this.#renderThread.postMessage({ subject: "player_left", data });
+
+          // Get player name
+          const handle = this.#playerHandles.get(data);
+          const isHandle = Boolean(handle);
+
+          let username = isHandle ? `@${handle}` : this.#playerNames.get(data);
+
+          if (!username) username = `Guest ${toHex(data)}`;
+
+          // Add message to chat
+          this.#addChatMessage({
+            type: "system",
+            variant: "player_left",
+            id: nanoid(),
+            timestamp: Date.now(),
+            playerId: data,
+            username,
+            isHandle,
+          });
           break;
         }
 
@@ -249,20 +291,12 @@ export class NetworkingInterface {
           if (!username) username = `Guest ${toHex(data.playerId)}`;
 
           // Add message to chat
-          const message: InternalChatMessage = {
-            ...data,
+          this.#addChatMessage({
+            type: "chat",
             username,
             isHandle,
-          };
-          const newChatMessages = this.chatMessages$.value.concat(message);
-
-          // Sort by timestamp
-          newChatMessages.sort((a, b) => a.timestamp - b.timestamp);
-
-          // Limit to 25 messages
-          newChatMessages.splice(0, newChatMessages.length - 25);
-
-          this.chatMessages$.next(newChatMessages);
+            ...data,
+          });
           break;
         }
 
@@ -444,6 +478,18 @@ export class NetworkingInterface {
     };
 
     this.#ws.send(JSON.stringify(message));
+  }
+
+  #addChatMessage(message: InternalChatMessage) {
+    const newChatMessages = this.chatMessages$.value.concat(message);
+
+    // Sort by timestamp
+    newChatMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Limit to 25 messages
+    newChatMessages.splice(0, newChatMessages.length - 25);
+
+    this.chatMessages$.next(newChatMessages);
   }
 
   #isWsOpen() {

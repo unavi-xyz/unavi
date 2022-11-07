@@ -22,7 +22,7 @@ import { FromRenderMessage, Plugin, ToRenderMessage } from "./types";
 import { disposeObject } from "./utils/disposeObject";
 import { loadCubeTexture } from "./utils/loadCubeTexture";
 
-const SHADOW_VIEW_DISTANCE = 60;
+const SHADOW_VIEW_DISTANCE = 50;
 
 export type RenderWorkerOptions = {
   pixelRatio: number;

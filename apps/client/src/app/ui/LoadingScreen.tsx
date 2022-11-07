@@ -83,7 +83,10 @@ export default function LoadingScreen({ spaceId, loaded }: Props) {
               <Button
                 variant="filled"
                 loading={!loaded}
-                onClick={() => setEntered(true)}
+                onClick={() => {
+                  if (!loaded) return;
+                  setEntered(true);
+                }}
               >
                 <div className="px-8 py-1 text-2xl">Enter</div>
               </Button>

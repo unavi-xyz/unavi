@@ -875,6 +875,8 @@ export type DoesFollowResponse = {
   followerAddress: Scalars['EthereumAddress'];
   /** If the user does follow */
   follows: Scalars['Boolean'];
+  /** Is finalised on-chain */
+  isFinalisedOnChain: Scalars['Boolean'];
   /** The profile id */
   profileId: Scalars['ProfileId'];
 };
@@ -2911,6 +2913,8 @@ export enum ReactionTypes {
 export type RecommendedProfileOptions = {
   /** If you wish to turn ML off */
   disableML?: InputMaybe<Scalars['Boolean']>;
+  /** If you wish to shuffle the results */
+  shuffle?: InputMaybe<Scalars['Boolean']>;
 };
 
 export type ReferenceModule = DegreesOfSeparationReferenceModuleSettings | FollowOnlyReferenceModuleSettings | UnknownReferenceModuleSettings;

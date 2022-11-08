@@ -52,6 +52,14 @@ export default function Editor() {
       await engine.waitForReady();
 
       engine.renderThread.postMessage({
+        subject: "set_shadow_settings",
+        data: {
+          viewDistance: 200,
+          mapSize: 8192,
+        },
+      });
+
+      engine.renderThread.postMessage({
         subject: "show_visuals",
         data: { visible: useEditorStore.getState().visuals },
       });

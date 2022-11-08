@@ -22,8 +22,6 @@ import { FromRenderMessage, Plugin, ToRenderMessage } from "./types";
 import { disposeObject } from "./utils/disposeObject";
 import { loadCubeTexture } from "./utils/loadCubeTexture";
 
-const SHADOW_VIEW_DISTANCE = 50;
-
 export type RenderWorkerOptions = {
   pixelRatio: number;
   canvasWidth: number;
@@ -58,6 +56,7 @@ export class RenderWorker {
   #canvasWidth = 0;
   #canvasHeight = 0;
   #clock = new Clock();
+  #shadowViewDistance = 50;
 
   #plugins: Plugin<ToRenderMessage>[] = [];
   #pluginState: PluginState = {
@@ -114,6 +113,19 @@ export class RenderWorker {
 
       case "size": {
         this.#updateCanvasSize(data.width, data.height);
+        break;
+      }
+
+      case "set_shadow_settings": {
+        if (!this.#renderer) return;
+
+        const maxMapSize = this.#renderer.capabilities.maxTextureSize;
+        const mapSize = Math.min(maxMapSize, data.mapSize);
+
+        this.#sun.shadow.mapSize.width = mapSize;
+        this.#sun.shadow.mapSize.height = mapSize;
+
+        this.#shadowViewDistance = data.viewDistance;
         break;
       }
     }
@@ -287,10 +299,10 @@ export class RenderWorker {
 
     const { x, z } = this.#camera.position;
 
-    this.#sun.shadow.camera.left = -SHADOW_VIEW_DISTANCE + x;
-    this.#sun.shadow.camera.right = SHADOW_VIEW_DISTANCE + x;
-    this.#sun.shadow.camera.top = -SHADOW_VIEW_DISTANCE - z;
-    this.#sun.shadow.camera.bottom = SHADOW_VIEW_DISTANCE - z;
+    this.#sun.shadow.camera.left = -this.#shadowViewDistance + x;
+    this.#sun.shadow.camera.right = this.#shadowViewDistance + x;
+    this.#sun.shadow.camera.top = -this.#shadowViewDistance - z;
+    this.#sun.shadow.camera.bottom = this.#shadowViewDistance - z;
 
     this.#sun.shadow.camera.updateProjectionMatrix();
   }

@@ -41,7 +41,7 @@ enum PublicationType {
 
 // Projects
 model Project {
-  id        String   @id @default(uuid())
+  id        String   @id
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

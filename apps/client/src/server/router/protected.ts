@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { customAlphabet } from "nanoid";
 import { z } from "zod";
 
 import { emptyScene } from "../../editor/constants";
@@ -19,10 +20,15 @@ import {
 import { protectedProcedure } from "./context";
 import { router } from "./trpc";
 
-const UUID_LENGTH = 36;
-const CUID_LENGTH = 25;
+const PROJECT_ID_LENGTH = 21;
+const PUBLICATION_ID_LENGTH = 25; // cuid
 const PROJECT_NAME_LENGTH = 70;
 const PROJECT_DESCRIPTION_LENGTH = 2000;
+
+const nanoid = customAlphabet(
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz",
+  PROJECT_ID_LENGTH
+);
 
 export const protectedRouter = router({
   projects: protectedProcedure.query(async ({ ctx }) => {
@@ -46,7 +52,7 @@ export const protectedRouter = router({
   project: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -63,7 +69,7 @@ export const protectedRouter = router({
   projectScene: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -82,7 +88,7 @@ export const protectedRouter = router({
   projectImage: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -101,7 +107,7 @@ export const protectedRouter = router({
   projectFiles: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -135,7 +141,7 @@ export const protectedRouter = router({
   projectSceneUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -154,7 +160,7 @@ export const protectedRouter = router({
   projectImageUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -173,7 +179,7 @@ export const protectedRouter = router({
   projectFileUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
         storageKey: z.string(),
       })
     )
@@ -207,13 +213,19 @@ export const protectedRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const id = nanoid();
+      const promises: Promise<any>[] = [];
+
       // Create project
-      const { id } = await prisma.project.create({
-        data: {
-          owner: ctx.address,
-          name: input.name,
-        },
-      });
+      promises.push(
+        prisma.project.create({
+          data: {
+            id,
+            owner: ctx.address,
+            name: input.name,
+          },
+        })
+      );
 
       // Upload default scene to S3
       const url = await createSceneUploadURL(id);
@@ -225,16 +237,22 @@ export const protectedRouter = router({
         },
       });
 
+      await Promise.all(promises);
+
       return id;
     }),
 
   saveProject: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
         name: z.string().max(PROJECT_NAME_LENGTH).optional(),
         description: z.string().max(PROJECT_DESCRIPTION_LENGTH).optional(),
-        publicationId: z.string().length(CUID_LENGTH).or(z.null()).optional(),
+        publicationId: z
+          .string()
+          .length(PUBLICATION_ID_LENGTH)
+          .or(z.null())
+          .optional(),
         editorState: z
           .object({
             visuals: z.boolean(),
@@ -266,7 +284,7 @@ export const protectedRouter = router({
   deleteProject: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -302,7 +320,7 @@ export const protectedRouter = router({
   publishedModelUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(CUID_LENGTH),
+        id: z.string().length(PUBLICATION_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -321,7 +339,7 @@ export const protectedRouter = router({
   publishedImageUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(CUID_LENGTH),
+        id: z.string().length(PUBLICATION_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -340,7 +358,7 @@ export const protectedRouter = router({
   publishedMetadataUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(CUID_LENGTH),
+        id: z.string().length(PUBLICATION_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -369,7 +387,7 @@ export const protectedRouter = router({
     .input(
       z.object({
         lensId: z.string(),
-        publicationId: z.string().length(CUID_LENGTH),
+        publicationId: z.string().length(PUBLICATION_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -390,7 +408,7 @@ export const protectedRouter = router({
     .input(
       z.object({
         lensId: z.string().optional(),
-        publicationId: z.string().length(CUID_LENGTH).optional(),
+        publicationId: z.string().length(PUBLICATION_ID_LENGTH).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

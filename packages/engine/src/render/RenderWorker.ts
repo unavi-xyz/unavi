@@ -205,7 +205,7 @@ export class RenderWorker {
 
     // Cascading shadow maps
     this.csm = new CSM({
-      maxFar: 30,
+      maxFar: 50,
       camera: this.#camera,
       parent: this.#scene,
       // lightDirection: new Vector3(0.2, -1, 0.3),

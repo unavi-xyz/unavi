@@ -7,6 +7,7 @@ import {
   PMREMGenerator,
   Scene,
   sRGBEncoding,
+  Vector3,
   WebGLRenderer,
 } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
@@ -107,19 +108,6 @@ export class RenderWorker {
         this.#updateCanvasSize(data.width, data.height);
         break;
       }
-
-      case "set_shadow_settings": {
-        if (!this.#renderer) return;
-
-        // const maxMapSize = this.#renderer.capabilities.maxTextureSize;
-        // const mapSize = Math.min(maxMapSize, data.mapSize);
-
-        // this.#sun.shadow.mapSize.width = mapSize;
-        // this.#sun.shadow.mapSize.height = mapSize;
-
-        // this.#shadowViewDistance = data.viewDistance;
-        break;
-      }
     }
   };
 
@@ -204,12 +192,16 @@ export class RenderWorker {
 
     // Cascading shadow maps
     this.csm = new CSM({
-      maxFar: 50,
+      maxFar: 100,
+      cascades: 3,
+      lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
+      shadowMapSize: 2048,
+      shadowBias: -0.0001,
       camera: this.#camera,
       parent: this.#scene,
     });
 
-    // this.csm.fade = true;
+    this.csm.fade = true;
     this.csm.setupMaterial(defaultMaterial);
 
     // Transform Controls

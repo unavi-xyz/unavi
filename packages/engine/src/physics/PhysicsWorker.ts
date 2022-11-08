@@ -9,7 +9,14 @@ import {
 } from "@dimforge/rapier3d";
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../constants";
-import { NodeJSON } from "../scene";
+import {
+  BoxCollider,
+  CylinderCollider,
+  MeshCollider,
+  MeshJSON,
+  NodeJSON,
+  SphereCollider,
+} from "../scene";
 import { PostMessage, Triplet } from "../types";
 import {
   playerCollisionGroup,
@@ -19,7 +26,7 @@ import {
 import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
 const TERMINAL_VELOCITY = 40;
-const VOID_HEIGHT = -100;
+const VOID_HEIGHT = -50;
 const JUMP_VELOCITY = 6;
 const JUMP_COOLDOWN_SECONDS = 0.2;
 const HZ = 60; // Physics updates per second
@@ -53,6 +60,7 @@ export class PhysicsWorker {
   #isSprinting = false;
 
   #nodes = new Map<string, NodeJSON>();
+  #meshes = new Map<string, MeshJSON>();
   #rigidBodies = new Map<string, RigidBody>();
   #colliders = new Map<string, Collider>();
   #spawn: Triplet = [0, 0, 0];
@@ -138,9 +146,24 @@ export class PhysicsWorker {
       }
 
       case "load_json": {
+        // Save meshes
+        if (data.scene.meshes) {
+          data.scene.meshes.forEach((mesh) => this.#meshes.set(mesh.id, mesh));
+        }
+
+        // Load nodes from JSON
+        const nodes = data.scene.nodes;
+        if (nodes)
+          nodes.forEach((node) => {
+            this.#nodes.set(node.id, node);
+            this.addCollider(node);
+          });
+
         // Save spawn
-        if (data.scene.spawn) {
-          this.#spawn = data.scene.spawn;
+        if (data.scene.spawnId) {
+          const spawnNode = this.#nodes.get(data.scene.spawnId);
+          if (spawnNode) this.#spawn = spawnNode.position;
+
           this.#spawn[1] += PLAYER_HEIGHT / 2;
 
           // Set player position
@@ -156,14 +179,6 @@ export class PhysicsWorker {
             this.#playerBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
           }
         }
-
-        // Load nodes from JSON
-        const nodes = data.scene.nodes;
-        if (nodes)
-          nodes.forEach((node) => {
-            this.#nodes.set(node.id, node);
-            this.addCollider(node);
-          });
         break;
       }
 
@@ -247,29 +262,62 @@ export class PhysicsWorker {
     // Remove existing collider
     this.removeCollider(node.id);
 
-    // If node has no collider, return
-    if (!node.collider) return;
-
     // Create collider description
     let colliderDesc: ColliderDesc | null = null;
+    let nodeCollider = node.collider ? { ...node.collider } : null;
 
-    switch (node.collider.type) {
+    if (nodeCollider?.type === "auto" && node.meshId) {
+      const mesh = this.#meshes.get(node.meshId);
+      if (!mesh) return;
+
+      switch (mesh.type) {
+        case "Box": {
+          const boxCollider = new BoxCollider();
+          boxCollider.size = [mesh.width, mesh.height, mesh.depth];
+          nodeCollider = boxCollider;
+          break;
+        }
+
+        case "Sphere": {
+          const sphereCollider = new SphereCollider();
+          sphereCollider.radius = mesh.radius;
+          nodeCollider = sphereCollider;
+          break;
+        }
+
+        case "Cylinder": {
+          const cylinderCollider = new CylinderCollider();
+          cylinderCollider.radius = mesh.radius;
+          cylinderCollider.height = mesh.height;
+          nodeCollider = cylinderCollider;
+          break;
+        }
+
+        case "Primitives": {
+          const meshCollider = new MeshCollider();
+          meshCollider.meshId = node.meshId;
+          nodeCollider = meshCollider;
+        }
+      }
+    }
+
+    switch (nodeCollider?.type) {
       case "box": {
-        const size = node.collider.size;
+        const size = nodeCollider.size;
         const halfSize: Triplet = [size[0] / 2, size[1] / 2, size[2] / 2];
         colliderDesc = ColliderDesc.cuboid(...halfSize);
         break;
       }
 
       case "sphere": {
-        const radius = node.collider.radius;
+        const radius = nodeCollider.radius;
         colliderDesc = ColliderDesc.ball(radius);
         break;
       }
 
       case "cylinder": {
-        const height = node.collider.height;
-        const cylinderRadius = node.collider.radius;
+        const height = nodeCollider.height;
+        const cylinderRadius = nodeCollider.radius;
         colliderDesc = ColliderDesc.cylinder(height / 2, cylinderRadius);
         break;
       }

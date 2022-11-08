@@ -2,22 +2,20 @@ import type { GLTF } from "@gltf-transform/core";
 import {
   AnimationClip,
   AnimationMixer,
-  Box3,
   BufferAttribute,
   BufferGeometry,
   CylinderGeometry,
-  DirectionalLight,
   Group,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
-  Vector3,
 } from "three";
 
 import { AccessorJSON, MeshJSON, NodeJSON } from "../../scene";
 import { sortNodes } from "../../scene/utils/sortNodes";
 import { PostMessage, Quad } from "../../types";
+import { RenderWorker } from "../RenderWorker";
 import { FromRenderMessage, RenderExport, ToRenderMessage } from "../types";
 import { addAnimation } from "./animation/addAnimation";
 import { addMaterial } from "./material/addMaterial";
@@ -29,7 +27,7 @@ import { updateMesh } from "./mesh/updateMesh";
 import { addNode } from "./node/addNode";
 import { removeNode } from "./node/removeNode";
 import { updateNode } from "./node/updateNode";
-import { ObjectName, SceneMap } from "./types";
+import { SceneMap, UserData } from "./types";
 import { getChildren } from "./utils/getChildren";
 import { updateGlobalTransform } from "./utils/updateGlobalTransform";
 
@@ -42,7 +40,6 @@ export class SceneLoader {
   mixer = new AnimationMixer(this.root);
 
   #showVisuals = false;
-  #sun = new DirectionalLight(0xfff0db, 0.98);
   #spawn = new Mesh(
     new CylinderGeometry(0.5, 0.5, 1.6, 8),
     new MeshBasicMaterial({ wireframe: true })
@@ -61,22 +58,21 @@ export class SceneLoader {
   };
 
   #postMessage: PostMessage<FromRenderMessage>;
+  #renderWorker: RenderWorker;
 
-  constructor(postMessage: PostMessage<FromRenderMessage>) {
+  constructor(
+    postMessage: PostMessage<FromRenderMessage>,
+    renderWorker: RenderWorker
+  ) {
     this.#postMessage = postMessage;
-
-    this.#spawn.name = ObjectName.Visual;
-    this.root.add(this.#spawn);
+    this.#renderWorker = renderWorker;
 
     this.root.add(this.contents);
     this.#map.objects.set("root", this.contents);
 
-    this.#sun.castShadow = true;
-    this.#sun.position.set(10, 50, 30);
-    this.root.add(this.#sun);
-
-    this.#sun.shadow.mapSize.width = 4096;
-    this.#sun.shadow.mapSize.height = 4096;
+    // Add spawn
+    this.#spawn.userData[UserData.isVisual] = true;
+    this.root.add(this.#spawn);
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
@@ -90,19 +86,16 @@ export class SceneLoader {
 
       case "add_node": {
         addNode(data.node, this.#map, this.#postMessage);
-        this.#updateShadowMap();
         break;
       }
 
       case "remove_node": {
         removeNode(data.nodeId, this.#map);
-        this.#updateShadowMap();
         break;
       }
 
       case "update_node": {
         updateNode(data.nodeId, data.data, this.#map, this.#postMessage);
-        this.#updateShadowMap();
         break;
       }
 
@@ -122,7 +115,7 @@ export class SceneLoader {
       }
 
       case "add_material": {
-        addMaterial(data.material, this.#map);
+        addMaterial(data.material, this.#map, this.#renderWorker);
         break;
       }
 
@@ -138,9 +131,12 @@ export class SceneLoader {
 
       case "load_json": {
         // Set spawn
-        if (data.scene.spawn) {
-          this.#spawn.position.fromArray(data.scene.spawn);
-          this.#spawn.position.y += 0.8;
+        if (data.scene.spawnId) {
+          const spawnNode = this.#map.nodes.get(data.scene.spawnId);
+          if (spawnNode) {
+            const spawnObject = this.#map.objects.get(data.scene.spawnId);
+            if (spawnObject) spawnObject.add(this.#spawn);
+          }
         }
 
         // Add accessors
@@ -155,7 +151,9 @@ export class SceneLoader {
 
         // Add materials
         if (data.scene.materials)
-          data.scene.materials.forEach((m) => addMaterial(m, this.#map));
+          data.scene.materials.forEach((m) =>
+            addMaterial(m, this.#map, this.#renderWorker)
+          );
 
         // Add meshes
         if (data.scene.meshes)
@@ -186,12 +184,12 @@ export class SceneLoader {
     }
 
     this.#updateVisuals();
-    this.#updateShadowMap();
   };
 
   #updateVisuals() {
     this.root.traverse((object) => {
-      if (object.name === ObjectName.Visual) object.visible = this.#showVisuals;
+      if (object.userData[UserData.isVisual])
+        object.visible = this.#showVisuals;
     });
   }
 
@@ -315,31 +313,5 @@ export class SceneLoader {
     // Repeat for children
     const children = getChildren(node.id, this.#map);
     children.forEach((child) => this.saveTransform(child.id));
-
-    this.#updateShadowMap();
-  }
-
-  #updateShadowMap() {
-    const sceneBounds = new Box3();
-    this.contents.traverse((object) => {
-      if (object instanceof Mesh) {
-        sceneBounds.expandByObject(object);
-      }
-    });
-
-    const size = sceneBounds.getSize(new Vector3());
-
-    const y = size.y + 20;
-    this.#sun.position.set(0, y, 0);
-    this.#sun.shadow.camera.far = y * 2;
-
-    this.#sun.shadow.camera.left = -size.x / 2;
-    this.#sun.shadow.camera.right = size.x / 2;
-    this.#sun.shadow.camera.top = size.z / 2;
-    this.#sun.shadow.camera.bottom = -size.z / 2;
-
-    this.#sun.shadow.bias = -0.0005;
-
-    this.#sun.shadow.camera.updateProjectionMatrix();
   }
 }

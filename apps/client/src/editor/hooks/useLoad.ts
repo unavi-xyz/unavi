@@ -58,6 +58,7 @@ export function useLoad() {
     useEditorStore.setState({
       name: project.name ?? "",
       description: project.description ?? "",
+      publicationId: project.publicationId,
     });
 
     // Set editor state

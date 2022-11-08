@@ -99,6 +99,7 @@ export class PlayerPlugin {
         this.#avatar = new PlayerAvatar(
           -1,
           data,
+          this.#postMessage,
           this.#avatarPath,
           this.#avatarAnimationsPath,
           this.#camera

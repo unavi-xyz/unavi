@@ -23,9 +23,7 @@ export async function getPublicationProps(
   const { data } = await lensClient
     .query<GetPublicationQuery, GetPublicationQueryVariables>(
       GetPublicationDocument,
-      {
-        request: { publicationId },
-      }
+      { request: { publicationId } }
     )
     .toPromise();
 

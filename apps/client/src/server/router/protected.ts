@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { customAlphabet } from "nanoid";
 import { z } from "zod";
 
 import { emptyScene } from "../../editor/constants";
@@ -11,6 +12,7 @@ import {
   createPublishedModelUploadURL,
   createSceneUploadURL,
   deleteProjectFromS3,
+  deletePublicationFromS3,
   getFileURL,
   getImageURL,
   getSceneURL,
@@ -18,9 +20,15 @@ import {
 import { protectedProcedure } from "./context";
 import { router } from "./trpc";
 
-const UUID_LENGTH = 36;
+const PROJECT_ID_LENGTH = 21;
+const PUBLICATION_ID_LENGTH = 25; // cuid
 const PROJECT_NAME_LENGTH = 70;
 const PROJECT_DESCRIPTION_LENGTH = 2000;
+
+const nanoid = customAlphabet(
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz",
+  PROJECT_ID_LENGTH
+);
 
 export const protectedRouter = router({
   projects: protectedProcedure.query(async ({ ctx }) => {
@@ -44,7 +52,7 @@ export const protectedRouter = router({
   project: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -61,7 +69,7 @@ export const protectedRouter = router({
   projectScene: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -80,7 +88,7 @@ export const protectedRouter = router({
   projectImage: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -99,7 +107,7 @@ export const protectedRouter = router({
   projectFiles: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -133,7 +141,7 @@ export const protectedRouter = router({
   projectSceneUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -152,7 +160,7 @@ export const protectedRouter = router({
   projectImageUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -171,7 +179,7 @@ export const protectedRouter = router({
   projectFileUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
         storageKey: z.string(),
       })
     )
@@ -205,13 +213,19 @@ export const protectedRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const id = nanoid();
+      const promises: Promise<any>[] = [];
+
       // Create project
-      const { id } = await prisma.project.create({
-        data: {
-          owner: ctx.address,
-          name: input.name,
-        },
-      });
+      promises.push(
+        prisma.project.create({
+          data: {
+            id,
+            owner: ctx.address,
+            name: input.name,
+          },
+        })
+      );
 
       // Upload default scene to S3
       const url = await createSceneUploadURL(id);
@@ -223,15 +237,22 @@ export const protectedRouter = router({
         },
       });
 
+      await Promise.all(promises);
+
       return id;
     }),
 
   saveProject: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
         name: z.string().max(PROJECT_NAME_LENGTH).optional(),
         description: z.string().max(PROJECT_DESCRIPTION_LENGTH).optional(),
+        publicationId: z
+          .string()
+          .length(PUBLICATION_ID_LENGTH)
+          .or(z.null())
+          .optional(),
         editorState: z
           .object({
             visuals: z.boolean(),
@@ -241,7 +262,7 @@ export const protectedRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify that user owns the project
+      // Verify user owns the project
       const project = await prisma.project.findFirst({
         where: { id: input.id, owner: ctx.address },
         include: { files: true },
@@ -255,6 +276,7 @@ export const protectedRouter = router({
           name: input.name,
           description: input.description,
           editorState: JSON.stringify(input.editorState),
+          publicationId: input.publicationId,
         },
       });
     }),
@@ -262,11 +284,11 @@ export const protectedRouter = router({
   deleteProject: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PROJECT_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify that user owns the project
+      // Verify user owns the project
       const project = await prisma.project.findFirst({
         where: { id: input.id, owner: ctx.address },
         include: { files: true },
@@ -298,16 +320,15 @@ export const protectedRouter = router({
   publishedModelUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PUBLICATION_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify that user owns the project
-      const project = await prisma.project.findFirst({
+      // Verify user owns the publication
+      const publication = await prisma.publication.findFirst({
         where: { id: input.id, owner: ctx.address },
-        include: { files: true },
       });
-      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get model upload URL from S3
       const url = await createPublishedModelUploadURL(input.id);
@@ -318,16 +339,15 @@ export const protectedRouter = router({
   publishedImageUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PUBLICATION_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify that user owns the project
-      const project = await prisma.project.findFirst({
+      // Verify user owns the publication
+      const publication = await prisma.publication.findFirst({
         where: { id: input.id, owner: ctx.address },
-        include: { files: true },
       });
-      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get image upload URL from S3
       const url = await createPublishedImageUploadURL(input.id);
@@ -338,20 +358,100 @@ export const protectedRouter = router({
   publishedMetadataUploadURL: protectedProcedure
     .input(
       z.object({
-        id: z.string().length(UUID_LENGTH),
+        id: z.string().length(PUBLICATION_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify that user owns the project
-      const project = await prisma.project.findFirst({
+      // Verify user owns the publication
+      const publication = await prisma.publication.findFirst({
         where: { id: input.id, owner: ctx.address },
-        include: { files: true },
       });
-      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get metadata upload URL from S3
       const url = await createPublishedMetadataUploadURL(input.id);
 
       return url;
+    }),
+
+  createPublication: protectedProcedure.mutation(async ({ ctx }) => {
+    // Create publication
+    const { id } = await prisma.publication.create({
+      data: { owner: ctx.address, type: "SPACE" },
+    });
+
+    return id;
+  }),
+
+  linkPublication: protectedProcedure
+    .input(
+      z.object({
+        lensId: z.string(),
+        publicationId: z.string().length(PUBLICATION_ID_LENGTH),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify user owns the publication
+      const publication = await prisma.publication.findFirst({
+        where: { id: input.publicationId, owner: ctx.address },
+      });
+      if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Save lensId to publication
+      await prisma.publication.update({
+        where: { id: input.publicationId },
+        data: { lensId: input.lensId },
+      });
+    }),
+
+  deletePublication: protectedProcedure
+    .input(
+      z.object({
+        lensId: z.string().optional(),
+        publicationId: z.string().length(PUBLICATION_ID_LENGTH).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      let id = input.publicationId;
+
+      // If lensId is provided, find the publication
+      if (input.lensId) {
+        const publication = await prisma.publication.findFirst({
+          where: { lensId: input.lensId, owner: ctx.address },
+        });
+        if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
+        id = publication.id;
+      }
+
+      if (!id) throw new TRPCError({ code: "BAD_REQUEST" });
+
+      // Verify user owns the publication
+      const publication = await prisma.publication.findFirst({
+        where: { id, owner: ctx.address },
+      });
+      if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const promises: Promise<any>[] = [];
+
+      // Delete publication from database
+      promises.push(
+        prisma.publication.delete({
+          where: { id },
+          include: { ViewEvents: true },
+        })
+      );
+
+      // Remove publicationId from projects
+      promises.push(
+        prisma.project.updateMany({
+          where: { publicationId: id },
+          data: { publicationId: null },
+        })
+      );
+
+      // Delete publication from S3
+      promises.push(deletePublicationFromS3(id));
+
+      await Promise.all(promises);
     }),
 });

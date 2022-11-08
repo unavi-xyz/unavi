@@ -4,6 +4,7 @@ import { Transport } from "mediasoup-client/lib/Transport";
 
 import { RenderThread } from "../render/RenderThread";
 import { quaternionToYaw } from "../render/utils/quaternionToYaw";
+import { NetworkingInterface } from "./NetworkingInterface";
 import { FromHostMessage, ToHostMessage } from "./types";
 
 const PUBLISH_HZ = 15; // X times per second
@@ -14,6 +15,7 @@ export class WebRTC {
   playerRotation: Int16Array | null = null;
 
   #ws: WebSocket;
+  #networkingInterface: NetworkingInterface;
   #renderThread: RenderThread;
 
   #audioContext = new AudioContext();
@@ -31,10 +33,12 @@ export class WebRTC {
 
   constructor(
     ws: WebSocket,
+    networkingInterface: NetworkingInterface,
     renderThread: RenderThread,
     producedTrack?: MediaStreamTrack | null
   ) {
     this.#ws = ws;
+    this.#networkingInterface = networkingInterface;
     this.#renderThread = renderThread;
     if (producedTrack) this.#producedTrack = producedTrack;
   }
@@ -104,6 +108,8 @@ export class WebRTC {
 
           if (state === "connected" && data.type === "producer") {
             if (this.#producedTrack) this.produceAudio(this.#producedTrack);
+
+            this.#networkingInterface.spaceJoinStatus.rtcConnected = true;
           }
         });
 

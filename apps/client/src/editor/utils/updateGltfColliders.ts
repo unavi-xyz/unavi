@@ -1,10 +1,10 @@
-import { HullCollider, MeshCollider } from "@wired-labs/engine";
+import { AutoCollider, HullCollider, MeshCollider } from "@wired-labs/engine";
 
 import { useEditorStore } from "../store";
 
 export function updateGltfColliders(nodeId: string) {
   const { engine } = useEditorStore.getState();
-  if (!engine) throw new Error("Engine not found");
+  if (!engine) return;
 
   const node = engine.scene.nodes[nodeId];
 
@@ -15,17 +15,29 @@ export function updateGltfColliders(nodeId: string) {
         if (!child.isInternal) return;
 
         switch (node.collider?.type) {
+          case "auto": {
+            const childCollider = new AutoCollider();
+            engine.scene.updateNode(child.id, {
+              collider: childCollider.toJSON(),
+            });
+            break;
+          }
+
           case "hull": {
             const childCollider = new HullCollider();
             childCollider.meshId = child.meshId;
-            engine.scene.updateNode(child.id, { collider: childCollider });
+            engine.scene.updateNode(child.id, {
+              collider: childCollider.toJSON(),
+            });
             break;
           }
 
           case "mesh": {
             const childCollider = new MeshCollider();
             childCollider.meshId = child.meshId;
-            engine.scene.updateNode(child.id, { collider: childCollider });
+            engine.scene.updateNode(child.id, {
+              collider: childCollider.toJSON(),
+            });
             break;
           }
 

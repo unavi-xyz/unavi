@@ -97,15 +97,15 @@ export class MainScene {
     });
 
     // Handle spawn changes
-    this.#scene.spawn$.subscribe((spawn) => {
+    this.#scene.spawnId$.subscribe((spawnId) => {
       this.#toRenderThread({
         subject: "load_json",
-        data: { scene: { spawn } },
+        data: { scene: { spawnId } },
       });
 
       this.#toPhysicsThread({
         subject: "load_json",
-        data: { scene: { spawn } },
+        data: { scene: { spawnId } },
       });
     });
   }
@@ -130,12 +130,16 @@ export class MainScene {
     }
   };
 
-  get spawn() {
-    return this.#scene.spawn;
+  get spawnId() {
+    return this.#scene.spawnId;
   }
 
-  get spawn$() {
-    return this.#scene.spawn$;
+  set spawnId(spawnId: string | null) {
+    this.#scene.spawnId = spawnId;
+  }
+
+  get spawnId$() {
+    return this.#scene.spawnId$;
   }
 
   get nodes() {
@@ -281,8 +285,9 @@ export class MainScene {
 
     // Send stripped down scene to physics thread
     const strippedScene: Partial<SceneJSON> = {
-      spawn: json.spawn,
+      spawnId: json.spawnId,
       nodes: json.nodes,
+      meshes: json.meshes,
     };
 
     this.#toPhysicsThread({
@@ -301,10 +306,9 @@ export class MainScene {
 
     // Wait for all glTFs to load
     if (json.meshes) {
-      const glTFs = json.meshes.filter((mesh) => mesh?.type === "glTF");
-
       await Promise.all(
-        glTFs.map((mesh) => {
+        json.meshes.map((mesh) => {
+          if (mesh.type !== "glTF" || !mesh.uri) return;
           return new Promise<void>((resolve) => {
             this.#gltfLoadCallbacks.set(mesh.id, () => {
               this.#gltfLoadCallbacks.delete(mesh.id);
@@ -317,7 +321,7 @@ export class MainScene {
   }
 
   clear() {
-    this.#scene.spawn = [0, 0, 0];
+    this.#scene.spawnId = null;
 
     // Remove all nodes
     Object.values(this.#scene.nodes).forEach((node) => {

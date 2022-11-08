@@ -69,9 +69,11 @@ export default function Preview() {
     const editorState = JSON.parse(project.editorState);
     if (!editorState) return;
 
-    engine.renderThread.postMessage({
-      subject: "show_visuals",
-      data: { visible: editorState.visuals },
+    engine.waitForReady().then(() => {
+      engine.renderThread.postMessage({
+        subject: "show_visuals",
+        data: { visible: editorState.visuals },
+      });
     });
   }, [engine, project]);
 
@@ -102,9 +104,7 @@ export default function Preview() {
       const { visuals } = useEditorStore.getState();
       engine.renderThread.postMessage({
         subject: "show_visuals",
-        data: {
-          visible: visuals,
-        },
+        data: { visible: visuals },
       });
 
       useEditorStore.setState({ engine });
@@ -118,17 +118,14 @@ export default function Preview() {
     async function load() {
       if (!engine || !sceneURL || !fileURLs) return;
 
+      console.info("🏗️ Loading scene...");
+
       const sceneResponse = await fetch(sceneURL);
       const savedScene: SavedSceneJSON = await sceneResponse.json();
 
       const scene: SceneJSON = {
-        spawn: savedScene.spawn,
-        accessors: savedScene.accessors,
-        animations: savedScene.animations,
+        ...savedScene,
         images: [],
-        materials: savedScene.materials,
-        meshes: savedScene.meshes,
-        nodes: savedScene.nodes,
       };
 
       // Load glTF models
@@ -176,7 +173,11 @@ export default function Preview() {
       scene.nodes.forEach((node) => updateGltfColliders(node.id));
 
       // Export scene as GLB
+      console.info("🏗️ Exporting scene to glTF...");
+
       const glb = await engine.export();
+
+      console.info("🏗️ Scene exported");
 
       // Clear scene
       engine.scene.clear();
@@ -214,18 +215,24 @@ export default function Preview() {
     const node = new Node();
     node.meshId = mesh.id;
 
+    console.info("🏗️ Loading glTF...");
+
     // Add node to scene
     engine.scene
       .loadJSON({
         nodes: [node.toJSON()],
         meshes: [mesh.toJSON()],
       })
-      .then(() => {
+      .then(async () => {
         // Start engine
-        engine.start();
+        await engine.start();
+        console.info("🏗️ glTF loaded");
       });
 
-    return () => engine.scene.removeNode(node.id);
+    return () => {
+      engine.scene.removeMesh(mesh.id);
+      engine.scene.removeNode(node.id);
+    };
   }, [engine, exportedScene]);
 
   const updateCanvasSize = useMemo(() => {
@@ -269,9 +276,7 @@ export default function Preview() {
       <MetaTags title="Preview" />
 
       <div className="h-full">
-        {exportedScene ? (
-          <div className="crosshair" />
-        ) : (
+        {!exportedScene && (
           <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
             <div className="flex h-full flex-col items-center justify-center">
               <Spinner />

@@ -8,13 +8,13 @@ import { useLoadUser } from "../../app/hooks/useLoadUser";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
+import LoadingScreen from "../../app/ui/LoadingScreen";
 import UserButton from "../../app/ui/UserButtons";
 import {
   getPublicationProps,
   PublicationProps,
 } from "../../client/lens/utils/getPublicationProps";
 import MetaTags from "../../home/MetaTags";
-import Spinner from "../../ui/Spinner";
 
 interface Props extends PublicationProps {
   id: string;
@@ -61,10 +61,14 @@ export default function App({
   useEffect(() => {
     if (!engine) return;
 
-    engine.joinSpace(id).then(() => {
+    engine.joinSpace(id).then(async () => {
       // Start engine
-      engine.start();
-      setEngineStarted(true);
+      await engine.start();
+
+      // Set a delay to let the scene load
+      setTimeout(() => {
+        setEngineStarted(true);
+      }, 3000);
     });
 
     return () => {
@@ -85,6 +89,7 @@ export default function App({
     engine.scene.addNode(node);
 
     return () => {
+      engine.scene.removeMesh(mesh.id);
       engine.scene.removeNode(node.id);
     };
   }, [engine, modelURL]);
@@ -171,6 +176,8 @@ export default function App({
         card="summary_large_image"
       />
 
+      <LoadingScreen spaceId={id} loaded={engineStarted} />
+
       <div
         className="h-full w-full"
         onDragOver={(e) => e.preventDefault()}
@@ -201,16 +208,6 @@ export default function App({
         )}
 
         <div className="h-full">
-          {engineStarted ? (
-            <div className="crosshair" />
-          ) : (
-            <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
-              <div className="flex h-full flex-col items-center justify-center">
-                <Spinner />
-              </div>
-            </div>
-          )}
-
           <div
             ref={containerRef}
             className="relative h-full w-full overflow-hidden"

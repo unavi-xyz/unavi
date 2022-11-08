@@ -166,6 +166,7 @@ export class Players {
           name: otherName,
           avatar: otherAvatar,
           handle: otherHandle,
+          beforeYou: true,
         },
       });
 

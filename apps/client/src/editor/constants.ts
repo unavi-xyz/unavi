@@ -1,7 +1,7 @@
 import { SceneJSON } from "@wired-labs/engine";
 
 export const emptyScene: SceneJSON = {
-  spawn: [0, 0, 0],
+  spawnId: null,
   nodes: [],
   meshes: [],
   materials: [],

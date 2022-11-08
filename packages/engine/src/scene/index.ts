@@ -1,5 +1,6 @@
 export * from "./Accessor";
 export * from "./Animation";
+export * from "./collider/AutoCollider";
 export * from "./collider/BoxCollider";
 export * from "./collider/CylinderCollider";
 export * from "./collider/HullCollider";

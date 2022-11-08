@@ -5,14 +5,25 @@ import {
 import { SctpStreamParameters } from "mediasoup-client/lib/SctpParameters";
 import { TransportOptions } from "mediasoup-client/lib/Transport";
 
-export type InternalChatMessage = {
-  id: string;
-  playerId: number;
-  username: string;
-  message: string;
-  timestamp: number;
-  isHandle: boolean;
-};
+export type InternalChatMessage =
+  | {
+      type: "chat";
+      id: string;
+      timestamp: number;
+      playerId: number;
+      username: string;
+      message: string;
+      isHandle: boolean;
+    }
+  | {
+      type: "system";
+      variant: "player_joined" | "player_left";
+      id: string;
+      timestamp: number;
+      playerId: number;
+      username: string;
+      isHandle: boolean;
+    };
 
 export type IChatMessage = {
   id: string;
@@ -92,6 +103,7 @@ export type FromHostMessage =
         name: string | null;
         avatar: string | null;
         handle: string | null;
+        beforeYou?: boolean;
       }
     >
   | GenericWebSocketMessage<"player_left", number>

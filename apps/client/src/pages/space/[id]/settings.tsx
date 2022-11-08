@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { useLens } from "../../../client/lens/hooks/useLens";
 import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
+import { trpc } from "../../../client/trpc";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import { getSpaceLayoutProps } from "../../../home/layouts/SpaceLayout/getSpaceLayoutProps";
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
@@ -25,13 +26,15 @@ export const getServerSideProps: GetServerSideProps<
 export default function Settings(
   props: InferGetServerSidePropsType<typeof getServerSideProps>
 ) {
-  const router = useRouter();
-  const id = router.query.id;
-
   const [loading, setLoading] = useState(false);
-  const [, hidePublication] = useHidePublicationMutation();
 
   const { handle } = useLens();
+  const [, hidePublication] = useHidePublicationMutation();
+  const router = useRouter();
+  const id = router.query.id as string;
+
+  const { mutateAsync: deletePublication } =
+    trpc.auth.deletePublication.useMutation();
 
   useEffect(() => {
     if (!handle && id) router.push(`/space/${id}`);
@@ -43,11 +46,16 @@ export default function Settings(
     setLoading(true);
 
     try {
-      await hidePublication({
-        request: {
-          publicationId: id,
-        },
-      });
+      const promises: Promise<any>[] = [];
+
+      // Remove from database
+      promises.push(deletePublication({ lensId: id }));
+
+      // Hide from lens API
+      promises.push(hidePublication({ request: { publicationId: id } }));
+
+      await Promise.all(promises);
+
       router.push(`/user/${handle}`);
     } catch (err) {
       console.error(err);

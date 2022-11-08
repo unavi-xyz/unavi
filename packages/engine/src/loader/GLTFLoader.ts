@@ -38,7 +38,6 @@ import { Accessor } from "../scene/Accessor";
 import { Animation } from "../scene/Animation";
 import { Image } from "../scene/Image";
 import { PrimitivesMesh } from "../scene/mesh/PrimitivesMesh";
-import { Triplet } from "../types";
 
 /*
  * Loads a GLTF model into the engine's internal scene format.
@@ -58,7 +57,7 @@ export class GLTFLoader {
 
   #pending: Promise<void>[] = [];
 
-  #spawn: Triplet | null = null;
+  #spawnId: string | null = null;
 
   async load(uri: string): Promise<Scene> {
     const res = await fetch(uri);
@@ -106,7 +105,7 @@ export class GLTFLoader {
 
     await Promise.all(this.#pending);
 
-    if (this.#spawn) this.#scene.spawn = this.#spawn;
+    this.#scene.spawnId = this.#spawnId;
 
     return this.#scene;
   }
@@ -319,7 +318,7 @@ export class GLTFLoader {
 
     // Load spawn
     const spawn = gltfNode.getExtension(SpawnPointExtension.EXTENSION_NAME);
-    if (spawn) this.#spawn = gltfNode.getTranslation();
+    if (spawn) this.#spawnId = node.id;
 
     // Load children
     gltfNode.listChildren().forEach((child) => this.#loadNode(child, node.id));

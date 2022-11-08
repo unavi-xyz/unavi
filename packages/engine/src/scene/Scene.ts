@@ -1,6 +1,5 @@
 import { BehaviorSubject } from "rxjs";
 
-import { Triplet } from "../types";
 import { Accessor } from "./Accessor";
 import { Animation } from "./Animation";
 import { Image } from "./Image";
@@ -31,14 +30,14 @@ export class Scene {
   images$ = new BehaviorSubject<{ [id: string]: Image }>({});
   animations$ = new BehaviorSubject<{ [id: string]: Animation }>({});
 
-  spawn$ = new BehaviorSubject<Triplet | null>(null);
+  spawnId$ = new BehaviorSubject<string | null>(null);
 
-  get spawn() {
-    return this.spawn$.value;
+  get spawnId() {
+    return this.spawnId$.value;
   }
 
-  set spawn(spawn: Triplet | null) {
-    this.spawn$.next(spawn);
+  set spawnId(spawnId: string | null) {
+    this.spawnId$.next(spawnId);
   }
 
   get nodes() {
@@ -135,6 +134,9 @@ export class Scene {
 
   removeNode(nodeId: string) {
     if (nodeId === "root") return;
+
+    // If node is a spawn point, remove it
+    if (this.spawnId === nodeId) this.spawnId = null;
 
     const node = this.nodes[nodeId];
     if (!node) throw new Error(`Node ${nodeId} not found`);
@@ -397,7 +399,7 @@ export class Scene {
 
   toJSON(includeInternal = false): SceneJSON {
     return {
-      spawn: this.spawn,
+      spawnId: this.spawnId,
 
       meshes: Object.values(this.meshes)
         .filter((m) => (m.isInternal ? includeInternal : true))
@@ -426,7 +428,7 @@ export class Scene {
   }
 
   loadJSON(json: Partial<SceneJSON>) {
-    if (json.spawn) this.spawn = json.spawn;
+    if (json.spawnId !== undefined) this.spawnId = json.spawnId;
 
     // Add accessors
     if (json.accessors) {
@@ -499,12 +501,14 @@ export class Scene {
 
   destroy() {
     Object.values(this.nodes).forEach((node) => node.destroy());
+    Object.values(this.meshes).forEach((mesh) => mesh.destroy());
     Object.values(this.materials).forEach((material) => material.destroy());
     Object.values(this.accessors).forEach((accessor) => accessor.destroy());
     Object.values(this.images).forEach((image) => image.destroy());
     Object.values(this.animations).forEach((animation) => animation.destroy());
 
     this.nodes$.complete();
+    this.meshes$.complete();
     this.materials$.complete();
     this.accessors$.complete();
     this.images$.complete();

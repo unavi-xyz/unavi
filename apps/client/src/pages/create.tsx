@@ -19,7 +19,11 @@ export default function Create() {
   const { status: accountStatus } = useAccount();
   const utils = trpc.useContext();
 
-  const { data, status, refetch } = trpc.auth.projects.useQuery(undefined, {
+  const {
+    data: projects,
+    status,
+    refetch,
+  } = trpc.auth.projects.useQuery(undefined, {
     enabled: authState === "authenticated",
   });
 
@@ -35,6 +39,9 @@ export default function Create() {
     if (!authenticated) return;
     setOpenCreateProject(true);
   }
+
+  const unpublishedProjects = projects?.filter((p) => !p.publicationId) ?? [];
+  const publishedProjects = projects?.filter((p) => p.publicationId) ?? [];
 
   return (
     <>
@@ -67,8 +74,8 @@ export default function Create() {
 
           <div className="grid grid-cols-3 gap-3">
             {authState === "authenticated" ? (
-              status === "success" && data.length > 0 ? (
-                data.map(({ id, name, image }) => (
+              status === "success" && unpublishedProjects.length > 0 ? (
+                unpublishedProjects.map(({ id, name, image }) => (
                   <Link key={id} href={`/project/${id}`} passHref>
                     <div>
                       <Card
@@ -96,6 +103,27 @@ export default function Create() {
               <div>You need to be signed in to create a project.</div>
             )}
           </div>
+
+          {status === "success" && publishedProjects.length > 0 ? (
+            <>
+              <div className="text-2xl font-bold">🏙️ Published</div>
+
+              <div className="grid grid-cols-3 gap-3">
+                {publishedProjects.map(({ id, name, image }) => (
+                  <Link key={id} href={`/project/${id}`} passHref>
+                    <div>
+                      <Card
+                        text={name}
+                        image={image}
+                        sizes="333px"
+                        animateEnter
+                      />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
     </>

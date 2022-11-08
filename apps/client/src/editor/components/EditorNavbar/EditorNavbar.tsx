@@ -13,6 +13,7 @@ import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import PublishPage from "./PublishPage";
 import ToolButton from "./ToolButton";
+import UpdatePage from "./UpdatePage";
 
 export default function EditorNavbar() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function EditorNavbar() {
 
   const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
+  const publicationId = useEditorStore((state) => state.publicationId);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
@@ -58,7 +60,11 @@ export default function EditorNavbar() {
         open={openPublishDialog}
         onClose={() => setOpenPublishDialog(false)}
       >
-        <PublishPage />
+        {publicationId ? (
+          <UpdatePage onClose={() => setOpenPublishDialog(false)} />
+        ) : (
+          <PublishPage />
+        )}
       </Dialog>
 
       <div className="flex h-full items-center justify-between px-4 py-2">

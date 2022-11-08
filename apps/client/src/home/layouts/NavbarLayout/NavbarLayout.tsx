@@ -7,7 +7,7 @@ interface Props {
 export default function NavbarLayout({ children }: Props) {
   return (
     <>
-      <div className="absolute z-10 h-14 w-full">
+      <div className="absolute z-20 h-14 w-full">
         <Navbar />
       </div>
 

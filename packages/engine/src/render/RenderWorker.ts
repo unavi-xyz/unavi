@@ -7,8 +7,10 @@ import {
   PMREMGenerator,
   Scene,
   sRGBEncoding,
+  Vector3,
   WebGLRenderer,
 } from "three";
+import { CSM } from "three/examples/jsm/csm/CSM";
 
 import { PostMessage } from "../types";
 import { OrbitControlsPlugin } from "./plugins/OrbitControls/OrbitControlsPlugin";
@@ -16,6 +18,7 @@ import { OtherPlayersPlugin } from "./plugins/OtherPlayers/OtherPlayersPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
 import { TransformControlsPlugin } from "./plugins/TransformControls/TransformControlsPlugin";
+import { defaultMaterial } from "./SceneLoader/constants";
 import { SceneLoader } from "./SceneLoader/SceneLoader";
 import { FromRenderMessage, Plugin, ToRenderMessage } from "./types";
 import { disposeObject } from "./utils/disposeObject";
@@ -55,6 +58,8 @@ export class RenderWorker {
   #canvasHeight = 0;
   #clock = new Clock();
 
+  csm: CSM | null = null;
+
   #plugins: Plugin<ToRenderMessage>[] = [];
   #pluginState: PluginState = {
     usingTransformControls: false,
@@ -64,7 +69,7 @@ export class RenderWorker {
     this.#canvas = canvas;
     this.#postMessage = postMessage;
 
-    this.#sceneLoader = new SceneLoader(postMessage);
+    this.#sceneLoader = new SceneLoader(postMessage, this);
     this.#scene.add(this.#sceneLoader.root);
   }
 
@@ -120,7 +125,12 @@ export class RenderWorker {
     if (!this.#canvas) throw new Error("Canvas not set");
 
     this.#plugins.push(
-      new OtherPlayersPlugin(this.#scene, avatarPath, avatarAnimationsPath)
+      new OtherPlayersPlugin(
+        this.#scene,
+        this.#postMessage,
+        avatarPath,
+        avatarAnimationsPath
+      )
     );
 
     this.#canvasWidth = canvasWidth;
@@ -144,17 +154,16 @@ export class RenderWorker {
     this.#scene.add(ambientLight);
 
     // Fog
-    this.#scene.fog = new FogExp2(0xeefaff, 0.005);
+    this.#scene.fog = new FogExp2(0xeefaff, 0.004);
 
     // Camera
     this.#camera = new PerspectiveCamera(
       75,
       canvasWidth / canvasHeight,
-      0.14,
-      1000
+      0.17,
+      750
     );
 
-    // Camera
     switch (camera) {
       case "orbit": {
         this.#plugins.push(
@@ -180,6 +189,20 @@ export class RenderWorker {
         break;
       }
     }
+
+    // Cascading shadow maps
+    this.csm = new CSM({
+      maxFar: 100,
+      cascades: 3,
+      lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
+      shadowMapSize: 2048,
+      shadowBias: -0.0001,
+      camera: this.#camera,
+      parent: this.#scene,
+    });
+
+    this.csm.fade = true;
+    this.csm.setupMaterial(defaultMaterial);
 
     // Transform Controls
     if (enableTransformControls) {
@@ -245,8 +268,9 @@ export class RenderWorker {
     this.#animationFrameId = requestAnimationFrame(() => this.#animate());
     if (!this.#renderer || !this.#camera) return;
 
-    this.#sceneLoader.mixer.update(delta);
     this.#plugins.forEach((plugin) => plugin.animate && plugin.animate(delta));
+    this.#sceneLoader.mixer.update(delta);
+    this.csm?.update();
 
     this.#renderer.render(this.#scene, this.#camera);
   }

@@ -55,6 +55,7 @@ export function createObject(
   if (!mesh) throw new Error("Mesh not found");
 
   const oldObject = map.objects.get(mesh.id);
+  let disposeOldObject = true;
 
   // Create object
   switch (mesh?.type) {
@@ -90,19 +91,27 @@ export function createObject(
         }
       }
 
-      // Get material
-      const material = mesh.materialId
-        ? map.materials.get(mesh.materialId)
-        : defaultMaterial;
-      if (!material) throw new Error("Material not found");
+      // Update geometry if old object
+      if (oldObject instanceof Mesh) {
+        oldObject.geometry.dispose();
+        oldObject.geometry = geometry;
 
-      // Create mesh
-      const threeMesh = new Mesh(geometry, material);
-      threeMesh.castShadow = true;
-      threeMesh.receiveShadow = true;
+        disposeOldObject = false;
+      } else {
+        // Get material
+        const material = mesh.materialId
+          ? map.materials.get(mesh.materialId)
+          : defaultMaterial;
+        if (!material) throw new Error("Material not found");
 
-      map.objects.set(mesh.id, threeMesh);
-      oldObject?.parent?.add(threeMesh);
+        // Create mesh
+        const threeMesh = new Mesh(geometry, material);
+        threeMesh.castShadow = true;
+        threeMesh.receiveShadow = true;
+
+        map.objects.set(mesh.id, threeMesh);
+        oldObject?.parent?.add(threeMesh);
+      }
       break;
     }
 
@@ -234,5 +243,5 @@ export function createObject(
   }
 
   // Remove old object
-  if (oldObject) disposeObject(oldObject);
+  if (oldObject && disposeOldObject) disposeObject(oldObject);
 }

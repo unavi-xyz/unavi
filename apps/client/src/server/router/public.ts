@@ -76,5 +76,7 @@ export const publicRouter = router({
           data: { viewCount: { increment: 1 } },
         })
       );
+
+      await Promise.all(promises);
     }),
 });

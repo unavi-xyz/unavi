@@ -234,6 +234,7 @@ export const protectedRouter = router({
         id: z.string().length(UUID_LENGTH),
         name: z.string().max(PROJECT_NAME_LENGTH).optional(),
         description: z.string().max(PROJECT_DESCRIPTION_LENGTH).optional(),
+        publicationId: z.string().length(CUID_LENGTH).or(z.null()).optional(),
         editorState: z
           .object({
             visuals: z.boolean(),
@@ -257,6 +258,7 @@ export const protectedRouter = router({
           name: input.name,
           description: input.description,
           editorState: JSON.stringify(input.editorState),
+          publicationId: input.publicationId,
         },
       });
     }),
@@ -354,33 +356,14 @@ export const protectedRouter = router({
       return url;
     }),
 
-  createPublication: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().length(UUID_LENGTH),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Verify user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id: input.id, owner: ctx.address },
-        include: { files: true },
-      });
-      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+  createPublication: protectedProcedure.mutation(async ({ ctx }) => {
+    // Create publication
+    const { id } = await prisma.publication.create({
+      data: { owner: ctx.address, type: "SPACE" },
+    });
 
-      // Create publication
-      const { id } = await prisma.publication.create({
-        data: { owner: ctx.address, type: "SPACE" },
-      });
-
-      // Save publication ID to project
-      await prisma.project.update({
-        where: { id: input.id },
-        data: { publicationId: id },
-      });
-
-      return id;
-    }),
+    return id;
+  }),
 
   linkPublication: protectedProcedure
     .input(

@@ -45,8 +45,6 @@ export default function PublishPage() {
   const name = useEditorStore((state) => state.name);
   const description = useEditorStore((state) => state.description);
 
-  const { mutateAsync: saveProject } = trpc.auth.saveProject.useMutation();
-
   const { handle, client } = useLens();
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
@@ -60,6 +58,8 @@ export default function PublishPage() {
       trpc: {},
     }
   );
+
+  const { mutateAsync: saveProject } = trpc.auth.saveProject.useMutation();
 
   const { mutateAsync: createModelUploadUrl } =
     trpc.auth.publishedModelUploadURL.useMutation();
@@ -98,193 +98,202 @@ export default function PublishPage() {
       return;
     }
 
-    setLoading(true);
-    const promises: Promise<void>[] = [];
+    try {
+      setLoading(true);
+      const promises: Promise<void>[] = [];
 
-    // Save name and description
-    promises.push(
-      saveProject({
-        id,
-        name,
-        description,
-      })
-    );
+      // Create database publication
+      const publicationId = await createPublication();
 
-    // Create database publication
-    const publicationId = await createPublication({ id });
+      // Export scene and upload to S3
+      promises.push(
+        new Promise((resolve, reject) => {
+          async function upload() {
+            const { engine } = useEditorStore.getState();
+            if (!engine) throw new Error("Engine not found");
 
-    // Export scene and upload to S3
-    promises.push(
-      new Promise((resolve, reject) => {
-        async function upload() {
-          const { engine } = useEditorStore.getState();
-          if (!engine) throw new Error("Engine not found");
+            // Export scene to glb
+            const glb = await engine.export();
+            const body = new Blob([glb], { type: "model/gltf-binary" });
 
-          // Export scene to glb
-          const glb = await engine.export();
-          const body = new Blob([glb], { type: "model/gltf-binary" });
+            // Upload to S3
+            const url = await createModelUploadUrl({ id: publicationId });
+            const response = await fetch(url, {
+              method: "PUT",
+              body,
+              headers: {
+                "Content-Type": "model/gltf-binary",
+                "x-amz-acl": "public-read",
+              },
+            });
 
-          // Upload to S3
-          const url = await createModelUploadUrl({ id: publicationId });
-          const response = await fetch(url, {
-            method: "PUT",
-            body,
-            headers: {
-              "Content-Type": "model/gltf-binary",
-              "x-amz-acl": "public-read",
-            },
-          });
-
-          if (!response.ok) reject();
-          else resolve();
-        }
-
-        upload();
-      })
-    );
-
-    // Upload image to S3
-    promises.push(
-      new Promise((resolve, reject) => {
-        async function upload() {
-          if (!imageURL) {
-            resolve();
-            return;
+            if (!response.ok) reject();
+            else resolve();
           }
 
-          // Get image
-          const imageResponse = await fetch(imageURL);
-          const body = await imageResponse.blob();
+          upload();
+        })
+      );
 
-          // Upload to S3
-          const url = await createImageUploadUrl({ id: publicationId });
-          const response = await fetch(url, {
-            method: "PUT",
-            body,
-            headers: {
-              "Content-Type": "image/jpeg",
-              "x-amz-acl": "public-read",
+      // Upload image to S3
+      promises.push(
+        new Promise((resolve, reject) => {
+          async function upload() {
+            if (!imageURL) {
+              resolve();
+              return;
+            }
+
+            // Get image
+            const imageResponse = await fetch(imageURL);
+            const body = await imageResponse.blob();
+
+            // Upload to S3
+            const url = await createImageUploadUrl({ id: publicationId });
+            const response = await fetch(url, {
+              method: "PUT",
+              body,
+              headers: {
+                "Content-Type": "image/jpeg",
+                "x-amz-acl": "public-read",
+              },
+            });
+
+            if (!response.ok) reject();
+            else resolve();
+          }
+
+          upload();
+        })
+      );
+
+      // Upload metadata to S3
+      promises.push(
+        new Promise((resolve, reject) => {
+          async function upload() {
+            const modelURL = cdnModelURL(publicationId);
+            const imageURL = cdnImageURL(publicationId);
+
+            const media: PublicationMetadataMedia[] = [
+              {
+                item: imageURL,
+                type: "image/jpeg",
+                altTag: "preview image",
+              },
+              {
+                item: modelURL,
+                type: "model/gltf-binary",
+                altTag: "model",
+              },
+            ];
+
+            const metadata: PublicationMetadata = {
+              version: PublicationMetadataVersions.two,
+              metadata_id: nanoid(),
+              description,
+              locale: "en-US",
+              tags: ["3d", "gltf", "space", "wired"],
+              mainContentFocus: PublicationMainFocus.Image,
+              external_url: `https://thewired.space/user/${handle}`,
+              name,
+              image: imageURL,
+              imageMimeType: "image/jpeg",
+              media,
+              attributes: [],
+              appId: AppId.Space,
+            };
+
+            // Upload to S3
+            const url = await createMetadataUploadUrl({ id: publicationId });
+            const response = await fetch(url, {
+              method: "PUT",
+              body: JSON.stringify(metadata),
+              headers: {
+                "Content-Type": "application/json",
+                "x-amz-acl": "public-read",
+              },
+            });
+
+            if (response.ok) resolve();
+            else reject();
+          }
+
+          upload();
+        })
+      );
+
+      await Promise.all(promises);
+
+      const contentURI = cdnMetadataURL(publicationId);
+
+      // Create lens publication
+      const success = await createPost(contentURI);
+
+      if (!success) {
+        setLoading(false);
+        return;
+      }
+
+      // Save project, linking it to the publication
+      promises.push(
+        saveProject({
+          id,
+          name,
+          description,
+          publicationId,
+        })
+      );
+
+      if (!profile) {
+        router.push(`/user/${handle}`);
+        return;
+      }
+
+      // This is a hack to get the publicationId
+      // Get latest publications
+      const { data } = await client
+        .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
+          GetPublicationsDocument,
+          {
+            request: {
+              profileId: profile.id,
+              limit: 4, // We use 4 just in case other publications were created at the same time
+              sources: [AppId.Space],
             },
-          });
-
-          if (!response.ok) reject();
-          else resolve();
-        }
-
-        upload();
-      })
-    );
-
-    // Upload metadata to S3
-    promises.push(
-      new Promise((resolve, reject) => {
-        async function upload() {
-          const modelURL = cdnModelURL(publicationId);
-          const imageURL = cdnImageURL(publicationId);
-
-          const media: PublicationMetadataMedia[] = [
-            {
-              item: imageURL,
-              type: "image/jpeg",
-              altTag: "preview image",
-            },
-            {
-              item: modelURL,
-              type: "model/gltf-binary",
-              altTag: "model",
-            },
-          ];
-
-          const metadata: PublicationMetadata = {
-            version: PublicationMetadataVersions.two,
-            metadata_id: nanoid(),
-            description,
-            locale: "en-US",
-            tags: ["3d", "gltf", "space", "wired"],
-            mainContentFocus: PublicationMainFocus.Image,
-            external_url: `https://thewired.space/user/${handle}`,
-            name,
-            image: imageURL,
-            imageMimeType: "image/jpeg",
-            media,
-            attributes: [],
-            appId: AppId.Space,
-          };
-
-          // Upload to S3
-          const url = await createMetadataUploadUrl({ id: publicationId });
-          const response = await fetch(url, {
-            method: "PUT",
-            body: JSON.stringify(metadata),
-            headers: {
-              "Content-Type": "application/json",
-              "x-amz-acl": "public-read",
-            },
-          });
-
-          if (response.ok) resolve();
-          else reject();
-        }
-
-        upload();
-      })
-    );
-
-    await Promise.all(promises);
-
-    const contentURI = cdnMetadataURL(publicationId);
-
-    // Create lens publication
-    const success = await createPost(contentURI);
-
-    if (!success) {
-      setLoading(false);
-      return;
-    }
-
-    if (!profile) {
-      router.push(`/user/${handle}`);
-      return;
-    }
-
-    // This is a hack to get the publicationId
-    // Get latest publications
-    const { data } = await client
-      .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
-        GetPublicationsDocument,
-        {
-          request: {
-            profileId: profile?.id,
-            limit: 4, // We use 4 just in case other publications were created at the same time
-            sources: [AppId.Space],
           },
-        },
-        {
-          fetchOptions: { cache: "reload" },
-          requestPolicy: "network-only",
-        }
-      )
-      .toPromise();
+          {
+            fetchOptions: { cache: "reload" },
+            requestPolicy: "network-only",
+          }
+        )
+        .toPromise();
 
-    // Find the publication we just created by comparing metadata
-    const publication = data?.publications.items.find(
-      (item) =>
-        item.metadata.name === name && item.metadata.description === description
-    );
+      // Find the publication we just created by comparing metadata
+      const publication = data?.publications.items.find(
+        (item) =>
+          item.metadata.name === name &&
+          item.metadata.description === description
+      );
 
-    if (!publication) {
-      router.push(`/user/${handle}`);
-      return;
+      if (!publication) {
+        router.push(`/user/${handle}`);
+        return;
+      }
+
+      // Link lens publication id to database publication id
+      promises.push(
+        linkPublication({
+          lensId: publication.id,
+          publicationId,
+        })
+      );
+
+      // Redirect to space
+      router.push(`/space/${publication.id}`);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
     }
-
-    // Link lens publication id to database publication id
-    await linkPublication({
-      lensId: publication.id,
-      publicationId,
-    });
-
-    // Redirect to space
-    router.push(`/space/${publication.id}`);
   }
 
   const image = imageFile ? URL.createObjectURL(imageFile) : null;

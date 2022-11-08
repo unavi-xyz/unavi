@@ -306,10 +306,9 @@ export class MainScene {
 
     // Wait for all glTFs to load
     if (json.meshes) {
-      const glTFs = json.meshes.filter((mesh) => mesh?.type === "glTF");
-
       await Promise.all(
-        glTFs.map((mesh) => {
+        json.meshes.map((mesh) => {
+          if (mesh.type !== "glTF" || !mesh.uri) return;
           return new Promise<void>((resolve) => {
             this.#gltfLoadCallbacks.set(mesh.id, () => {
               this.#gltfLoadCallbacks.delete(mesh.id);

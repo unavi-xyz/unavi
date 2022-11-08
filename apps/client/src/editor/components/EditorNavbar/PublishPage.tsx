@@ -1,6 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   AppId,
+  GetPublicationsDocument,
+  GetPublicationsQuery,
+  GetPublicationsQueryVariables,
   PublicationMainFocus,
   PublicationMetadata,
   PublicationMetadataMedia,
@@ -9,6 +13,7 @@ import {
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { useSigner } from "wagmi";
 
 import { useCreatePost } from "../../../client/lens/hooks/useCreatePost";
 import { useLens } from "../../../client/lens/hooks/useLens";
@@ -21,16 +26,16 @@ import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
 import { useEditorStore } from "../../store";
 
-function cdnModelURL(projectId: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${projectId}/model.glb`;
+function cdnModelURL(id: string) {
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/model.glb`;
 }
 
-function cdnImageURL(projectId: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${projectId}/image.jpg`;
+function cdnImageURL(id: string) {
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/image.jpg`;
 }
 
-function cdnMetadataURL(projectId: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${projectId}/metadata.json`;
+function cdnMetadataURL(id: string) {
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/metadata.json`;
 }
 
 export default function PublishPage() {
@@ -42,7 +47,9 @@ export default function PublishPage() {
 
   const { mutateAsync: saveProject } = trpc.auth.saveProject.useMutation();
 
-  const { handle } = useLens();
+  const { handle, client } = useLens();
+  const { data: signer } = useSigner();
+  const { openConnectModal } = useConnectModal();
   const profile = useProfileByHandle(handle);
   const createPost = useCreatePost(profile?.id);
 
@@ -63,6 +70,12 @@ export default function PublishPage() {
   const { mutateAsync: createMetadataUploadUrl } =
     trpc.auth.publishedMetadataUploadURL.useMutation();
 
+  const { mutateAsync: createPublication } =
+    trpc.auth.createPublication.useMutation();
+
+  const { mutateAsync: linkPublication } =
+    trpc.auth.linkPublication.useMutation();
+
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
 
@@ -78,6 +91,13 @@ export default function PublishPage() {
   }, [imageFile, imageURL]);
 
   async function handlePublish() {
+    if (loading) return;
+
+    if (!signer) {
+      if (openConnectModal) openConnectModal();
+      return;
+    }
+
     setLoading(true);
     const promises: Promise<void>[] = [];
 
@@ -89,6 +109,9 @@ export default function PublishPage() {
         description,
       })
     );
+
+    // Create database publication
+    const publicationId = await createPublication({ id });
 
     // Export scene and upload to S3
     promises.push(
@@ -102,7 +125,7 @@ export default function PublishPage() {
           const body = new Blob([glb], { type: "model/gltf-binary" });
 
           // Upload to S3
-          const url = await createModelUploadUrl({ id });
+          const url = await createModelUploadUrl({ id: publicationId });
           const response = await fetch(url, {
             method: "PUT",
             body,
@@ -134,7 +157,7 @@ export default function PublishPage() {
           const body = await imageResponse.blob();
 
           // Upload to S3
-          const url = await createImageUploadUrl({ id });
+          const url = await createImageUploadUrl({ id: publicationId });
           const response = await fetch(url, {
             method: "PUT",
             body,
@@ -156,8 +179,8 @@ export default function PublishPage() {
     promises.push(
       new Promise((resolve, reject) => {
         async function upload() {
-          const modelURL = cdnModelURL(id);
-          const imageURL = cdnImageURL(id);
+          const modelURL = cdnModelURL(publicationId);
+          const imageURL = cdnImageURL(publicationId);
 
           const media: PublicationMetadataMedia[] = [
             {
@@ -177,7 +200,7 @@ export default function PublishPage() {
             metadata_id: nanoid(),
             description,
             locale: "en-US",
-            tags: ["3d", "gltf", "wired", "space"],
+            tags: ["3d", "gltf", "space", "wired"],
             mainContentFocus: PublicationMainFocus.Image,
             external_url: `https://thewired.space/user/${handle}`,
             name,
@@ -189,7 +212,7 @@ export default function PublishPage() {
           };
 
           // Upload to S3
-          const url = await createMetadataUploadUrl({ id });
+          const url = await createMetadataUploadUrl({ id: publicationId });
           const response = await fetch(url, {
             method: "PUT",
             body: JSON.stringify(metadata),
@@ -199,8 +222,8 @@ export default function PublishPage() {
             },
           });
 
-          if (!response.ok) reject();
-          else resolve();
+          if (response.ok) resolve();
+          else reject();
         }
 
         upload();
@@ -209,14 +232,59 @@ export default function PublishPage() {
 
     await Promise.all(promises);
 
-    const contentURI = cdnMetadataURL(id);
+    const contentURI = cdnMetadataURL(publicationId);
 
     // Create lens publication
     const success = await createPost(contentURI);
 
-    // Redirect to profile
-    if (success) router.push(`/user/${handle}`);
-    else setLoading(false);
+    if (!success) {
+      setLoading(false);
+      return;
+    }
+
+    if (!profile) {
+      router.push(`/user/${handle}`);
+      return;
+    }
+
+    // This is a hack to get the publicationId
+    // Get latest publications
+    const { data } = await client
+      .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
+        GetPublicationsDocument,
+        {
+          request: {
+            profileId: profile?.id,
+            limit: 4, // We use 4 just in case other publications were created at the same time
+            sources: [AppId.Space],
+          },
+        },
+        {
+          fetchOptions: { cache: "reload" },
+          requestPolicy: "network-only",
+        }
+      )
+      .toPromise();
+
+    // Find the publication we just created by comparing metadata
+    const publication = data?.publications.items.find(
+      (item) =>
+        item.metadata.name === name && item.metadata.description === description
+    );
+
+    if (!publication) {
+      router.push(`/user/${handle}`);
+      return;
+    }
+
+    // Link lens publication id to database publication id
+    await linkPublication({
+      lensId: publication.id,
+      publicationId,
+    });
+
+    // Redirect to space
+    router.push(`/space/${publication.id}`);
   }
 
   const image = imageFile ? URL.createObjectURL(imageFile) : null;
@@ -224,8 +292,9 @@ export default function PublishPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center space-y-1">
-        <h1 className="flex justify-center text-3xl">Publish Space</h1>
-        <p className="flex justify-center text-lg">Mint a new space NFT</p>
+        <h1 className="flex justify-center text-4xl font-bold">
+          Publish Space
+        </h1>
       </div>
 
       <div className="space-y-4">
@@ -253,15 +322,15 @@ export default function PublishPage() {
         <div className="space-y-4">
           <div className="text-lg font-bold">Image</div>
 
-          {image && (
-            <div className="relative aspect-card h-full w-full rounded-xl bg-primaryContainer">
+          <div className="relative aspect-card h-full w-full rounded-xl bg-primaryContainer">
+            {image && (
               <img
                 src={image}
                 alt="picture preview"
                 className="h-full w-full rounded-xl object-cover"
               />
-            </div>
-          )}
+            )}
+          </div>
 
           <FileInput
             title="Cover Picture"
@@ -276,7 +345,7 @@ export default function PublishPage() {
 
       <div className="flex justify-end">
         <Button onClick={handlePublish} variant="filled" loading={loading}>
-          Submit
+          {signer ? "Submit" : "Sign In"}
         </Button>
       </div>
     </div>

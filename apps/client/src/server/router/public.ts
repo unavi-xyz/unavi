@@ -14,58 +14,67 @@ export const publicRouter = router({
   }),
 
   hotSpaces: publicProcedure.query(async () => {
-    const spaces = await prisma.space.findMany({
-      orderBy: { viewsCount: "desc" },
-      take: 10,
+    // Get publications
+    const publications = await prisma.publication.findMany({
+      where: { type: "SPACE" },
+      orderBy: { viewCount: "desc" },
+      take: 9,
     });
 
-    const spaceIds = spaces.map((space) => space.publicationId);
-    return spaceIds;
+    // Get lens ids
+    const lensIds: string[] = [];
+
+    publications.forEach((publication) => {
+      if (publication.lensId) lensIds.push(publication.lensId);
+    });
+
+    return lensIds;
   }),
 
   hotAvatars: publicProcedure.query(async () => {
-    const avatars = await prisma.avatar.findMany({
-      orderBy: { viewsCount: "desc" },
-      take: 10,
+    // Get publications
+    const avatars = await prisma.publication.findMany({
+      where: { type: "SPACE" },
+      orderBy: { viewCount: "desc" },
+      take: 9,
     });
 
-    const avatarIds = avatars.map((avatar) => avatar.publicationId);
-    return avatarIds;
+    // Get lens ids
+    const lensIds: string[] = [];
+
+    avatars.forEach((publication) => {
+      if (publication.lensId) lensIds.push(publication.lensId);
+    });
+
+    return lensIds;
   }),
 
-  spaceView: publicProcedure
+  addView: publicProcedure
     .input(
       z.object({
-        id: z.string(),
+        lensId: z.string(),
       })
     )
     .mutation(async ({ input }) => {
-      // Update space view count
-      await prisma.space.upsert({
-        create: { publicationId: input.id, viewsCount: 1 },
-        where: { publicationId: input.id },
-        update: { viewsCount: { increment: 1 } },
+      const promises: Promise<any>[] = [];
+
+      // Get publication id
+      const publication = await prisma.publication.findFirst({
+        where: { lensId: input.lensId },
       });
+      if (!publication) return;
 
       // Create space view event
-      await prisma.spaceViewEvent.create({ data: { spaceId: input.id } });
-    }),
+      promises.push(
+        prisma.viewEvent.create({ data: { publicationId: publication.id } })
+      );
 
-  avatarView: publicProcedure
-    .input(
-      z.object({
-        id: z.string(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      // Update avatar view count
-      await prisma.avatar.upsert({
-        create: { publicationId: input.id, viewsCount: 1 },
-        where: { publicationId: input.id },
-        update: { viewsCount: { increment: 1 } },
-      });
-
-      // Create avatar view event
-      await prisma.avatarViewEvent.create({ data: { avatarId: input.id } });
+      // Update space view count
+      promises.push(
+        prisma.publication.update({
+          where: { id: publication.id },
+          data: { viewCount: { increment: 1 } },
+        })
+      );
     }),
 });

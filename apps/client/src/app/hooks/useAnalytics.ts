@@ -7,16 +7,24 @@ export function useAnalytics() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { mutateAsync } = trpc.public.spaceView.useMutation();
+  const { mutateAsync: addView } = trpc.public.addView.useMutation();
 
   useEffect(() => {
     if (!id) return;
 
-    // Send space view event if the user is still here after 30 seconds
+    // Send space view event after 30 seconds
     const timeout = setTimeout(() => {
-      mutateAsync({ id });
+      addView({ lensId: id });
     }, 30 * 1000);
 
-    return () => clearTimeout(timeout);
-  }, [mutateAsync, id]);
+    // Send another after 3 minutes
+    const timeout2 = setTimeout(() => {
+      addView({ lensId: id });
+    }, 3 * 60 * 1000);
+
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(timeout2);
+    };
+  }, [addView, id]);
 }

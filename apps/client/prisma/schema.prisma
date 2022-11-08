@@ -10,42 +10,33 @@ datasource db {
 }
 
 // Analytics
-model SpaceViewEvent {
+model ViewEvent {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
 
-  Space   Space  @relation(fields: [spaceId], references: [publicationId])
-  spaceId String
+  Publication   Publication @relation(fields: [publicationId], references: [id])
+  publicationId String
 }
 
-model Space {
-  id        Int      @id @default(autoincrement())
+// Publications
+model Publication {
+  id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  publicationId String @unique
+  owner  String
+  type   PublicationType
+  lensId String?
 
-  views      SpaceViewEvent[]
-  viewsCount Int              @default(0)
+  ViewEvents ViewEvent[]
+  viewCount  Int         @default(0)
+
+  Project Project[]
 }
 
-model AvatarViewEvent {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-
-  Avatar   Avatar @relation(fields: [avatarId], references: [publicationId])
-  avatarId String
-}
-
-model Avatar {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  publicationId String @unique
-
-  views      AvatarViewEvent[]
-  viewsCount Int               @default(0)
+enum PublicationType {
+  SPACE
+  AVATAR
 }
 
 // Projects
@@ -61,6 +52,9 @@ model Project {
   editorState String?
 
   files File[]
+
+  Publication   Publication? @relation(fields: [publicationId], references: [id])
+  publicationId String?
 }
 
 model File {

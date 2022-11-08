@@ -11,7 +11,7 @@ export function addMaterial(
   renderWorker: RenderWorker
 ) {
   const materialObject = new MeshStandardMaterial();
-  renderWorker.csm?.setupMaterial(material);
+  renderWorker.csm?.setupMaterial(materialObject);
 
   map.materials.set(material.id, materialObject);
 

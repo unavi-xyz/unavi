@@ -1,12 +1,9 @@
 import {
-  BoxCollider,
+  AutoCollider,
   BoxMesh,
-  CylinderCollider,
   CylinderMesh,
   GLTFMesh,
-  MeshCollider,
   Node,
-  SphereCollider,
   SphereMesh,
 } from "@wired-labs/engine";
 
@@ -56,7 +53,7 @@ function createNode(name: ObjectName) {
       addMesh(mesh);
 
       node.meshId = mesh.id;
-      node.collider = new BoxCollider();
+      node.collider = new AutoCollider();
       break;
     }
 
@@ -65,7 +62,7 @@ function createNode(name: ObjectName) {
       addMesh(mesh);
 
       node.meshId = mesh.id;
-      node.collider = new SphereCollider();
+      node.collider = new AutoCollider();
       break;
     }
 
@@ -74,7 +71,7 @@ function createNode(name: ObjectName) {
       addMesh(mesh);
 
       node.meshId = mesh.id;
-      node.collider = new CylinderCollider();
+      node.collider = new AutoCollider();
       break;
     }
 
@@ -83,8 +80,7 @@ function createNode(name: ObjectName) {
       addMesh(mesh);
 
       node.meshId = mesh.id;
-      node.collider = new MeshCollider();
-      node.collider.meshId = mesh.id;
+      node.collider = new AutoCollider();
       break;
     }
   }

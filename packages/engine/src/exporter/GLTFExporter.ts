@@ -16,10 +16,14 @@ import { RenderExport } from "../render/types";
 import {
   Accessor,
   Animation,
+  BoxCollider,
+  CylinderCollider,
   Material,
+  MeshCollider,
   Node,
   Scene,
   SceneJSON,
+  SphereCollider,
   Texture,
 } from "../scene";
 import { setTextureInfo } from "./utils/setTextureInfo";
@@ -178,39 +182,79 @@ export class GLTFExporter {
 
     // Set collider
     if (node.collider) {
-      const collider = this.#extensions.collider.createCollider();
-      collider.setType(node.collider.type);
+      let nodeCollider = node.collider;
 
-      switch (node.collider.type) {
-        case "box": {
-          collider.setSize(node.collider.size);
-          break;
-        }
+      if (nodeCollider?.type === "auto" && node.meshId) {
+        const mesh = this.#scene.meshes[node.meshId];
+        if (!mesh) throw new Error("Mesh not found");
 
-        case "sphere": {
-          collider.setRadius(node.collider.radius);
-          break;
-        }
+        switch (mesh.type) {
+          case "Box": {
+            const boxCollider = new BoxCollider();
+            boxCollider.size = [mesh.width, mesh.height, mesh.depth];
+            nodeCollider = boxCollider;
+            break;
+          }
 
-        case "cylinder": {
-          collider.setRadius(node.collider.radius);
-          collider.setHeight(node.collider.height);
-          break;
-        }
+          case "Sphere": {
+            const sphereCollider = new SphereCollider();
+            sphereCollider.radius = mesh.radius;
+            nodeCollider = sphereCollider;
+            break;
+          }
 
-        case "hull":
-        case "mesh": {
-          if (!node.collider.meshId) break;
+          case "Cylinder": {
+            const cylinderCollider = new CylinderCollider();
+            cylinderCollider.radius = mesh.radius;
+            cylinderCollider.height = mesh.height;
+            nodeCollider = cylinderCollider;
+            break;
+          }
 
-          const colliderMesh = this.#cache.meshes.get(node.collider.meshId);
-          if (!colliderMesh) throw new Error("Mesh not found");
-
-          collider.setMesh(colliderMesh);
-          break;
+          case "Primitives": {
+            const meshCollider = new MeshCollider();
+            meshCollider.meshId = node.meshId;
+            nodeCollider = meshCollider;
+            break;
+          }
         }
       }
 
-      gltfNode.setExtension(collider.extensionName, collider);
+      if (nodeCollider?.type !== "auto") {
+        const collider = this.#extensions.collider.createCollider();
+        collider.setType(nodeCollider.type);
+
+        switch (nodeCollider.type) {
+          case "box": {
+            collider.setSize(nodeCollider.size);
+            break;
+          }
+
+          case "sphere": {
+            collider.setRadius(nodeCollider.radius);
+            break;
+          }
+
+          case "cylinder": {
+            collider.setRadius(nodeCollider.radius);
+            collider.setHeight(nodeCollider.height);
+            break;
+          }
+
+          case "hull":
+          case "mesh": {
+            if (!nodeCollider.meshId) break;
+
+            const colliderMesh = this.#cache.meshes.get(nodeCollider.meshId);
+            if (!colliderMesh) throw new Error("Mesh not found");
+
+            collider.setMesh(colliderMesh);
+            break;
+          }
+        }
+
+        gltfNode.setExtension(collider.extensionName, collider);
+      }
     }
 
     // Parse children

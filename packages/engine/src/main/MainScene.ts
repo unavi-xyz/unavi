@@ -287,6 +287,7 @@ export class MainScene {
     const strippedScene: Partial<SceneJSON> = {
       spawnId: json.spawnId,
       nodes: json.nodes,
+      meshes: json.meshes,
     };
 
     this.#toPhysicsThread({

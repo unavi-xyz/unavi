@@ -1,5 +1,6 @@
 import { ColliderType } from "../../gltf/extensions/Collider/types";
 import { Triplet } from "../../types";
+import { AutoCollider } from "./AutoCollider";
 import { BoxCollider } from "./BoxCollider";
 import { CylinderCollider } from "./CylinderCollider";
 import { HullCollider } from "./HullCollider";
@@ -7,7 +8,11 @@ import { MeshCollider } from "./MeshCollider";
 import { SphereCollider } from "./SphereCollider";
 
 interface BaseColliderJSON {
-  type: ColliderType;
+  type: ColliderType | "auto";
+}
+
+export interface AutoColliderJSON extends BaseColliderJSON {
+  type: "auto";
 }
 
 export interface BoxColliderJSON extends BaseColliderJSON {
@@ -37,6 +42,7 @@ export interface MeshColliderJSON extends BaseColliderJSON {
 }
 
 export type ColliderJSON =
+  | AutoColliderJSON
   | BoxColliderJSON
   | SphereColliderJSON
   | CylinderColliderJSON
@@ -44,6 +50,7 @@ export type ColliderJSON =
   | MeshColliderJSON;
 
 export type Collider =
+  | AutoCollider
   | BoxCollider
   | SphereCollider
   | CylinderCollider

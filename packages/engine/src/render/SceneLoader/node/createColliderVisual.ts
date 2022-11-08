@@ -8,6 +8,12 @@ import {
 } from "three";
 import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
 
+import {
+  BoxCollider,
+  CylinderCollider,
+  MeshCollider,
+  SphereCollider,
+} from "../../../scene";
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
 import { SceneMap, UserData } from "../types";
@@ -31,11 +37,47 @@ export function createColliderVisual(
 
   // Create new collider
   let collider: Mesh | null = null;
+  let nodeCollider = node.collider ? { ...node.collider } : null;
 
-  switch (node.collider?.type) {
+  if (nodeCollider?.type === "auto" && node.meshId) {
+    const mesh = map.meshes.get(node.meshId);
+    if (!mesh) throw new Error("Mesh not found");
+
+    switch (mesh.type) {
+      case "Box": {
+        const boxCollider = new BoxCollider();
+        boxCollider.size = [mesh.width, mesh.height, mesh.depth];
+        nodeCollider = boxCollider;
+        break;
+      }
+
+      case "Sphere": {
+        const sphereCollider = new SphereCollider();
+        sphereCollider.radius = mesh.radius;
+        nodeCollider = sphereCollider;
+        break;
+      }
+
+      case "Cylinder": {
+        const cylinderCollider = new CylinderCollider();
+        cylinderCollider.radius = mesh.radius;
+        cylinderCollider.height = mesh.height;
+        nodeCollider = cylinderCollider;
+        break;
+      }
+
+      case "Primitives": {
+        const meshCollider = new MeshCollider();
+        meshCollider.meshId = node.meshId;
+        nodeCollider = meshCollider;
+      }
+    }
+  }
+
+  switch (nodeCollider?.type) {
     case "box": {
       collider = new Mesh(
-        new BoxGeometry(...node.collider.size),
+        new BoxGeometry(...nodeCollider.size),
         wireframeMaterial
       );
       break;
@@ -43,7 +85,7 @@ export function createColliderVisual(
 
     case "sphere": {
       collider = new Mesh(
-        new SphereGeometry(node.collider.radius),
+        new SphereGeometry(nodeCollider.radius),
         wireframeMaterial
       );
       break;
@@ -52,9 +94,9 @@ export function createColliderVisual(
     case "cylinder": {
       collider = new Mesh(
         new CylinderGeometry(
-          node.collider.radius,
-          node.collider.radius,
-          node.collider.height,
+          nodeCollider.radius,
+          nodeCollider.radius,
+          nodeCollider.height,
           32
         ),
         wireframeMaterial
@@ -67,8 +109,8 @@ export function createColliderVisual(
       const object = map.objects.get(nodeId);
       if (!object) break;
 
-      if (!node.collider.meshId) break;
-      const colliderMesh = map.meshes.get(node.collider.meshId);
+      if (!nodeCollider.meshId) break;
+      const colliderMesh = map.meshes.get(nodeCollider.meshId);
       if (!colliderMesh) throw new Error("Collider mesh not found");
 
       // Get the collider mesh geometry
@@ -135,7 +177,7 @@ export function createColliderVisual(
           geometry.applyMatrix4(object.matrixWorld);
 
           // Remove indices if hull
-          if (node.collider?.type === "hull") geometry.deleteAttribute("index");
+          if (nodeCollider?.type === "hull") geometry.deleteAttribute("index");
 
           // Send geometry attributes to physics thread
           const attribute = geometry.getAttribute("position");
@@ -162,7 +204,7 @@ export function createColliderVisual(
       const geometry = mergeBufferGeometries(geometries);
 
       // Remove indices if hull
-      if (node.collider.type === "hull") geometry.deleteAttribute("index");
+      if (nodeCollider.type === "hull") geometry.deleteAttribute("index");
 
       // Create mesh
       collider = new Mesh(geometry, wireframeMaterial);

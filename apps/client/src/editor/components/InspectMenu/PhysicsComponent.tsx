@@ -1,4 +1,5 @@
 import {
+  AutoCollider,
   BoxCollider,
   Collider,
   CylinderCollider,
@@ -39,11 +40,17 @@ export default function PhysicsComponent({ nodeId }: Props) {
         <MenuRows titles={["Collider"]}>
           <SelectMenu
             value={capitalize(collider.type)}
-            options={["Box", "Sphere", "Cylinder", "Mesh"]}
+            options={["Auto", "Box", "Sphere", "Cylinder", "Mesh"]}
             onChange={(e) => {
               const value = e.target.value === "None" ? null : e.target.value;
 
               switch (value) {
+                case "Auto": {
+                  const autoCollider = new AutoCollider();
+                  updateNode(nodeId, { collider: autoCollider.toJSON() });
+                  break;
+                }
+
                 case "Box": {
                   const boxCollider = new BoxCollider();
                   updateNode(nodeId, { collider: boxCollider.toJSON() });

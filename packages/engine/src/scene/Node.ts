@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
 import { Quad, Triplet } from "../types";
+import { AutoCollider } from "./collider/AutoCollider";
 import { BoxCollider } from "./collider/BoxCollider";
 import { CylinderCollider } from "./collider/CylinderCollider";
 import { HullCollider } from "./collider/HullCollider";
@@ -195,6 +196,10 @@ function createCollider(json: ColliderJSON | null) {
   if (!json) return null;
 
   switch (json.type) {
+    case "auto": {
+      return new AutoCollider();
+    }
+
     case "box": {
       return BoxCollider.fromJSON(json);
     }

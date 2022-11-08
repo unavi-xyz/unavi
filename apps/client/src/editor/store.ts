@@ -15,6 +15,7 @@ export interface IEditorStore {
 
   name: string;
   description: string;
+  publicationId: string | null;
 
   visuals: boolean;
   tool: Tool;
@@ -34,6 +35,7 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
 
   name: "",
   description: "",
+  publicationId: null,
 
   visuals: true,
   tool: "translate",

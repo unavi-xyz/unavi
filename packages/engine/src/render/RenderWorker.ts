@@ -9,8 +9,7 @@ import {
   sRGBEncoding,
   WebGLRenderer,
 } from "three";
-// @ts-ignore
-import CSM from "three-csm";
+import { CSM } from "three/examples/jsm/csm/CSM";
 
 import { PostMessage } from "../types";
 import { OrbitControlsPlugin } from "./plugins/OrbitControls/OrbitControlsPlugin";
@@ -208,8 +207,6 @@ export class RenderWorker {
       maxFar: 50,
       camera: this.#camera,
       parent: this.#scene,
-      // lightDirection: new Vector3(0.2, -1, 0.3),
-      // shadowBias: 0.000001,
     });
 
     // this.csm.fade = true;

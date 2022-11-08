@@ -37,7 +37,6 @@ export default function ProjectLayout({ name, image, children }: Props) {
                       className="rounded-3xl object-cover"
                     />
                   ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={image}
                       alt="space preview"

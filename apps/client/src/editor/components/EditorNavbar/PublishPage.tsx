@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   AppId,

@@ -47,7 +47,6 @@ export default function Card({
             className="rounded-2xl object-cover"
           />
         ) : (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={image}
             draggable={false}

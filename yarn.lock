@@ -11138,10 +11138,10 @@ media-typer@0.3.0:
   resolved "https://registry.yarnpkg.com/media-typer/-/media-typer-0.3.0.tgz#8710d7af0aa626f8fffa1ce00168545263255748"
   integrity sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==
 
-mediasoup-client@^3.6.57:
-  version "3.6.57"
-  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.57.tgz#c87dd3db39a7dd06f10c3862f0934d10d8704d91"
-  integrity sha512-/DHOpgyebCgNIFZ8ZmOZXMPXklyFxTPJa3IoVybG7cghMetMeqvGiOhzgR5i/uoMZ1CMGsOCBF9+604gyBzt4w==
+mediasoup-client@^3.6.58:
+  version "3.6.58"
+  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.58.tgz#8beb377f4767fd7d9b2793551ccdec7aa9c00695"
+  integrity sha512-Kx0o94JxWBSSUd0MjMyEWpN0dHgIBhTcxDInrtji1V9ncq8L6eqiAT1g/DiUVJbmsdd9wLoSp9Jth6ciaNGTdA==
   dependencies:
     "@types/debug" "^4.1.7"
     "@types/events" "^3.0.0"
@@ -11152,7 +11152,7 @@ mediasoup-client@^3.6.57:
     fake-mediastreamtrack "^1.1.6"
     h264-profile-level-id "^1.0.1"
     sdp-transform "^2.14.1"
-    supports-color "^9.2.2"
+    supports-color "^9.2.3"
 
 mediasoup@^3.10.10:
   version "3.10.10"
@@ -14479,7 +14479,7 @@ supports-color@^8.0.0:
   dependencies:
     has-flag "^4.0.0"
 
-supports-color@^9.2.2, supports-color@^9.2.3:
+supports-color@^9.2.3:
   version "9.2.3"
   resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-9.2.3.tgz#a6e2c97fc20c80abecd69e50aebe4783ff77d45a"
   integrity sha512-aszYUX/DVK/ed5rFLb/dDinVJrQjG/vmU433wtqVSD800rYsJNWxh2R3USV90aLSU+UsyQkbNeffVLzc6B6foA==

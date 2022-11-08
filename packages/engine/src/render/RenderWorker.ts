@@ -1,15 +1,16 @@
 import {
   AmbientLight,
   Clock,
-  DirectionalLight,
   FogExp2,
   PCFSoftShadowMap,
   PerspectiveCamera,
   PMREMGenerator,
   Scene,
   sRGBEncoding,
+  Vector3,
   WebGLRenderer,
 } from "three";
+import { CSM } from "three/examples/jsm/csm/CSM";
 
 import { PostMessage } from "../types";
 import { OrbitControlsPlugin } from "./plugins/OrbitControls/OrbitControlsPlugin";
@@ -17,6 +18,7 @@ import { OtherPlayersPlugin } from "./plugins/OtherPlayers/OtherPlayersPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
 import { TransformControlsPlugin } from "./plugins/TransformControls/TransformControlsPlugin";
+import { defaultMaterial } from "./SceneLoader/constants";
 import { SceneLoader } from "./SceneLoader/SceneLoader";
 import { FromRenderMessage, Plugin, ToRenderMessage } from "./types";
 import { disposeObject } from "./utils/disposeObject";
@@ -50,13 +52,13 @@ export class RenderWorker {
   #scene = new Scene();
   #renderer: WebGLRenderer | null = null;
   #camera: PerspectiveCamera | null = null;
-  #sun = new DirectionalLight(0xfff0db, 0.98);
 
   #animationFrameId: number | null = null;
   #canvasWidth = 0;
   #canvasHeight = 0;
   #clock = new Clock();
-  #shadowViewDistance = 50;
+
+  csm: CSM | null = null;
 
   #plugins: Plugin<ToRenderMessage>[] = [];
   #pluginState: PluginState = {
@@ -67,17 +69,8 @@ export class RenderWorker {
     this.#canvas = canvas;
     this.#postMessage = postMessage;
 
-    this.#sceneLoader = new SceneLoader(postMessage);
+    this.#sceneLoader = new SceneLoader(postMessage, this);
     this.#scene.add(this.#sceneLoader.root);
-
-    // Add sun
-    this.#sun.castShadow = true;
-    this.#sun.position.set(0, 200, 0);
-    this.#scene.add(this.#sun);
-
-    this.#sun.shadow.mapSize.width = 2048;
-    this.#sun.shadow.mapSize.height = 2048;
-    this.#sun.shadow.bias = -0.0005;
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
@@ -113,19 +106,6 @@ export class RenderWorker {
 
       case "size": {
         this.#updateCanvasSize(data.width, data.height);
-        break;
-      }
-
-      case "set_shadow_settings": {
-        if (!this.#renderer) return;
-
-        const maxMapSize = this.#renderer.capabilities.maxTextureSize;
-        const mapSize = Math.min(maxMapSize, data.mapSize);
-
-        this.#sun.shadow.mapSize.width = mapSize;
-        this.#sun.shadow.mapSize.height = mapSize;
-
-        this.#shadowViewDistance = data.viewDistance;
         break;
       }
     }
@@ -210,6 +190,20 @@ export class RenderWorker {
       }
     }
 
+    // Cascading shadow maps
+    this.csm = new CSM({
+      maxFar: 100,
+      cascades: 3,
+      lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
+      shadowMapSize: 2048,
+      shadowBias: -0.0001,
+      camera: this.#camera,
+      parent: this.#scene,
+    });
+
+    this.csm.fade = true;
+    this.csm.setupMaterial(defaultMaterial);
+
     // Transform Controls
     if (enableTransformControls) {
       this.#plugins.unshift(
@@ -274,10 +268,9 @@ export class RenderWorker {
     this.#animationFrameId = requestAnimationFrame(() => this.#animate());
     if (!this.#renderer || !this.#camera) return;
 
-    this.#sceneLoader.mixer.update(delta);
     this.#plugins.forEach((plugin) => plugin.animate && plugin.animate(delta));
-
-    this.#updateShadowMap();
+    this.#sceneLoader.mixer.update(delta);
+    this.csm?.update();
 
     this.#renderer.render(this.#scene, this.#camera);
   }
@@ -292,18 +285,5 @@ export class RenderWorker {
     this.#renderer.setSize(width, height, false);
     this.#camera.aspect = width / height;
     this.#camera.updateProjectionMatrix();
-  }
-
-  #updateShadowMap() {
-    if (!this.#camera) return;
-
-    const { x, z } = this.#camera.position;
-
-    this.#sun.shadow.camera.left = -this.#shadowViewDistance + x;
-    this.#sun.shadow.camera.right = this.#shadowViewDistance + x;
-    this.#sun.shadow.camera.top = -this.#shadowViewDistance - z;
-    this.#sun.shadow.camera.bottom = this.#shadowViewDistance - z;
-
-    this.#sun.shadow.camera.updateProjectionMatrix();
   }
 }

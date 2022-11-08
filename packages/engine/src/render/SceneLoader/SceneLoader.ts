@@ -15,6 +15,7 @@ import {
 import { AccessorJSON, MeshJSON, NodeJSON } from "../../scene";
 import { sortNodes } from "../../scene/utils/sortNodes";
 import { PostMessage, Quad } from "../../types";
+import { RenderWorker } from "../RenderWorker";
 import { FromRenderMessage, RenderExport, ToRenderMessage } from "../types";
 import { addAnimation } from "./animation/addAnimation";
 import { addMaterial } from "./material/addMaterial";
@@ -57,9 +58,14 @@ export class SceneLoader {
   };
 
   #postMessage: PostMessage<FromRenderMessage>;
+  #renderWorker: RenderWorker;
 
-  constructor(postMessage: PostMessage<FromRenderMessage>) {
+  constructor(
+    postMessage: PostMessage<FromRenderMessage>,
+    renderWorker: RenderWorker
+  ) {
     this.#postMessage = postMessage;
+    this.#renderWorker = renderWorker;
 
     this.root.add(this.contents);
     this.#map.objects.set("root", this.contents);
@@ -109,7 +115,7 @@ export class SceneLoader {
       }
 
       case "add_material": {
-        addMaterial(data.material, this.#map);
+        addMaterial(data.material, this.#map, this.#renderWorker);
         break;
       }
 
@@ -145,7 +151,9 @@ export class SceneLoader {
 
         // Add materials
         if (data.scene.materials)
-          data.scene.materials.forEach((m) => addMaterial(m, this.#map));
+          data.scene.materials.forEach((m) =>
+            addMaterial(m, this.#map, this.#renderWorker)
+          );
 
         // Add meshes
         if (data.scene.meshes)

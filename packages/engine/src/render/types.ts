@@ -104,11 +104,7 @@ export type ToRenderMessage =
       }
     >
   | WorkerMessage<"set_avatar", string | null>
-  | WorkerMessage<"clear_players">
-  | WorkerMessage<
-      "set_shadow_settings",
-      { viewDistance: number; mapSize: number }
-    >;
+  | WorkerMessage<"clear_players">;
 
 export type FromRenderMessage =
   | WorkerMessage<"ready">

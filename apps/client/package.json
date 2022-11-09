@@ -25,7 +25,7 @@
     "@trpc/server": "10.0.0-rc.6",
     "@wired-labs/engine": "*",
     "@wired-labs/lens": "*",
-    "ethers": "^5.7.1",
+    "ethers": "^5.7.2",
     "graphql": "^16.5.0",
     "ipfs-http-client": "^57.0.3",
     "nanoid": "^4.0.0",

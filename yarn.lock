@@ -11503,10 +11503,10 @@ next-auth@^4.15.1:
     preact-render-to-string "^5.1.19"
     uuid "^8.3.2"
 
-next-axiom@^0.14.0:
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/next-axiom/-/next-axiom-0.14.0.tgz#83b54b8f15833fc1b1adeaa48b68fc5c5cb5386a"
-  integrity sha512-LLbiDcL79274HqaKTSipZo6B4SCLh++11BpVfg+cNTZoLb8VH1g7g14xgFBhKeDN+DaiDSg8Of7ZPqaYEcIUXQ==
+next-axiom@^0.15.1:
+  version "0.15.1"
+  resolved "https://registry.yarnpkg.com/next-axiom/-/next-axiom-0.15.1.tgz#841a58c90030db21d3fd71f26e8feda5278332f3"
+  integrity sha512-5leWEoW6LugxLGFilmJPCVmG8cfZio6sXtVw+/7dqQvEbX5T1dwvoOSfmLh2NjocP/i/R2jpdrtgFl+ZrkOl1Q==
   dependencies:
     whatwg-fetch "^3.6.2"
 

@@ -1,5 +1,4 @@
 import {
-  AppId,
   GetPublicationDocument,
   GetPublicationQuery,
   GetPublicationQueryVariables,
@@ -9,7 +8,6 @@ import {
 import { PageMetadata } from "../../../home/MetaTags";
 import { lensClient } from "../../../server/lens";
 import { getMediaURL } from "../../../utils/getMediaURL";
-import { trimHandle } from "./trimHandle";
 
 export interface PublicationProps {
   metadata: PageMetadata;
@@ -28,21 +26,8 @@ export async function getPublicationProps(
     .toPromise();
 
   const publication = (data?.publication as Publication | undefined) ?? null;
-
-  const title = `${publication?.metadata.name ?? publicationId}`;
-
-  const publicationType =
-    publication?.appId === AppId.Space
-      ? "Space"
-      : publication?.appId === AppId.Avatar
-      ? "Avatar"
-      : "";
-
-  const description =
-    publication?.metadata.description ?? publication?.profile.handle
-      ? `${publicationType} by @${trimHandle(publication?.profile.handle)}`
-      : "";
-
+  const title = publication?.metadata.name ?? `Space ${publicationId}`;
+  const description = publication?.metadata.description ?? null;
   const image = getMediaURL(publication?.metadata.media[0]);
 
   const metadata: PageMetadata = {

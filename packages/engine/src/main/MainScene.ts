@@ -207,15 +207,6 @@ export class MainScene {
   }
 
   addMesh(mesh: Mesh) {
-    if (mesh?.type === "glTF") {
-      const uri = mesh.uri;
-      if (uri)
-        this.#toLoaderThread({
-          subject: "load_gltf",
-          data: { id: mesh.id, uri },
-        });
-    }
-
     this.#scene.addMesh(mesh);
 
     const message: SceneMessage = {

@@ -7,7 +7,13 @@ import {
   Texture as ITexture,
   WebIO,
 } from "@gltf-transform/core";
-import { dedup, prune } from "@gltf-transform/functions";
+import { DracoMeshCompression } from "@gltf-transform/extensions";
+import {
+  dedup,
+  prune,
+  resample,
+  textureResize,
+} from "@gltf-transform/functions";
 
 import { extensions } from "../gltf/constants";
 import { ColliderExtension } from "../gltf/extensions/Collider/ColliderExtension";
@@ -117,13 +123,31 @@ export class GLTFExporter {
       this.#parseAnimation(animation)
     );
 
+    // Create IO
+    const io = new WebIO().registerExtensions(extensions).registerDependencies({
+      // @ts-ignore
+      "draco3d.encoder": await new DracoEncoderModule(),
+    });
+
+    this.#doc
+      .createExtension(DracoMeshCompression)
+      .setRequired(true)
+      .setEncoderOptions({
+        encodeSpeed: 5,
+        decodeSpeed: 5,
+        method: DracoMeshCompression.EncoderMethod.EDGEBREAKER,
+      });
+
     // Apply transforms
-    await this.#doc.transform(dedup(), prune());
+    await this.#doc.transform(
+      dedup(),
+      resample(),
+      prune(),
+      textureResize({ size: [1024, 1024] })
+    );
 
     // Write to binary
-    const io = new WebIO().registerExtensions(extensions);
     const glb = await io.writeBinary(this.#doc);
-
     return glb;
   }
 

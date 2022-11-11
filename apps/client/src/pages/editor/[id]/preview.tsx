@@ -1,6 +1,7 @@
 import { GLTFMesh, Node, SceneJSON } from "@wired-labs/engine";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
 
@@ -274,6 +275,9 @@ export default function Preview() {
   return (
     <>
       <MetaTags title="Preview" />
+
+      <Script src="/scripts/draco_encoder.js" />
+      <Script src="/scripts/draco_decoder.js" />
 
       <div className="h-full">
         {!exportedScene && (

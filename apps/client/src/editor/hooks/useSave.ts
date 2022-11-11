@@ -89,7 +89,12 @@ export function useSave() {
   }
 
   async function save() {
-    const { name, description, engine } = useEditorStore.getState();
+    const { name, description, engine, sceneLoaded } =
+      useEditorStore.getState();
+
+    // If scene is not loaded, don't save
+    if (!sceneLoaded) return;
+
     if (!engine) throw new Error("No engine");
 
     const promises: Promise<any>[] = [];

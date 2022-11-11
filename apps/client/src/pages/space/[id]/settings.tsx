@@ -48,11 +48,11 @@ export default function Settings(
     try {
       const promises: Promise<any>[] = [];
 
-      // Remove from database
-      promises.push(deletePublication({ lensId: id }));
-
       // Hide from lens API
       promises.push(hidePublication({ request: { publicationId: id } }));
+
+      // Remove from database
+      promises.push(deletePublication({ lensId: id }));
 
       await Promise.all(promises);
 

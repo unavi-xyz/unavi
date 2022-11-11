@@ -220,10 +220,13 @@ export default function Preview() {
 
     // Add node to scene
     engine.scene
-      .loadJSON({
-        nodes: [node.toJSON()],
-        meshes: [mesh.toJSON()],
-      })
+      .loadJSON(
+        {
+          nodes: [node.toJSON()],
+          meshes: [mesh.toJSON()],
+        },
+        true
+      )
       .then(async () => {
         // Start engine
         await engine.start();

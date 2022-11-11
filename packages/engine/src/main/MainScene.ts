@@ -31,6 +31,7 @@ export class MainScene {
     loadedGltfUris: new Map<string, string | null>(),
   };
 
+  #gltfLoadSpawn = new Map<string, boolean>();
   #gltfLoadCallbacks = new Map<string, () => void>();
 
   constructor({
@@ -62,7 +63,8 @@ export class MainScene {
       });
 
       // Add loaded glTF to the scene
-      await this.loadJSON(scene);
+      const loadSpawn = this.#gltfLoadSpawn.get(id);
+      await this.loadJSON(scene, false, loadSpawn);
 
       // Call glTF load callbacks
       const callback = this.#gltfLoadCallbacks.get(id);
@@ -270,7 +272,13 @@ export class MainScene {
     return this.#scene.toJSON(includeInternal);
   }
 
-  async loadJSON(json: Partial<SceneJSON>) {
+  async loadJSON(
+    json: Partial<SceneJSON>,
+    loadGltfSpawn = false,
+    loadSpawn = true
+  ) {
+    if (!loadSpawn) delete json.spawnId;
+
     // Remove root node
     json.nodes = json.nodes?.filter((node) => node.id !== "root");
 
@@ -301,7 +309,9 @@ export class MainScene {
         json.meshes.map((mesh) => {
           if (mesh.type !== "glTF" || !mesh.uri) return;
           return new Promise<void>((resolve) => {
+            this.#gltfLoadSpawn.set(mesh.id, loadGltfSpawn);
             this.#gltfLoadCallbacks.set(mesh.id, () => {
+              this.#gltfLoadSpawn.delete(mesh.id);
               this.#gltfLoadCallbacks.delete(mesh.id);
               resolve();
             });
@@ -312,7 +322,16 @@ export class MainScene {
   }
 
   clear() {
+    // Remove spawn
     this.#scene.spawnId = null;
+    this.#toPhysicsThread({
+      subject: "load_json",
+      data: { scene: { spawnId: null } },
+    });
+    this.#toRenderThread({
+      subject: "load_json",
+      data: { scene: { spawnId: null } },
+    });
 
     // Remove all nodes
     Object.values(this.#scene.nodes).forEach((node) => {

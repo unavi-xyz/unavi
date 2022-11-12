@@ -89,7 +89,12 @@ export function useSave() {
   }
 
   async function save() {
-    const { name, description, engine } = useEditorStore.getState();
+    const { name, description, engine, sceneLoaded } =
+      useEditorStore.getState();
+
+    // If scene is not loaded, don't save
+    if (!sceneLoaded) return;
+
     if (!engine) throw new Error("No engine");
 
     const promises: Promise<any>[] = [];
@@ -161,6 +166,9 @@ export function useSave() {
     });
 
     await Promise.all(promises);
+
+    // Wait for 1 second to make sure the scene is saved
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   return { save, saveImage };

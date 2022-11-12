@@ -1,4 +1,5 @@
 import { GLTFMesh, Node } from "@wired-labs/engine";
+import Script from "next/script";
 import { useEffect, useMemo, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -113,6 +114,9 @@ export default function Editor() {
   return (
     <>
       <MetaTags title="Editor" />
+
+      <Script src="/scripts/draco_encoder.js" />
+      <Script src="/scripts/draco_decoder.js" />
 
       <DndProvider backend={HTML5Backend}>
         <div

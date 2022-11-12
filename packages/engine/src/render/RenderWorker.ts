@@ -1,5 +1,4 @@
 import {
-  AmbientLight,
   Clock,
   FogExp2,
   PCFSoftShadowMap,
@@ -149,12 +148,8 @@ export class RenderWorker {
     this.#renderer.shadowMap.enabled = true;
     this.#renderer.shadowMap.type = PCFSoftShadowMap;
 
-    // Lights
-    const ambientLight = new AmbientLight(0xffffff, 0.02);
-    this.#scene.add(ambientLight);
-
     // Fog
-    this.#scene.fog = new FogExp2(0xeefaff, 0.004);
+    this.#scene.fog = new FogExp2(0xeefaff, 0.003);
 
     // Camera
     this.#camera = new PerspectiveCamera(
@@ -191,9 +186,11 @@ export class RenderWorker {
     }
 
     // Cascading shadow maps
+    const cascades = 3;
     this.csm = new CSM({
-      maxFar: 100,
-      cascades: 3,
+      lightIntensity: 1 / cascades,
+      maxFar: 75,
+      cascades,
       lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
       shadowMapSize: 2048,
       shadowBias: -0.0001,

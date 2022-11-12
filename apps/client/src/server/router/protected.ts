@@ -433,6 +433,15 @@ export const protectedRouter = router({
 
       const promises: Promise<any>[] = [];
 
+      // Delete publication from S3
+      promises.push(deletePublicationFromS3(id));
+
+      // Remove publicationId from projects
+      await prisma.project.updateMany({
+        where: { publicationId: id },
+        data: { publicationId: null },
+      });
+
       // Delete publication from database
       promises.push(
         prisma.publication.delete({
@@ -440,17 +449,6 @@ export const protectedRouter = router({
           include: { ViewEvents: true },
         })
       );
-
-      // Remove publicationId from projects
-      promises.push(
-        prisma.project.updateMany({
-          where: { publicationId: id },
-          data: { publicationId: null },
-        })
-      );
-
-      // Delete publication from S3
-      promises.push(deletePublicationFromS3(id));
 
       await Promise.all(promises);
     }),

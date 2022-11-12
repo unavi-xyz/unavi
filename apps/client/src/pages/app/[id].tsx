@@ -1,5 +1,6 @@
 import { GLTFMesh, Node } from "@wired-labs/engine";
 import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAnalytics } from "../../app/hooks/useAnalytics";
@@ -175,6 +176,8 @@ export default function App({
         image={metadata.image ?? undefined}
         card="summary_large_image"
       />
+
+      <Script src="/scripts/draco_decoder.js" />
 
       <LoadingScreen spaceId={id} loaded={engineStarted} />
 

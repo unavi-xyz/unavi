@@ -17,6 +17,7 @@ import FileInput from "../../../ui/FileInput";
 import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
 import { useEditorStore } from "../../store";
+import { cropImage } from "../../utils/cropImage";
 
 function cdnModelURL(id: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/model.glb`;
@@ -63,13 +64,7 @@ export default function UpdatePage({ onClose }: Props) {
 
   useEffect(() => {
     if (imageFile || !imageURL) return;
-
-    fetch(imageURL)
-      .then((res) => res.blob())
-      .then((blob) => {
-        const file = new File([blob], "image.jpg", { type: blob.type });
-        setImageFile(file);
-      });
+    cropImage(imageURL).then((file) => setImageFile(file));
   }, [imageFile, imageURL]);
 
   async function handlePublish() {
@@ -127,14 +122,14 @@ export default function UpdatePage({ onClose }: Props) {
           async function upload() {
             if (!publicationId) throw new Error("No publication id");
 
-            if (!imageURL) {
-              resolve();
+            if (!imageFile) {
+              reject();
               return;
             }
 
             // Get image
-            const imageResponse = await fetch(imageURL);
-            const body = await imageResponse.blob();
+            const res = await fetch(URL.createObjectURL(imageFile));
+            const body = await res.blob();
 
             // Upload to S3
             const url = await createImageUploadUrl({ id: publicationId });
@@ -270,7 +265,11 @@ export default function UpdatePage({ onClose }: Props) {
             accept="image/*"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) setImageFile(file);
+              if (!file) return;
+
+              cropImage(URL.createObjectURL(file)).then((file) =>
+                setImageFile(file)
+              );
             }}
           />
         </div>

@@ -5,12 +5,17 @@ import { useAccount } from "wagmi";
 
 import { useSession } from "../client/auth/useSession";
 import { trpc } from "../client/trpc";
+import { env } from "../env/client.mjs";
 import CreateProjectPage from "../home/CreateProjectPage";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
 import Dialog from "../ui/Dialog";
+
+function cdnImageURL(id: string) {
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/image.jpg`;
+}
 
 export default function Create() {
   const [openCreateProject, setOpenCreateProject] = useState(false);
@@ -42,6 +47,9 @@ export default function Create() {
 
   const unpublishedProjects = projects?.filter((p) => !p.publicationId) ?? [];
   const publishedProjects = projects?.filter((p) => p.publicationId) ?? [];
+  const publishedImages = publishedProjects.map((p) =>
+    p.publicationId ? cdnImageURL(p.publicationId) : p.image
+  );
 
   return (
     <>
@@ -109,12 +117,12 @@ export default function Create() {
               <div className="text-2xl font-bold">🏙️ Published</div>
 
               <div className="grid grid-cols-3 gap-3">
-                {publishedProjects.map(({ id, name, image }) => (
+                {publishedProjects.map(({ id, name }, i) => (
                   <Link key={id} href={`/project/${id}`} passHref>
                     <div>
                       <Card
                         text={name}
-                        image={image}
+                        image={publishedImages[i]}
                         sizes="333px"
                         animateEnter
                       />

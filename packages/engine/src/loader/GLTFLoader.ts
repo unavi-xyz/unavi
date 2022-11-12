@@ -44,7 +44,7 @@ import { PrimitivesMesh } from "../scene/mesh/PrimitivesMesh";
  */
 export class GLTFLoader {
   #scene = new Scene();
-  #io = new WebIO().registerExtensions(extensions);
+  #io: WebIO | null = null;
   #root: Root | null = null;
 
   #map = {
@@ -60,15 +60,22 @@ export class GLTFLoader {
   #spawnId: string | null = null;
 
   async load(uri: string): Promise<Scene> {
+    this.#io = new WebIO().registerExtensions(extensions).registerDependencies({
+      // @ts-ignore
+      "draco3d.decoder": await new DracoDecoderModule(),
+    });
+
     const res = await fetch(uri);
     const mimeType = res.headers.get("Content-Type");
 
     const readJSON = async () => {
+      if (!this.#io) throw new Error("No io");
       const document = await this.#io.read(uri);
       this.#root = document.getRoot();
     };
 
     const readBinary = async () => {
+      if (!this.#io) throw new Error("No io");
       const buffer = await res.arrayBuffer();
       const array = new Uint8Array(buffer);
       const document = await this.#io.readBinary(array);

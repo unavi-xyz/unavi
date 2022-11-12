@@ -119,10 +119,13 @@ export class NetworkingInterface {
     this.#spaceNodeId = node.id;
 
     // Load glTF
-    await this.#scene.loadJSON({
-      nodes: [node.toJSON()],
-      meshes: [mesh.toJSON()],
-    });
+    await this.#scene.loadJSON(
+      {
+        nodes: [node.toJSON()],
+        meshes: [mesh.toJSON()],
+      },
+      true
+    );
 
     // Wait for space to load
     await new Promise((resolve, reject) => {

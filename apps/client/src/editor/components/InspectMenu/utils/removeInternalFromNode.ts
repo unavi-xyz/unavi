@@ -1,3 +1,4 @@
+import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useEditorStore } from "../../../store";
 
 export function removeInternalFromNode(nodeId: string) {
@@ -7,7 +8,7 @@ export function removeInternalFromNode(nodeId: string) {
   const node = engine.scene.nodes[nodeId];
   if (!node) throw new Error("Node not found");
 
-  node.isInternal = false;
+  updateNode(nodeId, { isInternal: false });
 
   // Mesh
   if (node.meshId) {

@@ -144,6 +144,14 @@ export class MainScene {
     return this.#scene.spawnId$;
   }
 
+  get accessors() {
+    return this.#scene.accessors;
+  }
+
+  get animations() {
+    return this.#scene.animations;
+  }
+
   get nodes() {
     return this.#scene.nodes;
   }

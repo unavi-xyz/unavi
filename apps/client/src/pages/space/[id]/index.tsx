@@ -27,7 +27,7 @@ export default function Space(
     <SpaceLayout {...props}>
       <div className="space-y-2">
         <div className="text-2xl font-bold">Description</div>
-        <div className="text-lg text-outline">
+        <div className="text-lg text-outline whitespace-pre-line">
           {props.publication?.metadata.description}
         </div>
       </div>

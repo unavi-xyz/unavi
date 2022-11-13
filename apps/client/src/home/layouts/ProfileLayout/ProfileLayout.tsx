@@ -142,7 +142,7 @@ export default function ProfileLayout({
               </div>
 
               <div className="w-full pt-2">
-                <div className="text-center text-sm md:text-base">
+                <div className="text-center text-sm md:text-base whitespace-pre-line">
                   {profile.bio}
                 </div>
               </div>

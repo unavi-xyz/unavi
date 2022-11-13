@@ -154,31 +154,11 @@ export function useSave() {
         const uri = mesh.uri;
         if (uri) promises.push(uploadFile(uri, mesh.id, "model"));
       }
+    });
 
-      // Images
-      if (mesh.materialId) {
-        const material = engine.scene.materials[mesh.materialId];
-        if (!material) throw new Error("No material");
-
-        const colorTextureId = material.colorTexture?.imageId;
-        if (colorTextureId) promises.push(uploadImageFile(colorTextureId));
-
-        const emissiveTextureId = material.emissiveTexture?.imageId;
-        if (emissiveTextureId)
-          promises.push(uploadImageFile(emissiveTextureId));
-
-        const normalTextureId = material.normalTexture?.imageId;
-        if (normalTextureId) promises.push(uploadImageFile(normalTextureId));
-
-        const occlusionTextureId = material.occlusionTexture?.imageId;
-        if (occlusionTextureId)
-          promises.push(uploadImageFile(occlusionTextureId));
-
-        const metallicRoughnessTextureId =
-          material.metallicRoughnessTexture?.imageId;
-        if (metallicRoughnessTextureId)
-          promises.push(uploadImageFile(metallicRoughnessTextureId));
-      }
+    scene.images.forEach((image) => {
+      if (image.isInternal) return;
+      promises.push(uploadImageFile(image.id));
     });
 
     await Promise.all(promises);

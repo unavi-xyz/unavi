@@ -27,6 +27,7 @@ export function removeInternalFromNode(nodeId: string) {
           removeInternalFromMaterial(primitive.materialId);
 
           // Accessors
+          removeInternalFromAccessor(primitive.indicesId);
           removeInternalFromAccessor(primitive.COLOR_0);
           removeInternalFromAccessor(primitive.JOINTS_0);
           removeInternalFromAccessor(primitive.NORMAL);

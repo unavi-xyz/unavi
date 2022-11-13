@@ -8,6 +8,7 @@ import { removeMesh } from "../../../actions/RemoveMeshAction";
 import { updateMesh } from "../../../actions/UpdateMeshAction";
 import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
+import { useEditorStore } from "../../../store";
 import { updateGltfColliders } from "../../../utils/updateGltfColliders";
 import MenuRows from "../MenuRows";
 import { removeInternalFromNode } from "../utils/removeInternalFromNode";
@@ -31,6 +32,7 @@ export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
     updateNode(nodeId, { meshId: null, collider: null });
     removeMesh(mesh.id);
 
+    useEditorStore.setState({ changesToSave: true });
     setOpenConfirmDialog(false);
   }
 

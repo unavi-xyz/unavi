@@ -38,17 +38,12 @@ export function useSave() {
     if (!res.ok) throw new Error("Failed to upload image");
   }
 
-  async function uploadFile(
-    uri: string,
-    fileId: string,
-    type: "model" | "image"
-  ) {
+  async function uploadFile(uri: string, fileId: string) {
     const uriResponse = await fetch(uri);
     const buffer = await uriResponse.arrayBuffer();
     const array = new Uint8Array(buffer);
 
-    const storageKey =
-      type === "model" ? modelStorageKey(fileId) : imageStorageKey(fileId);
+    const storageKey = modelStorageKey(fileId);
 
     const url = await getFileUpload({ id, storageKey });
 
@@ -152,7 +147,7 @@ export function useSave() {
       // glTF models
       if (mesh?.type === "glTF") {
         const uri = mesh.uri;
-        if (uri) promises.push(uploadFile(uri, mesh.id, "model"));
+        if (uri) promises.push(uploadFile(uri, mesh.id));
       }
     });
 

@@ -90,7 +90,7 @@ export function useLoad() {
       };
 
       // Load glTF models
-      const modelPromises = savedScene.meshes.map(async (mesh) => {
+      const modelPromises = scene.meshes.map(async (mesh) => {
         if (mesh.type === "glTF" && mesh.uri) {
           const file = fileURLs.find((f) => f.id === modelStorageKey(mesh.id));
           if (!file) throw new Error("File not found");
@@ -122,6 +122,13 @@ export function useLoad() {
           array,
           bitmap,
         });
+      });
+
+      // Process accessors
+      scene.accessors.forEach((accessor) => {
+        if (accessor.type === "SCALAR")
+          accessor.array = Uint16Array.from(Object.values(accessor.array));
+        else accessor.array = Float32Array.from(Object.values(accessor.array));
       });
 
       await Promise.all(modelPromises);

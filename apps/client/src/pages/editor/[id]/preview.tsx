@@ -130,7 +130,7 @@ export default function Preview() {
       };
 
       // Load glTF models
-      const modelPromises = savedScene.meshes.map(async (mesh) => {
+      const modelPromises = scene.meshes.map(async (mesh) => {
         if (mesh?.type === "glTF" && mesh.uri) {
           const file = fileURLs.find((f) => f.id === modelStorageKey(mesh.id));
           if (!file) throw new Error("File not found");
@@ -166,6 +166,13 @@ export default function Preview() {
 
       await Promise.all(modelPromises);
       await Promise.all(imagePromises);
+
+      // Process accessors
+      scene.accessors.forEach((accessor) => {
+        if (accessor.type === "SCALAR")
+          accessor.array = Uint16Array.from(Object.values(accessor.array));
+        else accessor.array = Float32Array.from(Object.values(accessor.array));
+      });
 
       // Load scene
       await engine.scene.loadJSON(scene);

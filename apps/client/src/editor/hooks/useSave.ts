@@ -18,6 +18,8 @@ export function useSave() {
   const { mutateAsync: getSceneUpload } =
     trpc.auth.projectSceneUploadURL.useMutation();
 
+  const utils = trpc.useContext();
+
   async function saveImage() {
     const { engine, canvas } = useEditorStore.getState();
     if (!engine || !canvas) throw new Error("No engine");
@@ -164,6 +166,18 @@ export function useSave() {
         if (colorTextureId) promises.push(uploadImageFile(colorTextureId));
       }
     });
+
+    // Invalidate cache
+    promises.push(utils.auth.project.invalidate({ id }));
+    promises.push(utils.auth.projectScene.invalidate({ id }));
+    promises.push(utils.auth.projectFiles.invalidate({ id }));
+
+    await Promise.all(promises);
+
+    // Force a new fetch of the project
+    promises.push(utils.auth.project.prefetch({ id }));
+    promises.push(utils.auth.projectScene.prefetch({ id }));
+    promises.push(utils.auth.projectFiles.prefetch({ id }));
 
     await Promise.all(promises);
   }

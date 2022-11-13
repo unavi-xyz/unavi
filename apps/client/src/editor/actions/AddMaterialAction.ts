@@ -9,6 +9,8 @@ export class AddMaterialAction {
 
     // Add material
     engine.scene.addMaterial(material);
+
+    useEditorStore.setState({ changesToSave: true });
   }
 }
 

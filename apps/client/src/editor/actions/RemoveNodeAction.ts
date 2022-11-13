@@ -7,6 +7,8 @@ export class RemoveNodeAction {
 
     // Remove node
     engine.scene.removeNode(nodeId);
+
+    useEditorStore.setState({ changesToSave: true });
   }
 }
 

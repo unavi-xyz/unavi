@@ -6,6 +6,7 @@ import { Tool } from "./types";
 export interface IEditorStore {
   engine: Engine | null;
   sceneLoaded: boolean;
+  changesToSave: boolean;
 
   getNode: (id: string) => Node | undefined;
 
@@ -24,6 +25,7 @@ export interface IEditorStore {
 export const useEditorStore = create<IEditorStore>((set, get) => ({
   engine: null,
   sceneLoaded: false,
+  changesToSave: false,
 
   getNode: (id: string) => {
     return get().engine?.scene.nodes[id];

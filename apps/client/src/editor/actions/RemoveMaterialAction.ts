@@ -7,6 +7,8 @@ export class RemoveMaterialAction {
 
     // Remove material
     engine.scene.removeMaterial(materialId);
+
+    useEditorStore.setState({ changesToSave: true });
   }
 }
 

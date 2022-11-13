@@ -18,8 +18,6 @@ export function useSave() {
   const { mutateAsync: getSceneUpload } =
     trpc.auth.projectSceneUploadURL.useMutation();
 
-  const utils = trpc.useContext();
-
   async function saveImage() {
     const { engine, canvas } = useEditorStore.getState();
     if (!engine || !canvas) throw new Error("No engine");
@@ -98,7 +96,7 @@ export function useSave() {
     if (!sceneLoaded) return;
 
     if (!engine) throw new Error("No engine");
-
+    useEditorStore.setState({ changesToSave: false });
     const promises: Promise<any>[] = [];
 
     const editorState = getEditorState();

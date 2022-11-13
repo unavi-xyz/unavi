@@ -247,7 +247,7 @@ export class Scene {
         // Remove material
         if (mesh.materialId) {
           const material = this.materials[mesh.materialId];
-          if (!material) throw new Error(`Material not found`);
+          if (!material) return;
 
           // Only remove internal materials
           if (material.isInternal) {

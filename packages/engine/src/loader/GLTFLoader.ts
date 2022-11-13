@@ -405,7 +405,8 @@ export class GLTFLoader {
           primitive.WEIGHTS_0 = this.#loadAccessor(attribute);
           break;
         default:
-          throw new Error(`Unsupported primitive attribute: ${name}`);
+          console.warn(`Attribute ${name} not supported`);
+          return;
       }
     });
 

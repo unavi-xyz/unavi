@@ -5,6 +5,7 @@ import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
+import { trpc } from "../../../client/trpc";
 import Button from "../../../ui/Button";
 import Dialog from "../../../ui/Dialog";
 import IconButton from "../../../ui/IconButton";
@@ -17,7 +18,7 @@ import UpdatePage from "./UpdatePage";
 
 export default function EditorNavbar() {
   const router = useRouter();
-  const id = router.query.id;
+  const id = router.query.id as string;
 
   const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
@@ -27,6 +28,7 @@ export default function EditorNavbar() {
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const { save, saveImage } = useSave();
+  const utils = trpc.useContext();
 
   function handleToggleColliders() {
     useEditorStore.setState({ visuals: !visuals });
@@ -50,7 +52,17 @@ export default function EditorNavbar() {
     setPreviewLoading(true);
 
     try {
+      // Save
       await save();
+
+      // Force a new fetch of the project
+      const promises: Promise<any>[] = [];
+      promises.push(utils.auth.project.prefetch({ id }));
+      promises.push(utils.auth.projectScene.prefetch({ id }));
+      promises.push(utils.auth.projectFiles.prefetch({ id }));
+
+      await Promise.all(promises);
+
       router.push(`/editor/${id}/preview`);
     } catch (err) {
       console.error(err);

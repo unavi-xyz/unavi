@@ -173,13 +173,6 @@ export function useSave() {
     promises.push(utils.auth.projectFiles.invalidate({ id }));
 
     await Promise.all(promises);
-
-    // Force a new fetch of the project
-    promises.push(utils.auth.project.prefetch({ id }));
-    promises.push(utils.auth.projectScene.prefetch({ id }));
-    promises.push(utils.auth.projectFiles.prefetch({ id }));
-
-    await Promise.all(promises);
   }
 
   return { save, saveImage };

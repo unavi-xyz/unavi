@@ -1,5 +1,5 @@
-export function modelStorageKey(id: string) {
-  return `model-${id}`;
+export function binaryStorageKey(id: string) {
+  return `binary-${id}`;
 }
 
 export function imageStorageKey(id: string) {

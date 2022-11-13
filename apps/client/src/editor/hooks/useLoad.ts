@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { trpc } from "../../client/trpc";
 import { useEditorStore } from "../store";
 import { SavedSceneJSON } from "../types";
-import { imageStorageKey, modelStorageKey } from "../utils/fileStorage";
+import { binaryStorageKey, imageStorageKey } from "../utils/fileStorage";
 import { updateGltfColliders } from "../utils/updateGltfColliders";
 
 export function useLoad() {
@@ -87,12 +87,13 @@ export function useLoad() {
       const scene: SceneJSON = {
         ...savedScene,
         images: [],
+        accessors: [],
       };
 
       // Load glTF models
       const modelPromises = scene.meshes.map(async (mesh) => {
         if (mesh.type === "glTF" && mesh.uri) {
-          const file = fileURLs.find((f) => f.id === modelStorageKey(mesh.id));
+          const file = fileURLs.find((f) => f.id === binaryStorageKey(mesh.id));
           if (!file) throw new Error("File not found");
 
           const response = await fetch(file.uri);
@@ -124,15 +125,30 @@ export function useLoad() {
         });
       });
 
-      // Process accessors
-      scene.accessors.forEach((accessor) => {
-        if (accessor.type === "SCALAR")
-          accessor.array = Uint16Array.from(Object.values(accessor.array));
-        else accessor.array = Float32Array.from(Object.values(accessor.array));
+      // Load accessors
+      const accessorPromises = savedScene.accessors.map(async (accessor) => {
+        const file = fileURLs.find(
+          (f) => f.id === binaryStorageKey(accessor.id)
+        );
+        if (!file) throw new Error("File not found");
+
+        const response = await fetch(file.uri);
+        const buffer = await response.arrayBuffer();
+        const array =
+          accessor.type === "SCALAR"
+            ? new Uint16Array(buffer)
+            : new Float32Array(buffer);
+
+        scene.accessors.push({
+          ...accessor,
+          array,
+          isInternal: false,
+        });
       });
 
       await Promise.all(modelPromises);
       await Promise.all(imagePromises);
+      await Promise.all(accessorPromises);
 
       // Load scene
       await engine.scene.loadJSON(scene);

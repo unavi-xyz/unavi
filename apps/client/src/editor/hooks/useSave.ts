@@ -3,7 +3,10 @@ import { useRouter } from "next/router";
 import { trpc } from "../../client/trpc";
 import { useEditorStore } from "../store";
 import { SavedSceneJSON } from "../types";
-import { imageStorageKey, modelStorageKey } from "../utils/fileStorage";
+import {
+  binaryStorageKey as binaryStorageKey,
+  imageStorageKey,
+} from "../utils/fileStorage";
 import { getEditorState } from "../utils/getEditorState";
 
 export function useSave() {
@@ -38,12 +41,12 @@ export function useSave() {
     if (!res.ok) throw new Error("Failed to upload image");
   }
 
-  async function uploadFile(uri: string, fileId: string) {
+  async function uploadBinaryFile(uri: string, fileId: string) {
     const uriResponse = await fetch(uri);
     const buffer = await uriResponse.arrayBuffer();
     const array = new Uint8Array(buffer);
 
-    const storageKey = modelStorageKey(fileId);
+    const storageKey = binaryStorageKey(fileId);
 
     const url = await getFileUpload({ id, storageKey });
 
@@ -122,6 +125,12 @@ export function useSave() {
               id: image.id,
               mimeType: image.mimeType,
             })),
+            accessors: scene.accessors.map((accessor) => ({
+              id: accessor.id,
+              elementSize: accessor.elementSize,
+              normalized: accessor.normalized,
+              type: accessor.type,
+            })),
           };
 
           const body = JSON.stringify(savedScene);
@@ -142,18 +151,24 @@ export function useSave() {
       })
     );
 
-    // Upload files to S3
+    // Upload models to S3
     scene.meshes.forEach((mesh) => {
-      // glTF models
       if (mesh?.type === "glTF") {
         const uri = mesh.uri;
-        if (uri) promises.push(uploadFile(uri, mesh.id));
+        if (uri) promises.push(uploadBinaryFile(uri, mesh.id));
       }
     });
 
-    scene.images.forEach((image) => {
-      if (image.isInternal) return;
-      promises.push(uploadImageFile(image.id));
+    // Upload images to S3
+    scene.images.forEach((image) => promises.push(uploadImageFile(image.id)));
+
+    // Upload accessors to S3
+    scene.accessors.forEach((accessor) => {
+      const blob = new Blob([accessor.array], {
+        type: "application/octet-stream",
+      });
+      const uri = URL.createObjectURL(blob);
+      promises.push(uploadBinaryFile(uri, accessor.id));
     });
 
     await Promise.all(promises);

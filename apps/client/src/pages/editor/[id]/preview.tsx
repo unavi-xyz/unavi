@@ -9,8 +9,8 @@ import { trpc } from "../../../client/trpc";
 import { useEditorStore } from "../../../editor/store";
 import { SavedSceneJSON } from "../../../editor/types";
 import {
+  binaryStorageKey,
   imageStorageKey,
-  modelStorageKey,
 } from "../../../editor/utils/fileStorage";
 import { updateGltfColliders } from "../../../editor/utils/updateGltfColliders";
 import MetaTags from "../../../home/MetaTags";
@@ -127,12 +127,13 @@ export default function Preview() {
       const scene: SceneJSON = {
         ...savedScene,
         images: [],
+        accessors: [],
       };
 
       // Load glTF models
       const modelPromises = scene.meshes.map(async (mesh) => {
         if (mesh?.type === "glTF" && mesh.uri) {
-          const file = fileURLs.find((f) => f.id === modelStorageKey(mesh.id));
+          const file = fileURLs.find((f) => f.id === binaryStorageKey(mesh.id));
           if (!file) throw new Error("File not found");
 
           const response = await fetch(file.uri);
@@ -164,15 +165,30 @@ export default function Preview() {
         });
       });
 
+      // Load accessors
+      const accessorPromises = savedScene.accessors.map(async (accessor) => {
+        const file = fileURLs.find(
+          (f) => f.id === binaryStorageKey(accessor.id)
+        );
+        if (!file) throw new Error("File not found");
+
+        const response = await fetch(file.uri);
+        const buffer = await response.arrayBuffer();
+        const array =
+          accessor.type === "SCALAR"
+            ? new Uint16Array(buffer)
+            : new Float32Array(buffer);
+
+        scene.accessors.push({
+          ...accessor,
+          array,
+          isInternal: false,
+        });
+      });
+
       await Promise.all(modelPromises);
       await Promise.all(imagePromises);
-
-      // Process accessors
-      scene.accessors.forEach((accessor) => {
-        if (accessor.type === "SCALAR")
-          accessor.array = Uint16Array.from(Object.values(accessor.array));
-        else accessor.array = Float32Array.from(Object.values(accessor.array));
-      });
+      await Promise.all(accessorPromises);
 
       // Load scene
       await engine.scene.loadJSON(scene);

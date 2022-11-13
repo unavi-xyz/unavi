@@ -81,7 +81,7 @@ export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
 
             setTimeout(() => {
               updateGltfColliders(nodeId);
-            }, 1000);
+            }, 5000);
           }}
         />
       </MenuRows>

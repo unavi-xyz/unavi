@@ -167,11 +167,6 @@ export function useSave() {
       }
     });
 
-    // Invalidate cache
-    promises.push(utils.auth.project.invalidate({ id }));
-    promises.push(utils.auth.projectScene.invalidate({ id }));
-    promises.push(utils.auth.projectFiles.invalidate({ id }));
-
     await Promise.all(promises);
   }
 

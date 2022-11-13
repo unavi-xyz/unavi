@@ -24,6 +24,7 @@ export default function EditorNavbar() {
   const publicationId = useEditorStore((state) => state.publicationId);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const { save, saveImage } = useSave();
 
@@ -45,8 +46,16 @@ export default function EditorNavbar() {
   }
 
   async function handlePreview() {
-    await save();
-    router.push(`/editor/${id}/preview`);
+    if (previewLoading) return;
+    setPreviewLoading(true);
+
+    try {
+      await save();
+      router.push(`/editor/${id}/preview`);
+    } catch (err) {
+      console.error(err);
+      setPreviewLoading(false);
+    }
   }
 
   async function handleOpenPublish() {
@@ -111,7 +120,7 @@ export default function EditorNavbar() {
           <div className="aspect-square h-full">
             <Tooltip text="Preview" placement="bottom">
               <div className="h-full">
-                <IconButton onClick={handlePreview}>
+                <IconButton onClick={handlePreview} loading={previewLoading}>
                   <MdPreview />
                 </IconButton>
               </div>

@@ -166,9 +166,6 @@ export function useSave() {
     });
 
     await Promise.all(promises);
-
-    // Wait for 1 second to make sure the scene is saved
-    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   return { save, saveImage };

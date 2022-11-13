@@ -54,7 +54,7 @@
     "@wired-labs/tsconfig": "*",
     "autoprefixer": "^10.4.12",
     "dotenv-cli": "^6.0.0",
-    "eslint": "^8.25.0",
+    "eslint": "^8.27.0",
     "eslint-config-custom": "*",
     "postcss": "^8.4.18",
     "prisma": "^4.5.0",

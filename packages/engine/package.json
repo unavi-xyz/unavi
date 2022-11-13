@@ -28,7 +28,7 @@
     "@types/offscreencanvas": "^2019.7.0",
     "@types/three": "^0.144.0",
     "@wired-labs/tsconfig": "*",
-    "eslint": "^8.25.0",
+    "eslint": "^8.27.0",
     "eslint-config-custom": "*",
     "typescript": "~4.8.4"
   }

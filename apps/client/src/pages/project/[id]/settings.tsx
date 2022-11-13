@@ -10,6 +10,8 @@ export default function Project() {
   const router = useRouter();
   const id = router.query.id as string;
 
+  const utils = trpc.useContext();
+
   const { data: project } = trpc.auth.project.useQuery(
     { id },
     {
@@ -32,8 +34,19 @@ export default function Project() {
 
   async function handleDelete() {
     setLoading(true);
-    await deleteProject({ id });
-    router.push("/create");
+    const promises: Promise<any>[] = [];
+
+    try {
+      promises.push(deleteProject({ id }));
+      promises.push(utils.auth.projects.invalidate());
+
+      await Promise.all(promises);
+
+      router.push("/create");
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
   }
 
   return (

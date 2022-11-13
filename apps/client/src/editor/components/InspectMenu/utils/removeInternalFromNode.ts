@@ -16,7 +16,7 @@ export function removeInternalFromNode(nodeId: string) {
       mesh.isInternal = false;
 
       // Material
-      if (mesh.materialId) removeInternalFromMaterial(mesh.materialId);
+      removeInternalFromMaterial(mesh.materialId);
 
       // Primitives
       if (mesh.type === "Primitives") {
@@ -24,23 +24,17 @@ export function removeInternalFromNode(nodeId: string) {
           primitive.isInternal = false;
 
           // Material
-          if (primitive.materialId)
-            removeInternalFromMaterial(primitive.materialId);
+          removeInternalFromMaterial(primitive.materialId);
 
           // Accessors
-          if (primitive.COLOR_0) removeInternalFromAccessor(primitive.COLOR_0);
-          if (primitive.JOINTS_0)
-            removeInternalFromAccessor(primitive.JOINTS_0);
-          if (primitive.NORMAL) removeInternalFromAccessor(primitive.NORMAL);
-          if (primitive.POSITION)
-            removeInternalFromAccessor(primitive.POSITION);
-          if (primitive.TANGENT) removeInternalFromAccessor(primitive.TANGENT);
-          if (primitive.TEXCOORD_0)
-            removeInternalFromAccessor(primitive.TEXCOORD_0);
-          if (primitive.TEXCOORD_1)
-            removeInternalFromAccessor(primitive.TEXCOORD_1);
-          if (primitive.WEIGHTS_0)
-            removeInternalFromAccessor(primitive.WEIGHTS_0);
+          removeInternalFromAccessor(primitive.COLOR_0);
+          removeInternalFromAccessor(primitive.JOINTS_0);
+          removeInternalFromAccessor(primitive.NORMAL);
+          removeInternalFromAccessor(primitive.POSITION);
+          removeInternalFromAccessor(primitive.TANGENT);
+          removeInternalFromAccessor(primitive.TEXCOORD_0);
+          removeInternalFromAccessor(primitive.TEXCOORD_1);
+          removeInternalFromAccessor(primitive.WEIGHTS_0);
         });
       }
     }
@@ -57,7 +51,9 @@ export function removeInternalFromNode(nodeId: string) {
   node.childrenIds.forEach((childId) => removeInternalFromNode(childId));
 }
 
-export function removeInternalFromMaterial(materialId: string) {
+export function removeInternalFromMaterial(materialId: string | null) {
+  if (!materialId) return;
+
   const { engine } = useEditorStore.getState();
   if (!engine) throw new Error("Engine not found");
 
@@ -67,34 +63,28 @@ export function removeInternalFromMaterial(materialId: string) {
   material.isInternal = false;
 
   // Images
-  if (material.colorTexture?.imageId) {
-    const image = engine.scene.images[material.colorTexture.imageId];
-    if (image) image.isInternal = false;
-  }
-
-  if (material.emissiveTexture?.imageId) {
-    const image = engine.scene.images[material.emissiveTexture.imageId];
-    if (image) image.isInternal = false;
-  }
-
-  if (material.normalTexture?.imageId) {
-    const image = engine.scene.images[material.normalTexture.imageId];
-    if (image) image.isInternal = false;
-  }
-
-  if (material.metallicRoughnessTexture?.imageId) {
-    const image =
-      engine.scene.images[material.metallicRoughnessTexture.imageId];
-    if (image) image.isInternal = false;
-  }
-
-  if (material.occlusionTexture?.imageId) {
-    const image = engine.scene.images[material.occlusionTexture.imageId];
-    if (image) image.isInternal = false;
-  }
+  removeInternalFromImage(material.colorTexture?.imageId);
+  removeInternalFromImage(material.emissiveTexture?.imageId);
+  removeInternalFromImage(material.metallicRoughnessTexture?.imageId);
+  removeInternalFromImage(material.normalTexture?.imageId);
+  removeInternalFromImage(material.occlusionTexture?.imageId);
 }
 
-export function removeInternalFromAccessor(accessorId: string) {
+export function removeInternalFromImage(imageId: string | undefined | null) {
+  if (!imageId) return;
+
+  const { engine } = useEditorStore.getState();
+  if (!engine) throw new Error("Engine not found");
+
+  const image = engine.scene.images[imageId];
+  if (!image) throw new Error("Image not found");
+
+  image.isInternal = false;
+}
+
+export function removeInternalFromAccessor(accessorId: string | null) {
+  if (!accessorId) return;
+
   const { engine } = useEditorStore.getState();
   if (!engine) throw new Error("Engine not found");
 

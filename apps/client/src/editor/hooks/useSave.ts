@@ -162,6 +162,22 @@ export function useSave() {
 
         const colorTextureId = material.colorTexture?.imageId;
         if (colorTextureId) promises.push(uploadImageFile(colorTextureId));
+
+        const emissiveTextureId = material.emissiveTexture?.imageId;
+        if (emissiveTextureId)
+          promises.push(uploadImageFile(emissiveTextureId));
+
+        const normalTextureId = material.normalTexture?.imageId;
+        if (normalTextureId) promises.push(uploadImageFile(normalTextureId));
+
+        const occlusionTextureId = material.occlusionTexture?.imageId;
+        if (occlusionTextureId)
+          promises.push(uploadImageFile(occlusionTextureId));
+
+        const metallicRoughnessTextureId =
+          material.metallicRoughnessTexture?.imageId;
+        if (metallicRoughnessTextureId)
+          promises.push(uploadImageFile(metallicRoughnessTextureId));
       }
     });
 

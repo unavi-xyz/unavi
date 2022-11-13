@@ -1,4 +1,9 @@
-import { AutoCollider, HullCollider, MeshCollider } from "@wired-labs/engine";
+import {
+  AutoCollider,
+  ColliderJSON,
+  HullCollider,
+  MeshCollider,
+} from "@wired-labs/engine";
 
 import { useEditorStore } from "../store";
 
@@ -7,45 +12,55 @@ export function updateGltfColliders(nodeId: string) {
   if (!engine) return;
 
   const node = engine.scene.nodes[nodeId];
+  if (!node) throw new Error(`Node ${nodeId} not found`);
 
-  if (node?.meshId) {
+  if (node.meshId) {
     const mesh = engine.scene.meshes[node.meshId];
-    if (mesh?.type === "glTF") {
-      node.children.forEach((child) => {
-        if (!child.isInternal) return;
+    if (!mesh) throw new Error(`Mesh ${node.meshId} not found`);
 
-        switch (node.collider?.type) {
-          case "auto": {
-            const childCollider = new AutoCollider();
-            engine.scene.updateNode(child.id, {
-              collider: childCollider.toJSON(),
-            });
-            break;
-          }
-
-          case "hull": {
-            const childCollider = new HullCollider();
-            childCollider.meshId = child.meshId;
-            engine.scene.updateNode(child.id, {
-              collider: childCollider.toJSON(),
-            });
-            break;
-          }
-
-          case "mesh": {
-            const childCollider = new MeshCollider();
-            childCollider.meshId = child.meshId;
-            engine.scene.updateNode(child.id, {
-              collider: childCollider.toJSON(),
-            });
-            break;
-          }
-
-          default: {
-            engine.scene.updateNode(child.id, { collider: null });
-          }
-        }
-      });
+    if (mesh.type === "glTF") {
+      node.children.forEach((child) =>
+        setGltfCollider(child.id, node.collider)
+      );
     }
   }
+}
+
+function setGltfCollider(nodeId: string, rootCollider: ColliderJSON | null) {
+  const { engine } = useEditorStore.getState();
+  if (!engine) return;
+
+  const node = engine.scene.nodes[nodeId];
+  if (!node) throw new Error(`Node ${nodeId} not found`);
+
+  if (!node.isInternal) return;
+
+  switch (rootCollider?.type) {
+    case "auto": {
+      const collider = new AutoCollider();
+      engine.scene.updateNode(nodeId, { collider: collider.toJSON() });
+      break;
+    }
+
+    case "hull": {
+      const collider = new HullCollider();
+      collider.meshId = node.meshId;
+      engine.scene.updateNode(nodeId, { collider: collider.toJSON() });
+      break;
+    }
+
+    case "mesh": {
+      const collider = new MeshCollider();
+      collider.meshId = node.meshId;
+      engine.scene.updateNode(nodeId, { collider: collider.toJSON() });
+      break;
+    }
+
+    default: {
+      engine.scene.updateNode(nodeId, { collider: null });
+    }
+  }
+
+  // Repeat for children
+  node.children.forEach((child) => setGltfCollider(child.id, rootCollider));
 }

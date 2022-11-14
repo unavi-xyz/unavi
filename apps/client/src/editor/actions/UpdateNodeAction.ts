@@ -9,6 +9,8 @@ export class UpdateNodeAction {
 
     // Update node
     engine.scene.updateNode(nodeId, data);
+
+    useEditorStore.setState({ changesToSave: true });
   }
 }
 

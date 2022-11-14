@@ -9,6 +9,8 @@ export class UpdateMeshAction {
 
     // Update node
     engine.scene.updateMesh(meshId, data);
+
+    useEditorStore.setState({ changesToSave: true });
   }
 }
 

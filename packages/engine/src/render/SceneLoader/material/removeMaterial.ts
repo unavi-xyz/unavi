@@ -15,9 +15,19 @@ export function removeMaterial(materialId: string, map: SceneMap) {
 
       // Remove from object
       const object = map.objects.get(mesh.id);
-      if (object instanceof Mesh) {
-        object.material = defaultMaterial;
-      }
+      if (object instanceof Mesh) object.material = defaultMaterial;
+    }
+
+    if (mesh.type === "Primitives") {
+      mesh.primitives.forEach((primitive) => {
+        if (primitive.materialId === materialId) {
+          primitive.materialId = null;
+
+          // Remove from object
+          const object = map.objects.get(primitive.id);
+          if (object instanceof Mesh) object.material = defaultMaterial;
+        }
+      });
     }
   });
 

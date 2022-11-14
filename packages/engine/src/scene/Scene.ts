@@ -157,20 +157,15 @@ export class Scene {
       const mesh = this.meshes[node.meshId];
       if (!mesh) throw new Error(`Mesh ${node.meshId} not found`);
 
-      if (mesh.isInternal) {
-        const isUsed = Object.values(this.nodes).some(
-          (n) => n.meshId === node.meshId
-        );
+      const isUsed = Object.values(this.nodes).some(
+        (n) => n.meshId === node.meshId
+      );
 
-        if (!isUsed) this.removeMesh(node.meshId);
-      }
+      if (!isUsed) this.removeMesh(node.meshId);
     }
 
     // Remove animations
     Object.values(this.animations).forEach((animation) => {
-      // Only remove internal animations
-      if (!animation.isInternal) return;
-
       // Remove animation if it doesn't have any other node using it
       const targetIds = animation.channels.map((channel) => channel.targetId);
       const isUsed = targetIds.some((targetId) => {
@@ -247,7 +242,7 @@ export class Scene {
         // Remove material
         if (mesh.materialId) {
           const material = this.materials[mesh.materialId];
-          if (!material) throw new Error(`Material not found`);
+          if (!material) return;
 
           // Only remove internal materials
           if (material.isInternal) {
@@ -295,6 +290,12 @@ export class Scene {
     this.meshes = Object.fromEntries(
       Object.entries(this.meshes).map(([id, mesh]) => {
         if (mesh.materialId === materialId) mesh.materialId = null;
+        if (mesh.type === "Primitives") {
+          mesh.primitives.forEach((primitive) => {
+            if (primitive.materialId === materialId)
+              primitive.materialId = null;
+          });
+        }
         return [id, mesh];
       })
     );
@@ -314,9 +315,6 @@ export class Scene {
 
       const image = this.images[imageId];
       if (!image) return;
-
-      // Only remove internal images
-      if (!image.isInternal) return;
 
       // Only remove image if it's not used by any other material
       const otherMaterial = Object.values(this.materials).find((m) => {

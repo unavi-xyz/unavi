@@ -9,8 +9,8 @@ import { trpc } from "../../../client/trpc";
 import { useEditorStore } from "../../../editor/store";
 import { SavedSceneJSON } from "../../../editor/types";
 import {
+  binaryStorageKey,
   imageStorageKey,
-  modelStorageKey,
 } from "../../../editor/utils/fileStorage";
 import { updateGltfColliders } from "../../../editor/utils/updateGltfColliders";
 import MetaTags from "../../../home/MetaTags";
@@ -127,12 +127,13 @@ export default function Preview() {
       const scene: SceneJSON = {
         ...savedScene,
         images: [],
+        accessors: [],
       };
 
       // Load glTF models
-      const modelPromises = savedScene.meshes.map(async (mesh) => {
+      const modelPromises = scene.meshes.map(async (mesh) => {
         if (mesh?.type === "glTF" && mesh.uri) {
-          const file = fileURLs.find((f) => f.id === modelStorageKey(mesh.id));
+          const file = fileURLs.find((f) => f.id === binaryStorageKey(mesh.id));
           if (!file) throw new Error("File not found");
 
           const response = await fetch(file.uri);
@@ -161,6 +162,20 @@ export default function Preview() {
           mimeType: image.mimeType,
           array,
           bitmap,
+        });
+      });
+
+      // Load accessors
+      savedScene.accessors.map((accessor) => {
+        const array =
+          accessor.type === "SCALAR"
+            ? new Uint16Array(accessor.array)
+            : new Float32Array(accessor.array);
+
+        scene.accessors.push({
+          ...accessor,
+          array,
+          isInternal: false,
         });
       });
 

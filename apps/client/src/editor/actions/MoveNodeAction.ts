@@ -20,6 +20,8 @@ export class MoveNodeAction {
 
       parent.childrenIds$.next(sorted);
     }
+
+    useEditorStore.setState({ changesToSave: true });
   }
 }
 

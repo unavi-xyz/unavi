@@ -5,6 +5,7 @@ import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
+import { trpc } from "../../../client/trpc";
 import Button from "../../../ui/Button";
 import Dialog from "../../../ui/Dialog";
 import IconButton from "../../../ui/IconButton";
@@ -17,15 +18,18 @@ import UpdatePage from "./UpdatePage";
 
 export default function EditorNavbar() {
   const router = useRouter();
-  const id = router.query.id;
+  const id = router.query.id as string;
 
   const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
   const publicationId = useEditorStore((state) => state.publicationId);
+  const isSaving = useEditorStore((state) => state.isSaving);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const { save, saveImage } = useSave();
+  const utils = trpc.useContext();
 
   function handleToggleColliders() {
     useEditorStore.setState({ visuals: !visuals });
@@ -45,8 +49,31 @@ export default function EditorNavbar() {
   }
 
   async function handlePreview() {
-    await save();
-    router.push(`/editor/${id}/preview`);
+    if (previewLoading) return;
+    setPreviewLoading(true);
+
+    try {
+      // Save
+      await save();
+
+      // Invalidate cache
+      const promises: Promise<any>[] = [];
+      promises.push(utils.auth.project.invalidate({ id }));
+      promises.push(utils.auth.projectScene.invalidate({ id }));
+      promises.push(utils.auth.projectFiles.invalidate({ id }));
+      await Promise.all(promises);
+
+      // Force a new fetch of the project
+      promises.push(utils.auth.project.prefetch({ id }));
+      promises.push(utils.auth.projectScene.prefetch({ id }));
+      promises.push(utils.auth.projectFiles.prefetch({ id }));
+      await Promise.all(promises);
+
+      router.push(`/editor/${id}/preview`);
+    } catch (err) {
+      console.error(err);
+      setPreviewLoading(false);
+    }
   }
 
   async function handleOpenPublish() {
@@ -80,8 +107,10 @@ export default function EditorNavbar() {
             type="text"
             value={name ?? ""}
             onChange={(e) => useEditorStore.setState({ name: e.target.value })}
-            className="rounded-lg py-0.5 pl-3 transition hover:bg-neutral-100 hover:shadow-inner"
+            className="w-44 rounded-lg py-0.5 px-3 transition hover:bg-neutral-100 hover:shadow-inner"
           />
+
+          {isSaving && <div className="text-sm text-outline">Saving...</div>}
         </div>
 
         <div className="flex h-full w-full items-center justify-center space-x-2">
@@ -111,7 +140,7 @@ export default function EditorNavbar() {
           <div className="aspect-square h-full">
             <Tooltip text="Preview" placement="bottom">
               <div className="h-full">
-                <IconButton onClick={handlePreview}>
+                <IconButton onClick={handlePreview} loading={previewLoading}>
                   <MdPreview />
                 </IconButton>
               </div>

@@ -144,6 +144,14 @@ export class MainScene {
     return this.#scene.spawnId$;
   }
 
+  get accessors() {
+    return this.#scene.accessors;
+  }
+
+  get animations() {
+    return this.#scene.animations;
+  }
+
   get nodes() {
     return this.#scene.nodes;
   }
@@ -266,6 +274,10 @@ export class MainScene {
       subject: "update_material",
       data: { materialId, data },
     });
+  }
+
+  removeImage(imageId: string) {
+    this.#scene.removeImage(imageId);
   }
 
   toJSON(includeInternal?: boolean): SceneJSON {

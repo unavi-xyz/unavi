@@ -8,7 +8,9 @@ import {
 
 import { addMesh } from "../../../actions/AddMeshAction";
 import { removeMesh } from "../../../actions/RemoveMeshAction";
+import { removeNode } from "../../../actions/RemoveNodeAction";
 import { updateNode } from "../../../actions/UpdateNodeAction";
+import { useEditorStore } from "../../../store";
 import SelectMenu from "../../ui/SelectMenu";
 import ComponentMenu from "../ComponentMenu";
 import MenuRows from "../MenuRows";
@@ -37,6 +39,23 @@ export default function MeshComponent({ nodeId, mesh }: Props) {
       title="Mesh"
       onRemove={() => {
         updateNode(nodeId, { meshId: null });
+
+        if (mesh.type === "glTF") {
+          const { engine } = useEditorStore.getState();
+          if (!engine) throw new Error("Engine not found");
+
+          const node = engine.scene.nodes[nodeId];
+          if (!node) throw new Error("Node not found");
+
+          // Remove internal children
+          node.children.forEach((child) => {
+            if (child.isInternal) {
+              if (child.meshId) removeMesh(child.meshId);
+              removeNode(child.id);
+            }
+          });
+        }
+
         removeMesh(mesh.id);
       }}
     >

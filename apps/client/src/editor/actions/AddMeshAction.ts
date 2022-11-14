@@ -9,6 +9,8 @@ export class AddMeshAction {
 
     // Add mesh
     engine.scene.addMesh(mesh);
+
+    useEditorStore.setState({ changesToSave: true });
   }
 }
 

@@ -1,10 +1,12 @@
-import { GLTFMesh, Node } from "@wired-labs/engine";
+import { AutoCollider, GLTFMesh, Node } from "@wired-labs/engine";
 import Script from "next/script";
 import { useEffect, useMemo, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
 
+import { addMesh } from "../../../editor/actions/AddMeshAction";
+import { addNode } from "../../../editor/actions/AddNodeAction";
 import EditorNavbar from "../../../editor/components/EditorNavbar/EditorNavbar";
 import InspectMenu from "../../../editor/components/InspectMenu/InspectMenu";
 import TreeMenu from "../../../editor/components/TreeMenu/TreeMenu";
@@ -13,6 +15,7 @@ import { useEditorHotkeys } from "../../../editor/hooks/useEditorHotkeys";
 import { useLoad } from "../../../editor/hooks/useLoad";
 import { useTransformControls } from "../../../editor/hooks/useTransformControls";
 import { useEditorStore } from "../../../editor/store";
+import { updateGltfColliders } from "../../../editor/utils/updateGltfColliders";
 import MetaTags from "../../../home/MetaTags";
 import Spinner from "../../../ui/Spinner";
 
@@ -146,12 +149,19 @@ export default function Editor() {
             // Create node
             const node = new Node();
             node.meshId = mesh.id;
+            node.collider = new AutoCollider();
 
             const name = file.name.split(".").slice(0, -1).join(".");
             node.name = name;
 
             // Add node to scene
-            engine.scene.addNode(node);
+            addMesh(mesh);
+            addNode(node);
+
+            // Select node
+            useEditorStore.setState({ selectedId: node.id });
+
+            setTimeout(() => updateGltfColliders(node.id), 5000);
           }}
         >
           <div className="z-10 h-14 w-full border-b">

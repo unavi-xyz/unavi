@@ -9,6 +9,8 @@ export class UpdateMaterialAction {
 
     // Update material
     engine.scene.updateMaterial(materialId, data);
+
+    useEditorStore.setState({ changesToSave: true });
   }
 }
 

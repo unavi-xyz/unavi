@@ -7,6 +7,8 @@ export class RemoveMeshAction {
 
     // Remove mesh
     engine.scene.removeMesh(meshId);
+
+    useEditorStore.setState({ changesToSave: true });
   }
 }
 

@@ -9,6 +9,8 @@ export class AddNodeAction {
 
     // Add node
     engine.scene.addNode(node);
+
+    useEditorStore.setState({ changesToSave: true });
   }
 }
 

@@ -11,6 +11,7 @@ import {
   createPublishedMetadataUploadURL,
   createPublishedModelUploadURL,
   createSceneUploadURL,
+  deleteFilesFromS3,
   deleteProjectFromS3,
   deletePublicationFromS3,
   getFileURL,
@@ -259,6 +260,7 @@ export const protectedRouter = router({
             tool: z.string(),
           })
           .optional(),
+        fileIds: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -269,16 +271,42 @@ export const protectedRouter = router({
       });
       if (!project) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      // Update database
-      await prisma.project.update({
-        where: { id: input.id },
-        data: {
-          name: input.name,
-          description: input.description,
-          editorState: JSON.stringify(input.editorState),
-          publicationId: input.publicationId,
-        },
-      });
+      const promises: Promise<any>[] = [];
+
+      // Update project
+      promises.push(
+        prisma.project.update({
+          where: { id: input.id },
+          data: {
+            name: input.name,
+            description: input.description,
+            editorState: JSON.stringify(input.editorState),
+            publicationId: input.publicationId,
+          },
+        })
+      );
+
+      // Delete old files
+      if (input.fileIds) {
+        // From database
+        promises.push(
+          prisma.file.deleteMany({
+            where: {
+              projectId: input.id,
+              storageKey: { notIn: input.fileIds },
+            },
+          })
+        );
+
+        // From S3
+        const storageKeys = project.files.map((file) => file.storageKey);
+        const oldFiles = storageKeys.filter(
+          (storageKey) => !input.fileIds?.includes(storageKey)
+        );
+        promises.push(deleteFilesFromS3(input.id, oldFiles));
+      }
+
+      await Promise.all(promises);
     }),
 
   deleteProject: protectedProcedure

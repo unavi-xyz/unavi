@@ -41,38 +41,41 @@ export function useSave() {
     if (!res.ok) throw new Error("Failed to upload image");
   }
 
-  async function uploadBinaryFile(uri: string, fileId: string) {
-    const uriResponse = await fetch(uri);
-    const buffer = await uriResponse.arrayBuffer();
-    const array = new Uint8Array(buffer);
+  async function save() {
+    const fileIds: string[] = [];
 
-    const storageKey = binaryStorageKey(fileId);
+    async function uploadBinaryFile(uri: string, fileId: string) {
+      const uriResponse = await fetch(uri);
+      const buffer = await uriResponse.arrayBuffer();
+      const array = new Uint8Array(buffer);
 
-    const url = await getFileUpload({ id, storageKey });
+      const storageKey = binaryStorageKey(fileId);
+      fileIds.push(storageKey);
 
-    const response = await fetch(url, {
-      method: "PUT",
-      body: array,
-      headers: {
-        "Content-Type": "application/octet-stream",
-      },
-    });
+      const url = await getFileUpload({ id, storageKey });
 
-    if (!response.ok) throw new Error("Failed to upload file");
-  }
-
-  async function uploadImageFile(imageId: string) {
-    const { engine } = useEditorStore.getState();
-    if (!engine) throw new Error("No engine");
-
-    const image = engine.scene.images[imageId];
-    if (!image) throw new Error("No image");
-
-    if (!image.isInternal) {
-      const url = await getFileUpload({
-        id,
-        storageKey: imageStorageKey(imageId),
+      const response = await fetch(url, {
+        method: "PUT",
+        body: array,
+        headers: {
+          "Content-Type": "application/octet-stream",
+        },
       });
+
+      if (!response.ok) throw new Error("Failed to upload file");
+    }
+
+    async function uploadImageFile(imageId: string) {
+      const { engine } = useEditorStore.getState();
+      if (!engine) throw new Error("No engine");
+
+      const image = engine.scene.images[imageId];
+      if (!image) throw new Error("No image");
+
+      const storageKey = imageStorageKey(imageId);
+      fileIds.push(storageKey);
+
+      const url = await getFileUpload({ id, storageKey });
 
       const response = await fetch(url, {
         method: "PUT",
@@ -84,9 +87,7 @@ export function useSave() {
 
       if (!response.ok) throw new Error("Failed to upload file");
     }
-  }
 
-  async function save() {
     const { name, description, engine, sceneLoaded } =
       useEditorStore.getState();
 
@@ -99,16 +100,6 @@ export function useSave() {
 
     const editorState = getEditorState();
     const scene = engine.scene.toJSON();
-
-    // Save project
-    promises.push(
-      saveProject({
-        id,
-        name,
-        description,
-        editorState,
-      })
-    );
 
     // Upload image to S3
     promises.push(saveImage());
@@ -161,6 +152,15 @@ export function useSave() {
     scene.images.forEach((image) => promises.push(uploadImageFile(image.id)));
 
     await Promise.all(promises);
+
+    // Save project
+    await saveProject({
+      id,
+      name,
+      description,
+      editorState,
+      fileIds,
+    });
   }
 
   return { save, saveImage };

@@ -93,11 +93,14 @@ export function useSave() {
 
     // If scene is not loaded, don't save
     if (!sceneLoaded) return;
-
     if (!engine) throw new Error("No engine");
-    useEditorStore.setState({ changesToSave: false });
-    const promises: Promise<any>[] = [];
 
+    const { isSaving } = useEditorStore.getState();
+    if (isSaving) return;
+
+    useEditorStore.setState({ isSaving: true, changesToSave: false });
+
+    const promises: Promise<any>[] = [];
     const editorState = getEditorState();
     const scene = engine.scene.toJSON();
 
@@ -151,16 +154,22 @@ export function useSave() {
     // Upload images to S3
     scene.images.forEach((image) => promises.push(uploadImageFile(image.id)));
 
-    await Promise.all(promises);
+    try {
+      await Promise.all(promises);
 
-    // Save project
-    await saveProject({
-      id,
-      name,
-      description,
-      editorState,
-      fileIds,
-    });
+      // Save project
+      await saveProject({
+        id,
+        name,
+        description,
+        editorState,
+        fileIds,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+
+    useEditorStore.setState({ isSaving: false });
   }
 
   return { save, saveImage };

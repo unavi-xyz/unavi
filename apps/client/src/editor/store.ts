@@ -7,6 +7,7 @@ export interface IEditorStore {
   engine: Engine | null;
   sceneLoaded: boolean;
   changesToSave: boolean;
+  isSaving: boolean;
 
   getNode: (id: string) => Node | undefined;
 
@@ -26,6 +27,7 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
   engine: null,
   sceneLoaded: false,
   changesToSave: false,
+  isSaving: false,
 
   getNode: (id: string) => {
     return get().engine?.scene.nodes[id];

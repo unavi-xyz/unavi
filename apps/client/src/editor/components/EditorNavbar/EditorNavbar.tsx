@@ -23,6 +23,7 @@ export default function EditorNavbar() {
   const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
   const publicationId = useEditorStore((state) => state.publicationId);
+  const isSaving = useEditorStore((state) => state.isSaving);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -106,8 +107,10 @@ export default function EditorNavbar() {
             type="text"
             value={name ?? ""}
             onChange={(e) => useEditorStore.setState({ name: e.target.value })}
-            className="rounded-lg py-0.5 pl-3 transition hover:bg-neutral-100 hover:shadow-inner"
+            className="w-44 rounded-lg py-0.5 px-3 transition hover:bg-neutral-100 hover:shadow-inner"
           />
+
+          {isSaving && <div className="text-sm text-outline">Saving...</div>}
         </div>
 
         <div className="flex h-full w-full items-center justify-center space-x-2">

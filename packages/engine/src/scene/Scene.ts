@@ -157,20 +157,15 @@ export class Scene {
       const mesh = this.meshes[node.meshId];
       if (!mesh) throw new Error(`Mesh ${node.meshId} not found`);
 
-      if (mesh.isInternal) {
-        const isUsed = Object.values(this.nodes).some(
-          (n) => n.meshId === node.meshId
-        );
+      const isUsed = Object.values(this.nodes).some(
+        (n) => n.meshId === node.meshId
+      );
 
-        if (!isUsed) this.removeMesh(node.meshId);
-      }
+      if (!isUsed) this.removeMesh(node.meshId);
     }
 
     // Remove animations
     Object.values(this.animations).forEach((animation) => {
-      // Only remove internal animations
-      if (!animation.isInternal) return;
-
       // Remove animation if it doesn't have any other node using it
       const targetIds = animation.channels.map((channel) => channel.targetId);
       const isUsed = targetIds.some((targetId) => {

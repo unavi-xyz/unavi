@@ -36,7 +36,7 @@ export default function Project() {
 
   return (
     <ProjectLayout name={project?.name} image={image}>
-      <div>{project?.description}</div>
+      <div className="whitespace-pre-line">{project?.description}</div>
     </ProjectLayout>
   );
 }

@@ -12,7 +12,7 @@
     "@dimforge/rapier3d": "^0.10.0",
     "@gltf-transform/core": "2.4.4",
     "@gltf-transform/extensions": "2.4.4",
-    "@gltf-transform/functions": "^2.4.4",
+    "@gltf-transform/functions": "^2.4.6",
     "@pixiv/three-vrm": "^1.0.4",
     "@types/draco3d": "^1.4.1",
     "@wired-labs/lens": "*",

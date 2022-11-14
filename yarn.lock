@@ -2367,7 +2367,7 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@gltf-transform/core@2.4.4", "@gltf-transform/core@^2.4.4":
+"@gltf-transform/core@2.4.4":
   version "2.4.4"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.4.tgz#17a4e9117102f0af70a8893daa16b7cecf705a5c"
   integrity sha512-o5GfHS+r241wdKraMWBCMC55CedHnrFQo3HtfaYhfvsgw7ccKT2b+JSZv6u/cuRUS9NxnZsm5NQSixCdkHnGSQ==
@@ -2375,7 +2375,15 @@
     gl-matrix "~3.4.3"
     property-graph "^0.2.6"
 
-"@gltf-transform/extensions@2.4.4", "@gltf-transform/extensions@^2.4.4":
+"@gltf-transform/core@^2.4.4", "@gltf-transform/core@^2.4.6":
+  version "2.4.6"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.6.tgz#90c2a3fb0825ea1a0e12154ed8ef7fba185608b3"
+  integrity sha512-oyAeLNMs3zxEStfZdriZiDr7fm1poqR8pjvYXsCDPoRpTKnO+KYvuFMMYJFeGhpPm/Z1Ur/SdlfTkfVLpqjXYA==
+  dependencies:
+    gl-matrix "~3.4.3"
+    property-graph "^0.2.6"
+
+"@gltf-transform/extensions@2.4.4":
   version "2.4.4"
   resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.4.tgz#06f71dded20e81201f2e3e559c696f541ff152bd"
   integrity sha512-kVoNQ36L5slzxe4oTBLtNIV6ROHctOIG2uGdNXv2InAawU2fNVtYKUMGP0ARcV0tmXGvTYdoa27zSgtdyK/iJg==
@@ -2383,13 +2391,21 @@
     "@gltf-transform/core" "^2.4.4"
     ktx-parse "^0.4.5"
 
-"@gltf-transform/functions@^2.4.4":
-  version "2.4.4"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.4.4.tgz#cccf0016c9a7e7691fd9591aa433536946e5f6aa"
-  integrity sha512-mn+oD2o96kXf/sj6X1YimkG5AOqDCQeolb0XDIF7hSvE1Z4KGIeelZnCwB/y6FDinDpqGidGZLdSQtUqDg2XxQ==
+"@gltf-transform/extensions@^2.4.6":
+  version "2.4.6"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.6.tgz#c108095bbe20331a136fdda41ed84d02599e1680"
+  integrity sha512-SYYHbRIFK5PilnjtpbFsbbGpiN+fQ0cwJqJHcq1AD+2uGdx8mnmhhoXjdOmKPIwNrD6ULaVh3EiHDq1yMuPX2Q==
   dependencies:
-    "@gltf-transform/core" "^2.4.4"
-    "@gltf-transform/extensions" "^2.4.4"
+    "@gltf-transform/core" "^2.4.6"
+    ktx-parse "^0.4.5"
+
+"@gltf-transform/functions@^2.4.6":
+  version "2.4.6"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.4.6.tgz#cab6051d30a9f686d1ecec1d8fabf19a37116105"
+  integrity sha512-g/0SMY50k487tS/fZpzcKbyy9JIsntOyop86i9Co6ZJ4+eaesSijg58LNDiGJm9Y3tKWbjGa163pEW9iGBTVTA==
+  dependencies:
+    "@gltf-transform/core" "^2.4.6"
+    "@gltf-transform/extensions" "^2.4.6"
     gl-matrix "~3.4.3"
     ndarray "^1.0.19"
     ndarray-lanczos "^0.1.2"

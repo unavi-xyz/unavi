@@ -2,15 +2,14 @@ import { GLTFMesh } from "@wired-labs/engine";
 import { useState } from "react";
 
 import Button from "../../../../ui/Button";
+import ButtonFileInput from "../../../../ui/ButtonFileInput";
 import Dialog from "../../../../ui/Dialog";
-import FileInput from "../../../../ui/FileInput";
 import { removeMesh } from "../../../actions/RemoveMeshAction";
 import { updateMesh } from "../../../actions/UpdateMeshAction";
 import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../../store";
 import { updateGltfColliders } from "../../../utils/updateGltfColliders";
-import MenuRows from "../MenuRows";
 import { removeInternalFromNode } from "../utils/removeInternalFromNode";
 
 interface Props {
@@ -63,9 +62,8 @@ export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
         </div>
       </Dialog>
 
-      <MenuRows titles={["Model"]}>
-        <FileInput
-          displayName={name}
+      <div className="pt-1">
+        <ButtonFileInput
           accept=".glb,.gltf"
           onChange={(e) => {
             if (!e.target.files) return;
@@ -84,8 +82,10 @@ export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
 
             setTimeout(() => updateGltfColliders(nodeId), 5000);
           }}
-        />
-      </MenuRows>
+        >
+          {uri ? name : "Upload GLTF"}
+        </ButtonFileInput>
+      </div>
 
       {uri && (
         <Button

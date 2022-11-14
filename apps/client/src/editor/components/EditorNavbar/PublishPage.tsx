@@ -20,7 +20,7 @@ import { useProfileByHandle } from "../../../client/lens/hooks/useProfileByHandl
 import { trpc } from "../../../client/trpc";
 import { env } from "../../../env/client.mjs";
 import Button from "../../../ui/Button";
-import FileInput from "../../../ui/FileInput";
+import ButtonFileInput from "../../../ui/ButtonFileInput";
 import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
 import { useEditorStore } from "../../store";
@@ -337,7 +337,7 @@ export default function PublishPage() {
             )}
           </div>
 
-          <FileInput
+          <ButtonFileInput
             title="Cover Picture"
             accept="image/*"
             onChange={(e) => {
@@ -348,7 +348,9 @@ export default function PublishPage() {
                 setImageFile(file)
               );
             }}
-          />
+          >
+            Upload Image
+          </ButtonFileInput>
         </div>
       </div>
 

@@ -18,8 +18,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}
           fetch-depth: 0
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v3
@@ -28,7 +29,7 @@ jobs:
           cache: "yarn"
 
       - name: Install dependencies
-        run: yarn --prefer-offline
+        run: yarn --prefer-offline --frozen-lockfile
 
       - name: Run ESLint
         run: yarn lint
@@ -40,3 +41,4 @@ jobs:
           prettier_options: --write .
           only_changed: True
           commit_message: "prettier: format files"
+          github_token: ${{ secrets.PRETTIER_TOKEN }}

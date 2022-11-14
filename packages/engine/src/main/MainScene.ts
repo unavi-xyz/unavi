@@ -276,6 +276,10 @@ export class MainScene {
     });
   }
 
+  removeImage(imageId: string) {
+    this.#scene.removeImage(imageId);
+  }
+
   toJSON(includeInternal?: boolean): SceneJSON {
     return this.#scene.toJSON(includeInternal);
   }

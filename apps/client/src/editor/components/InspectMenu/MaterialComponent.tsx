@@ -216,9 +216,15 @@ export default function MaterialComponent({ nodeId }: Props) {
                 />
 
                 <button
-                  onClick={() =>
-                    updateMaterial(materialId, { colorTexture: null })
-                  }
+                  onClick={() => {
+                    updateMaterial(materialId, { colorTexture: null });
+
+                    const { engine } = useEditorStore.getState();
+                    if (!engine) throw new Error("Engine not found");
+
+                    if (colorTexture.imageId)
+                      engine.scene.removeImage(colorTexture.imageId);
+                  }}
                   className="flex h-full cursor-default items-center px-2 text-lg text-outline transition hover:text-black"
                 >
                   <MdClose />

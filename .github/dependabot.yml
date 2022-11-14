@@ -1,15 +1,10 @@
 version: 2
+
 updates:
   - package-ecosystem: "npm"
     directory: "/"
+    target-branch: "dev"
     schedule:
-      interval: "weekly"
-      day: "sunday"
+      interval: "daily"
     ignore:
       - dependency-name: "@aws-sdk/*"
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "sunday"

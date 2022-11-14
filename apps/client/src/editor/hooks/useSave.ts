@@ -126,10 +126,8 @@ export function useSave() {
               mimeType: image.mimeType,
             })),
             accessors: scene.accessors.map((accessor) => ({
-              id: accessor.id,
-              elementSize: accessor.elementSize,
-              normalized: accessor.normalized,
-              type: accessor.type,
+              ...accessor,
+              array: Array.from(accessor.array) as any,
             })),
           };
 
@@ -161,15 +159,6 @@ export function useSave() {
 
     // Upload images to S3
     scene.images.forEach((image) => promises.push(uploadImageFile(image.id)));
-
-    // Upload accessors to S3
-    scene.accessors.forEach((accessor) => {
-      const blob = new Blob([accessor.array], {
-        type: "application/octet-stream",
-      });
-      const uri = URL.createObjectURL(blob);
-      promises.push(uploadBinaryFile(uri, accessor.id));
-    });
 
     await Promise.all(promises);
   }

@@ -1,4 +1,4 @@
-import { AccessorType, SceneJSON } from "@wired-labs/engine";
+import { SceneJSON } from "@wired-labs/engine";
 
 export type Tool = "translate" | "rotate" | "scale";
 
@@ -11,16 +11,9 @@ export type SavedImageJSON = {
   mimeType: string;
 };
 
-export type SavedAccessJSON = {
-  id: string;
-  elementSize: number;
-  normalized: boolean;
-  type: AccessorType;
-};
-
 export type SavedSceneJSON = {
   spawnId: SceneJSON["spawnId"];
-  accessors: SavedAccessJSON[];
+  accessors: SceneJSON["accessors"];
   animations: SceneJSON["animations"];
   images: SavedImageJSON[];
   materials: SceneJSON["materials"];

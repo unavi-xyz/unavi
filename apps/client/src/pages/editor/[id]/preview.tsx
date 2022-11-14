@@ -166,18 +166,11 @@ export default function Preview() {
       });
 
       // Load accessors
-      const accessorPromises = savedScene.accessors.map(async (accessor) => {
-        const file = fileURLs.find(
-          (f) => f.id === binaryStorageKey(accessor.id)
-        );
-        if (!file) throw new Error("File not found");
-
-        const response = await fetch(file.uri);
-        const buffer = await response.arrayBuffer();
+      savedScene.accessors.map((accessor) => {
         const array =
           accessor.type === "SCALAR"
-            ? new Uint16Array(buffer)
-            : new Float32Array(buffer);
+            ? new Uint16Array(accessor.array)
+            : new Float32Array(accessor.array);
 
         scene.accessors.push({
           ...accessor,
@@ -188,7 +181,6 @@ export default function Preview() {
 
       await Promise.all(modelPromises);
       await Promise.all(imagePromises);
-      await Promise.all(accessorPromises);
 
       // Load scene
       await engine.scene.loadJSON(scene);

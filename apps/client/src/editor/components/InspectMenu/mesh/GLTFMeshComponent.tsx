@@ -82,9 +82,7 @@ export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
               uri: URL.createObjectURL(blob),
             });
 
-            setTimeout(() => {
-              updateGltfColliders(nodeId);
-            }, 5000);
+            setTimeout(() => updateGltfColliders(nodeId), 5000);
           }}
         />
       </MenuRows>

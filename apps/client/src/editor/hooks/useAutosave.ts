@@ -7,14 +7,14 @@ export function useAutosave() {
   const { save } = useSave();
 
   useEffect(() => {
-    // Attempt auto save every 30 seconds
+    // Auto save on an interval
     const interval = setInterval(async () => {
       // Only save if there have been changes
       const { changesToSave } = useEditorStore.getState();
       if (!changesToSave) return;
 
       await save();
-    }, 30000);
+    }, 3 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, [save]);

@@ -1,4 +1,3 @@
-import { GLTFMesh, Node } from "@wired-labs/engine";
 import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -25,7 +24,10 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({
   res,
   query,
 }) => {
-  res.setHeader("Cache-Control", "public, s-maxage=120");
+  res.setHeader(
+    "Cache-Control",
+    "public, s-maxage=60, stale-while-revalidate=600"
+  );
 
   const id = query.id as string;
   const props = await getPublicationProps(id);
@@ -41,7 +43,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({
 export default function App({
   id,
   metadata,
-  publication,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -51,9 +52,6 @@ export default function App({
   const engine = useAppStore((state) => state.engine);
 
   const setAvatar = useSetAvatar();
-
-  const modelURL: string | undefined =
-    publication?.metadata.media[1]?.original.url;
 
   useLoadUser();
   useAppHotkeys();
@@ -76,24 +74,6 @@ export default function App({
       engine.leaveSpace();
     };
   }, [engine, id]);
-
-  useEffect(() => {
-    if (!modelURL || !engine) return;
-
-    // Create glTF node
-    const mesh = new GLTFMesh();
-    mesh.uri = modelURL;
-    engine.scene.addMesh(mesh);
-
-    const node = new Node();
-    node.meshId = mesh.id;
-    engine.scene.addNode(node);
-
-    return () => {
-      engine.scene.removeMesh(mesh.id);
-      engine.scene.removeNode(node.id);
-    };
-  }, [engine, modelURL]);
 
   useEffect(() => {
     if (createdEngine.current) return;

@@ -72,29 +72,25 @@ export class MainScene {
     };
 
     // Load glTFs when added to the scene
-    this.#scene.nodes$.subscribe((nodes) => {
-      Object.values(nodes).forEach((node) => {
-        node.meshId$.subscribe((meshId) => {
-          if (!meshId) return;
-          const mesh = this.#scene.meshes[meshId];
-          if (mesh?.type === "glTF") {
-            mesh.uri$.subscribe((uri) => {
-              const loadedURI = this.#map.loadedGltfUris.get(node.id);
-              if (uri && uri !== loadedURI) {
-                this.#map.loadedGltfUris.set(node.id, uri);
+    this.#scene.meshes$.subscribe((meshes) => {
+      Object.values(meshes).forEach((mesh) => {
+        if (mesh.type === "glTF") {
+          mesh.uri$.subscribe((uri) => {
+            const loadedURI = this.#map.loadedGltfUris.get(mesh.id);
+            if (uri && uri !== loadedURI) {
+              this.#map.loadedGltfUris.set(mesh.id, uri);
 
-                // Load glTF
-                this.#toLoaderThread({
-                  subject: "load_gltf",
-                  data: {
-                    id: mesh.id,
-                    uri,
-                  },
-                });
-              }
-            });
-          }
-        });
+              // Load glTF
+              this.#toLoaderThread({
+                subject: "load_gltf",
+                data: {
+                  id: mesh.id,
+                  uri,
+                },
+              });
+            }
+          });
+        }
       });
     });
 
@@ -320,6 +316,7 @@ export class MainScene {
       await Promise.all(
         json.meshes.map((mesh) => {
           if (mesh.type !== "glTF" || !mesh.uri) return;
+
           return new Promise<void>((resolve) => {
             this.#gltfLoadSpawn.set(mesh.id, loadGltfSpawn);
             this.#gltfLoadCallbacks.set(mesh.id, () => {

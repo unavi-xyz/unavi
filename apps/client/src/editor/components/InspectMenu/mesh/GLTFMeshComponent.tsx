@@ -32,8 +32,11 @@ export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
     updateNode(nodeId, { meshId: null, collider: null });
     removeMesh(mesh.id);
 
-    useEditorStore.setState({ changesToSave: true });
+    useEditorStore.setState({ changesToSave: true, selectedId: null });
     setOpenConfirmDialog(false);
+
+    // Refresh selection to refresh tree menu
+    setTimeout(() => useEditorStore.setState({ selectedId: nodeId }));
   }
 
   return (

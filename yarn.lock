@@ -8114,10 +8114,10 @@ media-query-parser@^2.0.2:
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-mediasoup-client@^3.6.58:
-  version "3.6.58"
-  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.58.tgz#8beb377f4767fd7d9b2793551ccdec7aa9c00695"
-  integrity sha512-Kx0o94JxWBSSUd0MjMyEWpN0dHgIBhTcxDInrtji1V9ncq8L6eqiAT1g/DiUVJbmsdd9wLoSp9Jth6ciaNGTdA==
+mediasoup-client@^3.6.59:
+  version "3.6.59"
+  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.59.tgz#6187e620d1a703ccf9ad31130058a45c842488e9"
+  integrity sha512-/hQKSB2dt4Nrwuws6RK/OiQhWHfmKdG+lZyNoP67ltxsrd/rwKlj0aQMxe+Eoc3PfwTEyxIqtLSc7FERaEEBgA==
   dependencies:
     "@types/debug" "^4.1.7"
     "@types/events" "^3.0.0"

@@ -35,10 +35,9 @@ jobs:
         run: yarn lint
 
       - name: Run Prettier
-        uses: creyD/prettier_action@v4.2
+        run: yarn format
+
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
         with:
-          prettier_plugins: "prettier-plugin-prisma prettier-plugin-packagejson"
-          prettier_options: --write .
-          only_changed: True
-          commit_message: "prettier: format files"
-          github_token: ${{ secrets.PRETTIER_TOKEN }}
+          message: "chore: format code"

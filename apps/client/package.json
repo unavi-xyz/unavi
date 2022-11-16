@@ -18,7 +18,7 @@
     "@next/bundle-analyzer": "^13.0.2",
     "@next/font": "^13.0.0",
     "@prisma/client": "^4.6.1",
-    "@rainbow-me/rainbowkit": "^0.7.4",
+    "@rainbow-me/rainbowkit": "^0.8.0",
     "@trpc/client": "10.0.0-rc.6",
     "@trpc/next": "10.0.0-rc.8",
     "@trpc/react-query": "10.0.0-rc.6",

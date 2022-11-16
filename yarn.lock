@@ -3584,11 +3584,6 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.20.55.tgz#c329cbd434c42164f846b909bd6f85b5537f6240"
   integrity sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==
 
-"@types/node@^16.11.10":
-  version "16.11.64"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.11.64.tgz#9171f327298b619e2c52238b120c19056415d820"
-  integrity sha512-z5hPTlVFzNwtJ2LNozTpJcD1Cu44c4LNuzaq1mwxmiHWQh2ULdR6Vjwo1UGldzRpzL0yUEdZddnfqGW2G70z6Q==
-
 "@types/offscreencanvas@^2019.7.0":
   version "2019.7.0"
   resolved "https://registry.yarnpkg.com/@types/offscreencanvas/-/offscreencanvas-2019.7.0.tgz#e4a932069db47bb3eabeb0b305502d01586fa90d"
@@ -8122,16 +8117,16 @@ mediasoup-client@^3.6.59:
     sdp-transform "^2.14.1"
     supports-color "^9.2.3"
 
-mediasoup@^3.10.10:
-  version "3.10.10"
-  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.10.10.tgz#254288ff1fb484897d1816740450372fd1d9bca3"
-  integrity sha512-59wtdtso40y8xtIPNK/aL1TI+A8BvvlJW2Ui5c1p84hjuzLQjR53YXhZGn4t7Uwksi0fzBBWAsEw7eLUE+ic4Q==
+mediasoup@^3.11.3:
+  version "3.11.3"
+  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.11.3.tgz#e92032504f0811992a364d85aedb84514e4cce34"
+  integrity sha512-Fh2fngO9E3j2N8v0d/gWr/zP9e+bMa3cZLg5UkF49Bv95ctooh4PqKBGxVicZlA/aOsd2Ne36gyai0b7zWWKBA==
   dependencies:
-    "@types/node" "^16.11.10"
+    "@types/node" "^18.11.9"
     debug "^4.3.4"
     h264-profile-level-id "^1.0.1"
     supports-color "^9.2.3"
-    uuid "^8.3.2"
+    uuid "^9.0.0"
 
 merge-options@^3.0.4:
   version "3.0.4"
@@ -10869,6 +10864,11 @@ uuid@^8.1.0, uuid@^8.3.2:
   version "8.3.2"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-8.3.2.tgz#80d5b5ced271bb9af6c445f21a1a04c606cefbe2"
   integrity sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==
+
+uuid@^9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-9.0.0.tgz#592f550650024a38ceb0c562f2f6aa435761efb5"
+  integrity sha512-MXcSTerfPa4uqyzStbRoTgt5XIe3x5+42+q1sDuy3R5MDk66URdLMOZe5aPX/SQd+kuYAh0FdP/pO28IkQyTeg==
 
 v8-compile-cache-lib@^3.0.1:
   version "3.0.1"

@@ -49,12 +49,12 @@ export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
             Confirm Unpack
           </h1>
 
-          <div className="text-lg text-center">
+          <div className="text-center text-lg">
             Unpacking a model will expose its internal meshes and materials to
             the editor. This action cannot be undone.
           </div>
 
-          <div className="justify-end flex">
+          <div className="flex justify-end">
             <Button fullWidth variant="filled" onClick={handleSplit}>
               Confirm
             </Button>

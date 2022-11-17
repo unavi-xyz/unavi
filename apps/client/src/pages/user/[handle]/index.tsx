@@ -27,7 +27,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({
 }) => {
   res.setHeader(
     "Cache-Control",
-    "public, s-maxage=60, stale-while-revalidate=600"
+    "public, s-maxage=30, stale-while-revalidate=3600"
   );
 
   const handle = query.handle as string;

@@ -10,7 +10,7 @@ export const getServerSideProps: GetServerSideProps<
 > = async ({ res, query }) => {
   res.setHeader(
     "Cache-Control",
-    "public, s-maxage=60, stale-while-revalidate=600"
+    "public, s-maxage=60, stale-while-revalidate=604800"
   );
 
   const props = await getSpaceLayoutProps(query.id as string);

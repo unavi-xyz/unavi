@@ -21,7 +21,7 @@
     "@rainbow-me/rainbowkit": "^0.8.0",
     "@trpc/client": "10.0.0-rc.6",
     "@trpc/next": "10.0.0-rc.8",
-    "@trpc/react-query": "10.0.0-rc.6",
+    "@trpc/react-query": "10.0.0-rc.8",
     "@trpc/server": "10.0.0-rc.8",
     "@wired-labs/engine": "*",
     "@wired-labs/lens": "*",

@@ -149,7 +149,7 @@ export class RenderWorker {
     this.#renderer.shadowMap.type = PCFSoftShadowMap;
 
     // Fog
-    this.#scene.fog = new Fog(0xc4ebff, 400, 750);
+    this.#scene.fog = new Fog(0xc4ebff, 200, 720);
 
     // Camera
     this.#camera = new PerspectiveCamera(

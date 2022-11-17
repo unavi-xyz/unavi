@@ -1,6 +1,6 @@
 import {
   Clock,
-  FogExp2,
+  Fog,
   PCFSoftShadowMap,
   PerspectiveCamera,
   PMREMGenerator,
@@ -149,7 +149,7 @@ export class RenderWorker {
     this.#renderer.shadowMap.type = PCFSoftShadowMap;
 
     // Fog
-    this.#scene.fog = new FogExp2(0xeefaff, 0.003);
+    this.#scene.fog = new Fog(0xc4ebff, 400, 750);
 
     // Camera
     this.#camera = new PerspectiveCamera(

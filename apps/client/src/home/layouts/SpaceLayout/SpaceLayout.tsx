@@ -70,7 +70,7 @@ export default function SpaceLayout({
               </div>
             </div>
 
-            <div className="flex min-w-fit flex-col justify-between space-y-8 md:w-2/3">
+            <div className="flex flex-col justify-between space-y-8 md:w-2/3">
               <div className="space-y-4">
                 <div className="flex justify-center text-3xl font-black">
                   {publication?.metadata.name}

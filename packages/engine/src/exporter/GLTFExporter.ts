@@ -138,13 +138,17 @@ export class GLTFExporter {
         method: DracoMeshCompression.EncoderMethod.EDGEBREAKER,
       });
 
-    // Apply transforms
-    await this.#doc.transform(
-      dedup(),
-      resample(),
-      prune(),
-      textureResize({ size: [1024, 1024] })
-    );
+    try {
+      // Apply transforms
+      await this.#doc.transform(
+        dedup(),
+        resample(),
+        prune(),
+        textureResize({ size: [1024, 1024] })
+      );
+    } catch (err) {
+      console.warn(err);
+    }
 
     // Write to binary
     const glb = await io.writeBinary(this.#doc);

@@ -35,7 +35,7 @@ const SPRINT_SPEED = 1.6;
 
 const groundCollisionShape = new Capsule(
   PLAYER_HEIGHT / 2,
-  PLAYER_RADIUS - 0.05 // Slightly smaller radius to avoid sticking to walls
+  PLAYER_RADIUS - 0.1 // Slightly smaller radius to avoid sticking to walls
 );
 const PLAYER_FRICTION = 0.5;
 
@@ -392,7 +392,7 @@ export class PhysicsWorker {
         this.#world.gravity,
         groundCollisionShape,
         this.#world.timestep,
-        playerShapeCastCollisionGroup,
+        false,
         playerShapeCastCollisionGroup
       );
 

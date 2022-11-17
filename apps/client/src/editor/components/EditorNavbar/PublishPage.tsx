@@ -321,6 +321,7 @@ export default function PublishPage() {
           autoComplete="off"
           title="Description"
           outline
+          rows={4}
           defaultValue={description}
         />
 

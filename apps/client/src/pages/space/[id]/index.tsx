@@ -1,19 +1,19 @@
-import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 
-import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
+import { getPublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
-import { getSpaceLayoutProps } from "../../../home/layouts/SpaceLayout/getSpaceLayoutProps";
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
 
-export const getServerSideProps: GetServerSideProps<
-  PublicationProps & { host: string; playerCount: number | null }
-> = async ({ res, query }) => {
+export const getServerSideProps = async ({
+  res,
+  query,
+}: GetServerSidePropsContext) => {
   res.setHeader(
     "Cache-Control",
     "public, s-maxage=60, stale-while-revalidate=604800"
   );
 
-  const props = await getSpaceLayoutProps(query.id as string);
+  const props = await getPublicationProps(query.id as string);
 
   return {
     props,

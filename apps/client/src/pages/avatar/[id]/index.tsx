@@ -1,16 +1,13 @@
-import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 
-import {
-  getPublicationProps,
-  PublicationProps,
-} from "../../../client/lens/utils/getPublicationProps";
+import { getPublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import AvatarLayout from "../../../home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 
-export const getServerSideProps: GetServerSideProps<PublicationProps> = async ({
+export const getServerSideProps = async ({
   res,
   query,
-}) => {
+}: GetServerSidePropsContext) => {
   res.setHeader(
     "Cache-Control",
     "public, s-maxage=60, stale-while-revalidate=600"

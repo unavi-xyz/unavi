@@ -5,6 +5,11 @@ import { prisma } from "../prisma";
 import { createTempFileUploadURL } from "../s3";
 import { publicProcedure, router } from "./trpc";
 
+const HOST_URL =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:4000"
+    : "https://host.thewired.space";
+
 export const publicRouter = router({
   tempUploadURL: publicProcedure.mutation(async () => {
     // Get temp file upload URL from S3
@@ -13,41 +18,19 @@ export const publicRouter = router({
     return { url, fileId };
   }),
 
-  hotSpaces: publicProcedure.query(async () => {
-    // Get publications
-    const publications = await prisma.publication.findMany({
-      where: { type: "SPACE" },
-      orderBy: { viewCount: "desc" },
-      take: 9,
-    });
+  playerCount: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      const response = await fetch(`${HOST_URL}/playercount/${input.id}`);
+      const playerCountText = await response.text();
+      const playerCount = parseInt(playerCountText);
 
-    // Get lens ids
-    const lensIds: string[] = [];
-
-    publications.forEach((publication) => {
-      if (publication.lensId) lensIds.push(publication.lensId);
-    });
-
-    return lensIds;
-  }),
-
-  hotAvatars: publicProcedure.query(async () => {
-    // Get publications
-    const avatars = await prisma.publication.findMany({
-      where: { type: "SPACE" },
-      orderBy: { viewCount: "desc" },
-      take: 9,
-    });
-
-    // Get lens ids
-    const lensIds: string[] = [];
-
-    avatars.forEach((publication) => {
-      if (publication.lensId) lensIds.push(publication.lensId);
-    });
-
-    return lensIds;
-  }),
+      return playerCount;
+    }),
 
   addView: publicProcedure
     .input(

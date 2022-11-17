@@ -5,14 +5,18 @@ import { useRouter } from "next/router";
 import { useLens } from "../../../client/lens/hooks/useLens";
 import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { trimHandle } from "../../../client/lens/utils/trimHandle";
+import { trpc } from "../../../client/trpc";
 import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
 import { isFromCDN } from "../../../utils/isFromCDN";
 import MetaTags from "../../MetaTags";
 
-export interface SpaceLayoutProps extends PublicationProps {
-  playerCount: number | null;
-  host: string;
+const host =
+  process.env.NODE_ENV === "development"
+    ? "localhost:4000"
+    : "host.thewired.space";
+
+export interface Props extends PublicationProps {
   children: React.ReactNode;
 }
 
@@ -20,16 +24,16 @@ export default function SpaceLayout({
   children,
   metadata,
   publication,
-  playerCount,
   image,
-  host,
-}: SpaceLayoutProps) {
+}: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
   const { handle } = useLens();
   const author = trimHandle(publication?.profile.handle);
   const isAuthor = handle && handle === author;
+
+  const { data: playerCount } = trpc.public.playerCount.useQuery({ id });
 
   return (
     <>
@@ -88,7 +92,7 @@ export default function SpaceLayout({
                   </div>
 
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                    <div>{playerCount ?? "??"}</div>
+                    <div>{playerCount ?? 0}</div>
                     <div className="text-outline">
                       connected player{playerCount === 1 ? null : "s"}
                     </div>

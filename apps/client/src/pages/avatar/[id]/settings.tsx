@@ -1,21 +1,18 @@
 import { useHidePublicationMutation } from "@wired-labs/lens";
-import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import { useLens } from "../../../client/lens/hooks/useLens";
-import {
-  getPublicationProps,
-  PublicationProps,
-} from "../../../client/lens/utils/getPublicationProps";
+import { getPublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import AvatarLayout from "../../../home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import Button from "../../../ui/Button";
 
-export const getServerSideProps: GetServerSideProps<PublicationProps> = async ({
+export const getServerSideProps = async ({
   res,
   query,
-}) => {
+}: GetServerSidePropsContext) => {
   res.setHeader(
     "Cache-Control",
     "public, s-maxage=30, stale-while-revalidate=600"

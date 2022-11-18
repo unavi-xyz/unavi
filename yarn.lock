@@ -3549,10 +3549,10 @@
   resolved "https://registry.yarnpkg.com/@tootallnate/once/-/once-2.0.0.tgz#f544a148d3ab35801c1f633a7441fd87c2e484bf"
   integrity sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==
 
-"@trpc/client@10.0.0-rc.6":
-  version "10.0.0-rc.6"
-  resolved "https://registry.yarnpkg.com/@trpc/client/-/client-10.0.0-rc.6.tgz#de30c9107facdf7d54e000c1e6b95de50bbe7acd"
-  integrity sha512-/vyi0b9R+DOJgvYFFYSveRwIX4Ttu01Af0ORzZGsDHYZGB7lfSqHfQhizf+AHfEpQXQsJYy5ZFOt6RtvF6LuKg==
+"@trpc/client@10.0.0-rc.8":
+  version "10.0.0-rc.8"
+  resolved "https://registry.yarnpkg.com/@trpc/client/-/client-10.0.0-rc.8.tgz#2b6b0db8ec41e4403b72d25d37a2cd9d6c6c1257"
+  integrity sha512-NuQl7g1tkfFYn6P6dZJJkVsxnxutYpaxmpG/w5ZKW3QVu6cY1joUOrWakunKrghh3HS+svgLaPz0Xl0PlmdSlw==
 
 "@trpc/next@10.0.0-rc.8":
   version "10.0.0-rc.8"

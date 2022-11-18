@@ -3035,10 +3035,10 @@
   dependencies:
     glob "7.1.7"
 
-"@next/font@13.0.3":
-  version "13.0.3"
-  resolved "https://registry.yarnpkg.com/@next/font/-/font-13.0.3.tgz#e483422262e33d0f195685dbaf4399576ecfe719"
-  integrity sha512-J3bZooNyhzhRshEJZlc4Kagfx6f8LQkPdCsP0nZm63dAUaoeMaQRidFFhbL68WZ3S5XleVfpGYypZuBSyJqYtw==
+"@next/font@13.0.4":
+  version "13.0.4"
+  resolved "https://registry.yarnpkg.com/@next/font/-/font-13.0.4.tgz#43a9d38df0279745d2119bf79f10882b825a01a3"
+  integrity sha512-csZhVqe870p7XE03WfbDLzjVwdBAWxe6/lWGQosfqY/XN5tsmfDLpj442veicfCiiuF7/ydSnAAJxH8PQVBVWQ==
 
 "@next/swc-android-arm-eabi@13.0.2":
   version "13.0.2"

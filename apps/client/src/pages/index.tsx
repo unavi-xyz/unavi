@@ -51,7 +51,7 @@ export default function Index() {
               <div className="h-full w-full py-6 md:h-1/2 md:w-1/2 md:py-0">
                 <div className="relative h-full w-full">
                   <Image
-                    src="/images/jump.png"
+                    src="/images/Jump.png"
                     priority
                     fill
                     sizes="341px"
@@ -102,7 +102,7 @@ export default function Index() {
               <div className="h-full w-full py-4 md:h-1/2 md:w-1/2 md:p-8 md:py-0">
                 <div className="relative h-full w-full">
                   <Image
-                    src="/images/sitting.png"
+                    src="/images/Sitting.png"
                     fill
                     loading="eager"
                     sizes="293px"

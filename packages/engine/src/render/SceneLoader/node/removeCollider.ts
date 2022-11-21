@@ -1,7 +1,7 @@
 import { disposeObject } from "../../utils/disposeObject";
 import { SceneMap } from "../types";
 
-export function removeColliderVisual(nodeId: string, map: SceneMap) {
+export function removeCollider(nodeId: string, map: SceneMap) {
   const collider = map.colliders.get(nodeId);
   if (!collider) return;
 

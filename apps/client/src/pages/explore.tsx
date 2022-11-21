@@ -1,18 +1,48 @@
 import { AppId, Post, PublicationSortCriteria } from "@wired-labs/lens";
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/link";
 import { useState } from "react";
 
 import { useExploreQuery } from "../client/lens/hooks/useExploreQuery";
-import { trpc } from "../client/trpc";
 import { useCursor } from "../home/hooks/useCursor";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceCard from "../home/lens/SpaceCard";
 import SpaceIdCard from "../home/lens/SpaceIdCard";
 import MetaTags from "../home/MetaTags";
+import { prisma } from "../server/prisma";
 import Carousel from "../ui/Carousel";
 import { useIsMobile } from "../utils/useIsMobile";
 
-export default function Explore() {
+export const getServerSideProps = async ({
+  res,
+}: GetServerSidePropsContext) => {
+  res.setHeader(
+    "Cache-Control",
+    "public, s-maxage=60, stale-while-revalidate=604800"
+  );
+
+  // Get publications
+  const publications = await prisma.publication.findMany({
+    where: { type: "SPACE" },
+    orderBy: { viewCount: "desc" },
+    take: 9,
+  });
+
+  // Get lens ids
+  const hotSpaces: string[] = [];
+
+  publications.forEach((publication) => {
+    if (publication.lensId) hotSpaces.push(publication.lensId);
+  });
+
+  return {
+    props: { hotSpaces },
+  };
+};
+
+export default function Explore({
+  hotSpaces,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const isMobile = useIsMobile();
   const spaceLimit = isMobile ? 1 : 3;
   // const avatarLimit = isMobile ? 1 : 5;
@@ -34,9 +64,6 @@ export default function Explore() {
   // );
 
   const [hotSpacesCursor, setHotSpacesCursor] = useState(0);
-
-  const { data: _hotSpaces } = trpc.public.hotSpaces.useQuery();
-  const hotSpaces = _hotSpaces ?? [];
 
   const {
     next: hotSpacesNext,

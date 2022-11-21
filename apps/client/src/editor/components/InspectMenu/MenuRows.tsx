@@ -5,7 +5,7 @@ interface Props {
 
 export default function MenuRows({ titles, children }: Props) {
   return (
-    <div className="flex space-x-4 items-center h-full">
+    <div className="flex h-full items-center space-x-4">
       <div className="w-1/3 min-w-fit space-y-1">
         {titles.map((title) => (
           <div key={title}>{title}</div>

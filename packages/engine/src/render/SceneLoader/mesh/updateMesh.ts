@@ -4,7 +4,7 @@ import { MeshJSON } from "../../../scene";
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
 import { defaultMaterial } from "../constants";
-import { createColliderVisual } from "../node/createColliderVisual";
+import { createCollider } from "../node/createCollider";
 import { SceneMap } from "../types";
 import { createObject } from "./createObject";
 import { updateMeshMaterial } from "./updateMeshMaterial";
@@ -50,7 +50,7 @@ export function updateMesh(
   // Update auto collider visuals for nodes that use this mesh
   for (const node of map.nodes.values()) {
     if (node.meshId === meshId && node.collider) {
-      createColliderVisual(node.id, map, postMessage);
+      createCollider(node.id, map, postMessage);
     }
   }
 }

@@ -6,28 +6,25 @@ import {
   Post,
   PublicationTypes,
 } from "@wired-labs/lens";
-import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/link";
 
 import { HIDDEN_MESSAGE } from "../../../client/lens/constants";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
-import {
-  getProfileLayoutProps,
-  ProfileLayoutProps,
-} from "../../../home/layouts/ProfileLayout/getProfileLayoutProps";
+import { getProfileLayoutProps } from "../../../home/layouts/ProfileLayout/getProfileLayoutProps";
 import ProfileLayout from "../../../home/layouts/ProfileLayout/ProfileLayout";
 import AvatarCard from "../../../home/lens/AvatarCard";
 import SpaceCard from "../../../home/lens/SpaceCard";
 import { lensClient } from "../../../server/lens";
 import { getMediaURL } from "../../../utils/getMediaURL";
 
-export const getServerSideProps: GetServerSideProps<Props> = async ({
+export const getServerSideProps = async ({
   res,
   query,
-}) => {
+}: GetServerSidePropsContext) => {
   res.setHeader(
     "Cache-Control",
-    "public, s-maxage=60, stale-while-revalidate=600"
+    "public, s-maxage=30, stale-while-revalidate=3600"
   );
 
   const handle = query.handle as string;
@@ -38,6 +35,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({
       props: {
         ...props,
         profile: null,
+        publications: null,
       },
     };
   }
@@ -55,13 +53,12 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({
     )
     .toPromise();
 
-  const publications = publicationsQuery.data?.publications.items.map(
-    (item) => {
+  const publications =
+    publicationsQuery.data?.publications.items.map((item) => {
       const postItem = item as Post;
       postItem.metadata.image = getMediaURL(postItem.metadata.media[0]);
       return postItem;
-    }
-  );
+    }) ?? null;
 
   return {
     props: {
@@ -71,10 +68,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({
   };
 };
 
-interface Props extends ProfileLayoutProps {
-  publications?: Post[];
-}
-
 export default function User({
   publications,
   ...rest
@@ -83,7 +76,7 @@ export default function User({
     <ProfileLayout {...rest}>
       {publications && publications.length > 0 && (
         <div className="grid grid-cols-1 gap-4 pb-4 md:grid-cols-4">
-          {publications?.map((publication) => {
+          {publications.map((publication) => {
             if (publication.appId === AppId.Space) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 

@@ -18,8 +18,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}
           fetch-depth: 0
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v3
@@ -28,15 +29,16 @@ jobs:
           cache: "yarn"
 
       - name: Install dependencies
-        run: yarn --prefer-offline
+        run: yarn --prefer-offline --frozen-lockfile
 
       - name: Run ESLint
         run: yarn lint
 
       - name: Run Prettier
-        uses: creyD/prettier_action@v4.2
+        run: yarn format
+
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
         with:
-          prettier_plugins: "prettier-plugin-prisma prettier-plugin-packagejson"
-          prettier_options: --write .
-          only_changed: True
-          commit_message: "prettier: format files"
+          message: "chore: format code"
+          default_author: github_actions

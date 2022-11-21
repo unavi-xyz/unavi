@@ -1,5 +1,4 @@
-import { GLTFMesh, Node } from "@wired-labs/engine";
-import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -11,21 +10,17 @@ import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
 import LoadingScreen from "../../app/ui/LoadingScreen";
 import UserButton from "../../app/ui/UserButtons";
-import {
-  getPublicationProps,
-  PublicationProps,
-} from "../../client/lens/utils/getPublicationProps";
+import { getPublicationProps } from "../../client/lens/utils/getPublicationProps";
 import MetaTags from "../../home/MetaTags";
 
-interface Props extends PublicationProps {
-  id: string;
-}
-
-export const getServerSideProps: GetServerSideProps<Props> = async ({
+export const getServerSideProps = async ({
   res,
   query,
-}) => {
-  res.setHeader("Cache-Control", "public, s-maxage=120");
+}: GetServerSidePropsContext) => {
+  res.setHeader(
+    "Cache-Control",
+    "public, s-maxage=60, stale-while-revalidate=600"
+  );
 
   const id = query.id as string;
   const props = await getPublicationProps(id);
@@ -41,7 +36,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({
 export default function App({
   id,
   metadata,
-  publication,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -51,9 +45,6 @@ export default function App({
   const engine = useAppStore((state) => state.engine);
 
   const setAvatar = useSetAvatar();
-
-  const modelURL: string | undefined =
-    publication?.metadata.media[1]?.original.url;
 
   useLoadUser();
   useAppHotkeys();
@@ -66,34 +57,16 @@ export default function App({
       // Start engine
       await engine.start();
 
-      // Set a delay to let the scene load
+      // Set a delay to let the scene load + networking connect
       setTimeout(() => {
         setEngineStarted(true);
-      }, 3000);
+      }, 2000);
     });
 
     return () => {
       engine.leaveSpace();
     };
   }, [engine, id]);
-
-  useEffect(() => {
-    if (!modelURL || !engine) return;
-
-    // Create glTF node
-    const mesh = new GLTFMesh();
-    mesh.uri = modelURL;
-    engine.scene.addMesh(mesh);
-
-    const node = new Node();
-    node.meshId = mesh.id;
-    engine.scene.addNode(node);
-
-    return () => {
-      engine.scene.removeMesh(mesh.id);
-      engine.scene.removeNode(node.id);
-    };
-  }, [engine, modelURL]);
 
   useEffect(() => {
     if (createdEngine.current) return;

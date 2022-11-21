@@ -61,7 +61,7 @@ export default function InspectMenu() {
           onChange={(e) => {
             updateNode(selectedId, { name: e.target.value });
           }}
-          className="rounded-lg w-full mx-10 py-0.5 text-2xl text-center font-bold transition hover:bg-neutral-100 hover:shadow-inner"
+          className="mx-10 w-full rounded-lg py-0.5 text-center text-2xl font-bold transition hover:bg-neutral-100 hover:shadow-inner"
         />
       </div>
 

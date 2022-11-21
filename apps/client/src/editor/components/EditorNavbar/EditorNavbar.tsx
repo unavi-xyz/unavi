@@ -12,6 +12,7 @@ import IconButton from "../../../ui/IconButton";
 import Tooltip from "../../../ui/Tooltip";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
+import AutoGrowInput from "../ui/AutoGrowInput";
 import PublishPage from "./PublishPage";
 import ToolButton from "./ToolButton";
 import UpdatePage from "./UpdatePage";
@@ -103,14 +104,19 @@ export default function EditorNavbar() {
             <MdArrowBackIosNew />
           </div>
 
-          <input
-            type="text"
-            value={name ?? ""}
-            onChange={(e) => useEditorStore.setState({ name: e.target.value })}
-            className="w-44 rounded-lg py-0.5 px-3 transition hover:bg-neutral-100 hover:shadow-inner"
-          />
+          <div className="flex w-96 items-center">
+            <AutoGrowInput
+              type="text"
+              value={name}
+              onChange={(e) =>
+                useEditorStore.setState({ name: e.target.value })
+              }
+            />
 
-          {isSaving && <div className="text-sm text-outline">Saving...</div>}
+            {isSaving && (
+              <div className="pl-2 text-sm text-outline">Saving...</div>
+            )}
+          </div>
         </div>
 
         <div className="flex h-full w-full items-center justify-center space-x-2">

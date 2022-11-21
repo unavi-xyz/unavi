@@ -27,6 +27,7 @@ import { updateMesh } from "./mesh/updateMesh";
 import { addNode } from "./node/addNode";
 import { removeNode } from "./node/removeNode";
 import { updateNode } from "./node/updateNode";
+import { ObjectQueue } from "./ObjectQueue";
 import { SceneMap, UserData } from "./types";
 import { getChildren } from "./utils/getChildren";
 import { updateGlobalTransform } from "./utils/updateGlobalTransform";
@@ -39,23 +40,13 @@ export class SceneLoader {
   contents = new Group();
   mixer = new AnimationMixer(this.root);
 
-  #showVisuals = false;
+  #map: SceneMap;
+
   #spawn = new Mesh(
     new CylinderGeometry(0.5, 0.5, 1.6, 8),
     new MeshBasicMaterial({ wireframe: true })
   );
-
-  #map: SceneMap = {
-    accessors: new Map<string, AccessorJSON>(),
-    animations: new Map<string, AnimationClip>(),
-    attributes: new Map<string, BufferAttribute>(),
-    colliders: new Map<string, Group>(),
-    nodes: new Map<string, NodeJSON>(),
-    meshes: new Map<string, MeshJSON>(),
-    images: new Map<string, ImageBitmap>(),
-    materials: new Map<string, MeshStandardMaterial>(),
-    objects: new Map<string, Object3D>(),
-  };
+  #showVisuals = false;
 
   #postMessage: PostMessage<FromRenderMessage>;
   #renderWorker: RenderWorker;
@@ -67,12 +58,26 @@ export class SceneLoader {
     this.#postMessage = postMessage;
     this.#renderWorker = renderWorker;
 
+    if (!renderWorker.renderer) throw new Error("Renderer not found");
+    if (!renderWorker.camera) throw new Error("Camera not found");
+
+    this.#map = {
+      accessors: new Map<string, AccessorJSON>(),
+      animations: new Map<string, AnimationClip>(),
+      attributes: new Map<string, BufferAttribute>(),
+      colliders: new Map<string, Group>(),
+      nodes: new Map<string, NodeJSON>(),
+      meshes: new Map<string, MeshJSON>(),
+      images: new Map<string, ImageBitmap>(),
+      materials: new Map<string, MeshStandardMaterial>(),
+      objects: new Map<string, Object3D>(),
+      objectQueue: new ObjectQueue(renderWorker.renderer, renderWorker.camera),
+    };
+
     this.root.add(this.contents);
     this.#map.objects.set("root", this.contents);
 
-    // Add spawn
     this.#spawn.userData[UserData.isVisual] = true;
-    this.root.add(this.#spawn);
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
@@ -313,5 +318,10 @@ export class SceneLoader {
     // Repeat for children
     const children = getChildren(node.id, this.#map);
     children.forEach((child) => this.saveTransform(child.id));
+  }
+
+  update(delta: number) {
+    this.#map.objectQueue.update();
+    this.mixer.update(delta);
   }
 }

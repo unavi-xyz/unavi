@@ -27,7 +27,7 @@ export default function CreateProjectPage() {
       const id = await createProject({ name });
 
       // Fetch default image
-      const res = await fetch("/images/default-space.jpeg");
+      const res = await fetch("/images/Default-Space.jpg");
       const body = await res.blob();
 
       // Upload default image

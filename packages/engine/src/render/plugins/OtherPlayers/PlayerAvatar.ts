@@ -4,6 +4,7 @@ import {
   AnimationClip,
   AnimationMixer,
   BoxGeometry,
+  Camera,
   Group,
   LoopPingPong,
   Mesh,
@@ -11,12 +12,14 @@ import {
   PerspectiveCamera,
   Quaternion,
   Vector3,
+  WebGLRenderer,
 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../../../constants";
 import { PostMessage } from "../../../types";
 import { toHex } from "../../../utils/toHex";
+import { ObjectQueue } from "../../SceneLoader/ObjectQueue";
 import { FromRenderMessage } from "../../types";
 import { disposeObject } from "../../utils/disposeObject";
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
@@ -56,11 +59,14 @@ export class PlayerAvatar {
   #targetRotation = new Quaternion();
 
   #loader = new GLTFLoader();
+  #queue: ObjectQueue;
 
   constructor(
     playerId: number,
     avatar: string | null,
     postMessage: PostMessage<FromRenderMessage>,
+    sceneCamera: Camera,
+    renderer: WebGLRenderer,
     defaultAvatarPath?: string,
     avatarAnimationsPath?: string,
     camera?: PerspectiveCamera
@@ -71,6 +77,7 @@ export class PlayerAvatar {
     this.#avatarAnimationsPath = avatarAnimationsPath;
     this.#camera = camera;
     this.#isUser = Boolean(camera);
+    this.#queue = new ObjectQueue(renderer, sceneCamera);
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
@@ -123,15 +130,13 @@ export class PlayerAvatar {
     // Set VRM model
     this.#vrm = vrm;
 
-    // Add model to the scene
-    this.group.add(vrm.scene);
-
-    // Process vrm scene
+    // Process scene
     vrm.scene.traverse((object) => {
-      if (object instanceof Mesh) {
-        object.castShadow = true;
-      }
+      if (object instanceof Mesh) object.castShadow = true;
     });
+
+    // Add scene to queue
+    this.#queue.add(this.#vrm.scene, this.group, true);
 
     if (avatarAnimationsPath) {
       // Create mixer
@@ -209,6 +214,10 @@ export class PlayerAvatar {
   }
 
   animate(delta: number) {
+    // Load queue
+    this.#queue.update();
+
+    // Handle animations
     const K = 1 - Math.pow(LERP_FACTOR, delta);
 
     if (!this.#isUser) {
@@ -259,7 +268,7 @@ export class PlayerAvatar {
     const leftVelocity = velocity.x > 0 ? velocity.x : 0;
     const rightVelocity = velocity.x < 0 ? -velocity.x : 0;
     const forwardVelocity = Math.abs(velocity.z);
-    const isBackwards = velocity.z > 0;
+    const isBackwards = velocity.z < 0;
 
     this.#leftWeight = clamp(
       leftVelocity > 1 && !this.isFalling

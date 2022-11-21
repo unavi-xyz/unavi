@@ -9,14 +9,9 @@ import {
 } from "@dimforge/rapier3d";
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../constants";
-import {
-  BoxCollider,
-  CylinderCollider,
-  MeshCollider,
-  MeshJSON,
-  NodeJSON,
-  SphereCollider,
-} from "../scene";
+import { MeshJSON, NodeJSON } from "../scene";
+import { calcGlobalScale } from "../scene/utils/calcGlobalScale";
+import { convertAutoCollider } from "../scene/utils/convertAutoCollider";
 import { PostMessage, Triplet } from "../types";
 import {
   playerCollisionGroup,
@@ -35,7 +30,7 @@ const SPRINT_SPEED = 1.6;
 
 const groundCollisionShape = new Capsule(
   PLAYER_HEIGHT / 2,
-  PLAYER_RADIUS - 0.05 // Slightly smaller radius to avoid sticking to walls
+  PLAYER_RADIUS - 0.1 // Slightly smaller radius to avoid sticking to walls
 );
 const PLAYER_FRICTION = 0.5;
 
@@ -263,43 +258,11 @@ export class PhysicsWorker {
     this.removeCollider(node.id);
 
     // Create collider description
+    const nodes = Array.from(this.#nodes.values());
+    const globalScale = calcGlobalScale(node, nodes);
+    const nodeMesh = node.meshId ? this.#meshes.get(node.meshId) : undefined;
+    const nodeCollider = convertAutoCollider(node, nodeMesh, globalScale);
     let colliderDesc: ColliderDesc | null = null;
-    let nodeCollider = node.collider ? { ...node.collider } : null;
-
-    if (nodeCollider?.type === "auto" && node.meshId) {
-      const mesh = this.#meshes.get(node.meshId);
-      if (!mesh) return;
-
-      switch (mesh.type) {
-        case "Box": {
-          const boxCollider = new BoxCollider();
-          boxCollider.size = [mesh.width, mesh.height, mesh.depth];
-          nodeCollider = boxCollider;
-          break;
-        }
-
-        case "Sphere": {
-          const sphereCollider = new SphereCollider();
-          sphereCollider.radius = mesh.radius;
-          nodeCollider = sphereCollider;
-          break;
-        }
-
-        case "Cylinder": {
-          const cylinderCollider = new CylinderCollider();
-          cylinderCollider.radius = mesh.radius;
-          cylinderCollider.height = mesh.height;
-          nodeCollider = cylinderCollider;
-          break;
-        }
-
-        case "Primitives": {
-          const meshCollider = new MeshCollider();
-          meshCollider.meshId = node.meshId;
-          nodeCollider = meshCollider;
-        }
-      }
-    }
 
     switch (nodeCollider?.type) {
       case "box": {
@@ -392,7 +355,7 @@ export class PhysicsWorker {
         this.#world.gravity,
         groundCollisionShape,
         this.#world.timestep,
-        playerShapeCastCollisionGroup,
+        false,
         playerShapeCastCollisionGroup
       );
 

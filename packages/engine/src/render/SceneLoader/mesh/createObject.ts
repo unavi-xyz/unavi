@@ -8,6 +8,7 @@ import {
   LineLoop,
   LineSegments,
   Mesh,
+  Object3D,
   Points,
   SkinnedMesh,
   SphereGeometry,
@@ -56,6 +57,7 @@ export function createObject(
 
   const oldObject = map.objects.get(mesh.id);
   let disposeOldObject = true;
+  let parent: Object3D | null = null;
 
   // Create object
   switch (mesh?.type) {
@@ -110,7 +112,7 @@ export function createObject(
         threeMesh.receiveShadow = true;
 
         map.objects.set(mesh.id, threeMesh);
-        oldObject?.parent?.add(threeMesh);
+        parent = oldObject ? oldObject.parent : null;
       }
       break;
     }
@@ -118,7 +120,7 @@ export function createObject(
     case "Primitives": {
       const primitivesGroup = new Group();
       map.objects.set(mesh.id, primitivesGroup);
-      oldObject?.parent?.add(primitivesGroup);
+      parent = oldObject ? oldObject.parent : null;
 
       mesh.primitives.map((primitive) => {
         // Create geometry
@@ -237,11 +239,17 @@ export function createObject(
     default: {
       // Create empty object
       const object = new Group();
-      oldObject?.parent?.add(object);
       map.objects.set(mesh.id, object);
+      parent = oldObject ? oldObject.parent : null;
     }
   }
 
   // Remove old object
   if (oldObject && disposeOldObject) disposeObject(oldObject);
+
+  const object = map.objects.get(mesh.id);
+  if (!object) throw new Error("Object not found");
+
+  // Add to object queue if has parent
+  if (parent) map.objectQueue.add(object, parent);
 }

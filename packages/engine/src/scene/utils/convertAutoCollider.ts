@@ -1,3 +1,4 @@
+import { Triplet } from "../../types";
 import { BoxCollider } from "../collider/BoxCollider";
 import { CylinderCollider } from "../collider/CylinderCollider";
 import { MeshCollider } from "../collider/MeshCollider";
@@ -17,7 +18,8 @@ import { NodeJSON } from "../types";
  */
 export function convertAutoCollider(
   node: NodeJSON,
-  mesh: MeshJSON | undefined
+  mesh: MeshJSON | undefined,
+  globalScale: Triplet
 ):
   | BoxColliderJSON
   | SphereColliderJSON
@@ -26,25 +28,41 @@ export function convertAutoCollider(
   | HullColliderJSON
   | null {
   if (node.collider?.type === "auto") {
-    switch (mesh?.type) {
+    if (!mesh) return null;
+
+    // If non-uniform scale, use mesh collider
+    const isUniformScale = globalScale.every((e) => e === globalScale[0]);
+    if (!isUniformScale) {
+      const meshCollider = new MeshCollider();
+      meshCollider.meshId = node.meshId;
+      return meshCollider;
+    }
+
+    // Otherwise, apply scale to shape collider
+    const scale = globalScale[0];
+    switch (mesh.type) {
       case "Box": {
         const boxCollider = new BoxCollider();
-        boxCollider.size = [mesh.width, mesh.height, mesh.depth];
+        boxCollider.size = [
+          mesh.width * scale,
+          mesh.height * scale,
+          mesh.depth * scale,
+        ];
         return boxCollider;
         break;
       }
 
       case "Sphere": {
         const sphereCollider = new SphereCollider();
-        sphereCollider.radius = mesh.radius;
+        sphereCollider.radius = mesh.radius * scale;
         return sphereCollider;
         break;
       }
 
       case "Cylinder": {
         const cylinderCollider = new CylinderCollider();
-        cylinderCollider.radius = mesh.radius;
-        cylinderCollider.height = mesh.height;
+        cylinderCollider.radius = mesh.radius * scale;
+        cylinderCollider.height = mesh.height * scale;
         return cylinderCollider;
         break;
       }

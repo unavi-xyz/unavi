@@ -8,6 +8,7 @@ import {
 } from "three";
 import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
 
+import { calcGlobalScale } from "../../../scene/utils/calcGlobalScale";
 import { convertAutoCollider } from "../../../scene/utils/convertAutoCollider";
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
@@ -30,14 +31,18 @@ export function createColliderVisual(
   // Remove previous collider
   removeColliderVisual(nodeId, map);
 
-  // Create new collider
+  // Create new collider visual
+  const nodes = Array.from(map.nodes.values());
+  const globalScale = calcGlobalScale(node, nodes);
+  const isUniformScale = globalScale.every((e) => e === globalScale[0]);
   const nodeMesh = node.meshId ? map.meshes.get(node.meshId) : undefined;
-  const nodeCollider = convertAutoCollider(node, nodeMesh);
-  let collider: Mesh | null = null;
+  const nodeCollider = convertAutoCollider(node, nodeMesh, globalScale);
+
+  let visual: Mesh | null = null;
 
   switch (nodeCollider?.type) {
     case "box": {
-      collider = new Mesh(
+      visual = new Mesh(
         new BoxGeometry(...nodeCollider.size),
         wireframeMaterial
       );
@@ -45,7 +50,7 @@ export function createColliderVisual(
     }
 
     case "sphere": {
-      collider = new Mesh(
+      visual = new Mesh(
         new SphereGeometry(nodeCollider.radius),
         wireframeMaterial
       );
@@ -53,7 +58,7 @@ export function createColliderVisual(
     }
 
     case "cylinder": {
-      collider = new Mesh(
+      visual = new Mesh(
         new CylinderGeometry(
           nodeCollider.radius,
           nodeCollider.radius,
@@ -74,7 +79,7 @@ export function createColliderVisual(
       const colliderMesh = map.meshes.get(nodeCollider.meshId);
       if (!colliderMesh) throw new Error("Collider mesh not found");
 
-      // Get the collider mesh geometry
+      // Get the visual mesh geometry
       const geometries: BufferGeometry[] = [];
       switch (colliderMesh.type) {
         case "Box": {
@@ -168,20 +173,23 @@ export function createColliderVisual(
       if (nodeCollider.type === "hull") geometry.deleteAttribute("index");
 
       // Create mesh
-      collider = new Mesh(geometry, wireframeMaterial);
+      visual = new Mesh(geometry, wireframeMaterial);
       break;
     }
   }
 
-  if (collider) {
+  // Hack to fix scaling of visual after auto collider conversion
+  if (isUniformScale) visual?.scale.divideScalar(globalScale[0]);
+
+  if (visual) {
     const object = map.objects.get(nodeId);
     if (!object) throw new Error("Object not found");
 
-    // Set collider
-    collider.userData[UserData.isVisual] = true;
-    map.colliders.set(nodeId, collider);
+    // Set visual
+    visual.userData[UserData.isVisual] = true;
+    map.colliders.set(nodeId, visual);
 
-    // Add collider to scene
-    object.add(collider);
+    // Add visual to scene
+    object.add(visual);
   }
 }

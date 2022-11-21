@@ -28,6 +28,7 @@ import {
   SceneJSON,
   Texture,
 } from "../scene";
+import { calcGlobalScale } from "../scene/utils/calcGlobalScale";
 import { convertAutoCollider } from "../scene/utils/convertAutoCollider";
 import { setTextureInfo } from "./utils/setTextureInfo";
 
@@ -206,8 +207,14 @@ export class GLTFExporter {
     if (parent) parent.addChild(gltfNode);
 
     // Set collider
+    const nodes = Object.values(this.#scene.nodes);
+    const globalScale = calcGlobalScale(node, nodes);
     const nodeMesh = node.meshId ? this.#scene.meshes[node.meshId] : undefined;
-    const nodeCollider = convertAutoCollider(node, nodeMesh?.toJSON());
+    const nodeCollider = convertAutoCollider(
+      node,
+      nodeMesh?.toJSON(),
+      globalScale
+    );
 
     if (nodeCollider) {
       const collider = this.#extensions.collider.createCollider();

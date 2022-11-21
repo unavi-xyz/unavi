@@ -10,6 +10,7 @@ import {
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../constants";
 import { MeshJSON, NodeJSON } from "../scene";
+import { calcGlobalScale } from "../scene/utils/calcGlobalScale";
 import { convertAutoCollider } from "../scene/utils/convertAutoCollider";
 import { PostMessage, Triplet } from "../types";
 import {
@@ -257,8 +258,10 @@ export class PhysicsWorker {
     this.removeCollider(node.id);
 
     // Create collider description
+    const nodes = Array.from(this.#nodes.values());
+    const globalScale = calcGlobalScale(node, nodes);
     const nodeMesh = node.meshId ? this.#meshes.get(node.meshId) : undefined;
-    const nodeCollider = convertAutoCollider(node, nodeMesh);
+    const nodeCollider = convertAutoCollider(node, nodeMesh, globalScale);
     let colliderDesc: ColliderDesc | null = null;
 
     switch (nodeCollider?.type) {

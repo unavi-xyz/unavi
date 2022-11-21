@@ -44,13 +44,13 @@ export type PluginState = {
  * Can only be run in a Web Worker if the browser supports OffscreenCanvas.
  */
 export class RenderWorker {
+  renderer: WebGLRenderer | null = null;
+  camera: PerspectiveCamera | null = null;
   #sceneLoader: SceneLoader;
 
   #postMessage: PostMessage<FromRenderMessage>;
   #canvas: HTMLCanvasElement | OffscreenCanvas | undefined;
   #scene = new Scene();
-  #renderer: WebGLRenderer | null = null;
-  #camera: PerspectiveCamera | null = null;
 
   #animationFrameId: number | null = null;
   #canvasWidth = 0;
@@ -136,23 +136,23 @@ export class RenderWorker {
     this.#canvasHeight = canvasHeight;
 
     // Renderer
-    this.#renderer = new WebGLRenderer({
+    this.renderer = new WebGLRenderer({
       canvas: this.#canvas,
       antialias: pixelRatio > 1 ? false : true,
       powerPreference: "high-performance",
       preserveDrawingBuffer,
     });
-    this.#renderer.setPixelRatio(pixelRatio);
-    this.#renderer.setSize(canvasWidth, canvasHeight, false);
-    this.#renderer.outputEncoding = sRGBEncoding;
-    this.#renderer.shadowMap.enabled = true;
-    this.#renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.setPixelRatio(pixelRatio);
+    this.renderer.setSize(canvasWidth, canvasHeight, false);
+    this.renderer.outputEncoding = sRGBEncoding;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
 
     // Fog
     this.#scene.fog = new Fog(0xc4ebff, 200, 720);
 
     // Camera
-    this.#camera = new PerspectiveCamera(
+    this.camera = new PerspectiveCamera(
       75,
       canvasWidth / canvasHeight,
       0.17,
@@ -163,7 +163,7 @@ export class RenderWorker {
       case "orbit": {
         this.#plugins.push(
           new OrbitControlsPlugin(
-            this.#camera,
+            this.camera,
             canvasWidth,
             canvasHeight,
             this.#pluginState
@@ -174,7 +174,7 @@ export class RenderWorker {
 
       case "player": {
         const plugin = new PlayerPlugin(
-          this.#camera,
+          this.camera,
           this.#postMessage,
           avatarPath,
           avatarAnimationsPath
@@ -194,7 +194,7 @@ export class RenderWorker {
       lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
       shadowMapSize: 2048,
       shadowBias: -0.0001,
-      camera: this.#camera,
+      camera: this.camera,
       parent: this.#scene,
     });
 
@@ -205,13 +205,13 @@ export class RenderWorker {
     if (enableTransformControls) {
       this.#plugins.unshift(
         new TransformControlsPlugin(
-          this.#camera,
+          this.camera,
           this.#sceneLoader,
           this.#scene,
           this.#pluginState
         ),
         new RaycasterPlugin(
-          this.#camera,
+          this.camera,
           this.#sceneLoader,
           this.#postMessage,
           this.#pluginState
@@ -228,8 +228,8 @@ export class RenderWorker {
         this.#scene.environment = texture;
 
         // Generate PMREM mipmaps
-        if (!this.#renderer) throw new Error("Renderer not initialized");
-        const premGenerator = new PMREMGenerator(this.#renderer);
+        if (!this.renderer) throw new Error("Renderer not initialized");
+        const premGenerator = new PMREMGenerator(this.renderer);
         premGenerator.compileEquirectangularShader();
 
         this.#postMessage({ subject: "ready", data: null });
@@ -257,30 +257,30 @@ export class RenderWorker {
     this.stop();
     this.#plugins.forEach((plugin) => plugin.destroy && plugin.destroy());
     disposeObject(this.#scene);
-    this.#renderer?.dispose();
+    this.renderer?.dispose();
   }
 
   #animate() {
     const delta = this.#clock.getDelta();
     this.#animationFrameId = requestAnimationFrame(() => this.#animate());
-    if (!this.#renderer || !this.#camera) return;
+    if (!this.renderer || !this.camera) return;
 
     this.#plugins.forEach((plugin) => plugin.animate && plugin.animate(delta));
-    this.#sceneLoader.mixer.update(delta);
+    this.#sceneLoader.animate(delta);
     this.csm?.update();
 
-    this.#renderer.render(this.#scene, this.#camera);
+    this.renderer.render(this.#scene, this.camera);
   }
 
   #updateCanvasSize(width: number, height: number) {
-    if (!this.#renderer || !this.#camera) return;
+    if (!this.renderer || !this.camera) return;
     if (width === this.#canvasWidth && height === this.#canvasHeight) return;
 
     this.#canvasWidth = width;
     this.#canvasHeight = height;
 
-    this.#renderer.setSize(width, height, false);
-    this.#camera.aspect = width / height;
-    this.#camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height, false);
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
   }
 }

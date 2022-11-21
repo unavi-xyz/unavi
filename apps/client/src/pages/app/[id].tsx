@@ -57,7 +57,7 @@ export default function App({
       // Start engine
       await engine.start();
 
-      // Set a delay to let the scene load
+      // Set a delay to let the scene load + networking connect
       setTimeout(() => {
         setEngineStarted(true);
       }, 4000);

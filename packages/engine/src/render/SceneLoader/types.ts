@@ -17,8 +17,10 @@ export type SceneMap = {
   images: Map<string, ImageBitmap>;
   materials: Map<string, MeshStandardMaterial>;
   objects: Map<string, Object3D>;
+  objectQueue: { parent: Object3D; object: Object3D }[];
 };
 
 export enum UserData {
   isVisual = "isVisual",
+  isCompiled = "isCompiled",
 }

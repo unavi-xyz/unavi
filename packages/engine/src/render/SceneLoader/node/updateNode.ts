@@ -90,11 +90,11 @@ export function updateNode(
     }
 
     if (data.meshId) {
-      // Add mesh as child
       const meshObject = map.objects.get(data.meshId);
       if (!meshObject) throw new Error("Mesh not found");
 
-      meshGroup.add(meshObject);
+      // Add mesh to queue
+      map.objectQueue.push({ parent: meshGroup, object: meshObject });
     } else {
       // Remove mesh
       meshGroup.remove(...meshGroup.children);

@@ -70,9 +70,7 @@ export class SceneLoader {
     this.root.add(this.contents);
     this.#map.objects.set("root", this.contents);
 
-    // Add spawn
     this.#spawn.userData[UserData.isVisual] = true;
-    this.root.add(this.#spawn);
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {

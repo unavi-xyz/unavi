@@ -56,13 +56,15 @@ export class Players {
     // Max of 256 players
     const playerIds = Array.from(this.playerIds.values());
     let i = 0;
+
     while (playerId === null) {
       i++;
-      this.#previousPlayerId++;
-      if (this.#previousPlayerId >= 256) this.#previousPlayerId = 0;
+      const id = this.#previousPlayerId++;
+      if (this.#previousPlayerId > 255) this.#previousPlayerId = 0;
 
-      if (!playerIds.includes(this.#previousPlayerId))
-        playerId = this.#previousPlayerId;
+      if (!playerIds.includes(id)) {
+        playerId = id;
+      }
 
       if (i > 256) {
         console.error("No open player ids");
@@ -77,7 +79,7 @@ export class Players {
 
   removePlayer(ws: uWS.WebSocket) {
     const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
+    if (playerId === undefined) throw new Error("Player not found");
 
     console.info(`👋 Player ${playerId} disconnected`);
 
@@ -123,7 +125,7 @@ export class Players {
 
   joinSpace(ws: uWS.WebSocket, { spaceId }: { spaceId: string }) {
     const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
+    if (playerId === undefined) throw new Error("Player not found");
 
     console.info(`🌍 Player ${playerId} joined space ${spaceId}`);
 
@@ -152,7 +154,7 @@ export class Players {
       if (otherSpaceId !== spaceId) return;
 
       const otherPlayerId = this.playerIds.get(otherWs);
-      if (!otherPlayerId) throw new Error("Player not found");
+      if (otherPlayerId === undefined) throw new Error("Player not found");
 
       const otherName = this.names.get(otherWs) ?? null;
       const otherAvatar = this.avatars.get(otherWs) ?? null;
@@ -193,7 +195,7 @@ export class Players {
 
   leaveSpace(ws: uWS.WebSocket, isOpen = true) {
     const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
+    if (playerId === undefined) throw new Error("Player not found");
 
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
@@ -216,7 +218,7 @@ export class Players {
 
   publishMessage(ws: uWS.WebSocket, message: string) {
     const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
+    if (playerId === undefined) throw new Error("Player not found");
 
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
@@ -236,7 +238,7 @@ export class Players {
 
   publishFallingState(ws: uWS.WebSocket, isFalling: boolean) {
     const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
+    if (playerId === undefined) throw new Error("Player not found");
 
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
@@ -253,7 +255,7 @@ export class Players {
 
   publishName(ws: uWS.WebSocket, name: string | null) {
     const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
+    if (playerId === undefined) throw new Error("Player not found");
 
     // Save name
     if (name) this.names.set(ws, name);
@@ -274,7 +276,7 @@ export class Players {
 
   publishAvatar(ws: uWS.WebSocket, avatar: string | null) {
     const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
+    if (playerId === undefined) throw new Error("Player not found");
 
     // Save avatar
     if (avatar) this.avatars.set(ws, avatar);
@@ -295,7 +297,7 @@ export class Players {
 
   publishHandle(ws: uWS.WebSocket, handle: string | null) {
     const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
+    if (playerId === undefined) throw new Error("Player not found");
 
     // Save handle
     if (handle) this.handles.set(ws, handle);
@@ -384,7 +386,7 @@ export class Players {
 
   publishProducer(ws: uWS.WebSocket) {
     const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
+    if (playerId === undefined) throw new Error("Player not found");
 
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
@@ -399,7 +401,7 @@ export class Players {
 
   publishDataProducer(ws: uWS.WebSocket) {
     const playerId = this.playerIds.get(ws);
-    if (!playerId) throw new Error("Player not found");
+    if (playerId === undefined) throw new Error("Player not found");
 
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);

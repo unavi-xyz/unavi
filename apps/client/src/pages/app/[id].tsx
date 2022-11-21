@@ -60,7 +60,7 @@ export default function App({
       // Set a delay to let the scene load + networking connect
       setTimeout(() => {
         setEngineStarted(true);
-      }, 4000);
+      }, 2000);
     });
 
     return () => {

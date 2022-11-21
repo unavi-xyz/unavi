@@ -60,7 +60,7 @@ export default function App({
       // Set a delay to let the scene load
       setTimeout(() => {
         setEngineStarted(true);
-      }, 3000);
+      }, 4000);
     });
 
     return () => {

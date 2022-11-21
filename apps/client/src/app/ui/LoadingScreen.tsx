@@ -2,7 +2,7 @@ import { useGetPublicationQuery } from "@wired-labs/lens";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-import Button from "../../ui/Button";
+import Spinner from "../../ui/Spinner";
 import { getMediaURL } from "../../utils/getMediaURL";
 import { isFromCDN } from "../../utils/isFromCDN";
 
@@ -19,6 +19,11 @@ export default function LoadingScreen({ spaceId, loaded }: Props) {
     variables: { request: { publicationId: spaceId } },
     pause: !spaceId,
   });
+
+  useEffect(() => {
+    if (!loaded) return;
+    setEntered(true);
+  }, [loaded]);
 
   useEffect(() => {
     if (!entered) return;
@@ -79,16 +84,7 @@ export default function LoadingScreen({ spaceId, loaded }: Props) {
             </div>
 
             <div className="flex w-full justify-center">
-              <Button
-                variant="filled"
-                loading={!loaded}
-                onClick={() => {
-                  if (!loaded) return;
-                  setEntered(true);
-                }}
-              >
-                <div className="px-8 py-1 text-2xl">Enter</div>
-              </Button>
+              {!loaded && <Spinner />}
             </div>
           </div>
         )}

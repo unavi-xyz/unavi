@@ -22,16 +22,13 @@ import { RenderExport } from "../render/types";
 import {
   Accessor,
   Animation,
-  BoxCollider,
-  CylinderCollider,
   Material,
-  MeshCollider,
   Node,
   Scene,
   SceneJSON,
-  SphereCollider,
   Texture,
 } from "../scene";
+import { convertAutoCollider } from "../scene/utils/convertAutoCollider";
 import { setTextureInfo } from "./utils/setTextureInfo";
 
 /*
@@ -200,7 +197,7 @@ export class GLTFExporter {
     }
 
     // Parse mesh
-    const mesh = node.meshId ? this.#cache.meshes.get(node.meshId) : null;
+    const mesh = node.meshId ? this.#cache.meshes.get(node.meshId) : undefined;
     if (mesh) gltfNode.setMesh(mesh);
 
     // Add to parent
@@ -209,80 +206,43 @@ export class GLTFExporter {
     if (parent) parent.addChild(gltfNode);
 
     // Set collider
-    if (node.collider) {
-      let nodeCollider = node.collider;
+    const nodeMesh = node.meshId ? this.#scene.meshes[node.meshId] : undefined;
+    const nodeCollider = convertAutoCollider(node, nodeMesh?.toJSON());
 
-      if (nodeCollider?.type === "auto" && node.meshId) {
-        const mesh = this.#scene.meshes[node.meshId];
-        if (!mesh) throw new Error("Mesh not found");
+    if (nodeCollider) {
+      const collider = this.#extensions.collider.createCollider();
+      collider.setType(nodeCollider.type);
 
-        switch (mesh.type) {
-          case "Box": {
-            const boxCollider = new BoxCollider();
-            boxCollider.size = [mesh.width, mesh.height, mesh.depth];
-            nodeCollider = boxCollider;
-            break;
-          }
+      switch (nodeCollider.type) {
+        case "box": {
+          collider.setSize(nodeCollider.size);
+          break;
+        }
 
-          case "Sphere": {
-            const sphereCollider = new SphereCollider();
-            sphereCollider.radius = mesh.radius;
-            nodeCollider = sphereCollider;
-            break;
-          }
+        case "sphere": {
+          collider.setRadius(nodeCollider.radius);
+          break;
+        }
 
-          case "Cylinder": {
-            const cylinderCollider = new CylinderCollider();
-            cylinderCollider.radius = mesh.radius;
-            cylinderCollider.height = mesh.height;
-            nodeCollider = cylinderCollider;
-            break;
-          }
+        case "cylinder": {
+          collider.setRadius(nodeCollider.radius);
+          collider.setHeight(nodeCollider.height);
+          break;
+        }
 
-          case "Primitives": {
-            const meshCollider = new MeshCollider();
-            meshCollider.meshId = node.meshId;
-            nodeCollider = meshCollider;
-            break;
-          }
+        case "hull":
+        case "mesh": {
+          if (!nodeCollider.meshId) break;
+
+          const colliderMesh = this.#cache.meshes.get(nodeCollider.meshId);
+          if (!colliderMesh) throw new Error("Mesh not found");
+
+          collider.setMesh(colliderMesh);
+          break;
         }
       }
 
-      if (nodeCollider?.type !== "auto") {
-        const collider = this.#extensions.collider.createCollider();
-        collider.setType(nodeCollider.type);
-
-        switch (nodeCollider.type) {
-          case "box": {
-            collider.setSize(nodeCollider.size);
-            break;
-          }
-
-          case "sphere": {
-            collider.setRadius(nodeCollider.radius);
-            break;
-          }
-
-          case "cylinder": {
-            collider.setRadius(nodeCollider.radius);
-            collider.setHeight(nodeCollider.height);
-            break;
-          }
-
-          case "hull":
-          case "mesh": {
-            if (!nodeCollider.meshId) break;
-
-            const colliderMesh = this.#cache.meshes.get(nodeCollider.meshId);
-            if (!colliderMesh) throw new Error("Mesh not found");
-
-            collider.setMesh(colliderMesh);
-            break;
-          }
-        }
-
-        gltfNode.setExtension(collider.extensionName, collider);
-      }
+      gltfNode.setExtension(collider.extensionName, collider);
     }
 
     // Parse children

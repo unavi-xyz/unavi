@@ -9,14 +9,8 @@ import {
 } from "@dimforge/rapier3d";
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../constants";
-import {
-  BoxCollider,
-  CylinderCollider,
-  MeshCollider,
-  MeshJSON,
-  NodeJSON,
-  SphereCollider,
-} from "../scene";
+import { MeshJSON, NodeJSON } from "../scene";
+import { convertAutoCollider } from "../scene/utils/convertAutoCollider";
 import { PostMessage, Triplet } from "../types";
 import {
   playerCollisionGroup,
@@ -263,43 +257,9 @@ export class PhysicsWorker {
     this.removeCollider(node.id);
 
     // Create collider description
+    const nodeMesh = node.meshId ? this.#meshes.get(node.meshId) : undefined;
+    const nodeCollider = convertAutoCollider(node, nodeMesh);
     let colliderDesc: ColliderDesc | null = null;
-    let nodeCollider = node.collider ? { ...node.collider } : null;
-
-    if (nodeCollider?.type === "auto" && node.meshId) {
-      const mesh = this.#meshes.get(node.meshId);
-      if (!mesh) return;
-
-      switch (mesh.type) {
-        case "Box": {
-          const boxCollider = new BoxCollider();
-          boxCollider.size = [mesh.width, mesh.height, mesh.depth];
-          nodeCollider = boxCollider;
-          break;
-        }
-
-        case "Sphere": {
-          const sphereCollider = new SphereCollider();
-          sphereCollider.radius = mesh.radius;
-          nodeCollider = sphereCollider;
-          break;
-        }
-
-        case "Cylinder": {
-          const cylinderCollider = new CylinderCollider();
-          cylinderCollider.radius = mesh.radius;
-          cylinderCollider.height = mesh.height;
-          nodeCollider = cylinderCollider;
-          break;
-        }
-
-        case "Primitives": {
-          const meshCollider = new MeshCollider();
-          meshCollider.meshId = node.meshId;
-          nodeCollider = meshCollider;
-        }
-      }
-    }
 
     switch (nodeCollider?.type) {
       case "box": {

@@ -8,12 +8,7 @@ import {
 } from "three";
 import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
 
-import {
-  BoxCollider,
-  CylinderCollider,
-  MeshCollider,
-  SphereCollider,
-} from "../../../scene";
+import { convertAutoCollider } from "../../../scene/utils/convertAutoCollider";
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
 import { SceneMap, UserData } from "../types";
@@ -36,43 +31,9 @@ export function createColliderVisual(
   removeColliderVisual(nodeId, map);
 
   // Create new collider
+  const nodeMesh = node.meshId ? map.meshes.get(node.meshId) : undefined;
+  const nodeCollider = convertAutoCollider(node, nodeMesh);
   let collider: Mesh | null = null;
-  let nodeCollider = node.collider ? { ...node.collider } : null;
-
-  if (nodeCollider?.type === "auto" && node.meshId) {
-    const mesh = map.meshes.get(node.meshId);
-    if (!mesh) throw new Error("Mesh not found");
-
-    switch (mesh.type) {
-      case "Box": {
-        const boxCollider = new BoxCollider();
-        boxCollider.size = [mesh.width, mesh.height, mesh.depth];
-        nodeCollider = boxCollider;
-        break;
-      }
-
-      case "Sphere": {
-        const sphereCollider = new SphereCollider();
-        sphereCollider.radius = mesh.radius;
-        nodeCollider = sphereCollider;
-        break;
-      }
-
-      case "Cylinder": {
-        const cylinderCollider = new CylinderCollider();
-        cylinderCollider.radius = mesh.radius;
-        cylinderCollider.height = mesh.height;
-        nodeCollider = cylinderCollider;
-        break;
-      }
-
-      case "Primitives": {
-        const meshCollider = new MeshCollider();
-        meshCollider.meshId = node.meshId;
-        nodeCollider = meshCollider;
-      }
-    }
-  }
 
   switch (nodeCollider?.type) {
     case "box": {

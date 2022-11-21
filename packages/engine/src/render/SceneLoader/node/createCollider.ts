@@ -13,14 +13,14 @@ import { convertAutoCollider } from "../../../scene/utils/convertAutoCollider";
 import { PostMessage } from "../../../types";
 import { FromRenderMessage } from "../../types";
 import { SceneMap, UserData } from "../types";
-import { removeColliderVisual } from "./removeColliderVisual";
+import { removeCollider } from "./removeCollider";
 
 const wireframeMaterial = new MeshBasicMaterial({
   color: 0x000000,
   wireframe: true,
 });
 
-export function createColliderVisual(
+export function createCollider(
   nodeId: string,
   map: SceneMap,
   postMessage: PostMessage<FromRenderMessage>
@@ -29,9 +29,9 @@ export function createColliderVisual(
   if (!node) throw new Error("Node not found");
 
   // Remove previous collider
-  removeColliderVisual(nodeId, map);
+  removeCollider(nodeId, map);
 
-  // Create new collider visual
+  // Create new collider
   const nodes = Array.from(map.nodes.values());
   const globalScale = calcGlobalScale(node, nodes);
   const isUniformScale = globalScale.every((e) => e === globalScale[0]);

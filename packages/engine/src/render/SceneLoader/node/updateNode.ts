@@ -6,7 +6,7 @@ import { FromRenderMessage } from "../../types";
 import { createSkeletons } from "../mesh/createSkeletons";
 import { SceneMap } from "../types";
 import { updateGlobalTransform } from "../utils/updateGlobalTransform";
-import { createColliderVisual } from "./createColliderVisual";
+import { createCollider } from "./createCollider";
 
 const tempVector = new Vector3();
 const tempQuaternion = new Quaternion();
@@ -103,7 +103,7 @@ export function updateNode(
 
   // Update collider visual
   if (data.meshId !== undefined || data.collider !== undefined)
-    createColliderVisual(nodeId, map, postMessage);
+    createCollider(nodeId, map, postMessage);
 }
 
 function meshKey(nodeId: string) {

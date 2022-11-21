@@ -27,11 +27,10 @@ import { updateMesh } from "./mesh/updateMesh";
 import { addNode } from "./node/addNode";
 import { removeNode } from "./node/removeNode";
 import { updateNode } from "./node/updateNode";
+import { ObjectQueue } from "./ObjectQueue";
 import { SceneMap, UserData } from "./types";
 import { getChildren } from "./utils/getChildren";
 import { updateGlobalTransform } from "./utils/updateGlobalTransform";
-
-const MAX_COMPILE_TIME = 4; // Spend at most X ms compiling materials each frame
 
 /*
  * Turns the {@link RenderScene} into a Three.js scene.
@@ -41,27 +40,13 @@ export class SceneLoader {
   contents = new Group();
   mixer = new AnimationMixer(this.root);
 
+  #map: SceneMap;
+
   #spawn = new Mesh(
     new CylinderGeometry(0.5, 0.5, 1.6, 8),
     new MeshBasicMaterial({ wireframe: true })
   );
   #showVisuals = false;
-  #processingQueue = false;
-  #waitingQueue: SceneMap["objectQueue"] = [];
-  #waitingGroup = new Group();
-
-  #map: SceneMap = {
-    accessors: new Map<string, AccessorJSON>(),
-    animations: new Map<string, AnimationClip>(),
-    attributes: new Map<string, BufferAttribute>(),
-    colliders: new Map<string, Group>(),
-    nodes: new Map<string, NodeJSON>(),
-    meshes: new Map<string, MeshJSON>(),
-    images: new Map<string, ImageBitmap>(),
-    materials: new Map<string, MeshStandardMaterial>(),
-    objects: new Map<string, Object3D>(),
-    objectQueue: [],
-  };
 
   #postMessage: PostMessage<FromRenderMessage>;
   #renderWorker: RenderWorker;
@@ -73,13 +58,30 @@ export class SceneLoader {
     this.#postMessage = postMessage;
     this.#renderWorker = renderWorker;
 
+    if (!renderWorker.renderer) throw new Error("Renderer not found");
+    if (!renderWorker.camera) throw new Error("Camera not found");
+
+    this.#map = {
+      accessors: new Map<string, AccessorJSON>(),
+      animations: new Map<string, AnimationClip>(),
+      attributes: new Map<string, BufferAttribute>(),
+      colliders: new Map<string, Group>(),
+      nodes: new Map<string, NodeJSON>(),
+      meshes: new Map<string, MeshJSON>(),
+      images: new Map<string, ImageBitmap>(),
+      materials: new Map<string, MeshStandardMaterial>(),
+      objects: new Map<string, Object3D>(),
+      objectQueue: new ObjectQueue(
+        renderWorker.renderer,
+        renderWorker.camera,
+        this.root
+      ),
+    };
+
     this.root.add(this.contents);
     this.#map.objects.set("root", this.contents);
 
     this.#spawn.userData[UserData.isVisual] = true;
-
-    this.#waitingGroup.scale.set(0, 0, 0);
-    this.root.add(this.#waitingGroup);
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
@@ -322,61 +324,8 @@ export class SceneLoader {
     children.forEach((child) => this.saveTransform(child.id));
   }
 
-  animate(delta: number) {
-    // Add object to scene from queue
-    if (
-      !this.#processingQueue &&
-      this.#renderWorker.renderer &&
-      this.#renderWorker.camera &&
-      this.#map.objectQueue.length > 0
-    ) {
-      let compileTime = 0;
-
-      while (
-        this.#map.objectQueue.length > 0 &&
-        compileTime < MAX_COMPILE_TIME
-      ) {
-        const item = this.#map.objectQueue.shift();
-        if (item) {
-          const start = performance.now();
-
-          let isParentInScene = false;
-          item.parent.traverseAncestors((a) => {
-            if (a.type === "Scene") isParentInScene = true;
-          });
-
-          if (isParentInScene) {
-            // Add to parent
-            item.parent.add(item.object);
-          } else {
-            // Add to waiting queue
-            this.#waitingGroup.add(item.object);
-            this.#waitingQueue.push(item);
-          }
-
-          // Add waiting children
-          this.#waitingQueue.forEach((e) => {
-            if (e.parent === item.object) {
-              item.object.add(e.object);
-              this.#waitingQueue.splice(this.#waitingQueue.indexOf(e), 1);
-            }
-          });
-
-          // Compile materials
-          // This is the most expensive part
-          this.#renderWorker.renderer.compile(
-            item.object,
-            this.#renderWorker.camera
-          );
-
-          // Record compile time
-          const difference = performance.now() - start;
-          compileTime += difference;
-        }
-      }
-    }
-
-    // Animation mixer
+  update(delta: number) {
+    this.#map.objectQueue.update();
     this.mixer.update(delta);
   }
 }

@@ -94,7 +94,7 @@ export function updateNode(
       if (!meshObject) throw new Error("Mesh not found");
 
       // Add mesh to queue
-      map.objectQueue.push({ parent: meshGroup, object: meshObject });
+      map.objectQueue.add(meshObject, meshGroup);
     } else {
       // Remove mesh
       meshGroup.remove(...meshGroup.children);

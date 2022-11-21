@@ -46,7 +46,7 @@ export type PluginState = {
 export class RenderWorker {
   renderer: WebGLRenderer | null = null;
   camera: PerspectiveCamera | null = null;
-  #sceneLoader: SceneLoader;
+  #sceneLoader: SceneLoader | null = null;
 
   #postMessage: PostMessage<FromRenderMessage>;
   #canvas: HTMLCanvasElement | OffscreenCanvas | undefined;
@@ -67,14 +67,11 @@ export class RenderWorker {
   constructor(postMessage: PostMessage, canvas?: HTMLCanvasElement) {
     this.#canvas = canvas;
     this.#postMessage = postMessage;
-
-    this.#sceneLoader = new SceneLoader(postMessage, this);
-    this.#scene.add(this.#sceneLoader.root);
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
     this.#plugins.forEach((plugin) => plugin.onmessage(event));
-    this.#sceneLoader.onmessage(event);
+    this.#sceneLoader?.onmessage(event);
 
     const { subject, data } = event.data;
     switch (subject) {
@@ -123,18 +120,6 @@ export class RenderWorker {
   }: RenderWorkerOptions) {
     if (!this.#canvas) throw new Error("Canvas not set");
 
-    this.#plugins.push(
-      new OtherPlayersPlugin(
-        this.#scene,
-        this.#postMessage,
-        avatarPath,
-        avatarAnimationsPath
-      )
-    );
-
-    this.#canvasWidth = canvasWidth;
-    this.#canvasHeight = canvasHeight;
-
     // Renderer
     this.renderer = new WebGLRenderer({
       canvas: this.#canvas,
@@ -147,6 +132,9 @@ export class RenderWorker {
     this.renderer.outputEncoding = sRGBEncoding;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
+
+    this.#canvasWidth = canvasWidth;
+    this.#canvasHeight = canvasHeight;
 
     // Fog
     this.#scene.fog = new Fog(0xc4ebff, 200, 720);
@@ -176,6 +164,7 @@ export class RenderWorker {
         const plugin = new PlayerPlugin(
           this.camera,
           this.#postMessage,
+          this.renderer,
           avatarPath,
           avatarAnimationsPath
         );
@@ -184,6 +173,22 @@ export class RenderWorker {
         break;
       }
     }
+
+    // Other players
+    this.#plugins.push(
+      new OtherPlayersPlugin(
+        this.#scene,
+        this.#postMessage,
+        this.renderer,
+        this.camera,
+        avatarPath,
+        avatarAnimationsPath
+      )
+    );
+
+    // Scene loader
+    this.#sceneLoader = new SceneLoader(this.#postMessage, this);
+    this.#scene.add(this.#sceneLoader.root);
 
     // Cascading shadow maps
     const cascades = 3;
@@ -266,7 +271,7 @@ export class RenderWorker {
     if (!this.renderer || !this.camera) return;
 
     this.#plugins.forEach((plugin) => plugin.animate && plugin.animate(delta));
-    this.#sceneLoader.animate(delta);
+    this.#sceneLoader?.update(delta);
     this.csm?.update();
 
     this.renderer.render(this.#scene, this.camera);

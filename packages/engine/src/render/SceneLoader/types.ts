@@ -6,6 +6,7 @@ import {
 } from "three";
 
 import { AccessorJSON, MeshJSON, NodeJSON } from "../../scene";
+import { ObjectQueue } from "./ObjectQueue";
 
 export type SceneMap = {
   accessors: Map<string, AccessorJSON>;
@@ -17,7 +18,7 @@ export type SceneMap = {
   images: Map<string, ImageBitmap>;
   materials: Map<string, MeshStandardMaterial>;
   objects: Map<string, Object3D>;
-  objectQueue: { parent: Object3D; object: Object3D }[];
+  objectQueue: ObjectQueue;
 };
 
 export enum UserData {

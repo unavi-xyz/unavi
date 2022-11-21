@@ -5,6 +5,7 @@ import {
   PerspectiveCamera,
   Vector2,
   Vector3,
+  WebGLRenderer,
 } from "three";
 
 import { PostMessage } from "../../types";
@@ -21,6 +22,7 @@ export class PlayerPlugin {
   #postMessage: PostMessage<FromRenderMessage>;
   #avatarPath?: string;
   #avatarAnimationsPath?: string;
+  #renderer: WebGLRenderer;
 
   #avatar: PlayerAvatar | null = null;
 
@@ -47,6 +49,7 @@ export class PlayerPlugin {
   constructor(
     camera: PerspectiveCamera,
     postMessage: PostMessage<FromRenderMessage>,
+    renderer: WebGLRenderer,
     avatarPath?: string,
     avatarAnimationsPath?: string
   ) {
@@ -54,6 +57,7 @@ export class PlayerPlugin {
     this.#postMessage = postMessage;
     this.#avatarPath = avatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
+    this.#renderer = renderer;
   }
 
   onmessage(event: MessageEvent<ToRenderMessage>) {
@@ -100,6 +104,8 @@ export class PlayerPlugin {
           -1,
           data,
           this.#postMessage,
+          this.#camera,
+          this.#renderer,
           this.#avatarPath,
           this.#avatarAnimationsPath,
           this.#camera

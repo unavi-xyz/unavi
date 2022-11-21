@@ -1,4 +1,4 @@
-import { Group, Scene } from "three";
+import { Camera, Group, Scene, WebGLRenderer } from "three";
 
 import { PostMessage } from "../../../types";
 import { FromRenderMessage, ToRenderMessage } from "../../types";
@@ -10,12 +10,17 @@ export class OtherPlayersPlugin {
   #avatarPath?: string;
   #avatarAnimationsPath?: string;
 
+  #renderer: WebGLRenderer;
+  #camera: Camera;
+
   #players = new Map<number, PlayerAvatar>();
   #playerGroup = new Group();
 
   constructor(
     scene: Scene,
     postMessage: PostMessage<FromRenderMessage>,
+    renderer: WebGLRenderer,
+    camera: Camera,
     avatarPath?: string,
     avatarAnimationsPath?: string
   ) {
@@ -23,6 +28,9 @@ export class OtherPlayersPlugin {
     this.#postMessage = postMessage;
     this.#avatarPath = avatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
+
+    this.#renderer = renderer;
+    this.#camera = camera;
 
     this.#scene.add(this.#playerGroup);
   }
@@ -74,6 +82,8 @@ export class OtherPlayersPlugin {
       playerId,
       avatar,
       this.#postMessage,
+      this.#camera,
+      this.#renderer,
       this.#avatarPath,
       this.#avatarAnimationsPath
     );

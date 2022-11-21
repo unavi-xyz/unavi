@@ -251,5 +251,5 @@ export function createObject(
   if (!object) throw new Error("Object not found");
 
   // Add to object queue if has parent
-  if (parent) map.objectQueue.push({ object, parent });
+  if (parent) map.objectQueue.add(object, parent);
 }

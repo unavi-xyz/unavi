@@ -1,4 +1,4 @@
-import { Camera, Group, Object3D, WebGLRenderer } from "three";
+import { Camera, Mesh, Object3D, WebGLRenderer } from "three";
 
 const MAX_COMPILE_TIME = 2; // Spend at most X ms compiling materials each frame
 
@@ -8,26 +8,37 @@ const MAX_COMPILE_TIME = 2; // Spend at most X ms compiling materials each frame
 export class ObjectQueue {
   queue = new Array<{ object: Object3D; parent: Object3D }>();
 
-  waitingGroup = new Group();
-  waitingQueue = new Array<{ object: Object3D; parent: Object3D }>();
-
   #renderer: WebGLRenderer;
   #camera: Camera;
 
-  constructor(renderer: WebGLRenderer, camera: Camera, scene: Object3D) {
+  constructor(renderer: WebGLRenderer, camera: Camera) {
     this.#renderer = renderer;
     this.#camera = camera;
-
-    this.waitingGroup.scale.set(0, 0, 0);
-    scene.add(this.waitingGroup);
   }
 
-  add(object: Object3D, parent: Object3D) {
-    // Add children to the queue
-    // TODO load each child individually
-    // object.children.forEach((child) => this.add(child, object));
+  add(object: Object3D, parent: Object3D, useFrustum = false) {
+    // Add to parent and make invisible
+    parent.add(object);
 
-    this.queue.push({ object, parent });
+    if (useFrustum) {
+      // Hack to force objects to render for a frame
+      object.traverse((child) => {
+        child.frustumCulled = false;
+        child.onAfterRender = () => {
+          child.frustumCulled = true;
+          child.onAfterRender = () => {};
+        };
+      });
+    } else {
+      // Make invisible
+      object.visible = false;
+
+      // Add children to queue first
+      object.children.forEach((child) => this.add(child, object));
+
+      // Add to queue
+      this.queue.push({ object, parent });
+    }
   }
 
   update() {
@@ -41,32 +52,12 @@ export class ObjectQueue {
       if (item) {
         const start = performance.now();
 
-        // Add it either to either the parent or the waiting group
-        let isParentInScene = false;
-        item.parent.traverseAncestors((a) => {
-          if (a.type === "Scene") isParentInScene = true;
-        });
-
-        if (isParentInScene) {
-          // Add to parent
-          item.parent.add(item.object);
-        } else {
-          // Add to waiting group
-          item.object.removeFromParent();
-          this.waitingGroup.add(item.object);
-          this.waitingQueue.push(item);
-        }
-
-        // Add any waiting children
-        this.waitingQueue.forEach((e, i) => {
-          if (e.parent === item.object) {
-            item.object.add(e.object);
-            this.waitingQueue.splice(i, 1);
-          }
-        });
+        // Make visible
+        item.object.visible = true;
 
         // Compile materials
-        this.#renderer.compile(item.object, this.#camera);
+        if (item.object instanceof Mesh)
+          this.#renderer.compile(item.object, this.#camera);
 
         // Add to compile time
         const difference = performance.now() - start;

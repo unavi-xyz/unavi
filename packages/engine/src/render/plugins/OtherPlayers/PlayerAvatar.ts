@@ -77,7 +77,7 @@ export class PlayerAvatar {
     this.#avatarAnimationsPath = avatarAnimationsPath;
     this.#camera = camera;
     this.#isUser = Boolean(camera);
-    this.#queue = new ObjectQueue(renderer, sceneCamera, this.group);
+    this.#queue = new ObjectQueue(renderer, sceneCamera);
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
@@ -136,7 +136,7 @@ export class PlayerAvatar {
     });
 
     // Add scene to queue
-    this.#queue.add(this.#vrm.scene, this.group);
+    this.#queue.add(this.#vrm.scene, this.group, true);
 
     if (avatarAnimationsPath) {
       // Create mixer

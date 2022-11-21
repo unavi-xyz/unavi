@@ -268,7 +268,7 @@ export class PlayerAvatar {
     const leftVelocity = velocity.x > 0 ? velocity.x : 0;
     const rightVelocity = velocity.x < 0 ? -velocity.x : 0;
     const forwardVelocity = Math.abs(velocity.z);
-    const isBackwards = velocity.z > 0;
+    const isBackwards = velocity.z < 0;
 
     this.#leftWeight = clamp(
       leftVelocity > 1 && !this.isFalling

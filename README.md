@@ -39,7 +39,6 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 ### Apps
 
 - [client](apps/client): the main website used to access the Wired.
-- [examples](apps/examples): models for testing the engine
 - [host](apps/host): dockerized server for hosting spaces
 
 ### Packages

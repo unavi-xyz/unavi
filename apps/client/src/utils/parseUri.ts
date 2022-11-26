@@ -9,7 +9,10 @@ export function parseUri(uri: string) {
     return uri;
   } else if (isIPFS) {
     const hash = uri.split("ipfs://")[1];
-    const http = process.env.NODE_ENV === "development" ? "http" : "https";
+    const http =
+      env.NEXT_PUBLIC_IPFS_GATEWAY.split(":")[0] === "localhost"
+        ? "http"
+        : "https";
     return `${http}://${env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/${hash}`;
   } else if (isUrl) {
     return uri;

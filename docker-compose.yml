@@ -1,0 +1,40 @@
+version: "3"
+
+services:
+  db:
+    image: mysql:8
+    command: --default-authentication-plugin=mysql_native_password --lower_case_table_names=1
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - 3306:3306
+      - 33060:33060
+    working_dir: /var/lib/mysql
+    volumes:
+      - mysql:/var/lib/mysql
+
+  turbo:
+    container_name: turbo
+    build:
+      context: .
+      dockerfile: ./docker/turbo.Dockerfile
+    restart: always
+    env_file:
+      - .env
+    links:
+      - db
+    depends_on:
+      - db
+    ports:
+      - 3000:3000/tcp
+      - 3000:3000/udp
+      - 4000:4000
+      - ${RTC_MIN_PORT}-${RTC_MAX_PORT}:${RTC_MIN_PORT}-${RTC_MAX_PORT}/tcp
+      - ${RTC_MIN_PORT}-${RTC_MAX_PORT}:${RTC_MIN_PORT}-${RTC_MAX_PORT}/udp
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
+volumes:
+  mysql:

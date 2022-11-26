@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build": "turbo build",
-    "codegen": "yarn workspace @wired-labs/client codegen && yarn workspace @wired-labs/lens codegen",
+    "codegen": "yarn workspace @wired-labs/client codegen",
     "deploy": "turbo deploy",
     "dev": "turbo dev --parallel",
     "format": "prettier --write .",

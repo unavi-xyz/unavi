@@ -25,7 +25,7 @@ export const serverSchema = z.object({
 export const clientSchema = z.object({
   NEXT_PUBLIC_ALCHEMY_ID: z.string().optional(),
   NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT: z.string().optional(),
-  NEXT_PUBLIC_IPFS_AUTH: z.string(),
+  NEXT_PUBLIC_IPFS_AUTH: z.string().optional(),
   NEXT_PUBLIC_IPFS_ENDPOINT: z.string(),
   NEXT_PUBLIC_IPFS_GATEWAY: z.string(),
   NEXT_PUBLIC_CDN_ENDPOINT: z.string(),

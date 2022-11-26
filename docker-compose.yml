@@ -14,6 +14,15 @@ services:
     volumes:
       - mysql:/var/lib/mysql
 
+  ipfs:
+    image: ipfs/go-ipfs
+    restart: always
+    ports:
+      - 5001:5001
+      - 8080:8080
+    volumes:
+      - ipfs:/data/ipfs
+
   turbo:
     container_name: turbo
     build:
@@ -22,10 +31,9 @@ services:
     restart: always
     env_file:
       - .env
-    links:
-      - db
     depends_on:
       - db
+      - ipfs
     ports:
       - 3000:3000/tcp
       - 3000:3000/udp
@@ -38,3 +46,4 @@ services:
 
 volumes:
   mysql:
+  ipfs:

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { uploadFileToIpfs } from "../../client/ipfs/uploadFileToIpfs";
@@ -161,15 +160,12 @@ export default function Settings() {
 
                 {coverUrl && (
                   <div className="h-40 w-full">
-                    <div className="relative h-full w-full object-cover">
-                      <Image
-                        src={coverUrl}
-                        fill
-                        sizes="49vw"
-                        alt="cover picture preview"
-                        className="h-full w-full rounded-xl object-cover"
-                      />
-                    </div>
+                    <img
+                      src={coverUrl}
+                      alt="cover image preview"
+                      className="h-full w-full rounded-xl object-cover"
+                      crossOrigin="anonymous"
+                    />
                   </div>
                 )}
 
@@ -202,22 +198,20 @@ export default function Settings() {
               {pfpUrl && (
                 <div className="grid grid-cols-2 gap-x-16">
                   <div className="relative aspect-square h-full w-full">
-                    <Image
+                    <img
                       src={pfpUrl}
-                      fill
-                      sizes="24vw"
-                      alt="profile picture preview square"
+                      alt="profile picture preview"
                       className="h-full w-full rounded-xl object-cover"
+                      crossOrigin="anonymous"
                     />
                   </div>
 
                   <div className="relative aspect-square h-full w-full">
-                    <Image
+                    <img
                       src={pfpUrl}
-                      fill
-                      sizes="24vw"
-                      alt="profile picture preview circle"
+                      alt="profile picture preview"
                       className="h-full w-full rounded-full object-cover"
+                      crossOrigin="anonymous"
                     />
                   </div>
                 </div>

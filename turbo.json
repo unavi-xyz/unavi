@@ -2,11 +2,11 @@
   "$schema": "https://turborepo.org/schema.json",
   "pipeline": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate"],
       "outputs": ["build/**", "dist/**", ".next/**"]
     },
     "client#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate"],
       "outputs": [".next/**"],
       "env": [
         "BUNDLE_ANALYZE",
@@ -27,12 +27,11 @@
       ]
     },
     "host#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate"],
       "outputs": [],
       "env": [
         "MEDIASOUP_ANNOUNCED_IP",
         "MEDIASOUP_LISTEN_IP",
-        "PORT",
         "RTC_MAX_PORT",
         "RTC_MIN_PORT",
         "SSL_CERT",
@@ -42,8 +41,15 @@
     "lint": {
       "outputs": []
     },
+    "generate": {
+      "cache": false
+    },
+    "client#generate": {
+      "inputs": ["prisma/schema.prisma"]
+    },
     "deploy": {
-      "outputs": []
+      "dependsOn": ["lint", "build"],
+      "cache": false
     },
     "dev": {
       "cache": false

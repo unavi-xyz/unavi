@@ -9,10 +9,10 @@
   ],
   "scripts": {
     "build": "turbo build",
-    "codegen": "yarn workspace @wired-labs/client codegen",
     "deploy": "turbo deploy",
     "dev": "turbo dev --parallel",
     "format": "prettier --write .",
+    "generate": "turbo generate",
     "postinstall": "patch-package",
     "lint": "turbo lint"
   },

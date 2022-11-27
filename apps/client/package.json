@@ -1,13 +1,13 @@
 {
-  "name": "@wired-labs/client",
+  "name": "client",
   "version": "0.1.0",
   "private": true,
   "license": "GPL-3.0-or-later",
   "scripts": {
     "build": "next build",
-    "codegen": "prisma generate",
     "deploy": "dotenv -e .env.local prisma db push",
     "dev": "next dev",
+    "generate": "prisma generate",
     "lint": "cd ../.. && eslint --fix apps/client --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore",
     "start": "next start"
   },

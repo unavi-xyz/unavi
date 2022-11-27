@@ -26,7 +26,7 @@ RUN yarn install
 COPY . .
 
 # Run codegen
-RUN yarn codegen
+RUN yarn generate
 
 # Start dev server
 EXPOSE 3000/tcp 3000/udp 4000/tcp 4000/udp

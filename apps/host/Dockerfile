@@ -4,7 +4,7 @@ WORKDIR /app
 # Prune files
 RUN yarn global add turbo
 COPY . .
-RUN turbo prune --scope=@wired-labs/host --docker
+RUN turbo prune --scope=host --docker
 
 FROM node:18 AS installer
 WORKDIR /app
@@ -24,7 +24,7 @@ RUN yarn install --frozen-lockfile
 # Build the project and its dependencies
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
-RUN yarn turbo run build --filter=@wired-labs/host...
+RUN yarn turbo run build --filter=host...
 
 FROM node:18 AS runner
 WORKDIR /app

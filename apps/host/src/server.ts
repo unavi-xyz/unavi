@@ -6,7 +6,7 @@ import { Players } from "./Players";
 import { send } from "./utils/send";
 
 const textDecoder = new TextDecoder();
-const PORT = parseInt(process.env.PORT || "4000");
+const PORT = 4000;
 const cert_file_name = process.env.SSL_CERT;
 const key_file_name = process.env.SSL_KEY;
 

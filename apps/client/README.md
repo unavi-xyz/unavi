@@ -1,4 +1,4 @@
-# @wired-labs/client
+# Client
 
 The main website used to access the Wired.
 

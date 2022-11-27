@@ -54,21 +54,21 @@ export default function LandingInfoBlock({
 
           <div className="w-full pt-4 text-lg md:text-xl">
             {isExternalLink ? (
-              <a href={buttonLink} target="_blank" rel="noreferrer">
-                <div className="w-full md:w-fit">
+              <div className="w-full md:w-fit">
+                <a href={buttonLink} target="_blank" rel="noreferrer">
                   <Button variant="filled" rounded="large" fullWidth>
                     <div className="md:px-3 md:py-0.5">{buttonText}</div>
                   </Button>
-                </div>
-              </a>
+                </a>
+              </div>
             ) : (
-              <Link href={buttonLink} passHref>
-                <div className="w-full md:w-fit">
+              <div className="w-full md:w-fit">
+                <Link href={buttonLink} passHref>
                   <Button variant="filled" rounded="large" fullWidth>
                     <div className="md:px-3 md:py-0.5">{buttonText}</div>
                   </Button>
-                </div>
-              </Link>
+                </Link>
+              </div>
             )}
           </div>
         </div>

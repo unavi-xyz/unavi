@@ -1,4 +1,4 @@
-import { Triplet } from "@wired-labs/engine";
+import { Triplet } from "engine";
 import { useEffect, useRef } from "react";
 
 import { rgbToHex } from "../../../utils/rgb";

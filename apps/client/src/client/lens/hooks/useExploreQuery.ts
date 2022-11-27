@@ -6,7 +6,7 @@ import {
   Post,
   PublicationSortCriteria,
   PublicationTypes,
-} from "@wired-labs/lens";
+} from "lens";
 import { useRef, useState } from "react";
 import { useQuery } from "urql";
 

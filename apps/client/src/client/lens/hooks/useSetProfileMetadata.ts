@@ -1,9 +1,9 @@
+import { utils } from "ethers";
 import {
   LensPeriphery__factory,
   ProfileMetadata,
   useCreateSetProfileMetadataTypedDataMutation,
-} from "@wired-labs/lens";
-import { utils } from "ethers";
+} from "lens";
 import { useSigner, useSignTypedData } from "wagmi";
 
 import { uploadStringToIpfs } from "../../ipfs/uploadStringToIpfs";

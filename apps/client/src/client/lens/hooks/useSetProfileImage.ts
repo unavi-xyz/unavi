@@ -1,6 +1,6 @@
-import { useCreateSetProfileImageTypedDataMutation } from "@wired-labs/lens";
-import { LensHub__factory } from "@wired-labs/lens/contracts";
 import { utils } from "ethers";
+import { useCreateSetProfileImageTypedDataMutation } from "lens";
+import { LensHub__factory } from "lens/contracts";
 import { useSigner, useSignTypedData } from "wagmi";
 
 import { uploadFileToIpfs } from "../../ipfs/uploadFileToIpfs";

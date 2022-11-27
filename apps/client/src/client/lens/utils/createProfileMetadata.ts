@@ -3,7 +3,7 @@ import {
   Profile,
   ProfileMetadata,
   ProfileMetadataVersions,
-} from "@wired-labs/lens";
+} from "lens";
 import { nanoid } from "nanoid";
 
 export function createProfileMetadata(profile: Profile | undefined) {

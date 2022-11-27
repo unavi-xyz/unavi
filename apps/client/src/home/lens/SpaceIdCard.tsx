@@ -1,4 +1,4 @@
-import { Post, useGetPublicationQuery } from "@wired-labs/lens";
+import { Post, useGetPublicationQuery } from "lens";
 
 import { HIDDEN_MESSAGE } from "../../client/lens/constants";
 import SpaceCard from "./SpaceCard";

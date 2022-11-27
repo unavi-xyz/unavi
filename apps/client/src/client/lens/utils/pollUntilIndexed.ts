@@ -2,7 +2,7 @@ import {
   HasTxHashBeenIndexedDocument,
   HasTxHashBeenIndexedQuery,
   HasTxHashBeenIndexedQueryVariables,
-} from "@wired-labs/lens";
+} from "lens";
 import { Client } from "urql";
 
 export async function pollUntilIndexed(txHash: string, client: Client) {

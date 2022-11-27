@@ -3,7 +3,7 @@ import {
   GetPublicationQuery,
   GetPublicationQueryVariables,
   Publication,
-} from "@wired-labs/lens";
+} from "lens";
 
 import { PageMetadata } from "../../../home/MetaTags";
 import { lensClient } from "../../../server/lens";

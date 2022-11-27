@@ -1,4 +1,4 @@
-import { ProfileMedia } from "@wired-labs/lens";
+import { ProfileMedia } from "lens";
 
 import { parseUri } from "./parseUri";
 

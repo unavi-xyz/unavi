@@ -1,4 +1,4 @@
-import { AppId, Post, PublicationSortCriteria } from "@wired-labs/lens";
+import { AppId, Post, PublicationSortCriteria } from "lens";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/link";
 import { useState } from "react";

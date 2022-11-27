@@ -1,4 +1,4 @@
-import { FromHostMessage } from "@wired-labs/engine";
+import { FromHostMessage } from "engine";
 import { Consumer } from "mediasoup/node/lib/Consumer";
 import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";

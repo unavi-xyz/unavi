@@ -1,9 +1,4 @@
-import {
-  AutoCollider,
-  ColliderJSON,
-  HullCollider,
-  MeshCollider,
-} from "@wired-labs/engine";
+import { AutoCollider, ColliderJSON, HullCollider, MeshCollider } from "engine";
 
 import { useEditorStore } from "../store";
 

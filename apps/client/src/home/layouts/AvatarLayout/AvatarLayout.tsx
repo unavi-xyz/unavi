@@ -1,8 +1,4 @@
-import {
-  AttributeData,
-  ProfileMetadata,
-  ProfileMetadataVersions,
-} from "@wired-labs/lens";
+import { AttributeData, ProfileMetadata, ProfileMetadataVersions } from "lens";
 import { nanoid } from "nanoid";
 import Link from "next/link";
 import { useRouter } from "next/router";

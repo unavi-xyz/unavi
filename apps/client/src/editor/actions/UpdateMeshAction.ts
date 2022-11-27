@@ -1,4 +1,4 @@
-import { MeshJSON } from "@wired-labs/engine";
+import { MeshJSON } from "engine";
 
 import { useEditorStore } from "../store";
 

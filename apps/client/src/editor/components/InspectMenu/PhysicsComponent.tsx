@@ -6,7 +6,7 @@ import {
   HullCollider,
   MeshCollider,
   SphereCollider,
-} from "@wired-labs/engine";
+} from "engine";
 
 import { updateNode } from "../../actions/UpdateNodeAction";
 import { useNode } from "../../hooks/useNode";

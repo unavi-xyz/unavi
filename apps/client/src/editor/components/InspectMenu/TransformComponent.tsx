@@ -1,4 +1,4 @@
-import { Quad, Triplet } from "@wired-labs/engine";
+import { Quad, Triplet } from "engine";
 
 import { updateNode } from "../../actions/UpdateNodeAction";
 import { useNode } from "../../hooks/useNode";

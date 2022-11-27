@@ -1,4 +1,4 @@
-import { GLTFMesh, Node, SceneJSON } from "@wired-labs/engine";
+import { GLTFMesh, Node, SceneJSON } from "engine";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import Script from "next/script";
@@ -86,7 +86,7 @@ export default function Preview() {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");
 
-      const { Engine } = await import("@wired-labs/engine");
+      const { Engine } = await import("engine");
 
       // Create engine
       const engine = new Engine({

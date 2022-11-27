@@ -1,4 +1,4 @@
-import { GLTFMesh } from "@wired-labs/engine";
+import { GLTFMesh } from "engine";
 import { useState } from "react";
 
 import Button from "../../../../ui/Button";

@@ -1,6 +1,6 @@
 {
   "name": "host",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
   "license": "GPL-3.0-or-later",
   "type": "module",
@@ -16,7 +16,7 @@
     "start": "node --experimental-specifier-resolution=node ./build/server.js"
   },
   "dependencies": {
-    "@wired-labs/engine": "*",
+    "engine": "*",
     "mediasoup": "^3.11.3",
     "nanoid": "^4.0.0",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.15.0",
@@ -24,11 +24,11 @@
   },
   "devDependencies": {
     "@types/node": "^18.11.9",
-    "@wired-labs/tsconfig": "*",
     "eslint": "^8.28.0",
     "eslint-config-custom": "*",
     "nodemon": "^2.0.20",
     "ts-node": "^10.9.1",
+    "tsconfig": "*",
     "typescript": "~4.9.3"
   }
 }

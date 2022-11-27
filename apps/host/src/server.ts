@@ -1,4 +1,4 @@
-import { ToHostMessage } from "@wired-labs/engine";
+import { ToHostMessage } from "engine";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";

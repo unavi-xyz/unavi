@@ -25,14 +25,11 @@ RUN yarn install
 # Copy source
 COPY . .
 
-# Run codegen
-RUN yarn generate
-
 # Start dev server
-EXPOSE 3000/tcp 3000/udp 4000/tcp 4000/udp
 CMD \
  npx patch-package \
+ && yarn generate \
  && cd ./apps/client \
  && npx prisma db push \
  && cd ../.. \
- && npx turbo dev
+ && yarn dev

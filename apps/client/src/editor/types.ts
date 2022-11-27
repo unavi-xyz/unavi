@@ -1,4 +1,4 @@
-import { SceneJSON } from "@wired-labs/engine";
+import { SceneJSON } from "engine";
 
 export type Tool = "translate" | "rotate" | "scale";
 

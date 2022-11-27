@@ -1,4 +1,4 @@
-import { Node } from "@wired-labs/engine";
+import { Node } from "engine";
 
 import { useEditorStore } from "../store";
 

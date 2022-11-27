@@ -2,7 +2,7 @@ import {
   GetChallengeDocument,
   GetChallengeQuery,
   GetChallengeQueryVariables,
-} from "@wired-labs/lens";
+} from "lens";
 import { useEffect, useMemo, useState } from "react";
 import { Client } from "urql";
 

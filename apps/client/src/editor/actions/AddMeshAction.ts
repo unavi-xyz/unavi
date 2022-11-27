@@ -1,4 +1,4 @@
-import { Mesh } from "@wired-labs/engine";
+import { Mesh } from "engine";
 
 import { useEditorStore } from "../store";
 

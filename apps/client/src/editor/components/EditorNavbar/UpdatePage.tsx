@@ -4,7 +4,7 @@ import {
   PublicationMetadata,
   PublicationMetadataMedia,
   PublicationMetadataVersions,
-} from "@wired-labs/lens";
+} from "lens";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";

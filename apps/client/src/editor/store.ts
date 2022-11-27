@@ -1,4 +1,4 @@
-import { Engine, Node } from "@wired-labs/engine";
+import { Engine, Node } from "engine";
 import create from "zustand";
 
 import { Tool } from "./types";

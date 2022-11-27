@@ -1,4 +1,4 @@
-# @wired-labs/engine
+# engine
 
 A multi-threaded, glTF-based, 3D game engine.
 

@@ -1,6 +1,6 @@
 {
-  "name": "@wired-labs/engine",
-  "version": "0.1.0",
+  "name": "engine",
+  "version": "0.0.0",
   "private": true,
   "license": "GPL-3.0-or-later",
   "main": "./src/index.ts",
@@ -14,7 +14,7 @@
     "@gltf-transform/extensions": "2.4.6",
     "@gltf-transform/functions": "^2.4.6",
     "@pixiv/three-vrm": "^1.0.5",
-    "@wired-labs/lens": "*",
+    "lens": "*",
     "mediasoup-client": "^3.6.62",
     "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.0",
@@ -26,9 +26,9 @@
   "devDependencies": {
     "@types/offscreencanvas": "^2019.7.0",
     "@types/three": "^0.144.0",
-    "@wired-labs/tsconfig": "*",
     "eslint": "^8.28.0",
     "eslint-config-custom": "*",
+    "tsconfig": "*",
     "typescript": "~4.9.3"
   }
 }

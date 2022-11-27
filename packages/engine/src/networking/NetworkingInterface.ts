@@ -3,7 +3,7 @@ import {
   GetPublicationQuery,
   GetPublicationQueryVariables,
   Publication,
-} from "@wired-labs/lens";
+} from "lens";
 import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 import { createClient } from "urql";

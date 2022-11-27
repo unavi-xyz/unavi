@@ -65,7 +65,7 @@ export default defineNextConfig({
     ignoreDuringBuilds: true,
   },
   experimental: {
-    transpilePackages: ["three", "@wired-labs/engine", "@wired-labs/lens"],
+    transpilePackages: ["three", "engine", "lens"],
   },
   images: {
     domains: [

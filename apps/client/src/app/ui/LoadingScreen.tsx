@@ -1,4 +1,4 @@
-import { useGetPublicationQuery } from "@wired-labs/lens";
+import { useGetPublicationQuery } from "lens";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 

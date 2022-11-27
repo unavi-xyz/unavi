@@ -1,4 +1,4 @@
-import { Quad, Triplet } from "@wired-labs/engine";
+import { Quad, Triplet } from "engine";
 
 export function quaternionToEuler(quaternion: Quad): Triplet {
   const [x, y, z, w] = quaternion;

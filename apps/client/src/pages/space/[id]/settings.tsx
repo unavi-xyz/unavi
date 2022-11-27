@@ -1,4 +1,4 @@
-import { useHidePublicationMutation } from "@wired-labs/lens";
+import { useHidePublicationMutation } from "lens";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";

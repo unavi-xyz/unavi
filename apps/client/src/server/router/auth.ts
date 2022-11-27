@@ -30,7 +30,7 @@ const nanoid = customAlphabet(
   PROJECT_ID_LENGTH
 );
 
-export const protectedRouter = router({
+export const authRouter = router({
   projects: protectedProcedure.query(async ({ ctx }) => {
     const projects = await prisma.project.findMany({
       where: { owner: ctx.address },

@@ -54,6 +54,14 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 - [ESLint](https://eslint.org/) for code linting
 - [Prettier](https://prettier.io) for code formatting
 
+## 🐋 Docker
+
+You can run the Wired locally using [Docker](https://www.docker.com/). Running the following command will start the server and client in development mode:
+
+```bash
+docker compose up
+```
+
 ## ⚙️ Development
 
 ### Install

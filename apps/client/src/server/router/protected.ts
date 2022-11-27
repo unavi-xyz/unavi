@@ -2,7 +2,6 @@ import { TRPCError } from "@trpc/server";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";
 
-import { DEFAULT_SCENE } from "../../editor/constants";
 import { prisma } from "../prisma";
 import {
   createFileUploadURL,
@@ -215,30 +214,15 @@ export const protectedRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const id = nanoid();
-      const promises: Promise<any>[] = [];
 
       // Create project
-      promises.push(
-        prisma.project.create({
-          data: {
-            id,
-            owner: ctx.address,
-            name: input.name,
-          },
-        })
-      );
-
-      // Upload default scene to S3
-      const url = await createSceneUploadURL(id);
-      await fetch(url, {
-        method: "PUT",
-        body: JSON.stringify(DEFAULT_SCENE),
-        headers: {
-          "Content-Type": "application/json",
+      await prisma.project.create({
+        data: {
+          id,
+          owner: ctx.address,
+          name: input.name,
         },
       });
-
-      await Promise.all(promises);
 
       return id;
     }),

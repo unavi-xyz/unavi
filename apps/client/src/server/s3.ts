@@ -8,12 +8,15 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { env } from "../env/server.mjs";
 
+const host = env.S3_ENDPOINT.split(":")[0];
+const http = host === "localhost" || host === "127.0.0.1" ? "http" : "https";
+
 const s3Client = new S3Client({
-  endpoint: `https://${env.S3_ENDPOINT}` ?? "",
-  region: env.S3_REGION ?? "",
+  endpoint: `${http}://${env.S3_ENDPOINT}`,
+  region: env.S3_REGION,
   credentials: {
-    accessKeyId: env.S3_ACCESS_KEY_ID ?? "",
-    secretAccessKey: env.S3_SECRET ?? "",
+    accessKeyId: env.S3_ACCESS_KEY_ID,
+    secretAccessKey: env.S3_SECRET,
   },
 });
 

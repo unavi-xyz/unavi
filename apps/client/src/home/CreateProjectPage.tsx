@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import { useRef, useState } from "react";
 
 import { trpc } from "../client/trpc";
+import { DEFAULT_SCENE } from "../editor/constants";
 import Button from "../ui/Button";
 import TextField from "../ui/TextField";
 
@@ -13,6 +14,8 @@ export default function CreateProjectPage() {
   const { mutateAsync: createProject } = trpc.auth.createProject.useMutation();
   const { mutateAsync: createImageUpload } =
     trpc.auth.projectImageUploadURL.useMutation();
+  const { mutateAsync: createSceneUpload } =
+    trpc.auth.projectSceneUploadURL.useMutation();
 
   const [loading, setLoading] = useState(false);
 
@@ -23,22 +26,56 @@ export default function CreateProjectPage() {
     const name = nameRef.current?.value ?? "";
 
     try {
+      const promises: Promise<any>[] = [];
+
       // Create new project
       const id = await createProject({ name });
 
-      // Fetch default image
-      const res = await fetch("/images/Default-Space.jpg");
-      const body = await res.blob();
+      // Upload default scene
+      promises.push(
+        new Promise<void>((resolve, reject) => {
+          async function upload() {
+            const url = await createSceneUpload({ id });
+
+            await fetch(url, {
+              method: "PUT",
+              body: JSON.stringify(DEFAULT_SCENE),
+              headers: {
+                "Content-Type": "application/json",
+              },
+            });
+
+            resolve();
+          }
+
+          upload().catch(reject);
+        })
+      );
 
       // Upload default image
-      const imageUrl = await createImageUpload({ id });
-      await fetch(imageUrl, {
-        method: "PUT",
-        body,
-        headers: {
-          "Content-Type": "image/jpeg",
-        },
-      });
+      promises.push(
+        new Promise<void>((resolve, reject) => {
+          async function upload() {
+            const res = await fetch("/images/Default-Space.jpg");
+            const body = await res.blob();
+
+            const imageUrl = await createImageUpload({ id });
+            await fetch(imageUrl, {
+              method: "PUT",
+              body,
+              headers: {
+                "Content-Type": "image/jpeg",
+              },
+            });
+
+            resolve();
+          }
+
+          upload().catch(reject);
+        })
+      );
+
+      await Promise.all(promises);
 
       router.push(`/project/${id}`);
     } catch (err) {

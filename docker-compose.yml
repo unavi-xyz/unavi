@@ -23,6 +23,19 @@ services:
     volumes:
       - ipfs:/data/ipfs
 
+  minio:
+    image: minio/minio
+    restart: always
+    ports:
+      - 9000:9000
+      - 9090:9090
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET}
+    volumes:
+      - minio:/data
+    command: server /data --console-address ":9090"
+
   turbo:
     container_name: turbo
     build:
@@ -34,6 +47,7 @@ services:
     depends_on:
       - db
       - ipfs
+      - minio
     ports:
       - 3000:3000/tcp
       - 3000:3000/udp
@@ -47,3 +61,4 @@ services:
 volumes:
   mysql:
   ipfs:
+  minio:

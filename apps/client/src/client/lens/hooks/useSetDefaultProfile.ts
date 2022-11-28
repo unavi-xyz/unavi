@@ -1,3 +1,4 @@
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { utils } from "ethers";
 import {
   LensHub__factory,
@@ -15,11 +16,16 @@ export function useSetDefaultProfile() {
   const { data: signer } = useSigner();
   const { signTypedDataAsync } = useSignTypedData();
   const { client } = useLens();
+  const { openConnectModal } = useConnectModal();
 
-  async function setDefaultProfile(profileId: string) {
-    if (!signer) throw new Error("No signer");
+  async function setDefaultProfile(profileId: string): Promise<boolean> {
+    if (!signer) {
+      if (openConnectModal) openConnectModal();
+      else throw new Error("No signer");
+      return false;
+    }
 
-    //get typed data
+    // Get typed data
     const { data, error } = await createTypedData({
       request: {
         profileId,
@@ -31,7 +37,7 @@ export function useSetDefaultProfile() {
 
     const typedData = data.createSetDefaultProfileTypedData.typedData;
 
-    //sign typed data
+    // Sign typed data
     const domain = removeTypename(typedData.domain);
     const types = removeTypename(typedData.types);
     const value = removeTypename(typedData.value);
@@ -44,7 +50,7 @@ export function useSetDefaultProfile() {
 
     const { v, r, s } = utils.splitSignature(signature);
 
-    //send transaction
+    // Send transaction
     const contract = LensHub__factory.connect(ContractAddress.LensHub, signer);
     const tx = await contract.setDefaultProfileWithSig({
       profileId: typedData.value.profileId,
@@ -57,11 +63,13 @@ export function useSetDefaultProfile() {
       },
     });
 
-    //wait for transaction
+    // Wait for transaction
     await tx.wait();
 
-    //wait for indexing
+    // Wait for indexing
     await pollUntilIndexed(tx.hash, client);
+
+    return true;
   }
 
   return setDefaultProfile;

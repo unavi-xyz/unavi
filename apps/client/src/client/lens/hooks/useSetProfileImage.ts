@@ -1,3 +1,4 @@
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { utils } from "ethers";
 import { useCreateSetProfileImageTypedDataMutation } from "lens";
 import { LensHub__factory } from "lens/contracts";
@@ -14,9 +15,14 @@ export function useSetProfileImage(profileId: string) {
   const { signTypedDataAsync } = useSignTypedData();
   const { data: signer } = useSigner();
   const { client } = useLens();
+  const { openConnectModal } = useConnectModal();
 
-  async function setProfileImage(picture: File) {
-    if (!signer) return;
+  async function setProfileImage(picture: File): Promise<boolean> {
+    if (!signer) {
+      if (openConnectModal) openConnectModal();
+      else throw new Error("No signer");
+      return false;
+    }
 
     //upload image to ipfs
     const url = await uploadFileToIpfs(picture);
@@ -65,6 +71,8 @@ export function useSetProfileImage(profileId: string) {
 
     //wait for indexing
     await pollUntilIndexed(tx.hash, client);
+
+    return true;
   }
 
   return setProfileImage;

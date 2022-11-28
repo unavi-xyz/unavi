@@ -42,3 +42,6 @@ yarn-error.log*
 # codegen
 generated
 contracts
+
+# docker
+docker-compose.yml

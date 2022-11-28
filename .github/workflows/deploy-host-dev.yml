@@ -16,4 +16,5 @@ jobs:
           host: ${{ secrets.DEVHOST_HOST }}
           username: ${{ secrets.DEVHOST_USERNAME }}
           key: ${{ secrets.DEVHOST_KEY }}
+          command_timeout: 20m
           script: sh /home/deploy.sh

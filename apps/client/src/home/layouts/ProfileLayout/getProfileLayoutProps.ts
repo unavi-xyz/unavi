@@ -3,7 +3,7 @@ import {
   GetProfileQuery,
   GetProfileQueryVariables,
   Profile,
-} from "@wired-labs/lens";
+} from "lens";
 
 import { HANDLE_ENDING } from "../../../client/lens/constants";
 import { lensClient } from "../../../server/lens";

@@ -76,7 +76,7 @@ export default function App({
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");
 
-      const { Engine } = await import("@wired-labs/engine");
+      const { Engine } = await import("engine");
 
       // Create engine
       const engine = new Engine({

@@ -1,4 +1,4 @@
-import { ToHostMessage } from "@wired-labs/engine";
+import { ToHostMessage } from "engine";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
@@ -6,7 +6,7 @@ import { Players } from "./Players";
 import { send } from "./utils/send";
 
 const textDecoder = new TextDecoder();
-const PORT = parseInt(process.env.PORT || "4000");
+const PORT = 4000;
 const cert_file_name = process.env.SSL_CERT;
 const key_file_name = process.env.SSL_KEY;
 

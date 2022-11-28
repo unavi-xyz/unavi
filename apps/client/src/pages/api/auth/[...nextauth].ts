@@ -3,7 +3,7 @@ import {
   RefreshDocument,
   RefreshMutation,
   RefreshMutationVariables,
-} from "@wired-labs/lens";
+} from "lens";
 import NextAuth, { Account, NextAuthOptions, Profile } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 

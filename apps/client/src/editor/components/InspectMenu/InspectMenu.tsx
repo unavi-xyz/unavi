@@ -1,4 +1,4 @@
-import { BoxMesh } from "@wired-labs/engine";
+import { BoxMesh } from "engine";
 import { useState } from "react";
 
 import Button from "../../../ui/Button";

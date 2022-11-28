@@ -1,10 +1,4 @@
-import {
-  BoxMesh,
-  CylinderMesh,
-  GLTFMesh,
-  Mesh,
-  SphereMesh,
-} from "@wired-labs/engine";
+import { BoxMesh, CylinderMesh, GLTFMesh, Mesh, SphereMesh } from "engine";
 
 import { addMesh } from "../../../actions/AddMeshAction";
 import { removeMesh } from "../../../actions/RemoveMeshAction";

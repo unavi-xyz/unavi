@@ -1,4 +1,4 @@
-import { MaterialJSON } from "@wired-labs/engine";
+import { MaterialJSON } from "engine";
 
 import { useEditorStore } from "../store";
 

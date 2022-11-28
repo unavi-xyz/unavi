@@ -1,4 +1,4 @@
-import { AutoCollider, GLTFMesh, Node } from "@wired-labs/engine";
+import { AutoCollider, GLTFMesh, Node } from "engine";
 import Script from "next/script";
 import { useEffect, useMemo, useRef } from "react";
 import { DndProvider } from "react-dnd";
@@ -42,7 +42,7 @@ export default function Editor() {
 
       useEditorStore.setState({ sceneLoaded: false });
 
-      const { Engine } = await import("@wired-labs/engine");
+      const { Engine } = await import("engine");
 
       // Create engine
       const engine = new Engine({

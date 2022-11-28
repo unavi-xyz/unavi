@@ -1,4 +1,4 @@
-import { BoxMesh } from "@wired-labs/engine";
+import { BoxMesh } from "engine";
 
 import { updateMesh } from "../../../actions/UpdateMeshAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";

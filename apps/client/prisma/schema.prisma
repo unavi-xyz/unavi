@@ -24,8 +24,8 @@ model Publication {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner  String
   type   PublicationType
+  owner  String?
   lensId String?
 
   ViewEvents ViewEvent[]

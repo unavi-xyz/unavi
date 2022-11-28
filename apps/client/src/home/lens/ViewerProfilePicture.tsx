@@ -1,4 +1,4 @@
-import { useGetProfileQuery } from "@wired-labs/lens";
+import { useGetProfileQuery } from "lens";
 import { useEffect, useState } from "react";
 
 import { HANDLE_ENDING } from "../../client/lens/constants";

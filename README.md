@@ -39,7 +39,6 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 ### Apps
 
 - [client](apps/client): the main website used to access the Wired.
-- [examples](apps/examples): models for testing the engine
 - [host](apps/host): dockerized server for hosting spaces
 
 ### Packages
@@ -54,6 +53,14 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 - [TypeScript](https://www.typescriptlang.org/) for static type checking
 - [ESLint](https://eslint.org/) for code linting
 - [Prettier](https://prettier.io) for code formatting
+
+## 🐋 Docker
+
+You can run the Wired locally using [Docker](https://www.docker.com/). Run the following command to start the server and client in development mode:
+
+```bash
+docker compose up
+```
 
 ## ⚙️ Development
 

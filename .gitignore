@@ -38,3 +38,7 @@ yarn-error.log*
 
 # vscode
 .vscode
+
+# codegen
+generated
+contracts

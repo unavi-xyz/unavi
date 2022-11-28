@@ -34,7 +34,7 @@ export default function ProfileButton() {
           <div className="flex items-center justify-center space-x-4">
             {!isMobile && <div>@{handle}</div>}
 
-            <div className="h-9 w-9 rounded-full">
+            <div className="h-9 w-9 overflow-hidden">
               <ViewerProfilePicture circle draggable={false} />
             </div>
           </div>

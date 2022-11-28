@@ -1,7 +1,6 @@
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { useCreatePostTypedDataMutation } from "@wired-labs/lens";
-import { LensHub__factory } from "@wired-labs/lens/contracts";
 import { utils } from "ethers";
+import { LensHub__factory, useCreatePostTypedDataMutation } from "lens";
 import { useSigner, useSignTypedData } from "wagmi";
 
 import { ContractAddress } from "../constants";

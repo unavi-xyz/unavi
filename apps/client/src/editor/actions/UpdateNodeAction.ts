@@ -1,4 +1,4 @@
-import { NodeJSON } from "@wired-labs/engine";
+import { NodeJSON } from "engine";
 
 import { useEditorStore } from "../store";
 

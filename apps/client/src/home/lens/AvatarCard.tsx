@@ -1,4 +1,4 @@
-import { Post } from "@wired-labs/lens";
+import { Post } from "lens";
 
 import Card from "../../ui/Card";
 import { getMediaURL } from "../../utils/getMediaURL";

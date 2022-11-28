@@ -1,4 +1,4 @@
-import { BoxCollider, Triplet } from "@wired-labs/engine";
+import { BoxCollider, Triplet } from "engine";
 
 import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";

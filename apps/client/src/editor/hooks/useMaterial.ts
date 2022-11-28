@@ -1,4 +1,4 @@
-import { Material } from "@wired-labs/engine";
+import { Material } from "engine";
 import { useEffect, useState } from "react";
 
 import { useEditorStore } from "../store";

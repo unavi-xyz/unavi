@@ -5,7 +5,7 @@ import {
   VerifyDocument,
   VerifyQuery,
   VerifyQueryVariables,
-} from "@wired-labs/lens";
+} from "lens";
 
 import { lensClient } from "./lens";
 

@@ -6,6 +6,7 @@ import { useLens } from "../../../client/lens/hooks/useLens";
 import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { trimHandle } from "../../../client/lens/utils/trimHandle";
 import { trpc } from "../../../client/trpc";
+import { env } from "../../../env/client.mjs";
 import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
 import { isFromCDN } from "../../../utils/isFromCDN";
@@ -14,7 +15,7 @@ import MetaTags from "../../MetaTags";
 const host =
   process.env.NODE_ENV === "development"
     ? "localhost:4000"
-    : "host.thewired.space";
+    : env.NEXT_PUBLIC_DEFAULT_HOST;
 
 export interface Props extends PublicationProps {
   children: React.ReactNode;

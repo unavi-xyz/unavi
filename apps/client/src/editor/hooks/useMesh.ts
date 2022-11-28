@@ -1,4 +1,4 @@
-import { Mesh } from "@wired-labs/engine";
+import { Mesh } from "engine";
 import { useEffect, useState } from "react";
 
 import { useEditorStore } from "../store";

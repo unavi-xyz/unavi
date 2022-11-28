@@ -8,7 +8,7 @@ import {
   rainbowWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { chain, configureChains, createClient } from "wagmi";
+import { chain, Client, configureChains, createClient } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
@@ -52,4 +52,4 @@ const connectors = connectorsForWallets([
   },
 ]);
 
-export const wagmiClient = createClient({ connectors, provider });
+export const wagmiClient = createClient({ connectors, provider }) as Client;

@@ -6,6 +6,7 @@ import { MdAdd, MdLink, MdOutlineLocationOn } from "react-icons/md";
 
 import { useLens } from "../../../client/lens/hooks/useLens";
 import Button from "../../../ui/Button";
+import { isFromCDN } from "../../../utils/isFromCDN";
 import ProfilePicture from "../../lens/ProfilePicture";
 import MetaTags from "../../MetaTags";
 import AttributeRow from "./AttributeRow";
@@ -50,28 +51,34 @@ export default function ProfileLayout({
         <div className="max-w-content mx-auto">
           <div className="h-48 w-full bg-primaryContainer md:h-64 md:rounded-3xl">
             <div className="relative h-full w-full object-cover">
-              {coverImage && (
-                <Image
-                  src={coverImage}
-                  priority
-                  fill
-                  sizes="80vw"
-                  alt="cover"
-                  className="h-full w-full object-cover md:rounded-3xl"
-                />
-              )}
+              {coverImage &&
+                (isFromCDN(coverImage) ? (
+                  <Image
+                    src={coverImage}
+                    priority
+                    fill
+                    sizes="80vw"
+                    alt="cover"
+                    className="h-full w-full object-cover md:rounded-3xl"
+                  />
+                ) : (
+                  <img
+                    src={coverImage}
+                    alt="cover"
+                    className="h-full w-full object-cover md:rounded-3xl"
+                    crossOrigin="anonymous"
+                  />
+                ))}
             </div>
           </div>
 
           <div className="flex justify-center px-4 pb-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-background">
-                {
-                  <ProfilePicture
-                    src={profileImage ?? `https://avatar.tobi.sh/${handle}`}
-                    circle
-                  />
-                }
+                <ProfilePicture
+                  src={profileImage ?? `https://avatar.tobi.sh/${handle}`}
+                  circle
+                />
               </div>
 
               <div className="flex flex-col items-center">

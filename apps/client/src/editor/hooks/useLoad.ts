@@ -1,4 +1,4 @@
-import { SceneJSON } from "@wired-labs/engine";
+import { SceneJSON } from "engine";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 

@@ -1,4 +1,4 @@
-import { Engine } from "@wired-labs/engine";
+import { Engine } from "engine";
 import create from "zustand";
 
 export interface AppStore {

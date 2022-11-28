@@ -1,4 +1,4 @@
-import { SphereCollider } from "@wired-labs/engine";
+import { SphereCollider } from "engine";
 
 import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";

@@ -1,4 +1,4 @@
-import { useCreateProfileMutation } from "@wired-labs/lens";
+import { useCreateProfileMutation } from "lens";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 

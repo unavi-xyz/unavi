@@ -1,4 +1,4 @@
-import { CylinderCollider } from "@wired-labs/engine";
+import { CylinderCollider } from "engine";
 
 import { updateNode } from "../../../actions/UpdateNodeAction";
 import { useSubscribeValue } from "../../../hooks/useSubscribeValue";

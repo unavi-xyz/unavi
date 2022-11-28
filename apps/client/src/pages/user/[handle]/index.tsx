@@ -5,7 +5,7 @@ import {
   GetPublicationsQueryVariables,
   Post,
   PublicationTypes,
-} from "@wired-labs/lens";
+} from "lens";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/link";
 

@@ -1,10 +1,4 @@
-import {
-  AutoCollider,
-  BoxMesh,
-  Material,
-  Node,
-  SceneJSON,
-} from "@wired-labs/engine";
+import { AutoCollider, BoxMesh, Material, Node, SceneJSON } from "engine";
 
 import { hexToRgb } from "../utils/rgb";
 

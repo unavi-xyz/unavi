@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+import { isFromCDN } from "../../utils/isFromCDN";
+
 interface Props {
   src?: string | null;
   circle?: boolean;
@@ -15,7 +17,7 @@ export default function ProfilePicture({
 
   if (!src) return null;
 
-  return (
+  return isFromCDN(src) ? (
     <Image
       src={src}
       width={256}
@@ -23,6 +25,14 @@ export default function ProfilePicture({
       draggable={draggable}
       alt="profile picture"
       className={`${circleClass} bg-primaryContainer`}
+    />
+  ) : (
+    <img
+      src={src}
+      draggable={draggable}
+      alt="profile picture"
+      className={`${circleClass} h-full w-full bg-primaryContainer`}
+      crossOrigin="anonymous"
     />
   );
 }

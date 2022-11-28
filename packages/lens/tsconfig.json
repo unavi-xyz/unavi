@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
-    "composite": true
+    "composite": true,
+    "jsx": "react-jsx"
   },
-  "extends": "@wired-labs/tsconfig/react-library.json"
+  "extends": "tsconfig/base.json",
+  "include": ["src"]
 }

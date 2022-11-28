@@ -7,7 +7,7 @@ export function useCursor(
   setCursor: Dispatch<SetStateAction<number>>
 ) {
   const limit = pageSize + itemCount * pageSize + 1;
-  const lastCursor = Math.floor(itemCount / pageSize);
+  const lastCursor = Math.ceil(itemCount / pageSize) - 1;
   const isLastPage =
     (itemCount <= limit && cursor === lastCursor) || itemCount <= pageSize;
 

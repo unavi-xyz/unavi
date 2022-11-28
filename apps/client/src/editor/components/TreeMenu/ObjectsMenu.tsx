@@ -5,7 +5,7 @@ import {
   GLTFMesh,
   Node,
   SphereMesh,
-} from "@wired-labs/engine";
+} from "engine";
 
 import { addMesh } from "../../actions/AddMeshAction";
 import { addNode } from "../../actions/AddNodeAction";

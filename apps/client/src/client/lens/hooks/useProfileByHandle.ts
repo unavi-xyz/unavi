@@ -1,4 +1,4 @@
-import { Profile, useGetProfileQuery } from "@wired-labs/lens";
+import { Profile, useGetProfileQuery } from "lens";
 
 import { HANDLE_ENDING } from "../constants";
 

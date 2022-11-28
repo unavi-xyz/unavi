@@ -1,4 +1,4 @@
-import { Image, Material, Quad, Texture } from "@wired-labs/engine";
+import { Image, Material, Quad, Texture } from "engine";
 import { useState } from "react";
 import { BiImageAdd } from "react-icons/bi";
 import { MdAdd, MdClose, MdDelete, MdOutlineFolderOpen } from "react-icons/md";

@@ -1,4 +1,4 @@
-# @wired-labs/host
+# Host
 
 A dockerized node server for hosting spaces over WebSockets and WebRTC.
 

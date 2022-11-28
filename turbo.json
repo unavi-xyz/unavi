@@ -2,17 +2,18 @@
   "$schema": "https://turborepo.org/schema.json",
   "pipeline": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["build/**", "dist/**", ".next/**", ".docusaurus/**"]
+      "dependsOn": ["^build", "generate"],
+      "outputs": ["build/**", "dist/**", ".next/**"]
     },
     "client#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate"],
       "outputs": [".next/**"],
       "env": [
         "BUNDLE_ANALYZE",
         "NEXT_PUBLIC_ALCHEMY_ID",
         "NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT",
         "NEXT_PUBLIC_CDN_ENDPOINT",
+        "NEXT_PUBLIC_DEFAULT_HOST",
         "NEXT_PUBLIC_IPFS_AUTH",
         "NEXT_PUBLIC_IPFS_ENDPOINT",
         "NEXT_PUBLIC_IPFS_GATEWAY",
@@ -27,12 +28,11 @@
       ]
     },
     "host#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate"],
       "outputs": [],
       "env": [
         "MEDIASOUP_ANNOUNCED_IP",
         "MEDIASOUP_LISTEN_IP",
-        "PORT",
         "RTC_MAX_PORT",
         "RTC_MIN_PORT",
         "SSL_CERT",
@@ -42,8 +42,15 @@
     "lint": {
       "outputs": []
     },
+    "generate": {
+      "cache": false
+    },
+    "client#generate": {
+      "inputs": ["prisma/schema.prisma"]
+    },
     "deploy": {
-      "outputs": []
+      "dependsOn": ["lint", "build"],
+      "cache": false
     },
     "dev": {
       "cache": false

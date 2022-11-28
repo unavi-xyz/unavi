@@ -3,7 +3,7 @@ import {
   GetPublicationQuery,
   GetPublicationQueryVariables,
   Publication,
-} from "@wired-labs/lens";
+} from "lens";
 import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 import { createClient } from "urql";
@@ -15,8 +15,6 @@ import { toHex } from "../utils/toHex";
 import { LENS_API } from "./constants";
 import { FromHostMessage, InternalChatMessage, ToHostMessage } from "./types";
 import { WebRTC } from "./WebRTC";
-
-const DEFAULT_HOST = "wss://host.thewired.space";
 
 /*
  * Acts as an interface for all networking functionality.
@@ -102,7 +100,7 @@ export class NetworkingInterface {
         ? "ws://localhost:4000"
         : spaceHost
         ? `wss://${spaceHost}`
-        : DEFAULT_HOST;
+        : `wss://${process.env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
     this.#hostServer = host;
 

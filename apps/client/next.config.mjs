@@ -65,12 +65,12 @@ export default defineNextConfig({
     ignoreDuringBuilds: true,
   },
   experimental: {
-    transpilePackages: ["three", "@wired-labs/engine", "@wired-labs/lens"],
+    transpilePackages: ["three", "engine", "lens"],
   },
   images: {
     domains: [
-      env.NEXT_PUBLIC_IPFS_GATEWAY,
       env.NEXT_PUBLIC_CDN_ENDPOINT,
+      env.NEXT_PUBLIC_IPFS_GATEWAY.split(":")[0],
       "avatar.tobi.sh",
     ],
   },
@@ -112,6 +112,13 @@ export default defineNextConfig({
       ...config.experiments,
       asyncWebAssembly: true,
       syncWebAssembly: true,
+    };
+    return config;
+  },
+  webpackDevMiddleware: (config) => {
+    config.watchOptions = {
+      poll: 1000,
+      aggregateTimeout: 300,
     };
     return config;
   },

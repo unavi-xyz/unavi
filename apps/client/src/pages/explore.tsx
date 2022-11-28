@@ -25,7 +25,7 @@ export const getServerSideProps = async ({
   const publications = await prisma.publication.findMany({
     where: { type: "SPACE" },
     orderBy: { viewCount: "desc" },
-    take: 9,
+    take: 15,
   });
 
   // Get lens ids
@@ -97,16 +97,23 @@ export default function Explore({
               const gapOffset = `-${hotSpacesCursor * spaceLimit * 12}px`;
 
               return (
-                <Link key={spaceId} href={`/space/${spaceId}`} passHref>
-                  <div
-                    className="h-32 transition duration-500 md:h-44"
-                    style={{
-                      transform: `translate(calc(${pageOffset} + ${gapOffset}))`,
-                    }}
-                  >
-                    <SpaceIdCard spaceId={spaceId} sizes="293px" animateEnter />
-                  </div>
-                </Link>
+                <div
+                  key={spaceId}
+                  className="transition duration-500"
+                  style={{
+                    transform: `translate(calc(${pageOffset} + ${gapOffset}))`,
+                  }}
+                >
+                  <Link href={`/space/${spaceId}`}>
+                    <div className="h-32 md:h-44">
+                      <SpaceIdCard
+                        spaceId={spaceId}
+                        sizes="293px"
+                        animateEnter
+                      />
+                    </div>
+                  </Link>
+                </div>
               );
             })}
           </Carousel>
@@ -124,20 +131,23 @@ export default function Explore({
               const gapOffset = `-${latestSpaces.cursor * spaceLimit * 12}px`;
 
               return (
-                <Link key={space.id} href={`/space/${space.id}`} passHref>
-                  <div
-                    className="h-32 transition duration-500 md:h-44"
-                    style={{
-                      transform: `translate(calc(${pageOffset} + ${gapOffset}))`,
-                    }}
-                  >
-                    <SpaceCard
-                      space={space as Post}
-                      sizes="293px"
-                      animateEnter
-                    />
-                  </div>
-                </Link>
+                <div
+                  key={space.id}
+                  className="transition duration-500"
+                  style={{
+                    transform: `translate(calc(${pageOffset} + ${gapOffset}))`,
+                  }}
+                >
+                  <Link href={`/space/${space.id}`}>
+                    <div className="h-32 md:h-44">
+                      <SpaceCard
+                        space={space as Post}
+                        sizes="293px"
+                        animateEnter
+                      />
+                    </div>
+                  </Link>
+                </div>
               );
             })}
           </Carousel>

@@ -14,6 +14,8 @@ model ViewEvent {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
 
+  isCounted Boolean @default(true)
+
   Publication   Publication @relation(fields: [publicationId], references: [id])
   publicationId String
 }

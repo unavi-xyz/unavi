@@ -27,9 +27,9 @@ COPY . .
 
 # Start dev server
 CMD \
- npx patch-package \
+ yarn patch-package \
  && yarn generate \
  && cd ./apps/client \
- && npx prisma db push \
+ && yarn prisma db push \
  && cd ../.. \
  && yarn dev

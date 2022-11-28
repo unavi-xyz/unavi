@@ -4,6 +4,7 @@ import { useLens } from "../../../client/lens/hooks/useLens";
 import { useProfileByHandle } from "../../../client/lens/hooks/useProfileByHandle";
 import { useSetProfileMetadata } from "../../../client/lens/hooks/useSetProfileMetadata";
 import { createProfileMetadata } from "../../../client/lens/utils/createProfileMetadata";
+import { env } from "../../../env/client.mjs";
 import Button from "../../../ui/Button";
 import TextField from "../../../ui/TextField";
 
@@ -21,7 +22,10 @@ export default function HostPage() {
     setLoading(true);
 
     const { metadata, updateAttribute } = createProfileMetadata(profile);
-    updateAttribute("host", hostRef.current?.value ?? "host.thewired.space");
+    updateAttribute(
+      "host",
+      hostRef.current?.value ?? env.NEXT_PUBLIC_DEFAULT_HOST
+    );
 
     try {
       await setProfileMetadata(metadata);
@@ -39,7 +43,7 @@ export default function HostPage() {
         <h1 className="flex justify-center text-3xl">Host Server</h1>
         <p className="text-center">
           Specify a server to host your spaces. Can be changed at any time.
-          (defaults to <b>host.thewired.space</b>)
+          (defaults to <b>{env.NEXT_PUBLIC_DEFAULT_HOST}</b>)
         </p>
       </div>
 
@@ -47,7 +51,7 @@ export default function HostPage() {
         inputRef={hostRef}
         autoComplete="off"
         title="Host Server"
-        defaultValue="host.thewired.space"
+        defaultValue={env.NEXT_PUBLIC_DEFAULT_HOST}
       />
 
       <div className="flex justify-end">

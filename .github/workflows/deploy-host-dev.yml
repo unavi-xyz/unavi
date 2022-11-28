@@ -1,0 +1,19 @@
+name: deploy-host-dev
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy-host-dev:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH remote commands
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.DEVHOST_HOST }}
+          username: ${{ secrets.DEVHOST_USERNAME }}
+          key: ${{ secrets.DEVHOST_KEY }}
+          script: sh /home/deploy.sh

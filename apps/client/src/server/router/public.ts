@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
+import { env } from "../../env/client.mjs";
 import { prisma } from "../prisma";
 import { createTempFileUploadURL } from "../s3";
 import { publicProcedure, router } from "./trpc";
@@ -8,7 +9,7 @@ import { publicProcedure, router } from "./trpc";
 const HOST_URL =
   process.env.NODE_ENV === "development"
     ? "http://localhost:4000"
-    : "https://host.thewired.space";
+    : `https://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
 export const publicRouter = router({
   tempUploadURL: publicProcedure.mutation(async () => {

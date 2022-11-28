@@ -19,12 +19,12 @@ RUN \
 COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/yarn.lock ./yarn.lock
-RUN yarn install --frozen-lockfile
+RUN yarn install
 
 # Build the project and its dependencies
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
-RUN yarn turbo run build --filter=host...
+RUN yarn turbo build --filter=host...
 
 FROM node:18 AS runner
 WORKDIR /app

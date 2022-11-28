@@ -56,7 +56,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 
 ## 🐋 Docker
 
-You can run the Wired locally using [Docker](https://www.docker.com/). Running the following command will start the server and client in development mode:
+You can run the Wired locally using [Docker](https://www.docker.com/). Run the following command to start the server and client in development mode:
 
 ```bash
 docker compose up

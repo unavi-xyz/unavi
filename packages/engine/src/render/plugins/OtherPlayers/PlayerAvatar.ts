@@ -1,4 +1,4 @@
-import { VRM, VRMLoaderPlugin } from "@pixiv/three-vrm";
+import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import {
   AnimationAction,
   AnimationClip,
@@ -33,7 +33,6 @@ export class PlayerAvatar {
   readonly group = new Group();
 
   isFalling = false;
-  #isUser = false;
 
   #vrm: VRM | null = null;
   #camera?: PerspectiveCamera;
@@ -77,7 +76,6 @@ export class PlayerAvatar {
     this.#defaultAvatarPath = defaultAvatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
     this.#camera = camera;
-    this.#isUser = Boolean(camera);
     this.#queue = new ObjectQueue(renderer, sceneCamera);
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
@@ -108,9 +106,10 @@ export class PlayerAvatar {
     const gltf = await this.#loader.loadAsync(avatarPath);
     const vrm = gltf.userData.vrm as VRM;
 
-    // Remove previous VRM model
+    // Remove previous VRM
     if (this.#vrm) {
-      disposeObject(this.#vrm.scene);
+      this.#vrm.scene.removeFromParent();
+      VRMUtils.deepDispose(this.#vrm.scene);
       this.#vrm = null;
     }
 
@@ -128,13 +127,19 @@ export class PlayerAvatar {
       this.#camera.layers.disable(vrm.firstPerson.thirdPersonOnlyLayer);
     }
 
-    // Set VRM model
-    this.#vrm = vrm;
+    // Process VRM
+    VRMUtils.removeUnnecessaryVertices(vrm.scene);
+    VRMUtils.removeUnnecessaryJoints(vrm.scene);
+    VRMUtils.rotateVRM0(vrm);
 
-    // Process scene
+    vrm.scene.rotation.y += Math.PI;
+
     vrm.scene.traverse((object) => {
       if (object instanceof Mesh) object.castShadow = true;
     });
+
+    // Set VRM model
+    this.#vrm = vrm;
 
     // Add scene to queue
     this.#queue.add(this.#vrm.scene, this.group, true);
@@ -223,10 +228,8 @@ export class PlayerAvatar {
     // If user, copy rotation from camera
     if (this.#camera && this.#vrm) {
       this.group.quaternion.copy(this.#camera.quaternion);
-    }
-
-    // Apply location to group
-    if (!this.#isUser) {
+    } else {
+      // Apply location to group
       this.group.position.lerp(this.#targetPosition, K);
       this.group.quaternion.slerp(this.#targetRotation, K);
     }
@@ -245,7 +248,7 @@ export class PlayerAvatar {
     // Rotate head
     this.#headRotation.slerp(relativeRotation, K);
 
-    // Only rotate Z axis
+    //Don't rotate Y axis
     this.#headRotation.y = 0;
     this.#headRotation.normalize();
 
@@ -344,9 +347,18 @@ export class PlayerAvatar {
     if (this.#vrm) this.#vrm.update(delta);
 
     // Rotate head
-    this.#vrm?.humanoid.humanBones.head.node.quaternion.multiply(
-      this.#headRotation
-    );
+    if (this.#vrm?.meta.metaVersion === "1") {
+      // If vrm 1.0, rotate axis
+      const rotated = this.#tempQuat.copy(this.#headRotation);
+      rotated.x = this.#headRotation.z;
+      rotated.z = -this.#headRotation.x;
+
+      this.#vrm.humanoid.humanBones.head.node.quaternion.multiply(rotated);
+    } else {
+      this.#vrm?.humanoid.humanBones.head.node.quaternion.multiply(
+        this.#headRotation
+      );
+    }
   }
 
   destroy() {

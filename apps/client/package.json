@@ -21,7 +21,7 @@
     "@rainbow-me/rainbowkit": "^0.8.0",
     "@tanstack/react-query": "^4.18.0",
     "@trpc/client": "10.4.1",
-    "@trpc/next": "10.2.0",
+    "@trpc/next": "10.4.2",
     "@trpc/react-query": "10.2.0",
     "@trpc/server": "10.4.1",
     "engine": "*",

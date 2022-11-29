@@ -66,13 +66,13 @@ export default function LoadingScreen({ spaceId, loaded }: Props) {
                             priority
                             fill
                             sizes="30vw"
-                            alt="space preview"
+                            alt=""
                             className="rounded-3xl object-cover"
                           />
                         ) : (
                           <img
                             src={image}
-                            alt="space preview"
+                            alt=""
                             className="h-full w-full rounded-3xl object-cover"
                             crossOrigin="anonymous"
                           />

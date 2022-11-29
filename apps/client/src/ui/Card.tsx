@@ -46,14 +46,14 @@ export default function Card({
             fill
             sizes={sizes}
             draggable={false}
-            alt="card image"
+            alt=""
             className="rounded-2xl object-cover"
           />
         ) : (
           <img
             src={image}
             draggable={false}
-            alt="card image"
+            alt=""
             className="h-full w-full rounded-2xl object-cover"
             crossOrigin="anonymous"
           />

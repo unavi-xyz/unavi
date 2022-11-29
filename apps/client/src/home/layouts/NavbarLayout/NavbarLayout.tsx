@@ -11,9 +11,7 @@ export default function NavbarLayout({ children }: Props) {
         <Navbar />
       </div>
 
-      <div className="h-full w-full">
-        <div className="pt-14">{children}</div>
-      </div>
+      <div className="h-screen pt-14">{children}</div>
     </>
   );
 }

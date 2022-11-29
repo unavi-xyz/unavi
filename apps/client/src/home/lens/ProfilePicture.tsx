@@ -23,14 +23,14 @@ export default function ProfilePicture({
       width={256}
       height={256}
       draggable={draggable}
-      alt="profile picture"
+      alt=""
       className={`${circleClass} bg-primaryContainer`}
     />
   ) : (
     <img
       src={src}
       draggable={draggable}
-      alt="profile picture"
+      alt=""
       className={`${circleClass} h-full w-full bg-primaryContainer`}
       crossOrigin="anonymous"
     />

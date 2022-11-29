@@ -82,14 +82,8 @@ export default function User({
 
               return (
                 <div key={publication.id} className="w-full md:col-span-2">
-                  <Link
-                    href={`/space/${publication.id}`}
-                    passHref
-                    legacyBehavior
-                  >
-                    <div>
-                      <SpaceCard space={publication} sizes="49vw" />
-                    </div>
+                  <Link href={`/space/${publication.id}`}>
+                    <SpaceCard space={publication} sizes="49vw" />
                   </Link>
                 </div>
               );
@@ -98,14 +92,8 @@ export default function User({
 
               return (
                 <div key={publication.id} className="w-full">
-                  <Link
-                    href={`/avatar/${publication.id}`}
-                    passHref
-                    legacyBehavior
-                  >
-                    <div>
-                      <AvatarCard avatar={publication} sizes="24vw" />
-                    </div>
+                  <Link href={`/avatar/${publication.id}`}>
+                    <AvatarCard avatar={publication} sizes="24vw" />
                   </Link>
                 </div>
               );

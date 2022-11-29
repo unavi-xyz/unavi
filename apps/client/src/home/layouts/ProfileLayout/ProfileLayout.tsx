@@ -58,13 +58,13 @@ export default function ProfileLayout({
                     priority
                     fill
                     sizes="80vw"
-                    alt="cover"
+                    alt=""
                     className="h-full w-full object-cover md:rounded-3xl"
                   />
                 ) : (
                   <img
                     src={coverImage}
-                    alt="cover"
+                    alt=""
                     className="h-full w-full object-cover md:rounded-3xl"
                     crossOrigin="anonymous"
                   />

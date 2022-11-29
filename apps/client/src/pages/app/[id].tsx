@@ -155,7 +155,7 @@ export default function App({
       <LoadingScreen spaceId={id} loaded={engineStarted} />
 
       <div
-        className="h-full w-full"
+        className="h-screen w-screen"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           const { engine } = useAppStore.getState();

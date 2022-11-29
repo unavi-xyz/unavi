@@ -57,13 +57,13 @@ export default function SpaceLayout({
                       priority
                       fill
                       sizes="40vw"
-                      alt="space preview"
+                      alt=""
                       className="rounded-3xl object-cover"
                     />
                   ) : (
                     <img
                       src={image}
-                      alt="space preview"
+                      alt=""
                       className="h-full w-full rounded-3xl object-cover"
                       crossOrigin="anonymous"
                     />

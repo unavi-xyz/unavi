@@ -55,19 +55,22 @@ export class Players {
     // Find an open player id
     // Max of 256 players
     const playerIds = Array.from(this.playerIds.values());
+    const triedPlayerIds: number[] = [];
     let i = 0;
 
     while (playerId === null) {
+      // Pick a random id
+      let id: number;
+      while (triedPlayerIds.includes((id = Math.floor(Math.random() * 256))));
+      triedPlayerIds.push(id);
+
+      // If it's not taken, use it
+      if (!playerIds.includes(id)) playerId = id;
+
       i++;
-      const id = this.#previousPlayerId++;
-      if (this.#previousPlayerId > 255) this.#previousPlayerId = 0;
-
-      if (!playerIds.includes(id)) {
-        playerId = id;
-      }
-
-      if (i > 256) {
-        console.error("No open player ids");
+      if (i === 256) {
+        console.warn("🚩 No open player ids. Closing connection.");
+        ws.close();
         return;
       }
     }

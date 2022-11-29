@@ -173,11 +173,6 @@ export class NetworkingInterface {
       this.#reconnectCount = 0;
       this.spaceJoinStatus.wsConnected = true;
 
-      // Set player name and avatar
-      this.#sendName();
-      this.#sendAvatar();
-      this.#sendHandle();
-
       // Start WebRTC connection
       if (!this.#webRTC) throw new Error("WebRTC not initialized");
       this.#webRTC.connect();
@@ -193,6 +188,11 @@ export class NetworkingInterface {
 
       switch (subject) {
         case "join_successful": {
+          // Send player name and avatar
+          if (this.#myName) this.#sendName();
+          if (this.#myAvatar) this.#sendAvatar();
+          if (this.#myHandle) this.#sendHandle();
+
           // Set your name
           if (this.#myName) this.#playerNames.set(data.playerId, this.#myName);
           else this.#playerNames.delete(data.playerId);
@@ -205,6 +205,7 @@ export class NetworkingInterface {
           // Save player id
           this.playerId$.next(data.playerId);
           if (this.#webRTC) this.#webRTC.playerId = data.playerId;
+
           break;
         }
 

@@ -50,13 +50,14 @@ export class PlayerAvatar {
   #forwardWeight = 0;
   #sprintWeight = 0;
 
-  #velocity = new Vector3();
   #averageVelocity = new Vector3();
-
-  #tempQuat = new Quaternion();
+  #headRotation = new Quaternion();
   #prevPosition = new Vector3();
   #targetPosition = new Vector3();
   #targetRotation = new Quaternion();
+  #tempQuat = new Quaternion();
+  #tempQuat2 = new Quaternion();
+  #velocity = new Vector3();
 
   #loader = new GLTFLoader();
   #queue: ObjectQueue;
@@ -214,25 +215,39 @@ export class PlayerAvatar {
   }
 
   animate(delta: number) {
+    const K = 1 - Math.pow(LERP_FACTOR, delta);
+
     // Load queue
     this.#queue.update();
 
-    // Handle animations
-    const K = 1 - Math.pow(LERP_FACTOR, delta);
+    // If user, copy rotation from camera
+    if (this.#camera && this.#vrm) {
+      this.group.quaternion.copy(this.#camera.quaternion);
+    }
 
+    // Apply location to group
     if (!this.#isUser) {
       this.group.position.lerp(this.#targetPosition, K);
       this.group.quaternion.slerp(this.#targetRotation, K);
     }
 
-    if (this.#camera && this.#vrm) {
-      this.group.quaternion.copy(this.#camera.quaternion);
-    }
-
-    // Only rotate on Y axis
+    // Only rotate Y axis
     this.group.quaternion.x = 0;
     this.group.quaternion.z = 0;
     this.group.quaternion.normalize();
+
+    // Get relative rotation for head
+    const relativeRotation = this.#tempQuat2.copy(this.#targetRotation);
+    relativeRotation.premultiply(
+      this.#tempQuat.copy(this.group.quaternion).invert()
+    );
+
+    // Rotate head
+    this.#headRotation.slerp(relativeRotation, K);
+
+    // Only rotate Z axis
+    this.#headRotation.y = 0;
+    this.#headRotation.normalize();
 
     // Copy head position to camera
     if (this.#vrm && this.#camera) {
@@ -327,6 +342,11 @@ export class PlayerAvatar {
 
     // Update VRM
     if (this.#vrm) this.#vrm.update(delta);
+
+    // Rotate head
+    this.#vrm?.humanoid.humanBones.head.node.quaternion.multiply(
+      this.#headRotation
+    );
   }
 
   destroy() {

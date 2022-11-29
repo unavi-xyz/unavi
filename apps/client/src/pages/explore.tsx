@@ -25,7 +25,7 @@ export const getServerSideProps = async ({
   const publications = await prisma.publication.findMany({
     where: { type: "SPACE" },
     orderBy: { viewCount: "desc" },
-    take: 15,
+    take: 12,
   });
 
   // Get lens ids

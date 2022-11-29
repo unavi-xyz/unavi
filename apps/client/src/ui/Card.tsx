@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { MdPeople } from "react-icons/md";
 
 import { isFromCDN } from "../utils/isFromCDN";
 
@@ -10,6 +11,7 @@ interface Props {
   sizes?: string;
   aspect?: "card" | "vertical";
   animateEnter?: boolean;
+  playerCount?: number;
 }
 
 export default function Card({
@@ -19,6 +21,7 @@ export default function Card({
   sizes,
   aspect = "card",
   animateEnter = false,
+  playerCount,
 }: Props) {
   const [visible, setVisible] = useState(!animateEnter);
 
@@ -56,6 +59,15 @@ export default function Card({
           />
         ))}
 
+      <div className="absolute flex h-full w-full items-start p-2 tracking-wide">
+        {playerCount !== undefined && playerCount > 0 && (
+          <div className="flex items-center space-x-1.5 rounded-full bg-black/50 px-3 py-0.5 text-white  backdrop-blur-lg">
+            <MdPeople className="text-lg" />
+            <div className="font-bold">{playerCount}</div>
+          </div>
+        )}
+      </div>
+
       <div className="absolute flex h-full w-full items-end px-3 pb-2 tracking-wide text-white">
         {text && (
           <div
@@ -67,6 +79,7 @@ export default function Card({
             {text}
           </div>
         )}
+
         {subtext && (
           <div
             className="overflow-hidden text-lg drop-shadow-dark"

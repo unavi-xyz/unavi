@@ -132,7 +132,9 @@ export default function Index() {
               <div className="w-full md:w-fit">
                 <a href={DOCS_URL} target="_blank" rel="noreferrer">
                   <Button variant="filled" rounded="large" fullWidth>
-                    <div className="text-xl md:py-0.5 md:px-4">View Docs</div>
+                    <div className="flex h-9 items-center justify-center text-xl md:px-4">
+                      View Docs
+                    </div>
                   </Button>
                 </a>
               </div>

@@ -28,7 +28,7 @@ export default function UserIdentityButton() {
             <div className="text-xl">@{handle}</div>
 
             <div className="h-11 w-11 rounded-full">
-              <ViewerProfilePicture circle draggable={false} />
+              <ViewerProfilePicture circle draggable={false} size={44} />
             </div>
           </div>
         </Button>

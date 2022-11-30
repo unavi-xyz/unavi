@@ -24,6 +24,7 @@
     "@trpc/next": "10.4.2",
     "@trpc/react-query": "10.4.2",
     "@trpc/server": "10.4.2",
+    "boring-avatars": "^1.7.0",
     "engine": "*",
     "ethers": "^5.7.2",
     "graphql": "^16.5.0",

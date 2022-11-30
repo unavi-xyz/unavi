@@ -35,7 +35,7 @@ export default function ProfileButton() {
             {!isMobile && <div>@{handle}</div>}
 
             <div className="h-9 w-9 overflow-hidden">
-              <ViewerProfilePicture circle draggable={false} />
+              <ViewerProfilePicture circle draggable={false} size={36} />
             </div>
           </div>
         </Button>

@@ -63,7 +63,7 @@ export default function Index() {
               {FEATURED_SPACES.map((id) => (
                 <Link key={id} href={`/space/${id}`}>
                   <div className="h-44 md:h-48">
-                    <SpaceIdCard spaceId={id} animateEnter />
+                    <SpaceIdCard spaceId={id} sizes="331px" animateEnter />
                   </div>
                 </Link>
               ))}

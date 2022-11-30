@@ -25,7 +25,7 @@ export default function Index() {
               platform.
             </div>
 
-            <div className="flex w-full flex-col justify-center space-y-2 pt-2 text-xl md:flex-row md:space-y-0 md:space-x-4">
+            <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl md:flex-row md:space-y-0 md:space-x-4">
               <div className="w-full md:w-fit">
                 <Link href={`/app/${FEATURED_SPACES[1]}`}>
                   <Button variant="filled" rounded="large" fullWidth>
@@ -54,7 +54,7 @@ export default function Index() {
             </div>
           </section>
 
-          <section className="mb-[100px] space-y-4 md:mb-[150px] ">
+          <section className="mb-[100px] space-y-6 md:mb-[150px] ">
             <div className="text-center text-3xl font-black md:text-4xl">
               Featured Spaces
             </div>
@@ -70,14 +70,49 @@ export default function Index() {
             </div>
           </section>
 
-          <section className="mb-[100px] space-y-4 md:mb-[150px]">
-            <div className="text-center text-3xl font-black md:text-4xl">
-              The Spatial Web
+          <section className="mb-[100px] flex flex-col space-y-8 md:mb-[150px] md:flex-row md:space-y-0 md:space-x-4">
+            <div className="relative h-[200px] w-full md:h-[300px]">
+              <Image
+                src="/images/Screenshot1.png"
+                fill
+                sizes="512"
+                alt=""
+                className="w-full rounded-3xl object-cover"
+              />
             </div>
 
-            <div className="mx-auto text-center text-lg text-outline md:w-2/3 md:text-xl">
-              The Wired reimagines the web as an interconnected network of 3D
-              spaces, instead of 2D websites.
+            <div className="flex w-full flex-col justify-center space-y-4">
+              <div className="text-center text-3xl font-black md:text-4xl">
+                The Spatial Web
+              </div>
+
+              <div className="mx-auto text-center text-lg text-outline md:text-xl">
+                The Wired reimagines the web as an interconnected network of 3D
+                spaces, instead of 2D websites.
+              </div>
+            </div>
+          </section>
+
+          <section className="mb-[100px] flex flex-col-reverse md:mb-[150px] md:flex-row md:space-y-0 md:space-x-4">
+            <div className="flex w-full flex-col justify-center space-y-4 pt-8 md:pt-0">
+              <div className="text-center text-3xl font-black md:text-4xl">
+                Cross Platform
+              </div>
+
+              <div className="mx-auto text-center text-lg text-outline md:text-xl">
+                All you need is a web browser - explore from your phone, laptop,
+                or VR headset.
+              </div>
+            </div>
+
+            <div className="relative h-[200px] w-full md:h-[300px]">
+              <Image
+                src="/images/Screenshot2.png"
+                fill
+                sizes="512"
+                alt=""
+                className="w-full rounded-3xl object-cover"
+              />
             </div>
           </section>
 
@@ -99,29 +134,6 @@ export default function Index() {
                   </Button>
                 </a>
               </div>
-            </div>
-          </section>
-
-          <section className="mb-[100px] md:mb-[150px]">
-            <div className="relative h-[256px] w-full md:h-[512px]">
-              <Image
-                src="/images/Screenshot1.png"
-                fill
-                sizes="1024"
-                alt=""
-                className="w-full rounded-3xl object-cover"
-              />
-            </div>
-          </section>
-
-          <section className="mb-[100px] space-y-4 md:mb-[150px]">
-            <div className="text-center text-3xl font-black md:text-4xl">
-              Cross Platform
-            </div>
-
-            <div className="mx-auto text-center text-lg text-outline md:w-2/3 md:text-xl">
-              All you need is a web browser - explore from your phone, laptop,
-              or VR headset.
             </div>
           </section>
 

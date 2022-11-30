@@ -74,9 +74,10 @@ export default function Index() {
             <div className="relative h-[200px] w-full md:h-[300px]">
               <Image
                 src="/images/Screenshot1.png"
+                alt=""
                 fill
                 sizes="512"
-                alt=""
+                loading="eager"
                 className="w-full rounded-3xl object-cover"
               />
             </div>
@@ -108,9 +109,10 @@ export default function Index() {
             <div className="relative h-[200px] w-full md:h-[300px]">
               <Image
                 src="/images/Screenshot2.png"
+                alt=""
                 fill
                 sizes="512"
-                alt=""
+                loading="eager"
                 className="w-full rounded-3xl object-cover"
               />
             </div>

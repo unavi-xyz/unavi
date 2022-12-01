@@ -31,7 +31,7 @@ export const getStaticProps = async () => {
       const props = await getPublicationProps(publication.lensId);
 
       return {
-        id: publication.id,
+        id: publication.lensId,
         ...props,
       };
     })

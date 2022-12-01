@@ -49,15 +49,11 @@ export default function Settings(
     setLoading(true);
 
     try {
-      const promises: Promise<any>[] = [];
-
       // Hide from lens API
-      promises.push(hidePublication({ request: { publicationId: id } }));
+      await hidePublication({ request: { publicationId: id } });
 
       // Remove from database
-      promises.push(deletePublication({ lensId: id }));
-
-      await Promise.all(promises);
+      await deletePublication({ lensId: id });
 
       router.push(`/user/${handle}`);
     } catch (err) {

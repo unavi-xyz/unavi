@@ -169,17 +169,15 @@ export default function Editor() {
           </div>
 
           <Split
-            sizes={[5, 85, 10]}
-            minSize={[250, 500, 350]}
+            sizes={[15, 65, 20]}
+            minSize={[250, 500, 400]}
             direction="horizontal"
             expandToMin
             gutterSize={6}
             className="flex h-full"
             onMouseUp={updateCanvasSize}
           >
-            <div className="h-full">
-              <TreeMenu />
-            </div>
+            <TreeMenu />
 
             <div className="h-full border-x">
               <div

@@ -352,7 +352,7 @@ export class PhysicsWorker {
       const groundedCollision = this.#world.castShape(
         playerPosition,
         playerRotation,
-        this.#world.gravity,
+        { x: 0, y: -20, z: 0 },
         groundCollisionShape,
         this.#world.timestep,
         false,

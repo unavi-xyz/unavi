@@ -2402,10 +2402,10 @@
     ndarray-lanczos "^0.1.2"
     ndarray-pixels "^1.0.0"
 
-"@graphql-codegen/cli@2.14.1":
-  version "2.14.1"
-  resolved "https://registry.yarnpkg.com/@graphql-codegen/cli/-/cli-2.14.1.tgz#6a44d37a5d6275d3416077736ecbd30c77e7d437"
-  integrity sha512-Z9EiX8yJ5xtNdw/1ApV8uKx6UjCNl/D28zTHU8Fa7BcCdi3ilGOKSiWCNZaH1mpwKr5EfX18kme2bIqKmohv/w==
+"@graphql-codegen/cli@2.15.0":
+  version "2.15.0"
+  resolved "https://registry.yarnpkg.com/@graphql-codegen/cli/-/cli-2.15.0.tgz#e36dd8cdb32ce58aeeebd546266cd435732e796f"
+  integrity sha512-o4Wh99VJDX/z0fG3pkdOf0t0fu7SlYn6qlLnqzNhVpZByGPe548gu11GKiOPKVaQ76kkB3dzqzfINRl+v7EA4A==
   dependencies:
     "@babel/generator" "^7.18.13"
     "@babel/template" "^7.18.10"
@@ -3618,10 +3618,10 @@
   resolved "https://registry.yarnpkg.com/@types/ndarray/-/ndarray-1.0.11.tgz#a78730ac1fd10ea01cda6954dba7b3bf4fa126f4"
   integrity sha512-hOZVTN24zDHwCHaW7mF9n1vHJt83fZhNZ0YYRBwQGhA96yBWWDPTDDlqJatagHIOJB0a4xoNkNc+t/Cxd+6qUA==
 
-"@types/node@*", "@types/node@>=13.7.0", "@types/node@^18.0.0", "@types/node@^18.11.9":
-  version "18.11.9"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.9.tgz#02d013de7058cea16d36168ef2fc653464cfbad4"
-  integrity sha512-CRpX21/kGdzjOpFsZSkcrXMGIBWMGNIHXXBVFSH+ggkftxg+XYP20TESbh+zFvFj3EQOl5byk0HTRn1IL6hbqg==
+"@types/node@*", "@types/node@>=13.7.0", "@types/node@^18.0.0", "@types/node@^18.11.10", "@types/node@^18.11.9":
+  version "18.11.10"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.10.tgz#4c64759f3c2343b7e6c4b9caf761c7a3a05cee34"
+  integrity sha512-juG3RWMBOqcOuXC643OAdSA525V44cVgGV6dUDuiFtss+8Fk5x1hI93Rsld43VeJVIeqlP9I7Fn9/qaVqoEAuQ==
 
 "@types/node@^12.12.54":
   version "12.20.55"
@@ -3851,10 +3851,10 @@
   resolved "https://registry.yarnpkg.com/@vanilla-extract/sprinkles/-/sprinkles-1.5.0.tgz#c921183ae518bb484299c2dc81f2acefd91c3dbe"
   integrity sha512-W58f2Rzz5lLmk0jbhgStVlZl5wEiPB1Ur3fRvUaBM+MrifZ3qskmFq/CiH//fEYeG5Dh9vF1qRviMMH46cX9Nw==
 
-"@wagmi/core@0.7.6":
-  version "0.7.6"
-  resolved "https://registry.yarnpkg.com/@wagmi/core/-/core-0.7.6.tgz#bbcada361d8ab0e1c65660002d6c8a9cc34d8f4a"
-  integrity sha512-svnft0E7J7pFD48LdD73IHnB7kaokqHjhUHb39pknU1/EryM4m6UCc2MFf9tBHT69Tna2V1BcDTX0ZoE2pnclA==
+"@wagmi/core@0.7.7":
+  version "0.7.7"
+  resolved "https://registry.yarnpkg.com/@wagmi/core/-/core-0.7.7.tgz#eb42f1986763207fe8ccffdb80752a08bbec605f"
+  integrity sha512-28SRBNfU41Urf5AOVdjZPbWE9wvOZd8DE2FYiPqgHb4RFlVh76TAMBDBAsX7WLXfH7D4cFxYwTFX1tub/fAksQ==
   dependencies:
     abitype "^0.1.8"
     eventemitter3 "^4.0.7"
@@ -5905,10 +5905,10 @@ eslint-plugin-simple-import-sort@^8.0.0:
   resolved "https://registry.yarnpkg.com/eslint-plugin-simple-import-sort/-/eslint-plugin-simple-import-sort-8.0.0.tgz#9d9a2372b0606e999ea841b10458a370a6ccc160"
   integrity sha512-bXgJQ+lqhtQBCuWY/FUWdB27j4+lqcvXv5rUARkzbeWLwea+S5eBZEQrhnO+WgX3ZoJHVj0cn943iyXwByHHQw==
 
-eslint-plugin-tailwindcss@^3.7.0:
-  version "3.7.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-tailwindcss/-/eslint-plugin-tailwindcss-3.7.0.tgz#09f39b18d73141a18e7cb2431bcab89f68010b31"
-  integrity sha512-e/Pe2jr0vbvNnDXylHoubDGwSh4Z5a4ZhZrkUKHU4MYdSUpjFSofGoMwBSU3d1TybTbo89ENCEWnl1BVAM1iuQ==
+eslint-plugin-tailwindcss@^3.7.1:
+  version "3.7.1"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-tailwindcss/-/eslint-plugin-tailwindcss-3.7.1.tgz#1ca37d25ebdd224300d3b3ca06af2dab841334f0"
+  integrity sha512-MCPpVp5VvNYuRz1JYN9sN0r/cgAt3SfIlKbvYjVij+T/8r0z4U8nPY/c07vm+dLYb7mBv9N9LLIR4l9pLHSJaQ==
   dependencies:
     fast-glob "^3.2.5"
     postcss "^8.4.4"
@@ -8150,10 +8150,10 @@ media-query-parser@^2.0.2:
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-mediasoup-client@^3.6.62:
-  version "3.6.62"
-  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.62.tgz#095b96c1769bda6eb63e2c9f7d313df360d5a0da"
-  integrity sha512-P4/BM7HEf7XZdF3OHirOsbSwJhghyec0tZnzDlOTEZqxdRek0tnu1QWcm4cioBSyvMG1TXi9lwicxB/qUgzQ1g==
+mediasoup-client@^3.6.63:
+  version "3.6.63"
+  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.63.tgz#5e145cbbfd9dbd33c65dd1b77c24fec432ac4e95"
+  integrity sha512-JiQ5fdsK7ghIfJ5Yw3Wc+91Wgmey58PqTN+Tc135iP4WrszpgNhfeKpxHPSknZlyHRLOkV5+V78O9FUsK4z7FQ==
   dependencies:
     "@types/debug" "^4.1.7"
     awaitqueue "^2.4.0"
@@ -10987,16 +10987,16 @@ vscode-uri@^3.0.3:
   resolved "https://registry.yarnpkg.com/vscode-uri/-/vscode-uri-3.0.6.tgz#5e6e2e1a4170543af30151b561a41f71db1d6f91"
   integrity sha512-fmL7V1eiDBFRRnu+gfRWTzyPpNIHJTc4mWnFkwBUmO9U3KPgJAmTx7oxi2bl/Rh6HLdU7+4C9wlj0k2E4AdKFQ==
 
-wagmi@^0.8.7:
-  version "0.8.7"
-  resolved "https://registry.yarnpkg.com/wagmi/-/wagmi-0.8.7.tgz#2f191f1d19dcea2de78e976ab2c64c505339e026"
-  integrity sha512-WfaNBaYEigB48WaYBDkecyuitrhGnIHiPJT5V1wDc5RlMRkl9bx8UB87M1b9ZRaMsrjxWvF2+9mtw+30LR9y9g==
+wagmi@^0.8.8:
+  version "0.8.8"
+  resolved "https://registry.yarnpkg.com/wagmi/-/wagmi-0.8.8.tgz#8a297c08999fa1560c14659401684755ee033cd6"
+  integrity sha512-KrDPkXLzQjxWY4Umu3HPAvJHerXK+7myB+X0z9RlDmgXhuoWgqQheW21XC/AQfeHFxHusLyjCgCXpJmz/DPVyA==
   dependencies:
     "@coinbase/wallet-sdk" "^3.5.3"
     "@tanstack/query-sync-storage-persister" "^4.14.5"
     "@tanstack/react-query" "^4.14.5"
     "@tanstack/react-query-persist-client" "^4.14.5"
-    "@wagmi/core" "0.7.6"
+    "@wagmi/core" "0.7.7"
     "@walletconnect/ethereum-provider" "^1.8.0"
     abitype "^0.1.7"
     use-sync-external-store "^1.2.0"

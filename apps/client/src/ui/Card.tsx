@@ -3,10 +3,9 @@ import { MdPeople } from "react-icons/md";
 
 import { isFromCDN } from "../utils/isFromCDN";
 
-export interface Props {
+interface Props {
   image?: string | null;
   text?: string | null;
-  subtext?: string | null;
   sizes?: string;
   aspect?: "card" | "vertical";
   animateEnter?: boolean;
@@ -16,19 +15,18 @@ export interface Props {
 export default function Card({
   image,
   text,
-  subtext,
   sizes,
   aspect = "card",
   animateEnter = false,
   playerCount,
 }: Props) {
   const aspectCss = aspect === "card" ? "aspect-card" : "aspect-vertical";
-  const animateCss = animateEnter ? "animate-fadeIn" : null;
+  const animateCss = animateEnter ? "animate-fadeIn" : "";
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-2xl bg-primaryContainer transition hover:scale-105">
+    <div className="h-full w-full transition hover:scale-105">
       <div
-        className={`relative flex h-full w-full flex-col ${animateCss} ${aspectCss}`}
+        className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-primaryContainer ${animateCss} ${aspectCss}`}
       >
         {image &&
           (isFromCDN(image) ? (
@@ -69,17 +67,6 @@ export default function Card({
               }}
             >
               {text}
-            </div>
-          )}
-
-          {subtext && (
-            <div
-              className="overflow-hidden text-lg drop-shadow-dark"
-              style={{
-                textShadow: "0 0 6px rgba(0, 0, 0, 0.4)",
-              }}
-            >
-              {subtext}
             </div>
           )}
         </div>

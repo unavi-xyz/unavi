@@ -11,7 +11,7 @@ import SpaceCard from "../home/lens/SpaceCard";
 import MetaTags from "../home/MetaTags";
 import Button from "../ui/Button";
 
-const FEATURED_SPACES: string[] = ["0x46ad-0x33", "0x46ad-0x22", "0x46ad-0x24"];
+const FEATURED_SPACES: string[] = ["0x46ad-0x3d", "0x46ad-0x3e", "0x46ad-0x3f"];
 
 export const getStaticProps = async () => {
   const featuredSpaces = await Promise.all(

@@ -1,10 +1,9 @@
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import { MdPeople } from "react-icons/md";
 
 import { isFromCDN } from "../utils/isFromCDN";
 
-interface Props {
+export interface CardProps {
   image?: string | null;
   text?: string | null;
   subtext?: string | null;
@@ -22,21 +21,13 @@ export default function Card({
   aspect = "card",
   animateEnter = false,
   playerCount,
-}: Props) {
-  const [visible, setVisible] = useState(!animateEnter);
-
-  useEffect(() => {
-    if (!animateEnter) return;
-    const timeout = setTimeout(() => setVisible(true), 100);
-    return () => clearTimeout(timeout);
-  }, [animateEnter]);
-
+}: CardProps) {
   const aspectCss = aspect === "card" ? "aspect-card" : "aspect-vertical";
-  const opacityCss = visible ? "opacity-100" : "opacity-0 translate-y-2";
+  const animateCss = animateEnter ? "animate-fadeIn" : null;
 
   return (
     <div
-      className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-primaryContainer transition hover:scale-105 hover:cursor-pointer ${opacityCss} ${aspectCss}`}
+      className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-primaryContainer transition hover:scale-105 hover:cursor-pointer ${animateCss} ${aspectCss}`}
     >
       {image &&
         (isFromCDN(image) ? (

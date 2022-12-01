@@ -1,25 +1,57 @@
+/* eslint-disable tailwindcss/no-custom-classname */
+import { Post } from "lens";
+import { InferGetStaticPropsType } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
+import { getPublicationProps } from "../client/lens/utils/getPublicationProps";
 import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../constants";
+import { useAnimateOnEnter } from "../home/hooks/useAnimateOnEnter";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
-import SpaceIdCard from "../home/lens/SpaceIdCard";
+import SpaceCard from "../home/lens/SpaceCard";
 import MetaTags from "../home/MetaTags";
 import Button from "../ui/Button";
 
 const FEATURED_SPACES: string[] = ["0x46ad-0x33", "0x46ad-0x22", "0x46ad-0x24"];
 
-export default function Index() {
+export const getStaticProps = async () => {
+  const featuredSpaces = await Promise.all(
+    FEATURED_SPACES.map(async (id) => {
+      const props = await getPublicationProps(id);
+      return {
+        id,
+        ...props,
+      };
+    })
+  );
+
+  return {
+    props: {
+      featuredSpaces,
+    },
+    revalidate: 86400,
+  };
+};
+
+export default function Index({
+  featuredSpaces,
+}: InferGetStaticPropsType<typeof getStaticProps>) {
+  useAnimateOnEnter();
+
   return (
     <>
       <MetaTags />
 
-      <div className="flex h-full justify-center overflow-auto">
+      <div className="flex h-full justify-center">
         <div className="max-w-content mx-4">
-          <section className="flex flex-col justify-center space-y-1 py-[200px] md:py-[300px]">
-            <div className="text-center text-6xl font-black md:text-7xl">
+          <section className="show-on-scroll flex flex-col justify-center space-y-1 py-[200px] md:py-[300px]">
+            <div
+              className="text-center text-6xl font-black transition
+            md:text-7xl"
+            >
               The Wired
             </div>
+
             <div className="pb-2 text-center text-xl md:text-2xl">
               An <strong>open and decentralized</strong> web-based metaverse
               platform.
@@ -54,23 +86,25 @@ export default function Index() {
             </div>
           </section>
 
-          <section className="mb-[100px] space-y-6 md:mb-[150px] ">
+          <section className="show-on-scroll mb-[100px] space-y-6 md:mb-[150px]">
             <div className="text-center text-3xl font-black md:text-4xl">
               Featured Spaces
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {FEATURED_SPACES.map((id) => (
+              {featuredSpaces.map(({ id, publication }) => (
                 <Link key={id} href={`/space/${id}`}>
                   <div className="h-44 md:h-48">
-                    <SpaceIdCard spaceId={id} sizes="331px" animateEnter />
+                    {publication && (
+                      <SpaceCard space={publication as Post} sizes="331px" />
+                    )}
                   </div>
                 </Link>
               ))}
             </div>
           </section>
 
-          <section className="mb-[100px] flex flex-col space-y-8 md:mb-[150px] md:flex-row md:space-y-0 md:space-x-4">
+          <section className="show-on-scroll mb-[100px] flex flex-col space-y-8 md:mb-[150px] md:flex-row md:space-y-0 md:space-x-4">
             <div className="relative h-[200px] w-full md:h-[300px]">
               <Image
                 src="/images/Screenshot1.png"
@@ -94,7 +128,7 @@ export default function Index() {
             </div>
           </section>
 
-          <section className="mb-[100px] flex flex-col-reverse md:mb-[150px] md:flex-row md:space-y-0 md:space-x-4">
+          <section className="show-on-scroll mb-[100px] flex flex-col-reverse md:mb-[150px] md:flex-row md:space-y-0 md:space-x-4">
             <div className="flex w-full flex-col justify-center space-y-4 pt-8 md:pt-0">
               <div className="text-center text-3xl font-black md:text-4xl">
                 Cross Platform
@@ -118,7 +152,7 @@ export default function Index() {
             </div>
           </section>
 
-          <section className="mb-[100px] space-y-4 rounded-3xl p-8 outline outline-2 outline-black md:mb-[150px] md:p-12">
+          <section className="show-on-scroll mb-[100px] space-y-4 rounded-3xl p-8 outline outline-2 outline-black md:mb-[150px] md:p-12">
             <div className="text-center text-3xl font-black md:text-4xl">
               Open by Design
             </div>
@@ -141,7 +175,7 @@ export default function Index() {
             </div>
           </section>
 
-          <section className="space-y-4 pb-[150px]">
+          <section className="show-on-scroll space-y-4 pb-[150px]">
             <div className="text-center text-3xl font-black md:text-4xl">
               Join the Community
             </div>

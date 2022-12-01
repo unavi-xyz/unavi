@@ -45,8 +45,7 @@ export function useSave() {
     const { name, description, engine, sceneLoaded, isSaving } =
       useEditorStore.getState();
 
-    if (isSaving || !sceneLoaded) return;
-    if (!engine) throw new Error("No engine");
+    if (isSaving || !sceneLoaded || !engine) return;
 
     useEditorStore.setState({ isSaving: true, changesToSave: false });
 

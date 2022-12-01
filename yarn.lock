@@ -8407,10 +8407,10 @@ next-auth@^4.17.0:
     preact-render-to-string "^5.1.19"
     uuid "^8.3.2"
 
-next-axiom@^0.15.1:
-  version "0.15.1"
-  resolved "https://registry.yarnpkg.com/next-axiom/-/next-axiom-0.15.1.tgz#841a58c90030db21d3fd71f26e8feda5278332f3"
-  integrity sha512-5leWEoW6LugxLGFilmJPCVmG8cfZio6sXtVw+/7dqQvEbX5T1dwvoOSfmLh2NjocP/i/R2jpdrtgFl+ZrkOl1Q==
+next-axiom@^0.16.0:
+  version "0.16.0"
+  resolved "https://registry.yarnpkg.com/next-axiom/-/next-axiom-0.16.0.tgz#0bdde740cf51ba9f3bff0e68061c488c9a150094"
+  integrity sha512-WlmObMtra/OJPiJ6Gim4g8OTuLlJx9DVTeEaNmBIO3wEkR+Nt4932/xng2a9XofOVR7RgaNk1QIyPrqZW9P25w==
   dependencies:
     whatwg-fetch "^3.6.2"
 

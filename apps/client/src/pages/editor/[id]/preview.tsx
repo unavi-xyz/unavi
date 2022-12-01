@@ -15,7 +15,6 @@ import {
 } from "../../../editor/utils/fileStorage";
 import { updateGltfColliders } from "../../../editor/utils/updateGltfColliders";
 import MetaTags from "../../../home/MetaTags";
-import LoadingBar from "../../../ui/LoadingBar";
 
 export default function Preview() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -325,15 +324,7 @@ export default function Preview() {
       <Script src="/scripts/draco_encoder.js" />
       <Script src="/scripts/draco_decoder.js" />
 
-      <div className="h-screen">
-        {loadingProgress !== 1 && (
-          <div className="absolute top-0 left-0 flex h-full w-full animate-fadeInSlow items-center justify-center">
-            <div className="flex h-full flex-col items-center justify-center">
-              <LoadingBar progress={loadingProgress} text={loadingText} />
-            </div>
-          </div>
-        )}
-
+      <div className="h-screen w-screen overflow-hidden">
         <LoadingScreen
           text={project?.name}
           image={imageURL}

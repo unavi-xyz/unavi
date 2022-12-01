@@ -17,7 +17,7 @@ export function useSetProfileImage(profileId: string) {
   const { client } = useLens();
   const { openConnectModal } = useConnectModal();
 
-  async function setProfileImage(picture: File): Promise<boolean> {
+  async function setProfileImage(picture: File | null): Promise<boolean> {
     if (!signer) {
       if (openConnectModal) openConnectModal();
       else throw new Error("No signer");
@@ -25,7 +25,7 @@ export function useSetProfileImage(profileId: string) {
     }
 
     //upload image to ipfs
-    const url = await uploadFileToIpfs(picture);
+    const url = picture ? await uploadFileToIpfs(picture) : "";
 
     //create typed data
     const { data, error } = await createTypedData({

@@ -30,6 +30,8 @@ export default function Settings() {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingProfilePicture, setLoadingProfilePicture] = useState(false);
+  const [loadingProfilePictureDelete, setLoadingProfilePictureDelete] =
+    useState(false);
 
   const { handle } = useLens();
   const profile = useProfileByHandle(handle);
@@ -94,7 +96,8 @@ export default function Settings() {
   }
 
   async function handleProfilePictureSave() {
-    if (!pfpFile || loadingProfilePicture) return;
+    if (!pfpFile || loadingProfilePicture || loadingProfilePictureDelete)
+      return;
 
     setLoadingProfilePicture(true);
 
@@ -105,6 +108,20 @@ export default function Settings() {
     }
 
     setLoadingProfilePicture(false);
+  }
+
+  async function handleProfilePictureDelete() {
+    if (loadingProfilePicture || loadingProfilePictureDelete) return;
+
+    setLoadingProfilePictureDelete(true);
+
+    try {
+      await setProfileImage(null);
+    } catch (err) {
+      console.error(err);
+    }
+
+    setLoadingProfilePictureDelete(false);
   }
 
   const twitter = profile?.attributes?.find((item) => item.key === "twitter");
@@ -229,12 +246,23 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className="flex w-full justify-end">
+            <div className="flex w-full justify-end space-x-2">
+              {pfpUrl && (
+                <Button
+                  variant="text"
+                  color="error"
+                  onClick={handleProfilePictureDelete}
+                  loading={loadingProfilePictureDelete}
+                  disabled={loadingProfilePicture}
+                >
+                  Remove
+                </Button>
+              )}
               <Button
                 variant="filled"
                 onClick={handleProfilePictureSave}
                 loading={loadingProfilePicture}
-                disabled={!pfpFile}
+                disabled={!pfpFile || loadingProfilePictureDelete}
               >
                 Save
               </Button>

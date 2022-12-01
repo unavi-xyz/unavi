@@ -1,5 +1,4 @@
 import { useEditorStore } from "../store";
-import { removeMesh } from "./RemoveMeshAction";
 
 export class RemoveNodeAction {
   constructor(nodeId: string) {
@@ -11,9 +10,6 @@ export class RemoveNodeAction {
 
     // Remove node
     engine.scene.removeNode(nodeId);
-
-    // Remove mesh
-    if (node.meshId) removeMesh(node.meshId);
 
     useEditorStore.setState({ changesToSave: true });
   }

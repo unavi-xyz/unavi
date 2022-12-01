@@ -46,6 +46,7 @@ export function createCollider(
         new BoxGeometry(...nodeCollider.size),
         wireframeMaterial
       );
+      if (isUniformScale) visual.scale.divideScalar(globalScale[0]);
       break;
     }
 
@@ -54,6 +55,7 @@ export function createCollider(
         new SphereGeometry(nodeCollider.radius),
         wireframeMaterial
       );
+      if (isUniformScale) visual.scale.divideScalar(globalScale[0]);
       break;
     }
 
@@ -67,6 +69,7 @@ export function createCollider(
         ),
         wireframeMaterial
       );
+      if (isUniformScale) visual.scale.divideScalar(globalScale[0]);
       break;
     }
 
@@ -177,9 +180,6 @@ export function createCollider(
       break;
     }
   }
-
-  // Hack to fix scaling of visual after auto collider conversion
-  if (isUniformScale) visual?.scale.divideScalar(globalScale[0]);
 
   if (visual) {
     const object = map.objects.get(nodeId);

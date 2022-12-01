@@ -3,7 +3,6 @@ import {
   argentWallet,
   coinbaseWallet,
   injectedWallet,
-  ledgerWallet,
   metaMaskWallet,
   rainbowWallet,
   walletConnectWallet,
@@ -45,7 +44,6 @@ const connectors = connectorsForWallets([
     groupName: "More",
     wallets: [
       argentWallet({ chains }),
-      ledgerWallet({ chains }),
       walletConnectWallet({ chains }),
       ...(needsInjectedWalletFallback ? [injectedWallet({ chains })] : []),
     ],

@@ -2,16 +2,23 @@ import { useGetPublicationQuery } from "lens";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-import Spinner from "../../ui/Spinner";
+import LoadingBar from "../../ui/LoadingBar";
 import { getMediaURL } from "../../utils/getMediaURL";
 import { isFromCDN } from "../../utils/isFromCDN";
 
 interface Props {
   spaceId: string;
   loaded: boolean;
+  loadingProgress: number;
+  loadingText: string;
 }
 
-export default function LoadingScreen({ spaceId, loaded }: Props) {
+export default function LoadingScreen({
+  spaceId,
+  loaded,
+  loadingProgress,
+  loadingText,
+}: Props) {
   const [entered, setEntered] = useState(false);
   const [enterTransitionFinished, setEnterTransitionFinished] = useState(false);
 
@@ -84,7 +91,7 @@ export default function LoadingScreen({ spaceId, loaded }: Props) {
             </div>
 
             <div className="flex w-full justify-center">
-              {!loaded && <Spinner />}
+              <LoadingBar progress={loadingProgress} text={loadingText} />
             </div>
           </div>
         )}

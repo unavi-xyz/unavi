@@ -26,9 +26,7 @@ function setGltfCollider(nodeId: string, rootCollider: ColliderJSON | null) {
   if (!engine) return;
 
   const node = engine.scene.nodes[nodeId];
-  if (!node) throw new Error(`Node ${nodeId} not found`);
-
-  if (!node.isInternal) return;
+  if (!node?.isInternal) return;
 
   switch (rootCollider?.type) {
     case "auto": {

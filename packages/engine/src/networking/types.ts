@@ -32,6 +32,14 @@ export type IChatMessage = {
   timestamp: number;
 };
 
+export type SpaceJoinStatus = {
+  spaceId: string | null;
+  spaceFetched: boolean;
+  wsConnected: boolean;
+  webrtcConnected: boolean;
+  sceneLoaded: boolean;
+};
+
 type GenericWebSocketMessage<S extends string, D> = {
   subject: S;
   data: D;

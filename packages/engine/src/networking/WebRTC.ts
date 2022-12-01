@@ -109,7 +109,10 @@ export class WebRTC {
           if (state === "connected" && data.type === "producer") {
             if (this.#producedTrack) this.produceAudio(this.#producedTrack);
 
-            this.#networkingInterface.spaceJoinStatus.rtcConnected = true;
+            this.#networkingInterface.spaceJoinStatus = {
+              ...this.#networkingInterface.spaceJoinStatus,
+              webrtcConnected: true,
+            };
           }
         });
 

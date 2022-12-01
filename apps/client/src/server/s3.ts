@@ -55,7 +55,7 @@ export async function createSceneUploadURL(projectId: string) {
     ContentType: "application/json",
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
   return url;
 }
 
@@ -66,7 +66,7 @@ export async function createImageUploadURL(projectId: string) {
     ContentType: "image/jpeg",
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
   return url;
 }
 
@@ -76,7 +76,7 @@ export async function createFileUploadURL(projectId: string, fileId: string) {
     Key: projectFileKey(projectId, fileId),
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
   return url;
 }
 
@@ -88,7 +88,7 @@ export async function createPublishedModelUploadURL(projectId: string) {
     ACL: "public-read",
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
   return url;
 }
 
@@ -100,7 +100,7 @@ export async function createPublishedImageUploadURL(projectId: string) {
     ACL: "public-read",
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
   return url;
 }
 
@@ -112,7 +112,7 @@ export async function createPublishedMetadataUploadURL(projectId: string) {
     ACL: "public-read",
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
   return url;
 }
 
@@ -123,7 +123,7 @@ export async function createTempFileUploadURL(fileId: string) {
     ACL: "public-read",
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
   return url;
 }
 
@@ -133,7 +133,7 @@ export async function getSceneURL(projectId: string) {
     Key: projectSceneKey(projectId),
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
   return url;
 }
 
@@ -143,7 +143,7 @@ export async function getImageURL(projectId: string) {
     Key: projectImageKey(projectId),
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
   return url;
 }
 
@@ -153,7 +153,7 @@ export async function getFileURL(projectId: string, fileId: string) {
     Key: projectFileKey(projectId, fileId),
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
   return url;
 }
 

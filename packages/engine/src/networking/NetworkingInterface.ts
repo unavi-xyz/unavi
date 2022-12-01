@@ -13,7 +13,12 @@ import { RenderThread } from "../render/RenderThread";
 import { GLTFMesh, Node } from "../scene";
 import { toHex } from "../utils/toHex";
 import { LENS_API } from "./constants";
-import { FromHostMessage, InternalChatMessage, ToHostMessage } from "./types";
+import {
+  FromHostMessage,
+  InternalChatMessage,
+  SpaceJoinStatus,
+  ToHostMessage,
+} from "./types";
 import { WebRTC } from "./WebRTC";
 
 /*
@@ -49,11 +54,21 @@ export class NetworkingInterface {
   playerId$ = new BehaviorSubject<number | null>(null);
   chatMessages$ = new BehaviorSubject<InternalChatMessage[]>([]);
 
-  spaceJoinStatus = {
-    spaceId: "",
+  spaceJoinStatus$ = new BehaviorSubject<SpaceJoinStatus>({
+    spaceId: null,
+    spaceFetched: false,
     wsConnected: false,
-    rtcConnected: false,
-  };
+    webrtcConnected: false,
+    sceneLoaded: false,
+  });
+
+  get spaceJoinStatus() {
+    return this.spaceJoinStatus$.value;
+  }
+
+  set spaceJoinStatus(status: SpaceJoinStatus) {
+    this.spaceJoinStatus$.next(status);
+  }
 
   constructor({
     scene,
@@ -71,8 +86,10 @@ export class NetworkingInterface {
 
     this.spaceJoinStatus = {
       spaceId,
+      spaceFetched: false,
       wsConnected: false,
-      rtcConnected: false,
+      webrtcConnected: false,
+      sceneLoaded: false,
     };
 
     // Fetch space publication from lens
@@ -91,6 +108,11 @@ export class NetworkingInterface {
     const modelURL: string | undefined =
       publication?.metadata.media[1]?.original.url;
     if (!modelURL) throw new Error("Space model not found");
+
+    this.spaceJoinStatus = {
+      ...this.spaceJoinStatus,
+      spaceFetched: true,
+    };
 
     // Get host server
     const spaceHost = null; // TODO: get from metadata
@@ -125,6 +147,11 @@ export class NetworkingInterface {
       true
     );
 
+    this.spaceJoinStatus = {
+      ...this.spaceJoinStatus,
+      sceneLoaded: true,
+    };
+
     // Wait for space to load
     await new Promise((resolve, reject) => {
       const interval = setInterval(() => {
@@ -136,7 +163,7 @@ export class NetworkingInterface {
 
         if (
           this.spaceJoinStatus.wsConnected &&
-          this.spaceJoinStatus.rtcConnected &&
+          this.spaceJoinStatus.webrtcConnected &&
           this.#loadedPlayers.size === this.#connectedPlayers.size
         ) {
           clearInterval(interval);
@@ -171,7 +198,11 @@ export class NetworkingInterface {
     ws.onopen = () => {
       console.info("✅ Connected to host");
       this.#reconnectCount = 0;
-      this.spaceJoinStatus.wsConnected = true;
+
+      this.spaceJoinStatus = {
+        ...this.spaceJoinStatus,
+        wsConnected: true,
+      };
 
       // Start WebRTC connection
       if (!this.#webRTC) throw new Error("WebRTC not initialized");

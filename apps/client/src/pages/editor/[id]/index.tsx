@@ -123,7 +123,7 @@ export default function Editor() {
 
       <DndProvider backend={HTML5Backend}>
         <div
-          className="flex h-full flex-col overflow-hidden"
+          className="flex h-screen flex-col overflow-hidden"
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             const { engine } = useEditorStore.getState();
@@ -170,7 +170,7 @@ export default function Editor() {
 
           <Split
             sizes={[5, 85, 10]}
-            minSize={[250, 300, 430]}
+            minSize={[250, 500, 350]}
             direction="horizontal"
             expandToMin
             gutterSize={6}

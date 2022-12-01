@@ -5,6 +5,7 @@ import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
 
+import LoadingScreen from "../../../app/ui/LoadingScreen";
 import { trpc } from "../../../client/trpc";
 import { useEditorStore } from "../../../editor/store";
 import { SavedSceneJSON } from "../../../editor/types";
@@ -38,6 +39,14 @@ export default function Preview() {
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       refetchOnMount: false,
+      trpc: {},
+    }
+  );
+
+  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+    { id },
+    {
+      enabled: id !== undefined && !project?.publicationId,
       trpc: {},
     }
   );
@@ -318,12 +327,20 @@ export default function Preview() {
 
       <div className="h-screen">
         {loadingProgress !== 1 && (
-          <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+          <div className="absolute top-0 left-0 flex h-full w-full animate-fadeInSlow items-center justify-center">
             <div className="flex h-full flex-col items-center justify-center">
               <LoadingBar progress={loadingProgress} text={loadingText} />
             </div>
           </div>
         )}
+
+        <LoadingScreen
+          text={project?.name}
+          image={imageURL}
+          loaded={loadingProgress === 1}
+          loadingText={loadingText}
+          loadingProgress={loadingProgress}
+        />
 
         <div
           ref={containerRef}

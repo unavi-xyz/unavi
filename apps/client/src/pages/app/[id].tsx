@@ -1,3 +1,4 @@
+import { useGetPublicationQuery } from "lens";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -12,6 +13,7 @@ import LoadingScreen from "../../app/ui/LoadingScreen";
 import UserButton from "../../app/ui/UserButtons";
 import { getPublicationProps } from "../../client/lens/utils/getPublicationProps";
 import MetaTags from "../../home/MetaTags";
+import { getMediaURL } from "../../utils/getMediaURL";
 
 export const getServerSideProps = async ({
   res,
@@ -51,6 +53,13 @@ export default function App({
   useLoadUser();
   useAppHotkeys();
   useAnalytics();
+
+  const [{ data }] = useGetPublicationQuery({
+    variables: { request: { publicationId: id } },
+    pause: !id,
+  });
+
+  const image = getMediaURL(data?.publication?.metadata.media[0]);
 
   useEffect(() => {
     if (!engine) return;
@@ -182,7 +191,8 @@ export default function App({
       <Script src="/scripts/draco_decoder.js" />
 
       <LoadingScreen
-        spaceId={id}
+        text={data?.publication?.metadata.name}
+        image={image}
         loaded={engineStarted}
         loadingProgress={loadingProgress}
         loadingText={loadingText}

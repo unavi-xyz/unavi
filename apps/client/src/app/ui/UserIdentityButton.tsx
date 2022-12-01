@@ -38,6 +38,7 @@ export default function UserIdentityButton() {
             placement="right"
             open={openMenu}
             onClose={() => setOpenMenu(false)}
+            fullWidth
           >
             <ProfileMenu
               openSwitchProfile={() => setOpenSwitchProfile(true)}

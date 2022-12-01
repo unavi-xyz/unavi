@@ -97,8 +97,8 @@ export default function MaterialComponent({ nodeId }: Props) {
             </button>
           )}
 
-          <DropdownMenu open={open} onClose={() => setOpen(false)}>
-            <div className="flex max-h-52 flex-col space-y-1 overflow-x-hidden overflow-y-scroll p-2">
+          <DropdownMenu open={open} onClose={() => setOpen(false)} fullWidth>
+            <div className="flex max-h-64 flex-col space-y-1 overflow-x-hidden overflow-y-scroll p-2">
               {materials.length > 0 ? (
                 materials.map((material) => {
                   return (

@@ -8,12 +8,16 @@ import {
   Group,
   LoopPingPong,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
   Quaternion,
+  Shape,
+  ShapeGeometry,
   Vector3,
   WebGLRenderer,
 } from "three";
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../../../constants";
@@ -36,6 +40,8 @@ export class PlayerAvatar {
 
   #vrm: VRM | null = null;
   #camera?: PerspectiveCamera;
+  #sceneCamera: Camera;
+  #nameplate: Mesh | null = null;
 
   #defaultAvatarPath?: string;
   #avatarAnimationsPath?: string;
@@ -76,17 +82,17 @@ export class PlayerAvatar {
     this.#defaultAvatarPath = defaultAvatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
     this.#camera = camera;
+    this.#sceneCamera = sceneCamera;
     this.#queue = new ObjectQueue(renderer, sceneCamera);
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
-    // Load VRM model
-    try {
-      this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath);
-    } catch (error) {
-      console.error(error);
-      console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
-    }
+    this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath).catch(
+      (error) => {
+        console.error(error);
+        console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
+      }
+    );
   }
 
   async #loadModel(avatarPath?: string, avatarAnimationsPath?: string) {
@@ -198,6 +204,66 @@ export class PlayerAvatar {
       subject: "player_loaded",
       data: this.playerId,
     });
+  }
+
+  async setName(name: string) {
+    // Remove previous nameplate
+    if (this.#nameplate) disposeObject(this.#nameplate);
+
+    // Create text
+    const loader = new FontLoader();
+    const font = await loader.loadAsync(
+      new URL("./font.json", import.meta.url).href
+    );
+
+    const shapes = font.generateShapes(name, 0.075);
+    const geometry = new ShapeGeometry(shapes);
+
+    // Center horizontally
+    geometry.computeBoundingBox();
+    if (!geometry.boundingBox) throw new Error("No bounding box");
+    const xMid =
+      -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
+    geometry.translate(xMid, 0, 0);
+
+    const material = new MeshBasicMaterial();
+
+    const mesh = new Mesh(geometry, material);
+    mesh.position.y = PLAYER_HEIGHT - 0.25;
+    mesh.rotation.y = Math.PI;
+
+    this.group.add(mesh);
+    this.#nameplate = mesh;
+
+    // Create background
+    const width =
+      geometry.boundingBox.max.x - geometry.boundingBox.min.x + 0.15;
+    const height =
+      geometry.boundingBox.max.y - geometry.boundingBox.min.y + 0.06;
+    const radius = height / 2;
+
+    const shape = new Shape();
+    shape.moveTo(0, radius);
+    shape.lineTo(0, height - radius);
+    shape.quadraticCurveTo(0, height, radius, height);
+    shape.lineTo(width - radius, height);
+    shape.quadraticCurveTo(width, height, width, height - radius);
+    shape.lineTo(width, radius);
+    shape.quadraticCurveTo(width, 0, width - radius, 0);
+    shape.lineTo(radius, 0);
+    shape.quadraticCurveTo(0, 0, 0, radius);
+
+    const roundedRectangle = new ShapeGeometry(shape);
+
+    const background = new Mesh(
+      roundedRectangle,
+      new MeshBasicMaterial({ color: 0x010101 })
+    );
+    background.position.x = -width / 2;
+    background.position.y = -height / 4;
+    background.position.z = -0.0001;
+
+    this.#nameplate.add(background);
   }
 
   setAvatar(avatarPath: string | null) {
@@ -358,6 +424,16 @@ export class PlayerAvatar {
       this.#vrm?.humanoid.humanBones.head.node.quaternion.multiply(
         this.#headRotation
       );
+    }
+
+    // Update nameplate
+    if (this.#nameplate) {
+      // Hide if too far away
+      this.#nameplate.visible =
+        this.#sceneCamera.position.distanceTo(this.group.position) < 10;
+
+      // Rotate to face camera
+      this.#nameplate.lookAt(this.#sceneCamera.position);
     }
   }
 

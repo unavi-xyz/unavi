@@ -74,6 +74,12 @@ export class OtherPlayersPlugin {
         this.#players.forEach((player) => this.removePlayer(player.playerId));
         break;
       }
+
+      case "player_name": {
+        const player = this.#players.get(data.playerId);
+        if (player) player.setName(data.name);
+        break;
+      }
     }
   }
 

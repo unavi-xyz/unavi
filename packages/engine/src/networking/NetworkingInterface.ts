@@ -257,14 +257,18 @@ export class NetworkingInterface {
           this.#renderThread.postMessage({ subject: "player_joined", data });
 
           // Get player name
+          const username = this.#getUsername(data.playerId);
+
+          this.#renderThread.postMessage({
+            subject: "player_name",
+            data: {
+              playerId: data.playerId,
+              name: username,
+            },
+          });
+
           const handle = this.#playerHandles.get(data.playerId);
           const isHandle = Boolean(handle);
-
-          let username = isHandle
-            ? `@${handle}`
-            : this.#playerNames.get(data.playerId);
-
-          if (!username) username = `Guest ${toHex(data.playerId)}`;
 
           // Add message to chat if they joined after you
           if (!data.beforeYou)
@@ -277,6 +281,7 @@ export class NetworkingInterface {
               username,
               isHandle,
             });
+
           break;
         }
 
@@ -292,12 +297,10 @@ export class NetworkingInterface {
           this.#renderThread.postMessage({ subject: "player_left", data });
 
           // Get player name
+          const username = this.#getUsername(data);
+
           const handle = this.#playerHandles.get(data);
           const isHandle = Boolean(handle);
-
-          let username = isHandle ? `@${handle}` : this.#playerNames.get(data);
-
-          if (!username) username = `Guest ${toHex(data)}`;
 
           // Add message to chat
           this.#addChatMessage({
@@ -314,14 +317,10 @@ export class NetworkingInterface {
 
         case "player_message": {
           // Get player name
+          const username = this.#getUsername(data.playerId);
+
           const handle = this.#playerHandles.get(data.playerId);
           const isHandle = Boolean(handle);
-
-          let username = isHandle
-            ? `@${handle}`
-            : this.#playerNames.get(data.playerId);
-
-          if (!username) username = `Guest ${toHex(data.playerId)}`;
 
           // Add message to chat
           this.#addChatMessage({
@@ -346,6 +345,17 @@ export class NetworkingInterface {
 
           if (data.name) this.#playerNames.set(data.playerId, data.name);
           else this.#playerNames.delete(data.playerId);
+
+          const username = this.#getUsername(data.playerId);
+
+          this.#renderThread.postMessage({
+            subject: "player_name",
+            data: {
+              playerId: data.playerId,
+              name: username,
+            },
+          });
+
           break;
         }
 
@@ -523,6 +533,16 @@ export class NetworkingInterface {
     newChatMessages.splice(0, newChatMessages.length - 25);
 
     this.chatMessages$.next(newChatMessages);
+  }
+
+  #getUsername(playerId: number) {
+    const handle = this.#playerHandles.get(playerId);
+    const isHandle = Boolean(handle);
+
+    let username = isHandle ? `@${handle}` : this.#playerNames.get(playerId);
+    if (!username) username = `Guest ${toHex(playerId)}`;
+
+    return username;
   }
 
   #isWsOpen() {

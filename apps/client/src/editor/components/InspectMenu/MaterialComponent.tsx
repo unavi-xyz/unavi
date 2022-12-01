@@ -98,7 +98,7 @@ export default function MaterialComponent({ nodeId }: Props) {
           )}
 
           <DropdownMenu open={open} onClose={() => setOpen(false)}>
-            <div className="flex max-h-52 flex-col space-y-1 overflow-y-auto p-2">
+            <div className="flex max-h-52 flex-col space-y-1 overflow-x-hidden overflow-y-scroll p-2">
               {materials.length > 0 ? (
                 materials.map((material) => {
                   return (
@@ -284,30 +284,37 @@ function DropdownMaterialButton({
   selectedId: string | null;
   onClick: () => void;
 }) {
+  const [hovering, setHovering] = useState(false);
+
   const material = useMaterial(materialId);
   if (!material) return null;
 
   const selectedClass = materialId === selectedId ? "bg-primaryContainer" : "";
+  const hoveringClass = hovering ? "opacity-100" : "";
 
   return (
-    <div className="group relative">
+    <div className="relative">
       <button
         onClick={onClick}
-        className={`w-full cursor-default rounded-md transition hover:bg-primaryContainer ${selectedClass}`}
+        onMouseOver={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+        className={`group flex w-full cursor-default items-center justify-between rounded-md pl-4 pr-2 transition hover:bg-primaryContainer ${selectedClass}`}
       >
-        <div>{material.name || materialId}</div>
-      </button>
+        <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+          {material.name || materialId}
+        </div>
 
-      <div
-        onPointerUp={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          removeMaterial(materialId);
-        }}
-        className="absolute right-2 top-0 z-10 flex h-full items-center text-outline opacity-0 transition hover:text-black group-hover:opacity-100"
-      >
-        <MdDelete />
-      </div>
+        <div
+          onPointerUp={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            removeMaterial(materialId);
+          }}
+          className={`text-outline opacity-0 transition hover:text-black ${hoveringClass}`}
+        >
+          <MdDelete />
+        </div>
+      </button>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-/* eslint-disable tailwindcss/no-custom-classname */
 import { Post } from "lens";
 import { InferGetStaticPropsType } from "next";
 import Image from "next/image";

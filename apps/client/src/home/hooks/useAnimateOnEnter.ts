@@ -23,9 +23,6 @@ export function useAnimateOnEnter() {
 
     // Loop through each of the target
     targets.forEach(function (target) {
-      // Hide the element
-      target.classList.add("opacity-0");
-
       // Add the element to the watcher
       observer.observe(target);
     });

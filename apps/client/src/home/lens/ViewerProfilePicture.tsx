@@ -9,9 +9,14 @@ import ProfilePicture from "./ProfilePicture";
 interface Props {
   circle?: boolean;
   draggable?: boolean;
+  size: number;
 }
 
-export default function ViewerProfilePicture({ circle, draggable }: Props) {
+export default function ViewerProfilePicture({
+  circle,
+  draggable,
+  size,
+}: Props) {
   const { handle } = useLens();
 
   const [firstLoad, setFirstLoad] = useState(true);
@@ -26,9 +31,17 @@ export default function ViewerProfilePicture({ circle, draggable }: Props) {
   }, [firstLoad, fetching]);
 
   const profile = data?.profiles.items[0];
-  const src = firstLoad
-    ? null
-    : getMediaURL(profile?.picture) ?? `https://avatar.tobi.sh/${handle}`;
+  const src = firstLoad ? null : getMediaURL(profile?.picture);
 
-  return <ProfilePicture circle={circle} draggable={draggable} src={src} />;
+  if (!handle) return null;
+
+  return (
+    <ProfilePicture
+      circle={circle}
+      draggable={draggable}
+      src={src}
+      uniqueKey={handle}
+      size={size}
+    />
+  );
 }

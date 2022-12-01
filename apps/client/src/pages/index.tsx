@@ -1,174 +1,218 @@
+import { Post } from "lens";
+import { InferGetStaticPropsType } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { FaBook, FaDiscord } from "react-icons/fa";
-import { MdArrowDownward } from "react-icons/md";
-import { VscGithubInverted, VscTwitter } from "react-icons/vsc";
 
+import { getPublicationProps } from "../client/lens/utils/getPublicationProps";
 import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../constants";
-import LandingInfoBlock from "../home/LandingInfoBlock";
+import { useAnimateOnEnter } from "../home/hooks/useAnimateOnEnter";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
+import SpaceCard from "../home/lens/SpaceCard";
 import MetaTags from "../home/MetaTags";
 import Button from "../ui/Button";
 
-export default function Index() {
+const FEATURED_SPACES: string[] = ["0x46ad-0x3d", "0x46ad-0x3e", "0x46ad-0x3f"];
+
+export const getStaticProps = async () => {
+  const featuredSpaces = await Promise.all(
+    FEATURED_SPACES.map(async (id) => {
+      const props = await getPublicationProps(id);
+      return {
+        id,
+        ...props,
+      };
+    })
+  );
+
+  return {
+    props: {
+      featuredSpaces,
+    },
+    revalidate: 86400,
+  };
+};
+
+export default function Index({
+  featuredSpaces,
+}: InferGetStaticPropsType<typeof getStaticProps>) {
+  useAnimateOnEnter();
+
   return (
     <>
       <MetaTags />
 
-      <div className="flex justify-center pt-64">
-        <div className="max-w-content mx-4 snap-y snap-mandatory space-y-12">
-          <div className="h-screen snap-center pt-14 pb-12">
-            <div className="flex h-full flex-col-reverse pb-8 md:flex-row md:items-center">
-              <div className="flex h-full w-full flex-col space-y-4 md:justify-center">
-                <div className="text-center text-6xl font-black md:text-left md:text-8xl">
-                  The Wired
-                </div>
-
-                <div className="pb-2 text-center text-xl md:text-left md:text-3xl">
-                  An <strong>open and decentralized</strong> web-based metaverse
-                  platform.
-                </div>
-
-                <div className="flex flex-col justify-between space-y-2 text-lg md:flex-row md:justify-start md:space-y-0 md:space-x-4 md:text-xl">
-                  <div className="w-full md:w-fit">
-                    <Link href="/explore" passHref>
-                      <Button variant="filled" rounded="large" fullWidth>
-                        <div className="md:py-0.5 md:px-4">Play Now</div>
-                      </Button>
-                    </Link>
-                  </div>
-
-                  <div className="w-full md:w-fit">
-                    <a href={DOCS_URL} target="_blank" rel="noreferrer">
-                      <Button variant="text" rounded="large" fullWidth>
-                        <div className="md:py-0.5 md:px-4">Read Docs</div>
-                      </Button>
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <div className="h-full w-full py-6 md:h-1/2 md:w-1/2 md:py-0">
-                <div className="relative h-full w-full">
-                  <Image
-                    src="/images/Jump.png"
-                    priority
-                    fill
-                    sizes="341px"
-                    alt="Wired-chan"
-                    className="select-none object-contain"
-                  />
-                </div>
-              </div>
+      <div className="flex h-full justify-center">
+        <div className="max-w-content mx-4">
+          <section className="show-on-scroll flex flex-col justify-center space-y-1 py-[200px] md:py-[300px]">
+            <div
+              className="text-center text-6xl font-black transition
+            md:text-7xl"
+            >
+              The Wired
             </div>
 
-            <div className="-mt-5 flex justify-center md:-mt-8">
-              <MdArrowDownward className="animate-bounce rounded-full bg-surfaceDark p-1 text-4xl text-onSurfaceDark md:text-5xl" />
+            <div className="pb-2 text-center text-xl md:text-2xl">
+              An <strong>open and decentralized</strong> web-based metaverse
+              platform.
             </div>
-          </div>
 
-          <LandingInfoBlock
-            title="Create"
-            subtitle="Leave your mark on cyberspace"
-            body="Whether you're looking to build a digital home, start a clothing brand, or just scratch that creative itch - the Wired has you covered."
-            image="/images/Create.png"
-            imageSide="left"
-            buttonText="Start Creating"
-            buttonLink="/create"
-          />
-
-          <LandingInfoBlock
-            title="Explore"
-            subtitle="Discover new experiences"
-            body="Go rock climbing on Ganymede, hit an underground music festival, watch the sunset with a group of friends - who knows what you'll find."
-            image="/images/Explore.png"
-            imageSide="right"
-            buttonText="Start Exploring"
-            buttonLink="/explore"
-          />
-
-          <LandingInfoBlock
-            title="Open"
-            subtitle="Take control of your digital life"
-            body="Above all, the Wired is an open platform. Anyone can run their own game servers, modify their client, or build something new on top of it."
-            image="/images/Open.png"
-            imageSide="left"
-            buttonText="Read Docs"
-            buttonLink={DOCS_URL}
-          />
-
-          <div className="h-screen snap-center py-24">
-            <div className="flex h-full flex-col md:flex-row md:items-center">
-              <div className="h-full w-full py-4 md:h-1/2 md:w-1/2 md:p-8 md:py-0">
-                <div className="relative h-full w-full">
-                  <Image
-                    src="/images/Sitting.png"
-                    fill
-                    loading="eager"
-                    sizes="293px"
-                    alt="Wired-chan"
-                    className="select-none object-contain"
-                  />
-                </div>
+            <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl md:flex-row md:space-y-0 md:space-x-4">
+              <div className="w-full md:w-fit">
+                <Link href={`/app/${FEATURED_SPACES[1]}`}>
+                  <Button variant="filled" rounded="large" fullWidth>
+                    <div className="flex h-9 items-center justify-center md:px-4">
+                      Play Now
+                    </div>
+                  </Button>
+                </Link>
               </div>
 
-              <div className="w-full space-y-2">
-                <div className="w-fit rounded-xl bg-primaryContainer px-5 py-2 text-6xl font-black text-onPrimaryContainer">
-                  Links
-                </div>
-
-                <div className="flex flex-col space-y-2 pt-4 text-2xl">
-                  <a
-                    href={DISCORD_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-lg px-6 py-1 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <FaDiscord />
-                      <div>Discord</div>
-                    </div>
-                  </a>
-
-                  <a
-                    href={TWITTER_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-lg px-6 py-1 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <VscTwitter />
-                      <div>Twitter</div>
-                    </div>
-                  </a>
-
-                  <a
-                    href={GITHUB_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-lg px-6 py-1 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <VscGithubInverted />
+              <div className="w-full md:w-fit">
+                <a href={GITHUB_URL} target="_blank" rel="noreferrer">
+                  <Button variant="outlined" rounded="large" fullWidth>
+                    <div className="flex h-9 items-center justify-center space-x-4 px-1">
+                      <Image
+                        src="/images/GitHub.svg"
+                        width={32}
+                        height={32}
+                        alt=""
+                      />
                       <div>GitHub</div>
                     </div>
-                  </a>
-
-                  <a
-                    href={DOCS_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-lg px-6 py-1 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <FaBook />
-                      <div>Docs</div>
-                    </div>
-                  </a>
-                </div>
+                  </Button>
+                </a>
               </div>
             </div>
-          </div>
+          </section>
+
+          <section className="show-on-scroll mb-[100px] space-y-6 md:mb-[150px]">
+            <div className="text-center text-3xl font-black md:text-4xl">
+              Featured Spaces
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {featuredSpaces.map(({ id, publication }) => (
+                <Link key={id} href={`/space/${id}`}>
+                  <div className="h-44 md:h-48">
+                    {publication && (
+                      <SpaceCard space={publication as Post} sizes="331px" />
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="show-on-scroll mb-[100px] flex flex-col space-y-8 md:mb-[150px] md:flex-row md:space-y-0 md:space-x-4">
+            <div className="relative h-[200px] w-full md:h-[300px]">
+              <Image
+                src="/images/Screenshot1.png"
+                alt=""
+                fill
+                sizes="512"
+                loading="eager"
+                className="w-full rounded-3xl object-cover"
+              />
+            </div>
+
+            <div className="flex w-full flex-col justify-center space-y-4">
+              <div className="text-center text-3xl font-black md:text-4xl">
+                The Spatial Web
+              </div>
+
+              <div className="mx-auto text-center text-lg text-outline md:text-xl">
+                The Wired reimagines the web as an interconnected network of 3D
+                spaces, instead of 2D websites.
+              </div>
+            </div>
+          </section>
+
+          <section className="show-on-scroll mb-[100px] flex flex-col-reverse md:mb-[150px] md:flex-row md:space-y-0 md:space-x-4">
+            <div className="flex w-full flex-col justify-center space-y-4 pt-8 md:pt-0">
+              <div className="text-center text-3xl font-black md:text-4xl">
+                Cross Platform
+              </div>
+
+              <div className="mx-auto text-center text-lg text-outline md:text-xl">
+                All you need is a web browser - explore from your phone, laptop,
+                or VR headset.
+              </div>
+            </div>
+
+            <div className="relative h-[200px] w-full md:h-[300px]">
+              <Image
+                src="/images/Screenshot2.png"
+                alt=""
+                fill
+                sizes="512"
+                loading="eager"
+                className="w-full rounded-3xl object-cover"
+              />
+            </div>
+          </section>
+
+          <section className="show-on-scroll mb-[100px] space-y-4 rounded-3xl p-8 outline outline-2 outline-black md:mb-[150px] md:p-12">
+            <div className="text-center text-3xl font-black md:text-4xl">
+              Open by Design
+            </div>
+
+            <div className="mx-auto text-center text-lg text-outline md:w-2/3 md:text-xl">
+              Each layer is open for others to build on. Mod your client. Run
+              your own servers. The possibilities are endless.
+            </div>
+
+            <div className="flex w-full justify-center">
+              <div className="w-full md:w-fit">
+                <a href={DOCS_URL} target="_blank" rel="noreferrer">
+                  <Button variant="filled" rounded="large" fullWidth>
+                    <div className="flex h-9 items-center justify-center text-xl md:px-4">
+                      View Docs
+                    </div>
+                  </Button>
+                </a>
+              </div>
+            </div>
+          </section>
+
+          <section className="show-on-scroll space-y-4 pb-[150px]">
+            <div className="text-center text-3xl font-black md:text-4xl">
+              Join the Community
+            </div>
+
+            <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl md:flex-row md:space-y-0 md:space-x-4">
+              <div className="w-full md:w-fit">
+                <a href={DISCORD_URL} target="_blank" rel="noreferrer">
+                  <Button variant="outlined" rounded="large" fullWidth>
+                    <div className="flex h-9 items-center justify-center space-x-4 px-1">
+                      <Image
+                        src="/images/Discord.svg"
+                        width={32}
+                        height={32}
+                        alt=""
+                      />
+                      <div>Discord</div>
+                    </div>
+                  </Button>
+                </a>
+              </div>
+
+              <div className="w-full md:w-fit">
+                <a href={TWITTER_URL} target="_blank" rel="noreferrer">
+                  <Button variant="outlined" rounded="large" fullWidth>
+                    <div className="flex h-9 items-center justify-center space-x-4 px-1">
+                      <Image
+                        src="/images/Twitter.svg"
+                        width={32}
+                        height={32}
+                        alt=""
+                      />
+                      <div>Twitter</div>
+                    </div>
+                  </Button>
+                </a>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </>

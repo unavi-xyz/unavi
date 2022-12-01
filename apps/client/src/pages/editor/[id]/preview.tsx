@@ -5,6 +5,7 @@ import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
 
+import LoadingScreen from "../../../app/ui/LoadingScreen";
 import { trpc } from "../../../client/trpc";
 import { useEditorStore } from "../../../editor/store";
 import { SavedSceneJSON } from "../../../editor/types";
@@ -14,7 +15,6 @@ import {
 } from "../../../editor/utils/fileStorage";
 import { updateGltfColliders } from "../../../editor/utils/updateGltfColliders";
 import MetaTags from "../../../home/MetaTags";
-import Spinner from "../../../ui/Spinner";
 
 export default function Preview() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -22,6 +22,8 @@ export default function Preview() {
   const createdEngine = useRef(false);
 
   const [exportedScene, setExportedScene] = useState<Uint8Array>();
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingText, setLoadingText] = useState("Starting engine...");
 
   const engine = useEditorStore((state) => state.engine);
 
@@ -36,6 +38,14 @@ export default function Preview() {
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       refetchOnMount: false,
+      trpc: {},
+    }
+  );
+
+  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+    { id },
+    {
+      enabled: id !== undefined && !project?.publicationId,
       trpc: {},
     }
   );
@@ -86,6 +96,9 @@ export default function Preview() {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");
 
+      setLoadingText("Starting engine...");
+      setLoadingProgress(0);
+
       const { Engine } = await import("engine");
 
       // Create engine
@@ -119,16 +132,22 @@ export default function Preview() {
     async function load() {
       if (!engine || !sceneURL || !fileURLs) return;
 
-      console.info("🏗️ Loading scene...");
+      setLoadingText("Fetching scene...");
+      setLoadingProgress(0.2);
 
       const sceneResponse = await fetch(sceneURL);
       const savedScene: SavedSceneJSON = await sceneResponse.json();
+
+      setLoadingProgress(0.25);
 
       const scene: SceneJSON = {
         ...savedScene,
         images: [],
         accessors: [],
       };
+
+      const fetchCount = Object.keys(fileURLs).length;
+      const fetchPercent = 0.15 / fetchCount;
 
       // Load glTF models
       const modelPromises = scene.meshes.map(async (mesh) => {
@@ -141,6 +160,8 @@ export default function Preview() {
           const url = URL.createObjectURL(blob);
 
           mesh.uri = url;
+
+          setLoadingProgress((prev) => prev + fetchPercent);
         }
       });
 
@@ -163,6 +184,8 @@ export default function Preview() {
           array,
           bitmap,
         });
+
+        setLoadingProgress((prev) => prev + fetchPercent);
       });
 
       // Load accessors
@@ -182,18 +205,19 @@ export default function Preview() {
       await Promise.all(modelPromises);
       await Promise.all(imagePromises);
 
+      setLoadingText("Loading scene...");
+
       // Load scene
       await engine.scene.loadJSON(scene);
 
       // Update colliders
       scene.nodes.forEach((node) => updateGltfColliders(node.id));
 
+      setLoadingText("Exporting scene...");
+      setLoadingProgress(0.6);
+
       // Export scene as GLB
-      console.info("🏗️ Exporting scene to glTF...");
-
       const glb = await engine.export();
-
-      console.info("🏗️ Scene exported");
 
       // Clear scene
       engine.scene.clear();
@@ -220,6 +244,9 @@ export default function Preview() {
   useEffect(() => {
     if (!engine || !exportedScene) return;
 
+    setLoadingText("Loading exported scene...");
+    setLoadingProgress(0.8);
+
     // Load exported scene
     const blob = new Blob([exportedScene], { type: "model/gltf-binary" });
     const url = URL.createObjectURL(blob);
@@ -230,8 +257,6 @@ export default function Preview() {
 
     const node = new Node();
     node.meshId = mesh.id;
-
-    console.info("🏗️ Loading glTF...");
 
     // Add node to scene
     engine.scene
@@ -245,7 +270,9 @@ export default function Preview() {
       .then(async () => {
         // Start engine
         await engine.start();
-        console.info("🏗️ glTF loaded");
+
+        setLoadingText("Ready!");
+        setLoadingProgress(1);
       });
 
     return () => {
@@ -297,14 +324,14 @@ export default function Preview() {
       <Script src="/scripts/draco_encoder.js" />
       <Script src="/scripts/draco_decoder.js" />
 
-      <div className="h-full">
-        {!exportedScene && (
-          <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
-            <div className="flex h-full flex-col items-center justify-center">
-              <Spinner />
-            </div>
-          </div>
-        )}
+      <div className="h-screen w-screen overflow-hidden">
+        <LoadingScreen
+          text={project?.name}
+          image={imageURL}
+          loaded={loadingProgress === 1}
+          loadingText={loadingText}
+          loadingProgress={loadingProgress}
+        />
 
         <div
           ref={containerRef}

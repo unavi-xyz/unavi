@@ -52,7 +52,7 @@ export async function loadMixamoAnimation(
       if (!vrmBoneName) return;
 
       const vrmBone = vrm.humanoid.getNormalizedBoneNode(vrmBoneName);
-      if (!vrmBone) throw new Error("No VRM bone");
+      if (!vrmBone) return;
 
       const mixamoRigNode = fbx.getObjectByName(mixamoRigName);
       if (!mixamoRigNode) throw new Error("No mixamo rig node");

@@ -10,6 +10,10 @@ html {
   @apply w-full max-w-screen-lg;
 }
 
+.show-on-scroll {
+  @apply opacity-0;
+}
+
 /* Scrollbar Width */
 ::-webkit-scrollbar {
   width: 16px;

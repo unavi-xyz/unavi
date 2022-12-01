@@ -17,7 +17,7 @@ export default function ComponentMenu({
 
   return (
     <div
-      className={`group space-y-4 rounded-2xl p-5 ring-neutral-300 transition ${outlineClass}`}
+      className={`group space-y-4 rounded-2xl p-4 ring-neutral-300 transition ${outlineClass}`}
     >
       <div className="-mt-1 flex justify-between text-xl font-bold">
         {title && <div>{title}</div>}

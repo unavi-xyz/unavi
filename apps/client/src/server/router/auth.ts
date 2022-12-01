@@ -431,8 +431,7 @@ export const authRouter = router({
         const publication = await prisma.publication.findFirst({
           where: { lensId: input.lensId, owner: ctx.address },
         });
-        if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
-        id = publication.id;
+        if (publication) id = publication.id;
       }
 
       if (!id) throw new TRPCError({ code: "BAD_REQUEST" });
@@ -455,12 +454,10 @@ export const authRouter = router({
       });
 
       // Delete publication from database
-      promises.push(
-        prisma.publication.delete({
-          where: { id },
-          include: { ViewEvents: true },
-        })
-      );
+      await prisma.publication.delete({
+        where: { id },
+        include: { ViewEvents: true },
+      });
 
       await Promise.all(promises);
     }),

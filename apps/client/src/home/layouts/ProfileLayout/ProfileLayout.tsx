@@ -58,13 +58,13 @@ export default function ProfileLayout({
                     priority
                     fill
                     sizes="80vw"
-                    alt="cover"
+                    alt=""
                     className="h-full w-full object-cover md:rounded-3xl"
                   />
                 ) : (
                   <img
                     src={coverImage}
-                    alt="cover"
+                    alt=""
                     className="h-full w-full object-cover md:rounded-3xl"
                     crossOrigin="anonymous"
                   />
@@ -76,8 +76,10 @@ export default function ProfileLayout({
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-background">
                 <ProfilePicture
-                  src={profileImage ?? `https://avatar.tobi.sh/${handle}`}
+                  src={profileImage}
                   circle
+                  uniqueKey={handle}
+                  size={128}
                 />
               </div>
 

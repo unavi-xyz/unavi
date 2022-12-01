@@ -34,7 +34,7 @@ export default function ObjectsMenu() {
         <button
           key={name}
           onClick={() => addObject(name)}
-          className="flex w-full items-center rounded-lg px-4 py-0.5 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
+          className="flex w-full items-center whitespace-nowrap rounded-lg px-4 py-0.5 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
         >
           {name}
         </button>

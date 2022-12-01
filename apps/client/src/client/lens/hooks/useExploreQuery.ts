@@ -14,9 +14,6 @@ export function useExploreQuery(
   pageSize: number,
   sources: AppId[],
   sortCriteria: PublicationSortCriteria,
-  timestamp: number | null = null,
-  publicationTypes: PublicationTypes[] = [PublicationTypes.Post],
-  randomize = false,
   extraSize = 1
 ) {
   const [cursor, setCursor] = useState(0);
@@ -34,11 +31,10 @@ export function useExploreQuery(
       request: {
         sources,
         sortCriteria,
-        publicationTypes,
+        publicationTypes: [PublicationTypes.Post],
         limit,
-        timestamp,
         cursor: cursor * pageSize,
-        noRandomize: !randomize,
+        noRandomize: true,
       },
     },
   });

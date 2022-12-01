@@ -65,7 +65,7 @@ export default function InspectMenu() {
         />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4 px-1">
         <TransformComponent nodeId={selectedId} />
 
         {mesh && <MeshComponent nodeId={selectedId} mesh={mesh} />}

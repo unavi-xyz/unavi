@@ -38,7 +38,7 @@ export default function SettingsLayout({ children }: Props) {
         <div className="w-full space-y-2 pt-8 md:max-w-xs md:pr-8">
           <div className="flex space-x-4 pb-4">
             <div className="flex w-20 flex-col justify-center p-1">
-              <ViewerProfilePicture circle />
+              <ViewerProfilePicture circle size={80} />
             </div>
             <div className="flex flex-col justify-center">
               <div className="break-all text-lg font-black ">@{handle}</div>

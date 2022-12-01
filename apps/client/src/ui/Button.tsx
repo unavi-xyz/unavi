@@ -95,7 +95,7 @@ export default function Button({
 
   return (
     <button
-      className={`relative flex select-none items-center justify-center font-bold transition ${cursorClass} ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass} ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
+      className={`relative flex select-none items-center justify-center font-bold ring-inset transition ${cursorClass} ${paddingClass} ${disabledClass} ${fullWidthClass} ${roundClass} ${textClass} ${outlineClass} ${tonalClass} ${filledClass} ${elevatedClass}`}
       {...rest}
     >
       <div className={`w-full ${loadingClass}`}>{children}</div>

@@ -4,6 +4,7 @@ interface Props {
   open?: boolean;
   onClose?: () => void;
   placement?: "left" | "right";
+  fullWidth?: boolean;
   children: React.ReactNode;
 }
 
@@ -11,6 +12,7 @@ export default function DropdownMenu({
   open = false,
   onClose,
   placement = "left",
+  fullWidth = false,
   children,
 }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -52,12 +54,13 @@ export default function DropdownMenu({
   }, [onClose, open]);
 
   const placementClass = placement === "left" ? "left-0" : "right-0";
+  const fullWidthClass = fullWidth ? "w-full" : "";
 
   return (
     <div className="relative">
       <div
         ref={menuRef}
-        className={`absolute z-10 w-full min-w-max scale-75 rounded-xl bg-surface text-onSurface opacity-0 shadow-xl ring-1 ring-neutral-100 transition ${placementClass}`}
+        className={`absolute z-10 scale-75 rounded-xl bg-surface text-onSurface opacity-0 shadow-xl ring-1 ring-neutral-100 transition ${fullWidthClass} ${placementClass}`}
       >
         {visible && children}
       </div>

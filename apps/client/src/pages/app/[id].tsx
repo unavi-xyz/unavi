@@ -1,3 +1,4 @@
+import { useGetPublicationQuery } from "lens";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -12,6 +13,7 @@ import LoadingScreen from "../../app/ui/LoadingScreen";
 import UserButton from "../../app/ui/UserButtons";
 import { getPublicationProps } from "../../client/lens/utils/getPublicationProps";
 import MetaTags from "../../home/MetaTags";
+import { getMediaURL } from "../../utils/getMediaURL";
 
 export const getServerSideProps = async ({
   res,
@@ -41,6 +43,8 @@ export default function App({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const createdEngine = useRef(false);
   const [engineStarted, setEngineStarted] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingText, setLoadingText] = useState("Starting engine...");
 
   const engine = useAppStore((state) => state.engine);
 
@@ -50,17 +54,48 @@ export default function App({
   useAppHotkeys();
   useAnalytics();
 
+  const [{ data }] = useGetPublicationQuery({
+    variables: { request: { publicationId: id } },
+    pause: !id,
+  });
+
+  const image = getMediaURL(data?.publication?.metadata.media[0]);
+
   useEffect(() => {
     if (!engine) return;
+
+    engine.networkingInterface.spaceJoinStatus$.subscribe(
+      ({ spaceFetched, sceneLoaded, webrtcConnected, wsConnected }) => {
+        setLoadingText("Fetching space...");
+        setLoadingProgress(0.2);
+
+        if (!spaceFetched) return;
+
+        setLoadingText("Connecting...");
+        setLoadingProgress(0.35);
+
+        if (!wsConnected) return;
+
+        setLoadingText("Connecting...");
+        setLoadingProgress(0.5);
+
+        if (!webrtcConnected) return;
+
+        setLoadingText("Loading scene...");
+        setLoadingProgress(0.75);
+
+        if (!sceneLoaded) return;
+
+        setLoadingText("Ready!");
+        setLoadingProgress(1);
+      }
+    );
 
     engine.joinSpace(id).then(async () => {
       // Start engine
       await engine.start();
 
-      // Set a delay to let the scene load + networking connect
-      setTimeout(() => {
-        setEngineStarted(true);
-      }, 2000);
+      setEngineStarted(true);
     });
 
     return () => {
@@ -75,6 +110,9 @@ export default function App({
     async function initEngine() {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");
+
+      setLoadingText("Starting engine...");
+      setLoadingProgress(0);
 
       const { Engine } = await import("engine");
 
@@ -152,10 +190,16 @@ export default function App({
 
       <Script src="/scripts/draco_decoder.js" />
 
-      <LoadingScreen spaceId={id} loaded={engineStarted} />
+      <LoadingScreen
+        text={data?.publication?.metadata.name}
+        image={image}
+        loaded={engineStarted}
+        loadingProgress={loadingProgress}
+        loadingText={loadingText}
+      />
 
       <div
-        className="h-full w-full"
+        className="h-screen w-screen"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           const { engine } = useAppStore.getState();

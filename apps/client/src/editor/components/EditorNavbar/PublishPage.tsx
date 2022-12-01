@@ -23,6 +23,7 @@ import Button from "../../../ui/Button";
 import ButtonFileInput from "../../../ui/ButtonFileInput";
 import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
+import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
 
@@ -50,6 +51,7 @@ export default function PublishPage() {
   const { openConnectModal } = useConnectModal();
   const profile = useProfileByHandle(handle);
   const createPost = useCreatePost(profile?.id);
+  const { save } = useSave();
 
   const { data: imageURL } = trpc.auth.projectImage.useQuery(
     { id },
@@ -95,6 +97,9 @@ export default function PublishPage() {
     try {
       setLoading(true);
       const promises: Promise<void>[] = [];
+
+      // Save project
+      await save();
 
       // Create database publication
       const publicationId = await createPublication();
@@ -242,6 +247,9 @@ export default function PublishPage() {
         router.push(`/user/${handle}`);
         return;
       }
+
+      // Wait 3 seconds for the publication to be indexed
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       // This is a hack to get the publicationId
       // Get latest publications

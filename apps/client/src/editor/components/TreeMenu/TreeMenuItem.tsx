@@ -120,7 +120,9 @@ export default function TreeMenuItem({ id }: Props) {
             (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
         </div>
 
-        <div className="whitespace-nowrap">{name}</div>
+        <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+          {name}
+        </div>
       </div>
 
       {open && hasChildren && (
@@ -134,7 +136,7 @@ export default function TreeMenuItem({ id }: Props) {
       {!hasChildren && (
         <div
           ref={dropBelow}
-          className={`-mt-1 h-1 w-full rounded-md ${highlightBelowClass}`}
+          className={`h-1 w-full rounded-md ${highlightBelowClass}`}
         />
       )}
     </div>

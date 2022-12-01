@@ -1,4 +1,4 @@
-import { VRM, VRMLoaderPlugin } from "@pixiv/three-vrm";
+import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import {
   AnimationAction,
   AnimationClip,
@@ -8,12 +8,16 @@ import {
   Group,
   LoopPingPong,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
   Quaternion,
+  Shape,
+  ShapeGeometry,
   Vector3,
   WebGLRenderer,
 } from "three";
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../../../constants";
@@ -33,10 +37,11 @@ export class PlayerAvatar {
   readonly group = new Group();
 
   isFalling = false;
-  #isUser = false;
 
   #vrm: VRM | null = null;
   #camera?: PerspectiveCamera;
+  #sceneCamera: Camera;
+  #nameplate: Mesh | null = null;
 
   #defaultAvatarPath?: string;
   #avatarAnimationsPath?: string;
@@ -50,13 +55,14 @@ export class PlayerAvatar {
   #forwardWeight = 0;
   #sprintWeight = 0;
 
-  #velocity = new Vector3();
   #averageVelocity = new Vector3();
-
-  #tempQuat = new Quaternion();
+  #headRotation = new Quaternion();
   #prevPosition = new Vector3();
   #targetPosition = new Vector3();
   #targetRotation = new Quaternion();
+  #tempQuat = new Quaternion();
+  #tempQuat2 = new Quaternion();
+  #velocity = new Vector3();
 
   #loader = new GLTFLoader();
   #queue: ObjectQueue;
@@ -76,18 +82,17 @@ export class PlayerAvatar {
     this.#defaultAvatarPath = defaultAvatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
     this.#camera = camera;
-    this.#isUser = Boolean(camera);
+    this.#sceneCamera = sceneCamera;
     this.#queue = new ObjectQueue(renderer, sceneCamera);
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
-    // Load VRM model
-    try {
-      this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath);
-    } catch (error) {
-      console.error(error);
-      console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
-    }
+    this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath).catch(
+      (error) => {
+        console.error(error);
+        console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
+      }
+    );
   }
 
   async #loadModel(avatarPath?: string, avatarAnimationsPath?: string) {
@@ -107,9 +112,10 @@ export class PlayerAvatar {
     const gltf = await this.#loader.loadAsync(avatarPath);
     const vrm = gltf.userData.vrm as VRM;
 
-    // Remove previous VRM model
+    // Remove previous VRM
     if (this.#vrm) {
-      disposeObject(this.#vrm.scene);
+      this.#vrm.scene.removeFromParent();
+      VRMUtils.deepDispose(this.#vrm.scene);
       this.#vrm = null;
     }
 
@@ -127,13 +133,19 @@ export class PlayerAvatar {
       this.#camera.layers.disable(vrm.firstPerson.thirdPersonOnlyLayer);
     }
 
-    // Set VRM model
-    this.#vrm = vrm;
+    // Process VRM
+    VRMUtils.removeUnnecessaryVertices(vrm.scene);
+    VRMUtils.removeUnnecessaryJoints(vrm.scene);
+    VRMUtils.rotateVRM0(vrm);
 
-    // Process scene
+    vrm.scene.rotation.y += Math.PI;
+
     vrm.scene.traverse((object) => {
       if (object instanceof Mesh) object.castShadow = true;
     });
+
+    // Set VRM model
+    this.#vrm = vrm;
 
     // Add scene to queue
     this.#queue.add(this.#vrm.scene, this.group, true);
@@ -194,6 +206,66 @@ export class PlayerAvatar {
     });
   }
 
+  async setName(name: string) {
+    // Remove previous nameplate
+    if (this.#nameplate) disposeObject(this.#nameplate);
+
+    // Create text
+    const loader = new FontLoader();
+    const font = await loader.loadAsync(
+      new URL("./font.json", import.meta.url).href
+    );
+
+    const shapes = font.generateShapes(name, 0.075);
+    const geometry = new ShapeGeometry(shapes);
+
+    // Center horizontally
+    geometry.computeBoundingBox();
+    if (!geometry.boundingBox) throw new Error("No bounding box");
+    const xMid =
+      -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
+    geometry.translate(xMid, 0, 0);
+
+    const material = new MeshBasicMaterial();
+
+    const mesh = new Mesh(geometry, material);
+    mesh.position.y = PLAYER_HEIGHT - 0.25;
+    mesh.rotation.y = Math.PI;
+
+    this.group.add(mesh);
+    this.#nameplate = mesh;
+
+    // Create background
+    const width =
+      geometry.boundingBox.max.x - geometry.boundingBox.min.x + 0.15;
+    const height =
+      geometry.boundingBox.max.y - geometry.boundingBox.min.y + 0.06;
+    const radius = height / 2;
+
+    const shape = new Shape();
+    shape.moveTo(0, radius);
+    shape.lineTo(0, height - radius);
+    shape.quadraticCurveTo(0, height, radius, height);
+    shape.lineTo(width - radius, height);
+    shape.quadraticCurveTo(width, height, width, height - radius);
+    shape.lineTo(width, radius);
+    shape.quadraticCurveTo(width, 0, width - radius, 0);
+    shape.lineTo(radius, 0);
+    shape.quadraticCurveTo(0, 0, 0, radius);
+
+    const roundedRectangle = new ShapeGeometry(shape);
+
+    const background = new Mesh(
+      roundedRectangle,
+      new MeshBasicMaterial({ color: 0x010101 })
+    );
+    background.position.x = -width / 2;
+    background.position.y = -height / 4;
+    background.position.z = -0.0001;
+
+    this.#nameplate.add(background);
+  }
+
   setAvatar(avatarPath: string | null) {
     this.#loadModel(
       avatarPath ?? this.#defaultAvatarPath,
@@ -214,25 +286,37 @@ export class PlayerAvatar {
   }
 
   animate(delta: number) {
+    const K = 1 - Math.pow(LERP_FACTOR, delta);
+
     // Load queue
     this.#queue.update();
 
-    // Handle animations
-    const K = 1 - Math.pow(LERP_FACTOR, delta);
-
-    if (!this.#isUser) {
+    // If user, copy rotation from camera
+    if (this.#camera && this.#vrm) {
+      this.group.quaternion.copy(this.#camera.quaternion);
+    } else {
+      // Apply location to group
       this.group.position.lerp(this.#targetPosition, K);
       this.group.quaternion.slerp(this.#targetRotation, K);
     }
 
-    if (this.#camera && this.#vrm) {
-      this.group.quaternion.copy(this.#camera.quaternion);
-    }
-
-    // Only rotate on Y axis
+    // Only rotate Y axis
     this.group.quaternion.x = 0;
     this.group.quaternion.z = 0;
     this.group.quaternion.normalize();
+
+    // Get relative rotation for head
+    const relativeRotation = this.#tempQuat2.copy(this.#targetRotation);
+    relativeRotation.premultiply(
+      this.#tempQuat.copy(this.group.quaternion).invert()
+    );
+
+    // Rotate head
+    this.#headRotation.slerp(relativeRotation, K);
+
+    //Don't rotate Y axis
+    this.#headRotation.y = 0;
+    this.#headRotation.normalize();
 
     // Copy head position to camera
     if (this.#vrm && this.#camera) {
@@ -327,6 +411,30 @@ export class PlayerAvatar {
 
     // Update VRM
     if (this.#vrm) this.#vrm.update(delta);
+
+    // Rotate head
+    if (this.#vrm?.meta.metaVersion === "1") {
+      // If vrm 1.0, rotate axis
+      const rotated = this.#tempQuat.copy(this.#headRotation);
+      rotated.x = this.#headRotation.z;
+      rotated.z = -this.#headRotation.x;
+
+      this.#vrm.humanoid.humanBones.head.node.quaternion.multiply(rotated);
+    } else {
+      this.#vrm?.humanoid.humanBones.head.node.quaternion.multiply(
+        this.#headRotation
+      );
+    }
+
+    // Update nameplate
+    if (this.#nameplate) {
+      // Hide if too far away
+      this.#nameplate.visible =
+        this.#sceneCamera.position.distanceTo(this.group.position) < 10;
+
+      // Rotate to face camera
+      this.#nameplate.lookAt(this.#sceneCamera.position);
+    }
   }
 
   destroy() {

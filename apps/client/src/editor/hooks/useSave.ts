@@ -42,7 +42,17 @@ export function useSave() {
   }
 
   async function save() {
+    const { name, description, engine, sceneLoaded, isSaving } =
+      useEditorStore.getState();
+
+    if (isSaving || !sceneLoaded || !engine) return;
+
+    useEditorStore.setState({ isSaving: true, changesToSave: false });
+
     const fileIds: string[] = [];
+    const promises: Promise<any>[] = [];
+    const editorState = getEditorState();
+    const scene = engine.scene.toJSON();
 
     async function uploadBinaryFile(uri: string, fileId: string) {
       const uriResponse = await fetch(uri);
@@ -87,22 +97,6 @@ export function useSave() {
 
       if (!response.ok) throw new Error("Failed to upload file");
     }
-
-    const { name, description, engine, sceneLoaded } =
-      useEditorStore.getState();
-
-    // If scene is not loaded, don't save
-    if (!sceneLoaded) return;
-    if (!engine) throw new Error("No engine");
-
-    const { isSaving } = useEditorStore.getState();
-    if (isSaving) return;
-
-    useEditorStore.setState({ isSaving: true, changesToSave: false });
-
-    const promises: Promise<any>[] = [];
-    const editorState = getEditorState();
-    const scene = engine.scene.toJSON();
 
     // Upload image to S3
     promises.push(saveImage());

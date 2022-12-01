@@ -104,7 +104,14 @@ export type ToRenderMessage =
       }
     >
   | WorkerMessage<"set_avatar", string | null>
-  | WorkerMessage<"clear_players">;
+  | WorkerMessage<"clear_players">
+  | WorkerMessage<
+      "player_name",
+      {
+        playerId: number;
+        name: string;
+      }
+    >;
 
 export type FromRenderMessage =
   | WorkerMessage<"ready">

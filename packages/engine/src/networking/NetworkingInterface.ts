@@ -13,7 +13,12 @@ import { RenderThread } from "../render/RenderThread";
 import { GLTFMesh, Node } from "../scene";
 import { toHex } from "../utils/toHex";
 import { LENS_API } from "./constants";
-import { FromHostMessage, InternalChatMessage, ToHostMessage } from "./types";
+import {
+  FromHostMessage,
+  InternalChatMessage,
+  SpaceJoinStatus,
+  ToHostMessage,
+} from "./types";
 import { WebRTC } from "./WebRTC";
 
 /*
@@ -49,11 +54,21 @@ export class NetworkingInterface {
   playerId$ = new BehaviorSubject<number | null>(null);
   chatMessages$ = new BehaviorSubject<InternalChatMessage[]>([]);
 
-  spaceJoinStatus = {
-    spaceId: "",
+  spaceJoinStatus$ = new BehaviorSubject<SpaceJoinStatus>({
+    spaceId: null,
+    spaceFetched: false,
     wsConnected: false,
-    rtcConnected: false,
-  };
+    webrtcConnected: false,
+    sceneLoaded: false,
+  });
+
+  get spaceJoinStatus() {
+    return this.spaceJoinStatus$.value;
+  }
+
+  set spaceJoinStatus(status: SpaceJoinStatus) {
+    this.spaceJoinStatus$.next(status);
+  }
 
   constructor({
     scene,
@@ -71,8 +86,10 @@ export class NetworkingInterface {
 
     this.spaceJoinStatus = {
       spaceId,
+      spaceFetched: false,
       wsConnected: false,
-      rtcConnected: false,
+      webrtcConnected: false,
+      sceneLoaded: false,
     };
 
     // Fetch space publication from lens
@@ -91,6 +108,11 @@ export class NetworkingInterface {
     const modelURL: string | undefined =
       publication?.metadata.media[1]?.original.url;
     if (!modelURL) throw new Error("Space model not found");
+
+    this.spaceJoinStatus = {
+      ...this.spaceJoinStatus,
+      spaceFetched: true,
+    };
 
     // Get host server
     const spaceHost = null; // TODO: get from metadata
@@ -125,6 +147,11 @@ export class NetworkingInterface {
       true
     );
 
+    this.spaceJoinStatus = {
+      ...this.spaceJoinStatus,
+      sceneLoaded: true,
+    };
+
     // Wait for space to load
     await new Promise((resolve, reject) => {
       const interval = setInterval(() => {
@@ -136,7 +163,7 @@ export class NetworkingInterface {
 
         if (
           this.spaceJoinStatus.wsConnected &&
-          this.spaceJoinStatus.rtcConnected &&
+          this.spaceJoinStatus.webrtcConnected &&
           this.#loadedPlayers.size === this.#connectedPlayers.size
         ) {
           clearInterval(interval);
@@ -171,12 +198,11 @@ export class NetworkingInterface {
     ws.onopen = () => {
       console.info("✅ Connected to host");
       this.#reconnectCount = 0;
-      this.spaceJoinStatus.wsConnected = true;
 
-      // Set player name and avatar
-      this.#sendName();
-      this.#sendAvatar();
-      this.#sendHandle();
+      this.spaceJoinStatus = {
+        ...this.spaceJoinStatus,
+        wsConnected: true,
+      };
 
       // Start WebRTC connection
       if (!this.#webRTC) throw new Error("WebRTC not initialized");
@@ -193,6 +219,11 @@ export class NetworkingInterface {
 
       switch (subject) {
         case "join_successful": {
+          // Send player name and avatar
+          if (this.#myName) this.#sendName();
+          if (this.#myAvatar) this.#sendAvatar();
+          if (this.#myHandle) this.#sendHandle();
+
           // Set your name
           if (this.#myName) this.#playerNames.set(data.playerId, this.#myName);
           else this.#playerNames.delete(data.playerId);
@@ -205,6 +236,7 @@ export class NetworkingInterface {
           // Save player id
           this.playerId$.next(data.playerId);
           if (this.#webRTC) this.#webRTC.playerId = data.playerId;
+
           break;
         }
 
@@ -225,14 +257,18 @@ export class NetworkingInterface {
           this.#renderThread.postMessage({ subject: "player_joined", data });
 
           // Get player name
+          const username = this.#getUsername(data.playerId);
+
+          this.#renderThread.postMessage({
+            subject: "player_name",
+            data: {
+              playerId: data.playerId,
+              name: username,
+            },
+          });
+
           const handle = this.#playerHandles.get(data.playerId);
           const isHandle = Boolean(handle);
-
-          let username = isHandle
-            ? `@${handle}`
-            : this.#playerNames.get(data.playerId);
-
-          if (!username) username = `Guest ${toHex(data.playerId)}`;
 
           // Add message to chat if they joined after you
           if (!data.beforeYou)
@@ -245,6 +281,7 @@ export class NetworkingInterface {
               username,
               isHandle,
             });
+
           break;
         }
 
@@ -260,12 +297,10 @@ export class NetworkingInterface {
           this.#renderThread.postMessage({ subject: "player_left", data });
 
           // Get player name
+          const username = this.#getUsername(data);
+
           const handle = this.#playerHandles.get(data);
           const isHandle = Boolean(handle);
-
-          let username = isHandle ? `@${handle}` : this.#playerNames.get(data);
-
-          if (!username) username = `Guest ${toHex(data)}`;
 
           // Add message to chat
           this.#addChatMessage({
@@ -282,14 +317,10 @@ export class NetworkingInterface {
 
         case "player_message": {
           // Get player name
+          const username = this.#getUsername(data.playerId);
+
           const handle = this.#playerHandles.get(data.playerId);
           const isHandle = Boolean(handle);
-
-          let username = isHandle
-            ? `@${handle}`
-            : this.#playerNames.get(data.playerId);
-
-          if (!username) username = `Guest ${toHex(data.playerId)}`;
 
           // Add message to chat
           this.#addChatMessage({
@@ -314,6 +345,17 @@ export class NetworkingInterface {
 
           if (data.name) this.#playerNames.set(data.playerId, data.name);
           else this.#playerNames.delete(data.playerId);
+
+          const username = this.#getUsername(data.playerId);
+
+          this.#renderThread.postMessage({
+            subject: "player_name",
+            data: {
+              playerId: data.playerId,
+              name: username,
+            },
+          });
+
           break;
         }
 
@@ -491,6 +533,16 @@ export class NetworkingInterface {
     newChatMessages.splice(0, newChatMessages.length - 25);
 
     this.chatMessages$.next(newChatMessages);
+  }
+
+  #getUsername(playerId: number) {
+    const handle = this.#playerHandles.get(playerId);
+    const isHandle = Boolean(handle);
+
+    let username = isHandle ? `@${handle}` : this.#playerNames.get(playerId);
+    if (!username) username = `Guest ${toHex(playerId)}`;
+
+    return username;
   }
 
   #isWsOpen() {

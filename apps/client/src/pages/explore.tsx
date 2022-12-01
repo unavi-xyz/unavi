@@ -1,67 +1,62 @@
 import { AppId, Post, PublicationSortCriteria } from "lens";
-import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
+import { InferGetStaticPropsType } from "next";
 import Link from "next/link";
 import { useState } from "react";
 
 import { useExploreQuery } from "../client/lens/hooks/useExploreQuery";
+import { getPublicationProps } from "../client/lens/utils/getPublicationProps";
 import { useCursor } from "../home/hooks/useCursor";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceCard from "../home/lens/SpaceCard";
-import SpaceIdCard from "../home/lens/SpaceIdCard";
 import MetaTags from "../home/MetaTags";
 import { prisma } from "../server/prisma";
 import Carousel from "../ui/Carousel";
 import { useIsMobile } from "../utils/useIsMobile";
 
-export const getServerSideProps = async ({
-  res,
-}: GetServerSidePropsContext) => {
-  res.setHeader(
-    "Cache-Control",
-    "public, s-maxage=60, stale-while-revalidate=604800"
-  );
-
-  // Get publications
+export const getStaticProps = async () => {
+  // Get hot spaces from the database
   const publications = await prisma.publication.findMany({
     where: { type: "SPACE" },
     orderBy: { viewCount: "desc" },
-    take: 15,
+    take: 12,
   });
 
-  // Get lens ids
-  const hotSpaces: string[] = [];
+  const filtered = publications.filter((p) => p.lensId !== null);
 
-  publications.forEach((publication) => {
-    if (publication.lensId) hotSpaces.push(publication.lensId);
-  });
+  // Fetch lens publications
+  const hotSpaces = await Promise.all(
+    filtered.map(async (publication) => {
+      if (!publication.lensId) throw new Error("No lens id");
+
+      const props = await getPublicationProps(publication.lensId);
+
+      return {
+        id: publication.lensId,
+        ...props,
+      };
+    })
+  );
 
   return {
-    props: { hotSpaces },
+    props: {
+      hotSpaces,
+    },
+    revalidate: 600,
   };
 };
 
 export default function Explore({
   hotSpaces,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const isMobile = useIsMobile();
   const spaceLimit = isMobile ? 1 : 3;
-  // const avatarLimit = isMobile ? 1 : 5;
-
-  const [oneMonthAgo] = useState(Date.now() - 1000 * 60 * 60 * 24 * 30);
 
   const latestSpaces = useExploreQuery(
     spaceLimit,
     [AppId.Space],
     PublicationSortCriteria.Latest,
-    oneMonthAgo
+    spaceLimit + 1
   );
-
-  // const latestAvatars = useExploreQuery(
-  //   avatarLimit,
-  //   [AppId.Avatar],
-  //   PublicationSortCriteria.Latest,
-  //   oneMonthAgo
-  // );
 
   const [hotSpacesCursor, setHotSpacesCursor] = useState(0);
 
@@ -92,25 +87,23 @@ export default function Explore({
             onNext={hotSpacesNext}
             height="h-36 md:h-48"
           >
-            {hotSpaces.map((spaceId) => {
+            {hotSpaces.map(({ id, publication }) => {
               const pageOffset = `-${hotSpacesCursor * spaceLimit}00%`;
               const gapOffset = `-${hotSpacesCursor * spaceLimit * 12}px`;
 
+              if (!publication) return null;
+
               return (
                 <div
-                  key={spaceId}
+                  key={id}
                   className="transition duration-500"
                   style={{
                     transform: `translate(calc(${pageOffset} + ${gapOffset}))`,
                   }}
                 >
-                  <Link href={`/space/${spaceId}`}>
+                  <Link href={`/space/${id}`}>
                     <div className="h-32 md:h-44">
-                      <SpaceIdCard
-                        spaceId={spaceId}
-                        sizes="293px"
-                        animateEnter
-                      />
+                      <SpaceCard space={publication as Post} sizes="293px" />
                     </div>
                   </Link>
                 </div>

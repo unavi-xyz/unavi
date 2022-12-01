@@ -1,12 +1,11 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["referentialIntegrity"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider             = "mysql"
-  url                  = env("DATABASE_URL")
-  referentialIntegrity = "prisma"
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 // Analytics
@@ -14,8 +13,12 @@ model ViewEvent {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
 
+  isCounted Boolean @default(true)
+
   Publication   Publication @relation(fields: [publicationId], references: [id])
   publicationId String
+
+  @@index([publicationId])
 }
 
 // Publications
@@ -55,6 +58,8 @@ model Project {
 
   Publication   Publication? @relation(fields: [publicationId], references: [id])
   publicationId String?
+
+  @@index([publicationId])
 }
 
 model File {
@@ -64,6 +69,8 @@ model File {
 
   projectId String
   Project   Project? @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
 }
 
 // Next auth
@@ -83,6 +90,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -91,6 +99,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model User {

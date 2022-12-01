@@ -39,9 +39,7 @@ const App: AppType<{ session: Session | null }> = ({
 
       <div className={font.className}>
         <ClientSideProviders session={session}>
-          <div className="h-screen w-full snap-y snap-mandatory overflow-y-auto">
-            {getLayout(<Component {...pageProps} />)}
-          </div>
+          {getLayout(<Component {...pageProps} />)}
         </ClientSideProviders>
       </div>
     </>

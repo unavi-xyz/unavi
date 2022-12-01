@@ -54,7 +54,8 @@ export default function Explore({
   const latestSpaces = useExploreQuery(
     spaceLimit,
     [AppId.Space],
-    PublicationSortCriteria.Latest
+    PublicationSortCriteria.Latest,
+    spaceLimit + 1
   );
 
   const [hotSpacesCursor, setHotSpacesCursor] = useState(0);

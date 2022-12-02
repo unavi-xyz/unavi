@@ -136,11 +136,6 @@ export default function Settings() {
         <div className="mb-24 space-y-8">
           <div className="space-y-8 rounded-3xl bg-primaryContainer p-8 text-onPrimaryContainer">
             <div className="space-y-4 text-lg">
-              <div className="flex items-center space-x-4">
-                <div className="font-bold">Profile ID:</div>
-                <div>{profile.id}</div>
-              </div>
-
               <TextField
                 inputRef={nameRef}
                 title="Name"

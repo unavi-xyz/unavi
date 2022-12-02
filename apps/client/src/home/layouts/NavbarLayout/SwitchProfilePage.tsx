@@ -1,6 +1,6 @@
 import { ChangeEvent, useState } from "react";
-import { useAccount } from "wagmi";
 
+import { useLogin } from "../../../client/auth/LoginProvider";
 import { useLens } from "../../../client/lens/hooks/useLens";
 import { useProfilesByAddress } from "../../../client/lens/hooks/useProfilesByAddress";
 import { trimHandle } from "../../../client/lens/utils/trimHandle";
@@ -13,7 +13,7 @@ interface Props {
 
 export default function SwitchProfilePage({ onClose }: Props) {
   const { handle, switchProfile } = useLens();
-  const { address } = useAccount();
+  const { address } = useLogin();
   const { profiles } = useProfilesByAddress(address);
   const [selected, setSelected] = useState<string>();
   const handles =

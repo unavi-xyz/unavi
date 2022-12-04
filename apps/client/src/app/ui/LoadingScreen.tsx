@@ -55,7 +55,7 @@ export default function LoadingScreen({
                 {text}
               </div>
 
-              <div className="mx-auto w-1/2">
+              <div className="mx-auto px-8 md:w-1/2">
                 <div className="aspect-card h-full w-full rounded-3xl bg-primaryContainer">
                   <div className="relative h-full w-full object-cover">
                     {image &&

@@ -25,13 +25,14 @@ export default function NavigationTab({ href, text }: Props) {
     : "hover:bg-surfaceVariant";
 
   return (
-    <Link href={href} passHref>
-      <div
-        className={`flex w-full cursor-pointer justify-center rounded-lg py-1 text-lg
-                    font-bold transition md:w-min md:px-16 ${selectedClass}`}
-      >
-        {text}
-      </div>
-    </Link>
+    <div className="w-full md:w-min">
+      <Link href={href} passHref>
+        <div
+          className={`flex cursor-pointer justify-center rounded-lg py-1 text-lg font-bold transition md:px-20 ${selectedClass}`}
+        >
+          {text}
+        </div>
+      </Link>
+    </div>
   );
 }

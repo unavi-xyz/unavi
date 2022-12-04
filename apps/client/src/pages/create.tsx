@@ -108,7 +108,9 @@ export default function Create() {
                 </div>
               )
             ) : (
-              <div>You need to be signed in to create a project.</div>
+              <div className="text-outline">
+                You need to be signed in to create a project.
+              </div>
             )}
           </div>
 

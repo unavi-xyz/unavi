@@ -123,11 +123,7 @@ export default function ProfileLayout({
                   </Link>
                 ) : (
                   <div>
-                    <Button
-                      variant="filled"
-                      rounded="small"
-                      disabled={!viewerHandle}
-                    >
+                    <Button variant="filled" rounded="small" disabled>
                       <div className="flex items-center justify-center space-x-1 px-6">
                         <MdAdd />
                         <div>Follow</div>
@@ -151,7 +147,7 @@ export default function ProfileLayout({
               </div>
 
               <div className="w-full pt-2">
-                <div className="whitespace-pre-line text-center text-sm md:text-base">
+                <div className="whitespace-pre-line text-center">
                   {profile.bio}
                 </div>
               </div>
@@ -178,7 +174,7 @@ export default function ProfileLayout({
               </div>
             </div>
 
-            <div className="w-full md:mt-4">{children}</div>
+            <div className="mt-4 w-full">{children}</div>
           </div>
         </div>
       ) : (

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d": "^0.10.0",
-    "@gltf-transform/core": "2.4.6",
+    "@gltf-transform/core": "2.4.7",
     "@gltf-transform/extensions": "2.4.6",
     "@gltf-transform/functions": "^2.4.6",
     "@pixiv/three-vrm": "^1.0.5",

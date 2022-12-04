@@ -25,7 +25,7 @@ export default function ProfileButton() {
         <SwitchProfilePage onClose={() => setOpenSwitchProfile(false)} />
       </Dialog>
 
-      <div className="relative">
+      <div className="relative pt-1">
         <Button
           rounded={isMobile ? "full" : "large"}
           icon={isMobile}

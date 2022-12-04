@@ -33,11 +33,15 @@ export default function Dialog({
         dialogRef.current?.classList.remove("scale-75");
         dialogRef.current?.classList.remove("opacity-0");
         scrimRef.current?.classList.remove("opacity-0");
+
+        document.body.style.overflowY = "hidden";
       }, 10);
     } else {
       dialogRef.current?.classList.add("opacity-0");
       dialogRef.current?.classList.add("scale-75");
       scrimRef.current?.classList.add("opacity-0");
+
+      document.body.style.overflowY = "auto";
     }
 
     return () => clearTimeout(timeout);

@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import { signOut } from "next-auth/react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
@@ -26,6 +27,7 @@ export default function LoginProvider({ children }: Props) {
   const [open, setOpen] = useState(false);
   const [disableAutoConnect, setDisableAutoconnect] = useState(false);
 
+  const router = useRouter();
   const { switchProfile, setAccessToken } = useLens();
   const {
     address: connectedAddress,
@@ -100,16 +102,22 @@ export default function LoginProvider({ children }: Props) {
     setDisableAutoconnect(true);
   }
 
-  async function handleClose() {
-    setOpen(false);
-    logout();
-  }
-
   return (
     <LoginContext.Provider value={{ logout, address: sessionAddress }}>
       <>
-        <Dialog open={open} onClose={handleClose}>
-          <CreateProfilePage />
+        <Dialog
+          open={open}
+          onClose={() => {
+            setOpen(false);
+            logout();
+
+            // Reload page to avoid bug where you can't close the rainbow wallet modal
+            setTimeout(() => {
+              router.reload();
+            });
+          }}
+        >
+          <CreateProfilePage onClose={() => setOpen(false)} />
         </Dialog>
 
         {children}

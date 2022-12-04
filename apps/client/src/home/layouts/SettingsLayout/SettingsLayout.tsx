@@ -31,7 +31,7 @@ export default function SettingsLayout({ children }: Props) {
   return (
     <div className="flex justify-center">
       <Dialog open={open} onClose={() => setOpen(false)}>
-        <CreateProfilePage />
+        <CreateProfilePage onClose={() => setOpen(false)} />
       </Dialog>
 
       <div className="max-w-content mx-4 mb-4 flex flex-col md:flex-row">
@@ -69,7 +69,7 @@ export default function SettingsLayout({ children }: Props) {
           </div>
 
           <SettingsButton icon={<MdAdd />} onClick={() => setOpen(true)}>
-            Create Profile
+            New Profile
           </SettingsButton>
         </div>
 

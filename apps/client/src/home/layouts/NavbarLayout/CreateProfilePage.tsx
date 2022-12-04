@@ -1,16 +1,18 @@
 import { useCreateProfileMutation } from "lens";
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
+import { HANDLE_ENDING } from "../../../client/lens/constants";
 import { useLens } from "../../../client/lens/hooks/useLens";
 import { useValidateHandle } from "../../../client/lens/hooks/useValidateHandle";
 import Button from "../../../ui/Button";
 import ErrorBox from "../../../ui/ErrorBox";
 import TextField from "../../../ui/TextField";
 
-export default function CreateProfilePage() {
-  const router = useRouter();
+interface Props {
+  onClose: () => void;
+}
 
+export default function CreateProfilePage({ onClose }: Props) {
   const [handle, setHandle] = useState<string>("");
   const [formHandle, setFormHandle] = useState<string>("");
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -68,8 +70,8 @@ export default function CreateProfilePage() {
       // Log the user in
       switchProfile(handle);
 
-      // Redirect to the new profile page
-      router.push(`/user/${handle}`);
+      // Close the modal
+      onClose();
     } catch (err: any) {
       console.error(err);
       setError(err.message);
@@ -80,17 +82,14 @@ export default function CreateProfilePage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col items-center space-y-1">
-        <h1 className="flex justify-center text-3xl">Create a Profile</h1>
-        <p className="flex justify-center text-lg">Mint a Lens profile NFT</p>
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-center text-3xl font-bold">Create Your Profile</h1>
 
       <div className="space-y-4">
         <TextField
           title="Handle"
           frontAdornment="@"
-          maxLength={31}
+          maxLength={31 - HANDLE_ENDING.length}
           value={formHandle}
           outline
           onChange={(e) => {
@@ -101,18 +100,21 @@ export default function CreateProfilePage() {
           }}
         />
 
-        <div className="flex w-full justify-end">
-          <Button
-            variant="filled"
-            disabled={disabled}
-            loading={loading}
-            onClick={handleSubmit}
-          >
-            Submit
-          </Button>
-        </div>
-
         <ErrorBox error={error} />
+
+        <div className="flex justify-end">
+          <div className="w-full md:w-min">
+            <Button
+              variant="filled"
+              fullWidth
+              disabled={disabled}
+              loading={loading}
+              onClick={handleSubmit}
+            >
+              Submit
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

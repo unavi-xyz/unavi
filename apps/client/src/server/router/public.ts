@@ -2,7 +2,6 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { env } from "../../env/client.mjs";
-import { prisma } from "../prisma";
 import { createTempFileUploadURL } from "../s3";
 import { publicProcedure, router } from "./trpc";
 
@@ -39,11 +38,11 @@ export const publicRouter = router({
         lensId: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const promises: Promise<any>[] = [];
 
       // Get publication id
-      const publication = await prisma.publication.findFirst({
+      const publication = await ctx.prisma.publication.findFirst({
         where: { lensId: input.lensId },
       });
 
@@ -53,7 +52,7 @@ export const publicRouter = router({
         publicationId = publication.id;
       } else {
         // If no publication, create one
-        const { id } = await prisma.publication.create({
+        const { id } = await ctx.prisma.publication.create({
           data: { type: "SPACE", lensId: input.lensId },
         });
 
@@ -61,11 +60,11 @@ export const publicRouter = router({
       }
 
       // Create space view event
-      promises.push(prisma.viewEvent.create({ data: { publicationId } }));
+      promises.push(ctx.prisma.viewEvent.create({ data: { publicationId } }));
 
       // Update space view count
       promises.push(
-        prisma.publication.update({
+        ctx.prisma.publication.update({
           where: { id: publicationId },
           data: { viewCount: { increment: 1 } },
         })

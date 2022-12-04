@@ -2,7 +2,6 @@ import { TRPCError } from "@trpc/server";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";
 
-import { prisma } from "../prisma";
 import {
   createFileUploadURL,
   createImageUploadURL,
@@ -13,8 +12,7 @@ import {
   getImageURL,
   getSceneURL,
 } from "../s3";
-import { protectedProcedure } from "./context";
-import { router } from "./trpc";
+import { protectedProcedure, router } from "./trpc";
 
 const PROJECT_ID_LENGTH = 21;
 const PUBLICATION_ID_LENGTH = 25; // cuid
@@ -28,8 +26,8 @@ const nanoid = customAlphabet(
 
 export const projectRouter = router({
   getAll: protectedProcedure.query(async ({ ctx }) => {
-    const projects = await prisma.project.findMany({
-      where: { owner: ctx.address },
+    const projects = await ctx.prisma.project.findMany({
+      where: { owner: ctx.session.address },
       orderBy: { updatedAt: "desc" },
     });
 
@@ -53,8 +51,8 @@ export const projectRouter = router({
     )
     .query(async ({ ctx, input }) => {
       // Verify user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const project = await ctx.prisma.project.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
@@ -70,8 +68,8 @@ export const projectRouter = router({
     )
     .query(async ({ ctx, input }) => {
       // Verify user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const project = await ctx.prisma.project.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -89,8 +87,8 @@ export const projectRouter = router({
     )
     .query(async ({ ctx, input }) => {
       // Verify user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const project = await ctx.prisma.project.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -108,8 +106,8 @@ export const projectRouter = router({
     )
     .query(async ({ ctx, input }) => {
       // Verify user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const project = await ctx.prisma.project.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
@@ -142,8 +140,8 @@ export const projectRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const project = await ctx.prisma.project.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -161,8 +159,8 @@ export const projectRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const project = await ctx.prisma.project.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -181,15 +179,15 @@ export const projectRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const project = await ctx.prisma.project.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Add file to database if it doesn't exist
       if (!project.files.find((file) => file.storageKey === input.storageKey)) {
-        await prisma.file.create({
+        await ctx.prisma.file.create({
           data: {
             storageKey: input.storageKey,
             projectId: input.id,
@@ -212,10 +210,10 @@ export const projectRouter = router({
       const id = nanoid();
 
       // Create project
-      await prisma.project.create({
+      await ctx.prisma.project.create({
         data: {
           id,
-          owner: ctx.address,
+          owner: ctx.session.address,
           name: input.name,
         },
       });
@@ -245,8 +243,8 @@ export const projectRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const project = await ctx.prisma.project.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -255,7 +253,7 @@ export const projectRouter = router({
 
       // Update project
       promises.push(
-        prisma.project.update({
+        ctx.prisma.project.update({
           where: { id: input.id },
           data: {
             name: input.name,
@@ -270,7 +268,7 @@ export const projectRouter = router({
       if (input.fileIds) {
         // From database
         promises.push(
-          prisma.file.deleteMany({
+          ctx.prisma.file.deleteMany({
             where: {
               projectId: input.id,
               storageKey: { notIn: input.fileIds },
@@ -297,8 +295,8 @@ export const projectRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the project
-      const project = await prisma.project.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const project = await ctx.prisma.project.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
         include: { files: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
@@ -306,13 +304,13 @@ export const projectRouter = router({
       const promises: Promise<any>[] = [];
 
       // Delete files from database
-      await prisma.file.deleteMany({
+      await ctx.prisma.file.deleteMany({
         where: { projectId: input.id },
       });
 
       // Delete project from database
       promises.push(
-        prisma.project.delete({
+        ctx.prisma.project.delete({
           where: { id: input.id },
           include: { files: true },
         })

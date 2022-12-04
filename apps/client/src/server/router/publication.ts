@@ -1,15 +1,13 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { prisma } from "../prisma";
 import {
   createPublishedImageUploadURL,
   createPublishedMetadataUploadURL,
   createPublishedModelUploadURL,
   deletePublicationFromS3,
 } from "../s3";
-import { protectedProcedure } from "./context";
-import { router } from "./trpc";
+import { protectedProcedure, router } from "./trpc";
 
 const PUBLICATION_ID_LENGTH = 25; // cuid
 
@@ -22,8 +20,8 @@ export const publicationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the publication
-      const publication = await prisma.publication.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const publication = await ctx.prisma.publication.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
       });
       if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -41,8 +39,8 @@ export const publicationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the publication
-      const publication = await prisma.publication.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const publication = await ctx.prisma.publication.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
       });
       if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -60,8 +58,8 @@ export const publicationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the publication
-      const publication = await prisma.publication.findFirst({
-        where: { id: input.id, owner: ctx.address },
+      const publication = await ctx.prisma.publication.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
       });
       if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -73,8 +71,8 @@ export const publicationRouter = router({
 
   create: protectedProcedure.mutation(async ({ ctx }) => {
     // Create publication
-    const { id } = await prisma.publication.create({
-      data: { owner: ctx.address, type: "SPACE" },
+    const { id } = await ctx.prisma.publication.create({
+      data: { owner: ctx.session.address, type: "SPACE" },
     });
 
     return id;
@@ -89,13 +87,13 @@ export const publicationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the publication
-      const publication = await prisma.publication.findFirst({
-        where: { id: input.publicationId, owner: ctx.address },
+      const publication = await ctx.prisma.publication.findFirst({
+        where: { id: input.publicationId, owner: ctx.session.address },
       });
       if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Save lensId to publication
-      await prisma.publication.update({
+      await ctx.prisma.publication.update({
         where: { id: input.publicationId },
         data: { lensId: input.lensId },
       });
@@ -113,8 +111,8 @@ export const publicationRouter = router({
 
       // If lensId is provided, find the publication
       if (input.lensId) {
-        const publication = await prisma.publication.findFirst({
-          where: { lensId: input.lensId, owner: ctx.address },
+        const publication = await ctx.prisma.publication.findFirst({
+          where: { lensId: input.lensId, owner: ctx.session.address },
         });
         if (publication) id = publication.id;
       }
@@ -122,8 +120,8 @@ export const publicationRouter = router({
       if (!id) throw new TRPCError({ code: "BAD_REQUEST" });
 
       // Verify user owns the publication
-      const publication = await prisma.publication.findFirst({
-        where: { id, owner: ctx.address },
+      const publication = await ctx.prisma.publication.findFirst({
+        where: { id, owner: ctx.session.address },
       });
       if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -133,13 +131,13 @@ export const publicationRouter = router({
       promises.push(deletePublicationFromS3(id));
 
       // Remove publicationId from projects
-      await prisma.project.updateMany({
+      await ctx.prisma.project.updateMany({
         where: { publicationId: id },
         data: { publicationId: null },
       });
 
       // Delete publication from database
-      await prisma.publication.delete({
+      await ctx.prisma.publication.delete({
         where: { id },
         include: { ViewEvents: true },
       });

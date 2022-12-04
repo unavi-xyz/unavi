@@ -28,13 +28,13 @@ export default function Create() {
     data: projects,
     status,
     refetch,
-  } = trpc.auth.projects.useQuery(undefined, {
+  } = trpc.project.getAll.useQuery(undefined, {
     enabled: authState === "authenticated",
   });
 
   useEffect(() => {
     if (authState !== "authenticated" || accountStatus !== "connected") return;
-    utils.auth.projects.invalidate();
+    utils.project.getAll.invalidate();
     refetch();
   }, [refetch, authState, accountStatus, utils]);
 

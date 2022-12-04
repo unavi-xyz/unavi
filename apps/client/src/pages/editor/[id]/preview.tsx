@@ -30,7 +30,7 @@ export default function Preview() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data: project } = trpc.auth.project.useQuery(
+  const { data: project } = trpc.project.get.useQuery(
     { id },
     {
       enabled: id !== undefined,
@@ -42,7 +42,7 @@ export default function Preview() {
     }
   );
 
-  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+  const { data: imageURL } = trpc.project.image.useQuery(
     { id },
     {
       enabled: id !== undefined && !project?.publicationId,
@@ -50,7 +50,7 @@ export default function Preview() {
     }
   );
 
-  const { data: sceneURL } = trpc.auth.projectScene.useQuery(
+  const { data: sceneURL } = trpc.project.scene.useQuery(
     { id },
     {
       enabled: id !== undefined,
@@ -62,7 +62,7 @@ export default function Preview() {
     }
   );
 
-  const { data: fileURLs } = trpc.auth.projectFiles.useQuery(
+  const { data: fileURLs } = trpc.project.files.useQuery(
     { id },
     {
       enabled: id !== undefined,

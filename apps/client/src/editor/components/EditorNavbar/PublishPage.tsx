@@ -53,7 +53,7 @@ export default function PublishPage() {
   const createPost = useCreatePost(profile?.id);
   const { save } = useSave();
 
-  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+  const { data: imageURL } = trpc.project.image.useQuery(
     { id },
     {
       enabled: id !== undefined,
@@ -61,22 +61,21 @@ export default function PublishPage() {
     }
   );
 
-  const { mutateAsync: saveProject } = trpc.auth.saveProject.useMutation();
+  const { mutateAsync: saveProject } = trpc.project.save.useMutation();
 
   const { mutateAsync: createModelUploadUrl } =
-    trpc.auth.publishedModelUploadURL.useMutation();
+    trpc.publication.modelUploadURL.useMutation();
 
   const { mutateAsync: createImageUploadUrl } =
-    trpc.auth.publishedImageUploadURL.useMutation();
+    trpc.publication.imageUploadURL.useMutation();
 
   const { mutateAsync: createMetadataUploadUrl } =
-    trpc.auth.publishedMetadataUploadURL.useMutation();
+    trpc.publication.metadataUploadURL.useMutation();
 
   const { mutateAsync: createPublication } =
-    trpc.auth.createPublication.useMutation();
+    trpc.publication.create.useMutation();
 
-  const { mutateAsync: linkPublication } =
-    trpc.auth.linkPublication.useMutation();
+  const { mutateAsync: linkPublication } = trpc.publication.link.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);

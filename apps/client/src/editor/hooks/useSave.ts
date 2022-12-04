@@ -13,13 +13,13 @@ export function useSave() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { mutateAsync: saveProject } = trpc.auth.saveProject.useMutation();
+  const { mutateAsync: saveProject } = trpc.project.save.useMutation();
   const { mutateAsync: getFileUpload } =
-    trpc.auth.projectFileUploadURL.useMutation();
+    trpc.project.fileUploadURL.useMutation();
   const { mutateAsync: getImageUpload } =
-    trpc.auth.projectImageUploadURL.useMutation();
+    trpc.project.imageUploadURL.useMutation();
   const { mutateAsync: getSceneUpload } =
-    trpc.auth.projectSceneUploadURL.useMutation();
+    trpc.project.sceneUploadURL.useMutation();
 
   async function saveImage() {
     const { engine, canvas } = useEditorStore.getState();

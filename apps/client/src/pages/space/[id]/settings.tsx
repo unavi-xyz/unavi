@@ -37,7 +37,7 @@ export default function Settings(
   const id = router.query.id as string;
 
   const { mutateAsync: deletePublication } =
-    trpc.auth.deletePublication.useMutation();
+    trpc.publication.delete.useMutation();
 
   useEffect(() => {
     if (!handle && id) router.push(`/space/${id}`);

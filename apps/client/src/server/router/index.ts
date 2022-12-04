@@ -1,10 +1,12 @@
-import { authRouter } from "./auth";
+import { projectRouter } from "./project";
 import { publicRouter } from "./public";
+import { publicationRouter } from "./publication";
 import { router } from "./trpc";
 
 export const appRouter = router({
   public: publicRouter,
-  auth: authRouter,
+  project: projectRouter,
+  publication: publicationRouter,
 });
 
 export type AppRouter = typeof appRouter;

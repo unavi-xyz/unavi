@@ -12,7 +12,7 @@ export function useLoad() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data: project } = trpc.auth.project.useQuery(
+  const { data: project } = trpc.project.get.useQuery(
     { id },
     {
       enabled: id !== undefined,
@@ -24,7 +24,7 @@ export function useLoad() {
     }
   );
 
-  const { data: sceneURL } = trpc.auth.projectScene.useQuery(
+  const { data: sceneURL } = trpc.project.scene.useQuery(
     { id },
     {
       enabled: id !== undefined,
@@ -36,7 +36,7 @@ export function useLoad() {
     }
   );
 
-  const { data: fileURLs } = trpc.auth.projectFiles.useQuery(
+  const { data: fileURLs } = trpc.project.files.useQuery(
     { id },
     {
       enabled: id !== undefined,

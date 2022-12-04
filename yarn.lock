@@ -2374,7 +2374,7 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@gltf-transform/core@2.4.7", "@gltf-transform/core@^2.4.6", "@gltf-transform/core@^2.4.7":
+"@gltf-transform/core@2.4.7", "@gltf-transform/core@^2.4.7":
   version "2.4.7"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.7.tgz#96ddf79d9e63923458337b567a42d120aaa6712b"
   integrity sha512-XIsbeKXdFdTO5UgVVKnGPUB5vQfQ3DoBVQcJd7tZzTia895Grs52AAtGEZhy3ja4p2J0OMq22kVUMvolKRbM5w==
@@ -2382,7 +2382,7 @@
     gl-matrix "~3.4.3"
     property-graph "^0.2.6"
 
-"@gltf-transform/extensions@2.4.7", "@gltf-transform/extensions@^2.4.6":
+"@gltf-transform/extensions@2.4.7", "@gltf-transform/extensions@^2.4.7":
   version "2.4.7"
   resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.7.tgz#cfbba5973d4cede88114ab0b9fd618403e5b6d72"
   integrity sha512-Pn3g0deLv6EsW7rL3n6ohWJmhvSDRt554E0zW04qNVqcxCCpHdZwG/Vqs80ZG2OxYD3ctYF92gXPx6NKSTak5g==
@@ -2390,13 +2390,13 @@
     "@gltf-transform/core" "^2.4.7"
     ktx-parse "^0.4.5"
 
-"@gltf-transform/functions@^2.4.6":
-  version "2.4.6"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.4.6.tgz#cab6051d30a9f686d1ecec1d8fabf19a37116105"
-  integrity sha512-g/0SMY50k487tS/fZpzcKbyy9JIsntOyop86i9Co6ZJ4+eaesSijg58LNDiGJm9Y3tKWbjGa163pEW9iGBTVTA==
+"@gltf-transform/functions@^2.4.7":
+  version "2.4.7"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.4.7.tgz#2ea00e8ec95dab4d886cddff3d5ccd75f8d8604e"
+  integrity sha512-tqB3ZZ+QlL34jdoXzRU1HaULU1/9cWJz9aNP+X446fwLczmH0czcD7ir2VtD5B2k/g3Gq7+3HSmDbQKIKAU0Ng==
   dependencies:
-    "@gltf-transform/core" "^2.4.6"
-    "@gltf-transform/extensions" "^2.4.6"
+    "@gltf-transform/core" "^2.4.7"
+    "@gltf-transform/extensions" "^2.4.7"
     gl-matrix "~3.4.3"
     ndarray "^1.0.19"
     ndarray-lanczos "^0.1.2"

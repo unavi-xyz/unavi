@@ -8150,10 +8150,10 @@ media-query-parser@^2.0.2:
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-mediasoup-client@^3.6.64:
-  version "3.6.64"
-  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.64.tgz#c36341c7bfd745c9fc404a1f5bc8948b7d81b9a9"
-  integrity sha512-+1XyhDSAmAEpJUq9aIhsYo2OCcXSw8QRKB5ccMGZlvxJ8qtCGyeJYSvP4cF8YjeexTinV9De6jTFhpknKMCtog==
+mediasoup-client@^3.6.65:
+  version "3.6.65"
+  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.65.tgz#453af005799ed7f675600925163b0ddb06425e6f"
+  integrity sha512-e3YisD+l6k01Okl0n/0Mm2zqKgkcsLvj29ObH+gzyHwFVw9SGIIrz1gVQGpTRxWY2obiwdd/E8U85wTzQVLarg==
   dependencies:
     "@types/debug" "^4.1.7"
     awaitqueue "^2.4.0"

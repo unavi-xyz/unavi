@@ -15,7 +15,7 @@
     "@gltf-transform/functions": "^2.4.7",
     "@pixiv/three-vrm": "^1.0.5",
     "lens": "*",
-    "mediasoup-client": "^3.6.65",
+    "mediasoup-client": "^3.6.66",
     "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.0",
     "rxjs": "^7.6.0",

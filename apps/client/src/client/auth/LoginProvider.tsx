@@ -51,15 +51,30 @@ export default function LoginProvider({ children }: Props) {
     }
   }, [isDisconnected, status, disableAutoConnect]);
 
-  // Sign out from authentication if connected address changes
+  // Sign out if connected address changes
   useEffect(() => {
-    if (isConnected && status === "authenticated") {
-      if (sessionAddress !== connectedAddress) {
-        // Sign out of next-auth
-        signOut({ redirect: false });
-      }
+    if (
+      isConnected &&
+      status === "authenticated" &&
+      sessionAddress !== connectedAddress
+    ) {
+      // Sign out of next-auth
+      signOut({ redirect: false });
+
+      // Clear lens handle
+      switchProfile(undefined);
+
+      // Stop auto connect
+      setDisableAutoconnect(true);
     }
-  }, [isConnected, sessionAddress, connectedAddress, session, status]);
+  }, [
+    isConnected,
+    sessionAddress,
+    connectedAddress,
+    session,
+    status,
+    switchProfile,
+  ]);
 
   // Set handle + lens access token on authentication
   useEffect(() => {

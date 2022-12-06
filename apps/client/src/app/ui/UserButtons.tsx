@@ -52,6 +52,7 @@ export default function UserButtons() {
     } else if (didChangeAvatar) {
       engine.setAvatar(customAvatar);
       localStorage.removeItem(LocalStorageKey.Avatar);
+      localStorage.removeItem(LocalStorageKey.AvatarId);
       useAppStore.setState({ didChangeAvatar: false });
     }
   }

@@ -2,7 +2,6 @@ import { useGetPublicationQuery } from "lens";
 import { useEffect, useState } from "react";
 
 import { useLens } from "../../client/lens/hooks/useLens";
-import { useProfileByHandle } from "../../client/lens/hooks/useProfileByHandle";
 import { parseUri } from "../../utils/parseUri";
 import { LocalStorageKey } from "../constants";
 import { useAppStore } from "../store";
@@ -15,8 +14,6 @@ export function useLoadUser() {
 
   const engine = useAppStore((state) => state.engine);
   const { handle } = useLens();
-
-  const profile = useProfileByHandle(handle);
 
   const [{ data: avatarPublication }] = useGetPublicationQuery({
     variables: { request: { publicationId: avatarId } },
@@ -42,14 +39,11 @@ export function useLoadUser() {
 
     // Avatar
     const localAvatar = localStorage.getItem(LocalStorageKey.Avatar);
+    const localAvatarId = localStorage.getItem(LocalStorageKey.AvatarId);
 
-    const equippedAvatar = profile?.attributes
-      ? profile.attributes.find((attr) => attr.key === "avatar")
-      : undefined;
-
-    if (equippedAvatar?.value) {
-      // Use equipped avatar if available
-      setAvatarId(equippedAvatar.value);
+    if (localAvatarId) {
+      // Use avatarId if available
+      setAvatarId(localAvatarId);
     } else if (localAvatar) {
       // Otherwise use local storage avatar
       if (localAvatar !== customAvatar) {
@@ -61,7 +55,7 @@ export function useLoadUser() {
       useAppStore.setState({ customAvatar: null });
       engine.setAvatar(null);
     }
-  }, [avatarId, engine, profile]);
+  }, [avatarId, engine]);
 
   useEffect(() => {
     async function fetchAvatar() {

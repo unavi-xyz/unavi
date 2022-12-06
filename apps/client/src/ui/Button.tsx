@@ -67,9 +67,9 @@ export default function Button({
       : null;
 
   const disabledClass = loading
-    ? "bg-opacity-40 cursor-not-allowed bg-surfaceVariant hover:bg-surfaceVariant text-onSurfaceVariant"
+    ? "bg-opacity-40 bg-surfaceVariant hover:bg-surfaceVariant text-onSurfaceVariant"
     : disabled
-    ? "opacity-40 cursor-not-allowed bg-surfaceVariant hover:bg-surfaceVariant text-onSurfaceVariant"
+    ? "opacity-40 bg-surfaceVariant hover:bg-surfaceVariant text-onSurfaceVariant"
     : variant === "text"
     ? "active:bg-opacity-75"
     : variant === "outlined"
@@ -91,7 +91,11 @@ export default function Button({
 
   const paddingClass = icon ? "p-2.5" : "px-5 py-1.5";
   const cursorClass =
-    cursor === "pointer" ? "cursor-pointer" : "cursor-default";
+    disabled || loading
+      ? "cursor-not-allowed"
+      : cursor === "pointer"
+      ? "cursor-pointer"
+      : "cursor-default";
 
   return (
     <button

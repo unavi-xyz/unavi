@@ -127,11 +127,7 @@ export class PlayerAvatar {
     }
 
     // Enable first-person view if it's the user
-    if (this.#camera && vrm.firstPerson) {
-      vrm.firstPerson.setup();
-      this.#camera.layers.enable(vrm.firstPerson.firstPersonOnlyLayer);
-      this.#camera.layers.disable(vrm.firstPerson.thirdPersonOnlyLayer);
-    }
+    if (this.#camera) this.setFirstPerson(this.isFirstPerson);
 
     // Process VRM
     VRMUtils.removeUnnecessaryVertices(vrm.scene);
@@ -286,10 +282,10 @@ export class PlayerAvatar {
   }
 
   setFirstPerson(firstPerson: boolean) {
+    this.isFirstPerson = firstPerson;
+
     if (!this.vrm?.firstPerson) return;
     if (!this.#camera) throw new Error("Camera not set");
-
-    this.isFirstPerson = firstPerson;
 
     // Enable first-person view if it's the user
     if (firstPerson) {

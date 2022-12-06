@@ -3,10 +3,10 @@ import { PerspectiveCamera, Scene } from "three";
 import { PluginState } from "../../RenderWorker";
 import { SceneLoader } from "../../SceneLoader/SceneLoader";
 import { ToRenderMessage } from "../../types";
-import { FakePointerEvent } from "../types";
+import { FakePointerEvent, RenderPlugin } from "../types";
 import { TransformControls } from "./TransformControls";
 
-export class TransformControlsPlugin {
+export class TransformControlsPlugin implements RenderPlugin {
   #target = new EventTarget();
   #sceneLoader: SceneLoader;
   #transformControls: TransformControls;

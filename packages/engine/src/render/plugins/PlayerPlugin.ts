@@ -12,6 +12,7 @@ import { PLAYER_HEIGHT } from "../../constants";
 import { PostMessage } from "../../types";
 import { FromRenderMessage, ToRenderMessage } from "../types";
 import { PlayerAvatar } from "./OtherPlayers/PlayerAvatar";
+import { RenderPlugin } from "./types";
 
 const DAMPEN_FACTOR = 2;
 const PLAYER_SPEED = 3;
@@ -19,7 +20,7 @@ const FIRST_PERSON_OFFSET = new Vector3(0, 0.1, -0.03);
 const THIRD_PERSON_OFFSET = new Vector3(0, PLAYER_HEIGHT * 0.75, 0);
 const UP = new Vector3(0, 1, 0);
 
-export class PlayerPlugin {
+export class PlayerPlugin implements RenderPlugin {
   readonly group = new Group();
 
   #camera: PerspectiveCamera;
@@ -166,7 +167,7 @@ export class PlayerPlugin {
     this.#playerInputVector.set(input[0], input[1]);
   }
 
-  animate(delta: number) {
+  update(delta: number) {
     // Dampen input
     const deltaX = Date.now() - this.#inputXChangeTime;
     const deltaY = Date.now() - this.#inputYChangeTime;

@@ -17,9 +17,10 @@ import { OtherPlayersPlugin } from "./plugins/OtherPlayers/OtherPlayersPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
 import { TransformControlsPlugin } from "./plugins/TransformControls/TransformControlsPlugin";
+import { RenderPlugin } from "./plugins/types";
 import { defaultMaterial } from "./SceneLoader/constants";
 import { SceneLoader } from "./SceneLoader/SceneLoader";
-import { FromRenderMessage, Plugin, ToRenderMessage } from "./types";
+import { FromRenderMessage, ToRenderMessage } from "./types";
 import { disposeObject } from "./utils/disposeObject";
 import { loadCubeTexture } from "./utils/loadCubeTexture";
 
@@ -59,7 +60,7 @@ export class RenderWorker {
 
   csm: CSM | null = null;
 
-  #plugins: Plugin<ToRenderMessage>[] = [];
+  #plugins: RenderPlugin[] = [];
   #pluginState: PluginState = {
     usingTransformControls: false,
   };
@@ -270,7 +271,10 @@ export class RenderWorker {
     this.#animationFrameId = requestAnimationFrame(() => this.#animate());
     if (!this.renderer || !this.camera) return;
 
-    this.#plugins.forEach((plugin) => plugin.animate && plugin.animate(delta));
+    this.#plugins.forEach((plugin) => {
+      if (plugin.update) plugin.update(delta);
+    });
+
     this.#sceneLoader?.update(delta);
     this.csm?.update();
 

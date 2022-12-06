@@ -2,9 +2,10 @@ import { Camera, Group, Scene, WebGLRenderer } from "three";
 
 import { PostMessage } from "../../../types";
 import { FromRenderMessage, ToRenderMessage } from "../../types";
+import { RenderPlugin } from "../types";
 import { PlayerAvatar } from "./PlayerAvatar";
 
-export class OtherPlayersPlugin {
+export class OtherPlayersPlugin implements RenderPlugin {
   #scene: Scene;
   #postMessage: PostMessage<FromRenderMessage>;
   #avatarPath?: string;

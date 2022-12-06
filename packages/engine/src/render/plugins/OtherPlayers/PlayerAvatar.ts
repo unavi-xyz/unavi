@@ -48,6 +48,7 @@ export class PlayerAvatar {
   #mixer: AnimationMixer | null = null;
   #actions = new Map<AnimationName, AnimationAction>();
   #postMessage: PostMessage<FromRenderMessage>;
+  #settingName: Promise<void> | null = null;
 
   #fallWeight = 0;
   #leftWeight = 0;
@@ -203,63 +204,73 @@ export class PlayerAvatar {
   }
 
   async setName(name: string) {
+    if (this.#settingName) await this.#settingName;
+
     // Remove previous nameplate
     if (this.#nameplate) disposeObject(this.#nameplate);
 
-    // Create text
-    const loader = new FontLoader();
-    const font = await loader.loadAsync(
-      new URL("./font.json", import.meta.url).href
-    );
+    this.#settingName = new Promise((resolve) => {
+      const loadName = async () => {
+        // Create text
+        const loader = new FontLoader();
+        const font = await loader.loadAsync(
+          new URL("./font.json", import.meta.url).href
+        );
 
-    const shapes = font.generateShapes(name, 0.075);
-    const geometry = new ShapeGeometry(shapes);
+        const shapes = font.generateShapes(name, 0.075);
+        const geometry = new ShapeGeometry(shapes);
 
-    // Center horizontally
-    geometry.computeBoundingBox();
-    if (!geometry.boundingBox) throw new Error("No bounding box");
-    const xMid =
-      -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
-    geometry.translate(xMid, 0, 0);
+        // Center horizontally
+        geometry.computeBoundingBox();
+        if (!geometry.boundingBox) throw new Error("No bounding box");
+        const xMid =
+          -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
+        geometry.translate(xMid, 0, 0);
 
-    const material = new MeshBasicMaterial();
+        const material = new MeshBasicMaterial();
 
-    const mesh = new Mesh(geometry, material);
-    mesh.position.y = PLAYER_HEIGHT - 0.25;
-    mesh.rotation.y = Math.PI;
+        const mesh = new Mesh(geometry, material);
+        mesh.position.y = PLAYER_HEIGHT - 0.25;
+        mesh.rotation.y = Math.PI;
 
-    this.group.add(mesh);
-    this.#nameplate = mesh;
+        this.group.add(mesh);
+        this.#nameplate = mesh;
 
-    // Create background
-    const width =
-      geometry.boundingBox.max.x - geometry.boundingBox.min.x + 0.15;
-    const height =
-      geometry.boundingBox.max.y - geometry.boundingBox.min.y + 0.06;
-    const radius = height / 2;
+        // Create background
+        const width =
+          geometry.boundingBox.max.x - geometry.boundingBox.min.x + 0.15;
+        const height =
+          geometry.boundingBox.max.y - geometry.boundingBox.min.y + 0.06;
+        const radius = height / 2;
 
-    const shape = new Shape();
-    shape.moveTo(0, radius);
-    shape.lineTo(0, height - radius);
-    shape.quadraticCurveTo(0, height, radius, height);
-    shape.lineTo(width - radius, height);
-    shape.quadraticCurveTo(width, height, width, height - radius);
-    shape.lineTo(width, radius);
-    shape.quadraticCurveTo(width, 0, width - radius, 0);
-    shape.lineTo(radius, 0);
-    shape.quadraticCurveTo(0, 0, 0, radius);
+        const shape = new Shape();
+        shape.moveTo(0, radius);
+        shape.lineTo(0, height - radius);
+        shape.quadraticCurveTo(0, height, radius, height);
+        shape.lineTo(width - radius, height);
+        shape.quadraticCurveTo(width, height, width, height - radius);
+        shape.lineTo(width, radius);
+        shape.quadraticCurveTo(width, 0, width - radius, 0);
+        shape.lineTo(radius, 0);
+        shape.quadraticCurveTo(0, 0, 0, radius);
 
-    const roundedRectangle = new ShapeGeometry(shape);
+        const roundedRectangle = new ShapeGeometry(shape);
 
-    const background = new Mesh(
-      roundedRectangle,
-      new MeshBasicMaterial({ color: 0x010101 })
-    );
-    background.position.x = -width / 2;
-    background.position.y = -height / 4;
-    background.position.z = -0.0001;
+        const background = new Mesh(
+          roundedRectangle,
+          new MeshBasicMaterial({ color: 0x010101 })
+        );
+        background.position.x = -width / 2;
+        background.position.y = -height / 4;
+        background.position.z = -0.0001;
 
-    this.#nameplate.add(background);
+        this.#nameplate.add(background);
+
+        resolve();
+      };
+
+      loadName();
+    });
   }
 
   setAvatar(avatarPath: string | null) {

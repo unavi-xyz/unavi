@@ -355,7 +355,6 @@ export class NetworkingInterface {
               name: username,
             },
           });
-
           break;
         }
 
@@ -378,6 +377,16 @@ export class NetworkingInterface {
 
           if (data.handle) this.#playerHandles.set(data.playerId, data.handle);
           else this.#playerHandles.delete(data.playerId);
+
+          const username = this.#getUsername(data.playerId);
+
+          this.#renderThread.postMessage({
+            subject: "player_name",
+            data: {
+              playerId: data.playerId,
+              name: username,
+            },
+          });
           break;
         }
       }
@@ -537,10 +546,9 @@ export class NetworkingInterface {
 
   #getUsername(playerId: number) {
     const handle = this.#playerHandles.get(playerId);
-    const isHandle = Boolean(handle);
+    const name = this.#playerNames.get(playerId);
 
-    let username = isHandle ? `@${handle}` : this.#playerNames.get(playerId);
-    if (!username) username = `Guest ${toHex(playerId)}`;
+    const username = handle ? `@${handle}` : name ?? `Guest ${toHex(playerId)}`;
 
     return username;
   }

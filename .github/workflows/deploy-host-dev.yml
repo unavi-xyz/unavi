@@ -1,10 +1,5 @@
 name: deploy-host-dev
 
-on:
-  push:
-    branches:
-      - dev
-
 jobs:
   deploy-host-dev:
     name: Deploy

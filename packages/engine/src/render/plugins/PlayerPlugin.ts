@@ -46,11 +46,7 @@ export class PlayerPlugin implements RenderPlugin {
   #targetCameraPosition = new Vector3();
   #walkingDirection = new Vector2();
   #hasWalked = false;
-
-  // Set to constrain the pitch of the camera
-  #minPolarAngle = 0;
-  #maxPolarAngle = Math.PI;
-  #pointerSpeed = 5;
+  #delta = 0;
 
   constructor(
     camera: PerspectiveCamera,
@@ -147,12 +143,15 @@ export class PlayerPlugin implements RenderPlugin {
   mouseMove(x: number, y: number) {
     this.#cameraRotation.setFromQuaternion(this.#camera.quaternion);
 
-    this.#cameraRotation.y -= x * 0.002 * this.#pointerSpeed;
-    this.#cameraRotation.x -= y * 0.002 * this.#pointerSpeed;
+    this.#cameraRotation.y -= x * this.#delta * 1.2;
+    this.#cameraRotation.x -= y * this.#delta * 1.2;
+
+    const minPolarAngle = 0;
+    const maxPolarAngle = Math.PI;
 
     this.#cameraRotation.x = Math.max(
-      Math.PI / 2 - this.#maxPolarAngle,
-      Math.min(Math.PI / 2 - this.#minPolarAngle, this.#cameraRotation.x)
+      Math.PI / 2 - maxPolarAngle,
+      Math.min(Math.PI / 2 - minPolarAngle, this.#cameraRotation.x)
     );
   }
 
@@ -169,6 +168,8 @@ export class PlayerPlugin implements RenderPlugin {
   }
 
   update(delta: number) {
+    this.#delta = delta;
+
     // Dampen input
     const deltaX = Date.now() - this.#inputXChangeTime;
     const deltaY = Date.now() - this.#inputYChangeTime;

@@ -255,9 +255,9 @@ export class PlayerPlugin implements RenderPlugin {
     }
 
     // Update avatar
-    if (this.#avatar?.vrm) {
-      this.#avatar.update(delta);
+    if (this.#avatar) this.#avatar.update(delta);
 
+    if (this.#avatar?.vrm) {
       const humanBones = this.#avatar.vrm.humanoid.humanBones;
       const head = humanBones.head.node;
 

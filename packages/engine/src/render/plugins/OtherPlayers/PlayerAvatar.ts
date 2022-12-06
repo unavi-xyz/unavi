@@ -132,15 +132,17 @@ export class PlayerAvatar {
       this.#mixer = null;
     }
 
-    // Fix first person mesh annotations
-    if (vrm.firstPerson) {
-      vrm.firstPerson.meshAnnotations.forEach((annotation) => {
-        if (annotation.type === "both") annotation.type = "auto";
-      });
-    }
+    if (this.#camera) {
+      // Fix first person mesh annotations
+      if (vrm.firstPerson) {
+        vrm.firstPerson.meshAnnotations.forEach((annotation) => {
+          if (annotation.type === "both") annotation.type = "auto";
+        });
+      }
 
-    // Set first person view
-    this.setFirstPerson(this.isFirstPerson);
+      // Set first person view
+      setTimeout(() => this.setFirstPerson(this.isFirstPerson));
+    }
 
     // Process VRM
     VRMUtils.removeUnnecessaryVertices(vrm.scene);

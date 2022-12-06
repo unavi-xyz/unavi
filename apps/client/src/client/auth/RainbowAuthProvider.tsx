@@ -2,6 +2,7 @@ import {
   createAuthenticationAdapter,
   RainbowKitAuthenticationProvider,
 } from "@rainbow-me/rainbowkit";
+import { nanoid } from "nanoid";
 import { signIn, signOut } from "next-auth/react";
 import { ReactNode, useMemo } from "react";
 import { useAccount } from "wagmi";
@@ -22,27 +23,28 @@ export default function RainbowAuthProvider({ children, enabled }: Props) {
   const adapter = useMemo(
     () =>
       createAuthenticationAdapter({
-        createMessage: () => {
-          const message = challenge ?? "";
-          return message;
-        },
+        createMessage: () => challenge ?? "",
 
         getMessageBody: ({ message }) => message,
 
-        getNonce: async () => "dummy",
+        getNonce: async () => nanoid(),
 
         signOut: async () => {
           await signOut({ redirect: false });
         },
 
         verify: async ({ signature }) => {
-          const response = await signIn("credentials", {
-            address,
-            signature,
-            redirect: false,
-          });
+          try {
+            const response = await signIn("credentials", {
+              address,
+              signature,
+              redirect: false,
+            });
 
-          return response?.ok ?? false;
+            return Boolean(response?.ok);
+          } catch (error) {
+            return false;
+          }
         },
       }),
     [challenge, address]

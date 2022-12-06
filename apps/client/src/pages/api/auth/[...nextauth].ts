@@ -95,10 +95,10 @@ export const authOptions: NextAuthOptions = {
         signature: { label: "Signature", type: "text" },
       },
       async authorize(credentials) {
-        try {
-          if (!credentials) return null;
-          const { address, signature } = credentials;
+        if (!credentials) return null;
+        const { address, signature } = credentials;
 
+        try {
           // Authenticate with lens
           const { accessToken, refreshToken } = await authenticate(
             address,

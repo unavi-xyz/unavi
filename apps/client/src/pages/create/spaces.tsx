@@ -3,21 +3,21 @@ import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
 import { useAccount } from "wagmi";
 
-import { useSession } from "../client/auth/useSession";
-import { trpc } from "../client/trpc";
-import { env } from "../env/client.mjs";
-import CreateProjectPage from "../home/CreateProjectPage";
-import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
-import MetaTags from "../home/MetaTags";
-import Button from "../ui/Button";
-import Card from "../ui/Card";
-import Dialog from "../ui/Dialog";
+import { useSession } from "../../client/auth/useSession";
+import { trpc } from "../../client/trpc";
+import { env } from "../../env/client.mjs";
+import CreateProjectPage from "../../home/CreateProjectPage";
+import { getNavbarLayout } from "../../home/layouts/NavbarLayout/NavbarLayout";
+import MetaTags from "../../home/MetaTags";
+import Button from "../../ui/Button";
+import Card from "../../ui/Card";
+import Dialog from "../../ui/Dialog";
 
 function cdnImageURL(id: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/image.jpg`;
 }
 
-export default function Create() {
+export default function Spaces() {
   const [openCreateProject, setOpenCreateProject] = useState(false);
 
   const { status: authState } = useSession();
@@ -53,7 +53,7 @@ export default function Create() {
 
   return (
     <>
-      <MetaTags title="Create" />
+      <MetaTags title="Spaces" />
 
       <Dialog
         open={openCreateProject}
@@ -64,7 +64,7 @@ export default function Create() {
 
       <div className="mx-4 flex justify-center py-8">
         <div className="max-w-content space-y-8">
-          <div className="flex justify-center text-3xl font-black">Create</div>
+          <div className="flex justify-center text-3xl font-black">Spaces</div>
 
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">⚒️ Projects</div>
@@ -140,4 +140,4 @@ export default function Create() {
   );
 }
 
-Create.getLayout = getNavbarLayout;
+Spaces.getLayout = getNavbarLayout;

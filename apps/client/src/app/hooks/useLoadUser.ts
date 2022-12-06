@@ -9,6 +9,9 @@ import { useAppStore } from "../store";
 
 export function useLoadUser() {
   const [avatarId, setAvatarId] = useState<string | null>(null);
+  const [loadedAvatarPublication, setLoadedAvatarPublication] = useState<
+    string | null
+  >(null);
 
   const engine = useAppStore((state) => state.engine);
   const { handle } = useLens();
@@ -28,28 +31,37 @@ export function useLoadUser() {
   useEffect(() => {
     if (!engine) return;
 
+    const { customAvatar, displayName } = useAppStore.getState();
+
     // Name
-    const displayName = localStorage.getItem(LocalStorageKey.Name);
-    useAppStore.setState({ displayName });
-    engine.setName(displayName);
+    const localName = localStorage.getItem(LocalStorageKey.Name);
+    if (localName !== displayName) {
+      useAppStore.setState({ displayName });
+      engine.setName(displayName);
+    }
 
     // Avatar
-    const customAvatar = localStorage.getItem(LocalStorageKey.Avatar);
+    const localAvatar = localStorage.getItem(LocalStorageKey.Avatar);
 
     const equippedAvatar = profile?.attributes
       ? profile.attributes.find((attr) => attr.key === "avatar")
       : undefined;
 
     if (equippedAvatar?.value) {
+      // Use equipped avatar if available
       setAvatarId(equippedAvatar.value);
-
+    } else if (localAvatar) {
+      // Otherwise use local storage avatar
+      if (localAvatar !== customAvatar) {
+        useAppStore.setState({ customAvatar });
+        engine.setAvatar(customAvatar);
+      }
+    } else {
+      // Otherwise use default avatar
       useAppStore.setState({ customAvatar: null });
       engine.setAvatar(null);
-    } else {
-      useAppStore.setState({ customAvatar });
-      engine.setAvatar(customAvatar);
     }
-  }, [engine, profile]);
+  }, [avatarId, engine, profile]);
 
   useEffect(() => {
     async function fetchAvatar() {
@@ -61,14 +73,17 @@ export function useLoadUser() {
 
       const url = parseUri(avatarURI);
 
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const customAvatar = URL.createObjectURL(blob);
+      if (loadedAvatarPublication !== url) {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const customAvatar = URL.createObjectURL(blob);
 
-      useAppStore.setState({ customAvatar });
-      engine.setAvatar(avatarURI);
+        useAppStore.setState({ customAvatar });
+        engine.setAvatar(avatarURI);
+        setLoadedAvatarPublication(url);
+      }
     }
 
     fetchAvatar();
-  }, [engine, avatarPublication]);
+  }, [engine, avatarPublication, loadedAvatarPublication]);
 }

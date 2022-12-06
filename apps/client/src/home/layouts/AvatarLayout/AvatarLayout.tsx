@@ -178,7 +178,7 @@ export default function AvatarLayout({
                       src={image}
                       priority
                       fill
-                      sizes="40vw"
+                      sizes="425px"
                       alt=""
                       className="rounded-3xl object-cover"
                     />

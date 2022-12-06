@@ -319,7 +319,7 @@ export default function CreateAvatarPage() {
       <div className="text-lg font-bold">VRM File</div>
 
       <FileInput
-        accept=".vrm,.glb"
+        accept=".vrm"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) setVrmFile(file);

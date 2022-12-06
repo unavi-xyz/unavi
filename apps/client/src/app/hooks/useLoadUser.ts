@@ -47,15 +47,15 @@ export function useLoadUser() {
     } else if (localAvatar) {
       // Otherwise use local storage avatar
       if (localAvatar !== customAvatar) {
-        useAppStore.setState({ customAvatar });
-        engine.setAvatar(customAvatar);
+        useAppStore.setState({ customAvatar: localAvatar });
+        engine.setAvatar(localAvatar);
       }
     } else {
       // Otherwise use default avatar
       useAppStore.setState({ customAvatar: null });
       engine.setAvatar(null);
     }
-  }, [avatarId, engine]);
+  }, [engine]);
 
   useEffect(() => {
     async function fetchAvatar() {

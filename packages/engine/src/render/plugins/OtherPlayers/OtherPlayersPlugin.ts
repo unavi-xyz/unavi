@@ -36,8 +36,8 @@ export class OtherPlayersPlugin implements RenderPlugin {
     this.#scene.add(this.#playerGroup);
   }
 
-  animate(delta: number) {
-    this.#players.forEach((player) => player.animate(delta));
+  update(delta: number) {
+    this.#players.forEach((player) => player.update(delta));
   }
 
   onmessage(event: MessageEvent<ToRenderMessage>) {

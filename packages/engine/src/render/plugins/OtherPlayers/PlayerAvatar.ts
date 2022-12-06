@@ -309,14 +309,14 @@ export class PlayerAvatar {
     }
   }
 
-  animate(delta: number) {
+  update(delta: number) {
     const K = 1 - Math.pow(LERP_FACTOR, delta);
 
     // Load queue
     this.#queue.update();
 
     // Apply location to group if not user
-    if (!this.#camera || !this.vrm) {
+    if (!this.#camera) {
       this.group.position.lerp(this.#targetPosition, K);
       this.group.quaternion.slerp(this.#targetRotation, K);
     }

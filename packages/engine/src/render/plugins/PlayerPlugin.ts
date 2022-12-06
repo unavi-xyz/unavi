@@ -248,7 +248,7 @@ export class PlayerPlugin implements RenderPlugin {
     }
 
     // Update avatar
-    if (this.#avatar) this.#avatar.animate(delta);
+    if (this.#avatar) this.#avatar.update(delta);
 
     // If first person, copy head position to camera
     if (isFirstPerson && this.#avatar?.vrm) {

@@ -3,6 +3,7 @@ import {
   Group,
   MathUtils,
   PerspectiveCamera,
+  Quaternion,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -14,6 +15,7 @@ import { FromRenderMessage, ToRenderMessage } from "../types";
 import { PlayerAvatar } from "./OtherPlayers/PlayerAvatar";
 import { RenderPlugin } from "./types";
 
+const LERP_FACTOR = 10e-24;
 const DAMPEN_FACTOR = 2;
 const PLAYER_SPEED = 3;
 const THIRD_PERSON_OFFSET = new Vector3(0, PLAYER_HEIGHT * 0.8, 0);
@@ -43,6 +45,7 @@ export class PlayerPlugin implements RenderPlugin {
   #tempVec2 = new Vector2();
   #tempVec3 = new Vector3();
   #cameraRotation = new Euler(0, 0, 0, "YXZ");
+  #targetCameraRotation = new Quaternion();
   #targetCameraPosition = new Vector3();
   #walkingDirection = new Vector2();
   #hasWalked = false;
@@ -141,10 +144,10 @@ export class PlayerPlugin implements RenderPlugin {
   }
 
   mouseMove(x: number, y: number) {
-    this.#cameraRotation.setFromQuaternion(this.#camera.quaternion);
+    this.#cameraRotation.setFromQuaternion(this.#targetCameraRotation);
 
-    this.#cameraRotation.y -= x * this.#delta * 1.2;
-    this.#cameraRotation.x -= y * this.#delta * 1.2;
+    this.#cameraRotation.y -= (x * this.#delta) / 5;
+    this.#cameraRotation.x -= (y * this.#delta) / 5;
 
     const minPolarAngle = 0;
     const maxPolarAngle = Math.PI;
@@ -153,6 +156,8 @@ export class PlayerPlugin implements RenderPlugin {
       Math.PI / 2 - maxPolarAngle,
       Math.min(Math.PI / 2 - minPolarAngle, this.#cameraRotation.x)
     );
+
+    this.#targetCameraRotation.setFromEuler(this.#cameraRotation);
   }
 
   setPlayerInputVector(input: [number, number]) {
@@ -169,6 +174,7 @@ export class PlayerPlugin implements RenderPlugin {
 
   update(delta: number) {
     this.#delta = delta;
+    const K = 1 - Math.pow(LERP_FACTOR, delta);
 
     // Dampen input
     const deltaX = Date.now() - this.#inputXChangeTime;
@@ -214,9 +220,6 @@ export class PlayerPlugin implements RenderPlugin {
       );
     }
 
-    // Rotate camera
-    this.#camera.quaternion.setFromEuler(this.#cameraRotation);
-
     // Move camera to target position
     this.#camera.position.copy(this.#targetCameraPosition);
 
@@ -224,6 +227,11 @@ export class PlayerPlugin implements RenderPlugin {
     const isFirstPerson = this.#targetCameraPosition.z === 0;
     if (isFirstPerson !== this.#avatar?.isFirstPerson)
       this.#avatar?.setFirstPerson(isFirstPerson);
+
+    // Rotate camera
+    if (isFirstPerson)
+      this.#camera.quaternion.slerp(this.#targetCameraRotation, K);
+    else this.#camera.quaternion.copy(this.#targetCameraRotation);
 
     // Rotate avatar
     if (isFirstPerson) {

@@ -198,12 +198,12 @@ export class Players {
   }
 
   leaveSpace(ws: uWS.WebSocket, isOpen = true) {
-    const playerId = this.playerIds.get(ws);
-    if (playerId === undefined) return console.warn("playerId not found");
-
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
     if (!spaceId) return;
+
+    const playerId = this.playerIds.get(ws);
+    if (playerId === undefined) return console.warn("playerId not found");
 
     console.info(`🌍 Player ${playerId} left space ${spaceId}`);
 
@@ -221,12 +221,12 @@ export class Players {
   }
 
   publishMessage(ws: uWS.WebSocket, message: string) {
-    const playerId = this.playerIds.get(ws);
-    if (playerId === undefined) return console.warn("playerId not found");
-
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
     if (!spaceId) return;
+
+    const playerId = this.playerIds.get(ws);
+    if (playerId === undefined) return console.warn("playerId not found");
 
     const id = nanoid();
     const timestamp = Date.now();
@@ -241,12 +241,12 @@ export class Players {
   }
 
   publishFallingState(ws: uWS.WebSocket, isFalling: boolean) {
-    const playerId = this.playerIds.get(ws);
-    if (playerId === undefined) return console.warn("playerId not found");
-
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
     if (!spaceId) return;
+
+    const playerId = this.playerIds.get(ws);
+    if (playerId === undefined) return console.warn("playerId not found");
 
     // Tell everyone in the space about this player's jump state
     const jumpStateMessage: FromHostMessage = {
@@ -258,9 +258,6 @@ export class Players {
   }
 
   publishName(ws: uWS.WebSocket, name: string | null) {
-    const playerId = this.playerIds.get(ws);
-    if (playerId === undefined) return console.warn("playerId not found");
-
     // Save name
     if (name) this.names.set(ws, name);
     else this.names.delete(ws);
@@ -268,6 +265,9 @@ export class Players {
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
     if (!spaceId) return;
+
+    const playerId = this.playerIds.get(ws);
+    if (playerId === undefined) return console.warn("playerId not found");
 
     // Tell everyone in the space about this player's name
     const nameMessage: FromHostMessage = {
@@ -279,9 +279,6 @@ export class Players {
   }
 
   publishAvatar(ws: uWS.WebSocket, avatar: string | null) {
-    const playerId = this.playerIds.get(ws);
-    if (playerId === undefined) return console.warn("playerId not found");
-
     // Save avatar
     if (avatar) this.avatars.set(ws, avatar);
     else this.avatars.delete(ws);
@@ -289,6 +286,9 @@ export class Players {
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
     if (!spaceId) return;
+
+    const playerId = this.playerIds.get(ws);
+    if (playerId === undefined) return console.warn("playerId not found");
 
     // Tell everyone in the space about this player's avatar
     const avatarMessage: FromHostMessage = {
@@ -300,9 +300,6 @@ export class Players {
   }
 
   publishHandle(ws: uWS.WebSocket, handle: string | null) {
-    const playerId = this.playerIds.get(ws);
-    if (playerId === undefined) return console.warn("playerId not found");
-
     // Save handle
     if (handle) this.handles.set(ws, handle);
     else this.handles.delete(ws);
@@ -310,6 +307,9 @@ export class Players {
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
     if (!spaceId) return;
+
+    const playerId = this.playerIds.get(ws);
+    if (playerId === undefined) return console.warn("playerId not found");
 
     // Tell everyone in the space about this player's handle
     const handleMessage: FromHostMessage = {

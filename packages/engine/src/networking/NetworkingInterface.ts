@@ -204,6 +204,11 @@ export class NetworkingInterface {
         wsConnected: true,
       };
 
+      // Send player info
+      if (this.#myAvatar) this.#sendAvatar();
+      if (this.#myHandle) this.#sendHandle();
+      if (this.#myName) this.#sendName();
+
       // Start WebRTC connection
       if (!this.#webRTC) throw new Error("WebRTC not initialized");
       this.#webRTC.connect();
@@ -219,11 +224,6 @@ export class NetworkingInterface {
 
       switch (subject) {
         case "join_successful": {
-          // Send player name and avatar
-          if (this.#myName) this.#sendName();
-          if (this.#myAvatar) this.#sendAvatar();
-          if (this.#myHandle) this.#sendHandle();
-
           // Set your name
           if (this.#myName) this.#playerNames.set(data.playerId, this.#myName);
           else this.#playerNames.delete(data.playerId);

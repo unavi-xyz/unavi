@@ -8,3 +8,5 @@ export enum ContractAddress {
 export const API_URL = "https://api-mumbai.lens.dev/";
 export const HIDDEN_MESSAGE = "This publication has been hidden";
 export const HANDLE_ENDING = ".test";
+
+export const excludeProfileIds = ["0x2c", "0x035f"];

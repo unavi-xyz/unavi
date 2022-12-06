@@ -7,6 +7,8 @@ import {
 } from "lens";
 import { useRef, useState } from "react";
 
+import { excludeProfileIds } from "../constants";
+
 export function useExploreQuery(
   pageSize: number,
   sources: AppId[],
@@ -28,6 +30,7 @@ export function useExploreQuery(
         limit,
         cursor: cursor * pageSize,
         noRandomize: true,
+        excludeProfileIds,
       },
     },
   });

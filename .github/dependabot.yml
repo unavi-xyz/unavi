@@ -5,6 +5,9 @@ updates:
     directory: "/"
     target-branch: "dev"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "sunday"
+      time: "00:00"
+      open-pull-requests-limit: 10
     ignore:
       - dependency-name: "@aws-sdk/*"

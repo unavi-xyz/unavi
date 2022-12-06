@@ -69,14 +69,20 @@ export const publicationRouter = router({
       return url;
     }),
 
-  create: protectedProcedure.mutation(async ({ ctx }) => {
-    // Create publication
-    const { id } = await ctx.prisma.publication.create({
-      data: { owner: ctx.session.address, type: "SPACE" },
-    });
+  create: protectedProcedure
+    .input(
+      z.object({
+        type: z.enum(["SPACE", "AVATAR"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Create publication
+      const { id } = await ctx.prisma.publication.create({
+        data: { owner: ctx.session.address, type: input.type },
+      });
 
-    return id;
-  }),
+      return id;
+    }),
 
   link: protectedProcedure
     .input(

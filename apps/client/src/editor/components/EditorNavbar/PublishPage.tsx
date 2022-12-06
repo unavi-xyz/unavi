@@ -101,7 +101,7 @@ export default function PublishPage() {
       await save();
 
       // Create database publication
-      const publicationId = await createPublication();
+      const publicationId = await createPublication({ type: "SPACE" });
 
       // Export scene and upload to S3
       promises.push(

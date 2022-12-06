@@ -87,7 +87,7 @@ export default function CreateAvatarPage() {
       const promises: Promise<void>[] = [];
 
       // Create database publication
-      const publicationId = await createPublication();
+      const publicationId = await createPublication({ type: "AVATAR" });
 
       // Upload image to S3
       promises.push(

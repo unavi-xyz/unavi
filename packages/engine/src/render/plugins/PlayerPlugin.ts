@@ -19,6 +19,7 @@ const PLAYER_SPEED = 3;
 const FIRST_PERSON_OFFSET = new Vector3(0, 0.1, -0.03);
 const THIRD_PERSON_OFFSET = new Vector3(0, PLAYER_HEIGHT * 0.75, 0);
 const UP = new Vector3(0, 1, 0);
+const VEC2 = new Vector2();
 
 export class PlayerPlugin implements RenderPlugin {
   readonly group = new Group();
@@ -194,22 +195,13 @@ export class PlayerPlugin implements RenderPlugin {
     const angle = Math.atan2(direction.x, direction.z);
     const velocity = this.#tempVec2
       .set(this.#inputMomentum.x, this.#inputMomentum.y)
-      .rotateAround(new Vector2(0, 0), -angle)
+      .rotateAround(VEC2, -angle)
       .multiplyScalar(PLAYER_SPEED);
 
     // Send velocity
     if (this.#playerVelocity) {
       Atomics.store(this.#playerVelocity, 0, velocity.x * 1000);
       Atomics.store(this.#playerVelocity, 1, velocity.y * 1000);
-    }
-
-    // Send player rotation
-    if (this.#playerRotation) {
-      const rotation = this.#camera.quaternion;
-      Atomics.store(this.#playerRotation, 0, rotation.x * 1000);
-      Atomics.store(this.#playerRotation, 1, rotation.y * 1000);
-      Atomics.store(this.#playerRotation, 2, rotation.z * 1000);
-      Atomics.store(this.#playerRotation, 3, rotation.w * 1000);
     }
 
     // Apply player position
@@ -264,6 +256,20 @@ export class PlayerPlugin implements RenderPlugin {
         .applyEuler(this.#cameraRotation)
         .add(this.#avatar.group.position)
         .add(THIRD_PERSON_OFFSET);
+    }
+
+    // Send player rotation
+    if (this.#playerRotation) {
+      const rotation = isFirstPerson
+        ? this.#camera.quaternion
+        : this.#avatar?.group.quaternion;
+
+      if (rotation) {
+        Atomics.store(this.#playerRotation, 0, rotation.x * 1000);
+        Atomics.store(this.#playerRotation, 1, rotation.y * 1000);
+        Atomics.store(this.#playerRotation, 2, rotation.z * 1000);
+        Atomics.store(this.#playerRotation, 3, rotation.w * 1000);
+      }
     }
   }
 

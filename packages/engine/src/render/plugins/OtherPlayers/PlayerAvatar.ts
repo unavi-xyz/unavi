@@ -30,15 +30,15 @@ import { loadMixamoAnimation } from "./loadMixamoAnimation";
 import { AnimationName } from "./types";
 
 const LERP_FACTOR = 0.000001;
-const CAMERA_OFFSET = new Vector3(0, 0.1, -0.03);
 
 export class PlayerAvatar {
   readonly playerId: number;
   readonly group = new Group();
 
   isFalling = false;
+  isFirstPerson = false;
 
-  #vrm: VRM | null = null;
+  vrm: VRM | null = null;
   #camera?: PerspectiveCamera;
   #sceneCamera: Camera;
   #nameplate: Mesh | null = null;
@@ -113,10 +113,10 @@ export class PlayerAvatar {
     const vrm = gltf.userData.vrm as VRM;
 
     // Remove previous VRM
-    if (this.#vrm) {
-      this.#vrm.scene.removeFromParent();
-      VRMUtils.deepDispose(this.#vrm.scene);
-      this.#vrm = null;
+    if (this.vrm) {
+      this.vrm.scene.removeFromParent();
+      VRMUtils.deepDispose(this.vrm.scene);
+      this.vrm = null;
     }
 
     // Remove previous mixer
@@ -145,10 +145,10 @@ export class PlayerAvatar {
     });
 
     // Set VRM model
-    this.#vrm = vrm;
+    this.vrm = vrm;
 
     // Add scene to queue
-    this.#queue.add(this.#vrm.scene, this.group, true);
+    this.#queue.add(this.vrm.scene, this.group, true);
 
     if (avatarAnimationsPath) {
       // Create mixer
@@ -158,13 +158,13 @@ export class PlayerAvatar {
       const animations = new Map<AnimationName, AnimationClip>();
 
       const clipPromises = Object.values(AnimationName).map(async (name) => {
-        if (!this.#vrm) throw new Error("VRM not loaded");
+        if (!this.vrm) throw new Error("VRM not loaded");
         if (!this.#mixer) throw new Error("Mixer not created");
 
         const path = `${avatarAnimationsPath}${name}.fbx`;
 
         try {
-          const clips = await loadMixamoAnimation(path, this.#vrm);
+          const clips = await loadMixamoAnimation(path, this.vrm);
           const clip = clips[0];
           if (!clip) throw new Error(`No clip found for ${name}`);
 
@@ -285,17 +285,31 @@ export class PlayerAvatar {
     );
   }
 
+  setFirstPerson(firstPerson: boolean) {
+    if (!this.vrm?.firstPerson) return;
+    if (!this.#camera) throw new Error("Camera not set");
+
+    this.isFirstPerson = firstPerson;
+
+    // Enable first-person view if it's the user
+    if (firstPerson) {
+      this.vrm.firstPerson.setup();
+      this.#camera.layers.enable(this.vrm.firstPerson.firstPersonOnlyLayer);
+      this.#camera.layers.disable(this.vrm.firstPerson.thirdPersonOnlyLayer);
+    } else {
+      this.#camera.layers.disable(this.vrm.firstPerson.firstPersonOnlyLayer);
+      this.#camera.layers.enable(this.vrm.firstPerson.thirdPersonOnlyLayer);
+    }
+  }
+
   animate(delta: number) {
     const K = 1 - Math.pow(LERP_FACTOR, delta);
 
     // Load queue
     this.#queue.update();
 
-    // If user, copy rotation from camera
-    if (this.#camera && this.#vrm) {
-      this.group.quaternion.copy(this.#camera.quaternion);
-    } else {
-      // Apply location to group
+    // Apply location to group if not user
+    if (!this.#camera || !this.vrm) {
       this.group.position.lerp(this.#targetPosition, K);
       this.group.quaternion.slerp(this.#targetRotation, K);
     }
@@ -314,17 +328,9 @@ export class PlayerAvatar {
     // Rotate head
     this.#headRotation.slerp(relativeRotation, K);
 
-    //Don't rotate Y axis
+    // Don't rotate Y axis
     this.#headRotation.y = 0;
     this.#headRotation.normalize();
-
-    // Copy head position to camera
-    if (this.#vrm && this.#camera) {
-      const head = this.#vrm.humanoid.humanBones.head.node;
-      head.position.add(CAMERA_OFFSET);
-      head.getWorldPosition(this.#camera.position);
-      head.position.sub(CAMERA_OFFSET);
-    }
 
     // Calculate velocity relative to player rotation
     this.#velocity
@@ -410,18 +416,18 @@ export class PlayerAvatar {
     if (this.#mixer) this.#mixer.update(delta);
 
     // Update VRM
-    if (this.#vrm) this.#vrm.update(delta);
+    if (this.vrm) this.vrm.update(delta);
 
     // Rotate head
-    if (this.#vrm?.meta.metaVersion === "1") {
+    if (this.vrm?.meta.metaVersion === "1") {
       // If vrm 1.0, rotate axis
       const rotated = this.#tempQuat.copy(this.#headRotation);
       rotated.x = this.#headRotation.z;
       rotated.z = -this.#headRotation.x;
 
-      this.#vrm.humanoid.humanBones.head.node.quaternion.multiply(rotated);
+      this.vrm.humanoid.humanBones.head.node.quaternion.multiply(rotated);
     } else {
-      this.#vrm?.humanoid.humanBones.head.node.quaternion.multiply(
+      this.vrm?.humanoid.humanBones.head.node.quaternion.multiply(
         this.#headRotation
       );
     }
@@ -438,6 +444,12 @@ export class PlayerAvatar {
   }
 
   destroy() {
+    if (this.vrm) {
+      this.vrm.scene.removeFromParent();
+      VRMUtils.deepDispose(this.vrm.scene);
+      this.vrm = null;
+    }
+
     disposeObject(this.group);
   }
 }

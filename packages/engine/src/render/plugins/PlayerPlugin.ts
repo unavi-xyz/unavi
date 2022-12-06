@@ -8,12 +8,16 @@ import {
   WebGLRenderer,
 } from "three";
 
+import { PLAYER_HEIGHT } from "../../constants";
 import { PostMessage } from "../../types";
 import { FromRenderMessage, ToRenderMessage } from "../types";
 import { PlayerAvatar } from "./OtherPlayers/PlayerAvatar";
 
 const DAMPEN_FACTOR = 2;
 const PLAYER_SPEED = 3;
+const FIRST_PERSON_OFFSET = new Vector3(0, 0.1, -0.03);
+const THIRD_PERSON_OFFSET = new Vector3(0, PLAYER_HEIGHT * 0.75, 0);
+const UP = new Vector3(0, 1, 0);
 
 export class PlayerPlugin {
   readonly group = new Group();
@@ -27,7 +31,6 @@ export class PlayerPlugin {
   #avatar: PlayerAvatar | null = null;
 
   #playerInputVector = new Vector2();
-
   #playerVelocity: Int32Array | null = null;
   #playerPosition: Int32Array | null = null;
   #playerRotation: Int16Array | null = null;
@@ -38,13 +41,14 @@ export class PlayerPlugin {
 
   #tempVec2 = new Vector2();
   #tempVec3 = new Vector3();
-  #tempEuler = new Euler(0, 0, 0, "YXZ");
+  #cameraRotation = new Euler(0, 0, 0, "YXZ");
+  #targetCameraPosition = new Vector3();
+  #walkingDirection = new Vector2();
 
   // Set to constrain the pitch of the camera
   #minPolarAngle = 0;
   #maxPolarAngle = Math.PI;
-
-  #pointerSpeed = 1.0;
+  #pointerSpeed = 5;
 
   constructor(
     camera: PerspectiveCamera,
@@ -119,22 +123,35 @@ export class PlayerPlugin {
         if (data.playerId === -1 && this.#avatar) {
           this.#avatar.isFalling = data.isFalling;
         }
+        break;
+      }
+
+      case "wheel": {
+        this.wheel(data.deltaY);
+        break;
       }
     }
   }
 
-  mouseMove(x: number, y: number) {
-    this.#tempEuler.setFromQuaternion(this.#camera.quaternion);
-
-    this.#tempEuler.y -= x * 0.002 * this.#pointerSpeed;
-    this.#tempEuler.x -= y * 0.002 * this.#pointerSpeed;
-
-    this.#tempEuler.x = Math.max(
-      Math.PI / 2 - this.#maxPolarAngle,
-      Math.min(Math.PI / 2 - this.#minPolarAngle, this.#tempEuler.x)
+  wheel(delta: number) {
+    // Scroll out into third person mode
+    this.#targetCameraPosition.z += delta / 100;
+    this.#targetCameraPosition.z = Math.max(
+      0,
+      Math.min(20, this.#targetCameraPosition.z)
     );
+  }
 
-    this.#camera.quaternion.setFromEuler(this.#tempEuler);
+  mouseMove(x: number, y: number) {
+    this.#cameraRotation.setFromQuaternion(this.#camera.quaternion);
+
+    this.#cameraRotation.y -= x * 0.002 * this.#pointerSpeed;
+    this.#cameraRotation.x -= y * 0.002 * this.#pointerSpeed;
+
+    this.#cameraRotation.x = Math.max(
+      Math.PI / 2 - this.#maxPolarAngle,
+      Math.min(Math.PI / 2 - this.#minPolarAngle, this.#cameraRotation.x)
+    );
   }
 
   setPlayerInputVector(input: [number, number]) {
@@ -203,8 +220,50 @@ export class PlayerPlugin {
       );
     }
 
+    // Rotate camera
+    this.#camera.quaternion.setFromEuler(this.#cameraRotation);
+
+    // Move camera to target position
+    this.#camera.position.copy(this.#targetCameraPosition);
+
+    // Set first person mode
+    const isFirstPerson = this.#targetCameraPosition.z === 0;
+    if (isFirstPerson !== this.#avatar?.isFirstPerson)
+      this.#avatar?.setFirstPerson(isFirstPerson);
+
+    // Rotate avatar
+    if (isFirstPerson) {
+      // If first person, copy camera rotation to avatar
+      this.#avatar?.group.quaternion.copy(this.#camera.quaternion);
+    } else {
+      // If third person, rotate avatar by walking direction
+      this.#walkingDirection.add(velocity);
+      this.#walkingDirection.clampLength(0, 1);
+      const angle = Math.atan2(
+        -this.#walkingDirection.x,
+        -this.#walkingDirection.y
+      );
+      this.#avatar?.group.quaternion.setFromAxisAngle(UP, angle);
+    }
+
     // Update avatar
     if (this.#avatar) this.#avatar.animate(delta);
+
+    // If first person, copy head position to camera
+    if (isFirstPerson && this.#avatar?.vrm) {
+      const head = this.#avatar.vrm.humanoid.humanBones.head.node;
+      head.position.add(FIRST_PERSON_OFFSET);
+      head.getWorldPosition(this.#camera.position);
+      head.position.sub(FIRST_PERSON_OFFSET);
+    }
+
+    // If third person, rotate camera around avatar
+    if (!isFirstPerson && this.#avatar) {
+      this.#camera.position
+        .applyEuler(this.#cameraRotation)
+        .add(this.#avatar.group.position)
+        .add(THIRD_PERSON_OFFSET);
+    }
   }
 
   destroy() {

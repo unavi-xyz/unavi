@@ -13,7 +13,7 @@ export default function Navbar() {
     <div className="flex h-full w-full justify-center bg-surface">
       <div className="max-w-content mx-4 flex justify-between md:grid md:grid-cols-3">
         <div className="flex items-center">
-          <Link href="/" passHref>
+          <Link href="/">
             <div className="relative aspect-square h-10 cursor-pointer">
               <Image
                 src="/images/Logo-Icon.png"

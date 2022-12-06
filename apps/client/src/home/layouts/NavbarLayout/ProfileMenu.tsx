@@ -34,7 +34,7 @@ export default function ProfileMenu({
       </button>
 
       {includeExternal && (
-        <Link href={`/user/${handle}`} passHref>
+        <Link href={`/user/${handle}`}>
           <button className="w-full">
             <ProfileMenuButton icon={<MdOutlinePersonOutline />}>
               Your Profile
@@ -44,7 +44,7 @@ export default function ProfileMenu({
       )}
 
       {includeExternal && (
-        <Link href="/settings" passHref>
+        <Link href="/settings">
           <button className="w-full">
             <ProfileMenuButton icon={<MdOutlineSettings />}>
               Settings

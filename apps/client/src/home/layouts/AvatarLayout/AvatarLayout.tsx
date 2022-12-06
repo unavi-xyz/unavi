@@ -1,10 +1,10 @@
 import { AttributeData, ProfileMetadata, ProfileMetadataVersions } from "lens";
 import { nanoid } from "nanoid";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
-import { useFetchData } from "../../../client/ipfs/useFetchData";
 import { useLens } from "../../../client/lens/hooks/useLens";
 import { useProfileByHandle } from "../../../client/lens/hooks/useProfileByHandle";
 import { useSetProfileMetadata } from "../../../client/lens/hooks/useSetProfileMetadata";
@@ -12,9 +12,8 @@ import { PublicationProps } from "../../../client/lens/utils/getPublicationProps
 import { trimHandle } from "../../../client/lens/utils/trimHandle";
 import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
-import Spinner from "../../../ui/Spinner";
+import { isFromCDN } from "../../../utils/isFromCDN";
 import MetaTags from "../../MetaTags";
-import AvatarCanvas from "./AvatarCanvas";
 
 interface Props extends PublicationProps {
   children: React.ReactNode;
@@ -23,6 +22,7 @@ interface Props extends PublicationProps {
 export default function AvatarLayout({
   children,
   metadata,
+  image,
   publication,
 }: Props) {
   const router = useRouter();
@@ -30,7 +30,6 @@ export default function AvatarLayout({
 
   const { handle } = useLens();
   const profile = useProfileByHandle(handle);
-  const avatarUrl = useFetchData(publication?.metadata.content);
   const setProfileMetadata = useSetProfileMetadata(profile?.id);
 
   const [loading, setLoading] = useState(false);
@@ -168,15 +167,28 @@ export default function AvatarLayout({
 
       <div className="mx-4 h-full">
         <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
-          <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
-            <div className="mx-auto aspect-vertical w-full rounded-3xl bg-primaryContainer md:mx-0 md:w-1/2">
-              {avatarUrl ? (
-                <AvatarCanvas />
-              ) : (
-                <div className="flex h-full animate-pulse items-center justify-center rounded-3xl bg-surfaceVariant">
-                  <Spinner />
-                </div>
-              )}
+          <div className="flex flex-col items-center space-y-8 md:flex-row md:items-stretch md:space-y-0 md:space-x-8">
+            <div className="aspect-vertical h-full w-1/2 rounded-3xl bg-primaryContainer">
+              <div className="relative h-full w-full object-cover">
+                {image &&
+                  (isFromCDN(image) ? (
+                    <Image
+                      src={image}
+                      priority
+                      fill
+                      sizes="40vw"
+                      alt=""
+                      className="rounded-3xl object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={image}
+                      alt=""
+                      className="h-full w-full rounded-3xl object-cover"
+                      crossOrigin="anonymous"
+                    />
+                  ))}
+              </div>
             </div>
 
             <div className="flex min-w-fit flex-col justify-between space-y-8 md:w-2/3">
@@ -185,15 +197,13 @@ export default function AvatarLayout({
                   {publication?.metadata.name}
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                    <div>By</div>
-                    <Link href={`/user/${author}`}>
-                      <div className="cursor-pointer hover:underline">
-                        @{author}
-                      </div>
-                    </Link>
-                  </div>
+                <div className="flex justify-center space-x-1 font-bold">
+                  <div className="text-outline">By</div>
+                  <Link href={`/user/${author}`}>
+                    <div className="cursor-pointer hover:underline">
+                      @{author}
+                    </div>
+                  </Link>
                 </div>
               </div>
 

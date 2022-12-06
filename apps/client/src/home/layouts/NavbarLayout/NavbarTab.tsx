@@ -25,7 +25,7 @@ export default function NavbarTab({ href, text }: Props) {
     : "hover:bg-surfaceVariant hover:text-onSurfaceVariant";
 
   return (
-    <Link href={href} passHref>
+    <Link href={href}>
       <button
         className={`cursor-pointer rounded-lg px-4 py-1 font-bold transition ${selectedClass}`}
       >

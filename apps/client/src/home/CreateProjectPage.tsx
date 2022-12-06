@@ -91,7 +91,7 @@ export default function CreateProjectPage() {
       <TextField
         inputRef={nameRef}
         title="Name"
-        defaultValue="New Project"
+        defaultValue="My Project"
         outline
       />
 

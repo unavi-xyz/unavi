@@ -61,7 +61,7 @@ export default function Settings(
 
   return (
     <AvatarLayout {...props}>
-      <div className="space-y-4 rounded-2xl bg-primaryContainer p-8 text-onPrimaryContainer">
+      <div className="space-y-4 rounded-2xl bg-errorContainer p-8 text-onPrimaryContainer">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">
@@ -72,7 +72,7 @@ export default function Settings(
 
         <Button
           variant="filled"
-          color="primary"
+          color="error"
           rounded="large"
           loading={loading}
           onClick={handleDelete}

@@ -63,7 +63,7 @@ export default function LandingInfoBlock({
               </div>
             ) : (
               <div className="w-full md:w-fit">
-                <Link href={buttonLink} passHref>
+                <Link href={buttonLink}>
                   <Button variant="filled" rounded="large" fullWidth>
                     <div className="md:px-3 md:py-0.5">{buttonText}</div>
                   </Button>

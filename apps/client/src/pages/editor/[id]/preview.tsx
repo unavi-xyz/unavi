@@ -347,7 +347,7 @@ export default function Preview() {
           onClick={(e) => e.stopPropagation()}
           className="fixed top-0 right-0 p-6 text-2xl"
         >
-          <Link href={`/editor/${id}`} passHref>
+          <Link href={`/editor/${id}`}>
             <button className="rounded-full bg-surface p-2 text-onSurface shadow transition hover:shadow-md active:shadow">
               <MdClose />
             </button>

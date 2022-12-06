@@ -11,21 +11,19 @@ import {
 } from "lens";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useSigner } from "wagmi";
 
-import { useCreatePost } from "../../../client/lens/hooks/useCreatePost";
-import { useLens } from "../../../client/lens/hooks/useLens";
-import { useProfileByHandle } from "../../../client/lens/hooks/useProfileByHandle";
-import { trpc } from "../../../client/trpc";
-import { env } from "../../../env/client.mjs";
-import Button from "../../../ui/Button";
-import ButtonFileInput from "../../../ui/ButtonFileInput";
-import TextArea from "../../../ui/TextArea";
-import TextField from "../../../ui/TextField";
-import { useSave } from "../../hooks/useSave";
-import { useEditorStore } from "../../store";
-import { cropImage } from "../../utils/cropImage";
+import { useCreatePost } from "../client/lens/hooks/useCreatePost";
+import { useLens } from "../client/lens/hooks/useLens";
+import { useProfileByHandle } from "../client/lens/hooks/useProfileByHandle";
+import { trpc } from "../client/trpc";
+import { cropImage } from "../editor/utils/cropImage";
+import { env } from "../env/client.mjs";
+import Button from "../ui/Button";
+import FileInput from "../ui/FileInput";
+import TextArea from "../ui/TextArea";
+import TextField from "../ui/TextField";
 
 function cdnModelURL(id: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/model.glb`;
@@ -39,29 +37,20 @@ function cdnMetadataURL(id: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/metadata.json`;
 }
 
-export default function PublishPage() {
+export default function CreateAvatarPage() {
   const router = useRouter();
-  const id = router.query.id as string;
-
-  const name = useEditorStore((state) => state.name);
-  const description = useEditorStore((state) => state.description);
-
   const { handle, client } = useLens();
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
   const profile = useProfileByHandle(handle);
   const createPost = useCreatePost(profile?.id);
-  const { save } = useSave();
 
-  const { data: imageURL } = trpc.project.image.useQuery(
-    { id },
-    {
-      enabled: id !== undefined,
-      trpc: {},
-    }
-  );
+  const nameRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
-  const { mutateAsync: saveProject } = trpc.project.save.useMutation();
+  const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File>();
+  const [vrmFile, setVrmFile] = useState<File>();
 
   const { mutateAsync: createModelUploadUrl } =
     trpc.publication.modelUploadURL.useMutation();
@@ -77,61 +66,28 @@ export default function PublishPage() {
 
   const { mutateAsync: linkPublication } = trpc.publication.link.useMutation();
 
-  const [imageFile, setImageFile] = useState<File>();
-  const [loading, setLoading] = useState(false);
+  const imageURL = useMemo(() => {
+    if (!imageFile) return;
+    return URL.createObjectURL(imageFile);
+  }, [imageFile]);
 
-  useEffect(() => {
-    if (imageFile || !imageURL) return;
-    cropImage(imageURL).then((file) => setImageFile(file));
-  }, [imageFile, imageURL]);
-
-  async function handlePublish() {
-    if (loading) return;
+  async function handleCreate() {
+    if (loading || !imageFile || !vrmFile) return;
 
     if (!signer) {
       if (openConnectModal) openConnectModal();
       return;
     }
 
+    const name = nameRef.current?.value ?? "";
+    const description = descriptionRef.current?.value ?? "";
+
     try {
       setLoading(true);
       const promises: Promise<void>[] = [];
 
-      // Save project
-      await save();
-
       // Create database publication
       const publicationId = await createPublication();
-
-      // Export scene and upload to S3
-      promises.push(
-        new Promise((resolve, reject) => {
-          async function upload() {
-            const { engine } = useEditorStore.getState();
-            if (!engine) throw new Error("Engine not found");
-
-            // Export scene to glb
-            const glb = await engine.export();
-            const body = new Blob([glb], { type: "model/gltf-binary" });
-
-            // Upload to S3
-            const url = await createModelUploadUrl({ id: publicationId });
-            const response = await fetch(url, {
-              method: "PUT",
-              body,
-              headers: {
-                "Content-Type": "model/gltf-binary",
-                "x-amz-acl": "public-read",
-              },
-            });
-
-            if (!response.ok) reject();
-            else resolve();
-          }
-
-          upload();
-        })
-      );
 
       // Upload image to S3
       promises.push(
@@ -152,7 +108,39 @@ export default function PublishPage() {
               method: "PUT",
               body,
               headers: {
-                "Content-Type": "image/jpeg",
+                "Content-Type": imageFile.type,
+                "x-amz-acl": "public-read",
+              },
+            });
+
+            if (!response.ok) reject();
+            else resolve();
+          }
+
+          upload();
+        })
+      );
+
+      // Upload VRM to S3
+      promises.push(
+        new Promise((resolve, reject) => {
+          async function upload() {
+            if (!vrmFile) {
+              reject();
+              return;
+            }
+
+            // Get VRM
+            const res = await fetch(URL.createObjectURL(vrmFile));
+            const body = await res.blob();
+
+            // Upload to S3
+            const url = await createModelUploadUrl({ id: publicationId });
+            const response = await fetch(url, {
+              method: "PUT",
+              body,
+              headers: {
+                "Content-Type": vrmFile.type,
                 "x-amz-acl": "public-read",
               },
             });
@@ -190,7 +178,7 @@ export default function PublishPage() {
               metadata_id: nanoid(),
               description,
               locale: "en-US",
-              tags: ["3d", "gltf", "space", "wired"],
+              tags: ["vrm", "avatar", "wired"],
               mainContentFocus: PublicationMainFocus.Image,
               external_url: `https://thewired.space/user/${handle}`,
               name,
@@ -198,7 +186,7 @@ export default function PublishPage() {
               imageMimeType: "image/jpeg",
               media,
               attributes: [],
-              appId: AppId.Space,
+              appId: AppId.Avatar,
             };
 
             // Upload to S3
@@ -232,18 +220,8 @@ export default function PublishPage() {
         return;
       }
 
-      // Save project, linking it to the publication
-      promises.push(
-        saveProject({
-          id,
-          name,
-          description,
-          publicationId,
-        })
-      );
-
       if (!profile) {
-        router.push("/create/spaces");
+        router.push("/create/avatars");
         return;
       }
 
@@ -259,7 +237,7 @@ export default function PublishPage() {
             request: {
               profileId: profile.id,
               limit: 4, // We use 4 just in case other publications were created at the same time
-              sources: [AppId.Space],
+              sources: [AppId.Avatar],
             },
           },
           {
@@ -277,7 +255,7 @@ export default function PublishPage() {
       );
 
       if (!publication) {
-        router.push("/create/spaces");
+        router.push("/create/avatars");
         return;
       }
 
@@ -292,79 +270,70 @@ export default function PublishPage() {
       await Promise.all(promises);
 
       // Redirect to space
-      router.push(`/space/${publication.id}`);
-    } catch (error) {
-      console.error(error);
+      router.push(`/avatar/${publication.id}`);
+    } catch (err) {
+      console.error(err);
       setLoading(false);
     }
   }
 
-  const image = imageFile ? URL.createObjectURL(imageFile) : null;
-
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col items-center space-y-1">
-        <h1 className="flex justify-center text-4xl font-bold">
-          Publish Space
-        </h1>
-      </div>
+    <div className="space-y-4">
+      <div className="text-center text-3xl font-bold">New Avatar</div>
 
-      <div className="space-y-4">
-        <TextField
-          onChange={(e) => {
-            const value = e.target.value;
-            useEditorStore.setState({ name: value });
-          }}
-          title="Name"
-          outline
-          defaultValue={name}
-        />
+      <TextField
+        inputRef={nameRef}
+        title="Name"
+        defaultValue="My Avatar"
+        outline
+      />
 
-        <TextArea
-          onChange={(e) => {
-            const value = e.target.value;
-            useEditorStore.setState({ description: value });
-          }}
-          autoComplete="off"
-          title="Description"
-          outline
-          rows={4}
-          defaultValue={description}
-        />
+      <TextArea
+        textAreaRef={descriptionRef}
+        autoComplete="off"
+        title="Description"
+        outline
+        rows={4}
+      />
 
-        <div className="space-y-4">
-          <div className="text-lg font-bold">Image</div>
+      <div className="text-lg font-bold">Image</div>
 
-          <div className="relative aspect-card h-full w-full rounded-xl bg-primaryContainer">
-            {image && (
-              <img
-                src={image}
-                alt="picture preview"
-                className="h-full w-full rounded-xl"
-              />
-            )}
+      {imageURL && (
+        <div className="flex justify-center">
+          <div className="aspect-vertical w-1/3 overflow-hidden rounded-xl">
+            <img src={imageURL} alt="avatar image" className="h-full w-full" />
           </div>
-
-          <ButtonFileInput
-            title="Cover Picture"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-
-              cropImage(URL.createObjectURL(file)).then((file) =>
-                setImageFile(file)
-              );
-            }}
-          >
-            Upload Image
-          </ButtonFileInput>
         </div>
-      </div>
+      )}
+
+      <FileInput
+        accept="image/*"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+
+          cropImage(URL.createObjectURL(file), 3 / 5, false).then(setImageFile);
+        }}
+      />
+
+      <div className="text-lg font-bold">VRM File</div>
+
+      <FileInput
+        accept=".vrm,.glb"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) setVrmFile(file);
+        }}
+      />
 
       <div className="flex justify-end">
-        <Button onClick={handlePublish} variant="filled" loading={loading}>
-          {signer ? "Submit" : "Sign In"}
+        <Button
+          variant="filled"
+          onClick={handleCreate}
+          loading={loading}
+          disabled={loading || !imageFile || !vrmFile}
+        >
+          Create
         </Button>
       </div>
     </div>

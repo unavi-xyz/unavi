@@ -84,7 +84,7 @@ export default function Spaces() {
             {authState === "authenticated" ? (
               status === "success" && unpublishedProjects.length > 0 ? (
                 unpublishedProjects.map(({ id, name, image }) => (
-                  <Link key={id} href={`/project/${id}`} passHref>
+                  <Link key={id} href={`/project/${id}`}>
                     <div>
                       <Card
                         text={name}
@@ -120,7 +120,7 @@ export default function Spaces() {
 
               <div className="grid grid-cols-3 gap-3">
                 {publishedProjects.map(({ id, name }, i) => (
-                  <Link key={id} href={`/project/${id}`} passHref>
+                  <Link key={id} href={`/project/${id}`}>
                     <div>
                       <Card
                         text={name}

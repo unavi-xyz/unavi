@@ -101,7 +101,7 @@ export default function SpaceLayout({
                 </div>
               </div>
 
-              <Link href={`/app/${id}`} passHref>
+              <Link href={`/app/${id}`}>
                 <div>
                   <Button variant="filled" fullWidth>
                     <div className="py-2">Join Space</div>

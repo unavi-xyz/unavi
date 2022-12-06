@@ -48,7 +48,7 @@ export class PlayerPlugin {
   // Set to constrain the pitch of the camera
   #minPolarAngle = 0;
   #maxPolarAngle = Math.PI;
-  #pointerSpeed = 5;
+  #pointerSpeed = 1;
 
   constructor(
     camera: PerspectiveCamera,

@@ -16,8 +16,7 @@ import { RenderPlugin } from "./types";
 
 const DAMPEN_FACTOR = 2;
 const PLAYER_SPEED = 3;
-const FIRST_PERSON_OFFSET = new Vector3(0, 0.1, -0.03);
-const THIRD_PERSON_OFFSET = new Vector3(0, PLAYER_HEIGHT * 0.75, 0);
+const THIRD_PERSON_OFFSET = new Vector3(0, PLAYER_HEIGHT * 0.8, 0);
 const UP = new Vector3(0, 1, 0);
 const VEC2 = new Vector2();
 
@@ -46,6 +45,7 @@ export class PlayerPlugin implements RenderPlugin {
   #cameraRotation = new Euler(0, 0, 0, "YXZ");
   #targetCameraPosition = new Vector3();
   #walkingDirection = new Vector2();
+  #hasWalked = false;
 
   // Set to constrain the pitch of the camera
   #minPolarAngle = 0;
@@ -228,34 +228,61 @@ export class PlayerPlugin implements RenderPlugin {
     if (isFirstPerson) {
       // If first person, copy camera rotation to avatar
       this.#avatar?.group.quaternion.copy(this.#camera.quaternion);
+      this.#avatar?.setRotation(
+        this.#camera.quaternion.x,
+        this.#camera.quaternion.y,
+        this.#camera.quaternion.z,
+        this.#camera.quaternion.w
+      );
+
+      this.#hasWalked = false;
     } else {
       // If third person, rotate avatar by walking direction
-      this.#walkingDirection.add(velocity);
-      this.#walkingDirection.clampLength(0, 1);
-      const angle = Math.atan2(
-        -this.#walkingDirection.x,
-        -this.#walkingDirection.y
-      );
-      this.#avatar?.group.quaternion.setFromAxisAngle(UP, angle);
+      if (velocity.x !== 0 || velocity.y !== 0) this.#hasWalked = true;
+
+      if (this.#hasWalked) {
+        this.#walkingDirection.add(velocity);
+        this.#walkingDirection.clampLength(0, 1);
+        const angle = Math.atan2(
+          -this.#walkingDirection.x,
+          -this.#walkingDirection.y
+        );
+        this.#avatar?.group.quaternion.setFromAxisAngle(UP, angle);
+      }
+
+      // Reset head rotation
+      this.#avatar?.setRotation(0, 0, 0, 1);
     }
 
     // Update avatar
-    if (this.#avatar) this.#avatar.update(delta);
+    if (this.#avatar?.vrm) {
+      this.#avatar.update(delta);
 
-    // If first person, copy head position to camera
-    if (isFirstPerson && this.#avatar?.vrm) {
-      const head = this.#avatar.vrm.humanoid.humanBones.head.node;
-      head.position.add(FIRST_PERSON_OFFSET);
-      head.getWorldPosition(this.#camera.position);
-      head.position.sub(FIRST_PERSON_OFFSET);
-    }
+      const humanBones = this.#avatar.vrm.humanoid.humanBones;
+      const head = humanBones.head.node;
 
-    // If third person, rotate camera around avatar
-    if (!isFirstPerson && this.#avatar) {
-      this.#camera.position
-        .applyEuler(this.#cameraRotation)
-        .add(this.#avatar.group.position)
-        .add(THIRD_PERSON_OFFSET);
+      if (isFirstPerson) {
+        // If first person, copy head position to camera
+        this.#tempVec3.setScalar(0);
+
+        // If eyes are available, use eye position
+        if (humanBones.leftEye && humanBones.rightEye) {
+          this.#tempVec3
+            .copy(humanBones.leftEye.node.position)
+            .add(humanBones.rightEye.node.position)
+            .divideScalar(2);
+        }
+
+        head.position.add(this.#tempVec3);
+        head.getWorldPosition(this.#camera.position);
+        head.position.sub(this.#tempVec3);
+      } else {
+        // If third person, rotate camera around avatar head
+        this.#camera.position
+          .applyEuler(this.#cameraRotation)
+          .add(this.#avatar.group.position)
+          .add(THIRD_PERSON_OFFSET);
+      }
     }
 
     // Send player rotation

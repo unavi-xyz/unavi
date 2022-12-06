@@ -113,21 +113,20 @@ export class OtherPlayersPlugin implements RenderPlugin {
 
     const playerId = view.getUint8(0);
 
-    const location: [number, number, number, number, number, number, number] = [
-      0, 0, 0, 0, 0, 0, 0,
-    ];
+    const posX = view.getInt32(1, true) / 1000;
+    const posY = view.getInt32(5, true) / 1000;
+    const posZ = view.getInt32(9, true) / 1000;
 
-    location[0] = view.getInt32(1, true) / 1000;
-    location[1] = view.getInt32(5, true) / 1000;
-    location[2] = view.getInt32(9, true) / 1000;
-
-    location[3] = view.getInt16(13, true) / 1000;
-    location[4] = view.getInt16(15, true) / 1000;
-    location[5] = view.getInt16(17, true) / 1000;
-    location[6] = view.getInt16(19, true) / 1000;
+    const rotX = view.getInt16(13, true) / 1000;
+    const rotY = view.getInt16(15, true) / 1000;
+    const rotZ = view.getInt16(17, true) / 1000;
+    const rotW = view.getInt16(19, true) / 1000;
 
     const player = this.#players.get(playerId);
-    if (player) player.setLocation(location);
+    if (player) {
+      player.setPosition(posX, posY, posZ);
+      player.setRotation(rotX, rotY, rotZ, rotW);
+    }
   }
 
   destroy() {

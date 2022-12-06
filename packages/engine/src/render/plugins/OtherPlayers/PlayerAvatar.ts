@@ -132,8 +132,15 @@ export class PlayerAvatar {
       this.#mixer = null;
     }
 
-    // Enable first-person view if it's the user
-    if (this.#camera) this.setFirstPerson(this.isFirstPerson);
+    // Fix first person mesh annotations
+    if (vrm.firstPerson) {
+      vrm.firstPerson.meshAnnotations.forEach((annotation) => {
+        if (annotation.type === "both") annotation.type = "auto";
+      });
+    }
+
+    // Set first person view
+    this.setFirstPerson(this.isFirstPerson);
 
     // Process VRM
     VRMUtils.removeUnnecessaryVertices(vrm.scene);
@@ -280,16 +287,12 @@ export class PlayerAvatar {
     );
   }
 
-  setLocation(
-    location: [number, number, number, number, number, number, number]
-  ) {
-    this.#targetPosition.set(location[0], location[1], location[2]);
-    this.#targetRotation.set(
-      location[3],
-      location[4],
-      location[5],
-      location[6]
-    );
+  setPosition(x: number, y: number, z: number) {
+    this.#targetPosition.set(x, y, z);
+  }
+
+  setRotation(x: number, y: number, z: number, w: number) {
+    this.#targetRotation.set(x, y, z, w);
   }
 
   setFirstPerson(firstPerson: boolean) {
@@ -423,20 +426,22 @@ export class PlayerAvatar {
     if (this.#mixer) this.#mixer.update(delta);
 
     // Update VRM
-    if (this.vrm) this.vrm.update(delta);
+    if (this.vrm) {
+      this.vrm.update(delta);
 
-    // Rotate head
-    if (this.vrm?.meta.metaVersion === "1") {
-      // If vrm 1.0, rotate axis
-      const rotated = this.#tempQuat.copy(this.#headRotation);
-      rotated.x = this.#headRotation.z;
-      rotated.z = -this.#headRotation.x;
+      // Rotate head
+      const head = this.vrm.humanoid.humanBones.head.node;
 
-      this.vrm.humanoid.humanBones.head.node.quaternion.multiply(rotated);
-    } else {
-      this.vrm?.humanoid.humanBones.head.node.quaternion.multiply(
-        this.#headRotation
-      );
+      if (this.vrm.meta.metaVersion === "1") {
+        // If vrm 1.0, rotate axis first
+        const rotated = this.#tempQuat.copy(this.#headRotation);
+        rotated.x = this.#headRotation.z;
+        rotated.z = -this.#headRotation.x;
+
+        head.quaternion.multiply(rotated);
+      } else {
+        head.quaternion.multiply(this.#headRotation);
+      }
     }
 
     // Update nameplate

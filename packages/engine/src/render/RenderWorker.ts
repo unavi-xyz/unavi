@@ -144,7 +144,7 @@ export class RenderWorker {
     this.camera = new PerspectiveCamera(
       75,
       canvasWidth / canvasHeight,
-      0.17,
+      0.1,
       750
     );
 

@@ -87,12 +87,17 @@ export class PlayerAvatar {
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
-    this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath).catch(
-      (error) => {
+    this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath)
+      .catch((error) => {
         console.error(error);
         console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
-      }
-    );
+      })
+      .finally(() => {
+        this.#postMessage({
+          subject: "player_loaded",
+          data: this.playerId,
+        });
+      });
   }
 
   async #loadModel(avatarPath?: string, avatarAnimationsPath?: string) {
@@ -195,11 +200,6 @@ export class PlayerAvatar {
 
     if (this.playerId === -1) console.info(`💃 Loaded your avatar`);
     else console.info(`💃 Loaded ${toHex(this.playerId)}'s avatar`);
-
-    this.#postMessage({
-      subject: "player_loaded",
-      data: this.playerId,
-    });
   }
 
   async setName(name: string) {

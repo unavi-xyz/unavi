@@ -33,15 +33,17 @@ export default function AvatarLayout({
   const setProfileMetadata = useSetProfileMetadata(profile?.id);
 
   const [loading, setLoading] = useState(false);
+  const [changedEquipped, setChangedEquipped] = useState<boolean | null>(null);
 
   const author = trimHandle(publication?.profile.handle);
   const isAuthor = handle && handle === author;
   const attribute = profile?.attributes?.find((item) => item.key === "avatar");
-  const isEquipped = attribute?.value === id;
+  const isEquipped =
+    changedEquipped !== null ? changedEquipped : attribute?.value === id;
   const disableEquipButton = !handle;
 
   async function handleEquipAvatar() {
-    if (!profile) return;
+    if (!profile || loading) return;
 
     setLoading(true);
 
@@ -100,8 +102,8 @@ export default function AvatarLayout({
 
     try {
       await setProfileMetadata(metadata);
-
-      router.push(`/user/${handle}`);
+      setChangedEquipped(true);
+      router.reload();
     } catch (err) {
       console.error(err);
     }
@@ -110,7 +112,7 @@ export default function AvatarLayout({
   }
 
   async function handleUnequipAvatar() {
-    if (!profile) return;
+    if (!profile || loading) return;
 
     setLoading(true);
 
@@ -147,8 +149,8 @@ export default function AvatarLayout({
 
     try {
       await setProfileMetadata(metadata);
-
-      router.push(`/user/${handle}`);
+      setChangedEquipped(false);
+      router.reload();
     } catch (err) {
       console.error(err);
     }

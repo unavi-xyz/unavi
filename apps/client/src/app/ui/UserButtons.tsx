@@ -50,8 +50,9 @@ export default function UserButtons() {
     if (didChangeAvatar && customAvatar) {
       setAvatar(customAvatar);
     } else if (didChangeAvatar) {
-      engine.setAvatar(null);
+      engine.setAvatar(customAvatar);
       localStorage.removeItem(LocalStorageKey.Avatar);
+      useAppStore.setState({ didChangeAvatar: false });
     }
   }
 

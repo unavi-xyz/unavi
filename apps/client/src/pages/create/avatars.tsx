@@ -1,15 +1,8 @@
-import {
-  AppId,
-  GetPublicationsDocument,
-  GetPublicationsQuery,
-  GetPublicationsQueryVariables,
-  Post,
-} from "lens";
+import { AppId, Post, useGetPublicationsQuery } from "lens";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { MdAdd } from "react-icons/md";
-import { useQuery } from "urql";
 
 import { useLens } from "../../client/lens/hooks/useLens";
 import { useProfileByHandle } from "../../client/lens/hooks/useProfileByHandle";
@@ -27,11 +20,7 @@ export default function Avatars() {
   const { status: authState } = useSession();
   const authenticated = authState === "authenticated";
 
-  const [{ data }] = useQuery<
-    GetPublicationsQuery,
-    GetPublicationsQueryVariables
-  >({
-    query: GetPublicationsDocument,
+  const [{ data }] = useGetPublicationsQuery({
     variables: { request: { profileId: profile?.id, sources: [AppId.Avatar] } },
     pause: !profile?.id,
   });

@@ -4,10 +4,10 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     target-branch: "dev"
+    open-pull-requests-limit: 10
     schedule:
       interval: "weekly"
       day: "sunday"
       time: "00:00"
-      open-pull-requests-limit: 10
     ignore:
       - dependency-name: "@aws-sdk/*"

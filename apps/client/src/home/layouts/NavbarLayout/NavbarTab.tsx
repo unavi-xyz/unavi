@@ -20,9 +20,7 @@ export default function NavbarTab({ href, text }: Props) {
     setSelected(router.asPath.startsWith(href));
   }, [router, href]);
 
-  const selectedClass = selected
-    ? "bg-primaryContainer text-onPrimaryContainer"
-    : "hover:bg-surfaceVariant hover:text-onSurfaceVariant";
+  const selectedClass = selected ? "bg-sky-200" : "hover:bg-neutral-200";
 
   return (
     <Link href={href}>

@@ -18,7 +18,7 @@ export default function Select({
     <div className="w-full space-y-2">
       <div className="text-lg font-bold">{title}</div>
       <select
-        className={`w-full appearance-none rounded-lg bg-surface bg-arrow bg-right bg-no-repeat bg-origin-content py-2 pl-4 pr-3 text-onSurface outline-none transition hover:shadow ${outlineClass}`}
+        className={`w-full appearance-none rounded-lg bg-white bg-arrow bg-right bg-no-repeat bg-origin-content py-2 pl-4 pr-3 outline-none transition hover:shadow ${outlineClass}`}
         {...rest}
       >
         {options.map((option) => {

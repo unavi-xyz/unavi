@@ -335,7 +335,7 @@ export default function PublishPage() {
         <div className="space-y-4">
           <div className="text-lg font-bold">Image</div>
 
-          <div className="relative aspect-card h-full w-full rounded-xl bg-primaryContainer">
+          <div className="relative aspect-card h-full w-full rounded-xl bg-sky-100">
             {image && (
               <img
                 src={image}

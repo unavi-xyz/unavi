@@ -99,7 +99,7 @@ export default function EditorNavbar() {
         <div className="flex w-full items-center space-x-2 text-lg">
           <div
             onClick={handleBack}
-            className="cursor-pointer p-1 text-outline transition hover:text-inherit"
+            className="cursor-pointer p-1 text-neutral-500 transition hover:text-inherit"
           >
             <MdArrowBackIosNew />
           </div>
@@ -114,7 +114,7 @@ export default function EditorNavbar() {
             />
 
             {isSaving && (
-              <div className="pl-2 text-sm text-outline">Saving...</div>
+              <div className="pl-2 text-sm text-neutral-500">Saving...</div>
             )}
           </div>
         </div>

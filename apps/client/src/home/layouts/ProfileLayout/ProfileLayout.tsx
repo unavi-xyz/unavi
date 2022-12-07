@@ -49,7 +49,7 @@ export default function ProfileLayout({
 
       {profile ? (
         <div className="max-w-content mx-auto">
-          <div className="h-48 w-full bg-primaryContainer md:h-64 md:rounded-3xl">
+          <div className="h-48 w-full bg-sky-100 md:h-64 md:rounded-3xl">
             <div className="relative h-full w-full object-cover">
               {coverImage &&
                 (isFromCDN(coverImage) ? (
@@ -74,7 +74,7 @@ export default function ProfileLayout({
 
           <div className="flex justify-center px-4 pb-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
-              <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-background">
+              <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
                 <ProfilePicture
                   src={profileImage}
                   circle
@@ -93,7 +93,7 @@ export default function ProfileLayout({
                   <div className="text-lg font-black">
                     {profile.stats.totalFollowing}
                   </div>
-                  <div className="text-lg leading-5 text-outline">
+                  <div className="text-lg leading-5 text-neutral-500">
                     Following
                   </div>
                 </div>
@@ -102,7 +102,7 @@ export default function ProfileLayout({
                   <div className="text-lg font-black">
                     {profile.stats.totalFollowers}
                   </div>
-                  <div className="text-lg leading-5 text-outline">
+                  <div className="text-lg leading-5 text-neutral-500">
                     Followers
                   </div>
                 </div>

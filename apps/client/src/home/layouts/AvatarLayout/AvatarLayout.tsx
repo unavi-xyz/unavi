@@ -58,7 +58,7 @@ export default function AvatarLayout({
       <div className="mx-4 h-full">
         <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
           <div className="flex flex-col items-center space-y-8 md:flex-row md:items-stretch md:space-y-0 md:space-x-8">
-            <div className="aspect-vertical h-full w-1/2 rounded-3xl bg-primaryContainer">
+            <div className="aspect-vertical h-full w-1/2 rounded-3xl bg-sky-100">
               <div className="relative h-full w-full object-cover">
                 {image &&
                   (isFromCDN(image) ? (
@@ -88,7 +88,7 @@ export default function AvatarLayout({
                 </div>
 
                 <div className="flex justify-center space-x-1 font-bold">
-                  <div className="text-outline">By</div>
+                  <div className="text-neutral-500">By</div>
                   <Link href={`/user/${author}`}>
                     <div className="cursor-pointer hover:underline">
                       @{author}

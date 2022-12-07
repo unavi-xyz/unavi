@@ -65,7 +65,7 @@ export default function MaterialComponent({ nodeId }: Props) {
         <button
           onClick={() => setOpen(true)}
           className={`flex h-full w-1/3 min-w-fit cursor-default
-                      items-center justify-center space-y-1 rounded-md transition hover:bg-primaryContainer`}
+                      items-center justify-center space-y-1 rounded-md transition hover:bg-sky-100`}
         >
           <MdOutlineFolderOpen />
         </button>
@@ -82,7 +82,7 @@ export default function MaterialComponent({ nodeId }: Props) {
 
               <button
                 onClick={() => updateMesh(mesh.id, { materialId: null })}
-                className="flex h-full cursor-default items-center px-2 text-lg text-outline transition hover:text-black"
+                className="flex h-full cursor-default items-center px-2 text-lg text-neutral-100 transition hover:text-black"
               >
                 <MdClose />
               </button>
@@ -90,7 +90,7 @@ export default function MaterialComponent({ nodeId }: Props) {
           ) : (
             <button
               onClick={createMaterial}
-              className={`flex h-full w-full cursor-default items-center justify-center space-x-1 rounded-md bg-neutral-100 shadow-inner transition hover:bg-primaryContainer`}
+              className={`flex h-full w-full cursor-default items-center justify-center space-x-1 rounded-md bg-neutral-100 shadow-inner transition hover:bg-sky-100`}
             >
               <MdAdd className="text-lg" />
               <div>New Material</div>
@@ -98,7 +98,7 @@ export default function MaterialComponent({ nodeId }: Props) {
           )}
 
           <DropdownMenu open={open} onClose={() => setOpen(false)} fullWidth>
-            <div className="flex max-h-64 flex-col space-y-1 overflow-x-hidden overflow-y-scroll p-2">
+            <div className="flex max-h-96 flex-col space-y-1 overflow-x-hidden p-2">
               {materials.length > 0 ? (
                 materials.map((material) => {
                   return (
@@ -225,7 +225,7 @@ export default function MaterialComponent({ nodeId }: Props) {
                     if (colorTexture.imageId)
                       engine.scene.removeImage(colorTexture.imageId);
                   }}
-                  className="flex h-full cursor-default items-center px-2 text-lg text-outline transition hover:text-black"
+                  className="flex h-full cursor-default items-center px-2 text-lg text-neutral-100 transition hover:text-black"
                 >
                   <MdClose />
                 </button>
@@ -289,7 +289,7 @@ function DropdownMaterialButton({
   const material = useMaterial(materialId);
   if (!material) return null;
 
-  const selectedClass = materialId === selectedId ? "bg-primaryContainer" : "";
+  const selectedClass = materialId === selectedId ? "bg-sky-100" : "";
   const hoveringClass = hovering ? "opacity-100" : "";
 
   return (
@@ -298,7 +298,7 @@ function DropdownMaterialButton({
         onClick={onClick}
         onMouseOver={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
-        className={`group flex w-full cursor-default items-center justify-between rounded-md pl-4 pr-2 transition hover:bg-primaryContainer ${selectedClass}`}
+        className={`group flex w-full cursor-default items-center justify-between rounded-md pl-4 pr-2 transition hover:bg-sky-100 ${selectedClass}`}
       >
         <div className="overflow-hidden text-ellipsis whitespace-nowrap">
           {material.name || materialId}
@@ -310,7 +310,7 @@ function DropdownMaterialButton({
             e.preventDefault();
             removeMaterial(materialId);
           }}
-          className={`text-outline opacity-0 transition hover:text-black ${hoveringClass}`}
+          className={`text-neutral-500 opacity-0 transition hover:text-black ${hoveringClass}`}
         >
           <MdDelete />
         </div>

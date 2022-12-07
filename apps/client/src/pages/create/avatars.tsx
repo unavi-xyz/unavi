@@ -76,7 +76,7 @@ export default function Avatars() {
                   No avatars found.{" "}
                   <button
                     onClick={handleCreateAvatar}
-                    className="cursor-pointer font-bold text-primary decoration-2 hover:underline"
+                    className="cursor-pointer font-bold text-sky-400 decoration-2 hover:underline"
                   >
                     Click here
                   </button>{" "}
@@ -84,7 +84,7 @@ export default function Avatars() {
                 </div>
               )
             ) : (
-              <div className="text-outline">
+              <div className="text-neutral-500">
                 You need to be signed in to upload an avatar.
               </div>
             )}

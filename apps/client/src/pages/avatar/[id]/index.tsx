@@ -27,7 +27,7 @@ export default function Avatar(
     <AvatarLayout {...props}>
       <div className="space-y-2">
         <div className="text-2xl font-bold">Description</div>
-        <div className="whitespace-pre-line text-lg text-outline">
+        <div className="whitespace-pre-line text-lg text-neutral-500">
           {props.publication?.metadata.description}
         </div>
       </div>

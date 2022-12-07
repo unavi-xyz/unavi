@@ -44,13 +44,13 @@ export default function LandingInfoBlock({
         </div>
 
         <div className="w-full space-y-3">
-          <div className="w-fit rounded-xl bg-primaryContainer px-3 py-2 text-5xl font-black text-onPrimaryContainer md:px-4 md:text-6xl">
+          <div className="w-fit rounded-xl bg-sky-100 px-3 py-2 text-5xl font-black md:px-4 md:text-6xl">
             {title}
           </div>
 
           <div className="text-3xl md:text-5xl">{subtitle}</div>
 
-          <div className="ml-1 text-lg text-outline md:text-xl">{body}</div>
+          <div className="ml-1 text-lg text-neutral-500 md:text-xl">{body}</div>
 
           <div className="w-full pt-4 text-lg md:text-xl">
             {isExternalLink ? (

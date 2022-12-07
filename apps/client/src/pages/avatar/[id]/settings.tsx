@@ -61,7 +61,7 @@ export default function Settings(
 
   return (
     <AvatarLayout {...props}>
-      <div className="space-y-4 rounded-2xl bg-errorContainer p-8 text-onPrimaryContainer">
+      <div className="space-y-4 rounded-2xl bg-red-100 p-8 text-red-900">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">

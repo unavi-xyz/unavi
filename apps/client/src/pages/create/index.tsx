@@ -41,9 +41,9 @@ function CreateButton({ href, title, subtitle, image }: Props) {
   return (
     <div className="group w-full">
       <Link href={href}>
-        <div className="h-full w-full space-y-2 rounded-3xl border-4 border-background p-6 transition duration-300 hover:border-black">
+        <div className="h-full w-full space-y-2 rounded-3xl border-4 border-white p-6 transition duration-300 hover:border-neutral-900">
           <div className="w-full text-center text-3xl font-bold">{title}</div>
-          <div className="w-full text-center text-xl text-outline">
+          <div className="w-full text-center text-xl text-neutral-500">
             {subtitle}
           </div>
 

@@ -538,8 +538,8 @@ export class NetworkingInterface {
     // Sort by timestamp
     newChatMessages.sort((a, b) => a.timestamp - b.timestamp);
 
-    // Limit to 25 messages
-    newChatMessages.splice(0, newChatMessages.length - 25);
+    // Limit to 50 messages
+    newChatMessages.splice(0, newChatMessages.length - 50);
 
     this.chatMessages$.next(newChatMessages);
   }

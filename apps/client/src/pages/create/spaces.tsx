@@ -100,7 +100,7 @@ export default function Spaces() {
                   No projects found.{" "}
                   <button
                     onClick={handleCreateProject}
-                    className="cursor-pointer font-bold text-primary decoration-2 hover:underline"
+                    className="cursor-pointer font-bold text-sky-400 decoration-2 hover:underline"
                   >
                     Click here
                   </button>{" "}
@@ -108,7 +108,7 @@ export default function Spaces() {
                 </div>
               )
             ) : (
-              <div className="text-outline">
+              <div className="text-neutral-500">
                 You need to be signed in to create a project.
               </div>
             )}

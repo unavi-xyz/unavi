@@ -35,7 +35,7 @@ export default function ButtonFileInput({
     <div className="flex flex-col">
       <label
         htmlFor={id}
-        className={`relative flex cursor-pointer select-none items-center justify-center px-5 py-1.5 font-bold transition hover:bg-primaryContainer hover:text-onPrimaryContainer ${roundClass}`}
+        className={`relative flex cursor-pointer select-none items-center justify-center px-5 py-1.5 font-bold transition hover:bg-sky-100 ${roundClass}`}
       >
         {children ?? file?.name}
       </label>

@@ -34,51 +34,48 @@ export default function Button({
   const textClass =
     variant === "text"
       ? color === "primary"
-        ? "hover:bg-primaryContainer hover:text-onPrimaryContainer"
-        : "hover:bg-errorContainer hover:text-onErrorContainer"
+        ? "hover:bg-sky-100"
+        : "hover:bg-red-100 hover:text-red-900"
       : null;
 
   const outlineClass =
     variant === "outlined"
       ? color === "primary"
-        ? `ring-1 ring-outline
-           hover:text-onPrimaryContainer hover:bg-primaryContainer`
-        : `ring-1 ring-outline
-           hover:text-onErrorContainer hover:bg-errorContainer`
+        ? `ring-1 ring-neutral-500 hover:bg-sky-100`
+        : `ring-1 ring-neutral-500 hover:text-red-900 hover:bg-red-100`
       : null;
 
   const tonalClass =
     variant === "tonal"
       ? color === "primary"
-        ? "bg-primaryContainer text-onPrimaryContainer"
-        : "bg-errorContainer text-onErrorContainer"
+        ? "bg-sky-100"
+        : "bg-red-100 text-red-900"
       : null;
 
   const filledClass =
     variant === "filled"
       ? color === "primary"
-        ? "bg-primary text-onPrimary"
-        : "bg-error text-onError"
+        ? "bg-sky-300"
+        : "bg-red-700 text-white"
       : null;
 
   const elevatedClass =
     variant === "elevated"
-      ? "shadow-dark bg-surface text-primary hover:bg-surfaceVariant/50"
+      ? "shadow-dark bg-white text-sky-300 hover:bg-neutral-200/50"
       : null;
 
-  const disabledClass = loading
-    ? "bg-opacity-40 bg-surfaceVariant hover:bg-surfaceVariant text-onSurfaceVariant"
-    : disabled
-    ? "opacity-40 bg-surfaceVariant hover:bg-surfaceVariant text-onSurfaceVariant"
-    : variant === "text"
-    ? "active:bg-opacity-75"
-    : variant === "outlined"
-    ? "active:bg-opacity-75"
-    : variant === "filled"
-    ? "hover:shadow-dark hover:bg-opacity-90 active:bg-opacity-75"
-    : variant === "tonal"
-    ? "hover:shadow-dark hover:bg-opacity-90 active:bg-opacity-75"
-    : null;
+  const disabledClass =
+    loading || disabled
+      ? "opacity-40"
+      : variant === "text"
+      ? "active:bg-opacity-75"
+      : variant === "outlined"
+      ? "active:bg-opacity-75"
+      : variant === "filled"
+      ? "hover:shadow-dark hover:bg-opacity-90 active:bg-opacity-75"
+      : variant === "tonal"
+      ? "hover:shadow-dark hover:bg-opacity-90 active:bg-opacity-75"
+      : null;
 
   const loadingClass = loading ? "opacity-0" : null;
   const fullWidthClass = fullWidth ? "w-full" : null;

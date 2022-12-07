@@ -84,6 +84,7 @@ export default function UserButtons() {
   }
 
   const opacityClass = isPointerLocked ? "opacity-0" : "opacity-100";
+  const mutedClass = muted ? "text-red-600" : "text-black";
 
   return (
     <>
@@ -96,7 +97,7 @@ export default function UserButtons() {
       >
         <Tooltip text="Leave">
           <Link href={`/space/${id}`}>
-            <div className="aspect-square cursor-pointer rounded-full bg-surface p-3 text-2xl shadow transition hover:shadow-lg">
+            <div className="aspect-square cursor-pointer rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg">
               <IoMdArrowRoundBack />
             </div>
           </Link>
@@ -105,7 +106,7 @@ export default function UserButtons() {
         <Tooltip text="Identity">
           <button
             onClick={() => setOpenUserPage(true)}
-            className="aspect-square rounded-full bg-surface p-3 text-2xl shadow transition hover:shadow-lg"
+            className="aspect-square rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg"
           >
             <IoMdPerson />
           </button>
@@ -114,7 +115,7 @@ export default function UserButtons() {
         <Tooltip text={muted ? "Unmute" : "Mute"}>
           <button
             onClick={handleMic}
-            className="aspect-square rounded-full bg-surface p-3 text-2xl shadow transition hover:shadow-lg"
+            className={`${mutedClass} aspect-square rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg`}
           >
             {muted ? <MdMicOff /> : <MdMic />}
           </button>

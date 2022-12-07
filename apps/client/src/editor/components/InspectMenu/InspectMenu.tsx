@@ -61,7 +61,7 @@ export default function InspectMenu() {
           onChange={(e) => {
             updateNode(selectedId, { name: e.target.value });
           }}
-          className="mx-10 w-full rounded-lg py-0.5 text-center text-2xl font-bold transition hover:bg-neutral-100 hover:shadow-inner"
+          className="mx-10 w-full rounded-lg py-0.5 text-center text-2xl font-bold transition hover:bg-neutral-500 hover:shadow-inner"
         />
       </div>
 
@@ -127,7 +127,7 @@ export default function InspectMenu() {
 function ComponentButton({ children, ...props }: any) {
   return (
     <button
-      className="w-full cursor-default rounded-lg transition hover:bg-primaryContainer"
+      className="w-full cursor-default rounded-lg transition hover:bg-sky-100"
       {...props}
     >
       {children}

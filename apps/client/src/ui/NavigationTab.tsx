@@ -20,9 +20,7 @@ export default function NavigationTab({ href, text }: Props) {
     setSelected(router.asPath == href);
   }, [router, href]);
 
-  const selectedClass = selected
-    ? "bg-surfaceVariant"
-    : "hover:bg-surfaceVariant";
+  const selectedClass = selected ? "bg-neutral-200" : "hover:bg-neutral-200";
 
   return (
     <div className="w-full md:w-min">

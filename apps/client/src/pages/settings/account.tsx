@@ -59,10 +59,7 @@ export default function Account() {
     <>
       <MetaTags title="Account" />
 
-      <div
-        className="space-y-8 rounded-3xl bg-primaryContainer
-                   p-8 text-lg text-onPrimaryContainer"
-      >
+      <div className="space-y-8 rounded-3xl bg-sky-100 p-8 text-lg">
         <div className="space-y-2">
           <div className="text-xl font-bold">Default Profile</div>
           <div>

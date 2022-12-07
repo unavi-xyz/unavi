@@ -19,7 +19,7 @@
   "devDependencies": {
     "patch-package": "^6.5.0",
     "postinstall-postinstall": "^2.1.0",
-    "prettier": "^2.8.0",
+    "prettier": "^2.8.1",
     "prettier-plugin-packagejson": "^2.3.0",
     "prettier-plugin-prisma": "^4.4.0",
     "turbo": "^1.6.3",

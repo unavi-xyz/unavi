@@ -6,16 +6,23 @@ import {
   PMREMGenerator,
   Scene,
   sRGBEncoding,
+  Vector2,
   Vector3,
   WebGLRenderer,
 } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import { type OutlinePass as IOutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
+import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
 import { PostMessage } from "../types";
 import { OrbitControlsPlugin } from "./plugins/OrbitControls/OrbitControlsPlugin";
 import { OtherPlayersPlugin } from "./plugins/OtherPlayers/OtherPlayersPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
+import { OutlinePass } from "./plugins/TransformControls/OutlinePass";
 import { TransformControlsPlugin } from "./plugins/TransformControls/TransformControlsPlugin";
 import { RenderPlugin } from "./plugins/types";
 import { defaultMaterial } from "./SceneLoader/constants";
@@ -54,6 +61,8 @@ export class RenderWorker {
   #postMessage: PostMessage<FromRenderMessage>;
   #canvas: HTMLCanvasElement | OffscreenCanvas | undefined;
   #scene = new Scene();
+  #composer: EffectComposer | null = null;
+  outlinePass: IOutlinePass | null = null;
 
   #animationFrameId: number | null = null;
   #clock = new Clock();
@@ -211,7 +220,8 @@ export class RenderWorker {
           this.camera,
           this.#sceneLoader,
           this.#scene,
-          this.#pluginState
+          this.#pluginState,
+          this
         ),
         new RaycasterPlugin(
           this.camera,
@@ -240,6 +250,22 @@ export class RenderWorker {
     } else {
       this.#postMessage({ subject: "ready", data: null });
     }
+
+    // Post-processing
+    const renderPass = new RenderPass(this.#scene, this.camera);
+    const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
+
+    // @ts-ignore
+    this.outlinePass = new OutlinePass(
+      new Vector2(canvasWidth, canvasHeight),
+      this.#scene,
+      this.camera
+    ) as IOutlinePass;
+
+    this.#composer = new EffectComposer(this.renderer);
+    this.#composer.addPass(renderPass);
+    this.#composer.addPass(this.outlinePass);
+    this.#composer.addPass(gammaCorrectionPass);
   }
 
   start() {
@@ -261,13 +287,15 @@ export class RenderWorker {
     this.#plugins.forEach((plugin) => plugin.destroy && plugin.destroy());
     disposeObject(this.#scene);
     this.renderer?.dispose();
+    this.#composer?.reset();
+    this.outlinePass?.dispose();
   }
 
   #animate() {
     const delta = this.#clock.getDelta();
     this.#animationFrameId = requestAnimationFrame(() => this.#animate());
 
-    if (!this.renderer || !this.camera) return;
+    if (!this.renderer || !this.camera || !this.#composer) return;
 
     this.#plugins.forEach((plugin) => {
       if (plugin.update) plugin.update(delta);
@@ -276,14 +304,18 @@ export class RenderWorker {
     this.#sceneLoader?.update(delta);
     this.csm?.update();
 
-    this.renderer.render(this.#scene, this.camera);
+    this.#composer.render();
   }
 
   #updateCanvasSize(width: number, height: number) {
-    if (!this.renderer || !this.camera) return;
+    this.renderer?.setSize(width, height, false);
 
-    this.renderer.setSize(width, height, false);
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    if (this.camera) {
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+    }
+
+    this.#composer?.setSize(width, height);
+    this.outlinePass?.setSize(width, height);
   }
 }

@@ -1,6 +1,6 @@
-import { PerspectiveCamera, Scene } from "three";
+import { Object3D, PerspectiveCamera, Scene } from "three";
 
-import { PluginState } from "../../RenderWorker";
+import { PluginState, RenderWorker } from "../../RenderWorker";
 import { SceneLoader } from "../../SceneLoader/SceneLoader";
 import { ToRenderMessage } from "../../types";
 import { FakePointerEvent, RenderPlugin } from "../types";
@@ -10,16 +10,23 @@ export class TransformControlsPlugin implements RenderPlugin {
   #target = new EventTarget();
   #sceneLoader: SceneLoader;
   #transformControls: TransformControls;
+  #renderWorker: RenderWorker;
 
   constructor(
     camera: PerspectiveCamera,
     sceneLoader: SceneLoader,
     scene: Scene,
-    state: PluginState
+    state: PluginState,
+    renderWorker: RenderWorker
   ) {
+    this.#renderWorker = renderWorker;
     this.#sceneLoader = sceneLoader;
     this.#transformControls = new TransformControls(camera, this.#target);
     scene.add(this.#transformControls);
+
+    this.#transformControls.traverse((object) => {
+      object.userData.isTransformControls = true;
+    });
 
     this.#transformControls.addEventListener("mouseDown", () => {
       state.usingTransformControls = true;
@@ -44,11 +51,22 @@ export class TransformControlsPlugin implements RenderPlugin {
 
     switch (subject) {
       case "set_transform_target": {
-        if (data === null) this.#transformControls.detach();
-        else {
+        if (data === null) {
+          this.#transformControls.detach();
+        } else {
           const object = this.#sceneLoader.findObject(data);
           if (object) this.#transformControls.attach(object);
           else throw new Error(`Object not found: ${data}`);
+        }
+
+        if (this.#renderWorker.outlinePass) {
+          const selectedObjects: Object3D[] = [];
+
+          if (this.#transformControls.object) {
+            selectedObjects.push(this.#transformControls.object);
+          }
+
+          this.#renderWorker.outlinePass.selectedObjects = selectedObjects;
         }
         break;
       }

@@ -18,7 +18,7 @@
     "@ethersproject/bytes": "^5.6.1",
     "@ethersproject/providers": "^5.7.1",
     "@graphql-codegen/cli": "2.15.0",
-    "@graphql-codegen/introspection": "2.2.1",
+    "@graphql-codegen/introspection": "2.2.3",
     "@graphql-codegen/typescript": "2.8.3",
     "@graphql-codegen/typescript-operations": "2.5.10",
     "@graphql-codegen/typescript-urql": "^3.7.3",

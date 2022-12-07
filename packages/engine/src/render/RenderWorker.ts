@@ -24,6 +24,8 @@ import { FromRenderMessage, ToRenderMessage } from "./types";
 import { disposeObject } from "./utils/disposeObject";
 import { loadCubeTexture } from "./utils/loadCubeTexture";
 
+const CAMERA_FAR = 750;
+
 export type RenderWorkerOptions = {
   pixelRatio: number;
   canvasWidth: number;
@@ -54,8 +56,6 @@ export class RenderWorker {
   #scene = new Scene();
 
   #animationFrameId: number | null = null;
-  #canvasWidth = 0;
-  #canvasHeight = 0;
   #clock = new Clock();
 
   csm: CSM | null = null;
@@ -134,18 +134,15 @@ export class RenderWorker {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
 
-    this.#canvasWidth = canvasWidth;
-    this.#canvasHeight = canvasHeight;
-
     // Fog
-    this.#scene.fog = new Fog(0xc4ebff, 200, 720);
+    this.#scene.fog = new Fog(0xcfcfcf, CAMERA_FAR / 2, CAMERA_FAR);
 
     // Camera
     this.camera = new PerspectiveCamera(
       75,
       canvasWidth / canvasHeight,
       0.1,
-      750
+      CAMERA_FAR
     );
 
     switch (camera) {
@@ -269,6 +266,7 @@ export class RenderWorker {
   #animate() {
     const delta = this.#clock.getDelta();
     this.#animationFrameId = requestAnimationFrame(() => this.#animate());
+
     if (!this.renderer || !this.camera) return;
 
     this.#plugins.forEach((plugin) => {
@@ -283,10 +281,6 @@ export class RenderWorker {
 
   #updateCanvasSize(width: number, height: number) {
     if (!this.renderer || !this.camera) return;
-    if (width === this.#canvasWidth && height === this.#canvasHeight) return;
-
-    this.#canvasWidth = width;
-    this.#canvasHeight = height;
 
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;

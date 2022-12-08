@@ -26,7 +26,7 @@ export default function ProfileMenu({
   if (!handle) return null;
 
   return (
-    <div className="flex flex-col space-y-1 p-2">
+    <div className="space-y-1 p-2">
       <button onClick={openSwitchProfile} className="w-full">
         <ProfileMenuButton icon={<HiOutlineSwitchHorizontal />}>
           Switch Profile

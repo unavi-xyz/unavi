@@ -72,12 +72,12 @@ export default function InspectMenu() {
         {collider && <PhysicsComponent nodeId={selectedId} />}
 
         {otherComponents.length > 0 && (
-          <div className="px-5">
+          <div className="space-y-1 px-5">
             <Button fullWidth rounded="large" onClick={() => setOpen(true)}>
               Add Component
             </Button>
 
-            <DropdownMenu open={open} onClose={() => setOpen(false)}>
+            <DropdownMenu open={open} onClose={() => setOpen(false)} fullWidth>
               <div className="space-y-1 p-2">
                 {otherComponents.map((type) => {
                   switch (type) {

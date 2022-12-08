@@ -23,7 +23,7 @@
     "zod": "^3.19.1"
   },
   "devDependencies": {
-    "@types/node": "^18.11.11",
+    "@types/node": "^18.11.12",
     "eslint": "^8.29.0",
     "eslint-config-custom": "*",
     "nodemon": "^2.0.20",

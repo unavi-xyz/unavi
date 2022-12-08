@@ -35,9 +35,9 @@ export default function InspectMenu() {
   if (!selectedId)
     return (
       <div className="pr-2">
-        <div className="mt-0.5 w-full pt-4 text-center text-2xl font-bold">
+        {/* <div className="mt-0.5 w-full pt-4 text-center text-2xl font-bold">
           Scene
-        </div>
+        </div> */}
 
         <SceneComponent />
       </div>

@@ -21,7 +21,7 @@ export default function TextField({
 }: Props) {
   const id = useId();
 
-  const outlineClass = outline ? "border" : "";
+  const outlineClass = outline ? "border border-neutral-200" : "";
 
   return (
     <div className="flex flex-col space-y-1">
@@ -42,7 +42,7 @@ export default function TextField({
         )}
       </div>
 
-      <div className={`flex items-center rounded-lg bg-white ${outlineClass}`}>
+      <div className={`flex items-center rounded bg-white ${outlineClass}`}>
         {frontAdornment && (
           <span className="pl-3 font-bold text-neutral-500">
             {frontAdornment}
@@ -52,7 +52,7 @@ export default function TextField({
           ref={inputRef}
           id={id}
           type="text"
-          className="h-full w-full rounded-md px-3 py-2 outline-none"
+          className="h-full w-full rounded px-3 py-2 outline-none"
           {...rest}
         />
       </div>

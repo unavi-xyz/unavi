@@ -30,7 +30,7 @@ export class OrbitControlsPlugin implements RenderPlugin {
     camera.lookAt(0, 0, 0);
   }
 
-  animate() {
+  update() {
     this.#orbitControls.update();
   }
 

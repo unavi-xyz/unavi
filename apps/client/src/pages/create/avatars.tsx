@@ -67,7 +67,7 @@ export default function Avatars() {
                       key={publication.id}
                       href={`/avatar/${publication.id}`}
                     >
-                      <AvatarCard avatar={publication as Post} />
+                      <AvatarCard sizes="195px" avatar={publication as Post} />
                     </Link>
                   ))}
                 </div>

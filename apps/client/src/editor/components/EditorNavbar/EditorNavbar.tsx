@@ -114,7 +114,9 @@ export default function EditorNavbar() {
             />
 
             {isSaving && (
-              <div className="pl-2 text-sm text-neutral-500">Saving...</div>
+              <div className="pl-2 pt-0.5 text-sm text-neutral-500">
+                Saving...
+              </div>
             )}
           </div>
         </div>

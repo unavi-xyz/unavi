@@ -43,6 +43,8 @@ export default function Project() {
   const [loading, setLoading] = useState(false);
 
   async function handleDelete() {
+    if (loading) return;
+
     setLoading(true);
     const promises: Promise<any>[] = [];
 

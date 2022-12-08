@@ -31,6 +31,6 @@
     "graphql-tag": "^2.12.6",
     "tsconfig": "*",
     "typechain": "^8.1.1",
-    "typescript": "~4.9.3"
+    "typescript": "~4.9.4"
   }
 }

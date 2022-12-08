@@ -9,6 +9,7 @@ import {
   Vector2,
   Vector3,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
@@ -133,7 +134,7 @@ export class RenderWorker {
     // Renderer
     this.renderer = new WebGLRenderer({
       canvas: this.#canvas,
-      antialias: pixelRatio > 1 ? false : true,
+      antialias: true,
       powerPreference: "high-performance",
       preserveDrawingBuffer,
     });
@@ -262,7 +263,12 @@ export class RenderWorker {
       this.camera
     ) as IOutlinePass;
 
-    this.#composer = new EffectComposer(this.renderer);
+    const target = new WebGLRenderTarget(canvasWidth, canvasHeight, {
+      encoding: sRGBEncoding,
+      samples: 8,
+    });
+
+    this.#composer = new EffectComposer(this.renderer, target);
     this.#composer.addPass(renderPass);
     this.#composer.addPass(this.outlinePass);
     this.#composer.addPass(gammaCorrectionPass);

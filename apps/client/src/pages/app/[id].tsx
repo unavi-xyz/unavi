@@ -230,7 +230,7 @@ export default function App({
         </div>
 
         {engineStarted && (
-          <div className="absolute left-0 bottom-0 z-10 m-4">
+          <div className="absolute left-0 bottom-0 z-10 w-full p-4">
             <ChatBox />
           </div>
         )}

@@ -26,8 +26,8 @@ export default function ChatBox() {
     : "bg-neutral-800/20 hover:bg-neutral-800/30";
 
   return (
-    <div className="flex w-96 flex-col space-y-1">
-      <div className="h-full space-y-1">
+    <div className="flex w-full flex-col space-y-1 md:w-full md:max-w-sm">
+      <div className="h-full w-full space-y-1">
         {chatMessages?.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}

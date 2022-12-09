@@ -38,11 +38,13 @@ export const getStaticProps = async () => {
     })
   );
 
+  const TEN_MINUTES_IN_SECONDS = 60 * 10;
+
   return {
     props: {
       hotSpaces,
     },
-    revalidate: 600,
+    revalidate: TEN_MINUTES_IN_SECONDS,
   };
 };
 

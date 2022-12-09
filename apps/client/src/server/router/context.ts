@@ -9,6 +9,7 @@ import { prisma } from "../prisma";
 
 type CreateContextOptions = {
   session: CustomSession | null;
+  res: GetServerSidePropsContext["res"];
 };
 
 /*
@@ -31,6 +32,7 @@ export const getServerAuthSession = async (ctx: {
 export const createContextInner = async (opts: CreateContextOptions) => {
   return {
     session: opts.session,
+    res: opts.res,
     prisma,
   };
 };
@@ -43,6 +45,7 @@ export const createContext = async (opts: CreateNextContextOptions) => {
 
   return await createContextInner({
     session,
+    res,
   });
 };
 

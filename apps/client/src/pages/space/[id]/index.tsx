@@ -8,9 +8,12 @@ export const getServerSideProps = async ({
   res,
   query,
 }: GetServerSidePropsContext) => {
+  const ONE_HOUR_IN_SECONDS = 60 * 60;
+  const ONE_WEEK_IN_SECONDS = ONE_HOUR_IN_SECONDS * 24 * 7;
+
   res.setHeader(
     "Cache-Control",
-    "public, s-maxage=60, stale-while-revalidate=604800"
+    `public, s-maxage=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
   const props = await getPublicationProps(query.id as string);

@@ -12,7 +12,6 @@ export class InputManager {
   #pressingD = false;
 
   #jumpInterval: NodeJS.Timeout | null = null;
-
   #isLocked = false;
 
   constructor(canvas: HTMLCanvasElement, renderThread: RenderThread, physicsThread: PhysicsThread) {
@@ -41,10 +40,6 @@ export class InputManager {
 
   #onClick() {
     this.#canvas.requestPointerLock();
-  }
-
-  #onPointerlockChange() {
-    this.#isLocked = document.pointerLockElement === this.#canvas;
   }
 
   #onMouseMove(event: MouseEvent) {
@@ -138,8 +133,8 @@ export class InputManager {
   }
 
   #onPointerLockChange() {
-    const isLocked = document.pointerLockElement === this.#canvas;
-    if (isLocked) return;
+    this.#isLocked = document.pointerLockElement === this.#canvas;
+    if (this.#isLocked) return;
 
     this.#pressingW = false;
     this.#pressingS = false;

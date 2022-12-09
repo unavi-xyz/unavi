@@ -1,10 +1,4 @@
-import {
-  ExtensionProperty,
-  IProperty,
-  Mesh,
-  Nullable,
-  PropertyType,
-} from "@gltf-transform/core";
+import { ExtensionProperty, IProperty, Mesh, Nullable, PropertyType } from "@gltf-transform/core";
 
 import { Triplet } from "../../../types";
 import { EXTENSION_NAME, PROPERTY_TYPE } from "./constants";

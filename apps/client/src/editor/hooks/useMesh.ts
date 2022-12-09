@@ -3,10 +3,7 @@ import { useEffect, useState } from "react";
 
 import { useEditorStore } from "../store";
 
-export function useMesh<T = Mesh>(
-  id: string | null,
-  callback?: (mesh: Mesh) => T
-) {
+export function useMesh<T = Mesh>(id: string | null, callback?: (mesh: Mesh) => T) {
   const meshes$ = useEditorStore((state) => state.engine?.scene.meshes$);
 
   const [value, setValue] = useState<T | null>(null);

@@ -13,9 +13,7 @@ const key_file_name = process.env.SSL_KEY;
 // Create WebSocket server
 // Use SSL if cert and key are provided
 const server =
-  cert_file_name && key_file_name
-    ? uWS.SSLApp({ key_file_name, cert_file_name })
-    : uWS.App();
+  cert_file_name && key_file_name ? uWS.SSLApp({ key_file_name, cert_file_name }) : uWS.App();
 
 // Create Mediasoup router
 const { router, webRtcServer } = await createMediasoupWorker();
@@ -92,10 +90,7 @@ server.ws("/*", {
       }
 
       case "create_transport": {
-        const { transport, params } = await createWebRtcTransport(
-          router,
-          webRtcServer
-        );
+        const { transport, params } = await createWebRtcTransport(router, webRtcServer);
 
         players.setTransport(ws, transport, data.type);
 
@@ -147,10 +142,7 @@ server.ws("/*", {
           break;
         }
 
-        const id = await players.produceData(
-          ws,
-          data.sctpStreamParameters as any
-        );
+        const id = await players.produceData(ws, data.sctpStreamParameters as any);
 
         send(ws, {
           subject: "data_producer_id",

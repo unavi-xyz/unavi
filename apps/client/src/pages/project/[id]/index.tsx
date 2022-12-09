@@ -30,9 +30,7 @@ export default function Project() {
   );
 
   // If published, use the published image
-  const image = project?.publicationId
-    ? cdnImageURL(project.publicationId)
-    : imageURL;
+  const image = project?.publicationId ? cdnImageURL(project.publicationId) : imageURL;
 
   return (
     <ProjectLayout name={project?.name} image={image}>

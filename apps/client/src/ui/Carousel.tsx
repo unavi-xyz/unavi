@@ -31,9 +31,7 @@ export default function Carousel({
           </Button>
         </div>
 
-        <div
-          className={`grid w-full grid-flow-col gap-3 overflow-x-hidden pl-2 pt-2 ${height}`}
-        >
+        <div className={`grid w-full grid-flow-col gap-3 overflow-x-hidden pl-2 pt-2 ${height}`}>
           {children}
         </div>
 

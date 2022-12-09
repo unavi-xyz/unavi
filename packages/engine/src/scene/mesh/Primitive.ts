@@ -188,12 +188,9 @@ export class Primitive extends BaseMesh {
     if (json.mode !== undefined) this.mode = json.mode;
     if (json.indicesId !== undefined) this.indicesId = json.indicesId;
     if (json.weights !== undefined) this.weights = json.weights;
-    if (json.morphPositionIds !== undefined)
-      this.morphPositionIds = json.morphPositionIds;
-    if (json.morphNormalIds !== undefined)
-      this.morphNormalIds = json.morphNormalIds;
-    if (json.morphTangentIds !== undefined)
-      this.morphTangentIds = json.morphTangentIds;
+    if (json.morphPositionIds !== undefined) this.morphPositionIds = json.morphPositionIds;
+    if (json.morphNormalIds !== undefined) this.morphNormalIds = json.morphNormalIds;
+    if (json.morphTangentIds !== undefined) this.morphTangentIds = json.morphTangentIds;
     if (json.POSITION !== undefined) this.POSITION = json.POSITION;
     if (json.NORMAL !== undefined) this.NORMAL = json.NORMAL;
     if (json.TANGENT !== undefined) this.TANGENT = json.TANGENT;

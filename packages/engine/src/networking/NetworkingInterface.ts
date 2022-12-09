@@ -13,12 +13,7 @@ import { RenderThread } from "../render/RenderThread";
 import { GLTFMesh, Node } from "../scene";
 import { toHex } from "../utils/toHex";
 import { LENS_API } from "./constants";
-import {
-  FromHostMessage,
-  InternalChatMessage,
-  SpaceJoinStatus,
-  ToHostMessage,
-} from "./types";
+import { FromHostMessage, InternalChatMessage, SpaceJoinStatus, ToHostMessage } from "./types";
 import { WebRTC } from "./WebRTC";
 
 /*
@@ -70,13 +65,7 @@ export class NetworkingInterface {
     this.spaceJoinStatus$.next(status);
   }
 
-  constructor({
-    scene,
-    renderThread,
-  }: {
-    scene: MainScene;
-    renderThread: RenderThread;
-  }) {
+  constructor({ scene, renderThread }: { scene: MainScene; renderThread: RenderThread }) {
     this.#scene = scene;
     this.#renderThread = renderThread;
   }
@@ -94,19 +83,15 @@ export class NetworkingInterface {
 
     // Fetch space publication from lens
     const { data } = await this.#lensClient
-      .query<GetPublicationQuery, GetPublicationQueryVariables>(
-        GetPublicationDocument,
-        {
-          request: { publicationId: spaceId },
-        }
-      )
+      .query<GetPublicationQuery, GetPublicationQueryVariables>(GetPublicationDocument, {
+        request: { publicationId: spaceId },
+      })
       .toPromise();
 
     const publication = data?.publication as Publication | undefined;
     if (!publication) throw new Error("Space not found");
 
-    const modelURL: string | undefined =
-      publication?.metadata.media[1]?.original.url;
+    const modelURL: string | undefined = publication?.metadata.media[1]?.original.url;
     if (!modelURL) throw new Error("Space model not found");
 
     this.spaceJoinStatus = {
@@ -181,12 +166,7 @@ export class NetworkingInterface {
     this.#ws = ws;
 
     // Create WebRTC manager
-    this.#webRTC = new WebRTC(
-      ws,
-      this,
-      this.#renderThread,
-      this.#producedTrack
-    );
+    this.#webRTC = new WebRTC(ws, this, this.#renderThread, this.#producedTrack);
     this.#webRTC.playerId = this.playerId$.value;
     this.#webRTC.playerPosition = this.playerPosition;
     this.#webRTC.playerRotation = this.playerRotation;
@@ -229,8 +209,7 @@ export class NetworkingInterface {
           else this.#playerNames.delete(data.playerId);
 
           // Set your handle
-          if (this.#myHandle)
-            this.#playerHandles.set(data.playerId, this.#myHandle);
+          if (this.#myHandle) this.#playerHandles.set(data.playerId, this.#myHandle);
           else this.#playerHandles.delete(data.playerId);
 
           // Save player id
@@ -371,9 +350,7 @@ export class NetworkingInterface {
         }
 
         case "player_handle": {
-          console.info(
-            `🌿 Player ${toHex(data.playerId)} is now @${data.handle}`
-          );
+          console.info(`🌿 Player ${toHex(data.playerId)} is now @${data.handle}`);
 
           if (data.handle) this.#playerHandles.set(data.playerId, data.handle);
           else this.#playerHandles.delete(data.playerId);

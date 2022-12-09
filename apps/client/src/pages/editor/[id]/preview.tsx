@@ -9,10 +9,7 @@ import LoadingScreen from "../../../app/ui/LoadingScreen";
 import { trpc } from "../../../client/trpc";
 import { useEditorStore } from "../../../editor/store";
 import { SavedSceneJSON } from "../../../editor/types";
-import {
-  binaryStorageKey,
-  imageStorageKey,
-} from "../../../editor/utils/fileStorage";
+import { binaryStorageKey, imageStorageKey } from "../../../editor/utils/fileStorage";
 import { updateGltfColliders } from "../../../editor/utils/updateGltfColliders";
 import MetaTags from "../../../home/MetaTags";
 
@@ -333,20 +330,11 @@ export default function Preview() {
           loadingProgress={loadingProgress}
         />
 
-        <div
-          ref={containerRef}
-          className="relative h-full w-full overflow-hidden"
-        >
-          <canvas
-            ref={canvasRef}
-            className={`h-full w-full transition ${loadedClass}`}
-          />
+        <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+          <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
         </div>
 
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="fixed top-0 right-0 p-6 text-2xl"
-        >
+        <div onClick={(e) => e.stopPropagation()} className="fixed top-0 right-0 p-6 text-2xl">
           <Link href={`/editor/${id}`}>
             <button className="rounded-full bg-white p-2 shadow transition hover:shadow-md active:shadow">
               <MdClose />

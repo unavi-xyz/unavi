@@ -18,10 +18,7 @@ export default function ProfileButton() {
 
   return (
     <>
-      <Dialog
-        open={openSwitchProfile}
-        onClose={() => setOpenSwitchProfile(false)}
-      >
+      <Dialog open={openSwitchProfile} onClose={() => setOpenSwitchProfile(false)}>
         <SwitchProfilePage onClose={() => setOpenSwitchProfile(false)} />
       </Dialog>
 
@@ -41,11 +38,7 @@ export default function ProfileButton() {
         </Button>
 
         <div className="mt-1">
-          <DropdownMenu
-            placement="right"
-            open={openMenu}
-            onClose={() => setOpenMenu(false)}
-          >
+          <DropdownMenu placement="right" open={openMenu} onClose={() => setOpenMenu(false)}>
             <ProfileMenu openSwitchProfile={() => setOpenSwitchProfile(true)} />
           </DropdownMenu>
         </div>

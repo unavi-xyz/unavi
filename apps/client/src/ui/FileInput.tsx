@@ -5,12 +5,7 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   inputRef?: React.MutableRefObject<HTMLInputElement>;
 }
 
-export default function FileInput({
-  displayName,
-  inputRef,
-  onChange,
-  ...rest
-}: Props) {
+export default function FileInput({ displayName, inputRef, onChange, ...rest }: Props) {
   const id = useId();
 
   const [file, setFile] = useState<File>();

@@ -10,10 +10,7 @@ import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
 import Button from "../../../ui/Button";
 
-export const getServerSideProps = async ({
-  res,
-  query,
-}: GetServerSidePropsContext) => {
+export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   const ONE_HOUR_IN_SECONDS = 60 * 60;
   const ONE_WEEK_IN_SECONDS = ONE_HOUR_IN_SECONDS * 24 * 7;
 
@@ -33,9 +30,7 @@ export const getServerSideProps = async ({
   };
 };
 
-export default function Settings(
-  props: InferGetServerSidePropsType<typeof getServerSideProps>
-) {
+export default function Settings(props: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const [loading, setLoading] = useState(false);
 
   const { handle } = useLens();
@@ -43,8 +38,7 @@ export default function Settings(
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { mutateAsync: deletePublication } =
-    trpc.publication.delete.useMutation();
+  const { mutateAsync: deletePublication } = trpc.publication.delete.useMutation();
 
   useEffect(() => {
     if (!handle && id) router.push(`/space/${id}`);
@@ -76,9 +70,8 @@ export default function Settings(
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">
-          Deleting a space does not remove it from the blockchain. It only hides
-          it from the indexer. Anyone can still find the space by using their
-          own indexer.
+          Deleting a space does not remove it from the blockchain. It only hides it from the
+          indexer. Anyone can still find the space by using their own indexer.
         </div>
 
         <Button

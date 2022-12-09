@@ -36,11 +36,7 @@ export default function MetaTags({
 
   return (
     <Head>
-      {title === "The Wired" ? (
-        <title>{title}</title>
-      ) : (
-        <title>{`${title} / The Wired`}</title>
-      )}
+      {title === "The Wired" ? <title>{title}</title> : <title>{`${title} / The Wired`}</title>}
 
       <meta name="name" content={title} />
       <meta name="description" content={description} />

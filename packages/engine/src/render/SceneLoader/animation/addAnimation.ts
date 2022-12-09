@@ -15,14 +15,8 @@ import {
   GLTFCubicSplineQuaternionInterpolant,
 } from "./CubicSplineInterpolation";
 
-export function addAnimation(
-  animation: AnimationJSON,
-  map: SceneMap,
-  mixer: AnimationMixer
-) {
-  const tracks: Array<
-    NumberKeyframeTrack | VectorKeyframeTrack | QuaternionKeyframeTrack
-  > = [];
+export function addAnimation(animation: AnimationJSON, map: SceneMap, mixer: AnimationMixer) {
+  const tracks: Array<NumberKeyframeTrack | VectorKeyframeTrack | QuaternionKeyframeTrack> = [];
 
   animation.channels.forEach((channel) => {
     // Get keyframe track type
@@ -53,10 +47,7 @@ export function addAnimation(
     }
 
     // Get interpolation type
-    let interpolationMode:
-      | typeof InterpolateLinear
-      | typeof InterpolateDiscrete
-      | undefined;
+    let interpolationMode: typeof InterpolateLinear | typeof InterpolateDiscrete | undefined;
     switch (channel.sampler.interpolation) {
       case "LINEAR":
         interpolationMode = InterpolateLinear;
@@ -68,9 +59,7 @@ export function addAnimation(
         interpolationMode = undefined;
         break;
       default:
-        throw new Error(
-          `Unknown interpolation: ${channel.sampler.interpolation}`
-        );
+        throw new Error(`Unknown interpolation: ${channel.sampler.interpolation}`);
     }
 
     // Get input and output data
@@ -108,26 +97,19 @@ export function addAnimation(
       // The built in three.js cubic interpolant is not compatible with the glTF spec
       if (channel.sampler.interpolation === "CUBICSPLINE") {
         // @ts-ignore
-        track.createInterpolant =
-          function InterpolantFactoryMethodGLTFCubicSpline(result: any) {
-            // A CUBICSPLINE keyframe in glTF has three output values for each input value,
-            // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
-            // must be divided by three to get the interpolant's sampleSize argument.
-            const InterpolantType =
-              this instanceof QuaternionKeyframeTrack
-                ? GLTFCubicSplineQuaternionInterpolant
-                : GLTFCubicSplineInterpolant;
+        track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline(result: any) {
+          // A CUBICSPLINE keyframe in glTF has three output values for each input value,
+          // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
+          // must be divided by three to get the interpolant's sampleSize argument.
+          const InterpolantType =
+            this instanceof QuaternionKeyframeTrack
+              ? GLTFCubicSplineQuaternionInterpolant
+              : GLTFCubicSplineInterpolant;
 
-            return new InterpolantType(
-              this.times,
-              this.values,
-              this.getValueSize() / 3,
-              result
-            );
-          };
+          return new InterpolantType(this.times, this.values, this.getValueSize() / 3, result);
+        };
         // @ts-ignore
-        track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline =
-          true;
+        track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline = true;
       }
 
       // Add keyframe track to animation clip

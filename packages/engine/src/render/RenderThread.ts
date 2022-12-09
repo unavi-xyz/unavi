@@ -2,12 +2,7 @@ import { Engine } from "../Engine";
 import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderWorker } from "./RenderWorker";
-import {
-  FromRenderMessage,
-  PointerData,
-  RenderExport,
-  ToRenderMessage,
-} from "./types";
+import { FromRenderMessage, PointerData, RenderExport, ToRenderMessage } from "./types";
 
 export interface RenderThreadOptions {
   canvas: HTMLCanvasElement;
@@ -68,8 +63,7 @@ export class RenderThread {
         this.worker.workerPort.postMessage.bind(this.worker.workerPort),
         canvas
       );
-      this.worker.workerPort.onmessage =
-        renderWorker.onmessage.bind(renderWorker);
+      this.worker.workerPort.onmessage = renderWorker.onmessage.bind(renderWorker);
     }
 
     // Handle worker messages
@@ -184,13 +178,7 @@ export class RenderThread {
     return promise;
   }
 
-  setPlayerBuffers({
-    position,
-    velocity,
-  }: {
-    position: Int32Array;
-    velocity: Int32Array;
-  }) {
+  setPlayerBuffers({ position, velocity }: { position: Int32Array; velocity: Int32Array }) {
     this.postMessage({
       subject: "set_player_buffers",
       data: {
@@ -296,10 +284,7 @@ export class RenderThread {
   }
 }
 
-function getPointerData(
-  event: PointerEvent,
-  canvas: HTMLCanvasElement
-): PointerData {
+function getPointerData(event: PointerEvent, canvas: HTMLCanvasElement): PointerData {
   let pointer;
   if (canvas.ownerDocument.pointerLockElement) {
     pointer = {

@@ -15,14 +15,11 @@ export interface PublicationProps {
   image: string | null;
 }
 
-export async function getPublicationProps(
-  publicationId: string
-): Promise<PublicationProps> {
+export async function getPublicationProps(publicationId: string): Promise<PublicationProps> {
   const { data } = await lensClient
-    .query<GetPublicationQuery, GetPublicationQueryVariables>(
-      GetPublicationDocument,
-      { request: { publicationId } }
-    )
+    .query<GetPublicationQuery, GetPublicationQueryVariables>(GetPublicationDocument, {
+      request: { publicationId },
+    })
     .toPromise();
 
   const publication = (data?.publication as Publication | undefined) ?? null;

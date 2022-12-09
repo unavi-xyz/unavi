@@ -77,9 +77,4 @@ export type MeshJSON =
   | GLTFMeshJSON
   | PrimitivesMeshJSON;
 
-export type Mesh =
-  | BoxMesh
-  | SphereMesh
-  | CylinderMesh
-  | GLTFMesh
-  | PrimitivesMesh;
+export type Mesh = BoxMesh | SphereMesh | CylinderMesh | GLTFMesh | PrimitivesMesh;

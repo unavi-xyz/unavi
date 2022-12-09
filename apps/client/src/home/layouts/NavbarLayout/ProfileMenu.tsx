@@ -1,11 +1,7 @@
 import Link from "next/link";
 import { useContext } from "react";
 import { HiOutlineSwitchHorizontal } from "react-icons/hi";
-import {
-  MdLogout,
-  MdOutlinePersonOutline,
-  MdOutlineSettings,
-} from "react-icons/md";
+import { MdLogout, MdOutlinePersonOutline, MdOutlineSettings } from "react-icons/md";
 
 import { LoginContext } from "../../../client/auth/LoginProvider";
 import { useLens } from "../../../client/lens/hooks/useLens";
@@ -16,10 +12,7 @@ interface Props {
   includeExternal?: boolean;
 }
 
-export default function ProfileMenu({
-  openSwitchProfile,
-  includeExternal = true,
-}: Props) {
+export default function ProfileMenu({ openSwitchProfile, includeExternal = true }: Props) {
   const { handle } = useLens();
   const { logout } = useContext(LoginContext);
 
@@ -28,17 +21,13 @@ export default function ProfileMenu({
   return (
     <div className="space-y-1 p-2">
       <button onClick={openSwitchProfile} className="w-full">
-        <ProfileMenuButton icon={<HiOutlineSwitchHorizontal />}>
-          Switch Profile
-        </ProfileMenuButton>
+        <ProfileMenuButton icon={<HiOutlineSwitchHorizontal />}>Switch Profile</ProfileMenuButton>
       </button>
 
       {includeExternal && (
         <Link href={`/user/${handle}`}>
           <button className="w-full">
-            <ProfileMenuButton icon={<MdOutlinePersonOutline />}>
-              Your Profile
-            </ProfileMenuButton>
+            <ProfileMenuButton icon={<MdOutlinePersonOutline />}>Your Profile</ProfileMenuButton>
           </button>
         </Link>
       )}
@@ -46,9 +35,7 @@ export default function ProfileMenu({
       {includeExternal && (
         <Link href="/settings">
           <button className="w-full">
-            <ProfileMenuButton icon={<MdOutlineSettings />}>
-              Settings
-            </ProfileMenuButton>
+            <ProfileMenuButton icon={<MdOutlineSettings />}>Settings</ProfileMenuButton>
           </button>
         </Link>
       )}

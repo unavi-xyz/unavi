@@ -17,12 +17,7 @@ export class OrbitControlsPlugin implements RenderPlugin {
     state: PluginState
   ) {
     this.#state = state;
-    this.#orbitControls = new OrbitControls(
-      camera,
-      this.#target,
-      canvasWidth,
-      canvasHeight
-    );
+    this.#orbitControls = new OrbitControls(camera, this.#target, canvasWidth, canvasHeight);
     this.#orbitControls.enableDamping = true;
     this.#orbitControls.dampingFactor = 0.05;
 
@@ -39,22 +34,16 @@ export class OrbitControlsPlugin implements RenderPlugin {
 
     switch (subject) {
       case "pointermove": {
-        const pointerMoveEvent: FakePointerEvent = new CustomEvent(
-          "pointermove",
-          {
-            detail: data,
-          }
-        );
+        const pointerMoveEvent: FakePointerEvent = new CustomEvent("pointermove", {
+          detail: data,
+        });
         this.#target.dispatchEvent(pointerMoveEvent);
         break;
       }
 
       case "pointerdown": {
         if (this.#state.usingTransformControls) return;
-        const pointerDownEvent: FakePointerEvent = new CustomEvent(
-          "pointerdown",
-          { detail: data }
-        );
+        const pointerDownEvent: FakePointerEvent = new CustomEvent("pointerdown", { detail: data });
         this.#target.dispatchEvent(pointerDownEvent);
         break;
       }
@@ -68,12 +57,9 @@ export class OrbitControlsPlugin implements RenderPlugin {
       }
 
       case "pointercancel": {
-        const pointerCancelEvent: FakePointerEvent = new CustomEvent(
-          "pointercancel",
-          {
-            detail: data,
-          }
-        );
+        const pointerCancelEvent: FakePointerEvent = new CustomEvent("pointercancel", {
+          detail: data,
+        });
         this.#target.dispatchEvent(pointerCancelEvent);
         break;
       }

@@ -20,10 +20,7 @@ export default function ToolButton({ tool, children }: Props) {
   return (
     <div className="aspect-square h-full">
       <Tooltip text={TOOL_TOOLTIPS[tool]} placement="bottom">
-        <IconButton
-          selected={selected}
-          onClick={() => useEditorStore.setState({ tool })}
-        >
+        <IconButton selected={selected} onClick={() => useEditorStore.setState({ tool })}>
           {children}
         </IconButton>
       </Tooltip>

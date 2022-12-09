@@ -6,12 +6,6 @@ export class InputManager {
   #renderThread: RenderThread;
   #physicsThread: PhysicsThread;
 
-  #click = this.#onClick.bind(this);
-  #keydown = this.#onKeyDown.bind(this);
-  #keyup = this.#onKeyUp.bind(this);
-  #pointerlockchange = this.#onPointerlockChange.bind(this);
-  #mousemove = this.#onMouseMove.bind(this);
-
   #pressingW = false;
   #pressingS = false;
   #pressingA = false;
@@ -21,39 +15,26 @@ export class InputManager {
 
   #isLocked = false;
 
-  constructor(
-    canvas: HTMLCanvasElement,
-    renderThread: RenderThread,
-    physicsThread: PhysicsThread
-  ) {
+  constructor(canvas: HTMLCanvasElement, renderThread: RenderThread, physicsThread: PhysicsThread) {
     this.#canvas = canvas;
     this.#renderThread = renderThread;
     this.#physicsThread = physicsThread;
 
-    this.#canvas.addEventListener("click", this.#click.bind(this));
-    document.addEventListener("keydown", this.#keydown.bind(this));
-    document.addEventListener("keyup", this.#keyup.bind(this));
-    document.addEventListener(
-      "pointerlockchange",
-      this.#pointerlockchange.bind(this)
-    );
-    document.addEventListener("mousemove", this.#mousemove.bind(this));
-    document.addEventListener(
-      "pointerlockchange",
-      this.#onPointerLockChange.bind(this)
-    );
+    this.#canvas.addEventListener("click", this.#onClick.bind(this));
+    document.addEventListener("keydown", this.#onKeyDown.bind(this));
+    document.addEventListener("keyup", this.#onKeyUp.bind(this));
+    document.addEventListener("pointerlockchange", this.#onPointerLockChange.bind(this));
+    document.addEventListener("mousemove", this.#onMouseMove.bind(this));
+    document.addEventListener("pointerlockchange", this.#onPointerLockChange.bind(this));
   }
 
   destroy() {
-    this.#canvas.removeEventListener("click", this.#click);
-    document.removeEventListener("keydown", this.#keydown);
-    document.removeEventListener("keyup", this.#keyup);
-    document.removeEventListener("pointerlockchange", this.#pointerlockchange);
-    document.removeEventListener("mousemove", this.#mousemove);
-    document.removeEventListener(
-      "pointerlockchange",
-      this.#onPointerLockChange
-    );
+    this.#canvas.removeEventListener("click", this.#onClick);
+    document.removeEventListener("keydown", this.#onKeyDown);
+    document.removeEventListener("keyup", this.#onKeyUp);
+    document.removeEventListener("pointerlockchange", this.#onPointerLockChange);
+    document.removeEventListener("mousemove", this.#onMouseMove);
+    document.removeEventListener("pointerlockchange", this.#onPointerLockChange);
 
     document.exitPointerLock();
   }

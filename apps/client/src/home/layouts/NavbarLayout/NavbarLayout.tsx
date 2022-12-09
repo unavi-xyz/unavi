@@ -7,10 +7,7 @@ interface Props {
 export default function NavbarLayout({ children }: Props) {
   return (
     <>
-      <div
-        className="absolute z-20 h-14 w-full"
-        style={{ paddingLeft: "calc(100vw - 100%)" }}
-      >
+      <div className="absolute z-20 h-14 w-full" style={{ paddingLeft: "calc(100vw - 100%)" }}>
         <Navbar />
       </div>
 

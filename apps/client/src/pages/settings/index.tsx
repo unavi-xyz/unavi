@@ -30,8 +30,7 @@ export default function Settings() {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingProfilePicture, setLoadingProfilePicture] = useState(false);
-  const [loadingProfilePictureDelete, setLoadingProfilePictureDelete] =
-    useState(false);
+  const [loadingProfilePictureDelete, setLoadingProfilePictureDelete] = useState(false);
 
   const { handle } = useLens();
   const profile = useProfileByHandle(handle);
@@ -96,8 +95,7 @@ export default function Settings() {
   }
 
   async function handleProfilePictureSave() {
-    if (!pfpFile || loadingProfilePicture || loadingProfilePictureDelete)
-      return;
+    if (!pfpFile || loadingProfilePicture || loadingProfilePictureDelete) return;
 
     setLoadingProfilePicture(true);
 
@@ -136,29 +134,13 @@ export default function Settings() {
         <div className="mb-24 space-y-8">
           <div className="space-y-8 rounded-3xl bg-sky-100 p-8">
             <div className="space-y-4 text-lg">
-              <TextField
-                inputRef={nameRef}
-                title="Name"
-                defaultValue={profile?.name ?? ""}
-              />
+              <TextField inputRef={nameRef} title="Name" defaultValue={profile?.name ?? ""} />
 
-              <TextArea
-                textAreaRef={bioRef}
-                title="Bio"
-                defaultValue={profile?.bio ?? ""}
-              />
+              <TextArea textAreaRef={bioRef} title="Bio" defaultValue={profile?.bio ?? ""} />
 
-              <TextField
-                inputRef={locationRef}
-                title="Location"
-                defaultValue={location?.value}
-              />
+              <TextField inputRef={locationRef} title="Location" defaultValue={location?.value} />
 
-              <TextField
-                inputRef={websiteRef}
-                title="Website"
-                defaultValue={website?.value}
-              />
+              <TextField inputRef={websiteRef} title="Website" defaultValue={website?.value} />
 
               <TextField
                 inputRef={twitterRef}
@@ -193,11 +175,7 @@ export default function Settings() {
             </div>
 
             <div className="flex w-full justify-end">
-              <Button
-                variant="filled"
-                onClick={handleProfileSave}
-                loading={loadingProfile}
-              >
+              <Button variant="filled" onClick={handleProfileSave} loading={loadingProfile}>
                 Save
               </Button>
             </div>

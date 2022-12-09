@@ -16,8 +16,7 @@ export default function SwitchProfilePage({ onClose }: Props) {
   const { address } = useLogin();
   const { profiles } = useProfilesByAddress(address);
   const [selected, setSelected] = useState<string>();
-  const handles =
-    profiles?.map((profile) => `@${trimHandle(profile.handle)}`) ?? [];
+  const handles = profiles?.map((profile) => `@${trimHandle(profile.handle)}`) ?? [];
 
   // Put the current handle first
   const sortedHandles = handles.sort((a, b) => {
@@ -36,18 +35,14 @@ export default function SwitchProfilePage({ onClose }: Props) {
 
   return (
     <div className="space-y-4" onPointerUp={(e) => e.stopPropagation()}>
-      <div className="flex justify-center text-3xl font-bold">
-        Switch profile
-      </div>
+      <div className="flex justify-center text-3xl font-bold">Switch profile</div>
 
       <Select
         title="Select profile"
         options={sortedHandles}
         value={selected}
         outline
-        onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-          setSelected(e.target.value)
-        }
+        onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelected(e.target.value)}
       />
 
       <div className="flex justify-end">

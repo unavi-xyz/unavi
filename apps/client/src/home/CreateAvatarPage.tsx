@@ -52,17 +52,13 @@ export default function CreateAvatarPage() {
   const [imageFile, setImageFile] = useState<File>();
   const [vrmFile, setVrmFile] = useState<File>();
 
-  const { mutateAsync: createModelUploadUrl } =
-    trpc.publication.modelUploadURL.useMutation();
+  const { mutateAsync: createModelUploadUrl } = trpc.publication.modelUploadURL.useMutation();
 
-  const { mutateAsync: createImageUploadUrl } =
-    trpc.publication.imageUploadURL.useMutation();
+  const { mutateAsync: createImageUploadUrl } = trpc.publication.imageUploadURL.useMutation();
 
-  const { mutateAsync: createMetadataUploadUrl } =
-    trpc.publication.metadataUploadURL.useMutation();
+  const { mutateAsync: createMetadataUploadUrl } = trpc.publication.metadataUploadURL.useMutation();
 
-  const { mutateAsync: createPublication } =
-    trpc.publication.create.useMutation();
+  const { mutateAsync: createPublication } = trpc.publication.create.useMutation();
 
   const { mutateAsync: linkPublication } = trpc.publication.link.useMutation();
 
@@ -249,9 +245,7 @@ export default function CreateAvatarPage() {
 
       // Find the publication we just created by comparing metadata
       const publication = data?.publications.items.find(
-        (item) =>
-          item.metadata.name === name &&
-          item.metadata.description === description
+        (item) => item.metadata.name === name && item.metadata.description === description
       );
 
       if (!publication) {
@@ -281,12 +275,7 @@ export default function CreateAvatarPage() {
     <div className="space-y-4">
       <div className="text-center text-3xl font-bold">New Avatar</div>
 
-      <TextField
-        inputRef={nameRef}
-        title="Name"
-        defaultValue="My Avatar"
-        outline
-      />
+      <TextField inputRef={nameRef} title="Name" defaultValue="My Avatar" outline />
 
       <TextArea
         textAreaRef={descriptionRef}

@@ -34,9 +34,7 @@ export default function Project() {
   );
 
   // If published, use the published image
-  const image = project?.publicationId
-    ? cdnImageURL(project.publicationId)
-    : imageURL;
+  const image = project?.publicationId ? cdnImageURL(project.publicationId) : imageURL;
 
   const { mutateAsync: deleteProject } = trpc.project.delete.useMutation();
 
@@ -66,9 +64,7 @@ export default function Project() {
       <div className="space-y-4 rounded-2xl bg-red-100 p-8 text-red-900">
         <div className="text-2xl font-bold">Danger Zone</div>
 
-        <div className="text-lg">
-          Deleting a project is permanent and cannot be undone.
-        </div>
+        <div className="text-lg">Deleting a project is permanent and cannot be undone.</div>
 
         <Button
           variant="filled"

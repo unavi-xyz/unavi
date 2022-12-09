@@ -161,10 +161,7 @@ export async function getFileURL(projectId: string, fileId: string) {
   return url;
 }
 
-export async function deleteProjectFromS3(
-  projectId: string,
-  fileIds: string[]
-) {
+export async function deleteProjectFromS3(projectId: string, fileIds: string[]) {
   const fileKeys = fileIds.map((fileId) => ({
     Key: projectFileKey(projectId, fileId),
   }));

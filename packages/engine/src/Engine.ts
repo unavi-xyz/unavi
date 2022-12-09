@@ -76,11 +76,7 @@ export class Engine {
       await this.renderThread.waitForReady();
       await this.physicsThread.waitForReady();
 
-      this.input = new InputManager(
-        canvas,
-        this.renderThread,
-        this.physicsThread
-      );
+      this.input = new InputManager(canvas, this.renderThread, this.physicsThread);
       this.physicsThread.initPlayer();
     };
 

@@ -170,9 +170,7 @@ export class GLTFLoader {
     animationState.name = animation.getName();
 
     // Load channels
-    animationState.channels = animation
-      .listChannels()
-      .map((channel) => this.#loadChannel(channel));
+    animationState.channels = animation.listChannels().map((channel) => this.#loadChannel(channel));
 
     // Add to scene
     this.#scene.addAnimation(animationState);
@@ -250,15 +248,11 @@ export class GLTFLoader {
         const isSingleUse = gltfMesh.listParents().length === 1;
 
         if (isSingleUse) {
-          mesh.primitives.forEach(
-            (primitive) => (primitive.weights = nodeWeights)
-          );
+          mesh.primitives.forEach((primitive) => (primitive.weights = nodeWeights));
         } else {
           const gltfMeshCopy = gltfMesh.clone();
           const meshCopy = this.#loadMesh(gltfMeshCopy);
-          meshCopy.primitives.forEach(
-            (primitive) => (primitive.weights = nodeWeights)
-          );
+          meshCopy.primitives.forEach((primitive) => (primitive.weights = nodeWeights));
 
           // Set new mesh
           node.meshId = meshCopy.id;
@@ -343,9 +337,7 @@ export class GLTFLoader {
     mesh.name = gltfMesh.getName();
 
     // Load primitives
-    mesh.primitives = gltfMesh
-      .listPrimitives()
-      .map((primitive) => this.#loadPrimitive(primitive));
+    mesh.primitives = gltfMesh.listPrimitives().map((primitive) => this.#loadPrimitive(primitive));
 
     // Set weights
     const weights = gltfMesh.getWeights();
@@ -470,11 +462,9 @@ export class GLTFLoader {
     // Emissive texture
     const emissiveTexture = material.getEmissiveTexture();
     const emissiveInfo = material.getEmissiveTextureInfo();
-    if (emissiveTexture && emissiveInfo)
-      materialState.emissiveTexture = this.#loadTexture(
-        emissiveTexture,
-        emissiveInfo
-      );
+    if (emissiveTexture && emissiveInfo) {
+      materialState.emissiveTexture = this.#loadTexture(emissiveTexture, emissiveInfo);
+    }
 
     // Metallic roughness
     materialState.metalness = material.getMetallicFactor();
@@ -495,11 +485,9 @@ export class GLTFLoader {
     // Normal texture
     const normalTexture = material.getNormalTexture();
     const normalInfo = material.getNormalTextureInfo();
-    if (normalTexture && normalInfo)
-      materialState.normalTexture = this.#loadTexture(
-        normalTexture,
-        normalInfo
-      );
+    if (normalTexture && normalInfo) {
+      materialState.normalTexture = this.#loadTexture(normalTexture, normalInfo);
+    }
 
     // Occlusion strength
     materialState.occlusionStrength = material.getOcclusionStrength();
@@ -507,11 +495,9 @@ export class GLTFLoader {
     // Occlusion texture
     const occlusionTexture = material.getOcclusionTexture();
     const occlusionInfo = material.getOcclusionTextureInfo();
-    if (occlusionTexture && occlusionInfo)
-      materialState.occlusionTexture = this.#loadTexture(
-        occlusionTexture,
-        occlusionInfo
-      );
+    if (occlusionTexture && occlusionInfo) {
+      materialState.occlusionTexture = this.#loadTexture(occlusionTexture, occlusionInfo);
+    }
 
     // Add to scene
     this.#scene.addMaterial(materialState);

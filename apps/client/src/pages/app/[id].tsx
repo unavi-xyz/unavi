@@ -15,14 +15,8 @@ import { getPublicationProps } from "../../client/lens/utils/getPublicationProps
 import MetaTags from "../../home/MetaTags";
 import { getMediaURL } from "../../utils/getMediaURL";
 
-export const getServerSideProps = async ({
-  res,
-  query,
-}: GetServerSidePropsContext) => {
-  res.setHeader(
-    "Cache-Control",
-    "public, s-maxage=60, stale-while-revalidate=600"
-  );
+export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
+  res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
 
   const id = query.id as string;
   const props = await getPublicationProps(id);
@@ -230,14 +224,8 @@ export default function App({
         )}
 
         <div className="h-full">
-          <div
-            ref={containerRef}
-            className="relative h-full w-full overflow-hidden"
-          >
-            <canvas
-              ref={canvasRef}
-              className={`h-full w-full transition ${loadedClass}`}
-            />
+          <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+            <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
           </div>
         </div>
 

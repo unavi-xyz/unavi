@@ -20,12 +20,9 @@ export function createSkeletons(map: SceneMap) {
         const bones: Bone[] = [];
         const boneInverses: Matrix4[] = [];
 
-        if (!primitive.skin.inverseBindMatricesId)
-          throw new Error("No inverse bind matrices");
+        if (!primitive.skin.inverseBindMatricesId) throw new Error("No inverse bind matrices");
 
-        const inverseBindMatrices = map.accessors.get(
-          primitive.skin.inverseBindMatricesId
-        );
+        const inverseBindMatrices = map.accessors.get(primitive.skin.inverseBindMatricesId);
         if (!inverseBindMatrices) throw new Error("Accessor not found");
 
         primitive.skin.jointIds.forEach((jointId, i) => {

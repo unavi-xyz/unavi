@@ -65,8 +65,7 @@ export class CylinderMesh extends BaseMesh {
     if (json.materialId !== undefined) this.materialId = json.materialId;
     if (json.radius !== undefined) this.radius = json.radius;
     if (json.height !== undefined) this.height = json.height;
-    if (json.radialSegments !== undefined)
-      this.radialSegments = json.radialSegments;
+    if (json.radialSegments !== undefined) this.radialSegments = json.radialSegments;
   }
 
   static fromJSON(json: CylinderMeshJSON) {

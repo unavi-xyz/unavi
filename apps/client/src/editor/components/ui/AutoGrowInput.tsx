@@ -20,10 +20,7 @@ export default function AutoGrowInput(props: Props) {
 
   return (
     <>
-      <span
-        ref={span}
-        className="absolute -z-50 whitespace-pre py-0.5 pl-3 pr-3.5 opacity-0"
-      >
+      <span ref={span} className="absolute -z-50 whitespace-pre py-0.5 pl-3 pr-3.5 opacity-0">
         {props.value}
       </span>
       <input

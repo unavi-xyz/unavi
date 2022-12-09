@@ -36,10 +36,7 @@ export class Players {
   readonly producers = new Map<uWS.WebSocket, Producer>();
   readonly consumers = new Map<uWS.WebSocket, Map<uWS.WebSocket, Consumer>>();
   readonly dataProducers = new Map<uWS.WebSocket, DataProducer>();
-  readonly dataConsumers = new Map<
-    uWS.WebSocket,
-    Map<uWS.WebSocket, DataConsumer>
-  >();
+  readonly dataConsumers = new Map<uWS.WebSocket, Map<uWS.WebSocket, DataConsumer>>();
 
   #server: uWS.TemplatedApp;
   #router: Router;
@@ -157,8 +154,7 @@ export class Players {
       if (otherSpaceId !== spaceId) return;
 
       const otherPlayerId = this.playerIds.get(otherWs);
-      if (otherPlayerId === undefined)
-        return console.warn("playerId not found");
+      if (otherPlayerId === undefined) return console.warn("playerId not found");
 
       const otherName = this.names.get(otherWs) ?? null;
       const otherAvatar = this.avatars.get(otherWs) ?? null;
@@ -330,11 +326,7 @@ export class Players {
     return count;
   }
 
-  setTransport(
-    ws: uWS.WebSocket,
-    transport: Transport,
-    type: "producer" | "consumer"
-  ) {
+  setTransport(ws: uWS.WebSocket, transport: Transport, type: "producer" | "consumer") {
     if (type === "producer") this.producerTransports.set(ws, transport);
     else this.consumerTransports.set(ws, transport);
   }
@@ -351,10 +343,7 @@ export class Players {
     return producer.id;
   }
 
-  async produceData(
-    ws: uWS.WebSocket,
-    sctpStreamParameters: SctpStreamParameters
-  ) {
+  async produceData(ws: uWS.WebSocket, sctpStreamParameters: SctpStreamParameters) {
     const transport = this.producerTransports.get(ws);
     if (!transport) throw new Error("Producer transport not found");
 
@@ -366,10 +355,7 @@ export class Players {
     return dataProducer.id;
   }
 
-  async setRtpCapabilities(
-    ws: uWS.WebSocket,
-    rtpCapabilities: RtpCapabilities
-  ) {
+  async setRtpCapabilities(ws: uWS.WebSocket, rtpCapabilities: RtpCapabilities) {
     this.rtpCapabilities.set(ws, rtpCapabilities);
   }
 

@@ -20,11 +20,7 @@ export default function UserPage() {
 
       <div className="space-y-1">
         <div className="flex justify-center">
-          {handle ? (
-            <UserIdentityButton />
-          ) : (
-            <LoginButton fullWidth rounded="large" />
-          )}
+          {handle ? <UserIdentityButton /> : <LoginButton fullWidth rounded="large" />}
         </div>
       </div>
 

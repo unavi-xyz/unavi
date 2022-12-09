@@ -40,7 +40,5 @@ export function updateGlobalTransform(
 
   // Repeat for children
   const children = getChildren(nodeId, map);
-  children.forEach((child) =>
-    updateGlobalTransform(child.id, map, postMessage)
-  );
+  children.forEach((child) => updateGlobalTransform(child.id, map, postMessage));
 }

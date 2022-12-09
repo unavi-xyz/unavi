@@ -31,8 +31,7 @@ export function updateNode(
 
     map.meshes.forEach((mesh) => {
       if (mesh?.type !== "Primitives") return;
-      if (!mesh.primitives.some((p) => p.skin?.jointIds.includes(nodeId)))
-        return;
+      if (!mesh.primitives.some((p) => p.skin?.jointIds.includes(nodeId))) return;
 
       isJoint = true;
     });
@@ -58,9 +57,7 @@ export function updateNode(
     parentObject.add(object);
 
     // Restore object transform
-    const inverseParentRotation = parentObject
-      .getWorldQuaternion(tempQuaternion2)
-      .invert();
+    const inverseParentRotation = parentObject.getWorldQuaternion(tempQuaternion2).invert();
     object.position.copy(parentObject.worldToLocal(position));
     object.quaternion.multiplyQuaternions(quaternion, inverseParentRotation);
 

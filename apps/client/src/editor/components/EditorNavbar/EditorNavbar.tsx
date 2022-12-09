@@ -84,10 +84,7 @@ export default function EditorNavbar() {
 
   return (
     <>
-      <Dialog
-        open={openPublishDialog}
-        onClose={() => setOpenPublishDialog(false)}
-      >
+      <Dialog open={openPublishDialog} onClose={() => setOpenPublishDialog(false)}>
         {publicationId ? (
           <UpdatePage onClose={() => setOpenPublishDialog(false)} />
         ) : (
@@ -108,16 +105,10 @@ export default function EditorNavbar() {
             <AutoGrowInput
               type="text"
               value={name}
-              onChange={(e) =>
-                useEditorStore.setState({ name: e.target.value })
-              }
+              onChange={(e) => useEditorStore.setState({ name: e.target.value })}
             />
 
-            {isSaving && (
-              <div className="pl-2 pt-0.5 text-sm text-neutral-500">
-                Saving...
-              </div>
-            )}
+            {isSaving && <div className="pl-2 pt-0.5 text-sm text-neutral-500">Saving...</div>}
           </div>
         </div>
 
@@ -135,10 +126,7 @@ export default function EditorNavbar() {
 
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <div className="aspect-square h-full">
-            <Tooltip
-              text={`${visuals ? "Hide" : "Show"} Visuals`}
-              placement="bottom"
-            >
+            <Tooltip text={`${visuals ? "Hide" : "Show"} Visuals`} placement="bottom">
               <IconButton selected={visuals} onClick={handleToggleColliders}>
                 <HiCubeTransparent />
               </IconButton>

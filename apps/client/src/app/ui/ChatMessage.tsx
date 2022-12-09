@@ -24,19 +24,15 @@ export default function ChatMessage({ message }: Props) {
     };
   }, [message]);
 
-  const visibleClass =
-    !isPointerLocked || visible ? "opacity-100" : "opacity-0";
+  const visibleClass = !isPointerLocked || visible ? "opacity-100" : "opacity-0";
 
   const boldClass = message.isHandle ? "font-bold" : null;
 
   return (
-    <div
-      className={`w-fit rounded-lg bg-white px-4 py-1 transition duration-500 ${visibleClass}`}
-    >
+    <div className={`w-fit rounded-lg bg-white px-4 py-1 transition duration-500 ${visibleClass}`}>
       {message.type === "chat" ? (
         <span>
-          <span className={`${boldClass}`}>{message.username}</span>:{" "}
-          {message.message}
+          <span className={`${boldClass}`}>{message.username}</span>: {message.message}
         </span>
       ) : message.type === "system" ? (
         <span>

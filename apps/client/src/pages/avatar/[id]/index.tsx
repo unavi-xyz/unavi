@@ -7,10 +7,7 @@ import { getGltfStats } from "../../../server/helpers/getGltfStats";
 import { bytesToDisplay } from "../../../utils/bytesToDisplay";
 import { numberToCommas } from "../../../utils/numberToCommas";
 
-export const getServerSideProps = async ({
-  res,
-  query,
-}: GetServerSidePropsContext) => {
+export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   const ONE_HOUR_IN_SECONDS = 60 * 60;
   const ONE_WEEK_IN_SECONDS = ONE_HOUR_IN_SECONDS * 24 * 7;
 
@@ -35,9 +32,7 @@ export const getServerSideProps = async ({
   };
 };
 
-export default function Avatar(
-  props: InferGetServerSidePropsType<typeof getServerSideProps>
-) {
+export default function Avatar(props: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <AvatarLayout {...props}>
       <div className="space-y-8">
@@ -55,14 +50,7 @@ export default function Avatar(
 
           <div className="flex text-lg">
             <div>
-              {[
-                "File Size",
-                "Polygons",
-                "Materials",
-                "Meshes",
-                "Skins",
-                "Bones",
-              ].map((title) => (
+              {["File Size", "Polygons", "Materials", "Meshes", "Skins", "Bones"].map((title) => (
                 <div key={title} className="font-bold">
                   {title}
                 </div>

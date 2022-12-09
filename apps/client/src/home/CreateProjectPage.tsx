@@ -12,10 +12,8 @@ export default function CreateProjectPage() {
   const nameRef = useRef<HTMLInputElement>(null);
 
   const { mutateAsync: createProject } = trpc.project.create.useMutation();
-  const { mutateAsync: createImageUpload } =
-    trpc.project.imageUploadURL.useMutation();
-  const { mutateAsync: createSceneUpload } =
-    trpc.project.sceneUploadURL.useMutation();
+  const { mutateAsync: createImageUpload } = trpc.project.imageUploadURL.useMutation();
+  const { mutateAsync: createSceneUpload } = trpc.project.sceneUploadURL.useMutation();
 
   const [loading, setLoading] = useState(false);
 
@@ -88,20 +86,10 @@ export default function CreateProjectPage() {
     <div className="space-y-4">
       <div className="text-center text-3xl font-bold">New Project</div>
 
-      <TextField
-        inputRef={nameRef}
-        title="Name"
-        defaultValue="My Project"
-        outline
-      />
+      <TextField inputRef={nameRef} title="Name" defaultValue="My Project" outline />
 
       <div className="flex justify-end">
-        <Button
-          variant="filled"
-          onClick={handleCreate}
-          loading={loading}
-          disabled={loading}
-        >
+        <Button variant="filled" onClick={handleCreate} loading={loading} disabled={loading}>
           Create
         </Button>
       </div>

@@ -42,31 +42,20 @@ export function createCollider(
 
   switch (nodeCollider?.type) {
     case "box": {
-      visual = new Mesh(
-        new BoxGeometry(...nodeCollider.size),
-        wireframeMaterial
-      );
+      visual = new Mesh(new BoxGeometry(...nodeCollider.size), wireframeMaterial);
       if (isUniformScale) visual.scale.divideScalar(globalScale[0]);
       break;
     }
 
     case "sphere": {
-      visual = new Mesh(
-        new SphereGeometry(nodeCollider.radius),
-        wireframeMaterial
-      );
+      visual = new Mesh(new SphereGeometry(nodeCollider.radius), wireframeMaterial);
       if (isUniformScale) visual.scale.divideScalar(globalScale[0]);
       break;
     }
 
     case "cylinder": {
       visual = new Mesh(
-        new CylinderGeometry(
-          nodeCollider.radius,
-          nodeCollider.radius,
-          nodeCollider.height,
-          32
-        ),
+        new CylinderGeometry(nodeCollider.radius, nodeCollider.radius, nodeCollider.height, 32),
         wireframeMaterial
       );
       if (isUniformScale) visual.scale.divideScalar(globalScale[0]);
@@ -87,11 +76,7 @@ export function createCollider(
       switch (colliderMesh.type) {
         case "Box": {
           geometries.push(
-            new BoxGeometry(
-              colliderMesh.width,
-              colliderMesh.height,
-              colliderMesh.depth
-            )
+            new BoxGeometry(colliderMesh.width, colliderMesh.height, colliderMesh.depth)
           );
           break;
         }
@@ -151,9 +136,7 @@ export function createCollider(
           // Send geometry attributes to physics thread
           const attribute = geometry.getAttribute("position");
           const positions = Float32Array.from(attribute.array);
-          const indices = geometry.index
-            ? Uint32Array.from(geometry.index.array)
-            : undefined;
+          const indices = geometry.index ? Uint32Array.from(geometry.index.array) : undefined;
 
           postMessage({
             subject: "set_collider_geometry",

@@ -214,15 +214,9 @@ export class Material {
 
   toJSON(): MaterialJSON {
     const colorTexture = this.colorTexture ? this.colorTexture.toJSON() : null;
-    const emissiveTexture = this.emissiveTexture
-      ? this.emissiveTexture.toJSON()
-      : null;
-    const normalTexture = this.normalTexture
-      ? this.normalTexture.toJSON()
-      : null;
-    const occlusionTexture = this.occlusionTexture
-      ? this.occlusionTexture.toJSON()
-      : null;
+    const emissiveTexture = this.emissiveTexture ? this.emissiveTexture.toJSON() : null;
+    const normalTexture = this.normalTexture ? this.normalTexture.toJSON() : null;
+    const occlusionTexture = this.occlusionTexture ? this.occlusionTexture.toJSON() : null;
     const metallicRoughnessTexture = this.metallicRoughnessTexture
       ? this.metallicRoughnessTexture.toJSON()
       : null;
@@ -261,20 +255,13 @@ export class Material {
     if (json.alphaCutoff !== undefined) this.alphaCutoff = json.alphaCutoff;
     if (json.alphaMode !== undefined) this.alphaMode = json.alphaMode;
     if (json.normalScale !== undefined) this.normalScale = json.normalScale;
-    if (json.occlusionStrength !== undefined)
-      this.occlusionStrength = json.occlusionStrength;
+    if (json.occlusionStrength !== undefined) this.occlusionStrength = json.occlusionStrength;
     if (json.colorTexture !== undefined)
-      this.colorTexture = json.colorTexture
-        ? Texture.fromJSON(json.colorTexture)
-        : null;
+      this.colorTexture = json.colorTexture ? Texture.fromJSON(json.colorTexture) : null;
     if (json.emissiveTexture !== undefined)
-      this.emissiveTexture = json.emissiveTexture
-        ? Texture.fromJSON(json.emissiveTexture)
-        : null;
+      this.emissiveTexture = json.emissiveTexture ? Texture.fromJSON(json.emissiveTexture) : null;
     if (json.normalTexture !== undefined)
-      this.normalTexture = json.normalTexture
-        ? Texture.fromJSON(json.normalTexture)
-        : null;
+      this.normalTexture = json.normalTexture ? Texture.fromJSON(json.normalTexture) : null;
     if (json.occlusionTexture !== undefined)
       this.occlusionTexture = json.occlusionTexture
         ? Texture.fromJSON(json.occlusionTexture)

@@ -65,10 +65,8 @@ export class SphereMesh extends BaseMesh {
   applyJSON(json: Partial<SphereMeshJSON>) {
     if (json.materialId !== undefined) this.materialId = json.materialId;
     if (json.radius !== undefined) this.radius = json.radius;
-    if (json.widthSegments !== undefined)
-      this.widthSegments = json.widthSegments;
-    if (json.heightSegments !== undefined)
-      this.heightSegments = json.heightSegments;
+    if (json.widthSegments !== undefined) this.widthSegments = json.widthSegments;
+    if (json.heightSegments !== undefined) this.heightSegments = json.heightSegments;
   }
 
   static fromJSON(json: SphereMeshJSON) {

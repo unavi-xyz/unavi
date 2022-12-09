@@ -14,9 +14,7 @@ export function updateGltfColliders(nodeId: string) {
     if (!mesh) throw new Error(`Mesh ${node.meshId} not found`);
 
     if (mesh.type === "glTF") {
-      node.children.forEach((child) =>
-        setGltfCollider(child.id, node.collider)
-      );
+      node.children.forEach((child) => setGltfCollider(child.id, node.collider));
     }
   }
 }

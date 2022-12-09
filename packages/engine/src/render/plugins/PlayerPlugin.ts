@@ -74,9 +74,7 @@ export class PlayerPlugin implements RenderPlugin {
         this.#playerVelocity = data.velocity;
 
         // Create shared array buffer
-        const rotationBuffer = new SharedArrayBuffer(
-          Int32Array.BYTES_PER_ELEMENT * 4
-        );
+        const rotationBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 4);
 
         this.#playerRotation = new Int16Array(rotationBuffer);
 
@@ -137,10 +135,7 @@ export class PlayerPlugin implements RenderPlugin {
   wheel(delta: number) {
     // Scroll out into third person mode
     this.#targetCameraPosition.z += delta / 100;
-    this.#targetCameraPosition.z = Math.max(
-      0,
-      Math.min(20, this.#targetCameraPosition.z)
-    );
+    this.#targetCameraPosition.z = Math.max(0, Math.min(20, this.#targetCameraPosition.z));
   }
 
   mouseMove(x: number, y: number) {
@@ -225,12 +220,10 @@ export class PlayerPlugin implements RenderPlugin {
 
     // Set first person mode
     const isFirstPerson = this.#targetCameraPosition.z === 0;
-    if (isFirstPerson !== this.#avatar?.isFirstPerson)
-      this.#avatar?.setFirstPerson(isFirstPerson);
+    if (isFirstPerson !== this.#avatar?.isFirstPerson) this.#avatar?.setFirstPerson(isFirstPerson);
 
     // Rotate camera
-    if (isFirstPerson)
-      this.#camera.quaternion.slerp(this.#targetCameraRotation, K);
+    if (isFirstPerson) this.#camera.quaternion.slerp(this.#targetCameraRotation, K);
     else this.#camera.quaternion.copy(this.#targetCameraRotation);
 
     // Rotate avatar
@@ -252,10 +245,7 @@ export class PlayerPlugin implements RenderPlugin {
       if (this.#hasWalked) {
         this.#walkingDirection.add(velocity);
         this.#walkingDirection.clampLength(0, 1);
-        const angle = Math.atan2(
-          -this.#walkingDirection.x,
-          -this.#walkingDirection.y
-        );
+        const angle = Math.atan2(-this.#walkingDirection.x, -this.#walkingDirection.y);
         this.#avatar?.group.quaternion.setFromAxisAngle(UP, angle);
       }
 
@@ -296,9 +286,7 @@ export class PlayerPlugin implements RenderPlugin {
 
     // Send player rotation
     if (this.#playerRotation) {
-      const rotation = isFirstPerson
-        ? this.#camera.quaternion
-        : this.#avatar?.group.quaternion;
+      const rotation = isFirstPerson ? this.#camera.quaternion : this.#avatar?.group.quaternion;
 
       if (rotation) {
         Atomics.store(this.#playerRotation, 0, rotation.x * 1000);

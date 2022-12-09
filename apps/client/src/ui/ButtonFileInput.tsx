@@ -25,11 +25,7 @@ export default function ButtonFileInput({
   }
 
   const roundClass =
-    rounded === "small"
-      ? "rounded-lg"
-      : rounded === "large"
-      ? "rounded-xl"
-      : "rounded-full";
+    rounded === "small" ? "rounded-lg" : rounded === "large" ? "rounded-xl" : "rounded-full";
 
   return (
     <div className="flex flex-col">

@@ -8,8 +8,7 @@ export function quaternionToEuler(quaternion: Quad): Triplet {
   const roll = Math.atan2(sinr_cosp, cosr_cosp);
 
   const sinp = 2 * (w * y - z * x);
-  const pitch =
-    Math.abs(sinp) >= 1 ? (Math.sign(sinp) * Math.PI) / 2 : Math.asin(sinp);
+  const pitch = Math.abs(sinp) >= 1 ? (Math.sign(sinp) * Math.PI) / 2 : Math.asin(sinp);
 
   const siny_cosp = 2 * (w * z + x * y);
   const cosy_cosp = 1 - 2 * (y * y + z * z);

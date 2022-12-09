@@ -56,10 +56,7 @@ export type ToRenderMessage =
   | WorkerMessage<"set_transform_target", string | null>
   | WorkerMessage<"set_transform_mode", "translate" | "rotate" | "scale">
   | WorkerMessage<"prepare_export">
-  | WorkerMessage<
-      "set_player_buffers",
-      { position: Int32Array; velocity: Int32Array }
-    >
+  | WorkerMessage<"set_player_buffers", { position: Int32Array; velocity: Int32Array }>
   | WorkerMessage<"set_player_input_vector", [number, number]>
   | WorkerMessage<
       "mouse_move",

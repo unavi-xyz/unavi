@@ -4,11 +4,7 @@ import { Client, createClient, Provider } from "urql";
 import { API_URL } from "./constants";
 import { initialContext, LensContext } from "./context";
 
-export default function LensProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function LensProvider({ children }: { children: React.ReactNode }) {
   const [handle, setHandle] = useState<string>();
   const [client, setClient] = useState<Client>(initialContext.client);
   const [accessToken, setAccessToken] = useState<string>();

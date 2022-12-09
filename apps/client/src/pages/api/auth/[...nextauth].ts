@@ -1,17 +1,9 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import {
-  RefreshDocument,
-  RefreshMutation,
-  RefreshMutationVariables,
-} from "lens";
+import { RefreshDocument, RefreshMutation, RefreshMutationVariables } from "lens";
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-import {
-  CustomSession,
-  CustomToken,
-  CustomUser,
-} from "../../../client/auth/types";
+import { CustomSession, CustomToken, CustomUser } from "../../../client/auth/types";
 import { env } from "../../../env/server.mjs";
 import { authenticate, verifyJWT } from "../../../server/jwt";
 import { lensClient } from "../../../server/lens";
@@ -20,13 +12,7 @@ import { parseJWT } from "../../../utils/parseJWT";
 
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    async jwt({
-      token,
-      user,
-    }: {
-      token: CustomToken;
-      user?: CustomUser;
-    }): Promise<CustomToken> {
+    async jwt({ token, user }: { token: CustomToken; user?: CustomUser }): Promise<CustomToken> {
       // Initial sign in
       if (user) {
         return {
@@ -53,14 +39,11 @@ export const authOptions: NextAuthOptions = {
       // Refresh JWT token if it expires soon
       if (minutes < 60 * 60 * 24 * 6) {
         const { data, error } = await lensClient
-          .mutation<RefreshMutation, RefreshMutationVariables>(
-            RefreshDocument,
-            {
-              request: {
-                refreshToken: token.refreshToken,
-              },
-            }
-          )
+          .mutation<RefreshMutation, RefreshMutationVariables>(RefreshDocument, {
+            request: {
+              refreshToken: token.refreshToken,
+            },
+          })
           .toPromise();
 
         if (error) throw error;
@@ -74,13 +57,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
 
-    session({
-      session,
-      token,
-    }: {
-      session: CustomSession;
-      token: CustomToken;
-    }) {
+    session({ session, token }: { session: CustomSession; token: CustomToken }) {
       session.address = token.address;
       session.accessToken = token.accessToken;
       return session;
@@ -100,10 +77,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           // Authenticate with lens
-          const { accessToken, refreshToken } = await authenticate(
-            address,
-            signature
-          );
+          const { accessToken, refreshToken } = await authenticate(address, signature);
 
           // Verify token
           const verify = await verifyJWT(accessToken);

@@ -19,13 +19,7 @@ interface Props extends PublicationProps {
   children: React.ReactNode;
 }
 
-export default function AvatarLayout({
-  stats,
-  children,
-  metadata,
-  image,
-  publication,
-}: Props) {
+export default function AvatarLayout({ stats, children, metadata, image, publication }: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
@@ -95,9 +89,7 @@ export default function AvatarLayout({
                 <div className="flex justify-center space-x-1 font-bold md:justify-start">
                   <div className="text-neutral-500">By</div>
                   <Link href={`/user/${author}`}>
-                    <div className="cursor-pointer hover:underline">
-                      @{author}
-                    </div>
+                    <div className="cursor-pointer hover:underline">@{author}</div>
                   </Link>
                 </div>
 
@@ -116,14 +108,8 @@ export default function AvatarLayout({
 
               {isEquipped ? (
                 <div className="group">
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    onClick={handleUnequipAvatar}
-                  >
-                    <div className="py-2 group-hover:hidden">
-                      Avatar Equipped
-                    </div>
+                  <Button variant="outlined" fullWidth onClick={handleUnequipAvatar}>
+                    <div className="py-2 group-hover:hidden">Avatar Equipped</div>
                     <div className="hidden py-2 group-hover:block">Unequip</div>
                   </Button>
                 </div>
@@ -139,12 +125,7 @@ export default function AvatarLayout({
             <div className="flex space-x-4">
               <NavigationTab href={`/avatar/${id}`} text="About" />
 
-              {isAuthor && (
-                <NavigationTab
-                  href={`/avatar/${id}/settings`}
-                  text="Settings"
-                />
-              )}
+              {isAuthor && <NavigationTab href={`/avatar/${id}/settings`} text="Settings" />}
             </div>
 
             <div>{children}</div>

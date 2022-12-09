@@ -8,9 +8,7 @@ import { useAppStore } from "../store";
 
 export function useLoadUser() {
   const [avatarId, setAvatarId] = useState<string | null>(null);
-  const [loadedAvatarPublication, setLoadedAvatarPublication] = useState<
-    string | null
-  >(null);
+  const [loadedAvatarPublication, setLoadedAvatarPublication] = useState<string | null>(null);
 
   const engine = useAppStore((state) => state.engine);
   const { handle } = useLens();
@@ -61,8 +59,7 @@ export function useLoadUser() {
     async function fetchAvatar() {
       if (!engine || !avatarPublication) return;
 
-      const avatarURI =
-        avatarPublication?.publication?.metadata.media[1]?.original.url;
+      const avatarURI = avatarPublication?.publication?.metadata.media[1]?.original.url;
       if (!avatarURI) return;
 
       const url = parseUri(avatarURI);

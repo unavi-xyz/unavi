@@ -14,15 +14,12 @@ import { lensClient } from "./lens";
  */
 export async function authenticate(address: string, signature: string) {
   const { data, error } = await lensClient
-    .mutation<AuthenticateMutation, AuthenticateMutationVariables>(
-      AuthenticateDocument,
-      {
-        request: {
-          address,
-          signature,
-        },
-      }
-    )
+    .mutation<AuthenticateMutation, AuthenticateMutationVariables>(AuthenticateDocument, {
+      request: {
+        address,
+        signature,
+      },
+    })
     .toPromise();
 
   if (error) throw new Error(error.message);

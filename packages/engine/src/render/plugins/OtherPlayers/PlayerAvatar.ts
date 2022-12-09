@@ -103,11 +103,7 @@ export class PlayerAvatar {
 
   async #loadModel(avatarPath?: string, avatarAnimationsPath?: string) {
     if (!avatarPath) {
-      const geometry = new BoxGeometry(
-        PLAYER_RADIUS * 2,
-        PLAYER_HEIGHT,
-        PLAYER_RADIUS * 2
-      );
+      const geometry = new BoxGeometry(PLAYER_RADIUS * 2, PLAYER_HEIGHT, PLAYER_RADIUS * 2);
       const material = new MeshStandardMaterial({ color: 0xff3333 });
       const mesh = new Mesh(geometry, material);
       mesh.position.y = PLAYER_HEIGHT / 2;
@@ -202,10 +198,7 @@ export class PlayerAvatar {
       this.#actions.get(AnimationName.RightWalk)?.play();
       this.#actions.get(AnimationName.Sprint)?.play();
 
-      this.#actions
-        .get(AnimationName.Falling)
-        ?.play()
-        .setLoop(LoopPingPong, Infinity);
+      this.#actions.get(AnimationName.Falling)?.play().setLoop(LoopPingPong, Infinity);
     }
 
     if (this.playerId === -1) console.info(`💃 Loaded your avatar`);
@@ -222,9 +215,7 @@ export class PlayerAvatar {
       const loadName = async () => {
         // Create text
         const loader = new FontLoader();
-        const font = await loader.loadAsync(
-          new URL("./font.json", import.meta.url).href
-        );
+        const font = await loader.loadAsync(new URL("./font.json", import.meta.url).href);
 
         const shapes = font.generateShapes(name, 0.075);
         const geometry = new ShapeGeometry(shapes);
@@ -232,8 +223,7 @@ export class PlayerAvatar {
         // Center horizontally
         geometry.computeBoundingBox();
         if (!geometry.boundingBox) throw new Error("No bounding box");
-        const xMid =
-          -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
+        const xMid = -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
         geometry.translate(xMid, 0, 0);
 
         const material = new MeshBasicMaterial();
@@ -246,10 +236,8 @@ export class PlayerAvatar {
         this.#nameplate = mesh;
 
         // Create background
-        const width =
-          geometry.boundingBox.max.x - geometry.boundingBox.min.x + 0.15;
-        const height =
-          geometry.boundingBox.max.y - geometry.boundingBox.min.y + 0.06;
+        const width = geometry.boundingBox.max.x - geometry.boundingBox.min.x + 0.15;
+        const height = geometry.boundingBox.max.y - geometry.boundingBox.min.y + 0.06;
         const radius = height / 2;
 
         const shape = new Shape();
@@ -265,10 +253,7 @@ export class PlayerAvatar {
 
         const roundedRectangle = new ShapeGeometry(shape);
 
-        const background = new Mesh(
-          roundedRectangle,
-          new MeshBasicMaterial({ color: 0x010101 })
-        );
+        const background = new Mesh(roundedRectangle, new MeshBasicMaterial({ color: 0x010101 }));
         background.position.x = -width / 2;
         background.position.y = -height / 4;
         background.position.z = -0.0001;
@@ -283,10 +268,7 @@ export class PlayerAvatar {
   }
 
   setAvatar(avatarPath: string | null) {
-    this.#loadModel(
-      avatarPath ?? this.#defaultAvatarPath,
-      this.#avatarAnimationsPath
-    );
+    this.#loadModel(avatarPath ?? this.#defaultAvatarPath, this.#avatarAnimationsPath);
   }
 
   setPosition(x: number, y: number, z: number) {
@@ -333,9 +315,7 @@ export class PlayerAvatar {
 
     // Get relative rotation for head
     const relativeRotation = this.#tempQuat2.copy(this.#targetRotation);
-    relativeRotation.premultiply(
-      this.#tempQuat.copy(this.group.quaternion).invert()
-    );
+    relativeRotation.premultiply(this.#tempQuat.copy(this.group.quaternion).invert());
 
     // Rotate head
     this.#headRotation.slerp(relativeRotation, K);
@@ -357,14 +337,10 @@ export class PlayerAvatar {
 
     // Falling
     this.#fallWeight = clamp(
-      this.isFalling
-        ? this.#fallWeight + delta * 4
-        : this.#fallWeight - delta * 4
+      this.isFalling ? this.#fallWeight + delta * 4 : this.#fallWeight - delta * 4
     );
 
-    this.#actions
-      .get(AnimationName.Falling)
-      ?.setEffectiveWeight(this.#fallWeight);
+    this.#actions.get(AnimationName.Falling)?.setEffectiveWeight(this.#fallWeight);
 
     // Walking
     const leftVelocity = velocity.x > 0 ? velocity.x : 0;
@@ -396,13 +372,9 @@ export class PlayerAvatar {
         : this.#forwardWeight - delta * 8
     );
 
-    this.#actions
-      .get(AnimationName.LeftWalk)
-      ?.setEffectiveWeight(this.#leftWeight);
+    this.#actions.get(AnimationName.LeftWalk)?.setEffectiveWeight(this.#leftWeight);
 
-    this.#actions
-      .get(AnimationName.RightWalk)
-      ?.setEffectiveWeight(this.#rightWeight);
+    this.#actions.get(AnimationName.RightWalk)?.setEffectiveWeight(this.#rightWeight);
 
     this.#actions
       .get(AnimationName.Walk)
@@ -416,11 +388,7 @@ export class PlayerAvatar {
 
     // Idle
     const idleWeight =
-      1 -
-      this.#leftWeight -
-      this.#rightWeight -
-      this.#forwardWeight -
-      this.#fallWeight;
+      1 - this.#leftWeight - this.#rightWeight - this.#forwardWeight - this.#fallWeight;
 
     this.#actions.get(AnimationName.Idle)?.setEffectiveWeight(idleWeight);
 
@@ -449,8 +417,7 @@ export class PlayerAvatar {
     // Update nameplate
     if (this.#nameplate) {
       // Hide if too far away
-      this.#nameplate.visible =
-        this.#sceneCamera.position.distanceTo(this.group.position) < 10;
+      this.#nameplate.visible = this.#sceneCamera.position.distanceTo(this.group.position) < 10;
 
       // Rotate to face camera
       this.#nameplate.lookAt(this.#sceneCamera.position);

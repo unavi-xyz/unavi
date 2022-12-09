@@ -8,9 +8,7 @@ export default function ChatBox() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const chatBoxFocused = useAppStore((state) => state.chatBoxFocused);
-  const chatMessages$ = useAppStore(
-    (state) => state.engine?.networkingInterface.chatMessages$
-  );
+  const chatMessages$ = useAppStore((state) => state.engine?.networkingInterface.chatMessages$);
 
   const chatMessages = useSubscribeValue(chatMessages$);
 

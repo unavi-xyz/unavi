@@ -137,8 +137,7 @@ export default function Editor() {
             const file = item.getAsFile();
             if (!file) return;
 
-            const isGLTF =
-              file.name.endsWith(".gltf") || file.name.endsWith(".glb");
+            const isGLTF = file.name.endsWith(".gltf") || file.name.endsWith(".glb");
             if (!isGLTF) return;
 
             // Create mesh
@@ -180,10 +179,7 @@ export default function Editor() {
             <TreeMenu />
 
             <div className="h-full border-x">
-              <div
-                ref={containerRef}
-                className="relative h-full w-full overflow-hidden"
-              >
+              <div ref={containerRef} className="relative h-full w-full overflow-hidden">
                 {!sceneLoaded && (
                   <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
                     <div className="flex h-full  flex-col items-center justify-center">
@@ -192,10 +188,7 @@ export default function Editor() {
                   </div>
                 )}
 
-                <canvas
-                  ref={canvasRef}
-                  className={`h-full w-full transition ${loadedClass}`}
-                />
+                <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
               </div>
             </div>
 

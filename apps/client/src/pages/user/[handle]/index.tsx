@@ -18,14 +18,8 @@ import SpaceCard from "../../../home/lens/SpaceCard";
 import { lensClient } from "../../../server/lens";
 import { getMediaURL } from "../../../utils/getMediaURL";
 
-export const getServerSideProps = async ({
-  res,
-  query,
-}: GetServerSidePropsContext) => {
-  res.setHeader(
-    "Cache-Control",
-    "public, s-maxage=30, stale-while-revalidate=3600"
-  );
+export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
+  res.setHeader("Cache-Control", "public, s-maxage=30, stale-while-revalidate=3600");
 
   const handle = query.handle as string;
   const props = await getProfileLayoutProps(handle);
@@ -41,16 +35,13 @@ export const getServerSideProps = async ({
   }
 
   const publicationsQuery = await lensClient
-    .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
-      GetPublicationsDocument,
-      {
-        request: {
-          profileId: props.profile.id,
-          sources: [AppId.Space, AppId.Avatar],
-          publicationTypes: [PublicationTypes.Post],
-        },
-      }
-    )
+    .query<GetPublicationsQuery, GetPublicationsQueryVariables>(GetPublicationsDocument, {
+      request: {
+        profileId: props.profile.id,
+        sources: [AppId.Space, AppId.Avatar],
+        publicationTypes: [PublicationTypes.Post],
+      },
+    })
     .toPromise();
 
   const publications =

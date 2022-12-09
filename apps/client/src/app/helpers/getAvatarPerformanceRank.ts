@@ -1,11 +1,6 @@
 import { GLTFStats } from "../../server/helpers/getGltfStats";
 
-export type AvatarPerformanceRank =
-  | "Excellent"
-  | "Good"
-  | "Medium"
-  | "Poor"
-  | "Very Poor";
+export type AvatarPerformanceRank = "Excellent" | "Good" | "Medium" | "Poor" | "Very Poor";
 
 type WithoutVeryPoor = Exclude<AvatarPerformanceRank, "Very Poor">;
 type AvatarStats = Omit<GLTFStats, "fileSize">;
@@ -44,9 +39,7 @@ const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   },
 };
 
-export function getAvatarPerformanceRank(
-  stats: GLTFStats
-): AvatarPerformanceRank {
+export function getAvatarPerformanceRank(stats: GLTFStats): AvatarPerformanceRank {
   const keys = Object.keys(thresholds) as WithoutVeryPoor[];
 
   for (let i = 0; i < keys.length; i++) {

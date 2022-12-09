@@ -1,10 +1,6 @@
 import { NodeIO } from "@gltf-transform/core";
 import { DracoMeshCompression } from "@gltf-transform/extensions";
-import {
-  GetPublicationDocument,
-  GetPublicationQuery,
-  GetPublicationQueryVariables,
-} from "lens";
+import { GetPublicationDocument, GetPublicationQuery, GetPublicationQueryVariables } from "lens";
 
 import { lensClient } from "../lens";
 import createDecoderModule from "./draco_decoder_gltf";
@@ -21,14 +17,11 @@ export type GLTFStats = {
 export async function getGltfStats(publicationId: string): Promise<GLTFStats> {
   // Fetch publication
   const { data } = await lensClient
-    .query<GetPublicationQuery, GetPublicationQueryVariables>(
-      GetPublicationDocument,
-      {
-        request: {
-          publicationId,
-        },
-      }
-    )
+    .query<GetPublicationQuery, GetPublicationQueryVariables>(GetPublicationDocument, {
+      request: {
+        publicationId,
+      },
+    })
     .toPromise();
 
   const url = data?.publication?.metadata.media[1]?.original.url;
@@ -40,11 +33,9 @@ export async function getGltfStats(publicationId: string): Promise<GLTFStats> {
   const array = new Uint8Array(buffer);
 
   // Load model
-  const io = new NodeIO()
-    .registerExtensions([DracoMeshCompression])
-    .registerDependencies({
-      "draco3d.decoder": await createDecoderModule(),
-    });
+  const io = new NodeIO().registerExtensions([DracoMeshCompression]).registerDependencies({
+    "draco3d.decoder": await createDecoderModule(),
+  });
 
   const document = await io.readBinary(array);
 

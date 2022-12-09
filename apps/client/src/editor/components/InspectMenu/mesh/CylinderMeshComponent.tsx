@@ -20,8 +20,7 @@ export default function CylinderMeshComponent({ nodeId, mesh }: Props) {
     <>
       <MenuRows titles={["Radius", "Height", "Radial Segments"]}>
         {[radius, height, radialSegments].map((value, i) => {
-          const property =
-            i === 0 ? "radius" : i === 1 ? "height" : "radialSegments";
+          const property = i === 0 ? "radius" : i === 1 ? "height" : "radialSegments";
           const name = ["Radius", "Height", "Radial Segments"][i];
           const step = name === "Radial Segments" ? 1 : 0.1;
 

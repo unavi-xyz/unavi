@@ -130,17 +130,14 @@ export class WebRTC {
             });
           });
 
-          transport.on(
-            "producedata",
-            async ({ sctpStreamParameters }, callback) => {
-              this.#onDataProducerId = callback;
+          transport.on("producedata", async ({ sctpStreamParameters }, callback) => {
+            this.#onDataProducerId = callback;
 
-              this.#send({
-                subject: "produce_data",
-                data: { sctpStreamParameters },
-              });
-            }
-          );
+            this.#send({
+              subject: "produce_data",
+              data: { sctpStreamParameters },
+            });
+          });
 
           const dataProducer = await transport.produceData({
             ordered: false,
@@ -191,14 +188,7 @@ export class WebRTC {
               listener.forwardX.value = -Math.sin(yaw);
               listener.forwardZ.value = -Math.cos(yaw);
             } else {
-              listener.setOrientation(
-                -Math.sin(yaw),
-                0,
-                -Math.cos(yaw),
-                0,
-                1,
-                0
-              );
+              listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
             }
 
             // Create buffer
@@ -231,10 +221,8 @@ export class WebRTC {
       }
 
       case "create_consumer": {
-        if (!this.#consumerTransport)
-          throw new Error("Consumer transport not initialized");
-        if (this.#consumerTransport.closed)
-          throw new Error("Consumer transport closed");
+        if (!this.#consumerTransport) throw new Error("Consumer transport not initialized");
+        if (this.#consumerTransport.closed) throw new Error("Consumer transport closed");
 
         const consumer = await this.#consumerTransport.consume({
           id: data.id,
@@ -259,9 +247,7 @@ export class WebRTC {
         audio.srcObject = stream;
 
         // Create audio source
-        const source = this.#audioContext.createMediaStreamSource(
-          audio.srcObject
-        );
+        const source = this.#audioContext.createMediaStreamSource(audio.srcObject);
 
         // Create panner
         const panner = this.#audioContext.createPanner();
@@ -272,13 +258,11 @@ export class WebRTC {
         source.connect(panner);
         panner.connect(this.#audioContext.destination);
 
-        if (this.#audioContext.state === "suspended")
-          this.#audioContext.resume();
+        if (this.#audioContext.state === "suspended") this.#audioContext.resume();
 
         // Play audio on user interaction
         const play = async () => {
-          if (this.#audioContext.state === "suspended")
-            await this.#audioContext.resume();
+          if (this.#audioContext.state === "suspended") await this.#audioContext.resume();
           document.removeEventListener("click", play);
         };
 
@@ -290,10 +274,8 @@ export class WebRTC {
       }
 
       case "create_data_consumer": {
-        if (!this.#consumerTransport)
-          throw new Error("Consumer transport not initialized");
-        if (this.#consumerTransport.closed)
-          throw new Error("Consumer transport closed");
+        if (!this.#consumerTransport) throw new Error("Consumer transport not initialized");
+        if (this.#consumerTransport.closed) throw new Error("Consumer transport closed");
 
         const dataConsumer = await this.#consumerTransport.consumeData({
           id: data.id,
@@ -302,8 +284,7 @@ export class WebRTC {
         });
 
         dataConsumer.on("message", async (data: ArrayBuffer | Blob) => {
-          const buffer =
-            data instanceof ArrayBuffer ? data : await data.arrayBuffer();
+          const buffer = data instanceof ArrayBuffer ? data : await data.arrayBuffer();
 
           // Apply location to audio panner
           const view = new DataView(buffer);
@@ -351,10 +332,8 @@ export class WebRTC {
   }
 
   async produceAudio(track: MediaStreamTrack) {
-    if (!this.#producerTransport)
-      throw new Error("Producer transport not initialized");
-    if (this.#producerTransport.closed)
-      throw new Error("Producer transport closed");
+    if (!this.#producerTransport) throw new Error("Producer transport not initialized");
+    if (this.#producerTransport.closed) throw new Error("Producer transport closed");
 
     this.#producer = await this.#producerTransport.produce({ track });
 

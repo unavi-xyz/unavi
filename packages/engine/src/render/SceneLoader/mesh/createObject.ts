@@ -31,21 +31,13 @@ export function createObject(
   map: SceneMap,
   postMessage: PostMessage<FromRenderMessage>
 ) {
-  function setMorphAttribute(
-    geometry: BufferGeometry,
-    threeName: string,
-    accessorIds: string[]
-  ) {
+  function setMorphAttribute(geometry: BufferGeometry, threeName: string, accessorIds: string[]) {
     if (accessorIds.length === 0) return;
     const attributes = accessorIds.map((id) => createAttribute(id, map));
     geometry.morphAttributes[threeName] = attributes;
   }
 
-  function setAttribute(
-    geometry: BufferGeometry,
-    threeName: string,
-    accessorId: string | null
-  ) {
+  function setAttribute(geometry: BufferGeometry, threeName: string, accessorId: string | null) {
     if (accessorId === null) return;
 
     const attribute = createAttribute(accessorId, map);
@@ -74,11 +66,7 @@ export function createObject(
         }
 
         case "Sphere": {
-          geometry = new SphereGeometry(
-            mesh.radius,
-            mesh.widthSegments,
-            mesh.heightSegments
-          );
+          geometry = new SphereGeometry(mesh.radius, mesh.widthSegments, mesh.heightSegments);
           break;
         }
 
@@ -101,9 +89,7 @@ export function createObject(
         disposeOldObject = false;
       } else {
         // Get material
-        const material = mesh.materialId
-          ? map.materials.get(mesh.materialId)
-          : defaultMaterial;
+        const material = mesh.materialId ? map.materials.get(mesh.materialId) : defaultMaterial;
         if (!material) throw new Error("Material not found");
 
         // Create mesh
@@ -153,13 +139,7 @@ export function createObject(
           : defaultMaterial;
         if (!primitiveMaterial) throw new Error("Material not found");
 
-        let primitiveMesh:
-          | Mesh
-          | SkinnedMesh
-          | LineSegments
-          | LineLoop
-          | Line
-          | Points;
+        let primitiveMesh: Mesh | SkinnedMesh | LineSegments | LineLoop | Line | Points;
         switch (primitive.mode) {
           case WEBGL_CONSTANTS.TRIANGLES:
           case WEBGL_CONSTANTS.TRIANGLE_STRIP:
@@ -169,8 +149,7 @@ export function createObject(
               : new Mesh(geometry, primitiveMaterial);
 
             if (primitiveMesh instanceof SkinnedMesh) {
-              const normalized =
-                primitiveMesh.geometry.attributes.skinWeight.normalized;
+              const normalized = primitiveMesh.geometry.attributes.skinWeight.normalized;
               if (!normalized) primitiveMesh.normalizeSkinWeights();
             }
             break;

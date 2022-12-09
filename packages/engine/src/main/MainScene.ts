@@ -8,12 +8,7 @@ import { Mesh, MeshJSON } from "../scene";
 import { Material } from "../scene/Material";
 import { Node } from "../scene/Node";
 import { Scene } from "../scene/Scene";
-import {
-  MaterialJSON,
-  NodeJSON,
-  SceneJSON,
-  SceneMessage,
-} from "../scene/types";
+import { MaterialJSON, NodeJSON, SceneJSON, SceneMessage } from "../scene/types";
 import { PostMessage } from "../types";
 
 /*
@@ -49,9 +44,7 @@ export class MainScene {
 
     // Handle glTF loads
     loaderThread.onGltfLoaded = async ({ id, scene }) => {
-      const parentNode = Object.values(this.#scene.nodes).find(
-        (node) => node.meshId === id
-      );
+      const parentNode = Object.values(this.#scene.nodes).find((node) => node.meshId === id);
       if (!parentNode) return;
 
       // Attach nodes to parent
@@ -280,11 +273,7 @@ export class MainScene {
     return this.#scene.toJSON(includeInternal);
   }
 
-  async loadJSON(
-    json: Partial<SceneJSON>,
-    loadGltfSpawn = false,
-    loadSpawn = true
-  ) {
+  async loadJSON(json: Partial<SceneJSON>, loadGltfSpawn = false, loadSpawn = true) {
     if (!loadSpawn) delete json.spawnId;
 
     // Remove root node
@@ -348,9 +337,7 @@ export class MainScene {
     });
 
     // Remove all materials
-    Object.values(this.#scene.materials).forEach((material) =>
-      this.removeMaterial(material.id)
-    );
+    Object.values(this.#scene.materials).forEach((material) => this.removeMaterial(material.id));
   }
 
   destroy() {

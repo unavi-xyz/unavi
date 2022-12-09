@@ -13,20 +13,13 @@ import { isFromCDN } from "../../../utils/isFromCDN";
 import MetaTags from "../../MetaTags";
 
 const host =
-  process.env.NODE_ENV === "development"
-    ? "localhost:4000"
-    : env.NEXT_PUBLIC_DEFAULT_HOST;
+  process.env.NODE_ENV === "development" ? "localhost:4000" : env.NEXT_PUBLIC_DEFAULT_HOST;
 
 export interface Props extends PublicationProps {
   children: React.ReactNode;
 }
 
-export default function SpaceLayout({
-  children,
-  metadata,
-  publication,
-  image,
-}: Props) {
+export default function SpaceLayout({ children, metadata, publication, image }: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
@@ -81,9 +74,7 @@ export default function SpaceLayout({
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-neutral-500">By</div>
                     <Link href={`/user/${author}`}>
-                      <div className="cursor-pointer hover:underline">
-                        @{author}
-                      </div>
+                      <div className="cursor-pointer hover:underline">@{author}</div>
                     </Link>
                   </div>
 
@@ -115,9 +106,7 @@ export default function SpaceLayout({
             <div className="flex space-x-4">
               <NavigationTab href={`/space/${id}`} text="About" />
 
-              {isAuthor && (
-                <NavigationTab href={`/space/${id}/settings`} text="Settings" />
-              )}
+              {isAuthor && <NavigationTab href={`/space/${id}/settings`} text="Settings" />}
             </div>
 
             <div>{children}</div>

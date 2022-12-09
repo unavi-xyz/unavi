@@ -148,22 +148,12 @@ export class RenderWorker {
     this.#scene.fog = new Fog(0xcfcfcf, CAMERA_FAR / 2, CAMERA_FAR);
 
     // Camera
-    this.camera = new PerspectiveCamera(
-      75,
-      canvasWidth / canvasHeight,
-      0.1,
-      CAMERA_FAR
-    );
+    this.camera = new PerspectiveCamera(75, canvasWidth / canvasHeight, 0.1, CAMERA_FAR);
 
     switch (camera) {
       case "orbit": {
         this.#plugins.push(
-          new OrbitControlsPlugin(
-            this.camera,
-            canvasWidth,
-            canvasHeight,
-            this.#pluginState
-          )
+          new OrbitControlsPlugin(this.camera, canvasWidth, canvasHeight, this.#pluginState)
         );
         break;
       }
@@ -224,12 +214,7 @@ export class RenderWorker {
           this.#pluginState,
           this
         ),
-        new RaycasterPlugin(
-          this.camera,
-          this.#sceneLoader,
-          this.#postMessage,
-          this.#pluginState
-        )
+        new RaycasterPlugin(this.camera, this.#sceneLoader, this.#postMessage, this.#pluginState)
       );
     }
 

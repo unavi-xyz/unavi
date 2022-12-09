@@ -1,11 +1,6 @@
 import Spinner from "./Spinner";
 
-export type ButtonVariant =
-  | "elevated"
-  | "filled"
-  | "tonal"
-  | "outlined"
-  | "text";
+export type ButtonVariant = "elevated" | "filled" | "tonal" | "outlined" | "text";
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -46,23 +41,13 @@ export default function Button({
       : null;
 
   const tonalClass =
-    variant === "tonal"
-      ? color === "primary"
-        ? "bg-sky-100"
-        : "bg-red-100 text-red-900"
-      : null;
+    variant === "tonal" ? (color === "primary" ? "bg-sky-100" : "bg-red-100 text-red-900") : null;
 
   const filledClass =
-    variant === "filled"
-      ? color === "primary"
-        ? "bg-sky-300"
-        : "bg-red-700 text-white"
-      : null;
+    variant === "filled" ? (color === "primary" ? "bg-sky-300" : "bg-red-700 text-white") : null;
 
   const elevatedClass =
-    variant === "elevated"
-      ? "shadow-dark bg-white text-sky-300 hover:bg-neutral-200/50"
-      : null;
+    variant === "elevated" ? "shadow-dark bg-white text-sky-300 hover:bg-neutral-200/50" : null;
 
   const disabledClass =
     loading || disabled
@@ -80,11 +65,7 @@ export default function Button({
   const loadingClass = loading ? "opacity-0" : null;
   const fullWidthClass = fullWidth ? "w-full" : null;
   const roundClass =
-    rounded === "small"
-      ? "rounded-lg"
-      : rounded === "large"
-      ? "rounded-xl"
-      : "rounded-full";
+    rounded === "small" ? "rounded-lg" : rounded === "large" ? "rounded-xl" : "rounded-full";
 
   const paddingClass = icon ? "p-2.5" : "px-5 py-1.5";
   const cursorClass =

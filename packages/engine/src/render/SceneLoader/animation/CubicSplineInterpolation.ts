@@ -2,12 +2,7 @@ import { Interpolant, Quaternion } from "three";
 
 // Taken from https://github.com/mrdoob/three.js/blob/master/examples/jsm/loaders/GLTFLoader.js
 export class GLTFCubicSplineInterpolant extends Interpolant {
-  constructor(
-    parameterPositions: any,
-    sampleValues: any,
-    sampleSize: any,
-    resultBuffer: any
-  ) {
+  constructor(parameterPositions: any, sampleValues: any, sampleSize: any, resultBuffer: any) {
     super(parameterPositions, sampleValues, sampleSize, resultBuffer);
   }
 

@@ -48,9 +48,7 @@ export const getStaticProps = async () => {
   };
 };
 
-export default function Explore({
-  hotSpaces,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+export default function Explore({ hotSpaces }: InferGetStaticPropsType<typeof getStaticProps>) {
   const isMobile = useIsMobile();
   const spaceLimit = isMobile ? 1 : 3;
   const avatarLimit = isMobile ? 1 : 5;
@@ -75,12 +73,7 @@ export default function Explore({
     next: hotSpacesNext,
     back: hotSpacesBack,
     isLastPage: isLastHotSpacesPage,
-  } = useCursor(
-    hotSpaces.length,
-    spaceLimit,
-    hotSpacesCursor,
-    setHotSpacesCursor
-  );
+  } = useCursor(hotSpaces.length, spaceLimit, hotSpacesCursor, setHotSpacesCursor);
 
   return (
     <>
@@ -144,11 +137,7 @@ export default function Explore({
                 >
                   <Link href={`/space/${space.id}`}>
                     <div className="h-32 md:h-44">
-                      <SpaceCard
-                        space={space as Post}
-                        sizes="293px"
-                        animateEnter
-                      />
+                      <SpaceCard space={space as Post} sizes="293px" animateEnter />
                     </div>
                   </Link>
                 </div>

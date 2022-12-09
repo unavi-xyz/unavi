@@ -21,8 +21,7 @@ export class LoaderThread {
       this.#worker.workerPort.postMessage.bind(this.#worker.workerPort)
     );
 
-    this.#worker.workerPort.onmessage =
-      loaderWorker.onmessage.bind(loaderWorker);
+    this.#worker.workerPort.onmessage = loaderWorker.onmessage.bind(loaderWorker);
 
     this.#worker.onmessage = this.#onmessage;
   }
@@ -45,8 +44,7 @@ export class LoaderThread {
     }
   };
 
-  onGltfLoaded: ((data: { id: string; scene: SceneJSON }) => void) | null =
-    null;
+  onGltfLoaded: ((data: { id: string; scene: SceneJSON }) => void) | null = null;
 
   postMessage(message: ToLoaderMessage, transfer?: Transferable[]) {
     this.#worker.postMessage(message, transfer);

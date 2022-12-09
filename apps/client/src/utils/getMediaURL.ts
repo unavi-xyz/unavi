@@ -2,9 +2,7 @@ import { ProfileMedia } from "lens";
 
 import { parseUri } from "./parseUri";
 
-export function getMediaURL(
-  image: ProfileMedia | null | undefined
-): string | null {
+export function getMediaURL(image: ProfileMedia | null | undefined): string | null {
   let uri: string | null = null;
 
   switch (image?.__typename) {

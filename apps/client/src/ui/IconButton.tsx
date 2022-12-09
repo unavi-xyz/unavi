@@ -22,8 +22,7 @@ export default function IconButton({
 
   const roundedClass = rounded === "full" ? "rounded-full" : "rounded-lg";
 
-  const cursorClass =
-    cursor === "pointer" ? "cursor-pointer" : "cursor-default";
+  const cursorClass = cursor === "pointer" ? "cursor-pointer" : "cursor-default";
 
   const loadingClass = loading ? "opacity-0" : null;
 

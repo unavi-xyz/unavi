@@ -7,18 +7,11 @@ interface Props {
   children: React.ReactNode;
 }
 
-export default function ComponentMenu({
-  title,
-  removeable = true,
-  onRemove,
-  children,
-}: Props) {
+export default function ComponentMenu({ title, removeable = true, onRemove, children }: Props) {
   const outlineClass = removeable ? "hover:ring-1" : "";
 
   return (
-    <div
-      className={`group space-y-4 rounded-2xl p-4 ring-neutral-300 transition ${outlineClass}`}
-    >
+    <div className={`group space-y-4 rounded-2xl p-4 ring-neutral-300 transition ${outlineClass}`}>
       <div className="-mt-1 flex justify-between text-xl font-bold">
         {title && <div>{title}</div>}
 

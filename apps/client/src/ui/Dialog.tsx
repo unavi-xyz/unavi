@@ -7,11 +7,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-export default function Dialog({
-  open,
-  onClose,
-  children,
-}: Props): ReactPortal | null {
+export default function Dialog({ open, onClose, children }: Props): ReactPortal | null {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
 

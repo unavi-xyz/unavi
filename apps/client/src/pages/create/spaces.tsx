@@ -55,10 +55,7 @@ export default function Spaces() {
     <>
       <MetaTags title="Spaces" />
 
-      <Dialog
-        open={openCreateProject}
-        onClose={() => setOpenCreateProject(false)}
-      >
+      <Dialog open={openCreateProject} onClose={() => setOpenCreateProject(false)}>
         <CreateProjectPage />
       </Dialog>
 
@@ -86,12 +83,7 @@ export default function Spaces() {
                 unpublishedProjects.map(({ id, name, image }) => (
                   <Link key={id} href={`/project/${id}`}>
                     <div>
-                      <Card
-                        text={name}
-                        image={image}
-                        sizes="333px"
-                        animateEnter
-                      />
+                      <Card text={name} image={image} sizes="333px" animateEnter />
                     </div>
                   </Link>
                 ))
@@ -108,9 +100,7 @@ export default function Spaces() {
                 </div>
               )
             ) : (
-              <div className="text-neutral-500">
-                You need to be signed in to create a project.
-              </div>
+              <div className="text-neutral-500">You need to be signed in to create a project.</div>
             )}
           </div>
 
@@ -122,12 +112,7 @@ export default function Spaces() {
                 {publishedProjects.map(({ id, name }, i) => (
                   <Link key={id} href={`/project/${id}`}>
                     <div>
-                      <Card
-                        text={name}
-                        image={publishedImages[i]}
-                        sizes="333px"
-                        animateEnter
-                      />
+                      <Card text={name} image={publishedImages[i]} sizes="333px" animateEnter />
                     </div>
                   </Link>
                 ))}

@@ -7,7 +7,7 @@ import { useLens } from "../../../client/lens/hooks/useLens";
 import { getPublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import AvatarLayout from "../../../home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
-import { getAvatarStats } from "../../../server/helpers/getAvatarStats";
+import { getGltfStats } from "../../../server/helpers/getGltfStats";
 import Button from "../../../ui/Button";
 
 export const getServerSideProps = async ({
@@ -25,15 +25,15 @@ export const getServerSideProps = async ({
   const id = query.id as string;
 
   const publicationPropsPromise = getPublicationProps(id);
-  const avatarStatsPromise = getAvatarStats(id);
+  const statsPromise = getGltfStats(id);
 
   const publicationProps = await publicationPropsPromise;
-  const avatarStats = await avatarStatsPromise;
+  const stats = await statsPromise;
 
   return {
     props: {
       ...publicationProps,
-      avatarStats,
+      stats,
     },
   };
 };

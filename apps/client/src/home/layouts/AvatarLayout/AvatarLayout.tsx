@@ -8,19 +8,19 @@ import { getAvatarPerformanceRank } from "../../../app/helpers/getAvatarPerforma
 import { useLens } from "../../../client/lens/hooks/useLens";
 import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { trimHandle } from "../../../client/lens/utils/trimHandle";
-import { AvatarStats } from "../../../server/helpers/getAvatarStats";
+import { GLTFStats } from "../../../server/helpers/getGltfStats";
 import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
 import { isFromCDN } from "../../../utils/isFromCDN";
 import MetaTags from "../../MetaTags";
 
 interface Props extends PublicationProps {
-  avatarStats: AvatarStats;
+  stats: GLTFStats;
   children: React.ReactNode;
 }
 
 export default function AvatarLayout({
-  avatarStats,
+  stats,
   children,
   metadata,
   image,
@@ -49,7 +49,7 @@ export default function AvatarLayout({
     setIsEquipped(false);
   }
 
-  const performanceRank = getAvatarPerformanceRank(avatarStats);
+  const performanceRank = getAvatarPerformanceRank(stats);
 
   return (
     <>

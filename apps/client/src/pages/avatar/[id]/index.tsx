@@ -3,7 +3,7 @@ import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { getPublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import AvatarLayout from "../../../home/layouts/AvatarLayout/AvatarLayout";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
-import { getAvatarStats } from "../../../server/helpers/getAvatarStats";
+import { getGltfStats } from "../../../server/helpers/getGltfStats";
 
 export const getServerSideProps = async ({
   res,
@@ -20,15 +20,15 @@ export const getServerSideProps = async ({
   const id = query.id as string;
 
   const publicationPropsPromise = getPublicationProps(id);
-  const avatarStatsPromise = getAvatarStats(id);
+  const statsPromise = getGltfStats(id);
 
   const publicationProps = await publicationPropsPromise;
-  const avatarStats = await avatarStatsPromise;
+  const stats = await statsPromise;
 
   return {
     props: {
       ...publicationProps,
-      avatarStats,
+      stats,
     },
   };
 };
@@ -38,7 +38,7 @@ export default function Avatar(
 ) {
   return (
     <AvatarLayout {...props}>
-      <div className="space-y-4">
+      <div className="space-y-8">
         {props.publication?.metadata.description && (
           <div className="space-y-2">
             <div className="text-2xl font-bold">Description</div>
@@ -64,11 +64,11 @@ export default function Avatar(
 
             <div className="pl-8">
               {[
-                props.avatarStats.polygonCount,
-                props.avatarStats.materialCount,
-                props.avatarStats.meshCount,
-                props.avatarStats.skinCount,
-                props.avatarStats.boneCount,
+                props.stats.polygonCount,
+                props.stats.materialCount,
+                props.stats.meshCount,
+                props.stats.skinCount,
+                props.stats.boneCount,
               ].map((stat, i) => (
                 <div key={i} className="text-neutral-500">
                   {stat}

@@ -22,10 +22,14 @@ export const getServerSideProps = async ({
     `public, s-maxage=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
-  const props = await getPublicationProps(query.id as string);
+  const id = query.id as string;
+
+  const publicationProps = await getPublicationProps(id);
 
   return {
-    props,
+    props: {
+      ...publicationProps,
+    },
   };
 };
 

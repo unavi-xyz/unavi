@@ -1,4 +1,4 @@
-import { AvatarStats } from "../../server/helpers/getAvatarStats";
+import { GLTFStats } from "../../server/helpers/getGltfStats";
 
 export type AvatarPerformanceRank =
   | "Excellent"
@@ -9,7 +9,7 @@ export type AvatarPerformanceRank =
 
 type WithoutVeryPoor = Exclude<AvatarPerformanceRank, "Very Poor">;
 
-const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
+const thresholds: Record<WithoutVeryPoor, GLTFStats> = {
   Excellent: {
     polygonCount: 7_500,
     materialCount: 1,
@@ -44,7 +44,7 @@ const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
 };
 
 export function getAvatarPerformanceRank(
-  stats: AvatarStats
+  stats: GLTFStats
 ): AvatarPerformanceRank {
   const keys = Object.keys(thresholds) as WithoutVeryPoor[];
 

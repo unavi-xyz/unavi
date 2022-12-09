@@ -3,6 +3,7 @@ import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { getPublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
+import { getGltfStats } from "../../../server/helpers/getGltfStats";
 
 export const getServerSideProps = async ({
   res,
@@ -16,10 +17,19 @@ export const getServerSideProps = async ({
     `public, s-maxage=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
-  const props = await getPublicationProps(query.id as string);
+  const id = query.id as string;
+
+  const publicationPropsPromise = getPublicationProps(id);
+  const statsPromise = getGltfStats(id);
+
+  const publicationProps = await publicationPropsPromise;
+  const stats = await statsPromise;
 
   return {
-    props,
+    props: {
+      ...publicationProps,
+      stats,
+    },
   };
 };
 
@@ -28,10 +38,44 @@ export default function Space(
 ) {
   return (
     <SpaceLayout {...props}>
-      <div className="space-y-2">
-        <div className="text-2xl font-bold">Description</div>
-        <div className="whitespace-pre-line text-lg text-neutral-500">
-          {props.publication?.metadata.description}
+      <div className="space-y-8">
+        {props.publication?.metadata.description && (
+          <div className="space-y-2">
+            <div className="text-2xl font-bold">Description</div>
+            <div className="whitespace-pre-line text-lg text-neutral-500">
+              {props.publication?.metadata.description}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <div className="text-2xl font-bold">Stats</div>
+
+          <div className="flex text-lg">
+            <div>
+              {["Polygons", "Materials", "Meshes", "Skins", "Bones"].map(
+                (title) => (
+                  <div key={title} className="font-bold">
+                    {title}
+                  </div>
+                )
+              )}
+            </div>
+
+            <div className="pl-8">
+              {[
+                props.stats.polygonCount,
+                props.stats.materialCount,
+                props.stats.meshCount,
+                props.stats.skinCount,
+                props.stats.boneCount,
+              ].map((stat, i) => (
+                <div key={i} className="text-neutral-500">
+                  {stat}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </SpaceLayout>

@@ -1,4 +1,6 @@
 import { NodeIO } from "@gltf-transform/core";
+import { DracoMeshCompression } from "@gltf-transform/extensions";
+import { createDecoderModule } from "draco3dgltf";
 import {
   GetPublicationDocument,
   GetPublicationQuery,
@@ -7,7 +9,7 @@ import {
 
 import { lensClient } from "../lens";
 
-export type AvatarStats = {
+export type GLTFStats = {
   materialCount: number;
   meshCount: number;
   skinCount: number;
@@ -15,9 +17,7 @@ export type AvatarStats = {
   polygonCount: number;
 };
 
-export async function getAvatarStats(
-  publicationId: string
-): Promise<AvatarStats> {
+export async function getGltfStats(publicationId: string): Promise<GLTFStats> {
   // Fetch publication
   const { data } = await lensClient
     .query<GetPublicationQuery, GetPublicationQueryVariables>(
@@ -33,13 +33,18 @@ export async function getAvatarStats(
   const url = data?.publication?.metadata.media[1]?.original.url;
   if (!url) throw new Error("NOT_FOUND");
 
-  // Fetch avatar
+  // Fetch model
   const response = await fetch(url);
   const buffer = await response.arrayBuffer();
   const array = new Uint8Array(buffer);
 
-  // Load avatar
-  const io = new NodeIO();
+  // Load model
+  const io = new NodeIO()
+    .registerExtensions([DracoMeshCompression])
+    .registerDependencies({
+      "draco3d.decoder": await createDecoderModule(),
+    });
+
   const document = await io.readBinary(array);
 
   // Get stats

@@ -4,6 +4,8 @@ import { getPublicationProps } from "../../../client/lens/utils/getPublicationPr
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
 import { getGltfStats } from "../../../server/helpers/getGltfStats";
+import { bytesToDisplay } from "../../../utils/bytesToDisplay";
+import { numberToCommas } from "../../../utils/numberToCommas";
 
 export const getServerSideProps = async ({
   res,
@@ -53,22 +55,28 @@ export default function Space(
 
           <div className="flex text-lg">
             <div>
-              {["Polygons", "Materials", "Meshes", "Skins", "Bones"].map(
-                (title) => (
-                  <div key={title} className="font-bold">
-                    {title}
-                  </div>
-                )
-              )}
+              {[
+                "File Size",
+                "Polygons",
+                "Materials",
+                "Meshes",
+                "Skins",
+                "Bones",
+              ].map((title) => (
+                <div key={title} className="font-bold">
+                  {title}
+                </div>
+              ))}
             </div>
 
             <div className="pl-8">
               {[
-                props.stats.polygonCount,
-                props.stats.materialCount,
-                props.stats.meshCount,
-                props.stats.skinCount,
-                props.stats.boneCount,
+                bytesToDisplay(props.stats.fileSize),
+                numberToCommas(props.stats.polygonCount),
+                numberToCommas(props.stats.materialCount),
+                numberToCommas(props.stats.meshCount),
+                numberToCommas(props.stats.skinCount),
+                numberToCommas(props.stats.boneCount),
               ].map((stat, i) => (
                 <div key={i} className="text-neutral-500">
                   {stat}

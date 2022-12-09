@@ -10,6 +10,7 @@ import {
 import { lensClient } from "../lens";
 
 export type GLTFStats = {
+  fileSize: number;
   materialCount: number;
   meshCount: number;
   skinCount: number;
@@ -77,6 +78,7 @@ export async function getGltfStats(publicationId: string): Promise<GLTFStats> {
     }, 0);
 
   return {
+    fileSize: array.byteLength,
     materialCount,
     meshCount,
     skinCount,

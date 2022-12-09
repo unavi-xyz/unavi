@@ -1,10 +1,7 @@
 import { PhysicsThread } from "../physics/PhysicsThread";
 import { RenderThread } from "../render/RenderThread";
 
-/*
- * Handles user input for the player.
- */
-export class Player {
+export class InputManager {
   #canvas: HTMLCanvasElement;
   #renderThread: RenderThread;
   #physicsThread: PhysicsThread;

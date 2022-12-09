@@ -48,5 +48,4 @@ public
 
 # engine
 draco_decoder_gltf.js
-draco_encoder_gltf.js
 font.json

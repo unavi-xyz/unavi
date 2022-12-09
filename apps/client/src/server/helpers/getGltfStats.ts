@@ -1,6 +1,5 @@
 import { NodeIO } from "@gltf-transform/core";
 import { DracoMeshCompression } from "@gltf-transform/extensions";
-import { createDecoderModule } from "draco3dgltf";
 import {
   GetPublicationDocument,
   GetPublicationQuery,
@@ -8,6 +7,7 @@ import {
 } from "lens";
 
 import { lensClient } from "../lens";
+import createDecoderModule from "./draco_decoder_gltf";
 
 export type GLTFStats = {
   fileSize: number;

@@ -24,7 +24,7 @@ export default function ProjectLayout({ name, image, children }: Props) {
       <div className="mx-4 h-full">
         <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
           <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
-            <div className="aspect-card h-full w-full rounded-3xl bg-primaryContainer">
+            <div className="aspect-card h-full w-full rounded-3xl bg-sky-100">
               <div className="relative h-full w-full object-cover">
                 {image &&
                   (isFromCDN(image) ? (
@@ -54,7 +54,7 @@ export default function ProjectLayout({ name, image, children }: Props) {
                 </div>
               </div>
 
-              <Link href={`/editor/${id}`} passHref>
+              <Link href={`/editor/${id}`}>
                 <div className="w-full">
                   <Button variant="filled" fullWidth>
                     <div className="py-2">Open Editor</div>

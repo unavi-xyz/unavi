@@ -1,5 +1,6 @@
+import { useRouter } from "next/router";
 import { signOut } from "next-auth/react";
-import { createContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 
 import CreateProfilePage from "../../home/layouts/NavbarLayout/CreateProfilePage";
@@ -10,8 +11,12 @@ import { trimHandle } from "../lens/utils/trimHandle";
 import { wagmiClient } from "../wagmi";
 import { useSession } from "./useSession";
 
-export const LoginContext = createContext({
+export const LoginContext = createContext<{
+  logout: () => void;
+  address: string | null;
+}>({
   logout: () => {},
+  address: null,
 });
 
 interface Props {
@@ -22,6 +27,7 @@ export default function LoginProvider({ children }: Props) {
   const [open, setOpen] = useState(false);
   const [disableAutoConnect, setDisableAutoconnect] = useState(false);
 
+  const router = useRouter();
   const { switchProfile, setAccessToken } = useLens();
   const {
     address: connectedAddress,
@@ -30,7 +36,7 @@ export default function LoginProvider({ children }: Props) {
   } = useAccount();
   const { disconnect } = useDisconnect();
   const { status, session } = useSession();
-  const sessionAddress = session?.address;
+  const sessionAddress = session?.address ?? null;
 
   const { profiles, fetching } = useProfilesByAddress(sessionAddress);
 
@@ -45,15 +51,30 @@ export default function LoginProvider({ children }: Props) {
     }
   }, [isDisconnected, status, disableAutoConnect]);
 
-  // Sign out from authentication if connected address changes
+  // Sign out if connected address changes
   useEffect(() => {
-    if (isConnected && status === "authenticated") {
-      if (sessionAddress !== connectedAddress) {
-        // Sign out of next-auth
-        signOut({ redirect: false });
-      }
+    if (
+      isConnected &&
+      status === "authenticated" &&
+      sessionAddress !== connectedAddress
+    ) {
+      // Sign out of next-auth
+      signOut({ redirect: false });
+
+      // Clear lens handle
+      switchProfile(undefined);
+
+      // Stop auto connect
+      setDisableAutoconnect(true);
     }
-  }, [isConnected, sessionAddress, connectedAddress, session, status]);
+  }, [
+    isConnected,
+    sessionAddress,
+    connectedAddress,
+    session,
+    status,
+    switchProfile,
+  ]);
 
   // Set handle + lens access token on authentication
   useEffect(() => {
@@ -96,20 +117,30 @@ export default function LoginProvider({ children }: Props) {
     setDisableAutoconnect(true);
   }
 
-  async function handleClose() {
-    setOpen(false);
-    logout();
-  }
-
   return (
-    <LoginContext.Provider value={{ logout }}>
+    <LoginContext.Provider value={{ logout, address: sessionAddress }}>
       <>
-        <Dialog open={open} onClose={handleClose}>
-          <CreateProfilePage />
+        <Dialog
+          open={open}
+          onClose={() => {
+            setOpen(false);
+            logout();
+
+            // Reload page to avoid bug where you can't close the rainbow wallet modal
+            setTimeout(() => {
+              router.reload();
+            });
+          }}
+        >
+          <CreateProfilePage onClose={() => setOpen(false)} />
         </Dialog>
 
         {children}
       </>
     </LoginContext.Provider>
   );
+}
+
+export function useLogin() {
+  return useContext(LoginContext);
 }

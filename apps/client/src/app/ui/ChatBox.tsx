@@ -24,8 +24,8 @@ export default function ChatBox() {
   }, [chatBoxFocused]);
 
   const focusedClass = chatBoxFocused
-    ? "bg-surfaceDark/80"
-    : "bg-surfaceDark/20 hover:bg-surfaceDark/30";
+    ? "bg-neutral-800/80"
+    : "bg-neutral-800/20 hover:bg-neutral-800/30";
 
   return (
     <div className="flex w-96 flex-col space-y-1">
@@ -53,7 +53,7 @@ export default function ChatBox() {
           onBlur={() => useAppStore.setState({ chatBoxFocused: false })}
           type="text"
           placeholder="Send a message..."
-          className={`h-full w-full rounded-md px-4 py-2 text-white outline-none drop-shadow backdrop-blur-2xl transition placeholder:text-white/90 placeholder:drop-shadow ${focusedClass}`}
+          className={`h-full w-full rounded-md px-4 py-2 text-white outline-none drop-shadow backdrop-blur-2xl transition selection:bg-sky-600 placeholder:text-white/90 placeholder:drop-shadow ${focusedClass}`}
         />
       </div>
     </div>

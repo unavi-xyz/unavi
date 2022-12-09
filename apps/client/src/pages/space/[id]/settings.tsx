@@ -14,15 +14,22 @@ export const getServerSideProps = async ({
   res,
   query,
 }: GetServerSidePropsContext) => {
+  const ONE_HOUR_IN_SECONDS = 60 * 60;
+  const ONE_WEEK_IN_SECONDS = ONE_HOUR_IN_SECONDS * 24 * 7;
+
   res.setHeader(
     "Cache-Control",
-    "public, s-maxage=60, stale-while-revalidate=604800"
+    `public, s-maxage=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
-  const props = await getPublicationProps(query.id as string);
+  const id = query.id as string;
+
+  const publicationProps = await getPublicationProps(id);
 
   return {
-    props,
+    props: {
+      ...publicationProps,
+    },
   };
 };
 
@@ -37,7 +44,7 @@ export default function Settings(
   const id = router.query.id as string;
 
   const { mutateAsync: deletePublication } =
-    trpc.auth.deletePublication.useMutation();
+    trpc.publication.delete.useMutation();
 
   useEffect(() => {
     if (!handle && id) router.push(`/space/${id}`);
@@ -65,7 +72,7 @@ export default function Settings(
 
   return (
     <SpaceLayout {...props}>
-      <div className="space-y-4 rounded-2xl bg-errorContainer p-8 text-onErrorContainer">
+      <div className="space-y-4 rounded-2xl bg-red-100 p-8 text-red-900">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">

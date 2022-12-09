@@ -53,7 +53,7 @@ export default function PublishPage() {
   const createPost = useCreatePost(profile?.id);
   const { save } = useSave();
 
-  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+  const { data: imageURL } = trpc.project.image.useQuery(
     { id },
     {
       enabled: id !== undefined,
@@ -61,22 +61,21 @@ export default function PublishPage() {
     }
   );
 
-  const { mutateAsync: saveProject } = trpc.auth.saveProject.useMutation();
+  const { mutateAsync: saveProject } = trpc.project.save.useMutation();
 
   const { mutateAsync: createModelUploadUrl } =
-    trpc.auth.publishedModelUploadURL.useMutation();
+    trpc.publication.modelUploadURL.useMutation();
 
   const { mutateAsync: createImageUploadUrl } =
-    trpc.auth.publishedImageUploadURL.useMutation();
+    trpc.publication.imageUploadURL.useMutation();
 
   const { mutateAsync: createMetadataUploadUrl } =
-    trpc.auth.publishedMetadataUploadURL.useMutation();
+    trpc.publication.metadataUploadURL.useMutation();
 
   const { mutateAsync: createPublication } =
-    trpc.auth.createPublication.useMutation();
+    trpc.publication.create.useMutation();
 
-  const { mutateAsync: linkPublication } =
-    trpc.auth.linkPublication.useMutation();
+  const { mutateAsync: linkPublication } = trpc.publication.link.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
@@ -102,7 +101,7 @@ export default function PublishPage() {
       await save();
 
       // Create database publication
-      const publicationId = await createPublication();
+      const publicationId = await createPublication({ type: "SPACE" });
 
       // Export scene and upload to S3
       promises.push(
@@ -244,7 +243,7 @@ export default function PublishPage() {
       );
 
       if (!profile) {
-        router.push(`/user/${handle}`);
+        router.push("/create/spaces");
         return;
       }
 
@@ -278,7 +277,7 @@ export default function PublishPage() {
       );
 
       if (!publication) {
-        router.push(`/user/${handle}`);
+        router.push("/create/spaces");
         return;
       }
 
@@ -336,7 +335,7 @@ export default function PublishPage() {
         <div className="space-y-4">
           <div className="text-lg font-bold">Image</div>
 
-          <div className="relative aspect-card h-full w-full rounded-xl bg-primaryContainer">
+          <div className="relative aspect-card h-full w-full rounded-xl bg-sky-100">
             {image && (
               <img
                 src={image}

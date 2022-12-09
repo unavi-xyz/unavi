@@ -10,9 +10,7 @@ export default function SettingsButton({
   children,
   ...rest
 }: Props) {
-  const selectedClass = selected
-    ? "bg-primaryContainer text-onPrimaryContainer"
-    : "hover:bg-surfaceVariant";
+  const selectedClass = selected ? "bg-sky-100" : "hover:bg-neutral-200";
 
   return (
     <div

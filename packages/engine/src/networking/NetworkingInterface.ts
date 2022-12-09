@@ -204,6 +204,11 @@ export class NetworkingInterface {
         wsConnected: true,
       };
 
+      // Send player info
+      if (this.#myAvatar) this.#sendAvatar();
+      if (this.#myHandle) this.#sendHandle();
+      if (this.#myName) this.#sendName();
+
       // Start WebRTC connection
       if (!this.#webRTC) throw new Error("WebRTC not initialized");
       this.#webRTC.connect();
@@ -219,11 +224,6 @@ export class NetworkingInterface {
 
       switch (subject) {
         case "join_successful": {
-          // Send player name and avatar
-          if (this.#myName) this.#sendName();
-          if (this.#myAvatar) this.#sendAvatar();
-          if (this.#myHandle) this.#sendHandle();
-
           // Set your name
           if (this.#myName) this.#playerNames.set(data.playerId, this.#myName);
           else this.#playerNames.delete(data.playerId);
@@ -355,7 +355,6 @@ export class NetworkingInterface {
               name: username,
             },
           });
-
           break;
         }
 
@@ -378,6 +377,16 @@ export class NetworkingInterface {
 
           if (data.handle) this.#playerHandles.set(data.playerId, data.handle);
           else this.#playerHandles.delete(data.playerId);
+
+          const username = this.#getUsername(data.playerId);
+
+          this.#renderThread.postMessage({
+            subject: "player_name",
+            data: {
+              playerId: data.playerId,
+              name: username,
+            },
+          });
           break;
         }
       }
@@ -529,18 +538,17 @@ export class NetworkingInterface {
     // Sort by timestamp
     newChatMessages.sort((a, b) => a.timestamp - b.timestamp);
 
-    // Limit to 25 messages
-    newChatMessages.splice(0, newChatMessages.length - 25);
+    // Limit to 50 messages
+    newChatMessages.splice(0, newChatMessages.length - 50);
 
     this.chatMessages$.next(newChatMessages);
   }
 
   #getUsername(playerId: number) {
     const handle = this.#playerHandles.get(playerId);
-    const isHandle = Boolean(handle);
+    const name = this.#playerNames.get(playerId);
 
-    let username = isHandle ? `@${handle}` : this.#playerNames.get(playerId);
-    if (!username) username = `Guest ${toHex(playerId)}`;
+    const username = handle ? `@${handle}` : name ?? `Guest ${toHex(playerId)}`;
 
     return username;
   }

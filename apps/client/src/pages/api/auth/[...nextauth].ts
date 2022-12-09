@@ -4,7 +4,7 @@ import {
   RefreshMutation,
   RefreshMutationVariables,
 } from "lens";
-import NextAuth, { Account, NextAuthOptions, Profile } from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 import {
@@ -19,7 +19,6 @@ import { prisma } from "../../../server/prisma";
 import { parseJWT } from "../../../utils/parseJWT";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   callbacks: {
     async jwt({
       token,
@@ -27,9 +26,6 @@ export const authOptions: NextAuthOptions = {
     }: {
       token: CustomToken;
       user?: CustomUser;
-      account?: Account | null;
-      profile?: Profile;
-      isNewUser?: boolean;
     }): Promise<CustomToken> {
       // Initial sign in
       if (user) {
@@ -55,7 +51,7 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Refresh JWT token if it expires soon
-      if (minutes < 10) {
+      if (minutes < 60 * 60 * 24 * 6) {
         const { data, error } = await lensClient
           .mutation<RefreshMutation, RefreshMutationVariables>(
             RefreshDocument,
@@ -77,6 +73,7 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
+
     session({
       session,
       token,
@@ -89,6 +86,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
+
   providers: [
     CredentialsProvider({
       name: "Lens",
@@ -97,10 +95,10 @@ export const authOptions: NextAuthOptions = {
         signature: { label: "Signature", type: "text" },
       },
       async authorize(credentials) {
-        try {
-          if (!credentials) return null;
-          const { address, signature } = credentials;
+        if (!credentials) return null;
+        const { address, signature } = credentials;
 
+        try {
           // Authenticate with lens
           const { accessToken, refreshToken } = await authenticate(
             address,
@@ -118,6 +116,8 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+
+  adapter: PrismaAdapter(prisma),
   secret: env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
 };

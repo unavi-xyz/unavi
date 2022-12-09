@@ -28,7 +28,7 @@ export default function ProfilePicture({
           name={uniqueKey}
           square={!circle}
           variant="beam"
-          colors={["#52DAFF", "#FCECC9", "#FCB0B3", "#F93943", "#445E93"]}
+          colors={["#38bdf8", "#FCECC9", "#FCB0B3", "#F93943", "#445E93"]}
         />
       );
     else return null;
@@ -41,14 +41,14 @@ export default function ProfilePicture({
       height={256}
       draggable={draggable}
       alt=""
-      className={`${circleClass} bg-primaryContainer`}
+      className={`${circleClass} bg-sky-100`}
     />
   ) : (
     <img
       src={src}
       draggable={draggable}
       alt=""
-      className={`${circleClass} h-full w-full bg-primaryContainer`}
+      className={`${circleClass} h-full w-full bg-sky-100`}
       crossOrigin="anonymous"
     />
   );

@@ -1,6 +1,5 @@
 import { Engine } from "../Engine";
 import { Transferable } from "../types";
-import { Player } from "./Player";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
 
 export interface PhysicsThreadOptions {
@@ -20,13 +19,9 @@ export class PhysicsThread {
   ready = false;
   #readyListeners: Array<() => void> = [];
 
-  #canvas: HTMLCanvasElement;
   #engine: Engine;
 
-  #player: Player | null = null;
-
-  constructor({ canvas, engine }: PhysicsThreadOptions) {
-    this.#canvas = canvas;
+  constructor({ engine }: PhysicsThreadOptions) {
     this.#engine = engine;
 
     this.createWorker();
@@ -92,7 +87,6 @@ export class PhysicsThread {
   }
 
   initPlayer() {
-    this.#player = new Player(this.#canvas, this.#engine.renderThread, this);
     this.postMessage({ subject: "init_player", data: null });
   }
 
@@ -107,7 +101,5 @@ export class PhysicsThread {
   destroy() {
     this.stop();
     setTimeout(() => this.#worker.terminate());
-
-    this.#player?.destroy();
   }
 }

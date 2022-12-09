@@ -91,12 +91,12 @@ export default function TreeMenuItem({ id }: Props) {
     childrenIds && childrenIds.length > 0 && !allChildrenInternal;
   const isSelected = selectedId === id;
   const bgClass = isSelected
-    ? "bg-primaryContainer text-onPrimaryContainer"
+    ? "bg-sky-100"
     : isOver
-    ? "bg-surfaceVariant"
-    : "hover:bg-surfaceVariant";
+    ? "bg-neutral-200"
+    : "hover:bg-neutral-200";
   const opacityClass = isDragging ? "opacity-0" : null;
-  const highlightBelowClass = isOverBelow ? "bg-primary" : null;
+  const highlightBelowClass = isOverBelow ? "bg-sky-300" : null;
 
   if (isInternal) return null;
 
@@ -114,7 +114,7 @@ export default function TreeMenuItem({ id }: Props) {
       >
         <div
           onClick={() => setOpen((prev) => !prev)}
-          className="w-5 shrink-0 text-outline transition hover:text-inherit"
+          className="w-5 shrink-0 text-neutral-500 transition hover:text-inherit"
         >
           {hasChildren &&
             (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}

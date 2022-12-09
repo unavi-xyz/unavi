@@ -26,7 +26,7 @@ export default function Card({
   return (
     <div className="h-full w-full transition hover:scale-105">
       <div
-        className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-primaryContainer ${animateCss} ${aspectCss}`}
+        className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-sky-100 ${animateCss} ${aspectCss}`}
       >
         {image &&
           (isFromCDN(image) ? (

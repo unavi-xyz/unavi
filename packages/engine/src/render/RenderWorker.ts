@@ -6,22 +6,33 @@ import {
   PMREMGenerator,
   Scene,
   sRGBEncoding,
+  Vector2,
   Vector3,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import { type OutlinePass as IOutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
+import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
 import { PostMessage } from "../types";
 import { OrbitControlsPlugin } from "./plugins/OrbitControls/OrbitControlsPlugin";
 import { OtherPlayersPlugin } from "./plugins/OtherPlayers/OtherPlayersPlugin";
 import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
+import { OutlinePass } from "./plugins/TransformControls/OutlinePass";
 import { TransformControlsPlugin } from "./plugins/TransformControls/TransformControlsPlugin";
+import { RenderPlugin } from "./plugins/types";
 import { defaultMaterial } from "./SceneLoader/constants";
 import { SceneLoader } from "./SceneLoader/SceneLoader";
-import { FromRenderMessage, Plugin, ToRenderMessage } from "./types";
+import { FromRenderMessage, ToRenderMessage } from "./types";
 import { disposeObject } from "./utils/disposeObject";
 import { loadCubeTexture } from "./utils/loadCubeTexture";
+
+const CAMERA_FAR = 750;
 
 export type RenderWorkerOptions = {
   pixelRatio: number;
@@ -51,15 +62,15 @@ export class RenderWorker {
   #postMessage: PostMessage<FromRenderMessage>;
   #canvas: HTMLCanvasElement | OffscreenCanvas | undefined;
   #scene = new Scene();
+  #composer: EffectComposer | null = null;
+  outlinePass: IOutlinePass | null = null;
 
   #animationFrameId: number | null = null;
-  #canvasWidth = 0;
-  #canvasHeight = 0;
   #clock = new Clock();
 
   csm: CSM | null = null;
 
-  #plugins: Plugin<ToRenderMessage>[] = [];
+  #plugins: RenderPlugin[] = [];
   #pluginState: PluginState = {
     usingTransformControls: false,
   };
@@ -123,7 +134,7 @@ export class RenderWorker {
     // Renderer
     this.renderer = new WebGLRenderer({
       canvas: this.#canvas,
-      antialias: pixelRatio > 1 ? false : true,
+      antialias: true,
       powerPreference: "high-performance",
       preserveDrawingBuffer,
     });
@@ -133,18 +144,15 @@ export class RenderWorker {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
 
-    this.#canvasWidth = canvasWidth;
-    this.#canvasHeight = canvasHeight;
-
     // Fog
-    this.#scene.fog = new Fog(0xc4ebff, 200, 720);
+    this.#scene.fog = new Fog(0xcfcfcf, CAMERA_FAR / 2, CAMERA_FAR);
 
     // Camera
     this.camera = new PerspectiveCamera(
       75,
       canvasWidth / canvasHeight,
-      0.17,
-      750
+      0.1,
+      CAMERA_FAR
     );
 
     switch (camera) {
@@ -213,7 +221,8 @@ export class RenderWorker {
           this.camera,
           this.#sceneLoader,
           this.#scene,
-          this.#pluginState
+          this.#pluginState,
+          this
         ),
         new RaycasterPlugin(
           this.camera,
@@ -242,6 +251,27 @@ export class RenderWorker {
     } else {
       this.#postMessage({ subject: "ready", data: null });
     }
+
+    // Post-processing
+    const renderPass = new RenderPass(this.#scene, this.camera);
+    const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
+
+    // @ts-ignore
+    this.outlinePass = new OutlinePass(
+      new Vector2(canvasWidth, canvasHeight),
+      this.#scene,
+      this.camera
+    ) as IOutlinePass;
+
+    const target = new WebGLRenderTarget(canvasWidth, canvasHeight, {
+      encoding: sRGBEncoding,
+      samples: 8,
+    });
+
+    this.#composer = new EffectComposer(this.renderer, target);
+    this.#composer.addPass(renderPass);
+    this.#composer.addPass(this.outlinePass);
+    this.#composer.addPass(gammaCorrectionPass);
   }
 
   start() {
@@ -263,29 +293,35 @@ export class RenderWorker {
     this.#plugins.forEach((plugin) => plugin.destroy && plugin.destroy());
     disposeObject(this.#scene);
     this.renderer?.dispose();
+    this.#composer?.reset();
+    this.outlinePass?.dispose();
   }
 
   #animate() {
     const delta = this.#clock.getDelta();
     this.#animationFrameId = requestAnimationFrame(() => this.#animate());
-    if (!this.renderer || !this.camera) return;
 
-    this.#plugins.forEach((plugin) => plugin.animate && plugin.animate(delta));
+    if (!this.renderer || !this.camera || !this.#composer) return;
+
+    this.#plugins.forEach((plugin) => {
+      if (plugin.update) plugin.update(delta);
+    });
+
     this.#sceneLoader?.update(delta);
     this.csm?.update();
 
-    this.renderer.render(this.#scene, this.camera);
+    this.#composer.render();
   }
 
   #updateCanvasSize(width: number, height: number) {
-    if (!this.renderer || !this.camera) return;
-    if (width === this.#canvasWidth && height === this.#canvasHeight) return;
+    this.renderer?.setSize(width, height, false);
 
-    this.#canvasWidth = width;
-    this.#canvasHeight = height;
+    if (this.camera) {
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+    }
 
-    this.renderer.setSize(width, height, false);
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    this.#composer?.setSize(width, height);
+    this.outlinePass?.setSize(width, height);
   }
 }

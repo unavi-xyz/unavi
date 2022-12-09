@@ -33,11 +33,15 @@ export default function Dialog({
         dialogRef.current?.classList.remove("scale-75");
         dialogRef.current?.classList.remove("opacity-0");
         scrimRef.current?.classList.remove("opacity-0");
+
+        document.body.style.overflowY = "hidden";
       }, 10);
     } else {
       dialogRef.current?.classList.add("opacity-0");
       dialogRef.current?.classList.add("scale-75");
       scrimRef.current?.classList.add("opacity-0");
+
+      document.body.style.overflowY = "auto";
     }
 
     return () => clearTimeout(timeout);
@@ -55,7 +59,7 @@ export default function Dialog({
         ref={dialogRef}
         open
         onMouseDown={(e) => e.stopPropagation()}
-        className="flex w-full max-w-xl scale-75 flex-col space-y-4 rounded-3xl bg-surface p-10 text-onSurface opacity-0 drop-shadow-lg transition duration-200 ease-in-out"
+        className="flex w-full max-w-xl scale-75 flex-col space-y-4 rounded-3xl bg-white p-10 opacity-0 drop-shadow-lg transition duration-200 ease-in-out"
       >
         {children}
       </dialog>

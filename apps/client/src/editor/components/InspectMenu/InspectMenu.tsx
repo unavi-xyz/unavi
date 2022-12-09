@@ -35,9 +35,9 @@ export default function InspectMenu() {
   if (!selectedId)
     return (
       <div className="pr-2">
-        <div className="mt-0.5 w-full pt-4 text-center text-2xl font-bold">
+        {/* <div className="mt-0.5 w-full pt-4 text-center text-2xl font-bold">
           Scene
-        </div>
+        </div> */}
 
         <SceneComponent />
       </div>
@@ -72,12 +72,12 @@ export default function InspectMenu() {
         {collider && <PhysicsComponent nodeId={selectedId} />}
 
         {otherComponents.length > 0 && (
-          <div className="px-5">
+          <div className="space-y-1 px-5">
             <Button fullWidth rounded="large" onClick={() => setOpen(true)}>
               Add Component
             </Button>
 
-            <DropdownMenu open={open} onClose={() => setOpen(false)}>
+            <DropdownMenu open={open} onClose={() => setOpen(false)} fullWidth>
               <div className="space-y-1 p-2">
                 {otherComponents.map((type) => {
                   switch (type) {
@@ -127,7 +127,7 @@ export default function InspectMenu() {
 function ComponentButton({ children, ...props }: any) {
   return (
     <button
-      className="w-full cursor-default rounded-lg transition hover:bg-primaryContainer"
+      className="w-full cursor-default rounded-lg transition hover:bg-sky-100"
       {...props}
     >
       {children}

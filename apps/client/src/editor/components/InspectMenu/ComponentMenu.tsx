@@ -25,7 +25,7 @@ export default function ComponentMenu({
         {removeable && (
           <button
             onClick={onRemove}
-            className="text-outline opacity-0 transition hover:text-onSurface focus:opacity-100 group-hover:opacity-100"
+            className="text-neutral-500 opacity-0 transition hover:text-black focus:opacity-100 group-hover:opacity-100"
           >
             <MdClose />
           </button>

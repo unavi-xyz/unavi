@@ -20,18 +20,17 @@ export default function NavigationTab({ href, text }: Props) {
     setSelected(router.asPath == href);
   }, [router, href]);
 
-  const selectedClass = selected
-    ? "bg-surfaceVariant"
-    : "hover:bg-surfaceVariant";
+  const selectedClass = selected ? "bg-neutral-200" : "hover:bg-neutral-200";
 
   return (
-    <Link href={href} passHref>
-      <div
-        className={`flex w-full cursor-pointer justify-center rounded-lg py-1 text-lg
-                    font-bold transition md:w-min md:px-16 ${selectedClass}`}
-      >
-        {text}
-      </div>
-    </Link>
+    <div className="w-full md:w-min">
+      <Link href={href}>
+        <div
+          className={`flex cursor-pointer justify-center rounded-lg py-1 text-lg font-bold transition md:px-20 ${selectedClass}`}
+        >
+          {text}
+        </div>
+      </Link>
+    </div>
   );
 }

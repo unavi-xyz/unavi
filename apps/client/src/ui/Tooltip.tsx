@@ -26,7 +26,7 @@ export default function Tooltip({
         <div
           className={`absolute z-20 flex min-w-max scale-0 flex-col items-center transition duration-300 group-hover:scale-100 ${margin}`}
         >
-          <span className="relative w-full rounded-lg bg-surfaceDark px-3 py-2 text-xs font-bold leading-none text-onSurfaceDark shadow-lg">
+          <span className="relative w-full rounded-lg bg-neutral-800 px-3 py-2 text-xs font-bold leading-none text-white shadow-lg">
             {text}
           </span>
         </div>

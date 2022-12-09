@@ -40,7 +40,7 @@ export default function UserPage() {
                 didChangeName: true,
               });
             }}
-            className="h-full w-full rounded-xl bg-surfaceVariant/80 px-3 py-2 text-center outline-none ring-outline/80 transition hover:ring-1 focus:bg-surfaceVariant focus:ring-1"
+            className="h-full w-full rounded-xl bg-neutral-200/80 px-3 py-2 text-center outline-none ring-neutral-500/80 transition hover:ring-1 focus:bg-neutral-200 focus:ring-1"
           />
         </div>
       )}

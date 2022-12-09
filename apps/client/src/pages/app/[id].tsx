@@ -219,6 +219,8 @@ export default function App({
           // Set avatar
           const url = URL.createObjectURL(file);
           setAvatar(url);
+
+          useAppStore.setState({ customAvatar: url });
         }}
       >
         {engineStarted && (

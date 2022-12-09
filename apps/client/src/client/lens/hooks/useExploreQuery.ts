@@ -1,14 +1,13 @@
 import {
   AppId,
-  ExplorePublicationsDocument,
-  ExplorePublicationsQuery,
-  ExplorePublicationsQueryVariables,
   Post,
   PublicationSortCriteria,
   PublicationTypes,
+  useExplorePublicationsQuery,
 } from "lens";
 import { useRef, useState } from "react";
-import { useQuery } from "urql";
+
+import { excludeProfileIds } from "../constants";
 
 export function useExploreQuery(
   pageSize: number,
@@ -22,11 +21,7 @@ export function useExploreQuery(
 
   const limit = pageSize + maxLoadedCursor.current * pageSize + extraSize;
 
-  const [result] = useQuery<
-    ExplorePublicationsQuery,
-    ExplorePublicationsQueryVariables
-  >({
-    query: ExplorePublicationsDocument,
+  const [result] = useExplorePublicationsQuery({
     variables: {
       request: {
         sources,
@@ -35,6 +30,7 @@ export function useExploreQuery(
         limit,
         cursor: cursor * pageSize,
         noRandomize: true,
+        excludeProfileIds,
       },
     },
   });

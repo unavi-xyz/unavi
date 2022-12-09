@@ -1,7 +1,11 @@
-export async function cropImage(url: string, ratio = 5 / 3): Promise<File> {
+export async function cropImage(
+  url: string,
+  ratio = 5 / 3,
+  keepWidth = true
+): Promise<File> {
   const res = await fetch(url);
   const imageBlob = await res.blob();
-  // Crop image to 5:3 aspect ratio
+
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Failed to get canvas context");
@@ -13,9 +17,19 @@ export async function cropImage(url: string, ratio = 5 / 3): Promise<File> {
     img.onload = () => {
       const width = img.width;
       const height = img.height;
-      const cropWidth = width;
-      const cropHeight = cropWidth / ratio;
-      const cropX = 0;
+
+      let cropWidth: number;
+      let cropHeight: number;
+
+      if (keepWidth) {
+        cropWidth = width;
+        cropHeight = cropWidth / ratio;
+      } else {
+        cropHeight = height;
+        cropWidth = cropHeight * ratio;
+      }
+
+      const cropX = (width - cropWidth) / 2;
       const cropY = (height - cropHeight) / 2;
       canvas.width = cropWidth;
       canvas.height = cropHeight;

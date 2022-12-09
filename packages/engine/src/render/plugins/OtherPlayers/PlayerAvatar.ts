@@ -30,15 +30,15 @@ import { loadMixamoAnimation } from "./loadMixamoAnimation";
 import { AnimationName } from "./types";
 
 const LERP_FACTOR = 0.000001;
-const CAMERA_OFFSET = new Vector3(0, 0.1, -0.03);
 
 export class PlayerAvatar {
   readonly playerId: number;
   readonly group = new Group();
 
   isFalling = false;
+  isFirstPerson = false;
 
-  #vrm: VRM | null = null;
+  vrm: VRM | null = null;
   #camera?: PerspectiveCamera;
   #sceneCamera: Camera;
   #nameplate: Mesh | null = null;
@@ -48,6 +48,7 @@ export class PlayerAvatar {
   #mixer: AnimationMixer | null = null;
   #actions = new Map<AnimationName, AnimationAction>();
   #postMessage: PostMessage<FromRenderMessage>;
+  #settingName: Promise<void> | null = null;
 
   #fallWeight = 0;
   #leftWeight = 0;
@@ -87,12 +88,17 @@ export class PlayerAvatar {
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
-    this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath).catch(
-      (error) => {
+    this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath)
+      .catch((error) => {
         console.error(error);
         console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
-      }
-    );
+      })
+      .finally(() => {
+        this.#postMessage({
+          subject: "player_loaded",
+          data: this.playerId,
+        });
+      });
   }
 
   async #loadModel(avatarPath?: string, avatarAnimationsPath?: string) {
@@ -113,10 +119,10 @@ export class PlayerAvatar {
     const vrm = gltf.userData.vrm as VRM;
 
     // Remove previous VRM
-    if (this.#vrm) {
-      this.#vrm.scene.removeFromParent();
-      VRMUtils.deepDispose(this.#vrm.scene);
-      this.#vrm = null;
+    if (this.vrm) {
+      this.vrm.scene.removeFromParent();
+      VRMUtils.deepDispose(this.vrm.scene);
+      this.vrm = null;
     }
 
     // Remove previous mixer
@@ -126,11 +132,16 @@ export class PlayerAvatar {
       this.#mixer = null;
     }
 
-    // Enable first-person view if it's the user
-    if (this.#camera && vrm.firstPerson) {
-      vrm.firstPerson.setup();
-      this.#camera.layers.enable(vrm.firstPerson.firstPersonOnlyLayer);
-      this.#camera.layers.disable(vrm.firstPerson.thirdPersonOnlyLayer);
+    if (this.#camera) {
+      // Fix first person mesh annotations
+      if (vrm.firstPerson) {
+        vrm.firstPerson.meshAnnotations.forEach((annotation) => {
+          if (annotation.type === "both") annotation.type = "auto";
+        });
+      }
+
+      // Set first person view
+      setTimeout(() => this.setFirstPerson(this.isFirstPerson));
     }
 
     // Process VRM
@@ -145,10 +156,10 @@ export class PlayerAvatar {
     });
 
     // Set VRM model
-    this.#vrm = vrm;
+    this.vrm = vrm;
 
     // Add scene to queue
-    this.#queue.add(this.#vrm.scene, this.group, true);
+    this.#queue.add(this.vrm.scene, this.group, true);
 
     if (avatarAnimationsPath) {
       // Create mixer
@@ -158,13 +169,13 @@ export class PlayerAvatar {
       const animations = new Map<AnimationName, AnimationClip>();
 
       const clipPromises = Object.values(AnimationName).map(async (name) => {
-        if (!this.#vrm) throw new Error("VRM not loaded");
+        if (!this.vrm) throw new Error("VRM not loaded");
         if (!this.#mixer) throw new Error("Mixer not created");
 
         const path = `${avatarAnimationsPath}${name}.fbx`;
 
         try {
-          const clips = await loadMixamoAnimation(path, this.#vrm);
+          const clips = await loadMixamoAnimation(path, this.vrm);
           const clip = clips[0];
           if (!clip) throw new Error(`No clip found for ${name}`);
 
@@ -199,71 +210,76 @@ export class PlayerAvatar {
 
     if (this.playerId === -1) console.info(`💃 Loaded your avatar`);
     else console.info(`💃 Loaded ${toHex(this.playerId)}'s avatar`);
-
-    this.#postMessage({
-      subject: "player_loaded",
-      data: this.playerId,
-    });
   }
 
   async setName(name: string) {
+    if (this.#settingName) await this.#settingName;
+
     // Remove previous nameplate
     if (this.#nameplate) disposeObject(this.#nameplate);
 
-    // Create text
-    const loader = new FontLoader();
-    const font = await loader.loadAsync(
-      new URL("./font.json", import.meta.url).href
-    );
+    this.#settingName = new Promise((resolve) => {
+      const loadName = async () => {
+        // Create text
+        const loader = new FontLoader();
+        const font = await loader.loadAsync(
+          new URL("./font.json", import.meta.url).href
+        );
 
-    const shapes = font.generateShapes(name, 0.075);
-    const geometry = new ShapeGeometry(shapes);
+        const shapes = font.generateShapes(name, 0.075);
+        const geometry = new ShapeGeometry(shapes);
 
-    // Center horizontally
-    geometry.computeBoundingBox();
-    if (!geometry.boundingBox) throw new Error("No bounding box");
-    const xMid =
-      -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
-    geometry.translate(xMid, 0, 0);
+        // Center horizontally
+        geometry.computeBoundingBox();
+        if (!geometry.boundingBox) throw new Error("No bounding box");
+        const xMid =
+          -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
+        geometry.translate(xMid, 0, 0);
 
-    const material = new MeshBasicMaterial();
+        const material = new MeshBasicMaterial();
 
-    const mesh = new Mesh(geometry, material);
-    mesh.position.y = PLAYER_HEIGHT - 0.25;
-    mesh.rotation.y = Math.PI;
+        const mesh = new Mesh(geometry, material);
+        mesh.position.y = PLAYER_HEIGHT - 0.25;
+        mesh.rotation.y = Math.PI;
 
-    this.group.add(mesh);
-    this.#nameplate = mesh;
+        this.group.add(mesh);
+        this.#nameplate = mesh;
 
-    // Create background
-    const width =
-      geometry.boundingBox.max.x - geometry.boundingBox.min.x + 0.15;
-    const height =
-      geometry.boundingBox.max.y - geometry.boundingBox.min.y + 0.06;
-    const radius = height / 2;
+        // Create background
+        const width =
+          geometry.boundingBox.max.x - geometry.boundingBox.min.x + 0.15;
+        const height =
+          geometry.boundingBox.max.y - geometry.boundingBox.min.y + 0.06;
+        const radius = height / 2;
 
-    const shape = new Shape();
-    shape.moveTo(0, radius);
-    shape.lineTo(0, height - radius);
-    shape.quadraticCurveTo(0, height, radius, height);
-    shape.lineTo(width - radius, height);
-    shape.quadraticCurveTo(width, height, width, height - radius);
-    shape.lineTo(width, radius);
-    shape.quadraticCurveTo(width, 0, width - radius, 0);
-    shape.lineTo(radius, 0);
-    shape.quadraticCurveTo(0, 0, 0, radius);
+        const shape = new Shape();
+        shape.moveTo(0, radius);
+        shape.lineTo(0, height - radius);
+        shape.quadraticCurveTo(0, height, radius, height);
+        shape.lineTo(width - radius, height);
+        shape.quadraticCurveTo(width, height, width, height - radius);
+        shape.lineTo(width, radius);
+        shape.quadraticCurveTo(width, 0, width - radius, 0);
+        shape.lineTo(radius, 0);
+        shape.quadraticCurveTo(0, 0, 0, radius);
 
-    const roundedRectangle = new ShapeGeometry(shape);
+        const roundedRectangle = new ShapeGeometry(shape);
 
-    const background = new Mesh(
-      roundedRectangle,
-      new MeshBasicMaterial({ color: 0x010101 })
-    );
-    background.position.x = -width / 2;
-    background.position.y = -height / 4;
-    background.position.z = -0.0001;
+        const background = new Mesh(
+          roundedRectangle,
+          new MeshBasicMaterial({ color: 0x010101 })
+        );
+        background.position.x = -width / 2;
+        background.position.y = -height / 4;
+        background.position.z = -0.0001;
 
-    this.#nameplate.add(background);
+        this.#nameplate.add(background);
+
+        resolve();
+      };
+
+      loadName();
+    });
   }
 
   setAvatar(avatarPath: string | null) {
@@ -273,29 +289,39 @@ export class PlayerAvatar {
     );
   }
 
-  setLocation(
-    location: [number, number, number, number, number, number, number]
-  ) {
-    this.#targetPosition.set(location[0], location[1], location[2]);
-    this.#targetRotation.set(
-      location[3],
-      location[4],
-      location[5],
-      location[6]
-    );
+  setPosition(x: number, y: number, z: number) {
+    this.#targetPosition.set(x, y, z);
   }
 
-  animate(delta: number) {
+  setRotation(x: number, y: number, z: number, w: number) {
+    this.#targetRotation.set(x, y, z, w);
+  }
+
+  setFirstPerson(firstPerson: boolean) {
+    this.isFirstPerson = firstPerson;
+
+    if (!this.vrm?.firstPerson) return;
+    if (!this.#camera) throw new Error("Camera not set");
+
+    // Enable first-person view if it's the user
+    if (firstPerson) {
+      this.vrm.firstPerson.setup();
+      this.#camera.layers.enable(this.vrm.firstPerson.firstPersonOnlyLayer);
+      this.#camera.layers.disable(this.vrm.firstPerson.thirdPersonOnlyLayer);
+    } else {
+      this.#camera.layers.disable(this.vrm.firstPerson.firstPersonOnlyLayer);
+      this.#camera.layers.enable(this.vrm.firstPerson.thirdPersonOnlyLayer);
+    }
+  }
+
+  update(delta: number) {
     const K = 1 - Math.pow(LERP_FACTOR, delta);
 
     // Load queue
     this.#queue.update();
 
-    // If user, copy rotation from camera
-    if (this.#camera && this.#vrm) {
-      this.group.quaternion.copy(this.#camera.quaternion);
-    } else {
-      // Apply location to group
+    // Apply location to group if not user
+    if (!this.#camera) {
       this.group.position.lerp(this.#targetPosition, K);
       this.group.quaternion.slerp(this.#targetRotation, K);
     }
@@ -314,17 +340,9 @@ export class PlayerAvatar {
     // Rotate head
     this.#headRotation.slerp(relativeRotation, K);
 
-    //Don't rotate Y axis
+    // Don't rotate Y axis
     this.#headRotation.y = 0;
     this.#headRotation.normalize();
-
-    // Copy head position to camera
-    if (this.#vrm && this.#camera) {
-      const head = this.#vrm.humanoid.humanBones.head.node;
-      head.position.add(CAMERA_OFFSET);
-      head.getWorldPosition(this.#camera.position);
-      head.position.sub(CAMERA_OFFSET);
-    }
 
     // Calculate velocity relative to player rotation
     this.#velocity
@@ -410,20 +428,22 @@ export class PlayerAvatar {
     if (this.#mixer) this.#mixer.update(delta);
 
     // Update VRM
-    if (this.#vrm) this.#vrm.update(delta);
+    if (this.vrm) {
+      this.vrm.update(delta);
 
-    // Rotate head
-    if (this.#vrm?.meta.metaVersion === "1") {
-      // If vrm 1.0, rotate axis
-      const rotated = this.#tempQuat.copy(this.#headRotation);
-      rotated.x = this.#headRotation.z;
-      rotated.z = -this.#headRotation.x;
+      // Rotate head
+      const head = this.vrm.humanoid.humanBones.head.node;
 
-      this.#vrm.humanoid.humanBones.head.node.quaternion.multiply(rotated);
-    } else {
-      this.#vrm?.humanoid.humanBones.head.node.quaternion.multiply(
-        this.#headRotation
-      );
+      if (this.vrm.meta.metaVersion === "1") {
+        // If vrm 1.0, rotate axis first
+        const rotated = this.#tempQuat.copy(this.#headRotation);
+        rotated.x = this.#headRotation.z;
+        rotated.z = -this.#headRotation.x;
+
+        head.quaternion.multiply(rotated);
+      } else {
+        head.quaternion.multiply(this.#headRotation);
+      }
     }
 
     // Update nameplate
@@ -438,6 +458,12 @@ export class PlayerAvatar {
   }
 
   destroy() {
+    if (this.vrm) {
+      this.vrm.scene.removeFromParent();
+      VRMUtils.deepDispose(this.vrm.scene);
+      this.vrm = null;
+    }
+
     disposeObject(this.group);
   }
 }

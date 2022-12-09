@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 html {
-  @apply bg-background text-onBackground selection:bg-primaryContainer antialiased;
+  @apply selection:bg-sky-100 antialiased;
 }
 
 .max-w-content {

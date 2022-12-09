@@ -40,7 +40,7 @@ export default function UpdatePage({ onClose }: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+  const { data: imageURL } = trpc.project.image.useQuery(
     { id },
     {
       enabled: id !== undefined,
@@ -48,16 +48,16 @@ export default function UpdatePage({ onClose }: Props) {
     }
   );
 
-  const { mutateAsync: saveProject } = trpc.auth.saveProject.useMutation();
+  const { mutateAsync: saveProject } = trpc.project.save.useMutation();
 
   const { mutateAsync: createModelUploadUrl } =
-    trpc.auth.publishedModelUploadURL.useMutation();
+    trpc.publication.modelUploadURL.useMutation();
 
   const { mutateAsync: createImageUploadUrl } =
-    trpc.auth.publishedImageUploadURL.useMutation();
+    trpc.publication.imageUploadURL.useMutation();
 
   const { mutateAsync: createMetadataUploadUrl } =
-    trpc.auth.publishedMetadataUploadURL.useMutation();
+    trpc.publication.metadataUploadURL.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
@@ -250,7 +250,7 @@ export default function UpdatePage({ onClose }: Props) {
         <div className="space-y-4">
           <div className="text-lg font-bold">Image</div>
 
-          <div className="relative aspect-card h-full w-full rounded-xl bg-primaryContainer">
+          <div className="relative aspect-card h-full w-full rounded-xl bg-sky-100">
             {image && (
               <img
                 src={image}

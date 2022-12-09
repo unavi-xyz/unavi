@@ -1,5 +1,5 @@
+import { PhysicsThread } from "../physics/PhysicsThread";
 import { RenderThread } from "../render/RenderThread";
-import { PhysicsThread } from "./PhysicsThread";
 
 /*
  * Handles user input for the player.

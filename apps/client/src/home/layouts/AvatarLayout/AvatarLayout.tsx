@@ -1,161 +1,55 @@
-import { AttributeData, ProfileMetadata, ProfileMetadataVersions } from "lens";
-import { nanoid } from "nanoid";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { useFetchData } from "../../../client/ipfs/useFetchData";
+import { LocalStorageKey } from "../../../app/constants";
+import { getAvatarPerformanceRank } from "../../../app/helpers/getAvatarPerformanceRank";
 import { useLens } from "../../../client/lens/hooks/useLens";
-import { useProfileByHandle } from "../../../client/lens/hooks/useProfileByHandle";
-import { useSetProfileMetadata } from "../../../client/lens/hooks/useSetProfileMetadata";
 import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { trimHandle } from "../../../client/lens/utils/trimHandle";
+import { GLTFStats } from "../../../server/helpers/getGltfStats";
 import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
-import Spinner from "../../../ui/Spinner";
+import { isFromCDN } from "../../../utils/isFromCDN";
 import MetaTags from "../../MetaTags";
-import AvatarCanvas from "./AvatarCanvas";
 
 interface Props extends PublicationProps {
+  stats: GLTFStats;
   children: React.ReactNode;
 }
 
 export default function AvatarLayout({
+  stats,
   children,
   metadata,
+  image,
   publication,
 }: Props) {
   const router = useRouter();
   const id = router.query.id as string;
 
   const { handle } = useLens();
-  const profile = useProfileByHandle(handle);
-  const avatarUrl = useFetchData(publication?.metadata.content);
-  const setProfileMetadata = useSetProfileMetadata(profile?.id);
-
-  const [loading, setLoading] = useState(false);
-
   const author = trimHandle(publication?.profile.handle);
   const isAuthor = handle && handle === author;
-  const attribute = profile?.attributes?.find((item) => item.key === "avatar");
-  const isEquipped = attribute?.value === id;
-  const disableEquipButton = !handle;
 
-  async function handleEquipAvatar() {
-    if (!profile) return;
+  const [isEquipped, setIsEquipped] = useState(false);
 
-    setLoading(true);
+  useEffect(() => {
+    setIsEquipped(localStorage.getItem(LocalStorageKey.AvatarId) === id);
+  }, [id]);
 
-    const attributes =
-      profile.attributes?.map((attribute) => {
-        const data: AttributeData = {
-          key: attribute.key,
-          value: attribute.value,
-          traitType: attribute.traitType ?? undefined,
-          displayType: (attribute.displayType as any) ?? undefined,
-        };
-        return data;
-      }) ?? [];
-
-    const cover_picture: string =
-      profile.coverPicture?.__typename === "MediaSet"
-        ? profile.coverPicture.original.url
-        : profile.coverPicture?.__typename === "NftImage"
-        ? profile.coverPicture.uri
-        : null;
-
-    function addAttribute(key: string, value: any) {
-      const newData = {
-        key,
-        value,
-      };
-
-      const currentIndex = attributes.findIndex(
-        (attribute) => attribute.key === key
-      );
-
-      if (value === undefined) {
-        if (currentIndex !== -1) {
-          //remove attribute
-          attributes.splice(currentIndex, 1);
-        }
-      } else if (currentIndex === -1) {
-        //add attribute
-        attributes.push(newData);
-      } else {
-        //update attribute
-        attributes[currentIndex] = newData;
-      }
-    }
-
-    addAttribute("avatar", id);
-
-    const metadata: ProfileMetadata = {
-      version: ProfileMetadataVersions.one,
-      metadata_id: nanoid(),
-      name: profile?.name ?? null,
-      bio: profile?.bio ?? null,
-      cover_picture,
-      attributes,
-    };
-
-    try {
-      await setProfileMetadata(metadata);
-
-      router.push(`/user/${handle}`);
-    } catch (err) {
-      console.error(err);
-    }
-
-    setLoading(false);
+  function handleEquipAvatar() {
+    localStorage.setItem(LocalStorageKey.AvatarId, id);
+    setIsEquipped(true);
   }
 
-  async function handleUnequipAvatar() {
-    if (!profile) return;
-
-    setLoading(true);
-
-    const attributes =
-      (profile.attributes
-        ?.map((attribute) => {
-          if (attribute.key === "avatar") return null;
-
-          const data: AttributeData = {
-            key: attribute.key,
-            value: attribute.value,
-            traitType: attribute.traitType ?? undefined,
-            displayType: (attribute.displayType as any) ?? undefined,
-          };
-          return data;
-        })
-        .filter((item) => item !== null) as AttributeData[]) ?? [];
-
-    const cover_picture: string =
-      profile.coverPicture?.__typename === "MediaSet"
-        ? profile.coverPicture.original.url
-        : profile.coverPicture?.__typename === "NftImage"
-        ? profile.coverPicture.uri
-        : null;
-
-    const metadata: ProfileMetadata = {
-      version: ProfileMetadataVersions.one,
-      metadata_id: nanoid(),
-      name: profile?.name ?? null,
-      bio: profile?.bio ?? null,
-      cover_picture,
-      attributes,
-    };
-
-    try {
-      await setProfileMetadata(metadata);
-
-      router.push(`/user/${handle}`);
-    } catch (err) {
-      console.error(err);
-    }
-
-    setLoading(false);
+  function handleUnequipAvatar() {
+    localStorage.removeItem(LocalStorageKey.AvatarId);
+    setIsEquipped(false);
   }
+
+  const performanceRank = getAvatarPerformanceRank(stats);
 
   return (
     <>
@@ -168,15 +62,28 @@ export default function AvatarLayout({
 
       <div className="mx-4 h-full">
         <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
-          <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
-            <div className="mx-auto aspect-vertical w-full rounded-3xl bg-primaryContainer md:mx-0 md:w-1/2">
-              {avatarUrl ? (
-                <AvatarCanvas />
-              ) : (
-                <div className="flex h-full animate-pulse items-center justify-center rounded-3xl bg-surfaceVariant">
-                  <Spinner />
-                </div>
-              )}
+          <div className="flex flex-col items-center space-y-8 md:flex-row md:items-stretch md:space-y-0 md:space-x-8">
+            <div className="aspect-vertical h-full w-1/2 rounded-3xl bg-sky-100">
+              <div className="relative h-full w-full object-cover">
+                {image &&
+                  (isFromCDN(image) ? (
+                    <Image
+                      src={image}
+                      priority
+                      fill
+                      sizes="425px"
+                      alt=""
+                      className="rounded-3xl object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={image}
+                      alt=""
+                      className="h-full w-full rounded-3xl object-cover"
+                      crossOrigin="anonymous"
+                    />
+                  ))}
+              </div>
             </div>
 
             <div className="flex min-w-fit flex-col justify-between space-y-8 md:w-2/3">
@@ -185,15 +92,25 @@ export default function AvatarLayout({
                   {publication?.metadata.name}
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                    <div>By</div>
-                    <Link href={`/user/${author}`}>
-                      <div className="cursor-pointer hover:underline">
-                        @{author}
-                      </div>
-                    </Link>
-                  </div>
+                <div className="flex justify-center space-x-1 font-bold md:justify-start">
+                  <div className="text-neutral-500">By</div>
+                  <Link href={`/user/${author}`}>
+                    <div className="cursor-pointer hover:underline">
+                      @{author}
+                    </div>
+                  </Link>
+                </div>
+
+                <div className="flex justify-center space-x-1 font-bold md:justify-start">
+                  <div className="text-neutral-500">Performance</div>
+                  <a
+                    href="https://docs.thewired.space/avatars#-perfomance-ranks"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="cursor-pointer hover:underline"
+                  >
+                    {performanceRank}
+                  </a>
                 </div>
               </div>
 
@@ -202,8 +119,6 @@ export default function AvatarLayout({
                   <Button
                     variant="outlined"
                     fullWidth
-                    loading={loading}
-                    disabled={disableEquipButton}
                     onClick={handleUnequipAvatar}
                   >
                     <div className="py-2 group-hover:hidden">
@@ -213,13 +128,7 @@ export default function AvatarLayout({
                   </Button>
                 </div>
               ) : (
-                <Button
-                  variant="filled"
-                  fullWidth
-                  loading={loading}
-                  disabled={disableEquipButton}
-                  onClick={handleEquipAvatar}
-                >
+                <Button variant="filled" fullWidth onClick={handleEquipAvatar}>
                   <div className="py-2">Equip Avatar</div>
                 </Button>
               )}

@@ -31,7 +31,7 @@ export default function SettingsLayout({ children }: Props) {
   return (
     <div className="flex justify-center">
       <Dialog open={open} onClose={() => setOpen(false)}>
-        <CreateProfilePage />
+        <CreateProfilePage onClose={() => setOpen(false)} />
       </Dialog>
 
       <div className="max-w-content mx-4 mb-4 flex flex-col md:flex-row">
@@ -46,30 +46,30 @@ export default function SettingsLayout({ children }: Props) {
             </div>
           </div>
 
-          <Link href="/settings" passHref>
-            <div className="block">
+          <div>
+            <Link href="/settings">
               <SettingsButton
                 icon={<MdOutlinePersonOutline />}
                 selected={router.asPath === "/settings"}
               >
                 Profile
               </SettingsButton>
-            </div>
-          </Link>
+            </Link>
+          </div>
 
-          <Link href="/settings/account" passHref>
-            <div className="block">
+          <div>
+            <Link href="/settings/account">
               <SettingsButton
                 icon={<MdOutlineAccountBalanceWallet />}
                 selected={router.asPath === "/settings/account"}
               >
                 Account
               </SettingsButton>
-            </div>
-          </Link>
+            </Link>
+          </div>
 
           <SettingsButton icon={<MdAdd />} onClick={() => setOpen(true)}>
-            Create Profile
+            New Profile
           </SettingsButton>
         </div>
 

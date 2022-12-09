@@ -45,7 +45,7 @@ export default function LoadingScreen({
 
   return (
     <div
-      className={`absolute z-50 h-screen w-screen bg-surface pb-8 transition duration-500 ${transitionClass}`}
+      className={`absolute z-50 h-screen w-screen bg-white pb-8 transition duration-500 ${transitionClass}`}
     >
       <div className="flex h-full animate-fadeInSlow flex-col items-center justify-center">
         <div className="max-w-content space-y-6">
@@ -55,8 +55,8 @@ export default function LoadingScreen({
                 {text}
               </div>
 
-              <div className="mx-auto w-1/2">
-                <div className="aspect-card h-full w-full rounded-3xl bg-primaryContainer">
+              <div className="mx-auto px-8 md:w-1/2">
+                <div className="aspect-card h-full w-full rounded-3xl bg-sky-100">
                   <div className="relative h-full w-full object-cover">
                     {image &&
                       (isFromCDN(image) ? (

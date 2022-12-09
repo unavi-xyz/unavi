@@ -31,7 +31,7 @@ export default function SpecialsMenu() {
 
           addObject(SpecialName.Spawn);
         }}
-        className="flex w-full items-center space-x-4 rounded-lg px-4 py-0.5 transition hover:bg-primaryContainer hover:text-onPrimaryContainer"
+        className="flex w-full items-center space-x-4 rounded-lg px-4 py-0.5 transition hover:bg-sky-100"
       >
         <div>{SpecialName.Spawn}</div>
         <div className={`${spawnId ? "font-bold" : null}`}>

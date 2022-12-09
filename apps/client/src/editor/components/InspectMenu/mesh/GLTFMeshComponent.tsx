@@ -49,7 +49,7 @@ export default function GLTFMeshComponent({ nodeId, mesh }: Props) {
             Confirm Unpack
           </h1>
 
-          <div className="text-center text-lg text-outline">
+          <div className="text-center text-lg text-neutral-500">
             Unpacking this model will expose its internal meshes and materials
             to the editor. This action cannot be undone.
           </div>

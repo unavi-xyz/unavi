@@ -1,6 +1,6 @@
 import { ChangeEvent, useEffect, useState } from "react";
-import { useAccount } from "wagmi";
 
+import { useLogin } from "../../client/auth/LoginProvider";
 import { useProfilesByAddress } from "../../client/lens/hooks/useProfilesByAddress";
 import { useSetDefaultProfile } from "../../client/lens/hooks/useSetDefaultProfile";
 import { trimHandle } from "../../client/lens/utils/trimHandle";
@@ -10,8 +10,7 @@ import Button from "../../ui/Button";
 import Select from "../../ui/Select";
 
 export default function Account() {
-  const { address } = useAccount();
-
+  const { address } = useLogin();
   const { profiles } = useProfilesByAddress(address);
   const defaultProfile = profiles?.find((profile) => profile.isDefault);
 
@@ -60,10 +59,7 @@ export default function Account() {
     <>
       <MetaTags title="Account" />
 
-      <div
-        className="space-y-8 rounded-3xl bg-primaryContainer
-                   p-8 text-lg text-onPrimaryContainer"
-      >
+      <div className="space-y-8 rounded-3xl bg-sky-100 p-8 text-lg">
         <div className="space-y-2">
           <div className="text-xl font-bold">Default Profile</div>
           <div>

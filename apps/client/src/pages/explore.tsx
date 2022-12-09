@@ -7,6 +7,7 @@ import { useExploreQuery } from "../client/lens/hooks/useExploreQuery";
 import { getPublicationProps } from "../client/lens/utils/getPublicationProps";
 import { useCursor } from "../home/hooks/useCursor";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
+import AvatarCard from "../home/lens/AvatarCard";
 import SpaceCard from "../home/lens/SpaceCard";
 import MetaTags from "../home/MetaTags";
 import { prisma } from "../server/prisma";
@@ -37,11 +38,13 @@ export const getStaticProps = async () => {
     })
   );
 
+  const TEN_MINUTES_IN_SECONDS = 60 * 10;
+
   return {
     props: {
       hotSpaces,
     },
-    revalidate: 600,
+    revalidate: TEN_MINUTES_IN_SECONDS,
   };
 };
 
@@ -50,12 +53,20 @@ export default function Explore({
 }: InferGetStaticPropsType<typeof getStaticProps>) {
   const isMobile = useIsMobile();
   const spaceLimit = isMobile ? 1 : 3;
+  const avatarLimit = isMobile ? 1 : 5;
 
   const latestSpaces = useExploreQuery(
     spaceLimit,
     [AppId.Space],
     PublicationSortCriteria.Latest,
     spaceLimit + 1
+  );
+
+  const latestAvatars = useExploreQuery(
+    avatarLimit,
+    [AppId.Avatar],
+    PublicationSortCriteria.Latest,
+    avatarLimit + 1
   );
 
   const [hotSpacesCursor, setHotSpacesCursor] = useState(0);
@@ -145,32 +156,32 @@ export default function Explore({
             })}
           </Carousel>
 
-          {/* <Carousel
-          title="🌱 Latest Avatars"
-          disableBack={latestAvatars.cursor === 0}
-          disableNext={latestAvatars.isLastPage}
-          onBack={latestAvatars.back}
-          onNext={latestAvatars.next}
-          height="h-72 md:h-80"
-        >
-          {latestAvatars.items.map((avatar) => {
-            const pageOffset = `-${latestAvatars.cursor * avatarLimit}00%`;
-            const gapOffset = `-${latestAvatars.cursor * avatarLimit * 12}px`;
+          <Carousel
+            title="🐣 Latest Avatars"
+            disableBack={latestAvatars.cursor === 0}
+            disableNext={latestAvatars.isLastPage}
+            onBack={latestAvatars.back}
+            onNext={latestAvatars.next}
+            height="h-72 md:h-80"
+          >
+            {latestAvatars.items.map((avatar) => {
+              const pageOffset = `-${latestAvatars.cursor * avatarLimit}00%`;
+              const gapOffset = `-${latestAvatars.cursor * avatarLimit * 12}px`;
 
-            return (
-              <Link key={avatar.id} href={`/avatar/${avatar.id}`} passHref>
-                <div
-                  className="h-64 transition duration-500 md:h-72"
-                  style={{
-                    transform: `translate(calc(${pageOffset} + ${gapOffset}))`,
-                  }}
-                >
-                  <AvatarCard avatar={avatar} sizes="173px" animateEnter />
-                </div>
-              </Link>
-            );
-          })}
-        </Carousel> */}
+              return (
+                <Link key={avatar.id} href={`/avatar/${avatar.id}`}>
+                  <div
+                    className="h-64 transition duration-500 md:h-72"
+                    style={{
+                      transform: `translate(calc(${pageOffset} + ${gapOffset}))`,
+                    }}
+                  >
+                    <AvatarCard avatar={avatar} sizes="173px" animateEnter />
+                  </div>
+                </Link>
+              );
+            })}
+          </Carousel>
         </div>
       </div>
     </>

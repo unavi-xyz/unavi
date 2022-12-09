@@ -1,27 +1,52 @@
-import { inferAsyncReturnType, TRPCError } from "@trpc/server";
+import { inferAsyncReturnType } from "@trpc/server";
 import { CreateNextContextOptions } from "@trpc/server/adapters/next";
-import { getToken } from "next-auth/jwt";
+import { type GetServerSidePropsContext } from "next";
+import { unstable_getServerSession } from "next-auth";
 
-import { env } from "../../env/server.mjs";
-import { middleware, publicProcedure } from "./trpc";
+import { CustomSession } from "../../client/auth/types";
+import { authOptions } from "../../pages/api/auth/[...nextauth]";
+import { prisma } from "../prisma";
 
-export const createContext = async ({ req }: CreateNextContextOptions) => {
-  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET });
-  return { token };
+type CreateContextOptions = {
+  session: CustomSession | null;
+  res: GetServerSidePropsContext["res"];
+};
+
+/*
+ * Wrapper for unstable_getServerSession https://next-auth.js.org/configuration/nextjs
+ */
+export const getServerAuthSession = async (ctx: {
+  req: GetServerSidePropsContext["req"];
+  res: GetServerSidePropsContext["res"];
+}) => {
+  return (await unstable_getServerSession(ctx.req, ctx.res, {
+    ...authOptions,
+  })) as CustomSession | null;
+};
+
+/*
+ * Use this helper for:
+ * - testing, so we dont have to mock Next.js' req/res
+ * - trpc's `createSSGHelpers` where we don't have req/res
+ */
+export const createContextInner = async (opts: CreateContextOptions) => {
+  return {
+    session: opts.session,
+    res: opts.res,
+    prisma,
+  };
+};
+
+export const createContext = async (opts: CreateNextContextOptions) => {
+  const { req, res } = opts;
+
+  // Get the session from the server using the unstable_getServerSession wrapper function
+  const session = await getServerAuthSession({ req, res });
+
+  return await createContextInner({
+    session,
+    res,
+  });
 };
 
 export type Context = inferAsyncReturnType<typeof createContext>;
-
-const isAuthed = middleware(({ next, ctx }) => {
-  if (!ctx.token || !ctx.token.address)
-    throw new TRPCError({ code: "UNAUTHORIZED" });
-
-  return next({
-    ctx: {
-      ...ctx,
-      address: ctx.token.address as string,
-    },
-  });
-});
-
-export const protectedProcedure = publicProcedure.use(isAuthed);

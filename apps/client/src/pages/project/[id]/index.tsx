@@ -13,7 +13,7 @@ export default function Project() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { data: project } = trpc.auth.project.useQuery(
+  const { data: project } = trpc.project.get.useQuery(
     { id },
     {
       enabled: id !== undefined,
@@ -21,7 +21,7 @@ export default function Project() {
     }
   );
 
-  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+  const { data: imageURL } = trpc.project.image.useQuery(
     { id },
     {
       enabled: id !== undefined && !project?.publicationId,

@@ -2,10 +2,10 @@ import { PerspectiveCamera } from "three";
 
 import { PluginState } from "../../RenderWorker";
 import { ToRenderMessage } from "../../types";
-import { FakePointerEvent, FakeWheelEvent } from "../types";
+import { FakePointerEvent, FakeWheelEvent, RenderPlugin } from "../types";
 import { OrbitControls } from "./OrbitControls";
 
-export class OrbitControlsPlugin {
+export class OrbitControlsPlugin implements RenderPlugin {
   #target = new EventTarget();
   #orbitControls: OrbitControls;
   #state: PluginState;
@@ -30,7 +30,7 @@ export class OrbitControlsPlugin {
     camera.lookAt(0, 0, 0);
   }
 
-  animate() {
+  update() {
     this.#orbitControls.update();
   }
 

@@ -16,7 +16,7 @@ export default function TextArea({
 }: Props) {
   const id = useId();
 
-  const outlineClass = outline ? "border" : "";
+  const outlineClass = outline ? "border border-neutral-200" : "";
 
   return (
     <div className="flex w-full flex-col space-y-1">
@@ -27,14 +27,14 @@ export default function TextArea({
         {title}
       </label>
 
-      <div className="flex items-center rounded-lg">
+      <div className="flex items-center rounded">
         {frontAdornment && (
-          <span className="pl-2 font-bold text-primary">{frontAdornment}</span>
+          <span className="pl-2 font-bold text-sky-300">{frontAdornment}</span>
         )}
         <textarea
           ref={textAreaRef}
           id={id}
-          className={`h-full w-full rounded-md bg-surface px-3 py-2 text-onSurface outline-none ${outlineClass}`}
+          className={`h-full max-h-64 w-full rounded bg-white px-3 py-2 outline-none ${outlineClass}`}
           {...rest}
         />
       </div>

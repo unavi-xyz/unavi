@@ -120,7 +120,7 @@ export default function Index({
                 The Spatial Web
               </div>
 
-              <div className="mx-auto text-center text-lg text-outline md:text-xl">
+              <div className="mx-auto text-center text-lg text-neutral-500 md:text-xl">
                 The Wired reimagines the web as an interconnected network of 3D
                 spaces, instead of 2D websites.
               </div>
@@ -133,7 +133,7 @@ export default function Index({
                 Cross Platform
               </div>
 
-              <div className="mx-auto text-center text-lg text-outline md:text-xl">
+              <div className="mx-auto text-center text-lg text-neutral-500 md:text-xl">
                 All you need is a web browser - explore from your phone, laptop,
                 or VR headset.
               </div>
@@ -156,7 +156,7 @@ export default function Index({
               Open by Design
             </div>
 
-            <div className="mx-auto text-center text-lg text-outline md:w-2/3 md:text-xl">
+            <div className="mx-auto text-center text-lg text-neutral-500 md:w-2/3 md:text-xl">
               Each layer is open for others to build on. Mod your client. Run
               your own servers. The possibilities are endless.
             </div>

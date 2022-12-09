@@ -17,7 +17,7 @@ export default function Project() {
 
   const utils = trpc.useContext();
 
-  const { data: project } = trpc.auth.project.useQuery(
+  const { data: project } = trpc.project.get.useQuery(
     { id },
     {
       enabled: id !== undefined,
@@ -25,7 +25,7 @@ export default function Project() {
     }
   );
 
-  const { data: imageURL } = trpc.auth.projectImage.useQuery(
+  const { data: imageURL } = trpc.project.image.useQuery(
     { id },
     {
       enabled: id !== undefined && !project?.publicationId,
@@ -38,21 +38,23 @@ export default function Project() {
     ? cdnImageURL(project.publicationId)
     : imageURL;
 
-  const { mutateAsync: deleteProject } = trpc.auth.deleteProject.useMutation();
+  const { mutateAsync: deleteProject } = trpc.project.delete.useMutation();
 
   const [loading, setLoading] = useState(false);
 
   async function handleDelete() {
+    if (loading) return;
+
     setLoading(true);
     const promises: Promise<any>[] = [];
 
     try {
       promises.push(deleteProject({ id }));
-      promises.push(utils.auth.projects.invalidate());
+      promises.push(utils.project.getAll.invalidate());
 
       await Promise.all(promises);
 
-      router.push("/create");
+      router.push("/create/spaces");
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -61,7 +63,7 @@ export default function Project() {
 
   return (
     <ProjectLayout name={project?.name} image={image}>
-      <div className="space-y-4 rounded-2xl bg-errorContainer p-8 text-onErrorContainer">
+      <div className="space-y-4 rounded-2xl bg-red-100 p-8 text-red-900">
         <div className="text-2xl font-bold">Danger Zone</div>
 
         <div className="text-lg">

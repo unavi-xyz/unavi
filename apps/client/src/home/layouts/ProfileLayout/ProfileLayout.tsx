@@ -49,7 +49,7 @@ export default function ProfileLayout({
 
       {profile ? (
         <div className="max-w-content mx-auto">
-          <div className="h-48 w-full bg-primaryContainer md:h-64 md:rounded-3xl">
+          <div className="h-48 w-full bg-sky-100 md:h-64 md:rounded-3xl">
             <div className="relative h-full w-full object-cover">
               {coverImage &&
                 (isFromCDN(coverImage) ? (
@@ -74,7 +74,7 @@ export default function ProfileLayout({
 
           <div className="flex justify-center px-4 pb-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
-              <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-background">
+              <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
                 <ProfilePicture
                   src={profileImage}
                   circle
@@ -93,7 +93,7 @@ export default function ProfileLayout({
                   <div className="text-lg font-black">
                     {profile.stats.totalFollowing}
                   </div>
-                  <div className="text-lg leading-5 text-outline">
+                  <div className="text-lg leading-5 text-neutral-500">
                     Following
                   </div>
                 </div>
@@ -102,7 +102,7 @@ export default function ProfileLayout({
                   <div className="text-lg font-black">
                     {profile.stats.totalFollowers}
                   </div>
-                  <div className="text-lg leading-5 text-outline">
+                  <div className="text-lg leading-5 text-neutral-500">
                     Followers
                   </div>
                 </div>
@@ -114,7 +114,7 @@ export default function ProfileLayout({
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="flex w-full justify-center space-x-2">
                 {handle === viewerHandle ? (
-                  <Link href="/settings" passHref>
+                  <Link href="/settings">
                     <div>
                       <Button variant="outlined" rounded="small">
                         <div className="px-6">Edit profile</div>
@@ -123,11 +123,7 @@ export default function ProfileLayout({
                   </Link>
                 ) : (
                   <div>
-                    <Button
-                      variant="filled"
-                      rounded="small"
-                      disabled={!viewerHandle}
-                    >
+                    <Button variant="filled" rounded="small" disabled>
                       <div className="flex items-center justify-center space-x-1 px-6">
                         <MdAdd />
                         <div>Follow</div>
@@ -151,7 +147,7 @@ export default function ProfileLayout({
               </div>
 
               <div className="w-full pt-2">
-                <div className="whitespace-pre-line text-center text-sm md:text-base">
+                <div className="whitespace-pre-line text-center">
                   {profile.bio}
                 </div>
               </div>
@@ -178,7 +174,7 @@ export default function ProfileLayout({
               </div>
             </div>
 
-            <div className="w-full md:mt-4">{children}</div>
+            <div className="mt-4 w-full">{children}</div>
           </div>
         </div>
       ) : (

@@ -8,8 +8,9 @@ export type AvatarPerformanceRank =
   | "Very Poor";
 
 type WithoutVeryPoor = Exclude<AvatarPerformanceRank, "Very Poor">;
+type AvatarStats = Omit<GLTFStats, "fileSize">;
 
-const thresholds: Record<WithoutVeryPoor, GLTFStats> = {
+const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   Excellent: {
     polygonCount: 7_500,
     materialCount: 1,

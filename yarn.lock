@@ -8157,10 +8157,10 @@ media-query-parser@^2.0.2:
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-mediasoup-client@^3.6.66:
-  version "3.6.66"
-  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.66.tgz#80e5dc2746b795d44c55901b0b8f5a796b196d87"
-  integrity sha512-xTT8v42ykXeAgGHH4MsTirtkMZ46hbPkKfbO663l0/vGu9uD1bSR5dFSe+scp6go1LKF+iDLnPyO0mvWLhlAKg==
+mediasoup-client@^3.6.67:
+  version "3.6.67"
+  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.67.tgz#d4e8fbacee276ef4108931dc4cedc63cb561b623"
+  integrity sha512-lBIphHWjituYxRsKLd6yHeFx097KxA11AtMRW/8CO9mYo+JEUSAxkR+Fm6jDI89bGqTdQeKGFEx+kjkJdzGRBQ==
   dependencies:
     "@types/debug" "^4.1.7"
     awaitqueue "^2.4.0"
@@ -8170,7 +8170,7 @@ mediasoup-client@^3.6.66:
     fake-mediastreamtrack "^1.1.6"
     h264-profile-level-id "^1.0.1"
     sdp-transform "^2.14.1"
-    supports-color "^9.2.3"
+    supports-color "^9.3.0"
     uuid "^3.4.0"
 
 mediasoup@^3.11.3:
@@ -10311,10 +10311,10 @@ supports-color@^8.0.0:
   dependencies:
     has-flag "^4.0.0"
 
-supports-color@^9.2.3:
-  version "9.2.3"
-  resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-9.2.3.tgz#a6e2c97fc20c80abecd69e50aebe4783ff77d45a"
-  integrity sha512-aszYUX/DVK/ed5rFLb/dDinVJrQjG/vmU433wtqVSD800rYsJNWxh2R3USV90aLSU+UsyQkbNeffVLzc6B6foA==
+supports-color@^9.2.3, supports-color@^9.3.0:
+  version "9.3.0"
+  resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-9.3.0.tgz#cce566c5ad562eece4dfe5a4502a58efc54986a9"
+  integrity sha512-hJ6RYjNbcBFkpHi+ykjar+7GgHs+65Kxyw940nBLOSjaWZ13acq4A5f+gWiV5w+xfsg5MbnjDxTigLcUuljerw==
 
 supports-preserve-symlinks-flag@^1.0.0:
   version "1.0.0"

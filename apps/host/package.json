@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "engine": "*",
-    "mediasoup": "^3.11.3",
+    "mediasoup": "^3.11.4",
     "nanoid": "^4.0.0",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.15.0",
     "zod": "^3.19.1"

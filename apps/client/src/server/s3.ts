@@ -117,14 +117,10 @@ export async function createPublishedMetadataUploadURL(projectId: string) {
 }
 
 export async function createTempFileUploadURL(fileId: string) {
-  const expireDate = new Date();
-  expireDate.setDate(expireDate.getDate() + 14);
-
   const command = new PutObjectCommand({
     Bucket: env.S3_BUCKET,
     Key: tempFileKey(fileId),
     ACL: "public-read",
-    Expires: expireDate,
   });
 
   const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });

@@ -3,13 +3,11 @@ import {
   AnimationAction,
   AnimationClip,
   AnimationMixer,
-  BoxGeometry,
   Camera,
   Group,
   LoopPingPong,
   Mesh,
   MeshBasicMaterial,
-  MeshStandardMaterial,
   PerspectiveCamera,
   Quaternion,
   Shape,
@@ -20,7 +18,7 @@ import {
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../../../constants";
+import { PLAYER_HEIGHT } from "../../../constants";
 import { PostMessage } from "../../../types";
 import { toHex } from "../../../utils/toHex";
 import { ObjectQueue } from "../../SceneLoader/ObjectQueue";
@@ -91,7 +89,8 @@ export class PlayerAvatar {
     this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath)
       .catch((error) => {
         console.error(error);
-        console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
+        if (this.playerId === -1) console.error("🚨 Failed to load your avatar");
+        else console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
       })
       .finally(() => {
         this.#postMessage({
@@ -102,14 +101,7 @@ export class PlayerAvatar {
   }
 
   async #loadModel(avatarPath?: string, avatarAnimationsPath?: string) {
-    if (!avatarPath) {
-      const geometry = new BoxGeometry(PLAYER_RADIUS * 2, PLAYER_HEIGHT, PLAYER_RADIUS * 2);
-      const material = new MeshStandardMaterial({ color: 0xff3333 });
-      const mesh = new Mesh(geometry, material);
-      mesh.position.y = PLAYER_HEIGHT / 2;
-      this.group.add(mesh);
-      return;
-    }
+    if (!avatarPath) return;
 
     const gltf = await this.#loader.loadAsync(avatarPath);
     const vrm = gltf.userData.vrm as VRM;

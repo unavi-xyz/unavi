@@ -2,6 +2,7 @@ import {
   Euler,
   Group,
   MathUtils,
+  Object3D,
   PerspectiveCamera,
   Quaternion,
   Vector2,
@@ -278,34 +279,40 @@ export class PlayerPlugin implements RenderPlugin {
     // Update avatar
     if (this.#avatar) this.#avatar.update(delta);
 
-    if (this.#avatar?.vrm) {
-      const humanBones = this.#avatar.vrm.humanoid.humanBones;
-      const head = humanBones.head.node;
-
+    if (this.#avatar) {
       if (isFirstPerson) {
         // If first person, copy head position to camera
         this.#tempVec3.setScalar(0);
 
-        // If eyes are available, use eye position
-        if (humanBones.leftEye && humanBones.rightEye) {
-          this.#tempVec3
-            .copy(humanBones.leftEye.node.position)
-            .add(humanBones.rightEye.node.position)
-            .divideScalar(2);
+        let head: Object3D;
+
+        if (this.#avatar.vrm) {
+          const humanBones = this.#avatar.vrm.humanoid.humanBones;
+          head = humanBones.head.node;
+
+          // If eyes are available, use eye position
+          if (humanBones.leftEye && humanBones.rightEye) {
+            this.#tempVec3
+              .copy(humanBones.leftEye.node.position)
+              .add(humanBones.rightEye.node.position)
+              .divideScalar(2);
+          }
+        } else {
+          head = this.#avatar.group;
+          this.#tempVec3.y += 1.5;
         }
 
         head.position.add(this.#tempVec3);
         head.getWorldPosition(this.#camera.position);
         head.position.sub(this.#tempVec3);
       } else {
-        // If third person, rotate camera around avatar head
+        // If third person, rotate camera around avatar
         this.#camera.position
           .applyEuler(this.#cameraRotation)
           .add(this.#avatar.group.position)
           .add(THIRD_PERSON_OFFSET);
       }
     }
-
     // Send player rotation
     if (this.#playerRotation) {
       const rotation = isFirstPerson ? this.#camera.quaternion : this.#avatar?.group.quaternion;

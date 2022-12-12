@@ -1,50 +1,132 @@
 import { PhysicsThread } from "../physics/PhysicsThread";
 import { RenderThread } from "../render/RenderThread";
+import { getPointerData } from "./getPointerData";
+import { Joystick } from "./Joystick";
+import { TouchCameraControls } from "./TouchCameraControls";
 
 export class InputManager {
-  #canvas: HTMLCanvasElement;
+  canvas = document.createElement("canvas");
+
+  #cameraType: "orbit" | "player";
   #renderThread: RenderThread;
   #physicsThread: PhysicsThread;
+  #joystick: Joystick | null = null;
+  #touchControls: TouchCameraControls | null = null;
 
   #pressingW = false;
   #pressingS = false;
   #pressingA = false;
   #pressingD = false;
-
-  #jumpInterval: NodeJS.Timeout | null = null;
   #isLocked = false;
 
-  constructor(canvas: HTMLCanvasElement, renderThread: RenderThread, physicsThread: PhysicsThread) {
-    this.#canvas = canvas;
+  #jumpInterval: NodeJS.Timeout | null = null;
+
+  constructor(
+    renderThread: RenderThread,
+    physicsThread: PhysicsThread,
+    cameraType: "orbit" | "player"
+  ) {
     this.#renderThread = renderThread;
     this.#physicsThread = physicsThread;
+    this.#cameraType = cameraType;
 
-    this.#canvas.addEventListener("click", this.#onClick.bind(this));
+    if (cameraType === "player") {
+      this.#joystick = new Joystick(this.canvas, renderThread);
+      this.#touchControls = new TouchCameraControls(this.canvas, renderThread);
+    }
+
+    this.canvas.addEventListener("click", this.#onClick.bind(this));
+    this.canvas.addEventListener("contextmenu", this.#onContextMenu.bind(this));
+    this.canvas.addEventListener("pointermove", this.#onPointerMove.bind(this));
+    this.canvas.addEventListener("pointerup", this.#onPointerUp.bind(this));
+    this.canvas.addEventListener("pointerdown", this.#onPointerDown.bind(this));
+    this.canvas.addEventListener("pointercancel", this.#onPointerCancel.bind(this));
+    this.canvas.addEventListener("wheel", this.#onWheel.bind(this));
+
     document.addEventListener("keydown", this.#onKeyDown.bind(this));
     document.addEventListener("keyup", this.#onKeyUp.bind(this));
-    document.addEventListener("pointerlockchange", this.#onPointerLockChange.bind(this));
     document.addEventListener("mousemove", this.#onMouseMove.bind(this));
+    document.addEventListener("pointerlockchange", this.#onPointerLockChange.bind(this));
     document.addEventListener("pointerlockchange", this.#onPointerLockChange.bind(this));
   }
 
   destroy() {
-    this.#canvas.removeEventListener("click", this.#onClick);
+    this.#joystick?.destroy();
+    this.#touchControls?.destroy();
+
+    this.canvas.removeEventListener("click", this.#onClick);
+    this.canvas.removeEventListener("contextmenu", this.#onContextMenu);
+    this.canvas.removeEventListener("pointermove", this.#onPointerMove);
+    this.canvas.removeEventListener("pointerup", this.#onPointerUp);
+    this.canvas.removeEventListener("pointerdown", this.#onPointerDown);
+    this.canvas.removeEventListener("pointercancel", this.#onPointerCancel);
+    this.canvas.removeEventListener("wheel", this.#onWheel);
+
     document.removeEventListener("keydown", this.#onKeyDown);
     document.removeEventListener("keyup", this.#onKeyUp);
-    document.removeEventListener("pointerlockchange", this.#onPointerLockChange);
     document.removeEventListener("mousemove", this.#onMouseMove);
+    document.removeEventListener("pointerlockchange", this.#onPointerLockChange);
     document.removeEventListener("pointerlockchange", this.#onPointerLockChange);
 
     document.exitPointerLock();
   }
 
   #onClick() {
-    this.#canvas.requestPointerLock();
+    if (this.#cameraType === "player") this.canvas.requestPointerLock();
   }
 
   #onMouseMove(event: MouseEvent) {
     if (!this.#isLocked) return;
     this.#renderThread.mouseMove(event.movementX, event.movementY);
+  }
+
+  #onContextMenu(event: Event) {
+    event.preventDefault();
+  }
+
+  #onPointerMove(event: PointerEvent) {
+    this.#renderThread.postMessage({
+      subject: "pointermove",
+      data: getPointerData(event, this.canvas),
+    });
+  }
+
+  #onPointerUp(event: PointerEvent) {
+    this.canvas.releasePointerCapture(event.pointerId);
+
+    this.#renderThread.postMessage({
+      subject: "pointerup",
+      data: getPointerData(event, this.canvas),
+    });
+  }
+
+  #onPointerDown(event: PointerEvent) {
+    const isPointerLocked = document.pointerLockElement === this.canvas;
+    if (isPointerLocked) return;
+
+    this.canvas.setPointerCapture(event.pointerId);
+
+    this.#renderThread.postMessage({
+      subject: "pointerdown",
+      data: getPointerData(event, this.canvas),
+    });
+  }
+
+  #onPointerCancel(event: PointerEvent) {
+    this.#renderThread.postMessage({
+      subject: "pointercancel",
+      data: getPointerData(event, this.canvas),
+    });
+  }
+
+  #onWheel(event: WheelEvent) {
+    event.preventDefault();
+    this.#renderThread.postMessage({
+      subject: "wheel",
+      data: {
+        deltaY: event.deltaY,
+      },
+    });
   }
 
   #onKeyDown(event: KeyboardEvent) {
@@ -133,7 +215,7 @@ export class InputManager {
   }
 
   #onPointerLockChange() {
-    this.#isLocked = document.pointerLockElement === this.#canvas;
+    this.#isLocked = document.pointerLockElement === this.canvas;
     if (this.#isLocked) return;
 
     this.#pressingW = false;

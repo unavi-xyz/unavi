@@ -2,9 +2,10 @@ import { GLTFMesh, Node, SceneJSON } from "engine";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import Script from "next/script";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
 
+import { useResizeEngineCanvas } from "../../../app/hooks/useResizeEngineCanvas";
 import LoadingScreen from "../../../app/ui/LoadingScreen";
 import { trpc } from "../../../client/trpc";
 import { useEditorStore } from "../../../editor/store";
@@ -24,6 +25,7 @@ export default function Preview() {
 
   const engine = useEditorStore((state) => state.engine);
 
+  useResizeEngineCanvas(engine, canvasRef, containerRef);
   const router = useRouter();
   const id = router.query.id as string;
 
@@ -278,40 +280,6 @@ export default function Preview() {
     };
   }, [engine, exportedScene]);
 
-  const updateCanvasSize = useMemo(() => {
-    return () => {
-      if (typeof OffscreenCanvas !== "undefined") {
-        if (!engine) return;
-        const resize = engine.renderThread.onResize.bind(engine.renderThread);
-        resize();
-        return;
-      }
-
-      try {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const container = containerRef.current;
-        if (!container) return;
-
-        // Resize canvas
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
-      } catch (e) {
-        console.error(e);
-      }
-    };
-  }, [engine]);
-
-  useEffect(() => {
-    // Set initial canvas size
-    updateCanvasSize();
-
-    window.addEventListener("resize", updateCanvasSize);
-    return () => {
-      window.removeEventListener("resize", updateCanvasSize);
-    };
-  }, [updateCanvasSize]);
-
   const loadedClass = exportedScene ? "opacity-100" : "opacity-0";
 
   return (
@@ -334,7 +302,7 @@ export default function Preview() {
           <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
         </div>
 
-        <div onClick={(e) => e.stopPropagation()} className="fixed top-0 right-0 p-6 text-2xl">
+        <div onClick={(e) => e.stopPropagation()} className="fixed top-0 right-0 z-10 p-6 text-2xl">
           <Link href={`/editor/${id}`}>
             <button className="rounded-full bg-white p-2 shadow transition hover:shadow-md active:shadow">
               <MdClose />

@@ -33,14 +33,14 @@ export class PlayerPlugin implements RenderPlugin {
 
   #avatar: PlayerAvatar | null = null;
 
-  #playerInputVector = new Vector2();
   #playerVelocity: Int32Array | null = null;
   #playerPosition: Int32Array | null = null;
   #playerRotation: Int16Array | null = null;
 
+  #playerInputVector = new Vector2();
   #inputMomentum = new Vector2();
-  #inputYChangeTime = 0;
   #inputXChangeTime = 0;
+  #inputYChangeTime = 0;
 
   #tempVec2 = new Vector2();
   #tempVec3 = new Vector3();
@@ -89,6 +89,11 @@ export class PlayerPlugin implements RenderPlugin {
 
       case "set_player_input_vector": {
         this.setPlayerInputVector(data);
+        break;
+      }
+
+      case "set_camera_input_vector": {
+        this.setCameraInputVector(data[0], data[1]);
         break;
       }
 
@@ -165,6 +170,23 @@ export class PlayerPlugin implements RenderPlugin {
     }
 
     this.#playerInputVector.set(input[0], input[1]);
+  }
+
+  setCameraInputVector(x: number, y: number) {
+    this.#cameraRotation.setFromQuaternion(this.#targetCameraRotation);
+
+    this.#cameraRotation.y = x * Math.PI;
+    this.#cameraRotation.x = y * Math.PI;
+
+    const minPolarAngle = 0;
+    const maxPolarAngle = Math.PI;
+
+    this.#cameraRotation.x = Math.max(
+      Math.PI / 2 - maxPolarAngle,
+      Math.min(Math.PI / 2 - minPolarAngle, this.#cameraRotation.x)
+    );
+
+    this.#targetCameraRotation.setFromEuler(this.#cameraRotation);
   }
 
   update(delta: number) {

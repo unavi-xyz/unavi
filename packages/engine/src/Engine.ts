@@ -71,12 +71,13 @@ export class Engine {
       renderThread: this.renderThread,
     });
 
+    this.input = new InputManager(this.renderThread, this.physicsThread, camera);
+
     // Once the threads are ready, create the player
     const createPlayer = async () => {
       await this.renderThread.waitForReady();
       await this.physicsThread.waitForReady();
 
-      this.input = new InputManager(canvas, this.renderThread, this.physicsThread);
       this.physicsThread.initPlayer();
     };
 

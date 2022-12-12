@@ -1,10 +1,11 @@
 import { AutoCollider, GLTFMesh, Node } from "engine";
 import Script from "next/script";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
 
+import { useResizeEngineCanvas } from "../../../app/hooks/useResizeEngineCanvas";
 import { addMesh } from "../../../editor/actions/AddMeshAction";
 import { addNode } from "../../../editor/actions/AddNodeAction";
 import EditorNavbar from "../../../editor/components/EditorNavbar/EditorNavbar";
@@ -27,6 +28,7 @@ export default function Editor() {
   const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
 
+  const resize = useResizeEngineCanvas(engine, canvasRef, containerRef);
   useLoad();
   useAutosave();
   useTransformControls();
@@ -77,40 +79,6 @@ export default function Editor() {
       });
     };
   }, [engine]);
-
-  const updateCanvasSize = useMemo(() => {
-    return () => {
-      if (typeof OffscreenCanvas !== "undefined") {
-        if (!engine) return;
-        const resize = engine.renderThread.onResize.bind(engine.renderThread);
-        resize();
-        return;
-      }
-
-      try {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const container = containerRef.current;
-        if (!container) return;
-
-        // Resize canvas
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
-      } catch (e) {
-        console.error(e);
-      }
-    };
-  }, [engine]);
-
-  useEffect(() => {
-    // Set initial canvas size
-    updateCanvasSize();
-
-    window.addEventListener("resize", updateCanvasSize);
-    return () => {
-      window.removeEventListener("resize", updateCanvasSize);
-    };
-  }, [updateCanvasSize]);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
 
@@ -174,7 +142,7 @@ export default function Editor() {
             expandToMin
             gutterSize={6}
             className="flex h-full"
-            onMouseUp={updateCanvasSize}
+            onMouseMove={resize}
           >
             <TreeMenu />
 

@@ -1,11 +1,12 @@
 import { useGetPublicationQuery } from "lens";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useAnalytics } from "../../app/hooks/useAnalytics";
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useLoadUser } from "../../app/hooks/useLoadUser";
+import { useResizeEngineCanvas } from "../../app/hooks/useResizeEngineCanvas";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
@@ -44,6 +45,7 @@ export default function App({
 
   const setAvatar = useSetAvatar();
 
+  useResizeEngineCanvas(engine, canvasRef, containerRef);
   useLoadUser();
   useAppHotkeys();
   useAnalytics();
@@ -58,6 +60,7 @@ export default function App({
   useEffect(() => {
     if (!engine) return;
 
+    // Display loading status
     engine.networkingInterface.spaceJoinStatus$.subscribe(
       ({ spaceFetched, sceneLoaded, webrtcConnected, wsConnected }) => {
         setLoadingText("Fetching space...");
@@ -85,6 +88,7 @@ export default function App({
       }
     );
 
+    // Join space
     engine.joinSpace(id).then(async () => {
       // Start engine
       await engine.start();
@@ -135,41 +139,6 @@ export default function App({
       useAppStore.setState({ engine: null });
     };
   }, [engine]);
-
-  const updateCanvasSize = useMemo(() => {
-    return () => {
-      if (typeof OffscreenCanvas !== "undefined") {
-        if (!engine) return;
-        const resize = engine.renderThread.onResize.bind(engine.renderThread);
-        resize();
-        return;
-      }
-
-      try {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const container = containerRef.current;
-        if (!container) return;
-
-        // Resize canvas
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
-      } catch (e) {
-        console.error(e);
-      }
-    };
-  }, [engine]);
-
-  useEffect(() => {
-    // Set initial canvas size
-    updateCanvasSize();
-
-    window.addEventListener("resize", updateCanvasSize);
-    return () => {
-      window.removeEventListener("resize", updateCanvasSize);
-    };
-  }, [updateCanvasSize]);
 
   const loadedClass = engineStarted ? "opacity-100" : "opacity-0";
 

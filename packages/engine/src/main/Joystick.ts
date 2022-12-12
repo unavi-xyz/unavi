@@ -40,6 +40,8 @@ export class Joystick {
     // Only take input from the left side of the screen
     if (touch.clientX > this.#canvas.width / 2) return;
 
+    event.preventDefault();
+
     this.#fixedX = touch.clientX;
     this.#fixedY = touch.clientY;
     this.#innerX = touch.clientX;

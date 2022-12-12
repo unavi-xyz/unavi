@@ -35,6 +35,8 @@ export class TouchCameraControls {
     // Only take input from the right side of the screen
     if (touch.clientX < this.#canvas.width / 2) return;
 
+    event.preventDefault();
+
     this.#fixedX = touch.clientX;
     this.#fixedY = touch.clientY;
     this.#innerX = touch.clientX;

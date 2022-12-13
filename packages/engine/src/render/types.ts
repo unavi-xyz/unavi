@@ -127,6 +127,7 @@ export type FromRenderMessage =
       }
     >
   | WorkerMessage<"set_player_rotation_buffer", Int16Array>
+  | WorkerMessage<"set_camera_buffers", { position: Int32Array; rotation: Int16Array }>
   | WorkerMessage<
       "set_collider_geometry",
       { nodeId: string; positions: Float32Array; indices?: Uint32Array }

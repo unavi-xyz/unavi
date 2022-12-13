@@ -36,6 +36,8 @@ export class NetworkingInterface {
 
   playerPosition: Int32Array | null = null;
   playerRotation: Int16Array | null = null;
+  cameraPosition: Int32Array | null = null;
+  cameraRotation: Int16Array | null = null;
 
   #connectedPlayers = new Set<number>([-1]);
   #loadedPlayers = new Set<number>();
@@ -170,6 +172,8 @@ export class NetworkingInterface {
     this.#webRTC.playerId = this.playerId$.value;
     this.#webRTC.playerPosition = this.playerPosition;
     this.#webRTC.playerRotation = this.playerRotation;
+    this.#webRTC.cameraPosition = this.cameraPosition;
+    this.#webRTC.cameraRotation = this.cameraRotation;
 
     function send(message: ToHostMessage) {
       ws.send(JSON.stringify(message));
@@ -447,6 +451,16 @@ export class NetworkingInterface {
   setPlayerRotation(rotation: Int16Array) {
     this.playerRotation = rotation;
     if (this.#webRTC) this.#webRTC.playerRotation = rotation;
+  }
+
+  setCameraPosition(position: Int32Array) {
+    this.cameraPosition = position;
+    if (this.#webRTC) this.#webRTC.cameraPosition = position;
+  }
+
+  setCameraRotation(rotation: Int16Array) {
+    this.cameraRotation = rotation;
+    if (this.#webRTC) this.#webRTC.cameraRotation = rotation;
   }
 
   setFallState(falling: boolean) {

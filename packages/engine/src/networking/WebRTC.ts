@@ -13,6 +13,8 @@ export class WebRTC {
   playerId: number | null = null;
   playerPosition: Int32Array | null = null;
   playerRotation: Int16Array | null = null;
+  cameraPosition: Int32Array | null = null;
+  cameraRotation: Int16Array | null = null;
 
   #ws: WebSocket;
   #networkingInterface: NetworkingInterface;
@@ -157,9 +159,38 @@ export class WebRTC {
               this.playerId === null ||
               !this.playerPosition ||
               !this.playerRotation ||
+              !this.cameraPosition ||
+              !this.cameraRotation ||
               dataProducer.readyState !== "open"
             )
               return;
+
+            // Set audio listener location
+            const camPosX = Atomics.load(this.cameraPosition, 0);
+            const camPosY = Atomics.load(this.cameraPosition, 1);
+            const camPosZ = Atomics.load(this.cameraPosition, 2);
+
+            const camRotY = Atomics.load(this.cameraRotation, 1);
+            const camRotW = Atomics.load(this.cameraRotation, 3);
+
+            const listener = this.#audioContext.listener;
+
+            if (listener.positionX !== undefined) {
+              listener.positionX.value = camPosX / 1000;
+              listener.positionY.value = camPosY / 1000;
+              listener.positionZ.value = camPosZ / 1000;
+            } else {
+              listener.setPosition(camPosX / 1000, camPosY / 1000, camPosZ / 1000);
+            }
+
+            const yaw = quaternionToYaw(camRotY / 1000, camRotW / 1000);
+
+            if (listener.forwardX !== undefined) {
+              listener.forwardX.value = -Math.sin(yaw);
+              listener.forwardZ.value = -Math.cos(yaw);
+            } else {
+              listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
+            }
 
             // Read location
             const posX = Atomics.load(this.playerPosition, 0);
@@ -170,26 +201,6 @@ export class WebRTC {
             const rotY = Atomics.load(this.playerRotation, 1);
             const rotZ = Atomics.load(this.playerRotation, 2);
             const rotW = Atomics.load(this.playerRotation, 3);
-
-            // Set audio listener position
-            const listener = this.#audioContext.listener;
-
-            if (listener.positionX !== undefined) {
-              listener.positionX.value = posX / 1000;
-              listener.positionY.value = posY / 1000;
-              listener.positionZ.value = posZ / 1000;
-            } else {
-              listener.setPosition(posX / 1000, posY / 1000, posZ / 1000);
-            }
-
-            const yaw = quaternionToYaw(rotY / 1000, rotW / 1000);
-
-            if (listener.forwardX !== undefined) {
-              listener.forwardX.value = -Math.sin(yaw);
-              listener.forwardZ.value = -Math.cos(yaw);
-            } else {
-              listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
-            }
 
             // Create buffer
             view.setUint8(0, this.playerId);

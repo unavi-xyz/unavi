@@ -118,6 +118,12 @@ export class RenderThread {
         break;
       }
 
+      case "set_camera_buffers": {
+        this.#engine.networkingInterface.setCameraPosition(data.position);
+        this.#engine.networkingInterface.setCameraRotation(data.rotation);
+        break;
+      }
+
       case "set_collider_geometry": {
         const transfer: Transferable[] = [data.positions.buffer];
         if (data.indices) transfer.push(data.indices.buffer);

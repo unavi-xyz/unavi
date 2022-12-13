@@ -37,6 +37,8 @@ export class PlayerPlugin implements RenderPlugin {
   #playerVelocity: Int32Array | null = null;
   #playerPosition: Int32Array | null = null;
   #playerRotation: Int16Array | null = null;
+  #cameraPositionArray: Int32Array | null = null;
+  #cameraRotationArray: Int16Array | null = null;
 
   #playerInputVector = new Vector2();
   #inputMomentum = new Vector2();
@@ -64,6 +66,21 @@ export class PlayerPlugin implements RenderPlugin {
     this.#avatarPath = avatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
     this.#renderer = renderer;
+
+    // Create camera buffers
+    const rotationBuffer = new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4);
+    this.#cameraRotationArray = new Int16Array(rotationBuffer);
+
+    const positionBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3);
+    this.#cameraPositionArray = new Int32Array(positionBuffer);
+
+    this.#postMessage({
+      subject: "set_camera_buffers",
+      data: {
+        position: this.#cameraPositionArray,
+        rotation: this.#cameraRotationArray,
+      },
+    });
   }
 
   onmessage(event: MessageEvent<ToRenderMessage>) {
@@ -75,8 +92,7 @@ export class PlayerPlugin implements RenderPlugin {
         this.#playerVelocity = data.velocity;
 
         // Create shared array buffer
-        const rotationBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 4);
-
+        const rotationBuffer = new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4);
         this.#playerRotation = new Int16Array(rotationBuffer);
 
         // Send back to main thread
@@ -313,6 +329,7 @@ export class PlayerPlugin implements RenderPlugin {
           .add(THIRD_PERSON_OFFSET);
       }
     }
+
     // Send player rotation
     if (this.#playerRotation) {
       const rotation = isFirstPerson ? this.#camera.quaternion : this.#avatar?.group.quaternion;
@@ -323,6 +340,22 @@ export class PlayerPlugin implements RenderPlugin {
         Atomics.store(this.#playerRotation, 2, rotation.z * 1000);
         Atomics.store(this.#playerRotation, 3, rotation.w * 1000);
       }
+    }
+
+    // Send camera position
+    if (this.#cameraPositionArray) {
+      const worldPosition = this.#camera.getWorldPosition(this.#tempVec3);
+      Atomics.store(this.#cameraPositionArray, 0, worldPosition.x * 1000);
+      Atomics.store(this.#cameraPositionArray, 1, worldPosition.y * 1000);
+      Atomics.store(this.#cameraPositionArray, 2, worldPosition.z * 1000);
+    }
+
+    // Send camera rotation
+    if (this.#cameraRotationArray) {
+      Atomics.store(this.#cameraRotationArray, 0, this.#camera.quaternion.x * 1000);
+      Atomics.store(this.#cameraRotationArray, 1, this.#camera.quaternion.y * 1000);
+      Atomics.store(this.#cameraRotationArray, 2, this.#camera.quaternion.z * 1000);
+      Atomics.store(this.#cameraRotationArray, 3, this.#camera.quaternion.w * 1000);
     }
   }
 

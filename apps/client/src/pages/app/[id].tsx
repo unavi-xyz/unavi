@@ -1,4 +1,3 @@
-import { useGetPublicationQuery } from "lens";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
@@ -15,19 +14,24 @@ import MobileChatBox from "../../app/ui/MobileChatBox";
 import UserButton from "../../app/ui/UserButtons";
 import { getPublicationProps } from "../../client/lens/utils/getPublicationProps";
 import MetaTags from "../../home/MetaTags";
-import { getMediaURL } from "../../utils/getMediaURL";
 import { useIsMobile } from "../../utils/useIsMobile";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
-  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=600");
+  const ONE_MINUTE_IN_SECONDS = 60;
+  const ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
+
+  res.setHeader(
+    "Cache-Control",
+    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
+  );
 
   const id = query.id as string;
   const props = await getPublicationProps(id);
 
   return {
     props: {
-      ...props,
       id,
+      ...props,
     },
   };
 };
@@ -35,6 +39,8 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
 export default function App({
   id,
   metadata,
+  publication,
+  image,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -51,13 +57,6 @@ export default function App({
   useLoadUser();
   useAppHotkeys();
   useAnalytics();
-
-  const [{ data }] = useGetPublicationQuery({
-    variables: { request: { publicationId: id } },
-    pause: !id,
-  });
-
-  const image = getMediaURL(data?.publication?.metadata.media[0]);
 
   useEffect(() => {
     if (!engine) return;
@@ -156,7 +155,7 @@ export default function App({
       <Script src="/scripts/draco_decoder.js" />
 
       <LoadingScreen
-        text={data?.publication?.metadata.name}
+        text={publication?.metadata.name ?? id}
         image={image}
         loaded={engineStarted}
         loadingProgress={loadingProgress}

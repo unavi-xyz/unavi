@@ -8,6 +8,7 @@ export class Joystick {
   #renderThread: RenderThread;
 
   #ctx: CanvasRenderingContext2D;
+  #touchId: number | undefined = undefined;
   #angle: number | undefined = undefined;
   #fixedX: number | undefined = undefined;
   #fixedY: number | undefined = undefined;
@@ -33,12 +34,15 @@ export class Joystick {
   }
 
   #onTouchStart(event: TouchEvent) {
-    const touch = event.touches[0];
-    if (!touch) return;
     if (this.#fixedX || this.#fixedY) return;
+
+    const touch = event.changedTouches[event.changedTouches.length - 1];
+    if (!touch) return;
 
     // Only take input from the left side of the screen
     if (touch.clientX > this.#canvas.width / 2) return;
+
+    this.#touchId = touch.identifier;
 
     event.preventDefault();
 
@@ -49,10 +53,11 @@ export class Joystick {
   }
 
   #onTouchMove(event: TouchEvent) {
-    const touch = event.touches[0];
-    if (!touch) return;
+    if (this.#touchId === undefined || this.#fixedX === undefined || this.#fixedY === undefined)
+      return;
 
-    if (this.#fixedX === undefined || this.#fixedY === undefined) return;
+    const touch = event.touches.item(this.#touchId);
+    if (!touch) return;
 
     this.#innerX = touch.clientX;
     this.#innerY = touch.clientY;
@@ -69,11 +74,12 @@ export class Joystick {
   }
 
   #onTouchEnd() {
+    this.#touchId = undefined;
+    this.#angle = undefined;
     this.#fixedX = undefined;
     this.#fixedY = undefined;
     this.#innerX = undefined;
     this.#innerY = undefined;
-    this.#angle = undefined;
 
     this.#renderThread.setPlayerInputVector([0, 0]);
   }

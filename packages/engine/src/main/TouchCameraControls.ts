@@ -5,6 +5,7 @@ export class TouchCameraControls {
   #renderThread: RenderThread;
 
   #angle: number | undefined = undefined;
+  #touchId: number | undefined = undefined;
   #fixedX: number | undefined = undefined;
   #fixedY: number | undefined = undefined;
   #innerX: number | undefined = undefined;
@@ -29,11 +30,13 @@ export class TouchCameraControls {
   }
 
   #onTouchStart(event: TouchEvent) {
-    const touch = event.touches[0];
+    const touch = event.changedTouches[event.changedTouches.length - 1];
     if (!touch) return;
 
     // Only take input from the right side of the screen
     if (touch.clientX < this.#canvas.width / 2) return;
+
+    this.#touchId = touch.identifier;
 
     event.preventDefault();
 
@@ -47,10 +50,11 @@ export class TouchCameraControls {
   }
 
   #onTouchMove(event: TouchEvent) {
-    const touch = event.touches[0];
-    if (!touch) return;
+    if (this.#touchId === undefined || this.#fixedX === undefined || this.#fixedY === undefined)
+      return;
 
-    if (this.#fixedX === undefined || this.#fixedY === undefined) return;
+    const touch = event.touches.item(this.#touchId);
+    if (!touch) return;
 
     this.#innerX = touch.clientX;
     this.#innerY = touch.clientY;
@@ -59,11 +63,12 @@ export class TouchCameraControls {
   }
 
   #onTouchEnd() {
+    this.#angle = undefined;
+    this.#touchId = undefined;
     this.#fixedX = undefined;
     this.#fixedY = undefined;
     this.#innerX = undefined;
     this.#innerY = undefined;
-    this.#angle = undefined;
   }
 
   update() {

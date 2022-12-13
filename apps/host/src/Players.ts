@@ -21,8 +21,6 @@ function spaceTopic(spaceId: string) {
  * Contains logic for managing connected players.
  */
 export class Players {
-  #previousPlayerId = 0;
-
   readonly playerIds = new Map<uWS.WebSocket, number>();
   readonly spaceIds = new Map<uWS.WebSocket, string>();
   readonly names = new Map<uWS.WebSocket, string>();
@@ -121,6 +119,9 @@ export class Players {
     this.consumers.delete(ws);
     this.dataProducers.delete(ws);
     this.dataConsumers.delete(ws);
+
+    this.consumers.forEach((consumers) => consumers.delete(ws));
+    this.dataConsumers.forEach((dataConsumers) => dataConsumers.delete(ws));
   }
 
   joinSpace(ws: uWS.WebSocket, { spaceId }: { spaceId: string }) {

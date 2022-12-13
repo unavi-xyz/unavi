@@ -513,10 +513,10 @@ export class NetworkingInterface {
     const newChatMessages = this.chatMessages$.value.concat(message);
 
     // Sort by timestamp
-    newChatMessages.sort((a, b) => a.timestamp - b.timestamp);
+    newChatMessages.sort((a, b) => b.timestamp - a.timestamp);
 
     // Limit to 50 messages
-    newChatMessages.splice(0, newChatMessages.length - 50);
+    newChatMessages.splice(50, newChatMessages.length - 50);
 
     this.chatMessages$.next(newChatMessages);
   }

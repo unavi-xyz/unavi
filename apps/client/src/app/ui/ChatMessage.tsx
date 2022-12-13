@@ -30,16 +30,15 @@ export default function ChatMessage({ message }: Props) {
 
   return (
     <div
-      className={`w-fit max-w-full rounded-lg bg-white px-4 py-1 transition duration-500 ${visibleClass}`}
+      className={`my-0.5 w-fit max-w-full rounded-lg bg-white px-4 py-1 transition duration-500 ${visibleClass}`}
     >
       {message.type === "chat" ? (
         <div className="break-words">
-          <span className={`${boldClass}`}>{message.username}</span>:{" "}
-          <span className="text-neutral-500">{message.message}</span>
+          <span className={boldClass}>{message.username}</span>: <span>{message.message}</span>
         </div>
       ) : message.type === "system" ? (
-        <span>
-          <span className={`${boldClass}`}>{message.username}</span>
+        <span className="text-neutral-500">
+          <span>{message.username}</span>
           {message.variant === "player_joined"
             ? " joined"
             : message.variant === "player_left"

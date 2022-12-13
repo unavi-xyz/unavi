@@ -11,10 +11,12 @@ import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
 import LoadingScreen from "../../app/ui/LoadingScreen";
+import MobileChatBox from "../../app/ui/MobileChatBox";
 import UserButton from "../../app/ui/UserButtons";
 import { getPublicationProps } from "../../client/lens/utils/getPublicationProps";
 import MetaTags from "../../home/MetaTags";
 import { getMediaURL } from "../../utils/getMediaURL";
+import { useIsMobile } from "../../utils/useIsMobile";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
@@ -44,7 +46,7 @@ export default function App({
   const engine = useAppStore((state) => state.engine);
 
   const setAvatar = useSetAvatar();
-
+  const isMobile = useIsMobile();
   useResizeEngineCanvas(engine, canvasRef, containerRef);
   useLoadUser();
   useAppHotkeys();
@@ -198,11 +200,17 @@ export default function App({
           </div>
         </div>
 
-        {engineStarted && (
-          <div className="absolute left-0 bottom-0 z-10 w-full p-4">
-            <ChatBox />
-          </div>
-        )}
+        {engineStarted ? (
+          isMobile ? (
+            <div className="absolute left-0 bottom-0 z-10 p-4">
+              <MobileChatBox />
+            </div>
+          ) : (
+            <div className="absolute left-0 bottom-0 z-10 w-full max-w-sm p-4">
+              <ChatBox />
+            </div>
+          )
+        ) : null}
       </div>
     </>
   );

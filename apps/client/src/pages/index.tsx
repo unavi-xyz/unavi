@@ -55,7 +55,7 @@ export default function Index({ featuredSpaces }: InferGetStaticPropsType<typeof
 
             <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl md:flex-row md:space-y-0 md:space-x-4">
               <div className="w-full md:w-fit">
-                <Link href={`/app/${FEATURED_SPACES[1]}`}>
+                <Link href={`/app/${FEATURED_SPACES[0]}`}>
                   <Button variant="filled" rounded="large" fullWidth>
                     <div className="flex h-9 items-center justify-center md:px-4">Play Now</div>
                   </Button>

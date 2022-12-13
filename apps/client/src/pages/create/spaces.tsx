@@ -104,7 +104,7 @@ export default function Spaces() {
             )}
           </div>
 
-          {status === "success" && publishedProjects.length > 0 ? (
+          {authState === "authenticated" && status === "success" && publishedProjects.length > 0 ? (
             <>
               <div className="text-2xl font-bold">🏙️ Published</div>
 

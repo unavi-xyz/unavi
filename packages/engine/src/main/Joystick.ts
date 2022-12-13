@@ -7,14 +7,14 @@ export class Joystick {
   #canvas: HTMLCanvasElement;
   #renderThread: RenderThread;
 
+  touchId: number | undefined = undefined;
+
   #ctx: CanvasRenderingContext2D;
-  #touchId: number | undefined = undefined;
   #angle: number | undefined = undefined;
   #fixedX: number | undefined = undefined;
   #fixedY: number | undefined = undefined;
   #innerX: number | undefined = undefined;
   #innerY: number | undefined = undefined;
-  #animationFrame: number | undefined = undefined;
 
   constructor(canvas: HTMLCanvasElement, renderThread: RenderThread) {
     this.#canvas = canvas;
@@ -24,43 +24,20 @@ export class Joystick {
     if (!ctx) throw new Error("Could not get 2d context from canvas");
 
     this.#ctx = ctx;
-
-    canvas.addEventListener("touchstart", this.#onTouchStart.bind(this));
-    canvas.addEventListener("touchmove", this.#onTouchMove.bind(this));
-    canvas.addEventListener("touchend", this.#onTouchEnd.bind(this));
-    canvas.addEventListener("touchcancel", this.#onTouchEnd.bind(this));
-
-    this.update();
   }
 
-  #onTouchStart(event: TouchEvent) {
-    if (this.#fixedX || this.#fixedY) return;
-
-    const touch = event.changedTouches[event.changedTouches.length - 1];
-    if (!touch) return;
-
-    // Only take input from the left side of the screen
-    if (touch.clientX > this.#canvas.width / 2) return;
-
-    this.#touchId = touch.identifier;
-
-    event.preventDefault();
-
-    this.#fixedX = touch.clientX;
-    this.#fixedY = touch.clientY;
-    this.#innerX = touch.clientX;
-    this.#innerY = touch.clientY;
+  onTouchStart(x: number, y: number) {
+    this.#fixedX = x;
+    this.#fixedY = y;
+    this.#innerX = x;
+    this.#innerY = y;
   }
 
-  #onTouchMove(event: TouchEvent) {
-    if (this.#touchId === undefined || this.#fixedX === undefined || this.#fixedY === undefined)
-      return;
+  onTouchMove(x: number, y: number) {
+    if (this.#fixedX === undefined || this.#fixedY === undefined) return;
 
-    const touch = event.touches.item(this.#touchId);
-    if (!touch) return;
-
-    this.#innerX = touch.clientX;
-    this.#innerY = touch.clientY;
+    this.#innerX = x;
+    this.#innerY = y;
 
     this.#angle = Math.atan2(this.#innerY - this.#fixedY, this.#innerX - this.#fixedX);
 
@@ -73,8 +50,8 @@ export class Joystick {
     }
   }
 
-  #onTouchEnd() {
-    this.#touchId = undefined;
+  onTouchEnd() {
+    this.touchId = undefined;
     this.#angle = undefined;
     this.#fixedX = undefined;
     this.#fixedY = undefined;
@@ -85,8 +62,6 @@ export class Joystick {
   }
 
   update() {
-    this.#animationFrame = requestAnimationFrame(this.update.bind(this));
-
     this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
 
     if (
@@ -116,14 +91,5 @@ export class Joystick {
     const x = -Math.max(-1, Math.min(1, (this.#innerX - this.#fixedX) / FIXED_RADIUS));
     const y = -Math.max(-1, Math.min(1, (this.#innerY - this.#fixedY) / FIXED_RADIUS));
     this.#renderThread.setPlayerInputVector([x, y]);
-  }
-
-  destroy() {
-    if (this.#animationFrame !== undefined) cancelAnimationFrame(this.#animationFrame);
-
-    this.#canvas.removeEventListener("touchstart", this.#onTouchStart);
-    this.#canvas.removeEventListener("touchmove", this.#onTouchMove);
-    this.#canvas.removeEventListener("touchend", this.#onTouchEnd);
-    this.#canvas.removeEventListener("touchcancel", this.#onTouchEnd);
   }
 }

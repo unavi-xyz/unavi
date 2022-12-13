@@ -4,13 +4,13 @@ export class TouchCameraControls {
   #canvas: HTMLCanvasElement;
   #renderThread: RenderThread;
 
+  touchId: number | undefined = undefined;
+
   #angle: number | undefined = undefined;
-  #touchId: number | undefined = undefined;
   #fixedX: number | undefined = undefined;
   #fixedY: number | undefined = undefined;
   #innerX: number | undefined = undefined;
   #innerY: number | undefined = undefined;
-  #animationFrame: number | undefined = undefined;
 
   #cameraX = 0;
   #cameraY = 0;
@@ -21,50 +21,31 @@ export class TouchCameraControls {
     this.#canvas = canvas;
     this.#renderThread = renderThread;
 
-    canvas.addEventListener("touchstart", this.#onTouchStart.bind(this));
-    canvas.addEventListener("touchmove", this.#onTouchMove.bind(this));
-    canvas.addEventListener("touchend", this.#onTouchEnd.bind(this));
-    canvas.addEventListener("touchcancel", this.#onTouchEnd.bind(this));
-
     this.update();
   }
 
-  #onTouchStart(event: TouchEvent) {
-    const touch = event.changedTouches[event.changedTouches.length - 1];
-    if (!touch) return;
-
-    // Only take input from the right side of the screen
-    if (touch.clientX < this.#canvas.width / 2) return;
-
-    this.#touchId = touch.identifier;
-
-    event.preventDefault();
-
-    this.#fixedX = touch.clientX;
-    this.#fixedY = touch.clientY;
-    this.#innerX = touch.clientX;
-    this.#innerY = touch.clientY;
+  onTouchStart(x: number, y: number) {
+    this.#fixedX = x;
+    this.#fixedY = y;
+    this.#innerX = x;
+    this.#innerY = y;
 
     this.#cameraX = this.#prevCameraX;
     this.#cameraY = this.#prevCameraY;
   }
 
-  #onTouchMove(event: TouchEvent) {
-    if (this.#touchId === undefined || this.#fixedX === undefined || this.#fixedY === undefined)
-      return;
+  onTouchMove(x: number, y: number) {
+    if (this.#fixedX === undefined || this.#fixedY === undefined) return;
 
-    const touch = event.touches.item(this.#touchId);
-    if (!touch) return;
-
-    this.#innerX = touch.clientX;
-    this.#innerY = touch.clientY;
+    this.#innerX = x;
+    this.#innerY = y;
 
     this.#angle = Math.atan2(this.#innerY - this.#fixedY, this.#innerX - this.#fixedX);
   }
 
-  #onTouchEnd() {
+  onTouchEnd() {
+    this.touchId = undefined;
     this.#angle = undefined;
-    this.#touchId = undefined;
     this.#fixedX = undefined;
     this.#fixedY = undefined;
     this.#innerX = undefined;
@@ -72,8 +53,6 @@ export class TouchCameraControls {
   }
 
   update() {
-    this.#animationFrame = requestAnimationFrame(this.update.bind(this));
-
     if (
       this.#angle === undefined ||
       this.#fixedX === undefined ||
@@ -91,14 +70,5 @@ export class TouchCameraControls {
     this.#prevCameraY = y;
 
     this.#renderThread.postMessage({ subject: "set_camera_input_vector", data: [x, y] });
-  }
-
-  destroy() {
-    if (this.#animationFrame !== undefined) cancelAnimationFrame(this.#animationFrame);
-
-    this.#canvas.removeEventListener("touchstart", this.#onTouchStart);
-    this.#canvas.removeEventListener("touchmove", this.#onTouchMove);
-    this.#canvas.removeEventListener("touchend", this.#onTouchEnd);
-    this.#canvas.removeEventListener("touchcancel", this.#onTouchEnd);
   }
 }

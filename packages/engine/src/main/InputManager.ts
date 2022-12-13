@@ -20,6 +20,7 @@ export class InputManager {
   #isLocked = false;
 
   #jumpInterval: NodeJS.Timeout | null = null;
+  #animationFrame: number | null = null;
 
   constructor(
     renderThread: RenderThread,
@@ -37,30 +38,48 @@ export class InputManager {
 
     this.canvas.addEventListener("click", this.#onClick.bind(this));
     this.canvas.addEventListener("contextmenu", this.#onContextMenu.bind(this));
+    this.canvas.addEventListener("wheel", this.#onWheel.bind(this));
+
     this.canvas.addEventListener("pointermove", this.#onPointerMove.bind(this));
     this.canvas.addEventListener("pointerup", this.#onPointerUp.bind(this));
     this.canvas.addEventListener("pointerdown", this.#onPointerDown.bind(this));
     this.canvas.addEventListener("pointercancel", this.#onPointerCancel.bind(this));
-    this.canvas.addEventListener("wheel", this.#onWheel.bind(this));
+
+    this.canvas.addEventListener("touchstart", this.#onTouchStart.bind(this));
+    this.canvas.addEventListener("touchmove", this.#onTouchMove.bind(this));
+    this.canvas.addEventListener("touchend", this.#onTouchEnd.bind(this));
+    this.canvas.addEventListener("touchcancel", this.#onTouchEnd.bind(this));
 
     document.addEventListener("keydown", this.#onKeyDown.bind(this));
     document.addEventListener("keyup", this.#onKeyUp.bind(this));
     document.addEventListener("mousemove", this.#onMouseMove.bind(this));
     document.addEventListener("pointerlockchange", this.#onPointerLockChange.bind(this));
     document.addEventListener("pointerlockchange", this.#onPointerLockChange.bind(this));
+
+    this.update();
+  }
+
+  update() {
+    this.#animationFrame = requestAnimationFrame(this.update.bind(this));
+
+    this.#joystick?.update();
+    this.#touchControls?.update();
   }
 
   destroy() {
-    this.#joystick?.destroy();
-    this.#touchControls?.destroy();
-
     this.canvas.removeEventListener("click", this.#onClick);
     this.canvas.removeEventListener("contextmenu", this.#onContextMenu);
+    this.canvas.removeEventListener("wheel", this.#onWheel);
+
     this.canvas.removeEventListener("pointermove", this.#onPointerMove);
     this.canvas.removeEventListener("pointerup", this.#onPointerUp);
     this.canvas.removeEventListener("pointerdown", this.#onPointerDown);
     this.canvas.removeEventListener("pointercancel", this.#onPointerCancel);
-    this.canvas.removeEventListener("wheel", this.#onWheel);
+
+    this.canvas.removeEventListener("touchstart", this.#onTouchStart);
+    this.canvas.removeEventListener("touchmove", this.#onTouchMove);
+    this.canvas.removeEventListener("touchend", this.#onTouchEnd);
+    this.canvas.removeEventListener("touchcancel", this.#onTouchEnd);
 
     document.removeEventListener("keydown", this.#onKeyDown);
     document.removeEventListener("keyup", this.#onKeyUp);
@@ -69,6 +88,65 @@ export class InputManager {
     document.removeEventListener("pointerlockchange", this.#onPointerLockChange);
 
     document.exitPointerLock();
+  }
+
+  #onTouchStart(event: TouchEvent) {
+    if (!this.#joystick || !this.#touchControls) return;
+
+    const joystickId = this.#joystick.touchId;
+    const touchControlsId = this.#touchControls.touchId;
+
+    const touch = Array.from(event.touches).find((touch) => {
+      return touch.identifier !== joystickId && touch.identifier !== touchControlsId;
+    });
+    if (!touch) return;
+
+    event.preventDefault();
+
+    // If left side of canvas, use joystick
+    if (touch.clientX < this.canvas.width / 2) {
+      this.#joystick.touchId = touch.identifier;
+      this.#joystick.onTouchStart(touch.clientX, touch.clientY);
+    } else {
+      this.#touchControls.touchId = touch.identifier;
+      this.#touchControls.onTouchStart(touch.clientX, touch.clientY);
+    }
+  }
+
+  #onTouchMove(event: TouchEvent) {
+    if (!this.#joystick || !this.#touchControls) return;
+
+    const joystickId = this.#joystick.touchId;
+    const touchControlsId = this.#touchControls.touchId;
+
+    const joystickTouch = Array.from(event.touches).find(
+      (touch) => touch.identifier === joystickId
+    );
+    const touchControlsTouch = Array.from(event.touches).find(
+      (touch) => touch.identifier === touchControlsId
+    );
+
+    if (joystickTouch !== undefined)
+      this.#joystick.onTouchMove(joystickTouch.clientX, joystickTouch.clientY);
+    if (touchControlsTouch !== undefined)
+      this.#touchControls.onTouchMove(touchControlsTouch.clientX, touchControlsTouch.clientY);
+  }
+
+  #onTouchEnd(event: TouchEvent) {
+    if (!this.#joystick || !this.#touchControls) return;
+
+    const joystickId = this.#joystick.touchId;
+    const touchControlsId = this.#touchControls.touchId;
+
+    const joystickTouch = Array.from(event.touches).find(
+      (touch) => touch.identifier === joystickId
+    );
+    const touchControlsTouch = Array.from(event.touches).find(
+      (touch) => touch.identifier === touchControlsId
+    );
+
+    if (joystickTouch === undefined) this.#joystick.onTouchEnd();
+    if (touchControlsTouch === undefined) this.#touchControls.onTouchEnd();
   }
 
   #onClick() {

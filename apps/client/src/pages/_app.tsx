@@ -2,8 +2,10 @@ import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/globals.css";
 
 import { Nunito } from "@next/font/google";
+import { httpLink } from "@trpc/client";
 import { httpBatchLink } from "@trpc/client/links/httpBatchLink";
 import { loggerLink } from "@trpc/client/links/loggerLink";
+import { splitLink } from "@trpc/client/links/splitLink";
 import { withTRPC } from "@trpc/next";
 import { AppType } from "next/app";
 import Head from "next/head";
@@ -13,7 +15,6 @@ import React from "react";
 import ClientSideProviders from "../client/ClientSideProviders";
 import { AppRouter } from "../server/router/_app";
 import { getBaseUrl } from "../utils/getBaseUrl";
-
 // Export web vitals
 export { reportWebVitals } from "next-axiom";
 
@@ -58,41 +59,17 @@ export default withTRPC<AppRouter>({
             process.env.NODE_ENV === "development" ||
             (opts.direction === "down" && opts.result instanceof Error),
         }),
-        httpBatchLink({ url }),
+
+        splitLink({
+          condition(op) {
+            return op.context.skipBatch === true;
+          },
+          true: httpLink({ url }),
+          false: httpBatchLink({ url }),
+        }),
       ],
       url,
       queryClientConfig: { defaultOptions: { queries: { staleTime: 60 } } },
-      responseMeta({
-        ctx,
-        paths,
-        type,
-        errors,
-      }: {
-        ctx: any;
-        paths: string[];
-        type: string;
-        errors: any[];
-      }) {
-        const CACHED_PATHS = ["public.modelStats"];
-
-        const allCached =
-          paths && paths.every((path) => CACHED_PATHS.some((p) => path.includes(p)));
-
-        const allOk = errors.length === 0;
-        const isQuery = type === "query";
-
-        if (ctx?.res && allCached && allOk && isQuery) {
-          const ONE_HOUR_IN_SECONDS = 60 * 60;
-          const ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30;
-
-          return {
-            headers: {
-              "cache-control": `s-maxage=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_MONTH_IN_SECONDS}`,
-            },
-          };
-        }
-        return {};
-      },
     };
   },
 })(App);

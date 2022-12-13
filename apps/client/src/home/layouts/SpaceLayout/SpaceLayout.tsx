@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/router";
 
 import { useLens } from "../../../client/lens/hooks/useLens";
 import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
@@ -16,13 +15,11 @@ const host =
   process.env.NODE_ENV === "development" ? "localhost:4000" : env.NEXT_PUBLIC_DEFAULT_HOST;
 
 export interface Props extends PublicationProps {
+  id: string;
   children: React.ReactNode;
 }
 
-export default function SpaceLayout({ children, metadata, publication, image }: Props) {
-  const router = useRouter();
-  const id = router.query.id as string;
-
+export default function SpaceLayout({ id, metadata, publication, image, children }: Props) {
   const { handle } = useLens();
   const author = trimHandle(publication?.profile.handle);
   const isAuthor = handle && handle === author;

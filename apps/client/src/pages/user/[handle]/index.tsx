@@ -19,7 +19,7 @@ import { lensClient } from "../../../server/lens";
 import { getMediaURL } from "../../../utils/getMediaURL";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
-  res.setHeader("Cache-Control", "public, s-maxage=30, stale-while-revalidate=3600");
+  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=86400");
 
   const handle = query.handle as string;
   const props = await getProfileLayoutProps(handle);

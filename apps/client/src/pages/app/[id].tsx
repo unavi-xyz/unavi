@@ -19,7 +19,7 @@ import { getMediaURL } from "../../utils/getMediaURL";
 import { useIsMobile } from "../../utils/useIsMobile";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
-  res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
+  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=600");
 
   const id = query.id as string;
   const props = await getPublicationProps(id);

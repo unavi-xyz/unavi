@@ -16,13 +16,18 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
 
   res.setHeader(
     "Cache-Control",
-    `public, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
+    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
   const id = query.id as string;
-  const props = await getPublicationProps(id);
+  const publicationProps = await getPublicationProps(id);
 
-  return { props };
+  return {
+    props: {
+      id,
+      ...publicationProps,
+    },
+  };
 };
 
 export default function Settings(props: InferGetServerSidePropsType<typeof getServerSideProps>) {

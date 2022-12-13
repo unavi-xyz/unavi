@@ -1,5 +1,4 @@
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
-import { useRouter } from "next/router";
 
 import { getPublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { trpc } from "../../../client/trpc";
@@ -14,25 +13,32 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
 
   res.setHeader(
     "Cache-Control",
-    `public, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
+    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
   const id = query.id as string;
-  const props = await getPublicationProps(id);
+  const publicationProps = await getPublicationProps(id);
 
-  return { props };
+  return {
+    props: {
+      id,
+      ...publicationProps,
+    },
+  };
 };
 
 export default function Space(props: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const router = useRouter();
-  const id = router.query.id as string;
-
   const { data: stats } = trpc.public.modelStats.useQuery(
-    { publicationId: id },
+    { publicationId: props.id },
     {
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
+      trpc: {
+        context: {
+          skipBatch: true,
+        },
+      },
     }
   );
 

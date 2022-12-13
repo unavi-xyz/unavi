@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import { LocalStorageKey } from "../../../app/constants";
@@ -15,14 +14,12 @@ import { isFromCDN } from "../../../utils/isFromCDN";
 import MetaTags from "../../MetaTags";
 
 interface Props extends PublicationProps {
+  id: string;
   stats?: ModelStats;
   children: React.ReactNode;
 }
 
-export default function AvatarLayout({ stats, children, metadata, image, publication }: Props) {
-  const router = useRouter();
-  const id = router.query.id as string;
-
+export default function AvatarLayout({ id, stats, children, metadata, image, publication }: Props) {
   const { handle } = useLens();
   const author = trimHandle(publication?.profile.handle);
   const isAuthor = handle && handle === author;

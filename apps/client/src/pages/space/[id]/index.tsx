@@ -1,38 +1,41 @@
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
+import { useRouter } from "next/router";
 
 import { getPublicationProps } from "../../../client/lens/utils/getPublicationProps";
+import { trpc } from "../../../client/trpc";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
-import { getGltfStats } from "../../../server/helpers/getGltfStats";
 import { bytesToDisplay } from "../../../utils/bytesToDisplay";
 import { numberToCommas } from "../../../utils/numberToCommas";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
-  const ONE_HOUR_IN_SECONDS = 60 * 60;
-  const ONE_WEEK_IN_SECONDS = ONE_HOUR_IN_SECONDS * 24 * 7;
+  const ONE_MINUTE_IN_SECONDS = 60;
+  const ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
 
   res.setHeader(
     "Cache-Control",
-    `public, s-maxage=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
+    `public, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
   const id = query.id as string;
+  const props = await getPublicationProps(id);
 
-  const publicationPropsPromise = getPublicationProps(id);
-  const statsPromise = getGltfStats(id);
-
-  const publicationProps = await publicationPropsPromise;
-  const stats = await statsPromise;
-
-  return {
-    props: {
-      ...publicationProps,
-      stats,
-    },
-  };
+  return { props };
 };
 
 export default function Space(props: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const router = useRouter();
+  const id = router.query.id as string;
+
+  const { data: stats } = trpc.public.modelStats.useQuery(
+    { publicationId: id },
+    {
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+    }
+  );
+
   return (
     <SpaceLayout {...props}>
       <div className="space-y-4 text-lg">
@@ -48,14 +51,17 @@ export default function Space(props: InferGetServerSidePropsType<typeof getServe
           </div>
 
           <div className="pl-4">
-            {[
-              bytesToDisplay(props.stats.fileSize),
-              numberToCommas(props.stats.polygonCount),
-              numberToCommas(props.stats.materialCount),
-              numberToCommas(props.stats.meshCount),
-              numberToCommas(props.stats.skinCount),
-              numberToCommas(props.stats.boneCount),
-            ].map((stat, i) => (
+            {(stats
+              ? [
+                  bytesToDisplay(stats.fileSize),
+                  numberToCommas(stats.polygonCount),
+                  numberToCommas(stats.materialCount),
+                  numberToCommas(stats.meshCount),
+                  numberToCommas(stats.skinCount),
+                  numberToCommas(stats.boneCount),
+                ]
+              : ["...", "...", "...", "...", "...", "..."]
+            ).map((stat, i) => (
               <div key={i}>{stat}</div>
             ))}
           </div>

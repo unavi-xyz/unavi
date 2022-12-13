@@ -5,7 +5,7 @@ import { GetPublicationDocument, GetPublicationQuery, GetPublicationQueryVariabl
 import { lensClient } from "../lens";
 import createDecoderModule from "./draco_decoder_gltf";
 
-export type GLTFStats = {
+export type ModelStats = {
   fileSize: number;
   materialCount: number;
   meshCount: number;
@@ -14,7 +14,7 @@ export type GLTFStats = {
   polygonCount: number;
 };
 
-export async function getGltfStats(publicationId: string): Promise<GLTFStats> {
+export async function getModelStats(publicationId: string): Promise<ModelStats> {
   // Fetch publication
   const { data } = await lensClient
     .query<GetPublicationQuery, GetPublicationQueryVariables>(GetPublicationDocument, {

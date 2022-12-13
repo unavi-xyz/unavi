@@ -1,9 +1,9 @@
-import { GLTFStats } from "../../server/helpers/getGltfStats";
+import { ModelStats } from "../../server/helpers/getModelStats";
 
 export type AvatarPerformanceRank = "Excellent" | "Good" | "Medium" | "Poor" | "Very Poor";
 
 type WithoutVeryPoor = Exclude<AvatarPerformanceRank, "Very Poor">;
-type AvatarStats = Omit<GLTFStats, "fileSize">;
+type AvatarStats = Omit<ModelStats, "fileSize">;
 
 const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   Excellent: {
@@ -39,7 +39,7 @@ const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   },
 };
 
-export function getAvatarPerformanceRank(stats: GLTFStats): AvatarPerformanceRank {
+export function getAvatarPerformanceRank(stats: ModelStats): AvatarPerformanceRank {
   const keys = Object.keys(thresholds) as WithoutVeryPoor[];
 
   for (let i = 0; i < keys.length; i++) {

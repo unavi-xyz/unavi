@@ -62,6 +62,37 @@ export default withTRPC<AppRouter>({
       ],
       url,
       queryClientConfig: { defaultOptions: { queries: { staleTime: 60 } } },
+      responseMeta({
+        ctx,
+        paths,
+        type,
+        errors,
+      }: {
+        ctx: any;
+        paths: string[];
+        type: string;
+        errors: any[];
+      }) {
+        const CACHED_PATHS = ["public.modelStats"];
+
+        const allCached =
+          paths && paths.every((path) => CACHED_PATHS.some((p) => path.includes(p)));
+
+        const allOk = errors.length === 0;
+        const isQuery = type === "query";
+
+        if (ctx?.res && allCached && allOk && isQuery) {
+          const ONE_HOUR_IN_SECONDS = 60 * 60;
+          const ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30;
+
+          return {
+            headers: {
+              "cache-control": `s-maxage=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_MONTH_IN_SECONDS}`,
+            },
+          };
+        }
+        return {};
+      },
     };
   },
 })(App);

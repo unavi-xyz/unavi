@@ -8,14 +8,14 @@ import { getAvatarPerformanceRank } from "../../../app/helpers/getAvatarPerforma
 import { useLens } from "../../../client/lens/hooks/useLens";
 import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { trimHandle } from "../../../client/lens/utils/trimHandle";
-import { GLTFStats } from "../../../server/helpers/getGltfStats";
+import { ModelStats } from "../../../server/helpers/getModelStats";
 import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
 import { isFromCDN } from "../../../utils/isFromCDN";
 import MetaTags from "../../MetaTags";
 
 interface Props extends PublicationProps {
-  stats: GLTFStats;
+  stats?: ModelStats;
   children: React.ReactNode;
 }
 
@@ -43,7 +43,7 @@ export default function AvatarLayout({ stats, children, metadata, image, publica
     setIsEquipped(false);
   }
 
-  const performanceRank = getAvatarPerformanceRank(stats);
+  const performanceRank = stats ? getAvatarPerformanceRank(stats) : undefined;
 
   return (
     <>
@@ -100,7 +100,7 @@ export default function AvatarLayout({ stats, children, metadata, image, publica
                       rel="noreferrer"
                       className="cursor-pointer hover:underline"
                     >
-                      {performanceRank}
+                      {performanceRank ?? "..."}
                     </a>
                   </div>
                 </div>

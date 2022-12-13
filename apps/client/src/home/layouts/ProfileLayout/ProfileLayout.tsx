@@ -46,7 +46,7 @@ export default function ProfileLayout({
 
       {profile ? (
         <div className="max-w-content mx-auto">
-          <div className="h-48 w-full bg-sky-100 md:h-64 md:rounded-3xl">
+          <div className="h-48 w-full bg-sky-100 md:h-64 lg:rounded-xl">
             <div className="relative h-full w-full object-cover">
               {coverImage &&
                 (isFromCDN(coverImage) ? (
@@ -56,13 +56,13 @@ export default function ProfileLayout({
                     fill
                     sizes="80vw"
                     alt=""
-                    className="h-full w-full object-cover md:rounded-3xl"
+                    className="h-full w-full object-cover lg:rounded-xl"
                   />
                 ) : (
                   <img
                     src={coverImage}
                     alt=""
-                    className="h-full w-full object-cover md:rounded-3xl"
+                    className="h-full w-full object-cover lg:rounded-xl"
                     crossOrigin="anonymous"
                   />
                 ))}
@@ -154,7 +154,7 @@ export default function ProfileLayout({
               </div>
             </div>
 
-            <div className="mt-4 w-full">{children}</div>
+            <div className="mt-6 w-full">{children}</div>
           </div>
         </div>
       ) : (

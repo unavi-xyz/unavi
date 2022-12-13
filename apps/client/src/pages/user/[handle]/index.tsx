@@ -66,13 +66,13 @@ export default function User({
   return (
     <ProfileLayout {...rest}>
       {publications && publications.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 pb-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 pb-4 md:mx-4 md:grid-cols-4 lg:mx-0">
           {publications.map((publication) => {
             if (publication.appId === AppId.Space) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 
               return (
-                <div key={publication.id} className="w-full md:col-span-2">
+                <div key={publication.id} className="col-span-2 w-full">
                   <Link href={`/space/${publication.id}`}>
                     <SpaceCard space={publication} sizes="49vw" />
                   </Link>

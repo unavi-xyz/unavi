@@ -57,7 +57,7 @@ export default function AvatarLayout({ stats, children, metadata, image, publica
       <div className="mx-4 h-full">
         <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
           <div className="flex flex-col items-center space-y-8 md:flex-row md:items-stretch md:space-y-0 md:space-x-8">
-            <div className="aspect-vertical h-full w-1/2 rounded-3xl bg-sky-100">
+            <div className="aspect-vertical h-full w-2/3 rounded-2xl bg-sky-100 md:w-1/2">
               <div className="relative h-full w-full object-cover">
                 {image &&
                   (isFromCDN(image) ? (
@@ -67,42 +67,42 @@ export default function AvatarLayout({ stats, children, metadata, image, publica
                       fill
                       sizes="425px"
                       alt=""
-                      className="rounded-3xl object-cover"
+                      className="rounded-2xl object-cover"
                     />
                   ) : (
                     <img
                       src={image}
                       alt=""
-                      className="h-full w-full rounded-3xl object-cover"
+                      className="h-full w-full rounded-2xl object-cover"
                       crossOrigin="anonymous"
                     />
                   ))}
               </div>
             </div>
 
-            <div className="flex min-w-fit flex-col justify-between space-y-8 md:w-2/3">
-              <div className="space-y-4">
-                <div className="flex justify-center text-3xl font-black">
-                  {publication?.metadata.name}
-                </div>
+            <div className="flex w-full min-w-fit flex-col justify-between space-y-4 md:w-2/3">
+              <div className="space-y-4 pb-2">
+                <div className="text-center text-3xl font-black">{publication?.metadata.name}</div>
 
-                <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                  <div className="text-neutral-500">By</div>
-                  <Link href={`/user/${author}`}>
-                    <div className="cursor-pointer hover:underline">@{author}</div>
-                  </Link>
-                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
+                    <div className="text-neutral-500">By</div>
+                    <Link href={`/user/${author}`}>
+                      <div className="cursor-pointer hover:underline">@{author}</div>
+                    </Link>
+                  </div>
 
-                <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                  <div className="text-neutral-500">Performance</div>
-                  <a
-                    href="https://docs.thewired.space/avatars#-perfomance-ranks"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="cursor-pointer hover:underline"
-                  >
-                    {performanceRank}
-                  </a>
+                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
+                    <div className="text-neutral-500">Performance</div>
+                    <a
+                      href="https://docs.thewired.space/avatars#-perfomance-ranks"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="cursor-pointer hover:underline"
+                    >
+                      {performanceRank}
+                    </a>
+                  </div>
                 </div>
               </div>
 

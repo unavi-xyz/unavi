@@ -13,7 +13,7 @@ export default function MobileChatBox() {
           <div className="flex w-full justify-end">
             <button
               onClick={() => setOpenChat(false)}
-              className="aspect-square rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg"
+              className="aspect-square rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg active:bg-white/90 active:shadow-lg"
             >
               <MdClose />
             </button>

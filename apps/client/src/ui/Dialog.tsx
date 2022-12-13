@@ -55,7 +55,7 @@ export default function Dialog({ open, onClose, children }: Props): ReactPortal 
         ref={dialogRef}
         open
         onMouseDown={(e) => e.stopPropagation()}
-        className="flex w-full max-w-xl scale-75 flex-col space-y-4 rounded-3xl bg-white p-10 opacity-0 drop-shadow-lg transition duration-200 ease-in-out"
+        className="flex w-11/12 max-w-xl scale-75 flex-col space-y-4 rounded-2xl bg-white p-6 opacity-0 drop-shadow-lg transition duration-200 ease-in-out md:w-full md:p-10"
       >
         {children}
       </dialog>

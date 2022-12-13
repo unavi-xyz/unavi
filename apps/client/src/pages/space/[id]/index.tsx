@@ -35,42 +35,29 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
 export default function Space(props: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <SpaceLayout {...props}>
-      <div className="space-y-8">
+      <div className="space-y-4 text-lg">
         {props.publication?.metadata.description && (
-          <div className="space-y-2">
-            <div className="text-2xl font-bold">Description</div>
-            <div className="whitespace-pre-line text-lg text-neutral-500">
-              {props.publication?.metadata.description}
-            </div>
-          </div>
+          <div className="whitespace-pre-line">{props.publication?.metadata.description}</div>
         )}
 
-        <div className="space-y-2">
-          <div className="text-2xl font-bold">Stats</div>
+        <div className="flex text-neutral-500">
+          <div>
+            {["File Size", "Polygons", "Materials", "Meshes", "Skins", "Bones"].map((title) => (
+              <div key={title}>{title}</div>
+            ))}
+          </div>
 
-          <div className="flex text-lg">
-            <div>
-              {["File Size", "Polygons", "Materials", "Meshes", "Skins", "Bones"].map((title) => (
-                <div key={title} className="font-bold">
-                  {title}
-                </div>
-              ))}
-            </div>
-
-            <div className="pl-8">
-              {[
-                bytesToDisplay(props.stats.fileSize),
-                numberToCommas(props.stats.polygonCount),
-                numberToCommas(props.stats.materialCount),
-                numberToCommas(props.stats.meshCount),
-                numberToCommas(props.stats.skinCount),
-                numberToCommas(props.stats.boneCount),
-              ].map((stat, i) => (
-                <div key={i} className="text-neutral-500">
-                  {stat}
-                </div>
-              ))}
-            </div>
+          <div className="pl-4">
+            {[
+              bytesToDisplay(props.stats.fileSize),
+              numberToCommas(props.stats.polygonCount),
+              numberToCommas(props.stats.materialCount),
+              numberToCommas(props.stats.meshCount),
+              numberToCommas(props.stats.skinCount),
+              numberToCommas(props.stats.boneCount),
+            ].map((stat, i) => (
+              <div key={i}>{stat}</div>
+            ))}
           </div>
         </div>
       </div>

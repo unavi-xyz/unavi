@@ -26,7 +26,7 @@ export default function Card({
   return (
     <div className="h-full w-full transition hover:scale-105">
       <div
-        className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-sky-100 ${animateCss} ${aspectCss}`}
+        className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-sky-100 ${animateCss} ${aspectCss}`}
       >
         {image &&
           (isFromCDN(image) ? (
@@ -37,14 +37,14 @@ export default function Card({
               sizes={sizes}
               draggable={false}
               alt=""
-              className="rounded-2xl object-cover"
+              className="rounded-xl object-cover"
             />
           ) : (
             <img
               src={image}
               draggable={false}
               alt=""
-              className="h-full w-full rounded-2xl object-cover"
+              className="h-full w-full rounded-xl object-cover"
               crossOrigin="anonymous"
             />
           ))}

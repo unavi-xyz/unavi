@@ -70,7 +70,7 @@ export class MainScene {
       );
 
       // Add loaded glTF to the scene
-      const loadSpawn = this.#gltfLoadSpawn.get(id);
+      const loadSpawn = this.#gltfLoadSpawn.get(id) ?? false;
       await this.loadJSON(scene, false, loadSpawn);
 
       // Call glTF load callbacks

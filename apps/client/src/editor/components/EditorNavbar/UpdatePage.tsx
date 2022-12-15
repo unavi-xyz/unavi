@@ -50,14 +50,11 @@ export default function UpdatePage({ onClose }: Props) {
 
   const { mutateAsync: saveProject } = trpc.project.save.useMutation();
 
-  const { mutateAsync: createModelUploadUrl } =
-    trpc.publication.modelUploadURL.useMutation();
+  const { mutateAsync: createModelUploadUrl } = trpc.publication.modelUploadURL.useMutation();
 
-  const { mutateAsync: createImageUploadUrl } =
-    trpc.publication.imageUploadURL.useMutation();
+  const { mutateAsync: createImageUploadUrl } = trpc.publication.imageUploadURL.useMutation();
 
-  const { mutateAsync: createMetadataUploadUrl } =
-    trpc.publication.metadataUploadURL.useMutation();
+  const { mutateAsync: createMetadataUploadUrl } = trpc.publication.metadataUploadURL.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
@@ -267,9 +264,7 @@ export default function UpdatePage({ onClose }: Props) {
               const file = e.target.files?.[0];
               if (!file) return;
 
-              cropImage(URL.createObjectURL(file)).then((file) =>
-                setImageFile(file)
-              );
+              cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
             }}
           >
             Upload Image

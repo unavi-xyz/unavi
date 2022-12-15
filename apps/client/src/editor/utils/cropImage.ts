@@ -1,8 +1,4 @@
-export async function cropImage(
-  url: string,
-  ratio = 5 / 3,
-  keepWidth = true
-): Promise<File> {
+export async function cropImage(url: string, ratio = 5 / 3, keepWidth = true): Promise<File> {
   const res = await fetch(url);
   const imageBlob = await res.blob();
 
@@ -34,23 +30,12 @@ export async function cropImage(
       canvas.width = cropWidth;
       canvas.height = cropHeight;
 
-      ctx.drawImage(
-        img,
-        cropX,
-        cropY,
-        cropWidth,
-        cropHeight,
-        0,
-        0,
-        cropWidth,
-        cropHeight
-      );
+      ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
 
       canvas.toBlob((blob) => {
         URL.revokeObjectURL(img.src);
 
-        if (blob)
-          resolve(new File([blob], "image.jpg", { type: "image/jpeg" }));
+        if (blob) resolve(new File([blob], "image.jpg", { type: "image/jpeg" }));
         else reject();
       }, "image/jpeg");
     };

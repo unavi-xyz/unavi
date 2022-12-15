@@ -13,6 +13,8 @@ export class WebRTC {
   playerId: number | null = null;
   playerPosition: Int32Array | null = null;
   playerRotation: Int16Array | null = null;
+  cameraPosition: Int32Array | null = null;
+  cameraRotation: Int16Array | null = null;
 
   #ws: WebSocket;
   #networkingInterface: NetworkingInterface;
@@ -130,17 +132,14 @@ export class WebRTC {
             });
           });
 
-          transport.on(
-            "producedata",
-            async ({ sctpStreamParameters }, callback) => {
-              this.#onDataProducerId = callback;
+          transport.on("producedata", async ({ sctpStreamParameters }, callback) => {
+            this.#onDataProducerId = callback;
 
-              this.#send({
-                subject: "produce_data",
-                data: { sctpStreamParameters },
-              });
-            }
-          );
+            this.#send({
+              subject: "produce_data",
+              data: { sctpStreamParameters },
+            });
+          });
 
           const dataProducer = await transport.produceData({
             ordered: false,
@@ -160,9 +159,38 @@ export class WebRTC {
               this.playerId === null ||
               !this.playerPosition ||
               !this.playerRotation ||
+              !this.cameraPosition ||
+              !this.cameraRotation ||
               dataProducer.readyState !== "open"
             )
               return;
+
+            // Set audio listener location
+            const camPosX = Atomics.load(this.cameraPosition, 0);
+            const camPosY = Atomics.load(this.cameraPosition, 1);
+            const camPosZ = Atomics.load(this.cameraPosition, 2);
+
+            const camRotY = Atomics.load(this.cameraRotation, 1);
+            const camRotW = Atomics.load(this.cameraRotation, 3);
+
+            const listener = this.#audioContext.listener;
+
+            if (listener.positionX !== undefined) {
+              listener.positionX.value = camPosX / 1000;
+              listener.positionY.value = camPosY / 1000;
+              listener.positionZ.value = camPosZ / 1000;
+            } else {
+              listener.setPosition(camPosX / 1000, camPosY / 1000, camPosZ / 1000);
+            }
+
+            const yaw = quaternionToYaw(camRotY / 1000, camRotW / 1000);
+
+            if (listener.forwardX !== undefined) {
+              listener.forwardX.value = -Math.sin(yaw);
+              listener.forwardZ.value = -Math.cos(yaw);
+            } else {
+              listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
+            }
 
             // Read location
             const posX = Atomics.load(this.playerPosition, 0);
@@ -173,33 +201,6 @@ export class WebRTC {
             const rotY = Atomics.load(this.playerRotation, 1);
             const rotZ = Atomics.load(this.playerRotation, 2);
             const rotW = Atomics.load(this.playerRotation, 3);
-
-            // Set audio listener position
-            const listener = this.#audioContext.listener;
-
-            if (listener.positionX !== undefined) {
-              listener.positionX.value = posX / 1000;
-              listener.positionY.value = posY / 1000;
-              listener.positionZ.value = posZ / 1000;
-            } else {
-              listener.setPosition(posX / 1000, posY / 1000, posZ / 1000);
-            }
-
-            const yaw = quaternionToYaw(rotY / 1000, rotW / 1000);
-
-            if (listener.forwardX !== undefined) {
-              listener.forwardX.value = -Math.sin(yaw);
-              listener.forwardZ.value = -Math.cos(yaw);
-            } else {
-              listener.setOrientation(
-                -Math.sin(yaw),
-                0,
-                -Math.cos(yaw),
-                0,
-                1,
-                0
-              );
-            }
 
             // Create buffer
             view.setUint8(0, this.playerId);
@@ -231,10 +232,8 @@ export class WebRTC {
       }
 
       case "create_consumer": {
-        if (!this.#consumerTransport)
-          throw new Error("Consumer transport not initialized");
-        if (this.#consumerTransport.closed)
-          throw new Error("Consumer transport closed");
+        if (!this.#consumerTransport) throw new Error("Consumer transport not initialized");
+        if (this.#consumerTransport.closed) throw new Error("Consumer transport closed");
 
         const consumer = await this.#consumerTransport.consume({
           id: data.id,
@@ -259,9 +258,7 @@ export class WebRTC {
         audio.srcObject = stream;
 
         // Create audio source
-        const source = this.#audioContext.createMediaStreamSource(
-          audio.srcObject
-        );
+        const source = this.#audioContext.createMediaStreamSource(audio.srcObject);
 
         // Create panner
         const panner = this.#audioContext.createPanner();
@@ -272,13 +269,11 @@ export class WebRTC {
         source.connect(panner);
         panner.connect(this.#audioContext.destination);
 
-        if (this.#audioContext.state === "suspended")
-          this.#audioContext.resume();
+        if (this.#audioContext.state === "suspended") this.#audioContext.resume();
 
         // Play audio on user interaction
         const play = async () => {
-          if (this.#audioContext.state === "suspended")
-            await this.#audioContext.resume();
+          if (this.#audioContext.state === "suspended") await this.#audioContext.resume();
           document.removeEventListener("click", play);
         };
 
@@ -290,10 +285,8 @@ export class WebRTC {
       }
 
       case "create_data_consumer": {
-        if (!this.#consumerTransport)
-          throw new Error("Consumer transport not initialized");
-        if (this.#consumerTransport.closed)
-          throw new Error("Consumer transport closed");
+        if (!this.#consumerTransport) throw new Error("Consumer transport not initialized");
+        if (this.#consumerTransport.closed) throw new Error("Consumer transport closed");
 
         const dataConsumer = await this.#consumerTransport.consumeData({
           id: data.id,
@@ -302,8 +295,7 @@ export class WebRTC {
         });
 
         dataConsumer.on("message", async (data: ArrayBuffer | Blob) => {
-          const buffer =
-            data instanceof ArrayBuffer ? data : await data.arrayBuffer();
+          const buffer = data instanceof ArrayBuffer ? data : await data.arrayBuffer();
 
           // Apply location to audio panner
           const view = new DataView(buffer);
@@ -351,10 +343,8 @@ export class WebRTC {
   }
 
   async produceAudio(track: MediaStreamTrack) {
-    if (!this.#producerTransport)
-      throw new Error("Producer transport not initialized");
-    if (this.#producerTransport.closed)
-      throw new Error("Producer transport closed");
+    if (!this.#producerTransport) throw new Error("Producer transport not initialized");
+    if (this.#producerTransport.closed) throw new Error("Producer transport closed");
 
     this.#producer = await this.#producerTransport.produce({ track });
 

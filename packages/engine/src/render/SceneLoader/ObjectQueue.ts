@@ -56,8 +56,7 @@ export class ObjectQueue {
         item.object.visible = true;
 
         // Compile materials
-        if (item.object instanceof Mesh)
-          this.#renderer.compile(item.object, this.#camera);
+        if (item.object instanceof Mesh) this.#renderer.compile(item.object, this.#camera);
 
         // Add to compile time
         const difference = performance.now() - start;

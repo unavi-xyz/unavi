@@ -126,10 +126,7 @@ export default function InspectMenu() {
 
 function ComponentButton({ children, ...props }: any) {
   return (
-    <button
-      className="w-full cursor-default rounded-lg transition hover:bg-sky-100"
-      {...props}
-    >
+    <button className="w-full cursor-default rounded-lg transition hover:bg-sky-100" {...props}>
       {children}
     </button>
   );

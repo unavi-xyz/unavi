@@ -1,8 +1,4 @@
-import {
-  ExtensionProperty,
-  IProperty,
-  PropertyType,
-} from "@gltf-transform/core";
+import { ExtensionProperty, IProperty, PropertyType } from "@gltf-transform/core";
 
 import { EXTENSION_NAME, PROPERTY_TYPE } from "./constants";
 

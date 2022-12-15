@@ -1,11 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import {
-  MdAdd,
-  MdOutlineAccountBalanceWallet,
-  MdOutlinePersonOutline,
-} from "react-icons/md";
+import { MdAdd, MdOutlineAccountBalanceWallet, MdOutlinePersonOutline } from "react-icons/md";
 
 import { useLens } from "../../../client/lens/hooks/useLens";
 import { useProfileByHandle } from "../../../client/lens/hooks/useProfileByHandle";

@@ -1,27 +1,28 @@
-import { useGetPublicationQuery } from "lens";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useAnalytics } from "../../app/hooks/useAnalytics";
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useLoadUser } from "../../app/hooks/useLoadUser";
+import { useResizeEngineCanvas } from "../../app/hooks/useResizeEngineCanvas";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
 import LoadingScreen from "../../app/ui/LoadingScreen";
+import MobileChatBox from "../../app/ui/MobileChatBox";
 import UserButton from "../../app/ui/UserButtons";
 import { getPublicationProps } from "../../client/lens/utils/getPublicationProps";
 import MetaTags from "../../home/MetaTags";
-import { getMediaURL } from "../../utils/getMediaURL";
+import { useIsMobile } from "../../utils/useIsMobile";
 
-export const getServerSideProps = async ({
-  res,
-  query,
-}: GetServerSidePropsContext) => {
+export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
+  const ONE_MINUTE_IN_SECONDS = 60;
+  const ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
+
   res.setHeader(
     "Cache-Control",
-    "public, s-maxage=60, stale-while-revalidate=600"
+    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
   const id = query.id as string;
@@ -29,8 +30,8 @@ export const getServerSideProps = async ({
 
   return {
     props: {
-      ...props,
       id,
+      ...props,
     },
   };
 };
@@ -38,6 +39,7 @@ export const getServerSideProps = async ({
 export default function App({
   id,
   metadata,
+  image,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -49,21 +51,16 @@ export default function App({
   const engine = useAppStore((state) => state.engine);
 
   const setAvatar = useSetAvatar();
-
+  const isMobile = useIsMobile();
+  useResizeEngineCanvas(engine, canvasRef, containerRef);
   useLoadUser();
   useAppHotkeys();
   useAnalytics();
 
-  const [{ data }] = useGetPublicationQuery({
-    variables: { request: { publicationId: id } },
-    pause: !id,
-  });
-
-  const image = getMediaURL(data?.publication?.metadata.media[0]);
-
   useEffect(() => {
     if (!engine) return;
 
+    // Display loading status
     engine.networkingInterface.spaceJoinStatus$.subscribe(
       ({ spaceFetched, sceneLoaded, webrtcConnected, wsConnected }) => {
         setLoadingText("Fetching space...");
@@ -91,6 +88,7 @@ export default function App({
       }
     );
 
+    // Join space
     engine.joinSpace(id).then(async () => {
       // Start engine
       await engine.start();
@@ -142,41 +140,6 @@ export default function App({
     };
   }, [engine]);
 
-  const updateCanvasSize = useMemo(() => {
-    return () => {
-      if (typeof OffscreenCanvas !== "undefined") {
-        if (!engine) return;
-        const resize = engine.renderThread.onResize.bind(engine.renderThread);
-        resize();
-        return;
-      }
-
-      try {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const container = containerRef.current;
-        if (!container) return;
-
-        // Resize canvas
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
-      } catch (e) {
-        console.error(e);
-      }
-    };
-  }, [engine]);
-
-  useEffect(() => {
-    // Set initial canvas size
-    updateCanvasSize();
-
-    window.addEventListener("resize", updateCanvasSize);
-    return () => {
-      window.removeEventListener("resize", updateCanvasSize);
-    };
-  }, [updateCanvasSize]);
-
   const loadedClass = engineStarted ? "opacity-100" : "opacity-0";
 
   return (
@@ -191,7 +154,7 @@ export default function App({
       <Script src="/scripts/draco_decoder.js" />
 
       <LoadingScreen
-        text={data?.publication?.metadata.name}
+        text={metadata.title}
         image={image}
         loaded={engineStarted}
         loadingProgress={loadingProgress}
@@ -230,22 +193,22 @@ export default function App({
         )}
 
         <div className="h-full">
-          <div
-            ref={containerRef}
-            className="relative h-full w-full overflow-hidden"
-          >
-            <canvas
-              ref={canvasRef}
-              className={`h-full w-full transition ${loadedClass}`}
-            />
+          <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+            <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
           </div>
         </div>
 
-        {engineStarted && (
-          <div className="absolute left-0 bottom-0 z-10 m-4">
-            <ChatBox />
-          </div>
-        )}
+        {engineStarted ? (
+          isMobile ? (
+            <div className="absolute left-0 bottom-0 z-10 p-4">
+              <MobileChatBox />
+            </div>
+          ) : (
+            <div className="absolute left-0 bottom-0 z-10 w-full max-w-sm p-4">
+              <ChatBox />
+            </div>
+          )
+        ) : null}
       </div>
     </>
   );

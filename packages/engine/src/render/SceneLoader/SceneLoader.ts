@@ -51,10 +51,7 @@ export class SceneLoader {
   #postMessage: PostMessage<FromRenderMessage>;
   #renderWorker: RenderWorker;
 
-  constructor(
-    postMessage: PostMessage<FromRenderMessage>,
-    renderWorker: RenderWorker
-  ) {
+  constructor(postMessage: PostMessage<FromRenderMessage>, renderWorker: RenderWorker) {
     this.#postMessage = postMessage;
     this.#renderWorker = renderWorker;
 
@@ -150,21 +147,15 @@ export class SceneLoader {
 
         // Add images
         if (data.scene.images)
-          data.scene.images.forEach((i) =>
-            this.#map.images.set(i.id, i.bitmap)
-          );
+          data.scene.images.forEach((i) => this.#map.images.set(i.id, i.bitmap));
 
         // Add materials
         if (data.scene.materials)
-          data.scene.materials.forEach((m) =>
-            addMaterial(m, this.#map, this.#renderWorker)
-          );
+          data.scene.materials.forEach((m) => addMaterial(m, this.#map, this.#renderWorker));
 
         // Add meshes
         if (data.scene.meshes)
-          data.scene.meshes.forEach((m) =>
-            addMesh(m, this.#map, this.#postMessage)
-          );
+          data.scene.meshes.forEach((m) => addMesh(m, this.#map, this.#postMessage));
 
         // Add nodes
         if (data.scene.nodes) {
@@ -193,8 +184,7 @@ export class SceneLoader {
 
   #updateVisuals() {
     this.root.traverse((object) => {
-      if (object.userData[UserData.isVisual])
-        object.visible = this.#showVisuals;
+      if (object.userData[UserData.isVisual]) object.visible = this.#showVisuals;
     });
   }
 
@@ -247,8 +237,7 @@ export class SceneLoader {
         case "Cylinder": {
           const object = this.findObject(meshId);
           if (!object) throw new Error("Object not found");
-          if (!(object instanceof Mesh))
-            throw new Error("Object is not a mesh");
+          if (!(object instanceof Mesh)) throw new Error("Object is not a mesh");
 
           const mesh = object as Mesh<BufferGeometry, MeshStandardMaterial>;
 

@@ -1,9 +1,4 @@
-import {
-  AnimationClip,
-  BufferAttribute,
-  MeshStandardMaterial,
-  Object3D,
-} from "three";
+import { AnimationClip, BufferAttribute, MeshStandardMaterial, Object3D } from "three";
 
 import { AccessorJSON, MeshJSON, NodeJSON } from "../../scene";
 import { ObjectQueue } from "./ObjectQueue";

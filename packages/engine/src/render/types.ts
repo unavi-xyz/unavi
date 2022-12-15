@@ -56,11 +56,9 @@ export type ToRenderMessage =
   | WorkerMessage<"set_transform_target", string | null>
   | WorkerMessage<"set_transform_mode", "translate" | "rotate" | "scale">
   | WorkerMessage<"prepare_export">
-  | WorkerMessage<
-      "set_player_buffers",
-      { position: Int32Array; velocity: Int32Array }
-    >
+  | WorkerMessage<"set_player_buffers", { position: Int32Array; velocity: Int32Array }>
   | WorkerMessage<"set_player_input_vector", [number, number]>
+  | WorkerMessage<"set_camera_input_vector", [number, number]>
   | WorkerMessage<
       "mouse_move",
       {
@@ -129,6 +127,7 @@ export type FromRenderMessage =
       }
     >
   | WorkerMessage<"set_player_rotation_buffer", Int16Array>
+  | WorkerMessage<"set_camera_buffers", { position: Int32Array; rotation: Int16Array }>
   | WorkerMessage<
       "set_collider_geometry",
       { nodeId: string; positions: Float32Array; indices?: Uint32Array }

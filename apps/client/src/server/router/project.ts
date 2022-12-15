@@ -113,9 +113,7 @@ export const projectRouter = router({
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get file urls from S3
-      const urlPromises = project.files.map((file) =>
-        getFileURL(input.id, file.storageKey)
-      );
+      const urlPromises = project.files.map((file) => getFileURL(input.id, file.storageKey));
 
       const urls = await Promise.all(urlPromises);
 
@@ -227,11 +225,7 @@ export const projectRouter = router({
         id: z.string().length(PROJECT_ID_LENGTH),
         name: z.string().max(PROJECT_NAME_LENGTH).optional(),
         description: z.string().max(PROJECT_DESCRIPTION_LENGTH).optional(),
-        publicationId: z
-          .string()
-          .length(PUBLICATION_ID_LENGTH)
-          .or(z.null())
-          .optional(),
+        publicationId: z.string().length(PUBLICATION_ID_LENGTH).or(z.null()).optional(),
         editorState: z
           .object({
             visuals: z.boolean(),
@@ -278,9 +272,7 @@ export const projectRouter = router({
 
         // From S3
         const storageKeys = project.files.map((file) => file.storageKey);
-        const oldFiles = storageKeys.filter(
-          (storageKey) => !input.fileIds?.includes(storageKey)
-        );
+        const oldFiles = storageKeys.filter((storageKey) => !input.fileIds?.includes(storageKey));
         promises.push(deleteFilesFromS3(input.id, oldFiles));
       }
 

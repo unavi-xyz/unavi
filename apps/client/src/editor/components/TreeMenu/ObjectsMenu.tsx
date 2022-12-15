@@ -1,11 +1,4 @@
-import {
-  AutoCollider,
-  BoxMesh,
-  CylinderMesh,
-  GLTFMesh,
-  Node,
-  SphereMesh,
-} from "engine";
+import { AutoCollider, BoxMesh, CylinderMesh, GLTFMesh, Node, SphereMesh } from "engine";
 
 import { addMesh } from "../../actions/AddMeshAction";
 import { addNode } from "../../actions/AddNodeAction";

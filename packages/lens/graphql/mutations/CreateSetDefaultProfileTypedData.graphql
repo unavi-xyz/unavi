@@ -1,6 +1,4 @@
-mutation CreateSetDefaultProfileTypedData(
-  $request: CreateSetDefaultProfileRequest!
-) {
+mutation CreateSetDefaultProfileTypedData($request: CreateSetDefaultProfileRequest!) {
   createSetDefaultProfileTypedData(request: $request) {
     id
     expiresAt

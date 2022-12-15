@@ -1,7 +1,7 @@
 import { GLTFExporter } from "./exporter/GLTFExporter";
 import { LoaderThread } from "./loader/LoaderThread";
+import { InputManager } from "./main/InputManager";
 import { MainScene } from "./main/MainScene";
-import { Player } from "./main/Player";
 import { NetworkingInterface } from "./networking/NetworkingInterface";
 import { PhysicsThread } from "./physics/PhysicsThread";
 import { RenderThread } from "./render/RenderThread";
@@ -27,7 +27,7 @@ export class Engine {
 
   scene: MainScene;
   networkingInterface: NetworkingInterface;
-  player: Player | null = null;
+  input: InputManager | null = null;
 
   running = false;
 
@@ -71,12 +71,13 @@ export class Engine {
       renderThread: this.renderThread,
     });
 
+    this.input = new InputManager(this.renderThread, this.physicsThread, camera);
+
     // Once the threads are ready, create the player
     const createPlayer = async () => {
       await this.renderThread.waitForReady();
       await this.physicsThread.waitForReady();
 
-      this.player = new Player(canvas, this.renderThread, this.physicsThread);
       this.physicsThread.initPlayer();
     };
 
@@ -149,6 +150,6 @@ export class Engine {
     this.loaderThread.destroy();
     this.renderThread.destroy();
     this.scene.destroy();
-    this.player?.destroy();
+    this.input?.destroy();
   }
 }

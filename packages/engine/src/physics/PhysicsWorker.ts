@@ -210,10 +210,7 @@ export class PhysicsWorker {
 
   initPlayer() {
     // Create player body
-    const playerColliderDesc = ColliderDesc.capsule(
-      PLAYER_HEIGHT / 2,
-      PLAYER_RADIUS
-    );
+    const playerColliderDesc = ColliderDesc.capsule(PLAYER_HEIGHT / 2, PLAYER_RADIUS);
     playerColliderDesc.setCollisionGroups(playerCollisionGroup);
     playerColliderDesc.setFriction(PLAYER_FRICTION);
     playerColliderDesc.setFrictionCombineRule(CoefficientCombineRule.Min);
@@ -223,18 +220,11 @@ export class PhysicsWorker {
       .lockRotations();
 
     this.#playerBody = this.#world.createRigidBody(playerBodyDesc);
-    this.#playerCollider = this.#world.createCollider(
-      playerColliderDesc,
-      this.#playerBody
-    );
+    this.#playerCollider = this.#world.createCollider(playerColliderDesc, this.#playerBody);
 
     // Create shared array buffers
-    const positionBuffer = new SharedArrayBuffer(
-      Int32Array.BYTES_PER_ELEMENT * 3
-    );
-    const velocityBuffer = new SharedArrayBuffer(
-      Int32Array.BYTES_PER_ELEMENT * 2
-    );
+    const positionBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3);
+    const velocityBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 2);
 
     this.#playerPosition = new Int32Array(positionBuffer);
     this.#playerVelocity = new Int32Array(velocityBuffer);
@@ -400,10 +390,7 @@ export class PhysicsWorker {
       }
 
       // Cap y velocity to prevent going too fast
-      velocity.y = Math.max(
-        Math.min(velocity.y, TERMINAL_VELOCITY),
-        -TERMINAL_VELOCITY
-      );
+      velocity.y = Math.max(Math.min(velocity.y, TERMINAL_VELOCITY), -TERMINAL_VELOCITY);
 
       this.#playerBody.setLinvel(velocity, true);
     }

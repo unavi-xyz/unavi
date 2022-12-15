@@ -20,10 +20,7 @@ const providers = [publicProvider()];
 const apiKey = env.NEXT_PUBLIC_ALCHEMY_ID;
 if (apiKey) providers.push(alchemyProvider({ apiKey }));
 
-export const { chains, provider } = configureChains(
-  [chain.polygonMumbai],
-  providers
-);
+export const { chains, provider } = configureChains([chain.polygonMumbai], providers);
 
 const needsInjectedWalletFallback =
   typeof window !== "undefined" &&

@@ -22,9 +22,7 @@ export function updateMesh(
 
   const oldObject = map.objects.get(meshId);
   const position = oldObject ? oldObject.position.clone() : new Vector3();
-  const quaternion = oldObject
-    ? oldObject.quaternion.clone()
-    : new Quaternion();
+  const quaternion = oldObject ? oldObject.quaternion.clone() : new Quaternion();
   const scale = oldObject ? oldObject.scale.clone() : new Vector3(1, 1, 1);
 
   createObject(meshId, map, postMessage);
@@ -37,9 +35,7 @@ export function updateMesh(
   object.scale.copy(scale);
 
   if (object instanceof Mesh) {
-    const material = mesh.materialId
-      ? map.materials.get(mesh.materialId)
-      : defaultMaterial;
+    const material = mesh.materialId ? map.materials.get(mesh.materialId) : defaultMaterial;
     if (!material) throw new Error("Material not found");
 
     object.material = material;

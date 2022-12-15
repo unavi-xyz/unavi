@@ -152,9 +152,7 @@ export const CreateTransportResponseSchema = z.object({
         })
       ),
       dtlsParameters: z.object({
-        role: z
-          .union([z.literal("auto"), z.literal("client"), z.literal("server")])
-          .optional(),
+        role: z.union([z.literal("auto"), z.literal("client"), z.literal("server")]).optional(),
         fingerprints: z.array(
           z.object({
             algorithm: z.string(),
@@ -173,9 +171,7 @@ export const CreateTransportResponseSchema = z.object({
     })
     .optional(),
 });
-export type CreateTransportResponse = z.infer<
-  typeof CreateTransportResponseSchema
->;
+export type CreateTransportResponse = z.infer<typeof CreateTransportResponseSchema>;
 
 // NewAudioConsumer
 export const NewAudioConsumerDataSchema = z.object({
@@ -184,12 +180,7 @@ export const NewAudioConsumerDataSchema = z.object({
   id: z.string(),
   kind: MediaTypeSchema,
   rtpParameters: RtpParametersSchema,
-  type: z.union([
-    z.literal("simulcast"),
-    z.literal("svc"),
-    z.literal("simple"),
-    z.literal("pipe"),
-  ]),
+  type: z.union([z.literal("simulcast"), z.literal("svc"), z.literal("simple"), z.literal("pipe")]),
   producerPaused: z.boolean(),
 });
 export type NewAudioConsumerData = z.infer<typeof NewAudioConsumerDataSchema>;
@@ -197,11 +188,7 @@ export type NewAudioConsumerData = z.infer<typeof NewAudioConsumerDataSchema>;
 // ConnectTransport
 export const ConnectTransportDataSchema = z.object({
   dtlsParameters: z.object({
-    role: z.union([
-      z.literal("auto"),
-      z.literal("client"),
-      z.literal("server"),
-    ]),
+    role: z.union([z.literal("auto"), z.literal("client"), z.literal("server")]),
     fingerprints: z.array(
       z.object({
         algorithm: z.string(),
@@ -214,9 +201,7 @@ export type ConnectTransportData = z.infer<typeof ConnectTransportDataSchema>;
 export const ConnectTransportResponseSchema = z.object({
   success: z.boolean(),
 });
-export type ConnectTransportResponse = z.infer<
-  typeof ConnectTransportResponseSchema
->;
+export type ConnectTransportResponse = z.infer<typeof ConnectTransportResponseSchema>;
 
 // ProduceAudio
 export const ProduceAudioDataSchema = z.object({
@@ -305,9 +290,7 @@ export type SendChatMessageData = z.infer<typeof SendChatMessageDataSchema>;
 export const SendChatMessageResponseSchema = z.object({
   success: z.boolean(),
 });
-export type SendChatMessageResponse = z.infer<
-  typeof SendChatMessageResponseSchema
->;
+export type SendChatMessageResponse = z.infer<typeof SendChatMessageResponseSchema>;
 
 // RecieveChatMessage
 export const ReceiveChatMessageDataSchema = z.object({
@@ -317,6 +300,4 @@ export const ReceiveChatMessageDataSchema = z.object({
   text: z.string(),
   timestamp: z.number(),
 });
-export type ReceiveChatMessageData = z.infer<
-  typeof ReceiveChatMessageDataSchema
->;
+export type ReceiveChatMessageData = z.infer<typeof ReceiveChatMessageDataSchema>;

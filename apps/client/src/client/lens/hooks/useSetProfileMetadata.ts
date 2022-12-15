@@ -20,9 +20,7 @@ export function useSetProfileMetadata(profileId: string) {
   const { client } = useLens();
   const { openConnectModal } = useConnectModal();
 
-  async function setProfileMetadata(
-    metadata: ProfileMetadata
-  ): Promise<boolean> {
+  async function setProfileMetadata(metadata: ProfileMetadata): Promise<boolean> {
     if (!signer) {
       if (openConnectModal) openConnectModal();
       else throw new Error("No signer");
@@ -59,10 +57,7 @@ export function useSetProfileMetadata(profileId: string) {
     const { v, r, s } = utils.splitSignature(signature);
 
     // Send transaction
-    const contract = LensPeriphery__factory.connect(
-      ContractAddress.LensPeriphery,
-      signer
-    );
+    const contract = LensPeriphery__factory.connect(ContractAddress.LensPeriphery, signer);
     const tx = await contract.setProfileMetadataURIWithSig({
       profileId: typedData.value.profileId,
       metadata: typedData.value.metadata,

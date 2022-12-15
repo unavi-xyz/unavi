@@ -9,23 +9,12 @@ interface Props {
   animateEnter?: boolean;
 }
 
-export default function SpaceIdCard({
-  spaceId,
-  sizes,
-  animateEnter = false,
-}: Props) {
+export default function SpaceIdCard({ spaceId, sizes, animateEnter = false }: Props) {
   const [{ data }] = useGetPublicationQuery({
     variables: { request: { publicationId: spaceId } },
   });
 
-  if (!data || data.publication?.metadata.content === HIDDEN_MESSAGE)
-    return null;
+  if (!data || data.publication?.metadata.content === HIDDEN_MESSAGE) return null;
 
-  return (
-    <SpaceCard
-      space={data.publication as Post}
-      sizes={sizes}
-      animateEnter={animateEnter}
-    />
-  );
+  return <SpaceCard space={data.publication as Post} sizes={sizes} animateEnter={animateEnter} />;
 }

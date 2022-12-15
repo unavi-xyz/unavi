@@ -18,16 +18,6 @@ export default function UserPage() {
         <IoMdPerson className="text-5xl" />
       </div>
 
-      <div className="space-y-1">
-        <div className="flex justify-center">
-          {handle ? (
-            <UserIdentityButton />
-          ) : (
-            <LoginButton fullWidth rounded="large" />
-          )}
-        </div>
-      </div>
-
       {!handle && (
         <div className="space-y-1">
           <input
@@ -44,6 +34,12 @@ export default function UserPage() {
           />
         </div>
       )}
+
+      <div className="space-y-1">
+        <div className="flex justify-center">
+          {handle ? <UserIdentityButton /> : <LoginButton fullWidth rounded="large" />}
+        </div>
+      </div>
 
       <div className="space-y-1">
         <ButtonFileInput

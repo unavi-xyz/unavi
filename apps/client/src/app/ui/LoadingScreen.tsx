@@ -39,9 +39,7 @@ export default function LoadingScreen({
 
   if (enterTransitionFinished) return null;
 
-  const transitionClass = entered
-    ? "opacity-0 backdrop-blur-0"
-    : "opacity-100 backdrop-blur-xl";
+  const transitionClass = entered ? "opacity-0 backdrop-blur-0" : "opacity-100 backdrop-blur-xl";
 
   return (
     <div
@@ -51,9 +49,7 @@ export default function LoadingScreen({
         <div className="max-w-content space-y-6">
           <div className="flex w-full min-w-fit flex-col justify-between">
             <div className="space-y-4">
-              <div className="flex justify-center text-3xl font-black">
-                {text}
-              </div>
+              <div className="flex justify-center text-3xl font-black">{text}</div>
 
               <div className="mx-auto px-8 md:w-1/2">
                 <div className="aspect-card h-full w-full rounded-3xl bg-sky-100">

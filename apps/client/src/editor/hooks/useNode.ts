@@ -3,10 +3,7 @@ import { useEffect, useState } from "react";
 
 import { useEditorStore } from "../store";
 
-export function useNode<T = Node>(
-  id: string | null,
-  callback?: (node: Node) => T
-) {
+export function useNode<T = Node>(id: string | null, callback?: (node: Node) => T) {
   const nodes$ = useEditorStore((state) => state.engine?.scene.nodes$);
 
   const [value, setValue] = useState<T | null>(null);

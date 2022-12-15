@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { env } from "../../env/client.mjs";
+import { getModelStats } from "../helpers/getModelStats";
 import { createTempFileUploadURL } from "../s3";
 import { publicProcedure, router } from "./trpc";
 
@@ -71,5 +72,16 @@ export const publicRouter = router({
       );
 
       await Promise.all(promises);
+    }),
+
+  modelStats: publicProcedure
+    .input(
+      z.object({
+        publicationId: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      const stats = await getModelStats(input.publicationId);
+      return stats;
     }),
 });

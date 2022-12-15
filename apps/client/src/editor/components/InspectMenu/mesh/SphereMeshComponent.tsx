@@ -20,8 +20,7 @@ export default function SphereMeshComponent({ nodeId, mesh }: Props) {
     <>
       <MenuRows titles={["Radius", "Width Segments", "Height Segments"]}>
         {[radius, widthSegments, heightSegments].map((value, i) => {
-          const property =
-            i === 0 ? "radius" : i === 1 ? "widthSegments" : "heightSegments";
+          const property = i === 0 ? "radius" : i === 1 ? "widthSegments" : "heightSegments";
           const name = ["Radius", "Width Segments", "Height Segments"][i];
           const step = name === "Radius" ? 0.1 : 1;
 

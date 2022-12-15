@@ -41,15 +41,12 @@ export default function ProfileLayout({
       <Head>
         <meta property="og:type" content="profile" />
         <meta property="og:profile:username" content={handle} />
-        <meta
-          property="og:profile:first_name"
-          content={profile?.name ?? handle}
-        />
+        <meta property="og:profile:first_name" content={profile?.name ?? handle} />
       </Head>
 
       {profile ? (
         <div className="max-w-content mx-auto">
-          <div className="h-48 w-full bg-sky-100 md:h-64 md:rounded-3xl">
+          <div className="h-48 w-full bg-sky-100 md:h-64 lg:rounded-xl">
             <div className="relative h-full w-full object-cover">
               {coverImage &&
                 (isFromCDN(coverImage) ? (
@@ -59,13 +56,13 @@ export default function ProfileLayout({
                     fill
                     sizes="80vw"
                     alt=""
-                    className="h-full w-full object-cover md:rounded-3xl"
+                    className="h-full w-full object-cover lg:rounded-xl"
                   />
                 ) : (
                   <img
                     src={coverImage}
                     alt=""
-                    className="h-full w-full object-cover md:rounded-3xl"
+                    className="h-full w-full object-cover lg:rounded-xl"
                     crossOrigin="anonymous"
                   />
                 ))}
@@ -75,12 +72,7 @@ export default function ProfileLayout({
           <div className="flex justify-center px-4 pb-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
-                <ProfilePicture
-                  src={profileImage}
-                  circle
-                  uniqueKey={handle}
-                  size={128}
-                />
+                <ProfilePicture src={profileImage} circle uniqueKey={handle} size={128} />
               </div>
 
               <div className="flex flex-col items-center">
@@ -90,21 +82,13 @@ export default function ProfileLayout({
 
               <div className="flex w-full justify-center space-x-4 py-2">
                 <div className="flex flex-col items-center md:flex-row md:space-x-1">
-                  <div className="text-lg font-black">
-                    {profile.stats.totalFollowing}
-                  </div>
-                  <div className="text-lg leading-5 text-neutral-500">
-                    Following
-                  </div>
+                  <div className="text-lg font-black">{profile.stats.totalFollowing}</div>
+                  <div className="text-lg leading-5 text-neutral-500">Following</div>
                 </div>
 
                 <div className="flex flex-col items-center md:flex-row md:space-x-1">
-                  <div className="text-lg font-black">
-                    {profile.stats.totalFollowers}
-                  </div>
-                  <div className="text-lg leading-5 text-neutral-500">
-                    Followers
-                  </div>
+                  <div className="text-lg font-black">{profile.stats.totalFollowers}</div>
+                  <div className="text-lg leading-5 text-neutral-500">Followers</div>
                 </div>
               </div>
             </div>
@@ -147,16 +131,12 @@ export default function ProfileLayout({
               </div>
 
               <div className="w-full pt-2">
-                <div className="whitespace-pre-line text-center">
-                  {profile.bio}
-                </div>
+                <div className="whitespace-pre-line text-center">{profile.bio}</div>
               </div>
 
               <div className="flex flex-wrap space-x-4">
                 {location && (
-                  <AttributeRow icon={<MdOutlineLocationOn />}>
-                    {location.value}
-                  </AttributeRow>
+                  <AttributeRow icon={<MdOutlineLocationOn />}>{location.value}</AttributeRow>
                 )}
 
                 {website && (
@@ -174,7 +154,7 @@ export default function ProfileLayout({
               </div>
             </div>
 
-            <div className="mt-4 w-full">{children}</div>
+            <div className="mt-6 w-full">{children}</div>
           </div>
         </div>
       ) : (

@@ -3,10 +3,7 @@ import { useEffect, useState } from "react";
 
 import { useEditorStore } from "../store";
 
-export function useMaterial<T = Material>(
-  id: string | null,
-  callback?: (material: Material) => T
-) {
+export function useMaterial<T = Material>(id: string | null, callback?: (material: Material) => T) {
   const materials$ = useEditorStore((state) => state.engine?.scene.materials$);
 
   const [value, setValue] = useState<T | null>(null);

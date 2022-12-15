@@ -1,9 +1,4 @@
-import {
-  AttributeData,
-  Profile,
-  ProfileMetadata,
-  ProfileMetadataVersions,
-} from "lens";
+import { AttributeData, Profile, ProfileMetadata, ProfileMetadataVersions } from "lens";
 import { nanoid } from "nanoid";
 
 export function createProfileMetadata(profile: Profile | undefined) {
@@ -40,9 +35,7 @@ export function createProfileMetadata(profile: Profile | undefined) {
       value,
     };
 
-    const currentIndex = metadata.attributes.findIndex(
-      (attribute) => attribute.key === key
-    );
+    const currentIndex = metadata.attributes.findIndex((attribute) => attribute.key === key);
 
     if (value === undefined) {
       if (currentIndex !== -1) {

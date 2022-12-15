@@ -4,11 +4,7 @@ import { MaterialJSON } from "../../../scene";
 import { SceneMap } from "../types";
 import { createTexture } from "./createTexture";
 
-export function updateMaterial(
-  materialId: string,
-  material: Partial<MaterialJSON>,
-  map: SceneMap
-) {
+export function updateMaterial(materialId: string, material: Partial<MaterialJSON>, map: SceneMap) {
   const materialObject = map.materials.get(materialId);
   if (!materialObject) throw new Error("Material not found");
 
@@ -23,8 +19,7 @@ export function updateMaterial(
       materialObject.depthWrite = true;
 
       if (material.alphaMode === "MASK") {
-        if (material.alphaCutoff !== undefined)
-          materialObject.alphaTest = material.alphaCutoff;
+        if (material.alphaCutoff !== undefined) materialObject.alphaTest = material.alphaCutoff;
       }
     }
   }
@@ -41,19 +36,14 @@ export function updateMaterial(
   if (material.occlusionStrength !== undefined)
     materialObject.aoMapIntensity = material.occlusionStrength;
 
-  if (material.color !== undefined)
-    materialObject.color = new Color().fromArray(material.color);
+  if (material.color !== undefined) materialObject.color = new Color().fromArray(material.color);
 
-  if (material.roughness !== undefined)
-    materialObject.roughness = material.roughness;
+  if (material.roughness !== undefined) materialObject.roughness = material.roughness;
 
-  if (material.metalness !== undefined)
-    materialObject.metalness = material.metalness;
+  if (material.metalness !== undefined) materialObject.metalness = material.metalness;
 
   if (material.colorTexture !== undefined) {
-    const colorTexture = material.colorTexture
-      ? createTexture(material.colorTexture, map)
-      : null;
+    const colorTexture = material.colorTexture ? createTexture(material.colorTexture, map) : null;
 
     if (colorTexture) colorTexture.encoding = sRGBEncoding;
 

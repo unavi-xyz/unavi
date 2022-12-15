@@ -31,8 +31,7 @@ export default function UserButtons() {
     const engine = useAppStore.getState().engine;
     if (!engine) throw new Error("Engine not found");
 
-    const { displayName, customAvatar, didChangeName, didChangeAvatar } =
-      useAppStore.getState();
+    const { displayName, customAvatar, didChangeName, didChangeAvatar } = useAppStore.getState();
 
     // If no lens handle, use name
     if (!handle && didChangeName) {
@@ -92,9 +91,7 @@ export default function UserButtons() {
         <UserPage />
       </Dialog>
 
-      <div
-        className={`flex items-center justify-center space-x-4 transition ${opacityClass}`}
-      >
+      <div className={`flex items-center justify-center space-x-4 transition ${opacityClass}`}>
         <Tooltip text="Leave">
           <Link href={`/space/${id}`}>
             <div className="aspect-square cursor-pointer rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg">

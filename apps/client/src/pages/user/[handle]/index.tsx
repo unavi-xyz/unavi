@@ -18,14 +18,8 @@ import SpaceCard from "../../../home/lens/SpaceCard";
 import { lensClient } from "../../../server/lens";
 import { getMediaURL } from "../../../utils/getMediaURL";
 
-export const getServerSideProps = async ({
-  res,
-  query,
-}: GetServerSidePropsContext) => {
-  res.setHeader(
-    "Cache-Control",
-    "public, s-maxage=30, stale-while-revalidate=3600"
-  );
+export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
+  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=86400");
 
   const handle = query.handle as string;
   const props = await getProfileLayoutProps(handle);
@@ -41,16 +35,13 @@ export const getServerSideProps = async ({
   }
 
   const publicationsQuery = await lensClient
-    .query<GetPublicationsQuery, GetPublicationsQueryVariables>(
-      GetPublicationsDocument,
-      {
-        request: {
-          profileId: props.profile.id,
-          sources: [AppId.Space, AppId.Avatar],
-          publicationTypes: [PublicationTypes.Post],
-        },
-      }
-    )
+    .query<GetPublicationsQuery, GetPublicationsQueryVariables>(GetPublicationsDocument, {
+      request: {
+        profileId: props.profile.id,
+        sources: [AppId.Space, AppId.Avatar],
+        publicationTypes: [PublicationTypes.Post],
+      },
+    })
     .toPromise();
 
   const publications =
@@ -75,13 +66,13 @@ export default function User({
   return (
     <ProfileLayout {...rest}>
       {publications && publications.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 pb-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 pb-4 md:mx-4 md:grid-cols-4 lg:mx-0">
           {publications.map((publication) => {
             if (publication.appId === AppId.Space) {
               if (publication.metadata.content === HIDDEN_MESSAGE) return null;
 
               return (
-                <div key={publication.id} className="w-full md:col-span-2">
+                <div key={publication.id} className="col-span-2 w-full">
                   <Link href={`/space/${publication.id}`}>
                     <SpaceCard space={publication} sizes="49vw" />
                   </Link>

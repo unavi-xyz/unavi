@@ -29,11 +29,7 @@ export default function LoginProvider({ children }: Props) {
 
   const router = useRouter();
   const { switchProfile, setAccessToken } = useLens();
-  const {
-    address: connectedAddress,
-    isConnected,
-    isDisconnected,
-  } = useAccount();
+  const { address: connectedAddress, isConnected, isDisconnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { status, session } = useSession();
   const sessionAddress = session?.address ?? null;
@@ -53,11 +49,7 @@ export default function LoginProvider({ children }: Props) {
 
   // Sign out if connected address changes
   useEffect(() => {
-    if (
-      isConnected &&
-      status === "authenticated" &&
-      sessionAddress !== connectedAddress
-    ) {
+    if (isConnected && status === "authenticated" && sessionAddress !== connectedAddress) {
       // Sign out of next-auth
       signOut({ redirect: false });
 
@@ -67,24 +59,11 @@ export default function LoginProvider({ children }: Props) {
       // Stop auto connect
       setDisableAutoconnect(true);
     }
-  }, [
-    isConnected,
-    sessionAddress,
-    connectedAddress,
-    session,
-    status,
-    switchProfile,
-  ]);
+  }, [isConnected, sessionAddress, connectedAddress, session, status, switchProfile]);
 
   // Set handle + lens access token on authentication
   useEffect(() => {
-    if (
-      !profiles ||
-      fetching ||
-      status !== "authenticated" ||
-      !session?.accessToken
-    )
-      return;
+    if (!profiles || fetching || status !== "authenticated" || !session?.accessToken) return;
 
     setAccessToken(session.accessToken);
 

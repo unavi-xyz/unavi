@@ -3,10 +3,7 @@ import { useRouter } from "next/router";
 import { trpc } from "../../client/trpc";
 import { useEditorStore } from "../store";
 import { SavedSceneJSON } from "../types";
-import {
-  binaryStorageKey as binaryStorageKey,
-  imageStorageKey,
-} from "../utils/fileStorage";
+import { binaryStorageKey as binaryStorageKey, imageStorageKey } from "../utils/fileStorage";
 import { getEditorState } from "../utils/getEditorState";
 
 export function useSave() {
@@ -14,12 +11,9 @@ export function useSave() {
   const id = router.query.id as string;
 
   const { mutateAsync: saveProject } = trpc.project.save.useMutation();
-  const { mutateAsync: getFileUpload } =
-    trpc.project.fileUploadURL.useMutation();
-  const { mutateAsync: getImageUpload } =
-    trpc.project.imageUploadURL.useMutation();
-  const { mutateAsync: getSceneUpload } =
-    trpc.project.sceneUploadURL.useMutation();
+  const { mutateAsync: getFileUpload } = trpc.project.fileUploadURL.useMutation();
+  const { mutateAsync: getImageUpload } = trpc.project.imageUploadURL.useMutation();
+  const { mutateAsync: getSceneUpload } = trpc.project.sceneUploadURL.useMutation();
 
   async function saveImage() {
     const { engine, canvas } = useEditorStore.getState();
@@ -42,8 +36,7 @@ export function useSave() {
   }
 
   async function save() {
-    const { name, description, engine, sceneLoaded, isSaving } =
-      useEditorStore.getState();
+    const { name, description, engine, sceneLoaded, isSaving } = useEditorStore.getState();
 
     if (isSaving || !sceneLoaded || !engine) return;
 

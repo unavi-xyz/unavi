@@ -116,8 +116,7 @@ export class Scene {
 
     // Add to parent
     const parent = node.parent;
-    if (parent)
-      parent.childrenIds$.next([...parent.childrenIds$.value, node.id]);
+    if (parent) parent.childrenIds$.next([...parent.childrenIds$.value, node.id]);
 
     // Save to nodes
     this.nodes = { ...this.nodes, [node.id]: node };
@@ -145,9 +144,7 @@ export class Scene {
     node.childrenIds.forEach((childId) => this.removeNode(childId));
 
     // Remove from nodes
-    this.nodes = Object.fromEntries(
-      Object.entries(this.nodes).filter(([id]) => id !== nodeId)
-    );
+    this.nodes = Object.fromEntries(Object.entries(this.nodes).filter(([id]) => id !== nodeId));
 
     // Remove from parent
     if (node.parent) node.parentId = "";
@@ -157,9 +154,7 @@ export class Scene {
       const mesh = this.meshes[node.meshId];
       if (!mesh) throw new Error(`Mesh ${node.meshId} not found`);
 
-      const isUsed = Object.values(this.nodes).some(
-        (n) => n.meshId === node.meshId
-      );
+      const isUsed = Object.values(this.nodes).some((n) => n.meshId === node.meshId);
 
       if (!isUsed) this.removeMesh(node.meshId);
     }
@@ -204,9 +199,7 @@ export class Scene {
     if (!mesh) throw new Error(`Mesh ${meshId} not found`);
 
     // Remove from meshes
-    this.meshes = Object.fromEntries(
-      Object.entries(this.meshes).filter(([id]) => id !== meshId)
-    );
+    this.meshes = Object.fromEntries(Object.entries(this.meshes).filter(([id]) => id !== meshId));
 
     // Remove from nodes
     Object.values(this.nodes).forEach((node) => {
@@ -254,9 +247,7 @@ export class Scene {
               if (!mesh) return false;
 
               if (mesh.type === "Primitives")
-                return mesh.primitives.some(
-                  (primitive) => primitive.materialId === material.id
-                );
+                return mesh.primitives.some((primitive) => primitive.materialId === material.id);
 
               return mesh.materialId === material.id;
             });
@@ -292,8 +283,7 @@ export class Scene {
         if (mesh.materialId === materialId) mesh.materialId = null;
         if (mesh.type === "Primitives") {
           mesh.primitives.forEach((primitive) => {
-            if (primitive.materialId === materialId)
-              primitive.materialId = null;
+            if (primitive.materialId === materialId) primitive.materialId = null;
           });
         }
         return [id, mesh];
@@ -363,9 +353,7 @@ export class Scene {
     if (!image) throw new Error(`Image ${imageId} not found`);
 
     // Remove from images
-    this.images = Object.fromEntries(
-      Object.entries(this.images).filter(([id]) => id !== imageId)
-    );
+    this.images = Object.fromEntries(Object.entries(this.images).filter(([id]) => id !== imageId));
   }
 
   addAnimation(animation: Animation) {
@@ -430,9 +418,7 @@ export class Scene {
 
     // Add accessors
     if (json.accessors) {
-      json.accessors.forEach((accessor) =>
-        this.addAccessor(Accessor.fromJSON(accessor))
-      );
+      json.accessors.forEach((accessor) => this.addAccessor(Accessor.fromJSON(accessor)));
     }
 
     // Add images
@@ -442,9 +428,7 @@ export class Scene {
 
     // Add materials
     if (json.materials) {
-      json.materials.forEach((material) =>
-        this.addMaterial(Material.fromJSON(material))
-      );
+      json.materials.forEach((material) => this.addMaterial(Material.fromJSON(material)));
     }
 
     // Add meshes
@@ -491,9 +475,7 @@ export class Scene {
 
     // Add animations
     if (json.animations) {
-      json.animations.forEach((animation) =>
-        this.addAnimation(Animation.fromJSON(animation))
-      );
+      json.animations.forEach((animation) => this.addAnimation(Animation.fromJSON(animation)));
     }
   }
 

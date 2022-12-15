@@ -5,11 +5,7 @@ import { RenderWorker } from "../../RenderWorker";
 import { SceneMap } from "../types";
 import { updateMaterial } from "./updateMaterial";
 
-export function addMaterial(
-  material: MaterialJSON,
-  map: SceneMap,
-  renderWorker: RenderWorker
-) {
+export function addMaterial(material: MaterialJSON, map: SceneMap, renderWorker: RenderWorker) {
   const materialObject = new MeshStandardMaterial();
   renderWorker.csm?.setupMaterial(materialObject);
 

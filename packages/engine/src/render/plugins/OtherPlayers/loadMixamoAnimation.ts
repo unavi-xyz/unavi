@@ -72,9 +72,7 @@ export async function loadMixamoAnimation(
 
           quat.fromArray(flatQuaternion);
 
-          quat
-            .premultiply(parentRestWorldRotation)
-            .multiply(restRotationInverse);
+          quat.premultiply(parentRestWorldRotation).multiply(restRotationInverse);
 
           quat.toArray(flatQuaternion);
 
@@ -94,9 +92,7 @@ export async function loadMixamoAnimation(
         );
       } else if (track instanceof VectorKeyframeTrack) {
         const value = track.values.map(
-          (v, i) =>
-            (vrm.meta?.metaVersion === "0" && i % 3 !== 1 ? -v : v) *
-            hipsPositionScale
+          (v, i) => (vrm.meta?.metaVersion === "0" && i % 3 !== 1 ? -v : v) * hipsPositionScale
         );
         tracks.push(
           new VectorKeyframeTrack(

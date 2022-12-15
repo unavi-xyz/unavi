@@ -87,14 +87,9 @@ export default function TreeMenuItem({ id }: Props) {
   );
 
   const allChildrenInternal = children?.every((child) => child?.isInternal);
-  const hasChildren =
-    childrenIds && childrenIds.length > 0 && !allChildrenInternal;
+  const hasChildren = childrenIds && childrenIds.length > 0 && !allChildrenInternal;
   const isSelected = selectedId === id;
-  const bgClass = isSelected
-    ? "bg-sky-100"
-    : isOver
-    ? "bg-neutral-200"
-    : "hover:bg-neutral-200";
+  const bgClass = isSelected ? "bg-sky-100" : isOver ? "bg-neutral-200" : "hover:bg-neutral-200";
   const opacityClass = isDragging ? "opacity-0" : null;
   const highlightBelowClass = isOverBelow ? "bg-sky-300" : null;
 
@@ -116,13 +111,10 @@ export default function TreeMenuItem({ id }: Props) {
           onClick={() => setOpen((prev) => !prev)}
           className="w-5 shrink-0 text-neutral-500 transition hover:text-inherit"
         >
-          {hasChildren &&
-            (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
+          {hasChildren && (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
         </div>
 
-        <div className="overflow-hidden text-ellipsis whitespace-nowrap">
-          {name}
-        </div>
+        <div className="overflow-hidden text-ellipsis whitespace-nowrap">{name}</div>
       </div>
 
       {open && hasChildren && (
@@ -134,10 +126,7 @@ export default function TreeMenuItem({ id }: Props) {
       )}
 
       {!hasChildren && (
-        <div
-          ref={dropBelow}
-          className={`h-1 w-full rounded-md ${highlightBelowClass}`}
-        />
+        <div ref={dropBelow} className={`h-1 w-full rounded-md ${highlightBelowClass}`} />
       )}
     </div>
   );

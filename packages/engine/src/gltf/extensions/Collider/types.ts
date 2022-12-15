@@ -18,14 +18,7 @@ export interface ColliderExtensionDef {
   colliders: ColliderDef[];
 }
 
-export type ColliderType =
-  | "box"
-  | "capsule"
-  | "compound"
-  | "cylinder"
-  | "hull"
-  | "mesh"
-  | "sphere";
+export type ColliderType = "box" | "capsule" | "compound" | "cylinder" | "hull" | "mesh" | "sphere";
 
 export interface ICollider extends IProperty {
   type: ColliderType;

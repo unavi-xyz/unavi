@@ -15,10 +15,7 @@ export default function UserIdentityButton() {
 
   return (
     <>
-      <Dialog
-        open={openSwitchProfile}
-        onClose={() => setOpenSwitchProfile(false)}
-      >
+      <Dialog open={openSwitchProfile} onClose={() => setOpenSwitchProfile(false)}>
         <SwitchProfilePage onClose={() => setOpenSwitchProfile(false)} />
       </Dialog>
 

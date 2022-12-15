@@ -32,9 +32,7 @@ export const getStaticProps = async () => {
   };
 };
 
-export default function Index({
-  featuredSpaces,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+export default function Index({ featuredSpaces }: InferGetStaticPropsType<typeof getStaticProps>) {
   useAnimateOnEnter();
 
   return (
@@ -52,17 +50,14 @@ export default function Index({
             </div>
 
             <div className="pb-2 text-center text-xl md:text-2xl">
-              An <strong>open and decentralized</strong> web-based metaverse
-              platform.
+              An <strong>open and decentralized</strong> web-based metaverse platform.
             </div>
 
             <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl md:flex-row md:space-y-0 md:space-x-4">
               <div className="w-full md:w-fit">
-                <Link href={`/app/${FEATURED_SPACES[1]}`}>
+                <Link href={`/app/${FEATURED_SPACES[0]}`}>
                   <Button variant="filled" rounded="large" fullWidth>
-                    <div className="flex h-9 items-center justify-center md:px-4">
-                      Play Now
-                    </div>
+                    <div className="flex h-9 items-center justify-center md:px-4">Play Now</div>
                   </Button>
                 </Link>
               </div>
@@ -71,12 +66,7 @@ export default function Index({
                 <a href={GITHUB_URL} target="_blank" rel="noreferrer">
                   <Button variant="outlined" rounded="large" fullWidth>
                     <div className="flex h-9 items-center justify-center space-x-4 px-1">
-                      <Image
-                        src="/images/GitHub.svg"
-                        width={32}
-                        height={32}
-                        alt=""
-                      />
+                      <Image src="/images/GitHub.svg" width={32} height={32} alt="" />
                       <div>GitHub</div>
                     </div>
                   </Button>
@@ -86,17 +76,13 @@ export default function Index({
           </section>
 
           <section className="show-on-scroll mb-[100px] space-y-6 md:mb-[150px]">
-            <div className="text-center text-3xl font-black md:text-4xl">
-              Featured Spaces
-            </div>
+            <div className="text-center text-3xl font-black md:text-4xl">Featured Spaces</div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               {featuredSpaces.map(({ id, publication }) => (
                 <Link key={id} href={`/space/${id}`}>
                   <div className="h-44 md:h-48">
-                    {publication && (
-                      <SpaceCard space={publication as Post} sizes="331px" />
-                    )}
+                    {publication && <SpaceCard space={publication as Post} sizes="331px" />}
                   </div>
                 </Link>
               ))}
@@ -116,26 +102,21 @@ export default function Index({
             </div>
 
             <div className="flex w-full flex-col justify-center space-y-4">
-              <div className="text-center text-3xl font-black md:text-4xl">
-                The Spatial Web
-              </div>
+              <div className="text-center text-3xl font-black md:text-4xl">The Spatial Web</div>
 
               <div className="mx-auto text-center text-lg text-neutral-500 md:text-xl">
-                The Wired reimagines the web as an interconnected network of 3D
-                spaces, instead of 2D websites.
+                The Wired reimagines the web as an interconnected network of 3D spaces, instead of
+                2D websites.
               </div>
             </div>
           </section>
 
           <section className="show-on-scroll mb-[100px] flex flex-col-reverse md:mb-[150px] md:flex-row md:space-y-0 md:space-x-4">
             <div className="flex w-full flex-col justify-center space-y-4 pt-8 md:pt-0">
-              <div className="text-center text-3xl font-black md:text-4xl">
-                Cross Platform
-              </div>
+              <div className="text-center text-3xl font-black md:text-4xl">Cross Platform</div>
 
               <div className="mx-auto text-center text-lg text-neutral-500 md:text-xl">
-                All you need is a web browser - explore from your phone, laptop,
-                or VR headset.
+                All you need is a web browser - explore from your phone, laptop, or VR headset.
               </div>
             </div>
 
@@ -152,13 +133,11 @@ export default function Index({
           </section>
 
           <section className="show-on-scroll mb-[100px] space-y-4 rounded-3xl p-8 outline outline-2 outline-black md:mb-[150px] md:p-12">
-            <div className="text-center text-3xl font-black md:text-4xl">
-              Open by Design
-            </div>
+            <div className="text-center text-3xl font-black md:text-4xl">Open by Design</div>
 
             <div className="mx-auto text-center text-lg text-neutral-500 md:w-2/3 md:text-xl">
-              Each layer is open for others to build on. Mod your client. Run
-              your own servers. The possibilities are endless.
+              Each layer is open for others to build on. Mod your client. Run your own servers. The
+              possibilities are endless.
             </div>
 
             <div className="flex w-full justify-center">
@@ -175,21 +154,14 @@ export default function Index({
           </section>
 
           <section className="show-on-scroll space-y-4 pb-[150px]">
-            <div className="text-center text-3xl font-black md:text-4xl">
-              Join the Community
-            </div>
+            <div className="text-center text-3xl font-black md:text-4xl">Join the Community</div>
 
             <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl md:flex-row md:space-y-0 md:space-x-4">
               <div className="w-full md:w-fit">
                 <a href={DISCORD_URL} target="_blank" rel="noreferrer">
                   <Button variant="outlined" rounded="large" fullWidth>
                     <div className="flex h-9 items-center justify-center space-x-4 px-1">
-                      <Image
-                        src="/images/Discord.svg"
-                        width={32}
-                        height={32}
-                        alt=""
-                      />
+                      <Image src="/images/Discord.svg" width={32} height={32} alt="" />
                       <div>Discord</div>
                     </div>
                   </Button>
@@ -200,12 +172,7 @@ export default function Index({
                 <a href={TWITTER_URL} target="_blank" rel="noreferrer">
                   <Button variant="outlined" rounded="large" fullWidth>
                     <div className="flex h-9 items-center justify-center space-x-4 px-1">
-                      <Image
-                        src="/images/Twitter.svg"
-                        width={32}
-                        height={32}
-                        alt=""
-                      />
+                      <Image src="/images/Twitter.svg" width={32} height={32} alt="" />
                       <div>Twitter</div>
                     </div>
                   </Button>

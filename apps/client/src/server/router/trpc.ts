@@ -12,8 +12,7 @@ export const mergeRouters = t.mergeRouters;
 export const router = t.router;
 
 const isAuthed = t.middleware(({ next, ctx }) => {
-  if (!ctx.session || !ctx.session.address)
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+  if (!ctx.session || !ctx.session.address) throw new TRPCError({ code: "UNAUTHORIZED" });
 
   return next({
     ctx: {

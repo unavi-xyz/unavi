@@ -17,13 +17,13 @@
   },
   "dependencies": {
     "engine": "*",
-    "mediasoup": "^3.11.3",
+    "mediasoup": "^3.11.4",
     "nanoid": "^4.0.0",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.15.0",
     "zod": "^3.19.1"
   },
   "devDependencies": {
-    "@types/node": "^18.11.12",
+    "@types/node": "^18.11.13",
     "eslint": "^8.29.0",
     "eslint-config-custom": "*",
     "nodemon": "^2.0.20",

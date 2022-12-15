@@ -10,9 +10,7 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
 export default function ColorInput({ rgbValue, onChange, ...rest }: Props) {
   const displayRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const colorArray = rgbValue
-    ? [rgbValue[0] * 255, rgbValue[1] * 255, rgbValue[2] * 255]
-    : null;
+  const colorArray = rgbValue ? [rgbValue[0] * 255, rgbValue[1] * 255, rgbValue[2] * 255] : null;
   const colorHex = colorArray ? rgbToHex(colorArray) : "#000000";
 
   useEffect(() => {

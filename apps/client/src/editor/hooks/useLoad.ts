@@ -149,9 +149,7 @@ export function useLoad() {
       await engine.start();
 
       // Update colliders
-      Object.keys(engine.scene.nodes).forEach((nodeId) =>
-        updateGltfColliders(nodeId)
-      );
+      Object.keys(engine.scene.nodes).forEach((nodeId) => updateGltfColliders(nodeId));
 
       useEditorStore.setState({ sceneLoaded: true });
     }

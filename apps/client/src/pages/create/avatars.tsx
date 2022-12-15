@@ -32,10 +32,7 @@ export default function Avatars() {
 
   return (
     <>
-      <Dialog
-        open={openCreateDialog}
-        onClose={() => setopenCreateDialog(false)}
-      >
+      <Dialog open={openCreateDialog} onClose={() => setopenCreateDialog(false)}>
         <CreateAvatarPage />
       </Dialog>
 
@@ -63,10 +60,7 @@ export default function Avatars() {
               data ? (
                 <div className="grid grid-cols-5 gap-3">
                   {data.publications.items.map((publication) => (
-                    <Link
-                      key={publication.id}
-                      href={`/avatar/${publication.id}`}
-                    >
+                    <Link key={publication.id} href={`/avatar/${publication.id}`}>
                       <AvatarCard sizes="195px" avatar={publication as Post} />
                     </Link>
                   ))}
@@ -84,9 +78,7 @@ export default function Avatars() {
                 </div>
               )
             ) : (
-              <div className="text-neutral-500">
-                You need to be signed in to upload an avatar.
-              </div>
+              <div className="text-neutral-500">You need to be signed in to upload an avatar.</div>
             )}
           </div>
         </div>

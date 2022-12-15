@@ -10,10 +10,7 @@ export enum CollisionGroup {
  * @param membership The groups the collider is part of (should be a valid UInt16)
  * @param filter The groups the collider can interact with (should be a valid UInt16)
  */
-export function constructCollisionGroups(
-  membership: number,
-  filter: number
-): number {
+export function constructCollisionGroups(membership: number, filter: number): number {
   return (membership << 16) + filter;
 }
 

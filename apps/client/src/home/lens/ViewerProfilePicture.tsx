@@ -12,11 +12,7 @@ interface Props {
   size: number;
 }
 
-export default function ViewerProfilePicture({
-  circle,
-  draggable,
-  size,
-}: Props) {
+export default function ViewerProfilePicture({ circle, draggable, size }: Props) {
   const { handle } = useLens();
 
   const [firstLoad, setFirstLoad] = useState(true);

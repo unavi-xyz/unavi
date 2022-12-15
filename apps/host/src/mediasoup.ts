@@ -9,10 +9,7 @@ export async function createMediasoupWorker() {
   });
 
   worker.on("died", () => {
-    console.error(
-      "mediasoup Worker died, exiting  in 2 seconds... [pid:%d]",
-      worker.pid
-    );
+    console.error("mediasoup Worker died, exiting  in 2 seconds... [pid:%d]", worker.pid);
 
     setTimeout(() => process.exit(1), 2000);
   });
@@ -46,10 +43,7 @@ export async function createMediasoupWorker() {
   return { router, webRtcServer };
 }
 
-export async function createWebRtcTransport(
-  router: Router,
-  webRtcServer: WebRtcServer
-) {
+export async function createWebRtcTransport(router: Router, webRtcServer: WebRtcServer) {
   const transport = await router.createWebRtcTransport({
     enableUdp: true,
     enableTcp: true,

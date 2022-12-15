@@ -22,10 +22,7 @@ export default function HostPage() {
     setLoading(true);
 
     const { metadata, updateAttribute } = createProfileMetadata(profile);
-    updateAttribute(
-      "host",
-      hostRef.current?.value ?? env.NEXT_PUBLIC_DEFAULT_HOST
-    );
+    updateAttribute("host", hostRef.current?.value ?? env.NEXT_PUBLIC_DEFAULT_HOST);
 
     try {
       await setProfileMetadata(metadata);
@@ -42,8 +39,8 @@ export default function HostPage() {
       <div className="flex flex-col items-center space-y-1">
         <h1 className="flex justify-center text-3xl">Host Server</h1>
         <p className="text-center">
-          Specify a server to host your spaces. Can be changed at any time.
-          (defaults to <b>{env.NEXT_PUBLIC_DEFAULT_HOST}</b>)
+          Specify a server to host your spaces. Can be changed at any time. (defaults to{" "}
+          <b>{env.NEXT_PUBLIC_DEFAULT_HOST}</b>)
         </p>
       </div>
 

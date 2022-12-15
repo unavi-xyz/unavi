@@ -13,12 +13,7 @@ import { RenderThread } from "../render/RenderThread";
 import { GLTFMesh, Node } from "../scene";
 import { toHex } from "../utils/toHex";
 import { LENS_API } from "./constants";
-import {
-  FromHostMessage,
-  InternalChatMessage,
-  SpaceJoinStatus,
-  ToHostMessage,
-} from "./types";
+import { FromHostMessage, InternalChatMessage, SpaceJoinStatus, ToHostMessage } from "./types";
 import { WebRTC } from "./WebRTC";
 
 /*
@@ -41,6 +36,8 @@ export class NetworkingInterface {
 
   playerPosition: Int32Array | null = null;
   playerRotation: Int16Array | null = null;
+  cameraPosition: Int32Array | null = null;
+  cameraRotation: Int16Array | null = null;
 
   #connectedPlayers = new Set<number>([-1]);
   #loadedPlayers = new Set<number>();
@@ -70,13 +67,7 @@ export class NetworkingInterface {
     this.spaceJoinStatus$.next(status);
   }
 
-  constructor({
-    scene,
-    renderThread,
-  }: {
-    scene: MainScene;
-    renderThread: RenderThread;
-  }) {
+  constructor({ scene, renderThread }: { scene: MainScene; renderThread: RenderThread }) {
     this.#scene = scene;
     this.#renderThread = renderThread;
   }
@@ -94,19 +85,15 @@ export class NetworkingInterface {
 
     // Fetch space publication from lens
     const { data } = await this.#lensClient
-      .query<GetPublicationQuery, GetPublicationQueryVariables>(
-        GetPublicationDocument,
-        {
-          request: { publicationId: spaceId },
-        }
-      )
+      .query<GetPublicationQuery, GetPublicationQueryVariables>(GetPublicationDocument, {
+        request: { publicationId: spaceId },
+      })
       .toPromise();
 
     const publication = data?.publication as Publication | undefined;
     if (!publication) throw new Error("Space not found");
 
-    const modelURL: string | undefined =
-      publication?.metadata.media[1]?.original.url;
+    const modelURL: string | undefined = publication?.metadata.media[1]?.original.url;
     if (!modelURL) throw new Error("Space model not found");
 
     this.spaceJoinStatus = {
@@ -181,15 +168,12 @@ export class NetworkingInterface {
     this.#ws = ws;
 
     // Create WebRTC manager
-    this.#webRTC = new WebRTC(
-      ws,
-      this,
-      this.#renderThread,
-      this.#producedTrack
-    );
+    this.#webRTC = new WebRTC(ws, this, this.#renderThread, this.#producedTrack);
     this.#webRTC.playerId = this.playerId$.value;
     this.#webRTC.playerPosition = this.playerPosition;
     this.#webRTC.playerRotation = this.playerRotation;
+    this.#webRTC.cameraPosition = this.cameraPosition;
+    this.#webRTC.cameraRotation = this.cameraRotation;
 
     function send(message: ToHostMessage) {
       ws.send(JSON.stringify(message));
@@ -229,8 +213,7 @@ export class NetworkingInterface {
           else this.#playerNames.delete(data.playerId);
 
           // Set your handle
-          if (this.#myHandle)
-            this.#playerHandles.set(data.playerId, this.#myHandle);
+          if (this.#myHandle) this.#playerHandles.set(data.playerId, this.#myHandle);
           else this.#playerHandles.delete(data.playerId);
 
           // Save player id
@@ -371,9 +354,7 @@ export class NetworkingInterface {
         }
 
         case "player_handle": {
-          console.info(
-            `🌿 Player ${toHex(data.playerId)} is now @${data.handle}`
-          );
+          console.info(`🌿 Player ${toHex(data.playerId)} is now @${data.handle}`);
 
           if (data.handle) this.#playerHandles.set(data.playerId, data.handle);
           else this.#playerHandles.delete(data.playerId);
@@ -472,6 +453,16 @@ export class NetworkingInterface {
     if (this.#webRTC) this.#webRTC.playerRotation = rotation;
   }
 
+  setCameraPosition(position: Int32Array) {
+    this.cameraPosition = position;
+    if (this.#webRTC) this.#webRTC.cameraPosition = position;
+  }
+
+  setCameraRotation(rotation: Int16Array) {
+    this.cameraRotation = rotation;
+    if (this.#webRTC) this.#webRTC.cameraRotation = rotation;
+  }
+
   setFallState(falling: boolean) {
     if (!this.#ws || !this.#isWsOpen()) return;
 
@@ -536,10 +527,10 @@ export class NetworkingInterface {
     const newChatMessages = this.chatMessages$.value.concat(message);
 
     // Sort by timestamp
-    newChatMessages.sort((a, b) => a.timestamp - b.timestamp);
+    newChatMessages.sort((a, b) => b.timestamp - a.timestamp);
 
     // Limit to 50 messages
-    newChatMessages.splice(0, newChatMessages.length - 50);
+    newChatMessages.splice(50, newChatMessages.length - 50);
 
     this.chatMessages$.next(newChatMessages);
   }

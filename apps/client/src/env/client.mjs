@@ -9,16 +9,12 @@ export const formatErrors = (
 ) =>
   Object.entries(errors)
     .map(([name, value]) => {
-      if (value && "_errors" in value)
-        return `${name}: ${value._errors.join(", ")}\n`;
+      if (value && "_errors" in value) return `${name}: ${value._errors.join(", ")}\n`;
     })
     .filter(Boolean);
 
 if (_clientEnv.success === false) {
-  console.error(
-    "❌ Invalid environment variables:\n",
-    ...formatErrors(_clientEnv.error.format())
-  );
+  console.error("❌ Invalid environment variables:\n", ...formatErrors(_clientEnv.error.format()));
   throw new Error("Invalid environment variables");
 }
 

@@ -8,12 +8,7 @@ import { Mesh, MeshJSON } from "../scene";
 import { Material } from "../scene/Material";
 import { Node } from "../scene/Node";
 import { Scene } from "../scene/Scene";
-import {
-  MaterialJSON,
-  NodeJSON,
-  SceneJSON,
-  SceneMessage,
-} from "../scene/types";
+import { MaterialJSON, NodeJSON, SceneJSON, SceneMessage } from "../scene/types";
 import { PostMessage } from "../types";
 
 /*
@@ -29,6 +24,7 @@ export class MainScene {
 
   #map = {
     loadedGltfUris: new Map<string, string | null>(),
+    loadedGltfNodeIds: new Map<string, string[]>(),
   };
 
   #gltfLoadSpawn = new Map<string, boolean>();
@@ -49,21 +45,32 @@ export class MainScene {
 
     // Handle glTF loads
     loaderThread.onGltfLoaded = async ({ id, scene }) => {
-      const parentNode = Object.values(this.#scene.nodes).find(
-        (node) => node.meshId === id
-      );
+      const parentNode = Object.values(this.#scene.nodes).find((node) => node.meshId === id);
       if (!parentNode) return;
 
-      // Attach nodes to parent
       scene.nodes = scene.nodes.filter((nodeJSON) => {
         // Filter out root node
         if (nodeJSON.id === "root") return false;
+
+        // Attach to parent
         if (nodeJSON.parentId === "root") nodeJSON.parentId = parentNode.id;
+
         return true;
       });
 
+      // Remove old glTF nodes
+      this.#map.loadedGltfNodeIds.get(id)?.forEach((nodeId) => {
+        this.removeNode(nodeId);
+      });
+
+      // Add new glTF nodes
+      this.#map.loadedGltfNodeIds.set(
+        id,
+        scene.nodes.map((nodeJSON) => nodeJSON.id)
+      );
+
       // Add loaded glTF to the scene
-      const loadSpawn = this.#gltfLoadSpawn.get(id);
+      const loadSpawn = this.#gltfLoadSpawn.get(id) ?? false;
       await this.loadJSON(scene, false, loadSpawn);
 
       // Call glTF load callbacks
@@ -77,6 +84,7 @@ export class MainScene {
         if (mesh.type === "glTF") {
           mesh.uri$.subscribe((uri) => {
             const loadedURI = this.#map.loadedGltfUris.get(mesh.id);
+
             if (uri && uri !== loadedURI) {
               this.#map.loadedGltfUris.set(mesh.id, uri);
 
@@ -280,11 +288,7 @@ export class MainScene {
     return this.#scene.toJSON(includeInternal);
   }
 
-  async loadJSON(
-    json: Partial<SceneJSON>,
-    loadGltfSpawn = false,
-    loadSpawn = true
-  ) {
+  async loadJSON(json: Partial<SceneJSON>, loadGltfSpawn = false, loadSpawn = true) {
     if (!loadSpawn) delete json.spawnId;
 
     // Remove root node
@@ -348,9 +352,7 @@ export class MainScene {
     });
 
     // Remove all materials
-    Object.values(this.#scene.materials).forEach((material) =>
-      this.removeMaterial(material.id)
-    );
+    Object.values(this.#scene.materials).forEach((material) => this.removeMaterial(material.id));
   }
 
   destroy() {

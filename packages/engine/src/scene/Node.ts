@@ -72,23 +72,18 @@ export class Node {
   set parentId(parentId: string) {
     // Remove from previous parent
     if (this.parent) {
-      this.parent.childrenIds = this.parent.childrenIds.filter(
-        (id) => id !== this.id
-      );
+      this.parent.childrenIds = this.parent.childrenIds.filter((id) => id !== this.id);
     }
 
     // Set new parent
     this.parentId$.next(parentId);
 
     // Add to new parent
-    if (this.parent)
-      this.parent.childrenIds = [...this.parent.childrenIds, this.id];
+    if (this.parent) this.parent.childrenIds = [...this.parent.childrenIds, this.id];
   }
 
   get children() {
-    const children = this.childrenIds$.value.map(
-      (id) => this.scene?.nodes$.value[id]
-    );
+    const children = this.childrenIds$.value.map((id) => this.scene?.nodes$.value[id]);
     const filtered = children.filter((child) => child !== undefined) as Node[];
     return filtered;
   }
@@ -181,8 +176,7 @@ export class Node {
     if (json.scale !== undefined) this.scale = json.scale;
 
     if (json.meshId !== undefined) this.meshId = json.meshId;
-    if (json.collider !== undefined)
-      this.collider = createCollider(json.collider);
+    if (json.collider !== undefined) this.collider = createCollider(json.collider);
   }
 
   static fromJSON(json: NodeJSON) {

@@ -51,11 +51,7 @@ export default function RainbowAuthProvider({ children, enabled }: Props) {
   );
 
   return (
-    <RainbowKitAuthenticationProvider
-      adapter={adapter}
-      enabled={enabled}
-      status={status}
-    >
+    <RainbowKitAuthenticationProvider adapter={adapter} enabled={enabled} status={status}>
       {children}
     </RainbowKitAuthenticationProvider>
   );

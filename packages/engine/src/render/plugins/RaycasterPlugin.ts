@@ -48,26 +48,15 @@ export class RaycasterPlugin implements RenderPlugin {
   #onPointerUp(data: PointerData) {
     // Only fire a click if the pointer hasn't moved much, and hasn't been held down for too long
     // This is to prevent clicks from firing when the user is dragging the camera
-    const isValidClick =
-      performance.now() - this.#startMoveTime < 1000 && this.#moveCount < 6;
+    const isValidClick = performance.now() - this.#startMoveTime < 1000 && this.#moveCount < 6;
 
-    if (
-      data.button !== 0 ||
-      this.#state.usingTransformControls ||
-      !isValidClick
-    )
-      return;
+    if (data.button !== 0 || this.#state.usingTransformControls || !isValidClick) return;
 
     // Move raycaster to pointer position
-    this.#raycaster.setFromCamera(
-      { x: data.pointer.x, y: data.pointer.y },
-      this.#camera
-    );
+    this.#raycaster.setFromCamera({ x: data.pointer.x, y: data.pointer.y }, this.#camera);
 
     // Get intersected objects
-    const intersections = this.#raycaster.intersectObject(
-      this.#sceneLoader.contents
-    );
+    const intersections = this.#raycaster.intersectObject(this.#sceneLoader.contents);
 
     // Step through parents until we find a valid object
     let intersected: Object3D | undefined;
@@ -93,10 +82,7 @@ export class RaycasterPlugin implements RenderPlugin {
 /*
  * Step through an object's parents to find a non-internal node
  */
-function findValidObject(
-  object: Object3D,
-  sceneLoader: SceneLoader
-): Object3D | undefined {
+function findValidObject(object: Object3D, sceneLoader: SceneLoader): Object3D | undefined {
   const nodeId = sceneLoader.findId(object);
 
   if (nodeId) {

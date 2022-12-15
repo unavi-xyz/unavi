@@ -40,9 +40,7 @@ export default function MaterialComponent({ nodeId }: Props) {
 
   const materials$ = useEditorStore((state) => state.engine?.scene.materials$);
   const _materials = useSubscribeValue(materials$);
-  const materials = Object.values(_materials ?? {}).filter(
-    (m) => !m.isInternal
-  );
+  const materials = Object.values(_materials ?? {}).filter((m) => !m.isInternal);
 
   const [open, setOpen] = useState(false);
 
@@ -106,9 +104,7 @@ export default function MaterialComponent({ nodeId }: Props) {
                       <DropdownMaterialButton
                         materialId={material.id}
                         selectedId={materialId}
-                        onClick={() =>
-                          updateMesh(mesh.id, { materialId: material.id })
-                        }
+                        onClick={() => updateMesh(mesh.id, { materialId: material.id })}
                       />
                     </div>
                   );
@@ -131,12 +127,7 @@ export default function MaterialComponent({ nodeId }: Props) {
                   const value = e.target.value;
 
                   const rgb = hexToRgb(value);
-                  const normalized: Quad = [
-                    rgb[0] / 255,
-                    rgb[1] / 255,
-                    rgb[2] / 255,
-                    255,
-                  ];
+                  const normalized: Quad = [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, 255];
 
                   updateMaterial(materialId, { color: normalized });
                 }}
@@ -222,8 +213,7 @@ export default function MaterialComponent({ nodeId }: Props) {
                     const { engine } = useEditorStore.getState();
                     if (!engine) throw new Error("Engine not found");
 
-                    if (colorTexture.imageId)
-                      engine.scene.removeImage(colorTexture.imageId);
+                    if (colorTexture.imageId) engine.scene.removeImage(colorTexture.imageId);
                   }}
                   className="flex h-full cursor-default items-center px-2 text-lg text-neutral-100 transition hover:text-black"
                 >

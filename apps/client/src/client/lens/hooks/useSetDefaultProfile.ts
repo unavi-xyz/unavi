@@ -1,9 +1,6 @@
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { utils } from "ethers";
-import {
-  LensHub__factory,
-  useCreateSetDefaultProfileTypedDataMutation,
-} from "lens";
+import { LensHub__factory, useCreateSetDefaultProfileTypedDataMutation } from "lens";
 import { useSigner, useSignTypedData } from "wagmi";
 
 import { ContractAddress } from "../constants";

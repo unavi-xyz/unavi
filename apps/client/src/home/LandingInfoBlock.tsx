@@ -22,8 +22,7 @@ export default function LandingInfoBlock({
   image,
   imageSide,
 }: Props) {
-  const directionClass =
-    imageSide === "right" ? "md:flex-row-reverse" : "md:flex-row";
+  const directionClass = imageSide === "right" ? "md:flex-row-reverse" : "md:flex-row";
 
   const isExternalLink = buttonLink.startsWith("http");
 

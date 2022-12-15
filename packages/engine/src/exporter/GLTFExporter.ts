@@ -8,26 +8,13 @@ import {
   WebIO,
 } from "@gltf-transform/core";
 import { DracoMeshCompression } from "@gltf-transform/extensions";
-import {
-  dedup,
-  prune,
-  resample,
-  textureResize,
-} from "@gltf-transform/functions";
+import { dedup, prune, resample, textureResize } from "@gltf-transform/functions";
 
 import { extensions } from "../gltf/constants";
 import { ColliderExtension } from "../gltf/extensions/Collider/ColliderExtension";
 import { SpawnPointExtension } from "../gltf/extensions/SpawnPoint/SpawnPointExtension";
 import { RenderExport } from "../render/types";
-import {
-  Accessor,
-  Animation,
-  Material,
-  Node,
-  Scene,
-  SceneJSON,
-  Texture,
-} from "../scene";
+import { Accessor, Animation, Material, Node, Scene, SceneJSON, Texture } from "../scene";
 import { calcGlobalScale } from "../scene/utils/calcGlobalScale";
 import { convertAutoCollider } from "../scene/utils/convertAutoCollider";
 import { setTextureInfo } from "./utils/setTextureInfo";
@@ -65,24 +52,16 @@ export class GLTFExporter {
     if (renderData) this.#renderData = renderData;
 
     // Parse accessors
-    Object.values(this.#scene.accessors).forEach((accessor) =>
-      this.#parseAccessor(accessor)
-    );
+    Object.values(this.#scene.accessors).forEach((accessor) => this.#parseAccessor(accessor));
 
     // Parse materials
-    Object.values(this.#scene.materials).forEach((material) =>
-      this.#parseMaterial(material)
-    );
+    Object.values(this.#scene.materials).forEach((material) => this.#parseMaterial(material));
 
     // Parse meshes
-    Object.values(this.#scene.meshes).forEach((mesh) =>
-      this.#parseMesh(mesh.id)
-    );
+    Object.values(this.#scene.meshes).forEach((mesh) => this.#parseMesh(mesh.id));
 
     // Parse nodes
-    const rootChildren = Object.values(this.#scene.nodes).filter(
-      (e) => e.parentId === "root"
-    );
+    const rootChildren = Object.values(this.#scene.nodes).filter((e) => e.parentId === "root");
     rootChildren.forEach((node) => this.#parseNode(node));
 
     // Parse skins
@@ -101,9 +80,7 @@ export class GLTFExporter {
         gltfNode.setSkin(skin);
 
         // Set inverse bind matrices
-        const accessor = this.#cache.accessors.get(
-          primitive.skin.inverseBindMatricesId
-        );
+        const accessor = this.#cache.accessors.get(primitive.skin.inverseBindMatricesId);
         if (!accessor) throw new Error("Accessor not found");
         skin.setInverseBindMatrices(accessor);
 
@@ -117,9 +94,7 @@ export class GLTFExporter {
     });
 
     // Parse animations
-    Object.values(this.#scene.animations).forEach((animation) =>
-      this.#parseAnimation(animation)
-    );
+    Object.values(this.#scene.animations).forEach((animation) => this.#parseAnimation(animation));
 
     // Create IO
     const io = new WebIO().registerExtensions(extensions).registerDependencies({
@@ -127,14 +102,11 @@ export class GLTFExporter {
       "draco3d.encoder": await new DracoEncoderModule(),
     });
 
-    this.#doc
-      .createExtension(DracoMeshCompression)
-      .setRequired(true)
-      .setEncoderOptions({
-        encodeSpeed: 5,
-        decodeSpeed: 5,
-        method: DracoMeshCompression.EncoderMethod.EDGEBREAKER,
-      });
+    this.#doc.createExtension(DracoMeshCompression).setRequired(true).setEncoderOptions({
+      encodeSpeed: 5,
+      decodeSpeed: 5,
+      method: DracoMeshCompression.EncoderMethod.EDGEBREAKER,
+    });
 
     try {
       // Apply transforms
@@ -202,19 +174,14 @@ export class GLTFExporter {
     if (mesh) gltfNode.setMesh(mesh);
 
     // Add to parent
-    const parent =
-      node.parentId !== "root" ? this.#cache.nodes.get(node.parentId) : null;
+    const parent = node.parentId !== "root" ? this.#cache.nodes.get(node.parentId) : null;
     if (parent) parent.addChild(gltfNode);
 
     // Set collider
     const nodes = Object.values(this.#scene.nodes);
     const globalScale = calcGlobalScale(node, nodes);
     const nodeMesh = node.meshId ? this.#scene.meshes[node.meshId] : undefined;
-    const nodeCollider = convertAutoCollider(
-      node,
-      nodeMesh?.toJSON(),
-      globalScale
-    );
+    const nodeCollider = convertAutoCollider(node, nodeMesh?.toJSON(), globalScale);
 
     if (nodeCollider) {
       const collider = this.#extensions.collider.createCollider();
@@ -283,22 +250,19 @@ export class GLTFExporter {
         gltfPrimitive.setMode(4); // TRIANGLES
 
         // Set attributes
-        this.#renderData?.forEach(
-          ({ nodeId, attributeName, array, normalized, type }) => {
-            if (nodeId !== mesh.id) return;
+        this.#renderData?.forEach(({ nodeId, attributeName, array, normalized, type }) => {
+          if (nodeId !== mesh.id) return;
 
-            const gltfAccessor = this.#doc.createAccessor();
+          const gltfAccessor = this.#doc.createAccessor();
 
-            gltfAccessor.setArray(array);
-            gltfAccessor.setNormalized(normalized);
-            gltfAccessor.setType(type);
-            gltfAccessor.setBuffer(this.#buffer);
+          gltfAccessor.setArray(array);
+          gltfAccessor.setNormalized(normalized);
+          gltfAccessor.setType(type);
+          gltfAccessor.setBuffer(this.#buffer);
 
-            if (attributeName === "indices")
-              gltfPrimitive.setIndices(gltfAccessor);
-            else gltfPrimitive.setAttribute(attributeName, gltfAccessor);
-          }
-        );
+          if (attributeName === "indices") gltfPrimitive.setIndices(gltfAccessor);
+          else gltfPrimitive.setAttribute(attributeName, gltfAccessor);
+        });
 
         break;
       }
@@ -381,8 +345,7 @@ export class GLTFExporter {
               const morphPosition = this.#cache.accessors.get(morphId);
               if (!morphPosition) throw new Error("Accessor not found");
 
-              const primitiveTarget =
-                this.#doc.createPrimitiveTarget("POSITION");
+              const primitiveTarget = this.#doc.createPrimitiveTarget("POSITION");
               primitiveTarget.setAttribute("POSITION", morphPosition);
               gltfPrimitive.addTarget(primitiveTarget);
             });
@@ -404,8 +367,7 @@ export class GLTFExporter {
               const morphTangent = this.#cache.accessors.get(morphId);
               if (!morphTangent) throw new Error("Accessor not found");
 
-              const primitiveTarget =
-                this.#doc.createPrimitiveTarget("TANGENT");
+              const primitiveTarget = this.#doc.createPrimitiveTarget("TANGENT");
               primitiveTarget.setAttribute("TANGENT", morphTangent);
               gltfPrimitive.addTarget(primitiveTarget);
             });
@@ -438,17 +400,13 @@ export class GLTFExporter {
     gltfMaterial.setAlphaMode(material.alphaMode);
 
     if (material.colorTexture) {
-      gltfMaterial.setBaseColorTexture(
-        this.#parseTexture(material.colorTexture)
-      );
+      gltfMaterial.setBaseColorTexture(this.#parseTexture(material.colorTexture));
       const info = gltfMaterial.getBaseColorTextureInfo();
       setTextureInfo(info, material.colorTexture);
     }
 
     if (material.emissiveTexture) {
-      gltfMaterial.setEmissiveTexture(
-        this.#parseTexture(material.emissiveTexture)
-      );
+      gltfMaterial.setEmissiveTexture(this.#parseTexture(material.emissiveTexture));
       const info = gltfMaterial.getEmissiveTextureInfo();
       setTextureInfo(info, material.emissiveTexture);
     }
@@ -460,9 +418,7 @@ export class GLTFExporter {
     }
 
     if (material.occlusionTexture) {
-      gltfMaterial.setOcclusionTexture(
-        this.#parseTexture(material.occlusionTexture)
-      );
+      gltfMaterial.setOcclusionTexture(this.#parseTexture(material.occlusionTexture));
       const info = gltfMaterial.getOcclusionTextureInfo();
       setTextureInfo(info, material.occlusionTexture);
     }

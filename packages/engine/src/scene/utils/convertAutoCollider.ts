@@ -43,11 +43,7 @@ export function convertAutoCollider(
     switch (mesh.type) {
       case "Box": {
         const boxCollider = new BoxCollider();
-        boxCollider.size = [
-          mesh.width * scale,
-          mesh.height * scale,
-          mesh.depth * scale,
-        ];
+        boxCollider.size = [mesh.width * scale, mesh.height * scale, mesh.depth * scale];
         return boxCollider;
         break;
       }

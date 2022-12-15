@@ -1,7 +1,4 @@
-import {
-  RtpCapabilities,
-  RtpParameters,
-} from "mediasoup-client/lib/RtpParameters";
+import { RtpCapabilities, RtpParameters } from "mediasoup-client/lib/RtpParameters";
 import { SctpStreamParameters } from "mediasoup-client/lib/SctpParameters";
 import { TransportOptions } from "mediasoup-client/lib/Transport";
 
@@ -53,10 +50,7 @@ export type ToHostMessage =
       }
     >
   | GenericWebSocketMessage<"leave", null>
-  | GenericWebSocketMessage<
-      "location",
-      [number, number, number, number, number, number, number]
-    >
+  | GenericWebSocketMessage<"location", [number, number, number, number, number, number, number]>
   | GenericWebSocketMessage<"message", string>
   | GenericWebSocketMessage<"falling_state", boolean>
   | GenericWebSocketMessage<"set_name", string | null>
@@ -123,18 +117,9 @@ export type FromHostMessage =
         isFalling: boolean;
       }
     >
-  | GenericWebSocketMessage<
-      "player_name",
-      { playerId: number; name: string | null }
-    >
-  | GenericWebSocketMessage<
-      "player_avatar",
-      { playerId: number; avatar: string | null }
-    >
-  | GenericWebSocketMessage<
-      "player_handle",
-      { playerId: number; handle: string | null }
-    >
+  | GenericWebSocketMessage<"player_name", { playerId: number; name: string | null }>
+  | GenericWebSocketMessage<"player_avatar", { playerId: number; avatar: string | null }>
+  | GenericWebSocketMessage<"player_handle", { playerId: number; handle: string | null }>
   | GenericWebSocketMessage<"router_rtp_capabilities", RtpCapabilities>
   | GenericWebSocketMessage<
       "transport_created",

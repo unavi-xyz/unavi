@@ -1,8 +1,4 @@
-import {
-  GetChallengeDocument,
-  GetChallengeQuery,
-  GetChallengeQueryVariables,
-} from "lens";
+import { GetChallengeDocument, GetChallengeQuery, GetChallengeQueryVariables } from "lens";
 import { useEffect, useMemo, useState } from "react";
 import { Client } from "urql";
 
@@ -29,12 +25,9 @@ async function generateChallenge(address: string | undefined, client: Client) {
   if (!address) return;
 
   const { data, error } = await client
-    .query<GetChallengeQuery, GetChallengeQueryVariables>(
-      GetChallengeDocument,
-      {
-        request: { address },
-      }
-    )
+    .query<GetChallengeQuery, GetChallengeQueryVariables>(GetChallengeDocument, {
+      request: { address },
+    })
     .toPromise();
 
   if (error) throw new Error(error.message);

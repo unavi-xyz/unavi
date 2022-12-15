@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/router";
 
 import { useLens } from "../../../client/lens/hooks/useLens";
 import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
@@ -13,23 +12,14 @@ import { isFromCDN } from "../../../utils/isFromCDN";
 import MetaTags from "../../MetaTags";
 
 const host =
-  process.env.NODE_ENV === "development"
-    ? "localhost:4000"
-    : env.NEXT_PUBLIC_DEFAULT_HOST;
+  process.env.NODE_ENV === "development" ? "localhost:4000" : env.NEXT_PUBLIC_DEFAULT_HOST;
 
 export interface Props extends PublicationProps {
+  id: string;
   children: React.ReactNode;
 }
 
-export default function SpaceLayout({
-  children,
-  metadata,
-  publication,
-  image,
-}: Props) {
-  const router = useRouter();
-  const id = router.query.id as string;
-
+export default function SpaceLayout({ id, metadata, publication, image, children }: Props) {
   const { handle } = useLens();
   const author = trimHandle(publication?.profile.handle);
   const isAuthor = handle && handle === author;
@@ -48,7 +38,7 @@ export default function SpaceLayout({
       <div className="mx-4 h-full">
         <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
           <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
-            <div className="aspect-card h-full w-full rounded-3xl bg-sky-100">
+            <div className="aspect-card h-full w-full rounded-2xl bg-sky-100">
               <div className="relative h-full w-full object-cover">
                 {image &&
                   (isFromCDN(image) ? (
@@ -58,13 +48,13 @@ export default function SpaceLayout({
                       fill
                       sizes="40vw"
                       alt=""
-                      className="rounded-3xl object-cover"
+                      className="rounded-2xl object-cover"
                     />
                   ) : (
                     <img
                       src={image}
                       alt=""
-                      className="h-full w-full rounded-3xl object-cover"
+                      className="h-full w-full rounded-2xl object-cover"
                       crossOrigin="anonymous"
                     />
                   ))}
@@ -73,17 +63,13 @@ export default function SpaceLayout({
 
             <div className="flex flex-col justify-between space-y-8 md:w-2/3">
               <div className="space-y-4">
-                <div className="flex justify-center text-3xl font-black">
-                  {publication?.metadata.name}
-                </div>
+                <div className="text-center text-3xl font-black">{publication?.metadata.name}</div>
 
                 <div className="space-y-2">
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-neutral-500">By</div>
                     <Link href={`/user/${author}`}>
-                      <div className="cursor-pointer hover:underline">
-                        @{author}
-                      </div>
+                      <div className="cursor-pointer hover:underline">@{author}</div>
                     </Link>
                   </div>
 
@@ -92,12 +78,14 @@ export default function SpaceLayout({
                     <div>{host}</div>
                   </div>
 
-                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                    <div>{playerCount ?? 0}</div>
-                    <div className="text-neutral-500">
-                      connected player{playerCount === 1 ? null : "s"}
+                  {playerCount && playerCount > 0 ? (
+                    <div className="flex justify-center space-x-1 font-bold md:justify-start">
+                      <div>{playerCount}</div>
+                      <div className="text-neutral-500">
+                        connected player{playerCount === 1 ? null : "s"}
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -115,9 +103,7 @@ export default function SpaceLayout({
             <div className="flex space-x-4">
               <NavigationTab href={`/space/${id}`} text="About" />
 
-              {isAuthor && (
-                <NavigationTab href={`/space/${id}/settings`} text="Settings" />
-              )}
+              {isAuthor && <NavigationTab href={`/space/${id}/settings`} text="Settings" />}
             </div>
 
             <div>{children}</div>

@@ -23,8 +23,7 @@ export function updateMeshMaterial(meshId: string, map: SceneMap) {
       }
 
       // Enable flat shading if no normal attribute
-      if (!object.geometry.attributes.normal)
-        object.material.flatShading = true;
+      if (!object.geometry.attributes.normal) object.material.flatShading = true;
 
       // Enable vertex colors if color attribute
       if (object.geometry.attributes.color) object.material.vertexColors = true;

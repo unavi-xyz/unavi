@@ -32,10 +32,7 @@ export default function PhysicsComponent({ nodeId }: Props) {
   if (!collider) return null;
 
   return (
-    <ComponentMenu
-      title="Physics"
-      onRemove={() => updateNode(nodeId, { collider: null })}
-    >
+    <ComponentMenu title="Physics" onRemove={() => updateNode(nodeId, { collider: null })}>
       <>
         <MenuRows titles={["Collider"]}>
           <SelectMenu
@@ -97,13 +94,7 @@ export default function PhysicsComponent({ nodeId }: Props) {
   );
 }
 
-function ColliderComponent({
-  nodeId,
-  collider,
-}: {
-  nodeId: string;
-  collider: Collider | null;
-}) {
+function ColliderComponent({ nodeId, collider }: { nodeId: string; collider: Collider | null }) {
   switch (collider?.type) {
     case "box":
       return <BoxColliderComponent nodeId={nodeId} collider={collider} />;

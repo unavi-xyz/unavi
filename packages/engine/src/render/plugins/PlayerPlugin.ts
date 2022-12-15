@@ -2,6 +2,7 @@ import {
   Euler,
   Group,
   MathUtils,
+  Object3D,
   PerspectiveCamera,
   Quaternion,
   Vector2,
@@ -33,14 +34,16 @@ export class PlayerPlugin implements RenderPlugin {
 
   #avatar: PlayerAvatar | null = null;
 
-  #playerInputVector = new Vector2();
   #playerVelocity: Int32Array | null = null;
   #playerPosition: Int32Array | null = null;
   #playerRotation: Int16Array | null = null;
+  #cameraPositionArray: Int32Array | null = null;
+  #cameraRotationArray: Int16Array | null = null;
 
+  #playerInputVector = new Vector2();
   #inputMomentum = new Vector2();
-  #inputYChangeTime = 0;
   #inputXChangeTime = 0;
+  #inputYChangeTime = 0;
 
   #tempVec2 = new Vector2();
   #tempVec3 = new Vector3();
@@ -63,6 +66,21 @@ export class PlayerPlugin implements RenderPlugin {
     this.#avatarPath = avatarPath;
     this.#avatarAnimationsPath = avatarAnimationsPath;
     this.#renderer = renderer;
+
+    // Create camera buffers
+    const rotationBuffer = new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4);
+    this.#cameraRotationArray = new Int16Array(rotationBuffer);
+
+    const positionBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3);
+    this.#cameraPositionArray = new Int32Array(positionBuffer);
+
+    this.#postMessage({
+      subject: "set_camera_buffers",
+      data: {
+        position: this.#cameraPositionArray,
+        rotation: this.#cameraRotationArray,
+      },
+    });
   }
 
   onmessage(event: MessageEvent<ToRenderMessage>) {
@@ -74,10 +92,7 @@ export class PlayerPlugin implements RenderPlugin {
         this.#playerVelocity = data.velocity;
 
         // Create shared array buffer
-        const rotationBuffer = new SharedArrayBuffer(
-          Int32Array.BYTES_PER_ELEMENT * 4
-        );
-
+        const rotationBuffer = new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4);
         this.#playerRotation = new Int16Array(rotationBuffer);
 
         // Send back to main thread
@@ -91,6 +106,11 @@ export class PlayerPlugin implements RenderPlugin {
 
       case "set_player_input_vector": {
         this.setPlayerInputVector(data);
+        break;
+      }
+
+      case "set_camera_input_vector": {
+        this.setCameraInputVector(data[0], data[1]);
         break;
       }
 
@@ -137,10 +157,7 @@ export class PlayerPlugin implements RenderPlugin {
   wheel(delta: number) {
     // Scroll out into third person mode
     this.#targetCameraPosition.z += delta / 100;
-    this.#targetCameraPosition.z = Math.max(
-      0,
-      Math.min(20, this.#targetCameraPosition.z)
-    );
+    this.#targetCameraPosition.z = Math.max(0, Math.min(20, this.#targetCameraPosition.z));
   }
 
   mouseMove(x: number, y: number) {
@@ -170,6 +187,23 @@ export class PlayerPlugin implements RenderPlugin {
     }
 
     this.#playerInputVector.set(input[0], input[1]);
+  }
+
+  setCameraInputVector(x: number, y: number) {
+    this.#cameraRotation.setFromQuaternion(this.#targetCameraRotation);
+
+    this.#cameraRotation.y = x * Math.PI;
+    this.#cameraRotation.x = y * Math.PI;
+
+    const minPolarAngle = 0;
+    const maxPolarAngle = Math.PI;
+
+    this.#cameraRotation.x = Math.max(
+      Math.PI / 2 - maxPolarAngle,
+      Math.min(Math.PI / 2 - minPolarAngle, this.#cameraRotation.x)
+    );
+
+    this.#targetCameraRotation.setFromEuler(this.#cameraRotation);
   }
 
   update(delta: number) {
@@ -225,12 +259,10 @@ export class PlayerPlugin implements RenderPlugin {
 
     // Set first person mode
     const isFirstPerson = this.#targetCameraPosition.z === 0;
-    if (isFirstPerson !== this.#avatar?.isFirstPerson)
-      this.#avatar?.setFirstPerson(isFirstPerson);
+    if (isFirstPerson !== this.#avatar?.isFirstPerson) this.#avatar?.setFirstPerson(isFirstPerson);
 
     // Rotate camera
-    if (isFirstPerson)
-      this.#camera.quaternion.slerp(this.#targetCameraRotation, K);
+    if (isFirstPerson) this.#camera.quaternion.slerp(this.#targetCameraRotation, K);
     else this.#camera.quaternion.copy(this.#targetCameraRotation);
 
     // Rotate avatar
@@ -252,10 +284,7 @@ export class PlayerPlugin implements RenderPlugin {
       if (this.#hasWalked) {
         this.#walkingDirection.add(velocity);
         this.#walkingDirection.clampLength(0, 1);
-        const angle = Math.atan2(
-          -this.#walkingDirection.x,
-          -this.#walkingDirection.y
-        );
+        const angle = Math.atan2(-this.#walkingDirection.x, -this.#walkingDirection.y);
         this.#avatar?.group.quaternion.setFromAxisAngle(UP, angle);
       }
 
@@ -266,27 +295,34 @@ export class PlayerPlugin implements RenderPlugin {
     // Update avatar
     if (this.#avatar) this.#avatar.update(delta);
 
-    if (this.#avatar?.vrm) {
-      const humanBones = this.#avatar.vrm.humanoid.humanBones;
-      const head = humanBones.head.node;
-
+    if (this.#avatar) {
       if (isFirstPerson) {
         // If first person, copy head position to camera
         this.#tempVec3.setScalar(0);
 
-        // If eyes are available, use eye position
-        if (humanBones.leftEye && humanBones.rightEye) {
-          this.#tempVec3
-            .copy(humanBones.leftEye.node.position)
-            .add(humanBones.rightEye.node.position)
-            .divideScalar(2);
+        let head: Object3D;
+
+        if (this.#avatar.vrm) {
+          const humanBones = this.#avatar.vrm.humanoid.humanBones;
+          head = humanBones.head.node;
+
+          // If eyes are available, use eye position
+          if (humanBones.leftEye && humanBones.rightEye) {
+            this.#tempVec3
+              .copy(humanBones.leftEye.node.position)
+              .add(humanBones.rightEye.node.position)
+              .divideScalar(2);
+          }
+        } else {
+          head = this.#avatar.group;
+          this.#tempVec3.y += 1.5;
         }
 
         head.position.add(this.#tempVec3);
         head.getWorldPosition(this.#camera.position);
         head.position.sub(this.#tempVec3);
       } else {
-        // If third person, rotate camera around avatar head
+        // If third person, rotate camera around avatar
         this.#camera.position
           .applyEuler(this.#cameraRotation)
           .add(this.#avatar.group.position)
@@ -296,9 +332,7 @@ export class PlayerPlugin implements RenderPlugin {
 
     // Send player rotation
     if (this.#playerRotation) {
-      const rotation = isFirstPerson
-        ? this.#camera.quaternion
-        : this.#avatar?.group.quaternion;
+      const rotation = isFirstPerson ? this.#camera.quaternion : this.#avatar?.group.quaternion;
 
       if (rotation) {
         Atomics.store(this.#playerRotation, 0, rotation.x * 1000);
@@ -306,6 +340,22 @@ export class PlayerPlugin implements RenderPlugin {
         Atomics.store(this.#playerRotation, 2, rotation.z * 1000);
         Atomics.store(this.#playerRotation, 3, rotation.w * 1000);
       }
+    }
+
+    // Send camera position
+    if (this.#cameraPositionArray) {
+      const worldPosition = this.#camera.getWorldPosition(this.#tempVec3);
+      Atomics.store(this.#cameraPositionArray, 0, worldPosition.x * 1000);
+      Atomics.store(this.#cameraPositionArray, 1, worldPosition.y * 1000);
+      Atomics.store(this.#cameraPositionArray, 2, worldPosition.z * 1000);
+    }
+
+    // Send camera rotation
+    if (this.#cameraRotationArray) {
+      Atomics.store(this.#cameraRotationArray, 0, this.#camera.quaternion.x * 1000);
+      Atomics.store(this.#cameraRotationArray, 1, this.#camera.quaternion.y * 1000);
+      Atomics.store(this.#cameraRotationArray, 2, this.#camera.quaternion.z * 1000);
+      Atomics.store(this.#cameraRotationArray, 3, this.#camera.quaternion.w * 1000);
     }
   }
 

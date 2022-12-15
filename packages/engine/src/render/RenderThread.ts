@@ -2,12 +2,7 @@ import { Engine } from "../Engine";
 import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderWorker } from "./RenderWorker";
-import {
-  FromRenderMessage,
-  PointerData,
-  RenderExport,
-  ToRenderMessage,
-} from "./types";
+import { FromRenderMessage, RenderExport, ToRenderMessage } from "./types";
 
 export interface RenderThreadOptions {
   canvas: HTMLCanvasElement;
@@ -68,8 +63,7 @@ export class RenderThread {
         this.worker.workerPort.postMessage.bind(this.worker.workerPort),
         canvas
       );
-      this.worker.workerPort.onmessage =
-        renderWorker.onmessage.bind(renderWorker);
+      this.worker.workerPort.onmessage = renderWorker.onmessage.bind(renderWorker);
     }
 
     // Handle worker messages
@@ -93,12 +87,6 @@ export class RenderThread {
 
     // Event listeners
     window.addEventListener("resize", this.onResize.bind(this));
-    canvas.addEventListener("contextmenu", this.#onContextMenu.bind(this));
-    canvas.addEventListener("pointermove", this.#onPointerMove.bind(this));
-    canvas.addEventListener("pointerup", this.#onPointerUp.bind(this));
-    canvas.addEventListener("pointerdown", this.#onPointerDown.bind(this));
-    canvas.addEventListener("pointercancel", this.#onPointerCancel.bind(this));
-    canvas.addEventListener("wheel", this.#onWheel.bind(this));
   }
 
   #onmessage = (event: MessageEvent<FromRenderMessage>) => {
@@ -127,6 +115,12 @@ export class RenderThread {
 
       case "set_player_rotation_buffer": {
         this.#engine.networkingInterface.setPlayerRotation(data);
+        break;
+      }
+
+      case "set_camera_buffers": {
+        this.#engine.networkingInterface.setCameraPosition(data.position);
+        this.#engine.networkingInterface.setCameraRotation(data.rotation);
         break;
       }
 
@@ -184,13 +178,7 @@ export class RenderThread {
     return promise;
   }
 
-  setPlayerBuffers({
-    position,
-    velocity,
-  }: {
-    position: Int32Array;
-    velocity: Int32Array;
-  }) {
+  setPlayerBuffers({ position, velocity }: { position: Int32Array; velocity: Int32Array }) {
     this.postMessage({
       subject: "set_player_buffers",
       data: {
@@ -237,96 +225,5 @@ export class RenderThread {
   destroy() {
     this.worker.postMessage({ subject: "destroy", data: null });
     setTimeout(() => this.worker.terminate());
-
-    this.#canvas.removeEventListener("contextmenu", this.#onContextMenu);
-    this.#canvas.removeEventListener("pointermove", this.#onPointerMove);
-    this.#canvas.removeEventListener("pointerup", this.#onPointerUp);
-    this.#canvas.removeEventListener("pointerdown", this.#onPointerDown);
-    this.#canvas.removeEventListener("pointercancel", this.#onPointerCancel);
-    this.#canvas.removeEventListener("wheel", this.#onWheel);
   }
-
-  #onContextMenu(event: Event) {
-    event.preventDefault();
-  }
-
-  #onPointerMove(event: PointerEvent) {
-    this.postMessage({
-      subject: "pointermove",
-      data: getPointerData(event, this.#canvas),
-    });
-  }
-
-  #onPointerUp(event: PointerEvent) {
-    this.#canvas.releasePointerCapture(event.pointerId);
-
-    this.postMessage({
-      subject: "pointerup",
-      data: getPointerData(event, this.#canvas),
-    });
-  }
-
-  #onPointerDown(event: PointerEvent) {
-    const isPointerLocked = document.pointerLockElement === this.#canvas;
-    if (isPointerLocked) return;
-
-    this.#canvas.setPointerCapture(event.pointerId);
-
-    this.postMessage({
-      subject: "pointerdown",
-      data: getPointerData(event, this.#canvas),
-    });
-  }
-
-  #onPointerCancel(event: PointerEvent) {
-    this.postMessage({
-      subject: "pointercancel",
-      data: getPointerData(event, this.#canvas),
-    });
-  }
-
-  #onWheel(event: WheelEvent) {
-    event.preventDefault();
-    this.postMessage({
-      subject: "wheel",
-      data: {
-        deltaY: event.deltaY,
-      },
-    });
-  }
-}
-
-function getPointerData(
-  event: PointerEvent,
-  canvas: HTMLCanvasElement
-): PointerData {
-  let pointer;
-  if (canvas.ownerDocument.pointerLockElement) {
-    pointer = {
-      x: 0,
-      y: 0,
-      button: event.button,
-    };
-  } else {
-    const rect = canvas.getBoundingClientRect();
-    pointer = {
-      x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      y: (-(event.clientY - rect.top) / rect.height) * 2 + 1,
-      button: event.button,
-    };
-  }
-
-  return {
-    pointerId: event.pointerId,
-    pointerType: event.pointerType,
-    clientX: event.clientX,
-    clientY: event.clientY,
-    pageX: event.pageX,
-    pageY: event.pageY,
-    button: event.button,
-    ctrlKey: event.ctrlKey,
-    shiftKey: event.shiftKey,
-    metaKey: event.metaKey,
-    pointer,
-  };
 }

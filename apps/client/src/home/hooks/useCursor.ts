@@ -8,8 +8,7 @@ export function useCursor(
 ) {
   const limit = pageSize + itemCount * pageSize + 1;
   const lastCursor = Math.ceil(itemCount / pageSize) - 1;
-  const isLastPage =
-    (itemCount <= limit && cursor === lastCursor) || itemCount <= pageSize;
+  const isLastPage = (itemCount <= limit && cursor === lastCursor) || itemCount <= pageSize;
 
   function next() {
     if (isLastPage) return;

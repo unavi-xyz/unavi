@@ -63,17 +63,13 @@ export default function PublishPage() {
 
   const { mutateAsync: saveProject } = trpc.project.save.useMutation();
 
-  const { mutateAsync: createModelUploadUrl } =
-    trpc.publication.modelUploadURL.useMutation();
+  const { mutateAsync: createModelUploadUrl } = trpc.publication.modelUploadURL.useMutation();
 
-  const { mutateAsync: createImageUploadUrl } =
-    trpc.publication.imageUploadURL.useMutation();
+  const { mutateAsync: createImageUploadUrl } = trpc.publication.imageUploadURL.useMutation();
 
-  const { mutateAsync: createMetadataUploadUrl } =
-    trpc.publication.metadataUploadURL.useMutation();
+  const { mutateAsync: createMetadataUploadUrl } = trpc.publication.metadataUploadURL.useMutation();
 
-  const { mutateAsync: createPublication } =
-    trpc.publication.create.useMutation();
+  const { mutateAsync: createPublication } = trpc.publication.create.useMutation();
 
   const { mutateAsync: linkPublication } = trpc.publication.link.useMutation();
 
@@ -271,9 +267,7 @@ export default function PublishPage() {
 
       // Find the publication we just created by comparing metadata
       const publication = data?.publications.items.find(
-        (item) =>
-          item.metadata.name === name &&
-          item.metadata.description === description
+        (item) => item.metadata.name === name && item.metadata.description === description
       );
 
       if (!publication) {
@@ -304,9 +298,7 @@ export default function PublishPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center space-y-1">
-        <h1 className="flex justify-center text-4xl font-bold">
-          Publish Space
-        </h1>
+        <h1 className="flex justify-center text-4xl font-bold">Publish Space</h1>
       </div>
 
       <div className="space-y-4">
@@ -337,11 +329,7 @@ export default function PublishPage() {
 
           <div className="relative aspect-card h-full w-full rounded-xl bg-sky-100">
             {image && (
-              <img
-                src={image}
-                alt="picture preview"
-                className="h-full w-full rounded-xl"
-              />
+              <img src={image} alt="picture preview" className="h-full w-full rounded-xl" />
             )}
           </div>
 
@@ -352,9 +340,7 @@ export default function PublishPage() {
               const file = e.target.files?.[0];
               if (!file) return;
 
-              cropImage(URL.createObjectURL(file)).then((file) =>
-                setImageFile(file)
-              );
+              cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
             }}
           >
             Upload Image

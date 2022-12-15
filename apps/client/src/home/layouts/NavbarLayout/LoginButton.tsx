@@ -11,12 +11,7 @@ export default function LoginButton({ fullWidth = false, rounded }: Props) {
   const { openConnectModal } = useConnectModal();
 
   return (
-    <Button
-      variant="filled"
-      fullWidth={fullWidth}
-      rounded={rounded}
-      onClick={openConnectModal}
-    >
+    <Button variant="filled" fullWidth={fullWidth} rounded={rounded} onClick={openConnectModal}>
       Sign in
     </Button>
   );

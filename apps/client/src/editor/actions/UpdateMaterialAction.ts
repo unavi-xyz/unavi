@@ -14,9 +14,6 @@ export class UpdateMaterialAction {
   }
 }
 
-export function updateMaterial(
-  materialId: string,
-  data: Partial<MaterialJSON>
-) {
+export function updateMaterial(materialId: string, data: Partial<MaterialJSON>) {
   return new UpdateMaterialAction(materialId, data);
 }

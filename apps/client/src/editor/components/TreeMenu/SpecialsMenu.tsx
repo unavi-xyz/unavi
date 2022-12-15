@@ -34,7 +34,7 @@ export default function SpecialsMenu() {
         className="flex w-full items-center space-x-4 rounded-lg px-4 py-0.5 transition hover:bg-sky-100"
       >
         <div>{SpecialName.Spawn}</div>
-        <div className={`${spawnId ? "font-bold" : null}`}>{spawnId ? 1 : 0}/1</div>
+        <div className={spawnId ? "font-bold" : ""}>{spawnId ? 1 : 0}/1</div>
       </button>
     </div>
   );

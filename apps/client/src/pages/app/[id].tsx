@@ -39,7 +39,6 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
 export default function App({
   id,
   metadata,
-  publication,
   image,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -155,7 +154,7 @@ export default function App({
       <Script src="/scripts/draco_decoder.js" />
 
       <LoadingScreen
-        text={publication?.metadata.name ?? id}
+        text={metadata.title}
         image={image}
         loaded={engineStarted}
         loadingProgress={loadingProgress}

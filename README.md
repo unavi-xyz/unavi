@@ -43,6 +43,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 
 ### Packages
 
+- [contracts](packages/contracts): generated contract types
 - [engine](packages/engine): a multi-threaded 3D game engine
 - [eslint-config-custom](packages/eslint-config-custom): custom eslint config used throughout the repo
 - [lens](packages/lens): queries and types for interacting with Lens

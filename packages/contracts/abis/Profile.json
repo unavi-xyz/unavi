@@ -1130,10 +1130,7 @@
       }
     },
     "settings": {
-      "remappings": [
-        ":ds-test/=lib/forge-std/lib/ds-test/src/",
-        ":forge-std/=lib/forge-std/src/"
-      ],
+      "remappings": [":ds-test/=lib/forge-std/lib/ds-test/src/", ":forge-std/=lib/forge-std/src/"],
       "optimizer": {
         "enabled": true,
         "runs": 200
@@ -1258,45 +1255,19 @@
     "absolutePath": "src/Profile.sol",
     "id": 27563,
     "exportedSymbols": {
-      "Address": [
-        26220
-      ],
-      "Context": [
-        26242
-      ],
-      "ERC165": [
-        26441
-      ],
-      "ERC721": [
-        25604
-      ],
-      "ERC721URIStorage": [
-        25863
-      ],
-      "IERC165": [
-        26453
-      ],
-      "IERC721": [
-        25720
-      ],
-      "IERC721Metadata": [
-        25890
-      ],
-      "IERC721Receiver": [
-        25738
-      ],
-      "Math": [
-        27318
-      ],
-      "Profile": [
-        27562
-      ],
-      "Strings": [
-        26417
-      ],
-      "URIStorage": [
-        27634
-      ]
+      "Address": [26220],
+      "Context": [26242],
+      "ERC165": [26441],
+      "ERC721": [25604],
+      "ERC721URIStorage": [25863],
+      "IERC165": [26453],
+      "IERC721": [25720],
+      "IERC721Metadata": [25890],
+      "IERC721Receiver": [25738],
+      "Math": [27318],
+      "Profile": [27562],
+      "Strings": [26417],
+      "URIStorage": [27634]
     },
     "nodeType": "SourceUnit",
     "src": "45:3008:25",
@@ -1306,12 +1277,7 @@
         "nodeType": "PragmaDirective",
         "src": "45:24:25",
         "nodes": [],
-        "literals": [
-          "solidity",
-          "^",
-          "0.8",
-          ".17"
-        ]
+        "literals": ["solidity", "^", "0.8", ".17"]
       },
       {
         "id": 27321,
@@ -1619,9 +1585,7 @@
                 "modifierName": {
                   "id": 27344,
                   "name": "URIStorage",
-                  "nameLocations": [
-                    "1026:10:25"
-                  ],
+                  "nameLocations": ["1026:10:25"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 27634,
                   "src": "1026:10:25"
@@ -1661,9 +1625,7 @@
               "nodes": [],
               "statements": [
                 {
-                  "assignments": [
-                    27360
-                  ],
+                  "assignments": [27360],
                   "declarations": [
                     {
                       "constant": false,
@@ -1745,9 +1707,7 @@
                   "src": "1203:30:25"
                 },
                 {
-                  "assignments": [
-                    27366
-                  ],
+                  "assignments": [27366],
                   "declarations": [
                     {
                       "constant": false,
@@ -2318,10 +2278,7 @@
                       "id": 27401,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "1616:7:25",
                       "typeDescriptions": {
@@ -2489,10 +2446,7 @@
                       "id": 27410,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "1721:7:25",
                       "typeDescriptions": {
@@ -2656,10 +2610,7 @@
                       "id": 27421,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "1802:7:25",
                       "typeDescriptions": {
@@ -2745,9 +2696,7 @@
                   "src": "1933:30:25"
                 },
                 {
-                  "assignments": [
-                    27438
-                  ],
+                  "assignments": [27438],
                   "declarations": [
                     {
                       "constant": false,
@@ -3209,10 +3158,7 @@
                       "id": 27463,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "2222:7:25",
                       "typeDescriptions": {
@@ -4140,9 +4086,7 @@
                   },
                   "id": 27555,
                   "initializationExpression": {
-                    "assignments": [
-                      27520
-                    ],
+                    "assignments": [27520],
                     "declarations": [
                       {
                         "constant": false,
@@ -4257,10 +4201,7 @@
                       "id": 27556,
                       "name": "revert",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -19,
-                        -19
-                      ],
+                      "overloadedDeclarations": [-19, -19],
                       "referencedDeclaration": -19,
                       "src": "3007:6:25",
                       "typeDescriptions": {
@@ -4403,9 +4344,7 @@
             "baseName": {
               "id": 27322,
               "name": "URIStorage",
-              "nameLocations": [
-                "499:10:25"
-              ],
+              "nameLocations": ["499:10:25"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 27634,
               "src": "499:10:25"
@@ -4419,17 +4358,7 @@
         "contractDependencies": [],
         "contractKind": "contract",
         "fullyImplemented": true,
-        "linearizedBaseContracts": [
-          27562,
-          27634,
-          25863,
-          25604,
-          25890,
-          25720,
-          26441,
-          26453,
-          26242
-        ],
+        "linearizedBaseContracts": [27562, 27634, 25863, 25604, 25890, 25720, 26441, 26453, 26242],
         "name": "Profile",
         "nameLocation": "488:7:25",
         "scope": 27563,

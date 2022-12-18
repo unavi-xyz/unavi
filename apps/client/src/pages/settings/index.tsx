@@ -1,250 +1,119 @@
-import { useEffect, useRef, useState } from "react";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { Profile__factory } from "contracts";
+import React, { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
+import { useSigner } from "wagmi";
 
-import { uploadFileToIpfs } from "../../client/ipfs/uploadFileToIpfs";
-import { useLens } from "../../client/lens/hooks/useLens";
-import { useProfileByHandle } from "../../client/lens/hooks/useProfileByHandle";
-import { useSetProfileImage } from "../../client/lens/hooks/useSetProfileImage";
-import { useSetProfileMetadata } from "../../client/lens/hooks/useSetProfileMetadata";
-import { createProfileMetadata } from "../../client/lens/utils/createProfileMetadata";
-import { getSettingsLayout } from "../../home/layouts/SettingsLayout/SettingsLayout";
-import MetaTags from "../../home/MetaTags";
+import { useSession } from "../../client/auth/useSession";
+import { trpc } from "../../client/trpc";
+import { PROFILE_ADDRESS } from "../../constants";
+import { getNavbarLayout } from "../../home/layouts/NavbarLayout/NavbarLayout";
 import Button from "../../ui/Button";
-import FileInput from "../../ui/FileInput";
-import TextArea from "../../ui/TextArea";
+import Spinner from "../../ui/Spinner";
 import TextField from "../../ui/TextField";
-import { crop } from "../../utils/crop";
-import { getMediaURL } from "../../utils/getMediaURL";
 
 export default function Settings() {
-  const nameRef = useRef<HTMLInputElement>(null);
-  const bioRef = useRef<HTMLTextAreaElement>(null);
-  const locationRef = useRef<HTMLInputElement>(null);
-  const websiteRef = useRef<HTMLInputElement>(null);
-  const twitterRef = useRef<HTMLInputElement>(null);
-  const hostRef = useRef<HTMLInputElement>(null);
+  const [username, setUsername] = useState("");
+  const [savingUsername, setSavingUsername] = useState(false);
 
-  const [pfpRawFile, setPfpRawFile] = useState<File>();
-  const [pfpFile, setPfpFile] = useState<File>();
-  const [pfpUrl, setPfpUrl] = useState<string | null>(null);
-  const [coverFile, setCoverFile] = useState<File>();
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const [loadingProfilePicture, setLoadingProfilePicture] = useState(false);
-  const [loadingProfilePictureDelete, setLoadingProfilePictureDelete] = useState(false);
+  const { data: session, status } = useSession();
+  const { data: signer } = useSigner();
+  const { openConnectModal } = useConnectModal();
 
-  const { handle } = useLens();
-  const profile = useProfileByHandle(handle);
-  const pfpMediaUrl = getMediaURL(profile?.picture);
-  const coverMediaUrl = getMediaURL(profile?.coverPicture);
-
-  const setProfileMetadata = useSetProfileMetadata(profile?.id);
-  const setProfileImage = useSetProfileImage(profile?.id);
+  const { data: profile, isLoading } = trpc.social.profileByAddress.useQuery(
+    { address: session?.address ?? "" },
+    { enabled: session?.address !== undefined }
+  );
 
   useEffect(() => {
-    setPfpUrl(pfpMediaUrl);
-  }, [pfpMediaUrl]);
+    if (profile?.handleString) setUsername(profile.handleString);
+  }, [profile]);
 
-  useEffect(() => {
-    setCoverUrl(coverMediaUrl);
-  }, [coverMediaUrl]);
+  const usernameDisabled =
+    savingUsername || username.length === 0 || username === profile?.handleString;
 
-  useEffect(() => {
-    if (!pfpRawFile) return;
+  async function saveUsername() {
+    if (usernameDisabled) return;
 
-    crop(URL.createObjectURL(pfpRawFile), 1).then((res) => {
-      setPfpFile(res);
-    });
-  }, [pfpRawFile]);
-
-  useEffect(() => {
-    if (!pfpFile) return;
-    setPfpUrl(URL.createObjectURL(pfpFile));
-  }, [pfpFile]);
-
-  useEffect(() => {
-    if (coverFile) setCoverUrl(URL.createObjectURL(coverFile));
-  }, [coverFile]);
-
-  async function handleProfileSave() {
-    if (!profile || loadingProfile) return;
-
-    setLoadingProfile(true);
-
-    const { metadata, updateAttribute } = createProfileMetadata(profile);
-
-    if (coverFile) {
-      const uri = await uploadFileToIpfs(coverFile);
-      if (uri) metadata.cover_picture = uri;
+    if (!signer) {
+      if (openConnectModal) openConnectModal();
+      return;
     }
 
-    updateAttribute("location", locationRef.current?.value);
-    updateAttribute("website", websiteRef.current?.value);
-    updateAttribute("twitter", twitterRef.current?.value);
-    updateAttribute("host", hostRef.current?.value);
+    setSavingUsername(true);
 
-    metadata.name = nameRef.current?.value ?? null;
-    metadata.bio = bioRef.current?.value ?? null;
+    const contract = Profile__factory.connect(PROFILE_ADDRESS, signer);
 
-    try {
-      await setProfileMetadata(metadata);
-    } catch (err) {
-      console.error(err);
+    // If the user doesn't have a profile, create one
+    if (!profile) {
+      try {
+        const tx = await contract.mintWithHandle(username);
+
+        toast.promise(tx.wait(), {
+          loading: "Creating profile...",
+          success: "Profile created.",
+          error: "Failed to create profile.",
+        });
+
+        await tx.wait();
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      // If the user has a profile, update the username
+      try {
+        const tx = await contract.setHandle(profile.id, username);
+
+        toast.promise(tx.wait(), {
+          loading: "Updating username...",
+          success: "Username updated.",
+          error: "Failed to update username.",
+        });
+
+        await tx.wait();
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    setLoadingProfile(false);
+    setSavingUsername(false);
   }
 
-  async function handleProfilePictureSave() {
-    if (!pfpFile || loadingProfilePicture || loadingProfilePictureDelete) return;
+  if (status !== "authenticated") return null;
 
-    setLoadingProfilePicture(true);
-
-    try {
-      await setProfileImage(pfpFile);
-    } catch (err) {
-      console.error(err);
-    }
-
-    setLoadingProfilePicture(false);
-  }
-
-  async function handleProfilePictureDelete() {
-    if (loadingProfilePicture || loadingProfilePictureDelete) return;
-
-    setLoadingProfilePictureDelete(true);
-
-    try {
-      await setProfileImage(null);
-    } catch (err) {
-      console.error(err);
-    }
-
-    setLoadingProfilePictureDelete(false);
-  }
-
-  const twitter = profile?.attributes?.find((item) => item.key === "twitter");
-  const website = profile?.attributes?.find((item) => item.key === "website");
-  const location = profile?.attributes?.find((item) => item.key === "location");
+  if (isLoading)
+    return (
+      <div className="flex justify-center pt-12">
+        <Spinner />
+      </div>
+    );
 
   return (
-    <>
-      <MetaTags title="Settings" />
+    <div className="max-w-content mx-auto pt-12">
+      <div className="text-center text-3xl font-black">Edit Profile</div>
 
-      {profile && (
-        <div className="mb-24 space-y-8">
-          <div className="space-y-8 rounded-3xl bg-sky-100 p-8">
-            <div className="space-y-4 text-lg">
-              <TextField inputRef={nameRef} title="Name" defaultValue={profile?.name ?? ""} />
+      <div className="mx-auto w-1/2">
+        <div className="space-y-2">
+          <TextField
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            name="Username"
+            autoComplete="off"
+            disabled={savingUsername}
+            outline
+          />
 
-              <TextArea textAreaRef={bioRef} title="Bio" defaultValue={profile?.bio ?? ""} />
-
-              <TextField inputRef={locationRef} title="Location" defaultValue={location?.value} />
-
-              <TextField inputRef={websiteRef} title="Website" defaultValue={website?.value} />
-
-              <TextField
-                inputRef={twitterRef}
-                title="Twitter"
-                frontAdornment="@"
-                defaultValue={twitter?.value}
-              />
-
-              <div className="space-y-4">
-                <div className="text-lg font-bold">Cover Image</div>
-
-                {coverUrl && (
-                  <div className="h-40 w-full">
-                    <img
-                      src={coverUrl}
-                      alt="cover image preview"
-                      className="h-full w-full rounded-xl object-cover"
-                      crossOrigin="anonymous"
-                    />
-                  </div>
-                )}
-
-                <FileInput
-                  title="Cover Image"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setCoverFile(file);
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="flex w-full justify-end">
-              <Button variant="filled" onClick={handleProfileSave} loading={loadingProfile}>
-                Save
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-8 rounded-3xl bg-sky-100 p-8">
-            <div className="space-y-4 text-lg">
-              <div className="font-bold">Profile Picture</div>
-
-              {pfpUrl && (
-                <div className="grid grid-cols-2 gap-x-16">
-                  <div className="relative aspect-square h-full w-full">
-                    <img
-                      src={pfpUrl}
-                      alt="profile picture preview"
-                      className="h-full w-full rounded-xl object-cover"
-                      crossOrigin="anonymous"
-                    />
-                  </div>
-
-                  <div className="relative aspect-square h-full w-full">
-                    <img
-                      src={pfpUrl}
-                      alt="profile picture preview"
-                      className="h-full w-full rounded-full object-cover"
-                      crossOrigin="anonymous"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <FileInput
-                  title="Profile Picture"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setPfpRawFile(file);
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="flex w-full justify-end space-x-2">
-              {pfpUrl && (
-                <Button
-                  variant="text"
-                  color="error"
-                  onClick={handleProfilePictureDelete}
-                  loading={loadingProfilePictureDelete}
-                  disabled={loadingProfilePicture}
-                >
-                  Remove
-                </Button>
-              )}
-              <Button
-                variant="filled"
-                onClick={handleProfilePictureSave}
-                loading={loadingProfilePicture}
-                disabled={!pfpFile || loadingProfilePictureDelete}
-              >
-                Save
-              </Button>
-            </div>
+          <div className="flex justify-end">
+            <Button variant="tonal" onClick={saveUsername} disabled={usernameDisabled}>
+              Save
+            </Button>
           </div>
         </div>
-      )}
-    </>
+
+        <div className="space-y-2"></div>
+      </div>
+    </div>
   );
 }
 
-Settings.getLayout = getSettingsLayout;
+Settings.getLayout = getNavbarLayout;

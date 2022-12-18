@@ -29,19 +29,19 @@ export default function Button({
   const textClass =
     variant === "text"
       ? color === "primary"
-        ? "hover:bg-sky-100"
-        : "hover:bg-red-100 hover:text-red-900"
+        ? "hover:bg-sky-200"
+        : "hover:bg-red-200 hover:text-red-900"
       : null;
 
   const outlineClass =
     variant === "outlined"
       ? color === "primary"
-        ? `ring-1 ring-neutral-500 hover:bg-sky-100`
-        : `ring-1 ring-neutral-500 hover:text-red-900 hover:bg-red-100`
+        ? `ring-1 ring-neutral-500 hover:bg-sky-200`
+        : `ring-1 ring-neutral-500 hover:text-red-900 hover:bg-red-200`
       : null;
 
   const tonalClass =
-    variant === "tonal" ? (color === "primary" ? "bg-sky-100" : "bg-red-100 text-red-900") : null;
+    variant === "tonal" ? (color === "primary" ? "bg-sky-200" : "bg-red-200 text-red-900") : null;
 
   const filledClass =
     variant === "filled" ? (color === "primary" ? "bg-sky-300" : "bg-red-700 text-white") : null;

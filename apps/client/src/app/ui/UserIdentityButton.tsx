@@ -37,10 +37,7 @@ export default function UserIdentityButton() {
             onClose={() => setOpenMenu(false)}
             fullWidth
           >
-            <ProfileMenu
-              openSwitchProfile={() => setOpenSwitchProfile(true)}
-              includeExternal={false}
-            />
+            <ProfileMenu includeExternal={false} />
           </DropdownMenu>
         </div>
       </div>

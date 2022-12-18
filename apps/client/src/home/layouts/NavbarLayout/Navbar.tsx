@@ -1,13 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { useLens } from "../../../client/lens/hooks/useLens";
+import { useSession } from "../../../client/auth/useSession";
 import LoginButton from "./LoginButton";
 import NavbarTab from "./NavbarTab";
 import ProfileButton from "./ProfileButton";
 
 export default function Navbar() {
-  const { handle } = useLens();
+  const { status } = useSession();
 
   return (
     <div className="flex h-full w-full justify-center bg-white">
@@ -29,7 +29,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center justify-end">
-          {handle ? <ProfileButton /> : <LoginButton />}
+          {status === "authenticated" ? <ProfileButton /> : <LoginButton />}
         </div>
       </div>
     </div>

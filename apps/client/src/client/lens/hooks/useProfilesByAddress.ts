@@ -1,6 +1,6 @@
 import { useGetProfilesQuery } from "lens";
 
-export function useProfilesByAddress(address: string | null) {
+export function useProfilesByAddress(address?: string | null) {
   const [{ data, fetching }] = useGetProfilesQuery({
     variables: {
       request: {

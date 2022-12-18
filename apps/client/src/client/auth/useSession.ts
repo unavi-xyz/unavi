@@ -1,12 +1,15 @@
+import { Session } from "next-auth";
 import { useSession as useAuthSession } from "next-auth/react";
 
-import { CustomSession } from "./types";
+export interface CustomSession extends Session {
+  address?: string;
+}
 
-/*
- * Wrapper around next-auth `useSession` that applies our custom session type.
- */
 export function useSession() {
-  const { status, data: _session } = useAuthSession();
-  const session = _session as CustomSession | null;
-  return { status, session };
+  const { data, status } = useAuthSession();
+
+  return {
+    data: data as CustomSession | null,
+    status,
+  };
 }

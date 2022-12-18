@@ -1,9 +1,9 @@
 import { AppId, Post, useGetPublicationsQuery } from "lens";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { MdAdd } from "react-icons/md";
 
+import { useSession } from "../../client/auth/useSession";
 import { useLens } from "../../client/lens/hooks/useLens";
 import { useProfileByHandle } from "../../client/lens/hooks/useProfileByHandle";
 import CreateAvatarPage from "../../home/CreateAvatarPage";

@@ -9,7 +9,7 @@ export default function ProfileMenuButton({ icon, children, ...rest }: Props) {
   return (
     <div
       {...rest}
-      className="flex w-full cursor-pointer items-center space-x-2 whitespace-nowrap rounded-lg py-1 px-5 font-bold transition hover:bg-sky-100"
+      className="flex w-full cursor-pointer items-center space-x-2 whitespace-nowrap rounded-lg py-1 px-5 font-bold transition hover:bg-sky-200"
     >
       {icon && <div className="text-lg">{icon}</div>}
       <div>{children}</div>

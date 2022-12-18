@@ -12,7 +12,7 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export default function TextField({
-  title,
+  name,
   frontAdornment,
   help,
   inputRef,
@@ -27,7 +27,7 @@ export default function TextField({
     <div className="flex flex-col space-y-1">
       <div className="flex items-center space-x-1">
         <label htmlFor={id} className="pointer-events-none block text-lg font-bold">
-          {title}
+          {name}
         </label>
 
         {help && (
@@ -39,15 +39,16 @@ export default function TextField({
         )}
       </div>
 
-      <div className={`flex items-center rounded bg-white ${outlineClass}`}>
+      <div className={`flex items-center rounded-md bg-white ${outlineClass}`}>
         {frontAdornment && (
           <span className="pl-3 font-bold text-neutral-500">{frontAdornment}</span>
         )}
         <input
           ref={inputRef}
           id={id}
+          name={name}
           type="text"
-          className="h-full w-full rounded px-3 py-2 outline-none"
+          className="h-full w-full rounded-md px-3 py-2 outline-none"
           {...rest}
         />
       </div>

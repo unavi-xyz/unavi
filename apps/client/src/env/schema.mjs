@@ -8,7 +8,9 @@ import { z } from "zod";
 export const serverSchema = z.object({
   BUNDLE_ANALYZE: z.string().optional(),
   DATABASE_URL: z.string().url(),
+  ETH_PROVIDER: z.string().url(),
   NEXTAUTH_SECRET: z.string(),
+  NEXTAUTH_URL: z.string().url().optional(),
   NODE_ENV: z.enum(["development", "test", "production"]),
   S3_ACCESS_KEY_ID: z.string(),
   S3_BUCKET: z.string(),

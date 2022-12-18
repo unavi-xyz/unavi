@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { HANDLE_ENDING } from "../../client/lens/constants";
 import { useLens } from "../../client/lens/hooks/useLens";
 import { getMediaURL } from "../../utils/getMediaURL";
-import ProfilePicture from "./ProfilePicture";
+import ProfilePicture from "../ProfilePicture";
 
 interface Props {
   circle?: boolean;

@@ -1,7 +1,7 @@
 import Avatar from "boring-avatars";
 import Image from "next/image";
 
-import { isFromCDN } from "../../utils/isFromCDN";
+import { isFromCDN } from "../utils/isFromCDN";
 
 interface Props {
   src?: string | null;

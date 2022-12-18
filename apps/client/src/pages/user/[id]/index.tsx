@@ -6,7 +6,7 @@ import { MdAdd } from "react-icons/md";
 import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
-import ProfilePicture from "../../../home/lens/ProfilePicture";
+import ProfilePicture from "../../../home/ProfilePicture";
 import Button from "../../../ui/Button";
 import Spinner from "../../../ui/Spinner";
 
@@ -96,7 +96,7 @@ export default function User() {
           <div className="flex justify-center px-4 pb-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
-                <ProfilePicture circle uniqueKey={id} size={128} />
+                <ProfilePicture circle uniqueKey={isHandle ? handle : id} size={128} />
               </div>
 
               <div className="flex flex-col items-center pt-1">
@@ -106,6 +106,7 @@ export default function User() {
                     #{profile?.handleId?.toString().padStart(4, "0")}
                   </span>
                 </div>
+
                 <div className="text-lg text-neutral-500">{id}</div>
               </div>
 

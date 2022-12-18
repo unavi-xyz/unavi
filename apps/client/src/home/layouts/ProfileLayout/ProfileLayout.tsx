@@ -7,7 +7,7 @@ import { MdAdd, MdLink, MdOutlineLocationOn } from "react-icons/md";
 import { useLens } from "../../../client/lens/hooks/useLens";
 import Button from "../../../ui/Button";
 import { isFromCDN } from "../../../utils/isFromCDN";
-import ProfilePicture from "../../lens/ProfilePicture";
+import ProfilePicture from "../../ProfilePicture";
 import MetaTags from "../../MetaTags";
 import AttributeRow from "./AttributeRow";
 import { ProfileLayoutProps } from "./getProfileLayoutProps";

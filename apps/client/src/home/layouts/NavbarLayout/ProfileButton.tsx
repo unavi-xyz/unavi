@@ -6,6 +6,7 @@ import Button from "../../../ui/Button";
 import Dialog from "../../../ui/Dialog";
 import DropdownMenu from "../../../ui/DropdownMenu";
 import { useIsMobile } from "../../../utils/useIsMobile";
+import ProfilePicture from "../../ProfilePicture";
 import ProfileMenu from "./ProfileMenu";
 import SwitchProfilePage from "./SwitchProfilePage";
 
@@ -16,10 +17,12 @@ export default function ProfileButton() {
   const { data: session } = useSession();
   const isMobile = useIsMobile();
 
-  const { data: profile } = trpc.social.profileByAddress.useQuery(
+  const { data: profile, isLoading } = trpc.social.profileByAddress.useQuery(
     { address: session?.address ?? "" },
     { enabled: session?.address !== undefined }
   );
+
+  if (isLoading || !session?.address) return null;
 
   return (
     <>
@@ -40,9 +43,14 @@ export default function ProfileButton() {
               <div className="w-24 overflow-hidden text-ellipsis">{session?.address}</div>
             )}
 
-            {/* <div className="h-9 w-9 overflow-hidden">
-              <ViewerProfilePicture circle draggable={false} size={36} />
-            </div> */}
+            <div className="h-9 w-9 overflow-hidden">
+              <ProfilePicture
+                uniqueKey={profile?.handle ?? session.address}
+                circle
+                draggable={false}
+                size={36}
+              />
+            </div>
           </div>
         </Button>
 

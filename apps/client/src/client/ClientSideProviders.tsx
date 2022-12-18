@@ -1,14 +1,20 @@
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import {
+  GetSiweMessageOptions,
+  RainbowKitSiweNextAuthProvider,
+} from "@rainbow-me/rainbowkit-siwe-next-auth";
 import { Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import React from "react";
 import { WagmiConfig } from "wagmi";
 
-import LoginProvider from "./auth/LoginProvider";
-import RainbowAuthProvider from "./auth/RainbowAuthProvider";
 import LensProvider from "./lens/LensProvider";
 import { theme } from "./theme";
 import { chains, wagmiClient } from "./wagmi";
+
+const getSiweMessageOptions: GetSiweMessageOptions = () => ({
+  statement: "🔌 Sign in to the Wired",
+});
 
 interface Props {
   session: Session | null;
@@ -20,11 +26,11 @@ export default function ClientSideProviders({ session, children }: Props) {
     <SessionProvider session={session}>
       <LensProvider>
         <WagmiConfig client={wagmiClient}>
-          <RainbowAuthProvider>
+          <RainbowKitSiweNextAuthProvider getSiweMessageOptions={getSiweMessageOptions}>
             <RainbowKitProvider theme={theme} chains={chains}>
-              <LoginProvider>{children}</LoginProvider>
+              {children}
             </RainbowKitProvider>
-          </RainbowAuthProvider>
+          </RainbowKitSiweNextAuthProvider>
         </WagmiConfig>
       </LensProvider>
     </SessionProvider>

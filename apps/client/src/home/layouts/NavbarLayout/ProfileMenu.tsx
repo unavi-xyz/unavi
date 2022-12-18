@@ -1,31 +1,32 @@
 import Link from "next/link";
-import { useContext } from "react";
-import { HiOutlineSwitchHorizontal } from "react-icons/hi";
 import { MdLogout, MdOutlinePersonOutline, MdOutlineSettings } from "react-icons/md";
 
-import { LoginContext } from "../../../client/auth/LoginProvider";
-import { useLens } from "../../../client/lens/hooks/useLens";
+import { useLogout } from "../../../client/auth/useLogout";
+import { useSession } from "../../../client/auth/useSession";
+import { trpc } from "../../../client/trpc";
 import ProfileMenuButton from "./ProfileMenuButton";
 
 interface Props {
-  openSwitchProfile: () => void;
   includeExternal?: boolean;
 }
 
-export default function ProfileMenu({ openSwitchProfile, includeExternal = true }: Props) {
-  const { handle } = useLens();
-  const { logout } = useContext(LoginContext);
+export default function ProfileMenu({ includeExternal = true }: Props) {
+  const { data: session } = useSession();
+  const { logout } = useLogout();
 
-  if (!handle) return null;
+  const { data: profile } = trpc.social.profileByAddress.useQuery(
+    { address: session?.address ?? "" },
+    { enabled: session?.address !== undefined }
+  );
 
   return (
     <div className="space-y-1 p-2">
-      <button onClick={openSwitchProfile} className="w-full">
+      {/* <button onClick={openSwitchProfile} className="w-full">
         <ProfileMenuButton icon={<HiOutlineSwitchHorizontal />}>Switch Profile</ProfileMenuButton>
-      </button>
+      </button> */}
 
       {includeExternal && (
-        <Link href={`/user/${handle}`}>
+        <Link href={`/user/${profile?.handle ?? session?.address}`}>
           <button className="w-full">
             <ProfileMenuButton icon={<MdOutlinePersonOutline />}>Your Profile</ProfileMenuButton>
           </button>

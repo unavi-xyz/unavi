@@ -20,7 +20,6 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
-          persist-credentials: false
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v3

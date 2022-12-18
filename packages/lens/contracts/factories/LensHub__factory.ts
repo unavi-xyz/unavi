@@ -2491,7 +2491,7 @@ const _abi = [
     stateMutability: "nonpayable",
     type: "function",
   },
-];
+] as const;
 
 export class LensHub__factory {
   static readonly abi = _abi;

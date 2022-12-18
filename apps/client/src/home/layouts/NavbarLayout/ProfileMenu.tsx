@@ -4,6 +4,7 @@ import { MdLogout, MdOutlinePersonOutline, MdOutlineSettings } from "react-icons
 import { useLogout } from "../../../client/auth/useLogout";
 import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
+import { numberToHexDisplay } from "../../../utils/numberToHexDisplay";
 import ProfileMenuButton from "./ProfileMenuButton";
 
 interface Props {
@@ -26,7 +27,7 @@ export default function ProfileMenu({ includeExternal = true }: Props) {
       </button> */}
 
       {includeExternal && (
-        <Link href={`/user/${profile?.handle ?? session?.address}`}>
+        <Link href={`/user/${profile?.id ? numberToHexDisplay(profile.id) : session?.address}`}>
           <button className="w-full">
             <ProfileMenuButton icon={<MdOutlinePersonOutline />}>Your Profile</ProfileMenuButton>
           </button>

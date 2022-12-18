@@ -1,3 +1,4 @@
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/dist/client/link";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
@@ -9,33 +10,41 @@ import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout
 import ProfilePicture from "../../../home/ProfilePicture";
 import Button from "../../../ui/Button";
 import Spinner from "../../../ui/Spinner";
+import { hexDisplayToNumber } from "../../../utils/numberToHexDisplay";
 
-export default function User() {
-  const router = useRouter();
-  const id = router.query.id as string;
-  const handleId = router.asPath.split("#")[1]?.padStart(4, "0");
-  const isHandle = handleId ? true : false;
-  const handle = `${id}#${handleId}`;
+export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
+  const ONE_MINUTE_IN_SECONDS = 60;
+  const ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
 
-  const { data: session, status } = useSession();
-
-  const { data: profileAddress, isLoading: isLoadingAddress } =
-    trpc.social.profileByAddress.useQuery(
-      { address: id },
-      { enabled: !isHandle && id !== undefined }
-    );
-
-  const { data: profileHandle, isLoading: isLoadingHandle } = trpc.social.profileByHandle.useQuery(
-    { handle },
-    { enabled: isHandle }
+  res.setHeader(
+    "Cache-Control",
+    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
-  const profile = isHandle ? profileHandle : profileAddress;
-  const isLoading = isHandle ? isLoadingHandle : isLoadingAddress;
+  const id = query.id as string;
 
-  const isUser =
-    status === "authenticated" &&
-    (isHandle ? profile?.owner === session?.address : session?.address === id);
+  return {
+    props: { id },
+  };
+};
+export default function User({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+
+  const isAddress = id.length === 42;
+
+  const { data: profileAddress, isLoading: isLoadingAddress } =
+    trpc.social.profileByAddress.useQuery({ address: id }, { enabled: isAddress });
+
+  const { data: profileId, isLoading: isLoadingId } = trpc.social.profileById.useQuery(
+    { id: hexDisplayToNumber(id) },
+    { enabled: !isAddress }
+  );
+
+  const profile = isAddress ? profileAddress : profileId;
+  const isLoading = isAddress ? isLoadingAddress : isLoadingId;
+
+  const isUser = status === "authenticated" && profile?.owner === session?.address;
 
   // Force change page on hash change
   useEffect(() => {
@@ -49,6 +58,9 @@ export default function User() {
       window.removeEventListener("hashchange", onHashChange);
     };
   }, [router]);
+
+  if (!isAddress && !isLoading && profile === null)
+    return <div className="pt-12 text-center text-lg">User not found.</div>;
 
   return (
     <>
@@ -96,18 +108,20 @@ export default function User() {
           <div className="flex justify-center px-4 pb-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
-                <ProfilePicture circle uniqueKey={isHandle ? handle : id} size={128} />
+                <ProfilePicture circle uniqueKey={profile?.handle ?? id} size={128} />
               </div>
 
               <div className="flex flex-col items-center pt-1">
-                <div>
-                  <span className="text-2xl font-black">{profile?.handleString}</span>
-                  <span className="text-xl font-bold text-neutral-400">
-                    #{profile?.handleId?.toString().padStart(4, "0")}
-                  </span>
-                </div>
+                {profile?.handleString && profile.handleId ? (
+                  <div>
+                    <span className="text-2xl font-black">{profile?.handleString}</span>
+                    <span className="text-xl font-bold text-neutral-400">
+                      #{profile?.handleId?.toString().padStart(4, "0")}
+                    </span>
+                  </div>
+                ) : null}
 
-                <div className="text-lg text-neutral-500">{id}</div>
+                <div className="text-lg text-neutral-500">{isAddress ? id : profile?.owner}</div>
               </div>
 
               <div className="flex w-full justify-center space-x-4 py-2 text-lg">

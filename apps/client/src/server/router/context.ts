@@ -3,8 +3,8 @@ import { CreateNextContextOptions } from "@trpc/server/adapters/next";
 import { type GetServerSidePropsContext } from "next";
 import { unstable_getServerSession } from "next-auth";
 
-import { CustomSession } from "../../client/auth/types";
-import { authOptions } from "../../pages/api/auth/[...nextauth]";
+import { CustomSession } from "../../client/auth/useSession";
+import { getAuthOptions } from "../../pages/api/auth/[...nextauth]";
 import { prisma } from "../prisma";
 
 type CreateContextOptions = {
@@ -20,7 +20,7 @@ export const getServerAuthSession = async (ctx: {
   res: GetServerSidePropsContext["res"];
 }) => {
   return (await unstable_getServerSession(ctx.req, ctx.res, {
-    ...authOptions,
+    ...getAuthOptions(ctx.req),
   })) as CustomSession | null;
 };
 

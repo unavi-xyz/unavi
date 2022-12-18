@@ -33,15 +33,18 @@ export interface ProfileInterface extends utils.Interface {
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
+    "getDefaultProfile(address)": FunctionFragment;
     "getHandle(uint256)": FunctionFragment;
     "getProfileFromHandle(string,uint256)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
-    "mint(address)": FunctionFragment;
+    "mint()": FunctionFragment;
+    "mintWithHandle(string)": FunctionFragment;
     "name()": FunctionFragment;
     "ownerOf(uint256)": FunctionFragment;
     "safeTransferFrom(address,address,uint256)": FunctionFragment;
     "safeTransferFrom(address,address,uint256,bytes)": FunctionFragment;
     "setApprovalForAll(address,bool)": FunctionFragment;
+    "setDefaultProfile(uint256)": FunctionFragment;
     "setHandle(uint256,string)": FunctionFragment;
     "setTokenURI(uint256,string)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
@@ -57,15 +60,18 @@ export interface ProfileInterface extends utils.Interface {
       | "approve"
       | "balanceOf"
       | "getApproved"
+      | "getDefaultProfile"
       | "getHandle"
       | "getProfileFromHandle"
       | "isApprovedForAll"
       | "mint"
+      | "mintWithHandle"
       | "name"
       | "ownerOf"
       | "safeTransferFrom(address,address,uint256)"
       | "safeTransferFrom(address,address,uint256,bytes)"
       | "setApprovalForAll"
+      | "setDefaultProfile"
       | "setHandle"
       | "setTokenURI"
       | "supportsInterface"
@@ -92,6 +98,10 @@ export interface ProfileInterface extends utils.Interface {
     values: [PromiseOrValue<BigNumberish>]
   ): string;
   encodeFunctionData(
+    functionFragment: "getDefaultProfile",
+    values: [PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getHandle",
     values: [PromiseOrValue<BigNumberish>]
   ): string;
@@ -103,8 +113,9 @@ export interface ProfileInterface extends utils.Interface {
     functionFragment: "isApprovedForAll",
     values: [PromiseOrValue<string>, PromiseOrValue<string>]
   ): string;
+  encodeFunctionData(functionFragment: "mint", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "mint",
+    functionFragment: "mintWithHandle",
     values: [PromiseOrValue<string>]
   ): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
@@ -132,6 +143,10 @@ export interface ProfileInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "setApprovalForAll",
     values: [PromiseOrValue<string>, PromiseOrValue<boolean>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setDefaultProfile",
+    values: [PromiseOrValue<BigNumberish>]
   ): string;
   encodeFunctionData(
     functionFragment: "setHandle",
@@ -173,6 +188,10 @@ export interface ProfileInterface extends utils.Interface {
     functionFragment: "getApproved",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "getDefaultProfile",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "getHandle", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getProfileFromHandle",
@@ -183,6 +202,10 @@ export interface ProfileInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "mint", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "mintWithHandle",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "ownerOf", data: BytesLike): Result;
   decodeFunctionResult(
@@ -195,6 +218,10 @@ export interface ProfileInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "setApprovalForAll",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setDefaultProfile",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "setHandle", data: BytesLike): Result;
@@ -309,6 +336,11 @@ export interface Profile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[string]>;
 
+    getDefaultProfile(
+      owner: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
     getHandle(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -327,7 +359,11 @@ export interface Profile extends BaseContract {
     ): Promise<[boolean]>;
 
     mint(
-      to: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    mintWithHandle(
+      handle: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
@@ -356,6 +392,11 @@ export interface Profile extends BaseContract {
     setApprovalForAll(
       operator: PromiseOrValue<string>,
       approved: PromiseOrValue<boolean>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    setDefaultProfile(
+      tokenId: PromiseOrValue<BigNumberish>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
@@ -411,6 +452,11 @@ export interface Profile extends BaseContract {
     overrides?: CallOverrides
   ): Promise<string>;
 
+  getDefaultProfile(
+    owner: PromiseOrValue<string>,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
   getHandle(
     tokenId: PromiseOrValue<BigNumberish>,
     overrides?: CallOverrides
@@ -429,7 +475,11 @@ export interface Profile extends BaseContract {
   ): Promise<boolean>;
 
   mint(
-    to: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  mintWithHandle(
+    handle: PromiseOrValue<string>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
@@ -458,6 +508,11 @@ export interface Profile extends BaseContract {
   setApprovalForAll(
     operator: PromiseOrValue<string>,
     approved: PromiseOrValue<boolean>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  setDefaultProfile(
+    tokenId: PromiseOrValue<BigNumberish>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
@@ -513,6 +568,11 @@ export interface Profile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<string>;
 
+    getDefaultProfile(
+      owner: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getHandle(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -530,10 +590,12 @@ export interface Profile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
-    mint(
-      to: PromiseOrValue<string>,
+    mint(overrides?: CallOverrides): Promise<BigNumber>;
+
+    mintWithHandle(
+      handle: PromiseOrValue<string>,
       overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    ): Promise<[BigNumber, BigNumber]>;
 
     name(overrides?: CallOverrides): Promise<string>;
 
@@ -560,6 +622,11 @@ export interface Profile extends BaseContract {
     setApprovalForAll(
       operator: PromiseOrValue<string>,
       approved: PromiseOrValue<boolean>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setDefaultProfile(
+      tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -651,6 +718,11 @@ export interface Profile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    getDefaultProfile(
+      owner: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getHandle(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -669,7 +741,11 @@ export interface Profile extends BaseContract {
     ): Promise<BigNumber>;
 
     mint(
-      to: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    mintWithHandle(
+      handle: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
@@ -698,6 +774,11 @@ export interface Profile extends BaseContract {
     setApprovalForAll(
       operator: PromiseOrValue<string>,
       approved: PromiseOrValue<boolean>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    setDefaultProfile(
+      tokenId: PromiseOrValue<BigNumberish>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
@@ -754,6 +835,11 @@ export interface Profile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    getDefaultProfile(
+      owner: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     getHandle(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -772,7 +858,11 @@ export interface Profile extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     mint(
-      to: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    mintWithHandle(
+      handle: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -801,6 +891,11 @@ export interface Profile extends BaseContract {
     setApprovalForAll(
       operator: PromiseOrValue<string>,
       approved: PromiseOrValue<boolean>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setDefaultProfile(
+      tokenId: PromiseOrValue<BigNumberish>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

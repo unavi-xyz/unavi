@@ -26,7 +26,7 @@
     "@trpc/client": "10.4.3",
     "@trpc/next": "10.4.3",
     "@trpc/react-query": "10.4.3",
-    "@trpc/server": "10.4.3",
+    "@trpc/server": "10.5.0",
     "boring-avatars": "^1.7.0",
     "contracts": "*",
     "engine": "*",

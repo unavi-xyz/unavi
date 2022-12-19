@@ -228,7 +228,7 @@ export default function UpdatePage({ onClose }: Props) {
             const value = e.target.value;
             useEditorStore.setState({ name: value });
           }}
-          title="Name"
+          name="Name"
           outline
           defaultValue={name}
         />
@@ -239,7 +239,7 @@ export default function UpdatePage({ onClose }: Props) {
             useEditorStore.setState({ description: value });
           }}
           autoComplete="off"
-          title="Description"
+          name="Description"
           outline
           defaultValue={description}
         />
@@ -258,7 +258,7 @@ export default function UpdatePage({ onClose }: Props) {
           </div>
 
           <ButtonFileInput
-            title="Cover Picture"
+            name="Cover Picture"
             accept="image/*"
             onChange={(e) => {
               const file = e.target.files?.[0];

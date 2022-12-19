@@ -4,12 +4,14 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   children?: React.ReactNode;
   inputRef?: React.MutableRefObject<HTMLInputElement>;
   rounded?: "small" | "large";
+  disabled?: boolean;
 }
 
 export default function ButtonFileInput({
   children,
   inputRef,
   rounded = "large",
+  disabled,
   onChange,
   ...rest
 }: Props) {
@@ -25,13 +27,15 @@ export default function ButtonFileInput({
   }
 
   const roundClass =
-    rounded === "small" ? "rounded-lg" : rounded === "large" ? "rounded-xl" : "rounded-full";
+    rounded === "small" ? "rounded-lg" : rounded === "large" ? "rounded-lg" : "rounded-full";
+
+  const hoverClass = disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-sky-200";
 
   return (
     <div className="flex flex-col">
       <label
         htmlFor={id}
-        className={`relative flex cursor-pointer select-none items-center justify-center px-5 py-1.5 font-bold transition hover:bg-sky-100 ${roundClass}`}
+        className={`relative flex select-none items-center justify-center px-5 py-1.5 font-bold transition ${hoverClass} ${roundClass}`}
       >
         {children ?? file?.name}
       </label>

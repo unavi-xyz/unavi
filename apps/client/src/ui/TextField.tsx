@@ -4,7 +4,7 @@ import { MdOutlineHelpOutline } from "react-icons/md";
 import Tooltip from "./Tooltip";
 
 interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
-  title?: string;
+  name?: string;
   frontAdornment?: string;
   help?: string;
   outline?: boolean;

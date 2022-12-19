@@ -87,7 +87,7 @@ export default function CreateProfilePage({ onClose }: Props) {
 
       <div className="space-y-4">
         <TextField
-          title="Handle"
+          name="Handle"
           frontAdornment="@"
           maxLength={31 - HANDLE_ENDING.length}
           value={formHandle}

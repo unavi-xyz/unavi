@@ -2,15 +2,15 @@ import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/dist/client/link";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
-import { MdAdd } from "react-icons/md";
 
 import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
+import SpaceCard from "../../../home/lens/SpaceCard";
 import ProfilePicture from "../../../home/ProfilePicture";
 import Button from "../../../ui/Button";
 import Spinner from "../../../ui/Spinner";
-import { hexDisplayToNumber } from "../../../utils/numberToHexDisplay";
+import { hexDisplayToNumber, numberToHexDisplay } from "../../../utils/numberToHexDisplay";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   const ONE_MINUTE_IN_SECONDS = 60;
@@ -43,8 +43,12 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
 
   const profile = isAddress ? profileAddress : profileId;
   const isLoading = isAddress ? isLoadingAddress : isLoadingId;
-
   const isUser = status === "authenticated" && profile?.owner === session?.address;
+
+  const { data: spaces } = trpc.space.latest.useQuery(
+    { owner: profile?.owner },
+    { enabled: profile?.owner !== undefined }
+  );
 
   // Force change page on hash change
   useEffect(() => {
@@ -124,7 +128,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                 <div className="text-lg text-neutral-500">{isAddress ? id : profile?.owner}</div>
               </div>
 
-              <div className="flex w-full justify-center space-x-4 py-2 text-lg">
+              {/* <div className="flex w-full justify-center space-x-4 py-2 text-lg">
                 <div className="flex flex-col items-center md:flex-row md:space-x-1">
                   <div className="font-bold">{0}</div>
                   <div className="text-neutral-500">Following</div>
@@ -134,7 +138,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                   <div className="font-bold">{0}</div>
                   <div className="text-neutral-500">Followers</div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -149,16 +153,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                       </Button>
                     </div>
                   </Link>
-                ) : (
-                  <div>
-                    <Button variant="filled" rounded="small" disabled>
-                      <div className="flex items-center justify-center space-x-1 px-6">
-                        <MdAdd />
-                        <div>Follow</div>
-                      </div>
-                    </Button>
-                  </div>
-                )}
+                ) : null}
 
                 {/* {twitter && (
                   <Button variant="outlined" rounded="small">
@@ -197,6 +192,16 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                 )} */}
               </div>
             </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            {spaces?.map(({ id, metadata }) => {
+              return (
+                <Link href={`/space/${numberToHexDisplay(id)}`} key={id}>
+                  <SpaceCard metadata={metadata} animateEnter />
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}

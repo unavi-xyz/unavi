@@ -3,5 +3,5 @@
     "composite": true
   },
   "extends": "tsconfig/base.json",
-  "include": ["index.ts", "contracts"]
+  "include": ["index.ts", "contracts", "src"]
 }

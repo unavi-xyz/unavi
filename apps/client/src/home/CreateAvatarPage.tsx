@@ -275,12 +275,12 @@ export default function CreateAvatarPage() {
     <div className="space-y-4">
       <div className="text-center text-3xl font-bold">New Avatar</div>
 
-      <TextField inputRef={nameRef} title="Name" defaultValue="My Avatar" outline />
+      <TextField inputRef={nameRef} name="Name" defaultValue="My Avatar" outline />
 
       <TextArea
         textAreaRef={descriptionRef}
         autoComplete="off"
-        title="Description"
+        name="Description"
         outline
         rows={4}
       />

@@ -47,7 +47,7 @@ export default function HostPage() {
       <TextField
         inputRef={hostRef}
         autoComplete="off"
-        title="Host Server"
+        name="Host Server"
         defaultValue={env.NEXT_PUBLIC_DEFAULT_HOST}
       />
 

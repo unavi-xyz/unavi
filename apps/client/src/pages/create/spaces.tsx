@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
-import { useAccount } from "wagmi";
 
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
@@ -21,7 +20,6 @@ export default function Spaces() {
   const [openCreateProject, setOpenCreateProject] = useState(false);
 
   const { status: authState } = useSession();
-  const { status: accountStatus } = useAccount();
   const utils = trpc.useContext();
 
   const {
@@ -33,10 +31,10 @@ export default function Spaces() {
   });
 
   useEffect(() => {
-    if (authState !== "authenticated" || accountStatus !== "connected") return;
+    if (authState !== "authenticated") return;
     utils.project.getAll.invalidate();
     refetch();
-  }, [refetch, authState, accountStatus, utils]);
+  }, [refetch, authState, utils]);
 
   const authenticated = authState === "authenticated";
 

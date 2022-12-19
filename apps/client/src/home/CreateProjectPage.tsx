@@ -58,6 +58,7 @@ export default function CreateProjectPage() {
             const body = await res.blob();
 
             const imageUrl = await createImageUpload({ id });
+
             await fetch(imageUrl, {
               method: "PUT",
               body,
@@ -86,7 +87,13 @@ export default function CreateProjectPage() {
     <div className="space-y-4">
       <div className="text-center text-3xl font-bold">New Project</div>
 
-      <TextField inputRef={nameRef} title="Name" defaultValue="My Project" outline />
+      <TextField
+        inputRef={nameRef}
+        name="Name"
+        defaultValue="My Project"
+        outline
+        disabled={loading}
+      />
 
       <div className="flex justify-end">
         <Button variant="filled" onClick={handleCreate} loading={loading} disabled={loading}>

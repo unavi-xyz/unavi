@@ -38,7 +38,7 @@ export default function SwitchProfilePage({ onClose }: Props) {
       <div className="flex justify-center text-3xl font-bold">Switch profile</div>
 
       <Select
-        title="Select profile"
+        name="Select profile"
         options={sortedHandles}
         value={selected}
         outline

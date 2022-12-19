@@ -111,7 +111,7 @@ export default function Preview() {
 
       await engine.waitForReady();
 
-      engine.setAvatar(null);
+      engine.networking.setAvatar(null);
 
       // Set collider visibility
       const { visuals } = useEditorStore.getState();

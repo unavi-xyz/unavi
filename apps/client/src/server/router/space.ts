@@ -1,7 +1,6 @@
-import { ERC721MetadataSchema, Space__factory } from "contracts";
+import { ERC721MetadataSchema, Space__factory, SPACE_ADDRESS } from "contracts";
 import { z } from "zod";
 
-import { SPACE_ADDRESS } from "../../constants";
 import { ethersProvider } from "../constants";
 import { publicProcedure, router } from "./trpc";
 

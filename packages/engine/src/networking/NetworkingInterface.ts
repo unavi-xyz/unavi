@@ -1,9 +1,3 @@
-import {
-  GetPublicationDocument,
-  GetPublicationQuery,
-  GetPublicationQueryVariables,
-  Publication,
-} from "lens";
 import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 import { createClient } from "urql";
@@ -53,7 +47,6 @@ export class NetworkingInterface {
 
   spaceJoinStatus$ = new BehaviorSubject<SpaceJoinStatus>({
     spaceId: null,
-    spaceFetched: false,
     wsConnected: false,
     webrtcConnected: false,
     sceneLoaded: false,
@@ -72,44 +65,23 @@ export class NetworkingInterface {
     this.#renderThread = renderThread;
   }
 
-  async joinSpace(spaceId: string) {
+  async joinSpace({
+    spaceId,
+    host,
+    modelURL,
+  }: {
+    spaceId: number;
+    host: string;
+    modelURL: string;
+  }) {
     this.#reconnectCount = 0;
 
     this.spaceJoinStatus = {
       spaceId,
-      spaceFetched: false,
       wsConnected: false,
       webrtcConnected: false,
       sceneLoaded: false,
     };
-
-    // Fetch space publication from lens
-    const { data } = await this.#lensClient
-      .query<GetPublicationQuery, GetPublicationQueryVariables>(GetPublicationDocument, {
-        request: { publicationId: spaceId },
-      })
-      .toPromise();
-
-    const publication = data?.publication as Publication | undefined;
-    if (!publication) throw new Error("Space not found");
-
-    const modelURL: string | undefined = publication?.metadata.media[1]?.original.url;
-    if (!modelURL) throw new Error("Space model not found");
-
-    this.spaceJoinStatus = {
-      ...this.spaceJoinStatus,
-      spaceFetched: true,
-    };
-
-    // Get host server
-    const spaceHost = null; // TODO: get from metadata
-
-    const host =
-      process.env.NODE_ENV === "development"
-        ? "ws://localhost:4000"
-        : spaceHost
-        ? `wss://${spaceHost}`
-        : `wss://${process.env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
     this.#hostServer = host;
 
@@ -160,7 +132,7 @@ export class NetworkingInterface {
     });
   }
 
-  connectToHost(spaceId: string) {
+  connectToHost(spaceId: number) {
     if (!this.#hostServer) throw new Error("No host server set");
 
     // Create WebSocket connection to host server

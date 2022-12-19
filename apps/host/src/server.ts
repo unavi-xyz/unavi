@@ -169,7 +169,7 @@ server.ws("/*", {
 
 // Handle HTTP requests
 server.get("/playercount/*", (res, req) => {
-  const id = String(req.getUrl().slice(13));
+  const id = parseInt(req.getUrl().slice(13));
   const playerCount = players.getPlayerCount(id);
 
   console.info(`🔢 Player count for ${id}: ${playerCount}`);

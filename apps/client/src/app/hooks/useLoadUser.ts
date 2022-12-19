@@ -20,7 +20,7 @@ export function useLoadUser() {
 
   useEffect(() => {
     // Publish handle
-    engine?.setHandle(handle ?? null);
+    engine?.networking.setHandle(handle ?? null);
   }, [engine, handle]);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export function useLoadUser() {
     const localName = localStorage.getItem(LocalStorageKey.Name);
     if (localName !== displayName) {
       useAppStore.setState({ displayName });
-      engine.setName(displayName);
+      engine.networking.setName(displayName);
     }
 
     // Avatar
@@ -46,12 +46,12 @@ export function useLoadUser() {
       // Otherwise use local storage avatar
       if (localAvatar !== customAvatar) {
         useAppStore.setState({ customAvatar: localAvatar });
-        engine.setAvatar(localAvatar);
+        engine.networking.setAvatar(localAvatar);
       }
     } else {
       // Otherwise use default avatar
       useAppStore.setState({ customAvatar: null });
-      engine.setAvatar(null);
+      engine.networking.setAvatar(null);
     }
   }, [engine]);
 
@@ -70,7 +70,7 @@ export function useLoadUser() {
         const customAvatar = URL.createObjectURL(blob);
 
         useAppStore.setState({ customAvatar });
-        engine.setAvatar(avatarURI);
+        engine.networking.setAvatar(avatarURI);
         setLoadedAvatarPublication(url);
       }
     }

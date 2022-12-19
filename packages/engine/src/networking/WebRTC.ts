@@ -17,7 +17,7 @@ export class WebRTC {
   cameraRotation: Int16Array | null = null;
 
   #ws: WebSocket;
-  #networkingInterface: NetworkingInterface;
+  #networking: NetworkingInterface;
   #renderThread: RenderThread;
 
   #audioContext = new AudioContext();
@@ -35,12 +35,12 @@ export class WebRTC {
 
   constructor(
     ws: WebSocket,
-    networkingInterface: NetworkingInterface,
+    networking: NetworkingInterface,
     renderThread: RenderThread,
     producedTrack?: MediaStreamTrack | null
   ) {
     this.#ws = ws;
-    this.#networkingInterface = networkingInterface;
+    this.#networking = networking;
     this.#renderThread = renderThread;
     if (producedTrack) this.#producedTrack = producedTrack;
   }
@@ -111,8 +111,8 @@ export class WebRTC {
           if (state === "connected" && data.type === "producer") {
             if (this.#producedTrack) this.produceAudio(this.#producedTrack);
 
-            this.#networkingInterface.spaceJoinStatus = {
-              ...this.#networkingInterface.spaceJoinStatus,
+            this.#networking.spaceJoinStatus = {
+              ...this.#networking.spaceJoinStatus,
               webrtcConnected: true,
             };
           }

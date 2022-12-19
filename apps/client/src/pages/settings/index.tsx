@@ -1,12 +1,11 @@
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { Profile__factory } from "contracts";
+import { Profile__factory, PROFILE_ADDRESS } from "contracts";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
-import { PROFILE_ADDRESS } from "../../constants";
 import { getNavbarLayout } from "../../home/layouts/NavbarLayout/NavbarLayout";
 import Button from "../../ui/Button";
 import Spinner from "../../ui/Spinner";

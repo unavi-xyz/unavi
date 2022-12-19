@@ -13,7 +13,7 @@ import uWS from "uWebSockets.js";
 
 import { send } from "./utils/send";
 
-function spaceTopic(spaceId: string) {
+function spaceTopic(spaceId: number) {
   return `space/${spaceId}`;
 }
 
@@ -22,7 +22,7 @@ function spaceTopic(spaceId: string) {
  */
 export class Players {
   readonly playerIds = new Map<uWS.WebSocket, number>();
-  readonly spaceIds = new Map<uWS.WebSocket, string>();
+  readonly spaceIds = new Map<uWS.WebSocket, number>();
   readonly names = new Map<uWS.WebSocket, string>();
   readonly avatars = new Map<uWS.WebSocket, string>();
   readonly handles = new Map<uWS.WebSocket, string>();
@@ -124,7 +124,7 @@ export class Players {
     this.dataConsumers.forEach((dataConsumers) => dataConsumers.delete(ws));
   }
 
-  joinSpace(ws: uWS.WebSocket, { spaceId }: { spaceId: string }) {
+  joinSpace(ws: uWS.WebSocket, { spaceId }: { spaceId: number }) {
     const playerId = this.playerIds.get(ws);
     if (playerId === undefined) return console.warn("playerId not found");
 
@@ -317,7 +317,7 @@ export class Players {
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(handleMessage));
   }
 
-  getPlayerCount(spaceId: string): number {
+  getPlayerCount(spaceId: number): number {
     let count = 0;
 
     this.spaceIds.forEach((otherSpaceId) => {

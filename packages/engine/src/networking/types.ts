@@ -30,8 +30,7 @@ export type IChatMessage = {
 };
 
 export type SpaceJoinStatus = {
-  spaceId: string | null;
-  spaceFetched: boolean;
+  spaceId: number | null;
   wsConnected: boolean;
   webrtcConnected: boolean;
   sceneLoaded: boolean;
@@ -43,12 +42,7 @@ type GenericWebSocketMessage<S extends string, D> = {
 };
 
 export type ToHostMessage =
-  | GenericWebSocketMessage<
-      "join",
-      {
-        spaceId: string;
-      }
-    >
+  | GenericWebSocketMessage<"join", { spaceId: number }>
   | GenericWebSocketMessage<"leave", null>
   | GenericWebSocketMessage<"location", [number, number, number, number, number, number, number]>
   | GenericWebSocketMessage<"message", string>
@@ -57,12 +51,7 @@ export type ToHostMessage =
   | GenericWebSocketMessage<"set_avatar", string | null>
   | GenericWebSocketMessage<"set_handle", string | null>
   | GenericWebSocketMessage<"get_router_rtp_capabilities", null>
-  | GenericWebSocketMessage<
-      "create_transport",
-      {
-        type: "producer" | "consumer";
-      }
-    >
+  | GenericWebSocketMessage<"create_transport", { type: "producer" | "consumer" }>
   | GenericWebSocketMessage<
       "connect_transport",
       {
@@ -70,34 +59,14 @@ export type ToHostMessage =
         type: "producer" | "consumer";
       }
     >
-  | GenericWebSocketMessage<
-      "produce",
-      {
-        rtpParameters: RtpParameters;
-      }
-    >
-  | GenericWebSocketMessage<
-      "produce_data",
-      {
-        sctpStreamParameters: SctpStreamParameters;
-      }
-    >
-  | GenericWebSocketMessage<
-      "set_rtp_capabilities",
-      {
-        rtpCapabilities: RtpCapabilities;
-      }
-    >
+  | GenericWebSocketMessage<"produce", { rtpParameters: RtpParameters }>
+  | GenericWebSocketMessage<"produce_data", { sctpStreamParameters: SctpStreamParameters }>
+  | GenericWebSocketMessage<"set_rtp_capabilities", { rtpCapabilities: RtpCapabilities }>
   | GenericWebSocketMessage<"ready_to_consume", boolean>
   | GenericWebSocketMessage<"resume_audio", null>;
 
 export type FromHostMessage =
-  | GenericWebSocketMessage<
-      "join_successful",
-      {
-        playerId: number;
-      }
-    >
+  | GenericWebSocketMessage<"join_successful", { playerId: number }>
   | GenericWebSocketMessage<
       "player_joined",
       {
@@ -110,23 +79,14 @@ export type FromHostMessage =
     >
   | GenericWebSocketMessage<"player_left", number>
   | GenericWebSocketMessage<"player_message", IChatMessage>
-  | GenericWebSocketMessage<
-      "player_falling_state",
-      {
-        playerId: number;
-        isFalling: boolean;
-      }
-    >
+  | GenericWebSocketMessage<"player_falling_state", { playerId: number; isFalling: boolean }>
   | GenericWebSocketMessage<"player_name", { playerId: number; name: string | null }>
   | GenericWebSocketMessage<"player_avatar", { playerId: number; avatar: string | null }>
   | GenericWebSocketMessage<"player_handle", { playerId: number; handle: string | null }>
   | GenericWebSocketMessage<"router_rtp_capabilities", RtpCapabilities>
   | GenericWebSocketMessage<
       "transport_created",
-      {
-        type: "producer" | "consumer";
-        options: TransportOptions;
-      }
+      { type: "producer" | "consumer"; options: TransportOptions }
     >
   | GenericWebSocketMessage<
       "create_consumer",
@@ -146,15 +106,5 @@ export type FromHostMessage =
         sctpStreamParameters: SctpStreamParameters;
       }
     >
-  | GenericWebSocketMessage<
-      "producer_id",
-      {
-        id: string;
-      }
-    >
-  | GenericWebSocketMessage<
-      "data_producer_id",
-      {
-        id: string;
-      }
-    >;
+  | GenericWebSocketMessage<"producer_id", { id: string }>
+  | GenericWebSocketMessage<"data_producer_id", { id: string }>;

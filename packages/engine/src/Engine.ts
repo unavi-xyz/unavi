@@ -26,7 +26,7 @@ export class Engine {
   renderThread: RenderThread;
 
   scene: MainScene;
-  networkingInterface: NetworkingInterface;
+  networking: NetworkingInterface;
   input: InputManager | null = null;
 
   running = false;
@@ -66,7 +66,7 @@ export class Engine {
     });
 
     // Create networking interface
-    this.networkingInterface = new NetworkingInterface({
+    this.networking = new NetworkingInterface({
       scene: this.scene,
       renderThread: this.renderThread,
     });
@@ -82,30 +82,6 @@ export class Engine {
     };
 
     if (camera === "player") createPlayer();
-  }
-
-  joinSpace(spaceId: string) {
-    return this.networkingInterface.joinSpace(spaceId);
-  }
-
-  leaveSpace() {
-    this.networkingInterface.leaveSpace();
-  }
-
-  sendChatMessage(message: string) {
-    this.networkingInterface.sendChatMessage(message);
-  }
-
-  setName(name: string | null) {
-    this.networkingInterface.setName(name);
-  }
-
-  setAvatar(url: string | null) {
-    this.networkingInterface.setAvatar(url);
-  }
-
-  setHandle(handle: string | null) {
-    this.networkingInterface.setHandle(handle);
   }
 
   waitForReady() {
@@ -145,7 +121,7 @@ export class Engine {
   }
 
   destroy() {
-    this.networkingInterface.disconnect();
+    this.networking.disconnect();
     this.physicsThread.destroy();
     this.loaderThread.destroy();
     this.renderThread.destroy();

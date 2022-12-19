@@ -34,7 +34,7 @@ export function useSetAvatar() {
 
     // Publish avatar
     const avatarURL = getAvatarURL(fileId);
-    engine.setAvatar(avatarURL);
+    engine.networking.setAvatar(avatarURL);
 
     // Save to local storage
     localStorage.setItem(LocalStorageKey.Avatar, avatarURL);

@@ -1,5 +1,5 @@
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { ERC721Metadata, Space__factory } from "contracts";
+import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -7,7 +7,6 @@ import { useSigner } from "wagmi";
 
 import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
-import { SPACE_ADDRESS } from "../../../constants";
 import { env } from "../../../env/client.mjs";
 import Button from "../../../ui/Button";
 import ButtonFileInput from "../../../ui/ButtonFileInput";

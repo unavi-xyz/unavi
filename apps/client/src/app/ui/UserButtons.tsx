@@ -38,7 +38,7 @@ export default function UserButtons() {
       useAppStore.setState({ didChangeName: false });
 
       // Publish display name
-      engine.setName(displayName);
+      engine.networking.setName(displayName);
 
       // Save to local storage
       if (displayName) localStorage.setItem(LocalStorageKey.Name, displayName);
@@ -49,7 +49,7 @@ export default function UserButtons() {
     if (didChangeAvatar && customAvatar) {
       setAvatar(customAvatar);
     } else if (didChangeAvatar) {
-      engine.setAvatar(customAvatar);
+      engine.networking.setAvatar(customAvatar);
       localStorage.removeItem(LocalStorageKey.Avatar);
       localStorage.removeItem(LocalStorageKey.AvatarId);
       useAppStore.setState({ didChangeAvatar: false });
@@ -72,12 +72,12 @@ export default function UserButtons() {
       const track = stream.getAudioTracks()[0];
       if (!track) throw new Error("No audio track found");
 
-      await engine.networkingInterface.produceAudio(track);
+      await engine.networking.produceAudio(track);
 
       hasProducedAudio.current = true;
     }
 
-    await engine.networkingInterface.setAudioPaused(isMuted);
+    await engine.networking.setAudioPaused(isMuted);
 
     setMuted(isMuted);
   }

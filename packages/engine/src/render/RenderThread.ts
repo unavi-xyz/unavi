@@ -114,13 +114,13 @@ export class RenderThread {
       }
 
       case "set_player_rotation_buffer": {
-        this.#engine.networkingInterface.setPlayerRotation(data);
+        this.#engine.networking.setPlayerRotation(data);
         break;
       }
 
       case "set_camera_buffers": {
-        this.#engine.networkingInterface.setCameraPosition(data.position);
-        this.#engine.networkingInterface.setCameraRotation(data.rotation);
+        this.#engine.networking.setCameraPosition(data.position);
+        this.#engine.networking.setCameraRotation(data.rotation);
         break;
       }
 
@@ -139,7 +139,7 @@ export class RenderThread {
       }
 
       case "player_loaded": {
-        this.#engine.networkingInterface.setPlayerLoaded(data);
+        this.#engine.networking.setPlayerLoaded(data);
         break;
       }
     }

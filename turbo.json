@@ -10,6 +10,7 @@
       "outputs": [".next/**"],
       "env": [
         "BUNDLE_ANALYZE",
+        "ETH_PROVIDER",
         "NEXT_PUBLIC_ALCHEMY_ID",
         "NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT",
         "NEXT_PUBLIC_CDN_ENDPOINT",

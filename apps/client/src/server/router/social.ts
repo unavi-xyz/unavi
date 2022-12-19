@@ -1,8 +1,7 @@
 import { TRPCError } from "@trpc/server";
-import { Profile__factory } from "contracts";
+import { Profile__factory, PROFILE_ADDRESS } from "contracts";
 import { z } from "zod";
 
-import { PROFILE_ADDRESS } from "../../constants";
 import { ethersProvider } from "../constants";
 import { publicProcedure, router } from "./trpc";
 

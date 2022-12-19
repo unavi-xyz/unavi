@@ -12,8 +12,9 @@ import ChatBox from "../../app/ui/ChatBox";
 import LoadingScreen from "../../app/ui/LoadingScreen";
 import MobileChatBox from "../../app/ui/MobileChatBox";
 import UserButton from "../../app/ui/UserButtons";
-import { getPublicationProps } from "../../client/lens/utils/getPublicationProps";
+import { trpc } from "../../client/trpc";
 import MetaTags from "../../home/MetaTags";
+import { hexDisplayToNumber } from "../../utils/numberToHexDisplay";
 import { useIsMobile } from "../../utils/useIsMobile";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
@@ -25,22 +26,15 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
     `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
-  const id = query.id as string;
-  const props = await getPublicationProps(id);
+  const hexId = query.id as string;
+  const id = hexDisplayToNumber(hexId);
 
   return {
-    props: {
-      id,
-      ...props,
-    },
+    props: { id },
   };
 };
 
-export default function App({
-  id,
-  metadata,
-  image,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function App({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const createdEngine = useRef(false);
@@ -50,56 +44,81 @@ export default function App({
 
   const engine = useAppStore((state) => state.engine);
 
-  const setAvatar = useSetAvatar();
-  const isMobile = useIsMobile();
   useResizeEngineCanvas(engine, canvasRef, containerRef);
   useLoadUser();
   useAppHotkeys();
   useAnalytics();
 
+  const setAvatar = useSetAvatar();
+  const isMobile = useIsMobile();
+
+  const { data: space } = trpc.space.byId.useQuery(
+    { id },
+    {
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+    }
+  );
+
   useEffect(() => {
     if (!engine) return;
 
-    // Display loading status
-    engine.networkingInterface.spaceJoinStatus$.subscribe(
-      ({ spaceFetched, sceneLoaded, webrtcConnected, wsConnected }) => {
-        setLoadingText("Fetching space...");
-        setLoadingProgress(0.2);
+    async function joinSpace() {
+      if (!engine) return;
 
-        if (!spaceFetched) return;
+      setLoadingText("Fetching space...");
+      setLoadingProgress(0.2);
 
-        setLoadingText("Connecting...");
-        setLoadingProgress(0.35);
+      if (!space) return;
 
-        if (!wsConnected) return;
+      // Display loading status
+      engine.networking.spaceJoinStatus$.subscribe(
+        ({ sceneLoaded, webrtcConnected, wsConnected }) => {
+          setLoadingText("Connecting...");
+          setLoadingProgress(0.35);
 
-        setLoadingText("Connecting...");
-        setLoadingProgress(0.5);
+          if (!wsConnected) return;
 
-        if (!webrtcConnected) return;
+          setLoadingText("Connecting...");
+          setLoadingProgress(0.5);
 
-        setLoadingText("Loading scene...");
-        setLoadingProgress(0.75);
+          if (!webrtcConnected) return;
 
-        if (!sceneLoaded) return;
+          setLoadingText("Loading scene...");
+          setLoadingProgress(0.75);
 
-        setLoadingText("Ready!");
-        setLoadingProgress(1);
-      }
-    );
+          if (!sceneLoaded) return;
 
-    // Join space
-    engine.joinSpace(id).then(async () => {
+          setLoadingText("Ready!");
+          setLoadingProgress(1);
+        }
+      );
+
+      const host =
+        process.env.NODE_ENV === "development"
+          ? "ws://localhost:4000"
+          : `wss://${process.env.NEXT_PUBLIC_DEFAULT_HOST}`;
+
+      // Join space
+      await engine.networking.joinSpace({
+        spaceId: space.id,
+        host,
+        modelURL: space.metadata.animation_url,
+      });
+
       // Start engine
       await engine.start();
 
       setEngineStarted(true);
-    });
+    }
+
+    joinSpace();
 
     return () => {
-      engine.leaveSpace();
+      engine.networking.leaveSpace();
     };
-  }, [engine, id]);
+  }, [engine, space]);
 
   useEffect(() => {
     if (createdEngine.current) return;
@@ -145,17 +164,17 @@ export default function App({
   return (
     <>
       <MetaTags
-        title={metadata.title ?? id}
-        description={metadata.description ?? undefined}
-        image={metadata.image ?? undefined}
+        title={space?.metadata.name}
+        description={space?.metadata.description}
+        image={space?.metadata.image}
         card="summary_large_image"
       />
 
       <Script src="/scripts/draco_decoder.js" />
 
       <LoadingScreen
-        text={metadata.title}
-        image={image}
+        text={space?.metadata.name}
+        image={space?.metadata.image}
         loaded={engineStarted}
         loadingProgress={loadingProgress}
         loadingText={loadingText}

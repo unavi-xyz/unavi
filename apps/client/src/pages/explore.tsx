@@ -28,7 +28,7 @@ export const getServerSideProps = async ({ res }: GetServerSidePropsContext) => 
     },
   });
 
-  await ssg.space.latest.prefetch({});
+  await ssg.space.latest.prefetch({ limit: 25 });
 
   return {
     props: {
@@ -39,7 +39,7 @@ export const getServerSideProps = async ({ res }: GetServerSidePropsContext) => 
 
 export default function Explore() {
   const { data: spaces } = trpc.space.latest.useQuery(
-    {},
+    { limit: 25 },
     {
       refetchOnWindowFocus: false,
       refetchOnMount: false,

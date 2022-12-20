@@ -29,6 +29,7 @@ export const spaceRouter = router({
   latest: publicProcedure
     .input(
       z.object({
+        limit: z.number().min(1).max(99).optional().default(15),
         owner: z.string().optional(),
       })
     )
@@ -41,7 +42,7 @@ export const spaceRouter = router({
       const spaces = [];
       let i = 0;
 
-      while (spaces.length < 20) {
+      while (spaces.length < input.limit) {
         const tokenId = count - i;
         i++;
 

@@ -7,6 +7,7 @@ import { useSigner } from "wagmi";
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
 import { getNavbarLayout } from "../../home/layouts/NavbarLayout/NavbarLayout";
+import MetaTags from "../../home/MetaTags";
 import Button from "../../ui/Button";
 import Spinner from "../../ui/Spinner";
 import TextField from "../../ui/TextField";
@@ -88,30 +89,34 @@ export default function Settings() {
     );
 
   return (
-    <div className="max-w-content mx-auto pt-12">
-      <div className="text-center text-3xl font-black">Edit Profile</div>
+    <>
+      <MetaTags title="Settings" />
 
-      <div className="mx-auto w-1/2">
-        <div className="space-y-2">
-          <TextField
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            name="Username"
-            autoComplete="off"
-            disabled={savingUsername}
-            outline
-          />
+      <div className="max-w-content mx-auto pt-12">
+        <div className="text-center text-3xl font-black">Edit Profile</div>
 
-          <div className="flex justify-end">
-            <Button variant="tonal" onClick={saveUsername} disabled={usernameDisabled}>
-              Save
-            </Button>
+        <div className="mx-auto w-1/2">
+          <div className="space-y-2">
+            <TextField
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              name="Username"
+              autoComplete="off"
+              disabled={savingUsername}
+              outline
+            />
+
+            <div className="flex justify-end">
+              <Button variant="tonal" onClick={saveUsername} disabled={usernameDisabled}>
+                Save
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-2"></div>
+          <div className="space-y-2"></div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

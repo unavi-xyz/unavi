@@ -1,6 +1,7 @@
 import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/dist/client/link";
+import Head from "next/dist/shared/lib/head";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
@@ -8,6 +9,7 @@ import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceCard from "../../../home/lens/SpaceCard";
+import MetaTags from "../../../home/MetaTags";
 import ProfilePicture from "../../../home/ProfilePicture";
 import { prisma } from "../../../server/prisma";
 import { appRouter } from "../../../server/router/_app";
@@ -103,17 +105,13 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
 
   return (
     <>
-      {/* <MetaTags
-        title={metadata.title ?? handle}
-        description={metadata.description ?? undefined}
-        image={metadata.image ?? undefined}
-      /> */}
+      <MetaTags title={profile?.handle?.string} />
 
-      {/* <Head>
+      <Head>
         <meta property="og:type" content="profile" />
-        <meta property="og:profile:username" content={handle} />
-        <meta property="og:profile:first_name" content={profile?.name ?? handle} />
-      </Head> */}
+        <meta property="og:profile:username" content={profile?.handle?.full} />
+        <meta property="og:profile:first_name" content={profile?.handle?.string} />
+      </Head>
 
       {isLoading ? (
         <div className="flex justify-center pt-12">

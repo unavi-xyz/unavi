@@ -32,8 +32,7 @@ export default function Spaces() {
 
   useEffect(() => {
     if (authState !== "authenticated") return;
-    utils.project.getAll.invalidate();
-    refetch();
+    utils.project.getAll.invalidate().then(() => refetch());
   }, [refetch, authState, utils]);
 
   const authenticated = authState === "authenticated";

@@ -40,14 +40,13 @@ export default function PublishPage() {
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
   const { save } = useSave();
+  const utils = trpc.useContext();
 
   const { data: imageURL } = trpc.project.image.useQuery(
     { id },
     {
       enabled: id !== undefined,
-      refetchOnMount: false,
       refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
     }
   );
 
@@ -55,17 +54,16 @@ export default function PublishPage() {
     { address: session?.address ?? "" },
     {
       enabled: session?.address !== undefined,
-      refetchOnMount: false,
       refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
     }
   );
 
+  const { mutateAsync: saveProject } = trpc.project.save.useMutation();
   const { mutateAsync: createModelUploadUrl } = trpc.publication.modelUploadURL.useMutation();
   const { mutateAsync: createImageUploadUrl } = trpc.publication.imageUploadURL.useMutation();
   const { mutateAsync: createMetadataUploadUrl } = trpc.publication.metadataUploadURL.useMutation();
   const { mutateAsync: createPublication } = trpc.publication.create.useMutation();
-  // const { mutateAsync: linkPublication } = trpc.publication.link.useMutation();
+  const { mutateAsync: linkPublication } = trpc.publication.link.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
@@ -88,12 +86,21 @@ export default function PublishPage() {
 
     async function publish() {
       if (!signer) throw new Error("Signer not found");
+      if (!session) throw new Error("Session not found");
 
       // Save project
       await save();
 
       // Create database publication
-      const publicationId = await createPublication({ type: "SPACE" });
+      const publicationId = await createPublication();
+
+      // Link publication to project
+      promises.push(
+        saveProject({
+          id,
+          publicationId,
+        })
+      );
 
       // Export scene and upload to S3
       promises.push(
@@ -117,11 +124,10 @@ export default function PublishPage() {
               },
             });
 
-            if (!response.ok) reject();
-            else resolve();
+            if (!response.ok) throw new Error("Failed to upload model");
           }
 
-          upload();
+          upload().then(resolve).catch(reject);
         })
       );
 
@@ -149,11 +155,10 @@ export default function PublishPage() {
               },
             });
 
-            if (!response.ok) reject();
-            else resolve();
+            if (!response.ok) throw new Error("Failed to upload image");
           }
 
-          upload();
+          upload().then(resolve).catch(reject);
         })
       );
 
@@ -185,11 +190,10 @@ export default function PublishPage() {
               },
             });
 
-            if (response.ok) resolve();
-            else reject();
+            if (!response.ok) throw new Error("Failed to upload metadata");
           }
 
-          upload();
+          upload().then(resolve).catch(reject);
         })
       );
 
@@ -203,6 +207,35 @@ export default function PublishPage() {
       const tx = await contract.mintWithTokenURI(contentURI);
 
       await tx.wait();
+
+      // Get space ID
+      // Loop through all spaces until we the matching content URI
+      const count = (await contract.count()).toNumber();
+      let spaceId = 0;
+      let i = 0;
+
+      while (spaceId === 0) {
+        i++;
+        const tokenId = count - i;
+
+        const owner = await contract.ownerOf(tokenId);
+        if (owner !== session.address) continue;
+
+        const uri = await contract.tokenURI(tokenId);
+        if (uri !== contentURI) continue;
+
+        spaceId = tokenId;
+      }
+
+      await Promise.all([
+        // Link space to publication
+        linkPublication({ publicationId, spaceId }),
+        // Invalidate trpc cache
+        utils.space.latest.invalidate({ owner: session.address }),
+      ]);
+
+      // Redirect to space
+      router.push(`/space/${numberToHexDisplay(spaceId)}`);
     }
 
     toast.promise(
@@ -220,10 +253,8 @@ export default function PublishPage() {
   const image = imageFile ? URL.createObjectURL(imageFile) : null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-center space-y-1">
-        <h1 className="flex justify-center text-3xl font-bold">Publish Space</h1>
-      </div>
+    <div className="space-y-4">
+      <h1 className="text-center text-3xl font-bold">Publish Space</h1>
 
       <div className="space-y-4">
         <TextField

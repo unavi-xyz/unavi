@@ -217,10 +217,8 @@ export default function UpdatePage({ onClose }: Props) {
   const image = imageFile ? URL.createObjectURL(imageFile) : null;
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col items-center space-y-1">
-        <h1 className="flex justify-center text-4xl font-bold">Update Space</h1>
-      </div>
+    <div className="space-y-4">
+      <h1 className="text-center text-3xl font-bold">Update Space</h1>
 
       <div className="space-y-4">
         <TextField

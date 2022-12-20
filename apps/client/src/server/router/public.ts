@@ -1,8 +1,10 @@
+import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { env } from "../../env/client.mjs";
 import { getModelStats } from "../helpers/getModelStats";
+import { getSpaceMetadata } from "../helpers/getSpaceMetadata";
 import { createTempFileUploadURL } from "../s3";
 import { publicProcedure, router } from "./trpc";
 
@@ -36,15 +38,19 @@ export const publicRouter = router({
   addView: publicProcedure
     .input(
       z.object({
-        lensId: z.string(),
+        spaceId: z.number().int(),
       })
     )
     .mutation(async ({ input, ctx }) => {
       const promises: Promise<any>[] = [];
 
+      // Verify space exists
+      const space = await getSpaceMetadata(input.spaceId);
+      if (!space) throw new TRPCError({ code: "NOT_FOUND" });
+
       // Get publication id
       const publication = await ctx.prisma.publication.findFirst({
-        where: { lensId: input.lensId },
+        where: { spaceId: input.spaceId },
       });
 
       let publicationId: string;
@@ -54,7 +60,7 @@ export const publicRouter = router({
       } else {
         // If no publication, create one
         const { id } = await ctx.prisma.publication.create({
-          data: { type: "SPACE", lensId: input.lensId },
+          data: { spaceId: input.spaceId },
         });
 
         publicationId = id;

@@ -83,7 +83,7 @@ export default function CreateAvatarPage() {
       const promises: Promise<void>[] = [];
 
       // Create database publication
-      const publicationId = await createPublication({ type: "AVATAR" });
+      const publicationId = await createPublication();
 
       // Upload image to S3
       promises.push(
@@ -256,7 +256,7 @@ export default function CreateAvatarPage() {
       // Link lens publication id to database publication id
       promises.push(
         linkPublication({
-          lensId: publication.id,
+          spaceId: publication.id,
           publicationId,
         })
       );

@@ -37,8 +37,11 @@ export default function Settings({ id }: InferGetServerSidePropsType<typeof getS
   const router = useRouter();
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
+  const utils = trpc.useContext();
 
   const { data: space } = trpc.space.byId.useQuery({ id });
+
+  const { mutate: deletePublication } = trpc.publication.delete.useMutation();
 
   async function handleDelete() {
     if (loading) return;
@@ -55,11 +58,16 @@ export default function Settings({ id }: InferGetServerSidePropsType<typeof getS
 
       // Burn NFT
       const contract = Space__factory.connect(SPACE_ADDRESS, signer);
-
       await contract.burn(id);
 
-      // Remove from database
-      // await deletePublication({ lensId: id });
+      await Promise.all([
+        // Remove from database
+        deletePublication({ spaceId: id }),
+        // Invalidate trpc cache
+        utils.space.byId.invalidate({ id }),
+        utils.space.latest.invalidate({ owner: session?.address ?? "" }),
+        utils.project.getAll.invalidate(),
+      ]);
     }
 
     toast.promise(

@@ -147,10 +147,16 @@ export default function Settings() {
       }
 
       // Invalidate trpc query
-      utils.social.profile.byId.invalidate({ id: profile.id });
-      utils.social.profile.byAddress.invalidate({ address: session?.address ?? "" });
+      await Promise.all([
+        utils.social.profile.byId.invalidate({ id: profile.id }),
+        utils.social.profile.byAddress.invalidate({ address: session?.address ?? "" }),
+      ]);
+
       if (profile.handle)
-        utils.social.profile.byHandle.invalidate({ string: profile.handle.string, id: profile.id });
+        await utils.social.profile.byHandle.invalidate({
+          string: profile.handle.string,
+          id: profile.id,
+        });
     }
 
     toast.promise(

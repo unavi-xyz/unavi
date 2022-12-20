@@ -4,6 +4,7 @@ import { trpc } from "../client/trpc";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceCard from "../home/lens/SpaceCard";
 import MetaTags from "../home/MetaTags";
+import { numberToHexDisplay } from "../utils/numberToHexDisplay";
 
 export default function Explore() {
   const { data: spaces } = trpc.space.latest.useQuery({});
@@ -19,7 +20,7 @@ export default function Explore() {
           <div className="grid grid-cols-3 gap-4">
             {spaces?.map(({ id, metadata }) => {
               return (
-                <Link href={`/space/${id}`} key={id}>
+                <Link href={`/space/${numberToHexDisplay(id)}`} key={id}>
                   <SpaceCard metadata={metadata} animateEnter />
                 </Link>
               );

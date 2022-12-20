@@ -3,6 +3,7 @@ import { Space__factory, SPACE_ADDRESS } from "contracts";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
 import { useSession } from "../../../client/auth/useSession";
@@ -49,21 +50,35 @@ export default function Settings({ id }: InferGetServerSidePropsType<typeof getS
 
     setLoading(true);
 
-    try {
+    async function deleteSpace() {
+      if (!signer) throw new Error("No signer");
+
       // Burn NFT
       const contract = Space__factory.connect(SPACE_ADDRESS, signer);
 
-      // await contract.burn(id);
+      await contract.burn(id);
 
       // Remove from database
       // await deletePublication({ lensId: id });
-
-      router.push(`/user/${session?.address}`);
-    } catch (err) {
-      console.error(err);
     }
 
-    setLoading(false);
+    toast.promise(
+      deleteSpace()
+        .then(() => {
+          router.push(`/user/${session?.address}`);
+        })
+        .catch((err) => {
+          console.error(err);
+        })
+        .finally(() => {
+          setLoading(false);
+        }),
+      {
+        loading: "Deleting space...",
+        success: "Space deleted",
+        error: "Failed to delete space",
+      }
+    );
   }
 
   return (
@@ -77,7 +92,7 @@ export default function Settings({ id }: InferGetServerSidePropsType<typeof getS
           variant="filled"
           color="error"
           rounded="large"
-          loading={loading}
+          disabled={loading}
           onClick={handleDelete}
         >
           Delete Space

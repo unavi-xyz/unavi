@@ -35,30 +35,34 @@ export const spaceRouter = router({
     .query(async ({ input }) => {
       const spaceContract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
 
-      const totalSupplyBigNumber = await spaceContract.totalSupply();
-      const totalSupply = totalSupplyBigNumber.toNumber();
+      const countBigNumber = await spaceContract.count();
+      const count = countBigNumber.toNumber();
 
       const spaces = [];
       let i = 0;
 
       while (spaces.length < 20) {
-        const tokenId = totalSupply - i;
+        const tokenId = count - i;
         i++;
 
         // Break if we've reached the end
         if (tokenId <= 0) break;
 
-        // Check if owner matches
-        if (input.owner) {
-          const owner = await spaceContract.ownerOf(tokenId);
-          if (owner !== input.owner) continue;
+        try {
+          // Check if owner matches
+          if (input.owner) {
+            const owner = await spaceContract.ownerOf(tokenId);
+            if (owner !== input.owner) continue;
+          }
+
+          // Check if metadata exists
+          const metadata = await getSpaceMetadata(tokenId);
+          if (!metadata) continue;
+
+          spaces.push({ id: tokenId, metadata });
+        } catch {
+          // Ignore
         }
-
-        // Check if metadata exists
-        const metadata = await getSpaceMetadata(tokenId);
-        if (!metadata) continue;
-
-        spaces.push({ id: tokenId, metadata });
       }
 
       return spaces;

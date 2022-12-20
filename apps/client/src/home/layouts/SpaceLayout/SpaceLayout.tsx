@@ -112,7 +112,7 @@ export default function SpaceLayout({ id, author, metadata, children }: Props) {
             <div className="flex space-x-4">
               <NavigationTab href={`/space/${hexId}`} text="About" />
 
-              {isAuthor && <NavigationTab href={`/space/${id}/settings`} text="Settings" />}
+              {isAuthor && <NavigationTab href={`/space/${hexId}/settings`} text="Settings" />}
             </div>
 
             <div>{children}</div>

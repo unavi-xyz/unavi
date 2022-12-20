@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { getNavbarLayout } from "../../home/layouts/NavbarLayout/NavbarLayout";
+import MetaTags from "../../home/MetaTags";
 
 export default function Create() {
   return (
@@ -39,27 +40,31 @@ interface Props {
 
 function CreateButton({ href, title, subtitle, image }: Props) {
   return (
-    <div className="group w-full">
-      <Link href={href}>
-        <div className="h-full w-full space-y-2 rounded-3xl border-4 border-white p-6 transition duration-300 hover:border-neutral-900">
-          <div className="w-full text-center text-3xl font-bold">{title}</div>
-          <div className="w-full text-center text-xl text-neutral-500">{subtitle}</div>
+    <>
+      <MetaTags title="Create" />
 
-          <div className="flex h-64 w-full items-center justify-center pt-2">
-            <div className="relative h-full w-full overflow-hidden rounded-2xl">
-              {image && (
-                <Image
-                  src={image}
-                  alt=""
-                  sizes="440px"
-                  fill
-                  className="object-cover transition duration-500 group-hover:scale-105"
-                />
-              )}
+      <div className="group w-full">
+        <Link href={href}>
+          <div className="h-full w-full space-y-2 rounded-3xl border-4 border-white p-6 transition duration-300 hover:border-neutral-900">
+            <div className="w-full text-center text-3xl font-bold">{title}</div>
+            <div className="w-full text-center text-xl text-neutral-500">{subtitle}</div>
+
+            <div className="flex h-64 w-full items-center justify-center pt-2">
+              <div className="relative h-full w-full overflow-hidden rounded-2xl">
+                {image && (
+                  <Image
+                    src={image}
+                    alt=""
+                    sizes="440px"
+                    fill
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                  />
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </Link>
-    </div>
+        </Link>
+      </div>
+    </>
   );
 }

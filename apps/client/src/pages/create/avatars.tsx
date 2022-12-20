@@ -9,6 +9,7 @@ import { useProfileByHandle } from "../../client/lens/hooks/useProfileByHandle";
 import CreateAvatarPage from "../../home/CreateAvatarPage";
 import { getNavbarLayout } from "../../home/layouts/NavbarLayout/NavbarLayout";
 import AvatarCard from "../../home/lens/AvatarCard";
+import MetaTags from "../../home/MetaTags";
 import Button from "../../ui/Button";
 import Dialog from "../../ui/Dialog";
 
@@ -32,6 +33,8 @@ export default function Avatars() {
 
   return (
     <>
+      <MetaTags title="Avatars" />
+
       <Dialog open={openCreateDialog} onClose={() => setopenCreateDialog(false)}>
         <CreateAvatarPage />
       </Dialog>

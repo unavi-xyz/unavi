@@ -12,6 +12,7 @@ import Button from "../../../ui/Button";
 import ButtonFileInput from "../../../ui/ButtonFileInput";
 import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
+import { numberToHexDisplay } from "../../../utils/numberToHexDisplay";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
@@ -161,7 +162,9 @@ export default function PublishPage() {
             const metadata: ERC721Metadata = {
               animation_url: modelURL,
               description,
-              external_url: `https://thewired.space/user/${profile?.id ?? session?.address}`,
+              external_url: `https://thewired.space/user/${
+                profile ? numberToHexDisplay(profile.id) : session?.address
+              }`,
               image: imageURL,
               name,
             };

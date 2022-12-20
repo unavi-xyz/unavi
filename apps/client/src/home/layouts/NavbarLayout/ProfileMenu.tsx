@@ -15,7 +15,7 @@ export default function ProfileMenu({ includeExternal = true }: Props) {
   const { data: session } = useSession();
   const { logout } = useLogout();
 
-  const { data: profile } = trpc.social.profileByAddress.useQuery(
+  const { data: profile } = trpc.social.profile.byAddress.useQuery(
     { address: session?.address ?? "" },
     { enabled: session?.address !== undefined }
   );

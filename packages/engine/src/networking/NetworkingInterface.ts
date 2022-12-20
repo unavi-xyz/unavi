@@ -1,12 +1,10 @@
 import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
-import { createClient } from "urql";
 
 import { MainScene } from "../main/MainScene";
 import { RenderThread } from "../render/RenderThread";
 import { GLTFMesh, Node } from "../scene";
 import { toHex } from "../utils/toHex";
-import { LENS_API } from "./constants";
 import { FromHostMessage, InternalChatMessage, SpaceJoinStatus, ToHostMessage } from "./types";
 import { WebRTC } from "./WebRTC";
 
@@ -21,7 +19,6 @@ export class NetworkingInterface {
   #webRTC: WebRTC | null = null;
   #ws: WebSocket | null = null;
 
-  #lensClient = createClient({ url: LENS_API });
   #spaceNodeId: string | null = null;
   #broadcastInterval: NodeJS.Timeout | null = null;
   #hostServer: string | null = null;
@@ -86,7 +83,7 @@ export class NetworkingInterface {
     this.#hostServer = host;
 
     // Connect to host server
-    this.connectToHost(spaceId);
+    this.#connectToHost(spaceId);
 
     // Create glTF mesh
     const mesh = new GLTFMesh();
@@ -132,8 +129,8 @@ export class NetworkingInterface {
     });
   }
 
-  connectToHost(spaceId: number) {
-    if (!this.#hostServer) throw new Error("No host server set");
+  #connectToHost(spaceId: number) {
+    if (!this.#hostServer) throw new Error("Host server not set");
 
     // Create WebSocket connection to host server
     const ws = new WebSocket(this.#hostServer);
@@ -362,8 +359,8 @@ export class NetworkingInterface {
         const count = ++this.#reconnectCount;
 
         // Wait a little longer each attempt
-        const timeout = Math.min(1000 * count);
-        await new Promise((resolve) => setTimeout(resolve, timeout));
+        const timeoutLength = Math.min(1000 * count);
+        await new Promise((resolve) => setTimeout(resolve, timeoutLength));
 
         // Test if has been reconnected
         if (this.#ws?.readyState === WebSocket.OPEN) return;
@@ -372,8 +369,11 @@ export class NetworkingInterface {
         if (this.#ws) this.#ws.close();
         this.#ws = null;
 
+        // If host server has been removed, give up
+        if (!this.#hostServer) return;
+
         console.info(`🔄 (${count}) Attempting reconnect to host...`);
-        this.connectToHost(spaceId);
+        this.#connectToHost(spaceId);
       }
 
       console.error("🪦 Failed to reconnect to host. Giving up.");

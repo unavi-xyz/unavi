@@ -67,7 +67,7 @@ export default function Settings({ id }: InferGetServerSidePropsType<typeof getS
   }
 
   return (
-    <SpaceLayout id={id} owner={space?.owner} metadata={space?.metadata}>
+    <SpaceLayout id={id} author={space?.author ?? null} metadata={space?.metadata ?? null}>
       <div className="space-y-2 rounded-2xl bg-red-100 p-8 text-red-900">
         <div className="text-2xl font-bold">Danger Zone</div>
 

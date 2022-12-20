@@ -1,3 +1,4 @@
+import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/dist/client/link";
 import { useRouter } from "next/router";
@@ -8,6 +9,8 @@ import { trpc } from "../../../client/trpc";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceCard from "../../../home/lens/SpaceCard";
 import ProfilePicture from "../../../home/ProfilePicture";
+import { prisma } from "../../../server/prisma";
+import { appRouter } from "../../../server/router/_app";
 import Button from "../../../ui/Button";
 import Spinner from "../../../ui/Spinner";
 import { hexDisplayToNumber, numberToHexDisplay } from "../../../utils/numberToHexDisplay";
@@ -22,11 +25,31 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
   );
 
   const id = query.id as string;
+  const isAddress = id.length === 42;
+
+  const ssg = await createProxySSGHelpers({
+    router: appRouter,
+    ctx: {
+      prisma,
+      res,
+      session: null,
+    },
+  });
+
+  if (isAddress) {
+    await ssg.social.profile.byAddress.prefetch({ address: id });
+  } else {
+    await ssg.social.profile.byId.prefetch({ id: hexDisplayToNumber(id) });
+  }
 
   return {
-    props: { id },
+    props: {
+      trpcState: ssg.dehydrate(),
+      id,
+    },
   };
 };
+
 export default function User({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -34,20 +57,32 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
   const isAddress = id.length === 42;
 
   const { data: profileAddress, isLoading: isLoadingAddress } =
-    trpc.social.profileByAddress.useQuery({ address: id }, { enabled: isAddress });
+    trpc.social.profile.byAddress.useQuery(
+      { address: id },
+      {
+        enabled: isAddress,
+        refetchOnWindowFocus: false,
+      }
+    );
 
-  const { data: profileId, isLoading: isLoadingId } = trpc.social.profileById.useQuery(
+  const { data: profileId, isLoading: isLoadingId } = trpc.social.profile.byId.useQuery(
     { id: hexDisplayToNumber(id) },
-    { enabled: !isAddress }
+    {
+      enabled: !isAddress,
+      refetchOnWindowFocus: false,
+    }
   );
 
   const profile = isAddress ? profileAddress : profileId;
   const isLoading = isAddress ? isLoadingAddress : isLoadingId;
   const isUser = status === "authenticated" && profile?.owner === session?.address;
 
-  const { data: spaces } = trpc.space.latest.useQuery(
+  const { data: spaces, isLoading: isLoadingSpaces } = trpc.space.latest.useQuery(
     { owner: profile?.owner },
-    { enabled: profile?.owner !== undefined }
+    {
+      enabled: profile?.owner !== undefined,
+      refetchOnWindowFocus: false,
+    }
   );
 
   // Force change page on hash change
@@ -112,15 +147,15 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
           <div className="flex justify-center px-4 pb-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
-                <ProfilePicture circle uniqueKey={profile?.handle ?? id} size={128} />
+                <ProfilePicture circle uniqueKey={profile?.handle?.full ?? id} size={128} />
               </div>
 
               <div className="flex flex-col items-center pt-1">
-                {profile?.handleString && profile.handleId ? (
+                {profile?.handle ? (
                   <div>
-                    <span className="text-2xl font-black">{profile?.handleString}</span>
+                    <span className="text-2xl font-black">{profile.handle.string}</span>
                     <span className="text-xl font-bold text-neutral-400">
-                      #{profile?.handleId?.toString().padStart(4, "0")}
+                      #{profile.handle.id.toString().padStart(4, "0")}
                     </span>
                   </div>
                 ) : null}
@@ -194,15 +229,21 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            {spaces?.map(({ id, metadata }) => {
-              return (
-                <Link href={`/space/${numberToHexDisplay(id)}`} key={id}>
-                  <SpaceCard metadata={metadata} animateEnter />
-                </Link>
-              );
-            })}
-          </div>
+          {isLoadingSpaces ? (
+            <div className="flex justify-center pt-12">
+              <Spinner />
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              {spaces?.map(({ id, metadata }) => {
+                return (
+                  <Link href={`/space/${numberToHexDisplay(id)}`} key={id}>
+                    <SpaceCard id={id} metadata={metadata} animateEnter />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </>

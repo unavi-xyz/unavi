@@ -19,17 +19,17 @@ export default function Settings() {
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
 
-  const { data: profile, isLoading } = trpc.social.profileByAddress.useQuery(
+  const { data: profile, isLoading } = trpc.social.profile.byAddress.useQuery(
     { address: session?.address ?? "" },
     { enabled: session?.address !== undefined }
   );
 
   useEffect(() => {
-    if (profile?.handleString) setUsername(profile.handleString);
+    if (profile?.handle) setUsername(profile.handle.string);
   }, [profile]);
 
   const usernameDisabled =
-    savingUsername || username.length === 0 || username === profile?.handleString;
+    savingUsername || username.length === 0 || username === profile?.handle?.string;
 
   async function saveUsername() {
     if (usernameDisabled) return;

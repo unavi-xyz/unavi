@@ -1,13 +1,51 @@
+import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import Link from "next/link";
+import { GetServerSidePropsContext } from "next/types";
 
 import { trpc } from "../client/trpc";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceCard from "../home/lens/SpaceCard";
 import MetaTags from "../home/MetaTags";
+import { prisma } from "../server/prisma";
+import { appRouter } from "../server/router/_app";
 import { numberToHexDisplay } from "../utils/numberToHexDisplay";
 
+export const getServerSideProps = async ({ res }: GetServerSidePropsContext) => {
+  const ONE_MINUTE_IN_SECONDS = 60;
+  const ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
+
+  res.setHeader(
+    "Cache-Control",
+    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
+  );
+
+  const ssg = await createProxySSGHelpers({
+    router: appRouter,
+    ctx: {
+      prisma,
+      res,
+      session: null,
+    },
+  });
+
+  await ssg.space.latest.prefetch({});
+
+  return {
+    props: {
+      trpcState: ssg.dehydrate(),
+    },
+  };
+};
+
 export default function Explore() {
-  const { data: spaces } = trpc.space.latest.useQuery({});
+  const { data: spaces } = trpc.space.latest.useQuery(
+    {},
+    {
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+    }
+  );
 
   return (
     <>
@@ -21,7 +59,7 @@ export default function Explore() {
             {spaces?.map(({ id, metadata }) => {
               return (
                 <Link href={`/space/${numberToHexDisplay(id)}`} key={id}>
-                  <SpaceCard metadata={metadata} animateEnter />
+                  <SpaceCard id={id} metadata={metadata} animateEnter />
                 </Link>
               );
             })}

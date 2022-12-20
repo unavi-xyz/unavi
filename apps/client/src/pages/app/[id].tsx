@@ -70,7 +70,7 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
       setLoadingText("Fetching space...");
       setLoadingProgress(0.2);
 
-      if (!space) return;
+      if (!space?.metadata) return;
 
       // Display loading status
       engine.networking.spaceJoinStatus$.subscribe(
@@ -164,17 +164,17 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
   return (
     <>
       <MetaTags
-        title={space?.metadata.name}
-        description={space?.metadata.description}
-        image={space?.metadata.image}
+        title={space?.metadata?.name}
+        description={space?.metadata?.description}
+        image={space?.metadata?.image}
         card="summary_large_image"
       />
 
       <Script src="/scripts/draco_decoder.js" />
 
       <LoadingScreen
-        text={space?.metadata.name}
-        image={space?.metadata.image}
+        text={space?.metadata?.name}
+        image={space?.metadata?.image}
         loaded={engineStarted}
         loadingProgress={loadingProgress}
         loadingText={loadingText}

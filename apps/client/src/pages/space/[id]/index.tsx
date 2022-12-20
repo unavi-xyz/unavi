@@ -1,8 +1,11 @@
+import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 
 import { trpc } from "../../../client/trpc";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
+import { prisma } from "../../../server/prisma";
+import { appRouter } from "../../../server/router/_app";
 import { hexDisplayToNumber } from "../../../utils/numberToHexDisplay";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
@@ -17,13 +20,27 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
   const hexId = query.id as string;
   const id = hexDisplayToNumber(hexId);
 
+  const ssg = await createProxySSGHelpers({
+    router: appRouter,
+    ctx: {
+      prisma,
+      res,
+      session: null,
+    },
+  });
+
+  await ssg.space.byId.prefetch({ id });
+
   return {
-    props: { id },
+    props: {
+      trpcState: ssg.dehydrate(),
+      id,
+    },
   };
 };
 
 export default function Space({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const { data: space } = trpc.space.byId.useQuery({ id });
+  const { data: space } = trpc.space.byId.useQuery({ id }, { refetchOnWindowFocus: false });
 
   // const { data: stats } = trpc.public.modelStats.useQuery(
   //   { publicationId: id },
@@ -40,9 +57,9 @@ export default function Space({ id }: InferGetServerSidePropsType<typeof getServ
   // );
 
   return (
-    <SpaceLayout id={id} owner={space?.owner} metadata={space?.metadata}>
+    <SpaceLayout id={id} author={space?.author ?? null} metadata={space?.metadata ?? null}>
       <div className="space-y-4 text-lg">
-        {space?.metadata.description && (
+        {space?.metadata?.description && (
           <div className="whitespace-pre-line">{space?.metadata.description}</div>
         )}
 

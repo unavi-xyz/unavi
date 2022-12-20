@@ -1,19 +1,17 @@
 import { ERC721Metadata } from "contracts";
 
+import { trpc } from "../../client/trpc";
 import Card from "../../ui/Card";
 
 interface Props {
+  id: number;
   metadata: ERC721Metadata;
   sizes?: string;
   animateEnter?: boolean;
 }
 
-export default function SpaceCard({ metadata, sizes, animateEnter }: Props) {
-  // const image = metadata.media ? getMediaURL(metadata.media[0]) : null;
-
-  // const { data: playerCount } = trpc.public.playerCount.useQuery({
-  //   id: space.id,
-  // });
+export default function SpaceCard({ id, metadata, sizes, animateEnter }: Props) {
+  const { data: playerCount } = trpc.public.playerCount.useQuery({ id });
 
   return (
     <Card
@@ -21,7 +19,7 @@ export default function SpaceCard({ metadata, sizes, animateEnter }: Props) {
       image={metadata.image}
       sizes={sizes}
       animateEnter={animateEnter}
-      // playerCount={playerCount}
+      playerCount={playerCount}
     />
   );
 }

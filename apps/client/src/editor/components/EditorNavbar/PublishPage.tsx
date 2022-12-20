@@ -45,14 +45,19 @@ export default function PublishPage() {
     { id },
     {
       enabled: id !== undefined,
-      trpc: {},
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
     }
   );
 
-  const { data: profile } = trpc.social.profileByAddress.useQuery(
+  const { data: profile } = trpc.social.profile.byAddress.useQuery(
     { address: session?.address ?? "" },
     {
       enabled: session?.address !== undefined,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
     }
   );
 

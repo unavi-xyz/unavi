@@ -1,7 +1,9 @@
-import { ERC721MetadataSchema, Space__factory, SPACE_ADDRESS } from "contracts";
+import { Space__factory, SPACE_ADDRESS } from "contracts";
 import { z } from "zod";
 
 import { ethersProvider } from "../constants";
+import { getSpaceAuthor } from "../helpers/getSpaceAuthor";
+import { getSpaceMetadata } from "../helpers/getSpaceMetadata";
 import { publicProcedure, router } from "./trpc";
 
 export const spaceRouter = router({
@@ -12,27 +14,16 @@ export const spaceRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const contract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
+      const [author, metadata] = await Promise.all([
+        getSpaceAuthor(input.id),
+        getSpaceMetadata(input.id),
+      ]);
 
-      const owner = await contract.ownerOf(input.id);
-      const tokenURI = await contract.tokenURI(input.id);
-
-      if (!tokenURI) return null;
-
-      try {
-        const response = await fetch(tokenURI);
-        const json = await response.json();
-
-        const metadata = ERC721MetadataSchema.parse(json);
-
-        return {
-          id: input.id,
-          owner,
-          metadata,
-        };
-      } catch {
-        return null;
-      }
+      return {
+        id: input.id,
+        author,
+        metadata,
+      };
     }),
 
   latest: publicProcedure
@@ -42,41 +33,32 @@ export const spaceRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const contract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
+      const spaceContract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
 
-      const totalSupplyBigNumber = await contract.totalSupply();
+      const totalSupplyBigNumber = await spaceContract.totalSupply();
       const totalSupply = totalSupplyBigNumber.toNumber();
 
       const spaces = [];
       let i = 0;
 
-      while (spaces.length < 10) {
+      while (spaces.length < 20) {
         const tokenId = totalSupply - i;
+        i++;
+
+        // Break if we've reached the end
         if (tokenId <= 0) break;
 
-        const tokenURI = await contract.tokenURI(totalSupply - i);
-
-        if (tokenURI) {
-          const owner = await contract.ownerOf(tokenId);
-          if (input.owner && owner !== input.owner) continue;
-
-          try {
-            const response = await fetch(tokenURI);
-            const json = await response.json();
-
-            const metadata = ERC721MetadataSchema.parse(json);
-
-            spaces.push({
-              id: tokenId,
-              owner,
-              metadata,
-            });
-          } catch {
-            // Ignore
-          }
+        // Check if owner matches
+        if (input.owner) {
+          const owner = await spaceContract.ownerOf(tokenId);
+          if (owner !== input.owner) continue;
         }
 
-        i++;
+        // Check if metadata exists
+        const metadata = await getSpaceMetadata(tokenId);
+        if (!metadata) continue;
+
+        spaces.push({ id: tokenId, metadata });
       }
 
       return spaces;

@@ -23,11 +23,11 @@ export default createNextApiHandler({
 
     if (ctx?.res && allCached && allOk && isQuery) {
       const ONE_HOUR_IN_SECONDS = 60 * 60;
-      const ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30;
+      const ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
 
       return {
         headers: {
-          "cache-control": `public, max-age=0, s-maxage=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_MONTH_IN_SECONDS}`,
+          "cache-control": `public, max-age=0, s-maxage=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`,
         },
       };
     }

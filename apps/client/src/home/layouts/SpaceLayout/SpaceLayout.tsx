@@ -2,7 +2,10 @@ import { ERC721Metadata } from "contracts";
 import Image from "next/image";
 import Link from "next/link";
 
+import { useSession } from "../../../client/auth/useSession";
+import { trpc } from "../../../client/trpc";
 import { env } from "../../../env/client.mjs";
+import { Profile } from "../../../server/helpers/getProfileFromAddress";
 import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
 import { isFromCDN } from "../../../utils/isFromCDN";
@@ -14,13 +17,16 @@ const host =
 
 export interface Props {
   id: number;
-  owner?: string;
-  metadata?: ERC721Metadata;
+  author: Profile | null;
+  metadata: ERC721Metadata | null;
   children: React.ReactNode;
 }
 
-export default function SpaceLayout({ id, owner, metadata, children }: Props) {
-  // const { data: playerCount } = trpc.public.playerCount.useQuery({ id });
+export default function SpaceLayout({ id, author, metadata, children }: Props) {
+  const { data: playerCount } = trpc.public.playerCount.useQuery({ id });
+
+  const { data: session } = useSession();
+  const isAuthor = session && session.address === author?.owner;
 
   const hexId = numberToHexDisplay(id);
 
@@ -63,12 +69,17 @@ export default function SpaceLayout({ id, owner, metadata, children }: Props) {
               <div className="space-y-4">
                 <div className="text-center text-3xl font-black">{metadata?.name}</div>
 
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-neutral-500">By</div>
-                    <Link href={`/user/${owner}`}>
-                      <div className="cursor-pointer hover:underline">{owner}</div>
-                    </Link>
+
+                    {author && (
+                      <Link href={`/user/${numberToHexDisplay(author.id)}`}>
+                        <div className="cursor-pointer decoration-2 hover:underline">
+                          {author.handle?.string ?? author.owner}
+                        </div>
+                      </Link>
+                    )}
                   </div>
 
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
@@ -76,14 +87,14 @@ export default function SpaceLayout({ id, owner, metadata, children }: Props) {
                     <div>{host}</div>
                   </div>
 
-                  {/* {playerCount && playerCount > 0 ? (
+                  {playerCount && playerCount > 0 ? (
                     <div className="flex justify-center space-x-1 font-bold md:justify-start">
                       <div>{playerCount}</div>
                       <div className="text-neutral-500">
                         connected player{playerCount === 1 ? null : "s"}
                       </div>
                     </div>
-                  ) : null} */}
+                  ) : null}
                 </div>
               </div>
 
@@ -101,7 +112,7 @@ export default function SpaceLayout({ id, owner, metadata, children }: Props) {
             <div className="flex space-x-4">
               <NavigationTab href={`/space/${hexId}`} text="About" />
 
-              {/* {isAuthor && <NavigationTab href={`/space/${id}/settings`} text="Settings" />} */}
+              {isAuthor && <NavigationTab href={`/space/${id}/settings`} text="Settings" />}
             </div>
 
             <div>{children}</div>

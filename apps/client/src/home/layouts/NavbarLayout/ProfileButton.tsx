@@ -17,7 +17,7 @@ export default function ProfileButton() {
   const { data: session } = useSession();
   const isMobile = useIsMobile();
 
-  const { data: profile, isLoading } = trpc.social.profileByAddress.useQuery(
+  const { data: profile, isLoading } = trpc.social.profile.byAddress.useQuery(
     { address: session?.address ?? "" },
     { enabled: session?.address !== undefined }
   );
@@ -37,15 +37,15 @@ export default function ProfileButton() {
           onClick={() => setOpenMenu(true)}
         >
           <div className="flex items-center justify-center space-x-4">
-            {isMobile ? null : profile?.handleString ? (
-              <div>{profile?.handleString}</div>
+            {isMobile ? null : profile?.handle ? (
+              <div>{profile.handle.string}</div>
             ) : (
               <div className="w-24 overflow-hidden text-ellipsis">{session?.address}</div>
             )}
 
             <div className="h-9 w-9 overflow-hidden">
               <ProfilePicture
-                uniqueKey={profile?.handle ?? session.address}
+                uniqueKey={profile?.handle?.full ?? session.address}
                 circle
                 draggable={false}
                 size={36}

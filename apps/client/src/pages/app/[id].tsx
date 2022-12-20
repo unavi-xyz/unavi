@@ -1,3 +1,4 @@
+import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
@@ -14,6 +15,8 @@ import MobileChatBox from "../../app/ui/MobileChatBox";
 import UserButton from "../../app/ui/UserButtons";
 import { trpc } from "../../client/trpc";
 import MetaTags from "../../home/MetaTags";
+import { prisma } from "../../server/prisma";
+import { appRouter } from "../../server/router/_app";
 import { hexDisplayToNumber } from "../../utils/numberToHexDisplay";
 import { useIsMobile } from "../../utils/useIsMobile";
 
@@ -29,8 +32,22 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
   const hexId = query.id as string;
   const id = hexDisplayToNumber(hexId);
 
+  const ssg = await createProxySSGHelpers({
+    router: appRouter,
+    ctx: {
+      prisma,
+      res,
+      session: null,
+    },
+  });
+
+  await ssg.space.byId.prefetch({ id });
+
   return {
-    props: { id },
+    props: {
+      trpcState: ssg.dehydrate(),
+      id,
+    },
   };
 };
 

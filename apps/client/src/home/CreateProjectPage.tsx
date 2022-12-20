@@ -76,7 +76,7 @@ export default function CreateProjectPage() {
 
       await Promise.all(promises);
 
-      router.push(`/project/${id}`);
+      router.push(`/editor/${id}`);
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -96,7 +96,7 @@ export default function CreateProjectPage() {
       />
 
       <div className="flex justify-end">
-        <Button variant="filled" onClick={handleCreate} loading={loading} disabled={loading}>
+        <Button variant="filled" onClick={handleCreate} disabled={loading}>
           Create
         </Button>
       </div>

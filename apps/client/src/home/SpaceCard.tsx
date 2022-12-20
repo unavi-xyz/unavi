@@ -1,7 +1,7 @@
 import { ERC721Metadata } from "contracts";
 
-import { trpc } from "../../client/trpc";
-import Card from "../../ui/Card";
+import { trpc } from "../client/trpc";
+import Card from "../ui/Card";
 
 interface Props {
   id: number;

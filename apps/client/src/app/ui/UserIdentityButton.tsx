@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useLens } from "../../client/lens/hooks/useLens";
 import ProfileMenu from "../../home/layouts/NavbarLayout/ProfileMenu";
 import SwitchProfilePage from "../../home/layouts/NavbarLayout/SwitchProfilePage";
-import ViewerProfilePicture from "../../home/lens/ViewerProfilePicture";
 import Button from "../../ui/Button";
 import Dialog from "../../ui/Dialog";
 import DropdownMenu from "../../ui/DropdownMenu";
@@ -25,7 +24,7 @@ export default function UserIdentityButton() {
             <div className="text-xl">@{handle}</div>
 
             <div className="h-11 w-11 rounded-full">
-              <ViewerProfilePicture circle draggable={false} size={44} />
+              {/* <ViewerProfilePicture circle draggable={false} size={44} /> */}
             </div>
           </div>
         </Button>

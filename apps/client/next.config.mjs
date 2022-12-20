@@ -98,7 +98,7 @@ export default defineNextConfig({
       },
       {
         source: "/editor",
-        destination: "/create/spaces",
+        destination: "/create",
         permanent: false,
       },
     ];

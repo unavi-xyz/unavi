@@ -59,7 +59,7 @@ export default function Project() {
 
       await Promise.all(promises);
 
-      router.push("/create/spaces");
+      router.push("/create");
     } catch (err) {
       console.error(err);
       setLoading(false);

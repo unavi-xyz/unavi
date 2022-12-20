@@ -105,7 +105,13 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
 
   return (
     <>
-      <MetaTags title={profile?.handle?.string} />
+      <MetaTags
+        title={
+          profile ? (profile.handle ? profile.handle.string : numberToHexDisplay(profile.id)) : id
+        }
+        description={profile?.metadata?.description ?? undefined}
+        image={profile?.metadata?.image ?? undefined}
+      />
 
       <Head>
         <meta property="og:type" content="profile" />
@@ -142,7 +148,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
             </div>
           </div>
 
-          <div className="flex justify-center px-4 pb-4 md:px-0">
+          <section className="flex justify-center px-4 pb-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
                 <ProfilePicture circle uniqueKey={profile?.handle?.full ?? id} size={128} />
@@ -172,11 +178,15 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                   <div className="text-neutral-500">Followers</div>
                 </div>
               </div> */}
-            </div>
-          </div>
 
-          <div className="flex w-full flex-col items-center px-4 md:items-start md:px-0">
-            <div className="flex w-full flex-col items-center space-y-2">
+              {profile?.metadata?.description && (
+                <div className="w-full">
+                  <div className="whitespace-pre-line text-center">
+                    {profile.metadata.description}
+                  </div>
+                </div>
+              )}
+
               <div className="flex w-full justify-center space-x-2">
                 {isUser ? (
                   <Link href="/settings">
@@ -201,12 +211,12 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                   </Button>
                 )} */}
               </div>
+            </div>
+          </section>
 
-              <div className="w-full pt-2">
-                {/* <div className="whitespace-pre-line text-center">{profile.bio}</div> */}
-              </div>
-
-              <div className="flex flex-wrap space-x-4">
+          <section className="flex w-full flex-col items-center px-4 md:items-start md:px-0">
+            <div className="flex w-full flex-col items-center space-y-2">
+              <div className="flex flex-wrap space-x-4 pt-4">
                 {/* {location && (
                   <AttributeRow icon={<MdOutlineLocationOn />}>{location.value}</AttributeRow>
                 )} */}
@@ -225,7 +235,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                 )} */}
               </div>
             </div>
-          </div>
+          </section>
 
           {isLoadingSpaces ? (
             <div className="flex justify-center pt-12">

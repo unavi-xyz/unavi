@@ -36,11 +36,41 @@ export const spaceRouter = router({
     .query(async ({ input }) => {
       const spaceContract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
 
-      const countBigNumber = await spaceContract.count();
-      const count = countBigNumber.toNumber();
+      const isSpaceValid = async (tokenId: number) => {
+        try {
+          // Check if owner matches
+          if (input.owner) {
+            const owner = await spaceContract.ownerOf(tokenId);
+            if (owner !== input.owner) return;
+          }
 
-      const spaces = [];
-      let i = 0;
+          // Check if metadata exists
+          const metadata = await getSpaceMetadata(tokenId);
+          if (!metadata) return;
+
+          return { id: tokenId, metadata };
+        } catch {
+          // Ignore
+        }
+      };
+
+      type ValidResponse = Exclude<Awaited<ReturnType<typeof isSpaceValid>>, undefined>;
+
+      const count = (await spaceContract.count()).toNumber();
+
+      // Get latest spaces
+      const initialIds = new Array(Math.min(input.limit, count)).fill(0).map((_, i) => count - i);
+      const spaces: ValidResponse[] = [];
+
+      await Promise.all(
+        initialIds.map(async (id) => {
+          const valid = await isSpaceValid(id);
+          if (valid) spaces.push(valid);
+        })
+      );
+
+      // If any spaces were invalid, loop backwards until we have enough
+      let i = input.limit;
 
       while (spaces.length < input.limit) {
         const tokenId = count - i;
@@ -49,21 +79,8 @@ export const spaceRouter = router({
         // Break if we've reached the end
         if (tokenId <= 0) break;
 
-        try {
-          // Check if owner matches
-          if (input.owner) {
-            const owner = await spaceContract.ownerOf(tokenId);
-            if (owner !== input.owner) continue;
-          }
-
-          // Check if metadata exists
-          const metadata = await getSpaceMetadata(tokenId);
-          if (!metadata) continue;
-
-          spaces.push({ id: tokenId, metadata });
-        } catch {
-          // Ignore
-        }
+        const valid = await isSpaceValid(tokenId);
+        if (valid) spaces.push(valid);
       }
 
       return spaces;

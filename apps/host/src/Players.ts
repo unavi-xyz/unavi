@@ -25,7 +25,7 @@ export class Players {
   readonly spaceIds = new Map<uWS.WebSocket, number>();
   readonly names = new Map<uWS.WebSocket, string>();
   readonly avatars = new Map<uWS.WebSocket, string>();
-  readonly handles = new Map<uWS.WebSocket, string>();
+  readonly addresses = new Map<uWS.WebSocket, string>();
   readonly rtpCapabilities = new Map<uWS.WebSocket, RtpCapabilities>();
   readonly readyToConsume = new Map<uWS.WebSocket, boolean>();
   readonly consumeQueue = new Map<uWS.WebSocket, uWS.WebSocket[]>();
@@ -109,7 +109,7 @@ export class Players {
     this.spaceIds.delete(ws);
     this.names.delete(ws);
     this.avatars.delete(ws);
-    this.handles.delete(ws);
+    this.addresses.delete(ws);
     this.rtpCapabilities.delete(ws);
     this.readyToConsume.delete(ws);
     this.consumeQueue.delete(ws);
@@ -132,7 +132,7 @@ export class Players {
 
     const name = this.names.get(ws) ?? null;
     const avatar = this.avatars.get(ws) ?? null;
-    const handle = this.handles.get(ws) ?? null;
+    const address = this.addresses.get(ws) ?? null;
 
     // Tell everyone that this player joined
     const joinMessage: FromHostMessage = {
@@ -141,7 +141,7 @@ export class Players {
         playerId,
         name,
         avatar,
-        handle,
+        address,
       },
     };
 
@@ -159,7 +159,7 @@ export class Players {
 
       const otherName = this.names.get(otherWs) ?? null;
       const otherAvatar = this.avatars.get(otherWs) ?? null;
-      const otherHandle = this.handles.get(otherWs) ?? null;
+      const otherAddress = this.addresses.get(otherWs) ?? null;
 
       // Send player joined message
       send(ws, {
@@ -168,7 +168,7 @@ export class Players {
           playerId: otherPlayerId,
           name: otherName,
           avatar: otherAvatar,
-          handle: otherHandle,
+          address: otherAddress,
           beforeYou: true,
         },
       });
@@ -296,10 +296,10 @@ export class Players {
     ws.publish(spaceTopic(spaceId), JSON.stringify(avatarMessage));
   }
 
-  publishHandle(ws: uWS.WebSocket, handle: string | null) {
-    // Save handle
-    if (handle) this.handles.set(ws, handle);
-    else this.handles.delete(ws);
+  publishAddress(ws: uWS.WebSocket, address: string | null) {
+    // Save address
+    if (address) this.addresses.set(ws, address);
+    else this.addresses.delete(ws);
 
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
@@ -308,13 +308,13 @@ export class Players {
     const playerId = this.playerIds.get(ws);
     if (playerId === undefined) return console.warn("playerId not found");
 
-    // Tell everyone in the space about this player's handle
-    const handleMessage: FromHostMessage = {
-      subject: "player_handle",
-      data: { playerId, handle },
+    // Tell everyone in the space about this player's address
+    const addressMessage: FromHostMessage = {
+      subject: "player_address",
+      data: { playerId, address },
     };
 
-    this.#server.publish(spaceTopic(spaceId), JSON.stringify(handleMessage));
+    this.#server.publish(spaceTopic(spaceId), JSON.stringify(addressMessage));
   }
 
   getPlayerCount(spaceId: number): number {

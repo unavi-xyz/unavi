@@ -20,7 +20,6 @@
     "nanoid": "^4.0.0",
     "rxjs": "^7.8.0",
     "three": "^0.144.0",
-    "urql": "^3.0.3",
     "zod": "^3.20.2"
   },
   "devDependencies": {

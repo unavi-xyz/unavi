@@ -1,7 +1,7 @@
 import { useGetPublicationQuery } from "lens";
 import { useEffect, useState } from "react";
 
-import { useLens } from "../../client/lens/hooks/useLens";
+import { useSession } from "../../client/auth/useSession";
 import { parseUri } from "../../utils/parseUri";
 import { LocalStorageKey } from "../constants";
 import { useAppStore } from "../store";
@@ -11,7 +11,7 @@ export function useLoadUser() {
   const [loadedAvatarPublication, setLoadedAvatarPublication] = useState<string | null>(null);
 
   const engine = useAppStore((state) => state.engine);
-  const { handle } = useLens();
+  const { data: session } = useSession();
 
   const [{ data: avatarPublication }] = useGetPublicationQuery({
     variables: { request: { publicationId: avatarId } },
@@ -19,9 +19,9 @@ export function useLoadUser() {
   });
 
   useEffect(() => {
-    // Publish handle
-    engine?.networking.setHandle(handle ?? null);
-  }, [engine, handle]);
+    // Publish address
+    engine?.networking.setAddress(session?.address ?? null);
+  }, [engine, session]);
 
   useEffect(() => {
     if (!engine) return;

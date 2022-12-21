@@ -66,8 +66,8 @@ server.ws("/*", {
           break;
         }
 
-        case "set_handle": {
-          players.publishHandle(ws, data);
+        case "set_address": {
+          players.publishAddress(ws, data);
           break;
         }
 

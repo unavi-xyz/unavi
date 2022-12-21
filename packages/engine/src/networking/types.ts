@@ -10,7 +10,6 @@ export type InternalChatMessage =
       playerId: number;
       username: string;
       message: string;
-      isHandle: boolean;
     }
   | {
       type: "system";
@@ -19,7 +18,6 @@ export type InternalChatMessage =
       timestamp: number;
       playerId: number;
       username: string;
-      isHandle: boolean;
     };
 
 export type IChatMessage = {
@@ -49,7 +47,7 @@ export type ToHostMessage =
   | GenericWebSocketMessage<"falling_state", boolean>
   | GenericWebSocketMessage<"set_name", string | null>
   | GenericWebSocketMessage<"set_avatar", string | null>
-  | GenericWebSocketMessage<"set_handle", string | null>
+  | GenericWebSocketMessage<"set_address", string | null>
   | GenericWebSocketMessage<"get_router_rtp_capabilities", null>
   | GenericWebSocketMessage<"create_transport", { type: "producer" | "consumer" }>
   | GenericWebSocketMessage<
@@ -73,7 +71,7 @@ export type FromHostMessage =
         playerId: number;
         name: string | null;
         avatar: string | null;
-        handle: string | null;
+        address: string | null;
         beforeYou?: boolean;
       }
     >
@@ -82,7 +80,7 @@ export type FromHostMessage =
   | GenericWebSocketMessage<"player_falling_state", { playerId: number; isFalling: boolean }>
   | GenericWebSocketMessage<"player_name", { playerId: number; name: string | null }>
   | GenericWebSocketMessage<"player_avatar", { playerId: number; avatar: string | null }>
-  | GenericWebSocketMessage<"player_handle", { playerId: number; handle: string | null }>
+  | GenericWebSocketMessage<"player_address", { playerId: number; address: string | null }>
   | GenericWebSocketMessage<"router_rtp_capabilities", RtpCapabilities>
   | GenericWebSocketMessage<
       "transport_created",

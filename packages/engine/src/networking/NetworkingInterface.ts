@@ -33,11 +33,11 @@ export class NetworkingInterface {
   #connectedPlayers = new Set<number>([-1]);
   #loadedPlayers = new Set<number>();
   #playerNames = new Map<number, string>();
-  #playerHandles = new Map<number, string>();
+  #playerAddresses = new Map<number, string>();
 
   #myName: string | null = null;
   #myAvatar: string | null = null;
-  #myHandle: string | null = null;
+  #myAddress: string | null = null;
 
   playerId$ = new BehaviorSubject<number | null>(null);
   chatMessages$ = new BehaviorSubject<InternalChatMessage[]>([]);
@@ -159,7 +159,7 @@ export class NetworkingInterface {
 
       // Send player info
       if (this.#myAvatar) this.#sendAvatar();
-      if (this.#myHandle) this.#sendHandle();
+      if (this.#myAddress) this.#sendAddress();
       if (this.#myName) this.#sendName();
 
       // Start WebRTC connection
@@ -181,9 +181,9 @@ export class NetworkingInterface {
           if (this.#myName) this.#playerNames.set(data.playerId, this.#myName);
           else this.#playerNames.delete(data.playerId);
 
-          // Set your handle
-          if (this.#myHandle) this.#playerHandles.set(data.playerId, this.#myHandle);
-          else this.#playerHandles.delete(data.playerId);
+          // Set your address
+          if (this.#myAddress) this.#playerAddresses.set(data.playerId, this.#myAddress);
+          else this.#playerAddresses.delete(data.playerId);
 
           // Save player id
           this.playerId$.next(data.playerId);
@@ -201,9 +201,9 @@ export class NetworkingInterface {
           if (data.name) this.#playerNames.set(data.playerId, data.name);
           else this.#playerNames.delete(data.playerId);
 
-          // Set handle
-          if (data.handle) this.#playerHandles.set(data.playerId, data.handle);
-          else this.#playerHandles.delete(data.playerId);
+          // Set address
+          if (data.address) this.#playerAddresses.set(data.playerId, data.address);
+          else this.#playerAddresses.delete(data.playerId);
 
           // Add player to scene
           this.#renderThread.postMessage({ subject: "player_joined", data });
@@ -219,9 +219,6 @@ export class NetworkingInterface {
             },
           });
 
-          const handle = this.#playerHandles.get(data.playerId);
-          const isHandle = Boolean(handle);
-
           // Add message to chat if they joined after you
           if (!data.beforeYou)
             this.#addChatMessage({
@@ -231,7 +228,6 @@ export class NetworkingInterface {
               timestamp: Date.now(),
               playerId: data.playerId,
               username,
-              isHandle,
             });
 
           break;
@@ -251,9 +247,6 @@ export class NetworkingInterface {
           // Get player name
           const username = this.#getUsername(data);
 
-          const handle = this.#playerHandles.get(data);
-          const isHandle = Boolean(handle);
-
           // Add message to chat
           this.#addChatMessage({
             type: "system",
@@ -262,7 +255,6 @@ export class NetworkingInterface {
             timestamp: Date.now(),
             playerId: data,
             username,
-            isHandle,
           });
           break;
         }
@@ -271,14 +263,10 @@ export class NetworkingInterface {
           // Get player name
           const username = this.#getUsername(data.playerId);
 
-          const handle = this.#playerHandles.get(data.playerId);
-          const isHandle = Boolean(handle);
-
           // Add message to chat
           this.#addChatMessage({
             type: "chat",
             username,
-            isHandle,
             ...data,
           });
           break;
@@ -322,11 +310,11 @@ export class NetworkingInterface {
           break;
         }
 
-        case "player_handle": {
-          console.info(`🌿 Player ${toHex(data.playerId)} is now @${data.handle}`);
+        case "player_address": {
+          console.info(`🦩 Player ${toHex(data.playerId)} is now ${data.address}`);
 
-          if (data.handle) this.#playerHandles.set(data.playerId, data.handle);
-          else this.#playerHandles.delete(data.playerId);
+          if (data.address) this.#playerAddresses.set(data.playerId, data.address);
+          else this.#playerAddresses.delete(data.playerId);
 
           const username = this.#getUsername(data.playerId);
 
@@ -346,7 +334,7 @@ export class NetworkingInterface {
       console.info("❌ Disconnected from host");
 
       // Remove all players from scene
-      this.#playerHandles.clear();
+      this.#playerAddresses.clear();
       this.#playerNames.clear();
       this.#renderThread.postMessage({ subject: "clear_players", data: null });
 
@@ -479,17 +467,17 @@ export class NetworkingInterface {
     this.#ws.send(JSON.stringify(message));
   }
 
-  setHandle(handle: string | null) {
-    this.#myHandle = handle;
-    this.#sendHandle();
+  setAddress(address: string | null) {
+    this.#myAddress = address;
+    this.#sendAddress();
   }
 
-  #sendHandle() {
+  #sendAddress() {
     if (!this.#ws || !this.#isWsOpen()) return;
 
     const message: ToHostMessage = {
-      subject: "set_handle",
-      data: this.#myHandle,
+      subject: "set_address",
+      data: this.#myAddress,
     };
 
     this.#ws.send(JSON.stringify(message));
@@ -508,10 +496,10 @@ export class NetworkingInterface {
   }
 
   #getUsername(playerId: number) {
-    const handle = this.#playerHandles.get(playerId);
+    const address = this.#playerAddresses.get(playerId);
     const name = this.#playerNames.get(playerId);
 
-    const username = handle ? `@${handle}` : name ?? `Guest ${toHex(playerId)}`;
+    const username = address ? address.substring(0, 6) : name ?? `Guest ${toHex(playerId)}`;
 
     return username;
   }

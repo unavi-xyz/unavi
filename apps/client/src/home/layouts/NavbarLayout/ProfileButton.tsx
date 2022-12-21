@@ -10,7 +10,12 @@ import ProfilePicture from "../../ProfilePicture";
 import ProfileMenu from "./ProfileMenu";
 import SwitchProfilePage from "./SwitchProfilePage";
 
-export default function ProfileButton() {
+interface Props {
+  fullWidth?: boolean;
+  size?: "small" | "large";
+}
+
+export default function ProfileButton({ fullWidth = false, size = "small" }: Props) {
   const [openMenu, setOpenMenu] = useState(false);
   const [openSwitchProfile, setOpenSwitchProfile] = useState(false);
 
@@ -24,39 +29,50 @@ export default function ProfileButton() {
 
   if (isLoading || !session?.address) return null;
 
+  const fullWidthClass = fullWidth ? "w-full" : "";
+  const textSizeClass = size === "small" ? "" : "text-xl";
+  const profilePictureSizeClass = size === "small" ? "h-9 w-9" : "h-11 w-11";
+
   return (
     <>
       <Dialog open={openSwitchProfile} onClose={() => setOpenSwitchProfile(false)}>
         <SwitchProfilePage onClose={() => setOpenSwitchProfile(false)} />
       </Dialog>
 
-      <div className="relative pt-1">
+      <div className={`relative ${fullWidthClass}`}>
         <Button
+          color="neutral"
           rounded={isMobile ? "full" : "large"}
           icon={isMobile}
+          fullWidth={fullWidth}
           onClick={() => setOpenMenu(true)}
         >
-          <div className="flex items-center justify-center space-x-4">
+          <div className={`flex items-center justify-center space-x-4 ${textSizeClass}`}>
             {isMobile ? null : profile?.handle ? (
               <div>{profile.handle.string}</div>
             ) : (
               <div className="w-24 overflow-hidden text-ellipsis">{session?.address}</div>
             )}
 
-            <div className="h-9 w-9 overflow-hidden">
+            <div className={`overflow-hidden ${profilePictureSizeClass}`}>
               <ProfilePicture
                 src={profile?.metadata?.image}
                 uniqueKey={profile?.handle?.full ?? session.address}
                 circle
                 draggable={false}
-                size={36}
+                size={size === "small" ? 36 : 44}
               />
             </div>
           </div>
         </Button>
 
         <div className="mt-1">
-          <DropdownMenu placement="right" open={openMenu} onClose={() => setOpenMenu(false)}>
+          <DropdownMenu
+            fullWidth={fullWidth}
+            placement="right"
+            open={openMenu}
+            onClose={() => setOpenMenu(false)}
+          >
             <ProfileMenu />
           </DropdownMenu>
         </div>

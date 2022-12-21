@@ -4,7 +4,7 @@ export type ButtonVariant = "elevated" | "filled" | "tonal" | "outlined" | "text
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
-  color?: "primary" | "error";
+  color?: "primary" | "error" | "neutral";
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -30,7 +30,9 @@ export default function Button({
     variant === "text" && !disabled && !loading
       ? color === "primary"
         ? "hover:bg-sky-200"
-        : "hover:bg-red-200"
+        : color === "error"
+        ? "hover:bg-red-200"
+        : "hover:bg-neutral-200"
       : null;
 
   const outlineClass =

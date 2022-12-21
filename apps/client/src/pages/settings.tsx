@@ -4,16 +4,16 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
-import { useSession } from "../../client/auth/useSession";
-import { trpc } from "../../client/trpc";
-import { env } from "../../env/client.mjs";
-import { getNavbarLayout } from "../../home/layouts/NavbarLayout/NavbarLayout";
-import MetaTags from "../../home/MetaTags";
-import Button from "../../ui/Button";
-import Spinner from "../../ui/Spinner";
-import TextArea from "../../ui/TextArea";
-import TextField from "../../ui/TextField";
-import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { useSession } from "../client/auth/useSession";
+import { trpc } from "../client/trpc";
+import { env } from "../env/client.mjs";
+import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
+import MetaTags from "../home/MetaTags";
+import Button from "../ui/Button";
+import Spinner from "../ui/Spinner";
+import TextArea from "../ui/TextArea";
+import TextField from "../ui/TextField";
+import { numberToHexDisplay } from "../utils/numberToHexDisplay";
 
 function getProfileMetadataURL(profileId: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/profiles/${profileId}/metadata.json`;

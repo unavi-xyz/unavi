@@ -25,6 +25,15 @@ export async function cropImage(url: string, ratio = 5 / 3): Promise<File> {
         cropWidth = cropHeight * ratio;
       }
 
+      // Zoom in if image is too small
+      if (cropWidth > width) {
+        cropWidth = width;
+        cropHeight = cropWidth / ratio;
+      } else if (cropHeight > height) {
+        cropHeight = height;
+        cropWidth = cropHeight * ratio;
+      }
+
       const cropX = (width - cropWidth) / 2;
       const cropY = (height - cropHeight) / 2;
       canvas.width = cropWidth;

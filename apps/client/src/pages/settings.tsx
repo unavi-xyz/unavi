@@ -298,6 +298,7 @@ export default function Settings() {
                 </div>
 
                 <ButtonFileInput
+                  disabled={savingMetadata}
                   onChange={async (e) => {
                     if (!e.target.files) return;
 
@@ -321,6 +322,7 @@ export default function Settings() {
                     fullWidth
                     rounded="small"
                     color="error"
+                    disabled={savingMetadata}
                     onClick={() => setProfilePicture("")}
                   >
                     Remove Image
@@ -328,14 +330,24 @@ export default function Settings() {
                 )}
               </div>
 
-              {/* <div className="space-y-2">
+              <div className="space-y-2">
                 <div className="text-lg font-bold">Cover Picture</div>
 
                 <div className="flex justify-center pb-2">
-                  <div className="flex justify-center"></div>
+                  <div className="flex h-40 w-full justify-center rounded-xl bg-sky-100">
+                    {coverImage && (
+                      <img
+                        src={coverImage}
+                        alt=""
+                        crossOrigin="anonymous"
+                        className="h-40 w-full rounded-xl object-cover"
+                      />
+                    )}
+                  </div>
                 </div>
 
                 <ButtonFileInput
+                  disabled={savingMetadata}
                   onChange={async (e) => {
                     if (!e.target.files) return;
 
@@ -345,7 +357,7 @@ export default function Settings() {
                     const url = URL.createObjectURL(file);
 
                     // Crop image
-                    const croppedFile = await cropImage(url, 1 / 4);
+                    const croppedFile = await cropImage(url, 4);
                     const croppedUrl = URL.createObjectURL(croppedFile);
 
                     setCoverImage(croppedUrl);
@@ -354,12 +366,18 @@ export default function Settings() {
                   Upload Image
                 </ButtonFileInput>
 
-                {profilePicture && (
-                  <Button fullWidth rounded="small" color="error" onClick={() => setCoverImage("")}>
+                {coverImage && (
+                  <Button
+                    fullWidth
+                    rounded="small"
+                    color="error"
+                    disabled={savingMetadata}
+                    onClick={() => setCoverImage("")}
+                  >
                     Remove Image
                   </Button>
                 )}
-              </div> */}
+              </div>
 
               <div className="flex justify-end">
                 <Button variant="tonal" onClick={handleSaveMetadata} disabled={metadataDisabled}>

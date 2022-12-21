@@ -2,6 +2,7 @@ import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/dist/client/link";
 import Head from "next/dist/shared/lib/head";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
@@ -15,6 +16,7 @@ import { prisma } from "../../../server/prisma";
 import { appRouter } from "../../../server/router/_app";
 import Button from "../../../ui/Button";
 import Spinner from "../../../ui/Spinner";
+import { isFromCDN } from "../../../utils/isFromCDN";
 import { hexDisplayToNumber, numberToHexDisplay } from "../../../utils/numberToHexDisplay";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
@@ -127,10 +129,10 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
         <div className="max-w-content mx-auto">
           <div className="h-48 w-full bg-sky-100 md:h-64 lg:rounded-xl">
             <div className="relative h-full w-full object-cover">
-              {/* {coverImage &&
-                (isFromCDN(coverImage) ? (
+              {profile?.metadata?.animation_url &&
+                (isFromCDN(profile.metadata.animation_url) ? (
                   <Image
-                    src={coverImage}
+                    src={profile.metadata.animation_url}
                     priority
                     fill
                     sizes="80vw"
@@ -139,12 +141,12 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                   />
                 ) : (
                   <img
-                    src={coverImage}
+                    src={profile.metadata.animation_url}
                     alt=""
                     className="h-full w-full object-cover lg:rounded-xl"
                     crossOrigin="anonymous"
                   />
-                ))} */}
+                ))}
             </div>
           </div>
 

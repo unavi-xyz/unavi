@@ -27,7 +27,11 @@ export default function Button({
   ...rest
 }: Props) {
   const textClass =
-    variant === "text" ? (color === "primary" ? "hover:bg-sky-200" : "hover:bg-red-200") : null;
+    variant === "text" && !disabled && !loading
+      ? color === "primary"
+        ? "hover:bg-sky-200"
+        : "hover:bg-red-200"
+      : null;
 
   const outlineClass =
     variant === "outlined"

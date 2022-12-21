@@ -29,7 +29,7 @@ export default function ButtonFileInput({
   const roundClass =
     rounded === "small" ? "rounded-lg" : rounded === "large" ? "rounded-lg" : "rounded-full";
 
-  const hoverClass = disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-sky-200";
+  const hoverClass = disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:bg-sky-200";
 
   return (
     <div className="flex flex-col">

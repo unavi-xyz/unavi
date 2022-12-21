@@ -65,12 +65,7 @@ export default function Settings() {
   }, [profile]);
 
   const nameDisabled = savingName || name.length === 0 || name === profile?.handle?.string;
-
-  const metadataDisabled =
-    savingMetadata ||
-    (bio === profile?.metadata?.description &&
-      profilePicture === profile?.metadata?.image &&
-      coverImage === profile?.metadata?.animation_url);
+  const metadataDisabled = savingMetadata;
 
   async function handleSaveName() {
     if (nameDisabled) return;
@@ -323,7 +318,10 @@ export default function Settings() {
                     rounded="small"
                     color="error"
                     disabled={savingMetadata}
-                    onClick={() => setProfilePicture("")}
+                    onClick={() => {
+                      if (savingMetadata) return;
+                      setProfilePicture("");
+                    }}
                   >
                     Remove Image
                   </Button>
@@ -372,7 +370,10 @@ export default function Settings() {
                     rounded="small"
                     color="error"
                     disabled={savingMetadata}
-                    onClick={() => setCoverImage("")}
+                    onClick={() => {
+                      if (savingMetadata) return;
+                      setCoverImage("");
+                    }}
                   >
                     Remove Image
                   </Button>

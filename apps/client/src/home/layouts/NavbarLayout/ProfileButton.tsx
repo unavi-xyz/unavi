@@ -45,6 +45,7 @@ export default function ProfileButton() {
 
             <div className="h-9 w-9 overflow-hidden">
               <ProfilePicture
+                src={profile?.metadata?.image}
                 uniqueKey={profile?.handle?.full ?? session.address}
                 circle
                 draggable={false}

@@ -132,6 +132,30 @@ export async function createProfileMetadataUploadURL(profileId: string) {
   return url;
 }
 
+export async function createProfileImageUploadURL(profileId: string) {
+  const command = new PutObjectCommand({
+    Bucket: env.S3_BUCKET,
+    Key: `profiles/${profileId}/image.jpg`,
+    ContentType: "image/jpeg",
+    ACL: "public-read",
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+  return url;
+}
+
+export async function createProfileCoverImageUploadURL(profileId: string) {
+  const command = new PutObjectCommand({
+    Bucket: env.S3_BUCKET,
+    Key: `profiles/${profileId}/cover.jpg`,
+    ContentType: "image/jpeg",
+    ACL: "public-read",
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+  return url;
+}
+
 export async function createTempFileUploadURL(fileId: string) {
   const command = new PutObjectCommand({
     Bucket: env.S3_BUCKET,

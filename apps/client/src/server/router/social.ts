@@ -8,7 +8,11 @@ import { getProfileFromAddress } from "../helpers/getProfileFromAddress";
 import { getProfileHandle } from "../helpers/getProfileHandle";
 import { getProfileMetadata } from "../helpers/getProfileMetadata";
 import { getProfileOwner } from "../helpers/getProfileOwner";
-import { createProfileMetadataUploadURL } from "../s3";
+import {
+  createProfileCoverImageUploadURL,
+  createProfileImageUploadURL,
+  createProfileMetadataUploadURL,
+} from "../s3";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
 
 export const socialRouter = router({
@@ -96,6 +100,40 @@ export const socialRouter = router({
 
         const hexId = numberToHexDisplay(input.id);
         const url = await createProfileMetadataUploadURL(hexId);
+
+        return url;
+      }),
+
+    imageUploadURL: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        // Verify that the user is the owner of the profile
+        const owner = await getProfileOwner(input.id);
+        if (owner !== ctx.session.address) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+        const hexId = numberToHexDisplay(input.id);
+        const url = await createProfileImageUploadURL(hexId);
+
+        return url;
+      }),
+
+    coverImageUploadURL: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        // Verify that the user is the owner of the profile
+        const owner = await getProfileOwner(input.id);
+        if (owner !== ctx.session.address) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+        const hexId = numberToHexDisplay(input.id);
+        const url = await createProfileCoverImageUploadURL(hexId);
 
         return url;
       }),

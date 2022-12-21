@@ -151,7 +151,12 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
           <section className="flex justify-center px-4 pb-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
-                <ProfilePicture circle uniqueKey={profile?.handle?.full ?? id} size={128} />
+                <ProfilePicture
+                  src={profile?.metadata?.image}
+                  circle
+                  uniqueKey={profile?.handle?.full ?? id}
+                  size={128}
+                />
               </div>
 
               <div className="flex flex-col items-center pt-1">

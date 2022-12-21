@@ -31,8 +31,8 @@ export default function ProfilePicture({ src, circle, draggable = true, uniqueKe
   return isFromCDN(src) ? (
     <Image
       src={src}
-      width={256}
-      height={256}
+      width={size}
+      height={size}
       draggable={draggable}
       alt=""
       className={`${circleClass} bg-sky-100`}
@@ -41,8 +41,10 @@ export default function ProfilePicture({ src, circle, draggable = true, uniqueKe
     <img
       src={src}
       draggable={draggable}
+      width={size}
+      height={size}
       alt=""
-      className={`${circleClass} h-full w-full bg-sky-100`}
+      className={`${circleClass} bg-sky-100`}
       crossOrigin="anonymous"
     />
   );

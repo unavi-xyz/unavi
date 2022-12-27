@@ -60,7 +60,7 @@
     "@types/react-dom": "^18.0.9",
     "autoprefixer": "^10.4.13",
     "dotenv-cli": "^6.0.0",
-    "eslint": "^8.29.0",
+    "eslint": "^8.30.0",
     "eslint-config-custom": "*",
     "postcss": "^8.4.20",
     "prisma": "^4.7.1",

@@ -1036,45 +1036,19 @@
     "absolutePath": "src/Space.sol",
     "id": 2794,
     "exportedSymbols": {
-      "Address": [
-        4354
-      ],
-      "Context": [
-        4376
-      ],
-      "ERC165": [
-        4575
-      ],
-      "ERC721": [
-        3863
-      ],
-      "ERC721URIStorage": [
-        2918
-      ],
-      "IERC165": [
-        4587
-      ],
-      "IERC721": [
-        3979
-      ],
-      "IERC721Metadata": [
-        4024
-      ],
-      "IERC721Receiver": [
-        3997
-      ],
-      "Math": [
-        5452
-      ],
-      "Space": [
-        2793
-      ],
-      "Strings": [
-        4551
-      ],
-      "URIStorage": [
-        2765
-      ]
+      "Address": [4354],
+      "Context": [4376],
+      "ERC165": [4575],
+      "ERC721": [3863],
+      "ERC721URIStorage": [2918],
+      "IERC165": [4587],
+      "IERC721": [3979],
+      "IERC721Metadata": [4024],
+      "IERC721Receiver": [3997],
+      "Math": [5452],
+      "Space": [2793],
+      "Strings": [4551],
+      "URIStorage": [2765]
     },
     "nodeType": "SourceUnit",
     "src": "45:152:24",
@@ -1084,12 +1058,7 @@
         "nodeType": "PragmaDirective",
         "src": "45:24:24",
         "nodes": [],
-        "literals": [
-          "solidity",
-          "^",
-          "0.8",
-          ".17"
-        ]
+        "literals": ["solidity", "^", "0.8", ".17"]
       },
       {
         "id": 2782,
@@ -1164,9 +1133,7 @@
                 "modifierName": {
                   "id": 2786,
                   "name": "URIStorage",
-                  "nameLocations": [
-                    "163:10:24"
-                  ],
+                  "nameLocations": ["163:10:24"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 2765,
                   "src": "163:10:24"
@@ -1201,9 +1168,7 @@
             "baseName": {
               "id": 2783,
               "name": "URIStorage",
-              "nameLocations": [
-                "132:10:24"
-              ],
+              "nameLocations": ["132:10:24"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 2765,
               "src": "132:10:24"
@@ -1217,17 +1182,7 @@
         "contractDependencies": [],
         "contractKind": "contract",
         "fullyImplemented": true,
-        "linearizedBaseContracts": [
-          2793,
-          2765,
-          2918,
-          3863,
-          4024,
-          3979,
-          4575,
-          4587,
-          4376
-        ],
+        "linearizedBaseContracts": [2793, 2765, 2918, 3863, 4024, 3979, 4575, 4587, 4376],
         "name": "Space",
         "nameLocation": "123:5:24",
         "scope": 2794,

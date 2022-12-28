@@ -1,10 +1,27 @@
-import { InternalChatMessage } from "engine";
 import { useEffect, useState } from "react";
 
 import { usePointerLocked } from "../hooks/usePointerLocked";
 
+export type ChatMessage =
+  | {
+      type: "chat";
+      id: string;
+      timestamp: number;
+      playerId: number;
+      username: string;
+      message: string;
+    }
+  | {
+      type: "system";
+      variant: "player_joined" | "player_left";
+      id: string;
+      timestamp: number;
+      playerId: number;
+      username: string;
+    };
+
 interface Props {
-  message: InternalChatMessage;
+  message: ChatMessage;
 }
 
 export default function ChatMessage({ message }: Props) {

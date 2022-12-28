@@ -12,6 +12,7 @@ import { nanoid } from "nanoid";
 import uWS from "uWebSockets.js";
 
 import { send } from "./utils/send";
+import { toHex } from "./utils/toHex";
 
 function spaceTopic(spaceId: number) {
   return `space/${spaceId}`;
@@ -70,7 +71,7 @@ export class Players {
       }
     }
 
-    console.info(`👋 Player ${playerId} connected`);
+    console.info(`👋 Player ${toHex(playerId)} connected`);
 
     this.playerIds.set(ws, playerId);
   }
@@ -79,7 +80,7 @@ export class Players {
     const playerId = this.playerIds.get(ws);
     if (playerId === undefined) return console.warn("playerId not found");
 
-    console.info(`👋 Player ${playerId} disconnected`);
+    console.info(`👋 Player ${toHex(playerId)} disconnected`);
 
     this.leaveSpace(ws, false);
 
@@ -124,11 +125,11 @@ export class Players {
     this.dataConsumers.forEach((dataConsumers) => dataConsumers.delete(ws));
   }
 
-  joinSpace(ws: uWS.WebSocket, { spaceId }: { spaceId: number }) {
+  joinSpace(ws: uWS.WebSocket, spaceId: number) {
     const playerId = this.playerIds.get(ws);
     if (playerId === undefined) return console.warn("playerId not found");
 
-    console.info(`🌍 Player ${playerId} joined space ${spaceId}`);
+    console.info(`🌍 Player ${toHex(playerId)} joined space ${toHex(spaceId)}`);
 
     const name = this.names.get(ws) ?? null;
     const avatar = this.avatars.get(ws) ?? null;
@@ -202,7 +203,7 @@ export class Players {
     const playerId = this.playerIds.get(ws);
     if (playerId === undefined) return console.warn("playerId not found");
 
-    console.info(`🌍 Player ${playerId} left space ${spaceId}`);
+    console.info(`🌍 Player ${toHex(playerId)} left space ${toHex(spaceId)}`);
 
     // Unsubscribe from space topic if ws connection is still open
     if (isOpen) ws.unsubscribe(spaceTopic(spaceId));

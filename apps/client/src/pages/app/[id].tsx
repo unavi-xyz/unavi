@@ -1,19 +1,19 @@
 import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { useAnalytics } from "../../app/hooks/useAnalytics";
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useLoadUser } from "../../app/hooks/useLoadUser";
 import { useResizeEngineCanvas } from "../../app/hooks/useResizeEngineCanvas";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
+import { useSpace } from "../../app/hooks/useSpace";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
 import LoadingScreen from "../../app/ui/LoadingScreen";
 import MobileChatBox from "../../app/ui/MobileChatBox";
 import UserButton from "../../app/ui/UserButtons";
-import { trpc } from "../../client/trpc";
 import MetaTags from "../../home/MetaTags";
 import { prisma } from "../../server/prisma";
 import { appRouter } from "../../server/router/_app";
@@ -55,9 +55,6 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const createdEngine = useRef(false);
-  const [engineStarted, setEngineStarted] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingText, setLoadingText] = useState("Starting engine...");
 
   const engine = useAppStore((state) => state.engine);
 
@@ -65,77 +62,9 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
   useLoadUser();
   useAppHotkeys();
   useAnalytics();
-
   const setAvatar = useSetAvatar();
   const isMobile = useIsMobile();
-
-  const { data: space } = trpc.space.byId.useQuery(
-    { id },
-    {
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-    }
-  );
-
-  useEffect(() => {
-    if (!engine) return;
-
-    async function joinSpace() {
-      if (!engine) return;
-
-      setLoadingText("Fetching space...");
-      setLoadingProgress(0.2);
-
-      if (!space?.metadata) return;
-
-      // Display loading status
-      engine.networking.spaceJoinStatus$.subscribe(
-        ({ sceneLoaded, webrtcConnected, wsConnected }) => {
-          setLoadingText("Connecting...");
-          setLoadingProgress(0.35);
-
-          if (!wsConnected) return;
-
-          setLoadingText("Connecting...");
-          setLoadingProgress(0.5);
-
-          if (!webrtcConnected) return;
-
-          setLoadingText("Loading scene...");
-          setLoadingProgress(0.75);
-
-          if (!sceneLoaded) return;
-
-          setLoadingText("Ready!");
-          setLoadingProgress(1);
-        }
-      );
-
-      const host =
-        process.env.NODE_ENV === "development"
-          ? "ws://localhost:4000"
-          : `wss://${process.env.NEXT_PUBLIC_DEFAULT_HOST}`;
-
-      // Join space
-      await engine.networking.joinSpace({
-        spaceId: space.id,
-        host,
-        modelURL: space.metadata.animation_url,
-      });
-
-      // Start engine
-      await engine.start();
-
-      setEngineStarted(true);
-    }
-
-    joinSpace();
-
-    return () => {
-      engine.networking.leaveSpace();
-    };
-  }, [engine, space]);
+  const { space, loadingText, loadingProgress, join } = useSpace(id);
 
   useEffect(() => {
     if (createdEngine.current) return;
@@ -144,9 +73,6 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
     async function initEngine() {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");
-
-      setLoadingText("Starting engine...");
-      setLoadingProgress(0);
 
       const { Engine } = await import("engine");
 
@@ -159,7 +85,7 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
         avatarAnimationsPath: "/models/",
       });
 
-      await engine.waitForReady();
+      await engine.start();
 
       useAppStore.setState({ engine });
     }
@@ -170,13 +96,16 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
   useEffect(() => {
     if (!engine) return;
 
+    join();
+
     return () => {
       engine.destroy();
-      useAppStore.setState({ engine: null });
+      useAppStore.setState({ engine: null, chatMessages: [] });
     };
-  }, [engine]);
+  }, [engine, join]);
 
-  const loadedClass = engineStarted ? "opacity-100" : "opacity-0";
+  const loaded = loadingProgress === 1;
+  const loadedClass = loaded ? "opacity-100" : "opacity-0";
 
   return (
     <>
@@ -192,7 +121,6 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
       <LoadingScreen
         text={space?.metadata?.name}
         image={space?.metadata?.image}
-        loaded={engineStarted}
         loadingProgress={loadingProgress}
         loadingText={loadingText}
       />
@@ -222,7 +150,7 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
           useAppStore.setState({ customAvatar: url });
         }}
       >
-        {engineStarted && (
+        {loaded && (
           <div className="absolute inset-x-0 top-0 z-10 mx-auto mt-4 w-96">
             <UserButton />
           </div>
@@ -234,7 +162,7 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
           </div>
         </div>
 
-        {engineStarted ? (
+        {loaded ? (
           isMobile ? (
             <div className="absolute left-0 bottom-0 z-10 p-4">
               <MobileChatBox />

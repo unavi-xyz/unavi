@@ -37,7 +37,6 @@ export default function Preview() {
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       refetchOnMount: false,
-      trpc: {},
     }
   );
 
@@ -45,7 +44,6 @@ export default function Preview() {
     { id },
     {
       enabled: id !== undefined && !project?.publicationId,
-      trpc: {},
     }
   );
 
@@ -57,7 +55,6 @@ export default function Preview() {
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       refetchOnMount: false,
-      trpc: {},
     }
   );
 
@@ -69,7 +66,6 @@ export default function Preview() {
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       refetchOnMount: false,
-      trpc: {},
     }
   );
 
@@ -110,8 +106,6 @@ export default function Preview() {
       });
 
       await engine.waitForReady();
-
-      engine.networking.setAvatar(null);
 
       // Set collider visibility
       const { visuals } = useEditorStore.getState();
@@ -270,6 +264,11 @@ export default function Preview() {
         // Start engine
         await engine.start();
 
+        engine.renderThread.postMessage({
+          subject: "set_avatar",
+          data: null,
+        });
+
         setLoadingText("Ready!");
         setLoadingProgress(1);
       });
@@ -293,7 +292,6 @@ export default function Preview() {
         <LoadingScreen
           text={project?.name}
           image={imageURL}
-          loaded={loadingProgress === 1}
           loadingText={loadingText}
           loadingProgress={loadingProgress}
         />

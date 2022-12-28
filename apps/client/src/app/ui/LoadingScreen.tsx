@@ -7,25 +7,18 @@ import { isFromCDN } from "../../utils/isFromCDN";
 interface Props {
   text?: string | null;
   image?: string | null;
-  loaded: boolean;
   loadingProgress: number;
   loadingText: string;
 }
 
-export default function LoadingScreen({
-  text,
-  image,
-  loaded,
-  loadingProgress,
-  loadingText,
-}: Props) {
+export default function LoadingScreen({ text, image, loadingProgress, loadingText }: Props) {
   const [entered, setEntered] = useState(false);
   const [enterTransitionFinished, setEnterTransitionFinished] = useState(false);
 
   useEffect(() => {
-    if (!loaded) return;
-    setEntered(true);
-  }, [loaded]);
+    if (loadingProgress === 1) setEntered(true);
+    else setEntered(false);
+  }, [loadingProgress]);
 
   useEffect(() => {
     if (!entered) return;

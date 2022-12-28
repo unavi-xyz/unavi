@@ -43,13 +43,12 @@ export class PhysicsThread {
 
       case "player_buffers": {
         this.#engine.renderThread.setPlayerBuffers(data);
-        this.#engine.networking.setPlayerPosition(data.position);
         break;
       }
 
       case "player_falling": {
         // Publish to network
-        this.#engine.networking.setFallState(data);
+        // this.#engine.networking.setFallState(data);
 
         // Send to render thread
         this.#engine.renderThread.postMessage({

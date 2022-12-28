@@ -1,9 +1,9 @@
+import { RenderThread } from "engine/src/render/RenderThread";
+import { quaternionToYaw } from "engine/src/render/utils/quaternionToYaw";
 import { Device } from "mediasoup-client";
 import { Producer } from "mediasoup-client/lib/Producer";
 import { Transport } from "mediasoup-client/lib/Transport";
 
-import { RenderThread } from "../render/RenderThread";
-import { quaternionToYaw } from "../render/utils/quaternionToYaw";
 import { NetworkingInterface } from "./NetworkingInterface";
 import { FromHostMessage, ToHostMessage } from "./types";
 

@@ -8,12 +8,12 @@ import ButtonFileInput from "../../ui/ButtonFileInput";
 import { useAppStore } from "../store";
 
 export default function UserPage() {
+  const playerId = useAppStore((state) => state.playerId);
   const displayName = useAppStore((state) => state.displayName);
   const customAvatar = useAppStore((state) => state.customAvatar);
-  const engine = useAppStore((state) => state.engine);
+
   const { data: session } = useSession();
 
-  const playerId = engine?.networking.playerId$.value;
   const guestName =
     playerId == null || playerId === undefined
       ? "Guest"

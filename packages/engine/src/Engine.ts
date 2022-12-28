@@ -2,7 +2,6 @@ import { GLTFExporter } from "./exporter/GLTFExporter";
 import { LoaderThread } from "./loader/LoaderThread";
 import { InputManager } from "./main/InputManager";
 import { MainScene } from "./main/MainScene";
-import { NetworkingInterface } from "./networking/NetworkingInterface";
 import { PhysicsThread } from "./physics/PhysicsThread";
 import { RenderThread } from "./render/RenderThread";
 
@@ -26,7 +25,6 @@ export class Engine {
   renderThread: RenderThread;
 
   scene: MainScene;
-  networking: NetworkingInterface;
   input: InputManager | null = null;
 
   running = false;
@@ -52,25 +50,13 @@ export class Engine {
       avatarAnimationsPath,
     });
 
-    // Create physics thread
     this.physicsThread = new PhysicsThread({ canvas, engine: this });
-
-    // Create loader thread
     this.loaderThread = new LoaderThread();
-
-    // Create scene
     this.scene = new MainScene({
       physicsThread: this.physicsThread,
       loaderThread: this.loaderThread,
       renderThread: this.renderThread,
     });
-
-    // Create networking interface
-    this.networking = new NetworkingInterface({
-      scene: this.scene,
-      renderThread: this.renderThread,
-    });
-
     this.input = new InputManager(this.renderThread, this.physicsThread, camera);
 
     // Once the threads are ready, create the player
@@ -84,12 +70,10 @@ export class Engine {
     if (camera === "player") createPlayer();
   }
 
-  waitForReady() {
-    return Promise.all([
-      this.physicsThread.waitForReady(),
-      this.loaderThread.waitForReady(),
-      this.renderThread.waitForReady(),
-    ]);
+  async waitForReady() {
+    await this.physicsThread.waitForReady();
+    await this.loaderThread.waitForReady();
+    await this.renderThread.waitForReady();
   }
 
   async start() {
@@ -121,7 +105,6 @@ export class Engine {
   }
 
   destroy() {
-    this.networking.disconnect();
     this.physicsThread.destroy();
     this.loaderThread.destroy();
     this.renderThread.destroy();

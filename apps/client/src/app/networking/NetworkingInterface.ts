@@ -1,10 +1,6 @@
 import { nanoid } from "nanoid";
 import { BehaviorSubject } from "rxjs";
 
-import { MainScene } from "../main/MainScene";
-import { RenderThread } from "../render/RenderThread";
-import { GLTFMesh, Node } from "../scene";
-import { toHex } from "../utils/toHex";
 import { FromHostMessage, InternalChatMessage, SpaceJoinStatus, ToHostMessage } from "./types";
 import { WebRTC } from "./WebRTC";
 
@@ -13,9 +9,6 @@ import { WebRTC } from "./WebRTC";
  * Handles joining spaces, sending and receiving messages, etc.
  */
 export class NetworkingInterface {
-  #scene: MainScene;
-  #renderThread: RenderThread;
-
   #webRTC: WebRTC | null = null;
   #ws: WebSocket | null = null;
 
@@ -57,10 +50,7 @@ export class NetworkingInterface {
     this.spaceJoinStatus$.next(status);
   }
 
-  constructor({ scene, renderThread }: { scene: MainScene; renderThread: RenderThread }) {
-    this.#scene = scene;
-    this.#renderThread = renderThread;
-  }
+  constructor() {}
 
   async joinSpace({
     spaceId,
@@ -84,24 +74,6 @@ export class NetworkingInterface {
 
     // Connect to host server
     this.#connectToHost(spaceId);
-
-    // Create glTF mesh
-    const mesh = new GLTFMesh();
-    mesh.uri = modelURL;
-
-    const node = new Node();
-    node.meshId = mesh.id;
-
-    this.#spaceNodeId = node.id;
-
-    // Load glTF
-    await this.#scene.loadJSON(
-      {
-        nodes: [node.toJSON()],
-        meshes: [mesh.toJSON()],
-      },
-      true
-    );
 
     this.spaceJoinStatus = {
       ...this.spaceJoinStatus,
@@ -167,7 +139,7 @@ export class NetworkingInterface {
       this.#webRTC.connect();
 
       // Join space
-      send({ subject: "join", data: { spaceId } });
+      send({ subject: "join", data: { id: spaceId } });
     };
 
     ws.onmessage = (event: MessageEvent<string>) => {

@@ -22,6 +22,11 @@ export class RenderThread {
   ready = false;
   worker: Worker | FakeWorker;
 
+  cameraPosition: Int32Array | null = null;
+  cameraRotation: Int16Array | null = null;
+  playerRotation: Int16Array | null = null;
+  playerPosition: Int32Array | null = null;
+
   #canvas: HTMLCanvasElement;
   #engine: Engine;
   #onReady: Array<() => void> = [];
@@ -114,13 +119,13 @@ export class RenderThread {
       }
 
       case "set_player_rotation_buffer": {
-        this.#engine.networking.setPlayerRotation(data);
+        this.playerRotation = data;
         break;
       }
 
       case "set_camera_buffers": {
-        this.#engine.networking.setCameraPosition(data.position);
-        this.#engine.networking.setCameraRotation(data.rotation);
+        this.cameraPosition = data.position;
+        this.cameraRotation = data.rotation;
         break;
       }
 
@@ -139,7 +144,7 @@ export class RenderThread {
       }
 
       case "player_loaded": {
-        this.#engine.networking.setPlayerLoaded(data);
+        // this.#engine.networking.setPlayerLoaded(data);
         break;
       }
     }
@@ -179,6 +184,8 @@ export class RenderThread {
   }
 
   setPlayerBuffers({ position, velocity }: { position: Int32Array; velocity: Int32Array }) {
+    this.playerPosition = position;
+
     this.postMessage({
       subject: "set_player_buffers",
       data: {

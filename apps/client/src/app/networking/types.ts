@@ -40,7 +40,7 @@ type GenericWebSocketMessage<S extends string, D> = {
 };
 
 export type ToHostMessage =
-  | GenericWebSocketMessage<"join", { spaceId: number }>
+  | GenericWebSocketMessage<"join", { id: number }>
   | GenericWebSocketMessage<"leave", null>
   | GenericWebSocketMessage<"location", [number, number, number, number, number, number, number]>
   | GenericWebSocketMessage<"message", string>

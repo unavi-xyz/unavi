@@ -37,7 +37,7 @@ server.ws("/*", {
 
       switch (subject) {
         case "join": {
-          players.joinSpace(ws, data);
+          players.joinSpace(ws, data.id);
           break;
         }
 

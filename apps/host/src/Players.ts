@@ -1,4 +1,3 @@
-import { FromHostMessage } from "engine";
 import { Consumer } from "mediasoup/node/lib/Consumer";
 import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
@@ -9,6 +8,7 @@ import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { Transport } from "mediasoup/node/lib/Transport";
 import { RtpCapabilities } from "mediasoup-client/lib/RtpParameters";
 import { nanoid } from "nanoid";
+import { FromHostMessage } from "protocol";
 import uWS from "uWebSockets.js";
 
 import { send } from "./utils/send";

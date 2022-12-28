@@ -1,4 +1,4 @@
-import { ToHostMessage } from "engine";
+import { ToHostMessage } from "protocol";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";

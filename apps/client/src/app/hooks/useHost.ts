@@ -1,10 +1,16 @@
-import { FromHostMessage, ToHostMessage } from "engine";
+import { Device } from "mediasoup-client";
+import { Producer } from "mediasoup-client/lib/Producer";
+import { Transport } from "mediasoup-client/lib/Transport";
 import { nanoid } from "nanoid";
+import { FromHostMessage, ToHostMessage } from "protocol";
 import { useEffect, useMemo } from "react";
 
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { quaternionToYaw } from "../helpers/quaternionToYaw";
 import { useAppStore } from "../store";
 import { ChatMessage } from "../ui/ChatMessage";
+
+const PUBLISH_HZ = 15; // X times per second
 
 type Player = {
   id: number;
@@ -24,18 +30,27 @@ export function useHost(url: string) {
     useAppStore.setState({ ws });
 
     const players = new Map<number, Player>();
+    const device = new Device();
+    const audioContext = new AudioContext();
+    const panners = new Map<number, PannerNode>();
+
+    let producerTransport: Transport | null = null;
+    let consumerTransport: Transport | null = null;
+    const producedTrack: MediaStreamTrack | null = null;
+    let producer: Producer | null = null;
+
+    let onProducerId: (({ id }: { id: string }) => void) | null = null;
+    let onDataProducerId: (({ id }: { id: string }) => void) | null = null;
 
     ws.onopen = () => {
       console.info("WebSocket - ✅ Connected to host");
 
       const { displayName, customAvatar } = useAppStore.getState();
-
       sendToHost({ subject: "set_name", data: displayName });
       sendToHost({ subject: "set_avatar", data: customAvatar });
 
       // Start WebRTC connection
-      // if (!this.#webRTC) throw new Error("WebRTC not initialized");
-      // this.#webRTC.connect();
+      sendToHost({ subject: "get_router_rtp_capabilities", data: null });
     };
 
     ws.onclose = () => {
@@ -43,38 +58,9 @@ export function useHost(url: string) {
 
       // Remove all players from scene
       engine.renderThread.postMessage({ subject: "clear_players", data: null });
-
-      // if (this.#broadcastInterval) clearInterval(this.#broadcastInterval);
-
-      // if (!this.#hostServer || this.#reconnectCount > 0) return;
-
-      // Try reconnect
-      // while (this.#reconnectCount < 10) {
-      //   const count = ++this.#reconnectCount;
-
-      //   // Wait a little longer each attempt
-      //   const timeoutLength = Math.min(1000 * count);
-      //   await new Promise((resolve) => setTimeout(resolve, timeoutLength));
-
-      //   // Test if has been reconnected
-      //   if (this.#ws?.readyState === WebSocket.OPEN) return;
-
-      //   // Close preview WebSocket connection
-      //   if (this.#ws) this.#ws.close();
-      //   this.#ws = null;
-
-      //   // If host server has been removed, give up
-      //   if (!this.#hostServer) return;
-
-      //   console.info(`🔄 (${count}) Attempting reconnect to host...`);
-      //   this.#connectToHost(spaceId);
-      // }
-
-      // console.error("WebSocket - 🪦 Failed to reconnect to host. Giving up.");
-      // this.disconnect();
     };
 
-    ws.onmessage = (event: MessageEvent<string>) => {
+    ws.onmessage = async (event: MessageEvent<string>) => {
       const { subject, data }: FromHostMessage = JSON.parse(event.data);
 
       switch (subject) {
@@ -245,6 +231,290 @@ export function useHost(url: string) {
           });
           break;
         }
+
+        case "router_rtp_capabilities": {
+          // Create device
+          await device.load({ routerRtpCapabilities: data });
+
+          // Create transports
+          sendToHost({
+            subject: "create_transport",
+            data: { type: "producer" },
+          });
+
+          sendToHost({
+            subject: "create_transport",
+            data: { type: "consumer" },
+          });
+
+          // Set rtp capabilities
+          sendToHost({
+            subject: "set_rtp_capabilities",
+            data: {
+              rtpCapabilities: device.rtpCapabilities,
+            },
+          });
+          break;
+        }
+
+        case "transport_created": {
+          // Create local transport
+          const transport =
+            data.type === "producer"
+              ? device.createSendTransport(data.options)
+              : device.createRecvTransport(data.options);
+
+          transport.on("connect", async ({ dtlsParameters }, callback) => {
+            sendToHost({
+              subject: "connect_transport",
+              data: {
+                dtlsParameters,
+                type: data.type,
+              },
+            });
+
+            callback();
+          });
+
+          transport.on("connectionstatechange", async (state) => {
+            console.info(`WebRTC - ${data.type} ${state}`);
+
+            if (state === "connected" && data.type === "producer") {
+              if (producedTrack && producerTransport) {
+                producer = await producerTransport.produce({ track: producedTrack });
+
+                const { micPaused } = useAppStore.getState();
+
+                if (micPaused) producer.pause();
+                else producer.resume();
+              }
+            }
+          });
+
+          if (data.type === "producer") {
+            producerTransport = transport;
+
+            transport.on("produce", async ({ kind, rtpParameters }, callback) => {
+              if (kind === "video") throw new Error("Video not supported");
+
+              onProducerId = callback;
+
+              sendToHost({
+                subject: "produce",
+                data: { rtpParameters },
+              });
+            });
+
+            transport.on("producedata", async ({ sctpStreamParameters }, callback) => {
+              onDataProducerId = callback;
+
+              sendToHost({
+                subject: "produce_data",
+                data: { sctpStreamParameters },
+              });
+            });
+
+            const dataProducer = await transport.produceData({
+              ordered: false,
+              maxRetransmits: 0,
+            });
+
+            // Player id = 1 byte (Uint8)
+            // Position = 3 * 4 bytes (Int32)
+            // Rotation = 4 * 2 bytes (Int16)
+            // Total = 21 bytes
+            const bytes = 21;
+            const buffer = new ArrayBuffer(bytes);
+            const view = new DataView(buffer);
+
+            setInterval(() => {
+              const { playerId } = useAppStore.getState();
+
+              const playerPosition = engine.renderThread.playerPosition;
+              const playerRotation = engine.renderThread.playerRotation;
+              const cameraPosition = engine.renderThread.cameraPosition;
+              const cameraRotation = engine.renderThread.cameraRotation;
+
+              if (
+                playerId === null ||
+                !playerPosition ||
+                !playerRotation ||
+                !cameraPosition ||
+                !cameraRotation ||
+                dataProducer.readyState !== "open"
+              )
+                return;
+
+              // Set audio listener location
+              const camPosX = Atomics.load(cameraPosition, 0);
+              const camPosY = Atomics.load(cameraPosition, 1);
+              const camPosZ = Atomics.load(cameraPosition, 2);
+
+              const camRotY = Atomics.load(cameraRotation, 1);
+              const camRotW = Atomics.load(cameraRotation, 3);
+
+              const listener = audioContext.listener;
+
+              if (listener.positionX !== undefined) {
+                listener.positionX.value = camPosX / 1000;
+                listener.positionY.value = camPosY / 1000;
+                listener.positionZ.value = camPosZ / 1000;
+              } else {
+                listener.setPosition(camPosX / 1000, camPosY / 1000, camPosZ / 1000);
+              }
+
+              const yaw = quaternionToYaw(camRotY / 1000, camRotW / 1000);
+
+              if (listener.forwardX !== undefined) {
+                listener.forwardX.value = -Math.sin(yaw);
+                listener.forwardZ.value = -Math.cos(yaw);
+              } else {
+                listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
+              }
+
+              // Read location
+              const posX = Atomics.load(playerPosition, 0);
+              const posY = Atomics.load(playerPosition, 1);
+              const posZ = Atomics.load(playerPosition, 2);
+
+              const rotX = Atomics.load(playerRotation, 0);
+              const rotY = Atomics.load(playerRotation, 1);
+              const rotZ = Atomics.load(playerRotation, 2);
+              const rotW = Atomics.load(playerRotation, 3);
+
+              // Create buffer
+              view.setUint8(0, playerId);
+
+              view.setInt32(1, posX, true);
+              view.setInt32(5, posY, true);
+              view.setInt32(9, posZ, true);
+
+              view.setInt16(13, rotX, true);
+              view.setInt16(15, rotY, true);
+              view.setInt16(17, rotZ, true);
+              view.setInt16(19, rotW, true);
+
+              // Publish buffer
+              dataProducer.send(buffer);
+            }, 1000 / PUBLISH_HZ);
+          }
+
+          if (data.type === "consumer") {
+            consumerTransport = transport;
+
+            sendToHost({
+              subject: "ready_to_consume",
+              data: true,
+            });
+          }
+
+          break;
+        }
+
+        case "create_consumer": {
+          if (!consumerTransport) throw new Error("Consumer transport not initialized");
+          if (consumerTransport.closed) throw new Error("Consumer transport closed");
+
+          const consumer = await consumerTransport.consume({
+            id: data.id,
+            producerId: data.producerId,
+            rtpParameters: data.rtpParameters,
+            kind: "audio",
+          });
+
+          // Start receiving audio
+          sendToHost({
+            subject: "resume_audio",
+            data: null,
+          });
+
+          await consumer.resume();
+
+          // Create audio stream
+          const stream = new MediaStream([consumer.track.clone()]);
+
+          // Create audio element
+          const audio = new Audio();
+          audio.srcObject = stream;
+
+          // Create audio source
+          const source = audioContext.createMediaStreamSource(audio.srcObject);
+
+          // Create panner
+          const panner = audioContext.createPanner();
+          panner.panningModel = "HRTF";
+          panner.rolloffFactor = 0.5;
+
+          // Connect nodes
+          source.connect(panner);
+          panner.connect(audioContext.destination);
+
+          if (audioContext.state === "suspended") audioContext.resume();
+
+          // Play audio on user interaction
+          const play = async () => {
+            if (audioContext.state === "suspended") await audioContext.resume();
+            document.removeEventListener("click", play);
+          };
+
+          document.addEventListener("click", play);
+
+          // Store panner
+          panners.set(data.playerId, panner);
+          break;
+        }
+
+        case "create_data_consumer": {
+          if (!consumerTransport) throw new Error("Consumer transport not initialized");
+          if (consumerTransport.closed) throw new Error("Consumer transport closed");
+
+          const dataConsumer = await consumerTransport.consumeData({
+            id: data.id,
+            dataProducerId: data.dataProducerId,
+            sctpStreamParameters: data.sctpStreamParameters,
+          });
+
+          dataConsumer.on("message", async (data: ArrayBuffer | Blob) => {
+            const buffer = data instanceof ArrayBuffer ? data : await data.arrayBuffer();
+
+            // Apply location to audio panner
+            const view = new DataView(buffer);
+            const playerId = view.getUint8(0);
+
+            const panner = panners.get(playerId);
+            if (panner) {
+              if (panner.positionX !== undefined) {
+                panner.positionX.value = view.getInt32(1, true) / 1000;
+                panner.positionY.value = view.getInt32(5, true) / 1000;
+                panner.positionZ.value = view.getInt32(9, true) / 1000;
+              } else {
+                panner.setPosition(
+                  view.getInt32(1, true) / 1000,
+                  view.getInt32(5, true) / 1000,
+                  view.getInt32(9, true) / 1000
+                );
+              }
+            }
+
+            // Send to renderThread
+            engine.renderThread.postMessage({
+              subject: "player_location",
+              data: buffer,
+            });
+          });
+
+          break;
+        }
+
+        case "producer_id": {
+          if (onProducerId) onProducerId(data);
+          break;
+        }
+
+        case "data_producer_id": {
+          if (onDataProducerId) onDataProducerId(data);
+          break;
+        }
       }
     };
 
@@ -252,19 +522,11 @@ export function useHost(url: string) {
       // Close WebSocket connection
       ws.close();
 
-      // Hack to force close
-      ws.onopen = () => {
-        ws.close();
-      };
+      // Close WebRTC transports
+      if (producerTransport) producerTransport.close();
+      if (consumerTransport) consumerTransport.close();
 
-      ws.onmessage = () => {
-        ws.close();
-      };
-
-      ws.onerror = () => {
-        ws.close();
-      };
-
+      // Reset state
       useAppStore.setState({ ws: null });
     };
   }, [engine, url]);
@@ -276,9 +538,7 @@ export function useHost(url: string) {
     };
   }, []);
 
-  return {
-    connect,
-  };
+  return { connect };
 }
 
 export function sendToHost(message: ToHostMessage) {

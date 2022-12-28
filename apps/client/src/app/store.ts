@@ -11,6 +11,7 @@ export interface AppStore {
   displayName: string | null;
   customAvatar: string | null;
 
+  micPaused: boolean;
   chatBoxFocused: boolean;
   didChangeName: boolean;
   didChangeAvatar: boolean;
@@ -26,6 +27,7 @@ export const useAppStore = create<AppStore>(() => ({
   displayName: null,
   customAvatar: null,
 
+  micPaused: false,
   chatBoxFocused: false,
   didChangeName: false,
   didChangeAvatar: false,

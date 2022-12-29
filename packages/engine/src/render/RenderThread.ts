@@ -59,9 +59,7 @@ export class RenderThread {
       // Send canvas
       this.postMessage({ subject: "set_canvas", data: offscreen }, [offscreen]);
     } else {
-      console.info("❌ Browser does not support OffscreenCanvas");
-
-      // Render in a fake worker on the main thread
+      // Otherwise render in a fake worker on the main thread
       this.worker = new FakeWorker();
 
       const renderWorker = new RenderWorker(

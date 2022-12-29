@@ -84,7 +84,7 @@ export function useHost(url: string) {
         }
 
         case "player_joined": {
-          console.info(`👋 Player ${numberToHexDisplay(data.playerId)} joined`);
+          console.info(`🚪 Player ${numberToHexDisplay(data.playerId)} joined`);
 
           const player: Player = {
             id: data.playerId,
@@ -123,7 +123,7 @@ export function useHost(url: string) {
         }
 
         case "player_left": {
-          console.info(`👋 Player ${numberToHexDisplay(data)} left`);
+          console.info(`🚪 Player ${numberToHexDisplay(data)} left`);
 
           const player = players.get(data);
           if (!player) throw new Error("Player not found");
@@ -191,8 +191,6 @@ export function useHost(url: string) {
         }
 
         case "player_avatar": {
-          console.info(`💃 Got custom avatar for ${numberToHexDisplay(data.playerId)}`);
-
           const player = players.get(data.playerId);
           if (!player) throw new Error("Player not found");
 

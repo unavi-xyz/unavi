@@ -18,12 +18,12 @@ import {
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-import { PLAYER_HEIGHT } from "../../../constants";
-import { PostMessage } from "../../../types";
-import { toHex } from "../../../utils/toHex";
-import { ObjectQueue } from "../../SceneLoader/ObjectQueue";
-import { FromRenderMessage } from "../../types";
-import { disposeObject } from "../../utils/disposeObject";
+import { PLAYER_HEIGHT } from "../../constants";
+import { PostMessage } from "../../types";
+import { toHex } from "../../utils/toHex";
+import { ObjectQueue } from "../SceneLoader/ObjectQueue";
+import { FromRenderMessage } from "../types";
+import { disposeObject } from "../utils/disposeObject";
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
 import { AnimationName } from "./types";
 
@@ -41,6 +41,7 @@ export class PlayerAvatar {
   #sceneCamera: Camera;
   #nameplate: Mesh | null = null;
 
+  #currentAvatarPath?: string;
   #defaultAvatarPath?: string;
   #avatarAnimationsPath?: string;
   #mixer: AnimationMixer | null = null;
@@ -86,22 +87,24 @@ export class PlayerAvatar {
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
-    this.#loadModel(avatar ?? defaultAvatarPath, avatarAnimationsPath)
-      .catch((error) => {
-        console.error(error);
-        if (this.playerId === -1) console.error("🚨 Failed to load your avatar");
-        else console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
-      })
-      .finally(() => {
-        this.#postMessage({
-          subject: "player_loaded",
-          data: this.playerId,
+    const avatarPath = avatar ?? defaultAvatarPath;
+    if (avatarPath)
+      this.#loadModel(avatarPath, avatarAnimationsPath)
+        .catch((error) => {
+          console.error(error);
+          if (this.playerId === -1) console.error("🚨 Failed to load your avatar");
+          else console.error(`🚨 Failed to load ${this.playerId}'s avatar`);
+        })
+        .finally(() => {
+          this.#postMessage({
+            subject: "player_loaded",
+            data: this.playerId,
+          });
         });
-      });
   }
 
-  async #loadModel(avatarPath?: string, avatarAnimationsPath?: string) {
-    if (!avatarPath) return;
+  async #loadModel(avatarPath: string, avatarAnimationsPath?: string) {
+    if (this.#currentAvatarPath === avatarPath) return;
 
     const gltf = await this.#loader.loadAsync(avatarPath);
     const vrm = gltf.userData.vrm as VRM;
@@ -193,6 +196,8 @@ export class PlayerAvatar {
       this.#actions.get(AnimationName.Falling)?.play().setLoop(LoopPingPong, Infinity);
     }
 
+    this.#currentAvatarPath = avatarPath;
+
     if (this.playerId === -1) console.info(`💃 Loaded your avatar`);
     else console.info(`💃 Loaded ${toHex(this.playerId)}'s avatar`);
   }
@@ -260,7 +265,8 @@ export class PlayerAvatar {
   }
 
   setAvatar(avatarPath: string | null) {
-    this.#loadModel(avatarPath ?? this.#defaultAvatarPath, this.#avatarAnimationsPath);
+    const path = avatarPath ?? this.#defaultAvatarPath;
+    if (path) this.#loadModel(path, this.#avatarAnimationsPath);
   }
 
   setPosition(x: number, y: number, z: number) {

@@ -12,9 +12,9 @@ import {
 
 import { PLAYER_HEIGHT } from "../../constants";
 import { PostMessage } from "../../types";
+import { RenderPlugin } from "../plugins/types";
 import { FromRenderMessage, ToRenderMessage } from "../types";
-import { PlayerAvatar } from "./OtherPlayers/PlayerAvatar";
-import { RenderPlugin } from "./types";
+import { PlayerAvatar } from "./PlayerAvatar";
 
 const LERP_FACTOR = 10e-24;
 const DAMPEN_FACTOR = 2;

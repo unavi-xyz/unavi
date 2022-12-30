@@ -10,6 +10,7 @@
       "outputs": [".next/**"],
       "env": [
         "BUNDLE_ANALYZE",
+        "DATABASE_URL",
         "ETH_PROVIDER",
         "NEXT_PUBLIC_ALCHEMY_ID",
         "NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT",
@@ -19,6 +20,7 @@
         "NEXT_PUBLIC_IPFS_ENDPOINT",
         "NEXT_PUBLIC_IPFS_GATEWAY",
         "NEXTAUTH_SECRET",
+        "NEXTAUTH_URL",
         "NODE_ENV",
         "S3_ACCESS_KEY_ID",
         "S3_BUCKET",

@@ -15,7 +15,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
+import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { PLAYER_HEIGHT } from "../../constants";
@@ -66,6 +66,7 @@ export class PlayerAvatar {
 
   #loader = new GLTFLoader();
   #queue: ObjectQueue;
+  #font: Font | null = null;
 
   constructor(
     playerId: number,
@@ -87,8 +88,9 @@ export class PlayerAvatar {
 
     this.#loader.register((parser) => new VRMLoaderPlugin(parser));
 
+    // Load avatar
     const avatarPath = avatar ?? defaultAvatarPath;
-    if (avatarPath)
+    if (avatarPath) {
       this.#loadModel(avatarPath, avatarAnimationsPath)
         .catch((error) => {
           console.error(error);
@@ -101,6 +103,7 @@ export class PlayerAvatar {
             data: this.playerId,
           });
         });
+    }
   }
 
   async #loadModel(avatarPath: string, avatarAnimationsPath?: string) {
@@ -203,6 +206,7 @@ export class PlayerAvatar {
   }
 
   async setName(name: string) {
+    // Wait for previous nameplate to be set
     if (this.#settingName) await this.#settingName;
 
     // Remove previous nameplate
@@ -210,11 +214,14 @@ export class PlayerAvatar {
 
     this.#settingName = new Promise((resolve) => {
       const loadName = async () => {
-        // Create text
-        const loader = new FontLoader();
-        const font = await loader.loadAsync(new URL("./font.json", import.meta.url).href);
+        // Load font
+        if (!this.#font) {
+          const loader = new FontLoader();
+          this.#font = await loader.loadAsync(new URL("./font.json", import.meta.url).href);
+        }
 
-        const shapes = font.generateShapes(name, 0.075);
+        // Create text
+        const shapes = this.#font.generateShapes(name, 0.075);
         const geometry = new ShapeGeometry(shapes);
 
         // Center horizontally

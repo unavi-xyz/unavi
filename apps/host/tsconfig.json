@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "rootDir": "./src",
-    "outDir": "./build",
-    "jsx": "react-jsx"
+    "outDir": "./build"
   },
   "exclude": ["node_modules", "build"],
+  "include": ["src"],
   "extends": "tsconfig/base.json"
 }

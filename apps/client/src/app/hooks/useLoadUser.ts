@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
+import { useAppStore } from "../../app/store";
 import { useSession } from "../../client/auth/useSession";
 import { LocalStorageKey } from "../constants";
-import { useAppStore } from "../../app/store";
 import { sendToHost } from "./useHost";
 
 export function useLoadUser() {

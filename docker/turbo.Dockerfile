@@ -15,9 +15,10 @@ COPY patches patches
 COPY apps/client/package.json apps/client/package.json
 COPY apps/host/package.json apps/host/package.json
 
+COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/engine/package.json packages/engine/package.json
 COPY packages/eslint-config-custom/package.json packages/eslint-config-custom/package.json
-COPY packages/lens/package.json packages/lens/package.json
+COPY packages/protocol/package.json packages/protocol/package.json
 COPY packages/tsconfig/package.json packages/tsconfig/package.json
 
 RUN yarn install

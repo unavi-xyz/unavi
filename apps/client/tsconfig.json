@@ -3,13 +3,13 @@
   "include": ["**/*.ts", "**/*.tsx", "next-env.d.ts"],
   "references": [
     {
+      "path": "../../packages/contracts"
+    },
+    {
       "path": "../../packages/engine"
     },
     {
-      "path": "../../packages/lens"
-    },
-    {
-      "path": "../../packages/contracts"
+      "path": "../../packages/protocol"
     }
   ]
 }

@@ -1,9 +1,9 @@
 import { GLTFMesh, Node } from "engine";
 import { useMemo, useState } from "react";
 
+import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
 import { env } from "../../env/client.mjs";
-import { useAppStore } from "../../app/store";
 import { useHost } from "./useHost";
 
 const host =

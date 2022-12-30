@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 
+import { useAppStore } from "../../app/store";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { sendToHost } from "../hooks/useHost";
-import { useAppStore } from "../../app/store";
 import ChatMessage from "./ChatMessage";
 
 export default function ChatBox() {

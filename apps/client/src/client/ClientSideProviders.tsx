@@ -8,7 +8,6 @@ import { SessionProvider } from "next-auth/react";
 import React from "react";
 import { WagmiConfig } from "wagmi";
 
-import LensProvider from "./lens/LensProvider";
 import { theme } from "./theme";
 import { chains, wagmiClient } from "./wagmi";
 
@@ -24,15 +23,13 @@ interface Props {
 export default function ClientSideProviders({ session, children }: Props) {
   return (
     <SessionProvider session={session}>
-      <LensProvider>
-        <WagmiConfig client={wagmiClient}>
-          <RainbowKitSiweNextAuthProvider getSiweMessageOptions={getSiweMessageOptions}>
-            <RainbowKitProvider theme={theme} chains={chains}>
-              {children}
-            </RainbowKitProvider>
-          </RainbowKitSiweNextAuthProvider>
-        </WagmiConfig>
-      </LensProvider>
+      <WagmiConfig client={wagmiClient}>
+        <RainbowKitSiweNextAuthProvider getSiweMessageOptions={getSiweMessageOptions}>
+          <RainbowKitProvider theme={theme} chains={chains}>
+            {children}
+          </RainbowKitProvider>
+        </RainbowKitSiweNextAuthProvider>
+      </WagmiConfig>
     </SessionProvider>
   );
 }

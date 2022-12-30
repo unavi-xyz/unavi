@@ -1,11 +1,11 @@
 import { IoMdPerson } from "react-icons/io";
 
+import { useAppStore } from "../../app/store";
 import { useSession } from "../../client/auth/useSession";
 import LoginButton from "../../home/layouts/NavbarLayout/LoginButton";
 import ProfileButton from "../../home/layouts/NavbarLayout/ProfileButton";
 import Button from "../../ui/Button";
 import ButtonFileInput from "../../ui/ButtonFileInput";
-import { useAppStore } from "../../app/store";
 
 export default function UserPage() {
   const playerId = useAppStore((state) => state.playerId);

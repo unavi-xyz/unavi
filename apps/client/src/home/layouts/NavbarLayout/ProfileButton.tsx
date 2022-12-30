@@ -3,12 +3,10 @@ import { useState } from "react";
 import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
 import Button from "../../../ui/Button";
-import Dialog from "../../../ui/Dialog";
 import DropdownMenu from "../../../ui/DropdownMenu";
 import { useIsMobile } from "../../../utils/useIsMobile";
 import ProfilePicture from "../../ProfilePicture";
 import ProfileMenu from "./ProfileMenu";
-import SwitchProfilePage from "./SwitchProfilePage";
 
 interface Props {
   fullWidth?: boolean;
@@ -17,7 +15,6 @@ interface Props {
 
 export default function ProfileButton({ fullWidth = false, size = "small" }: Props) {
   const [openMenu, setOpenMenu] = useState(false);
-  const [openSwitchProfile, setOpenSwitchProfile] = useState(false);
 
   const { data: session, status } = useSession();
   const isMobile = useIsMobile();
@@ -34,59 +31,53 @@ export default function ProfileButton({ fullWidth = false, size = "small" }: Pro
   const profilePictureSizeClass = size === "small" ? "h-9 w-9" : "h-11 w-11";
 
   return (
-    <>
-      <Dialog open={openSwitchProfile} onClose={() => setOpenSwitchProfile(false)}>
-        <SwitchProfilePage onClose={() => setOpenSwitchProfile(false)} />
-      </Dialog>
+    <div className={`relative ${fullWidthClass}`}>
+      <Button
+        color="neutral"
+        rounded={isMobile ? "full" : "large"}
+        icon={isMobile}
+        fullWidth={fullWidth}
+        disabled={isLoading}
+        onClick={() => {
+          if (isLoading) return;
+          setOpenMenu(true);
+        }}
+      >
+        <div className={`flex items-center justify-center space-x-4 ${textSizeClass}`}>
+          {isMobile ? null : isLoading ? (
+            <div className="h-5 w-20 animate-pulse rounded bg-neutral-300" />
+          ) : profile?.handle ? (
+            <div>{profile.handle.string}</div>
+          ) : (
+            <div className="w-24 overflow-hidden text-ellipsis">{session?.address}</div>
+          )}
 
-      <div className={`relative ${fullWidthClass}`}>
-        <Button
-          color="neutral"
-          rounded={isMobile ? "full" : "large"}
-          icon={isMobile}
-          fullWidth={fullWidth}
-          disabled={isLoading}
-          onClick={() => {
-            if (isLoading) return;
-            setOpenMenu(true);
-          }}
-        >
-          <div className={`flex items-center justify-center space-x-4 ${textSizeClass}`}>
-            {isMobile ? null : isLoading ? (
-              <div className="h-5 w-20 animate-pulse rounded bg-neutral-300" />
-            ) : profile?.handle ? (
-              <div>{profile.handle.string}</div>
-            ) : (
-              <div className="w-24 overflow-hidden text-ellipsis">{session?.address}</div>
-            )}
-
-            <div className={`overflow-hidden ${profilePictureSizeClass}`}>
-              {isLoading ? (
-                <div className="h-full w-full animate-pulse rounded-full bg-neutral-300" />
-              ) : session?.address ? (
-                <ProfilePicture
-                  src={profile?.metadata?.image}
-                  uniqueKey={profile?.handle?.full ?? session.address}
-                  circle
-                  draggable={false}
-                  size={size === "small" ? 36 : 44}
-                />
-              ) : null}
-            </div>
+          <div className={`overflow-hidden ${profilePictureSizeClass}`}>
+            {isLoading ? (
+              <div className="h-full w-full animate-pulse rounded-full bg-neutral-300" />
+            ) : session?.address ? (
+              <ProfilePicture
+                src={profile?.metadata?.image}
+                uniqueKey={profile?.handle?.full ?? session.address}
+                circle
+                draggable={false}
+                size={size === "small" ? 36 : 44}
+              />
+            ) : null}
           </div>
-        </Button>
-
-        <div className="mt-1">
-          <DropdownMenu
-            fullWidth={fullWidth}
-            placement="right"
-            open={openMenu}
-            onClose={() => setOpenMenu(false)}
-          >
-            <ProfileMenu />
-          </DropdownMenu>
         </div>
+      </Button>
+
+      <div className="mt-1">
+        <DropdownMenu
+          fullWidth={fullWidth}
+          placement="right"
+          open={openMenu}
+          onClose={() => setOpenMenu(false)}
+        >
+          <ProfileMenu />
+        </DropdownMenu>
       </div>
-    </>
+    </div>
   );
 }

@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { FromHostMessage, ToHostMessage } from "protocol";
 import { useEffect, useMemo } from "react";
 
+import { trpc } from "../../client/trpc";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
 import { quaternionToYaw } from "../helpers/quaternionToYaw";
 import { useAppStore } from "../store";
@@ -16,11 +17,14 @@ type Player = {
   id: number;
   address: string | null;
   name: string | null;
+  username: string;
   avatar: string | null;
 };
 
 export function useHost(url: string) {
   const engine = useAppStore((state) => state.engine);
+
+  const utils = trpc.useContext();
 
   // Create WebSocket connection
   useEffect(() => {
@@ -41,6 +45,30 @@ export function useHost(url: string) {
 
     let onProducerId: (({ id }: { id: string }) => void) | null = null;
     let onDataProducerId: (({ id }: { id: string }) => void) | null = null;
+
+    async function updateUsername(player: Player) {
+      const oldUsername = player.username;
+
+      if (player.address) {
+        // Fetch flamingo profile
+        const profile = await utils.social.profile.byAddress.fetch({ address: player.address });
+
+        if (profile?.handle) {
+          player.username = profile.handle.string;
+        } else {
+          player.username = player.address.substring(0, 6);
+        }
+      } else if (player.name) {
+        player.username = player.name;
+      } else {
+        player.username = `Guest ${numberToHexDisplay(player.id)}`;
+      }
+
+      const { playerId } = useAppStore.getState();
+      if (player.username !== oldUsername && playerId !== player.id) {
+        console.info("📛 Player", numberToHexDisplay(player.id), "is now", player.username);
+      }
+    }
 
     ws.onopen = () => {
       console.info("WebSocket - ✅ Connected to host");
@@ -74,9 +102,12 @@ export function useHost(url: string) {
           const player: Player = {
             id: data.playerId,
             address: null,
-            name: displayName,
             avatar: customAvatar,
+            name: displayName,
+            username: "",
           };
+
+          await updateUsername(player);
 
           // Add to player list
           players.set(data.playerId, player);
@@ -89,9 +120,12 @@ export function useHost(url: string) {
           const player: Player = {
             id: data.playerId,
             address: data.address,
-            name: data.name,
             avatar: data.avatar,
+            name: data.name,
+            username: "",
           };
+
+          await updateUsername(player);
 
           // Add to player list
           players.set(data.playerId, player);
@@ -104,7 +138,7 @@ export function useHost(url: string) {
             subject: "player_name",
             data: {
               playerId: data.playerId,
-              name: getUsername(player),
+              name: player.username,
             },
           });
 
@@ -116,7 +150,7 @@ export function useHost(url: string) {
               id: nanoid(),
               timestamp: Date.now(),
               playerId: data.playerId,
-              username: getUsername(player),
+              username: player.username,
             });
 
           break;
@@ -141,7 +175,7 @@ export function useHost(url: string) {
             id: nanoid(),
             timestamp: Date.now(),
             playerId: data,
-            username: getUsername(player),
+            username: player.username,
           });
           break;
         }
@@ -157,7 +191,7 @@ export function useHost(url: string) {
             id: data.id,
             timestamp: data.timestamp,
             playerId: data.playerId,
-            username: getUsername(player),
+            username: player.username,
           });
           break;
         }
@@ -171,8 +205,6 @@ export function useHost(url: string) {
         }
 
         case "player_name": {
-          console.info(`📇 Player ${numberToHexDisplay(data.playerId)} is now ${data.name}`);
-
           const player = players.get(data.playerId);
           if (!player) throw new Error("Player not found");
 
@@ -180,11 +212,13 @@ export function useHost(url: string) {
           player.name = data.name;
 
           // Update player name
+          await updateUsername(player);
+
           engine.renderThread.postMessage({
             subject: "player_name",
             data: {
               playerId: data.playerId,
-              name: getUsername(player),
+              name: player.username,
             },
           });
           break;
@@ -209,10 +243,6 @@ export function useHost(url: string) {
         }
 
         case "player_address": {
-          const { playerId } = useAppStore.getState();
-          if (data.playerId !== playerId)
-            console.info(`🦩 Player ${numberToHexDisplay(data.playerId)} is now ${data.address}`);
-
           const player = players.get(data.playerId);
           if (!player) throw new Error("Player not found");
 
@@ -220,11 +250,13 @@ export function useHost(url: string) {
           player.address = data.address;
 
           // Update player name
+          await updateUsername(player);
+
           engine.renderThread.postMessage({
             subject: "player_name",
             data: {
               playerId: data.playerId,
-              name: getUsername(player),
+              name: player.username,
             },
           });
           break;
@@ -527,7 +559,7 @@ export function useHost(url: string) {
       // Reset state
       useAppStore.setState({ ws: null });
     };
-  }, [engine, url]);
+  }, [engine, utils, url]);
 
   const connect = useMemo(() => {
     return (id: number) => {
@@ -544,16 +576,6 @@ export function sendToHost(message: ToHostMessage) {
   if (!ws || ws.readyState !== ws.OPEN) throw new Error("WebSocket not initialized");
 
   ws.send(JSON.stringify(message));
-}
-
-function getUsername(player: Player) {
-  const username = player.address
-    ? player.address.substring(0, 6)
-    : player.name
-    ? player.name
-    : `Guest ${numberToHexDisplay(player.id)}`;
-
-  return username;
 }
 
 function addChatMessage(message: ChatMessage) {

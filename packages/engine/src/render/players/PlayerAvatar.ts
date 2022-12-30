@@ -108,6 +108,7 @@ export class PlayerAvatar {
 
   async #loadModel(avatarPath: string, avatarAnimationsPath?: string) {
     if (this.#currentAvatarPath === avatarPath) return;
+    this.#currentAvatarPath = avatarPath;
 
     const gltf = await this.#loader.loadAsync(avatarPath);
     const vrm = gltf.userData.vrm as VRM;
@@ -198,8 +199,6 @@ export class PlayerAvatar {
 
       this.#actions.get(AnimationName.Falling)?.play().setLoop(LoopPingPong, Infinity);
     }
-
-    this.#currentAvatarPath = avatarPath;
 
     if (this.playerId === -1) console.info(`💃 Loaded your avatar`);
     else console.info(`💃 Loaded ${toHex(this.playerId)}'s avatar`);

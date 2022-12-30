@@ -31,6 +31,6 @@ CMD \
  yarn patch-package \
  && yarn generate \
  && cd ./apps/client \
- && yarn prisma db push \
+ && yarn prisma db push --accept-data-loss \
  && cd ../.. \
  && yarn dev

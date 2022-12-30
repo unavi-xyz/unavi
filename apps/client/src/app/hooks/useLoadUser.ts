@@ -28,7 +28,7 @@ export function useLoadUser() {
     const localName = localStorage.getItem(LocalStorageKey.Name);
 
     if (localName !== displayName) {
-      useAppStore.setState({ displayName });
+      useAppStore.setState({ displayName: localName });
       sendToHost({ subject: "set_name", data: localName });
     }
 

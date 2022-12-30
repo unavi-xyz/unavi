@@ -4,6 +4,7 @@ import uWS from "uWebSockets.js";
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
 import { Players } from "./Players";
 import { send } from "./utils/send";
+import { toHex } from "./utils/toHex";
 
 const textDecoder = new TextDecoder();
 const PORT = 4000;
@@ -172,7 +173,7 @@ server.get("/playercount/*", (res, req) => {
   const id = parseInt(req.getUrl().slice(13));
   const playerCount = players.getPlayerCount(id);
 
-  console.info(`🔢 Player count for ${id}: ${playerCount}`);
+  console.info(`🔢 Player count for ${toHex(id)}: ${playerCount}`);
 
   res.write(String(playerCount));
   res.writeStatus("200 OK");

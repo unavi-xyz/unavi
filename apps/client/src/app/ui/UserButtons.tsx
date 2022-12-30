@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IoMdArrowRoundBack, IoMdPerson } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
-import { useLens } from "../../client/lens/hooks/useLens";
+import { useSession } from "../../client/auth/useSession";
+import { trpc } from "../../client/trpc";
 import Dialog from "../../ui/Dialog";
 import Tooltip from "../../ui/Tooltip";
 import { LocalStorageKey } from "../constants";
@@ -22,8 +23,14 @@ export default function UserButtons() {
   const hasProducedAudio = useRef(false);
 
   const isPointerLocked = usePointerLocked();
-  const { handle } = useLens();
   const setAvatar = useSetAvatar();
+  const utils = trpc.useContext();
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    if (!session?.address) return;
+    utils.social.profile.byAddress.prefetch({ address: session.address });
+  }, [session, utils]);
 
   async function handleClose() {
     setOpenUserPage(false);
@@ -33,17 +40,17 @@ export default function UserButtons() {
 
     const { displayName, customAvatar, didChangeName, didChangeAvatar } = useAppStore.getState();
 
-    // If no lens handle, use name
-    if (!handle && didChangeName) {
-      useAppStore.setState({ didChangeName: false });
+    // // If no lens handle, use name
+    // if (!handle && didChangeName) {
+    //   useAppStore.setState({ didChangeName: false });
 
-      // Publish display name
-      // engine.networking.setName(displayName);
+    //   // Publish display name
+    //   // engine.networking.setName(displayName);
 
-      // Save to local storage
-      if (displayName) localStorage.setItem(LocalStorageKey.Name, displayName);
-      else localStorage.removeItem(LocalStorageKey.Name);
-    }
+    //   // Save to local storage
+    //   if (displayName) localStorage.setItem(LocalStorageKey.Name, displayName);
+    //   else localStorage.removeItem(LocalStorageKey.Name);
+    // }
 
     // Avatar
     if (didChangeAvatar && customAvatar) {

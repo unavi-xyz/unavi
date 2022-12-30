@@ -46,8 +46,8 @@ export function useHost(url: string) {
       console.info("WebSocket - ✅ Connected to host");
 
       const { displayName, customAvatar } = useAppStore.getState();
-      sendToHost({ subject: "set_name", data: displayName });
-      sendToHost({ subject: "set_avatar", data: customAvatar });
+      if (displayName) sendToHost({ subject: "set_name", data: displayName });
+      if (customAvatar) sendToHost({ subject: "set_avatar", data: customAvatar });
 
       // Start WebRTC connection
       sendToHost({ subject: "get_router_rtp_capabilities", data: null });

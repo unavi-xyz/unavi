@@ -19,15 +19,15 @@ export default function ProfileButton({ fullWidth = false, size = "small" }: Pro
   const [openMenu, setOpenMenu] = useState(false);
   const [openSwitchProfile, setOpenSwitchProfile] = useState(false);
 
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const isMobile = useIsMobile();
 
-  const { data: profile, isLoading } = trpc.social.profile.byAddress.useQuery(
+  const { data: profile, isLoading: isProfileLoading } = trpc.social.profile.byAddress.useQuery(
     { address: session?.address ?? "" },
     { enabled: session?.address !== undefined }
   );
 
-  if (isLoading || !session?.address) return null;
+  const isLoading = status === "loading" || isProfileLoading;
 
   const fullWidthClass = fullWidth ? "w-full" : "";
   const textSizeClass = size === "small" ? "" : "text-xl";
@@ -45,23 +45,33 @@ export default function ProfileButton({ fullWidth = false, size = "small" }: Pro
           rounded={isMobile ? "full" : "large"}
           icon={isMobile}
           fullWidth={fullWidth}
-          onClick={() => setOpenMenu(true)}
+          disabled={isLoading}
+          onClick={() => {
+            if (isLoading) return;
+            setOpenMenu(true);
+          }}
         >
           <div className={`flex items-center justify-center space-x-4 ${textSizeClass}`}>
-            {isMobile ? null : profile?.handle ? (
+            {isMobile ? null : isLoading ? (
+              <div className="h-5 w-20 animate-pulse rounded bg-neutral-300" />
+            ) : profile?.handle ? (
               <div>{profile.handle.string}</div>
             ) : (
               <div className="w-24 overflow-hidden text-ellipsis">{session?.address}</div>
             )}
 
             <div className={`overflow-hidden ${profilePictureSizeClass}`}>
-              <ProfilePicture
-                src={profile?.metadata?.image}
-                uniqueKey={profile?.handle?.full ?? session.address}
-                circle
-                draggable={false}
-                size={size === "small" ? 36 : 44}
-              />
+              {isLoading ? (
+                <div className="h-full w-full animate-pulse rounded-full bg-neutral-300" />
+              ) : session?.address ? (
+                <ProfilePicture
+                  src={profile?.metadata?.image}
+                  uniqueKey={profile?.handle?.full ?? session.address}
+                  circle
+                  draggable={false}
+                  size={size === "small" ? 36 : 44}
+                />
+              ) : null}
             </div>
           </div>
         </Button>

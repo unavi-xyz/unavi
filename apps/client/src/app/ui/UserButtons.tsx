@@ -9,6 +9,7 @@ import { trpc } from "../../client/trpc";
 import Dialog from "../../ui/Dialog";
 import Tooltip from "../../ui/Tooltip";
 import { LocalStorageKey } from "../constants";
+import { sendToHost } from "../hooks/useHost";
 import { usePointerLocked } from "../hooks/usePointerLocked";
 import { useSetAvatar } from "../hooks/useSetAvatar";
 import { useAppStore } from "../store";
@@ -40,25 +41,30 @@ export default function UserButtons() {
 
     const { displayName, customAvatar, didChangeName, didChangeAvatar } = useAppStore.getState();
 
-    // // If no lens handle, use name
-    // if (!handle && didChangeName) {
-    //   useAppStore.setState({ didChangeName: false });
+    // If no flamingo handle, use name
+    if (didChangeName) {
+      useAppStore.setState({ didChangeName: false });
 
-    //   // Publish display name
-    //   // engine.networking.setName(displayName);
+      // Publish display name
+      sendToHost({ subject: "set_name", data: displayName });
 
-    //   // Save to local storage
-    //   if (displayName) localStorage.setItem(LocalStorageKey.Name, displayName);
-    //   else localStorage.removeItem(LocalStorageKey.Name);
-    // }
+      // Save to local storage
+      if (displayName) localStorage.setItem(LocalStorageKey.Name, displayName);
+      else localStorage.removeItem(LocalStorageKey.Name);
+    }
 
     // Avatar
-    if (didChangeAvatar && customAvatar) {
-      setAvatar(customAvatar);
-    } else if (didChangeAvatar) {
-      // engine.networking.setAvatar(customAvatar);
-      localStorage.removeItem(LocalStorageKey.Avatar);
-      useAppStore.setState({ didChangeAvatar: false });
+    if (didChangeAvatar) {
+      if (customAvatar) {
+        // Upload avatar
+        setAvatar(customAvatar);
+      } else {
+        // Remove avatar
+        sendToHost({ subject: "set_avatar", data: null });
+
+        localStorage.removeItem(LocalStorageKey.Avatar);
+        useAppStore.setState({ didChangeAvatar: false });
+      }
     }
   }
 

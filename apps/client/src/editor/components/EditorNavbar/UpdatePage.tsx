@@ -1,21 +1,16 @@
-import {
-  AppId,
-  PublicationMainFocus,
-  PublicationMetadata,
-  PublicationMetadataMedia,
-  PublicationMetadataVersions,
-} from "lens";
-import { nanoid } from "nanoid";
+import { ERC721Metadata } from "contracts";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import { useLens } from "../../../client/lens/hooks/useLens";
+import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
 import { env } from "../../../env/client.mjs";
 import Button from "../../../ui/Button";
 import ButtonFileInput from "../../../ui/ButtonFileInput";
 import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
+import { numberToHexDisplay } from "../../../utils/numberToHexDisplay";
+import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
 
@@ -36,7 +31,8 @@ export default function UpdatePage({ onClose }: Props) {
   const description = useEditorStore((state) => state.description);
   const publicationId = useEditorStore((state) => state.publicationId);
 
-  const { handle } = useLens();
+  const { data: session } = useSession();
+  const { save } = useSave();
   const router = useRouter();
   const id = router.query.id as string;
 
@@ -44,16 +40,21 @@ export default function UpdatePage({ onClose }: Props) {
     { id },
     {
       enabled: id !== undefined,
-      trpc: {},
+      refetchOnWindowFocus: false,
+    }
+  );
+
+  const { data: profile } = trpc.social.profile.byAddress.useQuery(
+    { address: session?.address ?? "" },
+    {
+      enabled: session?.address !== undefined,
+      refetchOnWindowFocus: false,
     }
   );
 
   const { mutateAsync: saveProject } = trpc.project.save.useMutation();
-
   const { mutateAsync: createModelUploadUrl } = trpc.publication.modelUploadURL.useMutation();
-
   const { mutateAsync: createImageUploadUrl } = trpc.publication.imageUploadURL.useMutation();
-
   const { mutateAsync: createMetadataUploadUrl } = trpc.publication.metadataUploadURL.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
@@ -66,7 +67,6 @@ export default function UpdatePage({ onClose }: Props) {
 
   async function handlePublish() {
     if (loading) return;
-
     if (!publicationId) throw new Error("No publication id");
 
     try {
@@ -74,6 +74,8 @@ export default function UpdatePage({ onClose }: Props) {
       const promises: Promise<void>[] = [];
 
       // Save project
+      promises.push(save());
+
       promises.push(
         saveProject({
           id,
@@ -139,11 +141,10 @@ export default function UpdatePage({ onClose }: Props) {
               },
             });
 
-            if (!response.ok) reject();
-            else resolve();
+            if (!response.ok) throw new Error("Failed to upload image");
           }
 
-          upload();
+          upload().then(resolve).catch(reject);
         })
       );
 
@@ -156,33 +157,14 @@ export default function UpdatePage({ onClose }: Props) {
             const modelURL = cdnModelURL(publicationId);
             const imageURL = cdnImageURL(publicationId);
 
-            const media: PublicationMetadataMedia[] = [
-              {
-                item: imageURL,
-                type: "image/jpeg",
-                altTag: "preview image",
-              },
-              {
-                item: modelURL,
-                type: "model/gltf-binary",
-                altTag: "model",
-              },
-            ];
-
-            const metadata: PublicationMetadata = {
-              version: PublicationMetadataVersions.two,
-              metadata_id: nanoid(),
+            const metadata: ERC721Metadata = {
+              animation_url: modelURL,
               description,
-              locale: "en-US",
-              tags: ["3d", "gltf", "space", "wired"],
-              mainContentFocus: PublicationMainFocus.Image,
-              external_url: `https://thewired.space/user/${handle}`,
-              name,
+              external_url: `https://thewired.space/user/${
+                profile ? numberToHexDisplay(profile.id) : session?.address
+              }`,
               image: imageURL,
-              imageMimeType: "image/jpeg",
-              media,
-              attributes: [],
-              appId: AppId.Space,
+              name,
             };
 
             // Upload to S3
@@ -196,11 +178,10 @@ export default function UpdatePage({ onClose }: Props) {
               },
             });
 
-            if (response.ok) resolve();
-            else reject();
+            if (!response.ok) throw new Error("Failed to upload metadata");
           }
 
-          upload();
+          upload().then(resolve).catch(reject);
         })
       );
 

@@ -41,7 +41,6 @@ export default function UserButtons() {
 
     const { displayName, customAvatar, didChangeName, didChangeAvatar } = useAppStore.getState();
 
-    // If no flamingo handle, use name
     if (didChangeName) {
       useAppStore.setState({ didChangeName: false });
 
@@ -53,8 +52,10 @@ export default function UserButtons() {
       else localStorage.removeItem(LocalStorageKey.Name);
     }
 
-    // Avatar
     if (didChangeAvatar) {
+      // Update engine
+      engine.renderThread.postMessage({ subject: "set_avatar", data: customAvatar });
+
       if (customAvatar) {
         // Upload avatar
         setAvatar(customAvatar);

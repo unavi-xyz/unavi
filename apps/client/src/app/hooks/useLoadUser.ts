@@ -8,8 +8,6 @@ import { sendToHost } from "./useHost";
 export function useLoadUser() {
   const engine = useAppStore((state) => state.engine);
   const ws = useAppStore((state) => state.ws);
-  const customAvatar = useAppStore((state) => state.customAvatar);
-  const displayName = useAppStore((state) => state.displayName);
 
   const { data: session } = useSession();
 
@@ -24,6 +22,7 @@ export function useLoadUser() {
 
     if (localName !== displayName) {
       useAppStore.setState({ displayName: localName });
+      sendToHost({ subject: "set_name", data: localName });
     }
 
     // Set avatar
@@ -33,11 +32,13 @@ export function useLoadUser() {
       if (localAvatar !== customAvatar) {
         useAppStore.setState({ customAvatar: localAvatar });
         engine.renderThread.postMessage({ subject: "set_avatar", data: localAvatar });
+        sendToHost({ subject: "set_avatar", data: localAvatar });
       }
     } else {
       // If no avatar set, use default avatar
       useAppStore.setState({ customAvatar: null });
       engine.renderThread.postMessage({ subject: "set_avatar", data: null });
+      sendToHost({ subject: "set_avatar", data: null });
     }
   }, [engine, ws, ws?.readyState]);
 
@@ -46,16 +47,4 @@ export function useLoadUser() {
     if (!ws || ws.readyState !== ws.OPEN) return;
     sendToHost({ subject: "set_address", data: session?.address ?? null });
   }, [session, ws, ws?.readyState]);
-
-  // Publish name on change
-  useEffect(() => {
-    if (!ws || ws.readyState !== ws.OPEN) return;
-    sendToHost({ subject: "set_name", data: displayName });
-  }, [displayName, ws, ws?.readyState]);
-
-  // Publish avatar on change
-  useEffect(() => {
-    if (!ws || ws.readyState !== ws.OPEN) return;
-    sendToHost({ subject: "set_avatar", data: customAvatar });
-  }, [customAvatar, ws, ws?.readyState]);
 }

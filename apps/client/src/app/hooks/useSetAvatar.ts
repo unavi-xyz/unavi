@@ -1,7 +1,7 @@
 import { trpc } from "../../client/trpc";
 import { env } from "../../env/client.mjs";
 import { LocalStorageKey } from "../constants";
-import { useAppStore } from "../store";
+import { useAppStore } from "../../app/store";
 import { sendToHost } from "./useHost";
 
 function getAvatarURL(fileId: string) {

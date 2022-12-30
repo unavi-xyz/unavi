@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 
 import { trpc } from "../../client/trpc";
 import { env } from "../../env/client.mjs";
-import { useAppStore } from "../store";
+import { useAppStore } from "../../app/store";
 import { useHost } from "./useHost";
 
 const host =

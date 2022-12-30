@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { useSession } from "../../client/auth/useSession";
 import { LocalStorageKey } from "../constants";
-import { useAppStore } from "../store";
+import { useAppStore } from "../../app/store";
 import { sendToHost } from "./useHost";
 
 export function useLoadUser() {

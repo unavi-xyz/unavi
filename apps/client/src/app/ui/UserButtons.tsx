@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { IoMdArrowRoundBack, IoMdPerson } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
+import { useAppStore } from "../../app/store";
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
 import Dialog from "../../ui/Dialog";
@@ -12,7 +13,6 @@ import { LocalStorageKey } from "../constants";
 import { sendToHost } from "../hooks/useHost";
 import { usePointerLocked } from "../hooks/usePointerLocked";
 import { useSetAvatar } from "../hooks/useSetAvatar";
-import { useAppStore } from "../store";
 import UserPage from "./UserPage";
 
 export default function UserButtons() {
@@ -75,6 +75,8 @@ export default function UserButtons() {
 
     // Toggle mic
     const isMuted = !muted;
+    useAppStore.setState({ micPaused: isMuted });
+    setMuted(isMuted);
 
     // If first time using mic, request permission
     if (!isMuted && !hasProducedAudio.current) {
@@ -85,14 +87,19 @@ export default function UserButtons() {
       const track = stream.getAudioTracks()[0];
       if (!track) throw new Error("No audio track found");
 
-      // await engine.networking.produceAudio(track);
+      const { producerTransport } = useAppStore.getState();
+      if (!producerTransport) throw new Error("Producer transport not found");
 
+      const producer = await producerTransport.produce({ track });
+
+      useAppStore.setState({ producer, producedTrack: track });
       hasProducedAudio.current = true;
     }
 
-    // await engine.networking.setAudioPaused(isMuted);
+    const { producer } = useAppStore.getState();
 
-    setMuted(isMuted);
+    if (isMuted) producer?.pause();
+    else producer?.resume();
   }
 
   const opacityClass = isPointerLocked ? "opacity-0" : "opacity-100";

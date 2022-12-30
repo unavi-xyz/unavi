@@ -1,14 +1,13 @@
 import { Device } from "mediasoup-client";
-import { Producer } from "mediasoup-client/lib/Producer";
 import { Transport } from "mediasoup-client/lib/Transport";
 import { nanoid } from "nanoid";
 import { FromHostMessage, ToHostMessage } from "protocol";
 import { useEffect, useMemo } from "react";
 
+import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
 import { quaternionToYaw } from "../helpers/quaternionToYaw";
-import { useAppStore } from "../store";
 import { ChatMessage } from "../ui/ChatMessage";
 
 const PUBLISH_HZ = 15; // X times per second
@@ -38,11 +37,7 @@ export function useHost(url: string) {
     const audioContext = new AudioContext();
     const panners = new Map<number, PannerNode>();
 
-    let producerTransport: Transport | null = null;
     let consumerTransport: Transport | null = null;
-    const producedTrack: MediaStreamTrack | null = null;
-    let producer: Producer | null = null;
-
     let onProducerId: (({ id }: { id: string }) => void) | null = null;
     let onDataProducerId: (({ id }: { id: string }) => void) | null = null;
 
@@ -318,19 +313,24 @@ export function useHost(url: string) {
             console.info(`WebRTC - ${data.type} ${state}`);
 
             if (state === "connected" && data.type === "producer") {
+              const { producerTransport, producedTrack } = useAppStore.getState();
+
+              // Produce audio
               if (producedTrack && producerTransport) {
-                producer = await producerTransport.produce({ track: producedTrack });
+                const producer = await producerTransport.produce({ track: producedTrack });
 
                 const { micPaused } = useAppStore.getState();
 
                 if (micPaused) producer.pause();
                 else producer.resume();
+
+                useAppStore.setState({ producer });
               }
             }
           });
 
           if (data.type === "producer") {
-            producerTransport = transport;
+            useAppStore.setState({ producerTransport: transport });
 
             transport.on("produce", async ({ kind, rtpParameters }, callback) => {
               if (kind === "video") throw new Error("Video not supported");
@@ -561,6 +561,7 @@ export function useHost(url: string) {
       ws.close();
 
       // Close WebRTC transports
+      const { producerTransport } = useAppStore.getState();
       if (producerTransport) producerTransport.close();
       if (consumerTransport) consumerTransport.close();
 

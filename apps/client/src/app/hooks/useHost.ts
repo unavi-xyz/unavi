@@ -82,6 +82,11 @@ export function useHost(url: string) {
 
       // Start WebRTC connection
       sendToHost({ subject: "get_router_rtp_capabilities", data: null });
+
+      // Update falling state on change
+      engine.physicsThread.isFalling$.subscribe((isFalling) => {
+        sendToHost({ subject: "falling_state", data: isFalling });
+      });
     };
 
     ws.onclose = () => {

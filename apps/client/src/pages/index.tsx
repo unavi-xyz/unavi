@@ -1,38 +1,13 @@
-import { Post } from "lens";
-import { InferGetStaticPropsType } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import { getPublicationProps } from "../client/lens/utils/getPublicationProps";
 import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../constants";
 import { useAnimateOnEnter } from "../home/hooks/useAnimateOnEnter";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
-import SpaceCard from "../home/lens/SpaceCard";
 import MetaTags from "../home/MetaTags";
 import Button from "../ui/Button";
 
-const FEATURED_SPACES: string[] = ["0x46ad-0x3d", "0x46ad-0x3e", "0x46ad-0x3f"];
-
-export const getStaticProps = async () => {
-  const featuredSpaces = await Promise.all(
-    FEATURED_SPACES.map(async (id) => {
-      const props = await getPublicationProps(id);
-      return {
-        id,
-        ...props,
-      };
-    })
-  );
-
-  return {
-    props: {
-      featuredSpaces,
-    },
-    revalidate: 86400,
-  };
-};
-
-export default function Index({ featuredSpaces }: InferGetStaticPropsType<typeof getStaticProps>) {
+export default function Index() {
   useAnimateOnEnter();
 
   return (
@@ -55,7 +30,7 @@ export default function Index({ featuredSpaces }: InferGetStaticPropsType<typeof
 
             <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl md:flex-row md:space-y-0 md:space-x-4">
               <div className="w-full md:w-fit">
-                <Link href={`/app/${FEATURED_SPACES[0]}`}>
+                <Link href="/app/0x04">
                   <Button variant="filled" rounded="large" fullWidth>
                     <div className="flex h-9 items-center justify-center md:px-4">Play Now</div>
                   </Button>
@@ -72,20 +47,6 @@ export default function Index({ featuredSpaces }: InferGetStaticPropsType<typeof
                   </Button>
                 </a>
               </div>
-            </div>
-          </section>
-
-          <section className="show-on-scroll mb-[100px] space-y-6 md:mb-[150px]">
-            <div className="text-center text-3xl font-black md:text-4xl">Featured Spaces</div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {featuredSpaces.map(({ id, publication }) => (
-                <Link key={id} href={`/space/${id}`}>
-                  <div className="h-44 md:h-48">
-                    {publication && <SpaceCard space={publication as Post} sizes="331px" />}
-                  </div>
-                </Link>
-              ))}
             </div>
           </section>
 

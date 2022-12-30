@@ -1,10 +1,27 @@
-import { InternalChatMessage } from "engine";
 import { useEffect, useState } from "react";
 
 import { usePointerLocked } from "../hooks/usePointerLocked";
 
+export type ChatMessage =
+  | {
+      type: "chat";
+      id: string;
+      timestamp: number;
+      playerId: number;
+      username: string;
+      message: string;
+    }
+  | {
+      type: "system";
+      variant: "player_joined" | "player_left";
+      id: string;
+      timestamp: number;
+      playerId: number;
+      username: string;
+    };
+
 interface Props {
-  message: InternalChatMessage;
+  message: ChatMessage;
 }
 
 export default function ChatMessage({ message }: Props) {
@@ -26,15 +43,13 @@ export default function ChatMessage({ message }: Props) {
 
   const visibleClass = !isPointerLocked || visible ? "opacity-100" : "opacity-0";
 
-  const boldClass = message.isHandle ? "font-bold" : "font-medium";
-
   return (
     <div
       className={`my-0.5 w-fit max-w-full rounded-lg bg-white px-4 py-1 transition duration-500 ${visibleClass}`}
     >
       {message.type === "chat" ? (
         <div className="break-words">
-          <span className={boldClass}>{message.username}</span>: <span>{message.message}</span>
+          <span>{message.username}</span>: <span>{message.message}</span>
         </div>
       ) : message.type === "system" ? (
         <span className="text-neutral-500">

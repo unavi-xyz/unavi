@@ -16,15 +16,15 @@
     "start": "node --experimental-specifier-resolution=node ./build/server.js"
   },
   "dependencies": {
-    "engine": "*",
     "mediasoup": "^3.11.4",
     "nanoid": "^4.0.0",
+    "protocol": "*",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.15.0",
-    "zod": "^3.19.1"
+    "zod": "^3.20.2"
   },
   "devDependencies": {
     "@types/node": "^18.11.13",
-    "eslint": "^8.29.0",
+    "eslint": "^8.30.0",
     "eslint-config-custom": "*",
     "nodemon": "^2.0.20",
     "ts-node": "^10.9.1",

@@ -1,4 +1,4 @@
-export async function cropImage(url: string, ratio = 5 / 3, keepWidth = true): Promise<File> {
+export async function cropImage(url: string, ratio = 5 / 3): Promise<File> {
   const res = await fetch(url);
   const imageBlob = await res.blob();
 
@@ -17,10 +17,19 @@ export async function cropImage(url: string, ratio = 5 / 3, keepWidth = true): P
       let cropWidth: number;
       let cropHeight: number;
 
-      if (keepWidth) {
+      if (height > width) {
         cropWidth = width;
         cropHeight = cropWidth / ratio;
       } else {
+        cropHeight = height;
+        cropWidth = cropHeight * ratio;
+      }
+
+      // Zoom in if image is too small
+      if (cropWidth > width) {
+        cropWidth = width;
+        cropHeight = cropWidth / ratio;
+      } else if (cropHeight > height) {
         cropHeight = height;
         cropWidth = cropHeight * ratio;
       }

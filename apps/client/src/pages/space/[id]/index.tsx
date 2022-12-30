@@ -1,11 +1,12 @@
+import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 
-import { getPublicationProps } from "../../../client/lens/utils/getPublicationProps";
 import { trpc } from "../../../client/trpc";
 import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
 import SpaceLayout from "../../../home/layouts/SpaceLayout/SpaceLayout";
-import { bytesToDisplay } from "../../../utils/bytesToDisplay";
-import { numberToCommas } from "../../../utils/numberToCommas";
+import { prisma } from "../../../server/prisma";
+import { appRouter } from "../../../server/router/_app";
+import { hexDisplayToNumber } from "../../../utils/numberToHexDisplay";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   const ONE_MINUTE_IN_SECONDS = 60;
@@ -16,62 +17,74 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
     `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
-  const id = query.id as string;
-  const publicationProps = await getPublicationProps(id);
+  const hexId = query.id as string;
+  const id = hexDisplayToNumber(hexId);
+
+  const ssg = await createProxySSGHelpers({
+    router: appRouter,
+    ctx: {
+      prisma,
+      res,
+      session: null,
+    },
+  });
+
+  await ssg.space.byId.prefetch({ id });
 
   return {
     props: {
+      trpcState: ssg.dehydrate(),
       id,
-      ...publicationProps,
     },
   };
 };
 
-export default function Space(props: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const { data: stats } = trpc.public.modelStats.useQuery(
-    { publicationId: props.id },
-    {
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      trpc: {
-        context: {
-          skipBatch: true,
-        },
-      },
-    }
-  );
+export default function Space({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const { data: space } = trpc.space.byId.useQuery({ id }, { refetchOnWindowFocus: false });
+
+  // const { data: stats } = trpc.public.modelStats.useQuery(
+  //   { publicationId: id },
+  //   {
+  //     refetchOnWindowFocus: false,
+  //     refetchOnMount: false,
+  //     refetchOnReconnect: false,
+  //     trpc: {
+  //       context: {
+  //         skipBatch: true,
+  //       },
+  //     },
+  //   }
+  // );
 
   return (
-    <SpaceLayout {...props}>
+    <SpaceLayout id={id} author={space?.author ?? null} metadata={space?.metadata ?? null}>
       <div className="space-y-4 text-lg">
-        {props.publication?.metadata.description && (
-          <div className="whitespace-pre-line">{props.publication?.metadata.description}</div>
+        {space?.metadata?.description && (
+          <div className="whitespace-pre-line">{space?.metadata.description}</div>
         )}
 
-        <div className="flex text-neutral-500">
-          <div>
-            {["File Size", "Polygons", "Materials", "Meshes", "Skins", "Bones"].map((title) => (
-              <div key={title}>{title}</div>
-            ))}
-          </div>
+        {/* {stats && (
+          <div className="flex text-neutral-500">
+            <div>
+              {["File Size", "Polygons", "Materials", "Meshes", "Skins", "Bones"].map((title) => (
+                <div key={title}>{title}</div>
+              ))}
+            </div>
 
-          <div className="pl-4">
-            {(stats
-              ? [
-                  bytesToDisplay(stats.fileSize),
-                  numberToCommas(stats.polygonCount),
-                  numberToCommas(stats.materialCount),
-                  numberToCommas(stats.meshCount),
-                  numberToCommas(stats.skinCount),
-                  numberToCommas(stats.boneCount),
-                ]
-              : ["...", "...", "...", "...", "...", "..."]
-            ).map((stat, i) => (
-              <div key={i}>{stat}</div>
-            ))}
+            <div className="pl-4">
+              {[
+                bytesToDisplay(stats.fileSize),
+                numberToCommas(stats.polygonCount),
+                numberToCommas(stats.materialCount),
+                numberToCommas(stats.meshCount),
+                numberToCommas(stats.skinCount),
+                numberToCommas(stats.boneCount),
+              ].map((stat, i) => (
+                <div key={i}>{stat}</div>
+              ))}
+            </div>
           </div>
-        </div>
+        )} */}
       </div>
     </SpaceLayout>
   );

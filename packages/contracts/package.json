@@ -1,0 +1,27 @@
+{
+  "name": "contracts",
+  "version": "0.0.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "generate": "typechain --target ethers-v5 --out-dir contracts './abis/*.json'",
+    "lint": "cd ../.. && eslint --fix packages/contracts --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
+  },
+  "dependencies": {
+    "zod": "^3.20.2"
+  },
+  "devDependencies": {
+    "@ethersproject/abi": "^5.6.4",
+    "@ethersproject/bytes": "^5.6.1",
+    "@ethersproject/providers": "^5.7.1",
+    "@typechain/ethers-v5": "^10.2.0",
+    "eslint": "^8.30.0",
+    "eslint-config-custom": "*",
+    "ethers": "^5.7.2",
+    "tsconfig": "*",
+    "typechain": "^8.1.1",
+    "typescript": "~4.9.4"
+  }
+}

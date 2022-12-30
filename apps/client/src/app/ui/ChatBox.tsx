@@ -1,17 +1,16 @@
 import { useEffect, useRef } from "react";
 
-import { useSubscribeValue } from "../../editor/hooks/useSubscribeValue";
+import { useAppStore } from "../../app/store";
 import { useIsMobile } from "../../utils/useIsMobile";
-import { useAppStore } from "../store";
+import { sendToHost } from "../hooks/useHost";
 import ChatMessage from "./ChatMessage";
 
 export default function ChatBox() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const chatBoxFocused = useAppStore((state) => state.chatBoxFocused);
-  const chatMessages$ = useAppStore((state) => state.engine?.networkingInterface.chatMessages$);
+  const chatMessages = useAppStore((state) => state.chatMessages);
 
-  const chatMessages = useSubscribeValue(chatMessages$);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -45,12 +44,14 @@ export default function ChatBox() {
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              const value = e.currentTarget.value;
+
+              const data = e.currentTarget.value;
+              if (!data) return;
+
               e.currentTarget.value = "";
-              if (!value) return;
 
               // Send message to server
-              useAppStore.getState().engine?.sendChatMessage(value);
+              sendToHost({ subject: "message", data });
             }
           }}
           onFocus={() => useAppStore.setState({ chatBoxFocused: true })}

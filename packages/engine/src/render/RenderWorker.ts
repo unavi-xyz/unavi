@@ -19,9 +19,9 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
 import { PostMessage } from "../types";
+import { OtherPlayersPlugin } from "./players/OtherPlayersPlugin";
+import { PlayerPlugin } from "./players/PlayerPlugin";
 import { OrbitControlsPlugin } from "./plugins/OrbitControls/OrbitControlsPlugin";
-import { OtherPlayersPlugin } from "./plugins/OtherPlayers/OtherPlayersPlugin";
-import { PlayerPlugin } from "./plugins/PlayerPlugin";
 import { RaycasterPlugin } from "./plugins/RaycasterPlugin";
 import { OutlinePass } from "./plugins/TransformControls/OutlinePass";
 import { TransformControlsPlugin } from "./plugins/TransformControls/TransformControlsPlugin";

@@ -44,6 +44,10 @@ function publishedMetadataKey(projectId: string) {
   return `published/${projectId}/metadata.json`;
 }
 
+function profileMetadataKey(profileId: string) {
+  return `profiles/${profileId}/metadata.json`;
+}
+
 function tempFileKey(fileId: string) {
   return `temp/${fileId}`;
 }
@@ -109,6 +113,42 @@ export async function createPublishedMetadataUploadURL(projectId: string) {
     Bucket: env.S3_BUCKET,
     Key: publishedMetadataKey(projectId),
     ContentType: "application/json",
+    ACL: "public-read",
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+  return url;
+}
+
+export async function createProfileMetadataUploadURL(profileId: string) {
+  const command = new PutObjectCommand({
+    Bucket: env.S3_BUCKET,
+    Key: profileMetadataKey(profileId),
+    ContentType: "application/json",
+    ACL: "public-read",
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+  return url;
+}
+
+export async function createProfileImageUploadURL(profileId: string) {
+  const command = new PutObjectCommand({
+    Bucket: env.S3_BUCKET,
+    Key: `profiles/${profileId}/image.jpg`,
+    ContentType: "image/jpeg",
+    ACL: "public-read",
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+  return url;
+}
+
+export async function createProfileCoverImageUploadURL(profileId: string) {
+  const command = new PutObjectCommand({
+    Bucket: env.S3_BUCKET,
+    Key: `profiles/${profileId}/cover.jpg`,
+    ContentType: "image/jpeg",
     ACL: "public-read",
   });
 

@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 
 import { trpc } from "../../../client/trpc";
 import { env } from "../../../env/client.mjs";
@@ -50,9 +51,15 @@ export default function Project() {
       promises.push(deleteProject({ id }));
       promises.push(utils.project.getAll.invalidate());
 
+      toast.promise(Promise.all(promises), {
+        loading: "Deleting project...",
+        success: "Project deleted",
+        error: "Failed to delete project",
+      });
+
       await Promise.all(promises);
 
-      router.push("/create/spaces");
+      router.push("/create");
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -70,7 +77,7 @@ export default function Project() {
           variant="filled"
           color="error"
           rounded="large"
-          loading={loading}
+          disabled={loading}
           onClick={handleDelete}
         >
           Delete Project

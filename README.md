@@ -26,7 +26,7 @@
 
 ## 🔥 Features
 
-- Decentralized identity / social graph using [Lens Protocol 🌿](https://lens.dev/)
+- Decentralized identity using [Flamingo 🦩](https://docs.thewired.space/flamingo)
 - Open backend, anyone can run their own servers
 - Custom multi-threaded, [glTF](https://github.com/KhronosGroup/glTF)-based game engine
 - [VRM](https://vrm.dev/) avatar support
@@ -38,14 +38,15 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 
 ### Apps
 
-- [client](apps/client): the main website used to access the Wired.
+- [client](apps/client): the main website used to access the Wired
 - [host](apps/host): dockerized server for hosting spaces
 
 ### Packages
 
+- [contracts](packages/contracts): generated contract types
 - [engine](packages/engine): a multi-threaded 3D game engine
 - [eslint-config-custom](packages/eslint-config-custom): custom eslint config used throughout the repo
-- [lens](packages/lens): queries and types for interacting with Lens
+- [protocol](packages/protocol): types describing the interface between client and host
 - [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
 
 ### Utilities

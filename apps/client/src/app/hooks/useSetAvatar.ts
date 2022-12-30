@@ -1,7 +1,8 @@
+import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
 import { env } from "../../env/client.mjs";
 import { LocalStorageKey } from "../constants";
-import { useAppStore } from "../store";
+import { sendToHost } from "./useHost";
 
 function getAvatarURL(fileId: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/temp/${fileId}`;
@@ -34,7 +35,7 @@ export function useSetAvatar() {
 
     // Publish avatar
     const avatarURL = getAvatarURL(fileId);
-    engine.setAvatar(avatarURL);
+    sendToHost({ subject: "set_avatar", data: avatarURL });
 
     // Save to local storage
     localStorage.setItem(LocalStorageKey.Avatar, avatarURL);

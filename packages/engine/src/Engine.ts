@@ -2,7 +2,6 @@ import { GLTFExporter } from "./exporter/GLTFExporter";
 import { LoaderThread } from "./loader/LoaderThread";
 import { InputManager } from "./main/InputManager";
 import { MainScene } from "./main/MainScene";
-import { NetworkingInterface } from "./networking/NetworkingInterface";
 import { PhysicsThread } from "./physics/PhysicsThread";
 import { RenderThread } from "./render/RenderThread";
 
@@ -26,7 +25,6 @@ export class Engine {
   renderThread: RenderThread;
 
   scene: MainScene;
-  networkingInterface: NetworkingInterface;
   input: InputManager | null = null;
 
   running = false;
@@ -52,25 +50,13 @@ export class Engine {
       avatarAnimationsPath,
     });
 
-    // Create physics thread
     this.physicsThread = new PhysicsThread({ canvas, engine: this });
-
-    // Create loader thread
     this.loaderThread = new LoaderThread();
-
-    // Create scene
     this.scene = new MainScene({
       physicsThread: this.physicsThread,
       loaderThread: this.loaderThread,
       renderThread: this.renderThread,
     });
-
-    // Create networking interface
-    this.networkingInterface = new NetworkingInterface({
-      scene: this.scene,
-      renderThread: this.renderThread,
-    });
-
     this.input = new InputManager(this.renderThread, this.physicsThread, camera);
 
     // Once the threads are ready, create the player
@@ -84,36 +70,10 @@ export class Engine {
     if (camera === "player") createPlayer();
   }
 
-  joinSpace(spaceId: string) {
-    return this.networkingInterface.joinSpace(spaceId);
-  }
-
-  leaveSpace() {
-    this.networkingInterface.leaveSpace();
-  }
-
-  sendChatMessage(message: string) {
-    this.networkingInterface.sendChatMessage(message);
-  }
-
-  setName(name: string | null) {
-    this.networkingInterface.setName(name);
-  }
-
-  setAvatar(url: string | null) {
-    this.networkingInterface.setAvatar(url);
-  }
-
-  setHandle(handle: string | null) {
-    this.networkingInterface.setHandle(handle);
-  }
-
-  waitForReady() {
-    return Promise.all([
-      this.physicsThread.waitForReady(),
-      this.loaderThread.waitForReady(),
-      this.renderThread.waitForReady(),
-    ]);
+  async waitForReady() {
+    await this.physicsThread.waitForReady();
+    await this.loaderThread.waitForReady();
+    await this.renderThread.waitForReady();
   }
 
   async start() {
@@ -145,7 +105,6 @@ export class Engine {
   }
 
   destroy() {
-    this.networkingInterface.disconnect();
     this.physicsThread.destroy();
     this.loaderThread.destroy();
     this.renderThread.destroy();

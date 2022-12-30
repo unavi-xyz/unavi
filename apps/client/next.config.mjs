@@ -65,7 +65,7 @@ export default defineNextConfig({
     ignoreDuringBuilds: true,
   },
   experimental: {
-    transpilePackages: ["three", "engine", "lens"],
+    transpilePackages: ["three", "engine"],
   },
   images: {
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT, env.NEXT_PUBLIC_IPFS_GATEWAY.split(":")[0]],
@@ -98,7 +98,7 @@ export default defineNextConfig({
       },
       {
         source: "/editor",
-        destination: "/create/spaces",
+        destination: "/create",
         permanent: false,
       },
     ];

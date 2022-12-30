@@ -1,9 +1,8 @@
-# engine
+# Engine
 
 A multi-threaded, glTF-based, 3D game engine.
 
 ## Tech Stack
 
-- [Three.js](https://threejs.org/)
-- [Rapier.rs](https://rapier.rs/)
-- [Mediasoup](https://mediasoup.org/)
+- Rendering - [Three.js](https://threejs.org/)
+- Physics - [Rapier.rs](https://rapier.rs/)

@@ -27,19 +27,13 @@ model Publication {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  type   PublicationType
-  owner  String?
-  lensId String?
+  owner   String?
+  spaceId Int?
 
   ViewEvents ViewEvent[]
   viewCount  Int         @default(0)
 
   Project Project[]
-}
-
-enum PublicationType {
-  SPACE
-  AVATAR
 }
 
 // Projects

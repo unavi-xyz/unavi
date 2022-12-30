@@ -319,6 +319,13 @@ export class InputManager {
     const right = aForce - dForce;
     const direction: [number, number] = [right, forward];
 
+    // Normalize direction
+    const magnitude = Math.sqrt(direction[0] ** 2 + direction[1] ** 2);
+    if (magnitude > 0) {
+      direction[0] /= magnitude;
+      direction[1] /= magnitude;
+    }
+
     // Send direction to render thread
     this.#renderThread.setPlayerInputVector(direction);
   }

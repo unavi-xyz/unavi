@@ -1,14 +1,14 @@
 interface Props extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options: string[];
   inputAdornment?: string;
-  title?: string;
+  name?: string;
   outline?: boolean;
 }
 
 export default function Select({
   options,
   inputAdornment,
-  title,
+  name: title,
   outline = false,
   ...rest
 }: Props) {

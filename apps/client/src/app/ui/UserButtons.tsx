@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IoMdArrowRoundBack, IoMdPerson } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
-import { useLens } from "../../client/lens/hooks/useLens";
+import { useAppStore } from "../../app/store";
+import { useSession } from "../../client/auth/useSession";
+import { trpc } from "../../client/trpc";
 import Dialog from "../../ui/Dialog";
 import Tooltip from "../../ui/Tooltip";
 import { LocalStorageKey } from "../constants";
+import { sendToHost } from "../hooks/useHost";
 import { usePointerLocked } from "../hooks/usePointerLocked";
 import { useSetAvatar } from "../hooks/useSetAvatar";
-import { useAppStore } from "../store";
 import UserPage from "./UserPage";
 
 export default function UserButtons() {
@@ -22,8 +24,14 @@ export default function UserButtons() {
   const hasProducedAudio = useRef(false);
 
   const isPointerLocked = usePointerLocked();
-  const { handle } = useLens();
   const setAvatar = useSetAvatar();
+  const utils = trpc.useContext();
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    if (!session?.address) return;
+    utils.social.profile.byAddress.prefetch({ address: session.address });
+  }, [session, utils]);
 
   async function handleClose() {
     setOpenUserPage(false);
@@ -33,26 +41,31 @@ export default function UserButtons() {
 
     const { displayName, customAvatar, didChangeName, didChangeAvatar } = useAppStore.getState();
 
-    // If no lens handle, use name
-    if (!handle && didChangeName) {
+    if (didChangeName) {
       useAppStore.setState({ didChangeName: false });
 
       // Publish display name
-      engine.setName(displayName);
+      sendToHost({ subject: "set_name", data: displayName });
 
       // Save to local storage
       if (displayName) localStorage.setItem(LocalStorageKey.Name, displayName);
       else localStorage.removeItem(LocalStorageKey.Name);
     }
 
-    // Avatar
-    if (didChangeAvatar && customAvatar) {
-      setAvatar(customAvatar);
-    } else if (didChangeAvatar) {
-      engine.setAvatar(customAvatar);
-      localStorage.removeItem(LocalStorageKey.Avatar);
-      localStorage.removeItem(LocalStorageKey.AvatarId);
-      useAppStore.setState({ didChangeAvatar: false });
+    if (didChangeAvatar) {
+      // Update engine
+      engine.renderThread.postMessage({ subject: "set_avatar", data: customAvatar });
+
+      if (customAvatar) {
+        // Upload avatar
+        setAvatar(customAvatar);
+      } else {
+        // Remove avatar
+        sendToHost({ subject: "set_avatar", data: null });
+
+        localStorage.removeItem(LocalStorageKey.Avatar);
+        useAppStore.setState({ didChangeAvatar: false });
+      }
     }
   }
 
@@ -62,6 +75,8 @@ export default function UserButtons() {
 
     // Toggle mic
     const isMuted = !muted;
+    useAppStore.setState({ micPaused: isMuted });
+    setMuted(isMuted);
 
     // If first time using mic, request permission
     if (!isMuted && !hasProducedAudio.current) {
@@ -72,14 +87,19 @@ export default function UserButtons() {
       const track = stream.getAudioTracks()[0];
       if (!track) throw new Error("No audio track found");
 
-      await engine.networkingInterface.produceAudio(track);
+      const { producerTransport } = useAppStore.getState();
+      if (!producerTransport) throw new Error("Producer transport not found");
 
+      const producer = await producerTransport.produce({ track });
+
+      useAppStore.setState({ producer, producedTrack: track });
       hasProducedAudio.current = true;
     }
 
-    await engine.networkingInterface.setAudioPaused(isMuted);
+    const { producer } = useAppStore.getState();
 
-    setMuted(isMuted);
+    if (isMuted) producer?.pause();
+    else producer?.resume();
   }
 
   const opacityClass = isPointerLocked ? "opacity-0" : "opacity-100";

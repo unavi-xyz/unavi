@@ -1,9 +1,10 @@
-import { ToHostMessage } from "engine";
+import { ToHostMessage } from "protocol";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
 import { Players } from "./Players";
 import { send } from "./utils/send";
+import { toHex } from "./utils/toHex";
 
 const textDecoder = new TextDecoder();
 const PORT = 4000;
@@ -37,7 +38,7 @@ server.ws("/*", {
 
       switch (subject) {
         case "join": {
-          players.joinSpace(ws, data);
+          players.joinSpace(ws, data.id);
           break;
         }
 
@@ -66,8 +67,8 @@ server.ws("/*", {
           break;
         }
 
-        case "set_handle": {
-          players.publishHandle(ws, data);
+        case "set_address": {
+          players.publishAddress(ws, data);
           break;
         }
 
@@ -169,10 +170,10 @@ server.ws("/*", {
 
 // Handle HTTP requests
 server.get("/playercount/*", (res, req) => {
-  const id = String(req.getUrl().slice(13));
+  const id = parseInt(req.getUrl().slice(13));
   const playerCount = players.getPlayerCount(id);
 
-  console.info(`🔢 Player count for ${id}: ${playerCount}`);
+  console.info(`🔢 Player count for ${toHex(id)}: ${playerCount}`);
 
   res.write(String(playerCount));
   res.writeStatus("200 OK");

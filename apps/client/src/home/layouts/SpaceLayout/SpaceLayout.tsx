@@ -1,37 +1,41 @@
+import { ERC721Metadata } from "contracts";
 import Image from "next/image";
 import Link from "next/link";
 
-import { useLens } from "../../../client/lens/hooks/useLens";
-import { PublicationProps } from "../../../client/lens/utils/getPublicationProps";
-import { trimHandle } from "../../../client/lens/utils/trimHandle";
+import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
 import { env } from "../../../env/client.mjs";
+import { Profile } from "../../../server/helpers/getProfileFromAddress";
 import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
 import { isFromCDN } from "../../../utils/isFromCDN";
+import { numberToHexDisplay } from "../../../utils/numberToHexDisplay";
 import MetaTags from "../../MetaTags";
 
 const host =
   process.env.NODE_ENV === "development" ? "localhost:4000" : env.NEXT_PUBLIC_DEFAULT_HOST;
 
-export interface Props extends PublicationProps {
-  id: string;
+export interface Props {
+  id: number;
+  author: Profile | null;
+  metadata: ERC721Metadata | null;
   children: React.ReactNode;
 }
 
-export default function SpaceLayout({ id, metadata, publication, image, children }: Props) {
-  const { handle } = useLens();
-  const author = trimHandle(publication?.profile.handle);
-  const isAuthor = handle && handle === author;
-
+export default function SpaceLayout({ id, author, metadata, children }: Props) {
   const { data: playerCount } = trpc.public.playerCount.useQuery({ id });
+
+  const { data: session } = useSession();
+  const isAuthor = session && session.address === author?.owner;
+
+  const hexId = numberToHexDisplay(id);
 
   return (
     <>
       <MetaTags
-        title={metadata.title ?? id}
-        description={metadata.description ?? undefined}
-        image={metadata.image ?? undefined}
+        title={metadata?.name}
+        description={metadata?.description}
+        image={metadata?.image}
         card="summary_large_image"
       />
 
@@ -40,10 +44,10 @@ export default function SpaceLayout({ id, metadata, publication, image, children
           <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
             <div className="aspect-card h-full w-full rounded-2xl bg-sky-100">
               <div className="relative h-full w-full object-cover">
-                {image &&
-                  (isFromCDN(image) ? (
+                {metadata?.image &&
+                  (isFromCDN(metadata.image) ? (
                     <Image
-                      src={image}
+                      src={metadata.image}
                       priority
                       fill
                       sizes="40vw"
@@ -52,7 +56,7 @@ export default function SpaceLayout({ id, metadata, publication, image, children
                     />
                   ) : (
                     <img
-                      src={image}
+                      src={metadata.image}
                       alt=""
                       className="h-full w-full rounded-2xl object-cover"
                       crossOrigin="anonymous"
@@ -63,14 +67,19 @@ export default function SpaceLayout({ id, metadata, publication, image, children
 
             <div className="flex flex-col justify-between space-y-8 md:w-2/3">
               <div className="space-y-4">
-                <div className="text-center text-3xl font-black">{publication?.metadata.name}</div>
+                <div className="text-center text-3xl font-black">{metadata?.name}</div>
 
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-neutral-500">By</div>
-                    <Link href={`/user/${author}`}>
-                      <div className="cursor-pointer hover:underline">@{author}</div>
-                    </Link>
+
+                    {author && (
+                      <Link href={`/user/${numberToHexDisplay(author.id)}`}>
+                        <div className="cursor-pointer decoration-2 hover:underline">
+                          {author.handle?.string ?? author.owner}
+                        </div>
+                      </Link>
+                    )}
                   </div>
 
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
@@ -89,7 +98,7 @@ export default function SpaceLayout({ id, metadata, publication, image, children
                 </div>
               </div>
 
-              <Link href={`/app/${id}`}>
+              <Link href={`/app/${hexId}`}>
                 <div>
                   <Button variant="filled" fullWidth>
                     <div className="py-2">Join Space</div>
@@ -101,9 +110,9 @@ export default function SpaceLayout({ id, metadata, publication, image, children
 
           <div className="space-y-4 pb-4">
             <div className="flex space-x-4">
-              <NavigationTab href={`/space/${id}`} text="About" />
+              <NavigationTab href={`/space/${hexId}`} text="About" />
 
-              {isAuthor && <NavigationTab href={`/space/${id}/settings`} text="Settings" />}
+              {isAuthor && <NavigationTab href={`/space/${hexId}/settings`} text="Settings" />}
             </div>
 
             <div>{children}</div>

@@ -1,80 +1,50 @@
-import { useGetPublicationQuery } from "lens";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-import { useLens } from "../../client/lens/hooks/useLens";
-import { parseUri } from "../../utils/parseUri";
+import { useAppStore } from "../../app/store";
+import { useSession } from "../../client/auth/useSession";
 import { LocalStorageKey } from "../constants";
-import { useAppStore } from "../store";
+import { sendToHost } from "./useHost";
 
 export function useLoadUser() {
-  const [avatarId, setAvatarId] = useState<string | null>(null);
-  const [loadedAvatarPublication, setLoadedAvatarPublication] = useState<string | null>(null);
-
   const engine = useAppStore((state) => state.engine);
-  const { handle } = useLens();
+  const ws = useAppStore((state) => state.ws);
 
-  const [{ data: avatarPublication }] = useGetPublicationQuery({
-    variables: { request: { publicationId: avatarId } },
-    pause: !avatarId,
-  });
+  const { data: session } = useSession();
 
+  // Set data on initial load
   useEffect(() => {
-    // Publish handle
-    engine?.setHandle(handle ?? null);
-  }, [engine, handle]);
-
-  useEffect(() => {
-    if (!engine) return;
+    if (!engine || !ws || ws.readyState !== ws.OPEN) return;
 
     const { customAvatar, displayName } = useAppStore.getState();
 
-    // Name
+    // Set name
     const localName = localStorage.getItem(LocalStorageKey.Name);
+
     if (localName !== displayName) {
-      useAppStore.setState({ displayName });
-      engine.setName(displayName);
+      useAppStore.setState({ displayName: localName });
+      sendToHost({ subject: "set_name", data: localName });
     }
 
-    // Avatar
+    // Set avatar
     const localAvatar = localStorage.getItem(LocalStorageKey.Avatar);
-    const localAvatarId = localStorage.getItem(LocalStorageKey.AvatarId);
 
-    if (localAvatarId) {
-      // Use avatarId if available
-      setAvatarId(localAvatarId);
-    } else if (localAvatar) {
-      // Otherwise use local storage avatar
+    if (localAvatar) {
       if (localAvatar !== customAvatar) {
         useAppStore.setState({ customAvatar: localAvatar });
-        engine.setAvatar(localAvatar);
+        engine.renderThread.postMessage({ subject: "set_avatar", data: localAvatar });
+        sendToHost({ subject: "set_avatar", data: localAvatar });
       }
     } else {
-      // Otherwise use default avatar
+      // If no avatar set, use default avatar
       useAppStore.setState({ customAvatar: null });
-      engine.setAvatar(null);
+      engine.renderThread.postMessage({ subject: "set_avatar", data: null });
+      sendToHost({ subject: "set_avatar", data: null });
     }
-  }, [engine]);
+  }, [engine, ws, ws?.readyState]);
 
+  // Publish address on change
   useEffect(() => {
-    async function fetchAvatar() {
-      if (!engine || !avatarPublication) return;
-
-      const avatarURI = avatarPublication?.publication?.metadata.media[1]?.original.url;
-      if (!avatarURI) return;
-
-      const url = parseUri(avatarURI);
-
-      if (loadedAvatarPublication !== url) {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const customAvatar = URL.createObjectURL(blob);
-
-        useAppStore.setState({ customAvatar });
-        engine.setAvatar(avatarURI);
-        setLoadedAvatarPublication(url);
-      }
-    }
-
-    fetchAvatar();
-  }, [engine, avatarPublication, loadedAvatarPublication]);
+    if (!ws || ws.readyState !== ws.OPEN) return;
+    sendToHost({ subject: "set_address", data: session?.address ?? null });
+  }, [session, ws, ws?.readyState]);
 }

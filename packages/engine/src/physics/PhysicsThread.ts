@@ -1,3 +1,5 @@
+import { BehaviorSubject } from "rxjs";
+
 import { Engine } from "../Engine";
 import { Transferable } from "../types";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./types";
@@ -20,6 +22,7 @@ export class PhysicsThread {
   #readyListeners: Array<() => void> = [];
 
   #engine: Engine;
+  isFalling$ = new BehaviorSubject(false);
 
   constructor({ engine }: PhysicsThreadOptions) {
     this.#engine = engine;
@@ -43,13 +46,12 @@ export class PhysicsThread {
 
       case "player_buffers": {
         this.#engine.renderThread.setPlayerBuffers(data);
-        this.#engine.networkingInterface.setPlayerPosition(data.position);
         break;
       }
 
       case "player_falling": {
-        // Publish to network
-        this.#engine.networkingInterface.setFallState(data);
+        // Save to state
+        this.isFalling$.next(data);
 
         // Send to render thread
         this.#engine.renderThread.postMessage({

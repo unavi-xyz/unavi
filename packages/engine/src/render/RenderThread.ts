@@ -22,6 +22,11 @@ export class RenderThread {
   ready = false;
   worker: Worker | FakeWorker;
 
+  cameraPosition: Int32Array | null = null;
+  cameraRotation: Int16Array | null = null;
+  playerRotation: Int16Array | null = null;
+  playerPosition: Int32Array | null = null;
+
   #canvas: HTMLCanvasElement;
   #engine: Engine;
   #onReady: Array<() => void> = [];
@@ -54,9 +59,7 @@ export class RenderThread {
       // Send canvas
       this.postMessage({ subject: "set_canvas", data: offscreen }, [offscreen]);
     } else {
-      console.info("❌ Browser does not support OffscreenCanvas");
-
-      // Render in a fake worker on the main thread
+      // Otherwise render in a fake worker on the main thread
       this.worker = new FakeWorker();
 
       const renderWorker = new RenderWorker(
@@ -114,13 +117,13 @@ export class RenderThread {
       }
 
       case "set_player_rotation_buffer": {
-        this.#engine.networkingInterface.setPlayerRotation(data);
+        this.playerRotation = data;
         break;
       }
 
       case "set_camera_buffers": {
-        this.#engine.networkingInterface.setCameraPosition(data.position);
-        this.#engine.networkingInterface.setCameraRotation(data.rotation);
+        this.cameraPosition = data.position;
+        this.cameraRotation = data.rotation;
         break;
       }
 
@@ -139,7 +142,7 @@ export class RenderThread {
       }
 
       case "player_loaded": {
-        this.#engine.networkingInterface.setPlayerLoaded(data);
+        // this.#engine.networking.setPlayerLoaded(data);
         break;
       }
     }
@@ -179,6 +182,8 @@ export class RenderThread {
   }
 
   setPlayerBuffers({ position, velocity }: { position: Int32Array; velocity: Int32Array }) {
+    this.playerPosition = position;
+
     this.postMessage({
       subject: "set_player_buffers",
       data: {

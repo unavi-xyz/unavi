@@ -14,20 +14,16 @@
     "@gltf-transform/extensions": "2.4.7",
     "@gltf-transform/functions": "^2.4.7",
     "@pixiv/three-vrm": "^1.0.5",
-    "lens": "*",
-    "mediasoup-client": "^3.6.67",
+    "contracts": "*",
     "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.0",
-    "rxjs": "^7.6.0",
+    "rxjs": "^7.8.0",
     "three": "^0.144.0",
-    "urql": "^3.0.3",
-    "zod": "^3.19.1"
+    "zod": "^3.20.2"
   },
   "devDependencies": {
     "@types/offscreencanvas": "^2019.7.0",
     "@types/three": "^0.144.0",
-    "eslint": "^8.29.0",
-    "eslint-config-custom": "*",
     "tsconfig": "*",
     "typescript": "~4.9.4"
   }

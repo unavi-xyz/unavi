@@ -41,7 +41,7 @@ yarn-error.log*
 
 # codegen
 generated
-contracts
+packages/contracts/contracts
 
 # public
 public

@@ -1,8 +1,6 @@
 import { NodeIO } from "@gltf-transform/core";
 import { DracoMeshCompression } from "@gltf-transform/extensions";
-import { GetPublicationDocument, GetPublicationQuery, GetPublicationQueryVariables } from "lens";
 
-import { lensClient } from "../lens";
 import createDecoderModule from "./draco_decoder_gltf";
 
 export type ModelStats = {
@@ -16,16 +14,8 @@ export type ModelStats = {
 
 export async function getModelStats(publicationId: string): Promise<ModelStats> {
   // Fetch publication
-  const { data } = await lensClient
-    .query<GetPublicationQuery, GetPublicationQueryVariables>(GetPublicationDocument, {
-      request: {
-        publicationId,
-      },
-    })
-    .toPromise();
-
-  const url = data?.publication?.metadata.media[1]?.original.url;
-  if (!url) throw new Error("NOT_FOUND");
+  // TODO
+  const url = publicationId;
 
   // Fetch model
   const response = await fetch(url);

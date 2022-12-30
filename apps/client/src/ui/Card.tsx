@@ -58,10 +58,10 @@ export default function Card({
           )}
         </div>
 
-        <div className="absolute flex h-full w-full items-end px-3 pb-2 tracking-wide text-white">
+        <div className="absolute flex h-full w-full items-end tracking-wide text-white">
           {text && (
             <div
-              className="w-full overflow-hidden text-xl font-black drop-shadow-dark"
+              className="w-full overflow-hidden px-3 pb-2 text-xl font-black drop-shadow-dark"
               style={{
                 textShadow: "0 0 6px rgba(0, 0, 0, 0.4)",
               }}

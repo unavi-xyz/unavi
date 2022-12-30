@@ -1,19 +1,23 @@
+import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { useAnalytics } from "../../app/hooks/useAnalytics";
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useLoadUser } from "../../app/hooks/useLoadUser";
 import { useResizeEngineCanvas } from "../../app/hooks/useResizeEngineCanvas";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
+import { useSpace } from "../../app/hooks/useSpace";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
 import LoadingScreen from "../../app/ui/LoadingScreen";
 import MobileChatBox from "../../app/ui/MobileChatBox";
 import UserButton from "../../app/ui/UserButtons";
-import { getPublicationProps } from "../../client/lens/utils/getPublicationProps";
 import MetaTags from "../../home/MetaTags";
+import { prisma } from "../../server/prisma";
+import { appRouter } from "../../server/router/_app";
+import { hexDisplayToNumber } from "../../utils/numberToHexDisplay";
 import { useIsMobile } from "../../utils/useIsMobile";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
@@ -25,81 +29,42 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
     `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
   );
 
-  const id = query.id as string;
-  const props = await getPublicationProps(id);
+  const hexId = query.id as string;
+  const id = hexDisplayToNumber(hexId);
+
+  const ssg = await createProxySSGHelpers({
+    router: appRouter,
+    ctx: {
+      prisma,
+      res,
+      session: null,
+    },
+  });
+
+  await ssg.space.byId.prefetch({ id });
 
   return {
     props: {
+      trpcState: ssg.dehydrate(),
       id,
-      ...props,
     },
   };
 };
 
-export default function App({
-  id,
-  metadata,
-  image,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function App({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const createdEngine = useRef(false);
-  const [engineStarted, setEngineStarted] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingText, setLoadingText] = useState("Starting engine...");
 
   const engine = useAppStore((state) => state.engine);
 
-  const setAvatar = useSetAvatar();
-  const isMobile = useIsMobile();
   useResizeEngineCanvas(engine, canvasRef, containerRef);
   useLoadUser();
   useAppHotkeys();
   useAnalytics();
-
-  useEffect(() => {
-    if (!engine) return;
-
-    // Display loading status
-    engine.networkingInterface.spaceJoinStatus$.subscribe(
-      ({ spaceFetched, sceneLoaded, webrtcConnected, wsConnected }) => {
-        setLoadingText("Fetching space...");
-        setLoadingProgress(0.2);
-
-        if (!spaceFetched) return;
-
-        setLoadingText("Connecting...");
-        setLoadingProgress(0.35);
-
-        if (!wsConnected) return;
-
-        setLoadingText("Connecting...");
-        setLoadingProgress(0.5);
-
-        if (!webrtcConnected) return;
-
-        setLoadingText("Loading scene...");
-        setLoadingProgress(0.75);
-
-        if (!sceneLoaded) return;
-
-        setLoadingText("Ready!");
-        setLoadingProgress(1);
-      }
-    );
-
-    // Join space
-    engine.joinSpace(id).then(async () => {
-      // Start engine
-      await engine.start();
-
-      setEngineStarted(true);
-    });
-
-    return () => {
-      engine.leaveSpace();
-    };
-  }, [engine, id]);
+  const setAvatar = useSetAvatar();
+  const isMobile = useIsMobile();
+  const { space, loadingText, loadingProgress, join } = useSpace(id);
 
   useEffect(() => {
     if (createdEngine.current) return;
@@ -108,9 +73,6 @@ export default function App({
     async function initEngine() {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not found");
-
-      setLoadingText("Starting engine...");
-      setLoadingProgress(0);
 
       const { Engine } = await import("engine");
 
@@ -123,7 +85,7 @@ export default function App({
         avatarAnimationsPath: "/models/",
       });
 
-      await engine.waitForReady();
+      await engine.start();
 
       useAppStore.setState({ engine });
     }
@@ -134,29 +96,31 @@ export default function App({
   useEffect(() => {
     if (!engine) return;
 
+    join();
+
     return () => {
       engine.destroy();
-      useAppStore.setState({ engine: null });
+      useAppStore.setState({ engine: null, chatMessages: [] });
     };
-  }, [engine]);
+  }, [engine, join]);
 
-  const loadedClass = engineStarted ? "opacity-100" : "opacity-0";
+  const loaded = loadingProgress === 1;
+  const loadedClass = loaded ? "opacity-100" : "opacity-0";
 
   return (
     <>
       <MetaTags
-        title={metadata.title ?? id}
-        description={metadata.description ?? undefined}
-        image={metadata.image ?? undefined}
+        title={space?.metadata?.name}
+        description={space?.metadata?.description}
+        image={space?.metadata?.image}
         card="summary_large_image"
       />
 
       <Script src="/scripts/draco_decoder.js" />
 
       <LoadingScreen
-        text={metadata.title}
-        image={image}
-        loaded={engineStarted}
+        text={space?.metadata?.name}
+        image={space?.metadata?.image}
         loadingProgress={loadingProgress}
         loadingText={loadingText}
       />
@@ -186,7 +150,7 @@ export default function App({
           useAppStore.setState({ customAvatar: url });
         }}
       >
-        {engineStarted && (
+        {loaded && (
           <div className="absolute inset-x-0 top-0 z-10 mx-auto mt-4 w-96">
             <UserButton />
           </div>
@@ -198,7 +162,7 @@ export default function App({
           </div>
         </div>
 
-        {engineStarted ? (
+        {loaded ? (
           isMobile ? (
             <div className="absolute left-0 bottom-0 z-10 p-4">
               <MobileChatBox />

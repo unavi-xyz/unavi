@@ -1,48 +1,83 @@
 import { useState } from "react";
 
-import { useLens } from "../../../client/lens/hooks/useLens";
+import { useSession } from "../../../client/auth/useSession";
+import { trpc } from "../../../client/trpc";
 import Button from "../../../ui/Button";
-import Dialog from "../../../ui/Dialog";
 import DropdownMenu from "../../../ui/DropdownMenu";
 import { useIsMobile } from "../../../utils/useIsMobile";
-import ViewerProfilePicture from "../../lens/ViewerProfilePicture";
+import ProfilePicture from "../../ProfilePicture";
 import ProfileMenu from "./ProfileMenu";
-import SwitchProfilePage from "./SwitchProfilePage";
 
-export default function ProfileButton() {
+interface Props {
+  fullWidth?: boolean;
+  size?: "small" | "large";
+}
+
+export default function ProfileButton({ fullWidth = false, size = "small" }: Props) {
   const [openMenu, setOpenMenu] = useState(false);
-  const [openSwitchProfile, setOpenSwitchProfile] = useState(false);
 
-  const { handle } = useLens();
+  const { data: session, status } = useSession();
   const isMobile = useIsMobile();
 
+  const { data: profile, isLoading: isProfileLoading } = trpc.social.profile.byAddress.useQuery(
+    { address: session?.address ?? "" },
+    { enabled: session?.address !== undefined }
+  );
+
+  const isLoading = status === "loading" || isProfileLoading;
+
+  const fullWidthClass = fullWidth ? "w-full" : "";
+  const textSizeClass = size === "small" ? "" : "text-xl";
+  const profilePictureSizeClass = size === "small" ? "h-9 w-9" : "h-11 w-11";
+
   return (
-    <>
-      <Dialog open={openSwitchProfile} onClose={() => setOpenSwitchProfile(false)}>
-        <SwitchProfilePage onClose={() => setOpenSwitchProfile(false)} />
-      </Dialog>
+    <div className={`relative ${fullWidthClass}`}>
+      <Button
+        color="neutral"
+        rounded={isMobile ? "full" : "large"}
+        icon={isMobile}
+        fullWidth={fullWidth}
+        disabled={isLoading}
+        onClick={() => {
+          if (isLoading) return;
+          setOpenMenu(true);
+        }}
+      >
+        <div className={`flex items-center justify-center space-x-4 ${textSizeClass}`}>
+          {isMobile ? null : isLoading ? (
+            <div className="h-5 w-20 animate-pulse rounded bg-neutral-300" />
+          ) : profile?.handle ? (
+            <div>{profile.handle.string}</div>
+          ) : (
+            <div className="w-24 overflow-hidden text-ellipsis">{session?.address}</div>
+          )}
 
-      <div className="relative pt-1">
-        <Button
-          rounded={isMobile ? "full" : "large"}
-          icon={isMobile}
-          onClick={() => setOpenMenu(true)}
-        >
-          <div className="flex items-center justify-center space-x-4">
-            {!isMobile && <div>@{handle}</div>}
-
-            <div className="h-9 w-9 overflow-hidden">
-              <ViewerProfilePicture circle draggable={false} size={36} />
-            </div>
+          <div className={`overflow-hidden ${profilePictureSizeClass}`}>
+            {isLoading ? (
+              <div className="h-full w-full animate-pulse rounded-full bg-neutral-300" />
+            ) : session?.address ? (
+              <ProfilePicture
+                src={profile?.metadata?.image}
+                uniqueKey={profile?.handle?.full ?? session.address}
+                circle
+                draggable={false}
+                size={size === "small" ? 36 : 44}
+              />
+            ) : null}
           </div>
-        </Button>
-
-        <div className="mt-1">
-          <DropdownMenu placement="right" open={openMenu} onClose={() => setOpenMenu(false)}>
-            <ProfileMenu openSwitchProfile={() => setOpenSwitchProfile(true)} />
-          </DropdownMenu>
         </div>
+      </Button>
+
+      <div className="mt-1">
+        <DropdownMenu
+          fullWidth={fullWidth}
+          placement="right"
+          open={openMenu}
+          onClose={() => setOpenMenu(false)}
+        >
+          <ProfileMenu />
+        </DropdownMenu>
       </div>
-    </>
+    </div>
   );
 }

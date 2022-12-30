@@ -69,25 +69,19 @@ export const publicationRouter = router({
       return url;
     }),
 
-  create: protectedProcedure
-    .input(
-      z.object({
-        type: z.enum(["SPACE", "AVATAR"]),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Create publication
-      const { id } = await ctx.prisma.publication.create({
-        data: { owner: ctx.session.address, type: input.type },
-      });
+  create: protectedProcedure.mutation(async ({ ctx }) => {
+    // Create publication
+    const { id } = await ctx.prisma.publication.create({
+      data: { owner: ctx.session.address },
+    });
 
-      return id;
-    }),
+    return id;
+  }),
 
   link: protectedProcedure
     .input(
       z.object({
-        lensId: z.string(),
+        spaceId: z.number().int(),
         publicationId: z.string().length(PUBLICATION_ID_LENGTH),
       })
     )
@@ -98,27 +92,27 @@ export const publicationRouter = router({
       });
       if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // Save lensId to publication
+      // Save spaceId to publication
       await ctx.prisma.publication.update({
         where: { id: input.publicationId },
-        data: { lensId: input.lensId },
+        data: { spaceId: input.spaceId },
       });
     }),
 
   delete: protectedProcedure
     .input(
       z.object({
-        lensId: z.string().optional(),
+        spaceId: z.number().int().optional(),
         publicationId: z.string().length(PUBLICATION_ID_LENGTH).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       let id = input.publicationId;
 
-      // If lensId is provided, find the publication
-      if (input.lensId) {
+      // If spaceId is provided, find the publication
+      if (input.spaceId) {
         const publication = await ctx.prisma.publication.findFirst({
-          where: { lensId: input.lensId, owner: ctx.session.address },
+          where: { spaceId: input.spaceId, owner: ctx.session.address },
         });
         if (publication) id = publication.id;
       }

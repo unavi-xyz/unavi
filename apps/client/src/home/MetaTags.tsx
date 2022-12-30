@@ -18,16 +18,15 @@ interface Props {
 }
 
 export default function MetaTags({
-  title = "The Wired",
-  description = "The Wired - An open and decentralized web-based metaverse platform.",
-  image = "/images/Logo-Maskable.png",
-  card = "summary",
+  title = "Welcome to the Wired",
+  description = "An open and decentralized metaverse platform.",
+  image = "/images/Hero.png",
+  card = "summary_large_image",
 }: Props) {
   const width = card === "summary_large_image" ? "1200" : "256";
 
   // If image is an external url, use the version hosted by next/image
   // this is a bit of a hack, but not sure how else to do it
-  // we want images fetched from IPFS to be viewable on other sites without making our IPFS gateway public
   const externalImage = image
     ? image.startsWith("http")
       ? `${origin}/_next/image/?url=${image}&w=${width}&q=75`

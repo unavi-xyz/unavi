@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { useAppStore } from "../store";
+import { useAppStore } from "../../app/store";
 
 export function useAppHotkeys() {
   useEffect(() => {

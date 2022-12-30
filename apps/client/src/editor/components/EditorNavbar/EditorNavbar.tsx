@@ -58,17 +58,18 @@ export default function EditorNavbar() {
       await save();
 
       // Invalidate cache
-      const promises: Promise<any>[] = [];
-      promises.push(utils.project.get.invalidate({ id }));
-      promises.push(utils.project.scene.invalidate({ id }));
-      promises.push(utils.project.files.invalidate({ id }));
-      await Promise.all(promises);
+      await Promise.all([
+        utils.project.get.invalidate({ id }),
+        utils.project.scene.invalidate({ id }),
+        utils.project.files.invalidate({ id }),
+      ]);
 
       // Force a new fetch of the project
-      promises.push(utils.project.get.prefetch({ id }));
-      promises.push(utils.project.scene.prefetch({ id }));
-      promises.push(utils.project.files.prefetch({ id }));
-      await Promise.all(promises);
+      await Promise.all([
+        utils.project.get.prefetch({ id }),
+        utils.project.scene.prefetch({ id }),
+        utils.project.files.prefetch({ id }),
+      ]);
 
       router.push(`/editor/${id}/preview`);
     } catch (err) {

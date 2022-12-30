@@ -1,16 +1,23 @@
 import { IoMdPerson } from "react-icons/io";
 
-import { useLens } from "../../client/lens/hooks/useLens";
+import { useAppStore } from "../../app/store";
+import { useSession } from "../../client/auth/useSession";
 import LoginButton from "../../home/layouts/NavbarLayout/LoginButton";
+import ProfileButton from "../../home/layouts/NavbarLayout/ProfileButton";
 import Button from "../../ui/Button";
 import ButtonFileInput from "../../ui/ButtonFileInput";
-import { useAppStore } from "../store";
-import UserIdentityButton from "./UserIdentityButton";
 
 export default function UserPage() {
+  const playerId = useAppStore((state) => state.playerId);
   const displayName = useAppStore((state) => state.displayName);
   const customAvatar = useAppStore((state) => state.customAvatar);
-  const { handle } = useLens();
+
+  const { data: session } = useSession();
+
+  const guestName =
+    playerId == null || playerId === undefined
+      ? "Guest"
+      : `Guest 0x${playerId.toString(16).padStart(2, "0")}`;
 
   return (
     <div className="space-y-4">
@@ -18,11 +25,21 @@ export default function UserPage() {
         <IoMdPerson className="text-5xl" />
       </div>
 
-      {!handle && (
+      <div className="space-y-1">
+        <div className="flex justify-center">
+          {session?.address ? (
+            <ProfileButton fullWidth size="large" />
+          ) : (
+            <LoginButton fullWidth rounded="large" />
+          )}
+        </div>
+      </div>
+
+      {!session?.address && (
         <div className="space-y-1">
           <input
             type="text"
-            placeholder="Enter your name..."
+            placeholder={guestName}
             value={displayName ?? ""}
             onChange={(e) => {
               useAppStore.setState({
@@ -34,12 +51,6 @@ export default function UserPage() {
           />
         </div>
       )}
-
-      <div className="space-y-1">
-        <div className="flex justify-center">
-          {handle ? <UserIdentityButton /> : <LoginButton fullWidth rounded="large" />}
-        </div>
-      </div>
 
       <div className="space-y-1">
         <ButtonFileInput

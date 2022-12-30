@@ -47,11 +47,14 @@ export function useHost(url: string) {
     let onDataProducerId: (({ id }: { id: string }) => void) | null = null;
 
     async function updateUsername(player: Player) {
-      const oldUsername = player.username;
+      let oldUsername = player.username;
 
       if (player.address) {
         // Fetch flamingo profile
         const profile = await utils.social.profile.byAddress.fetch({ address: player.address });
+
+        // Make sure old username is correct, in case it changed while we were fetching
+        oldUsername = player.username;
 
         if (profile?.handle) {
           player.username = profile.handle.string;

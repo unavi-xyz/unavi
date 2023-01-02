@@ -29,7 +29,7 @@ const WALK_SPEED = 1;
 const SPRINT_SPEED = 1.6;
 
 const groundCollisionShape = new Capsule(
-  PLAYER_HEIGHT / 2,
+  (PLAYER_HEIGHT - PLAYER_RADIUS * 2) / 2,
   PLAYER_RADIUS - 0.1 // Slightly smaller radius to avoid sticking to walls
 );
 const PLAYER_FRICTION = 0.5;
@@ -210,7 +210,10 @@ export class PhysicsWorker {
 
   initPlayer() {
     // Create player body
-    const playerColliderDesc = ColliderDesc.capsule(PLAYER_HEIGHT / 2, PLAYER_RADIUS);
+    const playerColliderDesc = ColliderDesc.capsule(
+      (PLAYER_HEIGHT - PLAYER_RADIUS * 2) / 2,
+      PLAYER_RADIUS
+    );
     playerColliderDesc.setCollisionGroups(playerCollisionGroup);
     playerColliderDesc.setFriction(PLAYER_FRICTION);
     playerColliderDesc.setFrictionCombineRule(CoefficientCombineRule.Min);
@@ -401,7 +404,7 @@ export class PhysicsWorker {
     // Send player position to render thread
     if (this.#playerPosition && this.#playerBody) {
       const position = this.#playerBody.translation();
-      const playerFeet = position.y - PLAYER_HEIGHT / 2 - PLAYER_RADIUS;
+      const playerFeet = position.y - PLAYER_HEIGHT / 2;
       Atomics.store(this.#playerPosition, 0, position.x * 1000);
       Atomics.store(this.#playerPosition, 1, playerFeet * 1000);
       Atomics.store(this.#playerPosition, 2, position.z * 1000);

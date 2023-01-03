@@ -12,6 +12,7 @@ export type SceneMap = {
   meshes: Map<string, MeshJSON>;
   images: Map<string, ImageBitmap>;
   materials: Map<string, MeshStandardMaterial>;
+  materialVariants: Map<string, MeshStandardMaterial>;
   objects: Map<string, Object3D>;
   objectQueue: ObjectQueue;
 };

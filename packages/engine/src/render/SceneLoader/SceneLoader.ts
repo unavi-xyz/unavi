@@ -67,6 +67,7 @@ export class SceneLoader {
       meshes: new Map<string, MeshJSON>(),
       images: new Map<string, ImageBitmap>(),
       materials: new Map<string, MeshStandardMaterial>(),
+      materialVariants: new Map<string, MeshStandardMaterial>(),
       objects: new Map<string, Object3D>(),
       objectQueue: new ObjectQueue(renderWorker.renderer, renderWorker.camera),
     };

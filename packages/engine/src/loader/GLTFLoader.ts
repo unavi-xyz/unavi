@@ -14,6 +14,7 @@ import {
   TextureInfo as ITextureInfo,
   WebIO,
 } from "@gltf-transform/core";
+import { Transform } from "@gltf-transform/extensions";
 import { nanoid } from "nanoid";
 
 import { extensions } from "../gltf/constants";
@@ -522,6 +523,14 @@ export class GLTFLoader {
 
     const wrapT = info.getWrapT();
     textureState.wrapT = wrapT;
+
+    // Texture transform
+    const transform = info.getExtension<Transform>("KHR_texture_transform");
+    if (transform) {
+      textureState.offset = transform.getOffset();
+      textureState.rotation = transform.getRotation();
+      textureState.scale = transform.getScale();
+    }
 
     return textureState;
   }

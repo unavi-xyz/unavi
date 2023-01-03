@@ -12,6 +12,10 @@ export class Texture {
   wrapS$ = new BehaviorSubject<GLTF.TextureWrapMode>(33071);
   wrapT$ = new BehaviorSubject<GLTF.TextureWrapMode>(33071);
 
+  offset: [number, number] | null = null;
+  rotation: number | null = null;
+  scale: [number, number] | null = null;
+
   get name() {
     return this.name$.value;
   }
@@ -76,6 +80,9 @@ export class Texture {
       minFilter: this.minFilter,
       wrapS: this.wrapS,
       wrapT: this.wrapT,
+      offset: this.offset,
+      rotation: this.rotation,
+      scale: this.scale,
     };
   }
 
@@ -86,6 +93,9 @@ export class Texture {
     if (json.minFilter !== undefined) this.minFilter = json.minFilter;
     if (json.wrapS !== undefined) this.wrapS = json.wrapS;
     if (json.wrapT !== undefined) this.wrapT = json.wrapT;
+    if (json.offset !== undefined) this.offset = json.offset;
+    if (json.rotation !== undefined) this.rotation = json.rotation;
+    if (json.scale !== undefined) this.scale = json.scale;
   }
 
   static fromJSON(json: TextureJSON) {

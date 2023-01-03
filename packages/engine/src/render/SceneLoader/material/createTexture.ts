@@ -17,7 +17,7 @@ import { WEBGL_CONSTANTS } from "../../constants";
 import { SceneMap } from "../types";
 
 export function createTexture(
-  { imageId, magFilter, minFilter, wrapS, wrapT }: TextureJSON,
+  { imageId, magFilter, minFilter, wrapS, wrapT, offset, rotation, scale }: TextureJSON,
   map: SceneMap
 ): ThreeTexture {
   if (imageId === null) throw new Error("Texture source not found");
@@ -89,6 +89,10 @@ export function createTexture(
     default:
       throw new Error(`Unknown wrapT: ${wrapT}`);
   }
+
+  if (offset) threeTexture.offset.fromArray(offset);
+  if (rotation) threeTexture.rotation = rotation;
+  if (scale) threeTexture.repeat.fromArray(scale);
 
   return threeTexture;
 }

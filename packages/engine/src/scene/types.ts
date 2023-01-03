@@ -23,6 +23,9 @@ export type TextureJSON = {
   minFilter: GLTF.TextureMinFilter;
   wrapS: GLTF.TextureWrapMode;
   wrapT: GLTF.TextureWrapMode;
+  offset: [number, number] | null;
+  rotation: number | null;
+  scale: [number, number] | null;
 };
 
 export type ImageJSON = {

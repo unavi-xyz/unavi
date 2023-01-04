@@ -3,7 +3,6 @@ import {
   Fog,
   PCFSoftShadowMap,
   PerspectiveCamera,
-  PMREMGenerator,
   Scene,
   sRGBEncoding,
   Vector2,
@@ -221,15 +220,8 @@ export class RenderWorker {
     // Skybox
     if (skyboxPath) {
       loadCubeTexture(skyboxPath).then((texture) => {
-        texture.encoding = sRGBEncoding;
-
         this.#scene.background = texture;
         this.#scene.environment = texture;
-
-        // Generate PMREM mipmaps
-        if (!this.renderer) throw new Error("Renderer not initialized");
-        const premGenerator = new PMREMGenerator(this.renderer);
-        premGenerator.compileEquirectangularShader();
 
         this.#postMessage({ subject: "ready", data: null });
       });

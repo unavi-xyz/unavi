@@ -2297,7 +2297,7 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@gltf-transform/core@2.5.1", "@gltf-transform/core@^2.4.7":
+"@gltf-transform/core@2.5.1", "@gltf-transform/core@^2.4.7", "@gltf-transform/core@^2.5.1":
   version "2.5.1"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.5.1.tgz#d84ba1a02f956276ab055fc670cfb0771466e3fd"
   integrity sha512-Ah4TVzQtlUpEOJPJovgobbviec7og7NaSo9f+Lg0kJCk3Wwjl++FuDHKCDYEB+CQL8CoLpfB62+8t+NH5buedg==
@@ -2305,7 +2305,7 @@
     gl-matrix "~3.4.3"
     property-graph "^0.2.6"
 
-"@gltf-transform/extensions@2.4.7", "@gltf-transform/extensions@^2.4.7":
+"@gltf-transform/extensions@2.4.7":
   version "2.4.7"
   resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.7.tgz#cfbba5973d4cede88114ab0b9fd618403e5b6d72"
   integrity sha512-Pn3g0deLv6EsW7rL3n6ohWJmhvSDRt554E0zW04qNVqcxCCpHdZwG/Vqs80ZG2OxYD3ctYF92gXPx6NKSTak5g==
@@ -2313,14 +2313,23 @@
     "@gltf-transform/core" "^2.4.7"
     ktx-parse "^0.4.5"
 
-"@gltf-transform/functions@^2.4.7":
-  version "2.4.7"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.4.7.tgz#2ea00e8ec95dab4d886cddff3d5ccd75f8d8604e"
-  integrity sha512-tqB3ZZ+QlL34jdoXzRU1HaULU1/9cWJz9aNP+X446fwLczmH0czcD7ir2VtD5B2k/g3Gq7+3HSmDbQKIKAU0Ng==
+"@gltf-transform/extensions@^2.5.1":
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.5.1.tgz#cae4cde16cf7b6ab0548a22cde681320d6fb5570"
+  integrity sha512-fn+Mkh5XoaWYU/BUa5BvU5T1u7Bj8o2z2mDGhTKSzoGgNG2RO6tGrniESBEuDYQCtDx9HJLs0YOlziBx4zFbiw==
   dependencies:
-    "@gltf-transform/core" "^2.4.7"
-    "@gltf-transform/extensions" "^2.4.7"
+    "@gltf-transform/core" "^2.5.1"
+    ktx-parse "^0.4.5"
+
+"@gltf-transform/functions@^2.5.1":
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.5.1.tgz#10b82cc23cba530ef70852198218c2eca04c170a"
+  integrity sha512-A5Y2WypPo7sMmlRIAmkbS2iuI9cdujO9Nxogq6KxWJvG3I4QFCOOVWBmahWegwgXsO00ecvQQ73iuCIRJ2oC+Q==
+  dependencies:
+    "@gltf-transform/core" "^2.5.1"
+    "@gltf-transform/extensions" "^2.5.1"
     gl-matrix "~3.4.3"
+    ktx-parse "^0.4.5"
     ndarray "^1.0.19"
     ndarray-lanczos "^0.1.2"
     ndarray-pixels "^1.0.0"

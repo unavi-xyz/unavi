@@ -12,6 +12,7 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,

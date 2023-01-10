@@ -15,8 +15,8 @@
     "@gltf-transform/functions": "^2.5.1",
     "@pixiv/three-vrm": "^1.0.5",
     "contracts": "*",
-    "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.0",
+    "property-graph": "^1.0.1",
     "rxjs": "^7.8.0",
     "three": "^0.144.0",
     "zod": "^3.20.2"

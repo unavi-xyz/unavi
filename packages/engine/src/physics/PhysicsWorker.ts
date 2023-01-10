@@ -12,7 +12,7 @@ import { PLAYER_HEIGHT, PLAYER_RADIUS } from "../constants";
 import { MeshJSON, NodeJSON } from "../scene";
 import { calcGlobalScale } from "../scene/utils/calcGlobalScale";
 import { convertAutoCollider } from "../scene/utils/convertAutoCollider";
-import { PostMessage, Triplet } from "../types";
+import { PostMessage, Vec3 } from "../types";
 import {
   playerCollisionGroup,
   playerShapeCastCollisionGroup,
@@ -58,7 +58,7 @@ export class PhysicsWorker {
   #meshes = new Map<string, MeshJSON>();
   #rigidBodies = new Map<string, RigidBody>();
   #colliders = new Map<string, Collider>();
-  #spawn: Triplet = [0, 0, 0];
+  #spawn: Vec3 = [0, 0, 0];
   #geometryPositions = new Map<string, Float32Array>();
   #geometryIndices = new Map<string, Uint32Array>();
 
@@ -260,7 +260,7 @@ export class PhysicsWorker {
     switch (nodeCollider?.type) {
       case "box": {
         const size = nodeCollider.size;
-        const halfSize: Triplet = [size[0] / 2, size[1] / 2, size[2] / 2];
+        const halfSize: Vec3 = [size[0] / 2, size[1] / 2, size[2] / 2];
         colliderDesc = ColliderDesc.cuboid(...halfSize);
         break;
       }

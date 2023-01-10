@@ -2,7 +2,6 @@ import { useRouter } from "next/router";
 import { useRef, useState } from "react";
 
 import { trpc } from "../client/trpc";
-import { DEFAULT_SCENE } from "../editor/constants";
 import Button from "../ui/Button";
 import TextField from "../ui/TextField";
 
@@ -30,25 +29,25 @@ export default function CreateProjectPage() {
       const id = await createProject({ name });
 
       // Upload default scene
-      promises.push(
-        new Promise<void>((resolve, reject) => {
-          async function upload() {
-            const url = await createSceneUpload({ id });
+      // promises.push(
+      //   new Promise<void>((resolve, reject) => {
+      //     async function upload() {
+      //       const url = await createSceneUpload({ id });
 
-            await fetch(url, {
-              method: "PUT",
-              body: JSON.stringify(DEFAULT_SCENE),
-              headers: {
-                "Content-Type": "application/json",
-              },
-            });
+      //       await fetch(url, {
+      //         method: "PUT",
+      //         body: JSON.stringify(DEFAULT_SCENE),
+      //         headers: {
+      //           "Content-Type": "application/json",
+      //         },
+      //       });
 
-            resolve();
-          }
+      //       resolve();
+      //     }
 
-          upload().catch(reject);
-        })
-      );
+      //     upload().catch(reject);
+      //   })
+      // );
 
       // Upload default image
       promises.push(

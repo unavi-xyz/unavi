@@ -1,5 +1,5 @@
 import { SceneMessage } from "../scene";
-import { Quad, Triplet, WorkerMessage } from "../types";
+import { Vec4, Vec3, WorkerMessage } from "../types";
 
 export type ToPhysicsMessage =
   | SceneMessage
@@ -11,8 +11,8 @@ export type ToPhysicsMessage =
       "set_global_transform",
       {
         nodeId: string;
-        position: Triplet;
-        rotation: Quad;
+        position: Vec3;
+        rotation: Vec4;
       }
     >
   | WorkerMessage<"sprinting", boolean>

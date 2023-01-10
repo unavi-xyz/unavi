@@ -1,11 +1,11 @@
 import { ExtensionProperty, IProperty, Mesh, Nullable, PropertyType } from "@gltf-transform/core";
 
-import { Triplet } from "../../../types";
+import { Vec3 } from "../../../types";
 import { EXTENSION_NAME, PROPERTY_TYPE } from "./constants";
 import { ColliderType, ICollider } from "./types";
 
 export class Collider extends ExtensionProperty<ICollider> {
-  static EXTENSION_NAME = EXTENSION_NAME;
+  static override EXTENSION_NAME = EXTENSION_NAME;
   declare extensionName: typeof EXTENSION_NAME;
   declare propertyType: typeof PROPERTY_TYPE;
   declare parentTypes: [PropertyType.NODE];
@@ -26,7 +26,7 @@ export class Collider extends ExtensionProperty<ICollider> {
     this.parentTypes = [PropertyType.NODE];
   }
 
-  protected getDefaults(): Nullable<ICollider> {
+  protected override getDefaults(): Nullable<ICollider> {
     return Object.assign(super.getDefaults() as IProperty, {
       type: null,
       size: null,
@@ -44,11 +44,11 @@ export class Collider extends ExtensionProperty<ICollider> {
     return this.set("type", type);
   }
 
-  getSize(): Triplet | null {
+  getSize(): Vec3 | null {
     return this.get("size");
   }
 
-  setSize(size: Triplet | null): this {
+  setSize(size: Vec3 | null): this {
     return this.set("size", size);
   }
 

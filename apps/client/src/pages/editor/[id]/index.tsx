@@ -1,84 +1,35 @@
-import { AutoCollider, GLTFMesh, Node } from "engine";
+import { Engine } from "engine";
 import Script from "next/script";
 import { useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
 
-import { useResizeEngineCanvas } from "../../../app/hooks/useResizeEngineCanvas";
-import { addMesh } from "../../../editor/actions/AddMeshAction";
-import { addNode } from "../../../editor/actions/AddNodeAction";
-import EditorNavbar from "../../../editor/components/EditorNavbar/EditorNavbar";
-import InspectMenu from "../../../editor/components/InspectMenu/InspectMenu";
-import TreeMenu from "../../../editor/components/TreeMenu/TreeMenu";
-import { useAutosave } from "../../../editor/hooks/useAutosave";
-import { useEditorHotkeys } from "../../../editor/hooks/useEditorHotkeys";
-import { useLoad } from "../../../editor/hooks/useLoad";
-import { useTransformControls } from "../../../editor/hooks/useTransformControls";
 import { useEditorStore } from "../../../editor/store";
-import { updateGltfColliders } from "../../../editor/utils/updateGltfColliders";
 import MetaTags from "../../../home/MetaTags";
-import Spinner from "../../../ui/Spinner";
 
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const createdEngine = useRef(false);
 
-  const engine = useEditorStore((state) => state.engine);
+  // const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
 
-  const resize = useResizeEngineCanvas(engine, canvasRef, containerRef);
-  useLoad();
-  useAutosave();
-  useTransformControls();
-  useEditorHotkeys();
+  // const resize = useResizeEngineCanvas(engine, canvasRef, containerRef);
+  // useLoad();
+  // useAutosave();
+  // useTransformControls();
+  // useEditorHotkeys();
 
   useEffect(() => {
-    if (createdEngine.current) return;
+    if (!canvasRef.current || createdEngine.current) return;
+
+    const engine = new Engine({ canvas: canvasRef.current });
     createdEngine.current = true;
 
-    async function initEngine() {
-      const canvas = canvasRef.current;
-      if (!canvas) throw new Error("Canvas not found");
-
-      useEditorStore.setState({ sceneLoaded: false });
-
-      const { Engine } = await import("engine");
-
-      // Create engine
-      const engine = new Engine({
-        canvas,
-        camera: "orbit",
-        enableTransformControls: true,
-        preserveDrawingBuffer: true,
-        skyboxPath: "/images/skybox/",
-      });
-
-      await engine.waitForReady();
-
-      engine.renderThread.postMessage({
-        subject: "show_visuals",
-        data: { visible: useEditorStore.getState().visuals },
-      });
-
-      useEditorStore.setState({ engine, canvas });
-    }
-
-    initEngine();
+    useEditorStore.setState({ engine });
   }, []);
-
-  useEffect(() => {
-    if (!engine) return;
-
-    return () => {
-      engine.destroy();
-      useEditorStore.setState({
-        engine: null,
-        selectedId: null,
-      });
-    };
-  }, [engine]);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
 
@@ -107,33 +58,9 @@ export default function Editor() {
 
             const isGLTF = file.name.endsWith(".gltf") || file.name.endsWith(".glb");
             if (!isGLTF) return;
-
-            // Create mesh
-            const mesh = new GLTFMesh();
-            mesh.name = file.name;
-            mesh.uri = URL.createObjectURL(file);
-
-            // Create node
-            const node = new Node();
-            node.meshId = mesh.id;
-            node.collider = new AutoCollider();
-
-            const name = file.name.split(".").slice(0, -1).join(".");
-            node.name = name;
-
-            // Add node to scene
-            addMesh(mesh);
-            addNode(node);
-
-            // Select node
-            useEditorStore.setState({ selectedId: node.id });
-
-            setTimeout(() => updateGltfColliders(node.id), 5000);
           }}
         >
-          <div className="z-10 h-14 w-full border-b">
-            <EditorNavbar />
-          </div>
+          <div className="z-10 h-14 w-full border-b">{/* <EditorNavbar /> */}</div>
 
           <Split
             sizes={[15, 65, 20]}
@@ -142,27 +69,25 @@ export default function Editor() {
             expandToMin
             gutterSize={6}
             className="flex h-full"
-            onMouseMove={resize}
+            // onMouseMove={resize}
           >
-            <TreeMenu />
+            {/* <TreeMenu /> */}
 
             <div className="h-full border-x">
               <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-                {!sceneLoaded && (
+                {/* {!sceneLoaded && (
                   <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
                     <div className="flex h-full  flex-col items-center justify-center">
                       <Spinner />
                     </div>
                   </div>
-                )}
+                )} */}
 
                 <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
               </div>
             </div>
 
-            <div className="h-full">
-              <InspectMenu />
-            </div>
+            <div className="h-full">{/* <InspectMenu /> */}</div>
           </Split>
         </div>
       </DndProvider>

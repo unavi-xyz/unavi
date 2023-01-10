@@ -5,8 +5,8 @@ import { EXTENSION_NAME } from "./constants";
 import { ColliderDef, ColliderExtensionDef, NodeColliderDef } from "./types";
 
 export class ColliderExtension extends Extension {
-  static EXTENSION_NAME = EXTENSION_NAME;
-  readonly extensionName = EXTENSION_NAME;
+  static override EXTENSION_NAME = EXTENSION_NAME;
+  override extensionName = EXTENSION_NAME;
 
   createCollider(): Collider {
     return new Collider(this.document.getGraph());

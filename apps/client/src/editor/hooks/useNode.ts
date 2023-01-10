@@ -1,28 +1,22 @@
-import { Node } from "engine";
+import { Node } from "@gltf-transform/core";
 import { useEffect, useState } from "react";
 
 import { useEditorStore } from "../store";
 
-export function useNode<T = Node>(id: string | null, callback?: (node: Node) => T) {
-  const nodes$ = useEditorStore((state) => state.engine?.scene.nodes$);
+export function useNode(id: string | null) {
+  const engine = useEditorStore((state) => state.engine);
 
-  const [value, setValue] = useState<T | null>(null);
+  const [node, setNode] = useState<Node | null>(null);
 
   useEffect(() => {
-    if (!id || !nodes$) return;
+    if (!engine || !id) {
+      setNode(null);
+      return;
+    }
 
-    const subscription = nodes$.subscribe({
-      next: (nodes) => {
-        const node = nodes[id];
-        if (!node) return;
+    const newNode = engine.modules.scene.node.store.get(id) ?? null;
+    setNode(newNode);
+  }, [id, engine]);
 
-        if (callback) setValue(callback(node));
-        else setValue(node as T);
-      },
-    });
-
-    return () => subscription.unsubscribe();
-  }, [id, callback, nodes$]);
-
-  return value;
+  return node;
 }

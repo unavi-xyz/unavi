@@ -37,7 +37,7 @@ export class RenderThread {
     this.scene.add(this.renderScene.root);
     this.scene.fog = new Fog(0xcfcfcf, CAMERA_FAR / 2, CAMERA_FAR);
 
-    this.camera.position.set(0, 4, 0);
+    this.camera.position.set(0, 4, 12);
     this.camera.lookAt(0, 0, 0);
 
     const light = new AmbientLight(0xffffff, 0.5);
@@ -66,6 +66,7 @@ export class RenderThread {
       case "set_size": {
         this.size = data;
         this.camera.aspect = data.width / data.height;
+        this.camera.updateProjectionMatrix();
         this.renderer?.setSize(data.width, data.height, false);
         break;
       }
@@ -100,10 +101,5 @@ export class RenderThread {
     if (!this.renderer) return;
 
     this.renderer.render(this.scene, this.camera);
-
-    // Spin camera
-    this.camera.position.x = 15 * Math.sin(Date.now() / 1000);
-    this.camera.position.z = 15 * Math.cos(Date.now() / 1000);
-    this.camera.lookAt(0, 0, 0);
   }
 }

@@ -1,146 +1,52 @@
-import { useRef, useState } from "react";
-import { useDrag, useDrop } from "react-dnd";
+import { useState } from "react";
+import { HiOutlineCube } from "react-icons/hi";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
-import { moveNode } from "../../actions/MoveNodeAction";
-import { useNode } from "../../hooks/useNode";
-import { useSubscribeValue } from "../../hooks/useSubscribeValue";
+import { useNodeAttribute } from "../../hooks/useNodeAttribute";
 import { useEditorStore } from "../../store";
-import { DND_TYPES } from "../../types";
-import { moveToSibling } from "../../utils/moveToSibling";
-
-type DragItem = {
-  id: string;
-};
 
 interface Props {
   id: string;
+  depth?: number;
 }
 
-export default function TreeMenuItem({ id }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(true);
+export default function TreeMenuItem({ id, depth = 0 }: Props) {
+  const name = useNodeAttribute(id, "name");
+  const childrenIds = useNodeAttribute(id, "children") ?? [];
   const selectedId = useEditorStore((state) => state.selectedId);
 
-  const nodes$ = useEditorStore((state) => state.engine?.scene.nodes$);
-  const name$ = useNode(id, (node) => node.name$);
-  const childrenIds$ = useNode(id, (node) => node.childrenIds$);
-  const isInternal$ = useNode(id, (node) => node.isInternal$);
+  const [open, setOpen] = useState(false);
 
-  const name = useSubscribeValue(name$);
-  const childrenIds = useSubscribeValue(childrenIds$);
-  const isInternal = useSubscribeValue(isInternal$);
-  const nodes = useSubscribeValue(nodes$);
-
-  const children = nodes ? childrenIds?.map((id) => nodes[id]) : [];
-
-  // Create drag source
-  const [{ isDragging }, drag] = useDrag(
-    () => ({
-      type: DND_TYPES.Node,
-      item: { id },
-      collect: (monitor) => ({
-        isDragging: monitor.isDragging(),
-      }),
-    }),
-    [id]
-  );
-
-  // Create drop target
-  const [{ isOver }, drop] = useDrop(
-    () => ({
-      accept: DND_TYPES.Node,
-      drop({ id: droppedId }: DragItem, monitor) {
-        if (droppedId !== id) {
-          const didDrop = monitor.didDrop();
-          if (didDrop || isDeepChild(id, droppedId)) return;
-
-          // Move to new parent
-          moveNode(droppedId, id);
-        }
-      },
-      collect: (monitor) => ({
-        isOver: monitor.isOver({ shallow: true }),
-      }),
-    }),
-    [id]
-  );
-
-  // Create drop target for below
-  const [{ isOver: isOverBelow }, dropBelow] = useDrop(
-    () => ({
-      accept: DND_TYPES.Node,
-      drop({ id: droppedId }: DragItem, monitor) {
-        if (droppedId !== id) {
-          const didDrop = monitor.didDrop();
-          if (didDrop || isDeepChild(id, droppedId)) return;
-
-          // Add as sibling
-          moveToSibling(droppedId, id, "below");
-        }
-      },
-      collect: (monitor) => ({
-        isOver: monitor.isOver({ shallow: true }),
-      }),
-    }),
-    [id]
-  );
-
-  const allChildrenInternal = children?.every((child) => child?.isInternal);
-  const hasChildren = childrenIds && childrenIds.length > 0 && !allChildrenInternal;
   const isSelected = selectedId === id;
-  const bgClass = isSelected ? "bg-sky-100" : isOver ? "bg-neutral-200" : "hover:bg-neutral-200";
-  const opacityClass = isDragging ? "opacity-0" : null;
-  const highlightBelowClass = isOverBelow ? "bg-sky-300" : null;
-
-  if (isInternal) return null;
-
-  drop(ref);
-  drag(ref);
+  const hasChildren = childrenIds.length > 0;
 
   return (
-    <div ref={ref} className="h-full">
+    <div>
       <div
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          useEditorStore.setState({ selectedId: id });
-        }}
-        className={`flex h-6 items-center rounded-md px-2 font-bold ${bgClass} ${opacityClass}`}
+        onClick={() => useEditorStore.setState({ selectedId: id })}
+        style={{ paddingLeft: `${depth + 1}rem` }}
+        className={`flex cursor-default select-none items-center space-x-1 text-sm text-neutral-800 ${
+          isSelected ? "bg-sky-200 text-black" : "hover:bg-neutral-200"
+        }`}
       >
         <div
-          onClick={() => setOpen((prev) => !prev)}
-          className="w-5 shrink-0 text-neutral-500 transition hover:text-inherit"
+          className={`w-3 shrink-0 hover:text-neutral-500 ${hasChildren && "cursor-pointer"}`}
+          onClick={() => setOpen(!open)}
         >
           {hasChildren && (open ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
         </div>
 
-        <div className="overflow-hidden text-ellipsis whitespace-nowrap">{name}</div>
+        <HiOutlineCube className="shrink-0 text-lg" />
+
+        <div className="overflow-x-hidden text-ellipsis">{name}</div>
       </div>
 
-      {open && hasChildren && (
-        <div className={`pl-4 ${opacityClass}`}>
-          {childrenIds.map((childId) => (
-            <TreeMenuItem key={childId} id={childId} />
+      <div>
+        {open &&
+          childrenIds.map((childId) => (
+            <TreeMenuItem key={childId} id={childId} depth={depth + 1} />
           ))}
-        </div>
-      )}
-
-      {!hasChildren && (
-        <div ref={dropBelow} className={`h-1 w-full rounded-md ${highlightBelowClass}`} />
-      )}
+      </div>
     </div>
   );
-}
-
-function isDeepChild(nodeId: string, parentId: string) {
-  const node = useEditorStore.getState().getNode(parentId);
-  if (!node) return false;
-
-  if (node.childrenIds.includes(nodeId)) return true;
-
-  for (const child of node.childrenIds) {
-    if (isDeepChild(nodeId, child)) return true;
-  }
-
-  return false;
 }

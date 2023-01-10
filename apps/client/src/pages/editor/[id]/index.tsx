@@ -3,10 +3,15 @@ import Script from "next/script";
 import { useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import Split from "react-split";
 
 import { useResizeCanvas } from "../../../app/hooks/useResizeCanvas";
+import EditorNavbar from "../../../editor/components/EditorNavbar/EditorNavbar";
+import InspectMenu from "../../../editor/components/InspectMenu/InspectMenu";
+import TreeMenu from "../../../editor/components/TreeMenu/TreeMenu";
 import { useEditorStore } from "../../../editor/store";
 import MetaTags from "../../../home/MetaTags";
+import Spinner from "../../../ui/Spinner";
 
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -16,7 +21,7 @@ export default function Editor() {
   const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
 
-  useResizeCanvas(engine, canvasRef, containerRef);
+  const resize = useResizeCanvas(engine, canvasRef, containerRef);
   // useLoad();
   // useAutosave();
   // useTransformControls();
@@ -42,7 +47,7 @@ export default function Editor() {
 
       <DndProvider backend={HTML5Backend}>
         <div
-          className="flex h-screen flex-col overflow-hidden"
+          className="absolute top-0 left-0 h-full w-full overflow-hidden"
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             const { engine } = useEditorStore.getState();
@@ -60,35 +65,36 @@ export default function Editor() {
             if (!isGLTF) return;
           }}
         >
-          <div className="z-10 h-14 w-full border-b">{/* <EditorNavbar /> */}</div>
+          <div className="z-10 h-14 w-full border-b">
+            <EditorNavbar />
+          </div>
 
-          <div className="h-full border-x">
-            <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-              {/* {!sceneLoaded && (
+          <Split
+            sizes={[20, 60, 20]}
+            minSize={[50, 400, 50]}
+            direction="horizontal"
+            gutterSize={6}
+            className="flex h-full"
+            onMouseUp={resize}
+          >
+            <TreeMenu />
+
+            <div className="border-x">
+              <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+                {!sceneLoaded && (
                   <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
                     <div className="flex h-full  flex-col items-center justify-center">
                       <Spinner />
                     </div>
                   </div>
-                )} */}
+                )}
 
-              <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
+                <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
+              </div>
             </div>
-          </div>
 
-          {/* <Split
-            sizes={[15, 65, 20]}
-            minSize={[250, 500, 400]}
-            direction="horizontal"
-            expandToMin
-            gutterSize={6}
-            className="flex h-full"
-            onMouseMove={resize}
-          >
-            <TreeMenu />
-
-            <div className="h-full"><InspectMenu /></div>
-          </Split> */}
+            <InspectMenu />
+          </Split>
         </div>
       </DndProvider>
     </>

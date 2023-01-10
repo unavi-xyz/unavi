@@ -35,13 +35,13 @@ export default function EditorNavbar() {
   function handleToggleColliders() {
     useEditorStore.setState({ visuals: !visuals });
 
-    const { engine } = useEditorStore.getState();
-    engine?.renderThread.postMessage({
-      subject: "show_visuals",
-      data: {
-        visible: !visuals,
-      },
-    });
+    // const { engine } = useEditorStore.getState();
+    // engine?.renderThread.postMessage({
+    //   subject: "show_visuals",
+    //   data: {
+    //     visible: !visuals,
+    //   },
+    // });
   }
 
   async function handleBack() {
@@ -117,9 +117,11 @@ export default function EditorNavbar() {
           <ToolButton tool="translate">
             <BiMove />
           </ToolButton>
+
           <ToolButton tool="rotate">
             <MdSync />
           </ToolButton>
+
           <ToolButton tool="scale">
             <CgArrowsExpandUpRight />
           </ToolButton>

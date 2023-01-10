@@ -36,6 +36,12 @@ export class NodeUtils implements Utils<Node, NodeJSON> {
     }
   }
 
+  getParent(node: Node) {
+    for (const [id, n] of this.store) {
+      if (n.listChildren().includes(node)) return id;
+    }
+  }
+
   create(json: Partial<NodeJSON> = {}, id?: string) {
     const node = this.#doc.createNode();
     this.applyJSON(node, json);

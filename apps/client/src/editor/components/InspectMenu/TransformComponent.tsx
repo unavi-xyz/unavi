@@ -1,8 +1,7 @@
-import { Quad, Triplet } from "engine";
+import { Vec3 } from "engine";
 
-import { updateNode } from "../../actions/UpdateNodeAction";
 import { useNode } from "../../hooks/useNode";
-import { useSubscribeValue } from "../../hooks/useSubscribeValue";
+import { useNodeAttribute } from "../../hooks/useNodeAttribute";
 import { eulerToQuaternion } from "../../utils/eulerToQuaternion";
 import { quaternionToEuler } from "../../utils/quaternionToEuler";
 import NumberInput from "../ui/NumberInput";
@@ -14,25 +13,22 @@ interface Props {
 }
 
 export default function TransformComponent({ nodeId }: Props) {
-  const position$ = useNode(nodeId, (node) => node.position$);
-  const rotation$ = useNode(nodeId, (node) => node.rotation$);
-  const scale$ = useNode(nodeId, (node) => node.scale$);
-
-  const position = useSubscribeValue<Triplet>(position$);
-  const rotation = useSubscribeValue<Quad>(rotation$);
-  const scale = useSubscribeValue<Triplet>(scale$);
+  const translation = useNodeAttribute(nodeId, "translation");
+  const rotation = useNodeAttribute(nodeId, "rotation");
+  const scale = useNodeAttribute(nodeId, "scale");
+  const node = useNode(nodeId);
 
   const euler = rotation ? quaternionToEuler(rotation) : null;
 
   return (
     <ComponentMenu removeable={false}>
-      <MenuRows titles={["Position", "Rotation", "Scale"]}>
+      <MenuRows titles={["Translation", "Rotation", "Scale"]}>
         <div className="grid grid-cols-3 gap-3">
-          {position?.map((value, i) => {
+          {translation?.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
-            const name = `position-${letter}`;
+            const name = `translation-${letter}`;
 
-            const rounded = Math.round(value * 1000) / 1000;
+            const rounded = Math.round(value * 10000) / 10000;
 
             return (
               <div key={name} className="flex space-x-2">
@@ -47,12 +43,12 @@ export default function TransformComponent({ nodeId }: Props) {
                     if (value === null) return;
 
                     const num = parseFloat(value);
-                    const rounded = Math.round(num * 1000) / 1000;
+                    const rounded = Math.round(num * 10000) / 10000;
 
-                    const newPosition: Triplet = [...position];
-                    newPosition[i] = rounded;
+                    const newTranslation: Vec3 = [...translation];
+                    newTranslation[i] = rounded;
 
-                    updateNode(nodeId, { position: newPosition });
+                    node?.setTranslation(newTranslation);
                   }}
                 />
               </div>
@@ -66,7 +62,7 @@ export default function TransformComponent({ nodeId }: Props) {
             const name = `rotation-${letter}`;
 
             const degress = Math.round((value * 180) / Math.PI);
-            const rounded = Math.round(degress * 1000) / 1000;
+            const rounded = Math.round(degress * 10000) / 10000;
 
             return (
               <div key={name} className="flex space-x-2">
@@ -81,15 +77,15 @@ export default function TransformComponent({ nodeId }: Props) {
                     if (value === null) return;
 
                     const num = parseFloat(value);
-                    const rounded = Math.round(num * 1000) / 1000;
+                    const rounded = Math.round(num * 10000) / 10000;
                     const radians = (rounded * Math.PI) / 180;
 
-                    const newEuler: Triplet = [...euler];
+                    const newEuler: Vec3 = [...euler];
                     newEuler[i] = radians;
 
                     const newRotation = eulerToQuaternion(newEuler);
 
-                    updateNode(nodeId, { rotation: newRotation });
+                    node?.setRotation(newRotation);
                   }}
                 />
               </div>
@@ -102,7 +98,7 @@ export default function TransformComponent({ nodeId }: Props) {
             const letter = ["X", "Y", "Z"][i];
             const name = `scale-${letter}`;
 
-            const rounded = Math.round(value * 1000) / 1000;
+            const rounded = Math.round(value * 10000) / 10000;
 
             return (
               <div key={name} className="flex space-x-2">
@@ -117,12 +113,12 @@ export default function TransformComponent({ nodeId }: Props) {
                     if (value === null) return;
 
                     const num = parseFloat(value);
-                    const rounded = Math.round(num * 1000) / 1000;
+                    const rounded = Math.round(num * 10000) / 10000;
 
-                    const newScale: Triplet = [...scale];
+                    const newScale: Vec3 = [...scale];
                     newScale[i] = rounded;
 
-                    updateNode(nodeId, { scale: newScale });
+                    node?.setScale(newScale);
                   }}
                 />
               </div>

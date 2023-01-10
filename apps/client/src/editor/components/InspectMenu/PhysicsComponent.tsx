@@ -9,7 +9,7 @@ import {
 } from "engine";
 
 import { updateNode } from "../../actions/UpdateNodeAction";
-import { useNode } from "../../hooks/useNode";
+import { useNodeAttribute } from "../../hooks/useNodeAttribute";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { capitalize } from "../../utils/capitalize";
 import { updateGltfColliders } from "../../utils/updateGltfColliders";
@@ -25,7 +25,7 @@ interface Props {
 }
 
 export default function PhysicsComponent({ nodeId }: Props) {
-  const node = useNode(nodeId);
+  const node = useNodeAttribute(nodeId);
   const collider = useSubscribeValue(node?.collider$);
   const meshId = useSubscribeValue(node?.meshId$);
 

@@ -12,7 +12,7 @@ import { updateMaterial } from "../../actions/UpdateMaterialAction";
 import { updateMesh } from "../../actions/UpdateMeshAction";
 import { useMaterial } from "../../hooks/useMaterial";
 import { useMesh } from "../../hooks/useMesh";
-import { useNode } from "../../hooks/useNode";
+import { useNodeAttribute } from "../../hooks/useNodeAttribute";
 import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { useEditorStore } from "../../store";
 import ColorInput from "../ui/ColorInput";
@@ -25,7 +25,7 @@ interface Props {
 }
 
 export default function MaterialComponent({ nodeId }: Props) {
-  const node = useNode(nodeId);
+  const node = useNodeAttribute(nodeId);
   const meshId = useSubscribeValue(node?.meshId$);
   const mesh = useMesh(meshId);
   const materialId = useSubscribeValue(mesh?.materialId$);

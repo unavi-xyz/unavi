@@ -20,7 +20,7 @@ export default function AutoGrowInput(props: Props) {
 
   return (
     <>
-      <span ref={span} className="absolute -z-50 whitespace-pre py-0.5 pl-3 pr-3.5 opacity-0">
+      <span ref={span} className="absolute -z-50 whitespace-pre py-0.5 px-4 opacity-0">
         {props.value}
       </span>
       <input
@@ -28,7 +28,7 @@ export default function AutoGrowInput(props: Props) {
         value={content}
         style={{ width }}
         onChange={handleChange}
-        className="max-w-full rounded-lg py-0.5 pl-3 pr-3.5 transition hover:bg-neutral-100 hover:shadow-inner"
+        className="max-w-full rounded-lg py-0.5 px-4 transition hover:bg-neutral-100 hover:shadow-inner"
       />
     </>
   );

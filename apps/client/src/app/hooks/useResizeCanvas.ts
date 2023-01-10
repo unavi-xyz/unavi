@@ -61,7 +61,7 @@ export function useResizeCanvas(
 
       engine.modules.render.toRenderThread({
         subject: "set_size",
-        data: { width: container.clientWidth, height: container.clientHeight },
+        data: { width: canvas.clientWidth, height: canvas.clientHeight },
       });
     };
   }, [canvasRef, containerRef, engine, inputCanvas]);

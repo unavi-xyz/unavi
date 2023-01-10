@@ -3,7 +3,6 @@ import { HiOutlineCube } from "react-icons/hi";
 
 import DropdownMenu from "../../../ui/DropdownMenu";
 import IconButton from "../../../ui/IconButton";
-import ObjectsMenu from "./ObjectsMenu";
 
 export default function ObjectsButton() {
   const [open, setOpen] = useState(false);
@@ -16,7 +15,7 @@ export default function ObjectsButton() {
 
       <div className="mt-1">
         <DropdownMenu open={open} onClose={() => setOpen(false)}>
-          <ObjectsMenu />
+          {/* <ObjectsMenu /> */}
         </DropdownMenu>
       </div>
     </div>

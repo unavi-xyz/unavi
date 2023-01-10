@@ -2,8 +2,11 @@ import { Document, Node } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
 import { Vec3, Vec4 } from "../../types";
+import { MeshUtils } from "./MeshUtils";
 import { Utils } from "./types";
 
+type MeshId = string;
+type SkinId = string;
 type NodeId = string;
 
 export interface NodeJSON {
@@ -11,16 +14,20 @@ export interface NodeJSON {
   translation: Vec3;
   rotation: Vec4;
   scale: Vec3;
+  mesh: MeshId | null;
+  skin: SkinId | null;
   children: NodeId[];
 }
 
 export class NodeUtils implements Utils<Node, NodeJSON> {
   #doc: Document;
+  #mesh: MeshUtils;
 
   store = new Map<string, Node>();
 
-  constructor(doc: Document) {
+  constructor(doc: Document, mesh: MeshUtils) {
     this.#doc = doc;
+    this.#mesh = mesh;
   }
 
   getId(node: Node) {
@@ -73,6 +80,16 @@ export class NodeUtils implements Utils<Node, NodeJSON> {
     if (json.rotation) node.setRotation(json.rotation);
     if (json.scale) node.setScale(json.scale);
 
+    if (json.mesh !== undefined) {
+      if (json.mesh === null) {
+        node.setMesh(null);
+      } else {
+        const mesh = this.#mesh.store.get(json.mesh);
+        if (!mesh) throw new Error("Mesh not found");
+        node.setMesh(mesh);
+      }
+    }
+
     if (json.children) {
       for (const childId of json.children) {
         const child = this.store.get(childId);
@@ -84,12 +101,15 @@ export class NodeUtils implements Utils<Node, NodeJSON> {
   }
 
   toJSON(node: Node): NodeJSON {
+    const mesh = node.getMesh();
+    const meshId = mesh ? this.#mesh.getId(mesh) : null;
+    if (meshId === undefined) throw new Error("Mesh not found");
+
     const childrenIds = node.listChildren().map((child) => {
       for (const [id, node] of this.store) {
         if (node === child) return id;
       }
-
-      throw new Error("Node not found");
+      throw new Error("Child not found");
     });
 
     return {
@@ -97,6 +117,8 @@ export class NodeUtils implements Utils<Node, NodeJSON> {
       translation: node.getTranslation(),
       rotation: node.getRotation(),
       scale: node.getScale(),
+      mesh: meshId,
+      skin: null,
       children: childrenIds,
     };
   }

@@ -18,15 +18,18 @@ const subjects = [
   "dispose_texture",
 
   "create_material",
+  "change_material",
   "dispose_material",
 
   "create_primitive",
+  "change_primitive",
   "dispose_primitive",
 
   "create_mesh",
   "dispose_mesh",
 
   "create_node",
+  "change_node",
   "dispose_node",
 ] as const;
 
@@ -45,15 +48,18 @@ export type SceneMessage =
   | SceneWorkerMessage<"dispose_texture", string>
   // Material
   | SceneWorkerMessage<"create_material", { id: string; json: MaterialJSON }>
+  | SceneWorkerMessage<"change_material", { id: string; json: Partial<MaterialJSON> }>
   | SceneWorkerMessage<"dispose_material", string>
   // Primitive
   | SceneWorkerMessage<"create_primitive", { id: string; json: PrimitiveJSON }>
+  | SceneWorkerMessage<"change_primitive", { id: string; json: Partial<PrimitiveJSON> }>
   | SceneWorkerMessage<"dispose_primitive", string>
   // Mesh
   | SceneWorkerMessage<"create_mesh", { id: string; json: MeshJSON }>
   | SceneWorkerMessage<"dispose_mesh", string>
   // Node
   | SceneWorkerMessage<"create_node", { id: string; json: NodeJSON }>
+  | SceneWorkerMessage<"change_node", { id: string; json: Partial<NodeJSON> }>
   | SceneWorkerMessage<"dispose_node", string>;
 
 export function isSceneMessage(message: WorkerMessage): message is SceneMessage {

@@ -5,7 +5,7 @@ import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
 
-import { useResizeEngineCanvas } from "../../../app/hooks/useResizeEngineCanvas";
+import { useResizeEngineCanvas } from "../../../app/hooks/useResizeCanvas";
 import LoadingScreen from "../../../app/ui/LoadingScreen";
 import { trpc } from "../../../client/trpc";
 import { useEditorStore } from "../../../editor/store";

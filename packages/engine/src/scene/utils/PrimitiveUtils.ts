@@ -138,11 +138,14 @@ export class PrimitiveUtils implements Utils<Primitive, PrimitiveJSON> {
         attributes: {},
       };
 
-      target.listAttributes().forEach((attribute) => {
+      target.listAttributes().forEach((attribute, i) => {
         const accessorId = this.#accessor.getId(attribute);
         if (accessorId === undefined) throw new Error("Accessor not found");
 
-        targetJSON.attributes[attribute.getName()] = accessorId;
+        const name = target.listSemantics()[i];
+        if (!name) throw new Error("Target attribute name not found");
+
+        targetJSON.attributes[name] = accessorId;
       });
 
       return targetJSON;
@@ -156,11 +159,14 @@ export class PrimitiveUtils implements Utils<Primitive, PrimitiveJSON> {
       targets,
     };
 
-    primitive.listAttributes().forEach((attribute) => {
+    primitive.listAttributes().forEach((attribute, i) => {
       const accessorId = this.#accessor.getId(attribute);
       if (accessorId === undefined) throw new Error("Accessor not found");
 
-      json.attributes[attribute.getName()] = accessorId;
+      const name = primitive.listSemantics()[i];
+      if (!name) throw new Error("Attribute name not found");
+
+      json.attributes[name] = accessorId;
     });
 
     return json;

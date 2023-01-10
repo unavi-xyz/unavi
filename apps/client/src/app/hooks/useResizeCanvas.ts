@@ -1,7 +1,7 @@
 import { Engine } from "engine";
 import { useEffect, useMemo, useState } from "react";
 
-export function useResizeEngineCanvas(
+export function useResizeCanvas(
   engine: Engine | null,
   canvasRef: React.RefObject<HTMLCanvasElement>,
   containerRef: React.RefObject<HTMLDivElement>
@@ -14,9 +14,9 @@ export function useResizeEngineCanvas(
       return;
     }
 
-    engine.waitForReady().then(() => {
-      if (engine.input) setInputCanvas(engine.input.canvas);
-    });
+    // engine.waitForReady().then(() => {
+    //   if (engine.input) setInputCanvas(engine.input.canvas);
+    // });
   }, [engine]);
 
   useEffect(() => {
@@ -39,44 +39,42 @@ export function useResizeEngineCanvas(
     };
   }, [inputCanvas, containerRef]);
 
-  const updateCanvasSize = useMemo(() => {
+  const resize = useMemo(() => {
     return () => {
+      if (!engine) return;
+
       if (inputCanvas) {
         inputCanvas.width = window.innerWidth;
         inputCanvas.height = window.innerHeight;
       }
 
-      if (typeof OffscreenCanvas !== "undefined") {
-        if (!engine) return;
-        const resize = engine.renderThread.onResize.bind(engine.renderThread);
-        resize();
-      } else {
-        try {
-          const canvas = canvasRef.current;
-          if (!canvas) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-          const container = containerRef.current;
-          if (!container) return;
+      const container = containerRef.current;
+      if (!container) return;
 
-          // Resize canvas
-          canvas.width = container.clientWidth;
-          canvas.height = container.clientHeight;
-        } catch (e) {
-          console.error(e);
-        }
+      if (typeof OffscreenCanvas === "undefined") {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
       }
+
+      engine.modules.render.toRenderThread({
+        subject: "set_size",
+        data: { width: container.clientWidth, height: container.clientHeight },
+      });
     };
   }, [canvasRef, containerRef, engine, inputCanvas]);
 
   useEffect(() => {
     // Set initial canvas size
-    updateCanvasSize();
+    resize();
 
-    window.addEventListener("resize", updateCanvasSize);
+    window.addEventListener("resize", resize);
     return () => {
-      window.removeEventListener("resize", updateCanvasSize);
+      window.removeEventListener("resize", resize);
     };
-  }, [updateCanvasSize]);
+  }, [resize]);
 
-  return updateCanvasSize;
+  return resize;
 }

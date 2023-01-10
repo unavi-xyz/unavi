@@ -31,6 +31,13 @@ export class RenderModule {
       // Send canvas to worker
       this.toRenderThread({ subject: "set_canvas", data: canvas });
     }
+
+    this.toRenderThread({
+      subject: "set_size",
+      data: { width: canvas.width, height: canvas.height },
+    });
+
+    this.toRenderThread({ subject: "set_pixel_ratio", data: window.devicePixelRatio });
   }
 
   toRenderThread(message: ToRenderMessage, transferables?: Transferable[]) {

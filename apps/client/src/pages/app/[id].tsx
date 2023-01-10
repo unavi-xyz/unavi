@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import { useAnalytics } from "../../app/hooks/useAnalytics";
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useLoadUser } from "../../app/hooks/useLoadUser";
-import { useResizeEngineCanvas } from "../../app/hooks/useResizeEngineCanvas";
+import { useResizeEngineCanvas } from "../../app/hooks/useResizeCanvas";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useSpace } from "../../app/hooks/useSpace";
 import { useAppStore } from "../../app/store";

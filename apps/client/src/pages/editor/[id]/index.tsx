@@ -3,8 +3,8 @@ import Script from "next/script";
 import { useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import Split from "react-split";
 
+import { useResizeCanvas } from "../../../app/hooks/useResizeCanvas";
 import { useEditorStore } from "../../../editor/store";
 import MetaTags from "../../../home/MetaTags";
 
@@ -13,10 +13,10 @@ export default function Editor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const createdEngine = useRef(false);
 
-  // const engine = useEditorStore((state) => state.engine);
+  const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
 
-  // const resize = useResizeEngineCanvas(engine, canvasRef, containerRef);
+  useResizeCanvas(engine, canvasRef, containerRef);
   // useLoad();
   // useAutosave();
   // useTransformControls();
@@ -28,7 +28,7 @@ export default function Editor() {
     const engine = new Engine({ canvas: canvasRef.current });
     createdEngine.current = true;
 
-    useEditorStore.setState({ engine });
+    useEditorStore.setState({ engine, sceneLoaded: true });
   }, []);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
@@ -62,20 +62,9 @@ export default function Editor() {
         >
           <div className="z-10 h-14 w-full border-b">{/* <EditorNavbar /> */}</div>
 
-          <Split
-            sizes={[15, 65, 20]}
-            minSize={[250, 500, 400]}
-            direction="horizontal"
-            expandToMin
-            gutterSize={6}
-            className="flex h-full"
-            // onMouseMove={resize}
-          >
-            {/* <TreeMenu /> */}
-
-            <div className="h-full border-x">
-              <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-                {/* {!sceneLoaded && (
+          <div className="h-full border-x">
+            <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+              {/* {!sceneLoaded && (
                   <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
                     <div className="flex h-full  flex-col items-center justify-center">
                       <Spinner />
@@ -83,12 +72,23 @@ export default function Editor() {
                   </div>
                 )} */}
 
-                <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
-              </div>
+              <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
             </div>
+          </div>
 
-            <div className="h-full">{/* <InspectMenu /> */}</div>
-          </Split>
+          {/* <Split
+            sizes={[15, 65, 20]}
+            minSize={[250, 500, 400]}
+            direction="horizontal"
+            expandToMin
+            gutterSize={6}
+            className="flex h-full"
+            onMouseMove={resize}
+          >
+            <TreeMenu />
+
+            <div className="h-full"><InspectMenu /></div>
+          </Split> */}
         </div>
       </DndProvider>
     </>

@@ -37,14 +37,12 @@ export interface MaterialJSON {
 
 export class MaterialUtils implements Utils<Material, MaterialJSON> {
   #doc: Document;
-  texture: TextureUtils;
-  info = new TextureInfoUtils();
-
+  #texture: TextureUtils;
   store = new Map<string, Material>();
 
   constructor(doc: Document, texture: TextureUtils) {
     this.#doc = doc;
-    this.texture = texture;
+    this.#texture = texture;
   }
 
   getId(material: Material) {
@@ -98,95 +96,95 @@ export class MaterialUtils implements Utils<Material, MaterialJSON> {
 
     if (json.baseColorFactor) material.setBaseColorFactor(json.baseColorFactor);
     if (json.baseColorTexture) {
-      const texture = this.texture.store.get(json.baseColorTexture);
+      const texture = this.#texture.store.get(json.baseColorTexture);
       if (texture) material.setBaseColorTexture(texture);
     }
     if (json.baseColorTextureInfo) {
       const info = material.getBaseColorTextureInfo();
-      if (info) this.info.applyJSON(info, json.baseColorTextureInfo);
+      if (info) TextureInfoUtils.applyJSON(info, json.baseColorTextureInfo);
     }
 
     if (json.emissiveFactor) material.setEmissiveFactor(json.emissiveFactor);
     if (json.emissiveTexture) {
-      const texture = this.texture.store.get(json.emissiveTexture);
+      const texture = this.#texture.store.get(json.emissiveTexture);
       if (texture) material.setEmissiveTexture(texture);
     }
     if (json.emissiveTextureInfo) {
       const info = material.getEmissiveTextureInfo();
-      if (info) this.info.applyJSON(info, json.emissiveTextureInfo);
+      if (info) TextureInfoUtils.applyJSON(info, json.emissiveTextureInfo);
     }
 
     if (json.normalScale) material.setNormalScale(json.normalScale);
     if (json.normalTexture) {
-      const texture = this.texture.store.get(json.normalTexture);
+      const texture = this.#texture.store.get(json.normalTexture);
       if (texture) material.setNormalTexture(texture);
     }
     if (json.normalTextureInfo) {
       const info = material.getNormalTextureInfo();
-      if (info) this.info.applyJSON(info, json.normalTextureInfo);
+      if (info) TextureInfoUtils.applyJSON(info, json.normalTextureInfo);
     }
 
     if (json.occlusionStrength) material.setOcclusionStrength(json.occlusionStrength);
     if (json.occlusionTexture) {
-      const texture = this.texture.store.get(json.occlusionTexture);
+      const texture = this.#texture.store.get(json.occlusionTexture);
       if (texture) material.setOcclusionTexture(texture);
     }
     if (json.occlusionTextureInfo) {
       const info = material.getOcclusionTextureInfo();
-      if (info) this.info.applyJSON(info, json.occlusionTextureInfo);
+      if (info) TextureInfoUtils.applyJSON(info, json.occlusionTextureInfo);
     }
 
     if (json.roughnessFactor) material.setRoughnessFactor(json.roughnessFactor);
     if (json.metallicFactor) material.setMetallicFactor(json.metallicFactor);
     if (json.metallicRoughnessTexture) {
-      const texture = this.texture.store.get(json.metallicRoughnessTexture);
+      const texture = this.#texture.store.get(json.metallicRoughnessTexture);
       if (texture) material.setMetallicRoughnessTexture(texture);
     }
     if (json.metallicRoughnessTextureInfo) {
       const info = material.getMetallicRoughnessTextureInfo();
-      if (info) this.info.applyJSON(info, json.metallicRoughnessTextureInfo);
+      if (info) TextureInfoUtils.applyJSON(info, json.metallicRoughnessTextureInfo);
     }
   }
 
   toJSON(material: Material): MaterialJSON {
     const baseColorTexture = material.getBaseColorTexture();
-    const baseColorTextureId = baseColorTexture ? this.texture.getId(baseColorTexture) : null;
+    const baseColorTextureId = baseColorTexture ? this.#texture.getId(baseColorTexture) : null;
     if (baseColorTextureId === undefined) throw new Error("Base color texture not found");
 
     const baseColorInfo = material.getBaseColorTextureInfo();
-    const baseColorInfoJSON = baseColorInfo ? this.info.toJSON(baseColorInfo) : null;
+    const baseColorInfoJSON = baseColorInfo ? TextureInfoUtils.toJSON(baseColorInfo) : null;
 
     const emissiveTexture = material.getEmissiveTexture();
-    const emissiveTextureId = emissiveTexture ? this.texture.getId(emissiveTexture) : null;
+    const emissiveTextureId = emissiveTexture ? this.#texture.getId(emissiveTexture) : null;
     if (emissiveTextureId === undefined) throw new Error("Emissive texture not found");
 
     const emissiveInfo = material.getEmissiveTextureInfo();
-    const emissiveInfoJSON = emissiveInfo ? this.info.toJSON(emissiveInfo) : null;
+    const emissiveInfoJSON = emissiveInfo ? TextureInfoUtils.toJSON(emissiveInfo) : null;
 
     const normalTexture = material.getNormalTexture();
-    const normalTextureId = normalTexture ? this.texture.getId(normalTexture) : null;
+    const normalTextureId = normalTexture ? this.#texture.getId(normalTexture) : null;
     if (normalTextureId === undefined) throw new Error("Normal texture not found");
 
     const normalInfo = material.getNormalTextureInfo();
-    const normalInfoJSON = normalInfo ? this.info.toJSON(normalInfo) : null;
+    const normalInfoJSON = normalInfo ? TextureInfoUtils.toJSON(normalInfo) : null;
 
     const occlusionTexture = material.getOcclusionTexture();
-    const occlusionTextureId = occlusionTexture ? this.texture.getId(occlusionTexture) : null;
+    const occlusionTextureId = occlusionTexture ? this.#texture.getId(occlusionTexture) : null;
     if (occlusionTextureId === undefined) throw new Error("Occlusion texture not found");
 
     const occlusionInfo = material.getOcclusionTextureInfo();
-    const occlusionInfoJSON = occlusionInfo ? this.info.toJSON(occlusionInfo) : null;
+    const occlusionInfoJSON = occlusionInfo ? TextureInfoUtils.toJSON(occlusionInfo) : null;
 
     const metallicRoughnessTexture = material.getMetallicRoughnessTexture();
     const metallicRoughnessTextureId = metallicRoughnessTexture
-      ? this.texture.getId(metallicRoughnessTexture)
+      ? this.#texture.getId(metallicRoughnessTexture)
       : null;
     if (metallicRoughnessTextureId === undefined)
       throw new Error("Metallic roughness texture not found");
 
     const metallicRoughnessInfo = material.getMetallicRoughnessTextureInfo();
     const metallicRoughnessInfoJSON = metallicRoughnessInfo
-      ? this.info.toJSON(metallicRoughnessInfo)
+      ? TextureInfoUtils.toJSON(metallicRoughnessInfo)
       : null;
 
     return {

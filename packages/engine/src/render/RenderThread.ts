@@ -11,8 +11,10 @@ import {
   WebGLRenderer,
 } from "three";
 
+import { isInputMessage } from "../input/messages";
 import { isSceneMessage } from "../scene/messages";
 import { PostMessage } from "../types";
+import { OrbitControlsWrapper } from "./controls/OrbitControlsWrapper";
 import { FromRenderMessage, ToRenderMessage } from "./messages";
 import { RenderScene } from "./RenderScene";
 
@@ -30,6 +32,8 @@ export class RenderThread {
   size = { width: 0, height: 0 };
   pixelRatio = 1;
   camera = new PerspectiveCamera(75, 1, CAMERA_NEAR, CAMERA_FAR);
+
+  controls = new OrbitControlsWrapper(this.camera);
 
   constructor(postMessage: PostMessage<FromRenderMessage>) {
     this.postMessage = postMessage;
@@ -54,6 +58,10 @@ export class RenderThread {
       this.renderScene.onmessage(event.data);
     }
 
+    if (isInputMessage(event.data)) {
+      this.controls.onmessage(event.data);
+    }
+
     const { subject, data } = event.data;
 
     switch (subject) {
@@ -68,6 +76,7 @@ export class RenderThread {
         this.camera.aspect = data.width / data.height;
         this.camera.updateProjectionMatrix();
         this.renderer?.setSize(data.width, data.height, false);
+        this.controls.setSize(data.width, data.height);
         break;
       }
 
@@ -99,6 +108,8 @@ export class RenderThread {
   render() {
     requestAnimationFrame(() => this.render());
     if (!this.renderer) return;
+
+    this.controls.update();
 
     this.renderer.render(this.scene, this.camera);
   }

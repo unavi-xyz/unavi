@@ -1,11 +1,13 @@
+import { InputModule } from "./input/InputModule";
 import { PhysicsModule } from "./physics/PhysicsModule";
 import { RenderModule } from "./render/RenderModule";
 import { SceneModule } from "./scene/SceneModule";
 
 interface ModuleContainer {
+  input: InputModule;
+  physics: PhysicsModule;
   render: RenderModule;
   scene: SceneModule;
-  physics: PhysicsModule;
 }
 
 export interface EngineOptions {
@@ -16,16 +18,22 @@ export class Engine {
   modules: ModuleContainer;
 
   constructor({ canvas }: EngineOptions) {
-    const render = new RenderModule(canvas);
     const physics = new PhysicsModule();
+    const render = new RenderModule(canvas);
+    const input = new InputModule(canvas, render);
     const scene = new SceneModule(render);
 
     this.modules = {
-      render,
+      input,
       physics,
+      render,
       scene,
     };
 
     this.modules.scene.load("/models/Cyberia.glb");
+  }
+
+  destroy() {
+    this.modules.input.destroy();
   }
 }

@@ -38,7 +38,7 @@ export default function TreeMenuItem({ id, depth = 0 }: Props) {
 
         <HiOutlineCube className="shrink-0 text-lg" />
 
-        <div className="overflow-x-hidden text-ellipsis">{name}</div>
+        <div className="overflow-x-hidden text-ellipsis whitespace-nowrap">{name}</div>
       </div>
 
       <div>

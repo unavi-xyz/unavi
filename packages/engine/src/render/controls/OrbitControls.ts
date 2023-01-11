@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   EventDispatcher,
   Matrix4,
@@ -12,6 +11,8 @@ import {
   Vector3,
 } from "three";
 
+import { PointerData } from "../../input/messages";
+
 // https://github.com/mrdoob/three.js/blob/dev/examples/jsm/controls/OrbitControls.js
 
 // This set of controls performs orbiting, dollying (zooming), and panning.
@@ -24,6 +25,10 @@ import {
 const _changeEvent = { type: "change" };
 const _startEvent = { type: "start" };
 const _endEvent = { type: "end" };
+
+type FakeKeyDownEvent = CustomEvent<{ code: string }>;
+type FakePointerEvent = CustomEvent<PointerData>;
+type FakeWheelEvent = CustomEvent<{ deltaY: number }>;
 
 export class OrbitControls extends EventDispatcher {
   object: PerspectiveCamera | OrthographicCamera;
@@ -64,6 +69,8 @@ export class OrbitControls extends EventDispatcher {
   mouseButtons = { LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.PAN };
   touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
 
+  canvasSize = new Vector2();
+
   getPolarAngle: () => number;
   getAzimuthalAngle: () => number;
   getDistance: () => number;
@@ -73,12 +80,7 @@ export class OrbitControls extends EventDispatcher {
   update: () => void;
   dispose: () => void;
 
-  constructor(
-    object: PerspectiveCamera | OrthographicCamera,
-    domElement: EventTarget,
-    clientWidth: number,
-    clientHeight: number
-  ) {
+  constructor(object: PerspectiveCamera | OrthographicCamera, domElement: EventTarget) {
     super();
 
     if (domElement === undefined)
@@ -433,17 +435,21 @@ export class OrbitControls extends EventDispatcher {
           // half of the fov is center to top of screen
           targetDistance *= Math.tan(((scope.object.fov / 2) * Math.PI) / 180.0);
 
-          // we use only clientHeight here so aspect ratio does not distort speed
-          panLeft((2 * deltaX * targetDistance) / clientHeight, scope.object.matrix);
-          panUp((2 * deltaY * targetDistance) / clientHeight, scope.object.matrix);
+          // we use only canvasSize.y here so aspect ratio does not distort speed
+          panLeft((2 * deltaX * targetDistance) / scope.canvasSize.y, scope.object.matrix);
+          panUp((2 * deltaY * targetDistance) / scope.canvasSize.y, scope.object.matrix);
         } else if (scope.object instanceof OrthographicCamera) {
           // orthographic
           panLeft(
-            (deltaX * (scope.object.right - scope.object.left)) / scope.object.zoom / clientWidth,
+            (deltaX * (scope.object.right - scope.object.left)) /
+              scope.object.zoom /
+              scope.canvasSize.x,
             scope.object.matrix
           );
           panUp(
-            (deltaY * (scope.object.top - scope.object.bottom)) / scope.object.zoom / clientHeight,
+            (deltaY * (scope.object.top - scope.object.bottom)) /
+              scope.object.zoom /
+              scope.canvasSize.y,
             scope.object.matrix
           );
         } else {
@@ -513,9 +519,9 @@ export class OrbitControls extends EventDispatcher {
 
       rotateDelta.subVectors(rotateEnd, rotateStart).multiplyScalar(scope.rotateSpeed);
 
-      rotateLeft((2 * Math.PI * rotateDelta.x) / clientHeight); // yes, height
+      rotateLeft((2 * Math.PI * rotateDelta.x) / scope.canvasSize.y); // yes, height
 
-      rotateUp((2 * Math.PI * rotateDelta.y) / clientHeight);
+      rotateUp((2 * Math.PI * rotateDelta.y) / scope.canvasSize.y);
 
       rotateStart.copy(rotateEnd);
 
@@ -589,8 +595,10 @@ export class OrbitControls extends EventDispatcher {
 
     function handleTouchStartRotate() {
       if (pointers.length === 1) {
+        if (!pointers[0]) return;
         rotateStart.set(pointers[0].detail.pageX, pointers[0].detail.pageY);
       } else {
+        if (!pointers[0] || !pointers[1]) return;
         const x = 0.5 * (pointers[0].detail.pageX + pointers[1].detail.pageX);
         const y = 0.5 * (pointers[0].detail.pageY + pointers[1].detail.pageY);
 
@@ -600,8 +608,10 @@ export class OrbitControls extends EventDispatcher {
 
     function handleTouchStartPan() {
       if (pointers.length === 1) {
+        if (!pointers[0]) return;
         panStart.set(pointers[0].detail.pageX, pointers[0].detail.pageY);
       } else {
+        if (!pointers[0] || !pointers[1]) return;
         const x = 0.5 * (pointers[0].detail.pageX + pointers[1].detail.pageX);
         const y = 0.5 * (pointers[0].detail.pageY + pointers[1].detail.pageY);
 
@@ -610,6 +620,7 @@ export class OrbitControls extends EventDispatcher {
     }
 
     function handleTouchStartDolly() {
+      if (!pointers[0] || !pointers[1]) return;
       const dx = pointers[0].detail.pageX - pointers[1].detail.pageX;
       const dy = pointers[0].detail.pageY - pointers[1].detail.pageY;
 
@@ -635,6 +646,7 @@ export class OrbitControls extends EventDispatcher {
         rotateEnd.set(event.detail.pageX, event.detail.pageY);
       } else {
         const position = getSecondPointerPosition(event);
+        if (!position) return;
 
         const x = 0.5 * (event.detail.pageX + position.x);
         const y = 0.5 * (event.detail.pageY + position.y);
@@ -644,9 +656,9 @@ export class OrbitControls extends EventDispatcher {
 
       rotateDelta.subVectors(rotateEnd, rotateStart).multiplyScalar(scope.rotateSpeed);
 
-      rotateLeft((2 * Math.PI * rotateDelta.x) / clientHeight); // yes, height
+      rotateLeft((2 * Math.PI * rotateDelta.x) / scope.canvasSize.y); // yes, height
 
-      rotateUp((2 * Math.PI * rotateDelta.y) / clientHeight);
+      rotateUp((2 * Math.PI * rotateDelta.y) / scope.canvasSize.y);
 
       rotateStart.copy(rotateEnd);
     }
@@ -656,6 +668,7 @@ export class OrbitControls extends EventDispatcher {
         panEnd.set(event.detail.pageX, event.detail.pageY);
       } else {
         const position = getSecondPointerPosition(event);
+        if (!position) return;
 
         const x = 0.5 * (event.detail.pageX + position.x);
         const y = 0.5 * (event.detail.pageY + position.y);
@@ -672,6 +685,7 @@ export class OrbitControls extends EventDispatcher {
 
     function handleTouchMoveDolly(event: FakePointerEvent) {
       const position = getSecondPointerPosition(event);
+      if (!position) return;
 
       const dx = event.detail.pageX - position.x;
       const dy = event.detail.pageY - position.y;
@@ -987,7 +1001,7 @@ export class OrbitControls extends EventDispatcher {
       delete pointerPositions[event.detail.pointerId];
 
       for (let i = 0; i < pointers.length; i++) {
-        if (pointers[i].detail.pointerId == event.detail.pointerId) {
+        if (pointers[i]?.detail.pointerId == event.detail.pointerId) {
           pointers.splice(i, 1);
           return;
         }
@@ -1007,7 +1021,8 @@ export class OrbitControls extends EventDispatcher {
 
     function getSecondPointerPosition(event: FakePointerEvent) {
       const pointer =
-        event.detail.pointerId === pointers[0].detail.pointerId ? pointers[1] : pointers[0];
+        event.detail.pointerId === pointers[0]?.detail.pointerId ? pointers[1] : pointers[0];
+      if (!pointer) return;
 
       return pointerPositions[pointer.detail.pointerId];
     }

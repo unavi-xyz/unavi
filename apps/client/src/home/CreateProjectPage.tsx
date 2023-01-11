@@ -12,7 +12,7 @@ export default function CreateProjectPage() {
 
   const { mutateAsync: createProject } = trpc.project.create.useMutation();
   const { mutateAsync: createImageUpload } = trpc.project.imageUploadURL.useMutation();
-  const { mutateAsync: createSceneUpload } = trpc.project.sceneUploadURL.useMutation();
+  // const { mutateAsync: createSceneUpload } = trpc.project.sceneUploadURL.useMutation();
 
   const [loading, setLoading] = useState(false);
 

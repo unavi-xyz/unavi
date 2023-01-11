@@ -15,7 +15,7 @@ export default function InspectMenu() {
 
   // const [open, setOpen] = useState(false);
 
-  if (!selectedId) return null;
+  if (!selectedId) return <div />;
 
   // const otherComponents = Object.values(ComponentType).filter((type) => {
   //   if (mesh && type === ComponentType.Mesh) return false;

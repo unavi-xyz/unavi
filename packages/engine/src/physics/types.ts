@@ -1,5 +1,5 @@
 import { SceneMessage } from "../scene";
-import { Vec4, Vec3, WorkerMessage } from "../types";
+import { Vec3, Vec4, WorkerMessage } from "../types";
 
 export type ToPhysicsMessage =
   | SceneMessage

@@ -70,10 +70,10 @@ export default function Editor() {
           </div>
 
           <Split
-            sizes={[20, 60, 20]}
+            sizes={[15, 65, 20]}
             minSize={[50, 400, 50]}
             direction="horizontal"
-            gutterSize={6}
+            gutterSize={4}
             className="flex h-full"
             onMouseUp={resize}
           >

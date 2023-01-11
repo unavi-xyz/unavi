@@ -19,7 +19,7 @@ export class Engine {
 
   constructor({ canvas }: EngineOptions) {
     const physics = new PhysicsModule();
-    const render = new RenderModule(canvas);
+    const render = new RenderModule(canvas, this);
     const input = new InputModule(canvas, render);
     const scene = new SceneModule(render);
 

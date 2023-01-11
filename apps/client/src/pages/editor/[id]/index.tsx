@@ -9,6 +9,7 @@ import { useResizeCanvas } from "../../../app/hooks/useResizeCanvas";
 import EditorNavbar from "../../../editor/components/EditorNavbar/EditorNavbar";
 import InspectMenu from "../../../editor/components/InspectMenu/InspectMenu";
 import TreeMenu from "../../../editor/components/TreeMenu/TreeMenu";
+import { useTransformControls } from "../../../editor/hooks/useTransformControls";
 import { useEditorStore } from "../../../editor/store";
 import MetaTags from "../../../home/MetaTags";
 import Spinner from "../../../ui/Spinner";
@@ -24,7 +25,7 @@ export default function Editor() {
   const resize = useResizeCanvas(engine, canvasRef, containerRef);
   // useLoad();
   // useAutosave();
-  // useTransformControls();
+  useTransformControls();
   // useEditorHotkeys();
 
   useEffect(() => {
@@ -33,11 +34,6 @@ export default function Editor() {
     const engine = new Engine({ canvas: canvasRef.current });
     createdEngine.current = true;
     useEditorStore.setState({ engine, sceneLoaded: true });
-
-    engine.modules.render.addEventListener("clicked_node", (e) => {
-      const nodeId = e.data.id;
-      useEditorStore.setState({ selectedId: nodeId });
-    });
   }, []);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";

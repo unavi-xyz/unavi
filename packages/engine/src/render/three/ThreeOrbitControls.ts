@@ -1,3 +1,5 @@
+// https://github.com/mrdoob/three.js/blob/dev/examples/jsm/controls/OrbitControls.js
+
 import {
   EventDispatcher,
   Matrix4,
@@ -12,8 +14,6 @@ import {
 } from "three";
 
 import { PointerData } from "../../input/messages";
-
-// https://github.com/mrdoob/three.js/blob/dev/examples/jsm/controls/OrbitControls.js
 
 // This set of controls performs orbiting, dollying (zooming), and panning.
 // Unlike TrackballControls, it maintains the "up" direction object.up (+Y by default).

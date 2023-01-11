@@ -1,5 +1,6 @@
 import { EventDispatcher } from "property-graph";
 
+import { Engine } from "../Engine";
 import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderEvent } from "./events";
@@ -7,10 +8,14 @@ import { FromRenderMessage, ToRenderMessage } from "./messages";
 import { RenderThread } from "./RenderThread";
 
 export class RenderModule extends EventDispatcher<RenderEvent> {
+  #engine: Engine;
+
   #renderWorker: Worker | FakeWorker;
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, engine: Engine) {
     super();
+
+    this.#engine = engine;
 
     // If OffscreenCanvas is supported, render in a worker
     if (typeof OffscreenCanvas !== "undefined") {
@@ -59,6 +64,15 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       case "clicked_node": {
         this.dispatchEvent({ type: subject, data });
         break;
+      }
+
+      case "set_node_transform": {
+        const node = this.#engine.modules.scene.node.store.get(data.nodeId);
+        if (!node) throw new Error("Node not found");
+
+        node.setTranslation(data.translation);
+        node.setRotation(data.rotation);
+        node.setScale(data.scale);
       }
     }
   };

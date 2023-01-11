@@ -1,13 +1,17 @@
 import { PerspectiveCamera } from "three";
 
 import { InputMessage } from "../../input/messages";
-import { ThreeOrbitControls } from "./ThreeOrbitControls";
+import { ThreeOrbitControls } from "../three/ThreeOrbitControls";
+import { TransformControls } from "./TransformControls";
 
 export class OrbitControls {
   #target = new EventTarget();
   #orbitControls: ThreeOrbitControls;
+  #transformControls: TransformControls;
 
-  constructor(camera: PerspectiveCamera) {
+  constructor(camera: PerspectiveCamera, transformControls: TransformControls) {
+    this.#transformControls = transformControls;
+
     this.#orbitControls = new ThreeOrbitControls(camera, this.#target);
     this.#orbitControls.enableDamping = true;
     this.#orbitControls.dampingFactor = 0.05;
@@ -33,7 +37,7 @@ export class OrbitControls {
       }
 
       case "pointerdown": {
-        // if (this.#state.usingTransformControls) return;
+        if (this.#transformControls.usingControls) return;
 
         const pointerDownEvent = new CustomEvent("pointerdown", { detail: data });
         this.#target.dispatchEvent(pointerDownEvent);

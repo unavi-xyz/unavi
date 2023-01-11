@@ -1,9 +1,9 @@
-import { Accessor, Texture, TextureInfo } from "@gltf-transform/core";
+import { Accessor, Mesh, Primitive, Texture, TextureInfo } from "@gltf-transform/core";
 import {
   BufferAttribute,
   DoubleSide,
   FrontSide,
-  Mesh,
+  Mesh as ThreeMesh,
   MeshStandardMaterial,
   Object3D,
   sRGBEncoding,
@@ -25,7 +25,7 @@ export class RenderScene extends Scene {
   root = new Object3D();
 
   materialObjects = new Map<string, MeshStandardMaterial>();
-  primitiveObjects = new Map<string, Mesh>();
+  primitiveObjects = new Map<string, ThreeMesh>();
   meshObjects = new Map<string, Object3D>();
   nodeObjects = new Map<string, Object3D>();
 
@@ -100,7 +100,7 @@ export class RenderScene extends Scene {
       case "create_primitive": {
         const { object: primitive } = this.primitive.create(data.json, data.id);
 
-        const object = new Mesh();
+        const object = new ThreeMesh();
         this.primitiveObjects.set(data.id, object);
 
         primitive.addEventListener("dispose", () => {
@@ -491,6 +491,65 @@ export class RenderScene extends Scene {
 
     // Apply JSON after updating the object
     this.material.applyJSON(material, json);
+  }
+
+  getPrimitiveObjectId(object: Object3D): string | null {
+    for (const [id, primitiveObject] of this.primitiveObjects.entries()) {
+      if (primitiveObject === object) return id;
+    }
+
+    return null;
+  }
+
+  getPrimitiveMeshId(primitive: Primitive): string | null {
+    for (const [id, mesh] of this.mesh.store.entries()) {
+      if (mesh.listPrimitives().includes(primitive)) return id;
+    }
+
+    return null;
+  }
+
+  getMeshObjectId(object: Object3D): string | null {
+    for (const [id, meshObject] of this.meshObjects.entries()) {
+      if (meshObject === object) return id;
+    }
+
+    return null;
+  }
+
+  getMeshNodeId(mesh: Mesh): string | null {
+    for (const [id, node] of this.node.store.entries()) {
+      if (node.getMesh() === mesh) return id;
+    }
+
+    return null;
+  }
+
+  getNodeObjectId(object: Object3D): string | null {
+    for (const [id, nodeObject] of this.nodeObjects.entries()) {
+      if (nodeObject === object) return id;
+    }
+
+    return null;
+  }
+
+  getPrimitiveObjectNodeId(object: Object3D): string | null {
+    const primitiveId = this.getPrimitiveObjectId(object);
+    if (!primitiveId) return null;
+
+    const primitive = this.primitive.store.get(primitiveId);
+    if (!primitive) throw new Error("Primitive not found");
+
+    const meshId = this.getPrimitiveMeshId(primitive);
+    if (!meshId) return null;
+
+    const mesh = this.mesh.store.get(meshId);
+    if (!mesh) throw new Error("Mesh not found");
+
+    const nodeId = this.getMeshNodeId(mesh);
+    if (!nodeId) return null;
+
+    return nodeId;
   }
 }
 

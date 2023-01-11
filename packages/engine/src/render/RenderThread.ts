@@ -1,8 +1,10 @@
 import {
   AmbientLight,
+  EquirectangularReflectionMapping,
   Fog,
   PCFSoftShadowMap,
   PerspectiveCamera,
+  PMREMGenerator,
   Scene,
   sRGBEncoding,
   Vector2,
@@ -13,6 +15,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
+import { CanvasTexture } from "three/src/Three";
 
 import { isInputMessage } from "../input/messages";
 import { isSceneMessage } from "../scene/messages";
@@ -106,8 +109,44 @@ export class RenderThread {
         this.renderer?.setPixelRatio(data);
         break;
       }
+
+      case "set_skybox": {
+        this.loadSkybox(data.uri);
+      }
     }
   };
+
+  async loadSkybox(uri: string | null) {
+    if (!uri) {
+      this.scene.environment = null;
+      this.scene.background = null;
+      return;
+    }
+
+    // Load skybox
+    const res = await fetch(uri);
+    const blob = await res.blob();
+    const bitmap = await createImageBitmap(blob, { imageOrientation: "flipY" });
+
+    const texture = new CanvasTexture(bitmap);
+    texture.mapping = EquirectangularReflectionMapping;
+    texture.encoding = sRGBEncoding;
+    texture.needsUpdate = true;
+
+    // Generate PMREM
+    if (!this.renderer) throw new Error("Renderer not initialized");
+    const pmremGenerator = new PMREMGenerator(this.renderer);
+    pmremGenerator.compileEquirectangularShader();
+
+    const renderTarget = pmremGenerator.fromEquirectangular(texture);
+
+    // Set skybox
+    this.scene.environment = renderTarget.texture;
+    this.scene.background = renderTarget.texture;
+
+    // Clean up
+    pmremGenerator.dispose();
+  }
 
   init() {
     if (!this.#canvas) return;

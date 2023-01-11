@@ -10,7 +10,8 @@ export type ToRenderMessage =
   | MessageJSON<"set_pixel_ratio", number>
   | MessageJSON<"player_input_direction", Vec2>
   | MessageJSON<"set_transform_controls_mode", "translate" | "rotate" | "scale">
-  | MessageJSON<"set_transform_controls_target", { nodeId: string | null }>;
+  | MessageJSON<"set_transform_controls_target", { nodeId: string | null }>
+  | MessageJSON<"set_skybox", { uri: string | null }>;
 
 export type FromRenderMessage =
   | MessageJSON<"ready">

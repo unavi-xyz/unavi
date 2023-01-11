@@ -34,6 +34,12 @@ export default function Editor() {
     const engine = new Engine({ canvas: canvasRef.current });
     createdEngine.current = true;
     useEditorStore.setState({ engine, sceneLoaded: true });
+
+    // Skybox
+    engine.modules.render.toRenderThread({
+      subject: "set_skybox",
+      data: { uri: "/images/Skybox_2K.jpg" },
+    });
   }, []);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";

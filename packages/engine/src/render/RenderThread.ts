@@ -1,9 +1,6 @@
 import {
   AmbientLight,
-  BoxGeometry,
   Fog,
-  Mesh,
-  MeshStandardMaterial,
   PCFSoftShadowMap,
   PerspectiveCamera,
   Scene,
@@ -14,7 +11,8 @@ import {
 import { isInputMessage } from "../input/messages";
 import { isSceneMessage } from "../scene/messages";
 import { PostMessage } from "../types";
-import { OrbitControlsWrapper } from "./controls/OrbitControlsWrapper";
+import { OrbitControls } from "./controls/OrbitControls";
+import { RaycastControls } from "./controls/RaycastControls";
 import { FromRenderMessage, ToRenderMessage } from "./messages";
 import { RenderScene } from "./RenderScene";
 
@@ -25,18 +23,19 @@ export class RenderThread {
   #canvas: HTMLCanvasElement | OffscreenCanvas | null = null;
   postMessage: PostMessage<FromRenderMessage>;
 
-  readonly renderScene = new RenderScene();
-  readonly scene = new Scene();
-
   renderer: WebGLRenderer | null = null;
   size = { width: 0, height: 0 };
   pixelRatio = 1;
   camera = new PerspectiveCamera(75, 1, CAMERA_NEAR, CAMERA_FAR);
 
-  controls = new OrbitControlsWrapper(this.camera);
+  renderScene = new RenderScene();
+  scene = new Scene();
+  controls = new OrbitControls(this.camera);
+  raycaster: RaycastControls;
 
   constructor(postMessage: PostMessage<FromRenderMessage>) {
     this.postMessage = postMessage;
+    this.raycaster = new RaycastControls(this.camera, this.renderScene, this.postMessage);
 
     this.scene.add(this.renderScene.root);
     this.scene.fog = new Fog(0xcfcfcf, CAMERA_FAR / 2, CAMERA_FAR);
@@ -46,9 +45,6 @@ export class RenderThread {
 
     const light = new AmbientLight(0xffffff, 0.5);
     this.scene.add(light);
-
-    const cube = new Mesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial({ color: 0xff0000 }));
-    this.scene.add(cube);
 
     this.render();
   }
@@ -60,6 +56,7 @@ export class RenderThread {
 
     if (isInputMessage(event.data)) {
       this.controls.onmessage(event.data);
+      this.raycaster.onmessage(event.data);
     }
 
     const { subject, data } = event.data;

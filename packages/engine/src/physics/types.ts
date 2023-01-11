@@ -1,13 +1,13 @@
 import { SceneMessage } from "../scene";
-import { Vec3, Vec4, WorkerMessage } from "../types";
+import { Vec3, Vec4, MessageJSON } from "../types";
 
 export type ToPhysicsMessage =
   | SceneMessage
-  | WorkerMessage<"init_player">
-  | WorkerMessage<"start">
-  | WorkerMessage<"stop">
-  | WorkerMessage<"jumping", boolean>
-  | WorkerMessage<
+  | MessageJSON<"init_player">
+  | MessageJSON<"start">
+  | MessageJSON<"stop">
+  | MessageJSON<"jumping", boolean>
+  | MessageJSON<
       "set_global_transform",
       {
         nodeId: string;
@@ -15,8 +15,8 @@ export type ToPhysicsMessage =
         rotation: Vec4;
       }
     >
-  | WorkerMessage<"sprinting", boolean>
-  | WorkerMessage<
+  | MessageJSON<"sprinting", boolean>
+  | MessageJSON<
       "set_collider_geometry",
       {
         nodeId: string;
@@ -26,12 +26,12 @@ export type ToPhysicsMessage =
     >;
 
 export type FromPhysicsMessage =
-  | WorkerMessage<"ready">
-  | WorkerMessage<
+  | MessageJSON<"ready">
+  | MessageJSON<
       "player_buffers",
       {
         position: Int32Array;
         velocity: Int32Array;
       }
     >
-  | WorkerMessage<"player_falling", boolean>;
+  | MessageJSON<"player_falling", boolean>;

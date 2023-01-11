@@ -32,8 +32,12 @@ export default function Editor() {
 
     const engine = new Engine({ canvas: canvasRef.current });
     createdEngine.current = true;
-
     useEditorStore.setState({ engine, sceneLoaded: true });
+
+    engine.modules.render.addEventListener("clicked_node", (e) => {
+      const nodeId = e.data.id;
+      useEditorStore.setState({ selectedId: nodeId });
+    });
   }, []);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";

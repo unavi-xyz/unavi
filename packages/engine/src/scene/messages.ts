@@ -1,4 +1,4 @@
-import { WorkerMessage } from "../types";
+import { MessageJSON } from "../types";
 import { AccessorJSON } from "./utils/AccessorUtils";
 import { BufferJSON } from "./utils/BufferUtils";
 import { MaterialJSON } from "./utils/MaterialUtils";
@@ -34,7 +34,7 @@ const subjects = [
 ] as const;
 
 type SceneMessageSubject = (typeof subjects)[number];
-type SceneWorkerMessage<S extends SceneMessageSubject, D> = WorkerMessage<S, D>;
+type SceneWorkerMessage<S extends SceneMessageSubject, D> = MessageJSON<S, D>;
 
 export type SceneMessage =
   // Buffer
@@ -62,6 +62,6 @@ export type SceneMessage =
   | SceneWorkerMessage<"change_node", { id: string; json: Partial<NodeJSON> }>
   | SceneWorkerMessage<"dispose_node", string>;
 
-export function isSceneMessage(message: WorkerMessage): message is SceneMessage {
+export function isSceneMessage(message: MessageJSON): message is SceneMessage {
   return subjects.includes(message.subject as SceneMessageSubject);
 }

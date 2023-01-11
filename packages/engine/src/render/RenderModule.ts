@@ -1,12 +1,17 @@
+import { EventDispatcher } from "property-graph";
+
 import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
-import { ToRenderMessage } from "./messages";
+import { RenderEvent } from "./events";
+import { FromRenderMessage, ToRenderMessage } from "./messages";
 import { RenderThread } from "./RenderThread";
 
-export class RenderModule {
+export class RenderModule extends EventDispatcher<RenderEvent> {
   #renderWorker: Worker | FakeWorker;
 
   constructor(canvas: HTMLCanvasElement) {
+    super();
+
     // If OffscreenCanvas is supported, render in a worker
     if (typeof OffscreenCanvas !== "undefined") {
       const offscreen = canvas.transferControlToOffscreen();
@@ -15,6 +20,8 @@ export class RenderModule {
         type: "module",
         name: "render",
       });
+
+      this.#renderWorker.onmessage = this.onmessage.bind(this);
 
       // Send canvas to worker
       this.toRenderThread({ subject: "set_canvas", data: offscreen }, [offscreen]);
@@ -27,6 +34,7 @@ export class RenderModule {
       );
 
       this.#renderWorker.insidePort.onmessage = thread.onmessage.bind(thread);
+      this.#renderWorker.outsidePort.onmessage = this.onmessage.bind(this);
 
       // Send canvas to worker
       this.toRenderThread({ subject: "set_canvas", data: canvas });
@@ -43,4 +51,15 @@ export class RenderModule {
   toRenderThread(message: ToRenderMessage, transferables?: Transferable[]) {
     this.#renderWorker.postMessage(message, transferables);
   }
+
+  onmessage = (event: MessageEvent<FromRenderMessage>) => {
+    const { subject, data } = event.data;
+
+    switch (subject) {
+      case "clicked_node": {
+        this.dispatchEvent({ type: subject, data });
+        break;
+      }
+    }
+  };
 }

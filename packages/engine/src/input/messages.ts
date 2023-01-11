@@ -1,4 +1,4 @@
-import { WorkerMessage } from "../types";
+import { MessageJSON } from "../types";
 
 export type PointerData = {
   pointerType: string;
@@ -28,7 +28,7 @@ const subjects = [
 ] as const;
 
 type InputMessageSubject = (typeof subjects)[number];
-type InputWorkerMessage<S extends InputMessageSubject, D> = WorkerMessage<S, D>;
+type InputWorkerMessage<S extends InputMessageSubject, D> = MessageJSON<S, D>;
 
 export type InputMessage =
   | InputWorkerMessage<"mousemove", { x: number; y: number }>
@@ -38,6 +38,6 @@ export type InputMessage =
   | InputWorkerMessage<"pointerdown", PointerData>
   | InputWorkerMessage<"pointercancel", PointerData>;
 
-export function isInputMessage(message: WorkerMessage): message is InputMessage {
+export function isInputMessage(message: MessageJSON): message is InputMessage {
   return subjects.includes(message.subject as InputMessageSubject);
 }

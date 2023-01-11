@@ -6,7 +6,7 @@ module.exports = {
   theme: {
     extend: {
       backgroundImage: {
-        arrow: "url('/images/arrow.svg')",
+        arrow: "url('/images/svg/arrow.svg')",
       },
       aspectRatio: {
         card: "5/3",

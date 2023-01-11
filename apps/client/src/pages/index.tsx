@@ -41,7 +41,7 @@ export default function Index() {
                 <a href={GITHUB_URL} target="_blank" rel="noreferrer">
                   <Button variant="outlined" rounded="large" fullWidth>
                     <div className="flex h-9 items-center justify-center space-x-4 px-1">
-                      <Image src="/images/GitHub.svg" width={32} height={32} alt="" />
+                      <Image src="/images/svg/GitHub.svg" width={32} height={32} alt="" />
                       <div>GitHub</div>
                     </div>
                   </Button>
@@ -122,7 +122,7 @@ export default function Index() {
                 <a href={DISCORD_URL} target="_blank" rel="noreferrer">
                   <Button variant="outlined" rounded="large" fullWidth>
                     <div className="flex h-9 items-center justify-center space-x-4 px-1">
-                      <Image src="/images/Discord.svg" width={32} height={32} alt="" />
+                      <Image src="/images/svg/Discord.svg" width={32} height={32} alt="" />
                       <div>Discord</div>
                     </div>
                   </Button>
@@ -133,7 +133,7 @@ export default function Index() {
                 <a href={TWITTER_URL} target="_blank" rel="noreferrer">
                   <Button variant="outlined" rounded="large" fullWidth>
                     <div className="flex h-9 items-center justify-center space-x-4 px-1">
-                      <Image src="/images/Twitter.svg" width={32} height={32} alt="" />
+                      <Image src="/images/svg/Twitter.svg" width={32} height={32} alt="" />
                       <div>Twitter</div>
                     </div>
                   </Button>

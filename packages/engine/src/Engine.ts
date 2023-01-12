@@ -29,8 +29,6 @@ export class Engine {
       render,
       scene,
     };
-
-    this.modules.scene.load("/models/Cyberia.glb");
   }
 
   destroy() {

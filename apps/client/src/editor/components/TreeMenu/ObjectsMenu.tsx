@@ -1,33 +1,33 @@
-import { AutoCollider, BoxMesh, CylinderMesh, GLTFMesh, Node, SphereMesh } from "engine";
+import { MeshExtras } from "engine";
 
-import { addMesh } from "../../actions/AddMeshAction";
-import { addNode } from "../../actions/AddNodeAction";
 import { useEditorStore } from "../../store";
 
-enum ObjectName {
-  Box = "Box",
-  Sphere = "Sphere",
-  Cylinder = "Cylinder",
-  glTF = "glTF Model",
-  Empty = "Empty",
-}
+const OBJECT_NAME = {
+  Box: "Box",
+  Sphere: "Sphere",
+  Cylinder: "Cylinder",
+  Model: "GLTF Model",
+  Empty: "Empty",
+} as const;
+
+type ObjectName = (typeof OBJECT_NAME)[keyof typeof OBJECT_NAME];
 
 export default function ObjectsMenu() {
   function addObject(name: ObjectName) {
     // Create node
-    const selectedId = createNode(name);
+    const id = createNode(name);
 
     // Select new node
-    useEditorStore.setState({ selectedId });
+    useEditorStore.setState({ selectedId: id });
   }
 
   return (
     <div className="space-y-0.5 p-2">
-      {Object.values(ObjectName).map((name) => (
+      {Object.values(OBJECT_NAME).map((name) => (
         <button
           key={name}
           onClick={() => addObject(name)}
-          className="flex w-full items-center whitespace-nowrap rounded-lg px-4 py-0.5 transition hover:bg-sky-100"
+          className="flex w-full items-center whitespace-nowrap rounded-lg px-4 py-0.5 transition hover:bg-neutral-200"
         >
           {name}
         </button>
@@ -37,48 +37,62 @@ export default function ObjectsMenu() {
 }
 
 function createNode(name: ObjectName) {
-  const node = new Node();
-  node.name = name;
+  const { engine } = useEditorStore.getState();
+  if (!engine) return;
+
+  const { id, object: node } = engine.modules.scene.node.create();
+  node.setName(name);
+
+  const { object: mesh } = engine.modules.scene.mesh.create();
+  node.setMesh(mesh);
 
   switch (name) {
-    case ObjectName.Box: {
-      const mesh = new BoxMesh();
-      addMesh(mesh);
+    case OBJECT_NAME.Box: {
+      const extras: MeshExtras = {
+        customMesh: {
+          type: "Box",
+          width: 1,
+          height: 1,
+          depth: 1,
+        },
+      };
 
-      node.meshId = mesh.id;
-      node.collider = new AutoCollider();
+      mesh.setExtras(extras);
       break;
     }
 
-    case ObjectName.Sphere: {
-      const mesh = new SphereMesh();
-      addMesh(mesh);
+    case OBJECT_NAME.Sphere: {
+      const extras: MeshExtras = {
+        customMesh: {
+          type: "Sphere",
+          radius: 0.5,
+          widthSegments: 32,
+          heightSegments: 32,
+        },
+      };
 
-      node.meshId = mesh.id;
-      node.collider = new AutoCollider();
+      mesh.setExtras(extras);
       break;
     }
 
-    case ObjectName.Cylinder: {
-      const mesh = new CylinderMesh();
-      addMesh(mesh);
+    case OBJECT_NAME.Cylinder: {
+      const extras: MeshExtras = {
+        customMesh: {
+          type: "Cylinder",
+          radiusTop: 0.5,
+          radiusBottom: 0.5,
+          height: 1,
+          radialSegments: 32,
+        },
+      };
 
-      node.meshId = mesh.id;
-      node.collider = new AutoCollider();
-      break;
-    }
-
-    case ObjectName.glTF: {
-      const mesh = new GLTFMesh();
-      addMesh(mesh);
-
-      node.meshId = mesh.id;
-      node.collider = new AutoCollider();
+      mesh.setExtras(extras);
       break;
     }
   }
 
-  addNode(node);
+  // Process scene changes
+  engine.modules.scene.processChanges();
 
-  return node.id;
+  return id;
 }

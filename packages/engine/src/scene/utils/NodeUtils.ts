@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 
 import { Vec3, Vec4 } from "../../types";
 import { MeshUtils } from "./MeshUtils";
-import { Utils } from "./types";
+import { Utils } from "./Utils";
 
 type MeshId = string;
 type SkinId = string;
@@ -19,13 +19,15 @@ export interface NodeJSON {
   children: NodeId[];
 }
 
-export class NodeUtils implements Utils<Node, NodeJSON> {
+export class NodeUtils extends Utils<Node, NodeJSON> {
   #doc: Document;
   #mesh: MeshUtils;
 
   store = new Map<string, Node>();
 
   constructor(doc: Document, mesh: MeshUtils) {
+    super();
+
     this.#doc = doc;
     this.#mesh = mesh;
   }
@@ -47,6 +49,8 @@ export class NodeUtils implements Utils<Node, NodeJSON> {
     this.applyJSON(node, json);
 
     const { id: nodeId } = this.process(node, id);
+
+    this.emitCreate(nodeId);
 
     return { id: nodeId, object: node };
   }

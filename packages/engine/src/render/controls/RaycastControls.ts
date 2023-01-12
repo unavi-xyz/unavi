@@ -62,16 +62,20 @@ export class RaycastControls {
     // Get intersected objects
     const intersections = this.#raycaster.intersectObject(this.#renderScene.root);
 
-    // Find the first intersected object that is a primitive
     const intersection = intersections.find((intersection) => {
+      // Accept intersections with primitives
       const primitiveId = this.#renderScene.getPrimitiveObjectId(intersection.object);
       if (primitiveId) return true;
+
+      // Accept intersections with custom meshes
+      const meshId = this.#renderScene.getCustomMeshObjectId(intersection.object);
+      if (meshId) return true;
 
       return false;
     });
 
     if (intersection) {
-      const nodeId = this.#renderScene.getPrimitiveObjectNodeId(intersection.object);
+      const nodeId = this.#renderScene.getObjectNodeId(intersection.object);
       if (nodeId) {
         this.#postMessage({ subject: "clicked_node", data: { nodeId } });
         return;

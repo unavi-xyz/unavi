@@ -33,6 +33,7 @@ export class RenderScene extends Scene {
 
   materialObjects = new Map<string, MeshStandardMaterial>();
   primitiveObjects = new Map<string, ThreeMesh>();
+  customMeshObjects = new Map<string, ThreeMesh>();
   meshObjects = new Map<string, Object3D>();
   nodeObjects = new Map<string, Object3D>();
 
@@ -267,35 +268,44 @@ export class RenderScene extends Scene {
     if (!object) throw new Error("Mesh object not found");
 
     if (json.extras) {
-      // Remove children
-      object.clear();
+      // Remove previous custom mesh
+      const prevCustomMesh = this.customMeshObjects.get(id);
+      if (prevCustomMesh) object.remove(prevCustomMesh);
 
-      // Create mesh
+      this.customMeshObjects.delete(id);
+
+      // Create custom mesh
       if (json.extras.customMesh) {
+        let customMesh: ThreeMesh | undefined;
+
         switch (json.extras.customMesh.type) {
           case "Box": {
             const { width, height, depth } = json.extras.customMesh;
             const geometry = new BoxGeometry(width, height, depth);
-            const customMesh = new ThreeMesh(geometry, defaultMaterial);
-            object.add(customMesh);
+            customMesh = new ThreeMesh(geometry, defaultMaterial);
+
             break;
           }
 
           case "Sphere": {
             const { radius, widthSegments, heightSegments } = json.extras.customMesh;
             const geometry = new SphereGeometry(radius, widthSegments, heightSegments);
-            const customMesh = new ThreeMesh(geometry, defaultMaterial);
-            object.add(customMesh);
+            customMesh = new ThreeMesh(geometry, defaultMaterial);
+
             break;
           }
 
           case "Cylinder": {
             const { radiusTop, radiusBottom, height, radialSegments } = json.extras.customMesh;
             const geometry = new CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
-            const customMesh = new ThreeMesh(geometry, defaultMaterial);
-            object.add(customMesh);
+            customMesh = new ThreeMesh(geometry, defaultMaterial);
             break;
           }
+        }
+
+        if (customMesh) {
+          object.add(customMesh);
+          this.customMeshObjects.set(id, customMesh);
         }
       }
     }
@@ -570,6 +580,14 @@ export class RenderScene extends Scene {
     this.material.applyJSON(material, json);
   }
 
+  getCustomMeshObjectId(object: Object3D): string | null {
+    for (const [id, customMeshObject] of this.customMeshObjects.entries()) {
+      if (customMeshObject === object) return id;
+    }
+
+    return null;
+  }
+
   getPrimitiveObjectId(object: Object3D): string | null {
     for (const [id, primitiveObject] of this.primitiveObjects.entries()) {
       if (primitiveObject === object) return id;
@@ -610,23 +628,38 @@ export class RenderScene extends Scene {
     return null;
   }
 
-  getPrimitiveObjectNodeId(object: Object3D): string | null {
+  getObjectNodeId(object: Object3D): string | null {
     const primitiveId = this.getPrimitiveObjectId(object);
-    if (!primitiveId) return null;
 
-    const primitive = this.primitive.store.get(primitiveId);
-    if (!primitive) throw new Error("Primitive not found");
+    if (primitiveId) {
+      const primitive = this.primitive.store.get(primitiveId);
+      if (!primitive) throw new Error("Primitive not found");
 
-    const meshId = this.getPrimitiveMeshId(primitive);
-    if (!meshId) return null;
+      const meshId = this.getPrimitiveMeshId(primitive);
+      if (!meshId) return null;
 
-    const mesh = this.mesh.store.get(meshId);
-    if (!mesh) throw new Error("Mesh not found");
+      const mesh = this.mesh.store.get(meshId);
+      if (!mesh) throw new Error("Mesh not found");
 
-    const nodeId = this.getMeshNodeId(mesh);
-    if (!nodeId) return null;
+      const nodeId = this.getMeshNodeId(mesh);
+      if (!nodeId) return null;
 
-    return nodeId;
+      return nodeId;
+    }
+
+    const meshId = this.getCustomMeshObjectId(object);
+
+    if (meshId) {
+      const mesh = this.mesh.store.get(meshId);
+      if (!mesh) throw new Error("Mesh not found");
+
+      const nodeId = this.getMeshNodeId(mesh);
+      if (!nodeId) return null;
+
+      return nodeId;
+    }
+
+    return null;
   }
 }
 

@@ -2,7 +2,7 @@ import { Document, Mesh } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
 import { PrimitiveUtils } from "./PrimitiveUtils";
-import { Utils } from "./types";
+import { Utils } from "./Utils";
 
 type PrimitiveId = string;
 
@@ -43,13 +43,15 @@ export interface MeshJSON {
   extras?: MeshExtras;
 }
 
-export class MeshUtils implements Utils<Mesh, MeshJSON> {
+export class MeshUtils extends Utils<Mesh, MeshJSON> {
   #doc: Document;
   #primitive: PrimitiveUtils;
 
   store = new Map<string, Mesh>();
 
   constructor(doc: Document, primitive: PrimitiveUtils) {
+    super();
+
     this.#doc = doc;
     this.#primitive = primitive;
   }
@@ -65,6 +67,8 @@ export class MeshUtils implements Utils<Mesh, MeshJSON> {
     this.applyJSON(mesh, json);
 
     const { id: meshId } = this.process(mesh, id);
+
+    this.emitCreate(meshId);
 
     return { id: meshId, object: mesh };
   }

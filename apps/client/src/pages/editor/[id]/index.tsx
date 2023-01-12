@@ -40,6 +40,9 @@ export default function Editor() {
       subject: "set_skybox",
       data: { uri: "/images/Skybox_2K.jpg" },
     });
+
+    // Model
+    engine.modules.scene.load("/models/Cyberia.glb");
   }, []);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";

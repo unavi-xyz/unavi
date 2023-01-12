@@ -1,4 +1,4 @@
-import { WebIO } from "@gltf-transform/core";
+import { Mesh, Node, WebIO } from "@gltf-transform/core";
 
 import { RenderModule } from "../render/RenderModule";
 import { Scene } from "./Scene";
@@ -12,7 +12,20 @@ export class SceneModule extends Scene {
 
   constructor(render: RenderModule) {
     super();
+
     this.#render = render;
+
+    this.node.addEventListener("create", ({ data }) => {
+      const node = this.node.store.get(data.id);
+      if (!node) throw new Error("Node not found");
+      this.#onNodeCreate(node);
+    });
+
+    this.mesh.addEventListener("create", ({ data }) => {
+      const mesh = this.mesh.store.get(data.id);
+      if (!mesh) throw new Error("Mesh not found");
+      this.#onMeshCreate(mesh);
+    });
   }
 
   async load(uri: string) {
@@ -139,60 +152,70 @@ export class SceneModule extends Scene {
     });
 
     this.mesh.processChanges().forEach((mesh) => {
-      const id = this.mesh.getId(mesh);
-      if (!id) throw new Error("Id not found");
-      const json = this.mesh.toJSON(mesh);
-
-      this.#render.toRenderThread({
-        subject: "create_mesh",
-        data: { id, json },
-      });
-
-      mesh.addEventListener("change", (e) => {
-        const attribute = e.attribute as keyof MeshJSON;
-        const json = this.mesh.toJSON(mesh);
-        const value = json[attribute];
-
-        this.#render.toRenderThread({
-          subject: "change_mesh",
-          data: { id, json: { [attribute]: value } },
-        });
-      });
-
-      mesh.addEventListener("dispose", () => {
-        this.#render.toRenderThread({
-          subject: "dispose_mesh",
-          data: id,
-        });
-      });
+      this.#onMeshCreate(mesh);
     });
 
     this.node.processChanges().forEach((node) => {
-      const id = this.node.getId(node);
-      if (!id) throw new Error("Id not found");
+      this.#onNodeCreate(node);
+    });
+  }
+
+  #onNodeCreate(node: Node) {
+    const id = this.node.getId(node);
+    if (!id) throw new Error("Id not found");
+
+    const json = this.node.toJSON(node);
+
+    this.#render.toRenderThread({
+      subject: "create_node",
+      data: { id, json },
+    });
+
+    node.addEventListener("change", (e) => {
+      const attribute = e.attribute as keyof NodeJSON;
       const json = this.node.toJSON(node);
+      const value = json[attribute];
 
       this.#render.toRenderThread({
-        subject: "create_node",
-        data: { id, json },
+        subject: "change_node",
+        data: { id, json: { [attribute]: value } },
       });
+    });
 
-      node.addEventListener("change", (e) => {
-        const attribute = e.attribute as keyof NodeJSON;
-        const json = this.node.toJSON(node);
-        const value = json[attribute];
-
-        this.#render.toRenderThread({
-          subject: "change_node",
-          data: { id, json: { [attribute]: value } },
-        });
+    node.addEventListener("dispose", () => {
+      this.#render.toRenderThread({
+        subject: "dispose_node",
+        data: id,
       });
+    });
+  }
 
-      node.addEventListener("dispose", () => {
-        this.#render.toRenderThread({
-          subject: "dispose_node",
-          data: id,
-        });
+  #onMeshCreate(mesh: Mesh) {
+    const id = this.mesh.getId(mesh);
+    if (!id) throw new Error("Id not found");
+
+    const json = this.mesh.toJSON(mesh);
+
+    this.#render.toRenderThread({
+      subject: "create_mesh",
+      data: { id, json },
+    });
+
+    mesh.addEventListener("change", (e) => {
+      const attribute = e.attribute as keyof MeshJSON;
+      const json = this.mesh.toJSON(mesh);
+      const value = json[attribute];
+
+      this.#render.toRenderThread({
+        subject: "change_mesh",
+        data: { id, json: { [attribute]: value } },
+      });
+    });
+
+    mesh.addEventListener("dispose", () => {
+      this.#render.toRenderThread({
+        subject: "dispose_mesh",
+        data: id,
       });
     });
   }

@@ -9,7 +9,9 @@ import {
   sRGBEncoding,
 } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
+import { BoxGeometry, CylinderGeometry, SphereGeometry } from "three/src/Three";
 
+import { MeshJSON } from "../scene";
 import { SceneMessage } from "../scene/messages";
 import { Scene } from "../scene/Scene";
 import { MaterialJSON } from "../scene/utils/MaterialUtils";
@@ -17,6 +19,8 @@ import { NodeJSON } from "../scene/utils/NodeUtils";
 import { PrimitiveJSON } from "../scene/utils/PrimitiveUtils";
 import { TextureInfoJSON, TextureInfoUtils } from "../scene/utils/TextureInfoUtils";
 import { createTexture } from "./createTexture";
+
+const defaultMaterial = new MeshStandardMaterial();
 
 /**
  * Receives scene updates from the main thread
@@ -147,19 +151,16 @@ export class RenderScene extends Scene {
         const object = new Object3D();
         this.meshObjects.set(data.id, object);
 
-        mesh.listPrimitives().forEach((primitive) => {
-          const primitiveId = this.primitive.getId(primitive);
-          if (!primitiveId) throw new Error("Primitive not found");
-
-          const primitiveObject = this.primitiveObjects.get(primitiveId);
-          if (!primitiveObject) throw new Error("Primitive object not found");
-
-          object.add(primitiveObject);
-        });
-
         mesh.addEventListener("dispose", () => {
           this.meshObjects.delete(data.id);
         });
+
+        this.updateMesh(data.id, data.json);
+        break;
+      }
+
+      case "change_mesh": {
+        this.updateMesh(data.id, data.json);
         break;
       }
 
@@ -256,6 +257,64 @@ export class RenderScene extends Scene {
 
     // Apply JSON after updating the object
     this.node.applyJSON(node, json);
+  }
+
+  updateMesh(id: string, json: Partial<MeshJSON>) {
+    const mesh = this.mesh.store.get(id);
+    if (!mesh) throw new Error("Mesh not found");
+
+    const object = this.meshObjects.get(id);
+    if (!object) throw new Error("Mesh object not found");
+
+    if (json.extras) {
+      // Remove children
+      object.clear();
+
+      // Create mesh
+      if (json.extras.customMesh) {
+        switch (json.extras.customMesh.type) {
+          case "Box": {
+            const { width, height, depth } = json.extras.customMesh;
+            const geometry = new BoxGeometry(width, height, depth);
+            const customMesh = new ThreeMesh(geometry, defaultMaterial);
+            object.add(customMesh);
+            break;
+          }
+
+          case "Sphere": {
+            const { radius, widthSegments, heightSegments } = json.extras.customMesh;
+            const geometry = new SphereGeometry(radius, widthSegments, heightSegments);
+            const customMesh = new ThreeMesh(geometry, defaultMaterial);
+            object.add(customMesh);
+            break;
+          }
+
+          case "Cylinder": {
+            const { radiusTop, radiusBottom, height, radialSegments } = json.extras.customMesh;
+            const geometry = new CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
+            const customMesh = new ThreeMesh(geometry, defaultMaterial);
+            object.add(customMesh);
+            break;
+          }
+        }
+      }
+    }
+
+    if (json.primitives) {
+      // Remove children
+      object.clear();
+
+      // Add new primitive objects as children
+      json.primitives.forEach((primitiveId) => {
+        const primitiveObject = this.primitiveObjects.get(primitiveId);
+        if (!primitiveObject) throw new Error("Primitive object not found");
+
+        object.add(primitiveObject);
+      });
+    }
+
+    // Apply JSON after updating the object
+    this.mesh.applyJSON(mesh, json);
   }
 
   updatePrimitive(id: string, json: Partial<PrimitiveJSON>) {

@@ -12,7 +12,7 @@ import TransformComponent from "./TransformComponent";
 export default function InspectMenu() {
   const selectedId = useEditorStore((state) => state.selectedId);
   const name = useNodeAttribute(selectedId, "name");
-  const mesh = useNodeAttribute(selectedId, "mesh");
+  const meshId = useNodeAttribute(selectedId, "mesh");
   const node = useNode(selectedId);
 
   // const [open, setOpen] = useState(false);
@@ -34,13 +34,13 @@ export default function InspectMenu() {
           onChange={(e) => {
             node?.setName(e.target.value);
           }}
-          className="mx-10 w-full rounded-lg py-0.5 text-center text-2xl font-bold transition hover:bg-neutral-100 hover:shadow-inner"
+          className="mx-10 w-full rounded-lg py-0.5 text-center text-2xl font-bold ring-inset ring-neutral-300 transition hover:bg-neutral-100 hover:ring-1"
         />
       </div>
 
       <div className="space-y-4 px-1">
         <TransformComponent nodeId={selectedId} />
-        {mesh && <MeshComponent nodeId={selectedId} meshId={mesh} />}
+        {meshId && <MeshComponent meshId={meshId} />}
 
         {/* {collider && <PhysicsComponent nodeId={selectedId} />} */}
 

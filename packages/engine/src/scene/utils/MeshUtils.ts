@@ -6,9 +6,41 @@ import { Utils } from "./types";
 
 type PrimitiveId = string;
 
+type BoxMesh = {
+  type: "Box";
+  width: number;
+  height: number;
+  depth: number;
+};
+
+type SphereMesh = {
+  type: "Sphere";
+  radius: number;
+  widthSegments: number;
+  heightSegments: number;
+};
+
+type CylinderMesh = {
+  type: "Cylinder";
+  radiusTop: number;
+  radiusBottom: number;
+  height: number;
+  radialSegments: number;
+};
+
+type ModelMesh = {
+  type: "Model";
+  uri: string;
+};
+
+export type MeshExtras = {
+  customMesh?: BoxMesh | SphereMesh | CylinderMesh | ModelMesh;
+};
+
 export interface MeshJSON {
   primitives: PrimitiveId[];
   weights: number[];
+  extras?: MeshExtras;
 }
 
 export class MeshUtils implements Utils<Mesh, MeshJSON> {
@@ -79,6 +111,10 @@ export class MeshUtils implements Utils<Mesh, MeshJSON> {
     if (json.weights) {
       mesh.setWeights(json.weights);
     }
+
+    if (json.extras) {
+      mesh.setExtras(json.extras);
+    }
   }
 
   toJSON(mesh: Mesh): MeshJSON {
@@ -91,6 +127,7 @@ export class MeshUtils implements Utils<Mesh, MeshJSON> {
     return {
       primitives: primitiveIds,
       weights: mesh.getWeights(),
+      extras: mesh.getExtras() as MeshExtras,
     };
   }
 }

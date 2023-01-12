@@ -23,15 +23,15 @@ export default function TransformComponent({ nodeId }: Props) {
   return (
     <ComponentMenu removeable={false}>
       <MenuRows titles={["Translation", "Rotation", "Scale"]}>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-x-2">
           {translation?.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
             const name = `translation-${letter}`;
 
-            const rounded = Math.round(value * 10000) / 10000;
+            const rounded = Math.round(value * 1000) / 1000;
 
             return (
-              <div key={name} className="flex space-x-2">
+              <div key={name} className="flex items-center space-x-1">
                 <label htmlFor={name}>{letter}</label>
                 <NumberInput
                   name={name}
@@ -43,7 +43,7 @@ export default function TransformComponent({ nodeId }: Props) {
                     if (value === null) return;
 
                     const num = parseFloat(value);
-                    const rounded = Math.round(num * 10000) / 10000;
+                    const rounded = Math.round(num * 1000) / 1000;
 
                     const newTranslation: Vec3 = [...translation];
                     newTranslation[i] = rounded;
@@ -56,16 +56,16 @@ export default function TransformComponent({ nodeId }: Props) {
           })}
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-x-2">
           {euler?.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
             const name = `rotation-${letter}`;
 
             const degress = Math.round((value * 180) / Math.PI);
-            const rounded = Math.round(degress * 10000) / 10000;
+            const rounded = Math.round(degress * 1000) / 1000;
 
             return (
-              <div key={name} className="flex space-x-2">
+              <div key={name} className="flex items-center space-x-1">
                 <label htmlFor={name}>{letter}</label>
                 <NumberInput
                   name={name}
@@ -77,7 +77,7 @@ export default function TransformComponent({ nodeId }: Props) {
                     if (value === null) return;
 
                     const num = parseFloat(value);
-                    const rounded = Math.round(num * 10000) / 10000;
+                    const rounded = Math.round(num * 1000) / 1000;
                     const radians = (rounded * Math.PI) / 180;
 
                     const newEuler: Vec3 = [...euler];
@@ -93,15 +93,15 @@ export default function TransformComponent({ nodeId }: Props) {
           })}
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-x-2">
           {scale?.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
             const name = `scale-${letter}`;
 
-            const rounded = Math.round(value * 10000) / 10000;
+            const rounded = Math.round(value * 1000) / 1000;
 
             return (
-              <div key={name} className="flex space-x-2">
+              <div key={name} className="flex items-center space-x-1">
                 <label htmlFor={name}>{letter}</label>
                 <NumberInput
                   name={name}
@@ -113,7 +113,7 @@ export default function TransformComponent({ nodeId }: Props) {
                     if (value === null) return;
 
                     const num = parseFloat(value);
-                    const rounded = Math.round(num * 10000) / 10000;
+                    const rounded = Math.round(num * 1000) / 1000;
 
                     const newScale: Vec3 = [...scale];
                     newScale[i] = rounded;

@@ -3,6 +3,7 @@ import { WebIO } from "@gltf-transform/core";
 import { RenderModule } from "../render/RenderModule";
 import { Scene } from "./Scene";
 import { MaterialJSON } from "./utils/MaterialUtils";
+import { MeshJSON } from "./utils/MeshUtils";
 import { NodeJSON } from "./utils/NodeUtils";
 import { PrimitiveJSON } from "./utils/PrimitiveUtils";
 
@@ -145,6 +146,17 @@ export class SceneModule extends Scene {
       this.#render.toRenderThread({
         subject: "create_mesh",
         data: { id, json },
+      });
+
+      mesh.addEventListener("change", (e) => {
+        const attribute = e.attribute as keyof MeshJSON;
+        const json = this.mesh.toJSON(mesh);
+        const value = json[attribute];
+
+        this.#render.toRenderThread({
+          subject: "change_mesh",
+          data: { id, json: { [attribute]: value } },
+        });
       });
 
       mesh.addEventListener("dispose", () => {

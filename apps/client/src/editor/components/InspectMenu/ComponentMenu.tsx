@@ -25,7 +25,7 @@ export default function ComponentMenu({ title, removeable = true, onRemove, chil
         )}
       </div>
 
-      <div className="space-y-1">{children}</div>
+      <div>{children}</div>
     </div>
   );
 }

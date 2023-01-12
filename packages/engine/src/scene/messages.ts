@@ -26,6 +26,7 @@ const subjects = [
   "dispose_primitive",
 
   "create_mesh",
+  "change_mesh",
   "dispose_mesh",
 
   "create_node",
@@ -56,6 +57,7 @@ export type SceneMessage =
   | SceneWorkerMessage<"dispose_primitive", string>
   // Mesh
   | SceneWorkerMessage<"create_mesh", { id: string; json: MeshJSON }>
+  | SceneWorkerMessage<"change_mesh", { id: string; json: Partial<MeshJSON> }>
   | SceneWorkerMessage<"dispose_mesh", string>
   // Node
   | SceneWorkerMessage<"create_node", { id: string; json: NodeJSON }>

@@ -67,7 +67,7 @@ export class RenderThread {
     this.camera.position.set(0, 4, 12);
     this.camera.lookAt(0, 0, 0);
 
-    const light = new AmbientLight(0xffffff, 0.5);
+    const light = new AmbientLight(0xffffff, 0.4);
     this.scene.add(light);
 
     this.render();

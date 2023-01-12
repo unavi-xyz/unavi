@@ -28,7 +28,7 @@ export default function AutoGrowInput(props: Props) {
         value={content}
         style={{ width }}
         onChange={handleChange}
-        className="max-w-full rounded-lg py-0.5 px-4 transition hover:bg-neutral-100 hover:shadow-inner"
+        className="max-w-full rounded-lg py-0.5 px-4 ring-inset ring-neutral-300 transition hover:bg-neutral-100 hover:ring-1"
       />
     </>
   );

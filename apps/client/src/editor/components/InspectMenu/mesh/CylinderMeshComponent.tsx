@@ -1,27 +1,33 @@
-import { CylinderMesh } from "engine";
-
-import { updateMesh } from "../../../actions/UpdateMeshAction";
-import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
+import { useMesh } from "../../../hooks/useMesh";
+import { useMeshAttribute } from "../../../hooks/useMeshAttribute";
 import NumberInput from "../../ui/NumberInput";
-import MaterialComponent from "../MaterialComponent";
 import MenuRows from "../MenuRows";
 
 interface Props {
-  nodeId: string;
-  mesh: CylinderMesh;
+  meshId: string;
 }
 
-export default function CylinderMeshComponent({ nodeId, mesh }: Props) {
-  const radius = useSubscribeValue(mesh.radius$);
-  const height = useSubscribeValue(mesh.height$);
-  const radialSegments = useSubscribeValue(mesh.radialSegments$);
+export default function CylinderMeshComponent({ meshId }: Props) {
+  const mesh = useMesh(meshId);
+  const extras = useMeshAttribute(meshId, "extras");
+
+  if (!mesh || extras?.customMesh?.type !== "Cylinder") return null;
+
+  const { height, radialSegments, radiusBottom, radiusTop } = extras.customMesh;
 
   return (
     <>
-      <MenuRows titles={["Radius", "Height", "Radial Segments"]}>
-        {[radius, height, radialSegments].map((value, i) => {
-          const property = i === 0 ? "radius" : i === 1 ? "height" : "radialSegments";
-          const name = ["Radius", "Height", "Radial Segments"][i];
+      <MenuRows titles={["Height", "Radius Top", "Radius Buttom", "Radial Segments"]}>
+        {[height, radiusTop, radiusBottom, radialSegments].map((value, i) => {
+          const property =
+            i === 0
+              ? "height"
+              : i === 1
+              ? "radiusTop"
+              : i === 2
+              ? "radiusBottom"
+              : "radialSegments";
+          const name = ["Height", "Radius Top", "Radius Buttom", "Radial Segments"][i];
           const step = name === "Radial Segments" ? 1 : 0.1;
 
           return (
@@ -31,20 +37,24 @@ export default function CylinderMeshComponent({ nodeId, mesh }: Props) {
               value={value ?? 0}
               step={step}
               onChange={(e) => {
+                if (extras?.customMesh?.type !== "Cylinder") return;
+
                 const value = e.target.value;
                 if (!value) return;
 
                 const num = parseFloat(value);
                 const rounded = Math.round(num * 1000) / 1000;
 
-                updateMesh(mesh.id, { [property]: rounded });
+                extras.customMesh[property] = rounded;
+
+                mesh.setExtras({ ...extras });
               }}
             />
           );
         })}
       </MenuRows>
 
-      <MaterialComponent nodeId={nodeId} />
+      {/* <MaterialComponent meshId={meshId} /> */}
     </>
   );
 }

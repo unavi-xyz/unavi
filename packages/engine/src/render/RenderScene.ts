@@ -8,6 +8,7 @@ import {
   Object3D,
   sRGBEncoding,
 } from "three";
+import { CSM } from "three/examples/jsm/csm/CSM";
 
 import { SceneMessage } from "../scene/messages";
 import { Scene } from "../scene/Scene";
@@ -22,12 +23,24 @@ import { createTexture } from "./createTexture";
  * and translates them into Three.js objects.
  */
 export class RenderScene extends Scene {
+  #csm: CSM | null = null;
+
   root = new Object3D();
 
   materialObjects = new Map<string, MeshStandardMaterial>();
   primitiveObjects = new Map<string, ThreeMesh>();
   meshObjects = new Map<string, Object3D>();
   nodeObjects = new Map<string, Object3D>();
+
+  setCSM(csm: CSM | null) {
+    this.#csm?.dispose();
+
+    this.#csm = csm;
+
+    for (const material of this.materialObjects.values()) {
+      this.#csm?.setupMaterial(material);
+    }
+  }
 
   onmessage({ subject, data }: SceneMessage) {
     switch (subject) {
@@ -70,6 +83,8 @@ export class RenderScene extends Scene {
         const object = new MeshStandardMaterial();
         this.materialObjects.set(data.id, object);
 
+        this.#csm?.setupMaterial(object);
+
         material.addEventListener("dispose", () => {
           object.map?.dispose();
           object.normalMap?.dispose();
@@ -102,6 +117,9 @@ export class RenderScene extends Scene {
 
         const object = new ThreeMesh();
         this.primitiveObjects.set(data.id, object);
+
+        object.castShadow = true;
+        object.receiveShadow = true;
 
         primitive.addEventListener("dispose", () => {
           object.geometry.dispose();

@@ -1,5 +1,6 @@
 import {
   AmbientLight,
+  CanvasTexture,
   EquirectangularReflectionMapping,
   Fog,
   PCFSoftShadowMap,
@@ -8,14 +9,15 @@ import {
   Scene,
   sRGBEncoding,
   Vector2,
+  Vector3,
   WebGLRenderer,
   WebGLRenderTarget,
 } from "three";
+import { CSM } from "three/examples/jsm/csm/CSM";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
-import { CanvasTexture } from "three/src/Three";
 
 import { isInputMessage } from "../input/messages";
 import { isSceneMessage } from "../scene/messages";
@@ -41,6 +43,7 @@ export class RenderThread {
 
   outlinePass: ThreeOutlinePass | null = null;
   composer: EffectComposer | null = null;
+  csm: CSM | null = null;
 
   renderScene = new RenderScene();
   scene = new Scene();
@@ -112,6 +115,7 @@ export class RenderThread {
 
       case "set_skybox": {
         this.loadSkybox(data.uri);
+        break;
       }
     }
   };
@@ -164,6 +168,19 @@ export class RenderThread {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
 
+    // Cascading shadow maps
+    this.csm = new CSM({
+      maxFar: 50,
+      cascades: 3,
+      lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
+      shadowMapSize: 2048,
+      camera: this.camera,
+      parent: this.scene,
+    });
+    this.csm.fade = true;
+
+    this.renderScene.setCSM(this.csm);
+
     // Post-processing
     const renderPass = new RenderPass(this.scene, this.camera);
     const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
@@ -189,6 +206,7 @@ export class RenderThread {
     requestAnimationFrame(() => this.render());
 
     this.controls.update();
+    this.csm?.update();
 
     this.composer?.render();
   }

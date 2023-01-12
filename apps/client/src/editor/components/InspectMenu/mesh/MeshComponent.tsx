@@ -1,17 +1,6 @@
-import { BoxMesh, CylinderMesh, GLTFMesh, Mesh, SphereMesh } from "engine";
-
-import { addMesh } from "../../../actions/AddMeshAction";
-import { removeMesh } from "../../../actions/RemoveMeshAction";
-import { removeNode } from "../../../actions/RemoveNodeAction";
-import { updateNode } from "../../../actions/UpdateNodeAction";
-import { useEditorStore } from "../../../store";
-import SelectMenu from "../../ui/SelectMenu";
+import { useMesh } from "../../../hooks/useMesh";
 import ComponentMenu from "../ComponentMenu";
 import MenuRows from "../MenuRows";
-import BoxMeshComponent from "./BoxMeshComponent";
-import CylinderMeshComponent from "./CylinderMeshComponent";
-import GLTFMeshComponent from "./GLTFMeshComponent";
-import SphereMeshComponent from "./SphereMeshComponent";
 
 enum MeshType {
   Box = "Box",
@@ -22,39 +11,41 @@ enum MeshType {
 
 interface Props {
   nodeId: string;
-  mesh: Mesh;
+  meshId: string;
 }
 
-export default function MeshComponent({ nodeId, mesh }: Props) {
-  if (mesh.type === "Primitives") return null;
+export default function MeshComponent({ nodeId, meshId }: Props) {
+  const mesh = useMesh(meshId);
+
+  if (!mesh) return null;
 
   return (
     <ComponentMenu
       title="Mesh"
-      onRemove={() => {
-        updateNode(nodeId, { meshId: null });
+      // onRemove={() => {
+      //   updateNode(nodeId, { meshId: null });
 
-        if (mesh.type === "glTF") {
-          const { engine } = useEditorStore.getState();
-          if (!engine) throw new Error("Engine not found");
+      //   if (mesh.type === "glTF") {
+      //     const { engine } = useEditorStore.getState();
+      //     if (!engine) throw new Error("Engine not found");
 
-          const node = engine.scene.nodes[nodeId];
-          if (!node) throw new Error("Node not found");
+      //     const node = engine.scene.nodes[nodeId];
+      //     if (!node) throw new Error("Node not found");
 
-          // Remove internal children
-          node.children.forEach((child) => {
-            if (child.isInternal) {
-              if (child.meshId) removeMesh(child.meshId);
-              removeNode(child.id);
-            }
-          });
-        }
+      //     // Remove internal children
+      //     node.children.forEach((child) => {
+      //       if (child.isInternal) {
+      //         if (child.meshId) removeMesh(child.meshId);
+      //         removeNode(child.id);
+      //       }
+      //     });
+      //   }
 
-        removeMesh(mesh.id);
-      }}
+      //   removeMesh(mesh.id);
+      // }}
     >
       <MenuRows titles={["Type"]}>
-        <SelectMenu
+        {/* <SelectMenu
           value={mesh.type}
           options={Object.values(MeshType)}
           onChange={(e) => {
@@ -94,10 +85,10 @@ export default function MeshComponent({ nodeId, mesh }: Props) {
               }
             }
           }}
-        />
+        /> */}
       </MenuRows>
 
-      {mesh.type === "Box" ? (
+      {/* {mesh.type === "Box" ? (
         <BoxMeshComponent nodeId={nodeId} mesh={mesh} />
       ) : mesh.type === "Sphere" ? (
         <SphereMeshComponent nodeId={nodeId} mesh={mesh} />
@@ -105,7 +96,7 @@ export default function MeshComponent({ nodeId, mesh }: Props) {
         <CylinderMeshComponent nodeId={nodeId} mesh={mesh} />
       ) : mesh.type === "glTF" ? (
         <GLTFMeshComponent nodeId={nodeId} mesh={mesh} />
-      ) : null}
+      ) : null} */}
     </ComponentMenu>
   );
 }

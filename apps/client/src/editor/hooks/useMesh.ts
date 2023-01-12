@@ -1,31 +1,22 @@
-import { Mesh } from "engine";
+import { Mesh } from "@gltf-transform/core";
 import { useEffect, useState } from "react";
 
 import { useEditorStore } from "../store";
 
-export function useMesh<T = Mesh>(id: string | null, callback?: (mesh: Mesh) => T) {
-  const meshes$ = useEditorStore((state) => state.engine?.scene.meshes$);
+export function useMesh(id: string | null) {
+  const engine = useEditorStore((state) => state.engine);
 
-  const [value, setValue] = useState<T | null>(null);
+  const [mesh, setMesh] = useState<Mesh | null>(null);
 
   useEffect(() => {
-    if (!meshes$ || !id) {
-      setValue(null);
+    if (!engine || !id) {
+      setMesh(null);
       return;
     }
 
-    const subscription = meshes$.subscribe({
-      next: (meshes) => {
-        const mesh = meshes[id];
-        if (!mesh) return;
+    const newMesh = engine.modules.scene.mesh.store.get(id) ?? null;
+    setMesh(newMesh);
+  }, [id, engine]);
 
-        if (callback) setValue(callback(mesh));
-        else setValue(mesh as T);
-      },
-    });
-
-    return () => subscription.unsubscribe();
-  }, [id, callback, meshes$]);
-
-  return value;
+  return mesh;
 }

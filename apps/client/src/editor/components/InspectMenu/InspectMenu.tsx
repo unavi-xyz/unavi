@@ -1,6 +1,7 @@
 import { useNode } from "../../hooks/useNode";
 import { useNodeAttribute } from "../../hooks/useNodeAttribute";
 import { useEditorStore } from "../../store";
+import MeshComponent from "./mesh/MeshComponent";
 import TransformComponent from "./TransformComponent";
 
 // enum ComponentType {
@@ -11,6 +12,7 @@ import TransformComponent from "./TransformComponent";
 export default function InspectMenu() {
   const selectedId = useEditorStore((state) => state.selectedId);
   const name = useNodeAttribute(selectedId, "name");
+  const mesh = useNodeAttribute(selectedId, "mesh");
   const node = useNode(selectedId);
 
   // const [open, setOpen] = useState(false);
@@ -38,9 +40,9 @@ export default function InspectMenu() {
 
       <div className="space-y-4 px-1">
         <TransformComponent nodeId={selectedId} />
+        {mesh && <MeshComponent nodeId={selectedId} meshId={mesh} />}
 
-        {/* {mesh && <MeshComponent nodeId={selectedId} mesh={mesh} />}
-        {collider && <PhysicsComponent nodeId={selectedId} />} */}
+        {/* {collider && <PhysicsComponent nodeId={selectedId} />} */}
 
         {/* {otherComponents.length > 0 && (
           <div className="space-y-1 px-5">

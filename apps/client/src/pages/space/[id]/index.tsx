@@ -10,11 +10,11 @@ import { hexDisplayToNumber } from "../../../utils/numberToHexDisplay";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   const ONE_MINUTE_IN_SECONDS = 60;
-  const ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
+  const ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30;
 
   res.setHeader(
     "Cache-Control",
-    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
+    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_MONTH_IN_SECONDS}`
   );
 
   const hexId = query.id as string;

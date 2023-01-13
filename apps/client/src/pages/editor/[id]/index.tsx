@@ -32,6 +32,8 @@ export default function Editor() {
     if (!canvasRef.current || createdEngine.current) return;
 
     const engine = new Engine({ canvas: canvasRef.current });
+    engine.controls = "orbit";
+
     createdEngine.current = true;
     useEditorStore.setState({ engine, sceneLoaded: true });
 
@@ -86,7 +88,9 @@ export default function Editor() {
             className="flex h-full"
             onMouseUp={resize}
           >
-            <TreeMenu />
+            <div>
+              <TreeMenu />
+            </div>
 
             <div className="border-x">
               <div ref={containerRef} className="relative h-full w-full overflow-hidden">
@@ -102,7 +106,9 @@ export default function Editor() {
               </div>
             </div>
 
-            <InspectMenu />
+            <div>
+              <InspectMenu />
+            </div>
           </Split>
         </div>
       </DndProvider>

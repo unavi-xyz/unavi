@@ -1,5 +1,6 @@
 import { Document } from "@gltf-transform/core";
 
+import { ColliderExtension } from "../gltf";
 import { AccessorUtils } from "./utils/AccessorUtils";
 import { BufferUtils } from "./utils/BufferUtils";
 import { MaterialUtils } from "./utils/MaterialUtils";
@@ -10,6 +11,10 @@ import { TextureUtils } from "./utils/TextureUtils";
 
 export class Scene {
   doc = new Document();
+
+  extensions = {
+    collider: this.doc.createExtension(ColliderExtension),
+  };
 
   buffer = new BufferUtils(this.doc);
   accessor = new AccessorUtils(this.doc, this.buffer);

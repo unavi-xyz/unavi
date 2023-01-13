@@ -1,12 +1,29 @@
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
+import { Vec3 } from "../../../types";
 import { Collider } from "./Collider";
 import { EXTENSION_NAME } from "./constants";
-import { ColliderDef, ColliderExtensionDef, NodeColliderDef } from "./types";
+import { ColliderType } from "./types";
+
+type NodeColliderDef = {
+  collider: number;
+};
+
+type ColliderDef = {
+  type: ColliderType;
+  size?: Vec3;
+  radius?: number;
+  height?: number;
+  mesh?: number;
+};
+
+type ColliderExtensionDef = {
+  colliders: ColliderDef[];
+};
 
 export class ColliderExtension extends Extension {
-  static override EXTENSION_NAME = EXTENSION_NAME;
-  override extensionName = EXTENSION_NAME;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME;
+  override readonly extensionName = EXTENSION_NAME;
 
   createCollider(): Collider {
     return new Collider(this.document.getGraph());
@@ -22,18 +39,19 @@ export class ColliderExtension extends Extension {
     const colliderDefs = rootDef.colliders || ([] as ColliderDef[]);
 
     const colliders = colliderDefs.map((colliderDef) => {
-      const collider = this.createCollider().setType(colliderDef.type);
+      const collider = this.createCollider();
+      collider.type = colliderDef.type;
 
-      if (colliderDef.size !== undefined) collider.setSize(colliderDef.size);
+      if (colliderDef.size !== undefined) collider.size = colliderDef.size;
 
-      if (colliderDef.radius !== undefined) collider.setRadius(colliderDef.radius);
+      if (colliderDef.radius !== undefined) collider.radius = colliderDef.radius;
 
-      if (colliderDef.height !== undefined) collider.setHeight(colliderDef.height);
+      if (colliderDef.height !== undefined) collider.height = colliderDef.height;
 
       if (colliderDef.mesh !== undefined) {
         const mesh = context.meshes[colliderDef.mesh];
         if (!mesh) throw new Error("Mesh not found");
-        collider.setMesh(mesh);
+        collider.mesh = mesh;
       }
 
       return collider;
@@ -67,12 +85,11 @@ export class ColliderExtension extends Extension {
 
     for (const property of this.properties) {
       const collider = property as Collider;
-      const colliderType = collider.getType();
-      const colliderDef = { type: colliderType } as ColliderDef;
+      const colliderDef = { type: collider.type } as ColliderDef;
 
-      switch (colliderType) {
+      switch (collider.type) {
         case Collider.Type.BOX: {
-          const size = collider.getSize();
+          const size = collider.size;
           if (!size) throw new Error("Size not set");
 
           colliderDef.size = size;
@@ -80,7 +97,7 @@ export class ColliderExtension extends Extension {
         }
 
         case Collider.Type.SPHERE: {
-          const radius = collider.getRadius();
+          const radius = collider.radius;
           if (radius === null) throw new Error("Radius not set");
 
           colliderDef.radius = radius;
@@ -89,10 +106,10 @@ export class ColliderExtension extends Extension {
 
         case Collider.Type.CAPSULE:
         case Collider.Type.CYLINDER: {
-          const radius = collider.getRadius();
+          const radius = collider.radius;
           if (radius === null) throw new Error("Radius not set");
 
-          const height = collider.getHeight();
+          const height = collider.height;
           if (height === null) throw new Error("Height not set");
 
           colliderDef.radius = radius;
@@ -101,7 +118,7 @@ export class ColliderExtension extends Extension {
         }
 
         case Collider.Type.MESH: {
-          const mesh = collider.getMesh();
+          const mesh = collider.mesh;
           if (!mesh) throw new Error("Mesh not set");
 
           const meshIndex = context.meshIndexMap.get(mesh);

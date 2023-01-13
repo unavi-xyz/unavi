@@ -1,3 +1,4 @@
+import { ControlsType } from "../Engine";
 import { InputMessage } from "../input/messages";
 import { SceneMessage } from "../scene/messages";
 import { MessageJSON, Vec2, Vec3, Vec4 } from "../types";
@@ -11,7 +12,8 @@ export type ToRenderMessage =
   | MessageJSON<"player_input_direction", Vec2>
   | MessageJSON<"set_transform_controls_mode", "translate" | "rotate" | "scale">
   | MessageJSON<"set_transform_controls_target", { nodeId: string | null }>
-  | MessageJSON<"set_skybox", { uri: string | null }>;
+  | MessageJSON<"set_skybox", { uri: string | null }>
+  | MessageJSON<"set_controls", ControlsType>;
 
 export type FromRenderMessage =
   | MessageJSON<"ready">

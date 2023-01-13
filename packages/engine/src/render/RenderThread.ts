@@ -2,7 +2,6 @@ import {
   AmbientLight,
   CanvasTexture,
   EquirectangularReflectionMapping,
-  Fog,
   PCFSoftShadowMap,
   PerspectiveCamera,
   PMREMGenerator,
@@ -62,7 +61,6 @@ export class RenderThread {
     );
 
     this.scene.add(this.renderScene.root);
-    this.scene.fog = new Fog(0xcfcfcf, CAMERA_FAR / 2, CAMERA_FAR);
 
     this.camera.position.set(0, 4, 12);
     this.camera.lookAt(0, 0, 0);
@@ -167,6 +165,10 @@ export class RenderThread {
     this.renderer.outputEncoding = sRGBEncoding;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
+
+    if (process.env.NODE_ENV === "production") {
+      this.renderer.debug.checkShaderErrors = false;
+    }
 
     // Cascading shadow maps
     this.csm = new CSM({

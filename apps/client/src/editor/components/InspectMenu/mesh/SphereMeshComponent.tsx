@@ -1,7 +1,7 @@
 import { useMesh } from "../../../hooks/useMesh";
 import { useMeshAttribute } from "../../../hooks/useMeshAttribute";
 import NumberInput from "../../ui/NumberInput";
-import MenuRows from "../MenuRows";
+import MenuRows from "../ui/MenuRows";
 
 interface Props {
   meshId: string;

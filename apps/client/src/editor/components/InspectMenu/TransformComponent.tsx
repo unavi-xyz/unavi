@@ -6,7 +6,7 @@ import { eulerToQuaternion } from "../../utils/eulerToQuaternion";
 import { quaternionToEuler } from "../../utils/quaternionToEuler";
 import NumberInput from "../ui/NumberInput";
 import ComponentMenu from "./ComponentMenu";
-import MenuRows from "./MenuRows";
+import MenuRows from "./ui/MenuRows";
 
 interface Props {
   nodeId: string;

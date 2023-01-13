@@ -1,9 +1,24 @@
 import { Document, Node } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
+import { Collider } from "../../gltf/extensions/Collider/Collider";
+import { ColliderExtension } from "../../gltf/extensions/Collider/ColliderExtension";
+import { ColliderType } from "../../gltf/extensions/Collider/types";
 import { Vec3, Vec4 } from "../../types";
 import { MeshUtils } from "./MeshUtils";
 import { Utils } from "./Utils";
+
+export type ColliderJSON = {
+  type: ColliderType;
+  size?: Vec3;
+  radius?: number;
+  height?: number;
+  mesh?: string;
+};
+
+type NodeExtensions = {
+  [ColliderExtension.EXTENSION_NAME]: ColliderJSON;
+};
 
 type MeshId = string;
 type SkinId = string;
@@ -17,6 +32,7 @@ export interface NodeJSON {
   mesh: MeshId | null;
   skin: SkinId | null;
   children: NodeId[];
+  extensions?: Partial<NodeExtensions>;
 }
 
 export class NodeUtils extends Utils<Node, NodeJSON> {
@@ -108,6 +124,27 @@ export class NodeUtils extends Utils<Node, NodeJSON> {
         node.addChild(child);
       }
     }
+
+    if (json.extensions) {
+      const colliderJSON = json.extensions[ColliderExtension.EXTENSION_NAME];
+
+      if (colliderJSON) {
+        const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
+
+        if (collider) {
+          collider.type = colliderJSON.type;
+          collider.size = colliderJSON.size ?? null;
+          collider.height = colliderJSON.height ?? null;
+          collider.radius = colliderJSON.radius ?? null;
+
+          if (colliderJSON.mesh) {
+            const mesh = this.#mesh.store.get(colliderJSON.mesh);
+            if (!mesh) throw new Error("Mesh not found");
+            collider.mesh = mesh;
+          }
+        }
+      }
+    }
   }
 
   toJSON(node: Node): NodeJSON {
@@ -122,6 +159,25 @@ export class NodeUtils extends Utils<Node, NodeJSON> {
       throw new Error("Child not found");
     });
 
+    let extensions: Partial<NodeExtensions> | undefined;
+
+    const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
+
+    if (collider) {
+      const mesh = collider.mesh;
+      const meshId = mesh ? this.#mesh.getId(mesh) : undefined;
+
+      extensions = {
+        [ColliderExtension.EXTENSION_NAME]: {
+          type: collider.type,
+          size: collider.size ?? undefined,
+          height: collider.height ?? undefined,
+          radius: collider.radius ?? undefined,
+          mesh: meshId,
+        },
+      };
+    }
+
     return {
       name: node.getName(),
       translation: node.getTranslation(),
@@ -130,6 +186,7 @@ export class NodeUtils extends Utils<Node, NodeJSON> {
       mesh: meshId,
       skin: null,
       children: childrenIds,
+      extensions,
     };
   }
 }

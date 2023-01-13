@@ -10,12 +10,16 @@ interface ModuleContainer {
   scene: SceneModule;
 }
 
+export type ControlsType = "orbit" | "player";
+
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
 }
 
 export class Engine {
   modules: ModuleContainer;
+
+  #controls: ControlsType = "player";
 
   constructor({ canvas }: EngineOptions) {
     const physics = new PhysicsModule();
@@ -29,6 +33,15 @@ export class Engine {
       render,
       scene,
     };
+  }
+
+  get controls() {
+    return this.#controls;
+  }
+
+  set controls(value: ControlsType) {
+    this.#controls = value;
+    this.modules.render.toRenderThread({ subject: "set_controls", data: value });
   }
 
   destroy() {

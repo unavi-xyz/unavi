@@ -270,9 +270,10 @@ export class RenderScene extends Scene {
     if (json.extras) {
       // Remove previous custom mesh
       const prevCustomMesh = this.customMeshObjects.get(id);
-      if (prevCustomMesh) object.remove(prevCustomMesh);
-
-      this.customMeshObjects.delete(id);
+      if (prevCustomMesh) {
+        object.remove(prevCustomMesh);
+        this.customMeshObjects.delete(id);
+      }
 
       // Create custom mesh
       if (json.extras.customMesh) {
@@ -311,8 +312,16 @@ export class RenderScene extends Scene {
     }
 
     if (json.primitives) {
-      // Remove children
-      object.clear();
+      // Remove previous primitive objects
+      mesh.listPrimitives().forEach((primitive) => {
+        const primitiveId = this.primitive.getId(primitive);
+        if (!primitiveId) throw new Error("Primitive not found");
+
+        const primitiveObject = this.primitiveObjects.get(primitiveId);
+        if (!primitiveObject) throw new Error("Primitive object not found");
+
+        object.remove(primitiveObject);
+      });
 
       // Add new primitive objects as children
       json.primitives.forEach((primitiveId) => {

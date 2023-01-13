@@ -1,5 +1,6 @@
-import { Mesh, Node, WebIO } from "@gltf-transform/core";
+import { ExtensionProperty, Mesh, Node, WebIO } from "@gltf-transform/core";
 
+import { Collider, ColliderExtension } from "../gltf";
 import { RenderModule } from "../render/RenderModule";
 import { Scene } from "./Scene";
 import { MaterialJSON } from "./utils/MaterialUtils";
@@ -171,21 +172,64 @@ export class SceneModule extends Scene {
       data: { id, json },
     });
 
+    node.addEventListener("dispose", () => {
+      this.#render.toRenderThread({
+        subject: "dispose_node",
+        data: id,
+      });
+    });
+
+    let extensionListeners: Array<{ extension: ExtensionProperty; listener: () => void }> = [];
+
     node.addEventListener("change", (e) => {
       const attribute = e.attribute as keyof NodeJSON;
       const json = this.node.toJSON(node);
       const value = json[attribute];
 
+      if (attribute === "mesh") {
+        // Update mesh collider
+        const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
+
+        if (collider?.type === "mesh") {
+          const meshId = value as string | null;
+
+          if (meshId) {
+            const mesh = this.mesh.store.get(meshId);
+            if (!mesh) throw new Error("Mesh not found");
+            collider.mesh = mesh;
+          } else {
+            collider.mesh = null;
+          }
+        }
+      }
+
+      if (attribute === "extensions") {
+        // Remove old listeners
+        extensionListeners.forEach(({ extension, listener }) => {
+          extension.removeEventListener("change", listener);
+        });
+
+        // Add new listeners
+        extensionListeners = node.listExtensions().map((extension) => {
+          const listener = () => {
+            const json = this.node.toJSON(node);
+            const value = json.extensions;
+
+            this.#render.toRenderThread({
+              subject: "change_node",
+              data: { id, json: { extensions: value } },
+            });
+          };
+
+          extension.addEventListener("change", listener);
+
+          return { extension, listener };
+        });
+      }
+
       this.#render.toRenderThread({
         subject: "change_node",
         data: { id, json: { [attribute]: value } },
-      });
-    });
-
-    node.addEventListener("dispose", () => {
-      this.#render.toRenderThread({
-        subject: "dispose_node",
-        data: id,
       });
     });
   }

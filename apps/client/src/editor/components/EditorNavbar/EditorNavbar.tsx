@@ -5,7 +5,6 @@ import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
-import { trpc } from "../../../client/trpc";
 import Button from "../../../ui/Button";
 import Dialog from "../../../ui/Dialog";
 import IconButton from "../../../ui/IconButton";
@@ -27,10 +26,8 @@ export default function EditorNavbar() {
   const isSaving = useEditorStore((state) => state.isSaving);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
-  const [previewLoading, setPreviewLoading] = useState(false);
 
   const { save, saveImage } = useSave();
-  const utils = trpc.useContext();
 
   function handleToggleColliders() {
     useEditorStore.setState({ visuals: !visuals });
@@ -49,33 +46,12 @@ export default function EditorNavbar() {
     router.push(`/project/${id}`);
   }
 
-  async function handlePreview() {
-    if (previewLoading) return;
-    setPreviewLoading(true);
+  function handlePreview() {
+    const { engine } = useEditorStore.getState();
+    if (!engine) return;
 
-    try {
-      // Save
-      await save();
-
-      // Invalidate cache
-      await Promise.all([
-        utils.project.get.invalidate({ id }),
-        utils.project.scene.invalidate({ id }),
-        utils.project.files.invalidate({ id }),
-      ]);
-
-      // Force a new fetch of the project
-      await Promise.all([
-        utils.project.get.prefetch({ id }),
-        utils.project.scene.prefetch({ id }),
-        utils.project.files.prefetch({ id }),
-      ]);
-
-      router.push(`/editor/${id}/preview`);
-    } catch (err) {
-      console.error(err);
-      setPreviewLoading(false);
-    }
+    if (engine.controls === "player") engine.controls = "orbit";
+    else engine.controls = "player";
   }
 
   async function handleOpenPublish() {
@@ -139,7 +115,7 @@ export default function EditorNavbar() {
           <div className="aspect-square h-full">
             <Tooltip text="Preview" placement="bottom">
               <div className="h-full">
-                <IconButton onClick={handlePreview} loading={previewLoading}>
+                <IconButton onClick={handlePreview}>
                   <MdPreview />
                 </IconButton>
               </div>

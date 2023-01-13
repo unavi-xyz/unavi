@@ -2,9 +2,10 @@ import { MeshExtras } from "engine";
 
 import { useMesh } from "../../../hooks/useMesh";
 import { useMeshAttribute } from "../../../hooks/useMeshAttribute";
+import { useEditorStore } from "../../../store";
 import SelectMenu from "../../ui/SelectMenu";
 import ComponentMenu from "../ComponentMenu";
-import MenuRows from "../MenuRows";
+import MenuRows from "../ui/MenuRows";
 import BoxMeshComponent from "./BoxMeshComponent";
 import CylinderMeshComponent from "./CylinderMeshComponent";
 import PrimitiveComponent from "./PrimitiveComponent";
@@ -36,27 +37,12 @@ export default function MeshComponent({ meshId }: Props) {
   return (
     <ComponentMenu
       title="Mesh"
-      // onRemove={() => {
-      //   updateNode(nodeId, { meshId: null });
+      onRemove={() => {
+        const { engine } = useEditorStore.getState();
+        if (!engine) return;
 
-      //   if (mesh.type === "glTF") {
-      //     const { engine } = useEditorStore.getState();
-      //     if (!engine) throw new Error("Engine not found");
-
-      //     const node = engine.scene.nodes[nodeId];
-      //     if (!node) throw new Error("Node not found");
-
-      //     // Remove internal children
-      //     node.children.forEach((child) => {
-      //       if (child.isInternal) {
-      //         if (child.meshId) removeMesh(child.meshId);
-      //         removeNode(child.id);
-      //       }
-      //     });
-      //   }
-
-      //   removeMesh(mesh.id);
-      // }}
+        mesh.dispose();
+      }}
     >
       <MenuRows titles={["Type"]}>
         <SelectMenu
@@ -142,8 +128,6 @@ export default function MeshComponent({ meshId }: Props) {
           }}
         />
       </MenuRows>
-
-      <div className="pb-4" />
 
       {meshType === MESH_TYPE.Box ? (
         <BoxMeshComponent meshId={meshId} />

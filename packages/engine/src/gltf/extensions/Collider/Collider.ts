@@ -2,7 +2,15 @@ import { ExtensionProperty, IProperty, Mesh, Nullable, PropertyType } from "@glt
 
 import { Vec3 } from "../../../types";
 import { EXTENSION_NAME, PROPERTY_TYPE } from "./constants";
-import { ColliderType, ICollider } from "./types";
+import { ColliderType } from "./types";
+
+interface ICollider extends IProperty {
+  type: ColliderType;
+  size: Vec3 | null;
+  radius: number | null;
+  height: number | null;
+  mesh: Mesh;
+}
 
 export class Collider extends ExtensionProperty<ICollider> {
   static override EXTENSION_NAME = EXTENSION_NAME;
@@ -27,7 +35,7 @@ export class Collider extends ExtensionProperty<ICollider> {
   }
 
   protected override getDefaults(): Nullable<ICollider> {
-    return Object.assign(super.getDefaults() as IProperty, {
+    return Object.assign(super.getDefaults(), {
       type: null,
       size: null,
       radius: null,
@@ -36,43 +44,43 @@ export class Collider extends ExtensionProperty<ICollider> {
     });
   }
 
-  getType(): ColliderType {
+  get type(): ColliderType {
     return this.get("type");
   }
 
-  setType(type: ColliderType): this {
-    return this.set("type", type);
+  set type(type: ColliderType) {
+    this.set("type", type);
   }
 
-  getSize(): Vec3 | null {
+  get size(): Vec3 | null {
     return this.get("size");
   }
 
-  setSize(size: Vec3 | null): this {
-    return this.set("size", size);
+  set size(size: Vec3 | null) {
+    this.set("size", size);
   }
 
-  getRadius(): number | null {
+  get radius(): number | null {
     return this.get("radius");
   }
 
-  setRadius(radius: number | null): this {
-    return this.set("radius", radius);
+  set radius(radius: number | null) {
+    this.set("radius", radius);
   }
 
-  getHeight(): number | null {
+  get height(): number | null {
     return this.get("height");
   }
 
-  setHeight(height: number | null): this {
-    return this.set("height", height);
+  set height(height: number | null) {
+    this.set("height", height);
   }
 
-  getMesh(): Mesh | null {
+  get mesh(): Mesh | null {
     return this.getRef("mesh");
   }
 
-  setMesh(mesh: Mesh | null): this {
-    return this.setRef("mesh", mesh);
+  set mesh(mesh: Mesh | null) {
+    this.setRef("mesh", mesh);
   }
 }

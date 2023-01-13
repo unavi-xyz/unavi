@@ -2,9 +2,9 @@ import { EventDispatcher } from "property-graph";
 
 import { MessageEvent } from "../../types";
 
-type UtilsEvent<JSON> = MessageEvent<"create", { id: string }>;
+type UtilsEvent = MessageEvent<"create", { id: string }>;
 
-export abstract class Utils<T, JSON> extends EventDispatcher<UtilsEvent<JSON>> {
+export abstract class Utils<T, JSON> extends EventDispatcher<UtilsEvent> {
   abstract store: Map<string, T>;
 
   constructor() {

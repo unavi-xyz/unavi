@@ -4,8 +4,8 @@ import { EXTENSION_NAME } from "./constants";
 import { SpawnPoint } from "./SpawnPoint";
 
 export class SpawnPointExtension extends Extension {
-  static override EXTENSION_NAME = EXTENSION_NAME;
-  override extensionName = EXTENSION_NAME;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME;
+  override readonly extensionName = EXTENSION_NAME;
 
   public createSpawnPoint(): SpawnPoint {
     return new SpawnPoint(this.document.getGraph());

@@ -18,7 +18,7 @@ import { useEditorStore } from "../../store";
 import ColorInput from "../ui/ColorInput";
 import NumberInput from "../ui/NumberInput";
 import TextInput from "../ui/TextInput";
-import MenuRows from "./MenuRows";
+import MenuRows from "./ui/MenuRows";
 
 interface Props {
   nodeId: string;

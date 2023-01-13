@@ -24,9 +24,4 @@ export const COLLISION_GROUP = {
     CollisionGroup.Player,
     CollisionGroup.Static | CollisionGroup.Dynamic
   ),
-
-  playerShapeCast: constructCollisionGroups(
-    CollisionGroup.All,
-    CollisionGroup.Static | CollisionGroup.Dynamic
-  ),
 } as const;

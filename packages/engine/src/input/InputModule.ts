@@ -7,7 +7,7 @@ export class InputModule {
   canvas: HTMLCanvasElement;
   render: RenderModule;
 
-  inputArray: Int32Array | null = null;
+  inputArray: Int16Array | null = null;
   rotationArray: Int32Array | null = null;
 
   constructor(canvas: HTMLCanvasElement, render: RenderModule) {

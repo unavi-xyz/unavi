@@ -100,6 +100,8 @@ export class PhysicsScene extends Scene {
       const collider = this.#world.createCollider(colliderDesc, rigidBody);
 
       this.colliders.set(nodeId, collider);
+
+      this.#updateNodeTransform(nodeId);
     }
   }
 

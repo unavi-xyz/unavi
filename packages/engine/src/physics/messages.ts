@@ -9,8 +9,8 @@ export type FromPhysicsMessage =
   | MessageJSON<
       "set_player_arrays",
       {
+        input: Int16Array;
         position: Int32Array;
         rotation: Int32Array;
-        input: Int32Array;
       }
     >;

@@ -1,8 +1,8 @@
 import { PerspectiveCamera, Raycaster } from "three";
 
-import { InputMessage, PointerData } from "../../input/messages";
+import { PointerData } from "../../input/messages";
 import { PostMessage } from "../../types";
-import { FromRenderMessage } from "../messages";
+import { FromRenderMessage, ToRenderMessage } from "../messages";
 import { RenderScene } from "../RenderScene";
 import { TransformControls } from "./TransformControls";
 
@@ -29,7 +29,7 @@ export class RaycastControls {
     this.#transformControls = transformControls;
   }
 
-  onmessage({ subject, data }: InputMessage) {
+  onmessage({ subject, data }: ToRenderMessage) {
     switch (subject) {
       case "pointerdown": {
         this.#startMoveTime = performance.now();

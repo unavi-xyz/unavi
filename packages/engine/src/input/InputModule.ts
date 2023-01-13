@@ -4,8 +4,17 @@ import { KeyboardInput } from "./KeyboardInput";
 export class InputModule {
   keyboard: KeyboardInput;
 
+  canvas: HTMLCanvasElement;
+  render: RenderModule;
+
+  inputArray: Int32Array | null = null;
+  rotationArray: Int32Array | null = null;
+
   constructor(canvas: HTMLCanvasElement, render: RenderModule) {
-    this.keyboard = new KeyboardInput(canvas, render);
+    this.canvas = canvas;
+    this.render = render;
+
+    this.keyboard = new KeyboardInput(this);
   }
 
   destroy() {

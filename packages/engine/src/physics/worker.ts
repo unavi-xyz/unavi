@@ -1,8 +1,8 @@
-import { PhysicsWorker } from "./PhysicsWorker";
+import { PostMessage } from "../types";
+import { PhysicsThread } from "./PhysicsThread";
 
-// @ts-ignore
-const physicsWorker = new PhysicsWorker(postMessage.bind(this));
+const physicsThread = new PhysicsThread(postMessage.bind(this) as PostMessage);
 
-onmessage = physicsWorker.onmessage;
+onmessage = physicsThread.onmessage;
 
 postMessage({ subject: "ready" });

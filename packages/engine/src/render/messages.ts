@@ -13,7 +13,8 @@ export type ToRenderMessage =
   | MessageJSON<"set_transform_controls_mode", "translate" | "rotate" | "scale">
   | MessageJSON<"set_transform_controls_target", { nodeId: string | null }>
   | MessageJSON<"set_skybox", { uri: string | null }>
-  | MessageJSON<"set_controls", ControlsType>;
+  | MessageJSON<"set_controls", ControlsType>
+  | MessageJSON<"set_player_arrays", { position: Int32Array; rotation: Int32Array }>;
 
 export type FromRenderMessage =
   | MessageJSON<"ready">

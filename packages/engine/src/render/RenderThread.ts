@@ -1,6 +1,7 @@
 import {
   AmbientLight,
   CanvasTexture,
+  Clock,
   EquirectangularReflectionMapping,
   PCFSoftShadowMap,
   PerspectiveCamera,
@@ -18,10 +19,12 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
-import { isInputMessage } from "../input/messages";
+import { DEFAULT_CONTROLS } from "../constants";
+import { ControlsType } from "../Engine";
 import { isSceneMessage } from "../scene/messages";
 import { PostMessage } from "../types";
 import { OrbitControls } from "./controls/OrbitControls";
+import { PlayerControls } from "./controls/PlayerControls";
 import { RaycastControls } from "./controls/RaycastControls";
 import { TransformControls } from "./controls/TransformControls";
 import { FromRenderMessage, ToRenderMessage } from "./messages";
@@ -35,21 +38,25 @@ export class RenderThread {
   #canvas: HTMLCanvasElement | OffscreenCanvas | null = null;
   postMessage: PostMessage<FromRenderMessage>;
 
+  renderScene = new RenderScene();
+  scene = new Scene();
+
   renderer: WebGLRenderer | null = null;
   size = { width: 0, height: 0 };
   pixelRatio = 1;
   camera = new PerspectiveCamera(75, 1, CAMERA_NEAR, CAMERA_FAR);
+  clock = new Clock();
 
   outlinePass: ThreeOutlinePass | null = null;
   composer: EffectComposer | null = null;
   csm: CSM | null = null;
 
-  renderScene = new RenderScene();
-  scene = new Scene();
-  raycaster: RaycastControls;
   transform = new TransformControls(this);
+  orbit = new OrbitControls(this.camera, this.transform);
+  player = new PlayerControls(this.camera);
+  raycaster: RaycastControls;
 
-  controls = new OrbitControls(this.camera, this.transform);
+  controls: ControlsType = DEFAULT_CONTROLS;
 
   constructor(postMessage: PostMessage<FromRenderMessage>) {
     this.postMessage = postMessage;
@@ -68,14 +75,16 @@ export class RenderThread {
     const light = new AmbientLight(0xffffff, 0.4);
     this.scene.add(light);
 
+    this.clock.start();
     this.render();
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
     this.transform.onmessage(event.data);
+    this.player.onmessage(event.data);
 
-    if (isInputMessage(event.data)) {
-      this.controls.onmessage(event.data);
+    if (this.controls === "orbit") {
+      this.orbit.onmessage(event.data);
       this.raycaster.onmessage(event.data);
     }
 
@@ -99,7 +108,7 @@ export class RenderThread {
         this.camera.updateProjectionMatrix();
 
         this.renderer?.setSize(data.width, data.height, false);
-        this.controls.setSize(data.width, data.height);
+        this.orbit.setSize(data.width, data.height);
         this.outlinePass?.setSize(data.width, data.height);
         this.composer?.setSize(data.width, data.height);
         break;
@@ -113,6 +122,11 @@ export class RenderThread {
 
       case "set_skybox": {
         this.loadSkybox(data.uri);
+        break;
+      }
+
+      case "set_controls": {
+        this.controls = data;
         break;
       }
     }
@@ -206,10 +220,15 @@ export class RenderThread {
 
   render() {
     requestAnimationFrame(() => this.render());
+    const delta = this.clock.getDelta();
 
-    this.controls.update();
+    if (this.controls === "player") {
+      this.player.update(delta);
+    } else {
+      this.orbit.update();
+    }
+
     this.csm?.update();
-
     this.composer?.render();
   }
 }

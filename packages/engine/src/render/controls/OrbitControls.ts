@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from "three";
 
-import { InputMessage } from "../../input/messages";
+import { ToRenderMessage } from "../messages";
 import { ThreeOrbitControls } from "../three/ThreeOrbitControls";
 import { TransformControls } from "./TransformControls";
 
@@ -28,7 +28,7 @@ export class OrbitControls {
     this.#orbitControls.update();
   }
 
-  onmessage({ subject, data }: InputMessage) {
+  onmessage({ subject, data }: ToRenderMessage) {
     switch (subject) {
       case "pointermove": {
         const pointerMoveEvent = new CustomEvent("pointermove", { detail: data });

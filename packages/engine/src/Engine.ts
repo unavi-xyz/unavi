@@ -1,3 +1,4 @@
+import { DEFAULT_CONTROLS } from "./constants";
 import { InputModule } from "./input/InputModule";
 import { PhysicsModule } from "./physics/PhysicsModule";
 import { RenderModule } from "./render/RenderModule";
@@ -19,13 +20,13 @@ export interface EngineOptions {
 export class Engine {
   modules: ModuleContainer;
 
-  #controls: ControlsType = "player";
+  #controls: ControlsType = DEFAULT_CONTROLS;
 
   constructor({ canvas }: EngineOptions) {
-    const physics = new PhysicsModule();
     const render = new RenderModule(canvas, this);
     const input = new InputModule(canvas, render);
-    const scene = new SceneModule(render);
+    const physics = new PhysicsModule(input, render);
+    const scene = new SceneModule(render, physics);
 
     this.modules = {
       input,
@@ -41,7 +42,9 @@ export class Engine {
 
   set controls(value: ControlsType) {
     this.#controls = value;
+    this.modules.input.keyboard.controls = value;
     this.modules.render.toRenderThread({ subject: "set_controls", data: value });
+    this.modules.physics.toPhysicsThread({ subject: "set_controls", data: value });
   }
 
   destroy() {

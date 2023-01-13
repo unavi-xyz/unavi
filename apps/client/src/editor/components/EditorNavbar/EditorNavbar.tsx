@@ -24,8 +24,10 @@ export default function EditorNavbar() {
   const name = useEditorStore((state) => state.name);
   const publicationId = useEditorStore((state) => state.publicationId);
   const isSaving = useEditorStore((state) => state.isSaving);
+  const engine = useEditorStore((state) => state.engine);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
+  const [previewMode, setPreviewMode] = useState(engine?.controls === "player" ? true : false);
 
   const { save, saveImage } = useSave();
 
@@ -50,8 +52,13 @@ export default function EditorNavbar() {
     const { engine } = useEditorStore.getState();
     if (!engine) return;
 
-    if (engine.controls === "player") engine.controls = "orbit";
-    else engine.controls = "player";
+    if (engine.controls === "player") {
+      engine.controls = "orbit";
+      setPreviewMode(false);
+    } else {
+      engine.controls = "player";
+      setPreviewMode(true);
+    }
   }
 
   async function handleOpenPublish() {
@@ -113,9 +120,9 @@ export default function EditorNavbar() {
           </div>
 
           <div className="aspect-square h-full">
-            <Tooltip text="Preview" placement="bottom">
+            <Tooltip text={`${previewMode ? "Exit" : "Enter"} Preview`} placement="bottom">
               <div className="h-full">
-                <IconButton onClick={handlePreview}>
+                <IconButton selected={previewMode} onClick={handlePreview}>
                   <MdPreview />
                 </IconButton>
               </div>

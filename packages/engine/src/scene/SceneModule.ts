@@ -1,6 +1,7 @@
 import { ExtensionProperty, Mesh, Node, WebIO } from "@gltf-transform/core";
 
 import { Collider, ColliderExtension } from "../gltf";
+import { PhysicsModule } from "../physics/PhysicsModule";
 import { RenderModule } from "../render/RenderModule";
 import { Scene } from "./Scene";
 import { MaterialJSON } from "./utils/MaterialUtils";
@@ -10,11 +11,13 @@ import { PrimitiveJSON } from "./utils/PrimitiveUtils";
 
 export class SceneModule extends Scene {
   #render: RenderModule;
+  #physics: PhysicsModule;
 
-  constructor(render: RenderModule) {
+  constructor(render: RenderModule, physics: PhysicsModule) {
     super();
 
     this.#render = render;
+    this.#physics = physics;
 
     this.node.addEventListener("create", ({ data }) => {
       const node = this.node.store.get(data.id);
@@ -41,16 +44,10 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.buffer.toJSON(buffer);
 
-      this.#render.toRenderThread({
-        subject: "create_buffer",
-        data: { id, json },
-      });
+      this.#render.toRenderThread({ subject: "create_buffer", data: { id, json } });
 
       buffer.addEventListener("dispose", () => {
-        this.#render.toRenderThread({
-          subject: "dispose_buffer",
-          data: id,
-        });
+        this.#render.toRenderThread({ subject: "dispose_buffer", data: id });
       });
     });
 
@@ -59,16 +56,10 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.accessor.toJSON(accessor);
 
-      this.#render.toRenderThread({
-        subject: "create_accessor",
-        data: { id, json },
-      });
+      this.#render.toRenderThread({ subject: "create_accessor", data: { id, json } });
 
       accessor.addEventListener("dispose", () => {
-        this.#render.toRenderThread({
-          subject: "dispose_accessor",
-          data: id,
-        });
+        this.#render.toRenderThread({ subject: "dispose_accessor", data: id });
       });
     });
 
@@ -78,19 +69,10 @@ export class SceneModule extends Scene {
       const json = this.texture.toJSON(texture);
       const transferable = json.image ? [json.image.buffer] : [];
 
-      this.#render.toRenderThread(
-        {
-          subject: "create_texture",
-          data: { id, json },
-        },
-        transferable
-      );
+      this.#render.toRenderThread({ subject: "create_texture", data: { id, json } }, transferable);
 
       texture.addEventListener("dispose", () => {
-        this.#render.toRenderThread({
-          subject: "dispose_texture",
-          data: id,
-        });
+        this.#render.toRenderThread({ subject: "dispose_texture", data: id });
       });
     });
 
@@ -99,10 +81,7 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.material.toJSON(material);
 
-      this.#render.toRenderThread({
-        subject: "create_material",
-        data: { id, json },
-      });
+      this.#render.toRenderThread({ subject: "create_material", data: { id, json } });
 
       material.addEventListener("change", (e) => {
         const attribute = e.attribute as keyof MaterialJSON;
@@ -116,10 +95,7 @@ export class SceneModule extends Scene {
       });
 
       material.addEventListener("dispose", () => {
-        this.#render.toRenderThread({
-          subject: "dispose_material",
-          data: id,
-        });
+        this.#render.toRenderThread({ subject: "dispose_material", data: id });
       });
     });
 
@@ -128,10 +104,7 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.primitive.toJSON(primitive);
 
-      this.#render.toRenderThread({
-        subject: "create_primitive",
-        data: { id, json },
-      });
+      this.#render.toRenderThread({ subject: "create_primitive", data: { id, json } });
 
       primitive.addEventListener("change", (e) => {
         const attribute = e.attribute as keyof PrimitiveJSON;
@@ -145,10 +118,7 @@ export class SceneModule extends Scene {
       });
 
       primitive.addEventListener("dispose", () => {
-        this.#render.toRenderThread({
-          subject: "dispose_primitive",
-          data: id,
-        });
+        this.#render.toRenderThread({ subject: "dispose_primitive", data: id });
       });
     });
 
@@ -167,16 +137,12 @@ export class SceneModule extends Scene {
 
     const json = this.node.toJSON(node);
 
-    this.#render.toRenderThread({
-      subject: "create_node",
-      data: { id, json },
-    });
+    this.#render.toRenderThread({ subject: "create_node", data: { id, json } });
+    this.#physics.toPhysicsThread({ subject: "create_node", data: { id, json } });
 
     node.addEventListener("dispose", () => {
-      this.#render.toRenderThread({
-        subject: "dispose_node",
-        data: id,
-      });
+      this.#render.toRenderThread({ subject: "dispose_node", data: id });
+      this.#physics.toPhysicsThread({ subject: "dispose_node", data: id });
     });
 
     let extensionListeners: Array<{ extension: ExtensionProperty; listener: () => void }> = [];
@@ -219,6 +185,10 @@ export class SceneModule extends Scene {
               subject: "change_node",
               data: { id, json: { extensions: value } },
             });
+            this.#physics.toPhysicsThread({
+              subject: "change_node",
+              data: { id, json: { extensions: value } },
+            });
           };
 
           extension.addEventListener("change", listener);
@@ -231,6 +201,10 @@ export class SceneModule extends Scene {
         subject: "change_node",
         data: { id, json: { [attribute]: value } },
       });
+      this.#physics.toPhysicsThread({
+        subject: "change_node",
+        data: { id, json: { [attribute]: value } },
+      });
     });
   }
 
@@ -240,10 +214,7 @@ export class SceneModule extends Scene {
 
     const json = this.mesh.toJSON(mesh);
 
-    this.#render.toRenderThread({
-      subject: "create_mesh",
-      data: { id, json },
-    });
+    this.#render.toRenderThread({ subject: "create_mesh", data: { id, json } });
 
     mesh.addEventListener("change", (e) => {
       const attribute = e.attribute as keyof MeshJSON;
@@ -257,10 +228,7 @@ export class SceneModule extends Scene {
     });
 
     mesh.addEventListener("dispose", () => {
-      this.#render.toRenderThread({
-        subject: "dispose_mesh",
-        data: id,
-      });
+      this.#render.toRenderThread({ subject: "dispose_mesh", data: id });
     });
   }
 }

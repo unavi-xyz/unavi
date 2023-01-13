@@ -8,9 +8,12 @@ import { FromRenderMessage, ToRenderMessage } from "./messages";
 import { RenderThread } from "./RenderThread";
 
 export class RenderModule extends EventDispatcher<RenderEvent> {
+  #worker: Worker | FakeWorker;
+
   #engine: Engine;
 
-  #renderWorker: Worker | FakeWorker;
+  ready = false;
+  messageQueue: Array<{ message: ToRenderMessage; transferables?: Transferable[] }> = [];
 
   constructor(canvas: HTMLCanvasElement, engine: Engine) {
     super();
@@ -21,25 +24,25 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     if (typeof OffscreenCanvas !== "undefined") {
       const offscreen = canvas.transferControlToOffscreen();
 
-      this.#renderWorker = new Worker(new URL("./worker.ts", import.meta.url), {
+      this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
         type: "module",
         name: "render",
       });
 
-      this.#renderWorker.onmessage = this.onmessage.bind(this);
+      this.#worker.onmessage = this.onmessage.bind(this);
 
       // Send canvas to worker
       this.toRenderThread({ subject: "set_canvas", data: offscreen }, [offscreen]);
     } else {
       // Otherwise render on the main thread, using a fake worker
-      this.#renderWorker = new FakeWorker();
+      this.#worker = new FakeWorker();
 
       const thread = new RenderThread(
-        this.#renderWorker.insidePort.postMessage.bind(this.#renderWorker.insidePort)
+        this.#worker.insidePort.postMessage.bind(this.#worker.insidePort)
       );
 
-      this.#renderWorker.insidePort.onmessage = thread.onmessage.bind(thread);
-      this.#renderWorker.outsidePort.onmessage = this.onmessage.bind(this);
+      this.#worker.insidePort.onmessage = thread.onmessage.bind(thread);
+      this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
 
       // Send canvas to worker
       this.toRenderThread({ subject: "set_canvas", data: canvas });
@@ -53,14 +56,22 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     this.toRenderThread({ subject: "set_pixel_ratio", data: window.devicePixelRatio });
   }
 
-  toRenderThread(message: ToRenderMessage, transferables?: Transferable[]) {
-    this.#renderWorker.postMessage(message, transferables);
-  }
-
   onmessage = (event: MessageEvent<FromRenderMessage>) => {
     const { subject, data } = event.data;
 
     switch (subject) {
+      case "ready": {
+        this.ready = true;
+
+        // Send queued messages
+        this.messageQueue.forEach(({ message, transferables }) => {
+          this.#worker.postMessage(message, transferables);
+        });
+
+        this.messageQueue = [];
+        break;
+      }
+
       case "clicked_node": {
         this.dispatchEvent({ type: subject, data });
         break;
@@ -76,4 +87,14 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       }
     }
   };
+
+  toRenderThread(message: ToRenderMessage, transferables?: Transferable[]) {
+    // If not ready, queue message
+    if (!this.ready) {
+      this.messageQueue.push({ message, transferables });
+      return;
+    }
+
+    this.#worker.postMessage(message, transferables);
+  }
 }

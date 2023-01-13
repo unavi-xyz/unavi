@@ -42,7 +42,7 @@ export default function InspectMenu() {
           onChange={(e) => {
             node.setName(e.target.value);
           }}
-          className="mx-10 w-full rounded-lg py-0.5 text-center text-2xl font-bold ring-inset ring-neutral-300 transition hover:bg-neutral-100 hover:ring-1"
+          className="mx-10 w-full rounded-lg py-0.5 text-center text-2xl font-bold ring-inset ring-neutral-300 transition hover:bg-neutral-100 hover:ring-1 focus:bg-neutral-100"
         />
       </div>
 

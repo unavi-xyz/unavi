@@ -52,7 +52,7 @@ export default function MetaTags({
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       {externalImage && <meta name="twitter:image" content={externalImage} />}
-      <meta name="twitter:site" content="@TheWiredXR" />
+      <meta name="twitter:site" content="@wired_xr" />
 
       {/* apple */}
       <meta name="apple-mobile-web-app-capable" content="yes" />

@@ -19,8 +19,8 @@
   <a href="https://discord.gg/VCsAEneUMn">
     <img src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord">
   </a>
-  <a href="https://twitter.com/TheWiredXR">
-    <img src="https://img.shields.io/twitter/follow/TheWiredXR?label=TheWiredXR&style=flat&logo=twitter&color=1DA1F2" alt="Twitter">
+  <a href="https://twitter.com/wired_xr">
+    <img src="https://img.shields.io/twitter/follow/wired_xr?label=wired_xr&style=flat&logo=twitter&color=1DA1F2" alt="Twitter">
   </a>
 </div>
 

@@ -24,7 +24,7 @@
     "@rainbow-me/rainbowkit-siwe-next-auth": "^0.1.5",
     "@tanstack/react-query": "^4.20.9",
     "@trpc/client": "10.7.0",
-    "@trpc/next": "10.8.1",
+    "@trpc/next": "10.9.0",
     "@trpc/react-query": "10.5.0",
     "@trpc/server": "10.7.0",
     "boring-avatars": "^1.7.0",

@@ -3892,10 +3892,12 @@ available-typed-arrays@^1.0.5:
   resolved "https://registry.yarnpkg.com/available-typed-arrays/-/available-typed-arrays-1.0.5.tgz#92f95616501069d07d10edb2fc37d3e1c65123b7"
   integrity sha512-DMD0KiN46eipeziST1LPP/STfDU0sufISXmjSgvVsoU2tqxctQeASejWcfNtxYKqETM1UxQ8sp2OrSBWpHY6sw==
 
-awaitqueue@^2.4.0:
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/awaitqueue/-/awaitqueue-2.4.0.tgz#beb9a2b563b4817921f21c09cca2cdbb0d5989d4"
-  integrity sha512-9nTnPxVuxiuKFTHslm9ltnekUECJidOQ5kE6JpZUH77KrKqStQuWUW7JPB2GJZ7rOwWLcbToHiIXle/nJe1VpQ==
+awaitqueue@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/awaitqueue/-/awaitqueue-3.0.1.tgz#155f10bb1b6dd2f926c6ab8cf1ea9ffacf69a113"
+  integrity sha512-w3uWpUVI/7Q/gS7SrW8UCkZBDC+JPxSjVSFVqlty+OEo4tSEOGPB6jHWXxsi+bRktDXFaFiVKFBvMVzPhUhvqA==
+  dependencies:
+    debug "^4.3.4"
 
 aws-sign2@~0.7.0:
   version "0.7.0"
@@ -6988,20 +6990,20 @@ media-query-parser@^2.0.2:
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-mediasoup-client@^3.6.68:
-  version "3.6.68"
-  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.68.tgz#2657e7e4c2baecec377f893a3c1736a4cd588d19"
-  integrity sha512-DOAqW98g4CbSohLBDneImCnwV5XFNJY0RAmvmNemFag3W6igWij2J7P+Btyiy1UevSDTzKbLbl8kqvvFvAKuhA==
+mediasoup-client@^3.6.70:
+  version "3.6.70"
+  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.70.tgz#1d692a587a0f0ac3b359a53c70902c25d998aa75"
+  integrity sha512-780fU2Zgh+kiGFiivni13g32ceEnaoqF/CIdvJTTGrK9aG6DCx0iQZPJUkqk+rCQWFu8S4ptHTMyKAGK3EdK/A==
   dependencies:
     "@types/debug" "^4.1.7"
-    awaitqueue "^2.4.0"
+    awaitqueue "^3.0.1"
     bowser "^2.11.0"
     debug "^4.3.4"
     events "^3.3.0"
     fake-mediastreamtrack "^1.1.6"
     h264-profile-level-id "^1.0.1"
     sdp-transform "^2.14.1"
-    supports-color "^9.3.0"
+    supports-color "^9.3.1"
     uuid "^3.4.0"
 
 mediasoup@^3.11.4:
@@ -8884,10 +8886,10 @@ supports-color@^8.0.0:
   dependencies:
     has-flag "^4.0.0"
 
-supports-color@^9.3.0:
-  version "9.3.0"
-  resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-9.3.0.tgz#cce566c5ad562eece4dfe5a4502a58efc54986a9"
-  integrity sha512-hJ6RYjNbcBFkpHi+ykjar+7GgHs+65Kxyw940nBLOSjaWZ13acq4A5f+gWiV5w+xfsg5MbnjDxTigLcUuljerw==
+supports-color@^9.3.0, supports-color@^9.3.1:
+  version "9.3.1"
+  resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-9.3.1.tgz#34e4ad3c71c9a39dae3254ecc46c9b74e89e15a6"
+  integrity sha512-knBY82pjmnIzK3NifMo3RxEIRD9E0kIzV4BKcyTZ9+9kWgLMxd4PrsTSMoFQUabgRBbF8KOLRDCyKgNV+iK44Q==
 
 supports-preserve-symlinks-flag@^1.0.0:
   version "1.0.0"

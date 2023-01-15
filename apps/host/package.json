@@ -19,7 +19,7 @@
     "mediasoup": "^3.11.4",
     "nanoid": "^4.0.0",
     "protocol": "*",
-    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.15.0",
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.19.0",
     "zod": "^3.20.2"
   },
   "devDependencies": {

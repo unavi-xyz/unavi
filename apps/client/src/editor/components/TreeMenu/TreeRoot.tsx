@@ -68,7 +68,7 @@ export default function TreeRoot() {
       newOpenIds.splice(openIndex, 1);
     });
 
-    // Sort children after parents
+    // Move children after parents
     newTreeIds.sort((a, b) => {
       if (!engine) return 0;
 
@@ -81,7 +81,9 @@ export default function TreeRoot() {
       const parentA = engine.modules.scene.node.getParent(nodeA);
       const parentB = engine.modules.scene.node.getParent(nodeB);
 
-      if (parentA === parentB) return 0;
+      if (!parentA) return -1;
+      if (!parentB) return 1;
+
       if (parentA === b) return 1;
       if (parentB === a) return -1;
 
@@ -89,8 +91,12 @@ export default function TreeRoot() {
     });
 
     // Save changes
-    const isSameTree = newTreeIds.every((id, index) => treeIds[index] === id);
-    const isSameOpen = newOpenIds.every((id, index) => openIds[index] === id);
+    const isSameTree =
+      newTreeIds.every((id, index) => treeIds[index] === id) &&
+      newTreeIds.length === treeIds.length;
+    const isSameOpen =
+      newOpenIds.every((id, index) => openIds[index] === id) &&
+      newOpenIds.length === openIds.length;
 
     if (!isSameTree) useEditorStore.setState({ treeIds: newTreeIds });
     if (!isSameOpen) useEditorStore.setState({ openIds: newOpenIds });

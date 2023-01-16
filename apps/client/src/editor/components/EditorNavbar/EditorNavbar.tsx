@@ -58,6 +58,8 @@ export default function EditorNavbar() {
     } else {
       engine.controls = "player";
       setPreviewMode(true);
+
+      useEditorStore.setState({ selectedId: null });
     }
   }
 

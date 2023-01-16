@@ -1,15 +1,17 @@
 import { Accessor, Mesh, Primitive, Texture, TextureInfo } from "@gltf-transform/core";
 import {
+  BoxGeometry,
   BufferAttribute,
+  CylinderGeometry,
   DoubleSide,
   FrontSide,
   Mesh as ThreeMesh,
   MeshStandardMaterial,
   Object3D,
+  SphereGeometry,
   sRGBEncoding,
 } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
-import { BoxGeometry, CylinderGeometry, SphereGeometry } from "three/src/Three";
 
 import { MeshJSON } from "../scene";
 import { SceneMessage } from "../scene/messages";
@@ -35,6 +37,7 @@ export class RenderScene extends Scene {
   primitiveObjects = new Map<string, ThreeMesh>();
   customMeshObjects = new Map<string, ThreeMesh>();
   meshObjects = new Map<string, Object3D>();
+  clonedMeshObjects = new Map<string, Object3D>();
   nodeObjects = new Map<string, Object3D>();
 
   setCSM(csm: CSM | null) {
@@ -225,9 +228,37 @@ export class RenderScene extends Scene {
 
       // Add new mesh
       if (json.mesh !== null) {
-        const mesh = this.meshObjects.get(json.mesh);
-        if (!mesh) throw new Error("Mesh not found");
-        object.add(mesh);
+        const meshObject = this.meshObjects.get(json.mesh);
+        if (!meshObject) throw new Error("Mesh not found");
+
+        let usedByOthers = false;
+
+        for (const other of this.node.store.values()) {
+          if (other === node) continue;
+
+          const otherMesh = other.getMesh();
+          if (!otherMesh) continue;
+
+          const otherMeshId = this.mesh.getId(otherMesh);
+          if (!otherMeshId) throw new Error("Mesh not found");
+
+          if (otherMeshId === json.mesh) {
+            usedByOthers = true;
+            break;
+          }
+        }
+
+        if (!usedByOthers) {
+          object.add(meshObject);
+        } else {
+          const clone = meshObject.clone();
+          object.add(clone);
+
+          const prevClone = this.clonedMeshObjects.get(id);
+          if (prevClone) prevClone.removeFromParent();
+
+          this.clonedMeshObjects.set(id, clone);
+        }
       }
     }
 
@@ -240,16 +271,16 @@ export class RenderScene extends Scene {
         const childObject = this.nodeObjects.get(childId);
         if (!childObject) throw new Error("Child object not found");
 
-        object.remove(childObject);
-
         // Add child to root
         this.root.add(childObject);
       });
 
       // Add new children
-      json.children.forEach((child) => {
-        const childObject = this.nodeObjects.get(child);
+      json.children.forEach((childId) => {
+        const childObject = this.nodeObjects.get(childId);
         if (!childObject) throw new Error("Child not found");
+
+        // Add child
         object.add(childObject);
       });
     }
@@ -592,6 +623,18 @@ export class RenderScene extends Scene {
     this.material.applyJSON(material, json);
   }
 
+  getClonedMeshObjectId(object: Object3D): string | null {
+    for (const [id, clonedMeshObject] of this.clonedMeshObjects.entries()) {
+      let found = false;
+      clonedMeshObject.traverse((child) => {
+        if (child === object) found = true;
+      });
+      if (found) return id;
+    }
+
+    return null;
+  }
+
   getCustomMeshObjectId(object: Object3D): string | null {
     for (const [id, customMeshObject] of this.customMeshObjects.entries()) {
       if (customMeshObject === object) return id;
@@ -641,8 +684,8 @@ export class RenderScene extends Scene {
   }
 
   getObjectNodeId(object: Object3D): string | null {
+    // Check primitives
     const primitiveId = this.getPrimitiveObjectId(object);
-
     if (primitiveId) {
       const primitive = this.primitive.store.get(primitiveId);
       if (!primitive) throw new Error("Primitive not found");
@@ -659,8 +702,8 @@ export class RenderScene extends Scene {
       return nodeId;
     }
 
+    // Check custom meshes
     const meshId = this.getCustomMeshObjectId(object);
-
     if (meshId) {
       const mesh = this.mesh.store.get(meshId);
       if (!mesh) throw new Error("Mesh not found");
@@ -670,6 +713,10 @@ export class RenderScene extends Scene {
 
       return nodeId;
     }
+
+    // Check cloned meshes
+    const clonedMeshId = this.getClonedMeshObjectId(object);
+    if (clonedMeshId) return clonedMeshId;
 
     return null;
   }

@@ -63,15 +63,9 @@ export class RaycastControls {
     const intersections = this.#raycaster.intersectObject(this.#renderScene.root);
 
     const intersection = intersections.find((intersection) => {
-      // Accept intersections with primitives
-      const primitiveId = this.#renderScene.getPrimitiveObjectId(intersection.object);
-      if (primitiveId) return true;
-
-      // Accept intersections with custom meshes
-      const meshId = this.#renderScene.getCustomMeshObjectId(intersection.object);
-      if (meshId) return true;
-
-      return false;
+      const nodeId = this.#renderScene.getObjectNodeId(intersection.object);
+      if (nodeId) return true;
+      else return false;
     });
 
     if (intersection) {

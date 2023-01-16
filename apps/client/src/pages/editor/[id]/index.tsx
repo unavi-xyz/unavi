@@ -42,7 +42,7 @@ export default function Editor() {
     });
 
     // Model
-    engine.modules.scene.load("/models/Cyberia.glb");
+    engine.modules.scene.addGLTF("/models/Cyberia.glb");
   }, []);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";

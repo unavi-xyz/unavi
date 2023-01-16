@@ -1,6 +1,7 @@
 import { ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform/core";
 
 import { Collider, ColliderExtension } from "../gltf";
+import { extensions } from "../gltf/constants";
 import { PhysicsModule } from "../physics/PhysicsModule";
 import { RenderModule } from "../render/RenderModule";
 import { SceneMessage } from "./messages";
@@ -39,9 +40,39 @@ export class SceneModule extends Scene {
     });
   }
 
-  async load(uri: string) {
-    const io = new WebIO();
+  async addGLTF(uri: string) {
+    const io = new WebIO().registerExtensions(extensions);
     const doc = await io.read(uri);
+
+    const path = uri.split("/");
+    const file = path[path.length - 1];
+    const fileName = file?.split(".")[0];
+
+    const scene = doc.getRoot().getDefaultScene();
+    const groupNode = doc.createNode(fileName);
+
+    // Add top level nodes to group node
+    scene?.listChildren().forEach((node) => groupNode.addChild(node));
+    scene?.addChild(groupNode);
+
+    // Add physics colliders
+    doc
+      .getRoot()
+      .listNodes()
+      .forEach((node) => {
+        const mesh = node.getMesh();
+        if (!mesh) return;
+
+        const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
+        if (collider) return;
+
+        const meshCollider = new Collider(doc.getGraph());
+        meshCollider.type = "trimesh";
+        meshCollider.mesh = mesh;
+
+        node.setExtension<Collider>(ColliderExtension.EXTENSION_NAME, meshCollider);
+      });
+
     this.loadDocument(doc);
   }
 

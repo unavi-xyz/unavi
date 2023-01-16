@@ -44,7 +44,7 @@ export default function Editor() {
     });
 
     // Model
-    engine.modules.scene.load("/models/Cyberia.glb");
+    engine.modules.scene.load("/models/Accumula-Town.glb");
   }, []);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";

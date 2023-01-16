@@ -91,9 +91,7 @@ export default function InspectMenu() {
                       if (!engine) return;
 
                       const collider = engine.modules.scene.extensions.collider.createCollider();
-
-                      collider.type = "mesh";
-                      collider.mesh = node.getMesh();
+                      collider.type = "trimesh";
 
                       node.setExtension(ColliderExtension.EXTENSION_NAME, collider);
                     }}

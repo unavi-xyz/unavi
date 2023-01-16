@@ -19,13 +19,12 @@ export class Collider extends ExtensionProperty<ICollider> {
   declare parentTypes: [PropertyType.NODE];
 
   static Type: Record<string, ColliderType> = {
-    MESH: "mesh",
     BOX: "box",
     SPHERE: "sphere",
     CYLINDER: "cylinder",
     CAPSULE: "capsule",
     HULL: "hull",
-    COMPOUND: "compound",
+    TRIMESH: "trimesh",
   };
 
   protected init(): void {

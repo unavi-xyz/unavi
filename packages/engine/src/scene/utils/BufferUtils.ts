@@ -1,18 +1,20 @@
 import { Buffer, Document } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
-import { Utils } from "./types";
+import { Utils } from "./Utils";
 
 export interface BufferJSON {
   uri: string;
 }
 
-export class BufferUtils implements Utils<Buffer, BufferJSON> {
+export class BufferUtils extends Utils<Buffer, BufferJSON> {
   #doc: Document;
 
   store = new Map<string, Buffer>();
 
   constructor(doc: Document) {
+    super();
+
     this.#doc = doc;
   }
 
@@ -27,6 +29,8 @@ export class BufferUtils implements Utils<Buffer, BufferJSON> {
     this.applyJSON(buffer, json);
 
     const { id: bufferId } = this.process(buffer, id);
+
+    this.emitCreate(bufferId);
 
     return { id: bufferId, object: buffer };
   }

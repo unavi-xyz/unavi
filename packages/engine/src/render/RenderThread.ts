@@ -186,12 +186,13 @@ export class RenderThread {
 
     // Cascading shadow maps
     this.csm = new CSM({
-      maxFar: 50,
-      cascades: 3,
+      maxFar: 40,
+      cascades: 2,
       lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
       shadowMapSize: 2048,
       camera: this.camera,
       parent: this.scene,
+      shadowBias: -0.00001,
     });
     this.csm.fade = true;
 
@@ -200,7 +201,6 @@ export class RenderThread {
     // Post-processing
     const renderPass = new RenderPass(this.scene, this.camera);
     const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
-
     this.outlinePass = new ThreeOutlinePass(
       new Vector2(this.size.width, this.size.height),
       this.scene,

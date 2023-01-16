@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { Vec3, Vec4 } from "../../types";
 import { TextureInfoJSON, TextureInfoUtils } from "./TextureInfoUtils";
 import { TextureUtils } from "./TextureUtils";
-import { Utils } from "./types";
+import { Utils } from "./Utils";
 
 type TextureId = string;
 
@@ -35,12 +35,14 @@ export interface MaterialJSON {
   metallicRoughnessTextureInfo: TextureInfoJSON | null;
 }
 
-export class MaterialUtils implements Utils<Material, MaterialJSON> {
+export class MaterialUtils extends Utils<Material, MaterialJSON> {
   #doc: Document;
   #texture: TextureUtils;
   store = new Map<string, Material>();
 
   constructor(doc: Document, texture: TextureUtils) {
+    super();
+
     this.#doc = doc;
     this.#texture = texture;
   }
@@ -56,6 +58,8 @@ export class MaterialUtils implements Utils<Material, MaterialJSON> {
     this.applyJSON(material, json);
 
     const { id: materialId } = this.process(material, id);
+
+    this.emitCreate(materialId);
 
     return { id: materialId, object: material };
   }

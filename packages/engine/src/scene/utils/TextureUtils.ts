@@ -1,7 +1,7 @@
 import { Document, Texture } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
-import { Utils } from "./types";
+import { Utils } from "./Utils";
 
 export interface TextureJSON {
   image: Uint8Array | null;
@@ -9,12 +9,14 @@ export interface TextureJSON {
   uri: string;
 }
 
-export class TextureUtils implements Utils<Texture, TextureJSON> {
+export class TextureUtils extends Utils<Texture, TextureJSON> {
   #doc: Document;
 
   store = new Map<string, Texture>();
 
   constructor(doc: Document) {
+    super();
+
     this.#doc = doc;
   }
 
@@ -29,6 +31,8 @@ export class TextureUtils implements Utils<Texture, TextureJSON> {
     this.applyJSON(texture, json);
 
     const { id: textureId } = this.process(texture, id);
+
+    this.emitCreate(textureId);
 
     return { id: textureId, object: texture };
   }

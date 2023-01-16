@@ -1,1 +1,1 @@
-export type ColliderType = "box" | "capsule" | "compound" | "cylinder" | "hull" | "mesh" | "sphere";
+export type ColliderType = "box" | "sphere" | "capsule" | "cylinder" | "hull" | "trimesh";

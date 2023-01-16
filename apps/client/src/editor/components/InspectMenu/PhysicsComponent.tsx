@@ -32,20 +32,20 @@ export default function PhysicsComponent({ nodeId }: Props) {
       <MenuRows titles={["Collider"]}>
         <SelectMenu
           value={capitalize(type)}
-          options={["Box", "Sphere", "Cylinder", "Mesh"]}
+          options={["Box", "Sphere", "Cylinder", "Trimesh"]}
           onChange={(e) => {
             if (!node) return;
 
             const extension = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
 
             if (extension) {
-              const value = e.target.value.toLowerCase() as ColliderType;
-              extension.type = value;
-
               extension.size = null;
               extension.height = null;
               extension.radius = null;
               extension.mesh = null;
+
+              const value = e.target.value.toLowerCase() as ColliderType;
+              extension.type = value;
 
               switch (value) {
                 case "box": {

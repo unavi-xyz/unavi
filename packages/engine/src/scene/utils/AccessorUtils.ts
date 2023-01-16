@@ -2,7 +2,7 @@ import { Accessor, Document, GLTF, TypedArray } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
 import { BufferUtils } from "./BufferUtils";
-import { Utils } from "./types";
+import { Utils } from "./Utils";
 
 type BufferId = string;
 
@@ -14,13 +14,15 @@ export interface AccessorJSON {
   buffer: BufferId | null;
 }
 
-export class AccessorUtils implements Utils<Accessor, AccessorJSON> {
+export class AccessorUtils extends Utils<Accessor, AccessorJSON> {
   #doc: Document;
   #buffer: BufferUtils;
 
   store = new Map<string, Accessor>();
 
   constructor(doc: Document, buffer: BufferUtils) {
+    super();
+
     this.#doc = doc;
     this.#buffer = buffer;
   }
@@ -36,6 +38,8 @@ export class AccessorUtils implements Utils<Accessor, AccessorJSON> {
     this.applyJSON(accessor, json);
 
     const { id: accessorId } = this.process(accessor, id);
+
+    this.emitCreate(accessorId);
 
     return { id: accessorId, object: accessor };
   }

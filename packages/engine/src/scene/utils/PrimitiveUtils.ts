@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 
 import { AccessorUtils } from "./AccessorUtils";
 import { MaterialUtils } from "./MaterialUtils";
-import { Utils } from "./types";
+import { Utils } from "./Utils";
 
 type MaterialId = string;
 type AccessorId = string;
@@ -19,7 +19,7 @@ export interface PrimitiveTargetJSON {
   attributes: { [key: string]: AccessorId };
 }
 
-export class PrimitiveUtils implements Utils<Primitive, PrimitiveJSON> {
+export class PrimitiveUtils extends Utils<Primitive, PrimitiveJSON> {
   #doc: Document;
   #accessor: AccessorUtils;
   #material: MaterialUtils;
@@ -27,6 +27,8 @@ export class PrimitiveUtils implements Utils<Primitive, PrimitiveJSON> {
   store = new Map<string, Primitive>();
 
   constructor(doc: Document, accessor: AccessorUtils, material: MaterialUtils) {
+    super();
+
     this.#doc = doc;
     this.#accessor = accessor;
     this.#material = material;
@@ -43,6 +45,8 @@ export class PrimitiveUtils implements Utils<Primitive, PrimitiveJSON> {
     this.applyJSON(primitive, json);
 
     const { id: primitiveId } = this.process(primitive, id);
+
+    this.emitCreate(primitiveId);
 
     return { id: primitiveId, object: primitive };
   }

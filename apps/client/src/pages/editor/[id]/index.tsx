@@ -1,8 +1,6 @@
 import { Engine } from "engine";
 import Script from "next/script";
 import { useEffect, useRef } from "react";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
 
 import { useResizeCanvas } from "../../../app/hooks/useResizeCanvas";
@@ -44,7 +42,7 @@ export default function Editor() {
     });
 
     // Model
-    engine.modules.scene.load("/models/Accumula-Town.glb");
+    engine.modules.scene.load("/models/Cyberia.glb");
   }, []);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
@@ -56,62 +54,60 @@ export default function Editor() {
       <Script src="/scripts/draco_encoder.js" />
       <Script src="/scripts/draco_decoder.js" />
 
-      <DndProvider backend={HTML5Backend}>
-        <div
-          className="absolute top-0 left-0 h-full w-full overflow-hidden"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            const { engine } = useEditorStore.getState();
-            if (!engine) return;
+      <div
+        className="absolute top-0 left-0 h-full w-full overflow-hidden"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          const { engine } = useEditorStore.getState();
+          if (!engine) return;
 
-            e.preventDefault();
+          e.preventDefault();
 
-            const item = e.dataTransfer.items[0];
-            if (item?.kind !== "file") return;
+          const item = e.dataTransfer.items[0];
+          if (item?.kind !== "file") return;
 
-            const file = item.getAsFile();
-            if (!file) return;
+          const file = item.getAsFile();
+          if (!file) return;
 
-            const isGLTF = file.name.endsWith(".gltf") || file.name.endsWith(".glb");
-            if (!isGLTF) return;
-          }}
+          const isGLTF = file.name.endsWith(".gltf") || file.name.endsWith(".glb");
+          if (!isGLTF) return;
+        }}
+      >
+        <div className="z-10 h-14 w-full border-b">
+          <EditorNavbar />
+        </div>
+
+        <Split
+          sizes={[15, 65, 20]}
+          minSize={[50, 400, 50]}
+          direction="horizontal"
+          gutterSize={4}
+          className="flex h-full"
+          onMouseUp={resize}
         >
-          <div className="z-10 h-14 w-full border-b">
-            <EditorNavbar />
+          <div>
+            <TreeMenu />
           </div>
 
-          <Split
-            sizes={[15, 65, 20]}
-            minSize={[50, 400, 50]}
-            direction="horizontal"
-            gutterSize={4}
-            className="flex h-full"
-            onMouseUp={resize}
-          >
-            <div>
-              <TreeMenu />
-            </div>
-
-            <div className="border-x">
-              <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-                {!sceneLoaded && (
-                  <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
-                    <div className="flex h-full  flex-col items-center justify-center">
-                      <Spinner />
-                    </div>
+          <div className="border-x">
+            <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+              {!sceneLoaded && (
+                <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+                  <div className="flex h-full  flex-col items-center justify-center">
+                    <Spinner />
                   </div>
-                )}
+                </div>
+              )}
 
-                <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
-              </div>
+              <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
             </div>
+          </div>
 
-            <div>
-              <InspectMenu />
-            </div>
-          </Split>
-        </div>
-      </DndProvider>
+          <div>
+            <InspectMenu />
+          </div>
+        </Split>
+      </div>
     </>
   );
 }

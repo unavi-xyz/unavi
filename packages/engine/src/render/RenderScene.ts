@@ -241,6 +241,9 @@ export class RenderScene extends Scene {
         if (!childObject) throw new Error("Child object not found");
 
         object.remove(childObject);
+
+        // Add child to root
+        this.root.add(childObject);
       });
 
       // Add new children

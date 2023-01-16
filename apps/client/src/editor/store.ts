@@ -1,4 +1,4 @@
-import { Engine, Node } from "engine";
+import { Engine } from "engine";
 import create from "zustand";
 
 import { Tool } from "./types";
@@ -8,8 +8,6 @@ export interface IEditorStore {
   sceneLoaded: boolean;
   changesToSave: boolean;
   isSaving: boolean;
-
-  getNode: (id: string) => Node | undefined;
 
   canvas: HTMLCanvasElement | null;
   preview: boolean;
@@ -21,17 +19,17 @@ export interface IEditorStore {
 
   visuals: boolean;
   tool: Tool;
+
+  treeIds: string[];
+  openIds: string[];
+  draggingId: string | null;
 }
 
-export const useEditorStore = create<IEditorStore>((set, get) => ({
+export const useEditorStore = create<IEditorStore>(() => ({
   engine: null,
   sceneLoaded: false,
   changesToSave: false,
   isSaving: false,
-
-  getNode: (id: string) => {
-    return get().engine?.scene.nodes[id];
-  },
 
   canvas: null,
   preview: false,
@@ -43,4 +41,8 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
 
   visuals: true,
   tool: "translate",
+
+  treeIds: [],
+  openIds: [],
+  draggingId: null,
 }));

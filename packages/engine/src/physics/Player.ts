@@ -38,6 +38,7 @@ export class Player {
     this.controller = this.#world.createCharacterController(0.01);
     this.controller.enableSnapToGround(0.01);
     this.controller.setSlideEnabled(true);
+    this.controller.enableAutostep(PLAYER_HEIGHT / 4, PLAYER_RADIUS / 2, false);
 
     const colliderDesc = ColliderDesc.capsule(PLAYER_HEIGHT / 2, PLAYER_RADIUS);
     colliderDesc.setCollisionGroups(COLLISION_GROUP.player);
@@ -84,9 +85,9 @@ export class Player {
     inputVelocity.x = inputXRotated * 4;
     inputVelocity.z = inputYRotated * 4;
 
-    // Only accelerate gravity if not grounded
+    // Only apply gravity if not grounded
     const isGrounded = this.controller.computedGrounded();
-    if (isGrounded) inputVelocity.y = this.#world.gravity.y * delta;
+    if (isGrounded) inputVelocity.y = 0;
     else inputVelocity.y += this.#world.gravity.y * delta;
 
     // Compute movement

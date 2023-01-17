@@ -7,6 +7,7 @@ import { useResizeCanvas } from "../../../app/hooks/useResizeCanvas";
 import EditorNavbar from "../../../editor/components/EditorNavbar/EditorNavbar";
 import InspectMenu from "../../../editor/components/InspectMenu/InspectMenu";
 import TreeMenu from "../../../editor/components/TreeMenu/TreeMenu";
+import { useLoad } from "../../../editor/hooks/useLoad";
 import { useTransformControls } from "../../../editor/hooks/useTransformControls";
 import { useEditorStore } from "../../../editor/store";
 import MetaTags from "../../../home/MetaTags";
@@ -21,9 +22,9 @@ export default function Editor() {
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
 
   const resize = useResizeCanvas(engine, canvasRef, containerRef);
-  // useLoad();
-  // useAutosave();
+  useLoad();
   useTransformControls();
+  // useAutosave();
   // useEditorHotkeys();
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function Editor() {
     engine.controls = "orbit";
 
     createdEngine.current = true;
-    useEditorStore.setState({ engine, sceneLoaded: true });
+    useEditorStore.setState({ engine, canvas: canvasRef.current, sceneLoaded: true });
 
     // Skybox
     engine.modules.render.toRenderThread({

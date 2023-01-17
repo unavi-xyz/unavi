@@ -2,156 +2,67 @@ import { useRouter } from "next/router";
 
 import { trpc } from "../../client/trpc";
 import { useEditorStore } from "../store";
-import { SavedSceneJSON } from "../types";
-import { binaryStorageKey as binaryStorageKey, imageStorageKey } from "../utils/fileStorage";
-import { getEditorState } from "../utils/getEditorState";
 
 export function useSave() {
   const router = useRouter();
   const id = router.query.id as string;
 
-  const { mutateAsync: saveProject } = trpc.project.save.useMutation();
-  const { mutateAsync: getFileUpload } = trpc.project.fileUploadURL.useMutation();
-  const { mutateAsync: getImageUpload } = trpc.project.imageUploadURL.useMutation();
-  const { mutateAsync: getSceneUpload } = trpc.project.sceneUploadURL.useMutation();
+  const { mutateAsync: getImageUpload } = trpc.project.getImageUpload.useMutation();
+  const { mutateAsync: getModelUpload } = trpc.project.getModelUpload.useMutation();
+  const { mutateAsync: update } = trpc.project.update.useMutation();
 
   async function saveImage() {
     const { engine, canvas } = useEditorStore.getState();
     if (!engine || !canvas) throw new Error("No engine");
 
+    // Take screenshot of canvas
     const image = canvas.toDataURL("image/jpeg");
     const response = await fetch(image);
     const body = await response.blob();
 
+    // Upload to S3
     const url = await getImageUpload({ id });
     const res = await fetch(url, {
       method: "PUT",
       body,
-      headers: {
-        "Content-Type": "image/jpeg",
-      },
+      headers: { "Content-Type": "image/jpeg" },
     });
 
     if (!res.ok) throw new Error("Failed to upload image");
   }
 
-  async function save() {
-    const { name, description, engine, sceneLoaded, isSaving } = useEditorStore.getState();
+  async function saveModel() {
+    const { engine } = useEditorStore.getState();
+    if (!engine) throw new Error("No engine");
 
-    if (isSaving || !sceneLoaded || !engine) return;
+    // Export to GLB
+    const glb = await engine.modules.scene.export();
 
-    useEditorStore.setState({ isSaving: true, changesToSave: false });
-
-    const fileIds: string[] = [];
-    const promises: Promise<any>[] = [];
-    const editorState = getEditorState();
-    const scene = engine.scene.toJSON();
-
-    async function uploadBinaryFile(uri: string, fileId: string) {
-      const uriResponse = await fetch(uri);
-      const buffer = await uriResponse.arrayBuffer();
-      const array = new Uint8Array(buffer);
-
-      const storageKey = binaryStorageKey(fileId);
-      fileIds.push(storageKey);
-
-      const url = await getFileUpload({ id, storageKey });
-
-      const response = await fetch(url, {
-        method: "PUT",
-        body: array,
-        headers: {
-          "Content-Type": "application/octet-stream",
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to upload file");
-    }
-
-    async function uploadImageFile(imageId: string) {
-      const { engine } = useEditorStore.getState();
-      if (!engine) throw new Error("No engine");
-
-      const image = engine.scene.images[imageId];
-      if (!image) throw new Error("No image");
-
-      const storageKey = imageStorageKey(imageId);
-      fileIds.push(storageKey);
-
-      const url = await getFileUpload({ id, storageKey });
-
-      const response = await fetch(url, {
-        method: "PUT",
-        body: image.array,
-        headers: {
-          "Content-Type": image.mimeType,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to upload file");
-    }
-
-    // Upload image to S3
-    promises.push(saveImage());
-
-    // Upload scene to S3
-    promises.push(
-      new Promise<void>((resolve, reject) => {
-        async function upload() {
-          const url = await getSceneUpload({ id });
-
-          const savedScene: SavedSceneJSON = {
-            ...scene,
-            images: scene.images.map((image) => ({
-              id: image.id,
-              mimeType: image.mimeType,
-            })),
-            accessors: scene.accessors.map((accessor) => ({
-              ...accessor,
-              array: Array.from(accessor.array) as any,
-            })),
-          };
-
-          const body = JSON.stringify(savedScene);
-
-          const res = await fetch(url, {
-            method: "PUT",
-            body,
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (res.ok) resolve();
-          else reject();
-        }
-
-        upload();
-      })
-    );
-
-    // Upload models to S3
-    scene.meshes.forEach((mesh) => {
-      if (mesh?.type === "glTF") {
-        const uri = mesh.uri;
-        if (uri) promises.push(uploadBinaryFile(uri, mesh.id));
-      }
+    // Upload to S3
+    const url = await getModelUpload({ id });
+    const res = await fetch(url, {
+      method: "PUT",
+      body: glb,
+      headers: { "Content-Type": "model/gltf-binary" },
     });
 
-    // Upload images to S3
-    scene.images.forEach((image) => promises.push(uploadImageFile(image.id)));
+    if (!res.ok) throw new Error("Failed to upload model");
+  }
+
+  async function saveMetadata() {
+    const { name, description } = useEditorStore.getState();
+    await update({ id, name, description });
+  }
+
+  async function save() {
+    const { isSaving, sceneLoaded } = useEditorStore.getState();
+    if (isSaving || !sceneLoaded) return;
+
+    useEditorStore.setState({ isSaving: true });
 
     try {
-      await Promise.all(promises);
-
-      // Save project
-      await saveProject({
-        id,
-        name,
-        description,
-        editorState,
-        fileIds,
-      });
+      await Promise.all([saveImage(), saveModel(), saveMetadata()]);
+      useEditorStore.setState({ changesToSave: false });
     } catch (err) {
       console.error(err);
     }
@@ -159,5 +70,5 @@ export function useSave() {
     useEditorStore.setState({ isSaving: false });
   }
 
-  return { save, saveImage };
+  return { save, saveImage, saveMetadata, saveModel };
 }

@@ -8,11 +8,7 @@ import { getProfileFromAddress } from "../helpers/getProfileFromAddress";
 import { getProfileHandle } from "../helpers/getProfileHandle";
 import { getProfileMetadata } from "../helpers/getProfileMetadata";
 import { getProfileOwner } from "../helpers/getProfileOwner";
-import {
-  createProfileCoverImageUploadURL,
-  createProfileImageUploadURL,
-  createProfileMetadataUploadURL,
-} from "../s3";
+import { Profile } from "../s3/Profile";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
 
 export const socialRouter = router({
@@ -87,7 +83,7 @@ export const socialRouter = router({
         }
       }),
 
-    metadataUploadURL: protectedProcedure
+    getMetadataUpload: protectedProcedure
       .input(
         z.object({
           id: z.number(),
@@ -99,12 +95,13 @@ export const socialRouter = router({
         if (owner !== ctx.session.address) throw new TRPCError({ code: "UNAUTHORIZED" });
 
         const hexId = numberToHexDisplay(input.id);
-        const url = await createProfileMetadataUploadURL(hexId);
+        const profile = new Profile(hexId);
+        const url = await profile.getUpload("metadata");
 
         return url;
       }),
 
-    imageUploadURL: protectedProcedure
+    getImageUpload: protectedProcedure
       .input(
         z.object({
           id: z.number(),
@@ -116,12 +113,13 @@ export const socialRouter = router({
         if (owner !== ctx.session.address) throw new TRPCError({ code: "UNAUTHORIZED" });
 
         const hexId = numberToHexDisplay(input.id);
-        const url = await createProfileImageUploadURL(hexId);
+        const profile = new Profile(hexId);
+        const url = await profile.getUpload("image");
 
         return url;
       }),
 
-    coverImageUploadURL: protectedProcedure
+    getCoverUpload: protectedProcedure
       .input(
         z.object({
           id: z.number(),
@@ -131,9 +129,9 @@ export const socialRouter = router({
         // Verify that the user is the owner of the profile
         const owner = await getProfileOwner(input.id);
         if (owner !== ctx.session.address) throw new TRPCError({ code: "UNAUTHORIZED" });
-
         const hexId = numberToHexDisplay(input.id);
-        const url = await createProfileCoverImageUploadURL(hexId);
+        const profile = new Profile(hexId);
+        const url = await profile.getUpload("cover");
 
         return url;
       }),

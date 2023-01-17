@@ -1,12 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import {
-  createPublishedImageUploadURL,
-  createPublishedMetadataUploadURL,
-  createPublishedModelUploadURL,
-  deletePublicationFromS3,
-} from "../s3";
 import { protectedProcedure, router } from "./trpc";
 
 const PUBLICATION_ID_LENGTH = 25; // cuid

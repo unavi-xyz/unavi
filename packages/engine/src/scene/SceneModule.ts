@@ -40,6 +40,17 @@ export class SceneModule extends Scene {
     });
   }
 
+  async export() {
+    const io = new WebIO().registerExtensions(extensions);
+    return await io.writeBinary(this.doc);
+  }
+
+  async load(uri: string) {
+    const io = new WebIO().registerExtensions(extensions);
+    const doc = await io.read(uri);
+    this.loadDocument(doc);
+  }
+
   async addGLTF(uri: string) {
     const io = new WebIO().registerExtensions(extensions);
     const doc = await io.read(uri);

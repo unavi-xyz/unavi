@@ -1,3 +1,4 @@
+import { Node } from "@gltf-transform/core";
 import { MeshExtras } from "engine";
 
 import { useMesh } from "../../../hooks/useMesh";
@@ -125,6 +126,13 @@ export default function MeshComponent({ meshId }: Props) {
                 break;
               }
             }
+
+            // Force node refresh
+            mesh.listParents().forEach((p) => {
+              if (p instanceof Node) {
+                p.setMesh(mesh);
+              }
+            });
           }}
         />
       </MenuRows>

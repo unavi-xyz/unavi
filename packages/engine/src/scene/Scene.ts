@@ -1,13 +1,13 @@
 import { Document } from "@gltf-transform/core";
 
 import { ColliderExtension } from "../gltf";
-import { AccessorUtils } from "./utils/AccessorUtils";
-import { BufferUtils } from "./utils/BufferUtils";
-import { MaterialUtils } from "./utils/MaterialUtils";
-import { MeshUtils } from "./utils/MeshUtils";
-import { NodeUtils } from "./utils/NodeUtils";
-import { PrimitiveUtils } from "./utils/PrimitiveUtils";
-import { TextureUtils } from "./utils/TextureUtils";
+import { Accessors } from "./attributes/Accessors";
+import { Buffers } from "./attributes/Buffers";
+import { Materials } from "./attributes/Materials";
+import { Meshes } from "./attributes/Meshes";
+import { Nodes } from "./attributes/Nodes";
+import { Primitives } from "./attributes/Primitives";
+import { Textures } from "./attributes/Textures";
 
 export class Scene {
   doc = new Document();
@@ -16,13 +16,13 @@ export class Scene {
     collider: this.doc.createExtension(ColliderExtension),
   };
 
-  buffer = new BufferUtils(this.doc);
-  accessor = new AccessorUtils(this.doc, this.buffer);
-  texture = new TextureUtils(this.doc);
-  material = new MaterialUtils(this.doc, this.texture);
-  primitive = new PrimitiveUtils(this.doc, this.accessor, this.material);
-  mesh = new MeshUtils(this.doc, this.primitive);
-  node = new NodeUtils(this.doc, this.mesh);
+  buffer = new Buffers(this.doc);
+  accessor = new Accessors(this.doc, this.buffer);
+  texture = new Textures(this.doc);
+  material = new Materials(this.doc, this.texture);
+  primitive = new Primitives(this.doc, this.accessor, this.material);
+  mesh = new Meshes(this.doc, this.primitive);
+  node = new Nodes(this.doc, this.mesh);
 
   loadDocument(doc: Document) {
     this.doc.merge(doc);

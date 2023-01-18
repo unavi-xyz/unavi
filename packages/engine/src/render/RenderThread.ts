@@ -28,7 +28,7 @@ import { PlayerControls } from "./controls/PlayerControls";
 import { RaycastControls } from "./controls/RaycastControls";
 import { TransformControls } from "./controls/TransformControls";
 import { FromRenderMessage, ToRenderMessage } from "./messages";
-import { RenderScene } from "./RenderScene";
+import { RenderScene } from "./scene/RenderScene";
 import { ThreeOutlinePass } from "./three/ThreeOutlinePass";
 
 const CAMERA_NEAR = 0.1;
@@ -135,6 +135,11 @@ export class RenderThread {
 
       case "set_controls": {
         this.controls = data;
+        break;
+      }
+
+      case "toggle_visuals": {
+        this.renderScene.visualsEnabled = data.enabled;
         break;
       }
     }

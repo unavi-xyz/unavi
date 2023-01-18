@@ -4,12 +4,12 @@ import { Collider, ColliderExtension } from "../gltf";
 import { extensions } from "../gltf/constants";
 import { PhysicsModule } from "../physics/PhysicsModule";
 import { RenderModule } from "../render/RenderModule";
+import { MaterialJSON } from "./attributes/Materials";
+import { MeshJSON } from "./attributes/Meshes";
+import { NodeJSON } from "./attributes/Nodes";
+import { PrimitiveJSON } from "./attributes/Primitives";
 import { SceneMessage } from "./messages";
 import { Scene } from "./Scene";
-import { MaterialJSON } from "./utils/MaterialUtils";
-import { MeshJSON } from "./utils/MeshUtils";
-import { NodeJSON } from "./utils/NodeUtils";
-import { PrimitiveJSON } from "./utils/PrimitiveUtils";
 
 export class SceneModule extends Scene {
   #render: RenderModule;
@@ -169,6 +169,37 @@ export class SceneModule extends Scene {
 
     let extensionListeners: Array<{ extension: ExtensionProperty; listener: () => void }> = [];
 
+    const setupExtensionListeners = () => {
+      // Remove old listeners
+      extensionListeners.forEach(({ extension, listener }) => {
+        extension.removeEventListener("change", listener);
+      });
+
+      // Add new listeners
+      extensionListeners = node.listExtensions().map((extension) => {
+        const listener = () => {
+          const json = this.node.toJSON(node);
+          const value = json.extensions;
+
+          this.#publish({ subject: "change_node", data: { id, json: { extensions: value } } });
+        };
+
+        extension.addEventListener("change", listener);
+
+        if (extension instanceof Collider) {
+          if (extension.type === "trimesh") {
+            // Set collider mesh
+            const mesh = node.getMesh();
+            extension.mesh = mesh;
+          }
+        }
+
+        return { extension, listener };
+      });
+    };
+
+    setupExtensionListeners();
+
     node.addEventListener("change", (e) => {
       const attribute = e.attribute as keyof NodeJSON;
       const json = this.node.toJSON(node);
@@ -194,32 +225,7 @@ export class SceneModule extends Scene {
       }
 
       if (attribute === "extensions") {
-        // Remove old listeners
-        extensionListeners.forEach(({ extension, listener }) => {
-          extension.removeEventListener("change", listener);
-        });
-
-        // Add new listeners
-        extensionListeners = node.listExtensions().map((extension) => {
-          const listener = () => {
-            const json = this.node.toJSON(node);
-            const value = json.extensions;
-
-            this.#publish({ subject: "change_node", data: { id, json: { extensions: value } } });
-          };
-
-          extension.addEventListener("change", listener);
-
-          if (extension instanceof Collider) {
-            if (extension.type === "trimesh") {
-              // Set collider mesh
-              const mesh = node.getMesh();
-              extension.mesh = mesh;
-            }
-          }
-
-          return { extension, listener };
-        });
+        setupExtensionListeners();
       }
     });
 

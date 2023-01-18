@@ -48,6 +48,8 @@ export class Engine {
   }
 
   destroy() {
+    this.modules.render.destroy();
     this.modules.input.destroy();
+    this.modules.physics.destroy();
   }
 }

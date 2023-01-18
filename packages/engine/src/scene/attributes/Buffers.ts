@@ -1,13 +1,13 @@
 import { Buffer, Document } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
-import { Utils } from "./Utils";
+import { Attribute } from "./Attribute";
 
 export interface BufferJSON {
   uri: string;
 }
 
-export class BufferUtils extends Utils<Buffer, BufferJSON> {
+export class Buffers extends Attribute<Buffer, BufferJSON> {
   #doc: Document;
 
   store = new Map<string, Buffer>();

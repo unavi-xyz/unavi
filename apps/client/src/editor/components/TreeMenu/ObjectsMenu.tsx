@@ -41,9 +41,9 @@ function createNode(name: ObjectName) {
   if (!engine) return;
 
   const { id, object: node } = engine.modules.scene.node.create();
-  node.setName(name);
-
   const { object: mesh } = engine.modules.scene.mesh.create();
+
+  node.setName(name);
   node.setMesh(mesh);
 
   switch (name) {
@@ -90,9 +90,6 @@ function createNode(name: ObjectName) {
       break;
     }
   }
-
-  // Process scene changes
-  engine.modules.scene.processChanges();
 
   return id;
 }

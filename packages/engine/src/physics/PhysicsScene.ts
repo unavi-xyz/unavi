@@ -1,6 +1,6 @@
 import { Collider, ColliderDesc, RigidBodyDesc, TriMesh, World } from "@dimforge/rapier3d";
 
-import { NodeJSON } from "../scene";
+import { MeshExtras, NodeJSON } from "../scene";
 import { SceneMessage } from "../scene/messages";
 import { Scene } from "../scene/Scene";
 import { Vec3 } from "../types";
@@ -160,6 +160,37 @@ export class PhysicsScene extends Scene {
 
           const mesh = this.mesh.store.get(colliderJSON.mesh);
           if (!mesh) throw new Error("Mesh not found");
+
+          // If custom mesh, use it
+          if (mesh.getExtras()) {
+            const extras = mesh.getExtras() as MeshExtras;
+            if (extras.customMesh) {
+              switch (extras.customMesh.type) {
+                case "Box": {
+                  colliderDesc = ColliderDesc.cuboid(
+                    extras.customMesh.width / 2,
+                    extras.customMesh.height / 2,
+                    extras.customMesh.depth / 2
+                  );
+                  break;
+                }
+
+                case "Sphere": {
+                  colliderDesc = ColliderDesc.ball(extras.customMesh.radius);
+                  break;
+                }
+
+                case "Cylinder": {
+                  colliderDesc = ColliderDesc.cylinder(
+                    extras.customMesh.height / 2,
+                    (extras.customMesh.radiusTop + extras.customMesh.radiusBottom) / 2
+                  );
+                  break;
+                }
+              }
+              break;
+            }
+          }
 
           const vertices = mesh.listPrimitives().flatMap((primitive) => {
             const attribute = primitive.getAttribute("POSITION");

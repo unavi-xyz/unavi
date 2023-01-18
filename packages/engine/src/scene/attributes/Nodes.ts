@@ -5,26 +5,26 @@ import { Collider } from "../../gltf/extensions/Collider/Collider";
 import { ColliderExtension } from "../../gltf/extensions/Collider/ColliderExtension";
 import { ColliderType } from "../../gltf/extensions/Collider/types";
 import { Vec3, Vec4 } from "../../types";
-import { MeshUtils } from "./MeshUtils";
-import { Utils } from "./Utils";
+import { Attribute } from "./Attribute";
+import { Meshes } from "./Meshes";
 
 export type ColliderJSON = {
   type: ColliderType;
-  size?: Vec3;
-  radius?: number;
-  height?: number;
-  mesh?: string;
+  size: Vec3 | null;
+  radius: number | null;
+  height: number | null;
+  mesh: string | null;
 };
 
-type NodeExtensions = {
-  [ColliderExtension.EXTENSION_NAME]: ColliderJSON;
+type NodeExtensionsJSON = {
+  [ColliderExtension.EXTENSION_NAME]: ColliderJSON | null;
 };
 
 type MeshId = string;
 type SkinId = string;
 type NodeId = string;
 
-export interface NodeJSON {
+export type NodeJSON = {
   name: string;
   translation: Vec3;
   rotation: Vec4;
@@ -32,16 +32,16 @@ export interface NodeJSON {
   mesh: MeshId | null;
   skin: SkinId | null;
   children: NodeId[];
-  extensions?: Partial<NodeExtensions>;
-}
+  extensions: NodeExtensionsJSON;
+};
 
-export class NodeUtils extends Utils<Node, NodeJSON> {
+export class Nodes extends Attribute<Node, NodeJSON> {
   #doc: Document;
-  #mesh: MeshUtils;
+  #mesh: Meshes;
 
   store = new Map<string, Node>();
 
-  constructor(doc: Document, mesh: MeshUtils) {
+  constructor(doc: Document, mesh: Meshes) {
     super();
 
     this.#doc = doc;
@@ -159,22 +159,23 @@ export class NodeUtils extends Utils<Node, NodeJSON> {
       throw new Error("Child not found");
     });
 
-    let extensions: Partial<NodeExtensions> | undefined;
+    const extensions: NodeExtensionsJSON = {
+      [ColliderExtension.EXTENSION_NAME]: null,
+    };
 
     const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
 
     if (collider) {
       const mesh = collider.mesh;
-      const meshId = mesh ? this.#mesh.getId(mesh) : undefined;
+      const meshId = mesh ? this.#mesh.getId(mesh) : null;
+      if (meshId === undefined) throw new Error("Mesh not found");
 
-      extensions = {
-        [ColliderExtension.EXTENSION_NAME]: {
-          type: collider.type,
-          size: collider.size ?? undefined,
-          height: collider.height ?? undefined,
-          radius: collider.radius ?? undefined,
-          mesh: meshId,
-        },
+      extensions[ColliderExtension.EXTENSION_NAME] = {
+        type: collider.type,
+        size: collider.size,
+        height: collider.height,
+        radius: collider.radius,
+        mesh: meshId,
       };
     }
 

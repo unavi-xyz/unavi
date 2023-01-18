@@ -1,9 +1,9 @@
 import { Document, GLTF, Primitive } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
-import { AccessorUtils } from "./AccessorUtils";
-import { MaterialUtils } from "./MaterialUtils";
-import { Utils } from "./Utils";
+import { Accessors } from "./Accessors";
+import { Attribute } from "./Attribute";
+import { Materials } from "./Materials";
 
 type MaterialId = string;
 type AccessorId = string;
@@ -19,14 +19,14 @@ export interface PrimitiveTargetJSON {
   attributes: { [key: string]: AccessorId };
 }
 
-export class PrimitiveUtils extends Utils<Primitive, PrimitiveJSON> {
+export class Primitives extends Attribute<Primitive, PrimitiveJSON> {
   #doc: Document;
-  #accessor: AccessorUtils;
-  #material: MaterialUtils;
+  #accessor: Accessors;
+  #material: Materials;
 
   store = new Map<string, Primitive>();
 
-  constructor(doc: Document, accessor: AccessorUtils, material: MaterialUtils) {
+  constructor(doc: Document, accessor: Accessors, material: Materials) {
     super();
 
     this.#doc = doc;

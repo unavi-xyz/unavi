@@ -95,4 +95,8 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
 
     this.#worker.postMessage(message, transferables);
   }
+
+  destroy() {
+    this.#worker.terminate();
+  }
 }

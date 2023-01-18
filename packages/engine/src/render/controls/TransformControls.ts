@@ -33,7 +33,7 @@ export class TransformControls {
       const object = this.#transformControls.object;
       if (!object) return;
 
-      const nodeId = this.#renderThread.renderScene.getNodeObjectId(object);
+      const nodeId = this.#renderThread.renderScene.getNodeId(object);
       if (!nodeId) throw new Error("Node id not found");
 
       const node = this.#renderThread.renderScene.node.store.get(nodeId);

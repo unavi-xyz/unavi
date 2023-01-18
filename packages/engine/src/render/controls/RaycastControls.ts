@@ -3,7 +3,7 @@ import { PerspectiveCamera, Raycaster } from "three";
 import { PointerData } from "../../input/messages";
 import { PostMessage } from "../../types";
 import { FromRenderMessage, ToRenderMessage } from "../messages";
-import { RenderScene } from "../RenderScene";
+import { RenderScene } from "../scene/RenderScene";
 import { TransformControls } from "./TransformControls";
 
 export class RaycastControls {

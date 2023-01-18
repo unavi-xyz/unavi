@@ -2,9 +2,9 @@ import { Document, GLTF, Material } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
 import { Vec3, Vec4 } from "../../types";
+import { Attribute } from "./Attribute";
 import { TextureInfoJSON, TextureInfoUtils } from "./TextureInfoUtils";
-import { TextureUtils } from "./TextureUtils";
-import { Utils } from "./Utils";
+import { Textures } from "./Textures";
 
 type TextureId = string;
 
@@ -35,12 +35,12 @@ export interface MaterialJSON {
   metallicRoughnessTextureInfo: TextureInfoJSON | null;
 }
 
-export class MaterialUtils extends Utils<Material, MaterialJSON> {
+export class Materials extends Attribute<Material, MaterialJSON> {
   #doc: Document;
-  #texture: TextureUtils;
+  #texture: Textures;
   store = new Map<string, Material>();
 
-  constructor(doc: Document, texture: TextureUtils) {
+  constructor(doc: Document, texture: Textures) {
     super();
 
     this.#doc = doc;

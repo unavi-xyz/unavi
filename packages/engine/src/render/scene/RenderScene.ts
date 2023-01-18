@@ -1,26 +1,35 @@
-import { Accessor, Mesh, Primitive, Texture, TextureInfo } from "@gltf-transform/core";
+import { Accessor, Mesh, Node, Primitive, Texture, TextureInfo } from "@gltf-transform/core";
 import {
   BoxGeometry,
   BufferAttribute,
+  BufferGeometry,
+  CapsuleGeometry,
   CylinderGeometry,
   DoubleSide,
   FrontSide,
   Mesh as ThreeMesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
   SphereGeometry,
   sRGBEncoding,
 } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
+import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
 
-import { MeshJSON } from "../scene";
-import { SceneMessage } from "../scene/messages";
-import { Scene } from "../scene/Scene";
-import { MaterialJSON } from "../scene/utils/MaterialUtils";
-import { NodeJSON } from "../scene/utils/NodeUtils";
-import { PrimitiveJSON } from "../scene/utils/PrimitiveUtils";
-import { TextureInfoJSON, TextureInfoUtils } from "../scene/utils/TextureInfoUtils";
+import { Collider, ColliderExtension } from "../../gltf";
+import { MeshJSON, NodeJSON } from "../../scene";
+import { MaterialJSON } from "../../scene/attributes/Materials";
+import { PrimitiveJSON } from "../../scene/attributes/Primitives";
+import { TextureInfoJSON, TextureInfoUtils } from "../../scene/attributes/TextureInfoUtils";
+import { SceneMessage } from "../../scene/messages";
+import { Scene } from "../../scene/Scene";
 import { createTexture } from "./createTexture";
+
+type NodeId = string;
+type MeshId = string;
+type PrimitiveId = string;
+type MaterialId = string;
 
 const defaultMaterial = new MeshStandardMaterial();
 
@@ -33,12 +42,26 @@ export class RenderScene extends Scene {
 
   root = new Object3D();
 
-  materialObjects = new Map<string, MeshStandardMaterial>();
-  primitiveObjects = new Map<string, ThreeMesh>();
-  customMeshObjects = new Map<string, ThreeMesh>();
-  meshObjects = new Map<string, Object3D>();
-  clonedMeshObjects = new Map<string, Object3D>();
-  nodeObjects = new Map<string, Object3D>();
+  materialObjects = new Map<MaterialId, MeshStandardMaterial>();
+  primitiveObjects = new Map<PrimitiveId, ThreeMesh>();
+  customMeshObjects = new Map<MeshId, ThreeMesh>();
+  meshObjects = new Map<MeshId, Object3D>();
+  instancedMeshObjects = new Map<NodeId, Object3D>();
+  nodeObjects = new Map<NodeId, Object3D>();
+  colliderObjects = new Map<NodeId, ThreeMesh>();
+
+  colliderMaterial = new MeshBasicMaterial({ color: "#000000", wireframe: true });
+  visuals = new Object3D();
+  #visualsEnabled = false;
+
+  get visualsEnabled() {
+    return this.#visualsEnabled;
+  }
+
+  set visualsEnabled(enabled: boolean) {
+    this.#visualsEnabled = enabled;
+    if (!enabled) this.visuals.clear();
+  }
 
   setCSM(csm: CSM | null) {
     this.#csm?.dispose();
@@ -111,6 +134,10 @@ export class RenderScene extends Scene {
 
       case "change_material": {
         this.updateMaterial(data.id, data.json);
+
+        const material = this.material.store.get(data.id);
+        if (!material) throw new Error("Material not found");
+        this.material.applyJSON(material, data.json);
         break;
       }
 
@@ -140,6 +167,10 @@ export class RenderScene extends Scene {
 
       case "change_primitive": {
         this.updatePrimitive(data.id, data.json);
+
+        const primitive = this.primitive.store.get(data.id);
+        if (!primitive) throw new Error("Primitive not found");
+        this.primitive.applyJSON(primitive, data.json);
         break;
       }
 
@@ -165,6 +196,10 @@ export class RenderScene extends Scene {
 
       case "change_mesh": {
         this.updateMesh(data.id, data.json);
+
+        const mesh = this.mesh.store.get(data.id);
+        if (!mesh) throw new Error("Mesh not found");
+        this.mesh.applyJSON(mesh, data.json);
         break;
       }
 
@@ -178,6 +213,7 @@ export class RenderScene extends Scene {
         const { object: node } = this.node.create(data.json, data.id);
 
         const object = new Object3D();
+        this.root.add(object);
         this.nodeObjects.set(data.id, object);
 
         node.addEventListener("dispose", () => {
@@ -190,6 +226,10 @@ export class RenderScene extends Scene {
 
       case "change_node": {
         this.updateNode(data.id, data.json);
+
+        const node = this.node.store.get(data.id);
+        if (!node) throw new Error("Node not found");
+        this.node.applyJSON(node, data.json);
         break;
       }
 
@@ -206,92 +246,155 @@ export class RenderScene extends Scene {
     if (!node) throw new Error("Node not found");
 
     const object = this.nodeObjects.get(id);
-    if (!object) throw new Error("Node object not found");
+    if (!object) throw new Error("Object not found");
+
+    if (json.name) object.name = json.name;
 
     if (json.translation) object.position.fromArray(json.translation);
     if (json.rotation) object.quaternion.fromArray(json.rotation);
     if (json.scale) object.scale.fromArray(json.scale);
 
     if (json.mesh !== undefined) {
-      // Remove previous mesh
-      const prevMesh = node.getMesh();
+      // Remove old mesh
+      object.children.forEach((child) => {
+        const id =
+          this.getMeshId(child) ??
+          this.getInstancedMeshNodeId(child) ??
+          this.getCustomMeshId(child);
 
-      if (prevMesh) {
-        const prevMeshId = this.mesh.getId(prevMesh);
-        if (!prevMeshId) throw new Error("Mesh not found");
-
-        const prevMeshObject = this.meshObjects.get(prevMeshId);
-        if (!prevMeshObject) throw new Error("Mesh object not found");
-
-        object.remove(prevMeshObject);
-      }
+        const isMesh = id !== null;
+        if (isMesh) object.remove(child);
+      });
 
       // Add new mesh
-      if (json.mesh !== null) {
+      if (json.mesh) {
+        const mesh = this.mesh.store.get(json.mesh);
+        if (!mesh) throw new Error("Mesh not found");
+
         const meshObject = this.meshObjects.get(json.mesh);
-        if (!meshObject) throw new Error("Mesh not found");
+        if (!meshObject) throw new Error("Mesh object not found");
 
-        let usedByOthers = false;
+        const instanceCount = mesh.listParents().filter((p) => p instanceof Node).length;
 
-        for (const other of this.node.store.values()) {
-          if (other === node) continue;
-
-          const otherMesh = other.getMesh();
-          if (!otherMesh) continue;
-
-          const otherMeshId = this.mesh.getId(otherMesh);
-          if (!otherMeshId) throw new Error("Mesh not found");
-
-          if (otherMeshId === json.mesh) {
-            usedByOthers = true;
-            break;
-          }
-        }
-
-        if (!usedByOthers) {
-          object.add(meshObject);
+        if (instanceCount > 1) {
+          const instance = meshObject.clone();
+          this.instancedMeshObjects.set(id, instance);
+          object.add(instance);
         } else {
-          const clone = meshObject.clone();
-          object.add(clone);
-
-          const prevClone = this.clonedMeshObjects.get(id);
-          if (prevClone) prevClone.removeFromParent();
-
-          this.clonedMeshObjects.set(id, clone);
+          object.add(meshObject);
         }
       }
     }
 
     if (json.children) {
-      // Remove previous children
-      node.listChildren().forEach((child) => {
-        const childId = this.node.getId(child);
-        if (!childId) throw new Error("Child not found");
-
-        const childObject = this.nodeObjects.get(childId);
-        if (!childObject) throw new Error("Child object not found");
-
-        // Add child to root
-        this.root.add(childObject);
+      // Remove old children
+      object.children.forEach((child) => {
+        const nodeId = this.getNodeId(child);
+        const isNode = nodeId !== null;
+        if (isNode) object.remove(child);
       });
 
       // Add new children
       json.children.forEach((childId) => {
-        const childObject = this.nodeObjects.get(childId);
-        if (!childObject) throw new Error("Child not found");
+        const nodeObject = this.nodeObjects.get(childId);
+        if (!nodeObject) throw new Error("Node object not found");
 
-        // Add child
-        object.add(childObject);
+        object.add(nodeObject);
       });
     }
 
-    // Add to root if no parent
-    if (object.parent === null) {
-      this.root.add(object);
-    }
+    if (json.extensions?.OMI_collider !== undefined) {
+      // Remove old collider
+      const prevCollider = this.colliderObjects.get(id);
+      if (prevCollider) {
+        object.remove(prevCollider);
+        prevCollider.geometry.dispose();
+        this.colliderObjects.delete(id);
+      }
 
-    // Apply JSON after updating the object
-    this.node.applyJSON(node, json);
+      // Add new collider
+      if (json.extensions.OMI_collider || json.mesh !== undefined) {
+        const newCollider = json.extensions.OMI_collider;
+        const oldCollider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
+
+        if (oldCollider || newCollider) {
+          const collider = newCollider ?? oldCollider;
+          if (!collider) throw new Error("Collider not found");
+
+          const meshId =
+            collider.mesh instanceof Mesh ? this.mesh.getId(collider.mesh) : collider.mesh;
+          if (meshId === undefined) throw new Error("Mesh not found");
+
+          let colliderGeometry: BufferGeometry | null = null;
+
+          switch (collider.type) {
+            case "box": {
+              if (!collider.size) break;
+              colliderGeometry = new BoxGeometry(
+                collider.size[0],
+                collider.size[1],
+                collider.size[2]
+              );
+              break;
+            }
+
+            case "sphere": {
+              if (!collider.radius) break;
+              colliderGeometry = new SphereGeometry(collider.radius);
+              break;
+            }
+
+            case "capsule": {
+              if (!collider.radius || !collider.height) break;
+              colliderGeometry = new CapsuleGeometry(collider.radius, collider.height);
+              break;
+            }
+
+            case "cylinder": {
+              if (!collider.radius || !collider.height) break;
+              colliderGeometry = new CylinderGeometry(
+                collider.radius,
+                collider.radius,
+                collider.height
+              );
+              break;
+            }
+
+            case "trimesh": {
+              if (!meshId) break;
+
+              const mesh = this.mesh.store.get(meshId);
+              if (!mesh) throw new Error("Mesh not found");
+
+              const primitiveGeometries = mesh.listPrimitives().map((primitive) => {
+                const primitiveId = this.primitive.getId(primitive);
+                if (!primitiveId) throw new Error("Primitive not found");
+
+                const primitiveObject = this.primitiveObjects.get(primitiveId);
+                if (!primitiveObject) throw new Error("Primitive object not found");
+
+                return primitiveObject.geometry;
+              });
+
+              const customMeshObject = this.customMeshObjects.get(meshId);
+              if (customMeshObject) primitiveGeometries.push(customMeshObject.geometry);
+
+              if (primitiveGeometries.length === 0) break;
+
+              colliderGeometry = mergeBufferGeometries(primitiveGeometries);
+              break;
+            }
+          }
+
+          if (colliderGeometry) {
+            const colliderObject = new ThreeMesh(colliderGeometry, this.colliderMaterial);
+            object.add(colliderObject);
+
+            this.colliderObjects.set(id, colliderObject);
+          }
+        }
+      }
+    }
   }
 
   updateMesh(id: string, json: Partial<MeshJSON>) {
@@ -365,9 +468,6 @@ export class RenderScene extends Scene {
         object.add(primitiveObject);
       });
     }
-
-    // Apply JSON after updating the object
-    this.mesh.applyJSON(mesh, json);
   }
 
   updatePrimitive(id: string, json: Partial<PrimitiveJSON>) {
@@ -377,14 +477,21 @@ export class RenderScene extends Scene {
     const object = this.primitiveObjects.get(id);
     if (!object) throw new Error("Primitive object not found");
 
-    if (json.material) {
-      const material = this.materialObjects.get(json.material);
-      if (!material) throw new Error("Material not found");
-      object.material = material;
+    if (json.material !== undefined) {
+      // Remove previous material
+      object.material = defaultMaterial;
+
+      // Add new material
+      if (json.material) {
+        const materialObject = this.materialObjects.get(json.material);
+        if (!materialObject) throw new Error("Material not found");
+
+        object.material = materialObject;
+      }
     }
 
     if (json.indices !== undefined) {
-      if (json.indices === null) {
+      if (!json.indices) {
         object.geometry.setIndex(null);
       } else {
         const accessor = this.accessor.store.get(json.indices);
@@ -396,6 +503,12 @@ export class RenderScene extends Scene {
     }
 
     if (json.attributes) {
+      // Remove previous attributes
+      Object.values(THREE_ATTRIBUTE_NAMES).forEach((name) => {
+        object.geometry.deleteAttribute(name);
+      });
+
+      // Add new attributes
       Object.entries(json.attributes).forEach(([name, accessorId]) => {
         const threeName = THREE_ATTRIBUTE_NAMES[name as keyof typeof THREE_ATTRIBUTE_NAMES];
 
@@ -414,11 +527,17 @@ export class RenderScene extends Scene {
     }
 
     if (json.targets) {
+      // Remove previous morph attributes
+      Object.values(THREE_ATTRIBUTE_NAMES).forEach((name) => {
+        delete object.geometry.morphAttributes[name];
+      });
+
+      // Add new morph attributes
       json.targets.forEach((target) => {
         Object.entries(target.attributes).forEach(([name, accessorId]) => {
           const threeName = THREE_ATTRIBUTE_NAMES[name as keyof typeof THREE_ATTRIBUTE_NAMES];
 
-          if (accessorId === null) {
+          if (!accessorId) {
             object.geometry.deleteAttribute(threeName);
           } else {
             const accessor = this.accessor.store.get(accessorId);
@@ -436,9 +555,6 @@ export class RenderScene extends Scene {
         });
       });
     }
-
-    // Apply JSON after updating the object
-    this.primitive.applyJSON(primitive, json);
   }
 
   async updateMaterial(id: string, json: Partial<MaterialJSON>) {
@@ -618,13 +734,10 @@ export class RenderScene extends Scene {
     }
 
     object.needsUpdate = true;
-
-    // Apply JSON after updating the object
-    this.material.applyJSON(material, json);
   }
 
-  getClonedMeshObjectId(object: Object3D): string | null {
-    for (const [id, clonedMeshObject] of this.clonedMeshObjects.entries()) {
+  getInstancedMeshNodeId(object: Object3D): string | null {
+    for (const [id, clonedMeshObject] of this.instancedMeshObjects.entries()) {
       let found = false;
       clonedMeshObject.traverse((child) => {
         if (child === object) found = true;
@@ -635,7 +748,7 @@ export class RenderScene extends Scene {
     return null;
   }
 
-  getCustomMeshObjectId(object: Object3D): string | null {
+  getCustomMeshId(object: Object3D): string | null {
     for (const [id, customMeshObject] of this.customMeshObjects.entries()) {
       if (customMeshObject === object) return id;
     }
@@ -643,7 +756,7 @@ export class RenderScene extends Scene {
     return null;
   }
 
-  getPrimitiveObjectId(object: Object3D): string | null {
+  getPrimitiveId(object: Object3D): string | null {
     for (const [id, primitiveObject] of this.primitiveObjects.entries()) {
       if (primitiveObject === object) return id;
     }
@@ -659,7 +772,7 @@ export class RenderScene extends Scene {
     return null;
   }
 
-  getMeshObjectId(object: Object3D): string | null {
+  getMeshId(object: Object3D): string | null {
     for (const [id, meshObject] of this.meshObjects.entries()) {
       if (meshObject === object) return id;
     }
@@ -675,7 +788,7 @@ export class RenderScene extends Scene {
     return null;
   }
 
-  getNodeObjectId(object: Object3D): string | null {
+  getNodeId(object: Object3D): string | null {
     for (const [id, nodeObject] of this.nodeObjects.entries()) {
       if (nodeObject === object) return id;
     }
@@ -685,7 +798,7 @@ export class RenderScene extends Scene {
 
   getObjectNodeId(object: Object3D): string | null {
     // Check primitives
-    const primitiveId = this.getPrimitiveObjectId(object);
+    const primitiveId = this.getPrimitiveId(object);
     if (primitiveId) {
       const primitive = this.primitive.store.get(primitiveId);
       if (!primitive) throw new Error("Primitive not found");
@@ -703,7 +816,7 @@ export class RenderScene extends Scene {
     }
 
     // Check custom meshes
-    const meshId = this.getCustomMeshObjectId(object);
+    const meshId = this.getCustomMeshId(object);
     if (meshId) {
       const mesh = this.mesh.store.get(meshId);
       if (!mesh) throw new Error("Mesh not found");
@@ -715,7 +828,7 @@ export class RenderScene extends Scene {
     }
 
     // Check cloned meshes
-    const clonedMeshId = this.getClonedMeshObjectId(object);
+    const clonedMeshId = this.getInstancedMeshNodeId(object);
     if (clonedMeshId) return clonedMeshId;
 
     return null;

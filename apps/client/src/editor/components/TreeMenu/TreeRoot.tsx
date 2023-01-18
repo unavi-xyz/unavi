@@ -8,8 +8,8 @@ export default function TreeRoot() {
   const engine = useEditorStore((state) => state.engine);
   const treeIds = useEditorStore((state) => state.treeIds);
   const openIds = useEditorStore((state) => state.openIds);
-  const nodes = useNodes();
 
+  const nodes = useNodes();
   const nodeIds = useMemo(() => {
     const ids = nodes
       .map((node) => engine?.modules.scene.node.getId(node))
@@ -51,6 +51,7 @@ export default function TreeRoot() {
   useEffect(() => {
     if (!engine) return;
 
+    const { treeIds, openIds } = useEditorStore.getState();
     const newTreeIds = [...treeIds];
     const newOpenIds = [...openIds];
 
@@ -100,7 +101,7 @@ export default function TreeRoot() {
 
     if (!isSameTree) useEditorStore.setState({ treeIds: newTreeIds });
     if (!isSameOpen) useEditorStore.setState({ openIds: newOpenIds });
-  }, [engine, nodeIds, treeIds, openIds]);
+  }, [engine, nodeIds]);
 
   return (
     <div className="h-full" onMouseDown={() => useEditorStore.setState({ selectedId: null })}>

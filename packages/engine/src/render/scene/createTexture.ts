@@ -13,8 +13,8 @@ import {
   Texture as ThreeTexture,
 } from "three";
 
-import { TextureInfoJSON } from "../scene/utils/TextureInfoUtils";
-import { WEBGL_CONSTANTS } from "./constants";
+import { TextureInfoJSON } from "../../scene/attributes/TextureInfoUtils";
+import { WEBGL_CONSTANTS } from "../constants";
 
 export async function createTexture(
   texture: Texture | null,

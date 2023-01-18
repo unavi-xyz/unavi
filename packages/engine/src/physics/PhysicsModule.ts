@@ -60,4 +60,8 @@ export class PhysicsModule {
 
     this.#worker.postMessage(message, transferables);
   }
+
+  destroy() {
+    this.#worker.terminate();
+  }
 }

@@ -1,8 +1,8 @@
 import { Accessor, Document, GLTF, TypedArray } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
-import { BufferUtils } from "./BufferUtils";
-import { Utils } from "./Utils";
+import { Attribute } from "./Attribute";
+import { Buffers } from "./Buffers";
 
 type BufferId = string;
 
@@ -14,13 +14,13 @@ export interface AccessorJSON {
   buffer: BufferId | null;
 }
 
-export class AccessorUtils extends Utils<Accessor, AccessorJSON> {
+export class Accessors extends Attribute<Accessor, AccessorJSON> {
   #doc: Document;
-  #buffer: BufferUtils;
+  #buffer: Buffers;
 
   store = new Map<string, Accessor>();
 
-  constructor(doc: Document, buffer: BufferUtils) {
+  constructor(doc: Document, buffer: Buffers) {
     super();
 
     this.#doc = doc;

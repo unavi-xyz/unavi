@@ -63,6 +63,12 @@ export default function PhysicsComponent({ nodeId }: Props) {
                   extension.radius = 0.5;
                   break;
                 }
+
+                case "trimesh": {
+                  const mesh = node.getMesh();
+                  extension.mesh = mesh;
+                  break;
+                }
               }
             }
           }}

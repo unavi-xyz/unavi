@@ -1,11 +1,11 @@
 import { MessageJSON } from "../types";
-import { AccessorJSON } from "./utils/AccessorUtils";
-import { BufferJSON } from "./utils/BufferUtils";
-import { MaterialJSON } from "./utils/MaterialUtils";
-import { MeshJSON } from "./utils/MeshUtils";
-import { NodeJSON } from "./utils/NodeUtils";
-import { PrimitiveJSON } from "./utils/PrimitiveUtils";
-import { TextureJSON } from "./utils/TextureUtils";
+import { AccessorJSON } from "./attributes/Accessors";
+import { BufferJSON } from "./attributes/Buffers";
+import { MaterialJSON } from "./attributes/Materials";
+import { MeshJSON } from "./attributes/Meshes";
+import { NodeJSON } from "./attributes/Nodes";
+import { PrimitiveJSON } from "./attributes/Primitives";
+import { TextureJSON } from "./attributes/Textures";
 
 const subjects = [
   "create_buffer",

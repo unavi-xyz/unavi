@@ -36,10 +36,14 @@ export function useLoad() {
     if (!engine || !project) return;
 
     useEditorStore.setState({
-      name: project.name ?? "",
+      name: project.name,
       description: project.description ?? "",
       publicationId: project.publicationId,
     });
+
+    return () => {
+      useEditorStore.setState({ name: "", description: "", publicationId: undefined });
+    };
   }, [engine, project]);
 
   useEffect(() => {
@@ -47,15 +51,18 @@ export function useLoad() {
       if (!engine || !modelUrl) return;
 
       const res = await fetch(modelUrl);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const buffer = await res.arrayBuffer();
+      const array = new Uint8Array(buffer);
 
-      await engine.modules.scene.load(url);
+      await engine.modules.scene.loadBinary(array);
 
-      URL.revokeObjectURL(url);
       useEditorStore.setState({ sceneLoaded: true });
     }
 
-    // load();
+    load();
+
+    return () => {
+      useEditorStore.setState({ sceneLoaded: false });
+    };
   }, [engine, modelUrl]);
 }

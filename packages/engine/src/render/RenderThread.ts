@@ -58,8 +58,14 @@ export class RenderThread {
 
   controls: ControlsType = DEFAULT_CONTROLS;
 
-  constructor(postMessage: PostMessage<FromRenderMessage>) {
+  constructor(postMessage: PostMessage<FromRenderMessage>, canvas?: HTMLCanvasElement) {
     this.postMessage = postMessage;
+
+    if (canvas) {
+      this.#canvas = canvas;
+      this.init();
+    }
+
     this.raycaster = new RaycastControls(
       this.camera,
       this.renderScene,
@@ -77,6 +83,8 @@ export class RenderThread {
 
     this.clock.start();
     this.render();
+
+    postMessage({ subject: "ready", data: null });
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {

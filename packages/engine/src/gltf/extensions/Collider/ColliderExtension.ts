@@ -91,7 +91,7 @@ export class ColliderExtension extends Extension {
       const colliderDef = { type: collider.type } as ColliderDef;
 
       switch (collider.type) {
-        case Collider.Type.BOX: {
+        case "box": {
           const size = collider.size;
           if (!size) throw new Error("Size not set");
 
@@ -99,7 +99,7 @@ export class ColliderExtension extends Extension {
           break;
         }
 
-        case Collider.Type.SPHERE: {
+        case "sphere": {
           const radius = collider.radius;
           if (radius === null) throw new Error("Radius not set");
 
@@ -107,8 +107,8 @@ export class ColliderExtension extends Extension {
           break;
         }
 
-        case Collider.Type.CAPSULE:
-        case Collider.Type.CYLINDER: {
+        case "capsule":
+        case "cylinder": {
           const radius = collider.radius;
           if (radius === null) throw new Error("Radius not set");
 
@@ -120,9 +120,9 @@ export class ColliderExtension extends Extension {
           break;
         }
 
-        case Collider.Type.MESH: {
+        case "trimesh": {
           const mesh = collider.mesh;
-          if (!mesh) throw new Error("Mesh not set");
+          if (!mesh) break;
 
           const meshIndex = context.meshIndexMap.get(mesh);
           if (meshIndex === undefined) throw new Error("Mesh not found");

@@ -45,9 +45,9 @@ export class SceneModule extends Scene {
     return await io.writeBinary(this.doc);
   }
 
-  async load(uri: string) {
+  async loadBinary(array: Uint8Array) {
     const io = new WebIO().registerExtensions(extensions);
-    const doc = await io.read(uri);
+    const doc = await io.readBinary(array);
     this.loadDocument(doc);
   }
 
@@ -116,9 +116,8 @@ export class SceneModule extends Scene {
       const id = this.texture.getId(texture);
       if (!id) throw new Error("Id not found");
       const json = this.texture.toJSON(texture);
-      const transferable = json.image ? [json.image.buffer] : [];
 
-      this.#render.toRenderThread({ subject: "create_texture", data: { id, json } }, transferable);
+      this.#render.toRenderThread({ subject: "create_texture", data: { id, json } });
 
       texture.addEventListener("dispose", () => {
         this.#render.toRenderThread({ subject: "dispose_texture", data: id });

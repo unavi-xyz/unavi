@@ -21,7 +21,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     this.#engine = engine;
 
     // If OffscreenCanvas is supported, render in a worker
-    if (typeof OffscreenCanvas !== "undefined") {
+    if (typeof OffscreenCanvas !== "undefined" && process.env.NODE_ENV === "production") {
       const offscreen = canvas.transferControlToOffscreen();
 
       this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
@@ -38,14 +38,12 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       this.#worker = new FakeWorker();
 
       const thread = new RenderThread(
-        this.#worker.insidePort.postMessage.bind(this.#worker.insidePort)
+        this.#worker.insidePort.postMessage.bind(this.#worker.insidePort),
+        canvas
       );
 
       this.#worker.insidePort.onmessage = thread.onmessage.bind(thread);
       this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
-
-      // Send canvas to worker
-      this.toRenderThread({ subject: "set_canvas", data: canvas });
     }
 
     this.toRenderThread({

@@ -16,7 +16,6 @@ import Spinner from "../../../ui/Spinner";
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const createdEngine = useRef(false);
 
   const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
@@ -28,13 +27,12 @@ export default function Editor() {
   // useEditorHotkeys();
 
   useEffect(() => {
-    if (!canvasRef.current || createdEngine.current) return;
+    if (!canvasRef.current) return;
 
     const engine = new Engine({ canvas: canvasRef.current });
     engine.controls = "orbit";
 
-    createdEngine.current = true;
-    useEditorStore.setState({ engine, canvas: canvasRef.current, sceneLoaded: true });
+    useEditorStore.setState({ engine, canvas: canvasRef.current });
 
     // Skybox
     engine.modules.render.toRenderThread({
@@ -42,8 +40,16 @@ export default function Editor() {
       data: { uri: "/images/Skybox_2K.jpg" },
     });
 
-    // Model
-    engine.modules.scene.addGLTF("/models/Cyberia.glb");
+    return () => {
+      engine.destroy();
+      useEditorStore.setState({
+        engine: null,
+        canvas: null,
+        selectedId: null,
+        treeIds: [],
+        openIds: [],
+      });
+    };
   }, []);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
@@ -59,7 +65,6 @@ export default function Editor() {
         className="absolute top-0 left-0 h-full w-full overflow-hidden"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
-          const { engine } = useEditorStore.getState();
           if (!engine) return;
 
           e.preventDefault();

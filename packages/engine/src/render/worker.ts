@@ -4,5 +4,3 @@ import { RenderThread } from "./RenderThread";
 const renderThread = new RenderThread(postMessage.bind(this) as PostMessage);
 
 onmessage = renderThread.onmessage;
-
-postMessage({ subject: "ready" });

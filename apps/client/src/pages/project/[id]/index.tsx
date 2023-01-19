@@ -6,7 +6,7 @@ import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout
 import ProjectLayout from "../../../home/layouts/ProjectLayout/ProjectLayout";
 
 function publicationImageURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/image.jpg`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/image.jpg`;
 }
 
 export default function Project() {

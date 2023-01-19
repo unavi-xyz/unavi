@@ -331,7 +331,10 @@ export class RenderScene extends Scene {
       object.children.forEach((child) => {
         const nodeId = this.getNodeId(child);
         const isNode = nodeId !== null;
-        if (isNode) object.remove(child);
+        if (isNode) {
+          object.remove(child);
+          this.root.add(child);
+        }
       });
 
       // Add new children

@@ -105,7 +105,10 @@ export default function TreeRoot() {
   }, [engine, nodeIds]);
 
   return (
-    <div className="h-full" onMouseDown={() => useEditorStore.setState({ selectedId: null })}>
+    <div
+      className="h-full pt-0.5"
+      onMouseDown={() => useEditorStore.setState({ selectedId: null })}
+    >
       {visibleIds.map((id) => {
         return <TreeItem key={id} id={id} />;
       })}

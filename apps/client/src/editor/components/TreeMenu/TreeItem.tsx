@@ -68,9 +68,8 @@ export default function TreeItem({ id }: Props) {
             node.addChild(draggedNode);
           }
 
-          const newTreeIds = [...treeIds];
-
           // Remove dragged nodes from tree
+          const newTreeIds = [...treeIds];
           const draggingIndex = newTreeIds.indexOf(draggingId);
           const draggedChildren = draggedNode.listChildren();
           const draggedIds = newTreeIds.splice(draggingIndex, draggedChildren.length + 1);
@@ -78,7 +77,6 @@ export default function TreeItem({ id }: Props) {
           // Add dragged nodes to tree
           const index = newTreeIds.indexOf(id);
           newTreeIds.splice(index + 1, 0, ...draggedIds);
-
           useEditorStore.setState({ treeIds: newTreeIds });
 
           // Open children
@@ -122,8 +120,6 @@ export default function TreeItem({ id }: Props) {
             const node = engine.modules.scene.node.store.get(id);
             if (!node) throw new Error("Node not found");
 
-            const newTreeIds = [...treeIds];
-
             const parentId = engine.modules.scene.node.getParent(node);
             const draggedParentId = engine.modules.scene.node.getParent(draggedNode);
 
@@ -145,6 +141,7 @@ export default function TreeItem({ id }: Props) {
             }
 
             // Remove dragged nodes from tree
+            const newTreeIds = [...treeIds];
             const draggingIndex = newTreeIds.indexOf(draggingId);
             const draggedChildren = draggedNode.listChildren();
             const draggedIds = newTreeIds.splice(draggingIndex, draggedChildren.length + 1);
@@ -152,7 +149,6 @@ export default function TreeItem({ id }: Props) {
             // Add dragged nodes to tree
             const index = newTreeIds.indexOf(id);
             newTreeIds.splice(index, 0, ...draggedIds);
-
             useEditorStore.setState({ treeIds: newTreeIds });
           }}
         >

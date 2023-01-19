@@ -1,13 +1,10 @@
 import { createProxySSGHelpers } from "@trpc/react-query/ssg";
+import { Engine } from "engine";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useRef } from "react";
 
-import { useAnalytics } from "../../app/hooks/useAnalytics";
-import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
-import { useLoadUser } from "../../app/hooks/useLoadUser";
-import { useResizeEngineCanvas } from "../../app/hooks/useResizeCanvas";
-import { useSetAvatar } from "../../app/hooks/useSetAvatar";
+import { useResizeCanvas } from "../../app/hooks/useResizeCanvas";
 import { useSpace } from "../../app/hooks/useSpace";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
@@ -54,54 +51,40 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
 export default function App({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const createdEngine = useRef(false);
 
   const engine = useAppStore((state) => state.engine);
 
-  useResizeEngineCanvas(engine, canvasRef, containerRef);
-  useLoadUser();
-  useAppHotkeys();
-  useAnalytics();
-  const setAvatar = useSetAvatar();
+  useResizeCanvas(engine, canvasRef, containerRef);
+  // useLoadUser();
+  // useAppHotkeys();
+  // useAnalytics();
+  // const setAvatar = useSetAvatar();
   const isMobile = useIsMobile();
+
   const { space, loadingText, loadingProgress, join } = useSpace(id);
 
   useEffect(() => {
-    if (createdEngine.current) return;
-    createdEngine.current = true;
+    if (!canvasRef.current) return;
 
-    async function initEngine() {
-      const canvas = canvasRef.current;
-      if (!canvas) throw new Error("Canvas not found");
+    const engine = new Engine({ canvas: canvasRef.current });
+    useAppStore.setState({ engine });
 
-      const { Engine } = await import("engine");
+    // Skybox
+    engine.modules.render.toRenderThread({
+      subject: "set_skybox",
+      data: { uri: "/images/Skybox_2K.jpg" },
+    });
 
-      // Create engine
-      const engine = new Engine({
-        canvas,
-        camera: "player",
-        skyboxPath: "/images/skybox/",
-        avatarPath: "/models/Wired-chan.vrm",
-        avatarAnimationsPath: "/models/",
-      });
-
-      await engine.start();
-
-      useAppStore.setState({ engine });
-    }
-
-    initEngine();
-  }, [canvasRef]);
+    return () => {
+      engine.destroy();
+      useAppStore.setState({ engine: null });
+    };
+  }, []);
 
   useEffect(() => {
     if (!engine) return;
 
     join();
-
-    return () => {
-      engine.destroy();
-      useAppStore.setState({ engine: null, chatMessages: [] });
-    };
   }, [engine, join]);
 
   const loaded = loadingProgress === 1;
@@ -145,7 +128,7 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
 
           // Set avatar
           const url = URL.createObjectURL(file);
-          setAvatar(url);
+          // setAvatar(url);
 
           useAppStore.setState({ customAvatar: url });
         }}

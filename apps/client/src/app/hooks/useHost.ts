@@ -7,7 +7,6 @@ import { useEffect, useMemo } from "react";
 import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
-import { quaternionToYaw } from "../helpers/quaternionToYaw";
 import { ChatMessage } from "../ui/ChatMessage";
 
 const PUBLISH_HZ = 15; // X times per second
@@ -79,16 +78,16 @@ export function useHost(url: string) {
       sendToHost({ subject: "get_router_rtp_capabilities", data: null });
 
       // Update falling state on change
-      engine.physicsThread.isFalling$.subscribe((isFalling) => {
-        sendToHost({ subject: "falling_state", data: isFalling });
-      });
+      // engine.physicsThread.isFalling$.subscribe((isFalling) => {
+      //   sendToHost({ subject: "falling_state", data: isFalling });
+      // });
     };
 
     ws.onclose = () => {
       console.info("WebSocket - ❌ Disconnected from host");
 
       // Remove all players from scene
-      engine.renderThread.postMessage({ subject: "clear_players", data: null });
+      // engine.renderThread.postMessage({ subject: "clear_players", data: null });
     };
 
     ws.onmessage = async (event: MessageEvent<string>) => {
@@ -134,16 +133,16 @@ export function useHost(url: string) {
           players.set(data.playerId, player);
 
           // Add player to scene
-          engine.renderThread.postMessage({ subject: "player_joined", data });
+          // engine.renderThread.postMessage({ subject: "player_joined", data });
 
           // Set player name
-          engine.renderThread.postMessage({
-            subject: "player_name",
-            data: {
-              playerId: data.playerId,
-              name: player.username,
-            },
-          });
+          // engine.renderThread.postMessage({
+          //   subject: "player_name",
+          //   data: {
+          //     playerId: data.playerId,
+          //     name: player.username,
+          //   },
+          // });
 
           // Add message to chat if they joined after you
           if (!data.beforeYou)
@@ -169,7 +168,7 @@ export function useHost(url: string) {
           players.delete(data);
 
           // Remove player from scene
-          engine.renderThread.postMessage({ subject: "player_left", data });
+          // engine.renderThread.postMessage({ subject: "player_left", data });
 
           // Add message to chat
           addChatMessage({
@@ -200,10 +199,10 @@ export function useHost(url: string) {
         }
 
         case "player_falling_state": {
-          engine.renderThread.postMessage({
-            subject: "set_player_falling_state",
-            data,
-          });
+          // engine.renderThread.postMessage({
+          //   subject: "set_player_falling_state",
+          //   data,
+          // });
           break;
         }
 
@@ -217,13 +216,13 @@ export function useHost(url: string) {
           // Update player name
           await updateUsername(player);
 
-          engine.renderThread.postMessage({
-            subject: "player_name",
-            data: {
-              playerId: data.playerId,
-              name: player.username,
-            },
-          });
+          // engine.renderThread.postMessage({
+          //   subject: "player_name",
+          //   data: {
+          //     playerId: data.playerId,
+          //     name: player.username,
+          //   },
+          // });
           break;
         }
 
@@ -235,13 +234,13 @@ export function useHost(url: string) {
           player.avatar = data.avatar;
 
           // Load avatar
-          engine.renderThread.postMessage({
-            subject: "set_player_avatar",
-            data: {
-              playerId: data.playerId,
-              avatar: data.avatar,
-            },
-          });
+          // engine.renderThread.postMessage({
+          //   subject: "set_player_avatar",
+          //   data: {
+          //     playerId: data.playerId,
+          //     avatar: data.avatar,
+          //   },
+          // });
           break;
         }
 
@@ -255,13 +254,13 @@ export function useHost(url: string) {
           // Update player name
           await updateUsername(player);
 
-          engine.renderThread.postMessage({
-            subject: "player_name",
-            data: {
-              playerId: data.playerId,
-              name: player.username,
-            },
-          });
+          // engine.renderThread.postMessage({
+          //   subject: "player_name",
+          //   data: {
+          //     playerId: data.playerId,
+          //     name: player.username,
+          //   },
+          // });
           break;
         }
 
@@ -365,76 +364,76 @@ export function useHost(url: string) {
             const buffer = new ArrayBuffer(bytes);
             const view = new DataView(buffer);
 
-            setInterval(() => {
-              const { playerId } = useAppStore.getState();
+            // setInterval(() => {
+            //   const { playerId } = useAppStore.getState();
 
-              const playerPosition = engine.renderThread.playerPosition;
-              const playerRotation = engine.renderThread.playerRotation;
-              const cameraPosition = engine.renderThread.cameraPosition;
-              const cameraRotation = engine.renderThread.cameraRotation;
+            //   const playerPosition = engine.renderThread.playerPosition;
+            //   const playerRotation = engine.renderThread.playerRotation;
+            //   const cameraPosition = engine.renderThread.cameraPosition;
+            //   const cameraRotation = engine.renderThread.cameraRotation;
 
-              if (
-                playerId === null ||
-                !playerPosition ||
-                !playerRotation ||
-                !cameraPosition ||
-                !cameraRotation ||
-                dataProducer.readyState !== "open"
-              )
-                return;
+            //   if (
+            //     playerId === null ||
+            //     !playerPosition ||
+            //     !playerRotation ||
+            //     !cameraPosition ||
+            //     !cameraRotation ||
+            //     dataProducer.readyState !== "open"
+            //   )
+            //     return;
 
-              // Set audio listener location
-              const camPosX = Atomics.load(cameraPosition, 0);
-              const camPosY = Atomics.load(cameraPosition, 1);
-              const camPosZ = Atomics.load(cameraPosition, 2);
+            //   // Set audio listener location
+            //   const camPosX = Atomics.load(cameraPosition, 0);
+            //   const camPosY = Atomics.load(cameraPosition, 1);
+            //   const camPosZ = Atomics.load(cameraPosition, 2);
 
-              const camRotY = Atomics.load(cameraRotation, 1);
-              const camRotW = Atomics.load(cameraRotation, 3);
+            //   const camRotY = Atomics.load(cameraRotation, 1);
+            //   const camRotW = Atomics.load(cameraRotation, 3);
 
-              const listener = audioContext.listener;
+            //   const listener = audioContext.listener;
 
-              if (listener.positionX !== undefined) {
-                listener.positionX.value = camPosX / 1000;
-                listener.positionY.value = camPosY / 1000;
-                listener.positionZ.value = camPosZ / 1000;
-              } else {
-                listener.setPosition(camPosX / 1000, camPosY / 1000, camPosZ / 1000);
-              }
+            //   if (listener.positionX !== undefined) {
+            //     listener.positionX.value = camPosX / 1000;
+            //     listener.positionY.value = camPosY / 1000;
+            //     listener.positionZ.value = camPosZ / 1000;
+            //   } else {
+            //     listener.setPosition(camPosX / 1000, camPosY / 1000, camPosZ / 1000);
+            //   }
 
-              const yaw = quaternionToYaw(camRotY / 1000, camRotW / 1000);
+            //   const yaw = quaternionToYaw(camRotY / 1000, camRotW / 1000);
 
-              if (listener.forwardX !== undefined) {
-                listener.forwardX.value = -Math.sin(yaw);
-                listener.forwardZ.value = -Math.cos(yaw);
-              } else {
-                listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
-              }
+            //   if (listener.forwardX !== undefined) {
+            //     listener.forwardX.value = -Math.sin(yaw);
+            //     listener.forwardZ.value = -Math.cos(yaw);
+            //   } else {
+            //     listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
+            //   }
 
-              // Read location
-              const posX = Atomics.load(playerPosition, 0);
-              const posY = Atomics.load(playerPosition, 1);
-              const posZ = Atomics.load(playerPosition, 2);
+            //   // Read location
+            //   const posX = Atomics.load(playerPosition, 0);
+            //   const posY = Atomics.load(playerPosition, 1);
+            //   const posZ = Atomics.load(playerPosition, 2);
 
-              const rotX = Atomics.load(playerRotation, 0);
-              const rotY = Atomics.load(playerRotation, 1);
-              const rotZ = Atomics.load(playerRotation, 2);
-              const rotW = Atomics.load(playerRotation, 3);
+            //   const rotX = Atomics.load(playerRotation, 0);
+            //   const rotY = Atomics.load(playerRotation, 1);
+            //   const rotZ = Atomics.load(playerRotation, 2);
+            //   const rotW = Atomics.load(playerRotation, 3);
 
-              // Create buffer
-              view.setUint8(0, playerId);
+            //   // Create buffer
+            //   view.setUint8(0, playerId);
 
-              view.setInt32(1, posX, true);
-              view.setInt32(5, posY, true);
-              view.setInt32(9, posZ, true);
+            //   view.setInt32(1, posX, true);
+            //   view.setInt32(5, posY, true);
+            //   view.setInt32(9, posZ, true);
 
-              view.setInt16(13, rotX, true);
-              view.setInt16(15, rotY, true);
-              view.setInt16(17, rotZ, true);
-              view.setInt16(19, rotW, true);
+            //   view.setInt16(13, rotX, true);
+            //   view.setInt16(15, rotY, true);
+            //   view.setInt16(17, rotZ, true);
+            //   view.setInt16(19, rotW, true);
 
-              // Publish buffer
-              dataProducer.send(buffer);
-            }, 1000 / PUBLISH_HZ);
+            //   // Publish buffer
+            //   dataProducer.send(buffer);
+            // }, 1000 / PUBLISH_HZ);
           }
 
           if (data.type === "consumer") {
@@ -535,10 +534,10 @@ export function useHost(url: string) {
             }
 
             // Send to renderThread
-            engine.renderThread.postMessage({
-              subject: "player_location",
-              data: buffer,
-            });
+            // engine.renderThread.postMessage({
+            //   subject: "player_location",
+            //   data: buffer,
+            // });
           });
 
           break;

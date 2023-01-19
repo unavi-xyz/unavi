@@ -7,6 +7,7 @@ import { Materials } from "./Materials";
 
 type MaterialId = string;
 type AccessorId = string;
+
 export interface PrimitiveJSON {
   mode: GLTF.MeshPrimitiveMode;
   material: MaterialId | null;
@@ -46,7 +47,7 @@ export class Primitives extends Attribute<Primitive, PrimitiveJSON> {
 
     const { id: primitiveId } = this.process(primitive, id);
 
-    this.emitCreate(primitiveId);
+    if (!id) this.emitCreate(primitiveId);
 
     return { id: primitiveId, object: primitive };
   }

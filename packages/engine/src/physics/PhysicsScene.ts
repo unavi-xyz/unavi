@@ -1,6 +1,7 @@
 import { Collider, ColliderDesc, RigidBodyDesc, TriMesh, World } from "@dimforge/rapier3d";
+import { Node } from "@gltf-transform/core";
 
-import { MeshExtras, NodeJSON } from "../scene";
+import { NodeJSON } from "../scene";
 import { SceneMessage } from "../scene/messages";
 import { Scene } from "../scene/Scene";
 import { Vec3 } from "../types";
@@ -46,7 +47,6 @@ export class PhysicsScene extends Scene {
 
       case "create_primitive": {
         if (data.json.material) data.json.material = null;
-
         this.primitive.create(data.json, data.id);
         break;
       }
@@ -75,7 +75,19 @@ export class PhysicsScene extends Scene {
       case "change_mesh": {
         const mesh = this.mesh.store.get(data.id);
         if (!mesh) throw new Error("Mesh not found");
+
         this.mesh.applyJSON(mesh, data.json);
+
+        mesh.listParents().forEach((parent) => {
+          if (parent instanceof Node) {
+            const nodeId = this.node.getId(parent);
+            if (!nodeId) throw new Error("Node not found");
+
+            const json = this.node.toJSON(parent);
+
+            this.#updateNode(nodeId, { extensions: json.extensions });
+          }
+        });
         break;
       }
 
@@ -161,37 +173,6 @@ export class PhysicsScene extends Scene {
           const mesh = this.mesh.store.get(colliderJSON.mesh);
           if (!mesh) throw new Error("Mesh not found");
 
-          // If custom mesh, use it
-          if (mesh.getExtras()) {
-            const extras = mesh.getExtras() as MeshExtras;
-            if (extras.customMesh) {
-              switch (extras.customMesh.type) {
-                case "Box": {
-                  colliderDesc = ColliderDesc.cuboid(
-                    extras.customMesh.width / 2,
-                    extras.customMesh.height / 2,
-                    extras.customMesh.depth / 2
-                  );
-                  break;
-                }
-
-                case "Sphere": {
-                  colliderDesc = ColliderDesc.ball(extras.customMesh.radius);
-                  break;
-                }
-
-                case "Cylinder": {
-                  colliderDesc = ColliderDesc.cylinder(
-                    extras.customMesh.height / 2,
-                    (extras.customMesh.radiusTop + extras.customMesh.radiusBottom) / 2
-                  );
-                  break;
-                }
-              }
-              break;
-            }
-          }
-
           const vertices = mesh.listPrimitives().flatMap((primitive) => {
             const attribute = primitive.getAttribute("POSITION");
             if (!attribute) throw new Error("Position attribute not found");
@@ -211,6 +192,8 @@ export class PhysicsScene extends Scene {
 
             return Array.from(array);
           });
+
+          if (vertices.length === 0 || indices.length === 0) break;
 
           colliderDesc = ColliderDesc.trimesh(
             Float32Array.from(vertices),

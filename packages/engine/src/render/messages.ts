@@ -18,6 +18,7 @@ export type ToRenderMessage =
   | MessageJSON<"toggle_visuals", { enabled: boolean }>;
 
 export type FromRenderMessage =
+  | SceneMessage
   | MessageJSON<"ready">
   | MessageJSON<"clicked_node", { nodeId: string | null }>
   | MessageJSON<

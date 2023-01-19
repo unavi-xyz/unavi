@@ -39,12 +39,12 @@ const defaultMaterial = new MeshStandardMaterial();
  */
 export class RenderScene extends Scene {
   #csm: CSM | null = null;
+  #toMainThread: (message: SceneMessage) => void;
 
   root = new Object3D();
 
   materialObjects = new Map<MaterialId, MeshStandardMaterial>();
   primitiveObjects = new Map<PrimitiveId, ThreeMesh>();
-  customMeshObjects = new Map<MeshId, ThreeMesh>();
   meshObjects = new Map<MeshId, Object3D>();
   instancedMeshObjects = new Map<NodeId, Object3D>();
   nodeObjects = new Map<NodeId, Object3D>();
@@ -53,6 +53,38 @@ export class RenderScene extends Scene {
   colliderMaterial = new MeshBasicMaterial({ color: "#000000", wireframe: true });
   visuals = new Object3D();
   #visualsEnabled = false;
+
+  constructor(toMainThread: (message: SceneMessage) => void) {
+    super();
+
+    this.#toMainThread = toMainThread;
+
+    this.accessor.addEventListener("create", ({ data }) => {
+      const accessor = this.accessor.store.get(data.id);
+      if (!accessor) throw new Error("Accessor not found");
+
+      const json = this.accessor.toJSON(accessor);
+
+      toMainThread({ subject: "create_accessor", data: { id: data.id, json } });
+
+      accessor.addEventListener("dispose", () => {
+        toMainThread({ subject: "dispose_accessor", data: data.id });
+      });
+    });
+
+    this.primitive.addEventListener("create", ({ data }) => {
+      const primitive = this.primitive.store.get(data.id);
+      if (!primitive) throw new Error("Primitive not found");
+
+      const json = this.primitive.toJSON(primitive);
+
+      toMainThread({ subject: "create_primitive", data: { id: data.id, json } });
+
+      primitive.addEventListener("dispose", () => {
+        toMainThread({ subject: "dispose_primitive", data: data.id });
+      });
+    });
+  }
 
   get visualsEnabled() {
     return this.#visualsEnabled;
@@ -226,10 +258,6 @@ export class RenderScene extends Scene {
 
       case "change_node": {
         this.updateNode(data.id, data.json);
-
-        const node = this.node.store.get(data.id);
-        if (!node) throw new Error("Node not found");
-        this.node.applyJSON(node, data.json);
         break;
       }
 
@@ -257,11 +285,7 @@ export class RenderScene extends Scene {
     if (json.mesh !== undefined) {
       // Remove old mesh
       object.children.forEach((child) => {
-        const id =
-          this.getMeshId(child) ??
-          this.getInstancedMeshNodeId(child) ??
-          this.getCustomMeshId(child);
-
+        const id = this.getMeshId(child) ?? this.getInstancedMeshNodeId(child);
         const isMesh = id !== null;
         if (isMesh) object.remove(child);
       });
@@ -303,97 +327,11 @@ export class RenderScene extends Scene {
       });
     }
 
-    if (json.extensions?.OMI_collider !== undefined) {
-      // Remove old collider
-      const prevCollider = this.colliderObjects.get(id);
-      if (prevCollider) {
-        object.remove(prevCollider);
-        prevCollider.geometry.dispose();
-        this.colliderObjects.delete(id);
-      }
+    // Apply node JSON
+    this.node.applyJSON(node, json);
 
-      // Add new collider
-      if (json.extensions.OMI_collider || json.mesh !== undefined) {
-        const newCollider = json.extensions.OMI_collider;
-        const oldCollider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
-
-        if (oldCollider || newCollider) {
-          const collider = newCollider ?? oldCollider;
-          if (!collider) throw new Error("Collider not found");
-
-          const meshId =
-            collider.mesh instanceof Mesh ? this.mesh.getId(collider.mesh) : collider.mesh;
-          if (meshId === undefined) throw new Error("Mesh not found");
-
-          let colliderGeometry: BufferGeometry | null = null;
-
-          switch (collider.type) {
-            case "box": {
-              if (!collider.size) break;
-              colliderGeometry = new BoxGeometry(
-                collider.size[0],
-                collider.size[1],
-                collider.size[2]
-              );
-              break;
-            }
-
-            case "sphere": {
-              if (!collider.radius) break;
-              colliderGeometry = new SphereGeometry(collider.radius);
-              break;
-            }
-
-            case "capsule": {
-              if (!collider.radius || !collider.height) break;
-              colliderGeometry = new CapsuleGeometry(collider.radius, collider.height);
-              break;
-            }
-
-            case "cylinder": {
-              if (!collider.radius || !collider.height) break;
-              colliderGeometry = new CylinderGeometry(
-                collider.radius,
-                collider.radius,
-                collider.height
-              );
-              break;
-            }
-
-            case "trimesh": {
-              if (!meshId) break;
-
-              const mesh = this.mesh.store.get(meshId);
-              if (!mesh) throw new Error("Mesh not found");
-
-              const primitiveGeometries = mesh.listPrimitives().map((primitive) => {
-                const primitiveId = this.primitive.getId(primitive);
-                if (!primitiveId) throw new Error("Primitive not found");
-
-                const primitiveObject = this.primitiveObjects.get(primitiveId);
-                if (!primitiveObject) throw new Error("Primitive object not found");
-
-                return primitiveObject.geometry;
-              });
-
-              const customMeshObject = this.customMeshObjects.get(meshId);
-              if (customMeshObject) primitiveGeometries.push(customMeshObject.geometry);
-
-              if (primitiveGeometries.length === 0) break;
-
-              colliderGeometry = mergeBufferGeometries(primitiveGeometries);
-              break;
-            }
-          }
-
-          if (colliderGeometry) {
-            const colliderObject = new ThreeMesh(colliderGeometry, this.colliderMaterial);
-            object.add(colliderObject);
-
-            this.colliderObjects.set(id, colliderObject);
-          }
-        }
-      }
+    if (json.mesh !== undefined || json.extensions?.OMI_collider !== undefined) {
+      this.updateColliderVisual(id);
     }
   }
 
@@ -403,50 +341,6 @@ export class RenderScene extends Scene {
 
     const object = this.meshObjects.get(id);
     if (!object) throw new Error("Mesh object not found");
-
-    if (json.extras) {
-      // Remove previous custom mesh
-      const prevCustomMesh = this.customMeshObjects.get(id);
-      if (prevCustomMesh) {
-        object.remove(prevCustomMesh);
-        this.customMeshObjects.delete(id);
-      }
-
-      // Create custom mesh
-      if (json.extras.customMesh) {
-        let customMesh: ThreeMesh | undefined;
-
-        switch (json.extras.customMesh.type) {
-          case "Box": {
-            const { width, height, depth } = json.extras.customMesh;
-            const geometry = new BoxGeometry(width, height, depth);
-            customMesh = new ThreeMesh(geometry, defaultMaterial);
-
-            break;
-          }
-
-          case "Sphere": {
-            const { radius, widthSegments, heightSegments } = json.extras.customMesh;
-            const geometry = new SphereGeometry(radius, widthSegments, heightSegments);
-            customMesh = new ThreeMesh(geometry, defaultMaterial);
-
-            break;
-          }
-
-          case "Cylinder": {
-            const { radiusTop, radiusBottom, height, radialSegments } = json.extras.customMesh;
-            const geometry = new CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
-            customMesh = new ThreeMesh(geometry, defaultMaterial);
-            break;
-          }
-        }
-
-        if (customMesh) {
-          object.add(customMesh);
-          this.customMeshObjects.set(id, customMesh);
-        }
-      }
-    }
 
     if (json.primitives) {
       // Remove previous primitive objects
@@ -468,6 +362,91 @@ export class RenderScene extends Scene {
         object.add(primitiveObject);
       });
     }
+
+    if (json.extras) {
+      if (json.extras.customMesh) {
+        // Remove old primitives
+        mesh.listPrimitives().forEach((primitive) => {
+          const primitiveId = this.primitive.getId(primitive);
+          if (!primitiveId) throw new Error("Primitive not found");
+
+          const primitiveObject = this.primitiveObjects.get(primitiveId);
+          if (!primitiveObject) throw new Error("Primitive object not found");
+
+          object.remove(primitiveObject);
+          this.primitiveObjects.delete(primitiveId);
+          primitive.dispose();
+        });
+
+        // Create custom mesh object
+        let customMesh: ThreeMesh | null = null;
+
+        switch (json.extras.customMesh.type) {
+          case "Box": {
+            const { width, height, depth } = json.extras.customMesh;
+            const geometry = new BoxGeometry(width, height, depth);
+            customMesh = new ThreeMesh(geometry, defaultMaterial);
+            break;
+          }
+
+          case "Sphere": {
+            const { radius, widthSegments, heightSegments } = json.extras.customMesh;
+            const geometry = new SphereGeometry(radius, widthSegments, heightSegments);
+            customMesh = new ThreeMesh(geometry, defaultMaterial);
+            break;
+          }
+
+          case "Cylinder": {
+            const { radiusTop, radiusBottom, height, radialSegments } = json.extras.customMesh;
+            const geometry = new CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
+            customMesh = new ThreeMesh(geometry, defaultMaterial);
+            break;
+          }
+        }
+
+        if (customMesh) {
+          // Create new primitive
+          const positions = customMesh.geometry.getAttribute("position");
+          const indices = customMesh.geometry.getIndex();
+          if (!indices) throw new Error("Indices not found");
+
+          const { id: positionsId } = this.accessor.create({
+            array: new Float32Array(positions.array),
+            type: "VEC3",
+            componentType: 5126,
+          });
+          const { id: indicesId } = this.accessor.create({
+            array: new Uint8Array(indices.array),
+            type: "SCALAR",
+            componentType: 5121,
+          });
+
+          const { id: primitiveId, object: primitive } = this.primitive.create({
+            indices: indicesId,
+            attributes: { POSITION: positionsId },
+          });
+
+          mesh.addPrimitive(primitive);
+          this.primitiveObjects.set(primitiveId, customMesh);
+          object.add(customMesh);
+
+          // Update main thread
+          this.#toMainThread({
+            subject: "change_mesh",
+            data: { id, json: { primitives: [primitiveId] } },
+          });
+        }
+      }
+    }
+
+    mesh.listParents().forEach((parent) => {
+      if (parent instanceof Node) {
+        const nodeId = this.node.getId(parent);
+        if (!nodeId) throw new Error("Node not found");
+
+        this.updateColliderVisual(nodeId);
+      }
+    });
   }
 
   updatePrimitive(id: string, json: Partial<PrimitiveJSON>) {
@@ -736,6 +715,91 @@ export class RenderScene extends Scene {
     object.needsUpdate = true;
   }
 
+  updateColliderVisual(nodeId: string) {
+    const node = this.node.store.get(nodeId);
+    if (!node) throw new Error("Node not found");
+
+    const object = this.nodeObjects.get(nodeId);
+    if (!object) throw new Error("Object not found");
+
+    const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
+
+    // Remove old collider
+    const prevCollider = this.colliderObjects.get(nodeId);
+    if (prevCollider) {
+      object.remove(prevCollider);
+      prevCollider.geometry.dispose();
+      this.colliderObjects.delete(nodeId);
+    }
+
+    if (collider) {
+      // Add new collider
+      const meshId = collider.mesh instanceof Mesh ? this.mesh.getId(collider.mesh) : collider.mesh;
+      if (meshId === undefined) throw new Error("Mesh not found");
+
+      let colliderGeometry: BufferGeometry | null = null;
+
+      switch (collider.type) {
+        case "box": {
+          if (!collider.size) break;
+          colliderGeometry = new BoxGeometry(collider.size[0], collider.size[1], collider.size[2]);
+          break;
+        }
+
+        case "sphere": {
+          if (!collider.radius) break;
+          colliderGeometry = new SphereGeometry(collider.radius);
+          break;
+        }
+
+        case "capsule": {
+          if (!collider.radius || !collider.height) break;
+          colliderGeometry = new CapsuleGeometry(collider.radius, collider.height);
+          break;
+        }
+
+        case "cylinder": {
+          if (!collider.radius || !collider.height) break;
+          colliderGeometry = new CylinderGeometry(
+            collider.radius,
+            collider.radius,
+            collider.height
+          );
+          break;
+        }
+
+        case "trimesh": {
+          if (!meshId) break;
+
+          const mesh = this.mesh.store.get(meshId);
+          if (!mesh) throw new Error("Mesh not found");
+
+          const primitiveGeometries = mesh.listPrimitives().map((primitive) => {
+            const primitiveId = this.primitive.getId(primitive);
+            if (!primitiveId) throw new Error("Primitive not found");
+
+            const primitiveObject = this.primitiveObjects.get(primitiveId);
+            if (!primitiveObject) throw new Error("Primitive object not found");
+
+            return primitiveObject.geometry;
+          });
+
+          if (primitiveGeometries.length === 0) break;
+
+          colliderGeometry = mergeBufferGeometries(primitiveGeometries);
+          break;
+        }
+      }
+
+      if (colliderGeometry) {
+        const colliderObject = new ThreeMesh(colliderGeometry, this.colliderMaterial);
+        object.add(colliderObject);
+
+        this.colliderObjects.set(nodeId, colliderObject);
+      }
+    }
+  }
+
   getInstancedMeshNodeId(object: Object3D): string | null {
     for (const [id, clonedMeshObject] of this.instancedMeshObjects.entries()) {
       let found = false;
@@ -743,14 +807,6 @@ export class RenderScene extends Scene {
         if (child === object) found = true;
       });
       if (found) return id;
-    }
-
-    return null;
-  }
-
-  getCustomMeshId(object: Object3D): string | null {
-    for (const [id, customMeshObject] of this.customMeshObjects.entries()) {
-      if (customMeshObject === object) return id;
     }
 
     return null;
@@ -806,18 +862,6 @@ export class RenderScene extends Scene {
       const meshId = this.getPrimitiveMeshId(primitive);
       if (!meshId) return null;
 
-      const mesh = this.mesh.store.get(meshId);
-      if (!mesh) throw new Error("Mesh not found");
-
-      const nodeId = this.getMeshNodeId(mesh);
-      if (!nodeId) return null;
-
-      return nodeId;
-    }
-
-    // Check custom meshes
-    const meshId = this.getCustomMeshId(object);
-    if (meshId) {
       const mesh = this.mesh.store.get(meshId);
       if (!mesh) throw new Error("Mesh not found");
 

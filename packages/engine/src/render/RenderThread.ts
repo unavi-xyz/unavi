@@ -22,7 +22,7 @@ import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectio
 import { DEFAULT_CONTROLS } from "../constants";
 import { ControlsType } from "../Engine";
 import { isSceneMessage } from "../scene/messages";
-import { PostMessage } from "../types";
+import { PostMessage, Transferable } from "../types";
 import { OrbitControls } from "./controls/OrbitControls";
 import { PlayerControls } from "./controls/PlayerControls";
 import { RaycastControls } from "./controls/RaycastControls";
@@ -38,7 +38,7 @@ export class RenderThread {
   #canvas: HTMLCanvasElement | OffscreenCanvas | null = null;
   postMessage: PostMessage<FromRenderMessage>;
 
-  renderScene = new RenderScene();
+  renderScene: RenderScene;
   scene = new Scene();
 
   renderer: WebGLRenderer | null = null;
@@ -61,6 +61,8 @@ export class RenderThread {
   constructor(postMessage: PostMessage<FromRenderMessage>, canvas?: HTMLCanvasElement) {
     this.postMessage = postMessage;
 
+    this.renderScene = new RenderScene(this.postMessage);
+
     if (canvas) {
       this.#canvas = canvas;
       this.init();
@@ -74,12 +76,9 @@ export class RenderThread {
     );
 
     this.scene.add(this.renderScene.root);
-
+    this.scene.add(new AmbientLight(0xffffff, 0.3));
     this.camera.position.set(0, 4, 12);
     this.camera.lookAt(0, 0, 0);
-
-    const light = new AmbientLight(0xffffff, 0.4);
-    this.scene.add(light);
 
     this.clock.start();
     this.render();
@@ -243,5 +242,9 @@ export class RenderThread {
 
     this.csm?.update();
     this.composer?.render();
+  }
+
+  toMainThread(message: FromRenderMessage, transfer?: Transferable[]) {
+    this.postMessage(message, transfer);
   }
 }

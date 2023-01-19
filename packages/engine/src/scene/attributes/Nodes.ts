@@ -1,12 +1,12 @@
-import { Document, Node } from "@gltf-transform/core";
+import { Node } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
 import { Collider } from "../../gltf/extensions/Collider/Collider";
 import { ColliderExtension } from "../../gltf/extensions/Collider/ColliderExtension";
 import { ColliderType } from "../../gltf/extensions/Collider/types";
 import { Vec3, Vec4 } from "../../types";
+import { Scene } from "../Scene";
 import { Attribute } from "./Attribute";
-import { Meshes } from "./Meshes";
 
 export type ColliderJSON = {
   type: ColliderType;
@@ -36,16 +36,14 @@ export type NodeJSON = {
 };
 
 export class Nodes extends Attribute<Node, NodeJSON> {
-  #doc: Document;
-  #mesh: Meshes;
+  #scene: Scene;
 
   store = new Map<string, Node>();
 
-  constructor(doc: Document, mesh: Meshes) {
+  constructor(scene: Scene) {
     super();
 
-    this.#doc = doc;
-    this.#mesh = mesh;
+    this.#scene = scene;
   }
 
   getId(node: Node) {
@@ -61,7 +59,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
   }
 
   create(json: Partial<NodeJSON> = {}, id?: string) {
-    const node = this.#doc.createNode();
+    const node = this.#scene.doc.createNode();
     this.applyJSON(node, json);
 
     const { id: nodeId } = this.process(node, id);
@@ -86,7 +84,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     const changed: Node[] = [];
 
     // Add new nodes
-    this.#doc
+    this.#scene.doc
       .getRoot()
       .listNodes()
       .forEach((node) => {
@@ -110,7 +108,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       if (json.mesh === null) {
         node.setMesh(null);
       } else {
-        const mesh = this.#mesh.store.get(json.mesh);
+        const mesh = this.#scene.mesh.store.get(json.mesh);
         if (!mesh) throw new Error("Mesh not found");
         node.setMesh(mesh);
       }
@@ -128,28 +126,31 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     if (json.extensions) {
       const colliderJSON = json.extensions[ColliderExtension.EXTENSION_NAME];
 
-      if (colliderJSON) {
-        const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
+      if (!colliderJSON) node.setExtension(ColliderExtension.EXTENSION_NAME, null);
+      else {
+        const collider =
+          node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME) ??
+          this.#scene.extensions.collider.createCollider();
 
-        if (collider) {
-          collider.type = colliderJSON.type;
-          collider.size = colliderJSON.size ?? null;
-          collider.height = colliderJSON.height ?? null;
-          collider.radius = colliderJSON.radius ?? null;
+        collider.type = colliderJSON.type;
+        collider.size = colliderJSON.size;
+        collider.height = colliderJSON.height;
+        collider.radius = colliderJSON.radius;
 
-          if (colliderJSON.mesh) {
-            const mesh = this.#mesh.store.get(colliderJSON.mesh);
-            if (!mesh) throw new Error("Mesh not found");
-            collider.mesh = mesh;
-          }
+        if (colliderJSON.mesh) {
+          const mesh = this.#scene.mesh.store.get(colliderJSON.mesh);
+          if (!mesh) throw new Error("Mesh not found");
+          collider.mesh = mesh;
         }
+
+        node.setExtension(ColliderExtension.EXTENSION_NAME, collider);
       }
     }
   }
 
   toJSON(node: Node): NodeJSON {
     const mesh = node.getMesh();
-    const meshId = mesh ? this.#mesh.getId(mesh) : null;
+    const meshId = mesh ? this.#scene.mesh.getId(mesh) : null;
     if (meshId === undefined) throw new Error("Mesh not found");
 
     const childrenIds = node.listChildren().map((child) => {
@@ -167,7 +168,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
 
     if (collider) {
       const mesh = collider.mesh;
-      const meshId = mesh ? this.#mesh.getId(mesh) : null;
+      const meshId = mesh ? this.#scene.mesh.getId(mesh) : null;
       if (meshId === undefined) throw new Error("Mesh not found");
 
       extensions[ColliderExtension.EXTENSION_NAME] = {

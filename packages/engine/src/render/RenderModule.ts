@@ -82,6 +82,37 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
         node.setTranslation(data.translation);
         node.setRotation(data.rotation);
         node.setScale(data.scale);
+        break;
+      }
+
+      case "create_accessor": {
+        const physics = this.#engine.modules.physics;
+        physics.toPhysicsThread({ subject: "create_accessor", data });
+        break;
+      }
+
+      case "dispose_accessor": {
+        const physics = this.#engine.modules.physics;
+        physics.toPhysicsThread({ subject: "dispose_accessor", data });
+        break;
+      }
+
+      case "create_primitive": {
+        const physics = this.#engine.modules.physics;
+        physics.toPhysicsThread({ subject: "create_primitive", data });
+        break;
+      }
+
+      case "dispose_primitive": {
+        const physics = this.#engine.modules.physics;
+        physics.toPhysicsThread({ subject: "dispose_primitive", data });
+        break;
+      }
+
+      case "change_mesh": {
+        const physics = this.#engine.modules.physics;
+        physics.toPhysicsThread({ subject: "change_mesh", data });
+        break;
       }
     }
   };

@@ -22,7 +22,7 @@ export class Scene {
   material = new Materials(this.doc, this.texture);
   primitive = new Primitives(this.doc, this.accessor, this.material);
   mesh = new Meshes(this.doc, this.primitive);
-  node = new Nodes(this.doc, this.mesh);
+  node = new Nodes(this);
 
   loadDocument(doc: Document) {
     this.doc.merge(doc);

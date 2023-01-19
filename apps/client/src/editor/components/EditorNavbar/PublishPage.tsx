@@ -18,15 +18,15 @@ import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
 
 function cdnModelURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/model.glb`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/model.glb`;
 }
 
 function cdnImageURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/image.jpg`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/image.jpg`;
 }
 
 function cdnMetadataURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/metadata.json`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/metadata.json`;
 }
 
 export default function PublishPage() {
@@ -44,24 +44,18 @@ export default function PublishPage() {
 
   const { data: imageURL } = trpc.project.image.useQuery(
     { id },
-    {
-      enabled: id !== undefined,
-      refetchOnWindowFocus: false,
-    }
+    { enabled: id !== undefined, refetchOnWindowFocus: false }
   );
 
   const { data: profile } = trpc.social.profile.byAddress.useQuery(
     { address: session?.address ?? "" },
-    {
-      enabled: session?.address !== undefined,
-      refetchOnWindowFocus: false,
-    }
+    { enabled: session?.address !== undefined, refetchOnWindowFocus: false }
   );
 
-  const { mutateAsync: saveProject } = trpc.project.save.useMutation();
-  const { mutateAsync: createModelUploadUrl } = trpc.publication.modelUploadURL.useMutation();
-  const { mutateAsync: createImageUploadUrl } = trpc.publication.imageUploadURL.useMutation();
-  const { mutateAsync: createMetadataUploadUrl } = trpc.publication.metadataUploadURL.useMutation();
+  const { mutateAsync: update } = trpc.project.update.useMutation();
+  const { mutateAsync: getModelUpload } = trpc.publication.getModelUpload.useMutation();
+  const { mutateAsync: getImageUpload } = trpc.publication.getImageUpload.useMutation();
+  const { mutateAsync: getMetadataUpload } = trpc.publication.getMetadataUpload.useMutation();
   const { mutateAsync: createPublication } = trpc.publication.create.useMutation();
   const { mutateAsync: linkPublication } = trpc.publication.link.useMutation();
 
@@ -81,135 +75,102 @@ export default function PublishPage() {
       return;
     }
 
-    setLoading(true);
-    const promises: Promise<void>[] = [];
-
     async function publish() {
       if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
 
-      // Save project
-      await save();
-
       // Create database publication
       const publicationId = await createPublication();
 
-      // Link publication to project
-      promises.push(
-        saveProject({
-          id,
-          publicationId,
-        })
-      );
+      // Save project
+      await save();
 
-      // Export scene and upload to S3
-      promises.push(
-        new Promise((resolve, reject) => {
-          async function upload() {
-            const { engine } = useEditorStore.getState();
-            if (!engine) throw new Error("Engine not found");
+      async function uploadModel() {
+        const { engine } = useEditorStore.getState();
+        if (!engine) throw new Error("Engine not found");
 
-            // Export scene to glb
-            const glb = await engine.export();
-            const body = new Blob([glb], { type: "model/gltf-binary" });
+        // Export scene to glb
+        const glb = await engine.modules.scene.export();
+        const body = new Blob([glb], { type: "model/gltf-binary" });
 
-            // Upload to S3
-            const url = await createModelUploadUrl({ id: publicationId });
-            const response = await fetch(url, {
-              method: "PUT",
-              body,
-              headers: {
-                "Content-Type": "model/gltf-binary",
-                "x-amz-acl": "public-read",
-              },
-            });
+        // Upload to S3
+        const url = await getModelUpload({ id: publicationId });
+        const response = await fetch(url, {
+          method: "PUT",
+          body,
+          headers: {
+            "Content-Type": "model/gltf-binary",
+            "x-amz-acl": "public-read",
+          },
+        });
 
-            if (!response.ok) throw new Error("Failed to upload model");
-          }
+        if (!response.ok) throw new Error("Failed to upload model");
+      }
 
-          upload().then(resolve).catch(reject);
-        })
-      );
+      async function uploadImage() {
+        if (!imageFile) throw new Error("Image not found");
 
-      // Upload image to S3
-      promises.push(
-        new Promise((resolve, reject) => {
-          async function upload() {
-            if (!imageFile) {
-              reject();
-              return;
-            }
+        // Get image
+        const res = await fetch(URL.createObjectURL(imageFile));
+        const body = await res.blob();
 
-            // Get image
-            const res = await fetch(URL.createObjectURL(imageFile));
-            const body = await res.blob();
+        // Upload to S3
+        const url = await getImageUpload({ id: publicationId });
+        const response = await fetch(url, {
+          method: "PUT",
+          body,
+          headers: {
+            "Content-Type": "image/jpeg",
+            "x-amz-acl": "public-read",
+          },
+        });
 
-            // Upload to S3
-            const url = await createImageUploadUrl({ id: publicationId });
-            const response = await fetch(url, {
-              method: "PUT",
-              body,
-              headers: {
-                "Content-Type": "image/jpeg",
-                "x-amz-acl": "public-read",
-              },
-            });
+        if (!response.ok) throw new Error("Failed to upload image");
+      }
 
-            if (!response.ok) throw new Error("Failed to upload image");
-          }
+      async function uploadMetadata() {
+        const modelURL = cdnModelURL(publicationId);
+        const imageURL = cdnImageURL(publicationId);
 
-          upload().then(resolve).catch(reject);
-        })
-      );
+        const metadata: ERC721Metadata = {
+          animation_url: modelURL,
+          description,
+          external_url: `https://thewired.space/user/${
+            profile ? numberToHexDisplay(profile.id) : session?.address
+          }`,
+          image: imageURL,
+          name,
+        };
 
-      // Upload metadata to S3
-      promises.push(
-        new Promise((resolve, reject) => {
-          async function upload() {
-            const modelURL = cdnModelURL(publicationId);
-            const imageURL = cdnImageURL(publicationId);
+        // Upload to S3
+        const url = await getMetadataUpload({ id: publicationId });
+        const response = await fetch(url, {
+          method: "PUT",
+          body: JSON.stringify(metadata),
+          headers: {
+            "Content-Type": "application/json",
+            "x-amz-acl": "public-read",
+          },
+        });
 
-            const metadata: ERC721Metadata = {
-              animation_url: modelURL,
-              description,
-              external_url: `https://thewired.space/user/${
-                profile ? numberToHexDisplay(profile.id) : session?.address
-              }`,
-              image: imageURL,
-              name,
-            };
+        if (!response.ok) throw new Error("Failed to upload metadata");
+      }
 
-            // Upload to S3
-            const url = await createMetadataUploadUrl({ id: publicationId });
-            const response = await fetch(url, {
-              method: "PUT",
-              body: JSON.stringify(metadata),
-              headers: {
-                "Content-Type": "application/json",
-                "x-amz-acl": "public-read",
-              },
-            });
-
-            if (!response.ok) throw new Error("Failed to upload metadata");
-          }
-
-          upload().then(resolve).catch(reject);
-        })
-      );
-
-      await Promise.all(promises);
-
-      const contentURI = cdnMetadataURL(publicationId);
+      await Promise.all([
+        update({ id, publicationId }), // Link publication to project
+        uploadModel(),
+        uploadImage(),
+        uploadMetadata(),
+      ]);
 
       // Mint space NFT
+      const contentURI = cdnMetadataURL(publicationId);
       const contract = Space__factory.connect(SPACE_ADDRESS, signer);
-
       const tx = await contract.mintWithTokenURI(contentURI);
-
       await tx.wait();
 
       // Get space ID
-      // Loop through all spaces until we the matching content URI
+      // Loop backwards through all spaces until we find the matching content URI
       const count = (await contract.count()).toNumber();
       let spaceId = 0;
       let i = 0;
@@ -228,15 +189,15 @@ export default function PublishPage() {
       }
 
       await Promise.all([
-        // Link space to publication
         linkPublication({ publicationId, spaceId }),
-        // Invalidate trpc cache
         utils.space.latest.invalidate({ owner: session.address }),
       ]);
 
       // Redirect to space
       router.push(`/space/${numberToHexDisplay(spaceId)}`);
     }
+
+    setLoading(true);
 
     toast.promise(
       publish().finally(() => {

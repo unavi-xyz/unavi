@@ -54,7 +54,11 @@ export function useLoad() {
       const buffer = await res.arrayBuffer();
       const array = new Uint8Array(buffer);
 
-      await engine.modules.scene.loadBinary(array);
+      try {
+        await engine.modules.scene.loadBinary(array);
+      } catch (err) {
+        console.error(err);
+      }
 
       useEditorStore.setState({ sceneLoaded: true });
     }

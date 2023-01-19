@@ -76,7 +76,7 @@ export class RenderThread {
     );
 
     this.scene.add(this.renderScene.root);
-    this.scene.add(new AmbientLight(0xffffff, 0.3));
+    this.scene.add(new AmbientLight(0xffffff, 0.2));
     this.camera.position.set(0, 4, 12);
     this.camera.lookAt(0, 0, 0);
 

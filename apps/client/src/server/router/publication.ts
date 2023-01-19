@@ -1,12 +1,13 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { Publication } from "../s3/Publication";
 import { protectedProcedure, router } from "./trpc";
 
 const PUBLICATION_ID_LENGTH = 25; // cuid
 
 export const publicationRouter = router({
-  modelUploadURL: protectedProcedure
+  getModelUpload: protectedProcedure
     .input(
       z.object({
         id: z.string().length(PUBLICATION_ID_LENGTH),
@@ -14,18 +15,18 @@ export const publicationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the publication
-      const publication = await ctx.prisma.publication.findFirst({
+      const found = await ctx.prisma.publication.findFirst({
         where: { id: input.id, owner: ctx.session.address },
       });
-      if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
+      if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // Get model upload URL from S3
-      const url = await createPublishedModelUploadURL(input.id);
+      const publication = new Publication(input.id);
+      const url = await publication.getUpload("model");
 
       return url;
     }),
 
-  imageUploadURL: protectedProcedure
+  getImageUpload: protectedProcedure
     .input(
       z.object({
         id: z.string().length(PUBLICATION_ID_LENGTH),
@@ -33,18 +34,18 @@ export const publicationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the publication
-      const publication = await ctx.prisma.publication.findFirst({
+      const found = await ctx.prisma.publication.findFirst({
         where: { id: input.id, owner: ctx.session.address },
       });
-      if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
+      if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // Get image upload URL from S3
-      const url = await createPublishedImageUploadURL(input.id);
+      const publication = new Publication(input.id);
+      const url = await publication.getUpload("image");
 
       return url;
     }),
 
-  metadataUploadURL: protectedProcedure
+  getMetadataUpload: protectedProcedure
     .input(
       z.object({
         id: z.string().length(PUBLICATION_ID_LENGTH),
@@ -52,13 +53,13 @@ export const publicationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the publication
-      const publication = await ctx.prisma.publication.findFirst({
+      const found = await ctx.prisma.publication.findFirst({
         where: { id: input.id, owner: ctx.session.address },
       });
-      if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
+      if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // Get metadata upload URL from S3
-      const url = await createPublishedMetadataUploadURL(input.id);
+      const publication = new Publication(input.id);
+      const url = await publication.getUpload("metadata");
 
       return url;
     }),
@@ -114,15 +115,14 @@ export const publicationRouter = router({
       if (!id) throw new TRPCError({ code: "BAD_REQUEST" });
 
       // Verify user owns the publication
-      const publication = await ctx.prisma.publication.findFirst({
+      const found = await ctx.prisma.publication.findFirst({
         where: { id, owner: ctx.session.address },
       });
-      if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
-
-      const promises: Promise<any>[] = [];
+      if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Delete publication from S3
-      promises.push(deletePublicationFromS3(id));
+      const publication = new Publication(id);
+      await publication.delete();
 
       // Remove publicationId from projects
       await ctx.prisma.project.updateMany({
@@ -135,7 +135,5 @@ export const publicationRouter = router({
         where: { id },
         include: { ViewEvents: true },
       });
-
-      await Promise.all(promises);
     }),
 });

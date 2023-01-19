@@ -5,7 +5,8 @@ import { z } from "zod";
 import { Project } from "../s3/Project";
 import { protectedProcedure, router } from "./trpc";
 
-const PROJECT_ID_LENGTH = 21;
+const PROJECT_ID_LENGTH = 21; // nanoid length
+const PUBLICATION_ID_LENGTH = 25; // cuid length
 const MAX_NAME_LENGTH = 80;
 const MAX_DESCRIPTION_LENGTH = 500;
 
@@ -150,6 +151,7 @@ export const projectRouter = router({
         id: z.string().length(PROJECT_ID_LENGTH),
         name: z.string().max(MAX_NAME_LENGTH).optional(),
         description: z.string().max(MAX_DESCRIPTION_LENGTH).optional(),
+        publicationId: z.string().length(PUBLICATION_ID_LENGTH).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -159,11 +161,20 @@ export const projectRouter = router({
       });
       if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
+      // Verify user owns the publication
+      if (input.publicationId !== undefined) {
+        const found = await ctx.prisma.publication.findFirst({
+          where: { id: input.publicationId, owner: ctx.session.address },
+        });
+        if (!found) throw new TRPCError({ code: "BAD_REQUEST" });
+      }
+
       await ctx.prisma.project.update({
         where: { id: input.id },
         data: {
           name: input.name,
           description: input.description,
+          publicationId: input.publicationId,
         },
       });
     }),

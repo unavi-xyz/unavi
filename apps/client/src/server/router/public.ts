@@ -49,30 +49,30 @@ export const publicRouter = router({
       if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get space id
-      const space = await ctx.prisma.space.findFirst({
+      const space = await ctx.prisma.publication.findFirst({
         where: { spaceId: input.spaceId },
       });
 
-      let spaceId: string;
+      let publicationId: string;
 
       if (space) {
-        spaceId = space.id;
+        publicationId = space.id;
       } else {
         // If no space, create one
-        const { id } = await ctx.prisma.space.create({
+        const { id } = await ctx.prisma.publication.create({
           data: { spaceId: input.spaceId },
         });
 
-        spaceId = id;
+        publicationId = id;
       }
 
       // Create space view event
-      promises.push(ctx.prisma.viewEvent.create({ data: { spaceId } }));
+      promises.push(ctx.prisma.viewEvent.create({ data: { publicationId } }));
 
       // Update space view count
       promises.push(
-        ctx.prisma.space.update({
-          where: { id: spaceId },
+        ctx.prisma.publication.update({
+          where: { id: publicationId },
           data: { viewCount: { increment: 1 } },
         })
       );

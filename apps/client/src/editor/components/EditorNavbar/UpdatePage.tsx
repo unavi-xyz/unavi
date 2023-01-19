@@ -1,6 +1,7 @@
 import { ERC721Metadata } from "contracts";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 
 import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
@@ -15,11 +16,11 @@ import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
 
 function cdnModelURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/model.glb`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/model.glb`;
 }
 
 function cdnImageURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/image.jpg`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/image.jpg`;
 }
 
 interface Props {
@@ -52,10 +53,9 @@ export default function UpdatePage({ onClose }: Props) {
     }
   );
 
-  const { mutateAsync: saveProject } = trpc.project.save.useMutation();
-  const { mutateAsync: createModelUploadUrl } = trpc.publication.modelUploadURL.useMutation();
-  const { mutateAsync: createImageUploadUrl } = trpc.publication.imageUploadURL.useMutation();
-  const { mutateAsync: createMetadataUploadUrl } = trpc.publication.metadataUploadURL.useMutation();
+  const { mutateAsync: getModelUpload } = trpc.publication.getModelUpload.useMutation();
+  const { mutateAsync: getImageUpload } = trpc.publication.getImageUpload.useMutation();
+  const { mutateAsync: getMetadataUpload } = trpc.publication.getMetadataUpload.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
@@ -69,130 +69,103 @@ export default function UpdatePage({ onClose }: Props) {
     if (loading) return;
     if (!publicationId) throw new Error("No publication id");
 
-    try {
-      setLoading(true);
-      const promises: Promise<void>[] = [];
+    async function publish() {
+      async function uploadModel() {
+        if (!publicationId) throw new Error("No publication id");
 
-      // Save project
-      promises.push(save());
+        const { engine } = useEditorStore.getState();
+        if (!engine) throw new Error("Engine not found");
 
-      promises.push(
-        saveProject({
-          id,
-          name,
+        // Export scene to glb
+        const glb = await engine.modules.scene.export();
+        const body = new Blob([glb], { type: "model/gltf-binary" });
+
+        // Upload to S3
+        const url = await getModelUpload({ id: publicationId });
+        const response = await fetch(url, {
+          method: "PUT",
+          body,
+          headers: {
+            "Content-Type": "model/gltf-binary",
+            "x-amz-acl": "public-read",
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to upload model");
+      }
+
+      async function uploadImage() {
+        if (!publicationId) throw new Error("No publication id");
+        if (!imageFile) throw new Error("Image not found");
+
+        // Get image
+        const res = await fetch(URL.createObjectURL(imageFile));
+        const body = await res.blob();
+
+        // Upload to S3
+        const url = await getImageUpload({ id: publicationId });
+        const response = await fetch(url, {
+          method: "PUT",
+          body,
+          headers: {
+            "Content-Type": "image/jpeg",
+            "x-amz-acl": "public-read",
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to upload image");
+      }
+
+      async function uploadMetadata() {
+        if (!publicationId) throw new Error("No publication id");
+
+        const modelURL = cdnModelURL(publicationId);
+        const imageURL = cdnImageURL(publicationId);
+
+        const metadata: ERC721Metadata = {
+          animation_url: modelURL,
           description,
-        })
-      );
+          external_url: `https://thewired.space/user/${
+            profile ? numberToHexDisplay(profile.id) : session?.address
+          }`,
+          image: imageURL,
+          name,
+        };
 
-      // Export scene and upload to S3
-      promises.push(
-        new Promise((resolve, reject) => {
-          async function upload() {
-            const { engine } = useEditorStore.getState();
-            if (!engine) throw new Error("Engine not found");
-            if (!publicationId) throw new Error("No publication id");
+        // Upload to S3
+        const url = await getMetadataUpload({ id: publicationId });
+        const response = await fetch(url, {
+          method: "PUT",
+          body: JSON.stringify(metadata),
+          headers: {
+            "Content-Type": "application/json",
+            "x-amz-acl": "public-read",
+          },
+        });
 
-            // Export scene to glb
-            const glb = await engine.export();
-            const body = new Blob([glb], { type: "model/gltf-binary" });
+        if (!response.ok) throw new Error("Failed to upload metadata");
+      }
 
-            // Upload to S3
-            const url = await createModelUploadUrl({ id: publicationId });
-            const response = await fetch(url, {
-              method: "PUT",
-              body,
-              headers: {
-                "Content-Type": "model/gltf-binary",
-                "x-amz-acl": "public-read",
-              },
-            });
+      await save();
+      await Promise.all([uploadModel(), uploadImage(), uploadMetadata()]);
 
-            if (!response.ok) reject();
-            else resolve();
-          }
-
-          upload();
-        })
-      );
-
-      // Upload image to S3
-      promises.push(
-        new Promise((resolve, reject) => {
-          async function upload() {
-            if (!publicationId) throw new Error("No publication id");
-
-            if (!imageFile) {
-              reject();
-              return;
-            }
-
-            // Get image
-            const res = await fetch(URL.createObjectURL(imageFile));
-            const body = await res.blob();
-
-            // Upload to S3
-            const url = await createImageUploadUrl({ id: publicationId });
-            const response = await fetch(url, {
-              method: "PUT",
-              body,
-              headers: {
-                "Content-Type": "image/jpeg",
-                "x-amz-acl": "public-read",
-              },
-            });
-
-            if (!response.ok) throw new Error("Failed to upload image");
-          }
-
-          upload().then(resolve).catch(reject);
-        })
-      );
-
-      // Upload metadata to S3
-      promises.push(
-        new Promise((resolve, reject) => {
-          async function upload() {
-            if (!publicationId) throw new Error("No publication id");
-
-            const modelURL = cdnModelURL(publicationId);
-            const imageURL = cdnImageURL(publicationId);
-
-            const metadata: ERC721Metadata = {
-              animation_url: modelURL,
-              description,
-              external_url: `https://thewired.space/user/${
-                profile ? numberToHexDisplay(profile.id) : session?.address
-              }`,
-              image: imageURL,
-              name,
-            };
-
-            // Upload to S3
-            const url = await createMetadataUploadUrl({ id: publicationId });
-            const response = await fetch(url, {
-              method: "PUT",
-              body: JSON.stringify(metadata),
-              headers: {
-                "Content-Type": "application/json",
-                "x-amz-acl": "public-read",
-              },
-            });
-
-            if (!response.ok) throw new Error("Failed to upload metadata");
-          }
-
-          upload().then(resolve).catch(reject);
-        })
-      );
-
-      await Promise.all(promises);
-
-      setLoading(false);
       onClose();
-    } catch (error) {
-      console.error(error);
-      setLoading(false);
     }
+
+    setLoading(true);
+
+    toast.promise(
+      publish().finally(() => {
+        setLoading(false);
+      }),
+      {
+        loading: "Updating...",
+        success: "Updated!",
+        error: "Failed to update",
+      }
+    );
+
+    setLoading(false);
   }
 
   const image = imageFile ? URL.createObjectURL(imageFile) : null;
@@ -252,7 +225,7 @@ export default function UpdatePage({ onClose }: Props) {
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={handlePublish} variant="filled" loading={loading}>
+        <Button onClick={handlePublish} variant="filled" disabled={loading}>
           Submit
         </Button>
       </div>

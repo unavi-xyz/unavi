@@ -13,7 +13,7 @@ import Card from "../ui/Card";
 import Dialog from "../ui/Dialog";
 
 function cdnImageURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/image.jpg`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/image.jpg`;
 }
 
 export default function Spaces() {
@@ -40,10 +40,10 @@ export default function Spaces() {
     setOpenCreateProject(true);
   }
 
-  const unpublishedProjects = projects?.filter((p) => !p.spaceId) ?? [];
-  const publishedProjects = projects?.filter((p) => p.spaceId) ?? [];
+  const unpublishedProjects = projects?.filter((p) => !p.publicationId) ?? [];
+  const publishedProjects = projects?.filter((p) => p.publicationId) ?? [];
   const publishedImages = publishedProjects.map((p) =>
-    p.spaceId ? cdnImageURL(p.spaceId) : p.image
+    p.publicationId ? cdnImageURL(p.publicationId) : p.image
   );
 
   return (

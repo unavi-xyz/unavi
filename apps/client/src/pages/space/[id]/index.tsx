@@ -40,7 +40,7 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
 };
 
 export default function Space({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const { data: space } = trpc.space.byId.useQuery({ id }, { refetchOnWindowFocus: false });
+  const { data: space } = trpc.space.byId.useQuery({ id });
 
   // const { data: stats } = trpc.public.modelStats.useQuery(
   //   { publicationId: id },

@@ -33,8 +33,8 @@ export default function SpaceLayout({ id, author, metadata, children }: Props) {
   return (
     <>
       <MetaTags
-        title={metadata?.name}
-        description={metadata?.description}
+        title={metadata?.name ?? `Space ${hexId}`}
+        description={metadata?.description ?? ""}
         image={metadata?.image}
         card="summary_large_image"
       />

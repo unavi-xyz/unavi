@@ -9,7 +9,7 @@ import ProjectLayout from "../../../home/layouts/ProjectLayout/ProjectLayout";
 import Button from "../../../ui/Button";
 
 function cdnImageURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/image.jpg`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/image.jpg`;
 }
 
 export default function Project() {

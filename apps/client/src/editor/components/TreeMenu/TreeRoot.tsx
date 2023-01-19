@@ -41,6 +41,7 @@ export default function TreeRoot() {
 
   useEffect(() => {
     const onMouseUp = () => {
+      document.body.style.removeProperty("cursor");
       useEditorStore.setState({ draggingId: null });
     };
 

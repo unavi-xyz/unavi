@@ -50,6 +50,7 @@ export default function TreeItem({ id }: Props) {
         onMouseDown={(e) => {
           e.stopPropagation();
           useEditorStore.setState({ draggingId: id, selectedId: id });
+          document.body.style.cursor = "grabbing";
         }}
         onMouseUp={() => {
           if (!engine || !draggingId || draggingId === id || isAncestor(draggingId, id, engine))

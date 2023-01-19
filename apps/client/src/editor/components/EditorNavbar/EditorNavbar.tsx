@@ -32,15 +32,11 @@ export default function EditorNavbar() {
   const { save, saveImage } = useSave();
 
   function handleToggleColliders() {
-    useEditorStore.setState({ visuals: !visuals });
+    const { engine } = useEditorStore.getState();
+    if (!engine) return;
 
-    // const { engine } = useEditorStore.getState();
-    // engine?.renderThread.postMessage({
-    //   subject: "show_visuals",
-    //   data: {
-    //     visible: !visuals,
-    //   },
-    // });
+    engine.visuals = !visuals;
+    useEditorStore.setState({ visuals: !visuals });
   }
 
   async function handleBack() {

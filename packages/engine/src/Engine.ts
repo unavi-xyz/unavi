@@ -1,4 +1,4 @@
-import { DEFAULT_CONTROLS } from "./constants";
+import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "./constants";
 import { InputModule } from "./input/InputModule";
 import { PhysicsModule } from "./physics/PhysicsModule";
 import { RenderModule } from "./render/RenderModule";
@@ -21,6 +21,7 @@ export class Engine {
   modules: ModuleContainer;
 
   #controls: ControlsType = DEFAULT_CONTROLS;
+  #visuals = DEFAULT_VISUALS;
 
   constructor({ canvas }: EngineOptions) {
     const render = new RenderModule(canvas, this);
@@ -45,6 +46,15 @@ export class Engine {
     this.modules.input.keyboard.controls = value;
     this.modules.render.toRenderThread({ subject: "set_controls", data: value });
     this.modules.physics.toPhysicsThread({ subject: "set_controls", data: value });
+  }
+
+  get visuals() {
+    return this.#visuals;
+  }
+
+  set visuals(value: boolean) {
+    this.#visuals = value;
+    this.modules.render.toRenderThread({ subject: "toggle_visuals", data: { enabled: value } });
   }
 
   destroy() {

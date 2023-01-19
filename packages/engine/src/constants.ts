@@ -1,6 +1,7 @@
 import { ControlsType } from "./Engine";
 
 export const DEFAULT_CONTROLS: ControlsType = "player";
+export const DEFAULT_VISUALS = false;
 
 export const PLAYER_HEIGHT = 1.6;
 export const PLAYER_RADIUS = 0.25;

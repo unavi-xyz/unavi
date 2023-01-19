@@ -31,8 +31,9 @@ export default function Editor() {
 
     const engine = new Engine({ canvas: canvasRef.current });
     engine.controls = "orbit";
+    engine.visuals = true;
 
-    useEditorStore.setState({ engine, canvas: canvasRef.current });
+    useEditorStore.setState({ engine, canvas: canvasRef.current, visuals: true });
 
     // Skybox
     engine.modules.render.toRenderThread({

@@ -17,6 +17,7 @@ import {
 import { CSM } from "three/examples/jsm/csm/CSM";
 import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
 
+import { DEFAULT_VISUALS } from "../../constants";
 import { Collider, ColliderExtension } from "../../gltf";
 import { MeshJSON, NodeJSON } from "../../scene";
 import { MaterialJSON } from "../../scene/attributes/Materials";
@@ -52,7 +53,7 @@ export class RenderScene extends Scene {
 
   colliderMaterial = new MeshBasicMaterial({ color: "#000000", wireframe: true });
   visuals = new Object3D();
-  #visualsEnabled = false;
+  #visualsEnabled = DEFAULT_VISUALS;
 
   constructor(toMainThread: (message: SceneMessage) => void) {
     super();
@@ -92,7 +93,22 @@ export class RenderScene extends Scene {
 
   set visualsEnabled(enabled: boolean) {
     this.#visualsEnabled = enabled;
-    if (!enabled) this.visuals.clear();
+
+    if (enabled) {
+      this.doc
+        .getRoot()
+        .listNodes()
+        .forEach((node) => {
+          const id = this.node.getId(node);
+          if (!id) throw new Error("Node not found");
+          this.updateColliderVisual(id);
+        });
+    } else {
+      this.colliderObjects.forEach((object) => {
+        object.removeFromParent();
+        object.geometry.dispose();
+      });
+    }
   }
 
   setCSM(csm: CSM | null) {
@@ -716,6 +732,8 @@ export class RenderScene extends Scene {
   }
 
   updateColliderVisual(nodeId: string) {
+    if (!this.visualsEnabled) return;
+
     const node = this.node.store.get(nodeId);
     if (!node) throw new Error("Node not found");
 

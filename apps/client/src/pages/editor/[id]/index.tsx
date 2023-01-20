@@ -65,7 +65,7 @@ export default function Editor() {
       <div
         className="absolute top-0 left-0 h-full w-full overflow-hidden"
         onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
+        onDrop={async (e) => {
           if (!engine) return;
 
           e.preventDefault();
@@ -78,6 +78,8 @@ export default function Editor() {
 
           const isGLTF = file.name.endsWith(".gltf") || file.name.endsWith(".glb");
           if (!isGLTF) return;
+
+          await engine.modules.scene.addFile(file);
         }}
       >
         <div className="z-10 h-14 w-full border-b">

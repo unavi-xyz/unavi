@@ -51,16 +51,17 @@ export class SceneModule extends Scene {
     this.loadDocument(doc);
   }
 
-  async addGLTF(uri: string) {
-    const io = new WebIO().registerExtensions(extensions);
-    const doc = await io.read(uri);
+  async addFile(file: File) {
+    const buffer = await file.arrayBuffer();
+    const array = new Uint8Array(buffer);
 
-    const path = uri.split("/");
-    const file = path[path.length - 1];
-    const fileName = file?.split(".")[0];
+    const io = new WebIO().registerExtensions(extensions);
+    const doc = await io.readBinary(array);
 
     const scene = doc.getRoot().getDefaultScene();
-    const groupNode = doc.createNode(fileName);
+
+    const name = file.name.split(".")[0];
+    const groupNode = doc.createNode(name);
 
     // Add top level nodes to group node
     scene?.listChildren().forEach((node) => groupNode.addChild(node));

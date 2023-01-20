@@ -113,7 +113,7 @@ export class PhysicsScene extends Scene {
           }
         });
 
-        this.#updateNode(data.id, data.json);
+        this.#updateNodeCollider(data.id);
         this.#updateNodeTransform(data.id);
         break;
       }
@@ -140,79 +140,81 @@ export class PhysicsScene extends Scene {
   #updateNode(nodeId: string, json: Partial<NodeJSON>) {
     const colliderJSON = json.extensions?.OMI_collider;
 
-    if (colliderJSON) {
+    if (colliderJSON !== undefined) {
       // Remove existing collider
       this.#removeNodeCollider(nodeId);
 
       // Create new collider
-      let colliderDesc: ColliderDesc | undefined;
+      if (colliderJSON) {
+        let colliderDesc: ColliderDesc | undefined;
 
-      switch (colliderJSON.type) {
-        case "box": {
-          const size = colliderJSON.size ?? [1, 1, 1];
-          colliderDesc = ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2);
-          break;
+        switch (colliderJSON.type) {
+          case "box": {
+            const size = colliderJSON.size ?? [1, 1, 1];
+            colliderDesc = ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2);
+            break;
+          }
+
+          case "sphere": {
+            const radius = colliderJSON.radius ?? 0.5;
+            colliderDesc = ColliderDesc.ball(radius);
+            break;
+          }
+
+          case "cylinder": {
+            const height = colliderJSON.height ?? 1;
+            const radius = colliderJSON.radius ?? 0.5;
+            colliderDesc = ColliderDesc.cylinder(height / 2, radius);
+            break;
+          }
+
+          case "trimesh": {
+            if (!colliderJSON.mesh) break;
+
+            const mesh = this.mesh.store.get(colliderJSON.mesh);
+            if (!mesh) throw new Error("Mesh not found");
+
+            const vertices = mesh.listPrimitives().flatMap((primitive) => {
+              const attribute = primitive.getAttribute("POSITION");
+              if (!attribute) throw new Error("Position attribute not found");
+
+              const array = attribute.getArray();
+              if (!array) throw new Error("Position attribute array not found");
+
+              return Array.from(array);
+            });
+
+            const indices = mesh.listPrimitives().flatMap((primitive) => {
+              const indicesAttribute = primitive.getIndices();
+              if (!indicesAttribute) throw new Error("Indices attribute not found");
+
+              const array = indicesAttribute.getArray();
+              if (!array) throw new Error("Indices attribute array not found");
+
+              return Array.from(array);
+            });
+
+            if (vertices.length === 0 || indices.length === 0) break;
+
+            colliderDesc = ColliderDesc.trimesh(
+              Float32Array.from(vertices),
+              Uint32Array.from(indices)
+            );
+          }
         }
 
-        case "sphere": {
-          const radius = colliderJSON.radius ?? 0.5;
-          colliderDesc = ColliderDesc.ball(radius);
-          break;
-        }
+        if (!colliderDesc) return;
 
-        case "cylinder": {
-          const height = colliderJSON.height ?? 1;
-          const radius = colliderJSON.radius ?? 0.5;
-          colliderDesc = ColliderDesc.cylinder(height / 2, radius);
-          break;
-        }
+        colliderDesc.setCollisionGroups(COLLISION_GROUP.static);
 
-        case "trimesh": {
-          if (!colliderJSON.mesh) break;
+        const rigidBodyDesc = RigidBodyDesc.fixed();
+        const rigidBody = this.#world.createRigidBody(rigidBodyDesc);
+        const collider = this.#world.createCollider(colliderDesc, rigidBody);
 
-          const mesh = this.mesh.store.get(colliderJSON.mesh);
-          if (!mesh) throw new Error("Mesh not found");
+        this.colliders.set(nodeId, collider);
 
-          const vertices = mesh.listPrimitives().flatMap((primitive) => {
-            const attribute = primitive.getAttribute("POSITION");
-            if (!attribute) throw new Error("Position attribute not found");
-
-            const array = attribute.getArray();
-            if (!array) throw new Error("Position attribute array not found");
-
-            return Array.from(array);
-          });
-
-          const indices = mesh.listPrimitives().flatMap((primitive) => {
-            const indicesAttribute = primitive.getIndices();
-            if (!indicesAttribute) throw new Error("Indices attribute not found");
-
-            const array = indicesAttribute.getArray();
-            if (!array) throw new Error("Indices attribute array not found");
-
-            return Array.from(array);
-          });
-
-          if (vertices.length === 0 || indices.length === 0) break;
-
-          colliderDesc = ColliderDesc.trimesh(
-            Float32Array.from(vertices),
-            Uint32Array.from(indices)
-          );
-        }
+        this.#updateNodeTransform(nodeId);
       }
-
-      if (!colliderDesc) return;
-
-      colliderDesc.setCollisionGroups(COLLISION_GROUP.static);
-
-      const rigidBodyDesc = RigidBodyDesc.fixed();
-      const rigidBody = this.#world.createRigidBody(rigidBodyDesc);
-      const collider = this.#world.createCollider(colliderDesc, rigidBody);
-
-      this.colliders.set(nodeId, collider);
-
-      this.#updateNodeTransform(nodeId);
     }
   }
 
@@ -229,6 +231,15 @@ export class PhysicsScene extends Scene {
       this.colliders.delete(nodeId);
       this.colliderScale.delete(nodeId);
     }
+  }
+
+  #updateNodeCollider(nodeId: string) {
+    const node = this.node.store.get(nodeId);
+    if (!node) throw new Error("Node not found");
+
+    const json = this.node.toJSON(node);
+
+    this.#updateNode(nodeId, { extensions: json.extensions });
   }
 
   #updateNodeTransform(nodeId: string) {

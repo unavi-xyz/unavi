@@ -6,7 +6,6 @@ const OBJECT_NAME = {
   Box: "Box",
   Sphere: "Sphere",
   Cylinder: "Cylinder",
-  Model: "GLTF Model",
   Empty: "Empty",
 } as const;
 
@@ -41,13 +40,14 @@ function createNode(name: ObjectName) {
   if (!engine) return;
 
   const { id, object: node } = engine.modules.scene.node.create();
-  const { object: mesh } = engine.modules.scene.mesh.create();
 
   node.setName(name);
-  node.setMesh(mesh);
 
   switch (name) {
     case OBJECT_NAME.Box: {
+      const { object: mesh } = engine.modules.scene.mesh.create();
+      node.setMesh(mesh);
+
       const extras: MeshExtras = {
         customMesh: {
           type: "Box",
@@ -62,6 +62,9 @@ function createNode(name: ObjectName) {
     }
 
     case OBJECT_NAME.Sphere: {
+      const { object: mesh } = engine.modules.scene.mesh.create();
+      node.setMesh(mesh);
+
       const extras: MeshExtras = {
         customMesh: {
           type: "Sphere",
@@ -76,6 +79,9 @@ function createNode(name: ObjectName) {
     }
 
     case OBJECT_NAME.Cylinder: {
+      const { object: mesh } = engine.modules.scene.mesh.create();
+      node.setMesh(mesh);
+
       const extras: MeshExtras = {
         customMesh: {
           type: "Cylinder",

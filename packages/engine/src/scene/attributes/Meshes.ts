@@ -28,13 +28,8 @@ type CylinderMesh = {
   radialSegments: number;
 };
 
-type ModelMesh = {
-  type: "Model";
-  uri: string;
-};
-
 export type MeshExtras = {
-  customMesh?: BoxMesh | SphereMesh | CylinderMesh | ModelMesh;
+  customMesh?: BoxMesh | SphereMesh | CylinderMesh;
 };
 
 export interface MeshJSON {

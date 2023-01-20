@@ -9,14 +9,12 @@ import ComponentMenu from "../ComponentMenu";
 import MenuRows from "../ui/MenuRows";
 import BoxMeshComponent from "./BoxMeshComponent";
 import CylinderMeshComponent from "./CylinderMeshComponent";
-import PrimitiveComponent from "./PrimitiveComponent";
 import SphereMeshComponent from "./SphereMeshComponent";
 
 const MESH_TYPE = {
   Box: "Box",
   Sphere: "Sphere",
   Cylinder: "Cylinder",
-  Model: "Model",
   Primitives: "Primitives",
 } as const;
 
@@ -29,11 +27,25 @@ interface Props {
 export default function MeshComponent({ meshId }: Props) {
   const mesh = useMesh(meshId);
   const extras = useMeshAttribute(meshId, "extras");
-  const primitiveIds = useMeshAttribute(meshId, "primitives");
 
   if (!mesh) return null;
 
   const meshType: MeshType = extras?.customMesh?.type ?? MESH_TYPE.Primitives;
+
+  if (meshType === MESH_TYPE.Primitives)
+    return (
+      <div className="group space-y-4 rounded-2xl p-4 ring-neutral-300 transition">
+        <div className="-mt-1 flex justify-between text-xl font-bold">
+          <div>Mesh</div>
+        </div>
+
+        <MenuRows titles={["Type"]}>
+          <div className="w-full cursor-not-allowed select-none rounded border border-neutral-300 bg-neutral-50 pl-1.5">
+            Primitives
+          </div>
+        </MenuRows>
+      </div>
+    );
 
   return (
     <ComponentMenu
@@ -48,19 +60,9 @@ export default function MeshComponent({ meshId }: Props) {
       <MenuRows titles={["Type"]}>
         <SelectMenu
           value={meshType}
-          options={Object.values(MESH_TYPE)}
+          options={Object.values(MESH_TYPE).filter((type) => type !== MESH_TYPE.Primitives)}
           onChange={(e) => {
             const type = e.target.value;
-
-            if (type === MESH_TYPE.Primitives) {
-              const newExtras: MeshExtras = {
-                ...extras,
-                customMesh: undefined,
-              };
-
-              mesh.setExtras(newExtras);
-              return;
-            }
 
             // Remove all primitives
             mesh.listPrimitives().forEach((primitive) => mesh.removePrimitive(primitive));
@@ -112,19 +114,6 @@ export default function MeshComponent({ meshId }: Props) {
                 mesh.setExtras(newExtras);
                 break;
               }
-
-              case MESH_TYPE.Model: {
-                const newExtras: MeshExtras = {
-                  ...extras,
-                  customMesh: {
-                    type: "Model",
-                    uri: "",
-                  },
-                };
-
-                mesh.setExtras(newExtras);
-                break;
-              }
             }
 
             // Force node refresh
@@ -143,11 +132,7 @@ export default function MeshComponent({ meshId }: Props) {
         <SphereMeshComponent meshId={meshId} />
       ) : meshType === MESH_TYPE.Cylinder ? (
         <CylinderMeshComponent meshId={meshId} />
-      ) : (
-        primitiveIds?.map((primitiveId) => (
-          <PrimitiveComponent key={primitiveId} primitiveId={primitiveId} />
-        ))
-      )}
+      ) : null}
     </ComponentMenu>
   );
 }

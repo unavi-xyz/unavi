@@ -40,8 +40,8 @@ export default function Spaces() {
     setOpenCreateProject(true);
   }
 
-  const unpublishedProjects = projects?.filter((p) => !p.publicationId) ?? [];
-  const publishedProjects = projects?.filter((p) => p.publicationId) ?? [];
+  const unpublishedProjects = projects?.filter((p) => !p.Publication?.spaceId) ?? [];
+  const publishedProjects = projects?.filter((p) => p.Publication?.spaceId) ?? [];
   const publishedImages = publishedProjects.map((p) =>
     p.publicationId ? cdnImageURL(p.publicationId) : p.image
   );

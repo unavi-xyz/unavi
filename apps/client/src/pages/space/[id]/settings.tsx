@@ -72,15 +72,9 @@ export default function Settings({ id }: InferGetServerSidePropsType<typeof getS
 
     toast.promise(
       deleteSpace()
-        .then(() => {
-          router.push(`/user/${session?.address}`);
-        })
-        .catch((err) => {
-          console.error(err);
-        })
-        .finally(() => {
-          setLoading(false);
-        }),
+        .then(() => router.push(`/user/${session?.address}`))
+        .catch((err) => console.error(err))
+        .finally(() => setLoading(false)),
       {
         loading: "Deleting space...",
         success: "Space deleted",
@@ -96,13 +90,7 @@ export default function Settings({ id }: InferGetServerSidePropsType<typeof getS
 
         <div className="pb-1 text-lg">Deleting a space is permanent and cannot be undone.</div>
 
-        <Button
-          variant="filled"
-          color="error"
-          rounded="large"
-          disabled={loading}
-          onClick={handleDelete}
-        >
+        <Button variant="filled" color="error" disabled={loading} onClick={handleDelete}>
           Delete Space
         </Button>
       </div>

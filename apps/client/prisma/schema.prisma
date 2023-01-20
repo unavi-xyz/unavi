@@ -29,7 +29,7 @@ model Publication {
   ViewEvents ViewEvent[]
   viewCount  Int         @default(0)
 
-  Project Project[]
+  Projects Project[]
 }
 
 model Project {

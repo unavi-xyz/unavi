@@ -5,6 +5,7 @@ import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
 
+import { trpc } from "../../../client/trpc";
 import Button from "../../../ui/Button";
 import Dialog from "../../../ui/Dialog";
 import IconButton from "../../../ui/IconButton";
@@ -22,12 +23,13 @@ export default function EditorNavbar() {
 
   const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
-  const publicationId = useEditorStore((state) => state.publicationId);
   const isSaving = useEditorStore((state) => state.isSaving);
   const engine = useEditorStore((state) => state.engine);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
   const [previewMode, setPreviewMode] = useState(engine?.controls === "player" ? true : false);
+
+  const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
 
   const { save, saveImage } = useSave();
 
@@ -67,7 +69,7 @@ export default function EditorNavbar() {
   return (
     <>
       <Dialog open={openPublishDialog} onClose={() => setOpenPublishDialog(false)}>
-        {publicationId ? (
+        {project?.Publication?.spaceId ? (
           <UpdatePage onClose={() => setOpenPublishDialog(false)} />
         ) : (
           <PublishPage />

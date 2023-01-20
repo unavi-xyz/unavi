@@ -69,7 +69,7 @@ export default function UpdatePage({ onClose }: Props) {
     if (loading) return;
     if (!publicationId) throw new Error("No publication id");
 
-    async function publish() {
+    async function update() {
       async function uploadModel() {
         if (!publicationId) throw new Error("No publication id");
 
@@ -155,17 +155,13 @@ export default function UpdatePage({ onClose }: Props) {
     setLoading(true);
 
     toast.promise(
-      publish().finally(() => {
-        setLoading(false);
-      }),
+      update().finally(() => setLoading(false)),
       {
         loading: "Updating...",
         success: "Updated!",
         error: "Failed to update",
       }
     );
-
-    setLoading(false);
   }
 
   const image = imageFile ? URL.createObjectURL(imageFile) : null;
@@ -182,6 +178,7 @@ export default function UpdatePage({ onClose }: Props) {
           }}
           name="Name"
           outline
+          disabled={loading}
           defaultValue={name}
         />
 
@@ -193,6 +190,7 @@ export default function UpdatePage({ onClose }: Props) {
           autoComplete="off"
           name="Description"
           outline
+          disabled={loading}
           defaultValue={description}
         />
 
@@ -212,6 +210,7 @@ export default function UpdatePage({ onClose }: Props) {
           <ButtonFileInput
             name="Cover Picture"
             accept="image/*"
+            disabled={loading}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (!file) return;

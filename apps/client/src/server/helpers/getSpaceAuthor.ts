@@ -12,5 +12,5 @@ export async function getSpaceAuthor(spaceId: number) {
   // Fetch profile
   const profile = await getProfileFromAddress(address);
 
-  return profile;
+  return { address, profile };
 }

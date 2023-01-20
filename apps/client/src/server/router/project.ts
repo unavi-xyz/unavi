@@ -19,6 +19,7 @@ export const projectRouter = router({
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const projects = await ctx.prisma.project.findMany({
       where: { owner: ctx.session.address },
+      include: { Publication: true },
       orderBy: { updatedAt: "desc" },
     });
 
@@ -47,6 +48,7 @@ export const projectRouter = router({
       // Verify user owns the project
       const project = await ctx.prisma.project.findFirst({
         where: { id: input.id, owner: ctx.session.address },
+        include: { Publication: true },
       });
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -151,32 +153,46 @@ export const projectRouter = router({
         id: z.string().length(PROJECT_ID_LENGTH),
         name: z.string().max(MAX_NAME_LENGTH).optional(),
         description: z.string().max(MAX_DESCRIPTION_LENGTH).optional(),
-        publicationId: z.string().length(PUBLICATION_ID_LENGTH).optional(),
+        publicationId: z.string().length(PUBLICATION_ID_LENGTH).nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the project
       const found = await ctx.prisma.project.findFirst({
         where: { id: input.id, owner: ctx.session.address },
+        include: { Publication: true },
       });
       if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
+      const promises: Promise<unknown>[] = [];
+
       // Verify user owns the publication
-      if (input.publicationId !== undefined) {
-        const found = await ctx.prisma.publication.findFirst({
+      if (input.publicationId) {
+        const publication = await ctx.prisma.publication.findFirst({
           where: { id: input.publicationId, owner: ctx.session.address },
         });
-        if (!found) throw new TRPCError({ code: "BAD_REQUEST" });
+        if (!publication) throw new TRPCError({ code: "BAD_REQUEST" });
       }
 
-      await ctx.prisma.project.update({
-        where: { id: input.id },
-        data: {
-          name: input.name,
-          description: input.description,
-          publicationId: input.publicationId,
-        },
-      });
+      // Delete old publication if not in use
+      if (input.publicationId !== undefined) {
+        if (found.Publication?.spaceId === null) {
+          promises.push(ctx.prisma.publication.delete({ where: { id: found.Publication.id } }));
+        }
+      }
+
+      promises.push(
+        ctx.prisma.project.update({
+          where: { id: input.id },
+          data: {
+            name: input.name,
+            description: input.description,
+            publicationId: input.publicationId,
+          },
+        })
+      );
+
+      await Promise.all(promises);
     }),
 
   delete: protectedProcedure
@@ -189,18 +205,21 @@ export const projectRouter = router({
       // Verify user owns the project
       const found = await ctx.prisma.project.findFirst({
         where: { id: input.id, owner: ctx.session.address },
+        include: { Publication: true },
       });
       if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
-      const promises: Promise<any>[] = [];
-
-      // Delete from database
-      promises.push(ctx.prisma.project.delete({ where: { id: input.id } }));
-
-      // Delete from S3
       const project = new Project(input.id);
-      promises.push(project.delete());
+      const publicationInUse = Boolean(found.Publication && found.Publication.spaceId !== null);
 
-      await Promise.all(promises);
+      await Promise.all([
+        // Delete from database
+        ctx.prisma.project.delete({
+          where: { id: input.id },
+          include: { Publication: !publicationInUse },
+        }),
+        // Delete from S3
+        project.delete(),
+      ]);
     }),
 });

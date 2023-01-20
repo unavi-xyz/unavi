@@ -79,11 +79,13 @@ export default function PublishPage() {
       if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
 
+      // Save project
+      const savePromise = save();
+
       // Create database publication
       const publicationId = await createPublication();
 
-      // Save project
-      await save();
+      await savePromise;
 
       async function uploadModel() {
         const { engine } = useEditorStore.getState();

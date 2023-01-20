@@ -581,7 +581,7 @@ export function useHost(url: string) {
 
 export function sendToHost(message: ToHostMessage) {
   const { ws } = useAppStore.getState();
-  if (!ws || ws.readyState !== ws.OPEN) throw new Error("WebSocket not initialized");
+  if (!ws || ws.readyState !== ws.OPEN) return;
 
   ws.send(JSON.stringify(message));
 }

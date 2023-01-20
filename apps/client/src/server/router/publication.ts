@@ -76,16 +76,16 @@ export const publicationRouter = router({
   link: protectedProcedure
     .input(
       z.object({
-        spaceId: z.number().int(),
+        spaceId: z.number().int().positive(),
         publicationId: z.string().length(PUBLICATION_ID_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {
       // Verify user owns the publication
-      const publication = await ctx.prisma.publication.findFirst({
+      const found = await ctx.prisma.publication.findFirst({
         where: { id: input.publicationId, owner: ctx.session.address },
       });
-      if (!publication) throw new TRPCError({ code: "NOT_FOUND" });
+      if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Save spaceId to publication
       await ctx.prisma.publication.update({
@@ -135,5 +135,19 @@ export const publicationRouter = router({
         where: { id },
         include: { ViewEvents: true },
       });
+    }),
+
+  bySpaceId: protectedProcedure
+    .input(
+      z.object({
+        spaceId: z.number().int().positive(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const publication = await ctx.prisma.publication.findFirst({
+        where: { spaceId: input.spaceId, owner: ctx.session.address },
+      });
+
+      return publication;
     }),
 });

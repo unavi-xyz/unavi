@@ -71,7 +71,6 @@ export function useSave() {
 
     try {
       await Promise.all([saveImage(), saveModel(), saveMetadata()]);
-      useEditorStore.setState({ changesToSave: false });
     } catch (err) {
       console.error(err);
     }

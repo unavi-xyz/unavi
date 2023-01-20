@@ -42,6 +42,16 @@ export class SceneModule extends Scene {
 
   async export() {
     const io = new WebIO().registerExtensions(extensions);
+
+    // Merge all buffers into one
+    const buffers = this.doc.getRoot().listBuffers();
+    buffers.forEach((buffer) => buffer.dispose());
+
+    const buffer = this.doc.createBuffer();
+
+    const accessors = this.doc.getRoot().listAccessors();
+    accessors.forEach((accessor) => accessor.setBuffer(buffer));
+
     return await io.writeBinary(this.doc);
   }
 

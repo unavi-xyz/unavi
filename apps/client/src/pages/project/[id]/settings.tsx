@@ -159,7 +159,7 @@ export default function Project() {
                 const value = e.target.value.replace(/[^0-9a-fA-FxX]/g, "").slice(0, 8);
                 e.target.value = value;
               }}
-              className="h-10 w-24 rounded-lg bg-neutral-100 py-1 pr-1 text-center ring-1 ring-inset ring-neutral-300"
+              className="h-10 w-24 rounded-lg bg-neutral-100 py-1 pr-1 text-center ring-1 ring-inset ring-neutral-400"
             />
             <Button
               variant="filled"

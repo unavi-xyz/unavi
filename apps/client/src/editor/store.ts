@@ -6,7 +6,6 @@ import { Tool } from "./types";
 export interface IEditorStore {
   engine: Engine | null;
   sceneLoaded: boolean;
-  changesToSave: boolean;
   isSaving: boolean;
 
   canvas: HTMLCanvasElement | null;
@@ -28,7 +27,6 @@ export interface IEditorStore {
 export const useEditorStore = create<IEditorStore>(() => ({
   engine: null,
   sceneLoaded: false,
-  changesToSave: false,
   isSaving: false,
 
   canvas: null,

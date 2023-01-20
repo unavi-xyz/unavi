@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { removeNode } from "../actions/RemoveNodeAction";
+import { deepDisposeNode } from "../components/TreeMenu/utils/dispose";
 import { useEditorStore } from "../store";
 
 export function useEditorHotkeys() {
@@ -14,10 +14,13 @@ export function useEditorHotkeys() {
       switch (e.key) {
         case "Delete": {
           const selectedId = useEditorStore.getState().selectedId;
-          if (selectedId) {
-            useEditorStore.setState({ selectedId: null });
-            removeNode(selectedId);
-          }
+          if (!selectedId) break;
+
+          const node = engine.modules.scene.node.store.get(selectedId);
+          if (!node) throw new Error("Node not found");
+
+          useEditorStore.setState({ selectedId: null });
+          deepDisposeNode(node);
           break;
         }
 

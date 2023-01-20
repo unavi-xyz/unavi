@@ -26,6 +26,18 @@ export class Scene {
 
   loadDocument(doc: Document) {
     this.doc.merge(doc);
+
+    // Merge into one scene
+    const scenes = this.doc.getRoot().listScenes();
+    const newScene = this.doc.createScene();
+    this.doc.getRoot().setDefaultScene(newScene);
+
+    scenes.forEach((scene) => {
+      // Move all nodes to new scene
+      scene.listChildren().forEach((node) => newScene.addChild(node));
+      scene.dispose();
+    });
+
     this.processChanges();
   }
 

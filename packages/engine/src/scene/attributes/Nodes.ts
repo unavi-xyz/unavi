@@ -81,19 +81,35 @@ export class Nodes extends Attribute<Node, NodeJSON> {
   }
 
   processChanges() {
-    const changed: Node[] = [];
+    const nodes = this.#scene.doc.getRoot().listNodes();
+
+    // Sort by depth
+    function getDepth(node: Node): number {
+      const parents = node.listParents().filter((parent) => parent instanceof Node);
+      if (parents.length === 0) return 0;
+
+      const parent = parents[0] as Node;
+      return getDepth(parent) + 1;
+    }
+
+    const sortedNodes = nodes
+      .map((node) => {
+        const depth = getDepth(node);
+        if (depth === undefined) throw new Error("Depth not found");
+        return { node, depth };
+      })
+      .sort((a, b) => b.depth - a.depth);
 
     // Add new nodes
-    this.#scene.doc
-      .getRoot()
-      .listNodes()
-      .forEach((node) => {
-        const nodeId = this.getId(node);
-        if (nodeId) return;
+    const changed: Node[] = [];
 
-        this.process(node);
-        changed.push(node);
-      });
+    sortedNodes.forEach(({ node }) => {
+      const nodeId = this.getId(node);
+      if (nodeId) return;
+
+      this.process(node);
+      changed.push(node);
+    });
 
     return changed;
   }

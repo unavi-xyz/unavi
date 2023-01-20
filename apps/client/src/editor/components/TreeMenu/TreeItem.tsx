@@ -5,6 +5,7 @@ import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 import { useNodeAttribute } from "../../hooks/useNodeAttribute";
 import { useEditorStore } from "../../store";
 import { isAncestor } from "./utils/isAncestor";
+import { moveNode } from "./utils/moveNode";
 
 interface Props {
   id: string;
@@ -75,16 +76,9 @@ export default function TreeItem({ id }: Props) {
             node.addChild(draggedNode);
           }
 
-          // Remove dragged nodes from tree
-          const newTreeIds = [...treeIds];
-          const draggingIndex = newTreeIds.indexOf(draggingId);
-          const draggedChildren = draggedNode.listChildren();
-          const draggedIds = newTreeIds.splice(draggingIndex, draggedChildren.length + 1);
-
-          // Add dragged nodes to tree
-          const index = newTreeIds.indexOf(id);
-          newTreeIds.splice(index + 1, 0, ...draggedIds);
-          useEditorStore.setState({ treeIds: newTreeIds });
+          // Move dragged node
+          const targetIndex = treeIds.indexOf(id);
+          moveNode(draggingId, targetIndex + 1);
 
           // Open children
           const alreadyOpen = openIds.includes(id);
@@ -147,16 +141,9 @@ export default function TreeItem({ id }: Props) {
               }
             }
 
-            // Remove dragged nodes from tree
-            const newTreeIds = [...treeIds];
-            const draggingIndex = newTreeIds.indexOf(draggingId);
-            const draggedChildren = draggedNode.listChildren();
-            const draggedIds = newTreeIds.splice(draggingIndex, draggedChildren.length + 1);
-
-            // Add dragged nodes to tree
-            const index = newTreeIds.indexOf(id);
-            newTreeIds.splice(index, 0, ...draggedIds);
-            useEditorStore.setState({ treeIds: newTreeIds });
+            // Move dragged node
+            const targetIndex = treeIds.indexOf(id);
+            moveNode(draggingId, targetIndex);
           }}
         >
           <div className="flex items-center">

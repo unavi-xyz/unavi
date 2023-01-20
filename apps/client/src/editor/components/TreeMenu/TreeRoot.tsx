@@ -58,7 +58,42 @@ export default function TreeRoot() {
 
     // Add new nodes to tree
     const newIds = nodeIds.filter((id) => !treeIds.includes(id));
-    newIds.forEach((id) => newTreeIds.push(id));
+
+    // Move children after parents
+    newIds.forEach((id) => {
+      const node = engine.modules.scene.node.store.get(id);
+      if (!node) throw new Error("Node not found");
+
+      function deepChildrenIds(id: string): string[] {
+        if (!engine) return [];
+
+        const node = engine.modules.scene.node.store.get(id);
+        if (!node) throw new Error("Node not found");
+
+        const childrenIds = node.listChildren().map((child) => {
+          const id = engine.modules.scene.node.getId(child);
+          if (!id) throw new Error("Node not found");
+          return id;
+        });
+
+        return childrenIds.flatMap((id) => [id, ...deepChildrenIds(id)]);
+      }
+
+      // Get children ids
+      const childrenIds = deepChildrenIds(id);
+
+      // Remove children from newIds
+      childrenIds.forEach((childId) => {
+        const index = newIds.indexOf(childId);
+        newIds.splice(index, 1);
+      });
+
+      // Add children after parent
+      const index = newIds.indexOf(id);
+      newIds.splice(index + 1, 0, ...childrenIds);
+    });
+
+    newTreeIds.push(...newIds);
 
     // Remove deleted nodes from tree
     const removedIds = newTreeIds.filter((id) => !nodeIds.includes(id));
@@ -68,28 +103,6 @@ export default function TreeRoot() {
 
       const openIndex = newOpenIds.indexOf(id);
       newOpenIds.splice(openIndex, 1);
-    });
-
-    // Move children after parents
-    newTreeIds.sort((a, b) => {
-      if (!engine) return 0;
-
-      const nodeA = engine.modules.scene.node.store.get(a);
-      if (!nodeA) throw new Error("Node not found");
-
-      const nodeB = engine.modules.scene.node.store.get(b);
-      if (!nodeB) throw new Error("Node not found");
-
-      const parentA = engine.modules.scene.node.getParent(nodeA);
-      const parentB = engine.modules.scene.node.getParent(nodeB);
-
-      if (!parentA) return -1;
-      if (!parentB) return 1;
-
-      if (parentA === b) return 1;
-      if (parentB === a) return -1;
-
-      return 0;
     });
 
     // Save changes

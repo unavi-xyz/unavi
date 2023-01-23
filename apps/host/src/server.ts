@@ -1,4 +1,4 @@
-import { ToHostMessage } from "protocol";
+import { toHostMessageSchema } from "protocol";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
@@ -34,7 +34,7 @@ server.ws("/*", {
   message: async (ws, buffer) => {
     try {
       const text = textDecoder.decode(buffer);
-      const { subject, data }: ToHostMessage = JSON.parse(text);
+      const { subject, data } = toHostMessageSchema.parse(JSON.parse(text));
 
       switch (subject) {
         case "join": {
@@ -47,12 +47,12 @@ server.ws("/*", {
           break;
         }
 
-        case "message": {
+        case "chat": {
           players.publishMessage(ws, data);
           break;
         }
 
-        case "falling_state": {
+        case "set_falling_state": {
           players.publishFallingState(ws, data);
           break;
         }
@@ -76,7 +76,7 @@ server.ws("/*", {
         case "get_router_rtp_capabilities": {
           send(ws, {
             subject: "router_rtp_capabilities",
-            data: router.rtpCapabilities,
+            data: { rtpCapabilities: router.rtpCapabilities },
           });
           break;
         }

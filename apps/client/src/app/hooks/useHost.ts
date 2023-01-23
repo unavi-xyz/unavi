@@ -1,27 +1,18 @@
 import { Device } from "mediasoup-client";
 import { Transport } from "mediasoup-client/lib/Transport";
-import { nanoid } from "nanoid";
-import { FromHostMessage, ToHostMessage } from "protocol";
+import { fromHostMessageSchema, ToHostMessage } from "protocol";
 import { useEffect, useMemo } from "react";
 
 import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { Players } from "../networking/Players";
 import { ChatMessage } from "../ui/ChatMessage";
 
 const PUBLISH_HZ = 15; // X times per second
 
-type Player = {
-  id: number;
-  address: string | null;
-  name: string | null;
-  username: string;
-  avatar: string | null;
-};
-
 export function useHost(url: string) {
   const engine = useAppStore((state) => state.engine);
-
   const utils = trpc.useContext();
 
   // Create WebSocket connection
@@ -31,7 +22,7 @@ export function useHost(url: string) {
     const ws = new WebSocket(url);
     useAppStore.setState({ ws });
 
-    const players = new Map<number, Player>();
+    const players = new Players();
     const device = new Device();
     const audioContext = new AudioContext();
     const panners = new Map<number, PannerNode>();
@@ -40,233 +31,225 @@ export function useHost(url: string) {
     let onProducerId: (({ id }: { id: string }) => void) | null = null;
     let onDataProducerId: (({ id }: { id: string }) => void) | null = null;
 
-    async function updateUsername(player: Player) {
-      let oldUsername = player.username;
+    // async function updateUsername(player: Player) {
+    //   let oldUsername = player.username;
 
-      if (player.address) {
-        // Fetch flamingo profile
-        const profile = await utils.social.profile.byAddress.fetch({ address: player.address });
+    //   if (player.address) {
+    //     // Fetch flamingo profile
+    //     const profile = await utils.social.profile.byAddress.fetch({ address: player.address });
 
-        // Make sure old username is correct, in case it changed while we were fetching
-        oldUsername = player.username;
+    //     // Make sure old username is correct, in case it changed while we were fetching
+    //     oldUsername = player.username;
 
-        if (profile?.handle) {
-          player.username = profile.handle.string;
-        } else {
-          player.username = player.address.substring(0, 6);
-        }
-      } else if (player.name) {
-        player.username = player.name;
-      } else {
-        player.username = `Guest ${numberToHexDisplay(player.id)}`;
-      }
+    //     if (profile?.handle) {
+    //       player.username = profile.handle.string;
+    //     } else {
+    //       player.username = player.address.substring(0, 6);
+    //     }
+    //   } else if (player.name) {
+    //     player.username = player.name;
+    //   } else {
+    //     player.username = `Guest ${numberToHexDisplay(player.id)}`;
+    //   }
 
-      const { playerId } = useAppStore.getState();
-      if (player.username !== oldUsername && playerId !== player.id) {
-        console.info("📛 Player", numberToHexDisplay(player.id), "is now", player.username);
-      }
-    }
+    //   const { playerId } = useAppStore.getState();
+    //   if (player.username !== oldUsername && playerId !== player.id) {
+    //     console.info("📛 Player", numberToHexDisplay(player.id), "is now", player.username);
+    //   }
+    // }
 
     ws.onopen = () => {
       console.info("WebSocket - ✅ Connected to host");
 
+      // Send name and avatar to host
       const { displayName, customAvatar } = useAppStore.getState();
       if (displayName) sendToHost({ subject: "set_name", data: displayName });
       if (customAvatar) sendToHost({ subject: "set_avatar", data: customAvatar });
 
-      // Start WebRTC connection
+      // Initiate WebRTC connection
       sendToHost({ subject: "get_router_rtp_capabilities", data: null });
-
-      // Update falling state on change
-      // engine.physicsThread.isFalling$.subscribe((isFalling) => {
-      //   sendToHost({ subject: "falling_state", data: isFalling });
-      // });
     };
 
     ws.onclose = () => {
       console.info("WebSocket - ❌ Disconnected from host");
-
-      // Remove all players from scene
-      // engine.renderThread.postMessage({ subject: "clear_players", data: null });
     };
 
     ws.onmessage = async (event: MessageEvent<string>) => {
-      const { subject, data }: FromHostMessage = JSON.parse(event.data);
+      const { subject, data } = fromHostMessageSchema.parse(JSON.parse(event.data));
 
       switch (subject) {
-        case "join_successful": {
+        case "join_success": {
           console.info(`🌏 Joined space as player ${numberToHexDisplay(data.playerId)}`);
 
           useAppStore.setState({ playerId: data.playerId });
+          // const { displayName, customAvatar } = useAppStore.getState();
 
-          const { displayName, customAvatar } = useAppStore.getState();
+          // const player: Player = {
+          //   id: data.playerId,
+          //   address: null,
+          //   avatar: customAvatar,
+          //   name: displayName,
+          //   username: "",
+          // };
 
-          const player: Player = {
-            id: data.playerId,
-            address: null,
-            avatar: customAvatar,
-            name: displayName,
-            username: "",
-          };
-
-          await updateUsername(player);
-
-          // Add to player list
-          players.set(data.playerId, player);
-          break;
-        }
-
-        case "player_joined": {
-          console.info(`🚪 Player ${numberToHexDisplay(data.playerId)} joined`);
-
-          const player: Player = {
-            id: data.playerId,
-            address: data.address,
-            avatar: data.avatar,
-            name: data.name,
-            username: "",
-          };
-
-          await updateUsername(player);
+          // await updateUsername(player);
 
           // Add to player list
-          players.set(data.playerId, player);
-
-          // Add player to scene
-          // engine.renderThread.postMessage({ subject: "player_joined", data });
-
-          // Set player name
-          // engine.renderThread.postMessage({
-          //   subject: "player_name",
-          //   data: {
-          //     playerId: data.playerId,
-          //     name: player.username,
-          //   },
-          // });
-
-          // Add message to chat if they joined after you
-          if (!data.beforeYou)
-            addChatMessage({
-              type: "system",
-              variant: "player_joined",
-              id: nanoid(),
-              timestamp: Date.now(),
-              playerId: data.playerId,
-              username: player.username,
-            });
-
+          // players.set(data.playerId, player);
           break;
         }
 
-        case "player_left": {
-          console.info(`🚪 Player ${numberToHexDisplay(data)} left`);
+        // case "player_joined": {
+        //   console.info(`🚪 Player ${numberToHexDisplay(data.playerId)} joined`);
 
-          const player = players.get(data);
-          if (!player) throw new Error("Player not found");
+        //   const player: Player = {
+        //     id: data.playerId,
+        //     address: data.address,
+        //     avatar: data.avatar,
+        //     name: data.name,
+        //     username: "",
+        //   };
 
-          // Remove from player list
-          players.delete(data);
+        //   await updateUsername(player);
 
-          // Remove player from scene
-          // engine.renderThread.postMessage({ subject: "player_left", data });
+        //   // Add to player list
+        //   players.set(data.playerId, player);
 
-          // Add message to chat
-          addChatMessage({
-            type: "system",
-            variant: "player_left",
-            id: nanoid(),
-            timestamp: Date.now(),
-            playerId: data,
-            username: player.username,
-          });
-          break;
-        }
+        //   // Add player to scene
+        //   // engine.renderThread.postMessage({ subject: "player_joined", data });
 
-        case "player_message": {
-          const player = players.get(data.playerId);
-          if (!player) throw new Error("Player not found");
+        //   // Set player name
+        //   // engine.renderThread.postMessage({
+        //   //   subject: "player_name",
+        //   //   data: {
+        //   //     playerId: data.playerId,
+        //   //     name: player.username,
+        //   //   },
+        //   // });
 
-          // Add message to chat
-          addChatMessage({
-            type: "chat",
-            message: data.message,
-            id: data.id,
-            timestamp: data.timestamp,
-            playerId: data.playerId,
-            username: player.username,
-          });
-          break;
-        }
+        //   // Add message to chat if they joined after you
+        //   if (!data.beforeYou)
+        //     addChatMessage({
+        //       type: "system",
+        //       variant: "player_joined",
+        //       id: nanoid(),
+        //       timestamp: Date.now(),
+        //       playerId: data.playerId,
+        //       username: player.username,
+        //     });
 
-        case "player_falling_state": {
-          // engine.renderThread.postMessage({
-          //   subject: "set_player_falling_state",
-          //   data,
-          // });
-          break;
-        }
+        //   break;
+        // }
 
-        case "player_name": {
-          const player = players.get(data.playerId);
-          if (!player) throw new Error("Player not found");
+        // case "player_left": {
+        //   console.info(`🚪 Player ${numberToHexDisplay(data)} left`);
 
-          // Set player name
-          player.name = data.name;
+        //   const player = players.get(data);
+        //   if (!player) throw new Error("Player not found");
 
-          // Update player name
-          await updateUsername(player);
+        //   // Remove from player list
+        //   players.delete(data);
 
-          // engine.renderThread.postMessage({
-          //   subject: "player_name",
-          //   data: {
-          //     playerId: data.playerId,
-          //     name: player.username,
-          //   },
-          // });
-          break;
-        }
+        //   // Remove player from scene
+        //   // engine.renderThread.postMessage({ subject: "player_left", data });
 
-        case "player_avatar": {
-          const player = players.get(data.playerId);
-          if (!player) throw new Error("Player not found");
+        //   // Add message to chat
+        //   addChatMessage({
+        //     type: "system",
+        //     variant: "player_left",
+        //     id: nanoid(),
+        //     timestamp: Date.now(),
+        //     playerId: data,
+        //     username: player.username,
+        //   });
+        //   break;
+        // }
 
-          // Set player avatar
-          player.avatar = data.avatar;
+        // case "player_message": {
+        //   const player = players.get(data.playerId);
+        //   if (!player) throw new Error("Player not found");
 
-          // Load avatar
-          // engine.renderThread.postMessage({
-          //   subject: "set_player_avatar",
-          //   data: {
-          //     playerId: data.playerId,
-          //     avatar: data.avatar,
-          //   },
-          // });
-          break;
-        }
+        //   // Add message to chat
+        //   addChatMessage({
+        //     type: "chat",
+        //     message: data.message,
+        //     id: data.id,
+        //     timestamp: data.timestamp,
+        //     playerId: data.playerId,
+        //     username: player.username,
+        //   });
+        //   break;
+        // }
 
-        case "player_address": {
-          const player = players.get(data.playerId);
-          if (!player) throw new Error("Player not found");
+        // case "player_falling_state": {
+        //   // engine.renderThread.postMessage({
+        //   //   subject: "set_player_falling_state",
+        //   //   data,
+        //   // });
+        //   break;
+        // }
 
-          // Set player address
-          player.address = data.address;
+        // case "player_name": {
+        //   const player = players.get(data.playerId);
+        //   if (!player) throw new Error("Player not found");
 
-          // Update player name
-          await updateUsername(player);
+        //   // Set player name
+        //   player.name = data.name;
 
-          // engine.renderThread.postMessage({
-          //   subject: "player_name",
-          //   data: {
-          //     playerId: data.playerId,
-          //     name: player.username,
-          //   },
-          // });
-          break;
-        }
+        //   // Update player name
+        //   await updateUsername(player);
+
+        //   // engine.renderThread.postMessage({
+        //   //   subject: "player_name",
+        //   //   data: {
+        //   //     playerId: data.playerId,
+        //   //     name: player.username,
+        //   //   },
+        //   // });
+        //   break;
+        // }
+
+        // case "player_avatar": {
+        //   const player = players.get(data.playerId);
+        //   if (!player) throw new Error("Player not found");
+
+        //   // Set player avatar
+        //   player.avatar = data.avatar;
+
+        //   // Load avatar
+        //   // engine.renderThread.postMessage({
+        //   //   subject: "set_player_avatar",
+        //   //   data: {
+        //   //     playerId: data.playerId,
+        //   //     avatar: data.avatar,
+        //   //   },
+        //   // });
+        //   break;
+        // }
+
+        // case "player_address": {
+        //   const player = players.get(data.playerId);
+        //   if (!player) throw new Error("Player not found");
+
+        //   // Set player address
+        //   player.address = data.address;
+
+        //   // Update player name
+        //   await updateUsername(player);
+
+        //   // engine.renderThread.postMessage({
+        //   //   subject: "player_name",
+        //   //   data: {
+        //   //     playerId: data.playerId,
+        //   //     name: player.username,
+        //   //   },
+        //   // });
+        //   break;
+        // }
 
         case "router_rtp_capabilities": {
           // Create device
-          await device.load({ routerRtpCapabilities: data });
+          await device.load({ routerRtpCapabilities: data.rtpCapabilities });
 
           // Create transports
           sendToHost({

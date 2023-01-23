@@ -7,7 +7,6 @@ import { RtpParameters } from "mediasoup/node/lib/RtpParameters";
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { Transport } from "mediasoup/node/lib/Transport";
 import { RtpCapabilities } from "mediasoup-client/lib/RtpParameters";
-import { nanoid } from "nanoid";
 import { FromHostMessage } from "protocol";
 import uWS from "uWebSockets.js";
 
@@ -183,12 +182,7 @@ export class Players {
     this.spaceIds.set(ws, spaceId);
 
     // Tell this player their own id
-    send(ws, {
-      subject: "join_successful",
-      data: {
-        playerId,
-      },
-    });
+    send(ws, { subject: "join_success", data: { playerId } });
 
     // Publish WebRTC producers
     this.publishProducer(ws);
@@ -212,7 +206,7 @@ export class Players {
     // Tell everyone that this player left
     const leaveMessage: FromHostMessage = {
       subject: "player_left",
-      data: playerId,
+      data: { playerId },
     };
 
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(leaveMessage));
@@ -226,13 +220,10 @@ export class Players {
     const playerId = this.playerIds.get(ws);
     if (playerId === undefined) return console.warn("playerId not found");
 
-    const id = nanoid();
-    const timestamp = Date.now();
-
     // Tell everyone in the space about this player's message
     const messageMessage: FromHostMessage = {
-      subject: "player_message",
-      data: { id, playerId, message, timestamp },
+      subject: "player_chat",
+      data: { playerId, message, timestamp: Date.now() },
     };
 
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(messageMessage));

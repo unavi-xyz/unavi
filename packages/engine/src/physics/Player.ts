@@ -115,7 +115,7 @@ export class Player {
     Atomics.store(
       this.position,
       1,
-      pos.y - PLAYER_HEIGHT / 2 - PLAYER_RADIUS * POSITION_ARRAY_ROUNDING
+      (pos.y - PLAYER_HEIGHT / 2 - PLAYER_RADIUS) * POSITION_ARRAY_ROUNDING
     );
     Atomics.store(this.position, 2, pos.z * POSITION_ARRAY_ROUNDING);
 

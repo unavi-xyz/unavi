@@ -32,7 +32,7 @@ import { FromRenderMessage, ToRenderMessage } from "./messages";
 import { RenderScene } from "./scene/RenderScene";
 import { ThreeOutlinePass } from "./three/ThreeOutlinePass";
 
-const CAMERA_NEAR = 0.1;
+const CAMERA_NEAR = 0.01;
 const CAMERA_FAR = 750;
 
 export class RenderThread {
@@ -214,7 +214,6 @@ export class RenderThread {
     this.csm.fade = true;
     this.csm.setupMaterial(RenderScene.DEFAULT_MATERIAL);
     this.renderScene.csm = this.csm;
-    this.player.csm = this.csm;
 
     // Post-processing
     const renderPass = new RenderPass(this.scene, this.camera);

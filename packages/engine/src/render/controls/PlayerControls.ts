@@ -1,6 +1,5 @@
 import { VRMFirstPerson } from "@pixiv/three-vrm";
 import { Euler, Group, PerspectiveCamera, Quaternion, Vector3 } from "three";
-import { CSM } from "three/examples/jsm/csm/CSM";
 
 import { PLAYER_HEIGHT, POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "../../constants";
 import { ToRenderMessage } from "../messages";
@@ -19,9 +18,9 @@ export class PlayerControls {
   #targetCameraRotation = new Quaternion();
   #euler = new Euler(0, 0, 0, "YXZ");
   #vec3 = new Vector3();
+  #vec3b = new Vector3();
   #delta = 0;
   #mode: "first-person" | "third-person" = "first-person";
-  #csm: CSM | null = null;
 
   constructor(camera: PerspectiveCamera) {
     this.#camera = camera;
@@ -45,15 +44,6 @@ export class PlayerControls {
     }
   }
 
-  get csm() {
-    return this.#csm;
-  }
-
-  set csm(csm: CSM | null) {
-    this.#csm = csm;
-    if (this.avatar) this.avatar.csm = csm;
-  }
-
   onmessage({ subject, data }: ToRenderMessage) {
     switch (subject) {
       case "set_player_arrays": {
@@ -68,13 +58,9 @@ export class PlayerControls {
         this.#euler.y -= (data.x * this.#delta) / 4;
         this.#euler.x -= (data.y * this.#delta) / 4;
 
-        const minPolarAngle = 0;
-        const maxPolarAngle = Math.PI;
-
-        this.#euler.x = Math.max(
-          Math.PI / 2 - maxPolarAngle,
-          Math.min(Math.PI / 2 - minPolarAngle, this.#euler.x)
-        );
+        const minAngle = -Math.PI / 2.8;
+        const maxAngle = Math.PI / 2.2;
+        this.#euler.x = Math.max(minAngle, Math.min(maxAngle, this.#euler.x));
 
         this.#targetCameraRotation.setFromEuler(this.#euler);
         break;
@@ -89,7 +75,6 @@ export class PlayerControls {
         if (data.uri) {
           this.avatar = new Avatar(data.uri);
           this.avatar.mode = this.mode;
-          this.avatar.csm = this.csm;
           this.body.add(this.avatar.group);
         }
         break;
@@ -99,7 +84,6 @@ export class PlayerControls {
 
   update(delta: number) {
     this.#delta = delta;
-    if (this.avatar) this.avatar.update(delta);
     if (!this.positionArray || !this.rotationArray) return;
 
     // Move body to player position
@@ -110,33 +94,46 @@ export class PlayerControls {
 
     if (this.mode === "first-person") this.updateFirstPerson(delta);
     else this.updateThirdPerson(delta);
+
+    if (this.avatar) this.avatar.update(delta);
   }
 
   updateFirstPerson(delta: number) {
     if (!this.positionArray || !this.rotationArray) return;
 
+    // Rotate camera
+    const K = 1 - Math.pow(10e-20, delta);
+    this.#camera.quaternion.slerp(this.#targetCameraRotation, K);
+
+    // Set avatar rotation
+    if (this.avatar) this.#camera.getWorldQuaternion(this.avatar.targetRotation);
+
     // Move camera
     const head = this.avatar?.vrm?.humanoid.getNormalizedBoneNode("head");
-    if (head) {
+    const leftEye = this.avatar?.vrm?.humanoid.getNormalizedBoneNode("leftEye");
+    const rightEye = this.avatar?.vrm?.humanoid.getNormalizedBoneNode("rightEye");
+
+    if (leftEye && rightEye) {
+      // Move camera to eye position
+      this.#camera.position
+        .addVectors(leftEye.getWorldPosition(this.#vec3), rightEye.getWorldPosition(this.#vec3b))
+        .multiplyScalar(0.5);
+    } else if (head) {
       // Move camera to head position
       head.getWorldPosition(this.#camera.position);
     } else {
-      // Move camera to body position + height offset if no head
+      // Move camera to body position + height offset
       this.body.getWorldPosition(this.#camera.position);
       this.#camera.position.y += PLAYER_HEIGHT;
     }
 
-    // Rotate camera
-    const K = 1 - Math.pow(10e-24, delta);
-    this.#camera.quaternion.slerp(this.#targetCameraRotation, K);
+    // Move camera forward a bit
+    const direction = this.#camera.getWorldDirection(this.#vec3);
+    this.#camera.position.add(this.#vec3.copy(direction).multiplyScalar(0.1));
 
     // Store camera rotation
-    const direction = this.#camera.getWorldDirection(this.#vec3);
     const angle = Math.atan2(direction.x, direction.z);
     Atomics.store(this.rotationArray, 0, angle * ROTATION_ARRAY_ROUNDING);
-
-    // Rotate body around Y axis
-    this.body.rotation.y = angle;
   }
 
   updateThirdPerson(delta: number) {

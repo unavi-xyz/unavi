@@ -15,6 +15,8 @@ export class SceneModule extends Scene {
   #render: RenderModule;
   #physics: PhysicsModule;
 
+  enableDracoDecoding = true;
+
   constructor(render: RenderModule, physics: PhysicsModule) {
     super();
 
@@ -40,8 +42,19 @@ export class SceneModule extends Scene {
     });
   }
 
-  async export() {
+  async #createIO() {
     const io = new WebIO().registerExtensions(extensions);
+
+    if (this.enableDracoDecoding) {
+      // @ts-ignore
+      io.registerDependencies({ "draco3d.decoder": await new DracoDecoderModule() });
+    }
+
+    return io;
+  }
+
+  async export() {
+    const io = await this.#createIO();
 
     // Merge all buffers into one
     const buffers = this.doc.getRoot().listBuffers();
@@ -56,7 +69,7 @@ export class SceneModule extends Scene {
   }
 
   async loadBinary(array: Uint8Array) {
-    const io = new WebIO().registerExtensions(extensions);
+    const io = await this.#createIO();
     const doc = await io.readBinary(array);
     this.loadDocument(doc);
   }
@@ -65,7 +78,7 @@ export class SceneModule extends Scene {
     const buffer = await file.arrayBuffer();
     const array = new Uint8Array(buffer);
 
-    const io = new WebIO().registerExtensions(extensions);
+    const io = await this.#createIO();
     const doc = await io.readBinary(array);
 
     const scene = doc.getRoot().getDefaultScene();

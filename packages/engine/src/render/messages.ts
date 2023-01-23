@@ -15,6 +15,7 @@ export type ToRenderMessage =
   | MessageJSON<"set_skybox", { uri: string | null }>
   | MessageJSON<"set_controls", ControlsType>
   | MessageJSON<"set_player_arrays", { position: Int32Array; rotation: Int32Array }>
+  | MessageJSON<"set_player_avatar", { uri: string | null }>
   | MessageJSON<"toggle_visuals", { enabled: boolean }>;
 
 export type FromRenderMessage =
@@ -23,10 +24,5 @@ export type FromRenderMessage =
   | MessageJSON<"clicked_node", { nodeId: string | null }>
   | MessageJSON<
       "set_node_transform",
-      {
-        nodeId: string;
-        translation: Vec3;
-        rotation: Vec4;
-        scale: Vec3;
-      }
+      { nodeId: string; translation: Vec3; rotation: Vec4; scale: Vec3 }
     >;

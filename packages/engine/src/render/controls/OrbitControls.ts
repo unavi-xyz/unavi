@@ -15,9 +15,6 @@ export class OrbitControls {
     this.#orbitControls = new ThreeOrbitControls(camera, this.#target);
     this.#orbitControls.enableDamping = true;
     this.#orbitControls.dampingFactor = 0.05;
-
-    camera.position.set(-1, 2, 5);
-    camera.lookAt(0, 0, 0);
   }
 
   setSize(width: number, height: number) {

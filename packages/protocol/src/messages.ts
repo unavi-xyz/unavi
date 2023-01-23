@@ -41,14 +41,14 @@ const FROM_HOST_SCHEMA = {
   player_left: z.object({ playerId: z.number().int().positive() }),
   player_chat: z.object({
     playerId: z.number().int().positive(),
-    message: z.string(),
+    text: z.string(),
     timestamp: z.number().int().positive(),
   }),
   player_falling_state: z.object({
     playerId: z.number().int().positive(),
     isFalling: z.boolean(),
   }),
-  player_name: z.object({
+  player_nickname: z.object({
     playerId: z.number().int().positive(),
     name: z.string().nullable(),
   }),
@@ -115,7 +115,7 @@ export const fromHostMessageSchema = z.union([
   getMessageSchema("player_left", FROM_HOST_SCHEMA.player_left),
   getMessageSchema("player_chat", FROM_HOST_SCHEMA.player_chat),
   getMessageSchema("player_falling_state", FROM_HOST_SCHEMA.player_falling_state),
-  getMessageSchema("player_name", FROM_HOST_SCHEMA.player_name),
+  getMessageSchema("player_nickname", FROM_HOST_SCHEMA.player_nickname),
   getMessageSchema("player_avatar", FROM_HOST_SCHEMA.player_avatar),
   getMessageSchema("player_address", FROM_HOST_SCHEMA.player_address),
 

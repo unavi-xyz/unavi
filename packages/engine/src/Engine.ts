@@ -1,14 +1,12 @@
 import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "./constants";
 import { InputModule } from "./input/InputModule";
 import { PhysicsModule } from "./physics/PhysicsModule";
-import { PlayerModule } from "./player/PlayerModule";
 import { RenderModule } from "./render/RenderModule";
 import { SceneModule } from "./scene/SceneModule";
 
 interface ModuleContainer {
   input: InputModule;
   physics: PhysicsModule;
-  player: PlayerModule;
   render: RenderModule;
   scene: SceneModule;
 }
@@ -30,12 +28,10 @@ export class Engine {
     const input = new InputModule(canvas, render);
     const physics = new PhysicsModule(input, render);
     const scene = new SceneModule(render, physics);
-    const player = new PlayerModule();
 
     this.modules = {
       input,
       physics,
-      player,
       render,
       scene,
     };

@@ -32,8 +32,6 @@ type MeshId = string;
 type PrimitiveId = string;
 type MaterialId = string;
 
-const defaultMaterial = new MeshStandardMaterial();
-
 /**
  * Receives scene updates from the main thread
  * and translates them into Three.js objects.
@@ -54,6 +52,8 @@ export class RenderScene extends Scene {
   colliderMaterial = new MeshBasicMaterial({ color: "#000000", wireframe: true });
   visuals = new Object3D();
   #visualsEnabled = DEFAULT_VISUALS;
+
+  static DEFAULT_MATERIAL = new MeshStandardMaterial();
 
   constructor(toMainThread: (message: SceneMessage) => void) {
     super();
@@ -111,13 +111,16 @@ export class RenderScene extends Scene {
     }
   }
 
-  setCSM(csm: CSM | null) {
-    this.#csm?.dispose();
+  get csm() {
+    return this.#csm;
+  }
 
+  set csm(csm: CSM | null) {
+    this.#csm?.dispose();
     this.#csm = csm;
 
     for (const material of this.materialObjects.values()) {
-      this.#csm?.setupMaterial(material);
+      csm?.setupMaterial(material);
     }
   }
 
@@ -162,7 +165,7 @@ export class RenderScene extends Scene {
         const object = new MeshStandardMaterial();
         this.materialObjects.set(data.id, object);
 
-        this.#csm?.setupMaterial(object);
+        this.csm?.setupMaterial(object);
 
         material.addEventListener("dispose", () => {
           object.map?.dispose();
@@ -404,21 +407,21 @@ export class RenderScene extends Scene {
           case "Box": {
             const { width, height, depth } = json.extras.customMesh;
             const geometry = new BoxGeometry(width, height, depth);
-            customMesh = new ThreeMesh(geometry, defaultMaterial);
+            customMesh = new ThreeMesh(geometry, RenderScene.DEFAULT_MATERIAL);
             break;
           }
 
           case "Sphere": {
             const { radius, widthSegments, heightSegments } = json.extras.customMesh;
             const geometry = new SphereGeometry(radius, widthSegments, heightSegments);
-            customMesh = new ThreeMesh(geometry, defaultMaterial);
+            customMesh = new ThreeMesh(geometry, RenderScene.DEFAULT_MATERIAL);
             break;
           }
 
           case "Cylinder": {
             const { radiusTop, radiusBottom, height, radialSegments } = json.extras.customMesh;
             const geometry = new CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
-            customMesh = new ThreeMesh(geometry, defaultMaterial);
+            customMesh = new ThreeMesh(geometry, RenderScene.DEFAULT_MATERIAL);
             break;
           }
         }
@@ -477,7 +480,7 @@ export class RenderScene extends Scene {
 
     if (json.material !== undefined) {
       // Remove previous material
-      object.material = defaultMaterial;
+      object.material = RenderScene.DEFAULT_MATERIAL;
 
       // Add new material
       if (json.material) {

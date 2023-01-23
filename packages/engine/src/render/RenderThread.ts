@@ -8,6 +8,7 @@ import {
   PMREMGenerator,
   Scene,
   sRGBEncoding,
+  Texture,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -76,6 +77,7 @@ export class RenderThread {
     );
 
     this.scene.add(this.renderScene.root);
+    this.scene.add(this.player.group);
     this.scene.add(new AmbientLight(0xffffff, 0.2));
     this.camera.position.set(0, 4, 12);
     this.camera.lookAt(0, 0, 0);
@@ -151,6 +153,10 @@ export class RenderThread {
       return;
     }
 
+    // Clean up old skybox
+    if (this.scene.background instanceof Texture) this.scene.background.dispose();
+    if (this.scene.environment instanceof Texture) this.scene.environment.dispose();
+
     // Load skybox
     const res = await fetch(uri);
     const blob = await res.blob();
@@ -165,7 +171,6 @@ export class RenderThread {
     if (!this.renderer) throw new Error("Renderer not initialized");
     const pmremGenerator = new PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
-
     const renderTarget = pmremGenerator.fromEquirectangular(texture);
 
     // Set skybox
@@ -207,8 +212,9 @@ export class RenderThread {
       shadowBias: -0.00001,
     });
     this.csm.fade = true;
-
-    this.renderScene.setCSM(this.csm);
+    this.csm.setupMaterial(RenderScene.DEFAULT_MATERIAL);
+    this.renderScene.csm = this.csm;
+    this.player.csm = this.csm;
 
     // Post-processing
     const renderPass = new RenderPass(this.scene, this.camera);
@@ -218,7 +224,6 @@ export class RenderThread {
       this.scene,
       this.camera
     );
-
     const target = new WebGLRenderTarget(this.size.width, this.size.height, {
       encoding: sRGBEncoding,
       samples: 8,
@@ -239,6 +244,8 @@ export class RenderThread {
     } else {
       this.orbit.update();
     }
+
+    if (this.size.width === 0 || this.size.height === 0) return;
 
     this.csm?.update();
     this.composer?.render();

@@ -9,7 +9,7 @@ export class MediasoupSchema {
   static rtpHeaderExtension = z.object({
     kind: z.union([z.literal("audio"), z.literal("video")]),
     uri: z.string(),
-    preferredId: z.number().int().positive(),
+    preferredId: z.number(),
     preferredEncrypt: z.boolean().optional(),
     direction: z
       .union([
@@ -22,7 +22,7 @@ export class MediasoupSchema {
   });
   static rtpHeaderExtensionParameters = z.object({
     uri: z.string(),
-    id: z.number().int().positive(),
+    id: z.number(),
     encrypt: z.boolean().optional(),
     parameters: z.record(z.string()).optional(),
   });
@@ -31,9 +31,9 @@ export class MediasoupSchema {
     codecs: z.array(
       z.object({
         mimeType: z.string(),
-        payloadType: z.number().int().positive(),
-        clockRate: z.number().int().positive(),
-        channels: z.number().int().positive().optional(),
+        payloadType: z.number(),
+        clockRate: z.number(),
+        channels: z.number().optional(),
         parameters: z.record(z.string()).optional(),
         rtcpFeedback: z.array(MediasoupSchema.rtcpFeedback).optional(),
       })
@@ -42,10 +42,10 @@ export class MediasoupSchema {
     encodings: z
       .array(
         z.object({
-          ssrc: z.number().int().positive().optional(),
+          ssrc: z.number().optional(),
           rid: z.string().optional(),
-          codecPayloadType: z.number().int().positive().optional(),
-          rtx: z.object({ ssrc: z.number().int().positive() }).optional(),
+          codecPayloadType: z.number().optional(),
+          rtx: z.object({ ssrc: z.number() }).optional(),
           dtx: z.boolean().optional(),
           scalabilityMode: z.string().optional(),
           scaleResolutionDownBy: z.number().optional(),
@@ -85,9 +85,9 @@ export class MediasoupSchema {
         z.object({
           kind: z.union([z.literal("audio"), z.literal("video")]),
           mimeType: z.string(),
-          preferredPayloadType: z.number().int().positive().optional(),
-          clockRate: z.number().int().positive(),
-          channels: z.number().int().positive().optional(),
+          preferredPayloadType: z.number().optional(),
+          clockRate: z.number(),
+          channels: z.number().optional(),
           parameters: z.record(z.string()).optional(),
           rtcpFeedback: z.array(MediasoupSchema.rtcpFeedback).optional(),
         })
@@ -96,10 +96,10 @@ export class MediasoupSchema {
     headerExtensions: z.array(MediasoupSchema.rtpHeaderExtension).optional(),
   });
   static sctpStreamParameters = z.object({
-    streamId: z.number().int().positive().optional(),
+    streamId: z.number().optional(),
     ordered: z.boolean().optional(),
-    maxPacketLifeTime: z.number().int().positive().optional(),
-    maxRetransmits: z.number().int().positive().optional(),
+    maxPacketLifeTime: z.number().optional(),
+    maxRetransmits: z.number().optional(),
     label: z.string().optional(),
     protocol: z.string().optional(),
   });
@@ -113,10 +113,10 @@ export class MediasoupSchema {
     iceCandidates: z.array(
       z.object({
         foundation: z.string(),
-        priority: z.number().int().positive(),
+        priority: z.number(),
         ip: z.string(),
         protocol: z.union([z.literal("udp"), z.literal("tcp")]),
-        port: z.number().int().positive(),
+        port: z.number(),
         type: z.union([
           z.literal("host"),
           z.literal("srflx"),
@@ -129,10 +129,10 @@ export class MediasoupSchema {
     dtlsParameters: MediasoupSchema.dltsParameters,
     sctpParameters: z
       .object({
-        port: z.number().int().positive(),
-        OS: z.number().int().positive(),
-        MIS: z.number().int().positive(),
-        maxMessageSize: z.number().int().positive(),
+        port: z.number(),
+        OS: z.number(),
+        MIS: z.number(),
+        maxMessageSize: z.number(),
       })
       .optional(),
     iceServers: z

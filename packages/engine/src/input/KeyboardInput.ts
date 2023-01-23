@@ -255,6 +255,7 @@ export class KeyboardInput {
     const isPointerLocked = document.pointerLockElement === this.#canvas;
     if (isPointerLocked) return;
 
+    this.#canvas.releasePointerCapture(event.pointerId);
     this.#canvas.setPointerCapture(event.pointerId);
 
     this.#render.toRenderThread({

@@ -4,7 +4,9 @@ import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useRef } from "react";
 
+import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useResizeCanvas } from "../../app/hooks/useResizeCanvas";
+import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useSpace } from "../../app/hooks/useSpace";
 import { useAppStore } from "../../app/store";
 import ChatBox from "../../app/ui/ChatBox";
@@ -56,9 +58,9 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
 
   useResizeCanvas(engine, canvasRef, containerRef);
   // useLoadUser();
-  // useAppHotkeys();
+  useAppHotkeys();
   // useAnalytics();
-  // const setAvatar = useSetAvatar();
+  const setAvatar = useSetAvatar();
   const isMobile = useIsMobile();
 
   const { space, loadingText, loadingProgress, join } = useSpace(id);
@@ -69,7 +71,11 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
     const engine = new Engine({ canvas: canvasRef.current });
     useAppStore.setState({ engine });
 
-    // Skybox
+    engine.modules.render.toRenderThread({
+      subject: "set_player_avatar",
+      data: { uri: "/models/Wired-chan.vrm" },
+    });
+
     engine.modules.render.toRenderThread({
       subject: "set_skybox",
       data: { uri: "/images/Skybox_2K.jpg" },
@@ -128,7 +134,7 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
 
           // Set avatar
           const url = URL.createObjectURL(file);
-          // setAvatar(url);
+          setAvatar(url);
 
           useAppStore.setState({ customAvatar: url });
         }}

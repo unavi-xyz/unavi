@@ -212,7 +212,7 @@ export class Players {
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(leaveMessage));
   }
 
-  publishMessage(ws: uWS.WebSocket, message: string) {
+  publishMessage(ws: uWS.WebSocket, text: string) {
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
     if (!spaceId) return;
@@ -221,12 +221,12 @@ export class Players {
     if (playerId === undefined) return console.warn("playerId not found");
 
     // Tell everyone in the space about this player's message
-    const messageMessage: FromHostMessage = {
+    const message: FromHostMessage = {
       subject: "player_chat",
-      data: { playerId, message, timestamp: Date.now() },
+      data: { playerId, text, timestamp: Date.now() },
     };
 
-    this.#server.publish(spaceTopic(spaceId), JSON.stringify(messageMessage));
+    this.#server.publish(spaceTopic(spaceId), JSON.stringify(message));
   }
 
   publishFallingState(ws: uWS.WebSocket, isFalling: boolean) {
@@ -246,9 +246,9 @@ export class Players {
     ws.publish(spaceTopic(spaceId), JSON.stringify(jumpStateMessage));
   }
 
-  publishName(ws: uWS.WebSocket, name: string | null) {
+  publishNickname(ws: uWS.WebSocket, nickname: string | null) {
     // Save name
-    if (name) this.names.set(ws, name);
+    if (nickname) this.names.set(ws, nickname);
     else this.names.delete(ws);
 
     // If not in a space, do nothing
@@ -260,8 +260,8 @@ export class Players {
 
     // Tell everyone in the space about this player's name
     const nameMessage: FromHostMessage = {
-      subject: "player_name",
-      data: { playerId, name },
+      subject: "player_nickname",
+      data: { playerId, name: nickname },
     };
 
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(nameMessage));

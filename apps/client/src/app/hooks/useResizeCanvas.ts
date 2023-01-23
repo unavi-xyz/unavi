@@ -33,10 +33,7 @@ export function useResizeCanvas(
     resize();
 
     window.addEventListener("resize", resize);
-
-    return () => {
-      window.removeEventListener("resize", resize);
-    };
+    return () => window.removeEventListener("resize", resize);
   }, [resize]);
 
   return resize;

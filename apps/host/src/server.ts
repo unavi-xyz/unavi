@@ -58,7 +58,7 @@ server.ws("/*", {
         }
 
         case "set_name": {
-          players.publishName(ws, data);
+          players.publishNickname(ws, data);
           break;
         }
 

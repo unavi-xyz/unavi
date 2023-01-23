@@ -4,14 +4,12 @@ export function usePointerLocked() {
   const [isPointerLocked, setIsPointerLocked] = useState(false);
 
   useEffect(() => {
-    function handlePointerLockChange() {
+    const onPointerLockChange = () => {
       setIsPointerLocked(document.pointerLockElement !== null);
-    }
-
-    document.addEventListener("pointerlockchange", handlePointerLockChange);
-    return () => {
-      document.removeEventListener("pointerlockchange", handlePointerLockChange);
     };
+
+    document.addEventListener("pointerlockchange", onPointerLockChange);
+    return () => document.removeEventListener("pointerlockchange", onPointerLockChange);
   }, []);
 
   return isPointerLocked;

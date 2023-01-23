@@ -23,7 +23,9 @@ export default function ChatBox() {
   }, [chatBoxFocused]);
 
   const focusedClass =
-    isMobile || chatBoxFocused ? "bg-neutral-800" : "bg-neutral-800/20 hover:bg-neutral-800/30";
+    isMobile || chatBoxFocused
+      ? "bg-neutral-800 placeholder:text-white/75"
+      : "bg-neutral-800/40 hover:bg-neutral-800/50 placeholder:text-white";
 
   const scrollClass = isMobile || chatBoxFocused ? "overflow-auto" : "overflow-hidden";
 
@@ -51,14 +53,14 @@ export default function ChatBox() {
               e.currentTarget.value = "";
 
               // Send message to server
-              sendToHost({ subject: "message", data });
+              sendToHost({ subject: "chat", data });
             }
           }}
           onFocus={() => useAppStore.setState({ chatBoxFocused: true })}
           onBlur={() => useAppStore.setState({ chatBoxFocused: false })}
           type="text"
           placeholder="Send a message..."
-          className={`h-full w-full rounded-md px-4 py-2 text-white outline-none drop-shadow backdrop-blur-2xl transition selection:bg-sky-600 placeholder:text-white/80 placeholder:drop-shadow ${focusedClass}`}
+          className={`h-full w-full rounded-lg px-4 py-2 text-white outline-none drop-shadow backdrop-blur-3xl transition selection:bg-sky-400/50 placeholder:drop-shadow ${focusedClass}`}
         />
       </div>
     </div>

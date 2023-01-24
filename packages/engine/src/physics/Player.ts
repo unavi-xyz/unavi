@@ -31,6 +31,8 @@ export class Player {
   rotation: Int32Array;
   position: Int32Array;
 
+  velocity: Vector3 = { x: 0, y: 0, z: 0 };
+
   constructor(world: World, postMessage: PostMessage<FromPhysicsMessage>) {
     this.#world = world;
     this.#postMessage = postMessage;
@@ -90,6 +92,11 @@ export class Player {
     if (isGrounded) inputVelocity.y = 0;
     else inputVelocity.y += this.#world.gravity.y * delta;
 
+    // Lerp input velocity
+    const K = 1 - Math.pow(10e-16, delta);
+    inputVelocity.x = inputVelocity.x * K + this.velocity.x * (1 - K);
+    inputVelocity.z = inputVelocity.z * K + this.velocity.z * (1 - K);
+
     // Compute movement
     const inputTranslation: Vector3 = {
       x: inputVelocity.x * delta,
@@ -100,14 +107,14 @@ export class Player {
     this.controller.computeColliderMovement(this.collider, inputTranslation);
     const computedMovement = this.controller.computedMovement();
 
-    const computedVelocity: Vector3 = {
+    this.velocity = {
       x: computedMovement.x / delta,
       y: computedMovement.y / delta,
       z: computedMovement.z / delta,
     };
 
     // Apply velocity
-    this.rigidBody.setLinvel(computedVelocity, true);
+    this.rigidBody.setLinvel(this.velocity, true);
 
     // Store position
     const pos = this.rigidBody.translation();

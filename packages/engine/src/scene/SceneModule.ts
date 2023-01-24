@@ -45,8 +45,7 @@ export class SceneModule extends Scene {
   async #createIO() {
     const io = new WebIO().registerExtensions(extensions);
 
-    // @ts-ignore
-    if (this.enableDracoDecoding && DracoDecoderModule) {
+    if (this.enableDracoDecoding) {
       // @ts-ignore
       io.registerDependencies({ "draco3d.decoder": await new DracoDecoderModule() });
     }

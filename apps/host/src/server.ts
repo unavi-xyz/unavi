@@ -34,7 +34,14 @@ server.ws("/*", {
   message: async (ws, buffer) => {
     try {
       const text = textDecoder.decode(buffer);
-      const { subject, data } = toHostMessageSchema.parse(JSON.parse(text));
+      const parsed = toHostMessageSchema.safeParse(JSON.parse(text));
+
+      if (!parsed.success) {
+        console.warn(parsed.error);
+        return;
+      }
+
+      const { subject, data } = parsed.data;
 
       switch (subject) {
         case "join": {

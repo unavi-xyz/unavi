@@ -19,6 +19,8 @@ import { PostMessage } from "../types";
 import { COLLISION_GROUP } from "./groups";
 import { FromPhysicsMessage } from "./messages";
 
+const CHARACTER_OFFSET = 0.01;
+
 export class Player {
   #world: World;
   #postMessage: PostMessage<FromPhysicsMessage>;
@@ -37,7 +39,7 @@ export class Player {
     this.#world = world;
     this.#postMessage = postMessage;
 
-    this.controller = this.#world.createCharacterController(0.01);
+    this.controller = this.#world.createCharacterController(CHARACTER_OFFSET);
     this.controller.enableSnapToGround(0.01);
     this.controller.setSlideEnabled(true);
     this.controller.enableAutostep(PLAYER_HEIGHT / 4, PLAYER_RADIUS / 2, false);
@@ -118,12 +120,9 @@ export class Player {
 
     // Store position
     const pos = this.rigidBody.translation();
+    const feetY = pos.y - PLAYER_HEIGHT / 2 - PLAYER_RADIUS - CHARACTER_OFFSET;
     Atomics.store(this.position, 0, pos.x * POSITION_ARRAY_ROUNDING);
-    Atomics.store(
-      this.position,
-      1,
-      (pos.y - PLAYER_HEIGHT / 2 - PLAYER_RADIUS) * POSITION_ARRAY_ROUNDING
-    );
+    Atomics.store(this.position, 1, feetY * POSITION_ARRAY_ROUNDING);
     Atomics.store(this.position, 2, pos.z * POSITION_ARRAY_ROUNDING);
 
     // Teleport out of void if needed

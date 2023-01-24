@@ -112,7 +112,7 @@ export class PlayerControls {
         );
 
         // Switch to first person mode when zoom in
-        if (this.mode === "third-person" && this.#targetOrbitDistance < 0.4) {
+        if (this.mode === "third-person" && this.#targetOrbitDistance < 0.3) {
           this.mode = "first-person";
           this.#targetOrbitDistance = 0;
         }

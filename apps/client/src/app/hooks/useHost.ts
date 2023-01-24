@@ -1,3 +1,4 @@
+import { POSITION_ARRAY_ROUNDING } from "engine/src/constants";
 import { Device } from "mediasoup-client";
 import { Transport } from "mediasoup-client/lib/Transport";
 import { fromHostMessageSchema, ToHostMessage } from "protocol";
@@ -6,6 +7,7 @@ import { useEffect, useMemo } from "react";
 import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { Player } from "../networking/Player";
 import { Players } from "../networking/Players";
 
 const PUBLISH_HZ = 15; // X times per second
@@ -19,24 +21,20 @@ export function useHost(url: string) {
     if (!engine) return;
 
     const ws = new WebSocket(url);
-    useAppStore.setState({ ws });
-
     const players = new Players(utils);
     const device = new Device();
     const audioContext = new AudioContext();
     const panners = new Map<number, PannerNode>();
 
+    useAppStore.setState({ ws, players });
+
+    let publishInterval: NodeJS.Timeout | null = null;
     let consumerTransport: Transport | null = null;
     let onProducerId: (({ id }: { id: string }) => void) | null = null;
     let onDataProducerId: (({ id }: { id: string }) => void) | null = null;
 
     ws.onopen = () => {
       console.info("WebSocket - ✅ Connected to host");
-
-      // Send name and avatar to host
-      const { displayName, customAvatar } = useAppStore.getState();
-      if (displayName) sendToHost({ subject: "set_name", data: displayName });
-      if (customAvatar) sendToHost({ subject: "set_avatar", data: customAvatar });
 
       // Initiate WebRTC connection
       sendToHost({ subject: "get_router_rtp_capabilities", data: null });
@@ -47,15 +45,22 @@ export function useHost(url: string) {
     };
 
     ws.onmessage = async (event: MessageEvent<string>) => {
-      const message = fromHostMessageSchema.parse(JSON.parse(event.data));
+      const parsed = fromHostMessageSchema.safeParse(JSON.parse(event.data));
 
-      players.onmessage(message);
+      if (!parsed.success) {
+        console.warn(parsed.error);
+        return;
+      }
 
-      const { subject, data } = message;
+      players.onmessage(parsed.data);
+
+      const { subject, data } = parsed.data;
 
       switch (subject) {
         case "join_success": {
           console.info(`🌏 Joined space as player ${numberToHexDisplay(data.playerId)}`);
+          const player = new Player(data.playerId, utils);
+          players.addPlayer(player);
           useAppStore.setState({ playerId: data.playerId });
           break;
         }
@@ -65,22 +70,13 @@ export function useHost(url: string) {
           await device.load({ routerRtpCapabilities: data.rtpCapabilities });
 
           // Create transports
-          sendToHost({
-            subject: "create_transport",
-            data: { type: "producer" },
-          });
-
-          sendToHost({
-            subject: "create_transport",
-            data: { type: "consumer" },
-          });
+          sendToHost({ subject: "create_transport", data: { type: "producer" } });
+          sendToHost({ subject: "create_transport", data: { type: "consumer" } });
 
           // Set rtp capabilities
           sendToHost({
             subject: "set_rtp_capabilities",
-            data: {
-              rtpCapabilities: device.rtpCapabilities,
-            },
+            data: { rtpCapabilities: device.rtpCapabilities },
           });
           break;
         }
@@ -93,11 +89,7 @@ export function useHost(url: string) {
               : device.createRecvTransport(data.options);
 
           transport.on("connect", async ({ dtlsParameters }, callback) => {
-            sendToHost({
-              subject: "connect_transport",
-              data: { dtlsParameters, type: data.type },
-            });
-
+            sendToHost({ subject: "connect_transport", data: { dtlsParameters, type: data.type } });
             callback();
           });
 
@@ -126,28 +118,16 @@ export function useHost(url: string) {
 
             transport.on("produce", async ({ kind, rtpParameters }, callback) => {
               if (kind === "video") throw new Error("Video not supported");
-
               onProducerId = callback;
-
-              sendToHost({
-                subject: "produce",
-                data: { rtpParameters },
-              });
+              sendToHost({ subject: "produce", data: { rtpParameters } });
             });
 
             transport.on("producedata", async ({ sctpStreamParameters }, callback) => {
               onDataProducerId = callback;
-
-              sendToHost({
-                subject: "produce_data",
-                data: { sctpStreamParameters },
-              });
+              sendToHost({ subject: "produce_data", data: { sctpStreamParameters } });
             });
 
-            const dataProducer = await transport.produceData({
-              ordered: false,
-              maxRetransmits: 0,
-            });
+            const dataProducer = await transport.produceData({ ordered: false, maxRetransmits: 0 });
 
             // Player id = 1 byte (Uint8)
             // Position = 3 * 4 bytes (Int32)
@@ -157,76 +137,72 @@ export function useHost(url: string) {
             const buffer = new ArrayBuffer(bytes);
             const view = new DataView(buffer);
 
-            // setInterval(() => {
-            //   const { playerId } = useAppStore.getState();
+            publishInterval = setInterval(() => {
+              const { playerId } = useAppStore.getState();
 
-            //   const playerPosition = engine.renderThread.playerPosition;
-            //   const playerRotation = engine.renderThread.playerRotation;
-            //   const cameraPosition = engine.renderThread.cameraPosition;
-            //   const cameraRotation = engine.renderThread.cameraRotation;
+              const positionArray = engine.modules.physics.positionArray;
+              const rotationArray = engine.modules.physics.rotationArray;
 
-            //   if (
-            //     playerId === null ||
-            //     !playerPosition ||
-            //     !playerRotation ||
-            //     !cameraPosition ||
-            //     !cameraRotation ||
-            //     dataProducer.readyState !== "open"
-            //   )
-            //     return;
+              if (
+                playerId === null ||
+                dataProducer.readyState !== "open" ||
+                !positionArray ||
+                !rotationArray
+              )
+                return;
 
-            //   // Set audio listener location
-            //   const camPosX = Atomics.load(cameraPosition, 0);
-            //   const camPosY = Atomics.load(cameraPosition, 1);
-            //   const camPosZ = Atomics.load(cameraPosition, 2);
+              // // Set audio listener location
+              // const camPosX = Atomics.load(cameraPosition, 0);
+              // const camPosY = Atomics.load(cameraPosition, 1);
+              // const camPosZ = Atomics.load(cameraPosition, 2);
 
-            //   const camRotY = Atomics.load(cameraRotation, 1);
-            //   const camRotW = Atomics.load(cameraRotation, 3);
+              // const camRotY = Atomics.load(cameraRotation, 1);
+              // const camRotW = Atomics.load(cameraRotation, 3);
 
-            //   const listener = audioContext.listener;
+              // const listener = audioContext.listener;
 
-            //   if (listener.positionX !== undefined) {
-            //     listener.positionX.value = camPosX / 1000;
-            //     listener.positionY.value = camPosY / 1000;
-            //     listener.positionZ.value = camPosZ / 1000;
-            //   } else {
-            //     listener.setPosition(camPosX / 1000, camPosY / 1000, camPosZ / 1000);
-            //   }
+              // if (listener.positionX !== undefined) {
+              //   listener.positionX.value = camPosX / 1000;
+              //   listener.positionY.value = camPosY / 1000;
+              //   listener.positionZ.value = camPosZ / 1000;
+              // } else {
+              //   listener.setPosition(camPosX / 1000, camPosY / 1000, camPosZ / 1000);
+              // }
 
-            //   const yaw = quaternionToYaw(camRotY / 1000, camRotW / 1000);
+              // const yaw = quaternionToYaw(camRotY / 1000, camRotW / 1000);
 
-            //   if (listener.forwardX !== undefined) {
-            //     listener.forwardX.value = -Math.sin(yaw);
-            //     listener.forwardZ.value = -Math.cos(yaw);
-            //   } else {
-            //     listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
-            //   }
+              // if (listener.forwardX !== undefined) {
+              //   listener.forwardX.value = -Math.sin(yaw);
+              //   listener.forwardZ.value = -Math.cos(yaw);
+              // } else {
+              //   listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
+              // }
 
-            //   // Read location
-            //   const posX = Atomics.load(playerPosition, 0);
-            //   const posY = Atomics.load(playerPosition, 1);
-            //   const posZ = Atomics.load(playerPosition, 2);
+              // Read location
+              const posX = Atomics.load(positionArray, 0);
+              const posY = Atomics.load(positionArray, 1);
+              const posZ = Atomics.load(positionArray, 2);
 
-            //   const rotX = Atomics.load(playerRotation, 0);
-            //   const rotY = Atomics.load(playerRotation, 1);
-            //   const rotZ = Atomics.load(playerRotation, 2);
-            //   const rotW = Atomics.load(playerRotation, 3);
+              // const rotX = Atomics.load(rotationArray, 0);
+              // const rotY = Atomics.load(rotationArray, 1);
+              // const rotZ = Atomics.load(rotationArray, 2);
+              // const rotW = Atomics.load(rotationArray, 3);
 
-            //   // Create buffer
-            //   view.setUint8(0, playerId);
+              // Create buffer
+              view.setUint8(0, playerId);
 
-            //   view.setInt32(1, posX, true);
-            //   view.setInt32(5, posY, true);
-            //   view.setInt32(9, posZ, true);
+              view.setInt32(1, posX, true);
+              view.setInt32(5, posY, true);
+              view.setInt32(9, posZ, true);
 
-            //   view.setInt16(13, rotX, true);
-            //   view.setInt16(15, rotY, true);
-            //   view.setInt16(17, rotZ, true);
-            //   view.setInt16(19, rotW, true);
+              // view.setInt16(13, rotX, true);
+              // view.setInt16(15, rotY, true);
+              // view.setInt16(17, rotZ, true);
+              // view.setInt16(19, rotW, true);
 
-            //   // Publish buffer
-            //   dataProducer.send(buffer);
-            // }, 1000 / PUBLISH_HZ);
+              // Publish buffer
+              dataProducer.send(buffer);
+            }, 1000 / PUBLISH_HZ);
           }
 
           if (data.type === "consumer") {
@@ -253,10 +229,7 @@ export function useHost(url: string) {
           });
 
           // Start receiving audio
-          sendToHost({
-            subject: "resume_audio",
-            data: null,
-          });
+          sendToHost({ subject: "resume_audio", data: null });
 
           await consumer.resume();
 
@@ -306,27 +279,26 @@ export function useHost(url: string) {
           dataConsumer.on("message", async (data: ArrayBuffer | Blob) => {
             const buffer = data instanceof ArrayBuffer ? data : await data.arrayBuffer();
 
-            // Apply location to audio panner
             const view = new DataView(buffer);
             const playerId = view.getUint8(0);
+            const posX = view.getInt32(1, true) / POSITION_ARRAY_ROUNDING;
+            const posY = view.getInt32(5, true) / POSITION_ARRAY_ROUNDING;
+            const posZ = view.getInt32(9, true) / POSITION_ARRAY_ROUNDING;
 
+            // Apply location to audio panner
             const panner = panners.get(playerId);
             if (panner) {
               if (panner.positionX !== undefined) {
-                panner.positionX.value = view.getInt32(1, true) / 1000;
-                panner.positionY.value = view.getInt32(5, true) / 1000;
-                panner.positionZ.value = view.getInt32(9, true) / 1000;
+                panner.positionX.value = posX;
+                panner.positionY.value = posY;
+                panner.positionZ.value = posZ;
               } else {
-                panner.setPosition(
-                  view.getInt32(1, true) / 1000,
-                  view.getInt32(5, true) / 1000,
-                  view.getInt32(9, true) / 1000
-                );
+                panner.setPosition(posX, posY, posZ);
               }
             }
 
-            // Send to renderThread
-            // engine.renderThread.postMessage({
+            // Send to engine
+            // engine.modules.render.toRenderThread({
             //   subject: "player_location",
             //   data: buffer,
             // });
@@ -348,9 +320,9 @@ export function useHost(url: string) {
     };
 
     return () => {
-      // Close WebSocket connection
+      if (publishInterval) clearInterval(publishInterval);
       ws.close();
-      useAppStore.setState({ ws: null });
+      useAppStore.setState({ ws: null, players: null, playerId: null });
     };
   }, [engine, utils, url]);
 

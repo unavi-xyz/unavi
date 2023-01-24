@@ -9,10 +9,10 @@ import ButtonFileInput from "../../ui/ButtonFileInput";
 
 export default function UserPage() {
   const playerId = useAppStore((state) => state.playerId);
-  const displayName = useAppStore((state) => state.displayName);
-  const customAvatar = useAppStore((state) => state.customAvatar);
-
   const { data: session } = useSession();
+
+  const nickname = useAppStore((state) => state.nickname);
+  const avatar = useAppStore((state) => state.avatar);
 
   const guestName =
     playerId == null || playerId === undefined
@@ -40,12 +40,9 @@ export default function UserPage() {
           <input
             type="text"
             placeholder={guestName}
-            value={displayName ?? ""}
+            value={nickname ?? ""}
             onChange={(e) => {
-              useAppStore.setState({
-                displayName: e.target.value,
-                didChangeName: true,
-              });
+              useAppStore.setState({ didChangeName: true, nickname: e.target.value });
             }}
             className="h-full w-full rounded-xl bg-neutral-200/80 px-3 py-2 text-center outline-none ring-neutral-500/80 transition hover:ring-1 focus:bg-neutral-200 focus:ring-1"
           />
@@ -62,25 +59,19 @@ export default function UserPage() {
             const blob = new Blob([file], { type: "model/gltf-binary" });
             const url = URL.createObjectURL(blob);
 
-            useAppStore.setState({
-              customAvatar: url,
-              didChangeAvatar: true,
-            });
+            useAppStore.setState({ didChangeAvatar: true, avatar: url });
           }}
         >
-          {customAvatar ? "Change Avatar" : "Upload Avatar"}
+          {avatar ? "Change Avatar" : "Upload Avatar"}
         </ButtonFileInput>
 
-        {customAvatar && (
+        {avatar && (
           <Button
             color="error"
             rounded="large"
             fullWidth
             onClick={() => {
-              useAppStore.setState({
-                customAvatar: null,
-                didChangeAvatar: true,
-              });
+              useAppStore.setState({ didChangeAvatar: true, avatar: null });
             }}
           >
             Remove Avatar

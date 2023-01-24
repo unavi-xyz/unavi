@@ -24,7 +24,7 @@ export class MediasoupSchema {
     uri: z.string(),
     id: z.number(),
     encrypt: z.boolean().optional(),
-    parameters: z.record(z.string()).optional(),
+    parameters: z.record(z.any()).optional(),
   });
   static rtpParameters = z.object({
     mid: z.string().optional(),
@@ -34,7 +34,7 @@ export class MediasoupSchema {
         payloadType: z.number(),
         clockRate: z.number(),
         channels: z.number().optional(),
-        parameters: z.record(z.string()).optional(),
+        parameters: z.record(z.any()).optional(),
         rtcpFeedback: z.array(MediasoupSchema.rtcpFeedback).optional(),
       })
     ),
@@ -88,7 +88,7 @@ export class MediasoupSchema {
           preferredPayloadType: z.number().optional(),
           clockRate: z.number(),
           channels: z.number().optional(),
-          parameters: z.record(z.string()).optional(),
+          parameters: z.record(z.any()).optional(),
           rtcpFeedback: z.array(MediasoupSchema.rtcpFeedback).optional(),
         })
       )
@@ -145,8 +145,8 @@ export class MediasoupSchema {
       )
       .optional(),
     iceTransportPolicy: z.union([z.literal("all"), z.literal("relay")]).optional(),
-    additionalSettings: z.record(z.string()).optional(),
-    proprietaryConstraints: z.record(z.string()).optional(),
-    appData: z.record(z.string()).optional(),
+    additionalSettings: z.record(z.any()).optional(),
+    proprietaryConstraints: z.record(z.any()).optional(),
+    appData: z.record(z.any()).optional(),
   });
 }

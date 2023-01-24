@@ -1,6 +1,7 @@
 import { FromHostMessage } from "protocol";
 
 import { TrpcContext } from "../../client/trpc";
+import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
 import { Player } from "./Player";
 
 export class Players {
@@ -16,11 +17,13 @@ export class Players {
       case "player_joined": {
         const player = new Player(data.playerId, this.#trpc);
         this.addPlayer(player);
+        console.info("👋 Player", player.hexId, "joined");
         break;
       }
 
       case "player_left": {
         this.removePlayer(data.playerId);
+        console.info("👋 Player", numberToHexDisplay(data.playerId), "left");
         break;
       }
 
@@ -59,5 +62,9 @@ export class Players {
 
   removePlayer(playerId: number) {
     this.#store.delete(playerId);
+  }
+
+  getPlayer(playerId: number) {
+    return this.#store.get(playerId);
   }
 }

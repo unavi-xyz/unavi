@@ -15,6 +15,9 @@ export class PhysicsModule {
   ready = false;
   messageQueue: Array<{ message: ToPhysicsMessage; transferables?: Transferable[] }> = [];
 
+  positionArray: Int32Array | null = null;
+  rotationArray: Int32Array | null = null;
+
   constructor(input: InputModule, render: RenderModule) {
     this.#input = input;
     this.#render = render;
@@ -39,6 +42,9 @@ export class PhysicsModule {
       }
 
       case "set_player_arrays": {
+        this.positionArray = data.position;
+        this.rotationArray = data.rotation;
+
         this.#input.inputArray = data.input;
         this.#input.rotationArray = data.rotation;
 

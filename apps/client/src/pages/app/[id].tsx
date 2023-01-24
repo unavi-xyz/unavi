@@ -5,6 +5,7 @@ import Script from "next/script";
 import { useEffect, useRef } from "react";
 
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
+import { useLoadUser } from "../../app/hooks/useLoadUser";
 import { useResizeCanvas } from "../../app/hooks/useResizeCanvas";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useSpace } from "../../app/hooks/useSpace";
@@ -57,9 +58,8 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
   const engine = useAppStore((state) => state.engine);
 
   useResizeCanvas(engine, canvasRef, containerRef);
-  // useLoadUser();
+  useLoadUser();
   useAppHotkeys();
-  // useAnalytics();
   const setAvatar = useSetAvatar();
   const isMobile = useIsMobile();
 
@@ -89,7 +89,6 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
 
   useEffect(() => {
     if (!engine) return;
-
     join();
   }, [engine, join]);
 
@@ -136,7 +135,7 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
           const url = URL.createObjectURL(file);
           setAvatar(url);
 
-          useAppStore.setState({ customAvatar: url });
+          useAppStore.setState({ avatar: url });
         }}
       >
         {loaded && (

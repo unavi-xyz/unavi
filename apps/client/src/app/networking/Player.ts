@@ -14,6 +14,8 @@ export class Player {
   #address: string | null = null;
   #isFalling = false;
 
+  avatar: string | null = null;
+
   constructor(id: number, trpc: TrpcContext) {
     this.id = id;
     this.#trpc = trpc;
@@ -30,7 +32,7 @@ export class Player {
 
   set displayName(value: string) {
     this.#displayName = value;
-    console.info("📛 Player", this.hexId, "is now", value);
+    console.info("🪪 Player", this.hexId, "is now", value);
   }
 
   get nickname() {
@@ -79,7 +81,7 @@ export class Player {
     this.#isFalling = value;
   }
 
-  sendChatMessage(text: string, timestamp: number) {
+  sendChatMessage(text: string, timestamp: number = Date.now()) {
     const message: ChatMessage = {
       type: "chat",
       id: nanoid(),

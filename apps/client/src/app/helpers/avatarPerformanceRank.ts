@@ -39,7 +39,7 @@ const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   },
 };
 
-export function getAvatarPerformanceRank(stats: ModelStats): AvatarPerformanceRank {
+export function avatarPerformanceRank(stats: ModelStats): AvatarPerformanceRank {
   const keys = Object.keys(thresholds) as WithoutVeryPoor[];
 
   for (let i = 0; i < keys.length; i++) {

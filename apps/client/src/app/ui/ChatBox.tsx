@@ -10,7 +10,6 @@ export default function ChatBox() {
 
   const chatBoxFocused = useAppStore((state) => state.chatBoxFocused);
   const chatMessages = useAppStore((state) => state.chatMessages);
-
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -47,13 +46,15 @@ export default function ChatBox() {
             if (e.key === "Enter") {
               e.preventDefault();
 
-              const data = e.currentTarget.value;
-              if (!data) return;
+              const { playerId, players } = useAppStore.getState();
+              if (playerId === null || !players) return;
 
+              const text = e.currentTarget.value;
+              if (!text) return;
               e.currentTarget.value = "";
 
               // Send message to server
-              sendToHost({ subject: "chat", data });
+              sendToHost({ subject: "chat", data: text });
             }
           }}
           onFocus={() => useAppStore.setState({ chatBoxFocused: true })}

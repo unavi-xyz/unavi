@@ -9,8 +9,6 @@ import { PhysicsScene } from "./PhysicsScene";
 import { Player } from "./Player";
 
 export class PhysicsThread {
-  #postMessage: PostMessage<FromPhysicsMessage>;
-
   controls: ControlsType = DEFAULT_CONTROLS;
 
   world = new World({ x: 0, y: -9.81, z: 0 });
@@ -18,8 +16,6 @@ export class PhysicsThread {
   player: Player;
 
   constructor(postMessage: PostMessage<FromPhysicsMessage>) {
-    this.#postMessage = postMessage;
-
     this.player = new Player(this.world, postMessage);
 
     setInterval(this.update, 1000 / 60); // 60hz

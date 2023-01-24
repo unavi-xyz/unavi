@@ -54,7 +54,7 @@ export class RenderThread {
 
   transform = new TransformControls(this);
   orbit = new OrbitControls(this.camera, this.transform);
-  player = new PlayerControls(this.camera);
+  player: PlayerControls;
   raycaster: RaycastControls;
 
   controls: ControlsType = DEFAULT_CONTROLS;
@@ -63,6 +63,7 @@ export class RenderThread {
     this.postMessage = postMessage;
 
     this.renderScene = new RenderScene(this.postMessage);
+    this.player = new PlayerControls(this.camera, this.renderScene.root);
 
     if (canvas) {
       this.#canvas = canvas;

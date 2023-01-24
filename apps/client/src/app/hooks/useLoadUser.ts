@@ -31,13 +31,13 @@ export function useLoadUser() {
     if (localAvatar) {
       if (localAvatar !== customAvatar) {
         useAppStore.setState({ customAvatar: localAvatar });
-        engine.renderThread.postMessage({ subject: "set_avatar", data: localAvatar });
+        // engine.modules.render.toRenderThread({ subject: "set_avatar", data: localAvatar });
         sendToHost({ subject: "set_avatar", data: localAvatar });
       }
     } else {
       // If no avatar set, use default avatar
       useAppStore.setState({ customAvatar: null });
-      engine.renderThread.postMessage({ subject: "set_avatar", data: null });
+      // engine.modules.render.toRenderThread({ subject: "set_avatar", data: null });
       sendToHost({ subject: "set_avatar", data: null });
     }
   }, [engine, ws, ws?.readyState]);

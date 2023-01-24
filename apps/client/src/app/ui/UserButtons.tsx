@@ -54,7 +54,7 @@ export default function UserButtons() {
 
     if (didChangeAvatar) {
       // Update engine
-      engine.renderThread.postMessage({ subject: "set_avatar", data: customAvatar });
+      // engine.modules.render.toRenderThread({ subject: "set_avatar", data: customAvatar });
 
       if (customAvatar) {
         // Upload avatar

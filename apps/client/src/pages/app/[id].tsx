@@ -72,6 +72,11 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
     useAppStore.setState({ engine });
 
     engine.modules.render.toRenderThread({
+      subject: "set_player_animations",
+      data: { path: "/models/" },
+    });
+
+    engine.modules.render.toRenderThread({
       subject: "set_player_avatar",
       data: { uri: "/models/Wired-chan.vrm" },
     });

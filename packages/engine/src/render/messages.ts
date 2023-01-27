@@ -16,6 +16,7 @@ export type ToRenderMessage =
   | MessageJSON<"set_controls", ControlsType>
   | MessageJSON<"set_player_arrays", { position: Int32Array; rotation: Int32Array }>
   | MessageJSON<"set_player_avatar", { uri: string | null }>
+  | MessageJSON<"set_player_animations", { path: string | null }>
   | MessageJSON<"toggle_visuals", { enabled: boolean }>;
 
 export type FromRenderMessage =

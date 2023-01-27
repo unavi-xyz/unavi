@@ -37,7 +37,16 @@ export default function Editor() {
 
     useEditorStore.setState({ engine, canvas: canvasRef.current, visuals: true });
 
-    // Skybox
+    engine.modules.render.toRenderThread({
+      subject: "set_player_animations",
+      data: { path: "/models/" },
+    });
+
+    engine.modules.render.toRenderThread({
+      subject: "set_player_avatar",
+      data: { uri: "/models/Wired-chan.vrm" },
+    });
+
     engine.modules.render.toRenderThread({
       subject: "set_skybox",
       data: { uri: "/images/Skybox_2K.jpg" },

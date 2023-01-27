@@ -22,14 +22,15 @@ export class PlayerControls {
 
   #targetCameraRotation = new Quaternion();
   #targetOrbitDistance = 0;
-  #position = new Vector3();
-  #velocity = new Vector3();
   #raycaster = new Raycaster();
   #euler = new Euler(0, 0, 0, "YXZ");
   #vec3 = new Vector3();
   #vec3b = new Vector3();
+  #quat = new Quaternion();
+  #quatb = new Quaternion();
   #delta = 0;
   #mode: "first-person" | "third-person" = "first-person";
+  #animationsPath: string | null = null;
 
   constructor(camera: PerspectiveCamera, root: Object3D) {
     this.#camera = camera;
@@ -63,6 +64,15 @@ export class PlayerControls {
     }
   }
 
+  get animationsPath() {
+    return this.#animationsPath;
+  }
+
+  set animationsPath(path: string | null) {
+    this.#animationsPath = path;
+    if (this.avatar) this.avatar.animationsPath = path;
+  }
+
   onmessage({ subject, data }: ToRenderMessage) {
     switch (subject) {
       case "set_player_arrays": {
@@ -90,20 +100,6 @@ export class PlayerControls {
         break;
       }
 
-      case "set_player_avatar": {
-        if (this.avatar) {
-          this.avatar.dispose();
-          this.avatar = null;
-        }
-
-        if (data.uri) {
-          this.avatar = new Avatar(data.uri);
-          this.avatar.mode = this.mode;
-          this.body.add(this.avatar.group);
-        }
-        break;
-      }
-
       case "wheel": {
         this.#targetOrbitDistance += data.deltaY * this.#delta * 0.75;
         this.#targetOrbitDistance = Math.max(
@@ -121,7 +117,34 @@ export class PlayerControls {
         if (this.mode === "first-person" && this.#targetOrbitDistance > 0) {
           this.mode = "third-person";
           this.#targetOrbitDistance = 0.4;
+
+          // Reset head rotation
+          if (this.avatar) {
+            const direction = this.#camera.getWorldDirection(this.#vec3);
+            const angle = Math.atan2(direction.x, direction.z) + Math.PI;
+            this.avatar.targetRotation.setFromAxisAngle(this.#vec3.set(0, 1, 0), angle);
+          }
         }
+        break;
+      }
+
+      case "set_player_avatar": {
+        if (this.avatar) {
+          this.avatar.dispose();
+          this.avatar = null;
+        }
+
+        if (data.uri) {
+          this.avatar = new Avatar(data.uri);
+          this.avatar.mode = this.mode;
+          this.avatar.animationsPath = this.animationsPath;
+          this.body.add(this.avatar.group);
+        }
+        break;
+      }
+
+      case "set_player_animations": {
+        this.#animationsPath = data.path;
         break;
       }
     }
@@ -129,40 +152,34 @@ export class PlayerControls {
 
   update(delta: number) {
     this.#delta = delta;
-    if (!this.positionArray || !this.rotationArray) return;
+    if (!this.positionArray || !this.rotationArray || !this.avatar) return;
 
-    // Move body to player position
+    // Set target position
     const x = Atomics.load(this.positionArray, 0) / POSITION_ARRAY_ROUNDING;
     const y = Atomics.load(this.positionArray, 1) / POSITION_ARRAY_ROUNDING;
     const z = Atomics.load(this.positionArray, 2) / POSITION_ARRAY_ROUNDING;
-    this.body.position.set(x, y, z);
+    this.avatar.targetPosition.set(x, y, z);
 
-    // Calculate velocity
-    const K = 1 - Math.pow(10e-12, delta);
-    const deltaPos = this.#vec3.set(x, y, z).sub(this.#position);
-    this.#velocity.lerp(deltaPos, K);
-    this.#position.set(x, y, z);
+    this.avatar.update(delta);
 
     if (this.mode === "first-person") this.updateFirstPerson(delta);
     else this.updateThirdPerson(delta);
-
-    if (this.avatar) this.avatar.update(delta);
   }
 
   updateFirstPerson(delta: number) {
-    if (!this.positionArray || !this.rotationArray) return;
+    if (!this.rotationArray || !this.avatar) return;
 
     // Rotate camera
     const K = 1 - Math.pow(10e-18, delta);
     this.#camera.quaternion.slerp(this.#targetCameraRotation, K);
 
     // Set avatar rotation
-    if (this.avatar) this.#camera.getWorldQuaternion(this.avatar.targetRotation);
+    this.#camera.getWorldQuaternion(this.avatar.targetRotation);
 
     // Move camera
-    const head = this.avatar?.vrm?.humanoid.getNormalizedBoneNode("head");
-    const leftEye = this.avatar?.vrm?.humanoid.getNormalizedBoneNode("leftEye");
-    const rightEye = this.avatar?.vrm?.humanoid.getNormalizedBoneNode("rightEye");
+    const head = this.avatar.vrm?.humanoid.getNormalizedBoneNode("head");
+    const leftEye = this.avatar.vrm?.humanoid.getNormalizedBoneNode("leftEye");
+    const rightEye = this.avatar.vrm?.humanoid.getNormalizedBoneNode("rightEye");
 
     if (leftEye && rightEye) {
       // Move camera to eye position
@@ -178,24 +195,24 @@ export class PlayerControls {
       this.#camera.position.y += PLAYER_HEIGHT;
     }
 
-    // Move camera forward a bit
-    const direction = this.#camera.getWorldDirection(this.#vec3);
-    this.#camera.position.add(this.#vec3.copy(direction).multiplyScalar(0.1));
-
     // Store camera rotation
+    const direction = this.#camera.getWorldDirection(this.#vec3);
     const angle = Math.atan2(direction.x, direction.z);
     Atomics.store(this.rotationArray, 0, angle * ROTATION_ARRAY_ROUNDING);
+
+    // Move camera forward a bit
+    this.#camera.position.add(this.#vec3.copy(direction).multiplyScalar(0.1));
   }
 
   updateThirdPerson(delta: number) {
-    if (!this.positionArray || !this.rotationArray) return;
+    if (!this.rotationArray || !this.avatar) return;
 
     // Rotate camera
     const K = 1 - Math.pow(10e-14, delta);
     this.#camera.quaternion.slerp(this.#targetCameraRotation, K);
 
     // Move camera
-    const head = this.avatar?.vrm?.humanoid.getNormalizedBoneNode("head");
+    const head = this.avatar.vrm?.humanoid.getNormalizedBoneNode("head");
     if (head) {
       // Orbit around head
       head.getWorldPosition(this.#camera.position);
@@ -226,11 +243,10 @@ export class PlayerControls {
     Atomics.store(this.rotationArray, 0, angle * ROTATION_ARRAY_ROUNDING);
 
     // Rotate body according to velocity
-    const velocity = this.#velocity.length();
-    if (this.avatar && velocity > 0.01) {
+    if (this.avatar.velocity.length() > 0.01) {
       this.avatar.targetRotation.setFromAxisAngle(
         this.#vec3.set(0, 1, 0),
-        Math.atan2(this.#velocity.x, this.#velocity.z) + Math.PI
+        Math.atan2(this.avatar.velocity.x, this.avatar.velocity.z)
       );
     }
   }

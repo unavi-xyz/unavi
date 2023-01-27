@@ -45,7 +45,7 @@ export default function ChatMessage({ message }: Props) {
     >
       {message.type === "chat" ? (
         <div className="whitespace-pre break-words">
-          <span>{message.displayName}</span>: <span>{message.text}</span>
+          <span className="font-bold">{message.displayName}</span>: <span>{message.text}</span>
         </div>
       ) : message.type === "system" ? (
         <span className="text-neutral-500">

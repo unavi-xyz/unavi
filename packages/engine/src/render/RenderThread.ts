@@ -29,6 +29,7 @@ import { PlayerControls } from "./controls/PlayerControls";
 import { RaycastControls } from "./controls/RaycastControls";
 import { TransformControls } from "./controls/TransformControls";
 import { FromRenderMessage, ToRenderMessage } from "./messages";
+import { Players } from "./players/Players";
 import { RenderScene } from "./scene/RenderScene";
 import { ThreeOutlinePass } from "./three/ThreeOutlinePass";
 
@@ -57,6 +58,7 @@ export class RenderThread {
   orbit = new OrbitControls(this.camera, this.transform);
   player: PlayerControls;
   raycaster: RaycastControls;
+  players = new Players();
 
   controls: ControlsType = DEFAULT_CONTROLS;
 
@@ -80,6 +82,7 @@ export class RenderThread {
 
     this.scene.add(this.renderScene.root);
     this.scene.add(this.player.group);
+    this.scene.add(this.players.group);
     this.scene.add(new AmbientLight(0xffffff, 0.2));
     this.camera.position.set(0, 4, 12);
     this.camera.lookAt(0, 0, 0);
@@ -93,6 +96,7 @@ export class RenderThread {
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
     this.transform.onmessage(event.data);
     this.player.onmessage(event.data);
+    this.players.onmessage(event.data);
 
     if (this.controls === "orbit") {
       this.orbit.onmessage(event.data);
@@ -148,7 +152,7 @@ export class RenderThread {
       }
 
       case "toggle_visuals": {
-        this.renderScene.visualsEnabled = data.enabled;
+        this.renderScene.visualsEnabled = data;
         break;
       }
 
@@ -260,6 +264,7 @@ export class RenderThread {
 
     if (this.size.width === 0 || this.size.height === 0) return;
 
+    this.players.update(delta);
     this.csm?.update();
     this.composer?.render();
   }

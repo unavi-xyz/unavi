@@ -7,12 +7,10 @@ export type ToPhysicsMessage =
   | MessageJSON<"destroy">
   | MessageJSON<"jump">
   | MessageJSON<"set_controls", ControlsType>
-  | MessageJSON<"set_sprinting", boolean>;
-
-export type FromPhysicsMessage =
-  | MessageJSON<"ready">
-  | MessageJSON<"set_grounded", boolean>
+  | MessageJSON<"set_sprinting", boolean>
   | MessageJSON<
-      "set_player_arrays",
-      { input: Int16Array; position: Int32Array; rotation: Int32Array }
+      "set_user_arrays",
+      { input: Int16Array; userPosition: Int32Array; cameraYaw: Int16Array }
     >;
+
+export type FromPhysicsMessage = MessageJSON<"ready"> | MessageJSON<"set_grounded", boolean>;

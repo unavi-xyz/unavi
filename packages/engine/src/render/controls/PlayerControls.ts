@@ -17,8 +17,10 @@ export class PlayerControls {
   body = new Group();
   avatar: Avatar | null = null;
 
-  positionArray: Int32Array | null = null;
-  rotationArray: Int32Array | null = null;
+  userPosition: Int32Array | null = null;
+  userRotation: Int16Array | null = null;
+  cameraPosition: Int32Array | null = null;
+  cameraYaw: Int16Array | null = null;
 
   #targetCameraRotation = new Quaternion();
   #targetOrbitDistance = 0;
@@ -26,10 +28,12 @@ export class PlayerControls {
   #euler = new Euler(0, 0, 0, "YXZ");
   #vec3 = new Vector3();
   #vec3b = new Vector3();
+  #quat = new Quaternion();
   #delta = 0;
 
   #mode: "first-person" | "third-person" = "first-person";
   #animationsPath: string | null = null;
+  #defaultAvatar: string | null = null;
   #grounded = false;
 
   constructor(camera: PerspectiveCamera, root: Object3D) {
@@ -66,9 +70,11 @@ export class PlayerControls {
 
   onmessage({ subject, data }: ToRenderMessage) {
     switch (subject) {
-      case "set_player_arrays": {
-        this.positionArray = data.position;
-        this.rotationArray = data.rotation;
+      case "set_user_arrays": {
+        this.userPosition = data.userPosition;
+        this.userRotation = data.userRotation;
+        this.cameraPosition = data.cameraPosition;
+        this.cameraYaw = data.cameraYaw;
         break;
       }
 
@@ -120,8 +126,21 @@ export class PlayerControls {
       }
 
       case "set_default_avatar": {
+        this.#defaultAvatar = data;
+
+        if (!this.avatar) {
+          this.avatar = new Avatar(data);
+          this.avatar.mode = this.mode;
+          this.avatar.animationsPath = this.#animationsPath;
+          this.avatar.grounded = this.#grounded;
+          this.body.add(this.avatar.group);
+        }
+        break;
+      }
+
+      case "set_user_avatar": {
         if (this.avatar) {
-          this.avatar.dispose();
+          this.avatar.destroy();
           this.avatar = null;
         }
 
@@ -151,22 +170,40 @@ export class PlayerControls {
 
   update(delta: number) {
     this.#delta = delta;
-    if (!this.positionArray || !this.rotationArray || !this.avatar) return;
+    if (
+      !this.userPosition ||
+      !this.userRotation ||
+      !this.cameraYaw ||
+      !this.cameraPosition ||
+      !this.avatar
+    )
+      return;
 
     // Set target position
-    const x = Atomics.load(this.positionArray, 0) / POSITION_ARRAY_ROUNDING;
-    const y = Atomics.load(this.positionArray, 1) / POSITION_ARRAY_ROUNDING;
-    const z = Atomics.load(this.positionArray, 2) / POSITION_ARRAY_ROUNDING;
+    const x = Atomics.load(this.userPosition, 0) / POSITION_ARRAY_ROUNDING;
+    const y = Atomics.load(this.userPosition, 1) / POSITION_ARRAY_ROUNDING;
+    const z = Atomics.load(this.userPosition, 2) / POSITION_ARRAY_ROUNDING;
     this.avatar.targetPosition.set(x, y, z);
 
     this.avatar.update(delta);
 
     if (this.mode === "first-person") this.updateFirstPerson(delta);
     else this.updateThirdPerson(delta);
+
+    // Store camera rotation
+    const direction = this.#camera.getWorldDirection(this.#vec3);
+    const yaw = Math.atan2(direction.x, direction.z);
+    Atomics.store(this.cameraYaw, 0, yaw * ROTATION_ARRAY_ROUNDING);
+
+    // Store camera position
+    this.#camera.getWorldPosition(this.#vec3);
+    Atomics.store(this.cameraPosition, 0, this.#vec3.x * POSITION_ARRAY_ROUNDING);
+    Atomics.store(this.cameraPosition, 1, this.#vec3.y * POSITION_ARRAY_ROUNDING);
+    Atomics.store(this.cameraPosition, 2, this.#vec3.z * POSITION_ARRAY_ROUNDING);
   }
 
   updateFirstPerson(delta: number) {
-    if (!this.rotationArray || !this.avatar) return;
+    if (!this.userRotation || !this.avatar) return;
 
     // Rotate camera
     const K = 1 - Math.pow(10e-18, delta);
@@ -194,17 +231,20 @@ export class PlayerControls {
       this.#camera.position.y += PLAYER_HEIGHT;
     }
 
-    // Store camera rotation
-    const direction = this.#camera.getWorldDirection(this.#vec3);
-    const angle = Math.atan2(direction.x, direction.z);
-    Atomics.store(this.rotationArray, 0, angle * ROTATION_ARRAY_ROUNDING);
-
     // Move camera forward a bit
+    const direction = this.#camera.getWorldDirection(this.#vec3);
     this.#camera.position.add(this.#vec3.copy(direction).multiplyScalar(0.15));
+
+    // Store user rotation
+    this.#camera.getWorldQuaternion(this.#quat);
+    Atomics.store(this.userRotation, 0, this.#quat.x * ROTATION_ARRAY_ROUNDING);
+    Atomics.store(this.userRotation, 1, this.#quat.y * ROTATION_ARRAY_ROUNDING);
+    Atomics.store(this.userRotation, 2, this.#quat.z * ROTATION_ARRAY_ROUNDING);
+    Atomics.store(this.userRotation, 3, this.#quat.w * ROTATION_ARRAY_ROUNDING);
   }
 
   updateThirdPerson(delta: number) {
-    if (!this.rotationArray || !this.avatar) return;
+    if (!this.userRotation || !this.avatar) return;
 
     // Rotate camera
     const K = 1 - Math.pow(10e-14, delta);
@@ -236,11 +276,6 @@ export class PlayerControls {
       this.#vec3.set(0, 0, orbitDistance).applyQuaternion(this.#camera.quaternion)
     );
 
-    // Store camera rotation
-    const direction = this.#camera.getWorldDirection(this.#vec3);
-    const angle = Math.atan2(direction.x, direction.z);
-    Atomics.store(this.rotationArray, 0, angle * ROTATION_ARRAY_ROUNDING);
-
     // Rotate body according to velocity
     if (this.avatar.velocity.length() > 0.01) {
       this.avatar.targetRotation.setFromAxisAngle(
@@ -248,5 +283,12 @@ export class PlayerControls {
         Math.atan2(this.avatar.velocity.x, this.avatar.velocity.z)
       );
     }
+
+    // Store user rotation
+    this.avatar.group.getWorldQuaternion(this.#quat);
+    Atomics.store(this.userRotation, 0, this.#quat.x * ROTATION_ARRAY_ROUNDING);
+    Atomics.store(this.userRotation, 1, this.#quat.y * ROTATION_ARRAY_ROUNDING);
+    Atomics.store(this.userRotation, 2, this.#quat.z * ROTATION_ARRAY_ROUNDING);
+    Atomics.store(this.userRotation, 3, this.#quat.w * ROTATION_ARRAY_ROUNDING);
   }
 }

@@ -128,7 +128,9 @@ export class Players {
     const playerId = this.playerIds.get(ws);
     if (playerId === undefined) return console.warn("playerId not found");
 
-    console.info(`🌍 Player ${toHex(playerId)} joined space ${toHex(spaceId)}`);
+    // Check if this player is already in this space
+    const currentSpaceId = this.spaceIds.get(ws);
+    if (currentSpaceId === spaceId) return;
 
     const name = this.names.get(ws) ?? null;
     const avatar = this.avatars.get(ws) ?? null;
@@ -137,12 +139,7 @@ export class Players {
     // Tell everyone that this player joined
     const joinMessage: FromHostMessage = {
       subject: "player_joined",
-      data: {
-        playerId,
-        name,
-        avatar,
-        address,
-      },
+      data: { playerId, name, avatar, address },
     };
 
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(joinMessage));
@@ -187,6 +184,8 @@ export class Players {
     // Publish WebRTC producers
     this.publishProducer(ws);
     this.publishDataProducer(ws);
+
+    console.info(`🌍 Player ${toHex(playerId)} joined space ${toHex(spaceId)}`);
   }
 
   leaveSpace(ws: uWS.WebSocket, isOpen = true) {
@@ -229,7 +228,7 @@ export class Players {
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(message));
   }
 
-  publishFallingState(ws: uWS.WebSocket, isFalling: boolean) {
+  publishGrounded(ws: uWS.WebSocket, grounded: boolean) {
     // If not in a space, do nothing
     const spaceId = this.spaceIds.get(ws);
     if (!spaceId) return;
@@ -239,8 +238,8 @@ export class Players {
 
     // Tell everyone in the space about this player's jump state
     const jumpStateMessage: FromHostMessage = {
-      subject: "player_falling_state",
-      data: { playerId, isFalling },
+      subject: "player_grounded",
+      data: { playerId, grounded },
     };
 
     ws.publish(spaceTopic(spaceId), JSON.stringify(jumpStateMessage));
@@ -261,7 +260,7 @@ export class Players {
     // Tell everyone in the space about this player's name
     const nameMessage: FromHostMessage = {
       subject: "player_nickname",
-      data: { playerId, name: nickname },
+      data: { playerId, nickname: nickname },
     };
 
     this.#server.publish(spaceTopic(spaceId), JSON.stringify(nameMessage));

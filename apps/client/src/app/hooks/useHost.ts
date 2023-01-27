@@ -1,4 +1,4 @@
-import { POSITION_ARRAY_ROUNDING } from "engine/src/constants";
+import { POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "engine";
 import { Device } from "mediasoup-client";
 import { Transport } from "mediasoup-client/lib/Transport";
 import { fromHostMessageSchema, ToHostMessage } from "protocol";
@@ -7,7 +7,7 @@ import { useEffect, useMemo } from "react";
 import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
-import { Player } from "../networking/Player";
+import { PlayerName } from "../networking/PlayerName";
 import { Players } from "../networking/Players";
 
 const PUBLISH_HZ = 15; // X times per second
@@ -21,7 +21,7 @@ export function useHost(url: string) {
     if (!engine) return;
 
     const ws = new WebSocket(url);
-    const players = new Players(utils);
+    const players = new Players(utils, engine);
     const device = new Device();
     const audioContext = new AudioContext();
     const panners = new Map<number, PannerNode>();
@@ -38,6 +38,10 @@ export function useHost(url: string) {
 
       // Initiate WebRTC connection
       sendToHost({ subject: "get_router_rtp_capabilities", data: null });
+
+      engine.physics.addEventListener("user_grounded", (event) => {
+        sendToHost({ subject: "set_grounded", data: event.data });
+      });
     };
 
     ws.onclose = () => {
@@ -59,8 +63,8 @@ export function useHost(url: string) {
       switch (subject) {
         case "join_success": {
           console.info(`🌏 Joined space as player ${numberToHexDisplay(data.playerId)}`);
-          const player = new Player(data.playerId, utils);
-          players.addPlayer(player);
+          const name = new PlayerName(data.playerId, utils);
+          players.names.set(data.playerId, name);
           useAppStore.setState({ playerId: data.playerId });
           break;
         }
@@ -140,24 +144,14 @@ export function useHost(url: string) {
             publishInterval = setInterval(() => {
               const { playerId } = useAppStore.getState();
 
-              const positionArray = engine.physics.positionArray;
-              const rotationArray = engine.physics.rotationArray;
-
-              if (
-                playerId === null ||
-                dataProducer.readyState !== "open" ||
-                !positionArray ||
-                !rotationArray
-              )
-                return;
+              if (playerId === null || dataProducer.readyState !== "open") return;
 
               // // Set audio listener location
-              // const camPosX = Atomics.load(cameraPosition, 0);
-              // const camPosY = Atomics.load(cameraPosition, 1);
-              // const camPosZ = Atomics.load(cameraPosition, 2);
+              // const camPosX = Atomics.load(engine.cameraPosition, 0) / POSITION_ARRAY_ROUNDING
+              // const camPosY = Atomics.load(engine.cameraPosition, 1) / POSITION_ARRAY_ROUNDING
+              // const camPosZ = Atomics.load(engine.cameraPosition, 2) / POSITION_ARRAY_ROUNDING
 
-              // const camRotY = Atomics.load(cameraRotation, 1);
-              // const camRotW = Atomics.load(cameraRotation, 3);
+              // const camYaw = Atomics.load(engine.cameraYaw, 1) / ROTATION_ARRAY_ROUNDING
 
               // const listener = audioContext.listener;
 
@@ -179,14 +173,14 @@ export function useHost(url: string) {
               // }
 
               // Read location
-              const posX = Atomics.load(positionArray, 0);
-              const posY = Atomics.load(positionArray, 1);
-              const posZ = Atomics.load(positionArray, 2);
+              const posX = Atomics.load(engine.userPosition, 0);
+              const posY = Atomics.load(engine.userPosition, 1);
+              const posZ = Atomics.load(engine.userPosition, 2);
 
-              // const rotX = Atomics.load(rotationArray, 0);
-              // const rotY = Atomics.load(rotationArray, 1);
-              // const rotZ = Atomics.load(rotationArray, 2);
-              // const rotW = Atomics.load(rotationArray, 3);
+              const rotX = Atomics.load(engine.userRotation, 0);
+              const rotY = Atomics.load(engine.userRotation, 1);
+              const rotZ = Atomics.load(engine.userRotation, 2);
+              const rotW = Atomics.load(engine.userRotation, 3);
 
               // Create buffer
               view.setUint8(0, playerId);
@@ -195,10 +189,10 @@ export function useHost(url: string) {
               view.setInt32(5, posY, true);
               view.setInt32(9, posZ, true);
 
-              // view.setInt16(13, rotX, true);
-              // view.setInt16(15, rotY, true);
-              // view.setInt16(17, rotZ, true);
-              // view.setInt16(19, rotW, true);
+              view.setInt16(13, rotX, true);
+              view.setInt16(15, rotY, true);
+              view.setInt16(17, rotZ, true);
+              view.setInt16(19, rotW, true);
 
               // Publish buffer
               dataProducer.send(buffer);
@@ -280,10 +274,17 @@ export function useHost(url: string) {
             const buffer = data instanceof ArrayBuffer ? data : await data.arrayBuffer();
 
             const view = new DataView(buffer);
+
             const playerId = view.getUint8(0);
+
             const posX = view.getInt32(1, true) / POSITION_ARRAY_ROUNDING;
             const posY = view.getInt32(5, true) / POSITION_ARRAY_ROUNDING;
             const posZ = view.getInt32(9, true) / POSITION_ARRAY_ROUNDING;
+
+            const rotX = view.getInt16(13, true) / ROTATION_ARRAY_ROUNDING;
+            const rotY = view.getInt16(15, true) / ROTATION_ARRAY_ROUNDING;
+            const rotZ = view.getInt16(17, true) / ROTATION_ARRAY_ROUNDING;
+            const rotW = view.getInt16(19, true) / ROTATION_ARRAY_ROUNDING;
 
             // Apply location to audio panner
             const panner = panners.get(playerId);
@@ -298,10 +299,11 @@ export function useHost(url: string) {
             }
 
             // Send to engine
-            // engine.render.send({
-            //   subject: "player_location",
-            //   data: buffer,
-            // });
+            const player = engine.player.getPlayer(playerId);
+            if (player) {
+              player.setPosition(posX, posY, posZ);
+              player.setRotation(rotX, rotY, rotZ, rotW);
+            }
           });
 
           break;
@@ -327,9 +329,7 @@ export function useHost(url: string) {
   }, [engine, utils, url]);
 
   const connect = useMemo(() => {
-    return (id: number) => {
-      sendToHost({ subject: "join", data: { id } });
-    };
+    return (id: number) => sendToHost({ subject: "join", data: { id } });
   }, []);
 
   return { connect };

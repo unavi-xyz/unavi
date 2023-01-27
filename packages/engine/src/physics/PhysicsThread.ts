@@ -34,6 +34,13 @@ export class PhysicsThread {
     const { subject, data } = event.data;
 
     switch (subject) {
+      case "set_user_arrays": {
+        this.player.input = data.input;
+        this.player.userPosition = data.userPosition;
+        this.player.cameraYaw = data.cameraYaw;
+        break;
+      }
+
       case "set_controls": {
         this.controls = data;
         break;

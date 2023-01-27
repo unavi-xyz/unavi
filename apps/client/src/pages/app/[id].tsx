@@ -57,11 +57,11 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
 
   const engine = useAppStore((state) => state.engine);
 
+  const setAvatar = useSetAvatar();
+  const isMobile = useIsMobile();
   useResizeCanvas(engine, canvasRef, containerRef);
   useLoadUser();
   useAppHotkeys();
-  const setAvatar = useSetAvatar();
-  const isMobile = useIsMobile();
 
   const { space, loadingText, loadingProgress, join } = useSpace(id);
 
@@ -77,7 +77,7 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
 
     return () => {
       engine.destroy();
-      useAppStore.setState({ engine: null });
+      useAppStore.setState({ engine: null, chatMessages: [] });
     };
   }, []);
 

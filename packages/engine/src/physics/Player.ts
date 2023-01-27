@@ -14,6 +14,8 @@ import {
   PLAYER_RADIUS,
   POSITION_ARRAY_ROUNDING,
   ROTATION_ARRAY_ROUNDING,
+  SPRINT_SPEED,
+  WALK_SPEED,
 } from "../constants";
 import { PostMessage } from "../types";
 import { COLLISION_GROUP } from "./groups";
@@ -29,9 +31,9 @@ export class Player {
   collider: Collider;
   rigidBody: RigidBody;
 
-  input: Int16Array;
-  rotation: Int32Array;
-  position: Int32Array;
+  input: Int16Array | null = null;
+  cameraYaw: Int16Array | null = null;
+  userPosition: Int32Array | null = null;
 
   velocity: Vector3 = { x: 0, y: 0, z: 0 };
   sprinting = false;
@@ -56,20 +58,6 @@ export class Player {
     this.rigidBody = this.#world.createRigidBody(rigidBodyDesc);
 
     this.collider = this.#world.createCollider(colliderDesc, this.rigidBody);
-
-    const inputBuffer = new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 2);
-    this.input = new Int16Array(inputBuffer);
-
-    const rotationBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 1);
-    this.rotation = new Int32Array(rotationBuffer);
-
-    const positionBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3);
-    this.position = new Int32Array(positionBuffer);
-
-    this.#postMessage({
-      subject: "set_player_arrays",
-      data: { input: this.input, rotation: this.rotation, position: this.position },
-    });
   }
 
   get isGrounded() {
@@ -89,22 +77,25 @@ export class Player {
   update() {
     const delta = this.#world.timestep;
 
+    if (!this.input || !this.cameraYaw || !this.userPosition) return;
+
     // Read input
     const inputX = Atomics.load(this.input, 0) / INPUT_ARRAY_ROUNDING;
     const inputY = Atomics.load(this.input, 1) / INPUT_ARRAY_ROUNDING;
 
     // Rotate input
-    const rotation = Atomics.load(this.rotation, 0) / ROTATION_ARRAY_ROUNDING;
-    const cos = Math.cos(rotation);
-    const sin = Math.sin(rotation);
-    const inputXRotated = inputY * sin - inputX * cos;
-    const inputYRotated = inputX * sin + inputY * cos;
+    const yaw = Atomics.load(this.cameraYaw, 0) / ROTATION_ARRAY_ROUNDING;
+    const cos = Math.cos(yaw);
+    const sin = Math.sin(yaw);
+    const rotatedX = inputY * sin - inputX * cos;
+    const rotatedZ = inputX * sin + inputY * cos;
 
-    const speed = this.sprinting ? 6 : 4;
+    // Calculate velocity
+    const speed = this.sprinting ? SPRINT_SPEED : WALK_SPEED;
 
     const inputVelocity = this.rigidBody.linvel();
-    inputVelocity.x = inputXRotated * speed;
-    inputVelocity.z = inputYRotated * speed;
+    inputVelocity.x = (rotatedX * speed) / 10;
+    inputVelocity.z = (rotatedZ * speed) / 10;
 
     // Only apply gravity if not grounded
     this.isGrounded = this.controller.computedGrounded();
@@ -141,12 +132,12 @@ export class Player {
     // Apply velocity
     this.rigidBody.setLinvel(this.velocity, true);
 
-    // Store position
+    // Store user position
     const pos = this.rigidBody.translation();
     const feetY = pos.y - PLAYER_HEIGHT / 2 - PLAYER_RADIUS - CHARACTER_OFFSET;
-    Atomics.store(this.position, 0, pos.x * POSITION_ARRAY_ROUNDING);
-    Atomics.store(this.position, 1, feetY * POSITION_ARRAY_ROUNDING);
-    Atomics.store(this.position, 2, pos.z * POSITION_ARRAY_ROUNDING);
+    Atomics.store(this.userPosition, 0, pos.x * POSITION_ARRAY_ROUNDING);
+    Atomics.store(this.userPosition, 1, feetY * POSITION_ARRAY_ROUNDING);
+    Atomics.store(this.userPosition, 2, pos.z * POSITION_ARRAY_ROUNDING);
 
     // Teleport out of void if needed
     if (pos.y < -100) {
@@ -154,4 +145,9 @@ export class Player {
       this.rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
     }
   }
+}
+
+export function quaternionToYaw(y: number, w: number): number {
+  const yaw = Math.atan2(2 * y * w, 1 - 2 * y * y);
+  return yaw;
 }

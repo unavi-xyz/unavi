@@ -25,6 +25,7 @@ import { PrimitiveJSON } from "../../scene/attributes/Primitives";
 import { TextureInfoJSON, TextureInfoUtils } from "../../scene/attributes/TextureInfoUtils";
 import { SceneMessage } from "../../scene/messages";
 import { Scene } from "../../scene/Scene";
+import { deepDispose } from "../utils/deepDispose";
 import { createTexture } from "./createTexture";
 
 type NodeId = string;
@@ -900,6 +901,11 @@ export class RenderScene extends Scene {
     if (clonedMeshId) return clonedMeshId;
 
     return null;
+  }
+
+  destroy() {
+    this.root.removeFromParent();
+    deepDispose(this.root);
   }
 }
 

@@ -2,11 +2,12 @@ import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import { AnimationAction, AnimationMixer, Group, Mesh, Quaternion, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
+import { WALK_SPEED } from "../../constants";
+import { deepDispose } from "../utils/deepDispose";
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
 
 const MIN_WALK_SPEED = 1;
-const MAX_WALK_SPEED = 25;
-const SPRINT_CUTOFF = MAX_WALK_SPEED + 5;
+const SPRINT_CUTOFF = WALK_SPEED + 5;
 
 const ANIMATION_NAME = {
   Falling: "Falling",
@@ -18,6 +19,8 @@ const ANIMATION_NAME = {
 } as const;
 
 export class Avatar {
+  readonly uri: string;
+
   group = new Group();
   vrm: VRM | null = null;
 
@@ -28,16 +31,19 @@ export class Avatar {
   #quat = new Quaternion();
   #quatb = new Quaternion();
   #vec3 = new Vector3();
+  #prevHeadRotation = new Quaternion();
 
   #mode: "first-person" | "third-person" = "third-person";
   #animationsPath: string | null = null;
-  grounded = false;
+  grounded = true;
 
   velocity = new Vector3();
   targetPosition = new Vector3();
   targetRotation = new Quaternion();
 
   constructor(uri: string) {
+    this.uri = uri;
+
     const loader = new GLTFLoader();
     loader.setCrossOrigin("anonymous");
     loader.register((parser) => new VRMLoaderPlugin(parser));
@@ -112,7 +118,7 @@ export class Avatar {
     this.vrm.update(delta);
 
     // Calculate velocity
-    const K = 1 - Math.pow(10e-12, delta);
+    const K = 1 - Math.pow(10e-8, delta);
     const deltaPos = this.#vec3
       .copy(this.group.position)
       .sub(this.targetPosition)
@@ -130,8 +136,8 @@ export class Avatar {
 
       const leftVelocity = relativeVelocity.x > 0 ? Math.abs(relativeVelocity.x) : 0;
       const rightVelocity = relativeVelocity.x < 0 ? Math.abs(relativeVelocity.x) : 0;
+      const horizontalVelocity = Math.max(leftVelocity, rightVelocity);
       const forwardVelocity = Math.abs(relativeVelocity.z);
-      const totalVelocity = Math.abs(relativeVelocity.x) + Math.abs(relativeVelocity.z);
       const isBackwards = relativeVelocity.z < 0;
 
       this.weights.walk = clamp(
@@ -143,7 +149,9 @@ export class Avatar {
       );
 
       this.weights.sprint = clamp(
-        totalVelocity > SPRINT_CUTOFF && this.grounded
+        (forwardVelocity > SPRINT_CUTOFF ||
+          (forwardVelocity > WALK_SPEED * 0.75 && horizontalVelocity > WALK_SPEED * 0.75)) &&
+          this.grounded
           ? this.weights.sprint + delta * 8
           : this.weights.sprint - delta * 8
       );
@@ -222,7 +230,7 @@ export class Avatar {
     }
 
     // Rotate body around Y axis
-    this.group.quaternion.copy(this.targetRotation);
+    this.group.quaternion.slerp(this.targetRotation, K);
     this.group.quaternion.x = 0;
     this.group.quaternion.z = 0;
     this.group.quaternion.normalize();
@@ -239,20 +247,25 @@ export class Avatar {
       relativeRotation.y = 0;
       relativeRotation.normalize();
 
+      head.quaternion.copy(this.#prevHeadRotation);
+
       if (this.vrm.meta.metaVersion === "1") {
         // If vrm 1.0, rotate axis
         const rotated = this.#quatb.copy(relativeRotation);
         rotated.x = relativeRotation.z;
         rotated.z = -relativeRotation.x;
-        head.quaternion.copy(rotated);
+        head.quaternion.slerp(rotated, K);
       } else {
-        head.quaternion.copy(relativeRotation);
+        head.quaternion.slerp(relativeRotation, K);
       }
+
+      this.#prevHeadRotation.copy(head.quaternion);
     }
   }
 
-  dispose() {
+  destroy() {
     this.group.removeFromParent();
+    deepDispose(this.group);
   }
 }
 

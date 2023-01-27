@@ -53,6 +53,16 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     });
 
     this.send({ subject: "set_pixel_ratio", data: window.devicePixelRatio });
+
+    this.send({
+      subject: "set_user_arrays",
+      data: {
+        userPosition: engine.userPosition,
+        userRotation: engine.userRotation,
+        cameraPosition: engine.cameraPosition,
+        cameraYaw: engine.cameraYaw,
+      },
+    });
   }
 
   onmessage = (event: MessageEvent<FromRenderMessage>) => {

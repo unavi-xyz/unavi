@@ -1,70 +1,95 @@
+import { Engine } from "engine";
+import { nanoid } from "nanoid";
 import { FromHostMessage } from "protocol";
 
 import { TrpcContext } from "../../client/trpc";
-import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
-import { Player } from "./Player";
+import { addChatMessage } from "../utils/addChatMessage";
+import { PlayerName } from "./PlayerName";
 
 export class Players {
   #trpc: TrpcContext;
-  #store = new Map<number, Player>();
+  #engine: Engine;
 
-  constructor(trpc: TrpcContext) {
+  names = new Map<number, PlayerName>();
+
+  constructor(trpc: TrpcContext, engine: Engine) {
     this.#trpc = trpc;
+    this.#engine = engine;
   }
 
   onmessage({ subject, data }: FromHostMessage) {
     switch (subject) {
       case "player_joined": {
-        const player = new Player(data.playerId, this.#trpc);
-        this.addPlayer(player);
-        console.info("👋 Player", player.hexId, "joined");
+        this.#engine.player.addPlayer(data.playerId);
+
+        const name = new PlayerName(data.playerId, this.#trpc);
+        this.names.set(data.playerId, name);
+
+        addChatMessage({
+          type: "system",
+          variant: "player_joined",
+          id: nanoid(),
+          displayName: name.displayName,
+          playerId: data.playerId,
+          timestamp: Date.now(),
+        });
+
+        console.info("👋 Player", name.hexId, "joined");
         break;
       }
 
       case "player_left": {
-        this.removePlayer(data.playerId);
-        console.info("👋 Player", numberToHexDisplay(data.playerId), "left");
+        const name = this.names.get(data.playerId);
+
+        if (name) {
+          addChatMessage({
+            type: "system",
+            variant: "player_left",
+            id: nanoid(),
+            timestamp: Date.now(),
+            playerId: data.playerId,
+            displayName: name.displayName,
+          });
+
+          console.info("👋 Player", name.hexId, "left");
+
+          this.names.delete(data.playerId);
+        }
+
+        this.#engine.player.removePlayer(data.playerId);
         break;
       }
 
       case "player_address": {
-        const player = this.#store.get(data.playerId);
-        if (player) player.address = data.address;
+        const name = this.names.get(data.playerId);
+        if (name) name.address = data.address;
         break;
       }
 
       case "player_nickname": {
-        const player = this.#store.get(data.playerId);
-        if (player) player.nickname = data.name;
+        const name = this.names.get(data.playerId);
+        if (name) name.nickname = data.nickname;
         break;
       }
 
       case "player_chat": {
-        const player = this.#store.get(data.playerId);
-        if (player) player.sendChatMessage(data.text, data.timestamp);
+        const name = this.names.get(data.playerId);
+        if (name) {
+          addChatMessage({
+            type: "chat",
+            id: nanoid(),
+            displayName: name.displayName,
+            ...data,
+          });
+        }
         break;
       }
 
-      case "player_falling_state": {
-        const player = this.#store.get(data.playerId);
-        if (player) player.isFalling = data.isFalling;
+      case "player_grounded": {
+        const player = this.#engine.player.getPlayer(data.playerId);
+        if (player) player.grounded = data.grounded;
         break;
       }
     }
-  }
-
-  addPlayer(player: Player) {
-    // Remove current player if it exists
-    this.#store.delete(player.id);
-    // Add new player
-    this.#store.set(player.id, player);
-  }
-
-  removePlayer(playerId: number) {
-    this.#store.delete(playerId);
-  }
-
-  getPlayer(playerId: number) {
-    return this.#store.get(playerId);
   }
 }

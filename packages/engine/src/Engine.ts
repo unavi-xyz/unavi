@@ -1,6 +1,7 @@
 import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "./constants";
 import { InputModule } from "./input/InputModule";
 import { PhysicsModule } from "./physics/PhysicsModule";
+import { PlayerModules } from "./player/PlayerModule";
 import { RenderModule } from "./render/RenderModule";
 import { SceneModule } from "./scene/SceneModule";
 
@@ -15,16 +16,31 @@ export class Engine {
 
   readonly input: InputModule;
   readonly physics: PhysicsModule;
+  readonly player: PlayerModules;
   readonly render: RenderModule;
   readonly scene: SceneModule;
+
+  inputArray: Int16Array;
+  userPosition: Int32Array;
+  userRotation: Int16Array;
+  cameraPosition: Int32Array;
+  cameraYaw: Int16Array;
 
   #controls: ControlsType = DEFAULT_CONTROLS;
   #visuals = DEFAULT_VISUALS;
 
   constructor({ canvas }: EngineOptions) {
     this.canvas = canvas;
+
+    this.inputArray = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4));
+    this.userPosition = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));
+    this.userRotation = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4));
+    this.cameraPosition = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));
+    this.cameraYaw = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT));
+
     this.input = new InputModule(this);
     this.physics = new PhysicsModule(this);
+    this.player = new PlayerModules(this);
     this.render = new RenderModule(this);
     this.scene = new SceneModule(this);
   }
@@ -46,7 +62,7 @@ export class Engine {
 
   set visuals(value: boolean) {
     this.#visuals = value;
-    this.render.send({ subject: "toggle_visuals", data: { enabled: value } });
+    this.render.send({ subject: "toggle_visuals", data: value });
   }
 
   destroy() {

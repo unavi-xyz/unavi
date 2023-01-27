@@ -14,12 +14,27 @@ export type ToRenderMessage =
   | MessageJSON<"set_controls", ControlsType>
   | MessageJSON<"set_grounded", boolean>
   | MessageJSON<"set_pixel_ratio", number>
-  | MessageJSON<"set_player_arrays", { position: Int32Array; rotation: Int32Array }>
   | MessageJSON<"set_size", { width: number; height: number }>
   | MessageJSON<"set_skybox", { uri: string | null }>
   | MessageJSON<"set_transform_controls_mode", "translate" | "rotate" | "scale">
   | MessageJSON<"set_transform_controls_target", { nodeId: string | null }>
-  | MessageJSON<"toggle_visuals", { enabled: boolean }>;
+  | MessageJSON<
+      "set_user_arrays",
+      {
+        userPosition: Int32Array;
+        userRotation: Int16Array;
+        cameraPosition: Int32Array;
+        cameraYaw: Int16Array;
+      }
+    >
+  | MessageJSON<"set_user_avatar", string | null>
+  | MessageJSON<"toggle_visuals", boolean>
+  // Players
+  | MessageJSON<"add_player", { id: number; position: Int32Array; rotation: Int16Array }>
+  | MessageJSON<"remove_player", number>
+  | MessageJSON<"set_player_avatar", { playerId: number; uri: string | null }>
+  | MessageJSON<"set_player_grounded", { playerId: number; grounded: boolean }>
+  | MessageJSON<"set_player_name", { playerId: number; name: string | null }>;
 
 export type FromRenderMessage =
   | SceneMessage

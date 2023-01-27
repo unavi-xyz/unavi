@@ -1,9 +1,12 @@
+import { EventDispatcher } from "property-graph";
+
 import { Engine } from "../Engine";
 import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
+import { PhysicsEvent } from "./events";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
 
-export class PhysicsModule {
+export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
   readonly engine: Engine;
 
   #worker: Worker | FakeWorker | null = null;
@@ -11,10 +14,9 @@ export class PhysicsModule {
   ready = false;
   messageQueue: Array<{ message: ToPhysicsMessage; transferables?: Transferable[] }> = [];
 
-  positionArray: Int32Array | null = null;
-  rotationArray: Int32Array | null = null;
-
   constructor(engine: Engine) {
+    super();
+
     this.engine = engine;
 
     // Use a fake worker in development, for better HMR support
@@ -36,6 +38,15 @@ export class PhysicsModule {
         this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
       });
     }
+
+    this.send({
+      subject: "set_user_arrays",
+      data: {
+        input: this.engine.inputArray,
+        userPosition: this.engine.userPosition,
+        cameraYaw: this.engine.cameraYaw,
+      },
+    });
   }
 
   onmessage = (event: MessageEvent<FromPhysicsMessage>) => {
@@ -54,22 +65,9 @@ export class PhysicsModule {
         break;
       }
 
-      case "set_player_arrays": {
-        this.positionArray = data.position;
-        this.rotationArray = data.rotation;
-
-        this.engine.input.inputArray = data.input;
-        this.engine.input.rotationArray = data.rotation;
-
-        this.engine.render.send({
-          subject: "set_player_arrays",
-          data: { position: data.position, rotation: data.rotation },
-        });
-        break;
-      }
-
       case "set_grounded": {
         this.engine.render.send({ subject: "set_grounded", data });
+        this.dispatchEvent({ type: "user_grounded", data });
         break;
       }
     }

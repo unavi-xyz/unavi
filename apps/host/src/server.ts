@@ -59,8 +59,8 @@ server.ws("/*", {
           break;
         }
 
-        case "set_falling_state": {
-          players.publishFallingState(ws, data);
+        case "set_grounded": {
+          players.publishGrounded(ws, data);
           break;
         }
 

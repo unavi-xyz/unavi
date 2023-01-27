@@ -21,6 +21,7 @@ export class KeyboardInput {
   };
 
   #jumpInterval: NodeJS.Timeout | null = null;
+  #capturedPointerId: number | null = null;
 
   constructor(module: InputModule) {
     this.#module = module;
@@ -43,6 +44,8 @@ export class KeyboardInput {
 
   destroy() {
     const canvas = this.#module.engine.canvas;
+
+    if (this.#capturedPointerId !== null) canvas.releasePointerCapture(this.#capturedPointerId);
 
     canvas.removeEventListener("click", this.#onClick);
     canvas.removeEventListener("contextmenu", this.#onContextMenu);
@@ -245,6 +248,7 @@ export class KeyboardInput {
   };
 
   #onPointerUp = (event: PointerEvent) => {
+    this.#capturedPointerId = null;
     this.#module.engine.canvas.releasePointerCapture(event.pointerId);
 
     this.#module.engine.render.send({
@@ -257,6 +261,7 @@ export class KeyboardInput {
     const isPointerLocked = document.pointerLockElement === this.#module.engine.canvas;
     if (isPointerLocked) return;
 
+    this.#capturedPointerId = event.pointerId;
     this.#module.engine.canvas.setPointerCapture(event.pointerId);
 
     this.#module.engine.render.send({
@@ -266,6 +271,7 @@ export class KeyboardInput {
   };
 
   #onPointerCancel = (event: PointerEvent) => {
+    this.#capturedPointerId = null;
     this.#module.engine.canvas.releasePointerCapture(event.pointerId);
 
     this.#module.engine.render.send({
@@ -301,19 +307,15 @@ export class KeyboardInput {
 
     const x = right - left;
     const y = forward - back;
-    const input = { x, y };
 
-    // Normalize direction
-    const magnitude = Math.sqrt(input.x ** 2 + input.y ** 2);
-    if (magnitude > 0) {
-      input.x /= magnitude;
-      input.y /= magnitude;
-    }
+    const length = Math.sqrt(x * x + y * y);
+    const normalX = x === 0 ? 0 : x / length;
+    const normalY = y === 0 ? 0 : y / length;
 
     // Write to input array
-    if (this.#module.inputArray) {
-      Atomics.store(this.#module.inputArray, 0, input.x * INPUT_ARRAY_ROUNDING);
-      Atomics.store(this.#module.inputArray, 1, input.y * INPUT_ARRAY_ROUNDING);
+    if (this.#module.engine.inputArray) {
+      Atomics.store(this.#module.engine.inputArray, 0, normalX * INPUT_ARRAY_ROUNDING);
+      Atomics.store(this.#module.engine.inputArray, 1, normalY * INPUT_ARRAY_ROUNDING);
     }
   }
 }

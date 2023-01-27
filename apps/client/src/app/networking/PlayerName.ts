@@ -2,19 +2,15 @@ import { nanoid } from "nanoid";
 
 import { TrpcContext } from "../../client/trpc";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
-import { useAppStore } from "../store";
-import { ChatMessage } from "../ui/ChatMessage";
+import { addChatMessage } from "../utils/addChatMessage";
 
-export class Player {
+export class PlayerName {
   readonly id: number;
   #trpc: TrpcContext;
 
   #displayName: string;
   #nickname: string | null = null;
   #address: string | null = null;
-  #isFalling = false;
-
-  avatar: string | null = null;
 
   constructor(id: number, trpc: TrpcContext) {
     this.id = id;
@@ -31,6 +27,7 @@ export class Player {
   }
 
   set displayName(value: string) {
+    if (this.#displayName === value) return;
     this.#displayName = value;
     console.info("🪪 Player", this.hexId, "is now", value);
   }
@@ -73,30 +70,14 @@ export class Player {
     this.displayName = `Guest ${this.hexId}`;
   }
 
-  get isFalling() {
-    return this.#isFalling;
-  }
-
-  set isFalling(value: boolean) {
-    this.#isFalling = value;
-  }
-
-  sendChatMessage(text: string, timestamp: number = Date.now()) {
-    const message: ChatMessage = {
+  sendChatMessage(text: string, timestamp = Date.now()) {
+    addChatMessage({
       type: "chat",
       id: nanoid(),
       playerId: this.id,
       displayName: this.displayName,
       text,
       timestamp,
-    };
-
-    const { chatMessages } = useAppStore.getState();
-
-    const newMessages = [...chatMessages, message]
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 100);
-
-    useAppStore.setState({ chatMessages: newMessages });
+    });
   }
 }

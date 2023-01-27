@@ -4,7 +4,6 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
 
-const MIN_FALL_SPEED = 20;
 const MIN_WALK_SPEED = 1;
 const MAX_WALK_SPEED = 25;
 const SPRINT_CUTOFF = MAX_WALK_SPEED + 5;
@@ -32,6 +31,7 @@ export class Avatar {
 
   #mode: "first-person" | "third-person" = "third-person";
   #animationsPath: string | null = null;
+  grounded = false;
 
   velocity = new Vector3();
   targetPosition = new Vector3();
@@ -133,25 +133,24 @@ export class Avatar {
       const forwardVelocity = Math.abs(relativeVelocity.z);
       const totalVelocity = Math.abs(relativeVelocity.x) + Math.abs(relativeVelocity.z);
       const isBackwards = relativeVelocity.z < 0;
-      const isFalling = Math.abs(this.velocity.y) > MIN_FALL_SPEED;
 
       this.weights.walk = clamp(
         clamp(
-          forwardVelocity > MIN_WALK_SPEED && !isFalling
+          forwardVelocity > MIN_WALK_SPEED && this.grounded
             ? this.weights.walk + delta * 8
             : this.weights.walk - delta * 8
         ) - this.weights.sprint
       );
 
       this.weights.sprint = clamp(
-        totalVelocity > SPRINT_CUTOFF && !isFalling
+        totalVelocity > SPRINT_CUTOFF && this.grounded
           ? this.weights.sprint + delta * 8
           : this.weights.sprint - delta * 8
       );
 
       this.weights.left = clamp(
         clamp(
-          leftVelocity > MIN_WALK_SPEED && !isFalling
+          leftVelocity > MIN_WALK_SPEED && this.grounded
             ? this.weights.left + delta * 8
             : this.weights.left - delta * 8
         ) -
@@ -161,7 +160,7 @@ export class Avatar {
 
       this.weights.right = clamp(
         clamp(
-          rightVelocity > MIN_WALK_SPEED && !isFalling
+          rightVelocity > MIN_WALK_SPEED && this.grounded
             ? this.weights.right + delta * 8
             : this.weights.right - delta * 8
         ) -
@@ -170,7 +169,7 @@ export class Avatar {
       );
 
       this.weights.fall = clamp(
-        isFalling ? this.weights.fall + delta * 4 : this.weights.fall - delta * 4
+        this.grounded ? this.weights.fall - delta * 4 : this.weights.fall + delta * 4
       );
 
       const leftWalk = this.animations.get(ANIMATION_NAME.LeftWalk);

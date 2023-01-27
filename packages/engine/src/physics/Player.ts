@@ -35,6 +35,8 @@ export class Player {
 
   velocity: Vector3 = { x: 0, y: 0, z: 0 };
   sprinting = false;
+  shouldJump = false;
+  #isGrounded = false;
 
   constructor(world: World, postMessage: PostMessage<FromPhysicsMessage>) {
     this.#world = world;
@@ -74,6 +76,20 @@ export class Player {
     });
   }
 
+  get isGrounded() {
+    return this.#isGrounded;
+  }
+
+  set isGrounded(value: boolean) {
+    if (value === this.#isGrounded) return;
+    this.#isGrounded = value;
+    this.#postMessage({ subject: "set_grounded", data: value });
+  }
+
+  jump() {
+    this.shouldJump = true;
+  }
+
   update() {
     const delta = this.#world.timestep;
 
@@ -95,14 +111,20 @@ export class Player {
     inputVelocity.z = inputYRotated * speed;
 
     // Only apply gravity if not grounded
-    const isGrounded = this.controller.computedGrounded();
-    if (isGrounded) inputVelocity.y = 0;
+    this.isGrounded = this.controller.computedGrounded();
+    if (this.isGrounded) inputVelocity.y = 0;
     else inputVelocity.y += this.#world.gravity.y * delta;
 
     // Lerp input velocity
     const K = 1 - Math.pow(10e-16, delta);
     inputVelocity.x = inputVelocity.x * K + this.velocity.x * (1 - K);
     inputVelocity.z = inputVelocity.z * K + this.velocity.z * (1 - K);
+
+    // Jump
+    if (this.shouldJump) {
+      this.shouldJump = false;
+      if (this.isGrounded) inputVelocity.y = 5;
+    }
 
     // Compute movement
     const inputTranslation: Vector3 = {

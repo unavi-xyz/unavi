@@ -30,6 +30,7 @@ export class PlayerControls {
 
   #mode: "first-person" | "third-person" = "first-person";
   #animationsPath: string | null = null;
+  #grounded = false;
 
   constructor(camera: PerspectiveCamera, root: Object3D) {
     this.#camera = camera;
@@ -61,15 +62,6 @@ export class PlayerControls {
       this.#camera.layers.disable(VRMFirstPerson.DEFAULT_FIRSTPERSON_ONLY_LAYER);
       this.#camera.layers.enable(VRMFirstPerson.DEFAULT_THIRDPERSON_ONLY_LAYER);
     }
-  }
-
-  get animationsPath() {
-    return this.#animationsPath;
-  }
-
-  set animationsPath(path: string | null) {
-    this.#animationsPath = path;
-    if (this.avatar) this.avatar.animationsPath = path;
   }
 
   onmessage({ subject, data }: ToRenderMessage) {
@@ -127,23 +119,31 @@ export class PlayerControls {
         break;
       }
 
-      case "set_player_avatar": {
+      case "set_default_avatar": {
         if (this.avatar) {
           this.avatar.dispose();
           this.avatar = null;
         }
 
-        if (data.uri) {
-          this.avatar = new Avatar(data.uri);
+        if (data) {
+          this.avatar = new Avatar(data);
           this.avatar.mode = this.mode;
-          this.avatar.animationsPath = this.animationsPath;
+          this.avatar.animationsPath = this.#animationsPath;
+          this.avatar.grounded = this.#grounded;
           this.body.add(this.avatar.group);
         }
         break;
       }
 
-      case "set_player_animations": {
-        this.#animationsPath = data.path;
+      case "set_animations_path": {
+        this.#animationsPath = data;
+        if (this.avatar) this.avatar.animationsPath = data;
+        break;
+      }
+
+      case "set_grounded": {
+        this.#grounded = data;
+        if (this.avatar) this.avatar.grounded = data;
         break;
       }
     }

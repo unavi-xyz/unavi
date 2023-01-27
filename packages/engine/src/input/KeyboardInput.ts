@@ -20,6 +20,8 @@ export class KeyboardInput {
     right: false,
   };
 
+  #jumpInterval: NodeJS.Timeout | null = null;
+
   constructor(module: InputModule) {
     this.#module = module;
     const canvas = module.engine.canvas;
@@ -160,15 +162,15 @@ export class KeyboardInput {
       }
 
       case " ": {
-        // if (!this.#jumpInterval) {
-        //   // Jump now
-        //   this.#physicsThread.jump();
+        if (!this.#jumpInterval) {
+          // Jump now
+          this.#module.engine.physics.send({ subject: "jump", data: null });
 
-        //   // Send a jump command on an interval while the spacebar is held down
-        //   this.#jumpInterval = setInterval(() => {
-        //     this.#physicsThread.jump();
-        //   }, 200);
-        // }
+          // Send a jump command on an interval while the spacebar is held down
+          this.#jumpInterval = setInterval(() => {
+            this.#module.engine.physics.send({ subject: "jump", data: null });
+          }, 100);
+        }
         break;
       }
     }
@@ -224,10 +226,10 @@ export class KeyboardInput {
       }
 
       case " ": {
-        // if (this.#jumpInterval !== null) {
-        //   clearInterval(this.#jumpInterval);
-        //   this.#jumpInterval = null;
-        // }
+        if (this.#jumpInterval !== null) {
+          clearInterval(this.#jumpInterval);
+          this.#jumpInterval = null;
+        }
         break;
       }
     }
@@ -285,10 +287,10 @@ export class KeyboardInput {
 
     this.#module.engine.physics.send({ subject: "set_sprinting", data: false });
 
-    // if (this.#jumpInterval !== null) {
-    //   clearInterval(this.#jumpInterval);
-    //   this.#jumpInterval = null;
-    // }
+    if (this.#jumpInterval !== null) {
+      clearInterval(this.#jumpInterval);
+      this.#jumpInterval = null;
+    }
   };
 
   #updateVelocity() {

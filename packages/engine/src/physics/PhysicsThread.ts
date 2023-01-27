@@ -44,6 +44,11 @@ export class PhysicsThread {
         break;
       }
 
+      case "jump": {
+        this.player.jump();
+        break;
+      }
+
       case "destroy": {
         clearInterval(this.#interval);
         break;

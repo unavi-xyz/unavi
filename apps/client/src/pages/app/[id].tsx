@@ -71,8 +71,8 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
     const engine = new Engine({ canvas: canvasRef.current });
     useAppStore.setState({ engine });
 
-    engine.render.send({ subject: "set_player_animations", data: { path: "/models" } });
-    engine.render.send({ subject: "set_player_avatar", data: { uri: "/models/Wired-chan.vrm" } });
+    engine.render.send({ subject: "set_animations_path", data: "/models" });
+    engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
     engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox_2K.jpg" } });
 
     return () => {

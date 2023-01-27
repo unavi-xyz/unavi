@@ -4,12 +4,14 @@ import { MessageJSON } from "../types";
 
 export type ToPhysicsMessage =
   | SceneMessage
+  | MessageJSON<"destroy">
+  | MessageJSON<"jump">
   | MessageJSON<"set_controls", ControlsType>
-  | MessageJSON<"set_sprinting", boolean>
-  | MessageJSON<"destroy">;
+  | MessageJSON<"set_sprinting", boolean>;
 
 export type FromPhysicsMessage =
   | MessageJSON<"ready">
+  | MessageJSON<"set_grounded", boolean>
   | MessageJSON<
       "set_player_arrays",
       { input: Int16Array; position: Int32Array; rotation: Int32Array }

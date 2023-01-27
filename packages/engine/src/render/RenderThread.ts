@@ -217,7 +217,7 @@ export class RenderThread {
       shadowMapSize: 2048,
       camera: this.camera,
       parent: this.scene,
-      shadowBias: -0.00001,
+      shadowBias: -0.00002,
     });
     this.csm.fade = true;
     this.csm.setupMaterial(RenderScene.DEFAULT_MATERIAL);

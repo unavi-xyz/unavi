@@ -67,6 +67,11 @@ export class PhysicsModule {
         });
         break;
       }
+
+      case "set_grounded": {
+        this.engine.render.send({ subject: "set_grounded", data });
+        break;
+      }
     }
   };
 

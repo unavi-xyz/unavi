@@ -206,6 +206,7 @@ export class RenderThread {
     this.csm = new CSM({
       maxFar: 40,
       cascades: 2,
+      lightIntensity: 0.5,
       lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
       shadowMapSize: 2048,
       camera: this.camera,

@@ -20,11 +20,12 @@ export class Avatar {
   animations = new Map<keyof typeof ANIMATION_NAME, AnimationAction>();
   mixer: AnimationMixer | null = null;
 
-  #mode: "first-person" | "third-person" = "third-person";
-  #animationsPath: string | null = null;
   #quat = new Quaternion();
   #quatb = new Quaternion();
   #vec3 = new Vector3();
+
+  #mode: "first-person" | "third-person" = "third-person";
+  #animationsPath: string | null = null;
 
   velocity = new Vector3();
   targetPosition = new Vector3();
@@ -45,7 +46,6 @@ export class Avatar {
       VRMUtils.rotateVRM0(vrm);
 
       vrm.scene.traverse((object) => {
-        object.frustumCulled = false;
         if (object instanceof Mesh) object.castShadow = true;
       });
 

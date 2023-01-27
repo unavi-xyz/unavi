@@ -26,9 +26,8 @@ export class PlayerControls {
   #euler = new Euler(0, 0, 0, "YXZ");
   #vec3 = new Vector3();
   #vec3b = new Vector3();
-  #quat = new Quaternion();
-  #quatb = new Quaternion();
   #delta = 0;
+
   #mode: "first-person" | "third-person" = "first-person";
   #animationsPath: string | null = null;
 

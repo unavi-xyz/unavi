@@ -138,6 +138,12 @@ export class RenderThread {
 
       case "set_controls": {
         this.controls = data;
+
+        if (data === "orbit") {
+          this.player.group.visible = false;
+        } else {
+          this.player.group.visible = true;
+        }
         break;
       }
 

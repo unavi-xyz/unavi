@@ -5,11 +5,11 @@ import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderEvent } from "./events";
 import { FromRenderMessage, ToRenderMessage } from "./messages";
-import { RenderThread } from "./RenderThread";
 
 export class RenderModule extends EventDispatcher<RenderEvent> {
   readonly engine: Engine;
-  readonly #worker: Worker | FakeWorker;
+
+  #worker: Worker | FakeWorker | null = null;
 
   ready = false;
   messageQueue: Array<{ message: ToRenderMessage; transferables?: Transferable[] }> = [];
@@ -34,15 +34,17 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       this.send({ subject: "set_canvas", data: offscreen }, [offscreen]);
     } else {
       // Otherwise render on the main thread, using a fake worker
-      this.#worker = new FakeWorker();
+      import("./RenderThread").then(({ RenderThread }) => {
+        this.#worker = new FakeWorker();
 
-      const thread = new RenderThread(
-        this.#worker.insidePort.postMessage.bind(this.#worker.insidePort),
-        engine.canvas
-      );
+        const thread = new RenderThread(
+          this.#worker.insidePort.postMessage.bind(this.#worker.insidePort),
+          engine.canvas
+        );
 
-      this.#worker.insidePort.onmessage = thread.onmessage.bind(thread);
-      this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
+        this.#worker.insidePort.onmessage = thread.onmessage.bind(thread);
+        this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
+      });
     }
 
     this.send({
@@ -62,7 +64,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
 
         // Send queued messages
         this.messageQueue.forEach(({ message, transferables }) => {
-          this.#worker.postMessage(message, transferables);
+          this.#worker?.postMessage(message, transferables);
         });
 
         this.messageQueue = [];
@@ -118,10 +120,11 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       return;
     }
 
-    this.#worker.postMessage(message, transferables);
+    this.#worker?.postMessage(message, transferables);
   }
 
   destroy() {
-    this.#worker.terminate();
+    this.send({ subject: "destroy", data: null });
+    setTimeout(() => this.#worker?.terminate());
   }
 }

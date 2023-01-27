@@ -15,10 +15,14 @@ export class PhysicsThread {
   scene = new PhysicsScene(this.world);
   player: Player;
 
+  #interval: NodeJS.Timeout;
+
   constructor(postMessage: PostMessage<FromPhysicsMessage>) {
     this.player = new Player(this.world, postMessage);
 
-    setInterval(this.update, 1000 / 60); // 60hz
+    this.#interval = setInterval(this.update, 1000 / 60); // 60hz
+
+    postMessage({ subject: "ready", data: null });
   }
 
   onmessage = (event: MessageEvent<ToPhysicsMessage>) => {
@@ -37,6 +41,11 @@ export class PhysicsThread {
 
       case "set_sprinting": {
         this.player.sprinting = data;
+        break;
+      }
+
+      case "destroy": {
+        clearInterval(this.#interval);
         break;
       }
     }

@@ -47,6 +47,7 @@ export class RenderThread {
   pixelRatio = 1;
   camera = new PerspectiveCamera(75, 1, CAMERA_NEAR, CAMERA_FAR);
   clock = new Clock();
+  #animationFrame: number | null = null;
 
   outlinePass: ThreeOutlinePass | null = null;
   composer: EffectComposer | null = null;
@@ -144,6 +145,11 @@ export class RenderThread {
         this.renderScene.visualsEnabled = data.enabled;
         break;
       }
+
+      case "destroy": {
+        if (this.#animationFrame) cancelAnimationFrame(this.#animationFrame);
+        break;
+      }
     }
   };
 
@@ -237,7 +243,7 @@ export class RenderThread {
   }
 
   render() {
-    requestAnimationFrame(() => this.render());
+    this.#animationFrame = requestAnimationFrame(() => this.render());
     const delta = this.clock.getDelta();
 
     if (this.controls === "player") {

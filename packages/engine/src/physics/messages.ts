@@ -5,7 +5,8 @@ import { MessageJSON } from "../types";
 export type ToPhysicsMessage =
   | SceneMessage
   | MessageJSON<"set_controls", ControlsType>
-  | MessageJSON<"set_sprinting", boolean>;
+  | MessageJSON<"set_sprinting", boolean>
+  | MessageJSON<"destroy">;
 
 export type FromPhysicsMessage =
   | MessageJSON<"ready">

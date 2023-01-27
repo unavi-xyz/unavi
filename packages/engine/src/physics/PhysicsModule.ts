@@ -1,13 +1,12 @@
 import { Engine } from "../Engine";
 import { Transferable } from "../types";
+import { FakeWorker } from "../utils/FakeWorker";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
 
 export class PhysicsModule {
   readonly engine: Engine;
-  readonly #worker = new Worker(new URL("./worker.ts", import.meta.url), {
-    type: "module",
-    name: "physics",
-  });
+
+  #worker: Worker | FakeWorker | null = null;
 
   ready = false;
   messageQueue: Array<{ message: ToPhysicsMessage; transferables?: Transferable[] }> = [];
@@ -17,7 +16,26 @@ export class PhysicsModule {
 
   constructor(engine: Engine) {
     this.engine = engine;
-    this.#worker.onmessage = this.onmessage;
+
+    // Use a fake worker in development, for better HMR support
+    if (process.env.NODE_ENV === "production") {
+      this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
+        type: "module",
+        name: "physics",
+      });
+      this.#worker.onmessage = this.onmessage;
+    } else {
+      import("./PhysicsThread").then(({ PhysicsThread }) => {
+        this.#worker = new FakeWorker();
+
+        const thread = new PhysicsThread(
+          this.#worker.insidePort.postMessage.bind(this.#worker.insidePort)
+        );
+
+        this.#worker.insidePort.onmessage = thread.onmessage.bind(thread);
+        this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
+      });
+    }
   }
 
   onmessage = (event: MessageEvent<FromPhysicsMessage>) => {
@@ -29,7 +47,7 @@ export class PhysicsModule {
 
         // Send queued messages
         this.messageQueue.forEach(({ message, transferables }) => {
-          this.#worker.postMessage(message, transferables);
+          this.#worker?.postMessage(message, transferables);
         });
 
         this.messageQueue = [];
@@ -59,10 +77,11 @@ export class PhysicsModule {
       return;
     }
 
-    this.#worker.postMessage(message, transferables);
+    this.#worker?.postMessage(message, transferables);
   }
 
   destroy() {
-    this.#worker.terminate();
+    this.send({ subject: "destroy", data: null });
+    setTimeout(() => this.#worker?.terminate());
   }
 }

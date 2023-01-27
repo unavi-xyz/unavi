@@ -27,39 +27,25 @@ const TO_HOST_SCHEMA = {
   resume_audio: z.null(),
 } as const;
 
+const playerId = z.number().int().min(0).max(255);
+
 const FROM_HOST_SCHEMA = {
-  join_success: z.object({ playerId: z.number().int().positive() }),
+  join_success: z.object({ playerId }),
 
   // Players
   player_joined: z.object({
-    playerId: z.number().int().positive(),
+    playerId,
     name: z.string().nullable(),
     avatar: z.string().nullable(),
     address: z.string().nullable(),
     beforeYou: z.boolean().optional(),
   }),
-  player_left: z.object({ playerId: z.number().int().positive() }),
-  player_chat: z.object({
-    playerId: z.number().int().positive(),
-    text: z.string(),
-    timestamp: z.number().int().positive(),
-  }),
-  player_falling_state: z.object({
-    playerId: z.number().int().positive(),
-    isFalling: z.boolean(),
-  }),
-  player_nickname: z.object({
-    playerId: z.number().int().positive(),
-    name: z.string().nullable(),
-  }),
-  player_avatar: z.object({
-    playerId: z.number().int().positive(),
-    avatar: z.string().nullable(),
-  }),
-  player_address: z.object({
-    playerId: z.number().int().positive(),
-    address: z.string().nullable(),
-  }),
+  player_left: z.object({ playerId }),
+  player_chat: z.object({ playerId, text: z.string(), timestamp: z.number().int().positive() }),
+  player_falling_state: z.object({ playerId, isFalling: z.boolean() }),
+  player_nickname: z.object({ playerId, name: z.string().nullable() }),
+  player_avatar: z.object({ playerId, avatar: z.string().nullable() }),
+  player_address: z.object({ playerId, address: z.string().nullable() }),
 
   // WebRTC
   router_rtp_capabilities: z.object({ rtpCapabilities: MediasoupSchema.rtpCapabilities }),
@@ -68,13 +54,13 @@ const FROM_HOST_SCHEMA = {
     options: MediasoupSchema.transportOptions,
   }),
   create_consumer: z.object({
-    playerId: z.number().int().positive(),
+    playerId,
     id: z.string(),
     producerId: z.string(),
     rtpParameters: MediasoupSchema.rtpParameters,
   }),
   create_data_consumer: z.object({
-    playerId: z.number().int().positive(),
+    playerId,
     id: z.string(),
     dataProducerId: z.string(),
     sctpStreamParameters: MediasoupSchema.sctpStreamParameters,

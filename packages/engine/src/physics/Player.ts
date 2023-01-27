@@ -68,11 +68,7 @@ export class Player {
 
     this.#postMessage({
       subject: "set_player_arrays",
-      data: {
-        input: this.input,
-        rotation: this.rotation,
-        position: this.position,
-      },
+      data: { input: this.input, rotation: this.rotation, position: this.position },
     });
   }
 

@@ -4,8 +4,9 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
 
+const MIN_FALL_SPEED = 20;
+const MIN_WALK_SPEED = 1;
 const MAX_WALK_SPEED = 25;
-const MAX_SPRINT_SPEED = 40;
 const SPRINT_CUTOFF = MAX_WALK_SPEED + 5;
 
 const ANIMATION_NAME = {
@@ -21,8 +22,9 @@ export class Avatar {
   group = new Group();
   vrm: VRM | null = null;
 
-  animations = new Map<keyof typeof ANIMATION_NAME, AnimationAction>();
   mixer: AnimationMixer | null = null;
+  animations = new Map<keyof typeof ANIMATION_NAME, AnimationAction>();
+  weights = { left: 0, right: 0, walk: 0, sprint: 0, fall: 0 };
 
   #quat = new Quaternion();
   #quatb = new Quaternion();
@@ -129,55 +131,88 @@ export class Avatar {
       const leftVelocity = relativeVelocity.x > 0 ? Math.abs(relativeVelocity.x) : 0;
       const rightVelocity = relativeVelocity.x < 0 ? Math.abs(relativeVelocity.x) : 0;
       const forwardVelocity = Math.abs(relativeVelocity.z);
+      const totalVelocity = Math.abs(relativeVelocity.x) + Math.abs(relativeVelocity.z);
       const isBackwards = relativeVelocity.z < 0;
+      const isFalling = Math.abs(this.velocity.y) > MIN_FALL_SPEED;
 
-      const fallingWeight = normalizeWeight(Math.abs(relativeVelocity.y), 50, 20);
-      const leftWeight = normalizeWeight(leftVelocity, MAX_WALK_SPEED * 0.75) - fallingWeight;
-      const rightWeight = normalizeWeight(rightVelocity, MAX_WALK_SPEED * 0.75) - fallingWeight;
-      const sprintWeight =
-        normalizeWeight(forwardVelocity, MAX_SPRINT_SPEED * 0.75, SPRINT_CUTOFF) - fallingWeight;
-      const walkWeight = normalizeWeight(forwardVelocity, MAX_WALK_SPEED * 0.75) - sprintWeight;
-      const idleWeight = 1 - leftWeight - rightWeight - walkWeight - sprintWeight - fallingWeight;
+      this.weights.walk = clamp(
+        clamp(
+          forwardVelocity > MIN_WALK_SPEED && !isFalling
+            ? this.weights.walk + delta * 8
+            : this.weights.walk - delta * 8
+        ) - this.weights.sprint
+      );
+
+      this.weights.sprint = clamp(
+        totalVelocity > SPRINT_CUTOFF && !isFalling
+          ? this.weights.sprint + delta * 8
+          : this.weights.sprint - delta * 8
+      );
+
+      this.weights.left = clamp(
+        clamp(
+          leftVelocity > MIN_WALK_SPEED && !isFalling
+            ? this.weights.left + delta * 8
+            : this.weights.left - delta * 8
+        ) -
+          this.weights.walk -
+          this.weights.sprint
+      );
+
+      this.weights.right = clamp(
+        clamp(
+          rightVelocity > MIN_WALK_SPEED && !isFalling
+            ? this.weights.right + delta * 8
+            : this.weights.right - delta * 8
+        ) -
+          this.weights.walk -
+          this.weights.sprint
+      );
+
+      this.weights.fall = clamp(
+        isFalling ? this.weights.fall + delta * 4 : this.weights.fall - delta * 4
+      );
 
       const leftWalk = this.animations.get(ANIMATION_NAME.LeftWalk);
       const rightWalk = this.animations.get(ANIMATION_NAME.RightWalk);
       const walk = this.animations.get(ANIMATION_NAME.Walk);
       const sprint = this.animations.get(ANIMATION_NAME.Sprint);
-      const falling = this.animations.get(ANIMATION_NAME.Falling);
+      const fall = this.animations.get(ANIMATION_NAME.Falling);
       const idle = this.animations.get(ANIMATION_NAME.Idle);
 
       if (leftWalk) {
-        if (leftWalk.isRunning() && leftWeight < 0.1) leftWalk.stop();
-        if (!leftWalk.isRunning() && leftWeight > 0.1) leftWalk.play();
-        leftWalk.setEffectiveWeight(leftWeight);
+        if (leftWalk.isRunning() && this.weights.left === 0) leftWalk.stop();
+        if (!leftWalk.isRunning() && this.weights.left > 0) leftWalk.play();
+        leftWalk.setEffectiveWeight(this.weights.left);
       }
 
       if (rightWalk) {
-        if (rightWalk.isRunning() && rightWeight < 0.1) rightWalk.stop();
-        if (!rightWalk.isRunning() && rightWeight > 0.1) rightWalk.play();
-        rightWalk.setEffectiveWeight(rightWeight);
+        if (rightWalk.isRunning() && this.weights.right === 0) rightWalk.stop();
+        if (!rightWalk.isRunning() && this.weights.right > 0) rightWalk.play();
+        rightWalk.setEffectiveWeight(this.weights.right);
       }
 
       if (walk) {
-        if (walk.isRunning() && walkWeight < 0.1 && sprintWeight === 0) walk.stop();
-        if (!walk.isRunning() && walkWeight > 0.1) walk.play();
-        walk.setEffectiveWeight(walkWeight);
+        if (walk.isRunning() && this.weights.walk === 0 && this.weights.sprint === 0) walk.stop();
+        if (!walk.isRunning() && this.weights.walk > 0) walk.play();
+        walk.setEffectiveWeight(this.weights.walk);
         walk.setEffectiveTimeScale(isBackwards ? -1 : 1);
       }
 
       if (sprint) {
-        if (sprint.isRunning() && sprintWeight < 0.1) sprint.stop();
-        if (!sprint.isRunning() && sprintWeight > 0.1) sprint.play();
-        sprint.setEffectiveWeight(sprintWeight);
+        if (sprint.isRunning() && this.weights.sprint === 0) sprint.stop();
+        if (!sprint.isRunning() && this.weights.sprint > 0) sprint.play();
+        sprint.setEffectiveWeight(this.weights.sprint);
         sprint.setEffectiveTimeScale(isBackwards ? -1 : 1);
       }
 
-      if (falling) {
-        if (falling.isRunning() && fallingWeight === 0) falling.stop();
-        if (!falling.isRunning() && fallingWeight > 0) falling.play();
-        falling.setEffectiveWeight(fallingWeight);
+      if (fall) {
+        if (fall.isRunning() && this.weights.fall === 0) fall.stop();
+        if (!fall.isRunning() && this.weights.fall > 0) fall.play();
+        fall.setEffectiveWeight(this.weights.fall);
       }
 
+      const idleWeight = 1 - Object.values(this.weights).reduce((a, b) => a + b, 0);
       if (idle) {
         if (idle.isRunning() && idleWeight === 0) idle.stop();
         if (!idle.isRunning() && idleWeight > 0) idle.play();
@@ -222,6 +257,6 @@ export class Avatar {
   }
 }
 
-function normalizeWeight(weight: number, max: number, min = 0) {
-  return Math.round(Math.max(0, Math.min(1, (weight - min) / (max - min))) * 100) / 100;
+function clamp(value: number, min = 0, max = 1) {
+  return Math.max(min, Math.min(max, value));
 }

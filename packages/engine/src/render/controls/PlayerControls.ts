@@ -200,7 +200,7 @@ export class PlayerControls {
     Atomics.store(this.rotationArray, 0, angle * ROTATION_ARRAY_ROUNDING);
 
     // Move camera forward a bit
-    this.#camera.position.add(this.#vec3.copy(direction).multiplyScalar(0.1));
+    this.#camera.position.add(this.#vec3.copy(direction).multiplyScalar(0.15));
   }
 
   updateThirdPerson(delta: number) {

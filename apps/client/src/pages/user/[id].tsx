@@ -6,18 +6,18 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
-import { useSession } from "../../../client/auth/useSession";
-import { trpc } from "../../../client/trpc";
-import { getNavbarLayout } from "../../../home/layouts/NavbarLayout/NavbarLayout";
-import MetaTags from "../../../home/MetaTags";
-import ProfilePicture from "../../../home/ProfilePicture";
-import SpaceCard from "../../../home/SpaceCard";
-import { prisma } from "../../../server/prisma";
-import { appRouter } from "../../../server/router/_app";
-import Button from "../../../ui/Button";
-import Spinner from "../../../ui/Spinner";
-import { isFromCDN } from "../../../utils/isFromCDN";
-import { hexDisplayToNumber, numberToHexDisplay } from "../../../utils/numberToHexDisplay";
+import { useSession } from "../../client/auth/useSession";
+import { trpc } from "../../client/trpc";
+import { getNavbarLayout } from "../../home/layouts/NavbarLayout/NavbarLayout";
+import MetaTags from "../../home/MetaTags";
+import ProfilePicture from "../../home/ProfilePicture";
+import SpaceCard from "../../home/SpaceCard";
+import { prisma } from "../../server/prisma";
+import { appRouter } from "../../server/router/_app";
+import Button from "../../ui/Button";
+import Spinner from "../../ui/Spinner";
+import { isFromCDN } from "../../utils/isFromCDN";
+import { hexDisplayToNumber, numberToHexDisplay } from "../../utils/numberToHexDisplay";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   const ONE_MINUTE_IN_SECONDS = 60;

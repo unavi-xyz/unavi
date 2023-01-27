@@ -3,17 +3,17 @@ import Script from "next/script";
 import { useEffect, useRef } from "react";
 import Split from "react-split";
 
-import { useResizeCanvas } from "../../../app/hooks/useResizeCanvas";
-import EditorNavbar from "../../../editor/components/EditorNavbar/EditorNavbar";
-import InspectMenu from "../../../editor/components/InspectMenu/InspectMenu";
-import TreeMenu from "../../../editor/components/TreeMenu/TreeMenu";
-import { useAutosave } from "../../../editor/hooks/useAutosave";
-import { useEditorHotkeys } from "../../../editor/hooks/useEditorHotkeys";
-import { useLoad } from "../../../editor/hooks/useLoad";
-import { useTransformControls } from "../../../editor/hooks/useTransformControls";
-import { useEditorStore } from "../../../editor/store";
-import MetaTags from "../../../home/MetaTags";
-import Spinner from "../../../ui/Spinner";
+import { useResizeCanvas } from "../../app/hooks/useResizeCanvas";
+import EditorNavbar from "../../editor/components/EditorNavbar/EditorNavbar";
+import InspectMenu from "../../editor/components/InspectMenu/InspectMenu";
+import TreeMenu from "../../editor/components/TreeMenu/TreeMenu";
+import { useAutosave } from "../../editor/hooks/useAutosave";
+import { useEditorHotkeys } from "../../editor/hooks/useEditorHotkeys";
+import { useLoad } from "../../editor/hooks/useLoad";
+import { useTransformControls } from "../../editor/hooks/useTransformControls";
+import { useEditorStore } from "../../editor/store";
+import MetaTags from "../../home/MetaTags";
+import Spinner from "../../ui/Spinner";
 
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);

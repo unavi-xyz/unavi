@@ -1,3 +1,4 @@
+import { Engine } from "engine";
 import { nanoid } from "nanoid";
 
 import { TrpcContext } from "../../client/trpc";
@@ -6,16 +7,18 @@ import { addChatMessage } from "../utils/addChatMessage";
 
 export class PlayerName {
   readonly id: number;
+  #engine: Engine;
   #trpc: TrpcContext;
 
-  #displayName: string;
+  #displayName = "Guest";
   #nickname: string | null = null;
   #address: string | null = null;
 
-  constructor(id: number, trpc: TrpcContext) {
+  constructor(id: number, trpc: TrpcContext, engine: Engine) {
     this.id = id;
     this.#trpc = trpc;
-    this.#displayName = `Guest ${this.hexId}`;
+    this.#engine = engine;
+    this.displayName = `Guest ${this.hexId}`;
   }
 
   get hexId() {
@@ -29,6 +32,10 @@ export class PlayerName {
   set displayName(value: string) {
     if (this.#displayName === value) return;
     this.#displayName = value;
+
+    const player = this.#engine.player.getPlayer(this.id);
+    if (player) player.name = value;
+
     console.info("🪪 Player", this.hexId, "is now", value);
   }
 

@@ -63,7 +63,7 @@ export function useHost(url: string) {
       switch (subject) {
         case "join_success": {
           console.info(`🌏 Joined space as player ${numberToHexDisplay(data.playerId)}`);
-          const name = new PlayerName(data.playerId, utils);
+          const name = new PlayerName(data.playerId, utils, engine);
           players.names.set(data.playerId, name);
           useAppStore.setState({ playerId: data.playerId });
           break;

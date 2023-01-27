@@ -32,6 +32,7 @@ import { FromRenderMessage, ToRenderMessage } from "./messages";
 import { Players } from "./players/Players";
 import { RenderScene } from "./scene/RenderScene";
 import { ThreeOutlinePass } from "./three/ThreeOutlinePass";
+import { deepDispose } from "./utils/deepDispose";
 
 const CAMERA_NEAR = 0.01;
 const CAMERA_FAR = 750;
@@ -58,7 +59,7 @@ export class RenderThread {
   orbit = new OrbitControls(this.camera, this.transform);
   player: PlayerControls;
   raycaster: RaycastControls;
-  players = new Players();
+  players = new Players(this.camera);
 
   controls: ControlsType = DEFAULT_CONTROLS;
 
@@ -158,6 +159,14 @@ export class RenderThread {
 
       case "destroy": {
         if (this.#animationFrame) cancelAnimationFrame(this.#animationFrame);
+        if (this.composer) this.composer.dispose();
+        if (this.renderer) this.renderer.dispose();
+        if (this.scene.background instanceof Texture) this.scene.background.dispose();
+        if (this.scene.environment instanceof Texture) this.scene.environment.dispose();
+        this.renderScene.destroy();
+        this.transform.destroy();
+        this.orbit.destroy();
+        deepDispose(this.scene);
         break;
       }
     }

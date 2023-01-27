@@ -5,7 +5,7 @@ export class Player {
   readonly id: number;
   readonly engine: Engine;
 
-  #displayName: string | null = null;
+  #name: string | null = null;
   #grounded = false;
 
   readonly position: Int32Array;
@@ -27,13 +27,18 @@ export class Player {
     });
   }
 
-  get displayName() {
-    return this.#displayName;
+  get name() {
+    return this.#name;
   }
 
-  set displayName(value: string | null) {
-    if (this.#displayName === value) return;
-    this.#displayName = value;
+  set name(value: string | null) {
+    if (this.#name === value) return;
+    this.#name = value;
+
+    this.engine.render.send({
+      subject: "set_player_name",
+      data: { playerId: this.id, name: value },
+    });
   }
 
   get grounded() {

@@ -1,8 +1,20 @@
 import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
-import { AnimationAction, AnimationMixer, Group, Mesh, Quaternion, Vector3 } from "three";
+import {
+  AnimationAction,
+  AnimationMixer,
+  Camera,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  Quaternion,
+  Shape,
+  ShapeGeometry,
+  Vector3,
+} from "three";
+import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-import { WALK_SPEED } from "../../constants";
+import { PLAYER_HEIGHT, WALK_SPEED } from "../../constants";
 import { deepDispose } from "../utils/deepDispose";
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
 
@@ -21,6 +33,7 @@ const ANIMATION_NAME = {
 export class Avatar {
   readonly uri: string;
 
+  #camera: Camera;
   group = new Group();
   vrm: VRM | null = null;
 
@@ -37,12 +50,21 @@ export class Avatar {
   #animationsPath: string | null = null;
   grounded = true;
 
+  #name: string | null = null;
+  #font: Font | null = null;
+  #loadFontPromise: Promise<void> | null = null;
+  #nameplate: Mesh | null = null;
+
   velocity = new Vector3();
   targetPosition = new Vector3();
   targetRotation = new Quaternion();
 
-  constructor(uri: string) {
+  static NAMEPLATE_TEXT_MATERIAL = new MeshBasicMaterial({ color: 0xffffff });
+  static NAMEPLATE_BG_MATERIAL = new MeshBasicMaterial({ color: 0x010101 });
+
+  constructor(uri: string, camera: Camera) {
     this.uri = uri;
+    this.#camera = camera;
 
     const loader = new GLTFLoader();
     loader.setCrossOrigin("anonymous");
@@ -85,6 +107,82 @@ export class Avatar {
   set animationsPath(path: string | null) {
     this.#animationsPath = path;
     if (this.vrm) this.loadAnimations(this.vrm);
+  }
+
+  get name() {
+    return this.#name;
+  }
+
+  set name(name: string | null) {
+    if (this.#name === name) return;
+    this.#name = name;
+    this.group.name = name ?? "";
+
+    if (name) {
+      if (!this.#loadFontPromise) this.#loadFontPromise = this.loadFont();
+      this.#loadFontPromise.then(() => this.#createNameplate(name));
+    }
+  }
+
+  async loadFont() {
+    if (this.#font) return;
+    const loader = new FontLoader();
+    this.#font = await loader.loadAsync(new URL("./font.json", import.meta.url).href);
+  }
+
+  #createNameplate(text: string) {
+    if (!this.#font) throw new Error("No font");
+
+    // Remove old nametag
+    if (this.#nameplate) {
+      this.group.remove(this.#nameplate);
+      this.#nameplate.traverse((object) => {
+        if (object instanceof Mesh) object.geometry.dispose();
+      });
+      this.#nameplate = null;
+    }
+
+    // Create text
+    const shapes = this.#font.generateShapes(text, 0.075);
+    const textGeometry = new ShapeGeometry(shapes);
+
+    // Center horizontally
+    textGeometry.computeBoundingBox();
+    if (!textGeometry.boundingBox) throw new Error("No bounding box");
+    const xMid = -0.5 * (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
+    textGeometry.translate(xMid, 0, 0);
+
+    const textMesh = new Mesh(textGeometry, Avatar.NAMEPLATE_TEXT_MATERIAL);
+    textMesh.position.y = PLAYER_HEIGHT + 0.2;
+    textMesh.rotation.y = Math.PI;
+
+    this.group.add(textMesh);
+    this.#nameplate = textMesh;
+
+    // Create background
+    const width = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x + 0.15;
+    const height = textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y + 0.06;
+    const radius = height / 2;
+
+    const shape = new Shape();
+    shape.moveTo(0, radius);
+    shape.lineTo(0, height - radius);
+    shape.quadraticCurveTo(0, height, radius, height);
+    shape.lineTo(width - radius, height);
+    shape.quadraticCurveTo(width, height, width, height - radius);
+    shape.lineTo(width, radius);
+    shape.quadraticCurveTo(width, 0, width - radius, 0);
+    shape.lineTo(radius, 0);
+    shape.quadraticCurveTo(0, 0, 0, radius);
+
+    const roundedRectangle = new ShapeGeometry(shape);
+
+    const background = new Mesh(roundedRectangle, Avatar.NAMEPLATE_BG_MATERIAL);
+    background.position.x = -width / 2;
+    background.position.y = -height / 4;
+    background.position.z = -0.001;
+
+    this.#nameplate.add(background);
   }
 
   async loadAnimations(vrm: VRM) {
@@ -260,6 +358,14 @@ export class Avatar {
       }
 
       this.#prevHeadRotation.copy(head.quaternion);
+    }
+
+    // Update nameplate
+    if (this.#nameplate) {
+      // Hide if too far away
+      this.#nameplate.visible = this.#camera.position.distanceTo(this.group.position) < 12;
+      // Rotate to face camera
+      this.#nameplate.lookAt(this.#camera.position);
     }
   }
 

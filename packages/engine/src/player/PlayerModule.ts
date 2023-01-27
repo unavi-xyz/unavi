@@ -22,5 +22,6 @@ export class PlayerModules {
 
   removePlayer(id: number) {
     this.#players.delete(id);
+    this.engine.render.send({ subject: "remove_player", data: id });
   }
 }

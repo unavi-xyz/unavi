@@ -22,7 +22,7 @@ export class Players {
       case "player_joined": {
         this.#engine.player.addPlayer(data.playerId);
 
-        const name = new PlayerName(data.playerId, this.#trpc);
+        const name = new PlayerName(data.playerId, this.#trpc, this.#engine);
         this.names.set(data.playerId, name);
 
         addChatMessage({

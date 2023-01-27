@@ -1,4 +1,4 @@
-import { Group } from "three";
+import { Camera, Group } from "three";
 
 import { POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "../../constants";
 import { Avatar } from "./Avatar";
@@ -10,15 +10,17 @@ export class Player {
   readonly position: Int32Array;
   readonly rotation: Int16Array;
 
+  #camera: Camera;
   #name: string | null = null;
   #avatar: Avatar | null = null;
   #animationsPath: string | null = null;
   #grounded = true;
 
-  constructor(id: number, position: Int32Array, rotation: Int16Array) {
+  constructor(id: number, position: Int32Array, rotation: Int16Array, camera: Camera) {
     this.id = id;
     this.position = position;
     this.rotation = rotation;
+    this.#camera = camera;
   }
 
   get name() {
@@ -28,6 +30,7 @@ export class Player {
   set name(value: string | null) {
     if (this.#name === value) return;
     this.#name = value;
+    if (this.avatar) this.avatar.name = value;
   }
 
   get avatar() {
@@ -40,8 +43,9 @@ export class Player {
     this.#avatar = value;
 
     if (value) {
-      value.animationsPath = this.#animationsPath;
-      value.grounded = this.#grounded;
+      value.animationsPath = this.animationsPath;
+      value.grounded = this.grounded;
+      value.name = this.name;
       this.group.add(value.group);
     }
   }
@@ -67,7 +71,7 @@ export class Player {
   }
 
   setAvatarUri(uri: string | null) {
-    if (uri) this.avatar = new Avatar(uri);
+    if (uri) this.avatar = new Avatar(uri, this.#camera);
     else this.avatar = null;
   }
 

@@ -1,4 +1,4 @@
-import { Group } from "three";
+import { Camera, Group } from "three";
 
 import { ToRenderMessage } from "../messages";
 import { Player } from "./Player";
@@ -9,11 +9,16 @@ export class Players {
   #store = new Map<number, Player>();
   #defaultAvatar: string | null = null;
   #animationsPath: string | null = null;
+  #camera: Camera;
+
+  constructor(camera: Camera) {
+    this.#camera = camera;
+  }
 
   onmessage({ subject, data }: ToRenderMessage) {
     switch (subject) {
       case "add_player": {
-        const player = new Player(data.id, data.position, data.rotation);
+        const player = new Player(data.id, data.position, data.rotation, this.#camera);
         player.animationsPath = this.#animationsPath;
         this.group.add(player.group);
 

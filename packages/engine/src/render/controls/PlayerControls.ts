@@ -15,7 +15,7 @@ export class PlayerControls {
 
   group = new Group();
   body = new Group();
-  avatar: Avatar | null = null;
+  #avatar: Avatar | null = null;
 
   userPosition: Int32Array | null = null;
   userRotation: Int16Array | null = null;
@@ -65,6 +65,24 @@ export class PlayerControls {
     } else {
       this.#camera.layers.disable(VRMFirstPerson.DEFAULT_FIRSTPERSON_ONLY_LAYER);
       this.#camera.layers.enable(VRMFirstPerson.DEFAULT_THIRDPERSON_ONLY_LAYER);
+    }
+  }
+
+  get avatar() {
+    return this.#avatar;
+  }
+
+  set avatar(avatar: Avatar | null) {
+    if (avatar?.uri === this.#avatar?.uri) return;
+    if (this.#avatar) this.#avatar.destroy();
+
+    this.#avatar = avatar;
+
+    if (avatar) {
+      avatar.mode = this.mode;
+      avatar.animationsPath = this.#animationsPath;
+      avatar.grounded = this.#grounded;
+      this.body.add(avatar.group);
     }
   }
 
@@ -127,30 +145,14 @@ export class PlayerControls {
 
       case "set_default_avatar": {
         this.#defaultAvatar = data;
-
-        if (!this.avatar) {
-          this.avatar = new Avatar(data);
-          this.avatar.mode = this.mode;
-          this.avatar.animationsPath = this.#animationsPath;
-          this.avatar.grounded = this.#grounded;
-          this.body.add(this.avatar.group);
-        }
+        if (!this.avatar) this.avatar = new Avatar(data, this.#camera);
         break;
       }
 
       case "set_user_avatar": {
-        if (this.avatar) {
-          this.avatar.destroy();
-          this.avatar = null;
-        }
-
-        if (data) {
-          this.avatar = new Avatar(data);
-          this.avatar.mode = this.mode;
-          this.avatar.animationsPath = this.#animationsPath;
-          this.avatar.grounded = this.#grounded;
-          this.body.add(this.avatar.group);
-        }
+        if (data) this.avatar = new Avatar(data, this.#camera);
+        else if (this.#defaultAvatar) this.avatar = new Avatar(this.#defaultAvatar, this.#camera);
+        else this.avatar = null;
         break;
       }
 

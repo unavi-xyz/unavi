@@ -34,6 +34,7 @@ export class Player {
   position: Int32Array;
 
   velocity: Vector3 = { x: 0, y: 0, z: 0 };
+  sprinting = false;
 
   constructor(world: World, postMessage: PostMessage<FromPhysicsMessage>) {
     this.#world = world;
@@ -87,9 +88,11 @@ export class Player {
     const inputXRotated = inputY * sin - inputX * cos;
     const inputYRotated = inputX * sin + inputY * cos;
 
+    const speed = this.sprinting ? 6 : 4;
+
     const inputVelocity = this.rigidBody.linvel();
-    inputVelocity.x = inputXRotated * 4;
-    inputVelocity.z = inputYRotated * 4;
+    inputVelocity.x = inputXRotated * speed;
+    inputVelocity.z = inputYRotated * speed;
 
     // Only apply gravity if not grounded
     const isGrounded = this.controller.computedGrounded();

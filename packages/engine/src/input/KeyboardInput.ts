@@ -1,13 +1,10 @@
 import { INPUT_ARRAY_ROUNDING } from "../constants";
 import { ControlsType } from "../Engine";
-import { RenderModule } from "../render/RenderModule";
 import { InputModule } from "./InputModule";
 import { PointerData } from "./messages";
 
 export class KeyboardInput {
   #module: InputModule;
-  #canvas: HTMLCanvasElement;
-  #render: RenderModule;
 
   controls: ControlsType = "player";
   isLocked = false;
@@ -25,17 +22,16 @@ export class KeyboardInput {
 
   constructor(module: InputModule) {
     this.#module = module;
-    this.#canvas = module.canvas;
-    this.#render = module.render;
+    const canvas = module.engine.canvas;
 
-    this.#canvas.addEventListener("click", this.#onClick);
-    this.#canvas.addEventListener("contextmenu", this.#onContextMenu);
-    this.#canvas.addEventListener("wheel", this.#onWheel);
+    canvas.addEventListener("click", this.#onClick);
+    canvas.addEventListener("contextmenu", this.#onContextMenu);
+    canvas.addEventListener("wheel", this.#onWheel);
 
-    this.#canvas.addEventListener("pointermove", this.#onPointerMove);
-    this.#canvas.addEventListener("pointerup", this.#onPointerUp);
-    this.#canvas.addEventListener("pointerdown", this.#onPointerDown);
-    this.#canvas.addEventListener("pointercancel", this.#onPointerCancel);
+    canvas.addEventListener("pointermove", this.#onPointerMove);
+    canvas.addEventListener("pointerup", this.#onPointerUp);
+    canvas.addEventListener("pointerdown", this.#onPointerDown);
+    canvas.addEventListener("pointercancel", this.#onPointerCancel);
 
     document.addEventListener("keydown", this.#onKeyDown);
     document.addEventListener("keyup", this.#onKeyUp);
@@ -44,14 +40,16 @@ export class KeyboardInput {
   }
 
   destroy() {
-    this.#canvas.removeEventListener("click", this.#onClick);
-    this.#canvas.removeEventListener("contextmenu", this.#onContextMenu);
-    this.#canvas.removeEventListener("wheel", this.#onWheel);
+    const canvas = this.#module.engine.canvas;
 
-    this.#canvas.removeEventListener("pointermove", this.#onPointerMove);
-    this.#canvas.removeEventListener("pointerup", this.#onPointerUp);
-    this.#canvas.removeEventListener("pointerdown", this.#onPointerDown);
-    this.#canvas.removeEventListener("pointercancel", this.#onPointerCancel);
+    canvas.removeEventListener("click", this.#onClick);
+    canvas.removeEventListener("contextmenu", this.#onContextMenu);
+    canvas.removeEventListener("wheel", this.#onWheel);
+
+    canvas.removeEventListener("pointermove", this.#onPointerMove);
+    canvas.removeEventListener("pointerup", this.#onPointerUp);
+    canvas.removeEventListener("pointerdown", this.#onPointerDown);
+    canvas.removeEventListener("pointercancel", this.#onPointerCancel);
 
     document.removeEventListener("keydown", this.#onKeyDown);
     document.removeEventListener("keyup", this.#onKeyUp);
@@ -60,12 +58,13 @@ export class KeyboardInput {
   }
 
   getPointerData(event: PointerEvent): PointerData {
+    const canvas = this.#module.engine.canvas;
     let pointer;
 
-    if (this.#canvas.ownerDocument.pointerLockElement) {
+    if (canvas.ownerDocument.pointerLockElement) {
       pointer = { x: 0, y: 0, button: event.button };
     } else {
-      const rect = this.#canvas.getBoundingClientRect();
+      const rect = canvas.getBoundingClientRect();
       pointer = {
         x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
         y: (-(event.clientY - rect.top) / rect.height) * 2 + 1,
@@ -89,7 +88,7 @@ export class KeyboardInput {
   }
 
   #onClick = () => {
-    if (this.controls === "player") this.#canvas.requestPointerLock();
+    if (this.controls === "player") this.#module.engine.canvas.requestPointerLock();
   };
 
   #onContextMenu = (event: Event) => {
@@ -99,7 +98,7 @@ export class KeyboardInput {
   #onMouseMove = (event: MouseEvent) => {
     if (!this.isLocked) return;
 
-    this.#render.toRenderThread({
+    this.#module.engine.render.send({
       subject: "mousemove",
       data: { x: event.movementX, y: event.movementY },
     });
@@ -108,7 +107,7 @@ export class KeyboardInput {
   #onWheel = (event: WheelEvent) => {
     event.preventDefault();
 
-    this.#render.toRenderThread({
+    this.#module.engine.render.send({
       subject: "wheel",
       data: { deltaY: event.deltaY },
     });
@@ -117,7 +116,7 @@ export class KeyboardInput {
   #onKeyDown = (event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
 
-    // if (event.shiftKey) this.#physicsThread.setSprinting(true);
+    if (event.shiftKey) this.#module.engine.physics.send({ subject: "set_sprinting", data: true });
 
     switch (key) {
       case "w": {
@@ -180,7 +179,8 @@ export class KeyboardInput {
   #onKeyUp = (event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
 
-    // if (!event.shiftKey) this.#physicsThread.setSprinting(false);
+    if (!event.shiftKey)
+      this.#module.engine.physics.send({ subject: "set_sprinting", data: false });
 
     switch (key) {
       case "w": {
@@ -236,44 +236,44 @@ export class KeyboardInput {
   };
 
   #onPointerMove = (event: PointerEvent) => {
-    this.#render.toRenderThread({
+    this.#module.engine.render.send({
       subject: "pointermove",
       data: this.getPointerData(event),
     });
   };
 
   #onPointerUp = (event: PointerEvent) => {
-    this.#canvas.releasePointerCapture(event.pointerId);
+    this.#module.engine.canvas.releasePointerCapture(event.pointerId);
 
-    this.#render.toRenderThread({
+    this.#module.engine.render.send({
       subject: "pointerup",
       data: this.getPointerData(event),
     });
   };
 
   #onPointerDown = (event: PointerEvent) => {
-    const isPointerLocked = document.pointerLockElement === this.#canvas;
+    const isPointerLocked = document.pointerLockElement === this.#module.engine.canvas;
     if (isPointerLocked) return;
 
-    this.#canvas.setPointerCapture(event.pointerId);
+    this.#module.engine.canvas.setPointerCapture(event.pointerId);
 
-    this.#render.toRenderThread({
+    this.#module.engine.render.send({
       subject: "pointerdown",
       data: this.getPointerData(event),
     });
   };
 
   #onPointerCancel = (event: PointerEvent) => {
-    this.#canvas.releasePointerCapture(event.pointerId);
+    this.#module.engine.canvas.releasePointerCapture(event.pointerId);
 
-    this.#render.toRenderThread({
+    this.#module.engine.render.send({
       subject: "pointercancel",
       data: this.getPointerData(event),
     });
   };
 
   #onPointerLockChange = () => {
-    this.isLocked = document.pointerLockElement === this.#canvas;
+    this.isLocked = document.pointerLockElement === this.#module.engine.canvas;
     if (this.isLocked) return;
 
     // Unpress all keys on exit pointer lock
@@ -283,7 +283,7 @@ export class KeyboardInput {
 
     this.#updateVelocity();
 
-    // this.#physicsThread.setSprinting(false);
+    this.#module.engine.physics.send({ subject: "set_sprinting", data: false });
 
     // if (this.#jumpInterval !== null) {
     //   clearInterval(this.#jumpInterval);

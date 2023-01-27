@@ -140,8 +140,8 @@ export function useHost(url: string) {
             publishInterval = setInterval(() => {
               const { playerId } = useAppStore.getState();
 
-              const positionArray = engine.modules.physics.positionArray;
-              const rotationArray = engine.modules.physics.rotationArray;
+              const positionArray = engine.physics.positionArray;
+              const rotationArray = engine.physics.rotationArray;
 
               if (
                 playerId === null ||
@@ -298,7 +298,7 @@ export function useHost(url: string) {
             }
 
             // Send to engine
-            // engine.modules.render.toRenderThread({
+            // engine.render.send({
             //   subject: "player_location",
             //   data: buffer,
             // });

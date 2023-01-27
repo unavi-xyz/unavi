@@ -1,16 +1,13 @@
-import { InputModule } from "../input/InputModule";
-import { RenderModule } from "../render/RenderModule";
+import { Engine } from "../Engine";
 import { Transferable } from "../types";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
 
 export class PhysicsModule {
-  #worker = new Worker(new URL("./worker.ts", import.meta.url), {
+  readonly engine: Engine;
+  readonly #worker = new Worker(new URL("./worker.ts", import.meta.url), {
     type: "module",
     name: "physics",
   });
-
-  #input: InputModule;
-  #render: RenderModule;
 
   ready = false;
   messageQueue: Array<{ message: ToPhysicsMessage; transferables?: Transferable[] }> = [];
@@ -18,10 +15,8 @@ export class PhysicsModule {
   positionArray: Int32Array | null = null;
   rotationArray: Int32Array | null = null;
 
-  constructor(input: InputModule, render: RenderModule) {
-    this.#input = input;
-    this.#render = render;
-
+  constructor(engine: Engine) {
+    this.engine = engine;
     this.#worker.onmessage = this.onmessage;
   }
 
@@ -45,10 +40,10 @@ export class PhysicsModule {
         this.positionArray = data.position;
         this.rotationArray = data.rotation;
 
-        this.#input.inputArray = data.input;
-        this.#input.rotationArray = data.rotation;
+        this.engine.input.inputArray = data.input;
+        this.engine.input.rotationArray = data.rotation;
 
-        this.#render.toRenderThread({
+        this.engine.render.send({
           subject: "set_player_arrays",
           data: { position: data.position, rotation: data.rotation },
         });
@@ -57,7 +52,7 @@ export class PhysicsModule {
     }
   };
 
-  toPhysicsThread(message: ToPhysicsMessage, transferables?: Transferable[]) {
+  send(message: ToPhysicsMessage, transferables?: Transferable[]) {
     // If not ready, queue message
     if (!this.ready) {
       this.messageQueue.push({ message, transferables });

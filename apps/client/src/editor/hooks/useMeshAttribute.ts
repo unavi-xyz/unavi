@@ -14,14 +14,14 @@ export function useMeshAttribute<T extends keyof MeshJSON>(id: string | null, at
       return;
     }
 
-    const newMesh = engine.modules.scene.mesh.store.get(id) ?? null;
+    const newMesh = engine.scene.mesh.store.get(id) ?? null;
 
     if (!newMesh || !attribute) {
       setValue(null);
       return;
     }
 
-    const json = engine.modules.scene.mesh.toJSON(newMesh);
+    const json = engine.scene.mesh.toJSON(newMesh);
     const initialValue = json[attribute];
     setValue(initialValue);
 
@@ -29,7 +29,7 @@ export function useMeshAttribute<T extends keyof MeshJSON>(id: string | null, at
       if (!engine || !attribute || !newMesh) return;
       if (e.attribute !== attribute) return;
 
-      const json = engine.modules.scene.mesh.toJSON(newMesh);
+      const json = engine.scene.mesh.toJSON(newMesh);
       const newValue = json[attribute];
       setValue(newValue);
     }

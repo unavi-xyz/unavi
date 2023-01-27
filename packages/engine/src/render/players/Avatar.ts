@@ -4,6 +4,10 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
 
+const MAX_WALK_SPEED = 25;
+const MAX_SPRINT_SPEED = 40;
+const SPRINT_CUTOFF = MAX_WALK_SPEED + 5;
+
 const ANIMATION_NAME = {
   Falling: "Falling",
   Idle: "Idle",
@@ -127,15 +131,20 @@ export class Avatar {
       const forwardVelocity = Math.abs(relativeVelocity.z);
       const isBackwards = relativeVelocity.z < 0;
 
-      const fallingWeight = Math.abs(relativeVelocity.y) / 5;
-      const leftWeight = Math.max(leftVelocity - fallingWeight, 0);
-      const rightWeight = Math.max(rightVelocity - fallingWeight, 0);
-      const forwardWeight = Math.max(forwardVelocity - fallingWeight, 0);
+      const fallingWeight = normalizeWeight(Math.abs(relativeVelocity.y), 50, 20);
+      const leftWeight = normalizeWeight(leftVelocity, MAX_WALK_SPEED * 0.75) - fallingWeight;
+      const rightWeight = normalizeWeight(rightVelocity, MAX_WALK_SPEED * 0.75) - fallingWeight;
+      const sprintWeight =
+        normalizeWeight(forwardVelocity, MAX_SPRINT_SPEED * 0.75, SPRINT_CUTOFF) - fallingWeight;
+      const walkWeight = normalizeWeight(forwardVelocity, MAX_WALK_SPEED * 0.75) - sprintWeight;
+      const idleWeight = 1 - leftWeight - rightWeight - walkWeight - sprintWeight - fallingWeight;
 
       const leftWalk = this.animations.get(ANIMATION_NAME.LeftWalk);
       const rightWalk = this.animations.get(ANIMATION_NAME.RightWalk);
       const walk = this.animations.get(ANIMATION_NAME.Walk);
+      const sprint = this.animations.get(ANIMATION_NAME.Sprint);
       const falling = this.animations.get(ANIMATION_NAME.Falling);
+      const idle = this.animations.get(ANIMATION_NAME.Idle);
 
       if (leftWalk) {
         if (leftWalk.isRunning() && leftWeight < 0.1) leftWalk.stop();
@@ -150,10 +159,17 @@ export class Avatar {
       }
 
       if (walk) {
-        if (walk.isRunning() && forwardWeight < 0.1) walk.stop();
-        if (!walk.isRunning() && forwardWeight > 0.1) walk.play();
-        walk.setEffectiveWeight(forwardWeight);
+        if (walk.isRunning() && walkWeight < 0.1 && sprintWeight === 0) walk.stop();
+        if (!walk.isRunning() && walkWeight > 0.1) walk.play();
+        walk.setEffectiveWeight(walkWeight);
         walk.setEffectiveTimeScale(isBackwards ? -1 : 1);
+      }
+
+      if (sprint) {
+        if (sprint.isRunning() && sprintWeight < 0.1) sprint.stop();
+        if (!sprint.isRunning() && sprintWeight > 0.1) sprint.play();
+        sprint.setEffectiveWeight(sprintWeight);
+        sprint.setEffectiveTimeScale(isBackwards ? -1 : 1);
       }
 
       if (falling) {
@@ -162,9 +178,7 @@ export class Avatar {
         falling.setEffectiveWeight(fallingWeight);
       }
 
-      const idle = this.animations.get(ANIMATION_NAME.Idle);
       if (idle) {
-        const idleWeight = Math.max(1 - leftWeight - rightWeight - forwardWeight, 0);
         if (idle.isRunning() && idleWeight === 0) idle.stop();
         if (!idle.isRunning() && idleWeight > 0) idle.play();
         idle.setEffectiveWeight(idleWeight);
@@ -206,4 +220,8 @@ export class Avatar {
   dispose() {
     this.group.removeFromParent();
   }
+}
+
+function normalizeWeight(weight: number, max: number, min = 0) {
+  return Math.round(Math.max(0, Math.min(1, (weight - min) / (max - min))) * 100) / 100;
 }

@@ -24,10 +24,10 @@ export default function TreeItem({ id }: Props) {
     const getDepth = (id: string): number => {
       if (!engine) return 0;
 
-      const node = engine.modules.scene.node.store.get(id);
+      const node = engine.scene.node.store.get(id);
       if (!node) throw new Error("Node not found");
 
-      const parentId = engine.modules.scene.node.getParent(node);
+      const parentId = engine.scene.node.getParent(node);
       if (!parentId) return 0;
 
       return getDepth(parentId) + 1;
@@ -64,14 +64,14 @@ export default function TreeItem({ id }: Props) {
           )
             return;
 
-          const draggedNode = engine.modules.scene.node.store.get(draggingId);
+          const draggedNode = engine.scene.node.store.get(draggingId);
           if (!draggedNode) throw new Error("Node not found");
 
-          const node = engine.modules.scene.node.store.get(id);
+          const node = engine.scene.node.store.get(id);
           if (!node) throw new Error("Node not found");
 
           // Add dragged node as child
-          const draggedParentId = engine.modules.scene.node.getParent(draggedNode);
+          const draggedParentId = engine.scene.node.getParent(draggedNode);
           if (draggedParentId !== id) {
             node.addChild(draggedNode);
           }
@@ -115,25 +115,25 @@ export default function TreeItem({ id }: Props) {
             if (!engine || !draggingId || draggingId === id || isAncestor(draggingId, id, engine))
               return;
 
-            const draggedNode = engine.modules.scene.node.store.get(draggingId);
+            const draggedNode = engine.scene.node.store.get(draggingId);
             if (!draggedNode) throw new Error("Node not found");
 
-            const node = engine.modules.scene.node.store.get(id);
+            const node = engine.scene.node.store.get(id);
             if (!node) throw new Error("Node not found");
 
-            const parentId = engine.modules.scene.node.getParent(node);
-            const draggedParentId = engine.modules.scene.node.getParent(draggedNode);
+            const parentId = engine.scene.node.getParent(node);
+            const draggedParentId = engine.scene.node.getParent(draggedNode);
 
             if (parentId !== draggedParentId) {
               // Add dragged node as sibling
               if (parentId) {
-                const parentNode = engine.modules.scene.node.store.get(parentId);
+                const parentNode = engine.scene.node.store.get(parentId);
                 if (!parentNode) throw new Error("Parent node not found");
 
                 parentNode.addChild(draggedNode);
               } else {
                 if (draggedParentId) {
-                  const draggedParent = engine.modules.scene.node.store.get(draggedParentId);
+                  const draggedParent = engine.scene.node.store.get(draggedParentId);
                   if (!draggedParent) throw new Error("Dragged node parent not found");
 
                   draggedParent.removeChild(draggedNode);

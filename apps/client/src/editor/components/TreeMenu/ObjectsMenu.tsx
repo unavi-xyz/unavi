@@ -39,13 +39,13 @@ function createNode(name: ObjectName) {
   const { engine } = useEditorStore.getState();
   if (!engine) return;
 
-  const { id, object: node } = engine.modules.scene.node.create();
+  const { id, object: node } = engine.scene.node.create();
 
   node.setName(name);
 
   switch (name) {
     case OBJECT_NAME.Box: {
-      const { object: mesh } = engine.modules.scene.mesh.create();
+      const { object: mesh } = engine.scene.mesh.create();
       node.setMesh(mesh);
 
       const extras: MeshExtras = {
@@ -62,7 +62,7 @@ function createNode(name: ObjectName) {
     }
 
     case OBJECT_NAME.Sphere: {
-      const { object: mesh } = engine.modules.scene.mesh.create();
+      const { object: mesh } = engine.scene.mesh.create();
       node.setMesh(mesh);
 
       const extras: MeshExtras = {
@@ -79,7 +79,7 @@ function createNode(name: ObjectName) {
     }
 
     case OBJECT_NAME.Cylinder: {
-      const { object: mesh } = engine.modules.scene.mesh.create();
+      const { object: mesh } = engine.scene.mesh.create();
       node.setMesh(mesh);
 
       const extras: MeshExtras = {

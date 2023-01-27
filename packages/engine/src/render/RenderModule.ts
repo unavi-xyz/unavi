@@ -8,21 +8,20 @@ import { FromRenderMessage, ToRenderMessage } from "./messages";
 import { RenderThread } from "./RenderThread";
 
 export class RenderModule extends EventDispatcher<RenderEvent> {
-  #worker: Worker | FakeWorker;
-
-  #engine: Engine;
+  readonly engine: Engine;
+  readonly #worker: Worker | FakeWorker;
 
   ready = false;
   messageQueue: Array<{ message: ToRenderMessage; transferables?: Transferable[] }> = [];
 
-  constructor(canvas: HTMLCanvasElement, engine: Engine) {
+  constructor(engine: Engine) {
     super();
 
-    this.#engine = engine;
+    this.engine = engine;
 
     // If OffscreenCanvas is supported, render in a worker
     if (typeof OffscreenCanvas !== "undefined" && process.env.NODE_ENV === "production") {
-      const offscreen = canvas.transferControlToOffscreen();
+      const offscreen = engine.canvas.transferControlToOffscreen();
 
       this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
         type: "module",
@@ -32,26 +31,26 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       this.#worker.onmessage = this.onmessage.bind(this);
 
       // Send canvas to worker
-      this.toRenderThread({ subject: "set_canvas", data: offscreen }, [offscreen]);
+      this.send({ subject: "set_canvas", data: offscreen }, [offscreen]);
     } else {
       // Otherwise render on the main thread, using a fake worker
       this.#worker = new FakeWorker();
 
       const thread = new RenderThread(
         this.#worker.insidePort.postMessage.bind(this.#worker.insidePort),
-        canvas
+        engine.canvas
       );
 
       this.#worker.insidePort.onmessage = thread.onmessage.bind(thread);
       this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
     }
 
-    this.toRenderThread({
+    this.send({
       subject: "set_size",
-      data: { width: canvas.width, height: canvas.height },
+      data: { width: engine.canvas.width, height: engine.canvas.height },
     });
 
-    this.toRenderThread({ subject: "set_pixel_ratio", data: window.devicePixelRatio });
+    this.send({ subject: "set_pixel_ratio", data: window.devicePixelRatio });
   }
 
   onmessage = (event: MessageEvent<FromRenderMessage>) => {
@@ -76,7 +75,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       }
 
       case "set_node_transform": {
-        const node = this.#engine.modules.scene.node.store.get(data.nodeId);
+        const node = this.engine.scene.node.store.get(data.nodeId);
         if (!node) throw new Error("Node not found");
 
         node.setTranslation(data.translation);
@@ -86,38 +85,33 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       }
 
       case "create_accessor": {
-        const physics = this.#engine.modules.physics;
-        physics.toPhysicsThread({ subject: "create_accessor", data });
+        this.engine.physics.send({ subject: "create_accessor", data });
         break;
       }
 
       case "dispose_accessor": {
-        const physics = this.#engine.modules.physics;
-        physics.toPhysicsThread({ subject: "dispose_accessor", data });
+        this.engine.physics.send({ subject: "dispose_accessor", data });
         break;
       }
 
       case "create_primitive": {
-        const physics = this.#engine.modules.physics;
-        physics.toPhysicsThread({ subject: "create_primitive", data });
+        this.engine.physics.send({ subject: "create_primitive", data });
         break;
       }
 
       case "dispose_primitive": {
-        const physics = this.#engine.modules.physics;
-        physics.toPhysicsThread({ subject: "dispose_primitive", data });
+        this.engine.physics.send({ subject: "dispose_primitive", data });
         break;
       }
 
       case "change_mesh": {
-        const physics = this.#engine.modules.physics;
-        physics.toPhysicsThread({ subject: "change_mesh", data });
+        this.engine.physics.send({ subject: "change_mesh", data });
         break;
       }
     }
   };
 
-  toRenderThread(message: ToRenderMessage, transferables?: Transferable[]) {
+  send(message: ToRenderMessage, transferables?: Transferable[]) {
     // If not ready, queue message
     if (!this.ready) {
       this.messageQueue.push({ message, transferables });

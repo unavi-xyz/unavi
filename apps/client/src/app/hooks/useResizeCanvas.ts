@@ -21,7 +21,7 @@ export function useResizeCanvas(
         canvas.height = container.clientHeight;
       }
 
-      engine.modules.render.toRenderThread({
+      engine.render.send({
         subject: "set_size",
         data: { width: canvas.clientWidth, height: canvas.clientHeight },
       });

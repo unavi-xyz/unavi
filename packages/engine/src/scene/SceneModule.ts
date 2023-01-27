@@ -1,5 +1,6 @@
 import { ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform/core";
 
+import { Engine } from "../Engine";
 import { Collider, ColliderExtension } from "../gltf";
 import { extensions } from "../gltf/constants";
 import { PhysicsModule } from "../physics/PhysicsModule";
@@ -17,11 +18,11 @@ export class SceneModule extends Scene {
 
   enableDracoDecoding = true;
 
-  constructor(render: RenderModule, physics: PhysicsModule) {
+  constructor(engine: Engine) {
     super();
 
-    this.#render = render;
-    this.#physics = physics;
+    this.#render = engine.render;
+    this.#physics = engine.physics;
 
     this.node.addEventListener("create", ({ data }) => {
       const node = this.node.store.get(data.id);
@@ -145,10 +146,10 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.texture.toJSON(texture);
 
-      this.#render.toRenderThread({ subject: "create_texture", data: { id, json } });
+      this.#render.send({ subject: "create_texture", data: { id, json } });
 
       texture.addEventListener("dispose", () => {
-        this.#render.toRenderThread({ subject: "dispose_texture", data: id });
+        this.#render.send({ subject: "dispose_texture", data: id });
       });
     });
 
@@ -157,21 +158,21 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.material.toJSON(material);
 
-      this.#render.toRenderThread({ subject: "create_material", data: { id, json } });
+      this.#render.send({ subject: "create_material", data: { id, json } });
 
       material.addEventListener("change", (e) => {
         const attribute = e.attribute as keyof MaterialJSON;
         const json = this.material.toJSON(material);
         const value = json[attribute];
 
-        this.#render.toRenderThread({
+        this.#render.send({
           subject: "change_material",
           data: { id, json: { [attribute]: value } },
         });
       });
 
       material.addEventListener("dispose", () => {
-        this.#render.toRenderThread({ subject: "dispose_material", data: id });
+        this.#render.send({ subject: "dispose_material", data: id });
       });
     });
 
@@ -303,7 +304,7 @@ export class SceneModule extends Scene {
   }
 
   #publish = (message: SceneMessage) => {
-    this.#render.toRenderThread(message);
-    this.#physics.toPhysicsThread(message);
+    this.#render.send(message);
+    this.#physics.send(message);
   };
 }

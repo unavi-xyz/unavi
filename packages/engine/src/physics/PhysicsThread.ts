@@ -34,6 +34,11 @@ export class PhysicsThread {
         this.controls = data;
         break;
       }
+
+      case "set_sprinting": {
+        this.player.sprinting = data;
+        break;
+      }
     }
   };
 

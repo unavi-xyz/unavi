@@ -14,7 +14,7 @@ export function usePrimitive(id: string | null) {
       return;
     }
 
-    const newPrimitive = engine.modules.scene.primitive.store.get(id) ?? null;
+    const newPrimitive = engine.scene.primitive.store.get(id) ?? null;
     setPrimitive(newPrimitive);
   }, [id, engine]);
 

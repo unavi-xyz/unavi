@@ -42,7 +42,7 @@ export function useSpace(id: number) {
       setLoadingText("Loading scene...");
       setLoadingProgress(0.3);
 
-      await engine.modules.scene.loadBinary(array);
+      await engine.scene.loadBinary(array);
 
       setLoadingText("Connecting...");
       setLoadingProgress(0.75);

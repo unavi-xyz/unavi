@@ -42,7 +42,7 @@ export function useSave() {
     if (!engine) throw new Error("No engine");
 
     // Export to GLB
-    const glb = await engine.modules.scene.export();
+    const glb = await engine.scene.export();
 
     // Upload to S3
     const url = await getModelUpload({ id });

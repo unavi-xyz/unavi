@@ -11,10 +11,10 @@ export function isAncestor(targetId: string, nodeId: string, engine: Engine): bo
 
   if (nodeId === targetId) return true;
 
-  const node = engine.modules.scene.node.store.get(nodeId);
+  const node = engine.scene.node.store.get(nodeId);
   if (!node) throw new Error("Node not found");
 
-  const parentId = engine.modules.scene.node.getParent(node);
+  const parentId = engine.scene.node.getParent(node);
   if (!parentId) return false;
 
   return isAncestor(targetId, parentId, engine);

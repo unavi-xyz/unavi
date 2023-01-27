@@ -1,19 +1,16 @@
-import { RenderModule } from "../render/RenderModule";
+import { Engine } from "../Engine";
 import { KeyboardInput } from "./KeyboardInput";
 
 export class InputModule {
-  keyboard: KeyboardInput;
-
-  canvas: HTMLCanvasElement;
-  render: RenderModule;
+  readonly engine: Engine;
 
   inputArray: Int16Array | null = null;
   rotationArray: Int32Array | null = null;
 
-  constructor(canvas: HTMLCanvasElement, render: RenderModule) {
-    this.canvas = canvas;
-    this.render = render;
+  keyboard: KeyboardInput;
 
+  constructor(engine: Engine) {
+    this.engine = engine;
     this.keyboard = new KeyboardInput(this);
   }
 

@@ -12,7 +12,7 @@ export default function TreeRoot() {
   const nodes = useNodes();
   const nodeIds = useMemo(() => {
     const ids = nodes
-      .map((node) => engine?.modules.scene.node.getId(node))
+      .map((node) => engine?.scene.node.getId(node))
       .filter((id) => id !== undefined) as string[];
 
     return ids;
@@ -22,10 +22,10 @@ export default function TreeRoot() {
     const isVisible = (id: string): boolean => {
       if (!engine) return false;
 
-      const node = engine.modules.scene.node.store.get(id);
+      const node = engine.scene.node.store.get(id);
       if (!node) throw new Error("Node not found");
 
-      const parentId = engine.modules.scene.node.getParent(node);
+      const parentId = engine.scene.node.getParent(node);
       if (!parentId) return true;
 
       const isParentOpen = openIds.includes(parentId);
@@ -61,17 +61,17 @@ export default function TreeRoot() {
 
     // Move children after parents
     newIds.forEach((id) => {
-      const node = engine.modules.scene.node.store.get(id);
+      const node = engine.scene.node.store.get(id);
       if (!node) throw new Error("Node not found");
 
       function deepChildrenIds(id: string): string[] {
         if (!engine) return [];
 
-        const node = engine.modules.scene.node.store.get(id);
+        const node = engine.scene.node.store.get(id);
         if (!node) throw new Error("Node not found");
 
         const childrenIds = node.listChildren().map((child) => {
-          const id = engine.modules.scene.node.getId(child);
+          const id = engine.scene.node.getId(child);
           if (!id) throw new Error("Node not found");
           return id;
         });

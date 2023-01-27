@@ -16,7 +16,7 @@ export function useEditorHotkeys() {
           const selectedId = useEditorStore.getState().selectedId;
           if (!selectedId) break;
 
-          const node = engine.modules.scene.node.store.get(selectedId);
+          const node = engine.scene.node.store.get(selectedId);
           if (!node) throw new Error("Node not found");
 
           useEditorStore.setState({ selectedId: null });

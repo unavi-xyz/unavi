@@ -37,17 +37,17 @@ export default function Editor() {
 
     useEditorStore.setState({ engine, canvas: canvasRef.current, visuals: true });
 
-    engine.modules.render.toRenderThread({
+    engine.render.send({
       subject: "set_player_animations",
       data: { path: "/models/" },
     });
 
-    engine.modules.render.toRenderThread({
+    engine.render.send({
       subject: "set_player_avatar",
       data: { uri: "/models/Wired-chan.vrm" },
     });
 
-    engine.modules.render.toRenderThread({
+    engine.render.send({
       subject: "set_skybox",
       data: { uri: "/images/Skybox_2K.jpg" },
     });
@@ -90,7 +90,7 @@ export default function Editor() {
           const isGLTF = file.name.endsWith(".gltf") || file.name.endsWith(".glb");
           if (!isGLTF) return;
 
-          await engine.modules.scene.addFile(file);
+          await engine.scene.addFile(file);
         }}
       >
         <div className="z-10 h-14 w-full border-b">

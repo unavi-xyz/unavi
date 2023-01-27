@@ -92,7 +92,7 @@ export default function PublishPage() {
         if (!engine) throw new Error("Engine not found");
 
         // Export scene to glb
-        const glb = await engine.modules.scene.export();
+        const glb = await engine.scene.export();
         const body = new Blob([glb], { type: "model/gltf-binary" });
 
         // Upload to S3

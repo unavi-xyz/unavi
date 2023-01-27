@@ -11,7 +11,7 @@ export function useTransformControls() {
   useEffect(() => {
     if (!engine) return;
 
-    engine.modules.render.addEventListener("clicked_node", (e) => {
+    engine.render.addEventListener("clicked_node", (e) => {
       const nodeId = e.data.nodeId;
       useEditorStore.setState({ selectedId: nodeId });
     });
@@ -21,7 +21,7 @@ export function useTransformControls() {
   useEffect(() => {
     if (!engine) return;
 
-    engine.modules.render.toRenderThread({
+    engine.render.send({
       subject: "set_transform_controls_target",
       data: { nodeId: selectedId },
     });
@@ -31,7 +31,7 @@ export function useTransformControls() {
   useEffect(() => {
     if (!engine) return;
 
-    engine.modules.render.toRenderThread({
+    engine.render.send({
       subject: "set_transform_controls_mode",
       data: tool,
     });

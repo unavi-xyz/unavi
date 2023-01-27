@@ -14,7 +14,7 @@ export function useMesh(id: string | null) {
       return;
     }
 
-    const newMesh = engine.modules.scene.mesh.store.get(id) ?? null;
+    const newMesh = engine.scene.mesh.store.get(id) ?? null;
     setMesh(newMesh);
   }, [id, engine]);
 

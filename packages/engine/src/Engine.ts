@@ -4,13 +4,6 @@ import { PhysicsModule } from "./physics/PhysicsModule";
 import { RenderModule } from "./render/RenderModule";
 import { SceneModule } from "./scene/SceneModule";
 
-interface ModuleContainer {
-  input: InputModule;
-  physics: PhysicsModule;
-  render: RenderModule;
-  scene: SceneModule;
-}
-
 export type ControlsType = "orbit" | "player";
 
 export interface EngineOptions {
@@ -18,23 +11,22 @@ export interface EngineOptions {
 }
 
 export class Engine {
-  modules: ModuleContainer;
+  readonly canvas: HTMLCanvasElement;
+
+  readonly input: InputModule;
+  readonly physics: PhysicsModule;
+  readonly render: RenderModule;
+  readonly scene: SceneModule;
 
   #controls: ControlsType = DEFAULT_CONTROLS;
   #visuals = DEFAULT_VISUALS;
 
   constructor({ canvas }: EngineOptions) {
-    const render = new RenderModule(canvas, this);
-    const input = new InputModule(canvas, render);
-    const physics = new PhysicsModule(input, render);
-    const scene = new SceneModule(render, physics);
-
-    this.modules = {
-      input,
-      physics,
-      render,
-      scene,
-    };
+    this.canvas = canvas;
+    this.input = new InputModule(this);
+    this.physics = new PhysicsModule(this);
+    this.render = new RenderModule(this);
+    this.scene = new SceneModule(this);
   }
 
   get controls() {
@@ -43,9 +35,9 @@ export class Engine {
 
   set controls(value: ControlsType) {
     this.#controls = value;
-    this.modules.input.keyboard.controls = value;
-    this.modules.render.toRenderThread({ subject: "set_controls", data: value });
-    this.modules.physics.toPhysicsThread({ subject: "set_controls", data: value });
+    this.input.keyboard.controls = value;
+    this.render.send({ subject: "set_controls", data: value });
+    this.physics.send({ subject: "set_controls", data: value });
   }
 
   get visuals() {
@@ -54,12 +46,12 @@ export class Engine {
 
   set visuals(value: boolean) {
     this.#visuals = value;
-    this.modules.render.toRenderThread({ subject: "toggle_visuals", data: { enabled: value } });
+    this.render.send({ subject: "toggle_visuals", data: { enabled: value } });
   }
 
   destroy() {
-    this.modules.render.destroy();
-    this.modules.input.destroy();
-    this.modules.physics.destroy();
+    this.render.destroy();
+    this.input.destroy();
+    this.physics.destroy();
   }
 }

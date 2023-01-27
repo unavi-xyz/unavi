@@ -14,7 +14,7 @@ export function useNode(id: string | null) {
       return;
     }
 
-    const newNode = engine.modules.scene.node.store.get(id) ?? null;
+    const newNode = engine.scene.node.store.get(id) ?? null;
     setNode(newNode);
   }, [id, engine]);
 

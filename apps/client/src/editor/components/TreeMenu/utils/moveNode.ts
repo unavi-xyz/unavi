@@ -5,7 +5,7 @@ export function moveNode(nodeId: string, targetIndex: number) {
   const { engine, treeIds } = useEditorStore.getState();
   if (!engine) return;
 
-  const node = engine.modules.scene.node.store.get(nodeId);
+  const node = engine.scene.node.store.get(nodeId);
   if (!node) throw new Error("Node not found");
 
   const newTreeIds = [...treeIds];

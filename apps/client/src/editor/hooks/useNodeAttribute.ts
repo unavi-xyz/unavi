@@ -14,14 +14,14 @@ export function useNodeAttribute<T extends keyof NodeJSON>(id: string | null, at
       return;
     }
 
-    const newNode = engine.modules.scene.node.store.get(id) ?? null;
+    const newNode = engine.scene.node.store.get(id) ?? null;
 
     if (!newNode || !attribute) {
       setValue(null);
       return;
     }
 
-    const json = engine.modules.scene.node.toJSON(newNode);
+    const json = engine.scene.node.toJSON(newNode);
     const initialValue = json[attribute];
     setValue(initialValue);
 
@@ -29,7 +29,7 @@ export function useNodeAttribute<T extends keyof NodeJSON>(id: string | null, at
       if (!engine || !attribute || !newNode) return;
       if (e.attribute !== attribute) return;
 
-      const json = engine.modules.scene.node.toJSON(newNode);
+      const json = engine.scene.node.toJSON(newNode);
       const newValue = json[attribute];
       setValue(newValue);
     }

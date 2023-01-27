@@ -54,7 +54,7 @@ export default function UserButtons() {
     if (didChangeAvatar) {
       useAppStore.setState({ didChangeAvatar: false });
       // Update engine
-      // engine.modules.render.toRenderThread({ subject: "set_avatar", data: customAvatar });
+      // engine.render.send({ subject: "set_avatar", data: customAvatar });
 
       if (avatar) {
         // Upload avatar

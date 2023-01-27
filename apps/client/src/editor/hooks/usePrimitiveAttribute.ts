@@ -17,14 +17,14 @@ export function usePrimitiveAttribute<T extends keyof PrimitiveJSON>(
       return;
     }
 
-    const newPrimitive = engine.modules.scene.primitive.store.get(id) ?? null;
+    const newPrimitive = engine.scene.primitive.store.get(id) ?? null;
 
     if (!newPrimitive || !attribute) {
       setValue(null);
       return;
     }
 
-    const json = engine.modules.scene.primitive.toJSON(newPrimitive);
+    const json = engine.scene.primitive.toJSON(newPrimitive);
     const initialValue = json[attribute];
     setValue(initialValue);
 
@@ -32,7 +32,7 @@ export function usePrimitiveAttribute<T extends keyof PrimitiveJSON>(
       if (!engine || !attribute || !newPrimitive) return;
       if (e.attribute !== attribute) return;
 
-      const json = engine.modules.scene.primitive.toJSON(newPrimitive);
+      const json = engine.scene.primitive.toJSON(newPrimitive);
       const newValue = json[attribute];
       setValue(newValue);
     }

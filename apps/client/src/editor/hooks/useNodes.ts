@@ -10,7 +10,7 @@ export function useNodes() {
 
   useEffect(() => {
     if (!engine) return;
-    const root = engine.modules.scene.doc.getRoot();
+    const root = engine.scene.doc.getRoot();
 
     const initialNodes = root.listNodes();
     setNodes(initialNodes);

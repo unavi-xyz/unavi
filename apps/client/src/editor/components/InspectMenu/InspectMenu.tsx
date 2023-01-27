@@ -66,7 +66,7 @@ export default function InspectMenu() {
                       const { engine } = useEditorStore.getState();
                       if (!engine) return;
 
-                      const { object: mesh } = engine.modules.scene.mesh.create({
+                      const { object: mesh } = engine.scene.mesh.create({
                         extras: {
                           customMesh: {
                             type: "Box",
@@ -90,7 +90,7 @@ export default function InspectMenu() {
                       const { engine } = useEditorStore.getState();
                       if (!engine) return;
 
-                      const collider = engine.modules.scene.extensions.collider.createCollider();
+                      const collider = engine.scene.extensions.collider.createCollider();
                       collider.type = "trimesh";
 
                       node.setExtension(ColliderExtension.EXTENSION_NAME, collider);

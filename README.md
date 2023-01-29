@@ -26,7 +26,7 @@
 
 ## 🔥 Features
 
-- Decentralized identity using [Flamingo 🦩](https://docs.thewired.space/flamingo)
+- Decentralized identity + content distribution over [Ethereum](https://github.com/wired-labs/contracts)
 - Open backend, anyone can run their own servers
 - Custom multi-threaded, [glTF](https://github.com/KhronosGroup/glTF)-based game engine
 - [VRM](https://vrm.dev/) avatar support

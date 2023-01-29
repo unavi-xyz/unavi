@@ -29,8 +29,8 @@ export function useSpace(id: number) {
 
   const join = useMemo(() => {
     return async () => {
-      if (!engine) throw new Error("Engine not found");
-      if (!space?.metadata) throw new Error("Space not found");
+      if (!engine) return;
+      if (!space?.metadata) return;
 
       setLoadingText("Downloading scene...");
       setLoadingProgress(0.1);

@@ -77,14 +77,14 @@ export class PlayerName {
     this.displayName = `Guest ${this.hexId}`;
   }
 
-  sendChatMessage(text: string, timestamp = Date.now()) {
+  chat(text: string) {
     addChatMessage({
       type: "chat",
       id: nanoid(),
       playerId: this.id,
       displayName: this.displayName,
       text,
-      timestamp,
+      timestamp: Date.now(),
     });
   }
 }

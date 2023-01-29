@@ -64,9 +64,7 @@ export default defineNextConfig({
   eslint: {
     ignoreDuringBuilds: true,
   },
-  experimental: {
-    transpilePackages: ["engine", "contracts", "protocol"],
-  },
+  transpilePackages: ["engine", "contracts", "protocol"],
   images: {
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT, env.NEXT_PUBLIC_IPFS_GATEWAY.split(":")[0]],
   },

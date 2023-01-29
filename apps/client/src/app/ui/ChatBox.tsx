@@ -51,6 +51,7 @@ export default function ChatBox() {
 
               const text = e.currentTarget.value;
               if (!text) return;
+
               e.currentTarget.value = "";
 
               // Send message to server

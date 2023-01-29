@@ -123,7 +123,7 @@ export class MediasoupSchema {
           z.literal("prflx"),
           z.literal("relay"),
         ]),
-        tcpType: z.union([z.literal("active"), z.literal("passive"), z.literal("so")]),
+        tcpType: z.union([z.literal("active"), z.literal("passive"), z.literal("so")]).optional(),
       })
     ),
     dtlsParameters: MediasoupSchema.dltsParameters,

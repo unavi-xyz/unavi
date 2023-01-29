@@ -16,7 +16,7 @@ export function useHost(url: string) {
   const engine = useAppStore((state) => state.engine);
   const utils = trpc.useContext();
 
-  // Create WebSocket connection
+  // Create WebSocket connections
   useEffect(() => {
     if (!engine) return;
 
@@ -30,8 +30,8 @@ export function useHost(url: string) {
 
     let publishInterval: NodeJS.Timeout | null = null;
     let consumerTransport: Transport | null = null;
-    let onProducerId: (({ id }: { id: string }) => void) | null = null;
-    let onDataProducerId: (({ id }: { id: string }) => void) | null = null;
+    let onProducerId: ((id: string) => void) | null = null;
+    let onDataProducerId: ((id: string) => void) | null = null;
 
     ws.onopen = () => {
       console.info("WebSocket - ✅ Connected to host");
@@ -46,6 +46,10 @@ export function useHost(url: string) {
 
     ws.onclose = () => {
       console.info("WebSocket - ❌ Disconnected from host");
+
+      players.names.forEach((_, id) => {
+        engine.player.removePlayer(id);
+      });
     };
 
     ws.onmessage = async (event: MessageEvent<string>) => {
@@ -70,18 +74,17 @@ export function useHost(url: string) {
         }
 
         case "router_rtp_capabilities": {
+          if (device.loaded) break;
+
           // Create device
-          await device.load({ routerRtpCapabilities: data.rtpCapabilities });
+          await device.load({ routerRtpCapabilities: data });
 
           // Create transports
           sendToHost({ subject: "create_transport", data: { type: "producer" } });
           sendToHost({ subject: "create_transport", data: { type: "consumer" } });
 
           // Set rtp capabilities
-          sendToHost({
-            subject: "set_rtp_capabilities",
-            data: { rtpCapabilities: device.rtpCapabilities },
-          });
+          sendToHost({ subject: "set_rtp_capabilities", data: device.rtpCapabilities });
           break;
         }
 
@@ -89,8 +92,8 @@ export function useHost(url: string) {
           // Create local transport
           const transport =
             data.type === "producer"
-              ? device.createSendTransport(data.options)
-              : device.createRecvTransport(data.options);
+              ? device.createSendTransport(data.options as any)
+              : device.createRecvTransport(data.options as any);
 
           transport.on("connect", async ({ dtlsParameters }, callback) => {
             sendToHost({ subject: "connect_transport", data: { dtlsParameters, type: data.type } });
@@ -122,13 +125,13 @@ export function useHost(url: string) {
 
             transport.on("produce", async ({ kind, rtpParameters }, callback) => {
               if (kind === "video") throw new Error("Video not supported");
-              onProducerId = callback;
-              sendToHost({ subject: "produce", data: { rtpParameters } });
+              onProducerId = (id) => callback({ id });
+              sendToHost({ subject: "produce", data: rtpParameters });
             });
 
             transport.on("producedata", async ({ sctpStreamParameters }, callback) => {
-              onDataProducerId = callback;
-              sendToHost({ subject: "produce_data", data: { sctpStreamParameters } });
+              onDataProducerId = (id) => callback({ id });
+              sendToHost({ subject: "produce_data", data: sctpStreamParameters });
             });
 
             const dataProducer = await transport.produceData({ ordered: false, maxRetransmits: 0 });
@@ -196,15 +199,7 @@ export function useHost(url: string) {
             }, 1000 / PUBLISH_HZ);
           }
 
-          if (data.type === "consumer") {
-            consumerTransport = transport;
-
-            sendToHost({
-              subject: "ready_to_consume",
-              data: true,
-            });
-          }
-
+          if (data.type === "consumer") consumerTransport = transport;
           break;
         }
 
@@ -213,7 +208,7 @@ export function useHost(url: string) {
           if (consumerTransport.closed) throw new Error("Consumer transport closed");
 
           const consumer = await consumerTransport.consume({
-            id: data.id,
+            id: data.consumerId,
             producerId: data.producerId,
             rtpParameters: data.rtpParameters,
             kind: "audio",
@@ -262,7 +257,7 @@ export function useHost(url: string) {
           if (consumerTransport.closed) throw new Error("Consumer transport closed");
 
           const dataConsumer = await consumerTransport.consumeData({
-            id: data.id,
+            id: data.consumerId,
             dataProducerId: data.dataProducerId,
             sctpStreamParameters: data.sctpStreamParameters,
           });
@@ -326,7 +321,7 @@ export function useHost(url: string) {
   }, [engine, utils, url]);
 
   const connect = useMemo(() => {
-    return (id: number) => sendToHost({ subject: "join", data: { id } });
+    return (id: number) => sendToHost({ subject: "join", data: id });
   }, []);
 
   return { connect };

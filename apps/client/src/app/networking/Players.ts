@@ -23,16 +23,20 @@ export class Players {
         this.#engine.player.addPlayer(data.playerId);
 
         const name = new PlayerName(data.playerId, this.#trpc, this.#engine);
+        name.address = data.address;
+        name.nickname = data.name;
         this.names.set(data.playerId, name);
 
-        addChatMessage({
-          type: "system",
-          variant: "player_joined",
-          id: nanoid(),
-          displayName: name.displayName,
-          playerId: data.playerId,
-          timestamp: Date.now(),
-        });
+        if (!data.beforeYou) {
+          addChatMessage({
+            type: "system",
+            variant: "player_joined",
+            id: nanoid(),
+            displayName: name.displayName,
+            playerId: data.playerId,
+            timestamp: Date.now(),
+          });
+        }
 
         console.info("👋 Player", name.hexId, "joined");
         break;
@@ -66,9 +70,9 @@ export class Players {
         break;
       }
 
-      case "player_nickname": {
+      case "player_name": {
         const name = this.names.get(data.playerId);
-        if (name) name.nickname = data.nickname;
+        if (name) name.nickname = data.name;
         break;
       }
 

@@ -2,9 +2,11 @@ import { z } from "zod";
 
 import { MediasoupSchema } from "./mediasoup";
 
+const spaceId = z.number().int().positive();
+
 const TO_HOST_SCHEMA = {
-  join: z.object({ id: z.number().int().positive() }),
-  leave: z.null(),
+  join: spaceId,
+  leave: spaceId,
   chat: z.string(),
   set_grounded: z.boolean(),
   set_name: z.union([z.string(), z.null()]),
@@ -20,17 +22,16 @@ const TO_HOST_SCHEMA = {
     type: z.union([z.literal("producer"), z.literal("consumer")]),
     dtlsParameters: MediasoupSchema.dltsParameters,
   }),
-  produce: z.object({ rtpParameters: MediasoupSchema.rtpParameters }),
-  produce_data: z.object({ sctpStreamParameters: MediasoupSchema.sctpStreamParameters }),
-  set_rtp_capabilities: z.object({ rtpCapabilities: MediasoupSchema.rtpCapabilities }),
-  ready_to_consume: z.boolean(),
+  produce: MediasoupSchema.rtpParameters,
+  produce_data: MediasoupSchema.sctpStreamParameters,
+  set_rtp_capabilities: MediasoupSchema.rtpCapabilities,
   resume_audio: z.null(),
 } as const;
 
 const playerId = z.number().int().min(0).max(255);
 
 const FROM_HOST_SCHEMA = {
-  join_success: z.object({ playerId }),
+  join_success: z.object({ spaceId, playerId }),
 
   // Players
   player_joined: z.object({
@@ -43,30 +44,30 @@ const FROM_HOST_SCHEMA = {
   player_left: z.object({ playerId }),
   player_chat: z.object({ playerId, text: z.string(), timestamp: z.number().int().positive() }),
   player_grounded: z.object({ playerId, grounded: z.boolean() }),
-  player_nickname: z.object({ playerId, nickname: z.string().nullable() }),
+  player_name: z.object({ playerId, name: z.string().nullable() }),
   player_avatar: z.object({ playerId, avatar: z.string().nullable() }),
   player_address: z.object({ playerId, address: z.string().nullable() }),
 
   // WebRTC
-  router_rtp_capabilities: z.object({ rtpCapabilities: MediasoupSchema.rtpCapabilities }),
+  router_rtp_capabilities: MediasoupSchema.rtpCapabilities,
   transport_created: z.object({
     type: z.union([z.literal("producer"), z.literal("consumer")]),
     options: MediasoupSchema.transportOptions,
   }),
   create_consumer: z.object({
     playerId,
-    id: z.string(),
+    consumerId: z.string(),
     producerId: z.string(),
     rtpParameters: MediasoupSchema.rtpParameters,
   }),
   create_data_consumer: z.object({
     playerId,
-    id: z.string(),
+    consumerId: z.string(),
     dataProducerId: z.string(),
     sctpStreamParameters: MediasoupSchema.sctpStreamParameters,
   }),
-  producer_id: z.object({ id: z.string() }),
-  data_producer_id: z.object({ id: z.string() }),
+  producer_id: z.string(),
+  data_producer_id: z.string(),
 } as const;
 
 function getMessageSchema<S extends string, D>(subject: S, data: z.ZodSchema<D>) {
@@ -89,7 +90,6 @@ export const toHostMessageSchema = z.union([
   getMessageSchema("produce", TO_HOST_SCHEMA.produce),
   getMessageSchema("produce_data", TO_HOST_SCHEMA.produce_data),
   getMessageSchema("set_rtp_capabilities", TO_HOST_SCHEMA.set_rtp_capabilities),
-  getMessageSchema("ready_to_consume", TO_HOST_SCHEMA.ready_to_consume),
   getMessageSchema("resume_audio", TO_HOST_SCHEMA.resume_audio),
 ] as const);
 
@@ -101,7 +101,7 @@ export const fromHostMessageSchema = z.union([
   getMessageSchema("player_left", FROM_HOST_SCHEMA.player_left),
   getMessageSchema("player_chat", FROM_HOST_SCHEMA.player_chat),
   getMessageSchema("player_grounded", FROM_HOST_SCHEMA.player_grounded),
-  getMessageSchema("player_nickname", FROM_HOST_SCHEMA.player_nickname),
+  getMessageSchema("player_name", FROM_HOST_SCHEMA.player_name),
   getMessageSchema("player_avatar", FROM_HOST_SCHEMA.player_avatar),
   getMessageSchema("player_address", FROM_HOST_SCHEMA.player_address),
 

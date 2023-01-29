@@ -1930,10 +1930,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@dimforge/rapier3d@^0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@dimforge/rapier3d/-/rapier3d-0.10.0.tgz#0a2e755d4ff50218771d26c022458ca5a9b1dbd4"
-  integrity sha512-sNYpXHkWoiQTEIUsCFAQRV1hhdm//NzT/KDTvjGBK/O0HHbG3Pea/tftUrAz779mNJgkOZDr5mxzFy3Mhd5Nrg==
+"@dimforge/rapier3d@^0.11.1":
+  version "0.11.1"
+  resolved "https://registry.yarnpkg.com/@dimforge/rapier3d/-/rapier3d-0.11.1.tgz#75f94156012dbc76f90c322a72e797d427c91bd0"
+  integrity sha512-rJT944tfEPZ2h+yEe2mqsl6yIsEtriEfpKt6pmuGwC9aodMO+p0sHbUMPC32Kw8aIpDo/Ok+nJopwkeJsUZSZA==
 
 "@emotion/hash@^0.8.0":
   version "0.8.0"

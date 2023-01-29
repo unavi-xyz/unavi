@@ -7017,14 +7017,14 @@ mediasoup-client@^3.6.70:
     supports-color "^9.3.1"
     uuid "^3.4.0"
 
-mediasoup@^3.11.4:
-  version "3.11.4"
-  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.11.4.tgz#022be9cd7ac2735ff4c3ca5fb24a5ee6c43277f9"
-  integrity sha512-kgUeGu0xmPtwRHhoz6a1ta7hVN71RbUrBPkpCfhAL1v9yphuuHtxaaj0v8Yw4mqTEvhJExDO74q5/Rxdc6RE5g==
+mediasoup@^3.11.7:
+  version "3.11.7"
+  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.11.7.tgz#a310a6e20cd32cef0cbd7d3bfa488a0920f0f680"
+  integrity sha512-Fom4oPSkvGftlFSQa93rFHh6DTgqQc5qyV4cbRYypDSPM+1vFIUNQcZWA12no+omLT+R4u8BoRi+64ke8km4sw==
   dependencies:
     debug "^4.3.4"
     h264-profile-level-id "^1.0.1"
-    supports-color "^9.3.0"
+    supports-color "^9.3.1"
     uuid "^9.0.0"
 
 merge-options@^3.0.4:
@@ -8910,7 +8910,7 @@ supports-color@^8.0.0:
   dependencies:
     has-flag "^4.0.0"
 
-supports-color@^9.3.0, supports-color@^9.3.1:
+supports-color@^9.3.1:
   version "9.3.1"
   resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-9.3.1.tgz#34e4ad3c71c9a39dae3254ecc46c9b74e89e15a6"
   integrity sha512-knBY82pjmnIzK3NifMo3RxEIRD9E0kIzV4BKcyTZ9+9kWgLMxd4PrsTSMoFQUabgRBbF8KOLRDCyKgNV+iK44Q==

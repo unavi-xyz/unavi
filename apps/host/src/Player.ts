@@ -6,13 +6,13 @@ import { RtpCapabilities, RtpParameters } from "mediasoup/node/lib/RtpParameters
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { Transport } from "mediasoup/node/lib/Transport";
 import { FromHostMessage } from "protocol";
-import { WebSocket } from "uWebSockets.js";
 
 import { Space } from "./Space";
 import { SpaceRegistry } from "./SpaceRegistry";
+import { uWebSocket } from "./types";
 
 export class Player {
-  ws: WebSocket | null = null;
+  ws: uWebSocket | null = null;
   #registry: SpaceRegistry;
 
   spaces = new Set<Space>();
@@ -32,7 +32,7 @@ export class Player {
   consumerTransport: Transport | null = null;
   producerTransport: Transport | null = null;
 
-  constructor(ws: WebSocket, registry: SpaceRegistry) {
+  constructor(ws: uWebSocket, registry: SpaceRegistry) {
     this.ws = ws;
     this.#registry = registry;
   }

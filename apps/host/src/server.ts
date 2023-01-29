@@ -1,9 +1,10 @@
 import { toHostMessageSchema } from "protocol";
-import uWS, { WebSocket } from "uWebSockets.js";
+import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
 import { Player } from "./Player";
 import { SpaceRegistry } from "./SpaceRegistry";
+import { UserData, uWebSocket } from "./types";
 import { toHex } from "./utils/toHex";
 
 const textDecoder = new TextDecoder();
@@ -20,10 +21,10 @@ const server =
 const { router, webRtcServer } = await createMediasoupWorker();
 
 const spaces = new SpaceRegistry(server);
-const players = new Map<WebSocket, Player>();
+const players = new Map<uWebSocket, Player>();
 
 // Handle WebSocket connections
-server.ws("/*", {
+server.ws<UserData>("/*", {
   compression: uWS.SHARED_COMPRESSOR,
   idleTimeout: 60,
 

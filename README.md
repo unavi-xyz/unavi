@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./assets/Logo.png" alt="Wired Logo" height="200">
   <h1>The Wired</h1>
-  <strong>🔌 An open and decentralized web-based metaverse platform.</strong>
+  <strong>An open and decentralized web-based metaverse platform.</strong>
 </div>
 
 <br />
@@ -20,7 +20,7 @@
     <img src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord">
   </a>
   <a href="https://twitter.com/wired_xr">
-    <img src="https://img.shields.io/twitter/follow/wired_xr?label=wired_xr&style=flat&logo=twitter&color=1DA1F2" alt="Twitter">
+    <img src="https://img.shields.io/badge/wired__xr--1DA1F2?logo=twitter" alt="Twitter">
   </a>
 </div>
 

@@ -16,6 +16,7 @@ import React from "react";
 import ClientSideProviders from "../client/ClientSideProviders";
 import { AppRouter } from "../server/router/_app";
 import { getBaseUrl } from "../utils/getBaseUrl";
+
 // Export web vitals
 export { reportWebVitals } from "next-axiom";
 

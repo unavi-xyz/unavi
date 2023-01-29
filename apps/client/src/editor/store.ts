@@ -1,5 +1,5 @@
 import { Engine } from "engine";
-import create from "zustand";
+import { create } from "zustand";
 
 import { Tool } from "./types";
 

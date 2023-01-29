@@ -1,7 +1,7 @@
 import { Engine } from "engine";
 import { Producer } from "mediasoup-client/lib/Producer";
 import { Transport } from "mediasoup-client/lib/Transport";
-import create from "zustand";
+import { create } from "zustand";
 
 import { Players } from "./networking/Players";
 import { ChatMessage } from "./ui/ChatMessage";

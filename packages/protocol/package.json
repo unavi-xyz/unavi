@@ -4,7 +4,7 @@
   "private": true,
   "license": "GPL-3.0-or-later",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./build/index.js",
   "types": "./src/index.ts",
   "scripts": {
     "lint": "cd ../.. && eslint --fix packages/protocol --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"

@@ -51,7 +51,7 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
   };
 };
 
-export default function App({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function Play({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 

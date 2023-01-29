@@ -90,7 +90,7 @@ export default defineNextConfig({
   async redirects() {
     return [
       {
-        source: "/app",
+        source: "/play",
         destination: "/explore",
         permanent: false,
       },

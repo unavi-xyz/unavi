@@ -5,7 +5,6 @@ import {
 } from "@rainbow-me/rainbowkit-siwe-next-auth";
 import { Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
-import React from "react";
 import { WagmiConfig } from "wagmi";
 
 import { theme } from "./theme";

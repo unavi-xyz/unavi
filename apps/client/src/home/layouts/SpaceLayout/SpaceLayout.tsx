@@ -98,7 +98,7 @@ export default function SpaceLayout({ id, author, metadata, children }: Props) {
                 </div>
               </div>
 
-              <Link href={`/app/${hexId}`}>
+              <Link href={`/play/${hexId}`}>
                 <div>
                   <Button variant="filled" fullWidth>
                     <div className="py-2">Join Space</div>

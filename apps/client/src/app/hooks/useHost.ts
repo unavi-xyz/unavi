@@ -143,34 +143,31 @@ export function useHost(url: string) {
 
             publishInterval = setInterval(() => {
               const { playerId } = useAppStore.getState();
-
               if (playerId === null || dataProducer.readyState !== "open") return;
 
-              // // Set audio listener location
-              // const camPosX = Atomics.load(engine.cameraPosition, 0) / POSITION_ARRAY_ROUNDING
-              // const camPosY = Atomics.load(engine.cameraPosition, 1) / POSITION_ARRAY_ROUNDING
-              // const camPosZ = Atomics.load(engine.cameraPosition, 2) / POSITION_ARRAY_ROUNDING
+              // Set audio listener location
+              const camPosX = Atomics.load(engine.cameraPosition, 0) / POSITION_ARRAY_ROUNDING;
+              const camPosY = Atomics.load(engine.cameraPosition, 1) / POSITION_ARRAY_ROUNDING;
+              const camPosZ = Atomics.load(engine.cameraPosition, 2) / POSITION_ARRAY_ROUNDING;
 
-              // const camYaw = Atomics.load(engine.cameraYaw, 1) / ROTATION_ARRAY_ROUNDING
+              const camYaw = Atomics.load(engine.cameraYaw, 0) / ROTATION_ARRAY_ROUNDING;
 
-              // const listener = audioContext.listener;
+              const listener = audioContext.listener;
 
-              // if (listener.positionX !== undefined) {
-              //   listener.positionX.value = camPosX / 1000;
-              //   listener.positionY.value = camPosY / 1000;
-              //   listener.positionZ.value = camPosZ / 1000;
-              // } else {
-              //   listener.setPosition(camPosX / 1000, camPosY / 1000, camPosZ / 1000);
-              // }
+              if (listener.positionX !== undefined) {
+                listener.positionX.value = camPosX;
+                listener.positionY.value = camPosY;
+                listener.positionZ.value = camPosZ;
+              } else {
+                listener.setPosition(camPosX, camPosY, camPosZ);
+              }
 
-              // const yaw = quaternionToYaw(camRotY / 1000, camRotW / 1000);
-
-              // if (listener.forwardX !== undefined) {
-              //   listener.forwardX.value = -Math.sin(yaw);
-              //   listener.forwardZ.value = -Math.cos(yaw);
-              // } else {
-              //   listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
-              // }
+              if (listener.forwardX !== undefined) {
+                listener.forwardX.value = Math.sin(camYaw);
+                listener.forwardZ.value = Math.cos(camYaw);
+              } else {
+                listener.setOrientation(Math.sin(camYaw), 0, Math.cos(camYaw), 0, 1, 0);
+              }
 
               // Read location
               const posX = Atomics.load(engine.userPosition, 0);

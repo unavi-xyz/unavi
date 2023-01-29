@@ -4,24 +4,22 @@ import { useAppStore } from "../../app/store";
 import { useSession } from "../../client/auth/useSession";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "./useHost";
+import { usePlayerName } from "./usePlayerName";
 
 export function useLoadUser() {
   const engine = useAppStore((state) => state.engine);
   const ws = useAppStore((state) => state.ws);
-
+  const playerId = useAppStore((state) => state.playerId);
+  const name = usePlayerName(playerId);
   const { data: session } = useSession();
 
   // Set data on initial load
   useEffect(() => {
-    if (!engine || !ws || ws.readyState !== ws.OPEN) return;
+    if (!name || !engine || !ws || ws.readyState !== ws.OPEN) return;
 
-    const { customAvatar, displayName } = useAppStore.getState();
-
-    // Set name
+    // Set nickname
     const localName = localStorage.getItem(LocalStorageKey.Name);
-
-    if (localName !== displayName) {
-      useAppStore.setState({ displayName: localName });
+    if (localName !== name.nickname) {
       sendToHost({ subject: "set_name", data: localName });
     }
 
@@ -29,22 +27,19 @@ export function useLoadUser() {
     const localAvatar = localStorage.getItem(LocalStorageKey.Avatar);
 
     if (localAvatar) {
-      if (localAvatar !== customAvatar) {
-        useAppStore.setState({ customAvatar: localAvatar });
-        engine.renderThread.postMessage({ subject: "set_avatar", data: localAvatar });
-        sendToHost({ subject: "set_avatar", data: localAvatar });
-      }
+      // if (localAvatar !== name.avatar) {
+      //   sendToHost({ subject: "set_avatar", data: localAvatar });
+      // }
     } else {
       // If no avatar set, use default avatar
-      useAppStore.setState({ customAvatar: null });
-      engine.renderThread.postMessage({ subject: "set_avatar", data: null });
       sendToHost({ subject: "set_avatar", data: null });
     }
-  }, [engine, ws, ws?.readyState]);
+  }, [engine, ws, ws?.readyState, name]);
 
   // Publish address on change
   useEffect(() => {
     if (!ws || ws.readyState !== ws.OPEN) return;
-    sendToHost({ subject: "set_address", data: session?.address ?? null });
+    const address = session?.address ?? null;
+    sendToHost({ subject: "set_address", data: address });
   }, [session, ws, ws?.readyState]);
 }

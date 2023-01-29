@@ -1,14 +1,22 @@
-export type PostMessage<M extends WorkerMessage = WorkerMessage> = (
+import { BaseEvent } from "property-graph";
+
+export type PostMessage<M extends MessageJSON = MessageJSON> = (
   message: M,
   transfer?: Transferable[]
 ) => void;
 
 export type Transferable = ArrayBuffer | MessagePort | ImageBitmap | OffscreenCanvas;
 
-export type WorkerMessage<Subject extends string = string, Data = any> = {
+export type MessageJSON<Subject extends string = string, Data = unknown> = {
   subject: Subject;
   data: Data;
 };
 
-export type Triplet = [number, number, number];
-export type Quad = [number, number, number, number];
+export interface MessageEvent<Type extends string = string, Data = unknown> extends BaseEvent {
+  type: Type;
+  data: Data;
+}
+
+export type Vec2 = [number, number];
+export type Vec3 = [number, number, number];
+export type Vec4 = [number, number, number, number];

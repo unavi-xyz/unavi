@@ -16,8 +16,8 @@ import { ColliderExtension } from "../gltf/extensions/Collider/ColliderExtension
 import { SpawnPointExtension } from "../gltf/extensions/SpawnPoint/SpawnPointExtension";
 import { RenderExport } from "../render/types";
 import { Accessor, Animation, Material, Node, Scene, SceneJSON, Texture } from "../scene";
-import { calcGlobalScale } from "../scene/utils/calcGlobalScale";
-import { convertAutoCollider } from "../scene/utils/convertAutoCollider";
+import { calcGlobalScale } from "../scene/attributes/calcGlobalScale";
+import { convertAutoCollider } from "../scene/attributes/convertAutoCollider";
 
 /*
  * Exports the scene as a glTF file.

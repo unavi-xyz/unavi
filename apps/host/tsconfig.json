@@ -3,7 +3,11 @@
     "rootDir": "./src",
     "outDir": "./build"
   },
-  "exclude": ["node_modules", "build"],
   "include": ["src"],
-  "extends": "tsconfig/base.json"
+  "extends": "tsconfig/base.json",
+  "references": [
+    {
+      "path": "../../packages/protocol"
+    }
+  ]
 }

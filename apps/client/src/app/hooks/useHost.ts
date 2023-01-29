@@ -1,292 +1,90 @@
+import { POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "engine";
 import { Device } from "mediasoup-client";
 import { Transport } from "mediasoup-client/lib/Transport";
-import { nanoid } from "nanoid";
-import { FromHostMessage, ToHostMessage } from "protocol";
+import { fromHostMessageSchema, ToHostMessage } from "protocol";
 import { useEffect, useMemo } from "react";
 
 import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
-import { quaternionToYaw } from "../helpers/quaternionToYaw";
-import { ChatMessage } from "../ui/ChatMessage";
+import { PlayerName } from "../networking/PlayerName";
+import { Players } from "../networking/Players";
 
 const PUBLISH_HZ = 15; // X times per second
 
-type Player = {
-  id: number;
-  address: string | null;
-  name: string | null;
-  username: string;
-  avatar: string | null;
-};
-
 export function useHost(url: string) {
   const engine = useAppStore((state) => state.engine);
-
   const utils = trpc.useContext();
 
-  // Create WebSocket connection
+  // Create WebSocket connections
   useEffect(() => {
     if (!engine) return;
 
     const ws = new WebSocket(url);
-    useAppStore.setState({ ws });
-
-    const players = new Map<number, Player>();
+    const players = new Players(utils, engine);
     const device = new Device();
     const audioContext = new AudioContext();
     const panners = new Map<number, PannerNode>();
 
+    useAppStore.setState({ ws, players });
+
+    let publishInterval: NodeJS.Timeout | null = null;
     let consumerTransport: Transport | null = null;
-    let onProducerId: (({ id }: { id: string }) => void) | null = null;
-    let onDataProducerId: (({ id }: { id: string }) => void) | null = null;
-
-    async function updateUsername(player: Player) {
-      let oldUsername = player.username;
-
-      if (player.address) {
-        // Fetch flamingo profile
-        const profile = await utils.social.profile.byAddress.fetch({ address: player.address });
-
-        // Make sure old username is correct, in case it changed while we were fetching
-        oldUsername = player.username;
-
-        if (profile?.handle) {
-          player.username = profile.handle.string;
-        } else {
-          player.username = player.address.substring(0, 6);
-        }
-      } else if (player.name) {
-        player.username = player.name;
-      } else {
-        player.username = `Guest ${numberToHexDisplay(player.id)}`;
-      }
-
-      const { playerId } = useAppStore.getState();
-      if (player.username !== oldUsername && playerId !== player.id) {
-        console.info("📛 Player", numberToHexDisplay(player.id), "is now", player.username);
-      }
-    }
+    let onProducerId: ((id: string) => void) | null = null;
+    let onDataProducerId: ((id: string) => void) | null = null;
 
     ws.onopen = () => {
       console.info("WebSocket - ✅ Connected to host");
 
-      const { displayName, customAvatar } = useAppStore.getState();
-      if (displayName) sendToHost({ subject: "set_name", data: displayName });
-      if (customAvatar) sendToHost({ subject: "set_avatar", data: customAvatar });
-
-      // Start WebRTC connection
+      // Initiate WebRTC connection
       sendToHost({ subject: "get_router_rtp_capabilities", data: null });
 
-      // Update falling state on change
-      engine.physicsThread.isFalling$.subscribe((isFalling) => {
-        sendToHost({ subject: "falling_state", data: isFalling });
+      engine.physics.addEventListener("user_grounded", (event) => {
+        sendToHost({ subject: "set_grounded", data: event.data });
       });
     };
 
     ws.onclose = () => {
       console.info("WebSocket - ❌ Disconnected from host");
 
-      // Remove all players from scene
-      engine.renderThread.postMessage({ subject: "clear_players", data: null });
+      players.names.forEach((_, id) => {
+        engine.player.removePlayer(id);
+      });
     };
 
     ws.onmessage = async (event: MessageEvent<string>) => {
-      const { subject, data }: FromHostMessage = JSON.parse(event.data);
+      const parsed = fromHostMessageSchema.safeParse(JSON.parse(event.data));
+
+      if (!parsed.success) {
+        console.warn(parsed.error);
+        return;
+      }
+
+      players.onmessage(parsed.data);
+
+      const { subject, data } = parsed.data;
 
       switch (subject) {
-        case "join_successful": {
+        case "join_success": {
           console.info(`🌏 Joined space as player ${numberToHexDisplay(data.playerId)}`);
-
+          const name = new PlayerName(data.playerId, utils, engine);
+          players.names.set(data.playerId, name);
           useAppStore.setState({ playerId: data.playerId });
-
-          const { displayName, customAvatar } = useAppStore.getState();
-
-          const player: Player = {
-            id: data.playerId,
-            address: null,
-            avatar: customAvatar,
-            name: displayName,
-            username: "",
-          };
-
-          await updateUsername(player);
-
-          // Add to player list
-          players.set(data.playerId, player);
-          break;
-        }
-
-        case "player_joined": {
-          console.info(`🚪 Player ${numberToHexDisplay(data.playerId)} joined`);
-
-          const player: Player = {
-            id: data.playerId,
-            address: data.address,
-            avatar: data.avatar,
-            name: data.name,
-            username: "",
-          };
-
-          await updateUsername(player);
-
-          // Add to player list
-          players.set(data.playerId, player);
-
-          // Add player to scene
-          engine.renderThread.postMessage({ subject: "player_joined", data });
-
-          // Set player name
-          engine.renderThread.postMessage({
-            subject: "player_name",
-            data: {
-              playerId: data.playerId,
-              name: player.username,
-            },
-          });
-
-          // Add message to chat if they joined after you
-          if (!data.beforeYou)
-            addChatMessage({
-              type: "system",
-              variant: "player_joined",
-              id: nanoid(),
-              timestamp: Date.now(),
-              playerId: data.playerId,
-              username: player.username,
-            });
-
-          break;
-        }
-
-        case "player_left": {
-          console.info(`🚪 Player ${numberToHexDisplay(data)} left`);
-
-          const player = players.get(data);
-          if (!player) throw new Error("Player not found");
-
-          // Remove from player list
-          players.delete(data);
-
-          // Remove player from scene
-          engine.renderThread.postMessage({ subject: "player_left", data });
-
-          // Add message to chat
-          addChatMessage({
-            type: "system",
-            variant: "player_left",
-            id: nanoid(),
-            timestamp: Date.now(),
-            playerId: data,
-            username: player.username,
-          });
-          break;
-        }
-
-        case "player_message": {
-          const player = players.get(data.playerId);
-          if (!player) throw new Error("Player not found");
-
-          // Add message to chat
-          addChatMessage({
-            type: "chat",
-            message: data.message,
-            id: data.id,
-            timestamp: data.timestamp,
-            playerId: data.playerId,
-            username: player.username,
-          });
-          break;
-        }
-
-        case "player_falling_state": {
-          engine.renderThread.postMessage({
-            subject: "set_player_falling_state",
-            data,
-          });
-          break;
-        }
-
-        case "player_name": {
-          const player = players.get(data.playerId);
-          if (!player) throw new Error("Player not found");
-
-          // Set player name
-          player.name = data.name;
-
-          // Update player name
-          await updateUsername(player);
-
-          engine.renderThread.postMessage({
-            subject: "player_name",
-            data: {
-              playerId: data.playerId,
-              name: player.username,
-            },
-          });
-          break;
-        }
-
-        case "player_avatar": {
-          const player = players.get(data.playerId);
-          if (!player) throw new Error("Player not found");
-
-          // Set player avatar
-          player.avatar = data.avatar;
-
-          // Load avatar
-          engine.renderThread.postMessage({
-            subject: "set_player_avatar",
-            data: {
-              playerId: data.playerId,
-              avatar: data.avatar,
-            },
-          });
-          break;
-        }
-
-        case "player_address": {
-          const player = players.get(data.playerId);
-          if (!player) throw new Error("Player not found");
-
-          // Set player address
-          player.address = data.address;
-
-          // Update player name
-          await updateUsername(player);
-
-          engine.renderThread.postMessage({
-            subject: "player_name",
-            data: {
-              playerId: data.playerId,
-              name: player.username,
-            },
-          });
           break;
         }
 
         case "router_rtp_capabilities": {
+          if (device.loaded) break;
+
           // Create device
           await device.load({ routerRtpCapabilities: data });
 
           // Create transports
-          sendToHost({
-            subject: "create_transport",
-            data: { type: "producer" },
-          });
-
-          sendToHost({
-            subject: "create_transport",
-            data: { type: "consumer" },
-          });
+          sendToHost({ subject: "create_transport", data: { type: "producer" } });
+          sendToHost({ subject: "create_transport", data: { type: "consumer" } });
 
           // Set rtp capabilities
-          sendToHost({
-            subject: "set_rtp_capabilities",
-            data: {
-              rtpCapabilities: device.rtpCapabilities,
-            },
-          });
+          sendToHost({ subject: "set_rtp_capabilities", data: device.rtpCapabilities });
           break;
         }
 
@@ -294,18 +92,11 @@ export function useHost(url: string) {
           // Create local transport
           const transport =
             data.type === "producer"
-              ? device.createSendTransport(data.options)
-              : device.createRecvTransport(data.options);
+              ? device.createSendTransport(data.options as any)
+              : device.createRecvTransport(data.options as any);
 
           transport.on("connect", async ({ dtlsParameters }, callback) => {
-            sendToHost({
-              subject: "connect_transport",
-              data: {
-                dtlsParameters,
-                type: data.type,
-              },
-            });
-
+            sendToHost({ subject: "connect_transport", data: { dtlsParameters, type: data.type } });
             callback();
           });
 
@@ -334,28 +125,16 @@ export function useHost(url: string) {
 
             transport.on("produce", async ({ kind, rtpParameters }, callback) => {
               if (kind === "video") throw new Error("Video not supported");
-
-              onProducerId = callback;
-
-              sendToHost({
-                subject: "produce",
-                data: { rtpParameters },
-              });
+              onProducerId = (id) => callback({ id });
+              sendToHost({ subject: "produce", data: rtpParameters });
             });
 
             transport.on("producedata", async ({ sctpStreamParameters }, callback) => {
-              onDataProducerId = callback;
-
-              sendToHost({
-                subject: "produce_data",
-                data: { sctpStreamParameters },
-              });
+              onDataProducerId = (id) => callback({ id });
+              sendToHost({ subject: "produce_data", data: sctpStreamParameters });
             });
 
-            const dataProducer = await transport.produceData({
-              ordered: false,
-              maxRetransmits: 0,
-            });
+            const dataProducer = await transport.produceData({ ordered: false, maxRetransmits: 0 });
 
             // Player id = 1 byte (Uint8)
             // Position = 3 * 4 bytes (Int32)
@@ -365,60 +144,43 @@ export function useHost(url: string) {
             const buffer = new ArrayBuffer(bytes);
             const view = new DataView(buffer);
 
-            setInterval(() => {
+            publishInterval = setInterval(() => {
               const { playerId } = useAppStore.getState();
-
-              const playerPosition = engine.renderThread.playerPosition;
-              const playerRotation = engine.renderThread.playerRotation;
-              const cameraPosition = engine.renderThread.cameraPosition;
-              const cameraRotation = engine.renderThread.cameraRotation;
-
-              if (
-                playerId === null ||
-                !playerPosition ||
-                !playerRotation ||
-                !cameraPosition ||
-                !cameraRotation ||
-                dataProducer.readyState !== "open"
-              )
-                return;
+              if (playerId === null || dataProducer.readyState !== "open") return;
 
               // Set audio listener location
-              const camPosX = Atomics.load(cameraPosition, 0);
-              const camPosY = Atomics.load(cameraPosition, 1);
-              const camPosZ = Atomics.load(cameraPosition, 2);
+              const camPosX = Atomics.load(engine.cameraPosition, 0) / POSITION_ARRAY_ROUNDING;
+              const camPosY = Atomics.load(engine.cameraPosition, 1) / POSITION_ARRAY_ROUNDING;
+              const camPosZ = Atomics.load(engine.cameraPosition, 2) / POSITION_ARRAY_ROUNDING;
 
-              const camRotY = Atomics.load(cameraRotation, 1);
-              const camRotW = Atomics.load(cameraRotation, 3);
+              const camYaw = Atomics.load(engine.cameraYaw, 0) / ROTATION_ARRAY_ROUNDING;
 
               const listener = audioContext.listener;
 
               if (listener.positionX !== undefined) {
-                listener.positionX.value = camPosX / 1000;
-                listener.positionY.value = camPosY / 1000;
-                listener.positionZ.value = camPosZ / 1000;
+                listener.positionX.value = camPosX;
+                listener.positionY.value = camPosY;
+                listener.positionZ.value = camPosZ;
               } else {
-                listener.setPosition(camPosX / 1000, camPosY / 1000, camPosZ / 1000);
+                listener.setPosition(camPosX, camPosY, camPosZ);
               }
 
-              const yaw = quaternionToYaw(camRotY / 1000, camRotW / 1000);
-
               if (listener.forwardX !== undefined) {
-                listener.forwardX.value = -Math.sin(yaw);
-                listener.forwardZ.value = -Math.cos(yaw);
+                listener.forwardX.value = Math.sin(camYaw);
+                listener.forwardZ.value = Math.cos(camYaw);
               } else {
-                listener.setOrientation(-Math.sin(yaw), 0, -Math.cos(yaw), 0, 1, 0);
+                listener.setOrientation(Math.sin(camYaw), 0, Math.cos(camYaw), 0, 1, 0);
               }
 
               // Read location
-              const posX = Atomics.load(playerPosition, 0);
-              const posY = Atomics.load(playerPosition, 1);
-              const posZ = Atomics.load(playerPosition, 2);
+              const posX = Atomics.load(engine.userPosition, 0);
+              const posY = Atomics.load(engine.userPosition, 1);
+              const posZ = Atomics.load(engine.userPosition, 2);
 
-              const rotX = Atomics.load(playerRotation, 0);
-              const rotY = Atomics.load(playerRotation, 1);
-              const rotZ = Atomics.load(playerRotation, 2);
-              const rotW = Atomics.load(playerRotation, 3);
+              const rotX = Atomics.load(engine.userRotation, 0);
+              const rotY = Atomics.load(engine.userRotation, 1);
+              const rotZ = Atomics.load(engine.userRotation, 2);
+              const rotW = Atomics.load(engine.userRotation, 3);
 
               // Create buffer
               view.setUint8(0, playerId);
@@ -437,15 +199,7 @@ export function useHost(url: string) {
             }, 1000 / PUBLISH_HZ);
           }
 
-          if (data.type === "consumer") {
-            consumerTransport = transport;
-
-            sendToHost({
-              subject: "ready_to_consume",
-              data: true,
-            });
-          }
-
+          if (data.type === "consumer") consumerTransport = transport;
           break;
         }
 
@@ -454,17 +208,14 @@ export function useHost(url: string) {
           if (consumerTransport.closed) throw new Error("Consumer transport closed");
 
           const consumer = await consumerTransport.consume({
-            id: data.id,
+            id: data.consumerId,
             producerId: data.producerId,
             rtpParameters: data.rtpParameters,
             kind: "audio",
           });
 
           // Start receiving audio
-          sendToHost({
-            subject: "resume_audio",
-            data: null,
-          });
+          sendToHost({ subject: "resume_audio", data: null });
 
           await consumer.resume();
 
@@ -494,7 +245,6 @@ export function useHost(url: string) {
             if (audioContext.state === "suspended") await audioContext.resume();
             document.removeEventListener("click", play);
           };
-
           document.addEventListener("click", play);
 
           // Store panner
@@ -507,7 +257,7 @@ export function useHost(url: string) {
           if (consumerTransport.closed) throw new Error("Consumer transport closed");
 
           const dataConsumer = await consumerTransport.consumeData({
-            id: data.id,
+            id: data.consumerId,
             dataProducerId: data.dataProducerId,
             sctpStreamParameters: data.sctpStreamParameters,
           });
@@ -515,30 +265,37 @@ export function useHost(url: string) {
           dataConsumer.on("message", async (data: ArrayBuffer | Blob) => {
             const buffer = data instanceof ArrayBuffer ? data : await data.arrayBuffer();
 
-            // Apply location to audio panner
             const view = new DataView(buffer);
+
             const playerId = view.getUint8(0);
 
+            const posX = view.getInt32(1, true) / POSITION_ARRAY_ROUNDING;
+            const posY = view.getInt32(5, true) / POSITION_ARRAY_ROUNDING;
+            const posZ = view.getInt32(9, true) / POSITION_ARRAY_ROUNDING;
+
+            const rotX = view.getInt16(13, true) / ROTATION_ARRAY_ROUNDING;
+            const rotY = view.getInt16(15, true) / ROTATION_ARRAY_ROUNDING;
+            const rotZ = view.getInt16(17, true) / ROTATION_ARRAY_ROUNDING;
+            const rotW = view.getInt16(19, true) / ROTATION_ARRAY_ROUNDING;
+
+            // Apply location to audio panner
             const panner = panners.get(playerId);
             if (panner) {
               if (panner.positionX !== undefined) {
-                panner.positionX.value = view.getInt32(1, true) / 1000;
-                panner.positionY.value = view.getInt32(5, true) / 1000;
-                panner.positionZ.value = view.getInt32(9, true) / 1000;
+                panner.positionX.value = posX;
+                panner.positionY.value = posY;
+                panner.positionZ.value = posZ;
               } else {
-                panner.setPosition(
-                  view.getInt32(1, true) / 1000,
-                  view.getInt32(5, true) / 1000,
-                  view.getInt32(9, true) / 1000
-                );
+                panner.setPosition(posX, posY, posZ);
               }
             }
 
-            // Send to renderThread
-            engine.renderThread.postMessage({
-              subject: "player_location",
-              data: buffer,
-            });
+            // Send to engine
+            const player = engine.player.getPlayer(playerId);
+            if (player) {
+              player.setPosition(posX, posY, posZ);
+              player.setRotation(rotX, rotY, rotZ, rotW);
+            }
           });
 
           break;
@@ -557,24 +314,14 @@ export function useHost(url: string) {
     };
 
     return () => {
-      // Close WebSocket connection
+      if (publishInterval) clearInterval(publishInterval);
       ws.close();
-
-      // Close WebRTC transports
-      const { producerTransport } = useAppStore.getState();
-      if (producerTransport) producerTransport.close();
-      if (consumerTransport) consumerTransport.close();
-
-      // Reset state
-      useAppStore.setState({ ws: null });
+      useAppStore.setState({ ws: null, players: null, playerId: null });
     };
   }, [engine, utils, url]);
 
   const connect = useMemo(() => {
-    return (id: number) => {
-      // Join space
-      sendToHost({ subject: "join", data: { id } });
-    };
+    return (id: number) => sendToHost({ subject: "join", data: id });
   }, []);
 
   return { connect };
@@ -582,21 +329,7 @@ export function useHost(url: string) {
 
 export function sendToHost(message: ToHostMessage) {
   const { ws } = useAppStore.getState();
-  if (!ws || ws.readyState !== ws.OPEN) throw new Error("WebSocket not initialized");
+  if (!ws || ws.readyState !== ws.OPEN) return;
 
   ws.send(JSON.stringify(message));
-}
-
-function addChatMessage(message: ChatMessage) {
-  const { chatMessages } = useAppStore.getState();
-
-  const newChatMessages = [...chatMessages, message];
-
-  // Sort by timestamp
-  newChatMessages.sort((a, b) => b.timestamp - a.timestamp);
-
-  // Limit to 50 messages
-  newChatMessages.splice(50, newChatMessages.length - 50);
-
-  useAppStore.setState({ chatMessages: newChatMessages });
 }

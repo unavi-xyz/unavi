@@ -1,4 +1,3 @@
-import { GLTFMesh, Node } from "engine";
 import { useMemo, useState } from "react";
 
 import { useAppStore } from "../../app/store";
@@ -30,30 +29,23 @@ export function useSpace(id: number) {
 
   const join = useMemo(() => {
     return async () => {
-      if (!engine) throw new Error("Engine not found");
-      if (!space?.metadata) throw new Error("Space not found");
+      if (!engine) return;
+      if (!space?.metadata) return;
 
-      // Load scene
-      setLoadingText("Loading scene...");
+      setLoadingText("Downloading scene...");
       setLoadingProgress(0.1);
 
-      const mesh = new GLTFMesh();
-      mesh.uri = space.metadata.animation_url;
+      const res = await fetch(space.metadata.animation_url);
+      const buffer = await res.arrayBuffer();
+      const array = new Uint8Array(buffer);
 
-      const node = new Node();
-      node.meshId = mesh.id;
+      setLoadingText("Loading scene...");
+      setLoadingProgress(0.3);
 
-      await engine.scene.loadJSON(
-        {
-          nodes: [node.toJSON()],
-          meshes: [mesh.toJSON()],
-        },
-        true
-      );
+      await engine.scene.loadBinary(array);
 
-      // Connect to server
       setLoadingText("Connecting...");
-      setLoadingProgress(0.5);
+      setLoadingProgress(0.75);
 
       await connect(space.id);
 

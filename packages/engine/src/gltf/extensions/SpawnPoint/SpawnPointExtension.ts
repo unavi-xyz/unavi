@@ -3,9 +3,12 @@ import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 import { EXTENSION_NAME } from "./constants";
 import { SpawnPoint } from "./SpawnPoint";
 
+/**
+ * @link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point
+ */
 export class SpawnPointExtension extends Extension {
-  public static readonly EXTENSION_NAME = EXTENSION_NAME;
-  public readonly extensionName = EXTENSION_NAME;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME;
+  override readonly extensionName = EXTENSION_NAME;
 
   public createSpawnPoint(): SpawnPoint {
     return new SpawnPoint(this.document.getGraph());

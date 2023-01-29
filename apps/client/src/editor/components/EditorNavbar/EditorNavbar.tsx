@@ -23,25 +23,22 @@ export default function EditorNavbar() {
 
   const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
-  const publicationId = useEditorStore((state) => state.publicationId);
   const isSaving = useEditorStore((state) => state.isSaving);
+  const engine = useEditorStore((state) => state.engine);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewMode, setPreviewMode] = useState(engine?.controls === "player" ? true : false);
+
+  const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
 
   const { save, saveImage } = useSave();
-  const utils = trpc.useContext();
 
   function handleToggleColliders() {
-    useEditorStore.setState({ visuals: !visuals });
-
     const { engine } = useEditorStore.getState();
-    engine?.renderThread.postMessage({
-      subject: "show_visuals",
-      data: {
-        visible: !visuals,
-      },
-    });
+    if (!engine) return;
+
+    engine.visuals = !visuals;
+    useEditorStore.setState({ visuals: !visuals });
   }
 
   async function handleBack() {
@@ -49,32 +46,18 @@ export default function EditorNavbar() {
     router.push(`/project/${id}`);
   }
 
-  async function handlePreview() {
-    if (previewLoading) return;
-    setPreviewLoading(true);
+  function handlePreview() {
+    const { engine } = useEditorStore.getState();
+    if (!engine) return;
 
-    try {
-      // Save
-      await save();
+    if (engine.controls === "player") {
+      engine.controls = "orbit";
+      setPreviewMode(false);
+    } else {
+      engine.controls = "player";
+      setPreviewMode(true);
 
-      // Invalidate cache
-      await Promise.all([
-        utils.project.get.invalidate({ id }),
-        utils.project.scene.invalidate({ id }),
-        utils.project.files.invalidate({ id }),
-      ]);
-
-      // Force a new fetch of the project
-      await Promise.all([
-        utils.project.get.prefetch({ id }),
-        utils.project.scene.prefetch({ id }),
-        utils.project.files.prefetch({ id }),
-      ]);
-
-      router.push(`/editor/${id}/preview`);
-    } catch (err) {
-      console.error(err);
-      setPreviewLoading(false);
+      useEditorStore.setState({ selectedId: null });
     }
   }
 
@@ -86,7 +69,7 @@ export default function EditorNavbar() {
   return (
     <>
       <Dialog open={openPublishDialog} onClose={() => setOpenPublishDialog(false)}>
-        {publicationId ? (
+        {project?.Publication?.spaceId ? (
           <UpdatePage onClose={() => setOpenPublishDialog(false)} />
         ) : (
           <PublishPage />
@@ -117,9 +100,11 @@ export default function EditorNavbar() {
           <ToolButton tool="translate">
             <BiMove />
           </ToolButton>
+
           <ToolButton tool="rotate">
             <MdSync />
           </ToolButton>
+
           <ToolButton tool="scale">
             <CgArrowsExpandUpRight />
           </ToolButton>
@@ -135,9 +120,9 @@ export default function EditorNavbar() {
           </div>
 
           <div className="aspect-square h-full">
-            <Tooltip text="Preview" placement="bottom">
+            <Tooltip text={`${previewMode ? "Exit" : "Enter"} Preview`} placement="bottom">
               <div className="h-full">
-                <IconButton onClick={handlePreview} loading={previewLoading}>
+                <IconButton selected={previewMode} onClick={handlePreview}>
                   <MdPreview />
                 </IconButton>
               </div>

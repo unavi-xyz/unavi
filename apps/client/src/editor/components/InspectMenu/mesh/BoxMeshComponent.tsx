@@ -1,20 +1,19 @@
-import { BoxMesh } from "engine";
-
-import { updateMesh } from "../../../actions/UpdateMeshAction";
-import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
+import { useMesh } from "../../../hooks/useMesh";
+import { useMeshAttribute } from "../../../hooks/useMeshAttribute";
 import NumberInput from "../../ui/NumberInput";
-import MaterialComponent from "../MaterialComponent";
-import MenuRows from "../MenuRows";
+import MenuRows from "../ui/MenuRows";
 
 interface Props {
-  nodeId: string;
-  mesh: BoxMesh;
+  meshId: string;
 }
 
-export default function BoxMeshComponent({ nodeId, mesh }: Props) {
-  const width = useSubscribeValue(mesh.width$);
-  const height = useSubscribeValue(mesh.height$);
-  const depth = useSubscribeValue(mesh.depth$);
+export default function BoxMeshComponent({ meshId }: Props) {
+  const mesh = useMesh(meshId);
+  const extras = useMeshAttribute(meshId, "extras");
+
+  if (!mesh || extras?.customMesh?.type !== "Box") return null;
+
+  const { width, height, depth } = extras.customMesh;
 
   return (
     <>
@@ -30,20 +29,24 @@ export default function BoxMeshComponent({ nodeId, mesh }: Props) {
               value={value ?? 0}
               step={0.1}
               onChange={(e) => {
+                if (extras?.customMesh?.type !== "Box") return;
+
                 const value = e.target.value;
                 if (!value) return;
 
                 const num = parseFloat(value);
                 const rounded = Math.round(num * 1000) / 1000;
 
-                updateMesh(mesh.id, { [property]: rounded });
+                extras.customMesh[property] = rounded;
+
+                mesh.setExtras({ ...extras });
               }}
             />
           );
         })}
       </MenuRows>
 
-      <MaterialComponent nodeId={nodeId} />
+      {/* <MaterialComponent meshId={meshId} /> */}
     </>
   );
 }

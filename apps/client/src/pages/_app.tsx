@@ -46,7 +46,7 @@ const App: AppType<{ session: Session | null }> = ({
           {getLayout(<Component {...pageProps} />)}
         </ClientSideProviders>
 
-        <Toaster />
+        <Toaster position="bottom-center" />
       </div>
     </>
   );

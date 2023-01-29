@@ -1,6 +1,6 @@
-import { Quad, Triplet } from "engine";
+import { Vec3, Vec4 } from "engine";
 
-export function quaternionToEuler(quaternion: Quad): Triplet {
+export function quaternionToEuler(quaternion: Vec4): Vec3 {
   const [x, y, z, w] = quaternion;
 
   const sinr_cosp = 2 * (w * x + y * z);

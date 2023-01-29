@@ -1,4 +1,5 @@
+export * from "./constants";
 export * from "./Engine";
-export * from "./main/MainScene";
+export * from "./gltf";
 export * from "./scene";
 export * from "./types";

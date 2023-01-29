@@ -25,10 +25,3 @@ export const WEBGL_CONSTANTS = {
   MIRRORED_REPEAT: 0x8370,
   REPEAT: 0x2901,
 };
-
-export enum ThreeAnimationPathName {
-  scale = "scale",
-  translation = "position",
-  rotation = "quaternion",
-  weights = "morphTargetInfluences",
-}

@@ -3,10 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "license": "GPL-3.0-or-later",
+  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
     "lint": "cd ../.. && eslint --fix packages/protocol --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
+  },
+  "dependencies": {
+    "zod": "^3.20.2"
   },
   "devDependencies": {
     "mediasoup-client": "^3.6.70",

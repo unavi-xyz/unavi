@@ -1,12 +1,12 @@
 import { createProxySSGHelpers } from "@trpc/react-query/ssg";
+import { Engine } from "engine";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useRef } from "react";
 
-import { useAnalytics } from "../../app/hooks/useAnalytics";
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useLoadUser } from "../../app/hooks/useLoadUser";
-import { useResizeEngineCanvas } from "../../app/hooks/useResizeEngineCanvas";
+import { useResizeCanvas } from "../../app/hooks/useResizeCanvas";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useSpace } from "../../app/hooks/useSpace";
 import { useAppStore } from "../../app/store";
@@ -22,11 +22,11 @@ import { useIsMobile } from "../../utils/useIsMobile";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   const ONE_MINUTE_IN_SECONDS = 60;
-  const ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
+  const ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30;
 
   res.setHeader(
     "Cache-Control",
-    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`
+    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_MONTH_IN_SECONDS}`
   );
 
   const hexId = query.id as string;
@@ -54,54 +54,36 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
 export default function App({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const createdEngine = useRef(false);
 
   const engine = useAppStore((state) => state.engine);
 
-  useResizeEngineCanvas(engine, canvasRef, containerRef);
-  useLoadUser();
-  useAppHotkeys();
-  useAnalytics();
   const setAvatar = useSetAvatar();
   const isMobile = useIsMobile();
+  useResizeCanvas(engine, canvasRef, containerRef);
+  useLoadUser();
+  useAppHotkeys();
+
   const { space, loadingText, loadingProgress, join } = useSpace(id);
 
   useEffect(() => {
-    if (createdEngine.current) return;
-    createdEngine.current = true;
+    if (!canvasRef.current) return;
 
-    async function initEngine() {
-      const canvas = canvasRef.current;
-      if (!canvas) throw new Error("Canvas not found");
+    const engine = new Engine({ canvas: canvasRef.current });
+    useAppStore.setState({ engine });
 
-      const { Engine } = await import("engine");
-
-      // Create engine
-      const engine = new Engine({
-        canvas,
-        camera: "player",
-        skyboxPath: "/images/skybox/",
-        avatarPath: "/models/Wired-chan.vrm",
-        avatarAnimationsPath: "/models/",
-      });
-
-      await engine.start();
-
-      useAppStore.setState({ engine });
-    }
-
-    initEngine();
-  }, [canvasRef]);
-
-  useEffect(() => {
-    if (!engine) return;
-
-    join();
+    engine.render.send({ subject: "set_animations_path", data: "/models" });
+    engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
+    engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox_2K.jpg" } });
 
     return () => {
       engine.destroy();
       useAppStore.setState({ engine: null, chatMessages: [] });
     };
+  }, []);
+
+  useEffect(() => {
+    if (!engine) return;
+    join();
   }, [engine, join]);
 
   const loaded = loadingProgress === 1;
@@ -147,7 +129,7 @@ export default function App({ id }: InferGetServerSidePropsType<typeof getServer
           const url = URL.createObjectURL(file);
           setAvatar(url);
 
-          useAppStore.setState({ customAvatar: url });
+          useAppStore.setState({ avatar: url });
         }}
       >
         {loaded && (

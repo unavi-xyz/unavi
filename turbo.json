@@ -3,7 +3,7 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build", "generate"],
-      "outputs": ["build/**", "dist/**", ".next/**"]
+      "outputs": ["build/**"]
     },
     "client#build": {
       "dependsOn": ["^build", "generate"],
@@ -32,7 +32,7 @@
     },
     "host#build": {
       "dependsOn": ["^build", "generate"],
-      "outputs": [],
+      "outputs": ["build/**"],
       "env": [
         "MEDIASOUP_ANNOUNCED_IP",
         "MEDIASOUP_LISTEN_IP",
@@ -49,14 +49,17 @@
       "cache": false
     },
     "client#generate": {
-      "inputs": ["prisma/schema.prisma"]
+      "inputs": ["prisma/schema.prisma"],
+      "outputs": []
     },
     "deploy": {
       "dependsOn": ["lint", "build"],
+      "outputs": [],
       "cache": false
     },
     "dev": {
-      "cache": false
+      "cache": false,
+      "outputs": []
     }
   }
 }

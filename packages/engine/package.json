@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "license": "GPL-3.0-or-later",
+  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
@@ -11,19 +12,19 @@
   "dependencies": {
     "@dimforge/rapier3d": "^0.11.1",
     "@gltf-transform/core": "2.5.1",
-    "@gltf-transform/extensions": "2.4.7",
-    "@gltf-transform/functions": "^2.5.1",
-    "@pixiv/three-vrm": "^1.0.5",
+    "@gltf-transform/extensions": "2.5.1",
+    "@gltf-transform/functions": "2.5.1",
+    "@pixiv/three-vrm": "^1.0.7",
     "contracts": "*",
-    "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.0",
+    "property-graph": "^1.0.1",
     "rxjs": "^7.8.0",
-    "three": "^0.144.0",
+    "three": "^0.148.0",
     "zod": "^3.20.2"
   },
   "devDependencies": {
     "@types/offscreencanvas": "^2019.7.0",
-    "@types/three": "^0.144.0",
+    "@types/three": "^0.148.0",
     "tsconfig": "*",
     "typescript": "~4.9.4"
   }

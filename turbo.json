@@ -42,24 +42,20 @@
         "SSL_KEY"
       ]
     },
-    "lint": {
-      "outputs": []
-    },
+    "lint": {},
     "generate": {
       "cache": false
     },
     "client#generate": {
-      "inputs": ["prisma/schema.prisma"],
-      "outputs": []
+      "inputs": ["prisma/schema.prisma"]
     },
     "deploy": {
       "dependsOn": ["lint", "build"],
-      "outputs": [],
       "cache": false
     },
     "dev": {
       "cache": false,
-      "outputs": []
+      "persistent": true
     }
   }
 }

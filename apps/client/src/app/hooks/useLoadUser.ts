@@ -10,31 +10,41 @@ export function useLoadUser() {
   const engine = useAppStore((state) => state.engine);
   const ws = useAppStore((state) => state.ws);
   const playerId = useAppStore((state) => state.playerId);
-  const name = usePlayerName(playerId);
+  const avatar = useAppStore((state) => state.avatar);
+  const playerName = usePlayerName(playerId);
   const { data: session } = useSession();
 
-  // Set data on initial load
+  // Load nickname from local storage on initial load
   useEffect(() => {
-    if (!name || !engine || !ws || ws.readyState !== ws.OPEN) return;
-
-    // Set nickname
+    if (!playerName) return;
     const localName = localStorage.getItem(LocalStorageKey.Name);
-    if (localName !== name.nickname) {
-      sendToHost({ subject: "set_name", data: localName });
+    playerName.nickname = localName;
+    useAppStore.setState({ nickname: localName });
+  }, [playerName]);
+
+  // Publish name on change
+  useEffect(() => {
+    if (!playerName || !engine || !ws || ws.readyState !== ws.OPEN) return;
+    sendToHost({ subject: "set_name", data: playerName.displayName });
+  }, [engine, ws, ws?.readyState, playerName, playerName?.displayName]);
+
+  // Publish avatar on change
+  useEffect(() => {
+    if (!ws || ws.readyState !== ws.OPEN) return;
+
+    if (avatar) {
+      sendToHost({ subject: "set_avatar", data: avatar });
+      return;
     }
 
-    // Set avatar
     const localAvatar = localStorage.getItem(LocalStorageKey.Avatar);
-
     if (localAvatar) {
-      // if (localAvatar !== name.avatar) {
-      //   sendToHost({ subject: "set_avatar", data: localAvatar });
-      // }
-    } else {
-      // If no avatar set, use default avatar
-      sendToHost({ subject: "set_avatar", data: null });
+      sendToHost({ subject: "set_avatar", data: localAvatar });
+      return;
     }
-  }, [engine, ws, ws?.readyState, name]);
+
+    sendToHost({ subject: "set_avatar", data: null });
+  }, [avatar, ws, ws?.readyState]);
 
   // Publish address on change
   useEffect(() => {
@@ -42,4 +52,10 @@ export function useLoadUser() {
     const address = session?.address ?? null;
     sendToHost({ subject: "set_address", data: address });
   }, [session, ws, ws?.readyState]);
+
+  // Update address on change
+  useEffect(() => {
+    if (!playerName || !ws || ws.readyState !== ws.OPEN) return;
+    playerName.address = session?.address ?? null;
+  }, [playerName, session, ws, ws?.readyState]);
 }

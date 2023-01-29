@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { FromHostMessage } from "protocol";
 
 import { TrpcContext } from "../../client/trpc";
+import { useAppStore } from "../store";
 import { addChatMessage } from "../utils/addChatMessage";
 import { PlayerName } from "./PlayerName";
 
@@ -71,6 +72,9 @@ export class Players {
       }
 
       case "player_name": {
+        const { playerId: userId } = useAppStore.getState();
+        if (data.playerId === userId) break;
+
         const name = this.names.get(data.playerId);
         if (name) name.nickname = data.name;
         break;

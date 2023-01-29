@@ -38,13 +38,18 @@ export default function UserButtons() {
     setOpenUserPage(false);
     if (!engine) return;
 
-    const { didChangeName, didChangeAvatar, nickname, avatar } = useAppStore.getState();
+    const { didChangeName, didChangeAvatar, nickname, avatar, playerId, players } =
+      useAppStore.getState();
+
+    if (!players || playerId === null) return;
+    const playerName = players.names.get(playerId);
+    if (!playerName) return;
 
     if (didChangeName) {
       useAppStore.setState({ didChangeName: false });
 
-      // Publish display name
-      sendToHost({ subject: "set_name", data: nickname });
+      // Update name
+      playerName.nickname = nickname;
 
       // Save to local storage
       if (nickname) localStorage.setItem(LocalStorageKey.Name, nickname);
@@ -54,7 +59,7 @@ export default function UserButtons() {
     if (didChangeAvatar) {
       useAppStore.setState({ didChangeAvatar: false });
       // Update engine
-      // engine.render.send({ subject: "set_avatar", data: customAvatar });
+      // engine.render.send({ subject: "set_user_avatar", data: customAvatar });
 
       if (avatar) {
         // Upload avatar

@@ -11,7 +11,7 @@ import { theme } from "./theme";
 import { chains, wagmiClient } from "./wagmi";
 
 const getSiweMessageOptions: GetSiweMessageOptions = () => ({
-  statement: "🔌 Sign in to the Wired",
+  statement: "⌛ Sign in to the Wired",
 });
 
 interface Props {

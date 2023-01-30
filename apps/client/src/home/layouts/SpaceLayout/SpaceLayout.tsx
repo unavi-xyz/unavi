@@ -6,7 +6,6 @@ import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
 import { env } from "../../../env/client.mjs";
 import { Profile } from "../../../server/helpers/getProfileFromAddress";
-import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
 import { isFromCDN } from "../../../utils/isFromCDN";
 import { numberToHexDisplay } from "../../../utils/numberToHexDisplay";
@@ -98,12 +97,11 @@ export default function SpaceLayout({ id, author, metadata, children }: Props) {
                 </div>
               </div>
 
-              <Link href={`/play/${hexId}`}>
-                <div>
-                  <Button variant="filled" fullWidth>
-                    <div className="py-2">Join Space</div>
-                  </Button>
-                </div>
+              <Link
+                href={`/play/${hexId}`}
+                className="rounded-full bg-neutral-900 py-3 text-center text-xl font-bold text-white transition hover:scale-105 active:opacity-90"
+              >
+                Join Space
               </Link>
             </div>
           </div>

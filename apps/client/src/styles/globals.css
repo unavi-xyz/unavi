@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 html {
-  @apply selection:bg-sky-100 antialiased;
+  @apply antialiased;
 }
 
 .max-w-content {
-  @apply w-full max-w-screen-lg;
+  @apply w-full max-w-screen-xl;
 }
 
 .show-on-scroll {

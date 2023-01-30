@@ -22,23 +22,19 @@ export default function ProfileMenu({ includeExternal = true }: Props) {
 
   return (
     <div className="space-y-1 p-2">
-      {/* <button onClick={openSwitchProfile} className="w-full">
-        <ProfileMenuButton icon={<HiOutlineSwitchHorizontal />}>Switch Profile</ProfileMenuButton>
-      </button> */}
-
       {includeExternal && (
         <Link href={`/user/${profile?.id ? numberToHexDisplay(profile.id) : session?.address}`}>
-          <button className="w-full">
+          <div className="w-full">
             <ProfileMenuButton icon={<MdOutlinePersonOutline />}>Your Profile</ProfileMenuButton>
-          </button>
+          </div>
         </Link>
       )}
 
       {includeExternal && (
         <Link href="/settings">
-          <button className="w-full">
+          <div className="w-full">
             <ProfileMenuButton icon={<MdOutlineSettings />}>Settings</ProfileMenuButton>
-          </button>
+          </div>
         </Link>
       )}
 

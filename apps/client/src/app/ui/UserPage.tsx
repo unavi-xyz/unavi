@@ -2,8 +2,8 @@ import { IoMdPerson } from "react-icons/io";
 
 import { useAppStore } from "../../app/store";
 import { useSession } from "../../client/auth/useSession";
-import LoginButton from "../../home/layouts/NavbarLayout/LoginButton";
 import ProfileButton from "../../home/layouts/NavbarLayout/ProfileButton";
+import SignInButton from "../../home/layouts/NavbarLayout/SignInButton";
 import Button from "../../ui/Button";
 import ButtonFileInput from "../../ui/ButtonFileInput";
 
@@ -27,11 +27,7 @@ export default function UserPage() {
 
       <div className="space-y-1">
         <div className="flex justify-center">
-          {session?.address ? (
-            <ProfileButton fullWidth size="large" />
-          ) : (
-            <LoginButton fullWidth rounded="large" />
-          )}
+          {session?.address ? <ProfileButton fullWidth size="large" /> : <SignInButton />}
         </div>
       </div>
 

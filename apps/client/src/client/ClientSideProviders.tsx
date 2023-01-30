@@ -7,7 +7,7 @@ import { Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { WagmiConfig } from "wagmi";
 
-import { theme } from "./theme";
+import { theme } from "./rainbow";
 import { chains, wagmiClient } from "./wagmi";
 
 const getSiweMessageOptions: GetSiweMessageOptions = () => ({

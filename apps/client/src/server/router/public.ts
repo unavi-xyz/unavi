@@ -5,7 +5,7 @@ import { z } from "zod";
 import { env } from "../../env/client.mjs";
 import { getModelStats } from "../helpers/getModelStats";
 import { getSpaceMetadata } from "../helpers/getSpaceMetadata";
-import { createTempFileUploadURL } from "../s3";
+import { getTempUpload } from "../s3/temp";
 import { publicProcedure, router } from "./trpc";
 
 const HOST_URL =
@@ -17,7 +17,7 @@ export const publicRouter = router({
   tempUploadURL: publicProcedure.mutation(async () => {
     // Get temp file upload URL from S3
     const fileId = nanoid();
-    const url = await createTempFileUploadURL(fileId);
+    const url = await getTempUpload(fileId);
     return { url, fileId };
   }),
 
@@ -45,20 +45,20 @@ export const publicRouter = router({
       const promises: Promise<any>[] = [];
 
       // Verify space exists
-      const space = await getSpaceMetadata(input.spaceId);
-      if (!space) throw new TRPCError({ code: "NOT_FOUND" });
+      const found = await getSpaceMetadata(input.spaceId);
+      if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // Get publication id
-      const publication = await ctx.prisma.publication.findFirst({
+      // Get space id
+      const space = await ctx.prisma.publication.findFirst({
         where: { spaceId: input.spaceId },
       });
 
       let publicationId: string;
 
-      if (publication) {
-        publicationId = publication.id;
+      if (space) {
+        publicationId = space.id;
       } else {
-        // If no publication, create one
+        // If no space, create one
         const { id } = await ctx.prisma.publication.create({
           data: { spaceId: input.spaceId },
         });
@@ -83,11 +83,11 @@ export const publicRouter = router({
   modelStats: publicProcedure
     .input(
       z.object({
-        publicationId: z.string(),
+        spaceId: z.string(),
       })
     )
     .query(async ({ input }) => {
-      const stats = await getModelStats(input.publicationId);
+      const stats = await getModelStats(input.spaceId);
       return stats;
     }),
 });

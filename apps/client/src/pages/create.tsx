@@ -13,7 +13,7 @@ import Card from "../ui/Card";
 import Dialog from "../ui/Dialog";
 
 function cdnImageURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/published/${id}/image.jpg`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/image.jpg`;
 }
 
 export default function Spaces() {
@@ -22,28 +22,26 @@ export default function Spaces() {
   const { status: authState } = useSession();
   const utils = trpc.useContext();
 
+  const authenticated = authState === "authenticated";
+
   const {
     data: projects,
     status,
     refetch,
-  } = trpc.project.getAll.useQuery(undefined, {
-    enabled: authState === "authenticated",
-  });
+  } = trpc.project.getAll.useQuery(undefined, { enabled: authenticated });
 
   useEffect(() => {
     if (authState !== "authenticated") return;
     utils.project.getAll.invalidate().then(() => refetch());
   }, [refetch, authState, utils]);
 
-  const authenticated = authState === "authenticated";
-
   function handleCreateProject() {
     if (!authenticated) return;
     setOpenCreateProject(true);
   }
 
-  const unpublishedProjects = projects?.filter((p) => !p.publicationId) ?? [];
-  const publishedProjects = projects?.filter((p) => p.publicationId) ?? [];
+  const unpublishedProjects = projects?.filter((p) => !p.Publication?.spaceId) ?? [];
+  const publishedProjects = projects?.filter((p) => p.Publication?.spaceId) ?? [];
   const publishedImages = publishedProjects.map((p) =>
     p.publicationId ? cdnImageURL(p.publicationId) : p.image
   );
@@ -75,13 +73,11 @@ export default function Spaces() {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            {authState === "authenticated" ? (
+            {authenticated ? (
               status === "success" && unpublishedProjects.length > 0 ? (
                 unpublishedProjects.map(({ id, name, image }) => (
                   <Link key={id} href={`/project/${id}`}>
-                    <div>
-                      <Card text={name} image={image} sizes="333px" animateEnter />
-                    </div>
+                    <Card text={name} image={image} sizes="333px" animateEnter />
                   </Link>
                 ))
               ) : (
@@ -108,9 +104,7 @@ export default function Spaces() {
               <div className="grid grid-cols-3 gap-3">
                 {publishedProjects.map(({ id, name }, i) => (
                   <Link key={id} href={`/project/${id}`}>
-                    <div>
-                      <Card text={name} image={publishedImages[i]} sizes="333px" animateEnter />
-                    </div>
+                    <Card text={name} image={publishedImages[i]} sizes="333px" animateEnter />
                   </Link>
                 ))}
               </div>

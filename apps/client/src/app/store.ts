@@ -1,13 +1,15 @@
 import { Engine } from "engine";
 import { Producer } from "mediasoup-client/lib/Producer";
 import { Transport } from "mediasoup-client/lib/Transport";
-import create from "zustand";
+import { create } from "zustand";
 
+import { Players } from "./networking/Players";
 import { ChatMessage } from "./ui/ChatMessage";
 
 export interface AppStore {
   engine: Engine | null;
   ws: WebSocket | null;
+  players: Players | null;
 
   producer: Producer | null;
   producerTransport: Transport | null;
@@ -15,8 +17,8 @@ export interface AppStore {
   micPaused: boolean;
 
   playerId: number | null;
-  displayName: string | null;
-  customAvatar: string | null;
+  nickname: string | null;
+  avatar: string | null;
 
   didChangeName: boolean;
   didChangeAvatar: boolean;
@@ -27,6 +29,7 @@ export interface AppStore {
 export const useAppStore = create<AppStore>(() => ({
   engine: null,
   ws: null,
+  players: null,
 
   producer: null,
   producerTransport: null,
@@ -34,8 +37,8 @@ export const useAppStore = create<AppStore>(() => ({
   micPaused: false,
 
   playerId: null,
-  displayName: null,
-  customAvatar: null,
+  nickname: null,
+  avatar: null,
 
   didChangeName: false,
   didChangeAvatar: false,

@@ -42,7 +42,7 @@ const securityHeaders = [
   },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(self), geolocation=(), browsing-topics=()",
+    value: "camera=(), microphone=(self), geolocation=()",
   },
 ];
 
@@ -64,9 +64,7 @@ export default defineNextConfig({
   eslint: {
     ignoreDuringBuilds: true,
   },
-  experimental: {
-    transpilePackages: ["three", "engine"],
-  },
+  transpilePackages: ["engine", "contracts", "protocol"],
   images: {
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT, env.NEXT_PUBLIC_IPFS_GATEWAY.split(":")[0]],
   },
@@ -92,7 +90,7 @@ export default defineNextConfig({
   async redirects() {
     return [
       {
-        source: "/app",
+        source: "/play",
         destination: "/explore",
         permanent: false,
       },

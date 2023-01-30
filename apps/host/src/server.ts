@@ -1,9 +1,10 @@
-import { ToHostMessage } from "protocol";
+import { toHostMessageSchema } from "protocol";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
-import { Players } from "./Players";
-import { send } from "./utils/send";
+import { Player } from "./Player";
+import { SpaceRegistry } from "./SpaceRegistry";
+import { UserData, uWebSocket } from "./types";
 import { toHex } from "./utils/toHex";
 
 const textDecoder = new TextDecoder();
@@ -19,161 +20,147 @@ const server =
 // Create Mediasoup router
 const { router, webRtcServer } = await createMediasoupWorker();
 
-// Create player manager
-const players = new Players(server, router);
+const spaces = new SpaceRegistry(server);
+const players = new Map<uWebSocket, Player>();
 
 // Handle WebSocket connections
-server.ws("/*", {
+server.ws<UserData>("/*", {
   compression: uWS.SHARED_COMPRESSOR,
   idleTimeout: 60,
 
   open: (ws) => {
-    players.addPlayer(ws);
+    players.set(ws, new Player(ws, spaces));
   },
 
-  message: async (ws, buffer) => {
-    try {
-      const text = textDecoder.decode(buffer);
-      const { subject, data }: ToHostMessage = JSON.parse(text);
+  message: (ws, buffer) => {
+    const player = players.get(ws);
+    if (!player) return;
 
-      switch (subject) {
-        case "join": {
-          players.joinSpace(ws, data.id);
-          break;
-        }
+    const text = textDecoder.decode(buffer);
+    const parsed = toHostMessageSchema.safeParse(JSON.parse(text));
 
-        case "leave": {
-          players.leaveSpace(ws);
-          break;
-        }
+    if (!parsed.success) {
+      console.warn(parsed.error);
+      return;
+    }
 
-        case "message": {
-          players.publishMessage(ws, data);
-          break;
-        }
+    const { subject, data } = parsed.data;
 
-        case "falling_state": {
-          players.publishFallingState(ws, data);
-          break;
-        }
-
-        case "set_name": {
-          players.publishName(ws, data);
-          break;
-        }
-
-        case "set_avatar": {
-          players.publishAvatar(ws, data);
-          break;
-        }
-
-        case "set_address": {
-          players.publishAddress(ws, data);
-          break;
-        }
-
-        // WebRTC
-        case "get_router_rtp_capabilities": {
-          send(ws, {
-            subject: "router_rtp_capabilities",
-            data: router.rtpCapabilities,
-          });
-          break;
-        }
-
-        case "ready_to_consume": {
-          players.setReadyToConsume(ws, data);
-          break;
-        }
-
-        case "resume_audio": {
-          players.setAudioPaused(ws, false);
-          break;
-        }
-
-        case "create_transport": {
-          const { transport, params } = await createWebRtcTransport(router, webRtcServer);
-
-          players.setTransport(ws, transport, data.type);
-
-          const iceCandidates: any = params.iceCandidates.filter((candidate) => {
-            return candidate.tcpType !== undefined;
-          });
-
-          send(ws, {
-            subject: "transport_created",
-            data: {
-              type: data.type,
-              options: {
-                id: params.id,
-                iceParameters: params.iceParameters,
-                iceCandidates,
-                dtlsParameters: params.dtlsParameters,
-                sctpParameters: params.sctpParameters,
-              },
-            },
-          });
-          break;
-        }
-
-        case "connect_transport": {
-          const transport =
-            data.type === "producer"
-              ? players.producerTransports.get(ws)
-              : players.consumerTransports.get(ws);
-          if (!transport) break;
-
-          transport.connect({ dtlsParameters: data.dtlsParameters });
-
-          break;
-        }
-
-        case "produce": {
-          const id = await players.produce(ws, data.rtpParameters);
-
-          send(ws, {
-            subject: "producer_id",
-            data: { id },
-          });
-          break;
-        }
-
-        case "produce_data": {
-          if (data.sctpStreamParameters.streamId === undefined) {
-            console.warn("produce_data: Stream ID is undefined");
-            break;
-          }
-
-          const id = await players.produceData(ws, data.sctpStreamParameters as any);
-
-          send(ws, {
-            subject: "data_producer_id",
-            data: { id },
-          });
-          break;
-        }
-
-        case "set_rtp_capabilities": {
-          players.setRtpCapabilities(ws, data.rtpCapabilities);
-          break;
-        }
+    switch (subject) {
+      case "join": {
+        player.join(data);
+        break;
       }
-    } catch (error) {
-      console.error(error);
+
+      case "leave": {
+        player.leave(data);
+        break;
+      }
+
+      case "chat": {
+        player.chat(data);
+        break;
+      }
+
+      case "set_grounded": {
+        player.grounded = data;
+        break;
+      }
+
+      case "set_name": {
+        player.name = data;
+        break;
+      }
+
+      case "set_avatar": {
+        player.avatar = data;
+        break;
+      }
+
+      case "set_address": {
+        player.address = data;
+        break;
+      }
+
+      // WebRTC
+      case "get_router_rtp_capabilities": {
+        player.send({ subject: "router_rtp_capabilities", data: router.rtpCapabilities });
+        break;
+      }
+
+      case "resume_audio": {
+        player.audioPaused = false;
+        break;
+      }
+
+      case "create_transport": {
+        createWebRtcTransport(router, webRtcServer)
+          .then(({ transport, params }) => {
+            player.setTransport(data.type, transport);
+
+            player.send({
+              subject: "transport_created",
+              data: {
+                type: data.type,
+                options: {
+                  id: params.id,
+                  iceParameters: params.iceParameters,
+                  iceCandidates: params.iceCandidates,
+                  dtlsParameters: params.dtlsParameters,
+                  sctpParameters: params.sctpParameters,
+                },
+              },
+            });
+          })
+          .catch((err) => console.warn(err));
+        break;
+      }
+
+      case "connect_transport": {
+        const transport =
+          data.type === "producer" ? player.producerTransport : player.consumerTransport;
+        if (!transport) break;
+
+        transport.connect({ dtlsParameters: data.dtlsParameters });
+        break;
+      }
+
+      case "produce": {
+        player.produce(data);
+        break;
+      }
+
+      case "produce_data": {
+        if (data.streamId === undefined) {
+          console.warn("Stream ID is undefined");
+          break;
+        }
+
+        player.produceData(data as any);
+        break;
+      }
+
+      case "set_rtp_capabilities": {
+        player.rtpCapabilities = data;
+        break;
+      }
     }
   },
 
   close: (ws) => {
-    players.removePlayer(ws);
+    const player = players.get(ws);
+    if (player) player.close();
+    players.delete(ws);
   },
 });
 
 // Handle HTTP requests
 server.get("/playercount/*", (res, req) => {
   const id = parseInt(req.getUrl().slice(13));
-  const playerCount = players.getPlayerCount(id);
+  const space = spaces.getSpace(id);
+  const playerCount = space ? space.playercount : 0;
 
-  console.info(`🔢 Player count for ${toHex(id)}: ${playerCount}`);
+  console.info(`/playercount/${toHex(id)}: ${playerCount}`);
 
   res.write(String(playerCount));
   res.writeStatus("200 OK");

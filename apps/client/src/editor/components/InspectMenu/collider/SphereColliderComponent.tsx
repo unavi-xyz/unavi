@@ -1,17 +1,17 @@
-import { SphereCollider } from "engine";
-
-import { updateNode } from "../../../actions/UpdateNodeAction";
-import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
+import { useCollider } from "../../../hooks/useExtension";
+import { useExtensionAttribute } from "../../../hooks/useExtensionAttribute";
+import { useNode } from "../../../hooks/useNode";
 import NumberInput from "../../ui/NumberInput";
-import MenuRows from "../MenuRows";
+import MenuRows from "../ui/MenuRows";
 
 interface Props {
   nodeId: string;
-  collider: SphereCollider;
 }
 
-export default function SphereColliderComponent({ nodeId, collider }: Props) {
-  const radius = useSubscribeValue(collider.radius$);
+export default function SphereColliderComponent({ nodeId }: Props) {
+  const node = useNode(nodeId);
+  const collider = useCollider(node);
+  const radius = useExtensionAttribute(collider, "radius");
 
   return (
     <MenuRows titles={["Radius"]}>
@@ -21,6 +21,8 @@ export default function SphereColliderComponent({ nodeId, collider }: Props) {
         step={0.1}
         min={0}
         onChange={(e) => {
+          if (!collider) return;
+
           const value = e.target.value;
           if (!value) return;
 
@@ -28,8 +30,6 @@ export default function SphereColliderComponent({ nodeId, collider }: Props) {
           const rounded = Math.round(num * 1000) / 1000;
 
           collider.radius = rounded;
-
-          updateNode(nodeId, { collider: collider.toJSON() });
         }}
       />
     </MenuRows>

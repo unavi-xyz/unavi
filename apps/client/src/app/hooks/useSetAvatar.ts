@@ -25,12 +25,8 @@ export function useSetAvatar() {
     const res = await fetch(url, {
       method: "PUT",
       body,
-      headers: {
-        "Content-Type": body.type,
-        "x-amz-acl": "public-read",
-      },
+      headers: { "Content-Type": body.type, "x-amz-acl": "public-read" },
     });
-
     if (!res.ok) throw new Error("Failed to upload avatar");
 
     // Publish avatar

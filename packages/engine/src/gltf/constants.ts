@@ -1,4 +1,8 @@
-import { DracoMeshCompression, MeshQuantization } from "@gltf-transform/extensions";
+import {
+  DracoMeshCompression,
+  MeshQuantization,
+  TextureTransform,
+} from "@gltf-transform/extensions";
 
 import { ColliderExtension } from "./extensions/Collider/ColliderExtension";
 import { SpawnPointExtension } from "./extensions/SpawnPoint/SpawnPointExtension";
@@ -8,4 +12,5 @@ export const extensions = [
   SpawnPointExtension,
   DracoMeshCompression,
   MeshQuantization,
+  TextureTransform,
 ];

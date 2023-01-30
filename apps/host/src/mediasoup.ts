@@ -48,7 +48,6 @@ export async function createWebRtcTransport(router: Router, webRtcServer: WebRtc
     enableUdp: true,
     enableTcp: true,
     enableSctp: true,
-    preferTcp: true,
     webRtcServer,
   });
 

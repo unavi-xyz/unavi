@@ -1,24 +1,15 @@
-import {
-  AutoCollider,
-  BoxCollider,
-  Collider,
-  CylinderCollider,
-  HullCollider,
-  MeshCollider,
-  SphereCollider,
-} from "engine";
+import { Collider, ColliderExtension, ColliderType } from "engine";
 
-import { updateNode } from "../../actions/UpdateNodeAction";
+import { useCollider } from "../../hooks/useExtension";
+import { useExtensionAttribute } from "../../hooks/useExtensionAttribute";
 import { useNode } from "../../hooks/useNode";
-import { useSubscribeValue } from "../../hooks/useSubscribeValue";
 import { capitalize } from "../../utils/capitalize";
-import { updateGltfColliders } from "../../utils/updateGltfColliders";
 import SelectMenu from "../ui/SelectMenu";
 import BoxColliderComponent from "./collider/BoxColliderComponent";
 import CylinderColliderComponent from "./collider/CylinderColliderComponent";
 import SphereColliderComponent from "./collider/SphereColliderComponent";
 import ComponentMenu from "./ComponentMenu";
-import MenuRows from "./MenuRows";
+import MenuRows from "./ui/MenuRows";
 
 interface Props {
   nodeId: string;
@@ -26,86 +17,71 @@ interface Props {
 
 export default function PhysicsComponent({ nodeId }: Props) {
   const node = useNode(nodeId);
-  const collider = useSubscribeValue(node?.collider$);
-  const meshId = useSubscribeValue(node?.meshId$);
+  const collider = useCollider(node);
+  const type = useExtensionAttribute(collider, "type");
 
-  if (!collider) return null;
+  if (!type) return null;
 
   return (
-    <ComponentMenu title="Physics" onRemove={() => updateNode(nodeId, { collider: null })}>
-      <>
-        <MenuRows titles={["Collider"]}>
-          <SelectMenu
-            value={capitalize(collider.type)}
-            options={["Auto", "Box", "Sphere", "Cylinder", "Mesh"]}
-            onChange={(e) => {
-              const value = e.target.value === "None" ? null : e.target.value;
+    <ComponentMenu
+      title="Physics"
+      onRemove={() => {
+        node?.setExtension(ColliderExtension.EXTENSION_NAME, null);
+      }}
+    >
+      <MenuRows titles={["Collider"]}>
+        <SelectMenu
+          value={capitalize(type)}
+          options={["Box", "Sphere", "Cylinder", "Trimesh"]}
+          onChange={(e) => {
+            if (!node) return;
+
+            const extension = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
+
+            if (extension) {
+              extension.size = null;
+              extension.height = null;
+              extension.radius = null;
+              extension.mesh = null;
+
+              const value = e.target.value.toLowerCase() as ColliderType;
+              extension.type = value;
 
               switch (value) {
-                case "Auto": {
-                  const autoCollider = new AutoCollider();
-                  updateNode(nodeId, { collider: autoCollider.toJSON() });
+                case "box": {
+                  extension.size = [1, 1, 1];
                   break;
                 }
 
-                case "Box": {
-                  const boxCollider = new BoxCollider();
-                  updateNode(nodeId, { collider: boxCollider.toJSON() });
+                case "sphere": {
+                  extension.radius = 0.5;
                   break;
                 }
 
-                case "Sphere": {
-                  const sphereCollider = new SphereCollider();
-                  updateNode(nodeId, { collider: sphereCollider.toJSON() });
+                case "cylinder": {
+                  extension.height = 1;
+                  extension.radius = 0.5;
                   break;
                 }
 
-                case "Cylinder": {
-                  const cylinderCollider = new CylinderCollider();
-                  updateNode(nodeId, { collider: cylinderCollider.toJSON() });
-                  break;
-                }
-
-                case "Hull": {
-                  if (!meshId) break;
-                  const hullCollider = new HullCollider();
-                  hullCollider.meshId = meshId;
-                  updateNode(nodeId, { collider: hullCollider.toJSON() });
-                  break;
-                }
-
-                case "Mesh": {
-                  if (!meshId) break;
-                  const meshCollider = new MeshCollider();
-                  meshCollider.meshId = meshId;
-                  updateNode(nodeId, { collider: meshCollider.toJSON() });
+                case "trimesh": {
+                  const mesh = node.getMesh();
+                  extension.mesh = mesh;
                   break;
                 }
               }
+            }
+          }}
+        />
+      </MenuRows>
 
-              updateGltfColliders(nodeId);
-            }}
-          />
-        </MenuRows>
-
-        <ColliderComponent nodeId={nodeId} collider={collider} />
-      </>
+      {type === "box" ? (
+        <BoxColliderComponent nodeId={nodeId} />
+      ) : type === "sphere" ? (
+        <SphereColliderComponent nodeId={nodeId} />
+      ) : type === "cylinder" ? (
+        <CylinderColliderComponent nodeId={nodeId} />
+      ) : null}
     </ComponentMenu>
   );
-}
-
-function ColliderComponent({ nodeId, collider }: { nodeId: string; collider: Collider | null }) {
-  switch (collider?.type) {
-    case "box":
-      return <BoxColliderComponent nodeId={nodeId} collider={collider} />;
-
-    case "sphere":
-      return <SphereColliderComponent nodeId={nodeId} collider={collider} />;
-
-    case "cylinder":
-      return <CylinderColliderComponent nodeId={nodeId} collider={collider} />;
-
-    default:
-      return null;
-  }
 }

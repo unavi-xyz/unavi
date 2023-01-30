@@ -5,9 +5,10 @@ import {
   Mesh as IMesh,
   Node as INode,
   Texture as ITexture,
+  TextureInfo,
   WebIO,
 } from "@gltf-transform/core";
-import { DracoMeshCompression } from "@gltf-transform/extensions";
+import { DracoMeshCompression, TextureTransform } from "@gltf-transform/extensions";
 import { dedup, prune, resample, textureResize } from "@gltf-transform/functions";
 
 import { extensions } from "../gltf/constants";
@@ -15,9 +16,8 @@ import { ColliderExtension } from "../gltf/extensions/Collider/ColliderExtension
 import { SpawnPointExtension } from "../gltf/extensions/SpawnPoint/SpawnPointExtension";
 import { RenderExport } from "../render/types";
 import { Accessor, Animation, Material, Node, Scene, SceneJSON, Texture } from "../scene";
-import { calcGlobalScale } from "../scene/utils/calcGlobalScale";
-import { convertAutoCollider } from "../scene/utils/convertAutoCollider";
-import { setTextureInfo } from "./utils/setTextureInfo";
+import { calcGlobalScale } from "../scene/attributes/calcGlobalScale";
+import { convertAutoCollider } from "../scene/attributes/convertAutoCollider";
 
 /*
  * Exports the scene as a glTF file.
@@ -27,6 +27,7 @@ export class GLTFExporter {
   #extensions = {
     collider: this.#doc.createExtension(ColliderExtension),
     spawnPoint: this.#doc.createExtension(SpawnPointExtension),
+    transform: this.#doc.createExtension(TextureTransform),
   };
 
   #scene = new Scene();
@@ -402,25 +403,25 @@ export class GLTFExporter {
     if (material.colorTexture) {
       gltfMaterial.setBaseColorTexture(this.#parseTexture(material.colorTexture));
       const info = gltfMaterial.getBaseColorTextureInfo();
-      setTextureInfo(info, material.colorTexture);
+      this.#setTextureInfo(info, material.colorTexture);
     }
 
     if (material.emissiveTexture) {
       gltfMaterial.setEmissiveTexture(this.#parseTexture(material.emissiveTexture));
       const info = gltfMaterial.getEmissiveTextureInfo();
-      setTextureInfo(info, material.emissiveTexture);
+      this.#setTextureInfo(info, material.emissiveTexture);
     }
 
     if (material.normalTexture) {
       gltfMaterial.setNormalTexture(this.#parseTexture(material.normalTexture));
       const info = gltfMaterial.getNormalTextureInfo();
-      setTextureInfo(info, material.normalTexture);
+      this.#setTextureInfo(info, material.normalTexture);
     }
 
     if (material.occlusionTexture) {
       gltfMaterial.setOcclusionTexture(this.#parseTexture(material.occlusionTexture));
       const info = gltfMaterial.getOcclusionTextureInfo();
-      setTextureInfo(info, material.occlusionTexture);
+      this.#setTextureInfo(info, material.occlusionTexture);
     }
 
     if (material.metallicRoughnessTexture) {
@@ -428,7 +429,7 @@ export class GLTFExporter {
         this.#parseTexture(material.metallicRoughnessTexture)
       );
       const info = gltfMaterial.getMetallicRoughnessTextureInfo();
-      setTextureInfo(info, material.metallicRoughnessTexture);
+      this.#setTextureInfo(info, material.metallicRoughnessTexture);
     }
 
     this.#cache.materials.set(material.id, gltfMaterial);
@@ -446,6 +447,27 @@ export class GLTFExporter {
     }
 
     return gltfTexture;
+  }
+
+  #setTextureInfo(info: TextureInfo | null, texture: Texture) {
+    if (!info) return;
+
+    info.setMagFilter(texture.magFilter);
+    info.setMinFilter(texture.minFilter);
+    info.setWrapS(texture.wrapS);
+    info.setWrapT(texture.wrapT);
+
+    // Texture transform
+    if (texture.offset || texture.rotation || texture.scale) {
+      this.#extensions.transform.setRequired(true);
+
+      const transform = this.#extensions.transform.createTransform();
+      info.setExtension("KHR_texture_transform", transform);
+
+      if (texture.offset) transform.setOffset(texture.offset);
+      if (texture.rotation) transform.setRotation(texture.rotation);
+      if (texture.scale) transform.setScale(texture.scale);
+    }
   }
 
   #parseAccessor(accessor: Accessor) {

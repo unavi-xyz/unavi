@@ -1,10 +1,10 @@
-import { Triplet } from "engine";
+import { Vec3 } from "engine";
 import { useEffect, useRef } from "react";
 
 import { rgbToHex } from "../../../utils/rgb";
 
 interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
-  rgbValue?: Triplet;
+  rgbValue?: Vec3;
 }
 
 export default function ColorInput({ rgbValue, onChange, ...rest }: Props) {

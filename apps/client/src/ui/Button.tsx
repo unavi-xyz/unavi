@@ -46,7 +46,13 @@ export default function Button({
     variant === "tonal" ? (color === "primary" ? "bg-sky-200" : "bg-red-200 text-red-900") : null;
 
   const filledClass =
-    variant === "filled" ? (color === "primary" ? "bg-sky-300" : "bg-red-700 text-white") : null;
+    variant === "filled"
+      ? color === "primary"
+        ? "bg-sky-300"
+        : color === "error"
+        ? "bg-red-700 text-white"
+        : "bg-neutral-300"
+      : null;
 
   const elevatedClass =
     variant === "elevated" ? "shadow-dark bg-white text-sky-300 hover:bg-neutral-200/50" : null;

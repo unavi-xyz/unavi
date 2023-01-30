@@ -23,6 +23,7 @@ export default function UserButtons() {
   const [muted, setMuted] = useState(true);
   const hasProducedAudio = useRef(false);
 
+  const engine = useAppStore((state) => state.engine);
   const isPointerLocked = usePointerLocked();
   const setAvatar = useSetAvatar();
   const utils = trpc.useContext();
@@ -35,36 +36,38 @@ export default function UserButtons() {
 
   async function handleClose() {
     setOpenUserPage(false);
+    if (!engine) return;
 
-    const engine = useAppStore.getState().engine;
-    if (!engine) throw new Error("Engine not found");
+    const { didChangeName, didChangeAvatar, nickname, avatar, playerId, players } =
+      useAppStore.getState();
 
-    const { displayName, customAvatar, didChangeName, didChangeAvatar } = useAppStore.getState();
+    if (!players || playerId === null) return;
+    const playerName = players.names.get(playerId);
+    if (!playerName) return;
 
     if (didChangeName) {
       useAppStore.setState({ didChangeName: false });
 
-      // Publish display name
-      sendToHost({ subject: "set_name", data: displayName });
+      // Update name
+      playerName.nickname = nickname;
 
       // Save to local storage
-      if (displayName) localStorage.setItem(LocalStorageKey.Name, displayName);
+      if (nickname) localStorage.setItem(LocalStorageKey.Name, nickname);
       else localStorage.removeItem(LocalStorageKey.Name);
     }
 
     if (didChangeAvatar) {
+      useAppStore.setState({ didChangeAvatar: false });
       // Update engine
-      engine.renderThread.postMessage({ subject: "set_avatar", data: customAvatar });
+      // engine.render.send({ subject: "set_user_avatar", data: customAvatar });
 
-      if (customAvatar) {
+      if (avatar) {
         // Upload avatar
-        setAvatar(customAvatar);
+        setAvatar(avatar);
       } else {
         // Remove avatar
         sendToHost({ subject: "set_avatar", data: null });
-
         localStorage.removeItem(LocalStorageKey.Avatar);
-        useAppStore.setState({ didChangeAvatar: false });
       }
     }
   }

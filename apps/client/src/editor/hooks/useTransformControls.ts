@@ -11,20 +11,29 @@ export function useTransformControls() {
   useEffect(() => {
     if (!engine) return;
 
-    engine.renderThread.onObjectClick = (id) => {
-      useEditorStore.setState({ selectedId: id });
-    };
+    engine.render.addEventListener("clicked_node", (e) => {
+      const nodeId = e.data.nodeId;
+      useEditorStore.setState({ selectedId: nodeId });
+    });
   }, [engine]);
 
   // Attach transform controls to the selected object
   useEffect(() => {
     if (!engine) return;
-    engine.renderThread.setTransformTarget(selectedId);
+
+    engine.render.send({
+      subject: "set_transform_controls_target",
+      data: { nodeId: selectedId },
+    });
   }, [engine, selectedId]);
 
   // Set mode
   useEffect(() => {
     if (!engine) return;
-    engine.renderThread.setTransformMode(tool);
+
+    engine.render.send({
+      subject: "set_transform_controls_mode",
+      data: tool,
+    });
   }, [engine, tool]);
 }

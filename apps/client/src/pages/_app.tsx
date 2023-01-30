@@ -16,6 +16,7 @@ import React from "react";
 import ClientSideProviders from "../client/ClientSideProviders";
 import { AppRouter } from "../server/router/_app";
 import { getBaseUrl } from "../utils/getBaseUrl";
+
 // Export web vitals
 export { reportWebVitals } from "next-axiom";
 
@@ -46,7 +47,7 @@ const App: AppType<{ session: Session | null }> = ({
           {getLayout(<Component {...pageProps} />)}
         </ClientSideProviders>
 
-        <Toaster />
+        <Toaster position="bottom-center" />
       </div>
     </>
   );

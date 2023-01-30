@@ -50,10 +50,10 @@ export default function Settings() {
   );
 
   const { mutateAsync: createMetadataUploadURL } =
-    trpc.social.profile.metadataUploadURL.useMutation();
-  const { mutateAsync: createImageUploadURL } = trpc.social.profile.imageUploadURL.useMutation();
+    trpc.social.profile.getMetadataUpload.useMutation();
+  const { mutateAsync: createImageUploadURL } = trpc.social.profile.getImageUpload.useMutation();
   const { mutateAsync: createCoverImageUploadURL } =
-    trpc.social.profile.coverImageUploadURL.useMutation();
+    trpc.social.profile.getCoverUpload.useMutation();
 
   useEffect(() => {
     if (profile?.handle) setName(profile.handle.string);

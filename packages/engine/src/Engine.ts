@@ -1,114 +1,73 @@
-import { GLTFExporter } from "./exporter/GLTFExporter";
-import { LoaderThread } from "./loader/LoaderThread";
-import { InputManager } from "./main/InputManager";
-import { MainScene } from "./main/MainScene";
-import { PhysicsThread } from "./physics/PhysicsThread";
-import { RenderThread } from "./render/RenderThread";
+import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "./constants";
+import { InputModule } from "./input/InputModule";
+import { PhysicsModule } from "./physics/PhysicsModule";
+import { PlayerModules } from "./player/PlayerModule";
+import { RenderModule } from "./render/RenderModule";
+import { SceneModule } from "./scene/SceneModule";
+
+export type ControlsType = "orbit" | "player";
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
-  camera?: "orbit" | "player";
-  enableTransformControls?: boolean;
-  preserveDrawingBuffer?: boolean;
-  skyboxPath?: string;
-  avatarPath?: string;
-  avatarAnimationsPath?: string;
 }
 
-/*
- * A multi-threaded 3D game engine.
- * Uses Web Workers to offload heavy tasks to separate threads.
- */
 export class Engine {
-  physicsThread: PhysicsThread;
-  loaderThread: LoaderThread;
-  renderThread: RenderThread;
+  readonly canvas: HTMLCanvasElement;
 
-  scene: MainScene;
-  input: InputManager | null = null;
+  readonly input: InputModule;
+  readonly physics: PhysicsModule;
+  readonly player: PlayerModules;
+  readonly render: RenderModule;
+  readonly scene: SceneModule;
 
-  running = false;
+  inputArray: Int16Array;
+  userPosition: Int32Array;
+  userRotation: Int16Array;
+  cameraPosition: Int32Array;
+  cameraYaw: Int16Array;
 
-  constructor({
-    canvas,
-    camera = "player",
-    enableTransformControls,
-    preserveDrawingBuffer,
-    skyboxPath,
-    avatarPath,
-    avatarAnimationsPath,
-  }: EngineOptions) {
-    // Create render thread
-    this.renderThread = new RenderThread({
-      canvas,
-      engine: this,
-      camera,
-      enableTransformControls,
-      preserveDrawingBuffer,
-      skyboxPath,
-      avatarPath,
-      avatarAnimationsPath,
-    });
+  #controls: ControlsType = DEFAULT_CONTROLS;
+  #visuals = DEFAULT_VISUALS;
 
-    this.physicsThread = new PhysicsThread({ canvas, engine: this });
-    this.loaderThread = new LoaderThread();
-    this.scene = new MainScene({
-      physicsThread: this.physicsThread,
-      loaderThread: this.loaderThread,
-      renderThread: this.renderThread,
-    });
-    this.input = new InputManager(this.renderThread, this.physicsThread, camera);
+  constructor({ canvas }: EngineOptions) {
+    this.canvas = canvas;
 
-    // Once the threads are ready, create the player
-    const createPlayer = async () => {
-      await this.renderThread.waitForReady();
-      await this.physicsThread.waitForReady();
+    this.inputArray = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4));
+    this.userPosition = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));
+    this.userRotation = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4));
+    this.cameraPosition = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));
+    this.cameraYaw = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT));
 
-      this.physicsThread.initPlayer();
-    };
-
-    if (camera === "player") createPlayer();
+    this.input = new InputModule(this);
+    this.physics = new PhysicsModule(this);
+    this.player = new PlayerModules(this);
+    this.render = new RenderModule(this);
+    this.scene = new SceneModule(this);
   }
 
-  async waitForReady() {
-    await this.physicsThread.waitForReady();
-    await this.loaderThread.waitForReady();
-    await this.renderThread.waitForReady();
+  get controls() {
+    return this.#controls;
   }
 
-  async start() {
-    await this.waitForReady();
-
-    this.physicsThread.start();
-    this.renderThread.start();
-
-    this.running = true;
+  set controls(value: ControlsType) {
+    this.#controls = value;
+    this.input.keyboard.controls = value;
+    this.render.send({ subject: "set_controls", data: value });
+    this.physics.send({ subject: "set_controls", data: value });
   }
 
-  stop() {
-    this.physicsThread.stop();
-    this.renderThread.stop();
-
-    this.running = false;
+  get visuals() {
+    return this.#visuals;
   }
 
-  async export() {
-    // Get scene
-    const json = this.scene.toJSON(true);
-    const data = await this.renderThread.export();
-
-    // Export as glb
-    const exporter = new GLTFExporter();
-    const glb = await exporter.parse(json, data);
-
-    return glb;
+  set visuals(value: boolean) {
+    this.#visuals = value;
+    this.render.send({ subject: "toggle_visuals", data: value });
   }
 
   destroy() {
-    this.physicsThread.destroy();
-    this.loaderThread.destroy();
-    this.renderThread.destroy();
-    this.scene.destroy();
-    this.input?.destroy();
+    this.render.destroy();
+    this.input.destroy();
+    this.physics.destroy();
   }
 }

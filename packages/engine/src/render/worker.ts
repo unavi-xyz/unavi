@@ -1,4 +1,6 @@
-import { RenderWorker } from "./RenderWorker";
+import { PostMessage } from "../types";
+import { RenderThread } from "./RenderThread";
 
-const renderWorker = new RenderWorker(postMessage.bind(this) as any);
-onmessage = renderWorker.onmessage;
+const renderThread = new RenderThread(postMessage.bind(this) as PostMessage);
+
+onmessage = renderThread.onmessage;

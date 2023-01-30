@@ -5,14 +5,13 @@ import {
 } from "@rainbow-me/rainbowkit-siwe-next-auth";
 import { Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
-import React from "react";
 import { WagmiConfig } from "wagmi";
 
 import { theme } from "./theme";
 import { chains, wagmiClient } from "./wagmi";
 
 const getSiweMessageOptions: GetSiweMessageOptions = () => ({
-  statement: "🔌 Sign in to the Wired",
+  statement: "⌛ Sign in to the Wired",
 });
 
 interface Props {

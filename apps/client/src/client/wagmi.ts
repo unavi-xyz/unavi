@@ -7,7 +7,8 @@ import {
   rainbowWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { chain, Client, configureChains, createClient } from "wagmi";
+import { configureChains, createClient } from "wagmi";
+import { arbitrumGoerli } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
@@ -16,9 +17,9 @@ import { env } from "../env/client.mjs";
 const providers = [publicProvider()];
 
 const apiKey = env.NEXT_PUBLIC_ALCHEMY_ID;
-if (apiKey) providers.push(alchemyProvider({ apiKey }));
+if (apiKey) providers.unshift(alchemyProvider({ apiKey }));
 
-export const { chains, provider } = configureChains([chain.arbitrumGoerli], providers);
+export const { chains, provider } = configureChains([arbitrumGoerli], providers);
 
 const needsInjectedWalletFallback =
   typeof window !== "undefined" &&
@@ -45,4 +46,4 @@ const connectors = connectorsForWallets([
   },
 ]);
 
-export const wagmiClient = createClient({ connectors, provider, autoConnect: true }) as Client;
+export const wagmiClient = createClient({ connectors, provider, autoConnect: true });

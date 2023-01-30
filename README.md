@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./assets/Logo.png" alt="Wired Logo" height="200">
   <h1>The Wired</h1>
-  <strong>🔌 An open and decentralized web-based metaverse platform.</strong>
+  <strong>An open and decentralized web-based metaverse platform.</strong>
 </div>
 
 <br />
@@ -19,14 +19,14 @@
   <a href="https://discord.gg/VCsAEneUMn">
     <img src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord">
   </a>
-  <a href="https://twitter.com/TheWiredXR">
-    <img src="https://img.shields.io/twitter/follow/TheWiredXR?label=TheWiredXR&style=flat&logo=twitter&color=1DA1F2" alt="Twitter">
+  <a href="https://twitter.com/wired_xr">
+    <img src="https://img.shields.io/badge/wired__xr--1DA1F2?logo=twitter" alt="Twitter">
   </a>
 </div>
 
 ## 🔥 Features
 
-- Decentralized identity using [Flamingo 🦩](https://docs.thewired.space/flamingo)
+- Decentralized identity + content distribution over [Ethereum](https://github.com/wired-labs/contracts)
 - Open backend, anyone can run their own servers
 - Custom multi-threaded, [glTF](https://github.com/KhronosGroup/glTF)-based game engine
 - [VRM](https://vrm.dev/) avatar support

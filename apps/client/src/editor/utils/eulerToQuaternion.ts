@@ -1,6 +1,6 @@
-import { Quad, Triplet } from "engine";
+import { Vec3, Vec4 } from "engine";
 
-export function eulerToQuaternion(euler: Triplet): Quad {
+export function eulerToQuaternion(euler: Vec3): Vec4 {
   const x = euler[0] * 0.5;
   const y = euler[1] * 0.5;
   const z = euler[2] * 0.5;

@@ -5,7 +5,7 @@ export default function TextInput(props: Props) {
     <input
       {...props}
       type="text"
-      className="w-full rounded-md bg-neutral-100 pl-2.5 shadow-inner focus:outline-none"
+      className="w-full rounded border border-neutral-300 bg-neutral-50 pl-1 leading-snug"
     />
   );
 }

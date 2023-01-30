@@ -1,4 +1,3 @@
-import { GLTFMesh, Node } from "engine";
 import { useMemo, useState } from "react";
 
 import { useAppStore } from "../../app/store";
@@ -12,12 +11,12 @@ const host =
     : `wss://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
 export function useSpace(id: number) {
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingText, setLoadingText] = useState("Starting engine...");
+  const [sceneDownloaded, setSceneDownloaded] = useState(false);
+  const [sceneLoaded, setSceneLoaded] = useState(false);
 
   const engine = useAppStore((state) => state.engine);
 
-  const { connect } = useHost(host);
+  const { spaceJoined } = useHost(id, host);
 
   const { data: space } = trpc.space.byId.useQuery(
     { id },
@@ -30,37 +29,30 @@ export function useSpace(id: number) {
 
   const join = useMemo(() => {
     return async () => {
-      if (!engine) throw new Error("Engine not found");
-      if (!space?.metadata) throw new Error("Space not found");
+      if (!engine) return;
+      if (!space?.metadata) return;
 
-      // Load scene
-      setLoadingText("Loading scene...");
-      setLoadingProgress(0.1);
+      const res = await fetch(space.metadata.animation_url);
+      const buffer = await res.arrayBuffer();
+      const array = new Uint8Array(buffer);
 
-      const mesh = new GLTFMesh();
-      mesh.uri = space.metadata.animation_url;
+      setSceneDownloaded(true);
 
-      const node = new Node();
-      node.meshId = mesh.id;
+      await engine.scene.loadBinary(array);
 
-      await engine.scene.loadJSON(
-        {
-          nodes: [node.toJSON()],
-          meshes: [mesh.toJSON()],
-        },
-        true
-      );
-
-      // Connect to server
-      setLoadingText("Connecting...");
-      setLoadingProgress(0.5);
-
-      await connect(space.id);
-
-      setLoadingText("Ready!");
-      setLoadingProgress(1);
+      setSceneLoaded(true);
     };
-  }, [engine, space, connect]);
+  }, [engine, space]);
+
+  const loadingText = !sceneDownloaded
+    ? "Downloading scene..."
+    : !sceneLoaded
+    ? "Loading scene..."
+    : !spaceJoined
+    ? "Connecting..."
+    : "Ready!";
+
+  const loadingProgress = !sceneDownloaded ? 0.1 : !sceneLoaded ? 0.3 : !spaceJoined ? 0.75 : 1;
 
   return {
     space,

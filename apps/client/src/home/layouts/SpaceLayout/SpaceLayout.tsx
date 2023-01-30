@@ -33,8 +33,8 @@ export default function SpaceLayout({ id, author, metadata, children }: Props) {
   return (
     <>
       <MetaTags
-        title={metadata?.name}
-        description={metadata?.description}
+        title={metadata?.name ?? `Space ${hexId}`}
+        description={metadata?.description ?? ""}
         image={metadata?.image}
         card="summary_large_image"
       />
@@ -98,7 +98,7 @@ export default function SpaceLayout({ id, author, metadata, children }: Props) {
                 </div>
               </div>
 
-              <Link href={`/app/${hexId}`}>
+              <Link href={`/play/${hexId}`}>
                 <div>
                   <Button variant="filled" fullWidth>
                     <div className="py-2">Join Space</div>

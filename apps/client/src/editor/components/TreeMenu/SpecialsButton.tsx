@@ -3,7 +3,6 @@ import { HiOutlineLightningBolt } from "react-icons/hi";
 
 import DropdownMenu from "../../../ui/DropdownMenu";
 import IconButton from "../../../ui/IconButton";
-import SpecialsMenu from "./SpecialsMenu";
 
 export default function SpecialsButton() {
   const [open, setOpen] = useState(false);
@@ -16,7 +15,7 @@ export default function SpecialsButton() {
 
       <div className="mt-1">
         <DropdownMenu open={open} onClose={() => setOpen(false)}>
-          <SpecialsMenu />
+          {/* <SpecialsMenu /> */}
         </DropdownMenu>
       </div>
     </div>

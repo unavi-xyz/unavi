@@ -14,16 +14,21 @@ export const spaceRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const [author, metadata] = await Promise.all([
-        getSpaceAuthor(input.id),
-        getSpaceMetadata(input.id),
-      ]);
+      try {
+        const [{ address, profile }, metadata] = await Promise.all([
+          getSpaceAuthor(input.id),
+          getSpaceMetadata(input.id),
+        ]);
 
-      return {
-        id: input.id,
-        author,
-        metadata,
-      };
+        return {
+          id: input.id,
+          owner: address,
+          author: profile,
+          metadata,
+        };
+      } catch {
+        return null;
+      }
     }),
 
   latest: publicProcedure

@@ -1,20 +1,19 @@
-import { SphereMesh } from "engine";
-
-import { updateMesh } from "../../../actions/UpdateMeshAction";
-import { useSubscribeValue } from "../../../hooks/useSubscribeValue";
+import { useMesh } from "../../../hooks/useMesh";
+import { useMeshAttribute } from "../../../hooks/useMeshAttribute";
 import NumberInput from "../../ui/NumberInput";
-import MaterialComponent from "../MaterialComponent";
-import MenuRows from "../MenuRows";
+import MenuRows from "../ui/MenuRows";
 
 interface Props {
-  nodeId: string;
-  mesh: SphereMesh;
+  meshId: string;
 }
 
-export default function SphereMeshComponent({ nodeId, mesh }: Props) {
-  const radius = useSubscribeValue(mesh.radius$);
-  const widthSegments = useSubscribeValue(mesh.widthSegments$);
-  const heightSegments = useSubscribeValue(mesh.heightSegments$);
+export default function SphereMeshComponent({ meshId }: Props) {
+  const mesh = useMesh(meshId);
+  const extras = useMeshAttribute(meshId, "extras");
+
+  if (!mesh || extras?.customMesh?.type !== "Sphere") return null;
+
+  const { radius, widthSegments, heightSegments } = extras.customMesh;
 
   return (
     <>
@@ -31,20 +30,24 @@ export default function SphereMeshComponent({ nodeId, mesh }: Props) {
               value={value ?? 0}
               step={step}
               onChange={(e) => {
+                if (extras?.customMesh?.type !== "Sphere") return;
+
                 const value = e.target.value;
                 if (!value) return;
 
                 const num = parseFloat(value);
                 const rounded = Math.round(num * 1000) / 1000;
 
-                updateMesh(mesh.id, { [property]: rounded });
+                extras.customMesh[property] = rounded;
+
+                mesh.setExtras({ ...extras });
               }}
             />
           );
         })}
       </MenuRows>
 
-      <MaterialComponent nodeId={nodeId} />
+      {/* <MaterialComponent meshId={meshId} /> */}
     </>
   );
 }

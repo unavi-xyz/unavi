@@ -3,13 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "license": "GPL-3.0-or-later",
-  "main": "./src/index.ts",
+  "type": "module",
+  "main": "./build/index.js",
   "types": "./src/index.ts",
   "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
     "lint": "cd ../.. && eslint --fix packages/protocol --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
+  "dependencies": {
+    "zod": "^3.20.2"
+  },
   "devDependencies": {
-    "mediasoup-client": "^3.6.68",
+    "mediasoup-client": "^3.6.70",
     "tsconfig": "*",
     "typescript": "~4.9.4"
   }

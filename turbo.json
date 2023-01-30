@@ -3,7 +3,7 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build", "generate"],
-      "outputs": ["build/**", "dist/**", ".next/**"]
+      "outputs": ["build/**"]
     },
     "client#build": {
       "dependsOn": ["^build", "generate"],
@@ -32,7 +32,7 @@
     },
     "host#build": {
       "dependsOn": ["^build", "generate"],
-      "outputs": [],
+      "outputs": ["build/**"],
       "env": [
         "MEDIASOUP_ANNOUNCED_IP",
         "MEDIASOUP_LISTEN_IP",
@@ -42,9 +42,7 @@
         "SSL_KEY"
       ]
     },
-    "lint": {
-      "outputs": []
-    },
+    "lint": {},
     "generate": {
       "cache": false
     },
@@ -56,7 +54,8 @@
       "cache": false
     },
     "dev": {
-      "cache": false
+      "cache": false,
+      "persistent": true
     }
   }
 }

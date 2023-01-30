@@ -2,7 +2,7 @@ import { POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "engine";
 import { Device } from "mediasoup-client";
 import { Transport } from "mediasoup-client/lib/Transport";
 import { fromHostMessageSchema, ToHostMessage } from "protocol";
-import { useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 
 import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
@@ -12,15 +12,17 @@ import { Players } from "../networking/Players";
 
 const PUBLISH_HZ = 15; // X times per second
 
-export function useHost(url: string) {
+export function useHost(id: number, host: string) {
   const engine = useAppStore((state) => state.engine);
   const utils = trpc.useContext();
+
+  const [spaceJoined, setSpaceJoined] = useState(false);
 
   // Create WebSocket connections
   useEffect(() => {
     if (!engine) return;
 
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(host);
     const players = new Players(utils, engine);
     const device = new Device();
     const audioContext = new AudioContext();
@@ -39,13 +41,16 @@ export function useHost(url: string) {
       // Initiate WebRTC connection
       sendToHost({ subject: "get_router_rtp_capabilities", data: null });
 
+      // Join space
+      sendToHost({ subject: "join", data: id });
+
       engine.physics.addEventListener("user_grounded", (event) => {
         sendToHost({ subject: "set_grounded", data: event.data });
       });
     };
 
     ws.onclose = () => {
-      console.info("WebSocket - ❌ Disconnected from host");
+      console.info("WebSocket - ❌ Connection closed");
 
       players.names.forEach((_, id) => {
         engine.player.removePlayer(id);
@@ -66,6 +71,7 @@ export function useHost(url: string) {
 
       switch (subject) {
         case "join_success": {
+          setSpaceJoined(true);
           console.info(`🌏 Joined space as player ${numberToHexDisplay(data.playerId)}`);
           const name = new PlayerName(data.playerId, utils, engine);
           players.names.set(data.playerId, name);
@@ -317,14 +323,11 @@ export function useHost(url: string) {
       if (publishInterval) clearInterval(publishInterval);
       ws.close();
       useAppStore.setState({ ws: null, players: null, playerId: null });
+      setSpaceJoined(false);
     };
-  }, [engine, utils, url]);
+  }, [engine, utils, id, host]);
 
-  const connect = useMemo(() => {
-    return (id: number) => sendToHost({ subject: "join", data: id });
-  }, []);
-
-  return { connect };
+  return { spaceJoined };
 }
 
 export function sendToHost(message: ToHostMessage) {

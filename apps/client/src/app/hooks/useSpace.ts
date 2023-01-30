@@ -11,12 +11,12 @@ const host =
     : `wss://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
 export function useSpace(id: number) {
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingText, setLoadingText] = useState("Starting engine...");
+  const [sceneDownloaded, setSceneDownloaded] = useState(false);
+  const [sceneLoaded, setSceneLoaded] = useState(false);
 
   const engine = useAppStore((state) => state.engine);
 
-  const { connect } = useHost(host);
+  const { spaceJoined } = useHost(id, host);
 
   const { data: space } = trpc.space.byId.useQuery(
     { id },
@@ -32,27 +32,27 @@ export function useSpace(id: number) {
       if (!engine) return;
       if (!space?.metadata) return;
 
-      setLoadingText("Downloading scene...");
-      setLoadingProgress(0.1);
-
       const res = await fetch(space.metadata.animation_url);
       const buffer = await res.arrayBuffer();
       const array = new Uint8Array(buffer);
 
-      setLoadingText("Loading scene...");
-      setLoadingProgress(0.3);
+      setSceneDownloaded(true);
 
       await engine.scene.loadBinary(array);
 
-      setLoadingText("Connecting...");
-      setLoadingProgress(0.75);
-
-      await connect(space.id);
-
-      setLoadingText("Ready!");
-      setLoadingProgress(1);
+      setSceneLoaded(true);
     };
-  }, [engine, space, connect]);
+  }, [engine, space]);
+
+  const loadingText = !sceneDownloaded
+    ? "Downloading scene..."
+    : !sceneLoaded
+    ? "Loading scene..."
+    : !spaceJoined
+    ? "Connecting..."
+    : "Ready!";
+
+  const loadingProgress = !sceneDownloaded ? 0.1 : !sceneLoaded ? 0.3 : !spaceJoined ? 0.75 : 1;
 
   return {
     space,

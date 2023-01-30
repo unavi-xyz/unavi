@@ -4,5 +4,10 @@
     "outDir": "./build"
   },
   "include": ["src"],
-  "extends": "tsconfig/base.json"
+  "extends": "tsconfig/base.json",
+  "references": [
+    {
+      "path": "../../packages/protocol"
+    }
+  ]
 }

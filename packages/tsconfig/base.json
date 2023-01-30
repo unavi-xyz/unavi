@@ -22,5 +22,5 @@
     "target": "ESNext"
   },
   "display": "Default",
-  "exclude": ["node_modules", "build", "dist", ".turbo", ".next"]
+  "exclude": ["node_modules", "build", ".turbo", ".next"]
 }

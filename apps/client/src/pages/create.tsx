@@ -72,7 +72,7 @@ export default function Spaces() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             {authenticated ? (
               status === "success" && unpublishedProjects.length > 0 ? (
                 unpublishedProjects.map(({ id, name, image }) => (
@@ -101,7 +101,7 @@ export default function Spaces() {
             <>
               <div className="text-2xl font-bold">🏙️ Published</div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 {publishedProjects.map(({ id, name }, i) => (
                   <Link key={id} href={`/project/${id}`}>
                     <Card text={name} image={publishedImages[i]} sizes="333px" animateEnter />

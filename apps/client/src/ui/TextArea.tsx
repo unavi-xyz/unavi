@@ -23,7 +23,7 @@ export default function TextArea({ name, textAreaRef, outline, frontAdornment, .
           ref={textAreaRef}
           id={id}
           name={name}
-          className={`h-full max-h-64 w-full rounded-md px-3 py-2 outline-none ${outlineClass}`}
+          className={`h-full max-h-64 w-full rounded-md px-3 py-2 ${outlineClass}`}
           {...rest}
         />
       </div>

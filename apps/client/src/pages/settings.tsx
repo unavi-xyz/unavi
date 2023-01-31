@@ -10,9 +10,7 @@ import { cropImage } from "../editor/utils/cropImage";
 import { env } from "../env/client.mjs";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
-import ProfilePicture from "../home/ProfilePicture";
-import Button from "../ui/Button";
-import ButtonFileInput from "../ui/ButtonFileInput";
+import ImageInput from "../ui/ImageInput";
 import Spinner from "../ui/Spinner";
 import TextArea from "../ui/TextArea";
 import TextField from "../ui/TextField";
@@ -31,8 +29,8 @@ function getProfileCoverImageURL(profileId: string) {
 }
 
 export default function Settings() {
-  const [name, setName] = useState("");
-  const [savingName, setSavingName] = useState(false);
+  const [username, setName] = useState("");
+  const [savingUsername, setSavingName] = useState(false);
 
   const [bio, setBio] = useState("");
   const [profilePicture, setProfilePicture] = useState("");
@@ -64,7 +62,8 @@ export default function Settings() {
     }
   }, [profile]);
 
-  const nameDisabled = savingName || name.length === 0 || name === profile?.handle?.string;
+  const nameDisabled =
+    savingUsername || username.length === 0 || username === profile?.handle?.string;
   const metadataDisabled = savingMetadata;
 
   async function handleSaveName() {
@@ -82,7 +81,7 @@ export default function Settings() {
     // If the user doesn't have a profile, create one
     if (!profile) {
       try {
-        const tx = await contract.mintWithHandle(name);
+        const tx = await contract.mintWithHandle(username);
 
         toast.promise(tx.wait(), {
           loading: "Creating profile...",
@@ -97,7 +96,7 @@ export default function Settings() {
     } else {
       // If the user has a profile, update the name
       try {
-        const tx = await contract.setHandle(profile.id, name);
+        const tx = await contract.setHandle(profile.id, username);
 
         toast.promise(tx.wait(), {
           loading: "Updating name...",
@@ -135,7 +134,7 @@ export default function Settings() {
         description: bio,
         external_url: `https://thewired.space/user/${hexId}`,
         image: profilePicture,
-        name,
+        name: username,
       };
 
       // Upload profile picture to S3 if it's a new one
@@ -249,25 +248,33 @@ export default function Settings() {
         <div className="text-center text-3xl font-black">Edit Profile</div>
 
         <div className="mx-auto w-1/2">
-          <div className="space-y-2">
+          <section className="space-y-2">
             <TextField
-              value={name}
+              value={username}
               onChange={(e) => setName(e.target.value)}
-              name="Name"
+              name="Username"
               autoComplete="off"
-              disabled={savingName}
+              disabled={savingUsername}
               outline
             />
 
             <div className="flex justify-end">
-              <Button variant="tonal" onClick={handleSaveName} disabled={nameDisabled}>
+              <button
+                onClick={handleSaveName}
+                disabled={nameDisabled}
+                className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white transition ${
+                  nameDisabled
+                    ? "cursor-not-allowed opacity-40"
+                    : "hover:scale-105 active:opacity-90"
+                }`}
+              >
                 Save
-              </Button>
+              </button>
             </div>
-          </div>
+          </section>
 
           {hasProfile ? (
-            <div className="space-y-2">
+            <section className="space-y-2">
               <TextArea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
@@ -281,18 +288,8 @@ export default function Settings() {
               <div className="space-y-2">
                 <div className="text-lg font-bold">Profile Picture</div>
 
-                <div className="flex justify-center pb-2">
-                  <div className="flex w-1/2 justify-center">
-                    <ProfilePicture
-                      size={256}
-                      circle
-                      src={profilePicture}
-                      uniqueKey={profile?.handle?.full ?? session?.address ?? ""}
-                    />
-                  </div>
-                </div>
-
-                <ButtonFileInput
+                <ImageInput
+                  src={profilePicture}
                   disabled={savingMetadata}
                   onChange={async (e) => {
                     if (!e.target.files) return;
@@ -308,43 +305,15 @@ export default function Settings() {
 
                     setProfilePicture(croppedUrl);
                   }}
-                >
-                  Upload Image
-                </ButtonFileInput>
-
-                {profilePicture && (
-                  <Button
-                    fullWidth
-                    rounded="small"
-                    color="error"
-                    disabled={savingMetadata}
-                    onClick={() => {
-                      if (savingMetadata) return;
-                      setProfilePicture("");
-                    }}
-                  >
-                    Remove Image
-                  </Button>
-                )}
+                  className="h-48 w-48 rounded-full object-cover"
+                />
               </div>
 
               <div className="space-y-2">
                 <div className="text-lg font-bold">Cover Picture</div>
 
-                <div className="flex justify-center pb-2">
-                  <div className="flex h-40 w-full justify-center rounded-xl bg-sky-100">
-                    {coverImage && (
-                      <img
-                        src={coverImage}
-                        alt=""
-                        crossOrigin="anonymous"
-                        className="h-40 w-full rounded-xl object-cover"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <ButtonFileInput
+                <ImageInput
+                  src={coverImage}
                   disabled={savingMetadata}
                   onChange={async (e) => {
                     if (!e.target.files) return;
@@ -360,32 +329,24 @@ export default function Settings() {
 
                     setCoverImage(croppedUrl);
                   }}
-                >
-                  Upload Image
-                </ButtonFileInput>
-
-                {coverImage && (
-                  <Button
-                    fullWidth
-                    rounded="small"
-                    color="error"
-                    disabled={savingMetadata}
-                    onClick={() => {
-                      if (savingMetadata) return;
-                      setCoverImage("");
-                    }}
-                  >
-                    Remove Image
-                  </Button>
-                )}
+                  className="h-40 w-full rounded-xl object-cover"
+                />
               </div>
 
               <div className="flex justify-end">
-                <Button variant="tonal" onClick={handleSaveMetadata} disabled={metadataDisabled}>
+                <button
+                  onClick={handleSaveMetadata}
+                  disabled={metadataDisabled}
+                  className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white transition ${
+                    metadataDisabled
+                      ? "cursor-not-allowed opacity-40"
+                      : "hover:scale-105 active:opacity-90"
+                  }`}
+                >
                   Save
-                </Button>
+                </button>
               </div>
-            </div>
+            </section>
           ) : null}
         </div>
       </div>

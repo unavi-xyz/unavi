@@ -48,7 +48,7 @@ export default function TextField({
           id={id}
           name={name}
           type="text"
-          className="h-full w-full rounded-md px-3 py-2 outline-none"
+          className="h-full w-full rounded-md px-3 py-2"
           {...rest}
         />
       </div>

@@ -27,7 +27,7 @@ export default function UserPage() {
 
       <div className="space-y-1">
         <div className="flex justify-center">
-          {session?.address ? <ProfileButton fullWidth size="large" /> : <SignInButton />}
+          {session?.address ? <ProfileButton /> : <SignInButton />}
         </div>
       </div>
 

@@ -74,30 +74,30 @@ export default function Index() {
               </div>
             </div>
 
-            <div className="absolute bottom-0 right-0 flex space-x-5">
+            <div className="absolute bottom-0 right-0 flex items-center space-x-4">
               <a
                 href={GITHUB_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="relative h-9 w-9 transition hover:opacity-70"
+                className="transition hover:opacity-70"
               >
-                <Image src={GitHub} fill alt="GitHub logo" />
+                <Image src={GitHub} width={35} height={35} alt="GitHub logo" />
               </a>
               <a
                 href={DISCORD_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="relative h-9 w-9 transition hover:opacity-70"
+                className="transition hover:opacity-70"
               >
-                <Image src={Discord} fill alt="Discord logo" />
+                <Image src={Discord} width={36} height={36} alt="Discord logo" />
               </a>
               <a
                 href={TWITTER_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="relative h-9 w-9 transition hover:opacity-70"
+                className="transition hover:opacity-70"
               >
-                <Image src={Twitter} fill alt="Twitter logo" />
+                <Image src={Twitter} width={36} height={36} alt="Twitter logo" />
               </a>
             </div>
           </section>
@@ -109,6 +109,7 @@ export default function Index() {
                   src={Screenshot3}
                   alt="Screenshot of the Wired"
                   fill
+                  sizes="728"
                   className="rounded-3xl object-cover"
                 />
               </div>
@@ -142,6 +143,7 @@ export default function Index() {
                   src={Screenshot4}
                   alt="Screenshot of the Wired"
                   fill
+                  sizes="728"
                   className="rounded-3xl object-cover"
                 />
               </div>

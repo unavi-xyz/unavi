@@ -26,7 +26,7 @@ export default function Card({
   return (
     <div className="h-full w-full transition hover:scale-105">
       <div
-        className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-sky-100 ${animateCss} ${aspectCss}`}
+        className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-neutral-200 ${animateCss} ${aspectCss}`}
       >
         {image &&
           (isFromCDN(image) ? (
@@ -62,9 +62,7 @@ export default function Card({
           {text && (
             <div
               className="w-full overflow-hidden px-3 pb-2 text-xl font-black drop-shadow-dark"
-              style={{
-                textShadow: "0 0 6px rgba(0, 0, 0, 0.4)",
-              }}
+              style={{ textShadow: "0 0 6px rgba(0, 0, 0, 0.6)" }}
             >
               {text}
             </div>

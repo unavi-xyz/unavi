@@ -13,7 +13,11 @@ export default function ImageInput({ src, className, ...rest }: Props) {
         />
       </label>
 
-      <img src={src} alt="" crossOrigin="anonymous" className={className} />
+      {src ? (
+        <img src={src} alt="" crossOrigin="anonymous" className={className} />
+      ) : (
+        <div className={`bg-neutral-200 ${className}`} />
+      )}
 
       <input id={id} type="file" className="hidden" {...rest} />
     </div>

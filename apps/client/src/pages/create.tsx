@@ -8,7 +8,6 @@ import { env } from "../env/client.mjs";
 import CreateProjectPage from "../home/CreateProjectPage";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
-import Button from "../ui/Button";
 import Card from "../ui/Card";
 import Dialog from "../ui/Dialog";
 
@@ -61,14 +60,17 @@ export default function Spaces() {
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">⚒️ Projects</div>
             <div>
-              <Button
-                variant="outlined"
-                rounded="small"
+              <button
                 disabled={!authenticated}
                 onClick={handleCreateProject}
+                className={`rounded-lg px-5 py-1.5 outline outline-1 outline-neutral-700 transition ${
+                  authenticated
+                    ? "hover:bg-neutral-200 active:opacity-80"
+                    : "cursor-not-allowed opacity-40"
+                }`}
               >
                 <MdAdd className="text-lg" />
-              </Button>
+              </button>
             </div>
           </div>
 
@@ -81,11 +83,11 @@ export default function Spaces() {
                   </Link>
                 ))
               ) : (
-                <div>
+                <div className="col-span-4">
                   No projects found.{" "}
                   <button
                     onClick={handleCreateProject}
-                    className="cursor-pointer font-bold text-sky-400 decoration-2 hover:underline"
+                    className="cursor-pointer font-bold text-neutral-900 decoration-2 hover:underline"
                   >
                     Click here
                   </button>{" "}
@@ -93,7 +95,9 @@ export default function Spaces() {
                 </div>
               )
             ) : (
-              <div className="text-neutral-500">You need to be signed in to create a project.</div>
+              <div className="col-span-4 text-neutral-500">
+                You need to be signed in to create a project.
+              </div>
             )}
           </div>
 

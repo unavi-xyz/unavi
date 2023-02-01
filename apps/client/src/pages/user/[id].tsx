@@ -126,7 +126,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
         </div>
       ) : (
         <div className="max-w-content mx-auto">
-          <div className="h-48 w-full bg-sky-100 md:h-64 lg:rounded-xl">
+          <div className="h-48 w-full bg-neutral-200 md:h-64 lg:rounded-xl">
             <div className="relative h-full w-full object-cover">
               {profile?.metadata?.animation_url &&
                 (isFromCDN(profile.metadata.animation_url) ? (

@@ -35,7 +35,7 @@ export default function ProfilePicture({ src, circle, draggable = true, uniqueKe
       height={size}
       draggable={draggable}
       alt=""
-      className={`${circleClass} bg-sky-100`}
+      className={`${circleClass} bg-neutral-200`}
     />
   ) : (
     <img
@@ -44,7 +44,7 @@ export default function ProfilePicture({ src, circle, draggable = true, uniqueKe
       width={size}
       height={size}
       alt=""
-      className={`${circleClass} bg-sky-100`}
+      className={`${circleClass} bg-neutral-200`}
       crossOrigin="anonymous"
     />
   );

@@ -63,9 +63,6 @@ export default function UserPage() {
 
         {avatar && (
           <Button
-            color="error"
-            rounded="large"
-            fullWidth
             onClick={() => {
               useAppStore.setState({ didChangeAvatar: true, avatar: null });
             }}

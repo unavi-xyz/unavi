@@ -10,6 +10,7 @@ import { cropImage } from "../editor/utils/cropImage";
 import { env } from "../env/client.mjs";
 import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
+import Button from "../ui/Button";
 import ImageInput from "../ui/ImageInput";
 import Spinner from "../ui/Spinner";
 import TextArea from "../ui/TextArea";
@@ -83,13 +84,11 @@ export default function Settings() {
       try {
         const tx = await contract.mintWithHandle(username);
 
-        toast.promise(tx.wait(), {
+        await toast.promise(tx.wait(), {
           loading: "Creating profile...",
           success: "Profile created.",
           error: "Failed to create profile.",
         });
-
-        await tx.wait();
       } catch (err) {
         console.error(err);
       }
@@ -98,13 +97,11 @@ export default function Settings() {
       try {
         const tx = await contract.setHandle(profile.id, username);
 
-        toast.promise(tx.wait(), {
+        await toast.promise(tx.wait(), {
           loading: "Updating name...",
           success: "Name updated.",
           error: "Failed to update name.",
         });
-
-        await tx.wait();
       } catch (err) {
         console.error(err);
       }
@@ -217,16 +214,15 @@ export default function Settings() {
         });
     }
 
-    toast.promise(
-      saveMetadata().finally(() => {
-        setSavingMetadata(false);
-      }),
-      {
+    toast
+      .promise(saveMetadata(), {
         loading: "Updating profile...",
         success: "Profile updated.",
         error: "Failed to update profile.",
-      }
-    );
+      })
+      .finally(() => {
+        setSavingMetadata(false);
+      });
   }
 
   const hasProfile = !isLoading && profile !== undefined;
@@ -259,17 +255,9 @@ export default function Settings() {
             />
 
             <div className="flex justify-end">
-              <button
-                onClick={handleSaveName}
-                disabled={nameDisabled}
-                className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white transition ${
-                  nameDisabled
-                    ? "cursor-not-allowed opacity-40"
-                    : "hover:scale-105 active:opacity-90"
-                }`}
-              >
+              <Button disabled={nameDisabled} onClick={handleSaveName}>
                 Save
-              </button>
+              </Button>
             </div>
           </section>
 
@@ -334,17 +322,9 @@ export default function Settings() {
               </div>
 
               <div className="flex justify-end">
-                <button
-                  onClick={handleSaveMetadata}
-                  disabled={metadataDisabled}
-                  className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white transition ${
-                    metadataDisabled
-                      ? "cursor-not-allowed opacity-40"
-                      : "hover:scale-105 active:opacity-90"
-                  }`}
-                >
+                <Button disabled={metadataDisabled} onClick={handleSaveMetadata}>
                   Save
-                </button>
+                </Button>
               </div>
             </section>
           ) : null}

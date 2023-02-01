@@ -63,7 +63,7 @@ export default function Spaces() {
               <button
                 disabled={!authenticated}
                 onClick={handleCreateProject}
-                className={`rounded-lg px-5 py-1.5 outline outline-1 outline-neutral-700 transition ${
+                className={`rounded-lg px-5 py-1.5 ring-1 ring-neutral-700 transition ${
                   authenticated
                     ? "hover:bg-neutral-200 active:opacity-80"
                     : "cursor-not-allowed opacity-40"

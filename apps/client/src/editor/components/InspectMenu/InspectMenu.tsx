@@ -54,7 +54,7 @@ export default function InspectMenu() {
 
         {availableComponents.length > 0 && (
           <div className="space-y-1 px-5">
-            <Button fullWidth rounded="large" onClick={() => setOpen(true)}>
+            <Button onClick={() => setOpen(true)} className="w-full rounded-lg">
               Add Component
             </Button>
 

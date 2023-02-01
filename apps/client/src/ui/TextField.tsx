@@ -5,20 +5,12 @@ import Tooltip from "./Tooltip";
 
 interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   name?: string;
-  frontAdornment?: string;
   help?: string;
   outline?: boolean;
   inputRef?: RefObject<HTMLInputElement>;
 }
 
-export default function TextField({
-  name,
-  frontAdornment,
-  help,
-  inputRef,
-  outline = false,
-  ...rest
-}: Props) {
+export default function TextField({ name, help, inputRef, outline = false, ...rest }: Props) {
   const id = useId();
 
   const outlineClass = outline ? "border border-neutral-200" : "";
@@ -40,9 +32,6 @@ export default function TextField({
       </div>
 
       <div className={`flex items-center rounded-md bg-white ${outlineClass}`}>
-        {frontAdornment && (
-          <span className="pl-3 font-bold text-neutral-500">{frontAdornment}</span>
-        )}
         <input
           ref={inputRef}
           id={id}

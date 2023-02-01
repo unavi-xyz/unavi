@@ -70,27 +70,24 @@ export default function Settings({ id }: InferGetServerSidePropsType<typeof getS
       ]);
     }
 
-    toast.promise(
-      deleteSpace()
-        .then(() => router.push(`/user/${session?.address}`))
-        .catch((err) => console.error(err))
-        .finally(() => setLoading(false)),
-      {
+    toast
+      .promise(deleteSpace(), {
         loading: "Deleting space...",
         success: "Space deleted",
         error: "Failed to delete space",
-      }
-    );
+      })
+      .then(() => router.push(`/user/${session?.address}`))
+      .catch((err) => console.error(err))
+      .finally(() => setLoading(false));
   }
 
   return (
     <SpaceLayout id={id} author={space?.author ?? null} metadata={space?.metadata ?? null}>
-      <div className="space-y-2 rounded-2xl bg-red-100 p-8 text-red-900">
+      <div className="space-y-2 rounded-2xl bg-red-100 px-8 py-6 text-red-900 ring-2 ring-inset ring-red-900/20">
         <div className="text-2xl font-bold">Danger Zone</div>
-
         <div className="pb-1 text-lg">Deleting a space is permanent and cannot be undone.</div>
 
-        <Button variant="filled" color="error" disabled={loading} onClick={handleDelete}>
+        <Button disabled={loading} onClick={handleDelete} className="rounded-lg bg-red-700">
           Delete Space
         </Button>
       </div>

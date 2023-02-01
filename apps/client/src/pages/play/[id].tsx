@@ -10,15 +10,12 @@ import { useResizeCanvas } from "../../app/hooks/useResizeCanvas";
 import { useSetAvatar } from "../../app/hooks/useSetAvatar";
 import { useSpace } from "../../app/hooks/useSpace";
 import { useAppStore } from "../../app/store";
-import ChatBox from "../../app/ui/ChatBox";
 import LoadingScreen from "../../app/ui/LoadingScreen";
-import MobileChatBox from "../../app/ui/MobileChatBox";
-import UserButton from "../../app/ui/UserButtons";
+import Overlay from "../../app/ui/Overlay";
 import MetaTags from "../../home/MetaTags";
 import { prisma } from "../../server/prisma";
 import { appRouter } from "../../server/router/_app";
 import { hexDisplayToNumber } from "../../utils/numberToHexDisplay";
-import { useIsMobile } from "../../utils/useIsMobile";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   const ONE_MINUTE_IN_SECONDS = 60;
@@ -58,7 +55,6 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
   const engine = useAppStore((state) => state.engine);
 
   const setAvatar = useSetAvatar();
-  const isMobile = useIsMobile();
   useResizeCanvas(engine, canvasRef, containerRef);
   useLoadUser();
   useAppHotkeys();
@@ -132,29 +128,13 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
           useAppStore.setState({ avatar: url });
         }}
       >
-        {loaded && (
-          <div className="absolute inset-x-0 top-0 z-10 mx-auto mt-4 w-96">
-            <UserButton />
-          </div>
-        )}
+        {loaded && <Overlay />}
 
         <div className="h-full">
           <div ref={containerRef} className="relative h-full w-full overflow-hidden">
             <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
           </div>
         </div>
-
-        {loaded ? (
-          isMobile ? (
-            <div className="absolute left-0 bottom-0 z-10 p-4">
-              <MobileChatBox />
-            </div>
-          ) : (
-            <div className="absolute left-0 bottom-0 z-10 w-full max-w-sm p-4">
-              <ChatBox />
-            </div>
-          )
-        ) : null}
       </div>
     </>
   );

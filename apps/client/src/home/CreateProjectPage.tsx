@@ -2,7 +2,6 @@ import { useRouter } from "next/router";
 import { useRef, useState } from "react";
 
 import { trpc } from "../client/trpc";
-import Button from "../ui/Button";
 import TextField from "../ui/TextField";
 
 export default function CreateProjectPage() {
@@ -57,9 +56,15 @@ export default function CreateProjectPage() {
       />
 
       <div className="flex justify-end">
-        <Button variant="filled" onClick={handleCreate} disabled={loading}>
+        <button
+          onClick={handleCreate}
+          disabled={loading}
+          className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white transition ${
+            loading ? "cursor-not-allowed opacity-40" : "hover:scale-105 active:opacity-90"
+          }`}
+        >
           Create
-        </Button>
+        </button>
       </div>
     </div>
   );

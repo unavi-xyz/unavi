@@ -45,8 +45,8 @@ export default function TreeItem({ id }: Props) {
     <div className="relative select-none">
       <div
         style={{ paddingLeft: `${depth + 1}rem` }}
-        className={`flex items-center space-x-1 text-sm text-neutral-800 ${
-          isSelected ? "bg-sky-200 text-black" : "hover:bg-neutral-200"
+        className={`flex items-center space-x-1 text-sm text-neutral-800 active:opacity-80 ${
+          isSelected ? "bg-neutral-200 text-black hover:bg-neutral-300" : "hover:bg-neutral-200"
         }`}
         onMouseDown={(e) => {
           if (e.button !== 0) return;
@@ -147,8 +147,8 @@ export default function TreeItem({ id }: Props) {
           }}
         >
           <div className="flex items-center">
-            <div className="h-1 w-1 rounded-full bg-blue-400" />
-            <div className="h-0.5 w-full bg-blue-400" />
+            <div className="h-1 w-1 rounded-full bg-neutral-800" />
+            <div className="h-0.5 w-full bg-neutral-800" />
           </div>
         </div>
       ) : null}

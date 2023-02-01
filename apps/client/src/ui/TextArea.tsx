@@ -1,12 +1,11 @@
 import { RefObject, useId } from "react";
 
 interface Props extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  frontAdornment?: string;
   outline?: boolean;
   textAreaRef?: RefObject<HTMLTextAreaElement>;
 }
 
-export default function TextArea({ name, textAreaRef, outline, frontAdornment, ...rest }: Props) {
+export default function TextArea({ name, textAreaRef, outline, ...rest }: Props) {
   const id = useId();
 
   const outlineClass = outline ? "border border-neutral-200" : "";
@@ -18,12 +17,11 @@ export default function TextArea({ name, textAreaRef, outline, frontAdornment, .
       </label>
 
       <div className="flex items-center rounded-md">
-        {frontAdornment && <span className="pl-2 font-bold text-sky-300">{frontAdornment}</span>}
         <textarea
           ref={textAreaRef}
           id={id}
           name={name}
-          className={`h-full max-h-64 w-full rounded-md px-3 py-2 outline-none ${outlineClass}`}
+          className={`h-full max-h-64 w-full rounded-md px-3 py-2 ${outlineClass}`}
           {...rest}
         />
       </div>

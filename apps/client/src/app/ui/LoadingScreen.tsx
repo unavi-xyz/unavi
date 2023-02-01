@@ -32,11 +32,11 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
 
   if (enterTransitionFinished) return null;
 
-  const transitionClass = entered ? "opacity-0 backdrop-blur-0" : "opacity-100 backdrop-blur-xl";
+  const transitionClass = entered ? "opacity-0 backdrop-blur-0" : "opacity-100 backdrop-blur-3xl";
 
   return (
     <div
-      className={`absolute z-50 h-screen w-screen bg-white pb-8 transition duration-500 ${transitionClass}`}
+      className={`absolute z-50 h-screen w-screen bg-white/50 pb-8 transition duration-500 ${transitionClass}`}
     >
       <div className="flex h-full animate-fadeInSlow flex-col items-center justify-center">
         <div className="max-w-content space-y-6">
@@ -45,7 +45,7 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
               <div className="flex justify-center text-3xl font-black">{text}</div>
 
               <div className="mx-auto px-8 md:w-1/2">
-                <div className="aspect-card h-full w-full rounded-3xl bg-sky-100">
+                <div className="aspect-card h-full w-full rounded-3xl bg-neutral-200">
                   <div className="relative h-full w-full object-cover">
                     {image &&
                       (isFromCDN(image) ? (

@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { MdPeople } from "react-icons/md";
 
 import { isFromCDN } from "../utils/isFromCDN";
 
@@ -9,7 +8,7 @@ interface Props {
   sizes?: string;
   aspect?: "card" | "vertical";
   animateEnter?: boolean;
-  playerCount?: number;
+  children?: React.ReactNode;
 }
 
 export default function Card({
@@ -18,7 +17,7 @@ export default function Card({
   sizes,
   aspect = "card",
   animateEnter = false,
-  playerCount,
+  children,
 }: Props) {
   const aspectCss = aspect === "card" ? "aspect-card" : "aspect-vertical";
   const animateCss = animateEnter ? "animate-fadeIn" : "";
@@ -26,7 +25,7 @@ export default function Card({
   return (
     <div className="h-full w-full transition hover:scale-105">
       <div
-        className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-sky-100 ${animateCss} ${aspectCss}`}
+        className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-neutral-200 ${animateCss} ${aspectCss}`}
       >
         {image &&
           (isFromCDN(image) ? (
@@ -49,27 +48,18 @@ export default function Card({
             />
           ))}
 
-        <div className="absolute flex h-full w-full items-start p-2 tracking-wide">
-          {playerCount !== undefined && playerCount > 0 && (
-            <div className="flex items-center space-x-1.5 rounded-full bg-black/50 px-3 py-0.5 text-white  backdrop-blur-lg">
-              <MdPeople className="text-lg" />
-              <div className="font-bold">{playerCount}</div>
-            </div>
-          )}
-        </div>
-
         <div className="absolute flex h-full w-full items-end tracking-wide text-white">
           {text && (
             <div
               className="w-full overflow-hidden px-3 pb-2 text-xl font-black drop-shadow-dark"
-              style={{
-                textShadow: "0 0 6px rgba(0, 0, 0, 0.4)",
-              }}
+              style={{ textShadow: "0 0 6px rgba(0, 0, 0, 0.6)" }}
             >
               {text}
             </div>
           )}
         </div>
+
+        {children}
       </div>
     </div>
   );

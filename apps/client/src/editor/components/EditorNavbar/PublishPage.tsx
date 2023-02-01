@@ -9,7 +9,7 @@ import { useSession } from "../../../client/auth/useSession";
 import { trpc } from "../../../client/trpc";
 import { env } from "../../../env/client.mjs";
 import Button from "../../../ui/Button";
-import ButtonFileInput from "../../../ui/ButtonFileInput";
+import ImageInput from "../../../ui/ImageInput";
 import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
 import { numberToHexDisplay } from "../../../utils/numberToHexDisplay";
@@ -201,19 +201,19 @@ export default function PublishPage() {
 
     setLoading(true);
 
-    toast.promise(
-      publish().finally(() => {
-        setLoading(false);
-      }),
-      {
+    toast
+      .promise(publish(), {
         loading: "Publishing...",
         success: "Published!",
         error: "Failed to publish",
-      }
-    );
+      })
+      .catch((err) => console.error(err))
+      .finally(() => {
+        setLoading(false);
+      });
   }
 
-  const image = imageFile ? URL.createObjectURL(imageFile) : null;
+  const image = imageFile ? URL.createObjectURL(imageFile) : undefined;
 
   return (
     <div className="space-y-4">
@@ -247,15 +247,8 @@ export default function PublishPage() {
         <div className="space-y-2">
           <div className="text-lg font-bold">Image</div>
 
-          <div className="relative aspect-card h-full w-full rounded-xl bg-sky-100">
-            {image && (
-              <img src={image} alt="picture preview" className="h-full w-full rounded-xl" />
-            )}
-          </div>
-
-          <ButtonFileInput
-            name="Cover Picture"
-            accept="image/*"
+          <ImageInput
+            src={image}
             disabled={loading}
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -263,14 +256,12 @@ export default function PublishPage() {
 
               cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
             }}
-          >
-            Upload Image
-          </ButtonFileInput>
+          />
         </div>
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={handlePublish} variant="filled" disabled={loading}>
+        <Button disabled={loading} onClick={handlePublish}>
           {signer ? "Submit" : "Sign In"}
         </Button>
       </div>

@@ -20,15 +20,16 @@ export default function NavbarTab({ href, text }: Props) {
     setSelected(router.asPath.startsWith(href));
   }, [router, href]);
 
-  const selectedClass = selected ? "bg-sky-200" : "hover:bg-neutral-200";
+  const selectedClass = selected
+    ? "bg-neutral-200 hover:bg-neutral-300 active:bg-neutral-400/60"
+    : "hover:bg-neutral-200 active:bg-neutral-300";
 
   return (
-    <Link href={href}>
-      <button
-        className={`cursor-pointer rounded-lg px-4 py-1 font-bold transition ${selectedClass}`}
-      >
-        {text}
-      </button>
+    <Link
+      href={href}
+      className={`cursor-pointer rounded-md px-4 py-1 font-bold transition ${selectedClass}`}
+    >
+      {text}
     </Link>
   );
 }

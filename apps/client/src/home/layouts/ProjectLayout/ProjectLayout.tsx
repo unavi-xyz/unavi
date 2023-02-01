@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import Button from "../../../ui/Button";
 import NavigationTab from "../../../ui/NavigationTab";
 import { isFromCDN } from "../../../utils/isFromCDN";
 import MetaTags from "../../MetaTags";
@@ -24,7 +23,7 @@ export default function ProjectLayout({ name, image, children }: Props) {
       <div className="mx-4 h-full">
         <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
           <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
-            <div className="aspect-card h-full w-full rounded-2xl bg-sky-100">
+            <div className="aspect-card h-full w-full rounded-2xl bg-neutral-200">
               <div className="relative h-full w-full object-cover">
                 {image &&
                   (isFromCDN(image) ? (
@@ -52,12 +51,11 @@ export default function ProjectLayout({ name, image, children }: Props) {
                 <div className="flex justify-center text-3xl font-black">{name}</div>
               </div>
 
-              <Link href={`/editor/${id}`}>
-                <div className="w-full">
-                  <Button variant="filled" fullWidth>
-                    <div className="py-2">Open Editor</div>
-                  </Button>
-                </div>
+              <Link
+                href={`/editor/${id}`}
+                className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white transition hover:scale-105 active:opacity-90"
+              >
+                Open Editor
               </Link>
             </div>
           </div>

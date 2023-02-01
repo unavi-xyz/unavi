@@ -9,25 +9,25 @@ export default function MobileChatBox() {
   return (
     <div className="space-y-2 p-2">
       {openChat && (
-        <div className="fixed left-0 bottom-0 z-50 flex h-full w-full flex-col justify-between space-y-4 bg-black/40 p-4 backdrop-blur-md">
+        <div className="fixed left-0 bottom-0 z-50 flex h-full w-full flex-col justify-between space-y-4 bg-black/40 p-4 backdrop-blur-lg">
           <div className="flex w-full justify-end">
             <button
               onClick={() => setOpenChat(false)}
-              className="aspect-square rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg active:bg-white/90 active:shadow-lg"
+              className="rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg active:bg-white/90 active:shadow-lg"
             >
               <MdClose />
             </button>
           </div>
 
           <div className="h-max">
-            <ChatBox />
+            <ChatBox alwaysShow />
           </div>
         </div>
       )}
 
       <button
         onClick={() => setOpenChat(true)}
-        className="aspect-square rounded-full bg-white p-4 text-2xl shadow transition hover:shadow-lg"
+        className="rounded-full bg-white/50 p-4 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
       >
         <MdOutlineChat />
       </button>

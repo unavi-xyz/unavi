@@ -14,7 +14,6 @@ import ProfilePicture from "../../home/ProfilePicture";
 import SpaceCard from "../../home/SpaceCard";
 import { prisma } from "../../server/prisma";
 import { appRouter } from "../../server/router/_app";
-import Button from "../../ui/Button";
 import Spinner from "../../ui/Spinner";
 import { isFromCDN } from "../../utils/isFromCDN";
 import { hexDisplayToNumber, numberToHexDisplay } from "../../utils/numberToHexDisplay";
@@ -127,7 +126,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
         </div>
       ) : (
         <div className="max-w-content mx-auto">
-          <div className="h-48 w-full bg-sky-100 md:h-64 lg:rounded-xl">
+          <div className="h-48 w-full bg-neutral-200 md:h-64 lg:rounded-xl">
             <div className="relative h-full w-full object-cover">
               {profile?.metadata?.animation_url &&
                 (isFromCDN(profile.metadata.animation_url) ? (
@@ -150,7 +149,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
             </div>
           </div>
 
-          <section className="flex justify-center px-4 pb-4 md:px-0">
+          <section className="flex justify-center px-4 pb-6 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
                 <ProfilePicture
@@ -161,7 +160,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                 />
               </div>
 
-              <div className="flex flex-col items-center pt-1">
+              <div className="flex flex-col items-center">
                 {profile?.handle ? (
                   <div>
                     <span className="text-2xl font-black">{profile.handle.string}</span>
@@ -174,72 +173,21 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                 <div className="text-lg text-neutral-500">{isAddress ? id : profile?.owner}</div>
               </div>
 
-              {/* <div className="flex w-full justify-center space-x-4 py-2 text-lg">
-                <div className="flex flex-col items-center md:flex-row md:space-x-1">
-                  <div className="font-bold">{0}</div>
-                  <div className="text-neutral-500">Following</div>
-                </div>
-
-                <div className="flex flex-col items-center md:flex-row md:space-x-1">
-                  <div className="font-bold">{0}</div>
-                  <div className="text-neutral-500">Followers</div>
-                </div>
-              </div> */}
-
               {profile?.metadata?.description && (
-                <div className="w-full">
-                  <div className="whitespace-pre-line text-center">
-                    {profile.metadata.description}
-                  </div>
+                <div className="w-full whitespace-pre-line text-center">
+                  {profile.metadata.description}
                 </div>
               )}
 
-              <div className="flex w-full justify-center space-x-2">
+              <div className="flex w-full justify-center space-x-2 pt-1">
                 {isUser ? (
-                  <Link href="/settings">
-                    <div>
-                      <Button variant="outlined" rounded="small">
-                        <div className="px-6">Edit profile</div>
-                      </Button>
-                    </div>
+                  <Link
+                    href="/settings"
+                    className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
+                  >
+                    Edit profile
                   </Link>
                 ) : null}
-
-                {/* {twitter && (
-                  <Button variant="outlined" rounded="small">
-                    <a
-                      href={`https://twitter.com/${twitter.value}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="hover:underline"
-                    >
-                      <FaTwitter className="text-lg" />
-                    </a>
-                  </Button>
-                )} */}
-              </div>
-            </div>
-          </section>
-
-          <section className="flex w-full flex-col items-center px-4 md:items-start md:px-0">
-            <div className="flex w-full flex-col items-center space-y-2">
-              <div className="flex flex-wrap space-x-4 pt-4">
-                {/* {location && (
-                  <AttributeRow icon={<MdOutlineLocationOn />}>{location.value}</AttributeRow>
-                )} */}
-
-                {/* {website && (
-                  <AttributeRow icon={<MdLink />}>
-                    <a
-                      href={website.value}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="hover:underline"
-                    >
-                      {website.value}
-                    </a>
-                  </AttributeRow>
-                )} */}
               </div>
             </div>
           </section>

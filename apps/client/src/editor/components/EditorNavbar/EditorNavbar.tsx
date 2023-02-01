@@ -129,9 +129,7 @@ export default function EditorNavbar() {
             </Tooltip>
           </div>
 
-          <Button variant="filled" onClick={handleOpenPublish}>
-            Publish
-          </Button>
+          <Button onClick={handleOpenPublish}>Publish</Button>
         </div>
       </div>
     </>

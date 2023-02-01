@@ -55,7 +55,7 @@ export default function Explore() {
         <div className="max-w-content space-y-8">
           <div className="flex justify-center text-3xl font-black">Explore</div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-3">
             {spaces?.map(({ id, metadata }) => {
               return (
                 <Link href={`/space/${numberToHexDisplay(id)}`} key={id}>

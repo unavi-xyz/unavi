@@ -66,7 +66,7 @@ export default function ChatBox({ alwaysShow }: Props) {
           onBlur={() => useAppStore.setState({ chatBoxFocused: false })}
           type="text"
           placeholder="Send a message..."
-          className={`h-full w-full rounded-lg px-4 py-2 text-white outline-none drop-shadow backdrop-blur-3xl transition placeholder:drop-shadow ${focusedClass}`}
+          className={`h-full w-full rounded-lg px-4 py-2 text-white outline-none drop-shadow backdrop-blur-2xl transition placeholder:drop-shadow ${focusedClass}`}
         />
       </div>
     </div>

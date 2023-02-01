@@ -18,7 +18,7 @@ export default function Navbar() {
             href="/"
             className="relative aspect-square h-10 cursor-pointer rounded-full outline-neutral-400"
           >
-            <Image src={Logo} alt="logo" priority fill sizes="36px" />
+            <Image src={Logo} alt="logo" priority width={40} height={40} />
           </Link>
         </div>
 

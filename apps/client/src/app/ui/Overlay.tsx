@@ -114,7 +114,7 @@ export default function Overlay() {
 
       <div className="absolute top-0 left-0 z-10 p-4">
         <Link href={`/space/${id}`} onClick={handleMic}>
-          <div className="rounded-full bg-white/50 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80">
+          <div className="rounded-full bg-white/60 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80">
             <IoMdArrowRoundBack />
           </div>
         </Link>
@@ -123,13 +123,13 @@ export default function Overlay() {
       <div className="absolute top-0 right-0 z-10 space-x-2 p-4">
         <button
           onClick={handleMic}
-          className="rounded-full bg-white/50 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
+          className="rounded-full bg-white/60 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
         >
           {muted ? <MdMicOff className="text-red-700" /> : <MdMic />}
         </button>
         <button
           onClick={() => setOpenUserPage(true)}
-          className="rounded-full bg-white/50 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
+          className="rounded-full bg-white/60 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
         >
           <IoMdSettings />
         </button>

@@ -36,7 +36,7 @@ export default function ProfileButton() {
               uniqueKey={profile?.handle?.full ?? session.address}
               circle
               draggable={false}
-              size={36}
+              size={40}
             />
           ) : null}
         </div>

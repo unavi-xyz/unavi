@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { usePointerLocked } from "../hooks/usePointerLocked";
+import { useAppStore } from "../store";
 
 export type ChatMessage =
   | {
@@ -25,23 +25,30 @@ interface Props {
 }
 
 export default function ChatMessage({ message }: Props) {
-  const isPointerLocked = usePointerLocked();
+  const chatBoxFocused = useAppStore((state) => state.chatBoxFocused);
   const [visible, setVisible] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     setVisible(true);
+    setHidden(false);
 
-    // Hide after 10 seconds
+    // Fade out then hide
     const timeout = setTimeout(() => setVisible(false), 10000);
+    const timeout2 = setTimeout(() => setHidden(true), 11000);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(timeout2);
+    };
   }, [message]);
 
-  const visibleClass = !isPointerLocked || visible ? "opacity-100" : "opacity-0";
+  const fadeClass = visible || chatBoxFocused ? "opacity-100" : "opacity-0";
+  const hiddenClass = !hidden || chatBoxFocused ? "" : "hidden";
 
   return (
     <div
-      className={`my-0.5 w-fit max-w-full rounded-lg bg-white px-4 py-1 transition duration-500 ${visibleClass}`}
+      className={`my-0.5 w-fit max-w-full rounded-lg bg-white px-4 py-1 transition duration-500 ${hiddenClass} ${fadeClass}`}
     >
       {message.type === "chat" ? (
         <div className="whitespace-pre break-words">

@@ -5,7 +5,11 @@ import { useIsMobile } from "../../utils/useIsMobile";
 import { sendToHost } from "../hooks/useHost";
 import ChatMessage from "./ChatMessage";
 
-export default function ChatBox() {
+interface Props {
+  alwaysShow?: boolean;
+}
+
+export default function ChatBox({ alwaysShow }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const chatBoxFocused = useAppStore((state) => state.chatBoxFocused);
@@ -35,7 +39,7 @@ export default function ChatBox() {
         style={{ maxHeight: "calc(100vh - 140px)" }}
       >
         {chatMessages?.map((message) => (
-          <ChatMessage key={message.id} message={message} />
+          <ChatMessage key={message.id} message={message} alwaysShow={alwaysShow} />
         ))}
       </div>
 

@@ -15,6 +15,6 @@ export async function getProfileHandle(profileId: number) {
   return {
     id: handleId,
     string: handleString,
-    full: `${handleString}#${handleId}`,
+    full: `${handleString}#${handleId.toString().padStart(4, "0")}`,
   };
 }

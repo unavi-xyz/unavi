@@ -22,9 +22,10 @@ export type ChatMessage =
 
 interface Props {
   message: ChatMessage;
+  alwaysShow?: boolean;
 }
 
-export default function ChatMessage({ message }: Props) {
+export default function ChatMessage({ message, alwaysShow }: Props) {
   const chatBoxFocused = useAppStore((state) => state.chatBoxFocused);
   const [visible, setVisible] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -43,8 +44,8 @@ export default function ChatMessage({ message }: Props) {
     };
   }, [message]);
 
-  const fadeClass = visible || chatBoxFocused ? "opacity-100" : "opacity-0";
-  const hiddenClass = !hidden || chatBoxFocused ? "" : "hidden";
+  const fadeClass = alwaysShow || visible || chatBoxFocused ? "opacity-100" : "opacity-0";
+  const hiddenClass = alwaysShow || !hidden || chatBoxFocused ? "" : "hidden";
 
   return (
     <div

@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function ProfilePicture({ src, circle, draggable = true, uniqueKey, size }: Props) {
-  const circleClass = circle ? "rounded-full" : "rounded-xl";
+  const circleClass = circle ? "rounded-full" : "rounded-lg";
 
   if (!src) {
     if (uniqueKey)

@@ -1,33 +1,34 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
-import { IoMdArrowRoundBack, IoMdPerson } from "react-icons/io";
+import { IoMdArrowRoundBack, IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
-import { useAppStore } from "../../app/store";
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
 import Dialog from "../../ui/Dialog";
-import Tooltip from "../../ui/Tooltip";
+import { useIsMobile } from "../../utils/useIsMobile";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "../hooks/useHost";
-import { usePointerLocked } from "../hooks/usePointerLocked";
 import { useSetAvatar } from "../hooks/useSetAvatar";
-import UserPage from "./UserPage";
+import { useAppStore } from "../store";
+import ChatBox from "./ChatBox";
+import MobileChatBox from "./MobileChatBox";
+import Settings from "./Settings";
 
-export default function UserButtons() {
-  const router = useRouter();
-  const id = router.query.id as string;
-
+export default function Overlay() {
+  const engine = useAppStore((state) => state.engine);
   const [openUserPage, setOpenUserPage] = useState(false);
   const [muted, setMuted] = useState(true);
   const hasProducedAudio = useRef(false);
 
-  const engine = useAppStore((state) => state.engine);
-  const isPointerLocked = usePointerLocked();
+  const isMobile = useIsMobile();
   const setAvatar = useSetAvatar();
   const utils = trpc.useContext();
+  const router = useRouter();
   const { data: session } = useSession();
+
+  const id = router.query.id as string;
 
   useEffect(() => {
     if (!session?.address) return;
@@ -59,7 +60,7 @@ export default function UserButtons() {
     if (didChangeAvatar) {
       useAppStore.setState({ didChangeAvatar: false });
       // Update engine
-      // engine.render.send({ subject: "set_user_avatar", data: customAvatar });
+      engine.render.send({ subject: "set_user_avatar", data: avatar });
 
       if (avatar) {
         // Upload avatar
@@ -105,41 +106,43 @@ export default function UserButtons() {
     else producer?.resume();
   }
 
-  const opacityClass = isPointerLocked ? "opacity-0" : "opacity-100";
-  const mutedClass = muted ? "text-red-600" : "text-black";
-
   return (
     <>
       <Dialog open={openUserPage} onClose={handleClose}>
-        <UserPage />
+        <Settings />
       </Dialog>
 
-      <div className={`flex items-center justify-center space-x-4 transition ${opacityClass}`}>
-        <Tooltip text="Leave">
-          <Link href={`/space/${id}`}>
-            <div className="aspect-square cursor-pointer rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg">
-              <IoMdArrowRoundBack />
-            </div>
-          </Link>
-        </Tooltip>
+      <div className="absolute top-0 left-0 z-10 p-4">
+        <Link href={`/space/${id}`} onClick={handleMic}>
+          <div className="rounded-full bg-white/50 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80">
+            <IoMdArrowRoundBack />
+          </div>
+        </Link>
+      </div>
 
-        <Tooltip text="Identity">
-          <button
-            onClick={() => setOpenUserPage(true)}
-            className="aspect-square rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg"
-          >
-            <IoMdPerson />
-          </button>
-        </Tooltip>
+      <div className="absolute top-0 right-0 z-10 space-x-2 p-4">
+        <button
+          onClick={handleMic}
+          className="rounded-full bg-white/50 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
+        >
+          {muted ? <MdMicOff className="text-red-700" /> : <MdMic />}
+        </button>
+        <button
+          onClick={() => setOpenUserPage(true)}
+          className="rounded-full bg-white/50 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
+        >
+          <IoMdSettings />
+        </button>
+      </div>
 
-        <Tooltip text={muted ? "Unmute" : "Mute"}>
-          <button
-            onClick={handleMic}
-            className={`${mutedClass} aspect-square rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg`}
-          >
-            {muted ? <MdMicOff /> : <MdMic />}
-          </button>
-        </Tooltip>
+      <div className="absolute bottom-0 left-0 z-10 p-4">
+        {isMobile ? (
+          <MobileChatBox />
+        ) : (
+          <div className="w-96">
+            <ChatBox />
+          </div>
+        )}
       </div>
     </>
   );

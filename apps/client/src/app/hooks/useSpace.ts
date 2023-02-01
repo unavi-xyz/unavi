@@ -52,7 +52,7 @@ export function useSpace(id: number) {
     ? "Connecting..."
     : "Ready!";
 
-  const loadingProgress = !sceneDownloaded ? 0.1 : !sceneLoaded ? 0.3 : !spaceJoined ? 0.75 : 1;
+  const loadingProgress = !sceneDownloaded ? 0.1 : !sceneLoaded ? 0.4 : !spaceJoined ? 0.75 : 1;
 
   return {
     space,

@@ -121,7 +121,10 @@ export default function Index() {
               </div>
               <div className="text-center text-lg text-neutral-600 md:text-start md:text-xl">
                 The Wired reimagines the web as an interconnected network of 3D spaces, instead of
-                2D websites. <strong>Anyone can host their own space, on their own servers.</strong>
+                2D websites.{" "}
+                <strong className="text-neutral-900">
+                  Anyone can host their own space, on their own servers.
+                </strong>
               </div>
             </div>
           </section>
@@ -132,8 +135,9 @@ export default function Index() {
                 Cross Platform
               </div>
               <div className="text-center text-lg text-neutral-600 md:text-start md:text-xl">
-                All you need is a <strong>web browser</strong> - explore the Wired from your phone,
-                laptop, or VR headset. Wherever you are, you can stay connected with your friends.
+                All you need is a <strong className="text-neutral-900">web browser</strong> -
+                explore the Wired from your phone, laptop, or VR headset. Wherever you are, you can
+                stay connected with your friends.
               </div>
             </div>
 

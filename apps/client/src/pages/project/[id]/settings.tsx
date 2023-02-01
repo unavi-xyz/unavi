@@ -147,7 +147,7 @@ export default function Project() {
             manually here.
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             <input
               ref={spaceIdRef}
               type="text"
@@ -165,14 +165,17 @@ export default function Project() {
             </Button>
 
             {project?.Publication?.spaceId && (
-              <Link href={`/space/${numberToHexDisplay(project?.Publication?.spaceId)}`}>
-                Go To
+              <Link
+                href={`/space/${numberToHexDisplay(project?.Publication?.spaceId)}`}
+                className="flex h-9 items-center justify-center rounded-lg px-4 font-bold hover:bg-neutral-200 active:opacity-80"
+              >
+                View
               </Link>
             )}
           </div>
         </div>
 
-        <div className="space-y-2 rounded-2xl bg-red-100 p-8 text-red-900 ring-2 ring-inset ring-red-900/20">
+        <div className="space-y-2 rounded-2xl bg-red-100 px-8 py-6 text-red-900 ring-2 ring-inset ring-red-900/20">
           <div className="text-2xl font-bold">Danger Zone</div>
           <div className="pb-1 text-lg">Deleting a project is permanent and cannot be undone.</div>
 

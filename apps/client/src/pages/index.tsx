@@ -119,7 +119,7 @@ export default function Index() {
               <div className="text-center text-3xl font-black md:text-start md:text-4xl">
                 The Spatial Web
               </div>
-              <div className="text-center text-lg text-neutral-700 md:text-start md:text-xl">
+              <div className="text-center text-lg text-neutral-600 md:text-start md:text-xl">
                 The Wired reimagines the web as an interconnected network of 3D spaces, instead of
                 2D websites. <strong>Anyone can host their own space, on their own servers.</strong>
               </div>
@@ -131,7 +131,7 @@ export default function Index() {
               <div className="text-center text-3xl font-black md:text-start md:text-4xl">
                 Cross Platform
               </div>
-              <div className="text-center text-lg text-neutral-700 md:text-start md:text-xl">
+              <div className="text-center text-lg text-neutral-600 md:text-start md:text-xl">
                 All you need is a <strong>web browser</strong> - explore the Wired from your phone,
                 laptop, or VR headset. Wherever you are, you can stay connected with your friends.
               </div>
@@ -153,7 +153,7 @@ export default function Index() {
           <section className="show-on-scroll mt-40 space-y-4 rounded-3xl p-8 outline outline-2 outline-black md:p-12">
             <div className="text-center text-3xl font-black md:text-4xl">Open by Design</div>
 
-            <div className="mx-auto text-center text-lg text-neutral-700 md:w-1/2 md:text-xl">
+            <div className="mx-auto text-center text-lg text-neutral-600 md:w-1/2 md:text-xl">
               Each layer is open for others to build on. Mod your client, run your own servers - the
               possibilities are endless.
             </div>

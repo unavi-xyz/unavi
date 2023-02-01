@@ -18,7 +18,7 @@ export default function IconButton({
   cursor = "default",
   ...rest
 }: Props) {
-  const selectedClass = selected ? "bg-sky-200" : "hover:bg-neutral-200";
+  const selectedClass = selected ? "bg-neutral-200 hover:bg-neutral-300" : "hover:bg-neutral-200";
 
   const roundedClass = rounded === "full" ? "rounded-full" : "rounded-lg";
 
@@ -28,7 +28,7 @@ export default function IconButton({
 
   return (
     <button
-      className={`flex aspect-square h-full items-center justify-center text-2xl transition ${cursorClass} ${roundedClass} ${selectedClass}`}
+      className={`flex aspect-square h-full items-center justify-center text-2xl transition active:opacity-80 ${cursorClass} ${roundedClass} ${selectedClass}`}
       {...rest}
     >
       {loading && (

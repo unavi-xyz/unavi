@@ -112,7 +112,7 @@ export default function Overlay() {
         <Settings />
       </Dialog>
 
-      <div className="absolute top-0 left-0 z-10 p-4">
+      <div className="absolute top-0 left-0 z-20 p-4">
         <Link href={`/space/${id}`} onClick={handleMic}>
           <div className="rounded-full bg-white/60 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80">
             <IoMdArrowRoundBack />
@@ -120,7 +120,7 @@ export default function Overlay() {
         </Link>
       </div>
 
-      <div className="absolute top-0 right-0 z-10 space-x-2 p-4">
+      <div className="absolute top-0 right-0 z-20 space-x-2 p-4">
         <button
           onClick={handleMic}
           className="rounded-full bg-white/60 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
@@ -135,7 +135,7 @@ export default function Overlay() {
         </button>
       </div>
 
-      <div className="absolute bottom-0 left-0 z-10 p-4">
+      <div className="absolute bottom-0 left-0 z-20 p-4">
         {isMobile ? (
           <MobileChatBox />
         ) : (

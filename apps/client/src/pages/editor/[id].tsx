@@ -18,20 +18,21 @@ import Spinner from "../../ui/Spinner";
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
 
   const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
 
-  const resize = useResizeCanvas(engine, canvasRef, containerRef);
+  const resize = useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
   useLoad();
   useAutosave();
   useTransformControls();
   useEditorHotkeys();
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !overlayRef.current) return;
 
-    const engine = new Engine({ canvas: canvasRef.current });
+    const engine = new Engine({ canvas: canvasRef.current, overlayCanvas: overlayRef.current });
     engine.controls = "orbit";
     engine.visuals = true;
 
@@ -109,6 +110,10 @@ export default function Editor() {
               )}
 
               <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
+              <canvas
+                ref={overlayRef}
+                className={`absolute top-0 left-0 z-10 h-full w-full transition ${loadedClass}`}
+              />
             </div>
           </div>
 

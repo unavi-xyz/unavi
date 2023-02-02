@@ -42,7 +42,7 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
     this.send({
       subject: "set_user_arrays",
       data: {
-        input: this.engine.inputArray,
+        input: this.engine.inputPosition,
         userPosition: this.engine.userPosition,
         cameraYaw: this.engine.cameraYaw,
       },

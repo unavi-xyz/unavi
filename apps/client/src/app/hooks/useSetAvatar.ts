@@ -4,7 +4,7 @@ import { env } from "../../env/client.mjs";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "./useHost";
 
-function getAvatarURL(fileId: string) {
+export function getTempURL(fileId: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/temp/${fileId}`;
 }
 
@@ -17,21 +17,28 @@ export function useSetAvatar() {
 
     useAppStore.setState({ didChangeAvatar: false });
 
-    // Get avatar file
-    const body = await fetch(avatar).then((res) => res.blob());
-    const { url, fileId } = await createTempUpload();
+    let avatarURL = avatar;
 
-    // Upload to S3
-    const res = await fetch(url, {
-      method: "PUT",
-      body,
-      headers: { "Content-Type": body.type, "x-amz-acl": "public-read" },
-    });
-    if (!res.ok) throw new Error("Failed to upload avatar");
+    const isUrl = avatarURL.startsWith("http");
+    if (!isUrl) {
+      // Get avatar file
+      const body = await fetch(avatar).then((res) => res.blob());
+      const { url, fileId } = await createTempUpload();
+
+      // Upload to S3
+      const res = await fetch(url, {
+        method: "PUT",
+        body,
+        headers: { "Content-Type": body.type, "x-amz-acl": "public-read" },
+      });
+      if (!res.ok) throw new Error("Failed to upload avatar");
+
+      avatarURL = getTempURL(fileId);
+    }
 
     // Publish avatar
-    const avatarURL = getAvatarURL(fileId);
     sendToHost({ subject: "set_avatar", data: avatarURL });
+    useAppStore.setState({ avatar: avatarURL });
 
     // Save to local storage
     localStorage.setItem(LocalStorageKey.Avatar, avatarURL);

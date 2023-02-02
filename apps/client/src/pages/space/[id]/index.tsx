@@ -74,7 +74,7 @@ export default function Space({ id }: InferGetServerSidePropsType<typeof getServ
             <div className="pl-4">
               {[
                 bytesToDisplay(stats.fileSize),
-                numberToCommas(stats.polygonCount),
+                numberToCommas(stats.triangleCount),
                 numberToCommas(stats.materialCount),
                 numberToCommas(stats.meshCount),
                 numberToCommas(stats.skinCount),

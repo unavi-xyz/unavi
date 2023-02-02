@@ -23,7 +23,8 @@ export class Players {
 
     switch (subject) {
       case "player_joined": {
-        this.#engine.player.addPlayer(data.playerId);
+        const player = this.#engine.player.addPlayer(data.playerId);
+        player.avatar = data.avatar;
 
         const name = new PlayerName(data.playerId, this.#trpc, this.#engine);
         name.address = data.address;

@@ -83,11 +83,11 @@ export const publicRouter = router({
   modelStats: publicProcedure
     .input(
       z.object({
-        spaceId: z.string(),
+        url: z.string().url(),
       })
     )
     .query(async ({ input }) => {
-      const stats = await getModelStats(input.spaceId);
+      const stats = await getModelStats(input.url);
       return stats;
     }),
 });

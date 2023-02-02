@@ -17,6 +17,7 @@ export function useHost(id: number, host: string) {
   const utils = trpc.useContext();
 
   const [spaceJoined, setSpaceJoined] = useState(false);
+  const [reconnectCount, setReconnectCount] = useState(0);
 
   // Create WebSocket connections
   useEffect(() => {
@@ -52,9 +53,8 @@ export function useHost(id: number, host: string) {
     ws.onclose = () => {
       console.info("WebSocket - ❌ Connection closed");
 
-      players.names.forEach((_, id) => {
-        engine.player.removePlayer(id);
-      });
+      // Attempt to reconnect
+      setReconnectCount(reconnectCount + 1);
     };
 
     ws.onmessage = async (event: MessageEvent<string>) => {
@@ -323,9 +323,10 @@ export function useHost(id: number, host: string) {
       if (publishInterval) clearInterval(publishInterval);
       ws.close();
       useAppStore.setState({ ws: null, players: null, playerId: null });
+      players.names.forEach((_, id) => engine.player.removePlayer(id));
       setSpaceJoined(false);
     };
-  }, [engine, utils, id, host]);
+  }, [engine, utils, id, host, reconnectCount]);
 
   return { spaceJoined };
 }

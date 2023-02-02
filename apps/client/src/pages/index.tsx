@@ -58,7 +58,7 @@ export default function Index() {
             <div className="show-on-scroll flex w-full flex-col items-end justify-center pb-24 md:pb-0">
               <div className="z-10 pr-36">
                 <Image
-                  src={Screenshot2}
+                  src={Screenshot1}
                   alt="Screenshot of the Wired"
                   priority
                   className="rounded-3xl"
@@ -66,7 +66,7 @@ export default function Index() {
               </div>
               <div className="-mt-28 pl-36">
                 <Image
-                  src={Screenshot1}
+                  src={Screenshot2}
                   alt="Screenshot of the Wired"
                   priority
                   className="rounded-3xl"

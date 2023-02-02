@@ -12,6 +12,8 @@ import { Avatar } from "../players/Avatar";
 
 const MIN_FIRST_PERSON_ANGLE = -Math.PI / 2.8;
 const MAX_FIRST_PERSON_ANGLE = Math.PI / 2.8;
+const MIN_THIRD_PERSON_ANGLE = -Math.PI / 2;
+const MAX_THIRD_PERSON_ANGLE = Math.PI / 2;
 const MAX_ORBIT_DISTANCE = 15;
 
 export class PlayerControls {
@@ -184,12 +186,27 @@ export class PlayerControls {
     this.#euler.x = y * Math.PI;
 
     if (this.mode === "first-person") {
-      this.#euler.x = Math.max(
-        MIN_FIRST_PERSON_ANGLE,
-        Math.min(MAX_FIRST_PERSON_ANGLE, this.#euler.x)
-      );
+      const minX = Math.min(MAX_FIRST_PERSON_ANGLE, this.#euler.x);
+      const maxX = Math.max(MIN_FIRST_PERSON_ANGLE, minX);
+
+      if (minX !== this.#euler.x) {
+        this.#euler.x = minX;
+        Atomics.store(this.inputRotation, 1, (minX / Math.PI) * INPUT_ARRAY_ROUNDING);
+      } else if (maxX !== this.#euler.x) {
+        this.#euler.x = maxX;
+        Atomics.store(this.inputRotation, 1, (maxX / Math.PI) * INPUT_ARRAY_ROUNDING);
+      }
     } else {
-      this.#euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.#euler.x));
+      const minX = Math.min(MAX_THIRD_PERSON_ANGLE, this.#euler.x);
+      const maxX = Math.max(MIN_THIRD_PERSON_ANGLE, minX);
+
+      if (minX !== this.#euler.x) {
+        this.#euler.x = minX;
+        Atomics.store(this.inputRotation, 1, (minX / Math.PI) * INPUT_ARRAY_ROUNDING);
+      } else if (maxX !== this.#euler.x) {
+        this.#euler.x = maxX;
+        Atomics.store(this.inputRotation, 1, (maxX / Math.PI) * INPUT_ARRAY_ROUNDING);
+      }
     }
 
     this.#targetCameraRotation.setFromEuler(this.#euler);

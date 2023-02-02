@@ -85,6 +85,6 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
 
   destroy() {
     this.send({ subject: "destroy", data: null });
-    setTimeout(() => this.#worker?.terminate());
+    setTimeout(() => this.#worker?.terminate(), 100);
   }
 }

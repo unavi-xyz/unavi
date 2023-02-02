@@ -55,10 +55,14 @@ export default function Overlay() {
       // Save to local storage
       if (nickname) localStorage.setItem(LocalStorageKey.Name, nickname);
       else localStorage.removeItem(LocalStorageKey.Name);
+
+      // Publish name change
+      sendToHost({ subject: "set_name", data: nickname });
     }
 
     if (didChangeAvatar) {
       useAppStore.setState({ didChangeAvatar: false });
+
       // Update engine
       engine.render.send({ subject: "set_user_avatar", data: avatar });
 

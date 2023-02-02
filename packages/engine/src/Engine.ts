@@ -9,10 +9,12 @@ export type ControlsType = "orbit" | "player";
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
+  overlayCanvas: HTMLCanvasElement;
 }
 
 export class Engine {
   readonly canvas: HTMLCanvasElement;
+  readonly overlayCanvas: HTMLCanvasElement;
 
   readonly input: InputModule;
   readonly physics: PhysicsModule;
@@ -20,7 +22,8 @@ export class Engine {
   readonly render: RenderModule;
   readonly scene: SceneModule;
 
-  inputArray: Int16Array;
+  inputPosition: Int16Array;
+  inputRotation: Int16Array;
   userPosition: Int32Array;
   userRotation: Int16Array;
   cameraPosition: Int32Array;
@@ -29,10 +32,12 @@ export class Engine {
   #controls: ControlsType = DEFAULT_CONTROLS;
   #visuals = DEFAULT_VISUALS;
 
-  constructor({ canvas }: EngineOptions) {
+  constructor({ canvas, overlayCanvas }: EngineOptions) {
     this.canvas = canvas;
+    this.overlayCanvas = overlayCanvas;
 
-    this.inputArray = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4));
+    this.inputPosition = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 2));
+    this.inputRotation = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 2));
     this.userPosition = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));
     this.userRotation = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4));
     this.cameraPosition = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));

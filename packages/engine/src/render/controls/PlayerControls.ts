@@ -1,7 +1,12 @@
 import { VRMFirstPerson } from "@pixiv/three-vrm";
 import { Euler, Group, Object3D, PerspectiveCamera, Quaternion, Raycaster, Vector3 } from "three";
 
-import { PLAYER_HEIGHT, POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "../../constants";
+import {
+  INPUT_ARRAY_ROUNDING,
+  PLAYER_HEIGHT,
+  POSITION_ARRAY_ROUNDING,
+  ROTATION_ARRAY_ROUNDING,
+} from "../../constants";
 import { ToRenderMessage } from "../messages";
 import { Avatar } from "../players/Avatar";
 
@@ -17,6 +22,7 @@ export class PlayerControls {
   body = new Group();
   #avatar: Avatar | null = null;
 
+  inputRotation: Int16Array | null = null;
   userPosition: Int32Array | null = null;
   userRotation: Int16Array | null = null;
   cameraPosition: Int32Array | null = null;
@@ -89,6 +95,7 @@ export class PlayerControls {
   onmessage({ subject, data }: ToRenderMessage) {
     switch (subject) {
       case "set_user_arrays": {
+        this.inputRotation = data.inputRotation;
         this.userPosition = data.userPosition;
         this.userRotation = data.userRotation;
         this.cameraPosition = data.cameraPosition;
@@ -97,21 +104,16 @@ export class PlayerControls {
       }
 
       case "mousemove": {
-        this.#euler.setFromQuaternion(this.#targetCameraRotation);
+        if (this.inputRotation) {
+          const currentX = Atomics.load(this.inputRotation, 0) / INPUT_ARRAY_ROUNDING;
+          const currentY = Atomics.load(this.inputRotation, 1) / INPUT_ARRAY_ROUNDING;
 
-        this.#euler.y -= (data.x * this.#delta) / 4;
-        this.#euler.x -= (data.y * this.#delta) / 4;
+          const x = currentX - (data.x * this.#delta) / 14;
+          const y = currentY - (data.y * this.#delta) / 14;
 
-        if (this.mode === "first-person") {
-          this.#euler.x = Math.max(
-            MIN_FIRST_PERSON_ANGLE,
-            Math.min(MAX_FIRST_PERSON_ANGLE, this.#euler.x)
-          );
-        } else {
-          this.#euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.#euler.x));
+          Atomics.store(this.inputRotation, 0, x * INPUT_ARRAY_ROUNDING);
+          Atomics.store(this.inputRotation, 1, y * INPUT_ARRAY_ROUNDING);
         }
-
-        this.#targetCameraRotation.setFromEuler(this.#euler);
         break;
       }
 
@@ -170,9 +172,33 @@ export class PlayerControls {
     }
   }
 
+  applyInputRotation() {
+    if (!this.inputRotation) return;
+
+    const x = Atomics.load(this.inputRotation, 0) / INPUT_ARRAY_ROUNDING;
+    const y = Atomics.load(this.inputRotation, 1) / INPUT_ARRAY_ROUNDING;
+
+    this.#euler.setFromQuaternion(this.#targetCameraRotation);
+
+    this.#euler.y = x * Math.PI;
+    this.#euler.x = y * Math.PI;
+
+    if (this.mode === "first-person") {
+      this.#euler.x = Math.max(
+        MIN_FIRST_PERSON_ANGLE,
+        Math.min(MAX_FIRST_PERSON_ANGLE, this.#euler.x)
+      );
+    } else {
+      this.#euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.#euler.x));
+    }
+
+    this.#targetCameraRotation.setFromEuler(this.#euler);
+  }
+
   update(delta: number) {
     this.#delta = delta;
     if (
+      !this.inputRotation ||
       !this.userPosition ||
       !this.userRotation ||
       !this.cameraYaw ||
@@ -181,11 +207,14 @@ export class PlayerControls {
     )
       return;
 
+    // Apply camera movement
+    this.applyInputRotation();
+
     // Set target position
-    const x = Atomics.load(this.userPosition, 0) / POSITION_ARRAY_ROUNDING;
-    const y = Atomics.load(this.userPosition, 1) / POSITION_ARRAY_ROUNDING;
-    const z = Atomics.load(this.userPosition, 2) / POSITION_ARRAY_ROUNDING;
-    this.avatar.targetPosition.set(x, y, z);
+    const posX = Atomics.load(this.userPosition, 0) / POSITION_ARRAY_ROUNDING;
+    const posY = Atomics.load(this.userPosition, 1) / POSITION_ARRAY_ROUNDING;
+    const posZ = Atomics.load(this.userPosition, 2) / POSITION_ARRAY_ROUNDING;
+    this.avatar.targetPosition.set(posX, posY, posZ);
 
     this.avatar.update(delta);
 

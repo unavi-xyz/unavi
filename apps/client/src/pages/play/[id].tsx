@@ -51,20 +51,21 @@ export const getServerSideProps = async ({ res, query }: GetServerSidePropsConte
 export default function Play({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
 
   const engine = useAppStore((state) => state.engine);
 
   const setAvatar = useSetAvatar();
-  useResizeCanvas(engine, canvasRef, containerRef);
+  useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
   useLoadUser();
   useAppHotkeys();
 
   const { space, loadingText, loadingProgress, join } = useSpace(id);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !overlayRef.current) return;
 
-    const engine = new Engine({ canvas: canvasRef.current });
+    const engine = new Engine({ canvas: canvasRef.current, overlayCanvas: overlayRef.current });
     useAppStore.setState({ engine });
 
     engine.render.send({ subject: "set_animations_path", data: "/models" });
@@ -124,8 +125,6 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
           // Set avatar
           const url = URL.createObjectURL(file);
           setAvatar(url);
-
-          useAppStore.setState({ avatar: url });
         }}
       >
         {loaded && <Overlay />}
@@ -133,6 +132,10 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
         <div className="h-full">
           <div ref={containerRef} className="relative h-full w-full overflow-hidden">
             <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
+            <canvas
+              ref={overlayRef}
+              className={`absolute top-0 left-0 z-10 h-full w-full transition ${loadedClass}`}
+            />
           </div>
         </div>
       </div>

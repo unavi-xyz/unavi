@@ -25,7 +25,7 @@ export class KeyboardInput {
 
   constructor(module: InputModule) {
     this.#module = module;
-    const canvas = module.engine.canvas;
+    const canvas = module.engine.overlayCanvas;
 
     canvas.addEventListener("click", this.#onClick);
     canvas.addEventListener("contextmenu", this.#onContextMenu);
@@ -43,7 +43,7 @@ export class KeyboardInput {
   }
 
   destroy() {
-    const canvas = this.#module.engine.canvas;
+    const canvas = this.#module.engine.overlayCanvas;
 
     if (this.#capturedPointerId !== null) canvas.releasePointerCapture(this.#capturedPointerId);
 
@@ -63,7 +63,7 @@ export class KeyboardInput {
   }
 
   getPointerData(event: PointerEvent): PointerData {
-    const canvas = this.#module.engine.canvas;
+    const canvas = this.#module.engine.overlayCanvas;
     let pointer;
 
     if (canvas.ownerDocument.pointerLockElement) {
@@ -93,7 +93,7 @@ export class KeyboardInput {
   }
 
   #onClick = () => {
-    if (this.controls === "player") this.#module.engine.canvas.requestPointerLock();
+    if (this.controls === "player") this.#module.engine.overlayCanvas.requestPointerLock();
   };
 
   #onContextMenu = (event: Event) => {
@@ -249,7 +249,7 @@ export class KeyboardInput {
 
   #onPointerUp = (event: PointerEvent) => {
     this.#capturedPointerId = null;
-    this.#module.engine.canvas.releasePointerCapture(event.pointerId);
+    this.#module.engine.overlayCanvas.releasePointerCapture(event.pointerId);
 
     this.#module.engine.render.send({
       subject: "pointerup",
@@ -258,11 +258,11 @@ export class KeyboardInput {
   };
 
   #onPointerDown = (event: PointerEvent) => {
-    const isPointerLocked = document.pointerLockElement === this.#module.engine.canvas;
+    const isPointerLocked = document.pointerLockElement === this.#module.engine.overlayCanvas;
     if (isPointerLocked) return;
 
     this.#capturedPointerId = event.pointerId;
-    this.#module.engine.canvas.setPointerCapture(event.pointerId);
+    this.#module.engine.overlayCanvas.setPointerCapture(event.pointerId);
 
     this.#module.engine.render.send({
       subject: "pointerdown",
@@ -272,7 +272,7 @@ export class KeyboardInput {
 
   #onPointerCancel = (event: PointerEvent) => {
     this.#capturedPointerId = null;
-    this.#module.engine.canvas.releasePointerCapture(event.pointerId);
+    this.#module.engine.overlayCanvas.releasePointerCapture(event.pointerId);
 
     this.#module.engine.render.send({
       subject: "pointercancel",
@@ -281,7 +281,7 @@ export class KeyboardInput {
   };
 
   #onPointerLockChange = () => {
-    this.isLocked = document.pointerLockElement === this.#module.engine.canvas;
+    this.isLocked = document.pointerLockElement === this.#module.engine.overlayCanvas;
     if (this.isLocked) return;
 
     // Unpress all keys on exit pointer lock
@@ -312,10 +312,10 @@ export class KeyboardInput {
     const normalX = x === 0 ? 0 : x / length;
     const normalY = y === 0 ? 0 : y / length;
 
-    // Write to input array
-    if (this.#module.engine.inputArray) {
-      Atomics.store(this.#module.engine.inputArray, 0, normalX * INPUT_ARRAY_ROUNDING);
-      Atomics.store(this.#module.engine.inputArray, 1, normalY * INPUT_ARRAY_ROUNDING);
+    // Write to position input
+    if (this.#module.engine.inputPosition) {
+      Atomics.store(this.#module.engine.inputPosition, 0, normalX * INPUT_ARRAY_ROUNDING);
+      Atomics.store(this.#module.engine.inputPosition, 1, normalY * INPUT_ARRAY_ROUNDING);
     }
   }
 }

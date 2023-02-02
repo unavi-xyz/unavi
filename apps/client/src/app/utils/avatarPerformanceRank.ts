@@ -7,7 +7,7 @@ type AvatarStats = Omit<ModelStats, "fileSize">;
 
 const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   Excellent: {
-    polygonCount: 7_500,
+    triangleCount: 7_500,
     materialCount: 1,
     meshCount: 1,
     skinCount: 1,
@@ -15,7 +15,7 @@ const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   },
 
   Good: {
-    polygonCount: 10_000,
+    triangleCount: 10_000,
     materialCount: 1,
     meshCount: 1,
     skinCount: 1,
@@ -23,7 +23,7 @@ const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   },
 
   Medium: {
-    polygonCount: 15_000,
+    triangleCount: 15_000,
     materialCount: 2,
     meshCount: 2,
     skinCount: 2,
@@ -31,7 +31,7 @@ const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   },
 
   Poor: {
-    polygonCount: 20_000,
+    triangleCount: 20_000,
     materialCount: 4,
     meshCount: 2,
     skinCount: 2,
@@ -49,7 +49,7 @@ export function avatarPerformanceRank(stats: ModelStats): AvatarPerformanceRank 
     const threshold = thresholds[key];
 
     if (
-      stats.polygonCount <= threshold.polygonCount &&
+      stats.triangleCount <= threshold.triangleCount &&
       stats.materialCount <= threshold.materialCount &&
       stats.meshCount <= threshold.meshCount &&
       stats.skinCount <= threshold.skinCount &&

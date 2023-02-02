@@ -2,6 +2,7 @@ import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import {
   AnimationAction,
   AnimationMixer,
+  Box3,
   Camera,
   Group,
   Mesh,
@@ -54,6 +55,7 @@ export class Avatar {
   #font: Font | null = null;
   #loadFontPromise: Promise<void> | null = null;
   #nameplate: Mesh | null = null;
+  #height: number = PLAYER_HEIGHT;
 
   velocity = new Vector3();
   targetPosition = new Vector3();
@@ -85,10 +87,26 @@ export class Avatar {
 
       if (this.#mode === "first-person") vrm.firstPerson?.setup();
 
+      const boundingBox = new Box3().setFromObject(vrm.scene);
+      const size = boundingBox.getSize(this.#vec3);
+      this.height = size.y;
+
       this.group.add(vrm.scene);
 
       this.loadAnimations(vrm);
     });
+  }
+
+  get height() {
+    return this.#height;
+  }
+
+  set height(height: number) {
+    this.#height = height;
+
+    if (this.#nameplate) {
+      this.#nameplate.position.y = height + 0.2;
+    }
   }
 
   get mode() {
@@ -152,12 +170,11 @@ export class Avatar {
     const xMid = -0.5 * (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
     textGeometry.translate(xMid, 0, 0);
 
-    const textMesh = new Mesh(textGeometry, Avatar.NAMEPLATE_TEXT_MATERIAL);
-    textMesh.position.y = PLAYER_HEIGHT + 0.2;
-    textMesh.rotation.y = Math.PI;
+    this.#nameplate = new Mesh(textGeometry, Avatar.NAMEPLATE_TEXT_MATERIAL);
+    this.#nameplate.position.y = this.#height + 0.2;
+    this.#nameplate.rotation.y = Math.PI;
 
-    this.group.add(textMesh);
-    this.#nameplate = textMesh;
+    this.group.add(this.#nameplate);
 
     // Create background
     const width = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x + 0.15;

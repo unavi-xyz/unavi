@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 export function useResizeCanvas(
   engine: Engine | null,
   canvasRef: React.RefObject<HTMLCanvasElement>,
+  overlayRef: React.RefObject<HTMLCanvasElement>,
   containerRef: React.RefObject<HTMLDivElement>
 ) {
   const resize = useMemo(() => {
@@ -13,8 +14,14 @@ export function useResizeCanvas(
       const canvas = canvasRef.current;
       if (!canvas) return;
 
+      const overlay = overlayRef.current;
+      if (!overlay) return;
+
       const container = containerRef.current;
       if (!container) return;
+
+      overlay.width = container.clientWidth;
+      overlay.height = container.clientHeight;
 
       if (typeof OffscreenCanvas === "undefined") {
         canvas.width = container.clientWidth;
@@ -26,7 +33,7 @@ export function useResizeCanvas(
         data: { width: canvas.clientWidth, height: canvas.clientHeight },
       });
     };
-  }, [canvasRef, containerRef, engine]);
+  }, [canvasRef, overlayRef, containerRef, engine]);
 
   useEffect(() => {
     // Set initial canvas size

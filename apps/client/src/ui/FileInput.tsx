@@ -2,10 +2,17 @@ import { ChangeEvent, useId, useState } from "react";
 
 interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   displayName?: string | null;
+  placeholder?: string;
   inputRef?: React.MutableRefObject<HTMLInputElement>;
 }
 
-export default function FileInput({ displayName, inputRef, onChange, ...rest }: Props) {
+export default function FileInput({
+  displayName,
+  placeholder = "No file chosen",
+  inputRef,
+  onChange,
+  ...rest
+}: Props) {
   const id = useId();
 
   const [file, setFile] = useState<File>();
@@ -16,6 +23,7 @@ export default function FileInput({ displayName, inputRef, onChange, ...rest }: 
     const file = e.target.files?.[0];
     if (file) setFile(file);
   }
+  const fileName = displayName === undefined ? file?.name : displayName;
 
   return (
     <div className="flex flex-col space-y-1">
@@ -25,8 +33,8 @@ export default function FileInput({ displayName, inputRef, onChange, ...rest }: 
       >
         <div className="flex items-center py-2.5 px-4">
           <div className="select-none border-r border-neutral-400 pr-4">Choose File</div>
-          <div className={`select-none break-all pl-4 ${file ? "" : "text-neutral-500"}`}>
-            {displayName ?? (file ? file.name : "No file chosen")}
+          <div className={`select-none break-all pl-4 ${fileName ? "" : "text-neutral-500"}`}>
+            {fileName ?? placeholder}
           </div>
         </div>
       </label>

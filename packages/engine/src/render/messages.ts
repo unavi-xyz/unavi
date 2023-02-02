@@ -21,6 +21,7 @@ export type ToRenderMessage =
   | MessageJSON<
       "set_user_arrays",
       {
+        inputRotation: Int16Array;
         userPosition: Int32Array;
         userRotation: Int16Array;
         cameraPosition: Int32Array;

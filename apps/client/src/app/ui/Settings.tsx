@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MdClose, MdLogout } from "react-icons/md";
 
 import { useLogout } from "../../client/auth/useLogout";
@@ -7,7 +7,10 @@ import { trpc } from "../../client/trpc";
 import SignInButton from "../../home/layouts/NavbarLayout/SignInButton";
 import ProfilePicture from "../../home/ProfilePicture";
 import FileInput from "../../ui/FileInput";
+import { bytesToDisplay } from "../../utils/bytesToDisplay";
+import { getTempURL } from "../hooks/useSetAvatar";
 import { useAppStore } from "../store";
+import { avatarPerformanceRank } from "../utils/avatarPerformanceRank";
 
 export default function Settings() {
   const nickname = useAppStore((state) => state.nickname);
@@ -18,10 +21,54 @@ export default function Settings() {
   const { data: session } = useSession();
   const { logout } = useLogout();
 
-  const { data: profile, isLoading } = trpc.social.profile.byAddress.useQuery(
+  const { data: profile, isLoading: isLoadingProfile } = trpc.social.profile.byAddress.useQuery(
     { address: session?.address ?? "" },
     { enabled: session?.address !== undefined }
   );
+
+  const isAvatarPublished = Boolean(avatar) && Boolean(avatar?.startsWith("http"));
+
+  const { data: stats } = trpc.public.modelStats.useQuery(
+    { url: avatar ?? "" },
+    {
+      enabled: isAvatarPublished,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+    }
+  );
+
+  const { mutateAsync: createTempUpload } = trpc.public.tempUploadURL.useMutation();
+
+  useEffect(() => {
+    if (!avatar) return;
+
+    const isURL = avatar.startsWith("http");
+    if (isURL) return;
+
+    async function uploadAvatar() {
+      if (!avatar) return;
+
+      // Get avatar file
+      const body = await fetch(avatar).then((res) => res.blob());
+      const { url, fileId } = await createTempUpload();
+
+      // Upload to S3
+      const res = await fetch(url, {
+        method: "PUT",
+        body,
+        headers: { "Content-Type": body.type, "x-amz-acl": "public-read" },
+      });
+      if (!res.ok) throw new Error("Failed to upload avatar");
+
+      const newURL = getTempURL(fileId);
+      useAppStore.setState({ avatar: newURL });
+    }
+
+    uploadAvatar();
+  }, [avatar, createTempUpload]);
+
+  const rank = stats ? avatarPerformanceRank(stats) : null;
 
   const guestName =
     playerId == null || playerId === undefined
@@ -48,10 +95,63 @@ export default function Settings() {
       )}
 
       <div className="text-lg font-bold">Avatar</div>
+
+      {avatar && (
+        <div className="flex items-center rounded-lg px-4 py-3 ring-1 ring-inset ring-neutral-300">
+          <div className="flex h-full items-stretch space-x-4">
+            <div className="flex w-1/3 min-w-fit flex-col justify-between">
+              <div className="text-neutral-700">Performance:</div>
+              <div className="text-neutral-700">Size:</div>
+            </div>
+
+            <div className="flex w-full flex-col justify-between">
+              {rank ? (
+                <div
+                  className={`font-medium ${
+                    rank === "Very Poor"
+                      ? "text-red-500"
+                      : rank === "Poor"
+                      ? "text-orange-500"
+                      : rank === "Medium"
+                      ? "text-yellow-500"
+                      : rank === "Good"
+                      ? "text-green-500"
+                      : "animate-textScroll bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 bg-clip-text text-transparent"
+                  }`}
+                >
+                  {rank}
+                </div>
+              ) : (
+                <div className="h-5 w-24 animate-pulse rounded-md bg-neutral-200" />
+              )}
+
+              {stats ? (
+                <div className="font-medium">{bytesToDisplay(stats.fileSize)}</div>
+              ) : (
+                <div className="h-5 w-24 animate-pulse rounded-md bg-neutral-200" />
+              )}
+            </div>
+          </div>
+
+          <div className="grow" />
+
+          <button
+            onClick={() => {
+              setAvatarName(undefined);
+              useAppStore.setState({ didChangeAvatar: true, avatar: null });
+            }}
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
+          >
+            <MdClose />
+          </button>
+        </div>
+      )}
+
       <div className="flex space-x-1">
         <div className="grow">
           <FileInput
-            displayName={avatarName}
+            displayName={avatarName ?? null}
+            placeholder="Upload VRM File"
             accept=".vrm"
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -63,18 +163,6 @@ export default function Settings() {
             }}
           />
         </div>
-
-        {avatar && (
-          <button
-            onClick={() => {
-              setAvatarName(undefined);
-              useAppStore.setState({ didChangeAvatar: true, avatar: null });
-            }}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
-          >
-            <MdClose />
-          </button>
-        )}
       </div>
 
       <div className="space-y-1">
@@ -83,7 +171,7 @@ export default function Settings() {
         {session?.address ? (
           <div className="flex items-center space-x-4 pt-2">
             <div className="overflow-hidden">
-              {isLoading ? (
+              {isLoadingProfile ? (
                 <div className="h-12 w-12 animate-pulse rounded-full bg-neutral-300" />
               ) : session?.address ? (
                 <ProfilePicture
@@ -95,7 +183,7 @@ export default function Settings() {
               ) : null}
             </div>
 
-            {isLoading ? (
+            {isLoadingProfile ? (
               <div className="h-5 w-40 animate-pulse rounded-md bg-neutral-300" />
             ) : (
               <div>
@@ -108,7 +196,7 @@ export default function Settings() {
 
             <div className="grow" />
 
-            {!isLoading && (
+            {!isLoadingProfile && (
               <button
                 onClick={logout}
                 className="flex h-12 w-12 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"

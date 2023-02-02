@@ -7,6 +7,7 @@ export class Player {
 
   #name: string | null = null;
   #grounded = false;
+  #avatar: string | null = null;
 
   readonly position: Int32Array;
   readonly rotation: Int16Array;
@@ -52,6 +53,20 @@ export class Player {
     this.engine.render.send({
       subject: "set_player_grounded",
       data: { playerId: this.id, grounded: value },
+    });
+  }
+
+  get avatar() {
+    return this.#avatar;
+  }
+
+  set avatar(value: string | null) {
+    if (this.#avatar === value) return;
+    this.#avatar = value;
+
+    this.engine.render.send({
+      subject: "set_player_avatar",
+      data: { playerId: this.id, uri: value },
     });
   }
 

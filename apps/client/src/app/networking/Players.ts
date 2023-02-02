@@ -19,6 +19,8 @@ export class Players {
   }
 
   onmessage({ subject, data }: FromHostMessage) {
+    const { playerId: userId } = useAppStore.getState();
+
     switch (subject) {
       case "player_joined": {
         this.#engine.player.addPlayer(data.playerId);
@@ -66,13 +68,14 @@ export class Players {
       }
 
       case "player_address": {
+        if (data.playerId === userId) break;
+
         const name = this.names.get(data.playerId);
         if (name) name.address = data.address;
         break;
       }
 
       case "player_name": {
-        const { playerId: userId } = useAppStore.getState();
         if (data.playerId === userId) break;
 
         const name = this.names.get(data.playerId);
@@ -82,20 +85,30 @@ export class Players {
 
       case "player_chat": {
         const name = this.names.get(data.playerId);
-        if (name) {
-          addChatMessage({
-            type: "chat",
-            id: nanoid(),
-            displayName: name.displayName,
-            ...data,
-          });
-        }
+        if (!name) break;
+
+        addChatMessage({
+          type: "chat",
+          id: nanoid(),
+          displayName: name.displayName,
+          ...data,
+        });
         break;
       }
 
       case "player_grounded": {
+        if (data.playerId === userId) break;
+
         const player = this.#engine.player.getPlayer(data.playerId);
         if (player) player.grounded = data.grounded;
+        break;
+      }
+
+      case "player_avatar": {
+        if (data.playerId === userId) break;
+
+        const player = this.#engine.player.getPlayer(data.playerId);
+        if (player) player.avatar = data.avatar;
         break;
       }
     }

@@ -125,8 +125,6 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
           // Set avatar
           const url = URL.createObjectURL(file);
           setAvatar(url);
-
-          useAppStore.setState({ avatar: url });
         }}
       >
         {loaded && <Overlay />}

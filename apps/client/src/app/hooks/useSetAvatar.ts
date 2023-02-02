@@ -36,9 +36,13 @@ export function useSetAvatar() {
       avatarURL = getTempURL(fileId);
     }
 
+    useAppStore.setState({ avatar: avatarURL });
+
+    // Update engine
+    engine.render.send({ subject: "set_user_avatar", data: avatarURL });
+
     // Publish avatar
     sendToHost({ subject: "set_avatar", data: avatarURL });
-    useAppStore.setState({ avatar: avatarURL });
 
     // Save to local storage
     localStorage.setItem(LocalStorageKey.Avatar, avatarURL);

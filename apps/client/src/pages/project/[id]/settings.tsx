@@ -25,8 +25,7 @@ export default function Project() {
   const [loadingDelete, setLoadingDelete] = useState(false);
   const [loadingConnect, setLoadingConnect] = useState(false);
 
-  const { mutateAsync: link } = trpc.publication.link.useMutation();
-  const { mutateAsync: createPublication } = trpc.publication.create.useMutation();
+  const { mutateAsync: publish } = trpc.project.publish.useMutation();
   const { mutateAsync: update } = trpc.project.update.useMutation();
   const { mutateAsync: deleteProject } = trpc.project.delete.useMutation();
   const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
@@ -91,9 +90,7 @@ export default function Project() {
 
       if (!publicationId) {
         // Create new publication
-        publicationId = await createPublication();
-        // Link publication to space
-        await link({ spaceId, publicationId });
+        publicationId = await publish({ id });
       }
 
       // Link project to publication

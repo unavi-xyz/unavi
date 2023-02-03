@@ -103,7 +103,7 @@ export default function Spaces() {
 
           {authState === "authenticated" && status === "success" && publishedProjects.length > 0 ? (
             <>
-              <div className="text-2xl font-bold">🏙️ Published</div>
+              <div className="text-2xl font-bold">🌍 Published</div>
 
               <div className="grid grid-cols-4 gap-3">
                 {publishedProjects.map(({ id, name }, i) => (

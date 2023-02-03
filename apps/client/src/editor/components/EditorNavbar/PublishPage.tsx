@@ -52,11 +52,9 @@ export default function PublishPage() {
     { enabled: session?.address !== undefined, refetchOnWindowFocus: false }
   );
 
-  const { mutateAsync: update } = trpc.project.update.useMutation();
-  const { mutateAsync: getModelUpload } = trpc.publication.getModelUpload.useMutation();
   const { mutateAsync: getImageUpload } = trpc.publication.getImageUpload.useMutation();
   const { mutateAsync: getMetadataUpload } = trpc.publication.getMetadataUpload.useMutation();
-  const { mutateAsync: createPublication } = trpc.publication.create.useMutation();
+  const { mutateAsync: publish } = trpc.project.publish.useMutation();
   const { mutateAsync: linkPublication } = trpc.publication.link.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
@@ -75,39 +73,12 @@ export default function PublishPage() {
       return;
     }
 
-    async function publish() {
+    async function publishProject() {
       if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
 
-      // Save project
-      const savePromise = save();
-
-      // Create database publication
-      const publicationId = await createPublication();
-
-      await savePromise;
-
-      async function uploadModel() {
-        const { engine } = useEditorStore.getState();
-        if (!engine) throw new Error("Engine not found");
-
-        // Export scene to glb
-        const glb = await engine.scene.export();
-        const body = new Blob([glb], { type: "model/gltf-binary" });
-
-        // Upload to S3
-        const url = await getModelUpload({ id: publicationId });
-        const response = await fetch(url, {
-          method: "PUT",
-          body,
-          headers: {
-            "Content-Type": "model/gltf-binary",
-            "x-amz-acl": "public-read",
-          },
-        });
-
-        if (!response.ok) throw new Error("Failed to upload model");
-      }
+      await save();
+      const publicationId = await publish({ id });
 
       async function uploadImage() {
         if (!imageFile) throw new Error("Image not found");
@@ -137,9 +108,11 @@ export default function PublishPage() {
         const metadata: ERC721Metadata = {
           animation_url: modelURL,
           description,
-          external_url: `https://thewired.space/user/${
-            profile ? numberToHexDisplay(profile.id) : session?.address
-          }`,
+          external_url: spaceId
+            ? `https://thewired.space/space/${numberToHexDisplay(spaceId)}`
+            : `https://thewired.space/user/${
+                profile ? numberToHexDisplay(profile.id) : session?.address
+              }`,
           image: imageURL,
           name,
         };
@@ -157,13 +130,6 @@ export default function PublishPage() {
 
         if (!response.ok) throw new Error("Failed to upload metadata");
       }
-
-      await Promise.all([
-        update({ id, publicationId }), // Link publication to project
-        uploadModel(),
-        uploadImage(),
-        uploadMetadata(),
-      ]);
 
       // Mint space NFT
       const contentURI = cdnMetadataURL(publicationId);
@@ -191,6 +157,8 @@ export default function PublishPage() {
       }
 
       await Promise.all([
+        uploadImage(),
+        uploadMetadata(),
         linkPublication({ publicationId, spaceId }),
         utils.space.latest.invalidate({ owner: session.address }),
       ]);
@@ -202,7 +170,7 @@ export default function PublishPage() {
     setLoading(true);
 
     toast
-      .promise(publish(), {
+      .promise(publishProject(), {
         loading: "Publishing...",
         success: "Published!",
         error: "Failed to publish",

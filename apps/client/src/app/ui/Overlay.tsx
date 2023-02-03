@@ -117,7 +117,7 @@ export default function Overlay() {
       </Dialog>
 
       <div className="absolute top-0 left-0 z-20 p-4">
-        <Link href={`/space/${id}`} onClick={handleMic}>
+        <Link href={`/space/${id}`}>
           <div className="rounded-full bg-white/60 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80">
             <IoMdArrowRoundBack />
           </div>

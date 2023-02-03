@@ -70,7 +70,7 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
 
     engine.render.send({ subject: "set_animations_path", data: "/models" });
     engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
-    engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox_2K.jpg" } });
+    engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
 
     return () => {
       engine.destroy();

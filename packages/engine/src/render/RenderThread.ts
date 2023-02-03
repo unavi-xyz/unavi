@@ -5,7 +5,6 @@ import {
   EquirectangularReflectionMapping,
   PCFSoftShadowMap,
   PerspectiveCamera,
-  PMREMGenerator,
   Scene,
   sRGBEncoding,
   Texture,
@@ -85,6 +84,7 @@ export class RenderThread {
     this.scene.add(this.player.group);
     this.scene.add(this.players.group);
     this.scene.add(new AmbientLight(0xffffff, 0.2));
+
     this.camera.position.set(0, 4, 12);
     this.camera.lookAt(0, 0, 0);
 
@@ -173,15 +173,15 @@ export class RenderThread {
   };
 
   async loadSkybox(uri: string | null) {
+    // Clean up old skybox
+    if (this.scene.background instanceof Texture) this.scene.background.dispose();
+    if (this.scene.environment instanceof Texture) this.scene.environment.dispose();
+
     if (!uri) {
       this.scene.environment = null;
       this.scene.background = null;
       return;
     }
-
-    // Clean up old skybox
-    if (this.scene.background instanceof Texture) this.scene.background.dispose();
-    if (this.scene.environment instanceof Texture) this.scene.environment.dispose();
 
     // Load skybox
     const res = await fetch(uri);
@@ -193,18 +193,9 @@ export class RenderThread {
     texture.encoding = sRGBEncoding;
     texture.needsUpdate = true;
 
-    // Generate PMREM
-    if (!this.renderer) throw new Error("Renderer not initialized");
-    const pmremGenerator = new PMREMGenerator(this.renderer);
-    pmremGenerator.compileEquirectangularShader();
-    const renderTarget = pmremGenerator.fromEquirectangular(texture);
-
     // Set skybox
-    this.scene.environment = renderTarget.texture;
-    this.scene.background = renderTarget.texture;
-
-    // Clean up
-    pmremGenerator.dispose();
+    this.scene.environment = texture;
+    this.scene.background = texture;
   }
 
   init() {
@@ -236,7 +227,7 @@ export class RenderThread {
       shadowMapSize: 2048,
       camera: this.camera,
       parent: this.scene,
-      shadowBias: -0.00002,
+      shadowBias: -0.00001,
     });
     this.csm.fade = true;
     this.csm.setupMaterial(RenderScene.DEFAULT_MATERIAL);

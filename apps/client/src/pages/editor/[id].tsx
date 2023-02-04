@@ -30,17 +30,7 @@ export default function Editor() {
   useEditorHotkeys();
 
   useEffect(() => {
-    if (!canvasRef.current || !overlayRef.current) return;
-
-    const engine = new Engine({ canvas: canvasRef.current, overlayCanvas: overlayRef.current });
-    engine.controls = "orbit";
-    engine.visuals = true;
-
-    useEditorStore.setState({ engine, canvas: canvasRef.current, visuals: true });
-
-    engine.render.send({ subject: "set_animations_path", data: "/models" });
-    engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
-    engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
+    if (!engine) return;
 
     return () => {
       engine.destroy();
@@ -52,7 +42,7 @@ export default function Editor() {
         openIds: [],
       });
     };
-  }, []);
+  }, [engine]);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
 
@@ -60,8 +50,25 @@ export default function Editor() {
     <>
       <MetaTags title="Editor" />
 
-      <Script src="/scripts/draco_encoder.js" />
-      <Script src="/scripts/draco_decoder.js" />
+      <Script
+        src="/scripts/draco_decoder.js"
+        onReady={() => {
+          if (!canvasRef.current || !overlayRef.current) throw new Error("Canvas not found");
+
+          const engine = new Engine({
+            canvas: canvasRef.current,
+            overlayCanvas: overlayRef.current,
+          });
+          engine.controls = "orbit";
+          engine.visuals = true;
+
+          engine.render.send({ subject: "set_animations_path", data: "/models" });
+          engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
+          engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
+
+          useEditorStore.setState({ engine, canvas: canvasRef.current, visuals: true });
+        }}
+      />
 
       <div
         className="absolute top-0 left-0 h-full w-full overflow-hidden"

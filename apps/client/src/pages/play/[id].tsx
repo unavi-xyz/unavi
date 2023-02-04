@@ -63,24 +63,14 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
   const { space, loadingText, loadingProgress, join } = useSpace(id);
 
   useEffect(() => {
-    if (!canvasRef.current || !overlayRef.current) return;
+    if (!engine) return;
 
-    const engine = new Engine({ canvas: canvasRef.current, overlayCanvas: overlayRef.current });
-    useAppStore.setState({ engine });
-
-    engine.render.send({ subject: "set_animations_path", data: "/models" });
-    engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
-    engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
+    join();
 
     return () => {
       engine.destroy();
       useAppStore.setState({ engine: null, chatMessages: [] });
     };
-  }, []);
-
-  useEffect(() => {
-    if (!engine) return;
-    join();
   }, [engine, join]);
 
   const loaded = loadingProgress === 1;
@@ -95,7 +85,23 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
         card="summary_large_image"
       />
 
-      <Script src="/scripts/draco_decoder.js" />
+      <Script
+        src="/scripts/draco_decoder.js"
+        onReady={() => {
+          if (!canvasRef.current || !overlayRef.current) throw new Error("Canvas not found");
+
+          const engine = new Engine({
+            canvas: canvasRef.current,
+            overlayCanvas: overlayRef.current,
+          });
+
+          engine.render.send({ subject: "set_animations_path", data: "/models" });
+          engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
+          engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
+
+          useAppStore.setState({ engine });
+        }}
+      />
 
       <LoadingScreen
         text={space?.metadata?.name}

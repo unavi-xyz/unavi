@@ -160,7 +160,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                 />
               </div>
 
-              <div className="flex flex-col items-center">
+              <div className="flex w-full flex-col items-center">
                 {profile?.handle ? (
                   <div>
                     <span className="text-2xl font-black">{profile.handle.string}</span>
@@ -170,7 +170,9 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                   </div>
                 ) : null}
 
-                <div className="text-lg text-neutral-500">{isAddress ? id : profile?.owner}</div>
+                <div className="w-full overflow-x-hidden text-ellipsis text-center text-neutral-400">
+                  {isAddress ? id : profile?.owner}
+                </div>
               </div>
 
               {profile?.metadata?.description && (
@@ -179,16 +181,16 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
                 </div>
               )}
 
-              <div className="flex w-full justify-center space-x-2 pt-1">
-                {isUser ? (
+              {isUser && (
+                <div className="flex w-full justify-center space-x-2">
                   <Link
                     href="/settings"
                     className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
                   >
                     Edit profile
                   </Link>
-                ) : null}
-              </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -197,7 +199,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
               <Spinner />
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 md:grid-cols-3">
               {spaces?.map(({ id, metadata }) => {
                 return (
                   <Link href={`/space/${numberToHexDisplay(id)}`} key={id}>

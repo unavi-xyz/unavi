@@ -177,7 +177,7 @@ export default function Project() {
           <div className="pb-1 text-lg">Deleting a project is permanent and cannot be undone.</div>
 
           <Button disabled={loadingDelete} onClick={handleDelete} className="rounded-lg bg-red-700">
-            Delete Space
+            Delete Project
           </Button>
         </div>
       </div>

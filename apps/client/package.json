@@ -33,6 +33,7 @@
     "ethers": "^5.7.2",
     "ipfs-http-client": "^60.0.0",
     "mediasoup-client": "^3.6.70",
+    "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.0",
     "next": "13.1.6",
     "next-auth": "4.19.0",

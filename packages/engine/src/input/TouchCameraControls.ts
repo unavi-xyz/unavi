@@ -15,6 +15,7 @@ export class TouchCameraControls {
   #cameraY = 0;
   #prevCameraX = 0;
   #prevCameraY = 0;
+  #startY = 0;
 
   constructor(module: InputModule) {
     this.#module = module;
@@ -28,6 +29,7 @@ export class TouchCameraControls {
 
     this.#cameraX = this.#prevCameraX;
     this.#cameraY = this.#prevCameraY;
+    this.#startY = this.#prevCameraY;
   }
 
   onTouchMove(x: number, y: number) {
@@ -63,13 +65,18 @@ export class TouchCameraControls {
     const y =
       (this.#fixedY - this.#innerY) / this.#module.engine.overlayCanvas.height + this.#cameraY;
 
+    // Clamp Y to a little before screen edges
+    const minY = Math.max(this.#startY - 1, -0.4);
+    const maxY = Math.min(this.#startY + 1, 0.4);
+    const clampedY = Math.min(Math.max(y, minY), maxY);
+
     this.#prevCameraX = x;
-    this.#prevCameraY = y;
+    this.#prevCameraY = clampedY;
 
     // Write to rotation input
     if (this.#module.engine.inputRotation) {
       Atomics.store(this.#module.engine.inputRotation, 0, x * INPUT_ARRAY_ROUNDING);
-      Atomics.store(this.#module.engine.inputRotation, 1, y * INPUT_ARRAY_ROUNDING);
+      Atomics.store(this.#module.engine.inputRotation, 1, clampedY * INPUT_ARRAY_ROUNDING);
     }
   }
 }

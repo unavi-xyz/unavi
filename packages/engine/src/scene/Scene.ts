@@ -1,6 +1,6 @@
 import { Document } from "@gltf-transform/core";
 
-import { ColliderExtension } from "../gltf";
+import { ColliderExtension, SPAWN_TITLES, SpawnPoint, SpawnPointExtension } from "../gltf";
 import { Accessors } from "./attributes/Accessors";
 import { Buffers } from "./attributes/Buffers";
 import { Materials } from "./attributes/Materials";
@@ -14,6 +14,7 @@ export class Scene {
 
   extensions = {
     collider: this.doc.createExtension(ColliderExtension),
+    spawn: this.doc.createExtension(SpawnPointExtension),
   };
 
   buffer = new Buffers(this.doc);
@@ -49,5 +50,15 @@ export class Scene {
     this.primitive.processChanges();
     this.mesh.processChanges();
     this.node.processChanges();
+  }
+
+  getSpawn(title: (typeof SPAWN_TITLES)[keyof typeof SPAWN_TITLES] = "Default") {
+    return this.doc
+      .getRoot()
+      .listNodes()
+      .find((node) => {
+        const spawn = node.getExtension<SpawnPoint>(SpawnPointExtension.EXTENSION_NAME);
+        return spawn && spawn.title === title;
+      });
   }
 }

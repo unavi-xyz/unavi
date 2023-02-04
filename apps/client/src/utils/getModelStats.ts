@@ -1,11 +1,4 @@
-import { Node, NodeIO } from "@gltf-transform/core";
-import {
-  DracoMeshCompression,
-  MeshQuantization,
-  TextureTransform,
-} from "@gltf-transform/extensions";
-
-import createDecoderModule from "./draco_decoder_gltf";
+import { Node, PlatformIO } from "@gltf-transform/core";
 
 export type ModelStats = {
   fileSize: number;
@@ -16,25 +9,15 @@ export type ModelStats = {
   triangleCount: number;
 };
 
-export async function getModelStats(url: string): Promise<ModelStats> {
-  // Fetch model
-  const response = await fetch(url);
-  const buffer = await response.arrayBuffer();
-  const array = new Uint8Array(buffer);
-
-  // Load model
-  const io = new NodeIO()
-    .registerExtensions([DracoMeshCompression, MeshQuantization, TextureTransform])
-    .registerDependencies({ "draco3d.decoder": await createDecoderModule() });
-
-  const document = await io.readBinary(array);
+export async function getModelStats(io: PlatformIO, array: Uint8Array): Promise<ModelStats> {
+  const doc = await io.readBinary(array);
 
   // Get stats
-  const materialCount = document.getRoot().listMaterials().length;
-  const meshCount = document.getRoot().listMeshes().length;
-  const skinCount = document.getRoot().listSkins().length;
+  const materialCount = doc.getRoot().listMaterials().length;
+  const meshCount = doc.getRoot().listMeshes().length;
+  const skinCount = doc.getRoot().listSkins().length;
 
-  const boneCount = document
+  const boneCount = doc
     .getRoot()
     .listSkins()
     .reduce((acc, skin) => {
@@ -42,7 +25,7 @@ export async function getModelStats(url: string): Promise<ModelStats> {
       return acc;
     }, new Set<Node>()).size;
 
-  const triangleCount = document
+  const triangleCount = doc
     .getRoot()
     .listMeshes()
     .reduce((acc, mesh) => {

@@ -34,6 +34,7 @@ export default function UpdatePage({ onClose }: Props) {
 
   const { data: session } = useSession();
   const { save } = useSave();
+  const utils = trpc.useContext();
   const router = useRouter();
   const id = router.query.id as string;
 
@@ -53,9 +54,17 @@ export default function UpdatePage({ onClose }: Props) {
     }
   );
 
-  const { mutateAsync: getModelUpload } = trpc.publication.getModelUpload.useMutation();
+  const { data: space } = trpc.publication.getLinkedSpace.useQuery(
+    { publicationId: publicationId ?? "" },
+    {
+      enabled: publicationId !== null,
+      refetchOnWindowFocus: false,
+    }
+  );
+
   const { mutateAsync: getImageUpload } = trpc.publication.getImageUpload.useMutation();
   const { mutateAsync: getMetadataUpload } = trpc.publication.getMetadataUpload.useMutation();
+  const { mutateAsync: publish } = trpc.project.publish.useMutation();
 
   const [imageFile, setImageFile] = useState<File>();
   const [loading, setLoading] = useState(false);
@@ -70,30 +79,6 @@ export default function UpdatePage({ onClose }: Props) {
     if (!publicationId) throw new Error("No publication id");
 
     async function update() {
-      async function uploadModel() {
-        if (!publicationId) throw new Error("No publication id");
-
-        const { engine } = useEditorStore.getState();
-        if (!engine) throw new Error("Engine not found");
-
-        // Export scene to glb
-        const glb = await engine.scene.export();
-        const body = new Blob([glb], { type: "model/gltf-binary" });
-
-        // Upload to S3
-        const url = await getModelUpload({ id: publicationId });
-        const response = await fetch(url, {
-          method: "PUT",
-          body,
-          headers: {
-            "Content-Type": "model/gltf-binary",
-            "x-amz-acl": "public-read",
-          },
-        });
-
-        if (!response.ok) throw new Error("Failed to upload model");
-      }
-
       async function uploadImage() {
         if (!publicationId) throw new Error("No publication id");
         if (!imageFile) throw new Error("Image not found");
@@ -125,9 +110,11 @@ export default function UpdatePage({ onClose }: Props) {
         const metadata: ERC721Metadata = {
           animation_url: modelURL,
           description,
-          external_url: `https://thewired.space/user/${
-            profile ? numberToHexDisplay(profile.id) : session?.address
-          }`,
+          external_url: space
+            ? `https://thewired.space/space/${space.spaceId}`
+            : `https://thewired.space/user/${
+                profile ? numberToHexDisplay(profile.id) : session?.address
+              }`,
           image: imageURL,
           name,
         };
@@ -147,7 +134,17 @@ export default function UpdatePage({ onClose }: Props) {
       }
 
       await save();
-      await Promise.all([uploadModel(), uploadImage(), uploadMetadata()]);
+
+      const promises = [
+        publish({ id }),
+        uploadImage(),
+        uploadMetadata(),
+        utils.project.image.invalidate({ id }),
+      ];
+
+      if (space?.spaceId) promises.push(utils.space.byId.invalidate({ id: space.spaceId }));
+
+      await Promise.all(promises);
 
       onClose();
     }

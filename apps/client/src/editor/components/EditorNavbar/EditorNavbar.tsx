@@ -56,8 +56,8 @@ export default function EditorNavbar() {
     } else {
       engine.controls = "player";
       setPreviewMode(true);
-
       useEditorStore.setState({ selectedId: null });
+      engine.physics.send({ subject: "respawn", data: null });
     }
   }
 
@@ -78,12 +78,12 @@ export default function EditorNavbar() {
 
       <div className="flex h-full items-center justify-between px-4 py-2">
         <div className="flex w-full items-center space-x-2 text-lg">
-          <div
+          <button
             onClick={handleBack}
             className="cursor-pointer p-1 text-neutral-500 transition hover:text-inherit"
           >
             <MdArrowBackIosNew />
-          </div>
+          </button>
 
           <div className="flex w-96 items-center">
             <AutoGrowInput

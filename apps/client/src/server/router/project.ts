@@ -1,8 +1,12 @@
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { TRPCError } from "@trpc/server";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";
 
+import { env } from "../../env/server.mjs";
+import { s3Client } from "../s3/client";
 import { Project } from "../s3/Project";
+import { Publication } from "../s3/Publication";
 import { protectedProcedure, router } from "./trpc";
 
 const PROJECT_ID_LENGTH = 21; // nanoid length
@@ -221,5 +225,61 @@ export const projectRouter = router({
         // Delete from S3
         project.delete(),
       ]);
+    }),
+
+  publish: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().length(PROJECT_ID_LENGTH),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify user owns the project
+      const found = await ctx.prisma.project.findFirst({
+        where: { id: input.id, owner: ctx.session.address },
+        include: { Publication: true },
+      });
+      if (!found) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Create new publication if it doesn't exist
+      let publicationId = found.Publication?.id;
+
+      if (!publicationId) {
+        const newPublication = await ctx.prisma.publication.create({
+          data: { owner: ctx.session.address },
+          select: { id: true },
+        });
+
+        publicationId = newPublication.id;
+
+        // Update project
+        await ctx.prisma.project.update({ where: { id: input.id }, data: { publicationId } });
+      }
+
+      // Create optimized model
+      const project = new Project(input.id);
+      await project.optimize();
+
+      // Download optimized model
+      const url = await project.getDownload("optimized_model");
+      const response = await fetch(url);
+      const buffer = await response.arrayBuffer();
+      const array = new Uint8Array(buffer);
+
+      // Upload optimized model to publication bucket
+      const publication = new Publication(publicationId);
+      const Key = publication.getKey("model");
+      const ContentType = publication.getContentType("model");
+      const command = new PutObjectCommand({
+        Bucket: env.S3_BUCKET,
+        Key,
+        ContentType,
+        Body: array,
+        ACL: "public-read",
+      });
+
+      await s3Client.send(command);
+
+      return publicationId;
     }),
 });

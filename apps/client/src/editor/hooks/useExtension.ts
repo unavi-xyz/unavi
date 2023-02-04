@@ -1,5 +1,5 @@
 import { ExtensibleProperty, ExtensionProperty } from "@gltf-transform/core";
-import { Collider, ColliderExtension } from "engine";
+import { Collider, ColliderExtension, SpawnPoint, SpawnPointExtension } from "engine";
 import { useEffect, useState } from "react";
 
 export function useExtension<T extends ExtensionProperty>(
@@ -23,4 +23,8 @@ export function useExtension<T extends ExtensionProperty>(
 
 export function useCollider(property: ExtensibleProperty | null) {
   return useExtension<Collider>(property, ColliderExtension.EXTENSION_NAME);
+}
+
+export function useSpawnPoint(property: ExtensibleProperty | null) {
+  return useExtension<SpawnPoint>(property, SpawnPointExtension.EXTENSION_NAME);
 }

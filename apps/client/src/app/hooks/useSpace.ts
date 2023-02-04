@@ -39,6 +39,7 @@ export function useSpace(id: number) {
       setSceneDownloaded(true);
 
       await engine.scene.loadBinary(array);
+      engine.physics.send({ subject: "respawn", data: null });
 
       setSceneLoaded(true);
     };

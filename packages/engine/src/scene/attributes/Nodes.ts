@@ -1,6 +1,7 @@
 import { Node } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
+import { SpawnPoint, SpawnPointExtension } from "../../gltf";
 import { Collider } from "../../gltf/extensions/Collider/Collider";
 import { ColliderExtension } from "../../gltf/extensions/Collider/ColliderExtension";
 import { ColliderType } from "../../gltf/extensions/Collider/types";
@@ -16,8 +17,13 @@ export type ColliderJSON = {
   mesh: string | null;
 };
 
+export type SpawnPointJSON = {
+  title: string;
+};
+
 type NodeExtensionsJSON = {
   [ColliderExtension.EXTENSION_NAME]: ColliderJSON | null;
+  [SpawnPointExtension.EXTENSION_NAME]: SpawnPointJSON | null;
 };
 
 type MeshId = string;
@@ -142,8 +148,9 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     if (json.extensions) {
       const colliderJSON = json.extensions[ColliderExtension.EXTENSION_NAME];
 
-      if (!colliderJSON) node.setExtension(ColliderExtension.EXTENSION_NAME, null);
-      else {
+      if (!colliderJSON) {
+        node.setExtension(ColliderExtension.EXTENSION_NAME, null);
+      } else {
         const collider =
           node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME) ??
           this.#scene.extensions.collider.createCollider();
@@ -160,6 +167,20 @@ export class Nodes extends Attribute<Node, NodeJSON> {
         }
 
         node.setExtension(ColliderExtension.EXTENSION_NAME, collider);
+      }
+
+      const spawnPointJSON = json.extensions[SpawnPointExtension.EXTENSION_NAME];
+
+      if (!spawnPointJSON) {
+        node.setExtension(SpawnPointExtension.EXTENSION_NAME, null);
+      } else {
+        const spawnPoint =
+          node.getExtension<SpawnPoint>(SpawnPointExtension.EXTENSION_NAME) ??
+          this.#scene.extensions.spawn.createSpawnPoint();
+
+        spawnPoint.title = spawnPointJSON.title;
+
+        node.setExtension(SpawnPointExtension.EXTENSION_NAME, spawnPoint);
       }
     }
   }
@@ -178,6 +199,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
 
     const extensions: NodeExtensionsJSON = {
       [ColliderExtension.EXTENSION_NAME]: null,
+      [SpawnPointExtension.EXTENSION_NAME]: null,
     };
 
     const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
@@ -193,6 +215,14 @@ export class Nodes extends Attribute<Node, NodeJSON> {
         height: collider.height,
         radius: collider.radius,
         mesh: meshId,
+      };
+    }
+
+    const spawnPoint = node.getExtension<SpawnPoint>(SpawnPointExtension.EXTENSION_NAME);
+
+    if (spawnPoint) {
+      extensions[SpawnPointExtension.EXTENSION_NAME] = {
+        title: spawnPoint.title,
       };
     }
 

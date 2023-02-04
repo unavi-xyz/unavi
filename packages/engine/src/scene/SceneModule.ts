@@ -16,8 +16,6 @@ export class SceneModule extends Scene {
   #render: RenderModule;
   #physics: PhysicsModule;
 
-  enableDracoDecoding = true;
-
   constructor(engine: Engine) {
     super();
 
@@ -44,18 +42,11 @@ export class SceneModule extends Scene {
   }
 
   async #createIO() {
-    const io = new WebIO().registerExtensions(extensions);
-
-    if (this.enableDracoDecoding) {
-      try {
-        // @ts-ignore
-        io.registerDependencies({ "draco3d.decoder": await new DracoDecoderModule() });
-      } catch (err) {
-        console.warn(err);
-      }
-    }
-
-    return io;
+    return new WebIO().registerExtensions(extensions).registerDependencies({
+      // DracoDecoderModule is a global variable, needs to be set by the user of this library
+      // @ts-ignore
+      "draco3d.decoder": await new DracoDecoderModule(),
+    });
   }
 
   async export() {

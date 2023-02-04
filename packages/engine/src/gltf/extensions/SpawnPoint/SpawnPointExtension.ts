@@ -3,6 +3,10 @@ import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 import { EXTENSION_NAME } from "./constants";
 import { SpawnPoint } from "./SpawnPoint";
 
+type SpawnPointDef = {
+  title: string;
+};
+
 /**
  * @link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point
  */
@@ -15,25 +19,26 @@ export class SpawnPointExtension extends Extension {
   }
 
   public read(context: ReaderContext): this {
-    const jsonDoc = context.jsonDoc;
-    const nodeDefs = jsonDoc.json.nodes || [];
+    const nodeDefs = context.jsonDoc.json.nodes || [];
 
     nodeDefs.forEach((nodeDef, nodeIndex) => {
-      if (nodeDef.extensions && nodeDef.extensions[EXTENSION_NAME]) {
-        const spawnPoint = this.createSpawnPoint();
-        const node = context.nodes[nodeIndex];
-        if (!node) throw new Error("Node not found");
+      if (!nodeDef.extensions || !nodeDef.extensions[EXTENSION_NAME]) return;
 
-        node.setExtension(EXTENSION_NAME, spawnPoint);
-      }
+      const node = context.nodes[nodeIndex];
+      if (!node) throw new Error("Node not found");
+
+      const spawnPoint = this.createSpawnPoint();
+
+      const rootDef = nodeDef.extensions[EXTENSION_NAME] as SpawnPointDef;
+      spawnPoint.title = rootDef.title;
+
+      node.setExtension(EXTENSION_NAME, spawnPoint);
     });
 
     return this;
   }
 
   public write(context: WriterContext): this {
-    const jsonDoc = context.jsonDoc;
-
     this.document
       .getRoot()
       .listNodes()
@@ -44,14 +49,16 @@ export class SpawnPointExtension extends Extension {
           const nodeIndex = context.nodeIndexMap.get(node);
           if (nodeIndex === undefined) throw new Error("Node index not found");
 
-          const nodes = jsonDoc.json.nodes;
+          const nodes = context.jsonDoc.json.nodes;
           if (!nodes) throw new Error("Nodes not found");
 
           const nodeDef = nodes[nodeIndex];
           if (!nodeDef) throw new Error("Node def not found");
 
           nodeDef.extensions = nodeDef.extensions || {};
-          nodeDef.extensions[EXTENSION_NAME] = {};
+
+          const def: SpawnPointDef = { title: spawnPoint.title };
+          nodeDef.extensions[EXTENSION_NAME] = def;
         }
       });
 

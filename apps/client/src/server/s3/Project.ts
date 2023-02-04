@@ -82,11 +82,20 @@ export class Project {
     const doc = await io.readBinary(array);
 
     // Process model
+    try {
+      // Some models fail with "Invalid JPG, marker table corrupted", not sure why
+      // If it happens, catch the error and continue with the rest of the transforms
+      await doc.transform(
+        dedup(),
+        prune({ propertyTypes: ALL_EXCEPT_NODE }),
+        textureResize({ size: [4096, 4096] })
+      );
+    } catch (err) {
+      console.warn("Transform failed:", err);
+    }
+
     await doc.transform(
-      dedup(),
-      prune({ propertyTypes: ALL_EXCEPT_NODE }),
       resample(),
-      textureResize({ size: [4096, 4096] }),
       weld({ tolerance: 0.001 }),
       simplify({ simplifier: MeshoptSimplifier, ratio: 0.75, error: 0.001 }),
       draco({ method: "edgebreaker", encodeSpeed: 1, decodeSpeed: 5 })

@@ -10,10 +10,10 @@ import {
   textureResize,
   weld,
 } from "@gltf-transform/functions";
-import draco3d from "draco3dgltf";
 import { extensions } from "engine";
 import { MeshoptSimplifier } from "meshoptimizer";
 
+import createEncoderModule from "../../../public/scripts/draco_encoder";
 import { env } from "../../env/server.mjs";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
 import { s3Client } from "./client";
@@ -77,7 +77,7 @@ export class Project {
     // Load model
     const io = new NodeIO()
       .registerExtensions(extensions)
-      .registerDependencies({ "draco3d.encoder": await draco3d.createEncoderModule() });
+      .registerDependencies({ "draco3d.encoder": await createEncoderModule() });
 
     const doc = await io.readBinary(array);
 

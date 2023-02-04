@@ -1,4 +1,5 @@
 import { ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform/core";
+import { DracoMeshCompression } from "@gltf-transform/extensions";
 
 import { Engine } from "../Engine";
 import { Collider, ColliderExtension } from "../gltf";
@@ -60,6 +61,16 @@ export class SceneModule extends Scene {
 
     const accessors = this.doc.getRoot().listAccessors();
     accessors.forEach((accessor) => accessor.setBuffer(buffer));
+
+    // Remove draco compression
+    this.doc
+      .getRoot()
+      .listExtensionsUsed()
+      .forEach((extension) => {
+        if (extension.extensionName === DracoMeshCompression.EXTENSION_NAME) {
+          extension.dispose();
+        }
+      });
 
     return await io.writeBinary(this.doc);
   }

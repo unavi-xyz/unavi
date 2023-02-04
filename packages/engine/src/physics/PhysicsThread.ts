@@ -18,7 +18,7 @@ export class PhysicsThread {
   #interval: NodeJS.Timeout;
 
   constructor(postMessage: PostMessage<FromPhysicsMessage>) {
-    this.player = new Player(this.world, postMessage);
+    this.player = new Player(this.world, this.scene, postMessage);
 
     this.#interval = setInterval(this.update, 1000 / 60); // 60hz
 
@@ -62,12 +62,7 @@ export class PhysicsThread {
       }
 
       case "respawn": {
-        const spawn = this.scene.getSpawn("Default");
-        const position = spawn?.getWorldTranslation() ?? [0, 0, 0];
-        this.player.rigidBody.setTranslation(
-          { x: position[0], y: position[1], z: position[2] },
-          true
-        );
+        this.player.respawn();
         break;
       }
     }

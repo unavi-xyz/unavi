@@ -20,11 +20,14 @@ import {
 import { PostMessage } from "../types";
 import { COLLISION_GROUP } from "./groups";
 import { FromPhysicsMessage } from "./messages";
+import { PhysicsScene } from "./PhysicsScene";
 
 const CHARACTER_OFFSET = 0.01;
+const RIGID_BODY_FEET_OFFSET = PLAYER_HEIGHT / 2 + PLAYER_RADIUS + CHARACTER_OFFSET;
 
 export class Player {
   #world: World;
+  #scene: PhysicsScene;
   #postMessage: PostMessage<FromPhysicsMessage>;
 
   controller: KinematicCharacterController;
@@ -40,8 +43,9 @@ export class Player {
   shouldJump = false;
   #isGrounded = false;
 
-  constructor(world: World, postMessage: PostMessage<FromPhysicsMessage>) {
+  constructor(world: World, scene: PhysicsScene, postMessage: PostMessage<FromPhysicsMessage>) {
     this.#world = world;
+    this.#scene = scene;
     this.#postMessage = postMessage;
 
     this.controller = this.#world.createCharacterController(CHARACTER_OFFSET);
@@ -72,6 +76,20 @@ export class Player {
 
   jump() {
     this.shouldJump = true;
+  }
+
+  respawn() {
+    const spawn = this.#scene.getSpawn();
+    const position = spawn?.getWorldTranslation() ?? [0, 0, 0];
+    this.rigidBody.setTranslation(
+      {
+        x: position[0],
+        y: position[1] + RIGID_BODY_FEET_OFFSET,
+        z: position[2],
+      },
+      true
+    );
+    this.rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
   }
 
   update() {
@@ -134,16 +152,12 @@ export class Player {
 
     // Store user position
     const pos = this.rigidBody.translation();
-    const feetY = pos.y - PLAYER_HEIGHT / 2 - PLAYER_RADIUS - CHARACTER_OFFSET;
     Atomics.store(this.userPosition, 0, pos.x * POSITION_ARRAY_ROUNDING);
-    Atomics.store(this.userPosition, 1, feetY * POSITION_ARRAY_ROUNDING);
+    Atomics.store(this.userPosition, 1, (pos.y - RIGID_BODY_FEET_OFFSET) * POSITION_ARRAY_ROUNDING);
     Atomics.store(this.userPosition, 2, pos.z * POSITION_ARRAY_ROUNDING);
 
     // Teleport out of void if needed
-    if (pos.y < -100) {
-      this.rigidBody.setTranslation({ x: 0, y: 0, z: 0 }, true);
-      this.rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
-    }
+    if (pos.y < -100) this.respawn();
   }
 }
 

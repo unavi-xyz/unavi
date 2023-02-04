@@ -33,8 +33,8 @@ import { RenderScene } from "./scene/RenderScene";
 import { ThreeOutlinePass } from "./three/ThreeOutlinePass";
 import { deepDispose } from "./utils/deepDispose";
 
-const CAMERA_NEAR = 0.01;
-const CAMERA_FAR = 750;
+const CAMERA_NEAR = 0.05;
+const CAMERA_FAR = 500;
 
 const SHADOW_CASCADES = 2;
 const SHADOW_BIAS = -0.0001;

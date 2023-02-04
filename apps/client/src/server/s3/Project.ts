@@ -1,15 +1,7 @@
 import { DeleteObjectsCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NodeIO, PropertyType } from "@gltf-transform/core";
-import {
-  dedup,
-  draco,
-  prune,
-  resample,
-  simplify,
-  textureResize,
-  weld,
-} from "@gltf-transform/functions";
+import { dedup, draco, prune, resample, simplify, textureResize } from "@gltf-transform/functions";
 import { extensions } from "engine";
 import { MeshoptSimplifier } from "meshoptimizer";
 
@@ -74,6 +66,8 @@ export class Project {
     const buffer = await response.arrayBuffer();
     const array = new Uint8Array(buffer);
 
+    const start = performance.now();
+
     // Load model
     const io = new NodeIO()
       .registerExtensions(extensions)
@@ -96,7 +90,6 @@ export class Project {
 
     await doc.transform(
       resample(),
-      weld({ tolerance: 0.001 }),
       simplify({ simplifier: MeshoptSimplifier, ratio: 0.75, error: 0.001 }),
       draco({ method: "edgebreaker", encodeSpeed: 1, decodeSpeed: 5 })
     );
@@ -109,7 +102,8 @@ export class Project {
       bytesToDisplay(array.byteLength),
       "->",
       bytesToDisplay(optimizedArray.byteLength),
-      `(${Math.round((optimizedArray.byteLength / array.byteLength) * 100)}%)`
+      `(${Math.round((optimizedArray.byteLength / array.byteLength) * 100)}%)`,
+      `(${Math.round(performance.now() - start)}ms)`
     );
 
     // Upload model to S3

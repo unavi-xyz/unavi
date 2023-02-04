@@ -34,6 +34,7 @@ export default function UpdatePage({ onClose }: Props) {
 
   const { data: session } = useSession();
   const { save } = useSave();
+  const utils = trpc.useContext();
   const router = useRouter();
   const id = router.query.id as string;
 
@@ -53,7 +54,7 @@ export default function UpdatePage({ onClose }: Props) {
     }
   );
 
-  const { data: spaceId } = trpc.publication.getLinkedSpace.useQuery(
+  const { data: space } = trpc.publication.getLinkedSpace.useQuery(
     { publicationId: publicationId ?? "" },
     {
       enabled: publicationId !== null,
@@ -109,8 +110,8 @@ export default function UpdatePage({ onClose }: Props) {
         const metadata: ERC721Metadata = {
           animation_url: modelURL,
           description,
-          external_url: spaceId
-            ? `https://thewired.space/space/${spaceId}`
+          external_url: space
+            ? `https://thewired.space/space/${space.spaceId}`
             : `https://thewired.space/user/${
                 profile ? numberToHexDisplay(profile.id) : session?.address
               }`,
@@ -133,7 +134,17 @@ export default function UpdatePage({ onClose }: Props) {
       }
 
       await save();
-      await Promise.all([publish({ id }), uploadImage(), uploadMetadata()]);
+
+      const promises = [
+        publish({ id }),
+        uploadImage(),
+        uploadMetadata(),
+        utils.project.image.invalidate({ id }),
+      ];
+
+      if (space?.spaceId) promises.push(utils.space.byId.invalidate({ id: space.spaceId }));
+
+      await Promise.all(promises);
 
       onClose();
     }

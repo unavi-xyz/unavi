@@ -8,6 +8,7 @@ export type ToPhysicsMessage =
   | MessageJSON<"jump">
   | MessageJSON<"set_controls", ControlsType>
   | MessageJSON<"set_sprinting", boolean>
+  | MessageJSON<"respawn", null>
   | MessageJSON<
       "set_user_arrays",
       { input: Int16Array; userPosition: Int32Array; cameraYaw: Int16Array }

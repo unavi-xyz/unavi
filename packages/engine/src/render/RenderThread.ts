@@ -36,6 +36,9 @@ import { deepDispose } from "./utils/deepDispose";
 const CAMERA_NEAR = 0.01;
 const CAMERA_FAR = 750;
 
+const SHADOW_CASCADES = 2;
+const SHADOW_BIAS = -0.0001;
+
 export class RenderThread {
   #canvas: HTMLCanvasElement | OffscreenCanvas | null = null;
   postMessage: PostMessage<FromRenderMessage>;
@@ -221,13 +224,13 @@ export class RenderThread {
     // Cascading shadow maps
     this.csm = new CSM({
       maxFar: 40,
-      cascades: 2,
-      lightIntensity: 0.5,
+      cascades: SHADOW_CASCADES,
+      lightIntensity: 1 / SHADOW_CASCADES,
       lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
       shadowMapSize: 2048,
       camera: this.camera,
       parent: this.scene,
-      shadowBias: -0.00001,
+      shadowBias: SHADOW_BIAS,
     });
     this.csm.fade = true;
     this.csm.setupMaterial(RenderScene.DEFAULT_MATERIAL);

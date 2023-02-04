@@ -1,6 +1,6 @@
 import { DeleteObjectsCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { NodeIO } from "@gltf-transform/core";
+import { NodeIO, PropertyType } from "@gltf-transform/core";
 import {
   dedup,
   draco,
@@ -15,8 +15,11 @@ import { extensions } from "engine";
 import { MeshoptSimplifier } from "meshoptimizer";
 
 import { env } from "../../env/server.mjs";
+import { bytesToDisplay } from "../../utils/bytesToDisplay";
 import { s3Client } from "./client";
 import { expiresIn } from "./constants";
+
+const ALL_EXCEPT_NODE = Object.values(PropertyType).filter((type) => type !== PropertyType.NODE);
 
 export const PROJECT_FILE = {
   IMAGE: "image",
@@ -81,7 +84,7 @@ export class Project {
     // Process model
     await doc.transform(
       dedup(),
-      prune(),
+      prune({ propertyTypes: ALL_EXCEPT_NODE }),
       resample(),
       textureResize({ size: [4096, 4096] }),
       weld({ tolerance: 0.001 }),
@@ -92,6 +95,14 @@ export class Project {
     // Write model
     const optimizedArray = await io.writeBinary(doc);
 
+    console.info(
+      "⚙️ Optimized model:",
+      bytesToDisplay(array.byteLength),
+      "->",
+      bytesToDisplay(optimizedArray.byteLength),
+      `(${Math.round((optimizedArray.byteLength / array.byteLength) * 100)}%)`
+    );
+
     // Upload model to S3
     const optimizedKey = this.getKey(PROJECT_FILE.OPTIMIZED_MODEL);
     const optimizedCommand = new PutObjectCommand({
@@ -100,6 +111,7 @@ export class Project {
       Body: optimizedArray,
       ContentType: this.getContentType(PROJECT_FILE.OPTIMIZED_MODEL),
     });
+
     await s3Client.send(optimizedCommand);
   }
 

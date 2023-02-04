@@ -1,18 +1,21 @@
-import { ColliderExtension } from "engine";
+import { ColliderExtension, SPAWN_TITLES } from "engine";
 import { useState } from "react";
 
 import Button from "../../../ui/Button";
 import DropdownMenu from "../../../ui/DropdownMenu";
 import { useNode } from "../../hooks/useNode";
 import { useNodeAttribute } from "../../hooks/useNodeAttribute";
+import { useSpawn } from "../../hooks/useSpawn";
 import { useEditorStore } from "../../store";
 import MeshComponent from "./mesh/MeshComponent";
 import PhysicsComponent from "./PhysicsComponent";
+import SpawnPointComponent from "./SpawnPointComponent";
 import TransformComponent from "./TransformComponent";
 
 const COMPONENT_TYPE = {
   Mesh: "Mesh",
   Physics: "Physics",
+  SpawnPoint: "Spawn Point",
 } as const;
 
 type ComponentType = (typeof COMPONENT_TYPE)[keyof typeof COMPONENT_TYPE];
@@ -23,6 +26,7 @@ export default function InspectMenu() {
   const name = useNodeAttribute(selectedId, "name");
   const meshId = useNodeAttribute(selectedId, "mesh");
   const extensions = useNodeAttribute(selectedId, "extensions");
+  const spawn = useSpawn();
 
   const [open, setOpen] = useState(false);
 
@@ -32,6 +36,7 @@ export default function InspectMenu() {
 
   if (!meshId) availableComponents.push(COMPONENT_TYPE.Mesh);
   if (!extensions?.OMI_collider) availableComponents.push(COMPONENT_TYPE.Physics);
+  if (!extensions?.OMI_spawn_point && !spawn) availableComponents.push(COMPONENT_TYPE.SpawnPoint);
 
   return (
     <div className="pr-2">
@@ -48,9 +53,10 @@ export default function InspectMenu() {
 
       <div className="space-y-4 px-1">
         <TransformComponent nodeId={selectedId} />
-        {meshId && <MeshComponent meshId={meshId} />}
 
+        {meshId && <MeshComponent meshId={meshId} />}
         {extensions?.OMI_collider && <PhysicsComponent nodeId={selectedId} />}
+        {extensions?.OMI_spawn_point && <SpawnPointComponent nodeId={selectedId} />}
 
         {availableComponents.length > 0 && (
           <div className="space-y-1 px-5">
@@ -80,11 +86,11 @@ export default function InspectMenu() {
                       node.setMesh(mesh);
                     }}
                   >
-                    Mesh
+                    {COMPONENT_TYPE.Mesh}
                   </ComponentButton>
                 )}
 
-                {availableComponents.includes("Physics") && (
+                {availableComponents.includes(COMPONENT_TYPE.Physics) && (
                   <ComponentButton
                     onClick={() => {
                       const { engine } = useEditorStore.getState();
@@ -96,7 +102,22 @@ export default function InspectMenu() {
                       node.setExtension(ColliderExtension.EXTENSION_NAME, collider);
                     }}
                   >
-                    Physics
+                    {COMPONENT_TYPE.Physics}
+                  </ComponentButton>
+                )}
+
+                {availableComponents.includes(COMPONENT_TYPE.SpawnPoint) && (
+                  <ComponentButton
+                    onClick={() => {
+                      const { engine } = useEditorStore.getState();
+                      if (!engine) return;
+
+                      const spawnPoint = engine.scene.extensions.spawn.createSpawnPoint();
+                      spawnPoint.title = SPAWN_TITLES.Default;
+                      node.setExtension("OMI_spawn_point", spawnPoint);
+                    }}
+                  >
+                    {COMPONENT_TYPE.SpawnPoint}
                   </ComponentButton>
                 )}
               </div>

@@ -33,12 +33,10 @@ export class ColliderExtension extends Extension {
   }
 
   read(context: ReaderContext): this {
-    const jsonDoc = context.jsonDoc;
+    if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[EXTENSION_NAME])
+      return this;
 
-    if (!jsonDoc.json.extensions || !jsonDoc.json.extensions[EXTENSION_NAME]) return this;
-
-    const rootDef = jsonDoc.json.extensions[EXTENSION_NAME] as ColliderExtensionDef;
-
+    const rootDef = context.jsonDoc.json.extensions[EXTENSION_NAME] as ColliderExtensionDef;
     const colliderDefs = rootDef.colliders || ([] as ColliderDef[]);
 
     const colliders = colliderDefs.map((colliderDef) => {
@@ -46,11 +44,8 @@ export class ColliderExtension extends Extension {
       collider.type = colliderDef.type;
 
       if (colliderDef.size !== undefined) collider.size = colliderDef.size;
-
       if (colliderDef.radius !== undefined) collider.radius = colliderDef.radius;
-
       if (colliderDef.height !== undefined) collider.height = colliderDef.height;
-
       if (colliderDef.mesh !== undefined) {
         const mesh = context.meshes[colliderDef.mesh];
         if (!mesh) throw new Error("Mesh not found");
@@ -60,7 +55,7 @@ export class ColliderExtension extends Extension {
       return collider;
     });
 
-    const nodeDefs = jsonDoc.json.nodes || [];
+    const nodeDefs = context.jsonDoc.json.nodes || [];
 
     nodeDefs.forEach((nodeDef, nodeIndex) => {
       if (!nodeDef.extensions || !nodeDef.extensions[EXTENSION_NAME]) return;

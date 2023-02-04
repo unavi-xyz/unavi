@@ -4,7 +4,7 @@ interface Props {
   title?: string;
   removeable?: boolean;
   onRemove?: () => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export default function ComponentMenu({ title, removeable = true, onRemove, children }: Props) {
@@ -25,7 +25,7 @@ export default function ComponentMenu({ title, removeable = true, onRemove, chil
         )}
       </div>
 
-      <div className="space-y-4">{children}</div>
+      {children && <div className="space-y-4">{children}</div>}
     </div>
   );
 }

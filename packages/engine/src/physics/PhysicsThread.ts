@@ -60,6 +60,16 @@ export class PhysicsThread {
         clearInterval(this.#interval);
         break;
       }
+
+      case "respawn": {
+        const spawn = this.scene.getSpawn("Default");
+        const position = spawn?.getWorldTranslation() ?? [0, 0, 0];
+        this.player.rigidBody.setTranslation(
+          { x: position[0], y: position[1], z: position[2] },
+          true
+        );
+        break;
+      }
     }
   };
 

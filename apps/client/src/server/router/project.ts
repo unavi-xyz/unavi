@@ -277,6 +277,7 @@ export const projectRouter = router({
         Body: array,
         ACL: "public-read",
       });
+
       await s3Client.send(command);
 
       return publicationId;

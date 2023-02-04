@@ -1,6 +1,7 @@
 import { Node, NodeIO } from "@gltf-transform/core";
-import draco3d from "draco3dgltf";
 import { extensions } from "engine";
+
+import createDecoderModule from "../../../public/scripts/draco_decoder";
 
 export type ModelStats = {
   fileSize: number;
@@ -20,7 +21,7 @@ export async function getModelStats(url: string): Promise<ModelStats> {
   // Load model
   const io = new NodeIO()
     .registerExtensions(extensions)
-    .registerDependencies({ "draco3d.decoder": await draco3d.createDecoderModule() });
+    .registerDependencies({ "draco3d.decoder": await createDecoderModule() });
 
   const doc = await io.readBinary(array);
 

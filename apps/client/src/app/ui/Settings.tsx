@@ -8,15 +8,17 @@ import SignInButton from "../../home/layouts/NavbarLayout/SignInButton";
 import ProfilePicture from "../../home/ProfilePicture";
 import FileInput from "../../ui/FileInput";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
-import { getTempURL } from "../hooks/useSetAvatar";
+import { ModelStats } from "../../utils/getModelStats";
 import { useAppStore } from "../store";
 import { avatarPerformanceRank } from "../utils/avatarPerformanceRank";
+import { clientGetModelStats } from "../utils/clientGetModelStats";
 
 export default function Settings() {
   const nickname = useAppStore((state) => state.nickname);
   const avatar = useAppStore((state) => state.avatar);
   const playerId = useAppStore((state) => state.playerId);
   const [avatarName, setAvatarName] = useState<string>();
+  const [stats, setStats] = useState<ModelStats | null>(null);
 
   const { data: session } = useSession();
   const { logout } = useLogout();
@@ -26,47 +28,20 @@ export default function Settings() {
     { enabled: session?.address !== undefined }
   );
 
-  const isAvatarPublished = Boolean(avatar) && Boolean(avatar?.startsWith("http"));
-
-  const { data: stats } = trpc.public.modelStats.useQuery(
-    { url: avatar ?? "" },
-    {
-      enabled: isAvatarPublished,
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-    }
-  );
-
-  const { mutateAsync: createTempUpload } = trpc.public.tempUploadURL.useMutation();
-
   useEffect(() => {
-    if (!avatar) return;
-
-    const isURL = avatar.startsWith("http");
-    if (isURL) return;
-
-    async function uploadAvatar() {
-      if (!avatar) return;
-
-      // Get avatar file
-      const body = await fetch(avatar).then((res) => res.blob());
-      const { url, fileId } = await createTempUpload();
-
-      // Upload to S3
-      const res = await fetch(url, {
-        method: "PUT",
-        body,
-        headers: { "Content-Type": body.type, "x-amz-acl": "public-read" },
-      });
-      if (!res.ok) throw new Error("Failed to upload avatar");
-
-      const newURL = getTempURL(fileId);
-      useAppStore.setState({ avatar: newURL });
+    if (!avatar) {
+      setStats(null);
+      return;
     }
 
-    uploadAvatar();
-  }, [avatar, createTempUpload]);
+    async function getStats() {
+      if (!avatar) return;
+      const stats = await clientGetModelStats(avatar);
+      setStats(stats);
+    }
+
+    getStats();
+  }, [avatar]);
 
   const rank = stats ? avatarPerformanceRank(stats) : null;
 

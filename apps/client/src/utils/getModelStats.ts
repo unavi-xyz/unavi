@@ -1,7 +1,4 @@
-import { Node, NodeIO } from "@gltf-transform/core";
-import { extensions } from "engine";
-
-import createDecoderModule from "../../../public/scripts/draco_decoder";
+import { Node, PlatformIO } from "@gltf-transform/core";
 
 export type ModelStats = {
   fileSize: number;
@@ -12,17 +9,7 @@ export type ModelStats = {
   triangleCount: number;
 };
 
-export async function getModelStats(url: string): Promise<ModelStats> {
-  // Fetch model
-  const response = await fetch(url);
-  const buffer = await response.arrayBuffer();
-  const array = new Uint8Array(buffer);
-
-  // Load model
-  const io = new NodeIO()
-    .registerExtensions(extensions)
-    .registerDependencies({ "draco3d.decoder": await createDecoderModule() });
-
+export async function getModelStats(io: PlatformIO, array: Uint8Array): Promise<ModelStats> {
   const doc = await io.readBinary(array);
 
   // Get stats

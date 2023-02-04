@@ -3,8 +3,8 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { env } from "../../env/client.mjs";
-import { getModelStats } from "../helpers/getModelStats";
 import { getSpaceMetadata } from "../helpers/getSpaceMetadata";
+import { serverGetModelStats } from "../helpers/serverGetModelStats";
 import { getTempUpload } from "../s3/temp";
 import { publicProcedure, router } from "./trpc";
 
@@ -87,7 +87,7 @@ export const publicRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const stats = await getModelStats(input.url);
+      const stats = await serverGetModelStats(input.url);
       return stats;
     }),
 });

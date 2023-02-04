@@ -2,7 +2,7 @@ import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { Engine } from "engine";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
 import { useLoadUser } from "../../app/hooks/useLoadUser";
@@ -54,6 +54,7 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
   const overlayRef = useRef<HTMLCanvasElement>(null);
 
   const engine = useAppStore((state) => state.engine);
+  const [scriptsReady, setScriptsReady] = useState(false);
 
   const setAvatar = useSetAvatar();
   useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
@@ -63,14 +64,28 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
   const { space, loadingText, loadingProgress, join } = useSpace(id);
 
   useEffect(() => {
-    if (!engine) return;
+    if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;
 
-    join();
+    const engine = new Engine({
+      canvas: canvasRef.current,
+      overlayCanvas: overlayRef.current,
+    });
+
+    engine.render.send({ subject: "set_animations_path", data: "/models" });
+    engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
+    engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
+
+    useAppStore.setState({ engine });
 
     return () => {
       engine.destroy();
       useAppStore.setState({ engine: null, chatMessages: [] });
     };
+  }, [scriptsReady]);
+
+  useEffect(() => {
+    if (!engine) return;
+    join();
   }, [engine, join]);
 
   const loaded = loadingProgress === 1;
@@ -85,23 +100,7 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
         card="summary_large_image"
       />
 
-      <Script
-        src="/scripts/draco_decoder.js"
-        onReady={() => {
-          if (!canvasRef.current || !overlayRef.current) throw new Error("Canvas not found");
-
-          const engine = new Engine({
-            canvas: canvasRef.current,
-            overlayCanvas: overlayRef.current,
-          });
-
-          engine.render.send({ subject: "set_animations_path", data: "/models" });
-          engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
-          engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
-
-          useAppStore.setState({ engine });
-        }}
-      />
+      <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
 
       <LoadingScreen
         text={space?.metadata?.name}

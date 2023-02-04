@@ -1,6 +1,6 @@
 import { Engine } from "engine";
 import Script from "next/script";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Split from "react-split";
 
 import { useResizeCanvas } from "../../app/hooks/useResizeCanvas";
@@ -22,6 +22,7 @@ export default function Editor() {
 
   const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
+  const [scriptsReady, setScriptsReady] = useState(false);
 
   const resize = useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
   useLoad();
@@ -30,7 +31,20 @@ export default function Editor() {
   useEditorHotkeys();
 
   useEffect(() => {
-    if (!engine) return;
+    if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;
+
+    const engine = new Engine({
+      canvas: canvasRef.current,
+      overlayCanvas: overlayRef.current,
+    });
+    engine.controls = "orbit";
+    engine.visuals = true;
+
+    engine.render.send({ subject: "set_animations_path", data: "/models" });
+    engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
+    engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
+
+    useEditorStore.setState({ engine, canvas: canvasRef.current, visuals: true });
 
     return () => {
       engine.destroy();
@@ -42,7 +56,7 @@ export default function Editor() {
         openIds: [],
       });
     };
-  }, [engine]);
+  }, [scriptsReady]);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
 
@@ -50,25 +64,7 @@ export default function Editor() {
     <>
       <MetaTags title="Editor" />
 
-      <Script
-        src="/scripts/draco_decoder.js"
-        onReady={() => {
-          if (!canvasRef.current || !overlayRef.current) throw new Error("Canvas not found");
-
-          const engine = new Engine({
-            canvas: canvasRef.current,
-            overlayCanvas: overlayRef.current,
-          });
-          engine.controls = "orbit";
-          engine.visuals = true;
-
-          engine.render.send({ subject: "set_animations_path", data: "/models" });
-          engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
-          engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
-
-          useEditorStore.setState({ engine, canvas: canvasRef.current, visuals: true });
-        }}
-      />
+      <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
 
       <div
         className="absolute top-0 left-0 h-full w-full overflow-hidden"

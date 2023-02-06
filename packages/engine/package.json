@@ -14,7 +14,7 @@
     "@gltf-transform/core": "2.5.1",
     "@gltf-transform/extensions": "2.5.1",
     "@gltf-transform/functions": "2.5.1",
-    "@pixiv/three-vrm": "^1.0.7",
+    "@pixiv/three-vrm": "^1.0.8",
     "contracts": "*",
     "nanoid": "^4.0.0",
     "property-graph": "^1.0.1",

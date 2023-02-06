@@ -16,7 +16,7 @@
     "start": "node --experimental-specifier-resolution=node ./build/server.js"
   },
   "dependencies": {
-    "mediasoup": "^3.11.7",
+    "mediasoup": "^3.11.8",
     "nanoid": "^4.0.0",
     "protocol": "*",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.19.0",

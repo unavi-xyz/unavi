@@ -37,9 +37,8 @@ export class ColliderExtension extends Extension {
       return this;
 
     const rootDef = context.jsonDoc.json.extensions[EXTENSION_NAME] as ColliderExtensionDef;
-    const colliderDefs = rootDef.colliders || ([] as ColliderDef[]);
 
-    const colliders = colliderDefs.map((colliderDef) => {
+    const colliders = rootDef.colliders.map((colliderDef) => {
       const collider = this.createCollider();
       collider.type = colliderDef.type;
 
@@ -55,7 +54,7 @@ export class ColliderExtension extends Extension {
       return collider;
     });
 
-    const nodeDefs = context.jsonDoc.json.nodes || [];
+    const nodeDefs = context.jsonDoc.json.nodes ?? [];
 
     nodeDefs.forEach((nodeDef, nodeIndex) => {
       if (!nodeDef.extensions || !nodeDef.extensions[EXTENSION_NAME]) return;
@@ -82,53 +81,54 @@ export class ColliderExtension extends Extension {
     const colliderIndexMap = new Map<Collider, number>();
 
     for (const property of this.properties) {
-      const collider = property as Collider;
-      const colliderDef = { type: collider.type } as ColliderDef;
+      if (property instanceof Collider) {
+        const colliderDef = { type: property.type } as ColliderDef;
 
-      switch (collider.type) {
-        case "box": {
-          const size = collider.size;
-          if (!size) throw new Error("Size not set");
+        switch (property.type) {
+          case "box": {
+            const size = property.size;
+            if (!size) throw new Error("Size not set");
 
-          colliderDef.size = size;
-          break;
+            colliderDef.size = size;
+            break;
+          }
+
+          case "sphere": {
+            const radius = property.radius;
+            if (radius === null) throw new Error("Radius not set");
+
+            colliderDef.radius = radius;
+            break;
+          }
+
+          case "capsule":
+          case "cylinder": {
+            const radius = property.radius;
+            if (radius === null) throw new Error("Radius not set");
+
+            const height = property.height;
+            if (height === null) throw new Error("Height not set");
+
+            colliderDef.radius = radius;
+            colliderDef.height = height;
+            break;
+          }
+
+          case "trimesh": {
+            const mesh = property.mesh;
+            if (!mesh) break;
+
+            const meshIndex = context.meshIndexMap.get(mesh);
+            if (meshIndex === undefined) throw new Error("Mesh not found");
+
+            colliderDef.mesh = meshIndex;
+            break;
+          }
         }
 
-        case "sphere": {
-          const radius = collider.radius;
-          if (radius === null) throw new Error("Radius not set");
-
-          colliderDef.radius = radius;
-          break;
-        }
-
-        case "capsule":
-        case "cylinder": {
-          const radius = collider.radius;
-          if (radius === null) throw new Error("Radius not set");
-
-          const height = collider.height;
-          if (height === null) throw new Error("Height not set");
-
-          colliderDef.radius = radius;
-          colliderDef.height = height;
-          break;
-        }
-
-        case "trimesh": {
-          const mesh = collider.mesh;
-          if (!mesh) break;
-
-          const meshIndex = context.meshIndexMap.get(mesh);
-          if (meshIndex === undefined) throw new Error("Mesh not found");
-
-          colliderDef.mesh = meshIndex;
-          break;
-        }
+        colliderDefs.push(colliderDef);
+        colliderIndexMap.set(property, colliderDefs.length - 1);
       }
-
-      colliderDefs.push(colliderDef);
-      colliderIndexMap.set(collider, colliderDefs.length - 1);
     }
 
     this.document
@@ -147,15 +147,19 @@ export class ColliderExtension extends Extension {
           const nodeDef = nodes[nodeIndex];
           if (!nodeDef) throw new Error("Node def not found");
 
-          nodeDef.extensions = nodeDef.extensions || {};
+          nodeDef.extensions = nodeDef.extensions ?? {};
           nodeDef.extensions[EXTENSION_NAME] = {
             collider: colliderIndexMap.get(collider),
           };
         }
       });
 
-    jsonDoc.json.extensions = jsonDoc.json.extensions || {};
-    jsonDoc.json.extensions[EXTENSION_NAME] = { colliders: colliderDefs };
+    if (colliderDefs.length > 0) {
+      const rootDef: ColliderExtensionDef = { colliders: colliderDefs };
+
+      if (!jsonDoc.json.extensions) jsonDoc.json.extensions = {};
+      jsonDoc.json.extensions[EXTENSION_NAME] = rootDef;
+    }
 
     return this;
   }

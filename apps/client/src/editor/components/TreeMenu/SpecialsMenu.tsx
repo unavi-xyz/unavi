@@ -37,17 +37,17 @@ export default function SpecialsMenu() {
   }
 
   return (
-    <div className="space-y-0.5 p-2">
+    <div className="py-2">
       <button
         onClick={() => addObject("Spawn")}
-        className="flex w-full items-center space-x-2 whitespace-nowrap rounded-lg px-4 py-0.5 transition hover:bg-neutral-200"
+        className="flex w-full cursor-default items-center space-x-2 whitespace-nowrap px-6 py-0.5 hover:bg-neutral-200 active:opacity-80"
       >
         <span>Spawn</span>
         <span className={spawn ? "font-bold" : ""}>({spawn ? 1 : 0}/1)</span>
       </button>
 
       <label onPointerUp={(e) => e.stopPropagation()} htmlFor={id}>
-        <div className="flex w-full cursor-pointer items-center whitespace-nowrap rounded-lg px-4 py-0.5 transition hover:bg-neutral-200">
+        <div className="flex w-full items-center whitespace-nowrap px-6 py-0.5 hover:bg-neutral-200 active:opacity-80">
           Import glTF
         </div>
       </label>

@@ -11,8 +11,8 @@ export default function ComponentMenu({ title, removeable = true, onRemove, chil
   const outlineClass = removeable ? "hover:ring-1" : "";
 
   return (
-    <div className={`group space-y-4 rounded-2xl p-4 ring-neutral-300 transition ${outlineClass}`}>
-      <div className="-mt-1 flex justify-between text-xl font-bold">
+    <div className={`group rounded-xl px-4 py-3 ring-neutral-300 transition ${outlineClass}`}>
+      <div className="flex justify-between text-xl font-bold">
         {title && <div>{title}</div>}
 
         {removeable && (
@@ -25,7 +25,7 @@ export default function ComponentMenu({ title, removeable = true, onRemove, chil
         )}
       </div>
 
-      {children && <div className="space-y-4">{children}</div>}
+      {children && <div className="space-y-2 pt-2">{children}</div>}
     </div>
   );
 }

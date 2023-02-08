@@ -21,7 +21,7 @@ export default function ProfileMenu({ includeExternal = true }: Props) {
   );
 
   return (
-    <div className="p-2">
+    <div className="py-2">
       {includeExternal && (
         <Link href={`/user/${profile?.id ? numberToHexDisplay(profile.id) : session?.address}`}>
           <div className="w-full">

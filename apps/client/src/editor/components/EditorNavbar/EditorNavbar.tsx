@@ -76,7 +76,7 @@ export default function EditorNavbar() {
         )}
       </Dialog>
 
-      <div className="flex h-full items-center justify-between px-4 py-2">
+      <div className="flex h-full items-center justify-between px-4 py-1">
         <div className="flex w-full items-center space-x-2 text-lg">
           <button
             onClick={handleBack}

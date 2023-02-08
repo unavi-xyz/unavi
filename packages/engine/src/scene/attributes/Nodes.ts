@@ -30,6 +30,10 @@ type MeshId = string;
 type SkinId = string;
 type NodeId = string;
 
+export type NodeExtras = {
+  scripts?: Array<{ id: string; name: string; behaviorNodes: number[] }>;
+};
+
 export type NodeJSON = {
   name: string;
   translation: Vec3;
@@ -39,6 +43,7 @@ export type NodeJSON = {
   skin: SkinId | null;
   children: NodeId[];
   extensions: NodeExtensionsJSON;
+  extras: NodeExtras;
 };
 
 export class Nodes extends Attribute<Node, NodeJSON> {
@@ -183,6 +188,8 @@ export class Nodes extends Attribute<Node, NodeJSON> {
         node.setExtension(SpawnPointExtension.EXTENSION_NAME, spawnPoint);
       }
     }
+
+    if (json.extras) node.setExtras(json.extras);
   }
 
   toJSON(node: Node): NodeJSON {
@@ -235,6 +242,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       skin: null,
       children: childrenIds,
       extensions,
+      extras: node.getExtras() as NodeExtras,
     };
   }
 }

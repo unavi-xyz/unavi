@@ -19,12 +19,9 @@ export default function IconButton({
   ...rest
 }: Props) {
   const selectedClass = selected ? "bg-neutral-200 hover:bg-neutral-300" : "hover:bg-neutral-200";
-
   const roundedClass = rounded === "full" ? "rounded-full" : "rounded-lg";
-
   const cursorClass = cursor === "pointer" ? "cursor-pointer" : "cursor-default";
-
-  const loadingClass = loading ? "opacity-0" : null;
+  const loadingClass = loading ? "opacity-0" : "";
 
   return (
     <button

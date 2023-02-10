@@ -6,7 +6,7 @@ import Split from "react-split";
 import { useResizeCanvas } from "../../app/hooks/useResizeCanvas";
 import EditorNavbar from "../../editor/components/EditorNavbar/EditorNavbar";
 import InspectMenu from "../../editor/components/InspectMenu/InspectMenu";
-import ScriptMenu from "../../editor/components/ScriptMenu";
+import ScriptMenu from "../../editor/components/ScriptMenu/ScriptMenu";
 import TreeMenu from "../../editor/components/TreeMenu/TreeMenu";
 import { useAutosave } from "../../editor/hooks/useAutosave";
 import { useEditorHotkeys } from "../../editor/hooks/useEditorHotkeys";
@@ -75,7 +75,7 @@ export default function Editor() {
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
 
       <div
-        className="absolute top-0 left-0 h-full w-full overflow-hidden"
+        className="h-full w-full"
         onDragOver={(e) => e.preventDefault()}
         onDrop={async (e) => {
           if (!engine) return;
@@ -94,55 +94,57 @@ export default function Editor() {
           await engine.scene.addFile(file);
         }}
       >
-        <div className="z-10 h-12 w-full border-b">
+        <div className="h-12 w-full border-b">
           <EditorNavbar />
         </div>
 
-        <Split
-          sizes={openScriptId ? [50, 50] : [100, 0]}
-          minSize={openScriptId ? [200, 200] : [200, 0]}
-          direction="vertical"
-          gutterSize={8}
-          className="h-full"
-          onMouseUp={resize}
-        >
+        <div className="fixed h-full w-full">
           <Split
-            sizes={[15, 65, 20]}
-            minSize={[50, 400, 50]}
-            direction="horizontal"
-            gutterSize={4}
-            className={`flex ${openScriptId ? "h-1/2" : "h-full"}`}
+            sizes={openScriptId ? [50, 50] : [100, 0]}
+            minSize={openScriptId ? [250, 250] : [250, 0]}
+            direction="vertical"
+            gutterSize={8}
+            className="h-full w-full"
             onMouseUp={resize}
           >
-            <div>
-              <TreeMenu />
-            </div>
-
-            <div className="border-x">
-              <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-                {!sceneLoaded && (
-                  <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
-                    <div className="flex h-full flex-col items-center justify-center">
-                      <Spinner />
-                    </div>
-                  </div>
-                )}
-
-                <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
-                <canvas
-                  ref={overlayRef}
-                  className={`absolute top-0 left-0 z-10 h-full w-full transition ${loadedClass}`}
-                />
+            <Split
+              sizes={[15, 65, 20]}
+              minSize={[50, 400, 50]}
+              direction="horizontal"
+              gutterSize={4}
+              className={`flex w-full ${openScriptId ? "h-1/2" : "h-full"}`}
+              onMouseUp={resize}
+            >
+              <div>
+                <TreeMenu />
               </div>
-            </div>
 
-            <div className="overflow-y-auto">
-              <InspectMenu />
-            </div>
+              <div className="border-x">
+                <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+                  {!sceneLoaded && (
+                    <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+                      <div className="flex h-full flex-col items-center justify-center">
+                        <Spinner />
+                      </div>
+                    </div>
+                  )}
+
+                  <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
+                  <canvas
+                    ref={overlayRef}
+                    className={`absolute top-0 left-0 z-10 h-full w-full transition ${loadedClass}`}
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-y-auto">
+                <InspectMenu />
+              </div>
+            </Split>
+
+            <div>{openScriptId && <ScriptMenu scriptId={openScriptId} />}</div>
           </Split>
-
-          <div>{openScriptId && <ScriptMenu scriptId={openScriptId} />}</div>
-        </Split>
+        </div>
       </div>
     </>
   );

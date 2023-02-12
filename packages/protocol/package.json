@@ -17,6 +17,6 @@
   "devDependencies": {
     "mediasoup-client": "^3.6.77",
     "tsconfig": "*",
-    "typescript": "~4.9.4"
+    "typescript": "~4.9.5"
   }
 }

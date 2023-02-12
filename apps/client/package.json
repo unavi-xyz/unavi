@@ -22,7 +22,7 @@
     "@prisma/client": "^4.9.0",
     "@rainbow-me/rainbowkit": "^0.8.1",
     "@rainbow-me/rainbowkit-siwe-next-auth": "^0.1.5",
-    "@tanstack/react-query": "^4.22.3",
+    "@tanstack/react-query": "^4.24.4",
     "@trpc/client": "10.10.0",
     "@trpc/next": "10.9.0",
     "@trpc/react-query": "10.11.0",

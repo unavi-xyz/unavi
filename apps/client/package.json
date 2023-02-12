@@ -25,7 +25,7 @@
     "@tanstack/react-query": "^4.22.3",
     "@trpc/client": "10.10.0",
     "@trpc/next": "10.9.0",
-    "@trpc/react-query": "10.9.0",
+    "@trpc/react-query": "10.11.0",
     "@trpc/server": "10.10.0",
     "boring-avatars": "^1.7.0",
     "contracts": "*",

@@ -37,7 +37,7 @@
     "nanoid": "^4.0.0",
     "next": "13.1.6",
     "next-auth": "4.19.2",
-    "next-axiom": "^0.16.0",
+    "next-axiom": "^0.17.0",
     "next-pwa": "^5.6.0",
     "protocol": "*",
     "react": "^18.2.0",

@@ -7911,10 +7911,10 @@ property-graph@^0.2.6:
   resolved "https://registry.yarnpkg.com/property-graph/-/property-graph-0.2.6.tgz#add988a436745936d4b2ae19f747f2556296c828"
   integrity sha512-QiBHxNZlwIarbkxsqCY688aP1ANbwtoQFBYgTZopQ0Bvku6/EYp3H4KH0ygxkhWQbJv5DEONspLy1rHi5xIycg==
 
-property-graph@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/property-graph/-/property-graph-1.0.1.tgz#f81285b10cda7bca8c9b9774e678b17a1291578a"
-  integrity sha512-AVNJIRGK2w4wELnPNI8S7NjZ6ryciPRo7ZM54bATQJtzO5dJ+olCquEWJvBoxsSq24SxFhVxXxdqC9GbVNkkhw==
+property-graph@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/property-graph/-/property-graph-1.0.3.tgz#b10d7578856fb187987f1fd765639edb6224b556"
+  integrity sha512-LhNLXmbUfWio8R6H+KEzhnQ9EYmo7/qe7v9jmZuvkZPgIdLhRNPSP1wrfUG0hJhamT9u0bRSfIKJxSKfotQ+zQ==
 
 protobufjs@^7.0.0:
   version "7.1.2"

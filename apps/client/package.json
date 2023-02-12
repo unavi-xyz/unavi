@@ -32,7 +32,7 @@
     "engine": "*",
     "ethers": "^5.7.2",
     "ipfs-http-client": "^60.0.0",
-    "mediasoup-client": "^3.6.75",
+    "mediasoup-client": "^3.6.77",
     "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.0",
     "next": "13.1.6",

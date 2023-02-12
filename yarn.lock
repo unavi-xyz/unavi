@@ -7015,10 +7015,10 @@ media-query-parser@^2.0.2:
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-mediasoup-client@^3.6.75:
-  version "3.6.75"
-  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.75.tgz#da708a47f6aff742282877f42fb0ba52f7e22e8c"
-  integrity sha512-nz3shYHEYhccdWy4OvbpSacHOiW+hZP2aWHmCSPBW6hQ01qVDTGIKTbMS0sueh7Ma3ZADbH4+JY2YlhSU7ft3g==
+mediasoup-client@^3.6.77:
+  version "3.6.77"
+  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.77.tgz#26a62d371b7c15de46c8f810e210331a3bc3d98f"
+  integrity sha512-+nSq/w8UHIr0e2qSk93pAZkVhiHNP3fdGjrKuam69uYSdy/byA+8kSTaePqqj84ypd73oj/cJp0W6y5YyYiiqA==
   dependencies:
     "@types/debug" "^4.1.7"
     awaitqueue "^3.0.1"
@@ -7026,6 +7026,7 @@ mediasoup-client@^3.6.75:
     debug "^4.3.4"
     events "^3.3.0"
     h264-profile-level-id "^1.0.1"
+    queue-microtask "^1.2.3"
     sdp-transform "^2.14.1"
     supports-color "^9.3.1"
 
@@ -8000,7 +8001,7 @@ query-string@6.13.5:
     split-on-first "^1.0.0"
     strict-uri-encode "^2.0.0"
 
-queue-microtask@^1.2.2:
+queue-microtask@^1.2.2, queue-microtask@^1.2.3:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/queue-microtask/-/queue-microtask-1.2.3.tgz#4929228bbc724dfac43e0efb058caf7b6cfb6243"
   integrity sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==

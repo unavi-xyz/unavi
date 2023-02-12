@@ -1,4 +1,4 @@
-import { OutputSocketSpecJSON } from "behave-graph";
+import { OutputSocketSpecJSON } from "@behave-graph/core";
 import { FaCaretRight } from "react-icons/fa";
 import { Connection, Handle, Position, useReactFlow } from "reactflow";
 

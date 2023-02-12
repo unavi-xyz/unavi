@@ -1,3 +1,4 @@
+import { BehaviorModule } from "./behavior/BehaviorModule";
 import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "./constants";
 import { InputModule } from "./input/InputModule";
 import { PhysicsModule } from "./physics/PhysicsModule";
@@ -16,6 +17,7 @@ export class Engine {
   readonly canvas: HTMLCanvasElement;
   readonly overlayCanvas: HTMLCanvasElement;
 
+  readonly behavior: BehaviorModule;
   readonly input: InputModule;
   readonly physics: PhysicsModule;
   readonly player: PlayerModules;
@@ -43,6 +45,7 @@ export class Engine {
     this.cameraPosition = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));
     this.cameraYaw = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT));
 
+    this.behavior = new BehaviorModule(this);
     this.input = new InputModule(this);
     this.physics = new PhysicsModule(this);
     this.player = new PlayerModules(this);

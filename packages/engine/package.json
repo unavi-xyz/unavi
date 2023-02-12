@@ -10,12 +10,12 @@
     "lint": "cd ../.. && eslint --fix packages/engine --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
+    "@behave-graph/core": "^0.9.13",
     "@dimforge/rapier3d": "^0.11.1",
     "@gltf-transform/core": "2.5.1",
     "@gltf-transform/extensions": "2.5.1",
     "@gltf-transform/functions": "2.5.1",
     "@pixiv/three-vrm": "^1.0.8",
-    "behave-graph": "^0.9.10",
     "contracts": "*",
     "nanoid": "^4.0.0",
     "property-graph": "^1.0.1",

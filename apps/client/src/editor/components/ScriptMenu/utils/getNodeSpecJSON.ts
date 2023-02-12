@@ -4,7 +4,7 @@ import {
   registerSceneProfile,
   Registry,
   writeNodeSpecsToJSON,
-} from "behave-graph";
+} from "@behave-graph/core";
 
 let nodeSpecJSON: NodeSpecJSON[] | undefined = undefined;
 

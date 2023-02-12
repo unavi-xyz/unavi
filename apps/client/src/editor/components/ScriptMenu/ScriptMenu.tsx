@@ -2,7 +2,7 @@ import "reactflow/dist/style.css";
 
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { nanoid } from "nanoid";
-import { MouseEvent, useCallback, useRef, useState } from "react";
+import { MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import { MdClose } from "react-icons/md";
 import ReactFlow, {
   addEdge,
@@ -25,6 +25,11 @@ import { nodeTypes } from "./utils/nodeTypes";
 
 const initialNodes: Node[] = [
   { id: "start", type: "lifecycle/onStart", position: { x: 0, y: 0 }, data: {} },
+  { id: "log", type: "debug/log", position: { x: 200, y: 0 }, data: { text: "Hello World" } },
+];
+
+const initialEdges: Edge[] = [
+  { id: "start-log", source: "start", target: "log", sourceHandle: "flow", targetHandle: "flow" },
 ];
 
 interface Props {
@@ -38,7 +43,7 @@ export default function ScriptMenu({ scriptId }: Props) {
 
   const script = useScript(scriptId);
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const onConnect = useCallback(
     (params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
@@ -92,6 +97,10 @@ export default function ScriptMenu({ scriptId }: Props) {
     },
     [onNodesChange]
   );
+
+  useEffect(() => {
+    // console.log("🧟‍♂️", nodes, edges);
+  }, [nodes, edges]);
 
   if (!script) return null;
 

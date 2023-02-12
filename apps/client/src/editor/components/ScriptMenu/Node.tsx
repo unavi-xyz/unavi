@@ -1,4 +1,4 @@
-import { NodeSpecJSON } from "behave-graph";
+import { NodeSpecJSON } from "@behave-graph/core";
 import { NodeProps, useEdges } from "reactflow";
 
 import { useChangeNodeData } from "./hooks/useChangeNodeData";

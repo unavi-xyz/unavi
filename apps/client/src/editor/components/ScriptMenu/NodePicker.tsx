@@ -1,8 +1,9 @@
+import { NodeSpecJSON } from "@behave-graph/core";
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { NodeSpecJSON } from "behave-graph";
-import rawSpecJson from "behave-graph/dist/node-spec.json";
 import { useEffect, useRef, useState } from "react";
 import { useReactFlow, XYPosition } from "reactflow";
+
+import rawSpecJson from "./node-spec.json";
 
 const usedNodes = rawSpecJson as NodeSpecJSON[];
 

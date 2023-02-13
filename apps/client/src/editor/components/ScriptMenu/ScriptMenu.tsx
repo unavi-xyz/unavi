@@ -10,7 +10,6 @@ import ReactFlow, {
   Connection,
   Controls,
   Edge,
-  Node,
   updateEdge,
   useEdgesState,
   useNodesState,
@@ -21,16 +20,9 @@ import IconButton from "../../../ui/IconButton";
 import { useScript } from "../../hooks/useScript";
 import { useEditorStore } from "../../store";
 import NodePicker from "./NodePicker";
+import { loadFlow } from "./utils/loadFlow";
 import { nodeTypes } from "./utils/nodeTypes";
-
-const initialNodes: Node[] = [
-  { id: "start", type: "lifecycle/onStart", position: { x: 0, y: 0 }, data: {} },
-  { id: "log", type: "debug/log", position: { x: 200, y: 0 }, data: { text: "Hello World" } },
-];
-
-const initialEdges: Edge[] = [
-  { id: "start-log", source: "start", target: "log", sourceHandle: "flow", targetHandle: "flow" },
-];
+import { saveFlow } from "./utils/saveFlow";
 
 interface Props {
   scriptId: string;
@@ -40,10 +32,12 @@ export default function ScriptMenu({ scriptId }: Props) {
   const edgeUpdateSuccessful = useRef(true);
 
   const [nodePickerPosition, setNodePickerPosition] = useState<XYPosition>();
+  const [loaded, setLoaded] = useState(false);
+  const engine = useEditorStore((state) => state.engine);
 
   const script = useScript(scriptId);
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const onConnect = useCallback(
     (params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
@@ -72,10 +66,7 @@ export default function ScriptMenu({ scriptId }: Props) {
 
   const onEdgeUpdateEnd = useCallback(
     (_: any, edge: Edge) => {
-      if (!edgeUpdateSuccessful.current) {
-        setEdges((eds) => eds.filter((e) => e.id !== edge.id));
-      }
-
+      if (!edgeUpdateSuccessful.current) setEdges((eds) => eds.filter((e) => e.id !== edge.id));
       edgeUpdateSuccessful.current = true;
     },
     [setEdges]
@@ -99,8 +90,22 @@ export default function ScriptMenu({ scriptId }: Props) {
   );
 
   useEffect(() => {
-    // console.log("🧟‍♂️", nodes, edges);
-  }, [nodes, edges]);
+    if (!engine) return;
+
+    // Load from the engine
+    const { nodes, edges } = loadFlow(engine);
+
+    setNodes(nodes);
+    setEdges(edges);
+    setLoaded(true);
+  }, [engine, setNodes, setEdges]);
+
+  useEffect(() => {
+    if (!engine || !loaded) return;
+
+    // Save to the engine
+    saveFlow(nodes, edges, engine);
+  }, [engine, loaded, nodes, edges]);
 
   if (!script) return null;
 

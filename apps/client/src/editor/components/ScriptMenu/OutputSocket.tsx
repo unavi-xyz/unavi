@@ -5,9 +5,9 @@ import { Connection, Handle, Position, useReactFlow } from "reactflow";
 import { valueColorsMap } from "./utils/colors";
 import { isValidConnection } from "./utils/isValidConnection";
 
-export type OutputSocketProps = {
+export interface OutputSocketProps extends OutputSocketSpecJSON {
   connected: boolean;
-} & OutputSocketSpecJSON;
+}
 
 export default function OutputSocket({ connected, valueType, name }: OutputSocketProps) {
   const instance = useReactFlow();

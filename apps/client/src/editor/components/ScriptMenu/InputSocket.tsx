@@ -6,11 +6,11 @@ import AutoSizeInput from "./AutoSizeInput";
 import { valueColorsMap } from "./utils/colors";
 import { isValidConnection } from "./utils/isValidConnection";
 
-export type InputSocketProps = {
+export interface InputSocketProps extends InputSocketSpecJSON {
   connected: boolean;
   value: any | undefined;
   onChange: (key: string, value: any) => void;
-} & InputSocketSpecJSON;
+}
 
 export default function InputSocket({
   connected,

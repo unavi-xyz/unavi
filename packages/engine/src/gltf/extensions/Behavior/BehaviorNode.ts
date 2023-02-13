@@ -1,13 +1,13 @@
-import { ExtensionProperty, IProperty } from "@gltf-transform/core";
+import { ExtensionProperty, IProperty, Nullable } from "@gltf-transform/core";
 
-import { Vec2, Vec3, Vec4 } from "../../../types";
 import { EXTENSION_NAME, PROPERTY_TYPE } from "./constants";
+import { BehaviorNodeParameters } from "./types";
 
 interface IBehaviorNode extends IProperty {
   type: string;
   name: string;
-  parameters: Record<string, number | boolean | Vec2 | Vec3 | Vec4> | null;
-  flow: Record<string, number> | null;
+  parameters: BehaviorNodeParameters | null;
+  flow: Record<string, BehaviorNode> | null;
 }
 
 export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
@@ -20,6 +20,15 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     this.extensionName = EXTENSION_NAME;
     this.propertyType = PROPERTY_TYPE;
     this.parentTypes = [];
+  }
+
+  protected override getDefaults(): Nullable<IBehaviorNode> {
+    return Object.assign(super.getDefaults(), {
+      type: null,
+      name: null,
+      parameters: null,
+      flow: null,
+    });
   }
 
   get type() {
@@ -42,7 +51,7 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     return this.get("parameters");
   }
 
-  set parameters(parameters: Record<string, number | boolean | Vec2 | Vec3 | Vec4> | null) {
+  set parameters(parameters: BehaviorNodeParameters | null) {
     this.set("parameters", parameters);
   }
 
@@ -50,7 +59,7 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     return this.get("flow");
   }
 
-  set flow(flow: Record<string, number> | null) {
+  set flow(flow: Record<string, BehaviorNode> | null) {
     this.set("flow", flow);
   }
 }

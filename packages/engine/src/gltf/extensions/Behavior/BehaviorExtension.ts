@@ -1,14 +1,15 @@
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
-import { Vec2, Vec3, Vec4 } from "../../../types";
 import { BehaviorNode } from "./BehaviorNode";
 import { EXTENSION_NAME } from "./constants";
+import { BehaviorNodeExtras, BehaviorNodeParametersDef } from "./types";
 
 type BehaviorNodeDef = {
   type: string;
   name: string;
-  parameters?: Record<string, number | boolean | Vec2 | Vec3 | Vec4>;
+  parameters?: BehaviorNodeParametersDef;
   flow?: Record<string, number>;
+  extras?: BehaviorNodeExtras;
 };
 
 type BehaviorExtensionDef = {
@@ -26,40 +27,89 @@ export class BehaviorExtension extends Extension {
     return new BehaviorNode(this.document.getGraph());
   }
 
-  read(context: ReaderContext): this {
+  read(context: ReaderContext) {
     if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[EXTENSION_NAME])
       return this;
 
     const rootDef = context.jsonDoc.json.extensions[EXTENSION_NAME] as BehaviorExtensionDef;
 
-    rootDef.behaviorNodes.forEach((behaviorNodeDef) => {
+    const behaviorNodes = rootDef.behaviorNodes.map((behaviorNodeDef) => {
       const behaviorNode = this.createBehaviorNode();
       behaviorNode.type = behaviorNodeDef.type;
       behaviorNode.name = behaviorNodeDef.name;
-      behaviorNode.parameters = behaviorNodeDef.parameters ?? null;
-      behaviorNode.flow = behaviorNodeDef.flow ?? null;
+      if (behaviorNodeDef.extras) behaviorNode.setExtras(behaviorNodeDef.extras);
+      return behaviorNode;
+    });
+
+    rootDef.behaviorNodes.forEach(({ parameters, flow }, i) => {
+      const behaviorNode = behaviorNodes[i];
+      if (!behaviorNode) throw new Error("Behavior node not found");
+
+      if (parameters) {
+        Object.entries(parameters).forEach(([key, value]) => {
+          if (typeof value === "object" && "$operation" in value) {
+            const operationNode = behaviorNodes[value.$operation];
+            if (!operationNode) throw new Error("Invalid behavior node reference");
+
+            if (!behaviorNode.parameters) behaviorNode.parameters = {};
+            behaviorNode.parameters[key] = { $operation: operationNode };
+          }
+        });
+      }
+
+      if (flow) {
+        Object.entries(flow).forEach(([key, value]) => {
+          const flowNode = behaviorNodes[value];
+          if (!flowNode) throw new Error("Invalid behavior node reference");
+
+          if (!behaviorNode.flow) behaviorNode.flow = {};
+          behaviorNode.flow[key] = flowNode;
+        });
+      }
     });
 
     return this;
   }
 
-  write(context: WriterContext): this {
-    const behaviorNodeDefs = [];
+  write(context: WriterContext) {
+    const behaviorNodes: BehaviorNode[] = [];
+    const behaviorNodeDefs: BehaviorNodeDef[] = [];
 
-    for (const property of this.properties) {
-      if (property instanceof BehaviorNode) {
-        const behaviorNode = property as BehaviorNode;
+    this.listProperties().forEach((property) => {
+      if (!(property instanceof BehaviorNode)) return;
 
-        const behaviorNodeDef: BehaviorNodeDef = {
-          type: behaviorNode.type,
-          name: behaviorNode.name,
-          parameters: behaviorNode.parameters ?? undefined,
-          flow: behaviorNode.flow ?? undefined,
-        };
+      const extras = property.getExtras() as BehaviorNodeExtras;
 
-        behaviorNodeDefs.push(behaviorNodeDef);
+      behaviorNodeDefs.push({ type: property.type, name: property.name, extras });
+      behaviorNodes.push(property);
+    });
+
+    behaviorNodeDefs.forEach((behaviorNodeDef, i) => {
+      const behaviorNode = behaviorNodes[i];
+      if (!behaviorNode) throw new Error("Invalid behavior node reference");
+
+      if (behaviorNode.parameters) {
+        Object.entries(behaviorNode.parameters).forEach(([key, value]) => {
+          if (!behaviorNodeDef.parameters) behaviorNodeDef.parameters = {};
+
+          if (typeof value === "object" && "$operation" in value) {
+            const operationIndex = behaviorNodes.indexOf(value.$operation);
+            behaviorNodeDef.parameters[key] = { $operation: operationIndex };
+          } else {
+            behaviorNodeDef.parameters[key] = value;
+          }
+        });
       }
-    }
+
+      if (behaviorNode.flow) {
+        Object.entries(behaviorNode.flow).forEach(([key, value]) => {
+          if (!behaviorNodeDef.flow) behaviorNodeDef.flow = {};
+
+          const flowIndex = behaviorNodes.indexOf(value);
+          behaviorNodeDef.flow[key] = flowIndex;
+        });
+      }
+    });
 
     if (behaviorNodeDefs.length > 0) {
       const rootDef: BehaviorExtensionDef = { behaviorNodes: behaviorNodeDefs };

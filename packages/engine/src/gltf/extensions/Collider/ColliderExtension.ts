@@ -32,7 +32,7 @@ export class ColliderExtension extends Extension {
     return new Collider(this.document.getGraph());
   }
 
-  read(context: ReaderContext): this {
+  read(context: ReaderContext) {
     if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[EXTENSION_NAME])
       return this;
 
@@ -72,7 +72,7 @@ export class ColliderExtension extends Extension {
     return this;
   }
 
-  write(context: WriterContext): this {
+  write(context: WriterContext) {
     const jsonDoc = context.jsonDoc;
 
     if (this.properties.size === 0) return this;

@@ -27,7 +27,7 @@ export default function Node({ id, data, spec, selected }: Props) {
   const pairs = getPairs(spec.inputs, spec.outputs);
 
   return (
-    <NodeContainer title={spec.label} category={spec.category} selected={selected}>
+    <NodeContainer id={id} title={spec.label} category={spec.category} selected={selected}>
       {pairs.map(([input, output], i) => (
         <div key={i} className="relative flex flex-row justify-between gap-8 px-2">
           {input && (

@@ -19,6 +19,7 @@ import ReactFlow, {
 import IconButton from "../../../ui/IconButton";
 import { useScript } from "../../hooks/useScript";
 import { useEditorStore } from "../../store";
+import NodeContextMenu from "./NodeContextMenu";
 import NodePicker from "./NodePicker";
 import { loadFlow } from "./utils/loadFlow";
 import { nodeTypes } from "./utils/nodeTypes";
@@ -31,7 +32,8 @@ interface Props {
 export default function ScriptMenu({ scriptId }: Props) {
   const edgeUpdateSuccessful = useRef(true);
 
-  const [nodePickerPosition, setNodePickerPosition] = useState<XYPosition>();
+  const [contextMenuPosition, setContextMenuPosition] = useState<XYPosition>();
+  const [contextMenuType, setContextMenuType] = useState<"edge" | "node" | "pane" | null>(null);
   const [loaded, setLoaded] = useState(false);
   const engine = useEditorStore((state) => state.engine);
 
@@ -44,12 +46,17 @@ export default function ScriptMenu({ scriptId }: Props) {
     [setEdges]
   );
 
+  const onNodeContextMenu = useCallback(() => {
+    setContextMenuType("node");
+  }, []);
+
   const onPaneContextMenu = useCallback((e: MouseEvent) => {
     const relativePosition = {
       x: e.clientX - e.currentTarget.getBoundingClientRect().left,
       y: e.clientY - e.currentTarget.getBoundingClientRect().top,
     };
-    setNodePickerPosition(relativePosition);
+    setContextMenuPosition(relativePosition);
+    setContextMenuType("pane");
   }, []);
 
   const onEdgeUpdateStart = useCallback(() => {
@@ -83,6 +90,18 @@ export default function ScriptMenu({ scriptId }: Props) {
             position,
             data: {},
           },
+        },
+      ]);
+    },
+    [onNodesChange]
+  );
+
+  const deleteNode = useCallback(
+    (id: string) => {
+      onNodesChange([
+        {
+          type: "remove",
+          id,
         },
       ]);
     },
@@ -127,7 +146,7 @@ export default function ScriptMenu({ scriptId }: Props) {
       <div className="h-full w-full pb-20">
         <ContextMenu.Root
           onOpenChange={(open) => {
-            if (!open) setNodePickerPosition(undefined);
+            if (!open) setContextMenuPosition(undefined);
           }}
         >
           <ContextMenu.Trigger>
@@ -141,12 +160,24 @@ export default function ScriptMenu({ scriptId }: Props) {
               onEdgeUpdateStart={onEdgeUpdateStart}
               onEdgeUpdateEnd={onEdgeUpdateEnd}
               onConnect={onConnect}
+              onNodeContextMenu={onNodeContextMenu}
+              onEdgeContextMenu={onPaneContextMenu}
               onPaneContextMenu={onPaneContextMenu}
               proOptions={{ hideAttribution: true }}
               fitView
               className="bg-neutral-100"
             >
-              <NodePicker position={nodePickerPosition} onPickNode={addNode} />
+              {contextMenuType === "node" ? (
+                <NodeContextMenu
+                  onDelete={() => {
+                    const { contextMenuNodeId } = useEditorStore.getState();
+                    if (contextMenuNodeId) deleteNode(contextMenuNodeId);
+                  }}
+                />
+              ) : contextMenuType === "pane" ? (
+                <NodePicker position={contextMenuPosition} addNode={addNode} />
+              ) : null}
+
               <Controls />
               <Background />
             </ReactFlow>

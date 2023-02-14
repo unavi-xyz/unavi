@@ -1,15 +1,19 @@
 import { NodeSpecJSON } from "@behave-graph/core";
 
+import { useEditorStore } from "../../store";
+
 interface Props {
+  id: string;
   title: string;
   category?: NodeSpecJSON["category"];
   selected: boolean;
   children: React.ReactNode;
 }
 
-export default function NodeContainer({ title, category, selected, children }: Props) {
+export default function NodeContainer({ id, title, category, selected, children }: Props) {
   return (
     <div
+      onContextMenu={() => useEditorStore.setState({ contextMenuNodeId: id })}
       className={`min-w-[120px] rounded bg-white/80 text-sm text-neutral-900 shadow hover:shadow-md
       ${selected ? "outline outline-2 outline-neutral-900" : ""}`}
     >

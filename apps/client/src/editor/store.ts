@@ -23,6 +23,7 @@ export interface IEditorStore {
   selectedId: string | null;
 
   openScriptId: string | null;
+  contextMenuNodeId: string | null;
 }
 
 export const useEditorStore = create<IEditorStore>(() => ({
@@ -45,4 +46,5 @@ export const useEditorStore = create<IEditorStore>(() => ({
   selectedId: null,
 
   openScriptId: null,
+  contextMenuNodeId: null,
 }));

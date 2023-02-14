@@ -9,10 +9,10 @@ const usedNodes = rawSpecJson as NodeSpecJSON[];
 
 interface Props {
   position?: XYPosition;
-  onPickNode: (type: string, position: XYPosition) => void;
+  addNode: (type: string, position: XYPosition) => void;
 }
 
-export default function NodePicker({ position, onPickNode }: Props) {
+export default function NodePicker({ position, addNode }: Props) {
   const filterInputRef = useRef<HTMLInputElement>(null);
   const [filterString, setFilterString] = useState("");
 
@@ -51,7 +51,7 @@ export default function NodePicker({ position, onPickNode }: Props) {
               <ContextMenu.Item
                 key={type}
                 onClick={() => {
-                  if (position) onPickNode(type, instance.project(position));
+                  if (position) addNode(type, instance.project(position));
                 }}
                 className="select-none rounded px-4 py-0.5 outline-none hover:bg-neutral-200"
               >

@@ -124,11 +124,7 @@ export default function InspectMenu() {
                         const newExtras = { ...extras };
                         if (!newExtras.scripts) newExtras.scripts = [];
 
-                        newExtras.scripts.push({
-                          id: nanoid(),
-                          name: "New Script",
-                          behaviorNodes: [],
-                        });
+                        newExtras.scripts.push({ id: nanoid(), name: "New Script" });
 
                         node.setExtras(newExtras);
                       }}

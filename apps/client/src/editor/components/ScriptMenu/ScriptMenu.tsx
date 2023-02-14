@@ -32,9 +32,9 @@ interface Props {
 export default function ScriptMenu({ scriptId }: Props) {
   const edgeUpdateSuccessful = useRef(true);
 
-  const [contextMenuPosition, setContextMenuPosition] = useState<XYPosition>();
-  const [contextMenuType, setContextMenuType] = useState<"edge" | "node" | "pane" | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [nodePickerPosition, setNodePickerPosition] = useState<XYPosition>();
+  const [contextMenuType, setContextMenuType] = useState<"node" | "pane">("pane");
+  const [loaded, setLoaded] = useState<string>();
   const engine = useEditorStore((state) => state.engine);
 
   const script = useScript(scriptId);
@@ -55,7 +55,7 @@ export default function ScriptMenu({ scriptId }: Props) {
       x: e.clientX - e.currentTarget.getBoundingClientRect().left,
       y: e.clientY - e.currentTarget.getBoundingClientRect().top,
     };
-    setContextMenuPosition(relativePosition);
+    setNodePickerPosition(relativePosition);
     setContextMenuType("pane");
   }, []);
 
@@ -109,22 +109,22 @@ export default function ScriptMenu({ scriptId }: Props) {
   );
 
   useEffect(() => {
-    if (!engine) return;
+    if (!engine || !scriptId) return;
 
     // Load from the engine
-    const { nodes, edges } = loadFlow(engine);
+    const { nodes, edges } = loadFlow(engine, scriptId);
 
     setNodes(nodes);
     setEdges(edges);
-    setLoaded(true);
-  }, [engine, setNodes, setEdges]);
+    setLoaded(scriptId);
+  }, [engine, scriptId, setNodes, setEdges]);
 
   useEffect(() => {
-    if (!engine || !loaded) return;
+    if (!engine || !loaded || !scriptId || loaded !== scriptId) return;
 
     // Save to the engine
-    saveFlow(nodes, edges, engine);
-  }, [engine, loaded, nodes, edges]);
+    saveFlow(nodes, edges, engine, scriptId);
+  }, [engine, loaded, nodes, edges, scriptId]);
 
   if (!script) return null;
 
@@ -146,7 +146,7 @@ export default function ScriptMenu({ scriptId }: Props) {
       <div className="h-full w-full pb-20">
         <ContextMenu.Root
           onOpenChange={(open) => {
-            if (!open) setContextMenuPosition(undefined);
+            if (!open) setNodePickerPosition(undefined);
           }}
         >
           <ContextMenu.Trigger>
@@ -175,7 +175,7 @@ export default function ScriptMenu({ scriptId }: Props) {
                   }}
                 />
               ) : contextMenuType === "pane" ? (
-                <NodePicker position={contextMenuPosition} addNode={addNode} />
+                <NodePicker position={nodePickerPosition} addNode={addNode} />
               ) : null}
 
               <Controls />

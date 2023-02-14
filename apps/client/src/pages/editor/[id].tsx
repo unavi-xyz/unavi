@@ -142,7 +142,7 @@ export default function Editor() {
               </div>
             </Split>
 
-            <div>{openScriptId && <ScriptMenu scriptId={openScriptId} />}</div>
+            <div>{openScriptId && <ScriptMenu key={openScriptId} scriptId={openScriptId} />}</div>
           </Split>
         </div>
       </div>

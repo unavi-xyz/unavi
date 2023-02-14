@@ -31,7 +31,7 @@ type SkinId = string;
 type NodeId = string;
 
 export type NodeExtras = {
-  scripts?: Array<{ id: string; name: string; behaviorNodes: number[] }>;
+  scripts?: Array<{ id: string; name: string }>;
 };
 
 export type NodeJSON = {

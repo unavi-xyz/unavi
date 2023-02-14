@@ -1,3 +1,5 @@
+import { BehaviorNode, BehaviorNodeExtras } from "engine";
+
 import { useNode } from "../../hooks/useNode";
 import { useNodeAttribute } from "../../hooks/useNodeAttribute";
 import { useEditorStore } from "../../store";
@@ -27,12 +29,21 @@ export default function ScriptComponent({ nodeId, scriptId }: Props) {
       onRemove={() => {
         if (!node) return;
 
-        const { openScriptId } = useEditorStore.getState();
+        const { openScriptId, engine } = useEditorStore.getState();
         if (openScriptId === scriptId) useEditorStore.setState({ openScriptId: null });
+        if (!engine) return;
 
+        // Remove script from node extras
         const newExtras = { ...extras };
         newExtras.scripts = newExtras.scripts?.filter((script) => script.id !== scriptId);
         node.setExtras(newExtras);
+
+        // Remove behavior nodes
+        engine.scene.extensions.behavior.listProperties().forEach((property) => {
+          if (!(property instanceof BehaviorNode)) return;
+          const extras = property.getExtras() as BehaviorNodeExtras;
+          if (extras.script === scriptId) property.dispose();
+        });
       }}
     >
       <MenuRows titles={["Name"]}>

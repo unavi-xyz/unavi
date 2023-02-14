@@ -5,7 +5,7 @@ import { Edge, Node } from "reactflow";
 /**
  * Loads the engine nodes into reactflow
  */
-export function loadFlow(engine: Engine) {
+export function loadFlow(engine: Engine, scriptId: string) {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
@@ -14,6 +14,8 @@ export function loadFlow(engine: Engine) {
 
     const { name, type, parameters, flow } = property;
     const extras = property.getExtras() as BehaviorNodeExtras;
+
+    if (extras.script !== scriptId) return;
 
     nodes.push({
       id: name,

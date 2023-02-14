@@ -13,4 +13,5 @@ export type BehaviorNodeParametersDef = Record<
 
 export type BehaviorNodeExtras = {
   position?: { x: number; y: number };
+  script?: string;
 };

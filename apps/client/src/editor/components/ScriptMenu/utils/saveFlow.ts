@@ -1,5 +1,5 @@
 import { BehaviorNode, BehaviorNodeExtras, Engine } from "engine";
-import { Edge, Node } from "reactflow";
+import { Edge, Node as FlowNode } from "reactflow";
 
 import { getNodeSpecJSON } from "./getNodeSpecJSON";
 
@@ -8,8 +8,8 @@ const nodeSpecJSON = getNodeSpecJSON();
 /**
  * Saves reactflow nodes and edges into the engine
  */
-export function saveFlow(nodes: Node[], edges: Edge[], engine: Engine) {
-  // Add nodes to extension
+export function saveFlow(nodes: FlowNode[], edges: Edge[], engine: Engine, scriptId: string) {
+  // Add behavior nodes to extension
   const behaviorNodes = nodes
     .map(({ id, type, data, position }) => {
       if (!type) return;
@@ -29,6 +29,7 @@ export function saveFlow(nodes: Node[], edges: Edge[], engine: Engine) {
 
       const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
       extras.position = position;
+      extras.script = scriptId;
 
       return behaviorNode;
     })
@@ -57,11 +58,15 @@ export function saveFlow(nodes: Node[], edges: Edge[], engine: Engine) {
     }
   });
 
-  // Remove old nodes
-  engine.scene.extensions.behavior.listProperties().forEach((property) => {
-    if (!(property instanceof BehaviorNode)) return;
-    if (behaviorNodes.find((node) => node.name === property.name)) return;
+  // Remove old behavior nodes
+  engine.scene.extensions.behavior.listProperties().forEach((behaviorNode) => {
+    if (!(behaviorNode instanceof BehaviorNode)) return;
 
-    property.dispose();
+    const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
+    if (extras.script !== scriptId) return;
+
+    if (behaviorNodes.includes(behaviorNode)) return;
+
+    behaviorNode.dispose();
   });
 }

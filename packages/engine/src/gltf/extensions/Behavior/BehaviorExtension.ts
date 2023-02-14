@@ -47,12 +47,15 @@ export class BehaviorExtension extends Extension {
 
       if (parameters) {
         Object.entries(parameters).forEach(([key, value]) => {
+          if (!behaviorNode.parameters) behaviorNode.parameters = {};
+
           if (typeof value === "object" && "$operation" in value) {
             const operationNode = behaviorNodes[value.$operation];
             if (!operationNode) throw new Error("Invalid behavior node reference");
 
-            if (!behaviorNode.parameters) behaviorNode.parameters = {};
             behaviorNode.parameters[key] = { $operation: operationNode };
+          } else {
+            behaviorNode.parameters[key] = value;
           }
         });
       }

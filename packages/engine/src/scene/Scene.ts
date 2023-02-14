@@ -58,12 +58,12 @@ export class Scene {
     newBehaviorNodes.forEach((behaviorNode) => {
       if (behaviorNode.parameters) {
         Object.entries(behaviorNode.parameters).forEach(([key, value]) => {
-          if (typeof value === "object" && "$operation" in value) {
-            const newNode = newBehaviorNodes.find((node) => node.name === value.$operation.name);
+          if (typeof value === "object" && "link" in value) {
+            const newNode = newBehaviorNodes.find((node) => node.name === value.link.name);
             if (!newNode) throw new Error("Invalid behavior node reference");
 
             if (!behaviorNode.parameters) behaviorNode.parameters = {};
-            behaviorNode.parameters[key] = { $operation: newNode };
+            behaviorNode.parameters[key] = { link: newNode, socket: value.socket };
           }
         });
       }

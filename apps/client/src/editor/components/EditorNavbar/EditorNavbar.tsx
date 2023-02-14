@@ -25,9 +25,10 @@ export default function EditorNavbar() {
   const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
   const isSaving = useEditorStore((state) => state.isSaving);
+  const engine = useEditorStore((state) => state.engine);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(engine?.controls === "player");
 
   const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
 
@@ -53,11 +54,13 @@ export default function EditorNavbar() {
     if (engine.controls === "player") {
       setPlaying(false);
       engine.controls = "orbit";
+      engine.behavior.stop();
     } else {
       setPlaying(true);
       engine.controls = "player";
       useEditorStore.setState({ selectedId: null });
       engine.physics.send({ subject: "respawn", data: null });
+      engine.behavior.start();
     }
   }
 

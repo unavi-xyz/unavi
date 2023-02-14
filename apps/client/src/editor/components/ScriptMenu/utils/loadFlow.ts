@@ -29,7 +29,7 @@ export function loadFlow(engine: Engine, scriptId: string) {
         edges.push({
           id: nanoid(),
           source: name,
-          sourceHandle: key === "next" ? "flow" : key,
+          sourceHandle: key,
           target: value.name,
           targetHandle: "flow",
         });
@@ -38,12 +38,12 @@ export function loadFlow(engine: Engine, scriptId: string) {
 
     if (parameters) {
       Object.entries(parameters).forEach(([key, value]) => {
-        if (typeof value !== "object" || !("$operation" in value)) return;
-        const operationNode = value.$operation;
+        if (typeof value !== "object" || !("link" in value)) return;
+
         edges.push({
           id: nanoid(),
-          source: operationNode.name,
-          sourceHandle: "flow",
+          source: value.link.name,
+          sourceHandle: value.socket,
           target: name,
           targetHandle: key,
         });

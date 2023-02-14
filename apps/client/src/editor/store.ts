@@ -9,7 +9,6 @@ export interface IEditorStore {
   sceneLoaded: boolean;
   isSaving: boolean;
 
-  preview: boolean;
   visuals: boolean;
   tool: Tool;
 
@@ -32,7 +31,6 @@ export const useEditorStore = create<IEditorStore>(() => ({
   sceneLoaded: false,
   isSaving: false,
 
-  preview: false,
   visuals: true,
   tool: "translate",
 

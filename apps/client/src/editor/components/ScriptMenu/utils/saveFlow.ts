@@ -6,7 +6,7 @@ import { getNodeSpecJSON } from "./getNodeSpecJSON";
 const nodeSpecJSON = getNodeSpecJSON();
 
 /**
- * Saves reactflow nodes and edges into the engine
+ * Saves reactflow nodes into the engine
  */
 export function saveFlow(nodes: FlowNode[], edges: Edge[], engine: Engine, scriptId: string) {
   // Add behavior nodes to extension
@@ -50,11 +50,10 @@ export function saveFlow(nodes: FlowNode[], edges: Edge[], engine: Engine, scrip
 
     if (outputSpec.valueType === "flow") {
       if (!sourceNode.flow) sourceNode.flow = {};
-      const handle = sourceHandle === "flow" ? "next" : sourceHandle;
-      sourceNode.flow[handle] = targetNode;
+      sourceNode.flow[sourceHandle] = targetNode;
     } else {
       if (!targetNode.parameters) targetNode.parameters = {};
-      targetNode.parameters[targetHandle] = { $operation: sourceNode };
+      targetNode.parameters[targetHandle] = { link: sourceNode, socket: sourceHandle };
     }
   });
 

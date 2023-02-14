@@ -1,3 +1,4 @@
+import { GraphJSON, NodeJSON } from "@behave-graph/core";
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
 import { BehaviorNode } from "./BehaviorNode";
@@ -49,11 +50,11 @@ export class BehaviorExtension extends Extension {
         Object.entries(parameters).forEach(([key, value]) => {
           if (!behaviorNode.parameters) behaviorNode.parameters = {};
 
-          if (typeof value === "object" && "$operation" in value) {
-            const operationNode = behaviorNodes[value.$operation];
+          if (typeof value === "object" && "link" in value) {
+            const operationNode = behaviorNodes[value.link];
             if (!operationNode) throw new Error("Invalid behavior node reference");
 
-            behaviorNode.parameters[key] = { $operation: operationNode };
+            behaviorNode.parameters[key] = { link: operationNode, socket: value.socket };
           } else {
             behaviorNode.parameters[key] = value;
           }
@@ -95,9 +96,9 @@ export class BehaviorExtension extends Extension {
         Object.entries(behaviorNode.parameters).forEach(([key, value]) => {
           if (!behaviorNodeDef.parameters) behaviorNodeDef.parameters = {};
 
-          if (typeof value === "object" && "$operation" in value) {
-            const operationIndex = behaviorNodes.indexOf(value.$operation);
-            behaviorNodeDef.parameters[key] = { $operation: operationIndex };
+          if (typeof value === "object" && "link" in value) {
+            const linkIndex = behaviorNodes.indexOf(value.link);
+            behaviorNodeDef.parameters[key] = { link: linkIndex, socket: value.socket };
           } else {
             behaviorNodeDef.parameters[key] = value;
           }
@@ -122,5 +123,53 @@ export class BehaviorExtension extends Extension {
     }
 
     return this;
+  }
+
+  toJSON(): GraphJSON {
+    const behaviorNodes = this.listProperties().filter(
+      (property): property is BehaviorNode => property instanceof BehaviorNode
+    );
+
+    const nodes: NodeJSON[] = behaviorNodes.map((behaviorNode, i) => {
+      return {
+        id: String(i),
+        label: behaviorNode.name,
+        type: behaviorNode.type,
+      };
+    });
+
+    behaviorNodes.forEach((behaviorNode, i) => {
+      const node = nodes[i];
+      if (!node) throw new Error("Node not found");
+
+      if (behaviorNode.flow) {
+        Object.entries(behaviorNode.flow).forEach(([key, value]) => {
+          const targetNodeIndex = behaviorNodes.indexOf(value);
+          const targetNode = nodes[targetNodeIndex];
+          if (!targetNode) throw new Error("Invalid behavior node reference");
+
+          if (!node.flows) node.flows = {};
+          node.flows[key] = { nodeId: targetNode.id, socket: "flow" };
+        });
+      }
+
+      if (behaviorNode.parameters) {
+        Object.entries(behaviorNode.parameters).forEach(([key, value]) => {
+          if (!node.parameters) node.parameters = {};
+
+          if (typeof value === "object" && "link" in value) {
+            const targetNodeIndex = behaviorNodes.indexOf(value.link);
+            const targetNode = nodes[targetNodeIndex];
+            if (!targetNode) throw new Error("Invalid behavior node reference");
+
+            node.parameters[key] = { link: { nodeId: targetNode.id, socket: value.socket } };
+          } else {
+            node.parameters[key] = { value };
+          }
+        });
+      }
+    });
+
+    return { nodes };
   }
 }

@@ -1,6 +1,5 @@
 import {
   Engine as BehaviorEngine,
-  GraphJSON,
   ManualLifecycleEventEmitter,
   readGraphFromJSON,
   registerCoreProfile,
@@ -30,16 +29,9 @@ export class BehaviorModule {
     registerSceneProfile(this.registry, new BehaviorScene(engine));
   }
 
-  get behaviorEngine() {
-    return this.#behaviorEngine;
-  }
+  #loadEngine() {
+    const json = this.#engine.scene.extensions.behavior.toJSON();
 
-  set behaviorEngine(behaviorEngine: BehaviorEngine | null) {
-    if (this.#behaviorEngine) this.#behaviorEngine.dispose();
-    this.#behaviorEngine = behaviorEngine;
-  }
-
-  readJSON(json: GraphJSON) {
     const graph = readGraphFromJSON(json, this.registry);
     const errors = validateGraph(graph);
 
@@ -48,11 +40,15 @@ export class BehaviorModule {
       throw new Error("Invalid graph");
     }
 
-    this.behaviorEngine = new BehaviorEngine(graph);
+    if (this.#behaviorEngine) this.#behaviorEngine.dispose();
+    this.#behaviorEngine = new BehaviorEngine(graph);
   }
 
   start() {
     this.stop();
+
+    this.#loadEngine();
+
     this.lifecycle.startEvent.emit();
     this.#execute();
     this.#interval = setInterval(() => this.#tick(), 1000 / TICK_HZ);

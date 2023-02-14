@@ -82,17 +82,20 @@ export class BehaviorScene implements IScene {
 
         switch (property) {
           case "translation": {
-            node.setTranslation(value);
+            if (valueType !== ValueType.vec3) return;
+            node.setTranslation([value.x, value.y, value.z]);
             break;
           }
 
           case "rotation": {
-            node.setRotation(value);
+            if (valueType !== ValueType.vec4) return;
+            node.setRotation([value.x, value.y, value.z, value.w]);
             break;
           }
 
           case "scale": {
-            node.setScale(value);
+            if (valueType !== ValueType.vec3) return;
+            node.setScale([value.x, value.y, value.z]);
             break;
           }
         }

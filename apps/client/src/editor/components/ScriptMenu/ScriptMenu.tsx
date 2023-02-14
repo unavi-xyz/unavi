@@ -80,31 +80,13 @@ export default function ScriptMenu({ scriptId }: Props) {
   );
 
   const addNode = useCallback(
-    (type: string, position: XYPosition) => {
-      onNodesChange([
-        {
-          type: "add",
-          item: {
-            id: nanoid(),
-            type,
-            position,
-            data: {},
-          },
-        },
-      ]);
-    },
+    (type: string, position: XYPosition) =>
+      onNodesChange([{ type: "add", item: { id: nanoid(), type, position, data: {} } }]),
     [onNodesChange]
   );
 
   const deleteNode = useCallback(
-    (id: string) => {
-      onNodesChange([
-        {
-          type: "remove",
-          id,
-        },
-      ]);
-    },
+    (id: string) => onNodesChange([{ type: "remove", id }]),
     [onNodesChange]
   );
 

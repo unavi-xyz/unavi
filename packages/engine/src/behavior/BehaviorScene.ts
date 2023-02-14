@@ -1,6 +1,8 @@
 import { IScene } from "@behave-graph/core";
 
 import { Engine } from "../Engine";
+import { ValueType } from "../gltf";
+import { parseJSONPath } from "./parseJsonPath";
 
 export class BehaviorScene implements IScene {
   #engine: Engine;
@@ -9,7 +11,7 @@ export class BehaviorScene implements IScene {
     this.#engine = engine;
   }
 
-  getProperty(jsonPath: string, valueTypeName: string) {
+  getProperty(jsonPath: string, valueType: string) {
     const parsed = parseJSONPath(jsonPath);
     if (!parsed) return;
 
@@ -21,20 +23,41 @@ export class BehaviorScene implements IScene {
         if (!node) throw new Error("Invalid node index");
 
         switch (property) {
-          case "name": {
-            return node.getName();
-          }
-
           case "translation": {
-            return node.getTranslation();
+            if (valueType !== ValueType.vec3) return;
+
+            const translation = node.getTranslation();
+
+            return {
+              x: translation[0],
+              y: translation[1],
+              z: translation[2],
+            };
           }
 
           case "rotation": {
-            return node.getRotation();
+            if (valueType !== ValueType.vec4) return;
+
+            const rotation = node.getRotation();
+
+            return {
+              x: rotation[0],
+              y: rotation[1],
+              z: rotation[2],
+              w: rotation[3],
+            };
           }
 
           case "scale": {
-            return node.getScale();
+            if (valueType !== ValueType.vec3) return;
+
+            const scale = node.getScale();
+
+            return {
+              x: scale[0],
+              y: scale[1],
+              z: scale[2],
+            };
           }
         }
         break;
@@ -46,7 +69,7 @@ export class BehaviorScene implements IScene {
     }
   }
 
-  setProperty(jsonPath: string, valueTypeName: string, value: any): void {
+  setProperty(jsonPath: string, valueType: string, value: any): void {
     const parsed = parseJSONPath(jsonPath);
     if (!parsed) return;
 
@@ -58,11 +81,6 @@ export class BehaviorScene implements IScene {
         if (!node) throw new Error("Invalid node index");
 
         switch (property) {
-          case "name": {
-            node.setName(value);
-            break;
-          }
-
           case "translation": {
             node.setTranslation(value);
             break;
@@ -88,15 +106,4 @@ export class BehaviorScene implements IScene {
   }
 
   addOnClickedListener(jsonPath: string, callback: (jsonPath: string) => void): void {}
-}
-
-function parseJSONPath(jsonPath: string) {
-  const parts = jsonPath.split("/") as [string, string, string];
-  if (parts.length !== 3) return null;
-
-  const resource = parts[0];
-  const index = parseInt(parts[1]);
-  const property = parts[2];
-
-  return { resource, index, property };
 }

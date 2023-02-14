@@ -25,10 +25,9 @@ export default function EditorNavbar() {
   const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
   const isSaving = useEditorStore((state) => state.isSaving);
-  const engine = useEditorStore((state) => state.engine);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
-  const [playing, setPlaying] = useState(engine?.controls === "player");
+  const [playing, setPlaying] = useState(false);
 
   const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
 

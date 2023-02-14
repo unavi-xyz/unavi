@@ -3,6 +3,7 @@ import { FaCaretRight } from "react-icons/fa";
 import { Connection, Handle, Position, useReactFlow } from "reactflow";
 
 import AutoSizeInput from "./AutoSizeInput";
+import JsonPathInput from "./JsonPathInput";
 import { valueColorsMap } from "./utils/colors";
 import { isValidConnection } from "./utils/isValidConnection";
 
@@ -21,10 +22,11 @@ export default function InputSocket({
   defaultValue,
 }: InputSocketProps) {
   const instance = useReactFlow();
+
   const isFlowSocket = valueType === "flow";
   const showName = isFlowSocket === false || name !== "flow";
-
-  const type =
+  const displayName = name === "jsonPath" ? "Path" : name;
+  const inputType =
     valueType === "string"
       ? "text"
       : valueType === "number"
@@ -38,19 +40,25 @@ export default function InputSocket({
       : "";
 
   return (
-    <div className="flex h-7 grow items-center justify-start">
+    <div className="flex h-7 grow items-center">
       {isFlowSocket && <FaCaretRight />}
-      {showName && <div className="mr-2 capitalize">{name}</div>}
+      {showName && <div className="mr-2 capitalize">{displayName}</div>}
 
-      {isFlowSocket === false && connected === false && (
-        <AutoSizeInput
-          type={type}
-          // eslint-disable-next-line tailwindcss/no-custom-classname
-          className="nodrag rounded bg-neutral-200 px-2 py-0.5 transition hover:bg-neutral-300/80 focus:bg-neutral-300/80"
-          value={String(value) ?? defaultValue ?? ""}
-          onChange={(e) => onChange(name, e.currentTarget.value)}
-        />
-      )}
+      {isFlowSocket === false && connected === false ? (
+        // eslint-disable-next-line tailwindcss/no-custom-classname
+        <div className="nodrag">
+          {name === "jsonPath" ? (
+            <JsonPathInput onChange={onChange} value={String(value)} />
+          ) : (
+            <AutoSizeInput
+              type={inputType}
+              className="h-6 rounded bg-neutral-200 px-2 transition hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+              value={String(value) ?? defaultValue ?? ""}
+              onChange={(e) => onChange(name, e.currentTarget.value)}
+            />
+          )}
+        </div>
+      ) : null}
 
       <Handle
         id={name}

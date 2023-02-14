@@ -1,8 +1,22 @@
+const colors = {
+  blue: "#3b82f6",
+  cyan: "#22d3ee",
+  green: "#22c55e",
+  lime: "#84cc16",
+  neutral: "#262626",
+  purple: "#a855f7",
+  red: "#ef4444",
+  sky: "#0ea5e9",
+} as const;
+
 export const valueColorsMap: Record<string, string> = {
-  flow: "#262626",
-  number: "#22c55e",
-  float: "#22c55e",
-  integer: "#84cc16",
-  boolean: "#ef4444",
-  string: "#a855f7",
+  flow: colors.neutral,
+  number: colors.green,
+  float: colors.green,
+  integer: colors.lime,
+  boolean: colors.red,
+  string: colors.purple,
+  vec2: colors.cyan,
+  vec3: colors.sky,
+  vec4: colors.blue,
 };

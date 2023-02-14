@@ -1,4 +1,12 @@
-import { BehaviorNode, BehaviorNodeExtras, Engine } from "engine";
+import {
+  BehaviorNode,
+  BehaviorNodeExtras,
+  BehaviorNodeParameters,
+  BehaviorNodeParametersJSON,
+  Engine,
+  isLinkJSON,
+  parseJSONPath,
+} from "engine";
 import { Edge, Node as FlowNode } from "reactflow";
 
 import { getNodeSpecJSON } from "./getNodeSpecJSON";
@@ -8,7 +16,12 @@ const nodeSpecJSON = getNodeSpecJSON();
 /**
  * Saves reactflow nodes into the engine
  */
-export function saveFlow(nodes: FlowNode[], edges: Edge[], engine: Engine, scriptId: string) {
+export function saveFlow(
+  nodes: FlowNode<BehaviorNodeParametersJSON>[],
+  edges: Edge[],
+  engine: Engine,
+  scriptId: string
+) {
   // Add behavior nodes to extension
   const behaviorNodes = nodes
     .map(({ id, type, data, position }) => {
@@ -22,9 +35,16 @@ export function saveFlow(nodes: FlowNode[], edges: Edge[], engine: Engine, scrip
 
       const behaviorNode = existingNode ?? engine.scene.extensions.behavior.createBehaviorNode();
 
+      const parameters: BehaviorNodeParameters = {};
+
+      Object.entries(data).forEach(([key, value]) => {
+        if (isLinkJSON(value)) return;
+        parameters[key] = value;
+      });
+
       behaviorNode.name = id;
       behaviorNode.type = type;
-      behaviorNode.parameters = data;
+      behaviorNode.parameters = parameters;
       behaviorNode.flow = null;
 
       const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
@@ -34,6 +54,32 @@ export function saveFlow(nodes: FlowNode[], edges: Edge[], engine: Engine, scrip
       return behaviorNode;
     })
     .filter((node): node is BehaviorNode => Boolean(node));
+
+  behaviorNodes.forEach((behaviorNode) => {
+    const nodeSpec = nodeSpecJSON.find((nodeSpec) => nodeSpec.type === behaviorNode.type);
+    if (!nodeSpec) return;
+
+    // Convert jsonPaths from string to ref
+    if (nodeSpec.inputs) {
+      nodeSpec.inputs.forEach(({ name }) => {
+        if (name !== "jsonPath" || !behaviorNode.parameters) return;
+
+        const value = behaviorNode.parameters[name];
+        if (!(typeof value === "string")) return;
+
+        const path = parseJSONPath(value);
+        if (!path) return;
+
+        const { resource, index, property } = path;
+        if (resource !== "nodes") return;
+
+        const node = engine.scene.doc.getRoot().listNodes()[index];
+        if (!node) return;
+
+        behaviorNode.parameters[name] = { isJsonPath: true, node, property };
+      });
+    }
+  });
 
   edges.forEach(({ source, sourceHandle, target, targetHandle }) => {
     if (!sourceHandle || !targetHandle) return;

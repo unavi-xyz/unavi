@@ -1,14 +1,15 @@
 import { GraphJSON, NodeJSON } from "@behave-graph/core";
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
+import { isJsonPath, isLink } from "../../../behavior";
 import { BehaviorNode } from "./BehaviorNode";
 import { EXTENSION_NAME } from "./constants";
-import { BehaviorNodeExtras, BehaviorNodeParametersDef } from "./types";
+import { BehaviorNodeExtras, BehaviorNodeParametersJSON } from "./types";
 
 type BehaviorNodeDef = {
   type: string;
   name: string;
-  parameters?: BehaviorNodeParametersDef;
+  parameters?: BehaviorNodeParametersJSON;
   flow?: Record<string, number>;
   extras?: BehaviorNodeExtras;
 };
@@ -96,9 +97,13 @@ export class BehaviorExtension extends Extension {
         Object.entries(behaviorNode.parameters).forEach(([key, value]) => {
           if (!behaviorNodeDef.parameters) behaviorNodeDef.parameters = {};
 
-          if (typeof value === "object" && "link" in value) {
+          if (isLink(value)) {
             const linkIndex = behaviorNodes.indexOf(value.link);
             behaviorNodeDef.parameters[key] = { link: linkIndex, socket: value.socket };
+          } else if (isJsonPath(value)) {
+            const index = context.nodeIndexMap.get(value.node);
+            if (index === undefined) throw new Error("Invalid node reference");
+            behaviorNodeDef.parameters[key] = `/nodes/${index}/${value.property}`;
           } else {
             behaviorNodeDef.parameters[key] = value;
           }
@@ -157,12 +162,16 @@ export class BehaviorExtension extends Extension {
         Object.entries(behaviorNode.parameters).forEach(([key, value]) => {
           if (!node.parameters) node.parameters = {};
 
-          if (typeof value === "object" && "link" in value) {
+          if (isLink(value)) {
             const targetNodeIndex = behaviorNodes.indexOf(value.link);
             const targetNode = nodes[targetNodeIndex];
             if (!targetNode) throw new Error("Invalid behavior node reference");
 
             node.parameters[key] = { link: { nodeId: targetNode.id, socket: value.socket } };
+          } else if (isJsonPath(value)) {
+            const nodes = this.document.getRoot().listNodes();
+            const index = nodes.indexOf(value.node);
+            node.parameters[key] = { value: `/nodes/${index}/${value.property}` };
           } else {
             node.parameters[key] = { value };
           }

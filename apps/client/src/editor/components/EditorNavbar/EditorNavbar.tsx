@@ -2,8 +2,9 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
+import { FaPlay, FaStop } from "react-icons/fa";
 import { HiCubeTransparent } from "react-icons/hi";
-import { MdArrowBackIosNew, MdPreview, MdSync } from "react-icons/md";
+import { MdArrowBackIosNew, MdSync } from "react-icons/md";
 
 import { trpc } from "../../../client/trpc";
 import Button from "../../../ui/Button";
@@ -24,10 +25,9 @@ export default function EditorNavbar() {
   const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
   const isSaving = useEditorStore((state) => state.isSaving);
-  const engine = useEditorStore((state) => state.engine);
 
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
-  const [previewMode, setPreviewMode] = useState(engine?.controls === "player" ? true : false);
+  const [playing, setPlaying] = useState(false);
 
   const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
 
@@ -46,16 +46,16 @@ export default function EditorNavbar() {
     router.push(`/project/${id}`);
   }
 
-  function handlePreview() {
+  function handlePlay() {
     const { engine } = useEditorStore.getState();
     if (!engine) return;
 
     if (engine.controls === "player") {
+      setPlaying(false);
       engine.controls = "orbit";
-      setPreviewMode(false);
     } else {
+      setPlaying(true);
       engine.controls = "player";
-      setPreviewMode(true);
       useEditorStore.setState({ selectedId: null });
       engine.physics.send({ subject: "respawn", data: null });
     }
@@ -112,20 +112,20 @@ export default function EditorNavbar() {
 
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <div className="aspect-square h-full">
-            <Tooltip text={`${visuals ? "Hide" : "Show"} Visuals`} placement="bottom">
-              <IconButton selected={visuals} onClick={handleToggleColliders}>
-                <HiCubeTransparent />
-              </IconButton>
+            <Tooltip text={`${playing ? "Stop" : "Play"}`} placement="bottom">
+              <div className="h-full">
+                <IconButton selected={playing} onClick={handlePlay}>
+                  {playing ? <FaStop className="text-sm" /> : <FaPlay className="text-sm" />}
+                </IconButton>
+              </div>
             </Tooltip>
           </div>
 
           <div className="aspect-square h-full">
-            <Tooltip text={`${previewMode ? "Exit" : "Enter"} Preview`} placement="bottom">
-              <div className="h-full">
-                <IconButton selected={previewMode} onClick={handlePreview}>
-                  <MdPreview />
-                </IconButton>
-              </div>
+            <Tooltip text={`${visuals ? "Hide" : "Show"} Visuals`} placement="bottom">
+              <IconButton selected={visuals} onClick={handleToggleColliders}>
+                <HiCubeTransparent />
+              </IconButton>
             </Tooltip>
           </div>
 

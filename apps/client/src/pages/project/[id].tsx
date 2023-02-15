@@ -2,23 +2,34 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import NavigationTab from "../../../ui/NavigationTab";
-import { isFromCDN } from "../../../utils/isFromCDN";
-import MetaTags from "../../MetaTags";
+import { trpc } from "../../client/trpc";
+import { env } from "../../env/client.mjs";
+import MetaTags from "../../home/MetaTags";
+import { getNavbarLayout } from "../../home/NavbarLayout/NavbarLayout";
+import ProjectSettings from "../../home/ProjectSettings";
+import ButtonTabs, { TabContent } from "../../ui/ButtonTabs";
+import { isFromCDN } from "../../utils/isFromCDN";
 
-interface Props {
-  name?: string | null;
-  image?: string | null;
-  children: React.ReactNode;
+function publicationImageURL(id: string) {
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/image.jpg`;
 }
 
-export default function ProjectLayout({ name, image, children }: Props) {
+export default function Project() {
   const router = useRouter();
   const id = router.query.id as string;
 
+  const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
+  const { data: imageURL } = trpc.project.image.useQuery(
+    { id },
+    { enabled: id !== undefined && !project?.publicationId }
+  );
+
+  // If published, use the publication image
+  const image = project?.publicationId ? publicationImageURL(project.publicationId) : imageURL;
+
   return (
     <>
-      <MetaTags title={name || "Project"} />
+      <MetaTags title={project?.name || "Project"} />
 
       <div className="mx-4 h-full">
         <div className="max-w-content mx-auto h-full w-full space-y-8 py-8">
@@ -48,7 +59,7 @@ export default function ProjectLayout({ name, image, children }: Props) {
 
             <div className="flex flex-col justify-between space-y-8 md:w-2/3">
               <div className="space-y-4">
-                <div className="flex justify-center text-3xl font-black">{name}</div>
+                <div className="flex justify-center text-3xl font-black">{project?.name}</div>
               </div>
 
               <Link
@@ -60,16 +71,18 @@ export default function ProjectLayout({ name, image, children }: Props) {
             </div>
           </div>
 
-          <div className="space-y-4 pb-4">
-            <div className="flex space-x-4">
-              <NavigationTab href={`/project/${id}`} text="About" />
-              <NavigationTab href={`/project/${id}/settings`} text="Settings" />
-            </div>
-
-            <div>{children}</div>
-          </div>
+          <ButtonTabs titles={["About", "Settings"]}>
+            <TabContent value="About">
+              <div className="whitespace-pre-line">{project?.description}</div>
+            </TabContent>
+            <TabContent value="Settings">
+              <ProjectSettings />
+            </TabContent>
+          </ButtonTabs>
         </div>
       </div>
     </>
   );
 }
+
+Project.getLayout = getNavbarLayout;

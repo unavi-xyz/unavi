@@ -6,8 +6,8 @@ import { useSession } from "../client/auth/useSession";
 import { trpc } from "../client/trpc";
 import { env } from "../env/client.mjs";
 import CreateProjectPage from "../home/CreateProjectPage";
-import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
+import { getNavbarLayout } from "../home/NavbarLayout/NavbarLayout";
 import Card from "../ui/Card";
 import Dialog from "../ui/Dialog";
 

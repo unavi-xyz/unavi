@@ -10,8 +10,8 @@ import GitHub from "../../public/images/svg/GitHub.svg";
 import Twitter from "../../public/images/svg/Twitter.svg";
 import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../constants";
 import { useAnimateOnEnter } from "../home/hooks/useAnimateOnEnter";
-import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
+import { getNavbarLayout } from "../home/NavbarLayout/NavbarLayout";
 
 export default function Index() {
   useAnimateOnEnter();

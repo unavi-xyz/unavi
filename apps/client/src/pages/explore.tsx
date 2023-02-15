@@ -3,8 +3,8 @@ import Link from "next/link";
 import { GetServerSidePropsContext } from "next/types";
 
 import { trpc } from "../client/trpc";
-import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
+import { getNavbarLayout } from "../home/NavbarLayout/NavbarLayout";
 import SpaceCard from "../home/SpaceCard";
 import { prisma } from "../server/prisma";
 import { appRouter } from "../server/router/_app";

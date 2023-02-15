@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import Logo from "../../../../public/images/Logo.png";
-import { useSession } from "../../../client/auth/useSession";
+import Logo from "../../../public/images/Logo.png";
+import { useSession } from "../../client/auth/useSession";
 import NavbarTab from "./NavbarTab";
 import ProfileButton from "./ProfileButton";
 import SignInButton from "./SignInButton";

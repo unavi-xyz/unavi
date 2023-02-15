@@ -1,28 +1,60 @@
-import { ERC721Metadata } from "contracts";
+import { createProxySSGHelpers } from "@trpc/react-query/ssg";
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import { useSession } from "../../../client/auth/useSession";
-import { trpc } from "../../../client/trpc";
-import { env } from "../../../env/client.mjs";
-import { Profile } from "../../../server/helpers/getProfileFromAddress";
-import NavigationTab from "../../../ui/NavigationTab";
-import { isFromCDN } from "../../../utils/isFromCDN";
-import { numberToHexDisplay } from "../../../utils/numberToHexDisplay";
-import MetaTags from "../../MetaTags";
+import { useSession } from "../../client/auth/useSession";
+import { trpc } from "../../client/trpc";
+import { env } from "../../env/client.mjs";
+import MetaTags from "../../home/MetaTags";
+import { getNavbarLayout } from "../../home/NavbarLayout/NavbarLayout";
+import SpaceSettings from "../../home/SpaceSettings";
+import { prisma } from "../../server/prisma";
+import { appRouter } from "../../server/router/_app";
+import ButtonTabs, { TabContent } from "../../ui/ButtonTabs";
+import { isFromCDN } from "../../utils/isFromCDN";
+import { hexDisplayToNumber, numberToHexDisplay } from "../../utils/numberToHexDisplay";
 
 const host =
   process.env.NODE_ENV === "development" ? "localhost:4000" : env.NEXT_PUBLIC_DEFAULT_HOST;
 
-export interface Props {
-  id: number;
-  author: Profile | null;
-  metadata: ERC721Metadata | null;
-  children: React.ReactNode;
-}
+export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
+  const ONE_MINUTE_IN_SECONDS = 60;
+  const ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30;
 
-export default function SpaceLayout({ id, author, metadata, children }: Props) {
+  res.setHeader(
+    "Cache-Control",
+    `public, max-age=0, s-maxage=${ONE_MINUTE_IN_SECONDS}, stale-while-revalidate=${ONE_MONTH_IN_SECONDS}`
+  );
+
+  const hexId = query.id as string;
+  const id = hexDisplayToNumber(hexId);
+
+  const ssg = await createProxySSGHelpers({
+    router: appRouter,
+    ctx: {
+      prisma,
+      res,
+      session: null,
+    },
+  });
+
+  await ssg.space.byId.prefetch({ id });
+
+  return {
+    props: {
+      trpcState: ssg.dehydrate(),
+      id,
+    },
+  };
+};
+
+export default function Space({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const { data: space } = trpc.space.byId.useQuery({ id });
   const { data: playerCount } = trpc.public.playerCount.useQuery({ id });
+
+  const metadata = space?.metadata;
+  const author = space?.author;
 
   const { data: session } = useSession();
   const isAuthor = session && session.address === author?.owner;
@@ -106,17 +138,21 @@ export default function SpaceLayout({ id, author, metadata, children }: Props) {
             </div>
           </div>
 
-          <div className="space-y-4 pb-4">
-            <div className="flex space-x-4">
-              <NavigationTab href={`/space/${hexId}`} text="About" />
+          <ButtonTabs titles={isAuthor ? ["About", "Settings"] : ["About"]}>
+            <TabContent value="About">
+              <div className="whitespace-pre-line">{metadata?.description}</div>
+            </TabContent>
 
-              {isAuthor && <NavigationTab href={`/space/${hexId}/settings`} text="Settings" />}
-            </div>
-
-            <div>{children}</div>
-          </div>
+            {isAuthor && (
+              <TabContent value="Settings">
+                <SpaceSettings id={id} />
+              </TabContent>
+            )}
+          </ButtonTabs>
         </div>
       </div>
     </>
   );
 }
+
+Space.getLayout = getNavbarLayout;

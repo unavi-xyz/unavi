@@ -1,9 +1,9 @@
 import { useState } from "react";
 
-import { useSession } from "../../../client/auth/useSession";
-import { trpc } from "../../../client/trpc";
-import DropdownMenu from "../../../ui/DropdownMenu";
-import ProfilePicture from "../../ProfilePicture";
+import { useSession } from "../../client/auth/useSession";
+import { trpc } from "../../client/trpc";
+import DropdownMenu from "../../ui/DropdownMenu";
+import ProfilePicture from "../ProfilePicture";
 import ProfileMenu from "./ProfileMenu";
 
 export default function ProfileButton() {

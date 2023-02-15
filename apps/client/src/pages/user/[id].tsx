@@ -8,8 +8,8 @@ import { useEffect } from "react";
 
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
-import { getNavbarLayout } from "../../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../../home/MetaTags";
+import { getNavbarLayout } from "../../home/NavbarLayout/NavbarLayout";
 import ProfilePicture from "../../home/ProfilePicture";
 import SpaceCard from "../../home/SpaceCard";
 import { prisma } from "../../server/prisma";

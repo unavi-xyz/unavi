@@ -4,7 +4,7 @@ import { MdClose, MdLogout } from "react-icons/md";
 import { useLogout } from "../../client/auth/useLogout";
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
-import SignInButton from "../../home/layouts/NavbarLayout/SignInButton";
+import SignInButton from "../../home/NavbarLayout/SignInButton";
 import ProfilePicture from "../../home/ProfilePicture";
 import FileInput from "../../ui/FileInput";
 import TextField from "../../ui/TextField";

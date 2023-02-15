@@ -25,6 +25,8 @@ module.exports = {
         floatInSlow: "floatIn 1s ease-in forwards",
         scaleIn: "scaleIn 150ms ease-in-out forwards",
         scaleOut: "scaleOut 150ms ease-in-out forwards",
+        scaleInFull: "scaleInFull 200ms ease forwards",
+        scaleOutFull: "scaleOutFull 200ms ease forwards",
         textScroll: "textScroll 5s ease infinite",
       },
       keyframes: {
@@ -47,6 +49,14 @@ module.exports = {
         scaleOut: {
           "0%": { opacity: 1, transform: "scale(1)" },
           "100%": { opacity: 0, transform: "scale(0.75)" },
+        },
+        scaleInFull: {
+          "0%": { transform: "scale(0)" },
+          "100%": { transform: "scale(1)" },
+        },
+        scaleOutFull: {
+          "0%": { transform: "scale(1)" },
+          "100%": { transform: "scale(0)" },
         },
         textScroll: {
           "0%, 100%": {

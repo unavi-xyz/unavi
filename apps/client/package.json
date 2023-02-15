@@ -23,6 +23,7 @@
     "@prisma/client": "^4.9.0",
     "@radix-ui/react-context-menu": "^2.1.1",
     "@radix-ui/react-dialog": "^1.0.2",
+    "@radix-ui/react-tooltip": "^1.0.3",
     "@rainbow-me/rainbowkit": "^0.8.1",
     "@rainbow-me/rainbowkit-siwe-next-auth": "^0.1.5",
     "@tanstack/react-query": "^4.22.3",

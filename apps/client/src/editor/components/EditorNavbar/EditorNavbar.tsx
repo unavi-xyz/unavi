@@ -116,17 +116,15 @@ export default function EditorNavbar() {
 
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <div className="aspect-square h-full">
-            <Tooltip text={`${playing ? "Stop" : "Play"}`} placement="bottom">
-              <div className="h-full">
-                <IconButton selected={playing} onClick={handlePlay}>
-                  {playing ? <FaStop className="text-sm" /> : <FaPlay className="text-sm" />}
-                </IconButton>
-              </div>
+            <Tooltip text={`${playing ? "Stop" : "Play"}`} side="bottom">
+              <IconButton onClick={handlePlay}>
+                {playing ? <FaStop className="text-sm" /> : <FaPlay className="text-sm" />}
+              </IconButton>
             </Tooltip>
           </div>
 
           <div className="aspect-square h-full">
-            <Tooltip text={`${visuals ? "Hide" : "Show"} Visuals`} placement="bottom">
+            <Tooltip text={`${visuals ? "Hide" : "Show"} Visuals`} side="bottom">
               <IconButton selected={visuals} onClick={handleToggleColliders}>
                 <HiCubeTransparent />
               </IconButton>

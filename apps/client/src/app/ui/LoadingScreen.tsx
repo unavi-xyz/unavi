@@ -38,7 +38,7 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
     <div
       className={`absolute z-50 h-screen w-screen bg-white/50 pb-8 transition duration-500 ${transitionClass}`}
     >
-      <div className="flex h-full animate-fadeInSlow flex-col items-center justify-center">
+      <div className="flex h-full animate-floatInSlow flex-col items-center justify-center">
         <div className="max-w-content space-y-6">
           <div className="flex w-full min-w-fit flex-col justify-between">
             <div className="space-y-4">

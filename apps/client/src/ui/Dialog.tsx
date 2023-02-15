@@ -1,65 +1,39 @@
-import React, { ReactPortal, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 
-interface Props {
+interface Props extends DialogPrimitive.DialogProps {
   open: boolean;
-  onClose?: () => void;
+  title?: string;
+  description?: string;
   children: React.ReactNode;
 }
 
-export default function Dialog({ open, onClose, children }: Props): ReactPortal | null {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const scrimRef = useRef<HTMLDivElement>(null);
+export default function Dialog({ open, title, description, children, ...rest }: Props) {
+  return (
+    <DialogPrimitive.Root open={open} {...rest}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay
+          className={`fixed inset-0 z-40 h-full w-full bg-neutral-900/40 backdrop-blur-sm ${
+            open ? "animate-fadeIn" : "animate-fadeOut"
+          }`}
+        />
+        <DialogPrimitive.Content
+          className={`fixed inset-0 z-50 m-auto h-fit w-full max-w-xl rounded-2xl bg-white py-8 px-10 shadow-md ${
+            open ? "animate-scaleIn" : "animate-scaleOut"
+          }`}
+        >
+          <DialogPrimitive.Title className="text-center text-3xl font-bold">
+            {title}
+          </DialogPrimitive.Title>
 
-  const [visible, setVisible] = useState(false);
+          {description && (
+            <DialogPrimitive.Description className="pt-2 text-center text-lg text-neutral-500">
+              {description}
+            </DialogPrimitive.Description>
+          )}
 
-  useEffect(() => {
-    // Add a delay before unmounting the menu so we can show animations
-    const timeout = setTimeout(() => setVisible(open), 200);
-
-    // Don't add the delay on open
-    if (open) {
-      setVisible(true);
-      clearTimeout(timeout);
-    }
-
-    // Open / close animation
-    if (open) {
-      setTimeout(() => {
-        dialogRef.current?.classList.remove("scale-75");
-        dialogRef.current?.classList.remove("opacity-0");
-        scrimRef.current?.classList.remove("opacity-0");
-
-        document.body.style.overflowY = "hidden";
-      }, 10);
-    } else {
-      dialogRef.current?.classList.add("opacity-0");
-      dialogRef.current?.classList.add("scale-75");
-      scrimRef.current?.classList.add("opacity-0");
-
-      document.body.style.overflowY = "auto";
-    }
-
-    return () => clearTimeout(timeout);
-  }, [open]);
-
-  if (!visible) return null;
-
-  return createPortal(
-    <div
-      ref={scrimRef}
-      onMouseDown={onClose}
-      className="fixed top-0 left-0 z-50 flex h-screen w-screen flex-col justify-center bg-black/30 opacity-0 backdrop-blur-sm transition-opacity duration-200 ease-in-out"
-    >
-      <dialog
-        ref={dialogRef}
-        open
-        onMouseDown={(e) => e.stopPropagation()}
-        className="flex w-11/12 max-w-xl scale-75 flex-col space-y-4 rounded-2xl bg-white p-6 opacity-0 drop-shadow-lg transition duration-200 ease-in-out md:w-full md:p-10"
-      >
-        {children}
-      </dialog>
-    </div>,
-    document.body
+          <div className="pt-4">{children}</div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

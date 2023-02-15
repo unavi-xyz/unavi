@@ -185,47 +185,41 @@ export default function PublishPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-center text-3xl font-bold">Publish Space</h1>
+      <TextField
+        name="Name"
+        onChange={(e) => {
+          const value = e.target.value;
+          useEditorStore.setState({ name: value });
+        }}
+        autoComplete="off"
+        defaultValue={name}
+        disabled={loading}
+      />
 
-      <div className="space-y-4">
-        <TextField
-          name="Name"
-          onChange={(e) => {
-            const value = e.target.value;
-            useEditorStore.setState({ name: value });
-          }}
-          outline
-          defaultValue={name}
+      <TextArea
+        name="Description"
+        onChange={(e) => {
+          const value = e.target.value;
+          useEditorStore.setState({ description: value });
+        }}
+        autoComplete="off"
+        rows={4}
+        defaultValue={description}
+        disabled={loading}
+      />
+
+      <div className="space-y-2">
+        <div className="text-lg font-bold">Image</div>
+
+        <ImageInput
+          src={image}
           disabled={loading}
-        />
-
-        <TextArea
-          name="Description"
           onChange={(e) => {
-            const value = e.target.value;
-            useEditorStore.setState({ description: value });
+            const file = e.target.files?.[0];
+            if (!file) return;
+            cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
           }}
-          autoComplete="off"
-          outline
-          rows={4}
-          defaultValue={description}
-          disabled={loading}
         />
-
-        <div className="space-y-2">
-          <div className="text-lg font-bold">Image</div>
-
-          <ImageInput
-            src={image}
-            disabled={loading}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-
-              cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
-            }}
-          />
-        </div>
       </div>
 
       <div className="flex justify-end">

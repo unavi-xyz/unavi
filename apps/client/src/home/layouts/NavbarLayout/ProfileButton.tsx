@@ -29,14 +29,14 @@ export default function ProfileButton() {
       >
         <div className="overflow-hidden">
           {isLoading ? (
-            <div className="h-10 w-10 animate-pulse rounded-full bg-neutral-300" />
+            <div className="h-9 w-9 animate-pulse rounded-full bg-neutral-300" />
           ) : session?.address ? (
             <ProfilePicture
               src={profile?.metadata?.image}
               uniqueKey={profile?.handle?.full ?? session.address}
               circle
               draggable={false}
-              size={40}
+              size={36}
             />
           ) : null}
         </div>

@@ -112,7 +112,13 @@ export default function Overlay() {
 
   return (
     <>
-      <Dialog open={openUserPage} onClose={handleClose}>
+      <Dialog
+        open={openUserPage}
+        onOpenChange={(open) => {
+          if (!open) handleClose();
+        }}
+        title="Settings"
+      >
         <Settings />
       </Dialog>
 

@@ -16,9 +16,9 @@ export default function Navbar() {
         <div className="flex items-center">
           <Link
             href="/"
-            className="relative aspect-square h-10 cursor-pointer rounded-full outline-neutral-400"
+            className="relative aspect-square h-9 cursor-pointer rounded-full outline-neutral-400"
           >
-            <Image src={Logo} alt="logo" priority width={40} height={40} />
+            <Image src={Logo} alt="logo" priority width={36} height={36} />
           </Link>
         </div>
 

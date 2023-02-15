@@ -49,7 +49,7 @@ export default function Spaces() {
     <>
       <MetaTags title="Create" />
 
-      <Dialog open={openCreateProject} onClose={() => setOpenCreateProject(false)}>
+      <Dialog open={openCreateProject} onOpenChange={setOpenCreateProject} title="Create Project">
         <CreateProjectPage />
       </Dialog>
 

@@ -251,7 +251,6 @@ export default function Settings() {
               name="Username"
               autoComplete="off"
               disabled={savingUsername}
-              outline
             />
 
             <div className="flex justify-end">
@@ -270,7 +269,6 @@ export default function Settings() {
                 autoComplete="off"
                 rows={4}
                 disabled={savingMetadata}
-                outline
               />
 
               <div className="space-y-2">

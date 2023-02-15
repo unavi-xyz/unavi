@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { trpc } from "../client/trpc";
 import TextField from "../ui/TextField";
 
+const DEFAULT_NAME = "New Project";
+
 export default function CreateProjectPage() {
   const router = useRouter();
 
@@ -31,7 +33,7 @@ export default function CreateProjectPage() {
 
     try {
       // Create new project
-      const id = await createProject({ name: nameRef.current?.value });
+      const id = await createProject({ name: nameRef.current?.value ?? DEFAULT_NAME });
 
       // Upload default image
       await uploadDefaultImage(id);
@@ -45,15 +47,7 @@ export default function CreateProjectPage() {
 
   return (
     <div className="space-y-4">
-      <div className="text-center text-3xl font-bold">New Project</div>
-
-      <TextField
-        inputRef={nameRef}
-        name="Name"
-        defaultValue="My Project"
-        outline
-        disabled={loading}
-      />
+      <TextField inputRef={nameRef} name="Name" placeholder={DEFAULT_NAME} disabled={loading} />
 
       <div className="flex justify-end">
         <button

@@ -68,14 +68,16 @@ export default function EditorNavbar() {
     setOpenPublishDialog(true);
   }
 
+  const isPublished = project?.Publication?.spaceId;
+
   return (
     <>
-      <Dialog open={openPublishDialog} onClose={() => setOpenPublishDialog(false)}>
-        {project?.Publication?.spaceId ? (
-          <UpdatePage onClose={() => setOpenPublishDialog(false)} />
-        ) : (
-          <PublishPage />
-        )}
+      <Dialog
+        open={openPublishDialog}
+        onOpenChange={setOpenPublishDialog}
+        title={isPublished ? "Update Space" : "Publish Space"}
+      >
+        {isPublished ? <UpdatePage onClose={() => setOpenPublishDialog(false)} /> : <PublishPage />}
       </Dialog>
 
       <div className="flex h-full items-center justify-between px-4 py-1">

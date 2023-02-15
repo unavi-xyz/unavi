@@ -20,13 +20,33 @@ module.exports = {
       },
       animation: {
         fadeIn: "fadeIn 150ms ease-in forwards",
-        fadeInSlow: "fadeIn 1s ease-in forwards",
+        fadeOut: "fadeOut 150ms ease-in forwards",
+        floatIn: "floatIn 150ms ease-in forwards",
+        floatInSlow: "floatIn 1s ease-in forwards",
+        scaleIn: "scaleIn 150ms ease-in-out forwards",
+        scaleOut: "scaleOut 150ms ease-in-out forwards",
         textScroll: "textScroll 5s ease infinite",
       },
       keyframes: {
         fadeIn: {
+          "0%": { opacity: 0 },
+          "100%": { opacity: 1 },
+        },
+        fadeOut: {
+          "0%": { opacity: 1 },
+          "100%": { opacity: 0 },
+        },
+        floatIn: {
           "0%": { opacity: 0, transform: "translateY(10px)" },
           "100%": { opacity: 1, transform: "translateY(0)" },
+        },
+        scaleIn: {
+          "0%": { opacity: 0, transform: "scale(0.75)" },
+          "100%": { opacity: 1, transform: "scale(1)" },
+        },
+        scaleOut: {
+          "0%": { opacity: 1, transform: "scale(1)" },
+          "100%": { opacity: 0, transform: "scale(0.75)" },
         },
         textScroll: {
           "0%, 100%": {

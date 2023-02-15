@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
 import DropdownMenu from "../../ui/DropdownMenu";
-import ProfilePicture from "../ProfilePicture";
+import Avatar from "../Avatar";
 import ProfileMenu from "./ProfileMenu";
 
 export default function ProfileButton() {
@@ -28,17 +28,13 @@ export default function ProfileButton() {
         }}
       >
         <div className="overflow-hidden">
-          {isLoading ? (
-            <div className="h-9 w-9 animate-pulse rounded-full bg-neutral-300" />
-          ) : session?.address ? (
-            <ProfilePicture
-              src={profile?.metadata?.image}
-              uniqueKey={profile?.handle?.full ?? session.address}
-              circle
-              draggable={false}
-              size={36}
-            />
-          ) : null}
+          <Avatar
+            src={profile?.metadata?.image}
+            uniqueKey={profile?.handle?.full ?? session?.address ?? ""}
+            loading={isLoading}
+            circle
+            size={36}
+          />
         </div>
       </button>
 

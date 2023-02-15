@@ -4,8 +4,8 @@ import { MdClose, MdLogout } from "react-icons/md";
 import { useLogout } from "../../client/auth/useLogout";
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
+import Avatar from "../../home/Avatar";
 import SignInButton from "../../home/NavbarLayout/SignInButton";
-import ProfilePicture from "../../home/ProfilePicture";
 import FileInput from "../../ui/FileInput";
 import TextField from "../../ui/TextField";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
@@ -144,16 +144,12 @@ export default function Settings() {
         {session?.address ? (
           <div className="flex items-center space-x-4 pt-2">
             <div className="overflow-hidden">
-              {isLoadingProfile ? (
-                <div className="h-12 w-12 animate-pulse rounded-full bg-neutral-300" />
-              ) : session?.address ? (
-                <ProfilePicture
-                  src={profile?.metadata?.image}
-                  uniqueKey={profile?.handle?.full ?? session.address}
-                  draggable={false}
-                  size={48}
-                />
-              ) : null}
+              <Avatar
+                src={profile?.metadata?.image}
+                uniqueKey={profile?.handle?.full ?? session.address}
+                loading={isLoadingProfile}
+                size={48}
+              />
             </div>
 
             {isLoadingProfile ? (

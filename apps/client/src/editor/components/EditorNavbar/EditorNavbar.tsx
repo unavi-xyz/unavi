@@ -1,10 +1,8 @@
 import { useRouter } from "next/router";
 import { useState } from "react";
-import { BiMove } from "react-icons/bi";
-import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { FaPlay, FaStop } from "react-icons/fa";
 import { HiCubeTransparent } from "react-icons/hi";
-import { MdArrowBackIosNew, MdSync } from "react-icons/md";
+import { MdArrowBackIosNew } from "react-icons/md";
 
 import { trpc } from "../../../client/trpc";
 import Button from "../../../ui/Button";
@@ -15,7 +13,7 @@ import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import AutoGrowInput from "../ui/AutoGrowInput";
 import PublishPage from "./PublishPage";
-import ToolButton from "./ToolButton";
+import ToolButtons from "./ToolButtons";
 import UpdatePage from "./UpdatePage";
 
 export default function EditorNavbar() {
@@ -100,19 +98,7 @@ export default function EditorNavbar() {
           </div>
         </div>
 
-        <div className="flex h-full w-full items-center justify-center space-x-2">
-          <ToolButton tool="translate">
-            <BiMove />
-          </ToolButton>
-
-          <ToolButton tool="rotate">
-            <MdSync />
-          </ToolButton>
-
-          <ToolButton tool="scale">
-            <CgArrowsExpandUpRight />
-          </ToolButton>
-        </div>
+        <ToolButtons />
 
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <div className="aspect-square h-full">

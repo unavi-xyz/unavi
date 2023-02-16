@@ -124,13 +124,13 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
         </div>
       ) : (
         <div className="max-w-content mx-auto">
-          <div className="h-48 w-full bg-neutral-200 md:h-64 lg:rounded-xl">
+          <div className="h-48 w-full bg-neutral-200 md:h-64 xl:rounded-xl">
             <div className="relative h-full w-full object-cover">
               {profile?.metadata?.animation_url && (
                 <img
                   src={profile.metadata.animation_url}
                   alt=""
-                  className="h-full w-full object-cover lg:rounded-xl"
+                  className="h-full w-full object-cover xl:rounded-xl"
                   crossOrigin="anonymous"
                 />
               )}

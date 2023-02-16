@@ -1,7 +1,7 @@
 import {
-  DracoMeshCompression,
-  MeshQuantization,
-  TextureTransform,
+  KHRDracoMeshCompression,
+  KHRMeshQuantization,
+  KHRTextureTransform,
 } from "@gltf-transform/extensions";
 
 import { BehaviorExtension } from "./extensions/Behavior/BehaviorExtension";
@@ -11,8 +11,8 @@ import { SpawnPointExtension } from "./extensions/SpawnPoint/SpawnPointExtension
 export const extensions = [
   BehaviorExtension,
   ColliderExtension,
-  DracoMeshCompression,
-  MeshQuantization,
+  KHRDracoMeshCompression,
+  KHRMeshQuantization,
+  KHRTextureTransform,
   SpawnPointExtension,
-  TextureTransform,
 ];

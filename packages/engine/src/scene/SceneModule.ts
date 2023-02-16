@@ -1,5 +1,5 @@
 import { ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform/core";
-import { DracoMeshCompression } from "@gltf-transform/extensions";
+import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
 
 import { Engine } from "../Engine";
 import { BehaviorExtension, Collider, ColliderExtension, SpawnPointExtension } from "../gltf";
@@ -67,7 +67,7 @@ export class SceneModule extends Scene {
       .getRoot()
       .listExtensionsUsed()
       .forEach((extension) => {
-        if (extension.extensionName === DracoMeshCompression.EXTENSION_NAME) {
+        if (extension.extensionName === KHRDracoMeshCompression.EXTENSION_NAME) {
           extension.dispose();
         }
       });

@@ -2331,41 +2331,31 @@
     "@floating-ui/dom" "^0.5.3"
     use-isomorphic-layout-effect "^1.1.1"
 
-"@gltf-transform/core@2.5.1", "@gltf-transform/core@^2.4.7", "@gltf-transform/core@^2.5.1":
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.5.1.tgz#d84ba1a02f956276ab055fc670cfb0771466e3fd"
-  integrity sha512-Ah4TVzQtlUpEOJPJovgobbviec7og7NaSo9f+Lg0kJCk3Wwjl++FuDHKCDYEB+CQL8CoLpfB62+8t+NH5buedg==
+"@gltf-transform/core@3.0.0", "@gltf-transform/core@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.0.0.tgz#216ff3be821940cf9da7d30b97ba62aeffba12b4"
+  integrity sha512-G00Lz6FS/lOqVE4pZwZCQxg6UNQTMx+YLqlLy72Ou0Ku/QtIkvMY8fmq7TbKHKdpko7xj1/nrIFZs1smlZDtdA==
   dependencies:
-    gl-matrix "~3.4.3"
-    property-graph "^0.2.6"
+    property-graph "^1.0.0"
 
-"@gltf-transform/extensions@2.4.7":
-  version "2.4.7"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.7.tgz#cfbba5973d4cede88114ab0b9fd618403e5b6d72"
-  integrity sha512-Pn3g0deLv6EsW7rL3n6ohWJmhvSDRt554E0zW04qNVqcxCCpHdZwG/Vqs80ZG2OxYD3ctYF92gXPx6NKSTak5g==
+"@gltf-transform/extensions@3.0.0", "@gltf-transform/extensions@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-3.0.0.tgz#36ab1827d6c969d73af64ea68ed0e525a343f60d"
+  integrity sha512-d3Nl0YU3ZOmjvxUBeJXTOxN+PsX72DmDmP004QnpP8H7gk2Bi86NlZOhAB6bU7vFTq+BestOpg6OaRZl4S0gPg==
   dependencies:
-    "@gltf-transform/core" "^2.4.7"
+    "@gltf-transform/core" "^3.0.0"
     ktx-parse "^0.4.5"
 
-"@gltf-transform/extensions@2.5.1", "@gltf-transform/extensions@^2.5.1":
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.5.1.tgz#cae4cde16cf7b6ab0548a22cde681320d6fb5570"
-  integrity sha512-fn+Mkh5XoaWYU/BUa5BvU5T1u7Bj8o2z2mDGhTKSzoGgNG2RO6tGrniESBEuDYQCtDx9HJLs0YOlziBx4zFbiw==
+"@gltf-transform/functions@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-3.0.0.tgz#9ad6c778fae9eaa9c83787f2b0d8d1b3ec54a73c"
+  integrity sha512-agFrTyPiLcJowMy4OAzjbjy9OX8ze95bztmtQD3s7IbCyb1kh/RHUW1R86V8HGjDCGpJHcxhx3YX9HrcTey2Xg==
   dependencies:
-    "@gltf-transform/core" "^2.5.1"
-    ktx-parse "^0.4.5"
-
-"@gltf-transform/functions@2.5.1":
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.5.1.tgz#10b82cc23cba530ef70852198218c2eca04c170a"
-  integrity sha512-A5Y2WypPo7sMmlRIAmkbS2iuI9cdujO9Nxogq6KxWJvG3I4QFCOOVWBmahWegwgXsO00ecvQQ73iuCIRJ2oC+Q==
-  dependencies:
-    "@gltf-transform/core" "^2.5.1"
-    "@gltf-transform/extensions" "^2.5.1"
-    gl-matrix "~3.4.3"
+    "@gltf-transform/core" "^3.0.0"
+    "@gltf-transform/extensions" "^3.0.0"
     ktx-parse "^0.4.5"
     ndarray "^1.0.19"
-    ndarray-lanczos "^0.1.2"
+    ndarray-lanczos "^0.2.0"
     ndarray-pixels "^1.0.0"
 
 "@humanwhocodes/config-array@^0.11.8":
@@ -6552,7 +6542,7 @@ github-from-package@0.0.0:
   resolved "https://registry.yarnpkg.com/github-from-package/-/github-from-package-0.0.0.tgz#97fb5d96bfde8973313f20e8288ef9a167fa64ce"
   integrity sha512-SyHy3T1v2NUXn29OsWdxmK6RwHD+vkj3v8en8AOBZ1wBQ/hCAQ5bAQTD02kW4W9tUp/3Qh6J8r9EvntiyCmOOw==
 
-gl-matrix@^3.4.3, gl-matrix@~3.4.3:
+gl-matrix@^3.4.3:
   version "3.4.3"
   resolved "https://registry.yarnpkg.com/gl-matrix/-/gl-matrix-3.4.3.tgz#fc1191e8320009fd4d20e9339595c6041ddc22c9"
   integrity sha512-wcCp8vu8FT22BnvKVPjXa/ICBWRq/zjFfdofZy1WSpQZpphblv12/bOQLBC1rMM7SGOFS9ltVmKOHil5+Ml7gA==
@@ -7881,10 +7871,10 @@ natural-compare@^1.4.0:
   resolved "https://registry.yarnpkg.com/natural-compare/-/natural-compare-1.4.0.tgz#4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7"
   integrity sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==
 
-ndarray-lanczos@^0.1.2:
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/ndarray-lanczos/-/ndarray-lanczos-0.1.2.tgz#7fc9d8d6f47bfff66610068393289b4762b0d043"
-  integrity sha512-o3dCYwaN0q4rDrhFx+1eMnyn3FIVL66xbpbKpuWb4UtGAwdgRWFc1iWyeCs8aW7fAklkJxLvqAnxDtiRB+Yf4g==
+ndarray-lanczos@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/ndarray-lanczos/-/ndarray-lanczos-0.2.0.tgz#b582420b13e3ea50ce0e04422f471c60a8aeac33"
+  integrity sha512-KkE+NPPBZ4DPXh9rAQpmI/FyEqc3y0GsznYbDWRzxR/XBtuUmWcdVLYuGh9MNjuzp/BOTyS883OsEPKtesQghA==
   dependencies:
     "@types/ndarray" "^1.0.10"
     ndarray "^1.0.19"
@@ -8591,12 +8581,7 @@ prop-types@^15.5.7, prop-types@^15.8.1:
     object-assign "^4.1.1"
     react-is "^16.13.1"
 
-property-graph@^0.2.6:
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/property-graph/-/property-graph-0.2.6.tgz#add988a436745936d4b2ae19f747f2556296c828"
-  integrity sha512-QiBHxNZlwIarbkxsqCY688aP1ANbwtoQFBYgTZopQ0Bvku6/EYp3H4KH0ygxkhWQbJv5DEONspLy1rHi5xIycg==
-
-property-graph@^1.0.3:
+property-graph@^1.0.0, property-graph@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/property-graph/-/property-graph-1.0.3.tgz#b10d7578856fb187987f1fd765639edb6224b556"
   integrity sha512-LhNLXmbUfWio8R6H+KEzhnQ9EYmo7/qe7v9jmZuvkZPgIdLhRNPSP1wrfUG0hJhamT9u0bRSfIKJxSKfotQ+zQ==

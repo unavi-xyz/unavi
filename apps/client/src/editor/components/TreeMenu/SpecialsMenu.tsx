@@ -47,9 +47,9 @@ export default function SpecialsMenu() {
         <div className={spawn ? "font-bold" : ""}>({spawn ? 1 : 0}/1)</div>
       </DropdownItem>
 
-      <DropdownItem asChild>
+      <DropdownItem className="outline-none focus:bg-neutral-200">
         <label
-          onPointerUp={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
           htmlFor={id}
           className="flex w-full items-center whitespace-nowrap px-6 py-0.5 outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
         >

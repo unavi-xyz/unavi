@@ -11,7 +11,7 @@ import {
 import { Engine } from "../Engine";
 import { BehaviorScene } from "./BehaviorScene";
 
-const TICK_HZ = 30;
+const TICK_HZ = 60;
 
 export class BehaviorModule {
   #engine: Engine;

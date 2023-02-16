@@ -121,7 +121,10 @@ export class KeyboardInput {
   #onKeyDown = (event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
 
-    if (event.shiftKey) this.#module.engine.physics.send({ subject: "set_sprinting", data: true });
+    if (event.shiftKey) {
+      this.#module.engine.render.send({ subject: "set_sprinting", data: true });
+      this.#module.engine.physics.send({ subject: "set_sprinting", data: true });
+    }
 
     switch (key) {
       case "w": {
@@ -184,8 +187,10 @@ export class KeyboardInput {
   #onKeyUp = (event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
 
-    if (!event.shiftKey)
+    if (!event.shiftKey) {
+      this.#module.engine.render.send({ subject: "set_sprinting", data: false });
       this.#module.engine.physics.send({ subject: "set_sprinting", data: false });
+    }
 
     switch (key) {
       case "w": {
@@ -291,6 +296,7 @@ export class KeyboardInput {
 
     this.#updateVelocity();
 
+    this.#module.engine.render.send({ subject: "set_sprinting", data: false });
     this.#module.engine.physics.send({ subject: "set_sprinting", data: false });
 
     if (this.#jumpInterval !== null) {

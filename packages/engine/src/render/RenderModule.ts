@@ -57,6 +57,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     this.send({
       subject: "set_user_arrays",
       data: {
+        inputPosition: engine.inputPosition,
         inputRotation: engine.inputRotation,
         userPosition: engine.userPosition,
         userRotation: engine.userRotation,

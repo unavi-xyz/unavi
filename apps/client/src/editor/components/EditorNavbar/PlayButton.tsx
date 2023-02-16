@@ -18,6 +18,8 @@ export default function PlayButton() {
       engine.behavior.stop();
       engine.controls = "orbit";
 
+      engine.physics.send({ subject: "stop", data: null });
+
       // Reset scene
       if (scene) {
         engine.scene.clear();
@@ -37,6 +39,7 @@ export default function PlayButton() {
       // Enter play mode
       engine.controls = "player";
       engine.physics.send({ subject: "respawn", data: null });
+      engine.physics.send({ subject: "start", data: null });
       engine.behavior.start();
 
       useEditorStore.setState({ isPlaying: true });

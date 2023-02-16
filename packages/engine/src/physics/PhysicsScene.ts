@@ -176,20 +176,20 @@ export class PhysicsScene extends Scene {
 
             const vertices = mesh.listPrimitives().flatMap((primitive) => {
               const attribute = primitive.getAttribute("POSITION");
-              if (!attribute) throw new Error("Position attribute not found");
+              if (!attribute) return [];
 
               const array = attribute.getArray();
-              if (!array) throw new Error("Position attribute array not found");
+              if (!array) return [];
 
               return Array.from(array);
             });
 
             const indices = mesh.listPrimitives().flatMap((primitive) => {
               const indicesAttribute = primitive.getIndices();
-              if (!indicesAttribute) throw new Error("Indices attribute not found");
+              if (!indicesAttribute) return [];
 
               const array = indicesAttribute.getArray();
-              if (!array) throw new Error("Indices attribute array not found");
+              if (!array) return [];
 
               return Array.from(array);
             });

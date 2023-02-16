@@ -10,6 +10,7 @@
     "lint": "cd ../.. && eslint --fix packages/engine --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
+    "@behave-graph/core": "^0.9.13",
     "@dimforge/rapier3d": "^0.11.1",
     "@gltf-transform/core": "2.5.1",
     "@gltf-transform/extensions": "2.5.1",
@@ -18,7 +19,6 @@
     "contracts": "*",
     "nanoid": "^4.0.1",
     "property-graph": "^1.0.3",
-    "rxjs": "^7.8.0",
     "three": "^0.148.0",
     "zod": "^3.20.6"
   },

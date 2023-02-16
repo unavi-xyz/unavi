@@ -107,13 +107,8 @@ export class Meshes extends Attribute<Mesh, MeshJSON> {
       }
     }
 
-    if (json.weights) {
-      mesh.setWeights(json.weights);
-    }
-
-    if (json.extras) {
-      mesh.setExtras(json.extras);
-    }
+    if (json.weights) mesh.setWeights(json.weights);
+    if (json.extras) mesh.setExtras(json.extras);
   }
 
   toJSON(mesh: Mesh): MeshJSON {

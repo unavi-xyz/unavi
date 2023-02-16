@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 
 import { useEditorStore } from "../store";
 
-export function useNodeAttribute<T extends keyof NodeJSON>(id: string | null, attribute: T) {
+export function useNodeAttribute<T extends keyof NodeJSON>(
+  id: string | null | undefined,
+  attribute: T
+) {
   const engine = useEditorStore((state) => state.engine);
 
   const [value, setValue] = useState<NodeJSON[T] | null>(null);

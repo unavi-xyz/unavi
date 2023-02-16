@@ -38,8 +38,10 @@ export function useSpace(id: number) {
 
       setSceneDownloaded(true);
 
-      await engine.scene.loadBinary(array);
+      await engine.scene.addBinary(array);
+
       engine.physics.send({ subject: "respawn", data: null });
+      engine.behavior.start();
 
       setSceneLoaded(true);
     };

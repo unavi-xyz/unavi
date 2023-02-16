@@ -3,8 +3,8 @@ import Link from "next/link";
 import { GetServerSidePropsContext } from "next/types";
 
 import { trpc } from "../client/trpc";
-import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
+import { getNavbarLayout } from "../home/NavbarLayout/NavbarLayout";
 import SpaceCard from "../home/SpaceCard";
 import { prisma } from "../server/prisma";
 import { appRouter } from "../server/router/_app";
@@ -51,14 +51,14 @@ export default function Explore() {
     <>
       <MetaTags title="Explore" />
 
-      <div className="mx-4 flex justify-center py-8">
-        <div className="max-w-content space-y-8">
-          <div className="flex justify-center text-3xl font-black">Explore</div>
+      <div className="flex justify-center">
+        <div className="max-w-content mx-4 space-y-8 py-8">
+          <div className="text-center text-3xl font-black">Explore</div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {spaces?.map(({ id, metadata }) => {
               return (
-                <Link href={`/space/${numberToHexDisplay(id)}`} key={id}>
+                <Link href={`/space/${numberToHexDisplay(id)}`} key={id} className="rounded-xl">
                   <SpaceCard id={id} metadata={metadata} animateEnter />
                 </Link>
               );

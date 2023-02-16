@@ -27,7 +27,7 @@ export class Collider extends ExtensionProperty<ICollider> {
     TRIMESH: "trimesh",
   };
 
-  protected init(): void {
+  protected init() {
     this.extensionName = EXTENSION_NAME;
     this.propertyType = PROPERTY_TYPE;
     this.parentTypes = [PropertyType.NODE];
@@ -43,7 +43,7 @@ export class Collider extends ExtensionProperty<ICollider> {
     });
   }
 
-  get type(): ColliderType {
+  get type() {
     return this.get("type");
   }
 
@@ -51,7 +51,7 @@ export class Collider extends ExtensionProperty<ICollider> {
     this.set("type", type);
   }
 
-  get size(): Vec3 | null {
+  get size() {
     return this.get("size");
   }
 
@@ -59,7 +59,7 @@ export class Collider extends ExtensionProperty<ICollider> {
     this.set("size", size);
   }
 
-  get radius(): number | null {
+  get radius() {
     return this.get("radius");
   }
 
@@ -67,7 +67,7 @@ export class Collider extends ExtensionProperty<ICollider> {
     this.set("radius", radius);
   }
 
-  get height(): number | null {
+  get height() {
     return this.get("height");
   }
 
@@ -75,7 +75,7 @@ export class Collider extends ExtensionProperty<ICollider> {
     this.set("height", height);
   }
 
-  get mesh(): Mesh | null {
+  get mesh() {
     return this.getRef("mesh");
   }
 

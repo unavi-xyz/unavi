@@ -29,7 +29,7 @@ export default function FileInput({
     <div className="flex flex-col space-y-1">
       <label
         htmlFor={id}
-        className="block cursor-pointer rounded-lg transition hover:bg-neutral-200 active:opacity-80"
+        className="block cursor-pointer rounded-lg bg-neutral-100 transition hover:bg-neutral-200 active:opacity-80"
       >
         <div className="flex items-center py-2.5 px-4">
           <div className="select-none border-r border-neutral-400 pr-4">Choose File</div>

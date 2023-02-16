@@ -6,6 +6,7 @@ import Split from "react-split";
 import { useResizeCanvas } from "../../app/hooks/useResizeCanvas";
 import EditorNavbar from "../../editor/components/EditorNavbar/EditorNavbar";
 import InspectMenu from "../../editor/components/InspectMenu/InspectMenu";
+import ScriptMenu from "../../editor/components/ScriptMenu/ScriptMenu";
 import TreeMenu from "../../editor/components/TreeMenu/TreeMenu";
 import { useAutosave } from "../../editor/hooks/useAutosave";
 import { useEditorHotkeys } from "../../editor/hooks/useEditorHotkeys";
@@ -22,6 +23,7 @@ export default function Editor() {
 
   const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
+  const openScriptId = useEditorStore((state) => state.openScriptId);
   const [scriptsReady, setScriptsReady] = useState(false);
 
   const resize = useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
@@ -33,18 +35,21 @@ export default function Editor() {
   useEffect(() => {
     if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;
 
+    const { visuals } = useEditorStore.getState();
+
     const engine = new Engine({
       canvas: canvasRef.current,
       overlayCanvas: overlayRef.current,
     });
+
     engine.controls = "orbit";
-    engine.visuals = true;
+    engine.visuals = visuals;
 
     engine.render.send({ subject: "set_animations_path", data: "/models" });
     engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
     engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
 
-    useEditorStore.setState({ engine, canvas: canvasRef.current, visuals: true });
+    useEditorStore.setState({ engine, canvas: canvasRef.current });
 
     return () => {
       engine.destroy();
@@ -52,11 +57,19 @@ export default function Editor() {
         engine: null,
         canvas: null,
         selectedId: null,
+        draggingId: null,
+        openScriptId: null,
+        isPlaying: false,
+        isSaving: false,
         treeIds: [],
         openIds: [],
       });
     };
   }, [scriptsReady]);
+
+  useEffect(() => {
+    resize();
+  }, [resize, openScriptId]);
 
   const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
 
@@ -67,7 +80,7 @@ export default function Editor() {
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
 
       <div
-        className="absolute top-0 left-0 h-full w-full overflow-hidden"
+        className="h-full w-full"
         onDragOver={(e) => e.preventDefault()}
         onDrop={async (e) => {
           if (!engine) return;
@@ -86,44 +99,57 @@ export default function Editor() {
           await engine.scene.addFile(file);
         }}
       >
-        <div className="z-10 h-14 w-full border-b">
+        <div className="h-12 w-full border-b">
           <EditorNavbar />
         </div>
 
-        <Split
-          sizes={[15, 65, 20]}
-          minSize={[50, 400, 50]}
-          direction="horizontal"
-          gutterSize={4}
-          className="flex h-full"
-          onMouseUp={resize}
-        >
-          <div>
-            <TreeMenu />
-          </div>
+        <div className="fixed h-full w-full">
+          <Split
+            sizes={openScriptId ? [50, 50] : [100, 0]}
+            minSize={openScriptId ? [250, 250] : [250, 0]}
+            direction="vertical"
+            gutterSize={8}
+            className="h-full w-full"
+            onMouseUp={resize}
+          >
+            <Split
+              sizes={[15, 65, 20]}
+              minSize={[50, 400, 50]}
+              direction="horizontal"
+              gutterSize={4}
+              className={`flex w-full ${openScriptId ? "h-1/2" : "h-full"}`}
+              onMouseUp={resize}
+            >
+              <div>
+                <TreeMenu />
+              </div>
 
-          <div className="border-x">
-            <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-              {!sceneLoaded && (
-                <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
-                  <div className="flex h-full  flex-col items-center justify-center">
-                    <Spinner />
-                  </div>
+              <div className="border-x">
+                <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+                  {!sceneLoaded && (
+                    <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+                      <div className="flex h-full flex-col items-center justify-center">
+                        <Spinner />
+                      </div>
+                    </div>
+                  )}
+
+                  <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
+                  <canvas
+                    ref={overlayRef}
+                    className={`absolute top-0 left-0 z-10 h-full w-full transition ${loadedClass}`}
+                  />
                 </div>
-              )}
+              </div>
 
-              <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
-              <canvas
-                ref={overlayRef}
-                className={`absolute top-0 left-0 z-10 h-full w-full transition ${loadedClass}`}
-              />
-            </div>
-          </div>
+              <div className="overflow-y-auto">
+                <InspectMenu />
+              </div>
+            </Split>
 
-          <div>
-            <InspectMenu />
-          </div>
-        </Split>
+            <div>{openScriptId && <ScriptMenu key={openScriptId} scriptId={openScriptId} />}</div>
+          </Split>
+        </div>
       </div>
     </>
   );

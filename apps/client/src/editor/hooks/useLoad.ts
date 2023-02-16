@@ -55,7 +55,7 @@ export function useLoad() {
       const array = new Uint8Array(buffer);
 
       try {
-        await engine.scene.loadBinary(array);
+        await engine.scene.addBinary(array);
       } catch (err) {
         console.error(err);
       }

@@ -8,11 +8,11 @@ export function useAnimateOnEnter() {
         if (entry.target instanceof HTMLElement) {
           // Is the element in the viewport?
           if (entry.isIntersecting) {
-            // Add the fadeIn class:
-            entry.target.classList.add("motion-safe:animate-fadeInSlow");
+            // Add the floatIn class:
+            entry.target.classList.add("motion-safe:animate-floatInSlow");
           } else if (window.scrollY < entry.target.offsetTop) {
             // Otherwise remove the fadein class
-            entry.target.classList.remove("motion-safe:animate-fadeInSlow");
+            entry.target.classList.remove("motion-safe:animate-floatInSlow");
           }
         }
       });

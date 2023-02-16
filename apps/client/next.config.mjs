@@ -46,6 +46,17 @@ const securityHeaders = [
   },
 ];
 
+const isolationHeaders = [
+  {
+    key: "Cross-Origin-Opener-Policy",
+    value: "same-origin",
+  },
+  {
+    key: "Cross-Origin-Embedder-Policy",
+    value: "require-corp",
+  },
+];
+
 /**
  * Don't be scared of the generics here.
  * All they do is to give us autocompletion when using this.
@@ -73,17 +84,7 @@ export default defineNextConfig({
     return [
       {
         source: "/:path*",
-        headers: [
-          {
-            key: "Cross-Origin-Opener-Policy",
-            value: "same-origin",
-          },
-          {
-            key: "Cross-Origin-Embedder-Policy",
-            value: "require-corp",
-          },
-          ...securityHeaders,
-        ],
+        headers: [...securityHeaders, ...isolationHeaders],
       },
     ];
   },

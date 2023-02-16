@@ -6,8 +6,8 @@ import { useSession } from "../client/auth/useSession";
 import { trpc } from "../client/trpc";
 import { env } from "../env/client.mjs";
 import CreateProjectPage from "../home/CreateProjectPage";
-import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
+import { getNavbarLayout } from "../home/NavbarLayout/NavbarLayout";
 import Card from "../ui/Card";
 import Dialog from "../ui/Dialog";
 
@@ -49,13 +49,13 @@ export default function Spaces() {
     <>
       <MetaTags title="Create" />
 
-      <Dialog open={openCreateProject} onClose={() => setOpenCreateProject(false)}>
+      <Dialog open={openCreateProject} onOpenChange={setOpenCreateProject} title="Create Project">
         <CreateProjectPage />
       </Dialog>
 
-      <div className="mx-4 flex justify-center py-8">
-        <div className="max-w-content space-y-8">
-          <div className="flex justify-center text-3xl font-black">Create</div>
+      <div className="flex justify-center">
+        <div className="max-w-content mx-4 space-y-4 py-8">
+          <div className="text-center text-3xl font-black">Create</div>
 
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">⚒️ Projects</div>
@@ -74,7 +74,7 @@ export default function Spaces() {
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {authenticated ? (
               status === "success" && unpublishedProjects.length > 0 ? (
                 unpublishedProjects.map(({ id, name, image }) => (
@@ -103,9 +103,9 @@ export default function Spaces() {
 
           {authState === "authenticated" && status === "success" && publishedProjects.length > 0 ? (
             <>
-              <div className="text-2xl font-bold">🌍 Published</div>
+              <div className="pt-4 text-2xl font-bold">🌍 Published</div>
 
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {publishedProjects.map(({ id, name }, i) => (
                   <Link key={id} href={`/project/${id}`}>
                     <Card text={name} image={publishedImages[i]} sizes="333px" animateEnter />

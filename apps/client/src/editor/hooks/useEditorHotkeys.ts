@@ -63,10 +63,10 @@ export function useEditorHotkeys() {
         }
       }
     }
-
-    document.addEventListener("keydown", handleKeyDown);
+    // TODO: only use hotkeys when relevant area is focused
+    // document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      // document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 }

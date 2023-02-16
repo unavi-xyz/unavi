@@ -1,3 +1,4 @@
+export * from "./behavior";
 export * from "./constants";
 export * from "./Engine";
 export * from "./gltf";

@@ -13,7 +13,7 @@ export class SpawnPoint extends ExtensionProperty<ISpawnPoint> {
   declare propertyType: typeof PROPERTY_TYPE;
   declare parentTypes: [PropertyType.NODE];
 
-  protected init(): void {
+  protected init() {
     this.extensionName = EXTENSION_NAME;
     this.propertyType = PROPERTY_TYPE;
     this.parentTypes = [PropertyType.NODE];
@@ -25,7 +25,7 @@ export class SpawnPoint extends ExtensionProperty<ISpawnPoint> {
     });
   }
 
-  get title(): string {
+  get title() {
     return this.get("title");
   }
 

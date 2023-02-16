@@ -1,6 +1,7 @@
 import { SPAWN_TITLES, SpawnPointExtension } from "engine";
 import { useId } from "react";
 
+import { DropdownItem } from "../../../ui/DropdownMenu";
 import { useSpawn } from "../../hooks/useSpawn";
 import { useEditorStore } from "../../store";
 
@@ -37,20 +38,24 @@ export default function SpecialsMenu() {
   }
 
   return (
-    <div className="space-y-0.5 p-2">
-      <button
+    <div className="py-2">
+      <DropdownItem
         onClick={() => addObject("Spawn")}
-        className="flex w-full items-center space-x-2 whitespace-nowrap rounded-lg px-4 py-0.5 transition hover:bg-neutral-200"
+        className="flex w-full cursor-default items-center space-x-2 whitespace-nowrap px-6 outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
       >
-        <span>Spawn</span>
-        <span className={spawn ? "font-bold" : ""}>({spawn ? 1 : 0}/1)</span>
-      </button>
+        <div>Spawn</div>
+        <div className={spawn ? "font-bold" : ""}>({spawn ? 1 : 0}/1)</div>
+      </DropdownItem>
 
-      <label onPointerUp={(e) => e.stopPropagation()} htmlFor={id}>
-        <div className="flex w-full cursor-pointer items-center whitespace-nowrap rounded-lg px-4 py-0.5 transition hover:bg-neutral-200">
+      <DropdownItem className="outline-none focus:bg-neutral-200">
+        <label
+          onClick={(e) => e.stopPropagation()}
+          htmlFor={id}
+          className="flex w-full items-center whitespace-nowrap px-6 outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+        >
           Import glTF
-        </div>
-      </label>
+        </label>
+      </DropdownItem>
 
       <input
         id={id}

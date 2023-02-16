@@ -428,6 +428,9 @@ export class RenderScene extends Scene {
         }
 
         if (customMesh) {
+          customMesh.castShadow = true;
+          customMesh.receiveShadow = true;
+
           // Create new primitive
           const positions = customMesh.geometry.getAttribute("position");
           const indices = customMesh.geometry.getIndex();

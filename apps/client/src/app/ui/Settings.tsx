@@ -14,7 +14,11 @@ import { useAppStore } from "../store";
 import { avatarPerformanceRank } from "../utils/avatarPerformanceRank";
 import { clientGetModelStats } from "../utils/clientGetModelStats";
 
-export default function Settings() {
+interface Props {
+  onClose: () => void;
+}
+
+export default function Settings({ onClose }: Props) {
   const nickname = useAppStore((state) => state.nickname);
   const avatar = useAppStore((state) => state.avatar);
   const playerId = useAppStore((state) => state.playerId);
@@ -176,7 +180,9 @@ export default function Settings() {
           </div>
         ) : (
           <div className="flex justify-center">
-            <SignInButton />
+            <div onClick={onClose}>
+              <SignInButton />
+            </div>
           </div>
         )}
       </section>

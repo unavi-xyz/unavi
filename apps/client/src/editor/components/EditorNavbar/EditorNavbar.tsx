@@ -3,8 +3,10 @@ import { useState } from "react";
 import { FaPlay, FaStop } from "react-icons/fa";
 import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew } from "react-icons/md";
+import { useSigner } from "wagmi";
 
 import { trpc } from "../../../client/trpc";
+import SignInButton from "../../../home/NavbarLayout/SignInButton";
 import Button from "../../../ui/Button";
 import Dialog from "../../../ui/Dialog";
 import IconButton from "../../../ui/IconButton";
@@ -30,6 +32,7 @@ export default function EditorNavbar() {
   const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
 
   const { save, saveImage } = useSave();
+  const { data: signer } = useSigner();
 
   function handleToggleColliders() {
     const { engine } = useEditorStore.getState();
@@ -117,7 +120,7 @@ export default function EditorNavbar() {
             </Tooltip>
           </div>
 
-          <Button onClick={handleOpenPublish}>Publish</Button>
+          {signer ? <Button onClick={handleOpenPublish}>Publish</Button> : <SignInButton />}
         </div>
       </div>
     </>

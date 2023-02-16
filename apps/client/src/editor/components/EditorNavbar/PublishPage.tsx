@@ -1,4 +1,3 @@
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -38,7 +37,6 @@ export default function PublishPage() {
 
   const { data: session } = useSession();
   const { data: signer } = useSigner();
-  const { openConnectModal } = useConnectModal();
   const { save } = useSave();
   const utils = trpc.useContext();
 
@@ -66,12 +64,7 @@ export default function PublishPage() {
   }, [imageFile, imageURL]);
 
   function handlePublish() {
-    if (loading) return;
-
-    if (!signer) {
-      if (openConnectModal) openConnectModal();
-      return;
-    }
+    if (loading || !signer) return;
 
     async function publishProject() {
       if (!signer) throw new Error("Signer not found");
@@ -224,7 +217,7 @@ export default function PublishPage() {
 
       <div className="flex justify-end">
         <Button disabled={loading} onClick={handlePublish}>
-          {signer ? "Submit" : "Sign In"}
+          Submit
         </Button>
       </div>
     </div>

@@ -18,7 +18,7 @@ import Settings from "./Settings";
 
 export default function Overlay() {
   const engine = useAppStore((state) => state.engine);
-  const [openUserPage, setOpenUserPage] = useState(false);
+  const [openSettings, setOpenSettings] = useState(false);
   const [muted, setMuted] = useState(true);
   const hasProducedAudio = useRef(false);
 
@@ -36,7 +36,7 @@ export default function Overlay() {
   }, [session, utils]);
 
   async function handleClose() {
-    setOpenUserPage(false);
+    setOpenSettings(false);
     if (!engine) return;
 
     const { didChangeName, didChangeAvatar, nickname, avatar, playerId, players } =
@@ -113,18 +113,18 @@ export default function Overlay() {
   return (
     <>
       <Dialog
-        open={openUserPage}
+        open={openSettings}
         onOpenChange={(open) => {
           if (!open) handleClose();
         }}
         title="Settings"
       >
-        <Settings />
+        <Settings onClose={handleClose} />
       </Dialog>
 
       <div className="absolute top-0 left-0 z-20 p-4">
         <Link href={`/space/${id}`}>
-          <div className="rounded-full bg-white/60 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80">
+          <div className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80">
             <IoMdArrowRoundBack />
           </div>
         </Link>
@@ -133,13 +133,13 @@ export default function Overlay() {
       <div className="absolute top-0 right-0 z-20 space-x-2 p-4">
         <button
           onClick={handleMic}
-          className="rounded-full bg-white/60 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
+          className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
         >
           {muted ? <MdMicOff className="text-red-700" /> : <MdMic />}
         </button>
         <button
-          onClick={() => setOpenUserPage(true)}
-          className="rounded-full bg-white/60 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
+          onClick={() => setOpenSettings(true)}
+          className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
         >
           <IoMdSettings />
         </button>

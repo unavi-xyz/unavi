@@ -121,7 +121,7 @@ export default function TreeRoot() {
 
   return (
     <ContextMenu.Root>
-      <div onMouseDown={() => useEditorStore.setState({ selectedId: null })} className="h-full">
+      <div onClick={() => useEditorStore.setState({ selectedId: null })} className="h-full">
         <ContextMenu.Trigger>
           {visibleIds.map((id) => {
             return <TreeItem key={id} id={id} />;

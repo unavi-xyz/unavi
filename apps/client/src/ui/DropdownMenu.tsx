@@ -1,69 +1,31 @@
-import { useEffect, useRef, useState } from "react";
+import * as DropdownPrimitive from "@radix-ui/react-dropdown-menu";
+import React from "react";
 
-interface Props {
-  open?: boolean;
-  onClose?: () => void;
-  placement?: "left" | "right";
-  fullWidth?: boolean;
-  children: React.ReactNode;
+interface Props extends DropdownPrimitive.DropdownMenuProps {
+  open: boolean;
 }
 
-export default function DropdownMenu({
-  open = false,
-  onClose,
-  placement = "left",
-  fullWidth = false,
-  children,
-}: Props) {
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    // Add a delay before unmounting the menu so we can show animations
-    const timeout = setTimeout(() => setVisible(open), 150);
-
-    // Don't add the delay on open
-    if (open) {
-      setVisible(true);
-      clearTimeout(timeout);
-    }
-
-    // Open close animations
-    if (open) {
-      menuRef.current?.classList.remove("scale-75");
-      menuRef.current?.classList.remove("opacity-0");
-    } else {
-      menuRef.current?.classList.add("opacity-0");
-      menuRef.current?.classList.add("scale-75");
-    }
-
-    return () => clearTimeout(timeout);
-  }, [open]);
-
-  useEffect(() => {
-    // If the user clicks outside of the dropdown, close it
-    function onPointerUp() {
-      if (open && onClose) onClose();
-    }
-
-    document.addEventListener("pointerup", onPointerUp);
-    return () => {
-      document.removeEventListener("pointerup", onPointerUp);
-    };
-  }, [onClose, open]);
-
-  const placementClass = placement === "left" ? "left-0" : "right-0";
-  const fullWidthClass = fullWidth ? "w-full" : "";
-
-  return (
-    <div className="relative">
-      <div
-        ref={menuRef}
-        className={`absolute z-10 scale-75 rounded-lg bg-white opacity-0 shadow transition ${fullWidthClass} ${placementClass}`}
+export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
+  ({ open, children, ...rest }, ref) => {
+    return (
+      <DropdownPrimitive.Content
+        ref={ref}
+        sideOffset={8}
+        className={`z-40 rounded-lg bg-white shadow ${
+          open ? "animate-scaleIn" : "animate-scaleOut"
+        }`}
+        {...rest}
       >
-        {visible && children}
-      </div>
-    </div>
-  );
-}
+        {children}
+      </DropdownPrimitive.Content>
+    );
+  }
+);
+
+DropdownContent.displayName = "DropdownContent";
+
+export const DropdownMenu = DropdownPrimitive.Root;
+export const DropdownTrigger = DropdownPrimitive.Trigger;
+export const DropdownItem = DropdownPrimitive.Item;
+
+export type DropdownMenuItemProps = DropdownPrimitive.DropdownMenuItemProps;

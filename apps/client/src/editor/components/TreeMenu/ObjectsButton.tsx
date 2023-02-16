@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { HiOutlineCube } from "react-icons/hi";
 
-import DropdownMenu from "../../../ui/DropdownMenu";
+import { DropdownContent, DropdownMenu, DropdownTrigger } from "../../../ui/DropdownMenu";
 import IconButton from "../../../ui/IconButton";
 import ObjectsMenu from "./ObjectsMenu";
 
@@ -9,16 +9,16 @@ export default function ObjectsButton() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="aspect-square h-full">
-      <IconButton onClick={() => setOpen((prev) => !prev)}>
-        <HiOutlineCube className="text-2xl" />
-      </IconButton>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownTrigger asChild>
+        <IconButton>
+          <HiOutlineCube className="text-2xl" />
+        </IconButton>
+      </DropdownTrigger>
 
-      <div className="mt-1">
-        <DropdownMenu open={open} onClose={() => setOpen(false)}>
-          <ObjectsMenu />
-        </DropdownMenu>
-      </div>
-    </div>
+      <DropdownContent open={open}>
+        <ObjectsMenu />
+      </DropdownContent>
+    </DropdownMenu>
   );
 }

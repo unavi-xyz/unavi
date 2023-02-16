@@ -1,5 +1,6 @@
 import { MeshExtras } from "engine";
 
+import { DropdownItem } from "../../../ui/DropdownMenu";
 import { useEditorStore } from "../../store";
 
 const OBJECT_NAME = {
@@ -15,7 +16,6 @@ export default function ObjectsMenu() {
   function addObject(name: ObjectName) {
     // Create node
     const id = createNode(name);
-
     // Select new node
     useEditorStore.setState({ selectedId: id });
   }
@@ -23,13 +23,13 @@ export default function ObjectsMenu() {
   return (
     <div className="py-2">
       {Object.values(OBJECT_NAME).map((name) => (
-        <button
+        <DropdownItem
           key={name}
           onClick={() => addObject(name)}
-          className="flex w-full cursor-default items-center whitespace-nowrap px-6 py-0.5 hover:bg-neutral-200 active:opacity-80"
+          className="flex w-full cursor-default items-center whitespace-nowrap px-6 py-0.5 outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
         >
           {name}
-        </button>
+        </DropdownItem>
       ))}
     </div>
   );

@@ -3,7 +3,13 @@ import { nanoid } from "nanoid";
 import { useState } from "react";
 
 import Button from "../../../ui/Button";
-import DropdownMenu from "../../../ui/DropdownMenu";
+import {
+  DropdownContent,
+  DropdownItem,
+  DropdownMenu,
+  DropdownMenuItemProps,
+  DropdownTrigger,
+} from "../../../ui/DropdownMenu";
 import { useNode } from "../../hooks/useNode";
 import { useNodeAttribute } from "../../hooks/useNodeAttribute";
 import { useSpawn } from "../../hooks/useSpawn";
@@ -68,12 +74,12 @@ export default function InspectMenu() {
 
         {availableComponents.length > 0 && (
           <div className="flex w-full justify-center">
-            <div className="space-y-1">
-              <Button onClick={() => setOpen(true)} className="rounded-lg px-8">
-                Add Component
-              </Button>
+            <DropdownMenu open={open} onOpenChange={setOpen}>
+              <DropdownTrigger asChild>
+                <Button className="rounded-lg px-8">Add Component</Button>
+              </DropdownTrigger>
 
-              <DropdownMenu open={open} onClose={() => setOpen(false)} fullWidth>
+              <DropdownContent open={open}>
                 <div className="py-2">
                   {availableComponents.includes("Mesh") && (
                     <ComponentButton
@@ -148,8 +154,8 @@ export default function InspectMenu() {
                     </ComponentButton>
                   )}
                 </div>
-              </DropdownMenu>
-            </div>
+              </DropdownContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
@@ -157,13 +163,13 @@ export default function InspectMenu() {
   );
 }
 
-function ComponentButton({ children, ...props }: any) {
+function ComponentButton({ children, ...props }: DropdownMenuItemProps) {
   return (
-    <button
-      className="w-full cursor-default px-6 text-left transition hover:bg-neutral-200 active:opacity-80"
+    <DropdownItem
+      className="w-full cursor-default px-10 text-left outline-none transition hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
       {...props}
     >
       {children}
-    </button>
+    </DropdownItem>
   );
 }

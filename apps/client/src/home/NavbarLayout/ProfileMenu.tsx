@@ -4,8 +4,8 @@ import { MdLogout, MdOutlinePersonOutline, MdOutlineSettings } from "react-icons
 import { useLogout } from "../../client/auth/useLogout";
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
+import { DropdownItem } from "../../ui/DropdownMenu";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
-import ProfileMenuButton from "./ProfileMenuButton";
 
 interface Props {
   includeExternal?: boolean;
@@ -23,24 +23,38 @@ export default function ProfileMenu({ includeExternal = true }: Props) {
   return (
     <div className="py-2">
       {includeExternal && (
-        <Link href={`/user/${profile?.id ? numberToHexDisplay(profile.id) : session?.address}`}>
-          <div className="w-full">
-            <ProfileMenuButton icon={<MdOutlinePersonOutline />}>Your Profile</ProfileMenuButton>
-          </div>
-        </Link>
+        <DropdownItem asChild>
+          <Link
+            href={`/user/${profile?.id ? numberToHexDisplay(profile.id) : session?.address}`}
+            draggable={false}
+            className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none transition hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+          >
+            <MdOutlinePersonOutline className="mr-2 text-lg" />
+            <div>Your Profile</div>
+          </Link>
+        </DropdownItem>
       )}
 
       {includeExternal && (
-        <Link href="/settings">
-          <div className="w-full">
-            <ProfileMenuButton icon={<MdOutlineSettings />}>Settings</ProfileMenuButton>
-          </div>
-        </Link>
+        <DropdownItem asChild>
+          <Link
+            href="/settings"
+            draggable={false}
+            className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none transition hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+          >
+            <MdOutlineSettings className="mr-2 text-lg" />
+            <div>Settings</div>
+          </Link>
+        </DropdownItem>
       )}
 
-      <button onClick={logout} className="w-full">
-        <ProfileMenuButton icon={<MdLogout />}>Log Out</ProfileMenuButton>
-      </button>
+      <DropdownItem
+        onClick={logout}
+        className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none transition hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+      >
+        <MdLogout className="mr-2 text-lg" />
+        <div>Log Out</div>
+      </DropdownItem>
     </div>
   );
 }

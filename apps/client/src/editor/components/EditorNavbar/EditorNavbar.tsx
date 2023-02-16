@@ -1,7 +1,5 @@
 import { useRouter } from "next/router";
 import { useState } from "react";
-import { FaPlay, FaStop } from "react-icons/fa";
-import { HiCubeTransparent } from "react-icons/hi";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { useSigner } from "wagmi";
 
@@ -9,59 +7,30 @@ import { trpc } from "../../../client/trpc";
 import SignInButton from "../../../home/NavbarLayout/SignInButton";
 import Button from "../../../ui/Button";
 import Dialog from "../../../ui/Dialog";
-import IconButton from "../../../ui/IconButton";
-import Tooltip from "../../../ui/Tooltip";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import AutoGrowInput from "../ui/AutoGrowInput";
+import PlayButton from "./PlayButton";
 import PublishPage from "./PublishPage";
 import ToolButtons from "./ToolButtons";
 import UpdatePage from "./UpdatePage";
+import VisualsButton from "./VisualsButton";
 
 export default function EditorNavbar() {
-  const router = useRouter();
-  const id = router.query.id as string;
-
-  const visuals = useEditorStore((state) => state.visuals);
   const name = useEditorStore((state) => state.name);
   const isSaving = useEditorStore((state) => state.isSaving);
-
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
-  const [playing, setPlaying] = useState(false);
-
-  const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
 
   const { save, saveImage } = useSave();
   const { data: signer } = useSigner();
+  const router = useRouter();
+  const id = router.query.id as string;
 
-  function handleToggleColliders() {
-    const { engine } = useEditorStore.getState();
-    if (!engine) return;
-
-    engine.visuals = !visuals;
-    useEditorStore.setState({ visuals: !visuals });
-  }
+  const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
 
   async function handleBack() {
     await save();
     router.push(`/project/${id}`);
-  }
-
-  function handlePlay() {
-    const { engine } = useEditorStore.getState();
-    if (!engine) return;
-
-    if (engine.controls === "player") {
-      setPlaying(false);
-      engine.controls = "orbit";
-      engine.behavior.stop();
-    } else {
-      setPlaying(true);
-      engine.controls = "player";
-      useEditorStore.setState({ selectedId: null });
-      engine.physics.send({ subject: "respawn", data: null });
-      engine.behavior.start();
-    }
   }
 
   async function handleOpenPublish() {
@@ -104,22 +73,8 @@ export default function EditorNavbar() {
         <ToolButtons />
 
         <div className="flex h-full w-full items-center justify-end space-x-2">
-          <div className="aspect-square h-full">
-            <Tooltip text={`${playing ? "Stop" : "Play"}`} side="bottom">
-              <IconButton onClick={handlePlay}>
-                {playing ? <FaStop className="text-sm" /> : <FaPlay className="text-sm" />}
-              </IconButton>
-            </Tooltip>
-          </div>
-
-          <div className="aspect-square h-full">
-            <Tooltip text={`${visuals ? "Hide" : "Show"} Visuals`} side="bottom">
-              <IconButton selected={visuals} onClick={handleToggleColliders}>
-                <HiCubeTransparent />
-              </IconButton>
-            </Tooltip>
-          </div>
-
+          <PlayButton />
+          <VisualsButton />
           {signer ? <Button onClick={handleOpenPublish}>Publish</Button> : <SignInButton />}
         </div>
       </div>

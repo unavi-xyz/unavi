@@ -5,9 +5,11 @@ import { Tool } from "./types";
 
 export interface IEditorStore {
   engine: Engine | null;
+
   canvas: HTMLCanvasElement | null;
   sceneLoaded: boolean;
   isSaving: boolean;
+  isPlaying: boolean;
 
   visuals: boolean;
   tool: Tool;
@@ -30,6 +32,7 @@ export const useEditorStore = create<IEditorStore>(() => ({
   canvas: null,
   sceneLoaded: false,
   isSaving: false,
+  isPlaying: false,
 
   visuals: true,
   tool: "translate",

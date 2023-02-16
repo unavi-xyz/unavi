@@ -33,7 +33,7 @@ export class Scene {
   mesh = new Meshes(this.doc, this.primitive);
   node = new Nodes(this);
 
-  loadDocument(doc: Document) {
+  addDocument(doc: Document) {
     this.doc.merge(doc);
 
     // Transfer behavior nodes

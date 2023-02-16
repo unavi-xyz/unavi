@@ -2,7 +2,7 @@ import { ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform
 import { DracoMeshCompression } from "@gltf-transform/extensions";
 
 import { Engine } from "../Engine";
-import { Collider, ColliderExtension } from "../gltf";
+import { BehaviorExtension, Collider, ColliderExtension, SpawnPointExtension } from "../gltf";
 import { extensions } from "../gltf/constants";
 import { PhysicsModule } from "../physics/PhysicsModule";
 import { RenderModule } from "../render/RenderModule";
@@ -75,10 +75,10 @@ export class SceneModule extends Scene {
     return await io.writeBinary(this.doc);
   }
 
-  async loadBinary(array: Uint8Array) {
+  async addBinary(array: Uint8Array) {
     const io = await this.#createIO();
     const doc = await io.readBinary(array);
-    this.loadDocument(doc);
+    this.addDocument(doc);
   }
 
   async addFile(file: File) {
@@ -115,7 +115,27 @@ export class SceneModule extends Scene {
         node.setExtension<Collider>(ColliderExtension.EXTENSION_NAME, meshCollider);
       });
 
-    this.loadDocument(doc);
+    this.addDocument(doc);
+  }
+
+  clear() {
+    this.node.store.forEach((node) => node.dispose());
+    this.mesh.store.forEach((mesh) => mesh.dispose());
+    this.primitive.store.forEach((primitive) => primitive.dispose());
+    this.accessor.store.forEach((accessor) => accessor.dispose());
+    this.buffer.store.forEach((buffer) => buffer.dispose());
+    this.texture.store.forEach((texture) => texture.dispose());
+    this.material.store.forEach((material) => material.dispose());
+
+    this.extensions.behavior.dispose();
+    this.extensions.collider.dispose();
+    this.extensions.spawn.dispose();
+
+    this.extensions = {
+      behavior: this.doc.createExtension(BehaviorExtension),
+      collider: this.doc.createExtension(ColliderExtension),
+      spawn: this.doc.createExtension(SpawnPointExtension),
+    };
   }
 
   override processChanges() {

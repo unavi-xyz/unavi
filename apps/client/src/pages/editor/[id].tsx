@@ -35,18 +35,21 @@ export default function Editor() {
   useEffect(() => {
     if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;
 
+    const { visuals } = useEditorStore.getState();
+
     const engine = new Engine({
       canvas: canvasRef.current,
       overlayCanvas: overlayRef.current,
     });
+
     engine.controls = "orbit";
-    engine.visuals = true;
+    engine.visuals = visuals;
 
     engine.render.send({ subject: "set_animations_path", data: "/models" });
     engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
     engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
 
-    useEditorStore.setState({ engine, canvas: canvasRef.current, visuals: true });
+    useEditorStore.setState({ engine, canvas: canvasRef.current });
 
     return () => {
       engine.destroy();
@@ -56,6 +59,8 @@ export default function Editor() {
         selectedId: null,
         draggingId: null,
         openScriptId: null,
+        isPlaying: false,
+        isSaving: false,
         treeIds: [],
         openIds: [],
       });

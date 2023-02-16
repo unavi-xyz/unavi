@@ -1,8 +1,10 @@
+import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useEffect, useMemo } from "react";
 
 import { useNodes } from "../../hooks/useNodes";
 import { useEditorStore } from "../../store";
 import TreeItem from "./TreeItem";
+import TreeItemContextMenu from "./TreeItemContextMenu";
 
 export default function TreeRoot() {
   const engine = useEditorStore((state) => state.engine);
@@ -118,13 +120,16 @@ export default function TreeRoot() {
   }, [engine, nodeIds]);
 
   return (
-    <div
-      className="h-full pt-0.5"
-      onMouseDown={() => useEditorStore.setState({ selectedId: null })}
-    >
-      {visibleIds.map((id) => {
-        return <TreeItem key={id} id={id} />;
-      })}
-    </div>
+    <ContextMenu.Root>
+      <div onMouseDown={() => useEditorStore.setState({ selectedId: null })} className="h-full">
+        <ContextMenu.Trigger>
+          {visibleIds.map((id) => {
+            return <TreeItem key={id} id={id} />;
+          })}
+        </ContextMenu.Trigger>
+      </div>
+
+      <TreeItemContextMenu />
+    </ContextMenu.Root>
   );
 }

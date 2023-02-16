@@ -49,12 +49,16 @@ export default function TreeItem({ id }: Props) {
           isSelected ? "bg-neutral-200 text-black hover:bg-neutral-300" : "hover:bg-neutral-200"
         }`}
         onMouseDown={(e) => {
+          useEditorStore.setState({ selectedId: id });
+
           if (e.button !== 0) return;
           e.stopPropagation();
-          useEditorStore.setState({ draggingId: id, selectedId: id });
+          useEditorStore.setState({ draggingId: id });
           document.body.style.cursor = "grabbing";
         }}
         onMouseUp={(e) => {
+          if (!draggingId) useEditorStore.setState({ selectedId: id });
+
           if (
             e.button !== 0 ||
             !engine ||

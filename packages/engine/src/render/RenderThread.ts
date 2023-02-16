@@ -64,6 +64,7 @@ export class RenderThread {
   players = new Players(this.camera);
 
   controls: ControlsType = DEFAULT_CONTROLS;
+  #prevCameraPosition = new Vector3(2, 4, 8);
 
   constructor(postMessage: PostMessage<FromRenderMessage>, canvas?: HTMLCanvasElement) {
     this.postMessage = postMessage;
@@ -87,9 +88,6 @@ export class RenderThread {
     this.scene.add(this.player.group);
     this.scene.add(this.players.group);
     this.scene.add(new AmbientLight(0xffffff, 0.2));
-
-    this.camera.position.set(0, 4, 12);
-    this.camera.lookAt(0, 0, 0);
 
     this.clock.start();
     this.render();
@@ -145,12 +143,15 @@ export class RenderThread {
       }
 
       case "set_controls": {
+        if (this.controls === data) break;
         this.controls = data;
 
         if (data === "orbit") {
           this.player.group.visible = false;
+          this.camera.position.copy(this.#prevCameraPosition);
         } else {
           this.player.group.visible = true;
+          this.#prevCameraPosition.copy(this.camera.position);
         }
         break;
       }

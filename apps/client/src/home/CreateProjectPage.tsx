@@ -33,7 +33,7 @@ export default function CreateProjectPage() {
 
     try {
       // Create new project
-      const id = await createProject({ name: nameRef.current?.value ?? DEFAULT_NAME });
+      const id = await createProject({ name: nameRef.current?.value || DEFAULT_NAME });
 
       // Upload default image
       await uploadDefaultImage(id);

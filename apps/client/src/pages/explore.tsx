@@ -58,7 +58,7 @@ export default function Explore() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {spaces?.map(({ id, metadata }) => {
               return (
-                <Link href={`/space/${numberToHexDisplay(id)}`} key={id}>
+                <Link href={`/space/${numberToHexDisplay(id)}`} key={id} className="rounded-xl">
                   <SpaceCard id={id} metadata={metadata} animateEnter />
                 </Link>
               );

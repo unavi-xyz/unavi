@@ -86,8 +86,13 @@ export default function ScriptMenu({ scriptId }: Props) {
   );
 
   const deleteNode = useCallback(
-    (id: string) => onNodesChange([{ type: "remove", id }]),
-    [onNodesChange]
+    (id: string) => {
+      // Remove all edges connected to the node
+      setEdges((edges) => edges.filter((edge) => edge.source !== id && edge.target !== id));
+      // Remove the node
+      onNodesChange([{ type: "remove", id }]);
+    },
+    [onNodesChange, setEdges]
   );
 
   useEffect(() => {

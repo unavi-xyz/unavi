@@ -27,7 +27,7 @@ export default function ProfileMenu({ includeExternal = true }: Props) {
           <Link
             href={`/user/${profile?.id ? numberToHexDisplay(profile.id) : session?.address}`}
             draggable={false}
-            className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none transition hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+            className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
           >
             <MdOutlinePersonOutline className="mr-2 text-lg" />
             <div>Your Profile</div>
@@ -40,7 +40,7 @@ export default function ProfileMenu({ includeExternal = true }: Props) {
           <Link
             href="/settings"
             draggable={false}
-            className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none transition hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+            className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
           >
             <MdOutlineSettings className="mr-2 text-lg" />
             <div>Settings</div>
@@ -50,7 +50,7 @@ export default function ProfileMenu({ includeExternal = true }: Props) {
 
       <DropdownItem
         onClick={logout}
-        className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none transition hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+        className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
       >
         <MdLogout className="mr-2 text-lg" />
         <div>Log Out</div>

@@ -26,7 +26,7 @@ export default function ObjectsMenu() {
         <DropdownItem
           key={name}
           onClick={() => addObject(name)}
-          className="flex w-full cursor-default items-center whitespace-nowrap px-6 py-0.5 outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+          className="flex w-full cursor-default items-center whitespace-nowrap px-6 outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
         >
           {name}
         </DropdownItem>

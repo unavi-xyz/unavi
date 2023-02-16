@@ -10,8 +10,8 @@ export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
     return (
       <DropdownPrimitive.Content
         ref={ref}
-        sideOffset={8}
-        className={`z-40 rounded-lg bg-white shadow ${
+        sideOffset={4}
+        className={`z-40 rounded-lg border border-neutral-400 bg-white shadow-md ${
           open ? "animate-scaleIn" : "animate-scaleOut"
         }`}
         {...rest}

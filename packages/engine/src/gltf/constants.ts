@@ -1,4 +1,5 @@
 import {
+  EXTTextureWebP,
   KHRDracoMeshCompression,
   KHRMeshQuantization,
   KHRTextureTransform,
@@ -11,6 +12,7 @@ import { SpawnPointExtension } from "./extensions/SpawnPoint/SpawnPointExtension
 export const extensions = [
   BehaviorExtension,
   ColliderExtension,
+  EXTTextureWebP,
   KHRDracoMeshCompression,
   KHRMeshQuantization,
   KHRTextureTransform,

@@ -22,7 +22,8 @@ import { COLLISION_GROUP } from "./groups";
 import { FromPhysicsMessage } from "./messages";
 import { PhysicsScene } from "./PhysicsScene";
 
-const CHARACTER_OFFSET = 0.01;
+const VOID_HEIGHT = -100;
+const CHARACTER_OFFSET = 0.02;
 const RIGID_BODY_FEET_OFFSET = PLAYER_HEIGHT / 2 + PLAYER_RADIUS + CHARACTER_OFFSET;
 
 export class Player {
@@ -116,7 +117,6 @@ export class Player {
     this.isGrounded = this.controller.computedGrounded();
 
     if (this.isGrounded) {
-      // Reset vertical velocity
       inputVelocity.y = this.#world.gravity.y * delta;
 
       // Get ground from latest collision event
@@ -131,10 +131,10 @@ export class Player {
         inputVelocity.z += groundVelocity.z * delta;
       }
     } else {
-      // Apply gravity
-      inputVelocity.y += this.#world.gravity.y * delta;
       // Reset ground
       this.#ground = null;
+      // Apply gravity
+      inputVelocity.y += this.#world.gravity.y * delta;
     }
 
     // Jump
@@ -170,7 +170,7 @@ export class Player {
     Atomics.store(this.userPosition, 2, pos.z * POSITION_ARRAY_ROUNDING);
 
     // Teleport out of void if needed
-    if (pos.y < -100) this.respawn();
+    if (pos.y < VOID_HEIGHT) this.respawn();
   }
 }
 

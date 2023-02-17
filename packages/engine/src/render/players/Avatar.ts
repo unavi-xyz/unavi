@@ -323,40 +323,40 @@ export class Avatar {
       const idle = this.animations.get(ANIMATION_NAME.Idle);
 
       if (leftWalk) {
-        if (leftWalk.isRunning() && this.weights.left === 0) leftWalk.stop();
+        if (leftWalk.isRunning() && this.weights.left === 0) leftWalk.reset();
         if (!leftWalk.isRunning() && this.weights.left > 0) leftWalk.play();
         leftWalk.setEffectiveWeight(this.weights.left);
       }
 
       if (rightWalk) {
-        if (rightWalk.isRunning() && this.weights.right === 0) rightWalk.stop();
+        if (rightWalk.isRunning() && this.weights.right === 0) rightWalk.reset();
         if (!rightWalk.isRunning() && this.weights.right > 0) rightWalk.play();
         rightWalk.setEffectiveWeight(this.weights.right);
       }
 
       if (walk) {
-        if (walk.isRunning() && this.weights.walk === 0 && this.weights.sprint === 0) walk.stop();
+        if (walk.isRunning() && this.weights.walk === 0 && this.weights.sprint === 0) walk.reset();
         if (!walk.isRunning() && this.weights.walk > 0) walk.play();
         walk.setEffectiveWeight(this.weights.walk);
         walk.setEffectiveTimeScale(isBackwards ? -1 : 1);
       }
 
       if (sprint) {
-        if (sprint.isRunning() && this.weights.sprint === 0) sprint.stop();
+        if (sprint.isRunning() && this.weights.sprint === 0) sprint.reset();
         if (!sprint.isRunning() && this.weights.sprint > 0) sprint.play();
         sprint.setEffectiveWeight(this.weights.sprint);
         sprint.setEffectiveTimeScale(isBackwards ? -1 : 1);
       }
 
       if (fall) {
-        if (fall.isRunning() && this.weights.fall === 0) fall.stop();
+        if (fall.isRunning() && this.weights.fall === 0) fall.reset();
         if (!fall.isRunning() && this.weights.fall > 0) fall.play();
         fall.setEffectiveWeight(this.weights.fall);
       }
 
       const idleWeight = 1 - Object.values(this.weights).reduce((a, b) => a + b, 0);
       if (idle) {
-        if (idle.isRunning() && idleWeight === 0) idle.stop();
+        if (idle.isRunning() && idleWeight === 0) idle.reset();
         if (!idle.isRunning() && idleWeight > 0) idle.play();
         idle.setEffectiveWeight(idleWeight);
       }

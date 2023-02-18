@@ -55,17 +55,18 @@ export default function TreeItem({ id }: Props) {
         className={`flex items-center space-x-1 text-sm text-neutral-800 active:opacity-80 ${
           isSelected ? "bg-neutral-200 text-black hover:bg-neutral-300" : "hover:bg-neutral-200"
         }`}
-        onClick={(e) => {
+        onMouseDown={(e) => {
           e.stopPropagation();
           useEditorStore.setState({ selectedId: id });
-        }}
-        onMouseDown={(e) => {
+
           if (e.button !== 0) return;
-          e.stopPropagation();
+
           useEditorStore.setState({ draggingId: id });
           document.body.style.cursor = "grabbing";
         }}
         onMouseUp={(e) => {
+          useEditorStore.setState({ selectedId: id });
+
           if (
             e.button !== 0 ||
             !engine ||

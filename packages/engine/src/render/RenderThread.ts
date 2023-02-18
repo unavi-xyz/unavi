@@ -152,6 +152,7 @@ export class RenderThread {
         } else {
           this.player.group.visible = true;
           this.#prevCameraPosition.copy(this.camera.position);
+          this.transform.detach();
         }
         break;
       }

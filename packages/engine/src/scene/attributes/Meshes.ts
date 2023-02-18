@@ -28,8 +28,10 @@ type CylinderMesh = {
   radialSegments: number;
 };
 
+export type CustomMesh = BoxMesh | SphereMesh | CylinderMesh;
+
 export type MeshExtras = {
-  customMesh?: BoxMesh | SphereMesh | CylinderMesh;
+  customMesh?: CustomMesh;
 };
 
 export interface MeshJSON {
@@ -99,12 +101,23 @@ export class Meshes extends Attribute<Mesh, MeshJSON> {
 
   applyJSON(mesh: Mesh, json: Partial<MeshJSON>) {
     if (json.primitives) {
-      for (const primitiveId of json.primitives) {
+      // Remove old primitives
+      mesh.listPrimitives().forEach((primitive) => {
+        const primitiveId = this.#primitive.getId(primitive);
+        if (!primitiveId) throw new Error("Primitive not found");
+
+        if (!json.primitives?.includes(primitiveId)) {
+          mesh.removePrimitive(primitive);
+        }
+      });
+
+      // Add new primitives
+      json.primitives.forEach((primitiveId) => {
         const primitive = this.#primitive.store.get(primitiveId);
         if (!primitive) throw new Error("Primitive not found");
 
         mesh.addPrimitive(primitive);
-      }
+      });
     }
 
     if (json.weights) mesh.setWeights(json.weights);

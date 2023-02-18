@@ -26,7 +26,9 @@ import { TextureInfoJSON, TextureInfoUtils } from "../../scene/attributes/Textur
 import { SceneMessage } from "../../scene/messages";
 import { Scene } from "../../scene/Scene";
 import { deepDispose } from "../utils/deepDispose";
+import { THREE_ATTRIBUTE_NAMES } from "./constants";
 import { createTexture } from "./createTexture";
+import { getCustomMeshData } from "./getCustomMeshData";
 
 type NodeId = string;
 type MeshId = string;
@@ -71,19 +73,6 @@ export class RenderScene extends Scene {
 
       accessor.addEventListener("dispose", () => {
         toMainThread({ subject: "dispose_accessor", data: data.id });
-      });
-    });
-
-    this.primitive.addEventListener("create", ({ data }) => {
-      const primitive = this.primitive.store.get(data.id);
-      if (!primitive) throw new Error("Primitive not found");
-
-      const json = this.primitive.toJSON(primitive);
-
-      toMainThread({ subject: "create_primitive", data: { id: data.id, json } });
-
-      primitive.addEventListener("dispose", () => {
-        toMainThread({ subject: "dispose_primitive", data: data.id });
       });
     });
   }
@@ -200,20 +189,7 @@ export class RenderScene extends Scene {
       }
 
       case "create_primitive": {
-        const { object: primitive } = this.primitive.create(data.json, data.id);
-
-        const object = new ThreeMesh();
-        this.primitiveObjects.set(data.id, object);
-
-        object.castShadow = true;
-        object.receiveShadow = true;
-
-        primitive.addEventListener("dispose", () => {
-          object.geometry.dispose();
-          this.meshObjects.delete(data.id);
-        });
-
-        this.updatePrimitive(data.id, data.json);
+        this.createPrimitive(data.json, data.id);
         break;
       }
 
@@ -377,7 +353,7 @@ export class RenderScene extends Scene {
         object.remove(primitiveObject);
       });
 
-      // Add new primitive objects as children
+      // Add new primitive objects
       json.primitives.forEach((primitiveId) => {
         const primitiveObject = this.primitiveObjects.get(primitiveId);
         if (!primitiveObject) throw new Error("Primitive object not found");
@@ -388,80 +364,49 @@ export class RenderScene extends Scene {
 
     if (json.extras) {
       if (json.extras.customMesh) {
-        // Remove old primitives
+        // Remove previous primitives
         mesh.listPrimitives().forEach((primitive) => {
-          const primitiveId = this.primitive.getId(primitive);
-          if (!primitiveId) throw new Error("Primitive not found");
-
-          const primitiveObject = this.primitiveObjects.get(primitiveId);
-          if (!primitiveObject) throw new Error("Primitive object not found");
-
-          object.remove(primitiveObject);
-          this.primitiveObjects.delete(primitiveId);
           primitive.dispose();
         });
 
-        // Create custom mesh object
-        let customMesh: ThreeMesh | null = null;
+        // Create new primitive
+        const { positions, normals, indices } = getCustomMeshData(json.extras.customMesh);
 
-        switch (json.extras.customMesh.type) {
-          case "Box": {
-            const { width, height, depth } = json.extras.customMesh;
-            const geometry = new BoxGeometry(width, height, depth);
-            customMesh = new ThreeMesh(geometry, RenderScene.DEFAULT_MATERIAL);
-            break;
-          }
+        const { id: positionsId, object: positionsAccessor } = this.accessor.create({
+          array: new Float32Array(positions),
+          type: "VEC3",
+          componentType: 5126,
+        });
 
-          case "Sphere": {
-            const { radius, widthSegments, heightSegments } = json.extras.customMesh;
-            const geometry = new SphereGeometry(radius, widthSegments, heightSegments);
-            customMesh = new ThreeMesh(geometry, RenderScene.DEFAULT_MATERIAL);
-            break;
-          }
+        const { id: normalsId, object: normalsAccessor } = this.accessor.create({
+          array: new Float32Array(normals),
+          type: "VEC3",
+          componentType: 5126,
+        });
 
-          case "Cylinder": {
-            const { radiusTop, radiusBottom, height, radialSegments } = json.extras.customMesh;
-            const geometry = new CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
-            customMesh = new ThreeMesh(geometry, RenderScene.DEFAULT_MATERIAL);
-            break;
-          }
-        }
+        const { id: indicesId, object: indicesAccessor } = this.accessor.create({
+          array: new Uint16Array(indices),
+          type: "SCALAR",
+          componentType: 5121,
+        });
 
-        if (customMesh) {
-          customMesh.castShadow = true;
-          customMesh.receiveShadow = true;
+        const { id: primitiveId, primitive } = this.createPrimitive({
+          indices: indicesId,
+          attributes: { POSITION: positionsId, NORMAL: normalsId },
+        });
 
-          // Create new primitive
-          const positions = customMesh.geometry.getAttribute("position");
-          const indices = customMesh.geometry.getIndex();
-          if (!indices) throw new Error("Indices not found");
+        // Remove accessors on dispose
+        primitive.addEventListener("dispose", () => {
+          positionsAccessor.dispose();
+          normalsAccessor.dispose();
+          indicesAccessor.dispose();
+        });
 
-          const { id: positionsId } = this.accessor.create({
-            array: new Float32Array(positions.array),
-            type: "VEC3",
-            componentType: 5126,
-          });
-          const { id: indicesId } = this.accessor.create({
-            array: new Uint8Array(indices.array),
-            type: "SCALAR",
-            componentType: 5121,
-          });
-
-          const { id: primitiveId, object: primitive } = this.primitive.create({
-            indices: indicesId,
-            attributes: { POSITION: positionsId },
-          });
-
-          mesh.addPrimitive(primitive);
-          this.primitiveObjects.set(primitiveId, customMesh);
-          object.add(customMesh);
-
-          // Update main thread
-          this.#toMainThread({
-            subject: "change_mesh",
-            data: { id, json: { primitives: [primitiveId] } },
-          });
-        }
+        // Add primitive to mesh
+        this.#toMainThread({
+          subject: "change_mesh",
+          data: { id, json: { primitives: [primitiveId] } },
+        });
       }
     }
 
@@ -473,6 +418,32 @@ export class RenderScene extends Scene {
         this.updateColliderVisual(nodeId);
       }
     });
+  }
+
+  createPrimitive(json: Partial<PrimitiveJSON>, primitiveId?: string) {
+    const { id, object: primitive } = this.primitive.create(json, primitiveId);
+    const fullJSON = this.primitive.toJSON(primitive);
+
+    if (!primitiveId) {
+      // Update main thread if primitive is new
+      this.#toMainThread({ subject: "create_primitive", data: { id, json: fullJSON } });
+    }
+
+    const object = new ThreeMesh();
+    this.primitiveObjects.set(id, object);
+
+    object.castShadow = true;
+    object.receiveShadow = true;
+
+    primitive.addEventListener("dispose", () => {
+      object.removeFromParent();
+      object.geometry.dispose();
+      this.primitiveObjects.delete(id);
+    });
+
+    this.updatePrimitive(id, fullJSON);
+
+    return { id, primitive };
   }
 
   updatePrimitive(id: string, json: Partial<PrimitiveJSON>) {
@@ -762,9 +733,6 @@ export class RenderScene extends Scene {
 
     if (collider) {
       // Add new collider
-      const meshId = collider.mesh instanceof Mesh ? this.mesh.getId(collider.mesh) : collider.mesh;
-      if (meshId === undefined) throw new Error("Mesh not found");
-
       let colliderGeometry: BufferGeometry | null = null;
 
       switch (collider.type) {
@@ -797,6 +765,8 @@ export class RenderScene extends Scene {
         }
 
         case "trimesh": {
+          const meshId =
+            collider.mesh instanceof Mesh ? this.mesh.getId(collider.mesh) : collider.mesh;
           if (!meshId) break;
 
           const mesh = this.mesh.store.get(meshId);
@@ -911,17 +881,6 @@ export class RenderScene extends Scene {
     deepDispose(this.root);
   }
 }
-
-const THREE_ATTRIBUTE_NAMES = {
-  POSITION: "position",
-  NORMAL: "normal",
-  TANGENT: "tangent",
-  TEXCOORD_0: "uv",
-  TEXCOORD_1: "uv2",
-  COLOR_0: "color",
-  JOINTS_0: "skinIndex",
-  WEIGHTS_0: "skinWeight",
-};
 
 function accessorToAttribute(accessor: Accessor): BufferAttribute | null {
   const array = accessor.getArray();

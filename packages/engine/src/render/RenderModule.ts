@@ -99,26 +99,37 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       }
 
       case "create_accessor": {
+        this.engine.scene.accessor.create(data.json, data.id);
         this.engine.physics.send({ subject: "create_accessor", data });
         break;
       }
 
       case "dispose_accessor": {
+        const accessor = this.engine.scene.accessor.store.get(data);
+        if (!accessor) throw new Error("Accessor not found");
+        accessor.dispose();
         this.engine.physics.send({ subject: "dispose_accessor", data });
         break;
       }
 
       case "create_primitive": {
+        this.engine.scene.primitive.create(data.json, data.id);
         this.engine.physics.send({ subject: "create_primitive", data });
         break;
       }
 
       case "dispose_primitive": {
+        const primitive = this.engine.scene.primitive.store.get(data);
+        if (!primitive) throw new Error("Primitive not found");
+        primitive.dispose();
         this.engine.physics.send({ subject: "dispose_primitive", data });
         break;
       }
 
       case "change_mesh": {
+        const mesh = this.engine.scene.mesh.store.get(data.id);
+        if (!mesh) throw new Error("Mesh not found");
+        this.engine.scene.mesh.applyJSON(mesh, data.json);
         this.engine.physics.send({ subject: "change_mesh", data });
         break;
       }

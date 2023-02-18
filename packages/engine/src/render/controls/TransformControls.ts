@@ -116,8 +116,12 @@ export class TransformControls {
     }
   }
 
-  destroy() {
+  detach() {
     this.#transformControls.detach();
+  }
+
+  destroy() {
+    this.detach();
     this.#transformControls.dispose();
   }
 }

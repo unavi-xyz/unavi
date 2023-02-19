@@ -11,7 +11,10 @@ export default function Navbar() {
   const { status } = useSession();
 
   return (
-    <nav className="flex h-full w-full justify-center bg-white">
+    <nav
+      className="flex h-full w-full justify-center bg-white"
+      style={{ paddingLeft: "calc(100vw - 100%)" }}
+    >
       <div className="max-w-content mx-4 flex justify-between md:grid md:grid-cols-3">
         <div className="flex items-center">
           <Link

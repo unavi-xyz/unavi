@@ -83,11 +83,11 @@ export default function Spaces() {
                   </Link>
                 ))
               ) : (
-                <div className="col-span-4">
+                <div className="col-span-4 text-neutral-500">
                   No projects found.{" "}
                   <button
                     onClick={handleCreateProject}
-                    className="cursor-pointer font-bold text-neutral-900 decoration-2 hover:underline"
+                    className="cursor-pointer font-bold text-neutral-700 decoration-2 hover:underline"
                   >
                     Click here
                   </button>{" "}

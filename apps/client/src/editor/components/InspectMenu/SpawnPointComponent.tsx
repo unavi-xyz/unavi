@@ -1,5 +1,3 @@
-import { SpawnPointExtension } from "engine";
-
 import { useSpawnPoint } from "../../hooks/useExtension";
 import { useExtensionAttribute } from "../../hooks/useExtensionAttribute";
 import { useNode } from "../../hooks/useNode";
@@ -21,7 +19,7 @@ export default function SpawnPointComponent({ nodeId }: Props) {
     <ComponentMenu
       title="Spawn Point"
       onRemove={() => {
-        node?.setExtension(SpawnPointExtension.EXTENSION_NAME, null);
+        spawnPoint.dispose();
       }}
     >
       <MenuRows titles={["Title"]}>

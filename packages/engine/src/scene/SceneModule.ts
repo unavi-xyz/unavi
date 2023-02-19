@@ -1,4 +1,4 @@
-import { ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform/core";
+import { Accessor, ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform/core";
 import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
 
 import { Engine } from "../Engine";
@@ -23,10 +23,16 @@ export class SceneModule extends Scene {
     this.#render = engine.render;
     this.#physics = engine.physics;
 
-    this.node.addEventListener("create", ({ data }) => {
-      const node = this.node.store.get(data.id);
-      if (!node) throw new Error("Node not found");
-      this.#onNodeCreate(node);
+    this.accessor.addEventListener("create", ({ data }) => {
+      const accessor = this.accessor.store.get(data.id);
+      if (!accessor) throw new Error("Accessor not found");
+      this.#onAccessorCreate(accessor);
+    });
+
+    this.primitive.addEventListener("create", ({ data }) => {
+      const primitive = this.primitive.store.get(data.id);
+      if (!primitive) throw new Error("Primitive not found");
+      this.#onPrimitiveCreate(primitive);
     });
 
     this.mesh.addEventListener("create", ({ data }) => {
@@ -35,10 +41,10 @@ export class SceneModule extends Scene {
       this.#onMeshCreate(mesh);
     });
 
-    this.primitive.addEventListener("create", ({ data }) => {
-      const primitive = this.primitive.store.get(data.id);
-      if (!primitive) throw new Error("Primitive not found");
-      this.#onPrimitiveCreate(primitive);
+    this.node.addEventListener("create", ({ data }) => {
+      const node = this.node.store.get(data.id);
+      if (!node) throw new Error("Node not found");
+      this.#onNodeCreate(node);
     });
   }
 
@@ -62,11 +68,16 @@ export class SceneModule extends Scene {
     const accessors = this.doc.getRoot().listAccessors();
     accessors.forEach((accessor) => accessor.setBuffer(buffer));
 
-    // Remove draco compression
     this.doc
       .getRoot()
       .listExtensionsUsed()
       .forEach((extension) => {
+        // Remove extension if it's empty
+        if (extension.listProperties().length === 0) {
+          extension.dispose();
+        }
+
+        // Remove draco compression
         if (extension.extensionName === KHRDracoMeshCompression.EXTENSION_NAME) {
           extension.dispose();
         }
@@ -152,15 +163,7 @@ export class SceneModule extends Scene {
     });
 
     this.accessor.processChanges().forEach((accessor) => {
-      const id = this.accessor.getId(accessor);
-      if (!id) throw new Error("Id not found");
-      const json = this.accessor.toJSON(accessor);
-
-      this.#publish({ subject: "create_accessor", data: { id, json } });
-
-      accessor.addEventListener("dispose", () => {
-        this.#publish({ subject: "dispose_accessor", data: id });
-      });
+      this.#onAccessorCreate(accessor);
     });
 
     this.texture.processChanges().forEach((texture) => {
@@ -208,6 +211,18 @@ export class SceneModule extends Scene {
 
     this.node.processChanges().forEach((node) => {
       this.#onNodeCreate(node);
+    });
+  }
+
+  #onAccessorCreate(accessor: Accessor) {
+    const id = this.accessor.getId(accessor);
+    if (!id) throw new Error("Id not found");
+
+    const json = this.accessor.toJSON(accessor);
+    this.#publish({ subject: "create_accessor", data: { id, json } });
+
+    accessor.addEventListener("dispose", () => {
+      this.#publish({ subject: "dispose_accessor", data: id });
     });
   }
 
@@ -325,8 +340,8 @@ export class SceneModule extends Scene {
     });
   }
 
-  #publish = (message: SceneMessage) => {
+  #publish(message: SceneMessage) {
     this.#render.send(message);
     this.#physics.send(message);
-  };
+  }
 }

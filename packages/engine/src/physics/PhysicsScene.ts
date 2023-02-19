@@ -55,14 +55,16 @@ export class PhysicsScene extends Scene {
         if (data.json.material) data.json.material = null;
 
         const primitive = this.primitive.store.get(data.id);
-        if (!primitive) throw new Error("Primitive not found");
+        if (!primitive) throw new Error(`Primitive not found: ${data.id}`);
+
         this.primitive.applyJSON(primitive, data.json);
         break;
       }
 
       case "dispose_primitive": {
         const primitive = this.primitive.store.get(data);
-        if (!primitive) throw new Error("Primitive not found");
+        if (!primitive) throw new Error(`Primitive not found: ${data}`);
+
         primitive.dispose();
         break;
       }

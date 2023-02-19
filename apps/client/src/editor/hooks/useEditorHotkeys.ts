@@ -1,6 +1,6 @@
+import { deepDisposeNode } from "engine";
 import { useEffect } from "react";
 
-import { deepDisposeNode } from "../components/TreeMenu/utils/dispose";
 import { useEditorStore } from "../store";
 
 export function useEditorHotkeys() {

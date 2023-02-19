@@ -47,7 +47,7 @@ export class Primitives extends Attribute<Primitive, PrimitiveJSON> {
 
     const { id: primitiveId } = this.process(primitive, id);
 
-    if (!id) this.emitCreate(primitiveId);
+    this.emitCreate(primitiveId);
 
     return { id: primitiveId, object: primitive };
   }

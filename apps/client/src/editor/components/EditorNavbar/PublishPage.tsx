@@ -157,8 +157,7 @@ export default function PublishPage() {
       ]);
 
       // Redirect to space
-      // Wait for the cache to update
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       router.push(`/space/${numberToHexDisplay(spaceId)}`);
     }
 

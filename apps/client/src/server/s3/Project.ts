@@ -1,12 +1,9 @@
 import { DeleteObjectsCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { NodeIO, PropertyType } from "@gltf-transform/core";
+import { NodeIO } from "@gltf-transform/core";
 import {
   dedup,
   draco,
-  flatten,
-  join,
-  prune,
   resample,
   simplify,
   sparse,
@@ -23,7 +20,7 @@ import { bytesToDisplay } from "../../utils/bytesToDisplay";
 import { s3Client } from "./client";
 import { expiresIn } from "./constants";
 
-const ALL_EXCEPT_NODE = Object.values(PropertyType).filter((type) => type !== PropertyType.NODE);
+// const ALL_EXCEPT_NODE = Object.values(PropertyType).filter((type) => type !== PropertyType.NODE);
 const MEGABYTE = 1024 * 1024;
 
 export const PROJECT_FILE = {
@@ -94,12 +91,9 @@ export class Project {
       try {
         await doc.transform(
           dedup(),
-          flatten(),
-          join(),
           weld(),
           simplify({ simplifier: MeshoptSimplifier, lockBorder: true }),
           resample(),
-          prune({ propertyTypes: ALL_EXCEPT_NODE }),
           sparse()
         );
       } catch (e) {

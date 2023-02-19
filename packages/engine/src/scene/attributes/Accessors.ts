@@ -39,7 +39,7 @@ export class Accessors extends Attribute<Accessor, AccessorJSON> {
 
     const { id: accessorId } = this.process(accessor, id);
 
-    if (!id) this.emitCreate(accessorId);
+    this.emitCreate(accessorId);
 
     return { id: accessorId, object: accessor };
   }

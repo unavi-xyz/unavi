@@ -1,8 +1,8 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
+import { deepDisposeNode } from "engine";
 import { MdClose } from "react-icons/md";
 
 import { useEditorStore } from "../../store";
-import { deepDisposeNode } from "./utils/dispose";
 
 export default function TreeItemContextMenu() {
   function handleDelete() {

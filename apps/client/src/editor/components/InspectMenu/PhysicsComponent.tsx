@@ -26,7 +26,7 @@ export default function PhysicsComponent({ nodeId }: Props) {
     <ComponentMenu
       title="Physics"
       onRemove={() => {
-        node?.setExtension(ColliderExtension.EXTENSION_NAME, null);
+        collider?.dispose();
       }}
     >
       <MenuRows titles={["Collider"]}>

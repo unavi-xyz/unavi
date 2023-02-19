@@ -15,7 +15,7 @@
     "zod": "^3.20.6"
   },
   "devDependencies": {
-    "mediasoup-client": "^3.6.77",
+    "mediasoup-client": "^3.6.80",
     "tsconfig": "*",
     "typescript": "~4.9.5"
   }

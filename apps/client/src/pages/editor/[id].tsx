@@ -9,7 +9,6 @@ import InspectMenu from "../../editor/components/InspectMenu/InspectMenu";
 import ScriptMenu from "../../editor/components/ScriptMenu/ScriptMenu";
 import TreeMenu from "../../editor/components/TreeMenu/TreeMenu";
 import { useAutosave } from "../../editor/hooks/useAutosave";
-import { useEditorHotkeys } from "../../editor/hooks/useEditorHotkeys";
 import { useLoad } from "../../editor/hooks/useLoad";
 import { useTransformControls } from "../../editor/hooks/useTransformControls";
 import { useEditorStore } from "../../editor/store";
@@ -30,7 +29,6 @@ export default function Editor() {
   useLoad();
   useAutosave();
   useTransformControls();
-  useEditorHotkeys();
 
   useEffect(() => {
     if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;

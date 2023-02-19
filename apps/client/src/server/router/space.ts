@@ -34,12 +34,14 @@ export const spaceRouter = router({
   latest: publicProcedure
     .input(
       z.object({
-        limit: z.number().min(1).max(99).optional().default(15),
+        limit: z.number().min(1).max(99),
         owner: z.string().optional(),
       })
     )
     .query(async ({ input }) => {
       const spaceContract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
+
+      const count = (await spaceContract.count()).toNumber();
 
       const isSpaceValid = async (tokenId: number) => {
         try {
@@ -61,32 +63,22 @@ export const spaceRouter = router({
 
       type ValidResponse = Exclude<Awaited<ReturnType<typeof isSpaceValid>>, undefined>;
 
-      const count = (await spaceContract.count()).toNumber();
-
-      // Get latest spaces
-      const initialIds = new Array(Math.min(input.limit, count)).fill(0).map((_, i) => count - i);
       const spaces: ValidResponse[] = [];
 
-      await Promise.all(
-        initialIds.map(async (id) => {
-          const valid = await isSpaceValid(id);
-          if (valid) spaces.push(valid);
-        })
-      );
+      let nextSpaceId = count - 1;
 
-      // If any spaces were invalid, loop backwards until we have enough
-      let i = input.limit;
+      const fetchSpace = async () => {
+        if (nextSpaceId === 0 || spaces.length === input.limit) return;
 
-      while (spaces.length < input.limit) {
-        const tokenId = count - i;
-        i++;
+        const valid = await isSpaceValid(nextSpaceId--);
 
-        // Break if we've reached the end
-        if (tokenId <= 0) break;
-
-        const valid = await isSpaceValid(tokenId);
         if (valid) spaces.push(valid);
-      }
+        else await fetchSpace();
+      };
+
+      const amountToFetch = Math.min(input.limit, count);
+
+      await Promise.all(Array.from({ length: amountToFetch }).map(fetchSpace));
 
       return spaces;
     }),

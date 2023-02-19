@@ -79,11 +79,8 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
   const isUser = status === "authenticated" && profile?.owner === session?.address;
 
   const { data: spaces, isLoading: isLoadingSpaces } = trpc.space.latest.useQuery(
-    { owner: profile?.owner },
-    {
-      enabled: profile?.owner !== undefined,
-      refetchOnWindowFocus: false,
-    }
+    { limit: 20, owner: profile?.owner },
+    { enabled: profile?.owner !== undefined }
   );
 
   // Force change page on hash change

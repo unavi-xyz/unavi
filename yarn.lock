@@ -2331,14 +2331,14 @@
     "@floating-ui/dom" "^0.5.3"
     use-isomorphic-layout-effect "^1.1.1"
 
-"@gltf-transform/core@3.0.1", "@gltf-transform/core@^3.0.0", "@gltf-transform/core@^3.0.1":
+"@gltf-transform/core@3.0.1", "@gltf-transform/core@^3.0.1":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.0.1.tgz#9d15c61f9f55131f63333514d91e9e9c3a0f477a"
   integrity sha512-IGBq5T2+Bei2aVdWqTj8lYSS86FEhlGvmn70Tc/8NYGwgcuti9wPDB1jX5CtsZmTifucFM36SlisSMLflY+OnQ==
   dependencies:
     property-graph "^1.0.0"
 
-"@gltf-transform/extensions@3.0.1", "@gltf-transform/extensions@^3.0.0":
+"@gltf-transform/extensions@3.0.1", "@gltf-transform/extensions@^3.0.1":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-3.0.1.tgz#b663c83d6f85166387e6abb2987f70fd575fb0c8"
   integrity sha512-ZFw9uZDOXfvUjanhr/G/UBsizPJFxRFLHcm8AU/nD32j59QCPlCQVSltD5sAKKBdGnlWXC1aMsXRk1CvCpE8eA==
@@ -2346,13 +2346,13 @@
     "@gltf-transform/core" "^3.0.1"
     ktx-parse "^0.4.5"
 
-"@gltf-transform/functions@3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-3.0.0.tgz#9ad6c778fae9eaa9c83787f2b0d8d1b3ec54a73c"
-  integrity sha512-agFrTyPiLcJowMy4OAzjbjy9OX8ze95bztmtQD3s7IbCyb1kh/RHUW1R86V8HGjDCGpJHcxhx3YX9HrcTey2Xg==
+"@gltf-transform/functions@3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-3.0.1.tgz#5ffd1fdc96f53ce4066611f51beb2c7bc691595f"
+  integrity sha512-4ptKd/CqKNnFauZSemavHX17PJZazfYuTrFsP46KOMZgfEWnWAuF9JqBwrWH0HMHImk70ubGBg5nmESg32bBOw==
   dependencies:
-    "@gltf-transform/core" "^3.0.0"
-    "@gltf-transform/extensions" "^3.0.0"
+    "@gltf-transform/core" "^3.0.1"
+    "@gltf-transform/extensions" "^3.0.1"
     ktx-parse "^0.4.5"
     ndarray "^1.0.19"
     ndarray-lanczos "^0.2.0"

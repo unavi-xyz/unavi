@@ -2331,10 +2331,10 @@
     "@floating-ui/dom" "^0.5.3"
     use-isomorphic-layout-effect "^1.1.1"
 
-"@gltf-transform/core@3.0.0", "@gltf-transform/core@^3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.0.0.tgz#216ff3be821940cf9da7d30b97ba62aeffba12b4"
-  integrity sha512-G00Lz6FS/lOqVE4pZwZCQxg6UNQTMx+YLqlLy72Ou0Ku/QtIkvMY8fmq7TbKHKdpko7xj1/nrIFZs1smlZDtdA==
+"@gltf-transform/core@3.0.1", "@gltf-transform/core@^3.0.0":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.0.1.tgz#9d15c61f9f55131f63333514d91e9e9c3a0f477a"
+  integrity sha512-IGBq5T2+Bei2aVdWqTj8lYSS86FEhlGvmn70Tc/8NYGwgcuti9wPDB1jX5CtsZmTifucFM36SlisSMLflY+OnQ==
   dependencies:
     property-graph "^1.0.0"
 

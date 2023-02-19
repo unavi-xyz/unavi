@@ -7,14 +7,14 @@ import {
   rainbowWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { configureChains, createClient } from "wagmi";
+import { ChainProviderFn, configureChains, createClient } from "wagmi";
 import { arbitrumGoerli } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
 import { env } from "../env/client.mjs";
 
-const providers = [publicProvider()];
+const providers: ChainProviderFn<typeof arbitrumGoerli>[] = [publicProvider()];
 
 const apiKey = env.NEXT_PUBLIC_ALCHEMY_ID;
 if (apiKey) providers.unshift(alchemyProvider({ apiKey }));

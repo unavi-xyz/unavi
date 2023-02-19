@@ -29,6 +29,21 @@ export function useHost(id: number, host: string) {
     const audioContext = new AudioContext();
     const panners = new Map<number, PannerNode>();
 
+    // Try to play audio
+    if (audioContext.state === "suspended") audioContext.resume();
+
+    // Play audio on user interaction
+    const play = () => {
+      if (audioContext.state === "suspended") audioContext.resume();
+      if (audioContext.state === "running") {
+        document.removeEventListener("click", play);
+        document.removeEventListener("touchstart", play);
+      }
+    };
+
+    document.addEventListener("click", play);
+    document.addEventListener("touchstart", play);
+
     useAppStore.setState({ ws, players });
 
     let publishInterval: NodeJS.Timeout | null = null;
@@ -222,7 +237,6 @@ export function useHost(id: number, host: string) {
 
           // Start receiving audio
           sendToHost({ subject: "resume_audio", data: null });
-
           await consumer.resume();
 
           // Create audio stream
@@ -231,6 +245,19 @@ export function useHost(id: number, host: string) {
           // Create audio element
           const audio = new Audio();
           audio.srcObject = stream;
+          audio.autoplay = true;
+
+          // Play audio on user interaction
+          const play = () => {
+            if (audioContext.state === "suspended") audio.play();
+            if (audioContext.state === "running") {
+              document.removeEventListener("click", play);
+              document.removeEventListener("touchstart", play);
+            }
+          };
+
+          document.addEventListener("click", play);
+          document.addEventListener("touchstart", play);
 
           // Create audio source
           const source = audioContext.createMediaStreamSource(audio.srcObject);
@@ -243,15 +270,6 @@ export function useHost(id: number, host: string) {
           // Connect nodes
           source.connect(panner);
           panner.connect(audioContext.destination);
-
-          if (audioContext.state === "suspended") audioContext.resume();
-
-          // Play audio on user interaction
-          const play = async () => {
-            if (audioContext.state === "suspended") await audioContext.resume();
-            document.removeEventListener("click", play);
-          };
-          document.addEventListener("click", play);
 
           // Store panner
           panners.set(data.playerId, panner);
@@ -322,9 +340,12 @@ export function useHost(id: number, host: string) {
     return () => {
       if (publishInterval) clearInterval(publishInterval);
       ws.close();
+      setSpaceJoined(false);
       useAppStore.setState({ ws: null, players: null, playerId: null });
       players.names.forEach((_, id) => engine.player.removePlayer(id));
-      setSpaceJoined(false);
+      document.removeEventListener("click", play);
+      document.removeEventListener("touchstart", play);
+      audioContext.close();
     };
   }, [engine, utils, id, host, reconnectCount]);
 

@@ -24,7 +24,6 @@ export class Player {
   #address: string | null = null;
   #avatar: string | null = null;
 
-  #audioPaused = true;
   #producer: Producer | null = null;
   #dataProducer: DataProducer | null = null;
   #rtpCapabilities: RtpCapabilities | null = null;
@@ -75,14 +74,6 @@ export class Player {
   set avatar(avatar: string | null) {
     this.#avatar = avatar;
     this.spaces.forEach((space) => space.setAvatar(this, avatar));
-  }
-
-  get audioPaused() {
-    return this.#audioPaused;
-  }
-
-  set audioPaused(audioPaused: boolean) {
-    this.#audioPaused = audioPaused;
   }
 
   get rtpCapabilities() {
@@ -245,6 +236,14 @@ export class Player {
     } catch (err) {
       console.warn(err);
     }
+  }
+
+  resumeAudio() {
+    this.consumers.forEach((consumers) => {
+      consumers.forEach((consumer) => {
+        if (consumer.paused && !consumer.closed) consumer.resume();
+      });
+    });
   }
 
   #startConsuming() {

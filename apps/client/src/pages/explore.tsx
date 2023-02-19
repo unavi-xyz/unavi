@@ -29,7 +29,7 @@ export default function Explore() {
               ? spaces.map(({ id, metadata }) => {
                   return (
                     <Link key={id} href={`/space/${numberToHexDisplay(id)}`} className="rounded-xl">
-                      <SpaceCard id={id} metadata={metadata} animateEnter />
+                      <SpaceCard id={id} metadata={metadata} sizes="512" animateEnter />
                     </Link>
                   );
                 })

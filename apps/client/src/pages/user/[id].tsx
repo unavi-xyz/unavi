@@ -188,7 +188,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
               {spaces?.map(({ id, metadata }) => {
                 return (
                   <Link href={`/space/${numberToHexDisplay(id)}`} key={id} className="rounded-xl">
-                    <SpaceCard id={id} metadata={metadata} animateEnter />
+                    <SpaceCard id={id} metadata={metadata} sizes="512" animateEnter />
                   </Link>
                 );
               })}

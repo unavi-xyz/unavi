@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useAppStore } from "../store";
+import { usePlayStore } from "../store";
 
 export type ChatMessage =
   | {
@@ -26,7 +26,7 @@ interface Props {
 }
 
 export default function ChatMessage({ message, alwaysShow }: Props) {
-  const chatBoxFocused = useAppStore((state) => state.chatBoxFocused);
+  const chatBoxFocused = usePlayStore((state) => state.chatBoxFocused);
   const [visible, setVisible] = useState(false);
   const [hidden, setHidden] = useState(false);
 

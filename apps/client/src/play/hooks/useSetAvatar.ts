@@ -1,6 +1,6 @@
-import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
 import { env } from "../../env/client.mjs";
+import { usePlayStore } from "../../play/store";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "./useHost";
 
@@ -12,10 +12,10 @@ export function useSetAvatar() {
   const { mutateAsync: createTempUpload } = trpc.public.tempUploadURL.useMutation();
 
   async function setAvatar(avatar: string) {
-    const { engine } = useAppStore.getState();
+    const { engine } = usePlayStore.getState();
     if (!engine) return;
 
-    useAppStore.setState({ didChangeAvatar: false });
+    usePlayStore.setState({ didChangeAvatar: false });
 
     let avatarURL = avatar;
 
@@ -36,7 +36,7 @@ export function useSetAvatar() {
       avatarURL = getTempURL(fileId);
     }
 
-    useAppStore.setState({ avatar: avatarURL });
+    usePlayStore.setState({ avatar: avatarURL });
 
     // Update engine
     engine.render.send({ subject: "set_user_avatar", data: avatarURL });

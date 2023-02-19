@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 
 import { TrpcContext } from "../../client/trpc";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
-import { useAppStore } from "../store";
+import { usePlayStore } from "../store";
 import { addChatMessage } from "../utils/addChatMessage";
 
 export class PlayerName {
@@ -37,7 +37,7 @@ export class PlayerName {
     const player = this.#engine.player.getPlayer(this.id);
     if (player) player.name = value;
 
-    const { playerId } = useAppStore.getState();
+    const { playerId } = usePlayStore.getState();
     if (this.id === playerId) console.info("🪪 You are now", value);
     else console.info("🪪 Player", this.hexId, "is now", value);
   }

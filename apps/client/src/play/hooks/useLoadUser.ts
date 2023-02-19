@@ -1,15 +1,15 @@
 import { useEffect } from "react";
 
-import { useAppStore } from "../../app/store";
 import { useSession } from "../../client/auth/useSession";
+import { usePlayStore } from "../../play/store";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "./useHost";
 import { usePlayerName } from "./usePlayerName";
 
 export function useLoadUser() {
-  const engine = useAppStore((state) => state.engine);
-  const ws = useAppStore((state) => state.ws);
-  const playerId = useAppStore((state) => state.playerId);
+  const engine = usePlayStore((state) => state.engine);
+  const ws = usePlayStore((state) => state.ws);
+  const playerId = usePlayStore((state) => state.playerId);
   const playerName = usePlayerName(playerId);
   const { data: session } = useSession();
 
@@ -18,14 +18,14 @@ export function useLoadUser() {
     if (!playerName) return;
     const localName = localStorage.getItem(LocalStorageKey.Name);
     playerName.nickname = localName;
-    useAppStore.setState({ nickname: localName });
+    usePlayStore.setState({ nickname: localName });
   }, [playerName]);
 
   // Load avatar from local storage on initial load
   useEffect(() => {
     if (!engine || !ws || ws.readyState !== ws.OPEN) return;
     const localAvatar = localStorage.getItem(LocalStorageKey.Avatar);
-    useAppStore.setState({ avatar: localAvatar });
+    usePlayStore.setState({ avatar: localAvatar });
     // Update engine
     engine.render.send({ subject: "set_user_avatar", data: localAvatar });
     // Publish to host

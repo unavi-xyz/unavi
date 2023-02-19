@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 
-import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
 import { env } from "../../env/client.mjs";
+import { usePlayStore } from "../../play/store";
 import { useHost } from "./useHost";
 
 const host =
@@ -14,7 +14,7 @@ export function useSpace(id: number) {
   const [sceneDownloaded, setSceneDownloaded] = useState(false);
   const [sceneLoaded, setSceneLoaded] = useState(false);
 
-  const engine = useAppStore((state) => state.engine);
+  const engine = usePlayStore((state) => state.engine);
 
   const { spaceJoined } = useHost(id, host);
 

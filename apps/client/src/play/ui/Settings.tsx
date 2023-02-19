@@ -10,7 +10,7 @@ import FileInput from "../../ui/FileInput";
 import TextField from "../../ui/TextField";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
 import { ModelStats } from "../../utils/getModelStats";
-import { useAppStore } from "../store";
+import { usePlayStore } from "../store";
 import { avatarPerformanceRank } from "../utils/avatarPerformanceRank";
 import { clientGetModelStats } from "../utils/clientGetModelStats";
 
@@ -19,9 +19,9 @@ interface Props {
 }
 
 export default function Settings({ onClose }: Props) {
-  const nickname = useAppStore((state) => state.nickname);
-  const avatar = useAppStore((state) => state.avatar);
-  const playerId = useAppStore((state) => state.playerId);
+  const nickname = usePlayStore((state) => state.nickname);
+  const avatar = usePlayStore((state) => state.avatar);
+  const playerId = usePlayStore((state) => state.playerId);
   const [avatarName, setAvatarName] = useState<string>();
   const [stats, setStats] = useState<ModelStats | null>(null);
 
@@ -63,7 +63,7 @@ export default function Settings({ onClose }: Props) {
           placeholder={guestName}
           value={nickname ?? ""}
           onChange={(e) => {
-            useAppStore.setState({ didChangeName: true, nickname: e.target.value });
+            usePlayStore.setState({ didChangeName: true, nickname: e.target.value });
           }}
           className="h-full w-full rounded-lg bg-neutral-200/50 px-4 py-2 text-center text-neutral-900 placeholder:text-neutral-400"
         />
@@ -114,7 +114,7 @@ export default function Settings({ onClose }: Props) {
             <button
               onClick={() => {
                 setAvatarName(undefined);
-                useAppStore.setState({ didChangeAvatar: true, avatar: null });
+                usePlayStore.setState({ didChangeAvatar: true, avatar: null });
               }}
               className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
             >
@@ -134,7 +134,7 @@ export default function Settings({ onClose }: Props) {
                 if (!file) return;
 
                 const url = URL.createObjectURL(file);
-                useAppStore.setState({ didChangeAvatar: true, avatar: url });
+                usePlayStore.setState({ didChangeAvatar: true, avatar: url });
                 setAvatarName(file.name);
               }}
             />

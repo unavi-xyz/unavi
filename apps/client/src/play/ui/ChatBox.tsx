@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { useAppStore } from "../../app/store";
+import { usePlayStore } from "../../play/store";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { sendToHost } from "../hooks/useHost";
 import ChatMessage from "./ChatMessage";
@@ -12,8 +12,8 @@ interface Props {
 export default function ChatBox({ alwaysShow }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const chatBoxFocused = useAppStore((state) => state.chatBoxFocused);
-  const chatMessages = useAppStore((state) => state.chatMessages);
+  const chatBoxFocused = usePlayStore((state) => state.chatBoxFocused);
+  const chatMessages = usePlayStore((state) => state.chatMessages);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function ChatBox({ alwaysShow }: Props) {
             if (e.key === "Enter") {
               e.preventDefault();
 
-              const { playerId, players } = useAppStore.getState();
+              const { playerId, players } = usePlayStore.getState();
               if (playerId === null || !players) return;
 
               const text = e.currentTarget.value;
@@ -62,8 +62,8 @@ export default function ChatBox({ alwaysShow }: Props) {
               sendToHost({ subject: "chat", data: text });
             }
           }}
-          onFocus={() => useAppStore.setState({ chatBoxFocused: true })}
-          onBlur={() => useAppStore.setState({ chatBoxFocused: false })}
+          onFocus={() => usePlayStore.setState({ chatBoxFocused: true })}
+          onBlur={() => usePlayStore.setState({ chatBoxFocused: false })}
           type="text"
           placeholder="Send a message..."
           className={`h-full w-full rounded-lg px-4 py-2 text-white outline-none drop-shadow backdrop-blur-2xl transition placeholder:drop-shadow ${focusedClass}`}

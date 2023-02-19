@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { useAppStore } from "../../app/store";
+import { usePlayStore } from "../store";
 
-export function useAppHotkeys() {
+export function useHotkeys() {
   useEffect(() => {
     async function handleKeyDown(e: KeyboardEvent) {
       const isPointerLocked = document.pointerLockElement !== null;
@@ -16,7 +16,7 @@ export function useAppHotkeys() {
         case "T":
         case "t": {
           e.preventDefault();
-          useAppStore.setState({ chatBoxFocused: true });
+          usePlayStore.setState({ chatBoxFocused: true });
           break;
         }
       }

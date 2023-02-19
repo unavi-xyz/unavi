@@ -4,8 +4,8 @@ import { Transport } from "mediasoup-client/lib/Transport";
 import { fromHostMessageSchema, ToHostMessage } from "protocol";
 import { useEffect, useState } from "react";
 
-import { useAppStore } from "../../app/store";
 import { trpc } from "../../client/trpc";
+import { usePlayStore } from "../../play/store";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
 import { PlayerName } from "../networking/PlayerName";
 import { Players } from "../networking/Players";
@@ -13,7 +13,7 @@ import { Players } from "../networking/Players";
 const PUBLISH_HZ = 15; // X times per second
 
 export function useHost(id: number, host: string) {
-  const engine = useAppStore((state) => state.engine);
+  const engine = usePlayStore((state) => state.engine);
   const utils = trpc.useContext();
 
   const [spaceJoined, setSpaceJoined] = useState(false);
@@ -44,7 +44,7 @@ export function useHost(id: number, host: string) {
     document.addEventListener("click", play);
     document.addEventListener("touchstart", play);
 
-    useAppStore.setState({ ws, players });
+    usePlayStore.setState({ ws, players });
 
     let publishInterval: NodeJS.Timeout | null = null;
     let consumerTransport: Transport | null = null;
@@ -90,7 +90,7 @@ export function useHost(id: number, host: string) {
           console.info(`🌏 Joined space as player ${numberToHexDisplay(data.playerId)}`);
           const name = new PlayerName(data.playerId, utils, engine);
           players.names.set(data.playerId, name);
-          useAppStore.setState({ playerId: data.playerId });
+          usePlayStore.setState({ playerId: data.playerId });
           break;
         }
 
@@ -125,24 +125,24 @@ export function useHost(id: number, host: string) {
             console.info(`WebRTC - ${data.type} ${state}`);
 
             if (state === "connected" && data.type === "producer") {
-              const { producerTransport, producedTrack } = useAppStore.getState();
+              const { producerTransport, producedTrack } = usePlayStore.getState();
 
               // Produce audio
               if (producedTrack && producerTransport) {
                 const producer = await producerTransport.produce({ track: producedTrack });
 
-                const { micPaused } = useAppStore.getState();
+                const { micPaused } = usePlayStore.getState();
 
                 if (micPaused) producer.pause();
                 else producer.resume();
 
-                useAppStore.setState({ producer });
+                usePlayStore.setState({ producer });
               }
             }
           });
 
           if (data.type === "producer") {
-            useAppStore.setState({ producerTransport: transport });
+            usePlayStore.setState({ producerTransport: transport });
 
             transport.on("produce", async ({ kind, rtpParameters }, callback) => {
               if (kind === "video") throw new Error("Video not supported");
@@ -166,7 +166,7 @@ export function useHost(id: number, host: string) {
             const view = new DataView(buffer);
 
             publishInterval = setInterval(() => {
-              const { playerId } = useAppStore.getState();
+              const { playerId } = usePlayStore.getState();
               if (playerId === null || dataProducer.readyState !== "open") return;
 
               // Set audio listener location
@@ -341,7 +341,7 @@ export function useHost(id: number, host: string) {
       if (publishInterval) clearInterval(publishInterval);
       ws.close();
       setSpaceJoined(false);
-      useAppStore.setState({ ws: null, players: null, playerId: null });
+      usePlayStore.setState({ ws: null, players: null, playerId: null });
       players.names.forEach((_, id) => engine.player.removePlayer(id));
       document.removeEventListener("click", play);
       document.removeEventListener("touchstart", play);
@@ -353,7 +353,7 @@ export function useHost(id: number, host: string) {
 }
 
 export function sendToHost(message: ToHostMessage) {
-  const { ws } = useAppStore.getState();
+  const { ws } = usePlayStore.getState();
   if (!ws || ws.readyState !== ws.OPEN) return;
 
   ws.send(JSON.stringify(message));

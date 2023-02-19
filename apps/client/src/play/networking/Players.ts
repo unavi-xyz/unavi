@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { FromHostMessage } from "protocol";
 
 import { TrpcContext } from "../../client/trpc";
-import { useAppStore } from "../store";
+import { usePlayStore } from "../store";
 import { addChatMessage } from "../utils/addChatMessage";
 import { PlayerName } from "./PlayerName";
 
@@ -19,7 +19,7 @@ export class Players {
   }
 
   onmessage({ subject, data }: FromHostMessage) {
-    const { playerId: userId } = useAppStore.getState();
+    const { playerId: userId } = usePlayStore.getState();
 
     switch (subject) {
       case "player_joined": {

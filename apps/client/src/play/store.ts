@@ -6,7 +6,7 @@ import { create } from "zustand";
 import { Players } from "./networking/Players";
 import { ChatMessage } from "./ui/ChatMessage";
 
-export interface AppStore {
+export interface PlayStore {
   engine: Engine | null;
   ws: WebSocket | null;
   players: Players | null;
@@ -26,7 +26,7 @@ export interface AppStore {
   chatMessages: ChatMessage[];
 }
 
-export const useAppStore = create<AppStore>(() => ({
+export const usePlayStore = create<PlayStore>(() => ({
   engine: null,
   ws: null,
   players: null,

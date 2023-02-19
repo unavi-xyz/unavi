@@ -11,13 +11,13 @@ import { useIsMobile } from "../../utils/useIsMobile";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "../hooks/useHost";
 import { useSetAvatar } from "../hooks/useSetAvatar";
-import { useAppStore } from "../store";
+import { usePlayStore } from "../store";
 import ChatBox from "./ChatBox";
 import MobileChatBox from "./MobileChatBox";
 import Settings from "./Settings";
 
 export default function Overlay() {
-  const engine = useAppStore((state) => state.engine);
+  const engine = usePlayStore((state) => state.engine);
   const [openSettings, setOpenSettings] = useState(false);
   const [muted, setMuted] = useState(true);
   const hasProducedAudio = useRef(false);
@@ -40,14 +40,14 @@ export default function Overlay() {
     if (!engine) return;
 
     const { didChangeName, didChangeAvatar, nickname, avatar, playerId, players } =
-      useAppStore.getState();
+      usePlayStore.getState();
 
     if (!players || playerId === null) return;
     const playerName = players.names.get(playerId);
     if (!playerName) return;
 
     if (didChangeName) {
-      useAppStore.setState({ didChangeName: false });
+      usePlayStore.setState({ didChangeName: false });
 
       // Update name
       playerName.nickname = nickname;
@@ -61,7 +61,7 @@ export default function Overlay() {
     }
 
     if (didChangeAvatar) {
-      useAppStore.setState({ didChangeAvatar: false });
+      usePlayStore.setState({ didChangeAvatar: false });
 
       // Update engine
       engine.render.send({ subject: "set_user_avatar", data: avatar });
@@ -78,12 +78,12 @@ export default function Overlay() {
   }
 
   async function handleMic() {
-    const { engine } = useAppStore.getState();
+    const { engine } = usePlayStore.getState();
     if (!engine) throw new Error("Engine not found");
 
     // Toggle mic
     const isMuted = !muted;
-    useAppStore.setState({ micPaused: isMuted });
+    usePlayStore.setState({ micPaused: isMuted });
     setMuted(isMuted);
 
     // If first time using mic, request permission
@@ -95,16 +95,16 @@ export default function Overlay() {
       const track = stream.getAudioTracks()[0];
       if (!track) throw new Error("No audio track found");
 
-      const { producerTransport } = useAppStore.getState();
+      const { producerTransport } = usePlayStore.getState();
       if (!producerTransport) throw new Error("Producer transport not found");
 
       const producer = await producerTransport.produce({ track });
 
-      useAppStore.setState({ producer, producedTrack: track });
+      usePlayStore.setState({ producer, producedTrack: track });
       hasProducedAudio.current = true;
     }
 
-    const { producer } = useAppStore.getState();
+    const { producer } = usePlayStore.getState();
 
     if (isMuted) producer?.pause();
     else producer?.resume();

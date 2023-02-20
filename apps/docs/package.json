@@ -1,0 +1,13 @@
+{
+  "name": "docs",
+  "version": "0.0.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "generate": "typedoc --plugin typedoc-plugin-markdown --out generated"
+  },
+  "devDependencies": {
+    "typedoc": "^0.23.25",
+    "typedoc-plugin-markdown": "^3.14.0"
+  }
+}

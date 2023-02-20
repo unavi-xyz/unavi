@@ -13,7 +13,7 @@ export default function MobileChatBox() {
           <div className="flex w-full justify-end">
             <button
               onClick={() => setOpenChat(false)}
-              className="rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg active:bg-white/90 active:shadow-lg"
+              className="rounded-full bg-white p-3 text-2xl shadow transition hover:shadow-lg active:scale-95 active:shadow-lg"
             >
               <MdClose />
             </button>
@@ -27,7 +27,7 @@ export default function MobileChatBox() {
 
       <button
         onClick={() => setOpenChat(true)}
-        className="rounded-full bg-white/70 p-4 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/70 hover:shadow-md active:opacity-80"
+        className="rounded-full bg-white/80 p-4 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/90 hover:shadow-md active:scale-95"
       >
         <MdOutlineChat />
       </button>

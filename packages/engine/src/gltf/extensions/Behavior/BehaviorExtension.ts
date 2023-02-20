@@ -19,7 +19,7 @@ type BehaviorExtensionDef = {
 };
 
 /**
- * @link https://github.com/ux3d/glTF/tree/extensions/KHR_behavior/extensions/2.0/Khronos/KHR_behavior
+ * Implementation of the {@link https://github.com/ux3d/glTF/tree/extensions/KHR_behavior/extensions/2.0/Khronos/KHR_behavior KHR_behavior} extension.
  */
 export class BehaviorExtension extends Extension {
   static override readonly EXTENSION_NAME = EXTENSION_NAME;

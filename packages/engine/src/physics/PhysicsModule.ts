@@ -6,6 +6,11 @@ import { FakeWorker } from "../utils/FakeWorker";
 import { PhysicsEvent } from "./events";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
 
+/**
+ * Acts as an interface between the main thread and the physics thread.
+ *
+ * @group modules
+ */
 export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
   readonly engine: Engine;
 
@@ -73,6 +78,12 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
     }
   };
 
+  /**
+   * Sends a message to the physics worker.
+   *
+   * @param message The message to send
+   * @param transferables Transferable objects to send with the message
+   */
   send(message: ToPhysicsMessage, transferables?: Transferable[]) {
     // If not ready, queue message
     if (!this.ready) {

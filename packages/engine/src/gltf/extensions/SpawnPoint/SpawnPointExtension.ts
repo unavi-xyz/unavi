@@ -8,7 +8,7 @@ type SpawnPointDef = {
 };
 
 /**
- * @link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point
+ * Implementation of the {@link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point OMI_spawn_point} extension.
  */
 export class SpawnPointExtension extends Extension {
   static override readonly EXTENSION_NAME = EXTENSION_NAME;

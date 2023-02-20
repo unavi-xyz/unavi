@@ -4,6 +4,9 @@ import { Engine } from "../Engine";
 import { ValueType } from "../gltf";
 import { parseJSONPath } from "./parseJsonPath";
 
+/**
+ * Used by behaviors to access the scene.
+ */
 export class BehaviorScene implements IScene {
   #engine: Engine;
 

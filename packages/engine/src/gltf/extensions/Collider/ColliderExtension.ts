@@ -22,7 +22,7 @@ type ColliderExtensionDef = {
 };
 
 /**
- * @link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_collider
+ * Implementation of the {@link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_collider OMI_collider} extension.
  */
 export class ColliderExtension extends Extension {
   static override readonly EXTENSION_NAME = EXTENSION_NAME;

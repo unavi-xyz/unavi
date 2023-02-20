@@ -3,6 +3,9 @@ import { ControlsType } from "../Engine";
 import { InputModule } from "./InputModule";
 import { PointerData } from "./messages";
 
+/**
+ * Handles keyboard and mouse input.
+ */
 export class KeyboardInput {
   #module: InputModule;
 

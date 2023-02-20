@@ -16,6 +16,9 @@ import { Nodes } from "./attributes/Nodes";
 import { Primitives } from "./attributes/Primitives";
 import { Textures } from "./attributes/Textures";
 
+/**
+ * The internal representation of a scene.
+ */
 export class Scene {
   doc = new Document();
 
@@ -33,6 +36,10 @@ export class Scene {
   mesh = new Meshes(this.doc, this.primitive);
   node = new Nodes(this);
 
+  /**
+   * Adds the given document to the scene.
+   * @param doc The document to merge.
+   */
   async addDocument(doc: Document) {
     this.doc.merge(doc);
 

@@ -26,6 +26,10 @@ const VOID_HEIGHT = -100;
 const CHARACTER_OFFSET = 0.02;
 const RIGID_BODY_FEET_OFFSET = PLAYER_HEIGHT / 2 + PLAYER_RADIUS + CHARACTER_OFFSET;
 
+/**
+ * Represents the player in the physics thread.
+ * Reads input from the main thread, and updates the player's position.
+ */
 export class Player {
   #world: World;
   #scene: PhysicsScene;

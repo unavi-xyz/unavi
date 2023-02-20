@@ -2,6 +2,11 @@ import { Engine } from "../Engine";
 import { KeyboardInput } from "./KeyboardInput";
 import { MobileInput } from "./MobileInput";
 
+/**
+ * Handles input from the user.
+ *
+ * @group modules
+ */
 export class InputModule {
   readonly engine: Engine;
 

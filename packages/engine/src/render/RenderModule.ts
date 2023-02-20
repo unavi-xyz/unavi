@@ -6,6 +6,12 @@ import { FakeWorker } from "../utils/FakeWorker";
 import { RenderEvent } from "./events";
 import { FromRenderMessage, ToRenderMessage } from "./messages";
 
+/**
+ * Acts as an interface between the main thread and the render thread.
+ * Only runs the render thread in a web worker if `OffscreenCanvas` is supported.
+ *
+ * @group modules
+ */
 export class RenderModule extends EventDispatcher<RenderEvent> {
   readonly engine: Engine;
 
@@ -129,6 +135,11 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     }
   };
 
+  /**
+   * Sends a message to the render worker.
+   * @param message The message to send.
+   * @param transferables Transferable objects to send with the message.
+   */
   send(message: ToRenderMessage, transferables?: Transferable[]) {
     // If not ready, queue message
     if (!this.ready) {

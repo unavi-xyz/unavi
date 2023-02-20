@@ -13,6 +13,12 @@ export interface EngineOptions {
   overlayCanvas: HTMLCanvasElement;
 }
 
+/**
+ * The main engine class.
+ *
+ * Uses two canvases, one for rendering and one for UI elements.
+ * Requires {@link https://web.dev/cross-origin-isolation-guide/ cross-origin isolation} to be enabled.
+ */
 export class Engine {
   readonly canvas: HTMLCanvasElement;
   readonly overlayCanvas: HTMLCanvasElement;
@@ -34,6 +40,12 @@ export class Engine {
   #controls: ControlsType = DEFAULT_CONTROLS;
   #visuals = DEFAULT_VISUALS;
 
+  /**
+   * Creates a new engine instance.
+   *
+   * @param canvas The canvas to render to.
+   * @param overlayCanvas The canvas to render the overlay to.
+   */
   constructor({ canvas, overlayCanvas }: EngineOptions) {
     this.canvas = canvas;
     this.overlayCanvas = overlayCanvas;

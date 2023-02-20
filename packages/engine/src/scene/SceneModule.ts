@@ -13,6 +13,12 @@ import { PrimitiveJSON } from "./attributes/Primitives";
 import { SceneMessage } from "./messages";
 import { Scene } from "./Scene";
 
+/**
+ * Handles scene related logic for the main thread.
+ * Syncs changes to the scene with the worker threads.
+ *
+ * @group modules
+ */
 export class SceneModule extends Scene {
   #render: RenderModule;
   #physics: PhysicsModule;

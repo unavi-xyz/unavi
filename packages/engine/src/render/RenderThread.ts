@@ -39,6 +39,10 @@ const CAMERA_FAR = 500;
 const SHADOW_CASCADES = 2;
 const SHADOW_BIAS = -0.0001;
 
+/**
+ * The render thread is responsible for rendering to the canvas.
+ * The render loop runs at the browser's requestAnimationFrame rate.
+ */
 export class RenderThread {
   #canvas: HTMLCanvasElement | OffscreenCanvas | null = null;
   postMessage: PostMessage<FromRenderMessage>;

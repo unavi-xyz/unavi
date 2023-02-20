@@ -16,6 +16,11 @@ const MIN_THIRD_PERSON_ANGLE = -Math.PI / 2;
 const MAX_THIRD_PERSON_ANGLE = Math.PI / 2;
 const MAX_ORBIT_DISTANCE = 15;
 
+/**
+ * Represents the player in the render thread.
+ * Reads input from the main thread, and player's position from the physics thread.
+ * Updates the player's rotation, camera position, and camera rotation.
+ */
 export class PlayerControls {
   #camera: PerspectiveCamera;
   #root: Object3D;

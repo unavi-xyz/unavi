@@ -26,11 +26,13 @@ const config = {
 
       /** @type {import('typedoc').TypeDocOptions} */
       {
-        entryPointStrategy: "packages",
-        entryPoints: ["../../packages/engine"],
-        readme: "none",
-        sidebar: { position: 100 },
+        entryPoints: ["../../packages/engine/src/index.ts"],
+        tsconfig: "../../packages/engine/tsconfig.json",
         excludePrivate: true,
+        readme: "none",
+        sidebar: {
+          position: 100,
+        },
       },
     ],
   ],

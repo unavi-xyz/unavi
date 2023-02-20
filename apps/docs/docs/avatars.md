@@ -21,7 +21,7 @@ It's important to keep in mind that players may automatically block low-performi
 ### Limits
 
 | Rank      | Polygons | Materials | Meshes | Skins | Bones |
-|-----------|----------|-----------|--------|-------|-------|
+| --------- | -------- | --------- | ------ | ----- | ----- |
 | Excellent | 7,500    | 1         | 1      | 1     | 75    |
 | Good      | 10,000   | 1         | 1      | 1     | 90    |
 | Medium    | 15,000   | 2         | 2      | 2     | 150   |

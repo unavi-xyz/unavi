@@ -50,6 +50,6 @@
   border: 1px solid #dadde1;
 }
 
-[data-theme='dark'] .large-img > img {
-  border: 0px
+[data-theme="dark"] .large-img > img {
+  border: 0px;
 }

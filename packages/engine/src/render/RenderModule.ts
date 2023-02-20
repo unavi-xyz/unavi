@@ -10,7 +10,7 @@ import { FromRenderMessage, ToRenderMessage } from "./messages";
  * Acts as an interface between the main thread and the render thread.
  * Only runs the render thread in a web worker if `OffscreenCanvas` is supported.
  *
- * @group modules
+ * @group Modules
  */
 export class RenderModule extends EventDispatcher<RenderEvent> {
   readonly engine: Engine;

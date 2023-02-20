@@ -1,4 +1,0 @@
-{
-  "entryPointStrategy": "packages",
-  "entryPoints": ["../../packages/engine", "../../packages/protocol"]
-}

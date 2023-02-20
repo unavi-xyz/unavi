@@ -4,7 +4,7 @@ import {
   JsonPathRef,
   ParameterLink,
   ParamLinkJSON,
-} from "../gltf";
+} from "../gltf/extensions/Behavior/types";
 
 export function isLink(param?: BehaviorNodeParameterValue): param is ParameterLink {
   return typeof param === "object" && "link" in param;

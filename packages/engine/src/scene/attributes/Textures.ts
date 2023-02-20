@@ -9,6 +9,11 @@ export interface TextureJSON {
   uri: string;
 }
 
+/**
+ * Stores and manages textures within a {@link Scene}.
+ *
+ * @group Scene
+ */
 export class Textures extends Attribute<Texture, TextureJSON> {
   #doc: Document;
 

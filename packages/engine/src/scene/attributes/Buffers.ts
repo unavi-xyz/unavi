@@ -7,6 +7,11 @@ export interface BufferJSON {
   uri: string;
 }
 
+/**
+ * Stores and manages buffers within a {@link Scene}.
+ *
+ * @group Scene
+ */
 export class Buffers extends Attribute<Buffer, BufferJSON> {
   #doc: Document;
 

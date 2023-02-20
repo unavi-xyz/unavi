@@ -1,4 +1,4 @@
-import { SPAWN_TITLES, SpawnPointExtension } from "engine";
+import { SPAWN_TITLE, SpawnPointExtension } from "engine";
 import { useId } from "react";
 
 import { DropdownItem } from "../../../ui/DropdownMenu";
@@ -84,7 +84,7 @@ function createNode(name: ObjectName) {
   switch (name) {
     case OBJECT_NAME.Spawn: {
       const spawnPoint = engine.scene.extensions.spawn.createSpawnPoint();
-      spawnPoint.title = SPAWN_TITLES.Default;
+      spawnPoint.title = SPAWN_TITLE.Default;
       node.setExtension(SpawnPointExtension.EXTENSION_NAME, spawnPoint);
       break;
     }

@@ -5,7 +5,7 @@ import { MobileInput } from "./MobileInput";
 /**
  * Handles input from the user.
  *
- * @group modules
+ * @group Modules
  */
 export class InputModule {
   readonly engine: Engine;

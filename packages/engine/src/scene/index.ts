@@ -5,3 +5,6 @@ export * from "./attributes/Meshes";
 export * from "./attributes/Nodes";
 export * from "./attributes/Primitives";
 export * from "./attributes/Textures";
+export * from "./messages";
+export * from "./Scene";
+export * from "./SceneModule";

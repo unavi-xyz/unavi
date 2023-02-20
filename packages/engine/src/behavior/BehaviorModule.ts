@@ -16,7 +16,7 @@ const TICK_HZ = 60;
 /**
  * Handles the lifecycle of the behavior engine.
  *
- * @group modules
+ * @group Modules
  */
 export class BehaviorModule {
   #engine: Engine;

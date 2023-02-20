@@ -1,7 +1,7 @@
 import { ExtensionProperty, IProperty, Mesh, Nullable, PropertyType } from "@gltf-transform/core";
 
 import { Vec3 } from "../../../types";
-import { EXTENSION_NAME, PROPERTY_TYPE } from "./constants";
+import { EXTENSION_NAME } from "../constants";
 import { ColliderType } from "./types";
 
 interface ICollider extends IProperty {
@@ -12,10 +12,16 @@ interface ICollider extends IProperty {
   mesh: Mesh;
 }
 
+/**
+ * Represents a physics collider.
+ *
+ * @group GLTF Extensions
+ * @see {@link ColliderExtension}
+ */
 export class Collider extends ExtensionProperty<ICollider> {
-  static override EXTENSION_NAME = EXTENSION_NAME;
-  declare extensionName: typeof EXTENSION_NAME;
-  declare propertyType: typeof PROPERTY_TYPE;
+  static override EXTENSION_NAME = EXTENSION_NAME.Collider;
+  declare extensionName: typeof EXTENSION_NAME.Collider;
+  declare propertyType: "Collider";
   declare parentTypes: [PropertyType.NODE];
 
   static Type: Record<string, ColliderType> = {
@@ -28,8 +34,8 @@ export class Collider extends ExtensionProperty<ICollider> {
   };
 
   protected init() {
-    this.extensionName = EXTENSION_NAME;
-    this.propertyType = PROPERTY_TYPE;
+    this.extensionName = EXTENSION_NAME.Collider;
+    this.propertyType = "Collider";
     this.parentTypes = [PropertyType.NODE];
   }
 

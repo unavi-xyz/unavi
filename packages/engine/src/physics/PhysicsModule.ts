@@ -9,7 +9,7 @@ import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
 /**
  * Acts as an interface between the main thread and the physics thread.
  *
- * @group modules
+ * @group Modules
  */
 export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
   readonly engine: Engine;

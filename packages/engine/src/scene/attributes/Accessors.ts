@@ -14,6 +14,11 @@ export interface AccessorJSON {
   buffer: BufferId | null;
 }
 
+/**
+ * Stores and manages accessors within a {@link Scene}.
+ *
+ * @group Scene
+ */
 export class Accessors extends Attribute<Accessor, AccessorJSON> {
   #doc: Document;
   #buffer: Buffers;

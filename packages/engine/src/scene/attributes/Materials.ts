@@ -35,6 +35,11 @@ export interface MaterialJSON {
   metallicRoughnessTextureInfo: TextureInfoJSON | null;
 }
 
+/**
+ * Stores and manages materials within a {@link Scene}.
+ *
+ * @group Scene
+ */
 export class Materials extends Attribute<Material, MaterialJSON> {
   #doc: Document;
   #texture: Textures;

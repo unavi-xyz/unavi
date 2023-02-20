@@ -1,4 +1,4 @@
-import { ColliderExtension, SPAWN_TITLES } from "engine";
+import { ColliderExtension, SPAWN_TITLE } from "engine";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 
@@ -146,7 +146,7 @@ export default function InspectMenu() {
                         if (!engine) return;
 
                         const spawnPoint = engine.scene.extensions.spawn.createSpawnPoint();
-                        spawnPoint.title = SPAWN_TITLES.Default;
+                        spawnPoint.title = SPAWN_TITLE.Default;
                         node.setExtension("OMI_spawn_point", spawnPoint);
                       }}
                     >

@@ -89,7 +89,7 @@ export class SceneModule extends Scene {
   async addBinary(array: Uint8Array) {
     const io = await this.#createIO();
     const doc = await io.readBinary(array);
-    this.addDocument(doc);
+    await this.addDocument(doc);
   }
 
   async addFile(file: File) {
@@ -126,7 +126,7 @@ export class SceneModule extends Scene {
         node.setExtension<Collider>(ColliderExtension.EXTENSION_NAME, meshCollider);
       });
 
-    this.addDocument(doc);
+    await this.addDocument(doc);
   }
 
   clear() {

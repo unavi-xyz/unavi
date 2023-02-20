@@ -64,10 +64,12 @@ export function useSave() {
   }
 
   async function save() {
-    const { isSaving, sceneLoaded } = useEditorStore.getState();
+    const { isSaving, sceneLoaded, stopPlaying } = useEditorStore.getState();
     if (isSaving || !sceneLoaded) return;
 
     useEditorStore.setState({ isSaving: true });
+
+    await stopPlaying();
 
     try {
       await Promise.all([saveImage(), saveModel(), saveMetadata()]);

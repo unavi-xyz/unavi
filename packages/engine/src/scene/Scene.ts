@@ -33,7 +33,7 @@ export class Scene {
   mesh = new Meshes(this.doc, this.primitive);
   node = new Nodes(this);
 
-  addDocument(doc: Document) {
+  async addDocument(doc: Document) {
     this.doc.merge(doc);
 
     // Transfer behavior nodes
@@ -91,6 +91,9 @@ export class Scene {
     });
 
     this.processChanges();
+
+    // Wait to let threads to finish
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   processChanges() {

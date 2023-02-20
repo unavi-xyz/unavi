@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FaPlay, FaStop } from "react-icons/fa";
 
 import IconButton from "../../../ui/IconButton";
@@ -7,48 +7,55 @@ import { useEditorStore } from "../../store";
 
 export default function PlayButton() {
   const isPlaying = useEditorStore((state) => state.isPlaying);
+  const engine = useEditorStore((state) => state.engine);
+  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
   const [scene, setScene] = useState<Uint8Array>();
 
-  async function handlePlay() {
-    const { engine, sceneLoaded } = useEditorStore.getState();
+  const startPlaying = useCallback(async () => {
     if (!engine || !sceneLoaded) return;
 
-    if (engine.controls === "player") {
-      // Exit play mode
-      engine.behavior.stop();
-      engine.controls = "orbit";
+    // Export scene
+    useEditorStore.setState({ sceneLoaded: false });
+    const glb = await engine.scene.export();
+    setScene(glb);
+    useEditorStore.setState({ sceneLoaded: true });
 
-      engine.physics.send({ subject: "stop", data: null });
+    // Enter play mode
+    engine.controls = "player";
+    engine.physics.send({ subject: "respawn", data: null });
+    engine.physics.send({ subject: "start", data: null });
+    engine.behavior.start();
 
-      // Reset scene
-      if (scene) {
-        engine.scene.clear();
+    useEditorStore.setState({ isPlaying: true });
+  }, [engine, sceneLoaded]);
 
-        useEditorStore.setState({ sceneLoaded: false });
-        await engine.scene.addBinary(scene);
-        setScene(undefined);
-        useEditorStore.setState({ sceneLoaded: true });
-      }
+  const stopPlaying = useCallback(async () => {
+    if (!engine || !sceneLoaded) return;
 
-      useEditorStore.setState({ isPlaying: false });
-    } else {
-      // Export scene
-      const glb = await engine.scene.export();
-      setScene(glb);
+    // Exit play mode
+    engine.behavior.stop();
+    engine.controls = "orbit";
+    engine.physics.send({ subject: "stop", data: null });
 
-      // Enter play mode
-      engine.controls = "player";
-      engine.physics.send({ subject: "respawn", data: null });
-      engine.physics.send({ subject: "start", data: null });
-      engine.behavior.start();
-
-      useEditorStore.setState({ isPlaying: true });
+    // Reset scene
+    if (scene) {
+      useEditorStore.setState({ sceneLoaded: false });
+      engine.scene.clear();
+      await engine.scene.addBinary(scene);
+      setScene(undefined);
+      useEditorStore.setState({ sceneLoaded: true });
     }
-  }
+
+    useEditorStore.setState({ isPlaying: false });
+  }, [engine, sceneLoaded, scene]);
+
+  useEffect(() => {
+    useEditorStore.setState({ stopPlaying });
+  }, [stopPlaying]);
 
   return (
     <Tooltip text={`${isPlaying ? "Stop" : "Play"}`} side="bottom">
-      <IconButton onClick={handlePlay}>
+      <IconButton onClick={isPlaying ? stopPlaying : startPlaying}>
         {isPlaying ? <FaStop className="text-sm" /> : <FaPlay className="text-sm" />}
       </IconButton>
     </Tooltip>

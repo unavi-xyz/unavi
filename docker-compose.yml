@@ -15,17 +15,17 @@ services:
     working_dir: /var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password --lower_case_table_names=1
 
-  ipfs:
-    container_name: ipfs
-    build:
-      context: .
-      dockerfile: ./docker/ipfs.Dockerfile
-    restart: unless-stopped
-    ports:
-      - 5001:5001
-      - 8080:8080
-    volumes:
-      - ipfs:/data/ipfs
+  # ipfs:
+  #   container_name: ipfs
+  #   build:
+  #     context: .
+  #     dockerfile: ./docker/ipfs.Dockerfile
+  #   restart: unless-stopped
+  #   ports:
+  #     - 5001:5001
+  #     - 8080:8080
+  #   volumes:
+  #     - ipfs:/data/ipfs
 
   minio:
     container_name: minio
@@ -64,7 +64,7 @@ services:
       - .env
     depends_on:
       - db
-      - ipfs
+      # - ipfs
       - minio
     ports:
       - 3000:3000/tcp
@@ -79,6 +79,6 @@ services:
 
 volumes:
   db:
-  ipfs:
+  # ipfs:
   minio:
   turbo:

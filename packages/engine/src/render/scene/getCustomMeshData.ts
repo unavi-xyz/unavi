@@ -3,6 +3,12 @@ import { BoxGeometry, BufferGeometry, CylinderGeometry, SphereGeometry } from "t
 import { CustomMesh } from "../../scene";
 import { THREE_ATTRIBUTE_NAMES } from "./constants";
 
+/**
+ * Get a custom mesh's geometry data.
+ *
+ * @param json The custom mesh JSON.
+ * @returns The geometry data.
+ */
 export function getCustomMeshData(json: CustomMesh) {
   let geometry: BufferGeometry;
 

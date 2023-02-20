@@ -40,6 +40,11 @@ export interface MeshJSON {
   extras?: MeshExtras;
 }
 
+/**
+ * Stores and manages meshes within a {@link Scene}.
+ *
+ * @group Scene
+ */
 export class Meshes extends Attribute<Mesh, MeshJSON> {
   #doc: Document;
   #primitive: Primitives;

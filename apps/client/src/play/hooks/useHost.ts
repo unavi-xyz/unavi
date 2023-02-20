@@ -12,6 +12,15 @@ import { Players } from "../networking/Players";
 
 const PUBLISH_HZ = 15; // X times per second
 
+/**
+ * Hook to connect to a host.
+ * This hook will create a WebSocket and WebRTC connection to the host and handle all
+ * incoming and outgoing messages.
+ *
+ * @param id Space ID
+ * @param host Host URL
+ * @returns Space joined status
+ */
 export function useHost(id: number, host: string) {
   const engine = usePlayStore((state) => state.engine);
   const utils = trpc.useContext();

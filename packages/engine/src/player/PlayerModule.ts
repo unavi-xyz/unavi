@@ -1,6 +1,11 @@
 import { Engine } from "../Engine";
 import { Player } from "./Player";
 
+/**
+ * Manages the lifecycle of players.
+ *
+ * @group Modules
+ */
 export class PlayerModules {
   readonly engine: Engine;
 

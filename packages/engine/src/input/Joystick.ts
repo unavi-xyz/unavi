@@ -4,6 +4,9 @@ import { InputModule } from "./InputModule";
 const FIXED_RADIUS = 70;
 const INNER_RADIUS = 30;
 
+/**
+ * Renders a joystick on the overlay canvas.
+ */
 export class Joystick {
   #module: InputModule;
 

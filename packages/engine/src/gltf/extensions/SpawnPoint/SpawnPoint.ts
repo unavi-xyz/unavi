@@ -1,21 +1,27 @@
 import { ExtensionProperty, IProperty, PropertyType } from "@gltf-transform/core";
 import { Nullable } from "@gltf-transform/core/dist/constants";
 
-import { EXTENSION_NAME, PROPERTY_TYPE } from "./constants";
+import { EXTENSION_NAME } from "../constants";
 
 interface ISpawnPoint extends IProperty {
   title: string;
 }
 
+/**
+ * Represents a spawn point.
+ *
+ * @group GLTF Extensions
+ * @see {@link SpawnPointExtension}
+ */
 export class SpawnPoint extends ExtensionProperty<ISpawnPoint> {
-  static override EXTENSION_NAME = EXTENSION_NAME;
-  declare extensionName: typeof EXTENSION_NAME;
-  declare propertyType: typeof PROPERTY_TYPE;
+  static override EXTENSION_NAME = EXTENSION_NAME.SpawnPoint;
+  declare extensionName: typeof EXTENSION_NAME.SpawnPoint;
+  declare propertyType: "SpawnPoint";
   declare parentTypes: [PropertyType.NODE];
 
   protected init() {
-    this.extensionName = EXTENSION_NAME;
-    this.propertyType = PROPERTY_TYPE;
+    this.extensionName = EXTENSION_NAME.SpawnPoint;
+    this.propertyType = "SpawnPoint";
     this.parentTypes = [PropertyType.NODE];
   }
 

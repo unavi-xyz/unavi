@@ -2,8 +2,8 @@ import { GraphJSON, NodeJSON } from "@behave-graph/core";
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
 import { isJsonPath, isLink } from "../../../behavior";
+import { EXTENSION_NAME } from "../constants";
 import { BehaviorNode } from "./BehaviorNode";
-import { EXTENSION_NAME } from "./constants";
 import { BehaviorNodeExtras, BehaviorNodeParametersJSON } from "./types";
 
 type BehaviorNodeDef = {
@@ -19,21 +19,23 @@ type BehaviorExtensionDef = {
 };
 
 /**
- * @link https://github.com/ux3d/glTF/tree/extensions/KHR_behavior/extensions/2.0/Khronos/KHR_behavior
+ * Implementation of the {@link https://github.com/ux3d/glTF/tree/extensions/KHR_behavior/extensions/2.0/Khronos/KHR_behavior KHR_behavior} extension.
+ *
+ * @group GLTF Extensions
  */
 export class BehaviorExtension extends Extension {
-  static override readonly EXTENSION_NAME = EXTENSION_NAME;
-  override readonly extensionName = EXTENSION_NAME;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.Behavior;
+  override readonly extensionName = EXTENSION_NAME.Behavior;
 
   createBehaviorNode(): BehaviorNode {
     return new BehaviorNode(this.document.getGraph());
   }
 
   read(context: ReaderContext) {
-    if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[EXTENSION_NAME])
+    if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[this.extensionName])
       return this;
 
-    const rootDef = context.jsonDoc.json.extensions[EXTENSION_NAME] as BehaviorExtensionDef;
+    const rootDef = context.jsonDoc.json.extensions[this.extensionName] as BehaviorExtensionDef;
 
     const behaviorNodes = rootDef.behaviorNodes.map((behaviorNodeDef) => {
       const behaviorNode = this.createBehaviorNode();
@@ -124,7 +126,7 @@ export class BehaviorExtension extends Extension {
       const rootDef: BehaviorExtensionDef = { behaviorNodes: behaviorNodeDefs };
 
       if (!context.jsonDoc.json.extensions) context.jsonDoc.json.extensions = {};
-      context.jsonDoc.json.extensions[EXTENSION_NAME] = rootDef;
+      context.jsonDoc.json.extensions[this.extensionName] = rootDef;
     }
 
     return this;

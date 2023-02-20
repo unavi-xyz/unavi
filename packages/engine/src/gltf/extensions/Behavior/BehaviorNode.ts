@@ -1,6 +1,6 @@
 import { ExtensionProperty, IProperty, Nullable } from "@gltf-transform/core";
 
-import { EXTENSION_NAME, PROPERTY_TYPE } from "./constants";
+import { EXTENSION_NAME } from "../constants";
 import { BehaviorNodeParameters } from "./types";
 
 interface IBehaviorNode extends IProperty {
@@ -10,15 +10,21 @@ interface IBehaviorNode extends IProperty {
   flow: Record<string, BehaviorNode> | null;
 }
 
+/**
+ * Represents a single node in the behavior graph.
+ *
+ * @group GLTF Extensions
+ * @see {@link BehaviorExtension}
+ */
 export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
-  static override EXTENSION_NAME = EXTENSION_NAME;
-  declare extensionName: typeof EXTENSION_NAME;
-  declare propertyType: typeof PROPERTY_TYPE;
+  static override EXTENSION_NAME = EXTENSION_NAME.Behavior;
+  declare extensionName: typeof EXTENSION_NAME.Behavior;
+  declare propertyType: "BehaviorNode";
   declare parentTypes: [];
 
   protected init() {
-    this.extensionName = EXTENSION_NAME;
-    this.propertyType = PROPERTY_TYPE;
+    this.extensionName = EXTENSION_NAME.Behavior;
+    this.propertyType = "BehaviorNode";
     this.parentTypes = [];
   }
 

@@ -36,8 +36,8 @@ type PrimitiveId = string;
 type MaterialId = string;
 
 /**
- * Receives scene updates from the main thread
- * and translates them into Three.js objects.
+ * Instants of a {@link Scene} for the render thread.
+ * This class is responsible for creating and disposing Three.js objects.
  */
 export class RenderScene extends Scene {
   #csm: CSM | null = null;

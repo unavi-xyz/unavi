@@ -10,6 +10,7 @@ export interface IEditorStore {
   sceneLoaded: boolean;
   isSaving: boolean;
   isPlaying: boolean;
+  stopPlaying: () => Promise<void>;
 
   visuals: boolean;
   tool: Tool;
@@ -33,6 +34,7 @@ export const useEditorStore = create<IEditorStore>(() => ({
   sceneLoaded: false,
   isSaving: false,
   isPlaying: false,
+  stopPlaying: async () => {},
 
   visuals: true,
   tool: "translate",

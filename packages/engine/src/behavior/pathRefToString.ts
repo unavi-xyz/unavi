@@ -1,5 +1,5 @@
 import { Engine } from "../Engine";
-import { JsonPathRef } from "../gltf";
+import { JsonPathRef } from "../gltf/extensions/Behavior/types";
 
 export function pathRefToString(value: JsonPathRef, engine: Engine) {
   const { node, property } = value;

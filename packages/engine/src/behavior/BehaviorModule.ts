@@ -13,6 +13,11 @@ import { BehaviorScene } from "./BehaviorScene";
 
 const TICK_HZ = 60;
 
+/**
+ * Handles the lifecycle of the behavior engine.
+ *
+ * @group Modules
+ */
 export class BehaviorModule {
   #engine: Engine;
 
@@ -44,6 +49,10 @@ export class BehaviorModule {
     this.#behaviorEngine = new BehaviorEngine(graph);
   }
 
+  /**
+   * Loads the behavior graph from the scene, and starts the engine.
+   * If the engine is already running, it will be stopped and restarted.
+   */
   start() {
     this.stop();
 

@@ -1,6 +1,3 @@
-export const EXTENSION_NAME = "OMI_spawn_point";
-export const PROPERTY_TYPE = "SpawnPoint";
-
-export const SPAWN_TITLES = {
+export const SPAWN_TITLE = {
   Default: "Default",
 } as const;

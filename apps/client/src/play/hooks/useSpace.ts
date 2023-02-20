@@ -10,6 +10,12 @@ const host =
     ? "ws://localhost:4000"
     : `wss://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
+/**
+ * Hook to get space data and join the space.
+ *
+ * @param id Space ID
+ * @returns Space data, loading text, loading progress, and join function
+ */
 export function useSpace(id: number) {
   const [sceneDownloaded, setSceneDownloaded] = useState(false);
   const [sceneLoaded, setSceneLoaded] = useState(false);

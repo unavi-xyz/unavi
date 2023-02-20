@@ -1,13 +1,13 @@
 import { Document } from "@gltf-transform/core";
 
 import {
+  BehaviorExtension,
   BehaviorNode,
   ColliderExtension,
-  SPAWN_TITLES,
+  SPAWN_TITLE,
   SpawnPoint,
   SpawnPointExtension,
 } from "../gltf";
-import { BehaviorExtension } from "../gltf/extensions/Behavior/BehaviorExtension";
 import { Accessors } from "./attributes/Accessors";
 import { Buffers } from "./attributes/Buffers";
 import { Materials } from "./attributes/Materials";
@@ -16,6 +16,11 @@ import { Nodes } from "./attributes/Nodes";
 import { Primitives } from "./attributes/Primitives";
 import { Textures } from "./attributes/Textures";
 
+/**
+ * The internal representation of a scene.
+ *
+ * @group Scene
+ */
 export class Scene {
   doc = new Document();
 
@@ -33,7 +38,11 @@ export class Scene {
   mesh = new Meshes(this.doc, this.primitive);
   node = new Nodes(this);
 
-  addDocument(doc: Document) {
+  /**
+   * Adds the given document to the scene.
+   * @param doc The document to merge.
+   */
+  async addDocument(doc: Document) {
     this.doc.merge(doc);
 
     // Transfer behavior nodes
@@ -91,6 +100,9 @@ export class Scene {
     });
 
     this.processChanges();
+
+    // Wait to let threads to finish
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   processChanges() {
@@ -103,7 +115,7 @@ export class Scene {
     this.node.processChanges();
   }
 
-  getSpawn(title: (typeof SPAWN_TITLES)[keyof typeof SPAWN_TITLES] = "Default") {
+  getSpawn(title: (typeof SPAWN_TITLE)[keyof typeof SPAWN_TITLE] = "Default") {
     return this.doc
       .getRoot()
       .listNodes()

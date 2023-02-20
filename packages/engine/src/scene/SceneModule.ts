@@ -13,6 +13,12 @@ import { PrimitiveJSON } from "./attributes/Primitives";
 import { SceneMessage } from "./messages";
 import { Scene } from "./Scene";
 
+/**
+ * Handles scene related logic for the main thread.
+ * Syncs changes to the scene with the worker threads.
+ *
+ * @group Modules
+ */
 export class SceneModule extends Scene {
   #render: RenderModule;
   #physics: PhysicsModule;
@@ -89,7 +95,7 @@ export class SceneModule extends Scene {
   async addBinary(array: Uint8Array) {
     const io = await this.#createIO();
     const doc = await io.readBinary(array);
-    this.addDocument(doc);
+    await this.addDocument(doc);
   }
 
   async addFile(file: File) {
@@ -126,7 +132,7 @@ export class SceneModule extends Scene {
         node.setExtension<Collider>(ColliderExtension.EXTENSION_NAME, meshCollider);
       });
 
-    this.addDocument(doc);
+    await this.addDocument(doc);
   }
 
   clear() {

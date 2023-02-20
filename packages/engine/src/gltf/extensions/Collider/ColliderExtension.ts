@@ -1,8 +1,8 @@
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
 import { Vec3 } from "../../../types";
+import { EXTENSION_NAME } from "../constants";
 import { Collider } from "./Collider";
-import { EXTENSION_NAME } from "./constants";
 import { ColliderType } from "./types";
 
 type NodeColliderDef = {
@@ -22,21 +22,23 @@ type ColliderExtensionDef = {
 };
 
 /**
- * @link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_collider
+ * Implementation of the {@link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_collider OMI_collider} extension.
+ *
+ * @group GLTF Extensions
  */
 export class ColliderExtension extends Extension {
-  static override readonly EXTENSION_NAME = EXTENSION_NAME;
-  override readonly extensionName = EXTENSION_NAME;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.Collider;
+  override readonly extensionName = EXTENSION_NAME.Collider;
 
   createCollider(): Collider {
     return new Collider(this.document.getGraph());
   }
 
   read(context: ReaderContext) {
-    if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[EXTENSION_NAME])
+    if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[this.extensionName])
       return this;
 
-    const rootDef = context.jsonDoc.json.extensions[EXTENSION_NAME] as ColliderExtensionDef;
+    const rootDef = context.jsonDoc.json.extensions[this.extensionName] as ColliderExtensionDef;
 
     const colliders = rootDef.colliders.map((colliderDef) => {
       const collider = this.createCollider();
@@ -57,8 +59,8 @@ export class ColliderExtension extends Extension {
     const nodeDefs = context.jsonDoc.json.nodes ?? [];
 
     nodeDefs.forEach((nodeDef, nodeIndex) => {
-      if (!nodeDef.extensions || !nodeDef.extensions[EXTENSION_NAME]) return;
-      const colliderNodeDef = nodeDef.extensions[EXTENSION_NAME] as NodeColliderDef;
+      if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName]) return;
+      const colliderNodeDef = nodeDef.extensions[this.extensionName] as NodeColliderDef;
 
       const node = context.nodes[nodeIndex];
       if (!node) throw new Error("Node not found");
@@ -66,7 +68,7 @@ export class ColliderExtension extends Extension {
       const collider = colliders[colliderNodeDef.collider];
       if (!collider) throw new Error("Collider not found");
 
-      node.setExtension(EXTENSION_NAME, collider);
+      node.setExtension(this.extensionName, collider);
     });
 
     return this;
@@ -135,7 +137,7 @@ export class ColliderExtension extends Extension {
       .getRoot()
       .listNodes()
       .forEach((node) => {
-        const collider = node.getExtension<Collider>(EXTENSION_NAME);
+        const collider = node.getExtension<Collider>(this.extensionName);
 
         if (collider) {
           const nodeIndex = context.nodeIndexMap.get(node);
@@ -148,7 +150,7 @@ export class ColliderExtension extends Extension {
           if (!nodeDef) throw new Error("Node def not found");
 
           nodeDef.extensions = nodeDef.extensions ?? {};
-          nodeDef.extensions[EXTENSION_NAME] = {
+          nodeDef.extensions[this.extensionName] = {
             collider: colliderIndexMap.get(collider),
           };
         }
@@ -158,7 +160,7 @@ export class ColliderExtension extends Extension {
       const rootDef: ColliderExtensionDef = { colliders: colliderDefs };
 
       if (!jsonDoc.json.extensions) jsonDoc.json.extensions = {};
-      jsonDoc.json.extensions[EXTENSION_NAME] = rootDef;
+      jsonDoc.json.extensions[this.extensionName] = rootDef;
     }
 
     return this;

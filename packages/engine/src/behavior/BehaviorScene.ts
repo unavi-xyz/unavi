@@ -1,9 +1,12 @@
 import { IScene } from "@behave-graph/core";
 
 import { Engine } from "../Engine";
-import { ValueType } from "../gltf";
+import { ValueType } from "../gltf/extensions/Behavior/types";
 import { parseJSONPath } from "./parseJsonPath";
 
+/**
+ * Used by behaviors to access the scene.
+ */
 export class BehaviorScene implements IScene {
   #engine: Engine;
 

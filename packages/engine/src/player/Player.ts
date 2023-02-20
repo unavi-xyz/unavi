@@ -1,6 +1,9 @@
 import { POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "../constants";
 import { Engine } from "../Engine";
 
+/**
+ * Represents a player in the game.
+ */
 export class Player {
   readonly id: number;
   readonly engine: Engine;

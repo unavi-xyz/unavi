@@ -10,6 +10,10 @@ import { Player } from "./Player";
 
 const PHYSICS_LOOP_HZ = 60;
 
+/**
+ * The physics thread is responsible for running the physics loop.
+ * The loop is run at a fixed rate of 60Hz.
+ */
 export class PhysicsThread {
   controls: ControlsType = DEFAULT_CONTROLS;
 

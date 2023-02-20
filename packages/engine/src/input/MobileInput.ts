@@ -2,6 +2,11 @@ import { InputModule } from "./InputModule";
 import { Joystick } from "./Joystick";
 import { TouchCameraControls } from "./TouchCameraControls";
 
+/**
+ * Handles touch input from the user.
+ * Uses a joystick for movement on the left side of the screen,
+ * and drag controls for camera movement on the right side of the screen.
+ */
 export class MobileInput {
   #module: InputModule;
 

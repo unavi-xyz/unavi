@@ -46,6 +46,11 @@ export type NodeJSON = {
   extras: NodeExtras;
 };
 
+/**
+ * Stores and manages nodes within a {@link Scene}.
+ *
+ * @group Scene
+ */
 export class Nodes extends Attribute<Node, NodeJSON> {
   #scene: Scene;
 

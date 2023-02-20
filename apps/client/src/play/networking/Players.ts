@@ -7,6 +7,10 @@ import { usePlayStore } from "../store";
 import { addChatMessage } from "../utils/addChatMessage";
 import { PlayerName } from "./PlayerName";
 
+/**
+ * Manages the lifecycle of players.
+ * Reads messages from the host and updates the engine.
+ */
 export class Players {
   #trpc: TrpcContext;
   #engine: Engine;

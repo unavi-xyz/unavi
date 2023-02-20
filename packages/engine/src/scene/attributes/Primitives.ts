@@ -20,6 +20,11 @@ export interface PrimitiveTargetJSON {
   attributes: { [key: string]: AccessorId };
 }
 
+/**
+ * Stores and manages primitives within a {@link Scene}.
+ *
+ * @group Scene
+ */
 export class Primitives extends Attribute<Primitive, PrimitiveJSON> {
   #doc: Document;
   #accessor: Accessors;

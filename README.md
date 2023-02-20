@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/Logo.png" alt="Wired Logo" height="200">
+  <img src="./assets/Logo.png" alt="Wired Logo" height="200" />
   <h1>The Wired</h1>
   <strong>An open and decentralized web-based metaverse platform.</strong>
 </div>
@@ -8,19 +8,19 @@
 
 <div align="center">
   <a href="https://docs.thewired.space">
-    <img src="https://img.shields.io/badge/docs-read-informational" alt="Docs">
+    <img src="https://img.shields.io/badge/docs-read-informational" alt="Docs" />
   </a>
   <a href="https://thewired.space">
-    <img src="https://therealsujitk-vercel-badge.vercel.app/?app=client-wired" alt="Vercel">
+    <img src="https://therealsujitk-vercel-badge.vercel.app/?app=client-wired" alt="Vercel" />
   </a>
   <a href="https://github.com/wired-labs/wired/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/wired-labs/wired" alt="License">
+    <img src="https://img.shields.io/github/license/wired-labs/wired" alt="License" />
   </a>
   <a href="https://discord.gg/VCsAEneUMn">
-    <img src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord">
+    <img src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord" />
   </a>
   <a href="https://twitter.com/wired_xr">
-    <img src="https://img.shields.io/badge/wired__xr--1DA1F2?logo=twitter" alt="Twitter">
+    <img src="https://img.shields.io/badge/wired__xr--1DA1F2?logo=twitter" alt="Twitter" />
   </a>
 </div>
 
@@ -39,6 +39,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 ### Apps
 
 - [client](apps/client): the main website used to access the Wired
+- [docs](apps/docs): a documentation website
 - [host](apps/host): dockerized server for hosting spaces
 
 ### Packages
@@ -54,14 +55,6 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 - [TypeScript](https://www.typescriptlang.org/) for static type checking
 - [ESLint](https://eslint.org/) for code linting
 - [Prettier](https://prettier.io) for code formatting
-
-## 🐋 Docker
-
-You can run the Wired locally using [Docker](https://www.docker.com/). Run the following command to start the server and client in development mode:
-
-```bash
-docker compose up
-```
 
 ## ⚙️ Development
 

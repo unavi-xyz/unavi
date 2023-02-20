@@ -12,7 +12,6 @@ import MetaTags from "../home/MetaTags";
 import { getNavbarLayout } from "../home/NavbarLayout/NavbarLayout";
 import Button from "../ui/Button";
 import ImageInput from "../ui/ImageInput";
-import Spinner from "../ui/Spinner";
 import TextArea from "../ui/TextArea";
 import TextField from "../ui/TextField";
 import { numberToHexDisplay } from "../utils/numberToHexDisplay";
@@ -227,14 +226,7 @@ export default function Settings() {
 
   const hasProfile = !isLoading && profile !== undefined;
 
-  if (status !== "authenticated") return null;
-
-  if (isLoading)
-    return (
-      <div className="flex justify-center pt-12">
-        <Spinner />
-      </div>
-    );
+  if (status !== "authenticated" || isLoading) return null;
 
   return (
     <>

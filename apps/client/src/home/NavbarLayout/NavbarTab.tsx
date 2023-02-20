@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
 
 interface Props {
   href: string;
@@ -9,18 +8,10 @@ interface Props {
 
 export default function NavbarTab({ href, text }: Props) {
   const router = useRouter();
-  const [selected, setSelected] = useState(false);
 
-  useEffect(() => {
-    if (href === "/") {
-      setSelected(router.asPath === "/");
-      return;
-    }
+  const isSelected = href === "/" ? router.asPath === "/" : router.asPath.startsWith(href);
 
-    setSelected(router.asPath.startsWith(href));
-  }, [router, href]);
-
-  const selectedClass = selected
+  const selectedClass = isSelected
     ? "bg-neutral-200 hover:bg-neutral-300 active:bg-neutral-400/60"
     : "hover:bg-neutral-200 active:bg-neutral-300";
 

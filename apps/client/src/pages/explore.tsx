@@ -33,14 +33,12 @@ export default function Explore() {
                     </Link>
                   );
                 })
-              : new Array(4)
-                  .fill(0)
-                  .map((_, i) => (
-                    <div
-                      key={i}
-                      className="aspect-card h-full w-full animate-pulse rounded-xl bg-neutral-300"
-                    />
-                  ))}
+              : Array.from({ length: 4 }, (_, i) => (
+                  <div
+                    key={i}
+                    className="aspect-card h-full w-full animate-pulse rounded-xl bg-neutral-300"
+                  />
+                ))}
           </div>
         </div>
       </div>

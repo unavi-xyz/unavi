@@ -35,7 +35,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center justify-end">
-          {status === "authenticated" ? <ProfileButton /> : <SignInButton />}
+          {status === "unauthenticated" ? <SignInButton /> : <ProfileButton />}
         </div>
       </div>
     </nav>

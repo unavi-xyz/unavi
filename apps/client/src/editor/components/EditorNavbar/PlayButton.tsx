@@ -10,8 +10,8 @@ export default function PlayButton() {
   const [scene, setScene] = useState<Uint8Array>();
 
   async function handlePlay() {
-    const { engine } = useEditorStore.getState();
-    if (!engine) return;
+    const { engine, sceneLoaded } = useEditorStore.getState();
+    if (!engine || !sceneLoaded) return;
 
     if (engine.controls === "player") {
       // Exit play mode

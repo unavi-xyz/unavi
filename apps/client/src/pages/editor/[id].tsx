@@ -13,7 +13,6 @@ import { useTransformControls } from "../../editor/hooks/useTransformControls";
 import { useEditorStore } from "../../editor/store";
 import MetaTags from "../../home/MetaTags";
 import { useResizeCanvas } from "../../play/hooks/useResizeCanvas";
-import Spinner from "../../ui/Spinner";
 
 export default function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,8 +68,6 @@ export default function Editor() {
     resize();
   }, [resize, openScriptId]);
 
-  const loadedClass = sceneLoaded ? "opacity-100" : "opacity-0";
-
   return (
     <>
       <MetaTags title="Editor" />
@@ -115,28 +112,24 @@ export default function Editor() {
               minSize={[50, 400, 50]}
               direction="horizontal"
               gutterSize={4}
-              className={`flex w-full ${openScriptId ? "h-1/2" : "h-full"}`}
+              className={`flex w-full transition ${openScriptId ? "h-1/2" : "h-full"} ${
+                engine ? "opacity-100" : "opacity-0"
+              }`}
               onMouseUp={resize}
             >
               <div>
                 <TreeMenu />
               </div>
 
-              <div className="border-x">
-                <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-                  {!sceneLoaded && (
-                    <div className="absolute top-0 left-0 flex h-full w-full items-center justify-center">
-                      <div className="flex h-full flex-col items-center justify-center">
-                        <Spinner />
-                      </div>
-                    </div>
-                  )}
-
-                  <canvas ref={canvasRef} className={`h-full w-full transition ${loadedClass}`} />
-                  <canvas
-                    ref={overlayRef}
-                    className={`absolute top-0 left-0 z-10 h-full w-full transition ${loadedClass}`}
-                  />
+              <div className={`border-x bg-neutral-300 ${sceneLoaded ? "" : "animate-pulse"}`}>
+                <div
+                  ref={containerRef}
+                  className={`relative h-full w-full overflow-hidden transition ${
+                    sceneLoaded ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  <canvas ref={canvasRef} className="h-full w-full" />
+                  <canvas ref={overlayRef} className="absolute top-0 left-0 z-10 h-full w-full" />
                 </div>
               </div>
 

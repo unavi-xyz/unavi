@@ -75,12 +75,19 @@ export default function Spaces() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {authenticated ? (
+            {authState !== "unauthenticated" ? (
               status === "success" && unpublishedProjects.length > 0 ? (
                 unpublishedProjects.map(({ id, name, image }) => (
                   <Link key={id} href={`/project/${id}`}>
                     <Card text={name} image={image} sizes="333px" animateEnter />
                   </Link>
+                ))
+              ) : status === "loading" ? (
+                Array.from({ length: 4 }, (_, i) => (
+                  <div
+                    key={i}
+                    className="aspect-card h-full w-full animate-pulse rounded-xl bg-neutral-300"
+                  />
                 ))
               ) : (
                 <div className="col-span-4 text-neutral-500">

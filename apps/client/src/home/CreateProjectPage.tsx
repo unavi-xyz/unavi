@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { trpc } from "../client/trpc";
 import TextField from "../ui/TextField";
 
+const DEFAULT_NAME = "New Project";
+
 export default function CreateProjectPage() {
   const router = useRouter();
 
@@ -12,6 +14,7 @@ export default function CreateProjectPage() {
 
   const { mutateAsync: createProject } = trpc.project.create.useMutation();
   const { mutateAsync: getImageUpload } = trpc.project.getImageUpload.useMutation();
+  const { mutateAsync: getModelUpload } = trpc.project.getModelUpload.useMutation();
 
   async function handleCreate() {
     if (loading) return;
@@ -29,12 +32,23 @@ export default function CreateProjectPage() {
       });
     }
 
+    async function uploadDefaultModel(id: string) {
+      const res = await fetch("/models/Default-Space.glb");
+      const blob = await res.blob();
+
+      const url = await getModelUpload({ id });
+      await fetch(url, {
+        method: "PUT",
+        body: blob,
+        headers: { "Content-Type": "model/gltf-binary" },
+      });
+    }
+
     try {
       // Create new project
-      const id = await createProject({ name: nameRef.current?.value });
+      const id = await createProject({ name: nameRef.current?.value || DEFAULT_NAME });
 
-      // Upload default image
-      await uploadDefaultImage(id);
+      await Promise.all([uploadDefaultImage(id), uploadDefaultModel(id)]);
 
       router.push(`/editor/${id}`);
     } catch (err) {
@@ -45,15 +59,7 @@ export default function CreateProjectPage() {
 
   return (
     <div className="space-y-4">
-      <div className="text-center text-3xl font-bold">New Project</div>
-
-      <TextField
-        inputRef={nameRef}
-        name="Name"
-        defaultValue="My Project"
-        outline
-        disabled={loading}
-      />
+      <TextField inputRef={nameRef} name="Name" placeholder={DEFAULT_NAME} disabled={loading} />
 
       <div className="flex justify-end">
         <button

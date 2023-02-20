@@ -165,46 +165,40 @@ export default function UpdatePage({ onClose }: Props) {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-center text-3xl font-bold">Update Space</h1>
+      <TextField
+        onChange={(e) => {
+          const value = e.target.value;
+          useEditorStore.setState({ name: value });
+        }}
+        autoComplete="off"
+        name="Name"
+        disabled={loading}
+        defaultValue={name}
+      />
+
+      <TextArea
+        onChange={(e) => {
+          const value = e.target.value;
+          useEditorStore.setState({ description: value });
+        }}
+        autoComplete="off"
+        name="Description"
+        disabled={loading}
+        defaultValue={description}
+      />
 
       <div className="space-y-4">
-        <TextField
-          onChange={(e) => {
-            const value = e.target.value;
-            useEditorStore.setState({ name: value });
-          }}
-          name="Name"
-          outline
+        <div className="text-lg font-bold">Image</div>
+
+        <ImageInput
+          src={image}
           disabled={loading}
-          defaultValue={name}
-        />
-
-        <TextArea
           onChange={(e) => {
-            const value = e.target.value;
-            useEditorStore.setState({ description: value });
+            const file = e.target.files?.[0];
+            if (!file) return;
+            cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
           }}
-          autoComplete="off"
-          name="Description"
-          outline
-          disabled={loading}
-          defaultValue={description}
         />
-
-        <div className="space-y-4">
-          <div className="text-lg font-bold">Image</div>
-
-          <ImageInput
-            src={image}
-            disabled={loading}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-
-              cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
-            }}
-          />
-        </div>
       </div>
 
       <div className="flex justify-end">

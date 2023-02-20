@@ -19,14 +19,16 @@ import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUt
 
 import { DEFAULT_VISUALS } from "../../constants";
 import { Collider, ColliderExtension } from "../../gltf";
-import { MeshJSON, NodeJSON } from "../../scene";
+import { AccessorJSON, MeshJSON, NodeJSON } from "../../scene";
 import { MaterialJSON } from "../../scene/attributes/Materials";
 import { PrimitiveJSON } from "../../scene/attributes/Primitives";
 import { TextureInfoJSON, TextureInfoUtils } from "../../scene/attributes/TextureInfoUtils";
 import { SceneMessage } from "../../scene/messages";
 import { Scene } from "../../scene/Scene";
 import { deepDispose } from "../utils/deepDispose";
+import { THREE_ATTRIBUTE_NAMES } from "./constants";
 import { createTexture } from "./createTexture";
+import { getCustomMeshData } from "./getCustomMeshData";
 
 type NodeId = string;
 type MeshId = string;
@@ -60,32 +62,6 @@ export class RenderScene extends Scene {
     super();
 
     this.#toMainThread = toMainThread;
-
-    this.accessor.addEventListener("create", ({ data }) => {
-      const accessor = this.accessor.store.get(data.id);
-      if (!accessor) throw new Error("Accessor not found");
-
-      const json = this.accessor.toJSON(accessor);
-
-      toMainThread({ subject: "create_accessor", data: { id: data.id, json } });
-
-      accessor.addEventListener("dispose", () => {
-        toMainThread({ subject: "dispose_accessor", data: data.id });
-      });
-    });
-
-    this.primitive.addEventListener("create", ({ data }) => {
-      const primitive = this.primitive.store.get(data.id);
-      if (!primitive) throw new Error("Primitive not found");
-
-      const json = this.primitive.toJSON(primitive);
-
-      toMainThread({ subject: "create_primitive", data: { id: data.id, json } });
-
-      primitive.addEventListener("dispose", () => {
-        toMainThread({ subject: "dispose_primitive", data: data.id });
-      });
-    });
   }
 
   get visualsEnabled() {
@@ -139,7 +115,7 @@ export class RenderScene extends Scene {
       }
 
       case "create_accessor": {
-        this.accessor.create(data.json, data.id);
+        this.createAccessor(data.json, data.id);
         break;
       }
 
@@ -200,20 +176,7 @@ export class RenderScene extends Scene {
       }
 
       case "create_primitive": {
-        const { object: primitive } = this.primitive.create(data.json, data.id);
-
-        const object = new ThreeMesh();
-        this.primitiveObjects.set(data.id, object);
-
-        object.castShadow = true;
-        object.receiveShadow = true;
-
-        primitive.addEventListener("dispose", () => {
-          object.geometry.dispose();
-          this.meshObjects.delete(data.id);
-        });
-
-        this.updatePrimitive(data.id, data.json);
+        this.createPrimitive(data.json, data.id);
         break;
       }
 
@@ -287,6 +250,22 @@ export class RenderScene extends Scene {
         break;
       }
     }
+  }
+
+  createAccessor(json: Partial<AccessorJSON>, accessorId?: string) {
+    if (accessorId) {
+      const accessor = this.accessor.store.get(accessorId);
+      if (accessor) return { id: accessorId, accessor };
+    }
+
+    const { id, object: accessor } = this.accessor.create(json, accessorId);
+
+    if (!accessorId) {
+      const fullJSON = this.accessor.toJSON(accessor);
+      this.#toMainThread({ subject: "create_accessor", data: { id, json: fullJSON } });
+    }
+
+    return { id, accessor };
   }
 
   updateNode(id: string, json: Partial<NodeJSON>) {
@@ -366,7 +345,7 @@ export class RenderScene extends Scene {
     if (!object) throw new Error("Mesh object not found");
 
     if (json.primitives) {
-      // Remove previous primitive objects
+      // Remove previous primitives
       mesh.listPrimitives().forEach((primitive) => {
         const primitiveId = this.primitive.getId(primitive);
         if (!primitiveId) throw new Error("Primitive not found");
@@ -374,11 +353,17 @@ export class RenderScene extends Scene {
         const primitiveObject = this.primitiveObjects.get(primitiveId);
         if (!primitiveObject) throw new Error("Primitive object not found");
 
+        mesh.removePrimitive(primitive);
         object.remove(primitiveObject);
       });
 
-      // Add new primitive objects as children
+      // Add new primitives
       json.primitives.forEach((primitiveId) => {
+        const primitive = this.primitive.store.get(primitiveId);
+        if (!primitive) throw new Error("Primitive not found");
+
+        mesh.addPrimitive(primitive);
+
         const primitiveObject = this.primitiveObjects.get(primitiveId);
         if (!primitiveObject) throw new Error("Primitive object not found");
 
@@ -390,75 +375,75 @@ export class RenderScene extends Scene {
       if (json.extras.customMesh) {
         // Remove old primitives
         mesh.listPrimitives().forEach((primitive) => {
+          mesh.removePrimitive(primitive);
+
           const primitiveId = this.primitive.getId(primitive);
           if (!primitiveId) throw new Error("Primitive not found");
 
-          const primitiveObject = this.primitiveObjects.get(primitiveId);
-          if (!primitiveObject) throw new Error("Primitive object not found");
+          const indices = primitive.getIndices();
+          if (indices) {
+            const isIndicesUsed =
+              indices.listParents().filter((parent) => parent instanceof Primitive).length > 1;
 
-          object.remove(primitiveObject);
-          this.primitiveObjects.delete(primitiveId);
-          primitive.dispose();
+            const indicesId = this.accessor.getId(indices);
+            if (!indicesId) throw new Error("Accessor not found");
+
+            if (!isIndicesUsed)
+              this.#toMainThread({ subject: "dispose_accessor", data: indicesId });
+          }
+
+          primitive.listAttributes().forEach((attribute) => {
+            const isAttributeUsed =
+              attribute.listParents().filter((parent) => parent instanceof Primitive).length > 1;
+
+            const attributeId = this.accessor.getId(attribute);
+            if (!attributeId) throw new Error("Accessor not found");
+
+            if (!isAttributeUsed)
+              this.#toMainThread({ subject: "dispose_accessor", data: attributeId });
+          });
+
+          this.#toMainThread({ subject: "dispose_primitive", data: primitiveId });
         });
 
-        // Create custom mesh object
-        let customMesh: ThreeMesh | null = null;
+        // Create acessors
+        const { positions, normals, indices } = getCustomMeshData(json.extras.customMesh);
 
-        switch (json.extras.customMesh.type) {
-          case "Box": {
-            const { width, height, depth } = json.extras.customMesh;
-            const geometry = new BoxGeometry(width, height, depth);
-            customMesh = new ThreeMesh(geometry, RenderScene.DEFAULT_MATERIAL);
-            break;
-          }
+        const { id: positionsId } = this.createAccessor({
+          array: new Float32Array(positions),
+          type: "VEC3",
+          componentType: 5126,
+        });
 
-          case "Sphere": {
-            const { radius, widthSegments, heightSegments } = json.extras.customMesh;
-            const geometry = new SphereGeometry(radius, widthSegments, heightSegments);
-            customMesh = new ThreeMesh(geometry, RenderScene.DEFAULT_MATERIAL);
-            break;
-          }
+        const { id: normalsId } = this.createAccessor({
+          array: new Float32Array(normals),
+          type: "VEC3",
+          componentType: 5126,
+        });
 
-          case "Cylinder": {
-            const { radiusTop, radiusBottom, height, radialSegments } = json.extras.customMesh;
-            const geometry = new CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
-            customMesh = new ThreeMesh(geometry, RenderScene.DEFAULT_MATERIAL);
-            break;
-          }
-        }
+        const { id: indicesId } = this.createAccessor({
+          array: new Uint16Array(indices),
+          type: "SCALAR",
+          componentType: 5121,
+        });
 
-        if (customMesh) {
-          // Create new primitive
-          const positions = customMesh.geometry.getAttribute("position");
-          const indices = customMesh.geometry.getIndex();
-          if (!indices) throw new Error("Indices not found");
+        // Create new primitive
+        const { id: primitiveId, primitive } = this.createPrimitive({
+          attributes: { POSITION: positionsId, NORMAL: normalsId },
+          indices: indicesId,
+        });
 
-          const { id: positionsId } = this.accessor.create({
-            array: new Float32Array(positions.array),
-            type: "VEC3",
-            componentType: 5126,
-          });
-          const { id: indicesId } = this.accessor.create({
-            array: new Uint8Array(indices.array),
-            type: "SCALAR",
-            componentType: 5121,
-          });
+        // Add to scene
+        const primitiveObject = this.primitiveObjects.get(primitiveId);
+        if (!primitiveObject) throw new Error("Primitive object not found");
 
-          const { id: primitiveId, object: primitive } = this.primitive.create({
-            indices: indicesId,
-            attributes: { POSITION: positionsId },
-          });
+        mesh.addPrimitive(primitive);
 
-          mesh.addPrimitive(primitive);
-          this.primitiveObjects.set(primitiveId, customMesh);
-          object.add(customMesh);
-
-          // Update main thread
-          this.#toMainThread({
-            subject: "change_mesh",
-            data: { id, json: { primitives: [primitiveId] } },
-          });
-        }
+        // Add primitive to mesh
+        this.#toMainThread({
+          subject: "change_mesh",
+          data: { id, json: { primitives: [primitiveId] } },
+        });
       }
     }
 
@@ -472,9 +457,40 @@ export class RenderScene extends Scene {
     });
   }
 
+  createPrimitive(json: Partial<PrimitiveJSON>, primitiveId?: string) {
+    if (primitiveId) {
+      const primitive = this.primitive.store.get(primitiveId);
+      if (primitive) return { id: primitiveId, primitive };
+    }
+
+    const { id, object: primitive } = this.primitive.create(json, primitiveId);
+    const fullJSON = this.primitive.toJSON(primitive);
+
+    if (!primitiveId) {
+      // Update main thread if primitive is new
+      this.#toMainThread({ subject: "create_primitive", data: { id, json: fullJSON } });
+    }
+
+    const object = new ThreeMesh();
+    this.primitiveObjects.set(id, object);
+
+    object.castShadow = true;
+    object.receiveShadow = true;
+
+    primitive.addEventListener("dispose", () => {
+      object.removeFromParent();
+      object.geometry.dispose();
+      this.primitiveObjects.delete(id);
+    });
+
+    this.updatePrimitive(id, fullJSON);
+
+    return { id, primitive };
+  }
+
   updatePrimitive(id: string, json: Partial<PrimitiveJSON>) {
     const primitive = this.primitive.store.get(id);
-    if (!primitive) throw new Error("Primitive not found");
+    if (!primitive) throw new Error(`Primitive not found ${id}`);
 
     const object = this.primitiveObjects.get(id);
     if (!object) throw new Error("Primitive object not found");
@@ -759,9 +775,6 @@ export class RenderScene extends Scene {
 
     if (collider) {
       // Add new collider
-      const meshId = collider.mesh instanceof Mesh ? this.mesh.getId(collider.mesh) : collider.mesh;
-      if (meshId === undefined) throw new Error("Mesh not found");
-
       let colliderGeometry: BufferGeometry | null = null;
 
       switch (collider.type) {
@@ -794,6 +807,8 @@ export class RenderScene extends Scene {
         }
 
         case "trimesh": {
+          const meshId =
+            collider.mesh instanceof Mesh ? this.mesh.getId(collider.mesh) : collider.mesh;
           if (!meshId) break;
 
           const mesh = this.mesh.store.get(meshId);
@@ -908,17 +923,6 @@ export class RenderScene extends Scene {
     deepDispose(this.root);
   }
 }
-
-const THREE_ATTRIBUTE_NAMES = {
-  POSITION: "position",
-  NORMAL: "normal",
-  TANGENT: "tangent",
-  TEXCOORD_0: "uv",
-  TEXCOORD_1: "uv2",
-  COLOR_0: "color",
-  JOINTS_0: "skinIndex",
-  WEIGHTS_0: "skinWeight",
-};
 
 function accessorToAttribute(accessor: Accessor): BufferAttribute | null {
   const array = accessor.getArray();

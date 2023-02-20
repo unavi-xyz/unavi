@@ -13,6 +13,7 @@ export type ToRenderMessage =
   | MessageJSON<"set_canvas", HTMLCanvasElement | OffscreenCanvas>
   | MessageJSON<"set_controls", ControlsType>
   | MessageJSON<"set_grounded", boolean>
+  | MessageJSON<"set_sprinting", boolean>
   | MessageJSON<"set_pixel_ratio", number>
   | MessageJSON<"set_size", { width: number; height: number }>
   | MessageJSON<"set_skybox", { uri: string | null }>
@@ -21,6 +22,7 @@ export type ToRenderMessage =
   | MessageJSON<
       "set_user_arrays",
       {
+        inputPosition: Int16Array;
         inputRotation: Int16Array;
         userPosition: Int32Array;
         userRotation: Int16Array;

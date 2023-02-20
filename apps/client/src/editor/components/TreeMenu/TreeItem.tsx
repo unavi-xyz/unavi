@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { HiOutlineCube } from "react-icons/hi";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
@@ -37,6 +37,13 @@ export default function TreeItem({ id }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engine, id, treeIds]);
 
+  // Open children if child selected
+  useEffect(() => {
+    const { openIds } = useEditorStore.getState();
+    if (!selectedId || !engine || selectedId === id || openIds.includes(id)) return;
+    if (isAncestor(id, selectedId, engine)) useEditorStore.setState({ openIds: [...openIds, id] });
+  }, [id, selectedId, engine]);
+
   const isOpen = openIds.includes(id);
   const isSelected = selectedId === id;
   const hasChildren = childrenIds.length > 0;
@@ -49,12 +56,17 @@ export default function TreeItem({ id }: Props) {
           isSelected ? "bg-neutral-200 text-black hover:bg-neutral-300" : "hover:bg-neutral-200"
         }`}
         onMouseDown={(e) => {
-          if (e.button !== 0) return;
           e.stopPropagation();
-          useEditorStore.setState({ draggingId: id, selectedId: id });
+          useEditorStore.setState({ selectedId: id });
+
+          if (e.button !== 0) return;
+
+          useEditorStore.setState({ draggingId: id });
           document.body.style.cursor = "grabbing";
         }}
         onMouseUp={(e) => {
+          useEditorStore.setState({ selectedId: id });
+
           if (
             e.button !== 0 ||
             !engine ||
@@ -87,7 +99,7 @@ export default function TreeItem({ id }: Props) {
       >
         <div
           className={`w-3 shrink-0 hover:text-neutral-500 ${hasChildren && "cursor-pointer"}`}
-          onMouseDown={(e) => {
+          onClick={(e) => {
             if (!hasChildren) return;
 
             e.stopPropagation();

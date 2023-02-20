@@ -1,4 +1,7 @@
 export * from "./constants";
+export * from "./extensions/Behavior/BehaviorExtension";
+export * from "./extensions/Behavior/BehaviorNode";
+export * from "./extensions/Behavior/types";
 export * from "./extensions/Collider/Collider";
 export * from "./extensions/Collider/ColliderExtension";
 export * from "./extensions/Collider/types";

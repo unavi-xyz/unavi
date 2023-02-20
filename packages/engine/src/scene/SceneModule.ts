@@ -1,8 +1,8 @@
-import { ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform/core";
-import { DracoMeshCompression } from "@gltf-transform/extensions";
+import { Accessor, ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform/core";
+import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
 
 import { Engine } from "../Engine";
-import { Collider, ColliderExtension } from "../gltf";
+import { BehaviorExtension, Collider, ColliderExtension, SpawnPointExtension } from "../gltf";
 import { extensions } from "../gltf/constants";
 import { PhysicsModule } from "../physics/PhysicsModule";
 import { RenderModule } from "../render/RenderModule";
@@ -23,10 +23,16 @@ export class SceneModule extends Scene {
     this.#render = engine.render;
     this.#physics = engine.physics;
 
-    this.node.addEventListener("create", ({ data }) => {
-      const node = this.node.store.get(data.id);
-      if (!node) throw new Error("Node not found");
-      this.#onNodeCreate(node);
+    this.accessor.addEventListener("create", ({ data }) => {
+      const accessor = this.accessor.store.get(data.id);
+      if (!accessor) throw new Error("Accessor not found");
+      this.#onAccessorCreate(accessor);
+    });
+
+    this.primitive.addEventListener("create", ({ data }) => {
+      const primitive = this.primitive.store.get(data.id);
+      if (!primitive) throw new Error("Primitive not found");
+      this.#onPrimitiveCreate(primitive);
     });
 
     this.mesh.addEventListener("create", ({ data }) => {
@@ -35,10 +41,10 @@ export class SceneModule extends Scene {
       this.#onMeshCreate(mesh);
     });
 
-    this.primitive.addEventListener("create", ({ data }) => {
-      const primitive = this.primitive.store.get(data.id);
-      if (!primitive) throw new Error("Primitive not found");
-      this.#onPrimitiveCreate(primitive);
+    this.node.addEventListener("create", ({ data }) => {
+      const node = this.node.store.get(data.id);
+      if (!node) throw new Error("Node not found");
+      this.#onNodeCreate(node);
     });
   }
 
@@ -62,12 +68,17 @@ export class SceneModule extends Scene {
     const accessors = this.doc.getRoot().listAccessors();
     accessors.forEach((accessor) => accessor.setBuffer(buffer));
 
-    // Remove draco compression
     this.doc
       .getRoot()
       .listExtensionsUsed()
       .forEach((extension) => {
-        if (extension.extensionName === DracoMeshCompression.EXTENSION_NAME) {
+        // Remove extension if it's empty
+        if (extension.listProperties().length === 0) {
+          extension.dispose();
+        }
+
+        // Remove draco compression
+        if (extension.extensionName === KHRDracoMeshCompression.EXTENSION_NAME) {
           extension.dispose();
         }
       });
@@ -75,10 +86,10 @@ export class SceneModule extends Scene {
     return await io.writeBinary(this.doc);
   }
 
-  async loadBinary(array: Uint8Array) {
+  async addBinary(array: Uint8Array) {
     const io = await this.#createIO();
     const doc = await io.readBinary(array);
-    this.loadDocument(doc);
+    this.addDocument(doc);
   }
 
   async addFile(file: File) {
@@ -115,7 +126,27 @@ export class SceneModule extends Scene {
         node.setExtension<Collider>(ColliderExtension.EXTENSION_NAME, meshCollider);
       });
 
-    this.loadDocument(doc);
+    this.addDocument(doc);
+  }
+
+  clear() {
+    this.node.store.forEach((node) => node.dispose());
+    this.mesh.store.forEach((mesh) => mesh.dispose());
+    this.primitive.store.forEach((primitive) => primitive.dispose());
+    this.accessor.store.forEach((accessor) => accessor.dispose());
+    this.buffer.store.forEach((buffer) => buffer.dispose());
+    this.texture.store.forEach((texture) => texture.dispose());
+    this.material.store.forEach((material) => material.dispose());
+
+    this.extensions.behavior.dispose();
+    this.extensions.collider.dispose();
+    this.extensions.spawn.dispose();
+
+    this.extensions = {
+      behavior: this.doc.createExtension(BehaviorExtension),
+      collider: this.doc.createExtension(ColliderExtension),
+      spawn: this.doc.createExtension(SpawnPointExtension),
+    };
   }
 
   override processChanges() {
@@ -132,15 +163,7 @@ export class SceneModule extends Scene {
     });
 
     this.accessor.processChanges().forEach((accessor) => {
-      const id = this.accessor.getId(accessor);
-      if (!id) throw new Error("Id not found");
-      const json = this.accessor.toJSON(accessor);
-
-      this.#publish({ subject: "create_accessor", data: { id, json } });
-
-      accessor.addEventListener("dispose", () => {
-        this.#publish({ subject: "dispose_accessor", data: id });
-      });
+      this.#onAccessorCreate(accessor);
     });
 
     this.texture.processChanges().forEach((texture) => {
@@ -188,6 +211,18 @@ export class SceneModule extends Scene {
 
     this.node.processChanges().forEach((node) => {
       this.#onNodeCreate(node);
+    });
+  }
+
+  #onAccessorCreate(accessor: Accessor) {
+    const id = this.accessor.getId(accessor);
+    if (!id) throw new Error("Id not found");
+
+    const json = this.accessor.toJSON(accessor);
+    this.#publish({ subject: "create_accessor", data: { id, json } });
+
+    accessor.addEventListener("dispose", () => {
+      this.#publish({ subject: "dispose_accessor", data: id });
     });
   }
 
@@ -305,8 +340,8 @@ export class SceneModule extends Scene {
     });
   }
 
-  #publish = (message: SceneMessage) => {
+  #publish(message: SceneMessage) {
     this.#render.send(message);
     this.#physics.send(message);
-  };
+  }
 }

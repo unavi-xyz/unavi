@@ -89,7 +89,7 @@ server.ws<UserData>("/*", {
       }
 
       case "resume_audio": {
-        player.audioPaused = false;
+        player.resumeAudio();
         break;
       }
 

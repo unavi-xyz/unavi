@@ -1,9 +1,18 @@
 import { DeleteObjectsCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { NodeIO, PropertyType } from "@gltf-transform/core";
-import { dedup, draco, prune, resample, simplify, textureResize } from "@gltf-transform/functions";
+import { NodeIO } from "@gltf-transform/core";
+import {
+  dedup,
+  draco,
+  resample,
+  simplify,
+  sparse,
+  textureCompress,
+  weld,
+} from "@gltf-transform/functions";
 import { extensions } from "engine";
 import { MeshoptSimplifier } from "meshoptimizer";
+import sharp from "sharp";
 
 import createEncoderModule from "../../../public/scripts/draco_encoder";
 import { env } from "../../env/server.mjs";
@@ -11,7 +20,8 @@ import { bytesToDisplay } from "../../utils/bytesToDisplay";
 import { s3Client } from "./client";
 import { expiresIn } from "./constants";
 
-const ALL_EXCEPT_NODE = Object.values(PropertyType).filter((type) => type !== PropertyType.NODE);
+// const ALL_EXCEPT_NODE = Object.values(PropertyType).filter((type) => type !== PropertyType.NODE);
+const MEGABYTE = 1024 * 1024;
 
 export const PROJECT_FILE = {
   IMAGE: "image",
@@ -75,23 +85,26 @@ export class Project {
 
     const doc = await io.readBinary(array);
 
-    // Process model
-    try {
-      // Some models fail with "Invalid JPG, marker table corrupted", not sure why
-      // If it happens, catch the error and continue with the rest of the transforms
-      await doc.transform(
-        dedup(),
-        prune({ propertyTypes: ALL_EXCEPT_NODE }),
-        textureResize({ size: [4096, 4096] })
-      );
-    } catch (err) {
-      console.warn("Transform failed:", err);
+    // Optimize model
+    // Ignore large models, it takes too long
+    if (array.byteLength < 30 * MEGABYTE) {
+      try {
+        await doc.transform(
+          dedup(),
+          weld(),
+          simplify({ simplifier: MeshoptSimplifier, lockBorder: true }),
+          resample(),
+          sparse()
+        );
+      } catch (e) {
+        console.warn("Failed to optimize model: ", e);
+      }
     }
 
+    // Compress model
     await doc.transform(
-      resample(),
-      simplify({ simplifier: MeshoptSimplifier, ratio: 0.75, error: 0.001 }),
-      draco({ method: "edgebreaker", encodeSpeed: 1, decodeSpeed: 5 })
+      textureCompress({ encoder: sharp, targetFormat: "webp", resize: [4096, 4096] }),
+      draco()
     );
 
     // Write model
@@ -102,7 +115,7 @@ export class Project {
       bytesToDisplay(array.byteLength),
       "->",
       bytesToDisplay(optimizedArray.byteLength),
-      `(${Math.round((optimizedArray.byteLength / array.byteLength) * 100)}%)`,
+      `(-${Math.round((1 - optimizedArray.byteLength / array.byteLength) * 100)}%)`,
       `(${Math.round(performance.now() - start)}ms)`
     );
 

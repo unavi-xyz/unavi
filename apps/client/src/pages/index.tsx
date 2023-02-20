@@ -10,8 +10,8 @@ import GitHub from "../../public/images/svg/GitHub.svg";
 import Twitter from "../../public/images/svg/Twitter.svg";
 import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../constants";
 import { useAnimateOnEnter } from "../home/hooks/useAnimateOnEnter";
-import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
+import { getNavbarLayout } from "../home/NavbarLayout/NavbarLayout";
 
 export default function Index() {
   useAnimateOnEnter();
@@ -81,7 +81,7 @@ export default function Index() {
                 rel="noreferrer"
                 className="transition hover:opacity-70"
               >
-                <Image src={GitHub} width={35} height={35} alt="GitHub logo" />
+                <Image src={GitHub} width={35} alt="GitHub logo" />
               </a>
               <a
                 href={DISCORD_URL}
@@ -89,7 +89,7 @@ export default function Index() {
                 rel="noreferrer"
                 className="transition hover:opacity-70"
               >
-                <Image src={Discord} width={36} height={36} alt="Discord logo" />
+                <Image src={Discord} width={36} alt="Discord logo" />
               </a>
               <a
                 href={TWITTER_URL}
@@ -97,7 +97,7 @@ export default function Index() {
                 rel="noreferrer"
                 className="transition hover:opacity-70"
               >
-                <Image src={Twitter} width={36} height={36} alt="Twitter logo" />
+                <Image src={Twitter} width={36} alt="Twitter logo" />
               </a>
             </div>
           </section>

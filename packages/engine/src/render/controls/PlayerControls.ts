@@ -24,6 +24,7 @@ export class PlayerControls {
   body = new Group();
   #avatar: Avatar | null = null;
 
+  inputPosition: Int16Array | null = null;
   inputRotation: Int16Array | null = null;
   userPosition: Int32Array | null = null;
   userRotation: Int16Array | null = null;
@@ -43,6 +44,7 @@ export class PlayerControls {
   #animationsPath: string | null = null;
   #defaultAvatar: string | null = null;
   #grounded = false;
+  #sprinting = false;
 
   constructor(camera: PerspectiveCamera, root: Object3D) {
     this.#camera = camera;
@@ -90,6 +92,8 @@ export class PlayerControls {
       avatar.mode = this.mode;
       avatar.animationsPath = this.#animationsPath;
       avatar.grounded = this.#grounded;
+      avatar.sprinting = this.#sprinting;
+      avatar.inputPosition = this.inputPosition;
       this.body.add(avatar.group);
     }
   }
@@ -97,11 +101,16 @@ export class PlayerControls {
   onmessage({ subject, data }: ToRenderMessage) {
     switch (subject) {
       case "set_user_arrays": {
+        this.inputPosition = data.inputPosition;
         this.inputRotation = data.inputRotation;
         this.userPosition = data.userPosition;
         this.userRotation = data.userRotation;
         this.cameraPosition = data.cameraPosition;
         this.cameraYaw = data.cameraYaw;
+
+        if (this.avatar) {
+          this.avatar.inputPosition = this.inputPosition;
+        }
         break;
       }
 
@@ -169,6 +178,12 @@ export class PlayerControls {
       case "set_grounded": {
         this.#grounded = data;
         if (this.avatar) this.avatar.grounded = data;
+        break;
+      }
+
+      case "set_sprinting": {
+        this.#sprinting = data;
+        if (this.avatar) this.avatar.sprinting = data;
         break;
       }
     }
@@ -292,7 +307,7 @@ export class PlayerControls {
   }
 
   updateThirdPerson(delta: number) {
-    if (!this.userRotation || !this.avatar) return;
+    if (!this.userRotation || !this.inputPosition || !this.avatar) return;
 
     // Rotate camera
     const K = 1 - Math.pow(10e-14, delta);
@@ -324,7 +339,7 @@ export class PlayerControls {
       this.#vec3.set(0, 0, orbitDistance).applyQuaternion(this.#camera.quaternion)
     );
 
-    // Rotate body according to velocity
+    // Rotate body
     if (this.avatar.velocity.length() > 0.01) {
       this.avatar.targetRotation.setFromAxisAngle(
         this.#vec3.set(0, 1, 0),

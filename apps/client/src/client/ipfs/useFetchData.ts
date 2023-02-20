@@ -9,7 +9,7 @@ export function useFetchData(uri: string | undefined) {
     async function fetchData() {
       if (!uri) return undefined;
 
-      //if uri is an ipfs hash, load it
+      // If uri is an ipfs hash, load it
       if (uri.startsWith("ipfs://")) {
         const hash = uri.replace("ipfs://", "");
         try {
@@ -21,7 +21,7 @@ export function useFetchData(uri: string | undefined) {
         }
       }
 
-      //otherwise, assume it's a http url
+      // Otherwise, assume it's a http url
       try {
         const res = await fetch(uri);
         const blob = await res.blob();

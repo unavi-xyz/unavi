@@ -64,9 +64,6 @@ export default function MeshComponent({ meshId }: Props) {
           onChange={(e) => {
             const type = e.target.value;
 
-            // Remove all primitives
-            mesh.listPrimitives().forEach((primitive) => mesh.removePrimitive(primitive));
-
             // Set custom mesh
             switch (type) {
               case MESH_TYPE.Box: {

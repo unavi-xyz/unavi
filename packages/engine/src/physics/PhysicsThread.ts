@@ -8,6 +8,8 @@ import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
 import { PhysicsScene } from "./PhysicsScene";
 import { Player } from "./Player";
 
+const PHYSICS_LOOP_HZ = 60;
+
 export class PhysicsThread {
   controls: ControlsType = DEFAULT_CONTROLS;
 
@@ -15,12 +17,10 @@ export class PhysicsThread {
   scene = new PhysicsScene(this.world);
   player: Player;
 
-  #interval: NodeJS.Timeout;
+  #interval: NodeJS.Timeout | null = null;
 
   constructor(postMessage: PostMessage<FromPhysicsMessage>) {
     this.player = new Player(this.world, this.scene, postMessage);
-
-    this.#interval = setInterval(this.update, 1000 / 60); // 60hz
 
     postMessage({ subject: "ready", data: null });
   }
@@ -56,8 +56,18 @@ export class PhysicsThread {
         break;
       }
 
+      case "start": {
+        this.start();
+        break;
+      }
+
+      case "stop": {
+        this.stop();
+        break;
+      }
+
       case "destroy": {
-        clearInterval(this.#interval);
+        this.stop();
         break;
       }
 
@@ -67,6 +77,16 @@ export class PhysicsThread {
       }
     }
   };
+
+  start() {
+    this.stop();
+    this.world.timestep = 1 / PHYSICS_LOOP_HZ;
+    this.#interval = setInterval(this.update, 1000 / PHYSICS_LOOP_HZ);
+  }
+
+  stop() {
+    if (this.#interval) clearInterval(this.#interval);
+  }
 
   update = () => {
     if (this.controls === "player") {

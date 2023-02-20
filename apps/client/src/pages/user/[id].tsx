@@ -2,20 +2,17 @@ import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/dist/client/link";
 import Head from "next/dist/shared/lib/head";
-import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
-import { getNavbarLayout } from "../../home/layouts/NavbarLayout/NavbarLayout";
+import Avatar from "../../home/Avatar";
 import MetaTags from "../../home/MetaTags";
-import ProfilePicture from "../../home/ProfilePicture";
+import { getNavbarLayout } from "../../home/NavbarLayout/NavbarLayout";
 import SpaceCard from "../../home/SpaceCard";
 import { prisma } from "../../server/prisma";
 import { appRouter } from "../../server/router/_app";
-import Spinner from "../../ui/Spinner";
-import { isFromCDN } from "../../utils/isFromCDN";
 import { hexDisplayToNumber, numberToHexDisplay } from "../../utils/numberToHexDisplay";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
@@ -80,12 +77,9 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
   const isLoading = isAddress ? isLoadingAddress : isLoadingId;
   const isUser = status === "authenticated" && profile?.owner === session?.address;
 
-  const { data: spaces, isLoading: isLoadingSpaces } = trpc.space.latest.useQuery(
-    { owner: profile?.owner },
-    {
-      enabled: profile?.owner !== undefined,
-      refetchOnWindowFocus: false,
-    }
+  const { data: spaces } = trpc.space.latest.useQuery(
+    { limit: 20, owner: profile?.owner },
+    { enabled: profile?.owner !== undefined }
   );
 
   // Force change page on hash change
@@ -120,97 +114,82 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
         <meta property="og:profile:first_name" content={profile?.handle?.string} />
       </Head>
 
-      {isLoading ? (
-        <div className="flex justify-center pt-12">
-          <Spinner />
-        </div>
-      ) : (
-        <div className="max-w-content mx-auto">
-          <div className="h-48 w-full bg-neutral-200 md:h-64 lg:rounded-xl">
-            <div className="relative h-full w-full object-cover">
-              {profile?.metadata?.animation_url &&
-                (isFromCDN(profile.metadata.animation_url) ? (
-                  <Image
-                    src={profile.metadata.animation_url}
-                    priority
-                    fill
-                    sizes="80vw"
-                    alt=""
-                    className="h-full w-full object-cover lg:rounded-xl"
-                  />
-                ) : (
-                  <img
-                    src={profile.metadata.animation_url}
-                    alt=""
-                    className="h-full w-full object-cover lg:rounded-xl"
-                    crossOrigin="anonymous"
-                  />
-                ))}
-            </div>
+      <div className="max-w-content mx-auto">
+        <div className="h-48 w-full bg-neutral-200 md:h-64 xl:rounded-xl">
+          <div className="relative h-full w-full object-cover">
+            {profile?.metadata?.animation_url && (
+              <img
+                src={profile.metadata.animation_url}
+                alt=""
+                className="h-full w-full object-cover xl:rounded-xl"
+                crossOrigin="anonymous"
+              />
+            )}
           </div>
+        </div>
 
-          <section className="flex justify-center px-4 pb-6 md:px-0">
-            <div className="flex w-full flex-col items-center space-y-2">
-              <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
-                <ProfilePicture
-                  src={profile?.metadata?.image}
-                  circle
-                  uniqueKey={profile?.handle?.full ?? id}
-                  size={128}
-                />
-              </div>
-
-              <div className="flex w-full flex-col items-center">
-                {profile?.handle ? (
-                  <div>
-                    <span className="text-2xl font-black">{profile.handle.string}</span>
-                    <span className="text-xl font-bold text-neutral-400">
-                      #{profile.handle.id.toString().padStart(4, "0")}
-                    </span>
-                  </div>
-                ) : null}
-
-                <div className="w-full overflow-x-hidden text-ellipsis text-center text-neutral-400">
-                  {isAddress ? id : profile?.owner}
-                </div>
-              </div>
-
-              {profile?.metadata?.description && (
-                <div className="w-full whitespace-pre-line text-center">
-                  {profile.metadata.description}
-                </div>
-              )}
-
-              {isUser && (
-                <div className="flex w-full justify-center space-x-2">
-                  <Link
-                    href="/settings"
-                    className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
-                  >
-                    Edit profile
-                  </Link>
-                </div>
-              )}
+        <section className="flex justify-center px-4 pb-6 md:px-0">
+          <div className="flex w-full flex-col items-center space-y-2">
+            <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
+              <Avatar
+                src={profile?.metadata?.image}
+                circle
+                uniqueKey={profile?.handle?.full ?? id}
+                size={128}
+              />
             </div>
-          </section>
 
-          {isLoadingSpaces ? (
-            <div className="flex justify-center pt-12">
-              <Spinner />
+            <div className="flex w-full flex-col items-center">
+              {profile?.handle ? (
+                <div>
+                  <span className="text-2xl font-black">{profile.handle.string}</span>
+                  <span className="text-xl font-bold text-neutral-400">
+                    #{profile.handle.id.toString().padStart(4, "0")}
+                  </span>
+                </div>
+              ) : null}
+
+              <div className="w-full overflow-x-hidden text-ellipsis text-center text-neutral-400">
+                {isAddress ? id : profile?.owner}
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 md:grid-cols-3">
-              {spaces?.map(({ id, metadata }) => {
+
+            {profile?.metadata?.description && (
+              <div className="w-full whitespace-pre-line text-center">
+                {profile.metadata.description}
+              </div>
+            )}
+
+            {isUser && (
+              <div className="flex w-full justify-center space-x-2">
+                <Link
+                  href="/settings"
+                  className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
+                >
+                  Edit profile
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 md:grid-cols-3">
+          {spaces
+            ? spaces.map(({ id, metadata }) => {
                 return (
-                  <Link href={`/space/${numberToHexDisplay(id)}`} key={id}>
-                    <SpaceCard id={id} metadata={metadata} animateEnter />
+                  <Link href={`/space/${numberToHexDisplay(id)}`} key={id} className="rounded-xl">
+                    <SpaceCard id={id} metadata={metadata} sizes="512" animateEnter />
                   </Link>
                 );
-              })}
-            </div>
-          )}
+              })
+            : Array.from({ length: 3 }, (_, i) => (
+                <div
+                  key={i}
+                  className="aspect-card h-full w-full animate-pulse rounded-xl bg-neutral-300"
+                />
+              ))}
         </div>
-      )}
+      </div>
     </>
   );
 }

@@ -10,22 +10,19 @@
     "lint": "cd ../.. && eslint --fix packages/engine --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
+    "@behave-graph/core": "^0.9.13",
     "@dimforge/rapier3d": "^0.11.1",
-    "@gltf-transform/core": "2.5.1",
-    "@gltf-transform/extensions": "2.5.1",
-    "@gltf-transform/functions": "2.5.1",
-    "@pixiv/three-vrm": "^1.0.7",
-    "contracts": "*",
-    "nanoid": "^4.0.0",
-    "property-graph": "^1.0.1",
-    "rxjs": "^7.8.0",
-    "three": "^0.148.0",
-    "zod": "^3.20.2"
+    "@gltf-transform/core": "3.0.1",
+    "@gltf-transform/extensions": "3.0.1",
+    "@pixiv/three-vrm": "^1.0.8",
+    "nanoid": "^4.0.1",
+    "property-graph": "^1.0.3",
+    "three": "^0.148.0"
   },
   "devDependencies": {
     "@types/offscreencanvas": "^2019.7.0",
     "@types/three": "^0.148.0",
     "tsconfig": "*",
-    "typescript": "~4.9.4"
+    "typescript": "~4.9.5"
   }
 }

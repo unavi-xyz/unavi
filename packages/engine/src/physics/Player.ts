@@ -22,7 +22,8 @@ import { COLLISION_GROUP } from "./groups";
 import { FromPhysicsMessage } from "./messages";
 import { PhysicsScene } from "./PhysicsScene";
 
-const CHARACTER_OFFSET = 0.01;
+const VOID_HEIGHT = -100;
+const CHARACTER_OFFSET = 0.02;
 const RIGID_BODY_FEET_OFFSET = PLAYER_HEIGHT / 2 + PLAYER_RADIUS + CHARACTER_OFFSET;
 
 export class Player {
@@ -38,10 +39,10 @@ export class Player {
   cameraYaw: Int16Array | null = null;
   userPosition: Int32Array | null = null;
 
-  velocity: Vector3 = { x: 0, y: 0, z: 0 };
   sprinting = false;
   shouldJump = false;
   #isGrounded = false;
+  #ground: RigidBody | null = null;
 
   constructor(world: World, scene: PhysicsScene, postMessage: PostMessage<FromPhysicsMessage>) {
     this.#world = world;
@@ -49,7 +50,7 @@ export class Player {
     this.#postMessage = postMessage;
 
     this.controller = this.#world.createCharacterController(CHARACTER_OFFSET);
-    this.controller.enableSnapToGround(0.05);
+    this.controller.enableSnapToGround(0.5);
     this.controller.enableAutostep(PLAYER_HEIGHT / 5, PLAYER_RADIUS / 2, false);
     this.controller.setSlideEnabled(true);
     this.controller.setMaxSlopeClimbAngle((60 * Math.PI) / 180);
@@ -93,9 +94,8 @@ export class Player {
   }
 
   update() {
-    const delta = this.#world.timestep;
-
     if (!this.input || !this.cameraYaw || !this.userPosition) return;
+    const delta = this.#world.timestep;
 
     // Read input
     const inputX = Atomics.load(this.input, 0) / INPUT_ARRAY_ROUNDING;
@@ -108,27 +108,39 @@ export class Player {
     const rotatedX = inputY * sin - inputX * cos;
     const rotatedZ = inputX * sin + inputY * cos;
 
-    // Calculate velocity
-    const speed = this.sprinting ? SPRINT_SPEED : WALK_SPEED;
-
+    // Get input velocity
     const inputVelocity = this.rigidBody.linvel();
+    const speed = this.sprinting ? SPRINT_SPEED : WALK_SPEED;
     inputVelocity.x = (rotatedX * speed) / 10;
     inputVelocity.z = (rotatedZ * speed) / 10;
 
-    // Only apply gravity if not grounded
     this.isGrounded = this.controller.computedGrounded();
-    if (this.isGrounded) inputVelocity.y = 0;
-    else inputVelocity.y += this.#world.gravity.y * delta;
 
-    // Lerp input velocity
-    const K = 1 - Math.pow(10e-16, delta);
-    inputVelocity.x = inputVelocity.x * K + this.velocity.x * (1 - K);
-    inputVelocity.z = inputVelocity.z * K + this.velocity.z * (1 - K);
+    if (this.isGrounded) {
+      inputVelocity.y = this.#world.gravity.y * delta;
+
+      // Get ground from latest collision event
+      const groundCollision = this.controller.computedCollision(0);
+      const groundRigidBody = groundCollision?.collider?.parent();
+      if (groundRigidBody) this.#ground = groundRigidBody;
+
+      // Move player with ground
+      if (this.#ground) {
+        const groundVelocity = this.#ground.linvel();
+        inputVelocity.x += groundVelocity.x * delta;
+        inputVelocity.z += groundVelocity.z * delta;
+      }
+    } else {
+      // Reset ground
+      this.#ground = null;
+      // Apply gravity
+      inputVelocity.y += this.#world.gravity.y * delta;
+    }
 
     // Jump
     if (this.shouldJump) {
       this.shouldJump = false;
-      if (this.isGrounded) inputVelocity.y = 5;
+      if (this.isGrounded) inputVelocity.y = 6;
     }
 
     // Compute movement
@@ -141,14 +153,15 @@ export class Player {
     this.controller.computeColliderMovement(this.collider, inputTranslation);
     const computedMovement = this.controller.computedMovement();
 
-    this.velocity = {
-      x: computedMovement.x / delta,
-      y: computedMovement.y / delta,
-      z: computedMovement.z / delta,
-    };
-
     // Apply velocity
-    this.rigidBody.setLinvel(this.velocity, true);
+    this.rigidBody.setLinvel(
+      {
+        x: computedMovement.x / delta,
+        y: computedMovement.y / delta,
+        z: computedMovement.z / delta,
+      },
+      true
+    );
 
     // Store user position
     const pos = this.rigidBody.translation();
@@ -157,7 +170,7 @@ export class Player {
     Atomics.store(this.userPosition, 2, pos.z * POSITION_ARRAY_ROUNDING);
 
     // Teleport out of void if needed
-    if (pos.y < -100) this.respawn();
+    if (pos.y < VOID_HEIGHT) this.respawn();
   }
 }
 

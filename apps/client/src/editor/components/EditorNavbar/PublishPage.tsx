@@ -1,4 +1,3 @@
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -38,7 +37,6 @@ export default function PublishPage() {
 
   const { data: session } = useSession();
   const { data: signer } = useSigner();
-  const { openConnectModal } = useConnectModal();
   const { save } = useSave();
   const utils = trpc.useContext();
 
@@ -66,12 +64,7 @@ export default function PublishPage() {
   }, [imageFile, imageURL]);
 
   function handlePublish() {
-    if (loading) return;
-
-    if (!signer) {
-      if (openConnectModal) openConnectModal();
-      return;
-    }
+    if (loading || !signer) return;
 
     async function publishProject() {
       if (!signer) throw new Error("Signer not found");
@@ -164,6 +157,7 @@ export default function PublishPage() {
       ]);
 
       // Redirect to space
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       router.push(`/space/${numberToHexDisplay(spaceId)}`);
     }
 
@@ -185,52 +179,46 @@ export default function PublishPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-center text-3xl font-bold">Publish Space</h1>
+      <TextField
+        name="Name"
+        onChange={(e) => {
+          const value = e.target.value;
+          useEditorStore.setState({ name: value });
+        }}
+        autoComplete="off"
+        defaultValue={name}
+        disabled={loading}
+      />
 
-      <div className="space-y-4">
-        <TextField
-          name="Name"
-          onChange={(e) => {
-            const value = e.target.value;
-            useEditorStore.setState({ name: value });
-          }}
-          outline
-          defaultValue={name}
+      <TextArea
+        name="Description"
+        onChange={(e) => {
+          const value = e.target.value;
+          useEditorStore.setState({ description: value });
+        }}
+        autoComplete="off"
+        rows={4}
+        defaultValue={description}
+        disabled={loading}
+      />
+
+      <div className="space-y-2">
+        <div className="text-lg font-bold">Image</div>
+
+        <ImageInput
+          src={image}
           disabled={loading}
-        />
-
-        <TextArea
-          name="Description"
           onChange={(e) => {
-            const value = e.target.value;
-            useEditorStore.setState({ description: value });
+            const file = e.target.files?.[0];
+            if (!file) return;
+            cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
           }}
-          autoComplete="off"
-          outline
-          rows={4}
-          defaultValue={description}
-          disabled={loading}
         />
-
-        <div className="space-y-2">
-          <div className="text-lg font-bold">Image</div>
-
-          <ImageInput
-            src={image}
-            disabled={loading}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-
-              cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
-            }}
-          />
-        </div>
       </div>
 
       <div className="flex justify-end">
         <Button disabled={loading} onClick={handlePublish}>
-          {signer ? "Submit" : "Sign In"}
+          Submit
         </Button>
       </div>
     </div>

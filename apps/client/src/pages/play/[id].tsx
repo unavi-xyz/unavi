@@ -4,15 +4,15 @@ import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
-import { useAppHotkeys } from "../../app/hooks/useAppHotkeys";
-import { useLoadUser } from "../../app/hooks/useLoadUser";
-import { useResizeCanvas } from "../../app/hooks/useResizeCanvas";
-import { useSetAvatar } from "../../app/hooks/useSetAvatar";
-import { useSpace } from "../../app/hooks/useSpace";
-import { useAppStore } from "../../app/store";
-import LoadingScreen from "../../app/ui/LoadingScreen";
-import Overlay from "../../app/ui/Overlay";
 import MetaTags from "../../home/MetaTags";
+import { useHotkeys } from "../../play/hooks/useHotkeys";
+import { useLoadUser } from "../../play/hooks/useLoadUser";
+import { useResizeCanvas } from "../../play/hooks/useResizeCanvas";
+import { useSetAvatar } from "../../play/hooks/useSetAvatar";
+import { useSpace } from "../../play/hooks/useSpace";
+import { usePlayStore } from "../../play/store";
+import LoadingScreen from "../../play/ui/LoadingScreen";
+import Overlay from "../../play/ui/Overlay";
 import { prisma } from "../../server/prisma";
 import { appRouter } from "../../server/router/_app";
 import { hexDisplayToNumber } from "../../utils/numberToHexDisplay";
@@ -53,13 +53,13 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
 
-  const engine = useAppStore((state) => state.engine);
+  const engine = usePlayStore((state) => state.engine);
   const [scriptsReady, setScriptsReady] = useState(false);
 
   const setAvatar = useSetAvatar();
   useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
   useLoadUser();
-  useAppHotkeys();
+  useHotkeys();
 
   const { space, loadingText, loadingProgress, join } = useSpace(id);
 
@@ -74,12 +74,13 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
     engine.render.send({ subject: "set_animations_path", data: "/models" });
     engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
     engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
+    engine.physics.send({ subject: "start", data: null });
 
-    useAppStore.setState({ engine });
+    usePlayStore.setState({ engine });
 
     return () => {
       engine.destroy();
-      useAppStore.setState({ engine: null, chatMessages: [] });
+      usePlayStore.setState({ engine: null, chatMessages: [] });
     };
   }, [scriptsReady]);
 
@@ -113,7 +114,7 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
         className="h-screen w-screen"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
-          const { engine } = useAppStore.getState();
+          const { engine } = usePlayStore.getState();
           if (!engine) return;
 
           e.preventDefault();

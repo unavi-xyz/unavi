@@ -20,7 +20,7 @@ export default function Card({
   children,
 }: Props) {
   const aspectCss = aspect === "card" ? "aspect-card" : "aspect-vertical";
-  const animateCss = animateEnter ? "animate-fadeIn" : "";
+  const animateCss = animateEnter ? "animate-floatIn" : "";
 
   return (
     <div className="h-full w-full transition hover:scale-105">

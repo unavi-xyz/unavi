@@ -1,6 +1,13 @@
 import { Document } from "@gltf-transform/core";
 
-import { ColliderExtension, SPAWN_TITLES, SpawnPoint, SpawnPointExtension } from "../gltf";
+import {
+  BehaviorNode,
+  ColliderExtension,
+  SPAWN_TITLES,
+  SpawnPoint,
+  SpawnPointExtension,
+} from "../gltf";
+import { BehaviorExtension } from "../gltf/extensions/Behavior/BehaviorExtension";
 import { Accessors } from "./attributes/Accessors";
 import { Buffers } from "./attributes/Buffers";
 import { Materials } from "./attributes/Materials";
@@ -13,6 +20,7 @@ export class Scene {
   doc = new Document();
 
   extensions = {
+    behavior: this.doc.createExtension(BehaviorExtension),
     collider: this.doc.createExtension(ColliderExtension),
     spawn: this.doc.createExtension(SpawnPointExtension),
   };
@@ -25,8 +33,51 @@ export class Scene {
   mesh = new Meshes(this.doc, this.primitive);
   node = new Nodes(this);
 
-  loadDocument(doc: Document) {
+  addDocument(doc: Document) {
     this.doc.merge(doc);
+
+    // Transfer behavior nodes
+    const behaviorNodes = doc
+      .getRoot()
+      .listExtensionsUsed()
+      .filter((ext) => ext instanceof BehaviorExtension)
+      .flatMap((ext) =>
+        ext.listProperties().filter((p): p is BehaviorNode => p instanceof BehaviorNode)
+      );
+
+    const newBehaviorNodes = behaviorNodes.map((behaviorNode) => {
+      const newBehaviorNode = this.extensions.behavior.createBehaviorNode();
+      newBehaviorNode.name = behaviorNode.name;
+      newBehaviorNode.type = behaviorNode.type;
+      newBehaviorNode.parameters = behaviorNode.parameters;
+      newBehaviorNode.flow = behaviorNode.flow;
+      newBehaviorNode.setExtras(behaviorNode.getExtras());
+      return newBehaviorNode;
+    });
+
+    newBehaviorNodes.forEach((behaviorNode) => {
+      if (behaviorNode.parameters) {
+        Object.entries(behaviorNode.parameters).forEach(([key, value]) => {
+          if (typeof value === "object" && "link" in value) {
+            const newNode = newBehaviorNodes.find((node) => node.name === value.link.name);
+            if (!newNode) throw new Error("Invalid behavior node reference");
+
+            if (!behaviorNode.parameters) behaviorNode.parameters = {};
+            behaviorNode.parameters[key] = { link: newNode, socket: value.socket };
+          }
+        });
+      }
+
+      if (behaviorNode.flow) {
+        Object.entries(behaviorNode.flow).forEach(([key, value]) => {
+          const newNode = newBehaviorNodes.find((node) => node.name === value.name);
+          if (!newNode) throw new Error("Invalid behavior node reference");
+
+          if (!behaviorNode.flow) behaviorNode.flow = {};
+          behaviorNode.flow[key] = newNode;
+        });
+      }
+    });
 
     // Merge into one scene
     const scenes = this.doc.getRoot().listScenes();

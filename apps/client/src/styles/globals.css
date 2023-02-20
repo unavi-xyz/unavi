@@ -27,7 +27,6 @@ html {
   background-clip: content-box;
 }
 
-/* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.6);
 }

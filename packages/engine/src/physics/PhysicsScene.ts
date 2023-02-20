@@ -55,14 +55,16 @@ export class PhysicsScene extends Scene {
         if (data.json.material) data.json.material = null;
 
         const primitive = this.primitive.store.get(data.id);
-        if (!primitive) throw new Error("Primitive not found");
+        if (!primitive) throw new Error(`Primitive not found: ${data.id}`);
+
         this.primitive.applyJSON(primitive, data.json);
         break;
       }
 
       case "dispose_primitive": {
         const primitive = this.primitive.store.get(data);
-        if (!primitive) throw new Error("Primitive not found");
+        if (!primitive) throw new Error(`Primitive not found: ${data}`);
+
         primitive.dispose();
         break;
       }
@@ -176,20 +178,20 @@ export class PhysicsScene extends Scene {
 
             const vertices = mesh.listPrimitives().flatMap((primitive) => {
               const attribute = primitive.getAttribute("POSITION");
-              if (!attribute) throw new Error("Position attribute not found");
+              if (!attribute) return [];
 
               const array = attribute.getArray();
-              if (!array) throw new Error("Position attribute array not found");
+              if (!array) return [];
 
               return Array.from(array);
             });
 
             const indices = mesh.listPrimitives().flatMap((primitive) => {
               const indicesAttribute = primitive.getIndices();
-              if (!indicesAttribute) throw new Error("Indices attribute not found");
+              if (!indicesAttribute) return [];
 
               const array = indicesAttribute.getArray();
-              if (!array) throw new Error("Indices attribute array not found");
+              if (!array) return [];
 
               return Array.from(array);
             });
@@ -207,7 +209,7 @@ export class PhysicsScene extends Scene {
 
         colliderDesc.setCollisionGroups(COLLISION_GROUP.static);
 
-        const rigidBodyDesc = RigidBodyDesc.fixed();
+        const rigidBodyDesc = RigidBodyDesc.kinematicPositionBased();
         const rigidBody = this.#world.createRigidBody(rigidBodyDesc);
         const collider = this.#world.createCollider(colliderDesc, rigidBody);
 
@@ -288,24 +290,18 @@ export class PhysicsScene extends Scene {
       const rigidBody = collider.parent();
 
       if (rigidBody) {
-        rigidBody.setTranslation(
-          {
-            x: worldTranslation[0],
-            y: worldTranslation[1],
-            z: worldTranslation[2],
-          },
-          true
-        );
+        rigidBody.setNextKinematicTranslation({
+          x: worldTranslation[0],
+          y: worldTranslation[1],
+          z: worldTranslation[2],
+        });
 
-        rigidBody.setRotation(
-          {
-            x: worldRotation[0],
-            y: worldRotation[1],
-            z: worldRotation[2],
-            w: worldRotation[3],
-          },
-          true
-        );
+        rigidBody.setNextKinematicRotation({
+          x: worldRotation[0],
+          y: worldRotation[1],
+          z: worldRotation[2],
+          w: worldRotation[3],
+        });
       }
     }
 

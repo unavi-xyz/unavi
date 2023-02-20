@@ -12,7 +12,7 @@ export function isAncestor(targetId: string, nodeId: string, engine: Engine): bo
   if (nodeId === targetId) return true;
 
   const node = engine.scene.node.store.get(nodeId);
-  if (!node) throw new Error("Node not found");
+  if (!node) return false;
 
   const parentId = engine.scene.node.getParent(node);
   if (!parentId) return false;

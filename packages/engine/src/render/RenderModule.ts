@@ -57,6 +57,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     this.send({
       subject: "set_user_arrays",
       data: {
+        inputPosition: engine.inputPosition,
         inputRotation: engine.inputRotation,
         userPosition: engine.userPosition,
         userRotation: engine.userRotation,
@@ -98,27 +99,31 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       }
 
       case "create_accessor": {
-        this.engine.physics.send({ subject: "create_accessor", data });
+        this.engine.scene.accessor.create(data.json, data.id);
         break;
       }
 
       case "dispose_accessor": {
-        this.engine.physics.send({ subject: "dispose_accessor", data });
+        const accessor = this.engine.scene.accessor.store.get(data);
+        if (accessor) accessor.dispose();
         break;
       }
 
       case "create_primitive": {
-        this.engine.physics.send({ subject: "create_primitive", data });
+        this.engine.scene.primitive.create(data.json, data.id);
         break;
       }
 
       case "dispose_primitive": {
-        this.engine.physics.send({ subject: "dispose_primitive", data });
+        const primitive = this.engine.scene.primitive.store.get(data);
+        if (primitive) primitive.dispose();
         break;
       }
 
       case "change_mesh": {
-        this.engine.physics.send({ subject: "change_mesh", data });
+        const mesh = this.engine.scene.mesh.store.get(data.id);
+        if (!mesh) throw new Error("Mesh not found");
+        this.engine.scene.mesh.applyJSON(mesh, data.json);
         break;
       }
     }

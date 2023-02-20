@@ -8,11 +8,10 @@ import { useSession } from "../client/auth/useSession";
 import { trpc } from "../client/trpc";
 import { cropImage } from "../editor/utils/cropImage";
 import { env } from "../env/client.mjs";
-import { getNavbarLayout } from "../home/layouts/NavbarLayout/NavbarLayout";
 import MetaTags from "../home/MetaTags";
+import { getNavbarLayout } from "../home/NavbarLayout/NavbarLayout";
 import Button from "../ui/Button";
 import ImageInput from "../ui/ImageInput";
-import Spinner from "../ui/Spinner";
 import TextArea from "../ui/TextArea";
 import TextField from "../ui/TextField";
 import { numberToHexDisplay } from "../utils/numberToHexDisplay";
@@ -227,107 +226,100 @@ export default function Settings() {
 
   const hasProfile = !isLoading && profile !== undefined;
 
-  if (status !== "authenticated") return null;
-
-  if (isLoading)
-    return (
-      <div className="flex justify-center pt-12">
-        <Spinner />
-      </div>
-    );
+  if (status !== "authenticated" || isLoading) return null;
 
   return (
     <>
       <MetaTags title="Settings" />
 
-      <div className="max-w-content mx-auto pt-12">
-        <div className="text-center text-3xl font-black">Edit Profile</div>
+      <div className="flex justify-center">
+        <div className="max-w-content mx-4 space-y-4 py-8">
+          <div className="text-center text-3xl font-black">Settings</div>
 
-        <div className="mx-auto w-1/2">
-          <section className="space-y-2">
-            <TextField
-              value={username}
-              onChange={(e) => setName(e.target.value)}
-              name="Username"
-              autoComplete="off"
-              disabled={savingUsername}
-              outline
-            />
-
-            <div className="flex justify-end">
-              <Button disabled={nameDisabled} onClick={handleSaveName}>
-                Save
-              </Button>
-            </div>
-          </section>
-
-          {hasProfile ? (
+          <div className="mx-auto max-w-xl">
             <section className="space-y-2">
-              <TextArea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                name="Bio"
+              <TextField
+                value={username}
+                onChange={(e) => setName(e.target.value)}
+                name="Username"
                 autoComplete="off"
-                rows={4}
-                disabled={savingMetadata}
-                outline
+                disabled={savingUsername}
               />
 
-              <div className="space-y-2">
-                <div className="text-lg font-bold">Profile Picture</div>
-
-                <ImageInput
-                  src={profilePicture}
-                  disabled={savingMetadata}
-                  onChange={async (e) => {
-                    if (!e.target.files) return;
-
-                    const file = e.target.files[0];
-                    if (!file) return;
-
-                    const url = URL.createObjectURL(file);
-
-                    // Crop image
-                    const croppedFile = await cropImage(url, 1);
-                    const croppedUrl = URL.createObjectURL(croppedFile);
-
-                    setProfilePicture(croppedUrl);
-                  }}
-                  className="h-48 w-48 rounded-full object-cover"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-lg font-bold">Cover Picture</div>
-
-                <ImageInput
-                  src={coverImage}
-                  disabled={savingMetadata}
-                  onChange={async (e) => {
-                    if (!e.target.files) return;
-
-                    const file = e.target.files[0];
-                    if (!file) return;
-
-                    const url = URL.createObjectURL(file);
-
-                    // Crop image
-                    const croppedFile = await cropImage(url, 4);
-                    const croppedUrl = URL.createObjectURL(croppedFile);
-
-                    setCoverImage(croppedUrl);
-                  }}
-                  className="h-40 w-full rounded-xl object-cover"
-                />
-              </div>
-
               <div className="flex justify-end">
-                <Button disabled={metadataDisabled} onClick={handleSaveMetadata}>
+                <Button disabled={nameDisabled} onClick={handleSaveName}>
                   Save
                 </Button>
               </div>
             </section>
-          ) : null}
+
+            {hasProfile ? (
+              <section className="space-y-2">
+                <TextArea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  name="Bio"
+                  autoComplete="off"
+                  rows={4}
+                  disabled={savingMetadata}
+                />
+
+                <div className="space-y-2">
+                  <div className="text-lg font-bold">Profile Picture</div>
+
+                  <ImageInput
+                    src={profilePicture}
+                    disabled={savingMetadata}
+                    onChange={async (e) => {
+                      if (!e.target.files) return;
+
+                      const file = e.target.files[0];
+                      if (!file) return;
+
+                      const url = URL.createObjectURL(file);
+
+                      // Crop image
+                      const croppedFile = await cropImage(url, 1);
+                      const croppedUrl = URL.createObjectURL(croppedFile);
+
+                      setProfilePicture(croppedUrl);
+                    }}
+                    className="h-48 w-48 rounded-full object-cover"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-lg font-bold">Cover Picture</div>
+
+                  <ImageInput
+                    src={coverImage}
+                    disabled={savingMetadata}
+                    onChange={async (e) => {
+                      if (!e.target.files) return;
+
+                      const file = e.target.files[0];
+                      if (!file) return;
+
+                      const url = URL.createObjectURL(file);
+
+                      // Crop image
+                      const croppedFile = await cropImage(url, 4);
+                      const croppedUrl = URL.createObjectURL(croppedFile);
+
+                      setCoverImage(croppedUrl);
+                    }}
+                    className="h-40 w-full rounded-xl object-cover"
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <Button disabled={metadataDisabled} onClick={handleSaveMetadata}>
+                    Save
+                  </Button>
+                </div>
+              </section>
+            ) : null}
+          </div>
         </div>
       </div>
     </>

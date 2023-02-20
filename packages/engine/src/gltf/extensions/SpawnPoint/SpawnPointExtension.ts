@@ -18,7 +18,7 @@ export class SpawnPointExtension extends Extension {
     return new SpawnPoint(this.document.getGraph());
   }
 
-  public read(context: ReaderContext): this {
+  public read(context: ReaderContext) {
     const nodeDefs = context.jsonDoc.json.nodes || [];
 
     nodeDefs.forEach((nodeDef, nodeIndex) => {
@@ -38,7 +38,7 @@ export class SpawnPointExtension extends Extension {
     return this;
   }
 
-  public write(context: WriterContext): this {
+  public write(context: WriterContext) {
     this.document
       .getRoot()
       .listNodes()

@@ -15,11 +15,12 @@ import {
 import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-import { PLAYER_HEIGHT, WALK_SPEED } from "../../constants";
+import { INPUT_ARRAY_ROUNDING, PLAYER_HEIGHT, SPRINT_SPEED, WALK_SPEED } from "../../constants";
 import { deepDispose } from "../utils/deepDispose";
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
 
-const MIN_WALK_SPEED = 1;
+const MIN_WALK_DETECT = 0.1;
+const MIN_WALK_SPEED = 2;
 const SPRINT_CUTOFF = WALK_SPEED + 5;
 
 const ANIMATION_NAME = {
@@ -50,6 +51,7 @@ export class Avatar {
   #mode: "first-person" | "third-person" = "third-person";
   #animationsPath: string | null = null;
   grounded = true;
+  sprinting = false;
 
   #name: string | null = null;
   #font: Font | null = null;
@@ -60,6 +62,8 @@ export class Avatar {
   velocity = new Vector3();
   targetPosition = new Vector3();
   targetRotation = new Quaternion();
+
+  inputPosition: Int16Array | null = null;
 
   static NAMEPLATE_TEXT_MATERIAL = new MeshBasicMaterial({ color: 0xffffff });
   static NAMEPLATE_BG_MATERIAL = new MeshBasicMaterial({ color: 0x010101 });
@@ -229,16 +233,31 @@ export class Avatar {
 
   update(delta: number) {
     if (!this.vrm) return;
+    const K = 1 - Math.pow(10e-8, delta);
 
     this.vrm.update(delta);
 
-    // Calculate velocity
-    const K = 1 - Math.pow(10e-8, delta);
-    const deltaPos = this.#vec3
-      .copy(this.group.position)
-      .sub(this.targetPosition)
-      .divideScalar(delta);
-    this.velocity.lerp(deltaPos, K);
+    if (this.inputPosition) {
+      // Calculate velocity based on input
+      const x = Atomics.load(this.inputPosition, 0) / INPUT_ARRAY_ROUNDING;
+      const z = Atomics.load(this.inputPosition, 1) / INPUT_ARRAY_ROUNDING;
+
+      // Input is relative to camera, so we need to rotate it
+      this.#vec3
+        .set(-x, 0, z)
+        .applyQuaternion(this.#camera.quaternion)
+        .multiplyScalar(this.sprinting ? SPRINT_SPEED : WALK_SPEED);
+
+      this.velocity.lerp(this.#vec3, K);
+    } else {
+      // Calculate velocity based on position
+      const deltaPos = this.#vec3
+        .copy(this.group.position)
+        .sub(this.targetPosition)
+        .divideScalar(delta);
+
+      this.velocity.lerp(deltaPos, K);
+    }
 
     // Move body
     this.group.position.lerp(this.targetPosition, K);
@@ -249,10 +268,11 @@ export class Avatar {
         .copy(this.velocity)
         .applyQuaternion(this.group.getWorldQuaternion(this.#quat).invert());
 
-      const leftVelocity = relativeVelocity.x > 0 ? Math.abs(relativeVelocity.x) : 0;
-      const rightVelocity = relativeVelocity.x < 0 ? Math.abs(relativeVelocity.x) : 0;
+      const leftVelocity = relativeVelocity.x > MIN_WALK_DETECT ? Math.abs(relativeVelocity.x) : 0;
+      const rightVelocity = relativeVelocity.x < MIN_WALK_DETECT ? Math.abs(relativeVelocity.x) : 0;
       const horizontalVelocity = Math.max(leftVelocity, rightVelocity);
-      const forwardVelocity = Math.abs(relativeVelocity.z);
+      const forwardVelocity =
+        Math.abs(relativeVelocity.z) > MIN_WALK_DETECT ? Math.abs(relativeVelocity.z) : 0;
       const isBackwards = relativeVelocity.z < 0;
 
       this.weights.walk = clamp(
@@ -303,40 +323,40 @@ export class Avatar {
       const idle = this.animations.get(ANIMATION_NAME.Idle);
 
       if (leftWalk) {
-        if (leftWalk.isRunning() && this.weights.left === 0) leftWalk.stop();
+        if (leftWalk.isRunning() && this.weights.left === 0) leftWalk.reset();
         if (!leftWalk.isRunning() && this.weights.left > 0) leftWalk.play();
         leftWalk.setEffectiveWeight(this.weights.left);
       }
 
       if (rightWalk) {
-        if (rightWalk.isRunning() && this.weights.right === 0) rightWalk.stop();
+        if (rightWalk.isRunning() && this.weights.right === 0) rightWalk.reset();
         if (!rightWalk.isRunning() && this.weights.right > 0) rightWalk.play();
         rightWalk.setEffectiveWeight(this.weights.right);
       }
 
       if (walk) {
-        if (walk.isRunning() && this.weights.walk === 0 && this.weights.sprint === 0) walk.stop();
+        if (walk.isRunning() && this.weights.walk === 0 && this.weights.sprint === 0) walk.reset();
         if (!walk.isRunning() && this.weights.walk > 0) walk.play();
         walk.setEffectiveWeight(this.weights.walk);
         walk.setEffectiveTimeScale(isBackwards ? -1 : 1);
       }
 
       if (sprint) {
-        if (sprint.isRunning() && this.weights.sprint === 0) sprint.stop();
+        if (sprint.isRunning() && this.weights.sprint === 0) sprint.reset();
         if (!sprint.isRunning() && this.weights.sprint > 0) sprint.play();
         sprint.setEffectiveWeight(this.weights.sprint);
         sprint.setEffectiveTimeScale(isBackwards ? -1 : 1);
       }
 
       if (fall) {
-        if (fall.isRunning() && this.weights.fall === 0) fall.stop();
+        if (fall.isRunning() && this.weights.fall === 0) fall.reset();
         if (!fall.isRunning() && this.weights.fall > 0) fall.play();
         fall.setEffectiveWeight(this.weights.fall);
       }
 
       const idleWeight = 1 - Object.values(this.weights).reduce((a, b) => a + b, 0);
       if (idle) {
-        if (idle.isRunning() && idleWeight === 0) idle.stop();
+        if (idle.isRunning() && idleWeight === 0) idle.reset();
         if (!idle.isRunning() && idleWeight > 0) idle.play();
         idle.setEffectiveWeight(idleWeight);
       }

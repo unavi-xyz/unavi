@@ -12,11 +12,11 @@
     "lint": "cd ../.. && eslint --fix packages/protocol --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
-    "zod": "^3.20.2"
+    "zod": "^3.20.6"
   },
   "devDependencies": {
-    "mediasoup-client": "^3.6.70",
+    "mediasoup-client": "^3.6.80",
     "tsconfig": "*",
-    "typescript": "~4.9.4"
+    "typescript": "~4.9.5"
   }
 }

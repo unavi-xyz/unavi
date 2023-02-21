@@ -1,4 +1,5 @@
 import { InputSocketSpecJSON } from "@behave-graph/core";
+import { ValueType } from "engine";
 import { FaCaretRight } from "react-icons/fa";
 import { Connection, Handle, Position, useReactFlow } from "reactflow";
 
@@ -10,6 +11,7 @@ import { isValidConnection } from "./utils/isValidConnection";
 export interface InputSocketProps extends InputSocketSpecJSON {
   connected: boolean;
   value: any | undefined;
+  pathType?: string;
   onChange: (key: string, value: any) => void;
 }
 
@@ -19,6 +21,7 @@ export default function InputSocket({
   onChange,
   name,
   valueType,
+  pathType,
   defaultValue,
 }: InputSocketProps) {
   const instance = useReactFlow();
@@ -27,15 +30,15 @@ export default function InputSocket({
   const showName = isFlowSocket === false || name !== "flow";
   const displayName = name === "jsonPath" ? "Path" : name;
   const inputType =
-    valueType === "string"
+    valueType === ValueType.string
       ? "text"
-      : valueType === "number"
+      : valueType === ValueType.number
       ? "number"
-      : valueType === "float"
+      : valueType === ValueType.float
       ? "number"
-      : valueType === "integer"
+      : valueType === ValueType.integer
       ? "number"
-      : valueType === "boolean"
+      : valueType === ValueType.boolean
       ? "checkbox"
       : "";
 
@@ -48,7 +51,7 @@ export default function InputSocket({
         // eslint-disable-next-line tailwindcss/no-custom-classname
         <div className="nodrag">
           {name === "jsonPath" ? (
-            <JsonPathInput onChange={onChange} value={String(value)} />
+            <JsonPathInput onChange={onChange} value={String(value)} pathType={pathType} />
           ) : (
             <AutoSizeInput
               type={inputType}

@@ -18,5 +18,7 @@ export const valueColorsMap: Record<string, string> = {
   string: colors.purple,
   vec2: colors.cyan,
   vec3: colors.sky,
+  euler: colors.sky,
   vec4: colors.blue,
+  quat: colors.blue,
 };

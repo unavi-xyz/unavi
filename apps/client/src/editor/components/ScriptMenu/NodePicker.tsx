@@ -5,7 +5,31 @@ import { useReactFlow, XYPosition } from "reactflow";
 
 import rawSpecJson from "./node-spec.json";
 
-const usedNodes = rawSpecJson as NodeSpecJSON[];
+const allNodes = rawSpecJson as NodeSpecJSON[];
+
+const hiddenNodes = [
+  "scene/get/boolean",
+  "scene/get/float",
+  "scene/get/string",
+  "scene/get/vec2",
+  "scene/set/boolean",
+  "scene/set/float",
+  "scene/set/string",
+  "scene/set/vec2",
+];
+
+const usedNodes = allNodes.filter((node) => {
+  const type = node.type.toLowerCase();
+
+  if (type.includes("color")) return false;
+  if (type.includes("euler")) return false;
+  if (type.includes("integer")) return false;
+  if (type.includes("vec4")) return false;
+
+  if (hiddenNodes.includes(node.type)) return false;
+
+  return true;
+});
 
 interface Props {
   position?: XYPosition;

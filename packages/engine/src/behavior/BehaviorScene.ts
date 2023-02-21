@@ -5,7 +5,7 @@ import { ValueType } from "../gltf/extensions/Behavior/types";
 import { parseJSONPath } from "./parseJsonPath";
 
 /**
- * Used by behaviors to access the scene.
+ * Used by behavior nodes to access the scene.
  */
 export class BehaviorScene implements IScene {
   #engine: Engine;
@@ -39,7 +39,7 @@ export class BehaviorScene implements IScene {
           }
 
           case "rotation": {
-            if (valueType !== ValueType.vec4) return;
+            if (valueType !== ValueType.quat && valueType !== ValueType.vec4) return;
 
             const rotation = node.getRotation();
 

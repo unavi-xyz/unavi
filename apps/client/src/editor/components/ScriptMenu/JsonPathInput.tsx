@@ -1,4 +1,4 @@
-import { parseJSONPath } from "engine";
+import { parseJSONPath, ValueType } from "engine";
 import { useEffect, useMemo, useState } from "react";
 
 import { useNodeAttribute } from "../../hooks/useNodeAttribute";
@@ -8,9 +8,18 @@ import { useEditorStore } from "../../store";
 interface Props {
   onChange: (key: string, value: any) => void;
   value?: string;
+  pathType?: string;
 }
 
-export default function JsonPathInput({ onChange, value }: Props) {
+export default function JsonPathInput({ onChange, value, pathType }: Props) {
+  const pathOptions = useMemo(() => {
+    if (!pathType) return ["Translation", "Rotation", "Scale"];
+    if (pathType === ValueType.vec3) return ["Translation", "Scale"];
+    if (pathType === ValueType.vec4) return ["Rotation"];
+    if (pathType === ValueType.quat) return ["Rotation"];
+    return [];
+  }, [pathType]);
+
   const engine = useEditorStore((state) => state.engine);
   const nodes = useNodes();
 
@@ -23,7 +32,11 @@ export default function JsonPathInput({ onChange, value }: Props) {
   }, [nodes, engine]);
 
   const [pathNode, setPathNode] = useState<string>();
-  const [pathProperty, setPathProperty] = useState("translation");
+  const [pathProperty, setPathProperty] = useState("");
+
+  useEffect(() => {
+    setPathProperty(pathOptions[0]?.toLowerCase() ?? "");
+  }, [pathOptions]);
 
   useEffect(() => {
     const path = parseJSONPath(value ?? "");
@@ -67,7 +80,7 @@ export default function JsonPathInput({ onChange, value }: Props) {
         }}
         className="h-6 rounded bg-neutral-200 px-1 transition"
       >
-        {["Translation", "Rotation", "Scale"].map((option) => {
+        {pathOptions.map((option) => {
           return (
             <option key={option} value={option} className="text-lg">
               {option}

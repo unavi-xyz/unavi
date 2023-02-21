@@ -44,4 +44,6 @@ export const ValueType = {
   vec2: "vec2",
   vec3: "vec3",
   vec4: "vec4",
+  euler: "euler",
+  quat: "quat",
 } as const;

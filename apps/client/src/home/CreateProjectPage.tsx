@@ -59,14 +59,20 @@ export default function CreateProjectPage() {
 
   return (
     <div className="space-y-4">
-      <TextField inputRef={nameRef} name="Name" placeholder={DEFAULT_NAME} disabled={loading} />
+      <TextField
+        inputRef={nameRef}
+        name="Name"
+        autoComplete="off"
+        placeholder={DEFAULT_NAME}
+        disabled={loading}
+      />
 
       <div className="flex justify-end">
         <button
           onClick={handleCreate}
           disabled={loading}
           className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white transition ${
-            loading ? "cursor-not-allowed opacity-40" : "hover:scale-105 active:opacity-90"
+            loading ? "cursor-not-allowed opacity-40" : "hover:scale-105"
           }`}
         >
           Create

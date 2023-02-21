@@ -33,6 +33,7 @@ export default function Node({ id, data, spec, selected }: Props) {
           {input && (
             <InputSocket
               {...input}
+              pathType={output?.valueType ?? pairs[i + 1]?.[0]?.valueType}
               value={data[input.name] ?? input.defaultValue}
               onChange={handleChange}
               connected={isHandleConnected(edges, id, input.name, "target")}

@@ -2,13 +2,13 @@ import {
   BehaviorNode,
   BehaviorNodeExtras,
   BehaviorNodeParameters,
-  BehaviorNodeParametersJSON,
   Engine,
-  isLinkJSON,
   parseJSONPath,
 } from "engine";
 import { Edge, Node as FlowNode } from "reactflow";
 
+import { FlowNodeData } from "../types";
+import { flowIsJsonPathJSON, flowIsLinkJSON, flowIsVariableJSON } from "./filters";
 import { getNodeSpecJSON } from "./getNodeSpecJSON";
 
 const nodeSpecJSON = getNodeSpecJSON();
@@ -17,7 +17,7 @@ const nodeSpecJSON = getNodeSpecJSON();
  * Saves reactflow nodes into the engine
  */
 export function saveFlow(
-  nodes: FlowNode<BehaviorNodeParametersJSON>[],
+  nodes: FlowNode<FlowNodeData>[],
   edges: Edge[],
   engine: Engine,
   scriptId: string
@@ -27,65 +27,71 @@ export function saveFlow(
     .map(({ id, type, data, position }) => {
       if (!type) return;
 
-      const existingNode = engine.scene.extensions.behavior.listProperties().find((property) => {
-        if (!(property instanceof BehaviorNode)) return false;
-        if (property.name !== id) return false;
-        return true;
-      }) as BehaviorNode | undefined;
+      const existingNode = engine.scene.extensions.behavior
+        .listBehaviorNodes()
+        .find((behaviorNode) => behaviorNode.getName() === id);
 
       const behaviorNode = existingNode ?? engine.scene.extensions.behavior.createBehaviorNode();
 
       const parameters: BehaviorNodeParameters = {};
 
+      const variables = engine.scene.extensions.behavior.listVariables();
+
       Object.entries(data).forEach(([key, value]) => {
-        if (isLinkJSON(value)) return;
-        parameters[key] = value;
+        if (flowIsLinkJSON(value)) return;
+
+        if (flowIsVariableJSON(value)) {
+          const variable = variables[value.variableId];
+          if (variable) {
+            behaviorNode.configuration = { isVariable: true };
+            behaviorNode.variable = variable;
+          }
+        } else {
+          parameters[key] = value;
+        }
       });
 
-      behaviorNode.name = id;
+      behaviorNode.setName(id);
       behaviorNode.type = type;
       behaviorNode.parameters = parameters;
-      behaviorNode.flow = null;
 
       const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
       extras.position = position;
       extras.script = scriptId;
 
+      // Convert jsonPaths from string to ref
+      const nodeSpec = nodeSpecJSON.find((nodeSpec) => nodeSpec.type === type);
+      if (!nodeSpec) return;
+
+      if (nodeSpec.inputs) {
+        nodeSpec.inputs.forEach(({ name }) => {
+          const value = data[name];
+          if (!flowIsJsonPathJSON(name, value)) return;
+
+          const path = parseJSONPath(value.value);
+          if (!path) return;
+
+          const { resource, index, property } = path;
+          if (resource !== "nodes") return;
+
+          const node = engine.scene.doc.getRoot().listNodes()[index];
+          if (!node) return;
+
+          if (!behaviorNode.parameters) behaviorNode.parameters = {};
+          behaviorNode.parameters[name] = { isJsonPath: true, property };
+          behaviorNode.setNode(name, node);
+        });
+      }
+
       return behaviorNode;
     })
     .filter((node): node is BehaviorNode => Boolean(node));
 
-  behaviorNodes.forEach((behaviorNode) => {
-    const nodeSpec = nodeSpecJSON.find((nodeSpec) => nodeSpec.type === behaviorNode.type);
-    if (!nodeSpec) return;
-
-    // Convert jsonPaths from string to ref
-    if (nodeSpec.inputs) {
-      nodeSpec.inputs.forEach(({ name }) => {
-        if (name !== "jsonPath" || !behaviorNode.parameters) return;
-
-        const value = behaviorNode.parameters[name];
-        if (!(typeof value === "string")) return;
-
-        const path = parseJSONPath(value);
-        if (!path) return;
-
-        const { resource, index, property } = path;
-        if (resource !== "nodes") return;
-
-        const node = engine.scene.doc.getRoot().listNodes()[index];
-        if (!node) return;
-
-        behaviorNode.parameters[name] = { isJsonPath: true, node, property };
-      });
-    }
-  });
-
   edges.forEach(({ source, sourceHandle, target, targetHandle }) => {
     if (!sourceHandle || !targetHandle) return;
 
-    const sourceNode = behaviorNodes.find((node) => node.name === source);
-    const targetNode = behaviorNodes.find((node) => node.name === target);
+    const sourceNode = behaviorNodes.find((node) => node.getName() === source);
+    const targetNode = behaviorNodes.find((node) => node.getName() === target);
     if (!sourceNode || !targetNode) return;
 
     const sourceSpec = nodeSpecJSON.find((nodeSpec) => nodeSpec.type === sourceNode.type);
@@ -95,18 +101,16 @@ export function saveFlow(
     if (!outputSpec) return;
 
     if (outputSpec.valueType === "flow") {
-      if (!sourceNode.flow) sourceNode.flow = {};
-      sourceNode.flow[sourceHandle] = targetNode;
+      sourceNode.setFlow(sourceHandle, targetNode);
     } else {
       if (!targetNode.parameters) targetNode.parameters = {};
-      targetNode.parameters[targetHandle] = { link: sourceNode, socket: sourceHandle };
+      targetNode.parameters[targetHandle] = { link: { socket: sourceHandle } };
+      targetNode.setLink(targetHandle, sourceNode);
     }
   });
 
   // Remove old behavior nodes
-  engine.scene.extensions.behavior.listProperties().forEach((behaviorNode) => {
-    if (!(behaviorNode instanceof BehaviorNode)) return;
-
+  engine.scene.extensions.behavior.listBehaviorNodes().forEach((behaviorNode) => {
     const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
     if (extras.script !== scriptId) return;
 

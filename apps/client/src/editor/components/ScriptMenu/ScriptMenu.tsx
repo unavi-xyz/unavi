@@ -96,9 +96,16 @@ export default function ScriptMenu({ scriptId }: Props) {
   );
 
   useEffect(() => {
+    if (!engine) return;
+    // Load variables
+    const variables = engine.scene.extensions.behavior.listVariables();
+    useEditorStore.setState({ variables });
+  }, [engine]);
+
+  useEffect(() => {
     if (!engine || !scriptId) return;
 
-    // Load from the engine
+    // Load nodes from engine
     const { nodes, edges } = loadFlow(engine, scriptId);
 
     setNodes(nodes);
@@ -109,7 +116,7 @@ export default function ScriptMenu({ scriptId }: Props) {
   useEffect(() => {
     if (!engine || !loaded || !scriptId || loaded !== scriptId) return;
 
-    // Save to the engine
+    // Save nodes to engine
     saveFlow(nodes, edges, engine, scriptId);
   }, [engine, loaded, nodes, edges, scriptId]);
 

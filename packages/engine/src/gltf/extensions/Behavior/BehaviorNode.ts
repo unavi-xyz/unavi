@@ -1,13 +1,17 @@
-import { ExtensionProperty, IProperty, Nullable } from "@gltf-transform/core";
+import { ExtensionProperty, IProperty, Node, Nullable } from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
-import { BehaviorNodeParameters } from "./types";
+import { BehaviorNodeConfiguration, BehaviorNodeParameters } from "./types";
+import { Variable } from "./Variable";
 
 interface IBehaviorNode extends IProperty {
-  type: string;
-  name: string;
+  configuration: BehaviorNodeConfiguration | null;
+  flow: { [key: string]: BehaviorNode };
+  links: { [key: string]: BehaviorNode };
+  nodes: { [key: string]: Node };
   parameters: BehaviorNodeParameters | null;
-  flow: Record<string, BehaviorNode> | null;
+  type: string;
+  variable: Variable;
 }
 
 /**
@@ -30,27 +34,59 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
 
   protected override getDefaults(): Nullable<IBehaviorNode> {
     return Object.assign(super.getDefaults(), {
-      type: null,
+      configuration: null,
+      flow: {},
+      links: {},
       name: null,
+      nodes: {},
       parameters: null,
-      flow: null,
+      type: null,
+      variable: null,
     });
   }
 
-  get type() {
-    return this.get("type");
+  get variable() {
+    return this.getRef("variable");
   }
 
-  set type(type: string) {
-    this.set("type", type);
+  set variable(variable: Variable | null) {
+    this.setRef("variable", variable);
   }
 
-  get name() {
-    return this.get("name");
+  getLink(linkId: string) {
+    return this.getRefMap("links", linkId);
   }
 
-  set name(name: string) {
-    this.set("name", name);
+  setLink(linkId: string, behaviorNode: BehaviorNode | null) {
+    this.setRefMap("links", linkId, behaviorNode);
+  }
+
+  getNode(nodeId: string) {
+    return this.getRefMap("nodes", nodeId);
+  }
+
+  setNode(nodeId: string, node: Node | null) {
+    this.setRefMap("nodes", nodeId, node);
+  }
+
+  get configuration() {
+    return this.get("configuration");
+  }
+
+  set configuration(configuration: BehaviorNodeConfiguration | null) {
+    this.set("configuration", configuration);
+  }
+
+  listFlowKeys() {
+    return this.listRefMapKeys("flow");
+  }
+
+  getFlow(key: string) {
+    return this.getRefMap("flow", key);
+  }
+
+  setFlow(key: string, behaviorNode: BehaviorNode) {
+    this.setRefMap("flow", key, behaviorNode);
   }
 
   get parameters() {
@@ -61,11 +97,11 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     this.set("parameters", parameters);
   }
 
-  get flow() {
-    return this.get("flow");
+  get type() {
+    return this.get("type");
   }
 
-  set flow(flow: Record<string, BehaviorNode> | null) {
-    this.set("flow", flow);
+  set type(type: string) {
+    this.set("type", type);
   }
 }

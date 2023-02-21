@@ -84,8 +84,8 @@ export class Accessors extends Attribute<Accessor, AccessorJSON> {
     if (json.normalized) accessor.setNormalized(json.normalized);
 
     if (json.buffer) {
-      const buffer = json.buffer ? this.#buffer.store.get(json.buffer) : null;
-      if (buffer === undefined) throw new Error("Buffer not found");
+      let buffer = json.buffer ? this.#buffer.store.get(json.buffer) : null;
+      if (buffer === undefined) buffer = this.#buffer.create().object;
       accessor.setBuffer(buffer);
     }
   }

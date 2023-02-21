@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useNodeAttribute } from "../../hooks/useNodeAttribute";
 import { useNodes } from "../../hooks/useNodes";
 import { useEditorStore } from "../../store";
+import { FlowNodeParamter } from "./types";
 
 interface Props {
-  onChange: (key: string, value: any) => void;
+  onChange: (key: string, value: FlowNodeParamter) => void;
   value?: string;
   pathType?: string;
 }
@@ -54,7 +55,7 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
   useEffect(() => {
     if (!pathNode) return;
     const index = nodeIds.indexOf(pathNode);
-    onChange("jsonPath", `/nodes/${index}/${pathProperty}`);
+    onChange("jsonPath", { value: `/nodes/${index}/${pathProperty}` });
   }, [pathNode, pathProperty, nodeIds, onChange]);
 
   const capitalizedProperty = pathProperty.charAt(0).toUpperCase() + pathProperty.slice(1);
@@ -64,7 +65,7 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
       <select
         value={pathNode}
         onChange={(e) => setPathNode(e.currentTarget.value)}
-        className="h-6 rounded bg-neutral-200 px-1 transition"
+        className="h-6 rounded bg-neutral-200 px-1 hover:bg-neutral-300/80 focus:bg-neutral-300/80"
       >
         {nodeIds.map((id) => (
           <NodeOption key={id} id={id} />
@@ -78,7 +79,7 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
         onChange={(e) => {
           setPathProperty(e.currentTarget.value.toLowerCase());
         }}
-        className="h-6 rounded bg-neutral-200 px-1 transition"
+        className="h-6 rounded bg-neutral-200 px-1 hover:bg-neutral-300/80 focus:bg-neutral-300/80"
       >
         {pathOptions.map((option) => {
           return (

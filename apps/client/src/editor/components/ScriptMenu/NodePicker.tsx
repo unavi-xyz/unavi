@@ -1,11 +1,12 @@
-import { NodeSpecJSON } from "@behave-graph/core";
 import * as ContextMenu from "@radix-ui/react-context-menu";
+import { nanoid } from "nanoid";
 import { useEffect, useRef, useState } from "react";
 import { useReactFlow, XYPosition } from "reactflow";
 
-import rawSpecJson from "./node-spec.json";
+import { useEditorStore } from "../../store";
+import { getNodeSpecJSON } from "./utils/getNodeSpecJSON";
 
-const allNodes = rawSpecJson as NodeSpecJSON[];
+const allNodes = getNodeSpecJSON();
 
 const hiddenNodes = [
   "scene/get/boolean",
@@ -25,6 +26,9 @@ const usedNodes = allNodes.filter((node) => {
   if (type.includes("euler")) return false;
   if (type.includes("integer")) return false;
   if (type.includes("vec4")) return false;
+  if (type.includes("mat3")) return false;
+  if (type.includes("mat4")) return false;
+  if (type.includes("customevent")) return false;
 
   if (hiddenNodes.includes(node.type)) return false;
 
@@ -70,11 +74,24 @@ export default function NodePicker({ position, addNode }: Props) {
             className="w-full rounded-full bg-neutral-200 pl-4 leading-8 transition placeholder:text-neutral-600"
           />
 
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-56 overflow-y-auto">
             {filteredNodes.map(({ type }) => (
               <ContextMenu.Item
                 key={type}
                 onClick={() => {
+                  const { engine } = useEditorStore.getState();
+                  if (!engine) return;
+
+                  if (type.includes("variable")) {
+                    // If no variables, create one
+                    const { variables } = useEditorStore.getState();
+                    if (variables.length === 0) {
+                      const newVariable = engine.scene.extensions.behavior.createVariable();
+                      newVariable.setName(nanoid(8));
+                      useEditorStore.setState({ variables: [...variables, newVariable] });
+                    }
+                  }
+
                   if (position) addNode(type, instance.project(position));
                 }}
                 className="select-none rounded px-4 py-0.5 outline-none hover:bg-neutral-200"

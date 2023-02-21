@@ -1,18 +1,19 @@
 import { InputSocketSpecJSON } from "@behave-graph/core";
-import { ValueType } from "engine";
+import { ConstantValue, ValueType } from "engine";
 import { FaCaretRight } from "react-icons/fa";
 import { Connection, Handle, Position, useReactFlow } from "reactflow";
 
 import AutoSizeInput from "./AutoSizeInput";
 import JsonPathInput from "./JsonPathInput";
+import { FlowNodeParamter } from "./types";
 import { valueColorsMap } from "./utils/colors";
 import { isValidConnection } from "./utils/isValidConnection";
 
 export interface InputSocketProps extends InputSocketSpecJSON {
   connected: boolean;
-  value: any | undefined;
+  value?: ConstantValue;
   pathType?: string;
-  onChange: (key: string, value: any) => void;
+  onChange: (key: string, value: FlowNodeParamter) => void;
 }
 
 export default function InputSocket({
@@ -22,13 +23,13 @@ export default function InputSocket({
   name,
   valueType,
   pathType,
-  defaultValue,
 }: InputSocketProps) {
   const instance = useReactFlow();
 
   const isFlowSocket = valueType === "flow";
+  const isJsonPath = name === "jsonPath";
   const showName = isFlowSocket === false || name !== "flow";
-  const displayName = name === "jsonPath" ? "Path" : name;
+  const displayName = isJsonPath ? "Path" : name;
   const inputType =
     valueType === ValueType.string
       ? "text"
@@ -50,29 +51,35 @@ export default function InputSocket({
       {isFlowSocket === false && connected === false ? (
         // eslint-disable-next-line tailwindcss/no-custom-classname
         <div className="nodrag">
-          {name === "jsonPath" ? (
-            <JsonPathInput onChange={onChange} value={String(value)} pathType={pathType} />
+          {isJsonPath ? (
+            <JsonPathInput
+              onChange={onChange}
+              value={String(value?.value ?? "")}
+              pathType={pathType}
+            />
           ) : (
             <AutoSizeInput
               type={inputType}
-              className="h-6 rounded bg-neutral-200 px-2 transition hover:bg-neutral-300/80 focus:bg-neutral-300/80"
-              value={String(value) ?? defaultValue ?? ""}
-              onChange={(e) => onChange(name, e.currentTarget.value)}
+              className="h-6 rounded bg-neutral-200 px-2 hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+              value={String(value?.value ?? "")}
+              onChange={(e) => onChange(name, { value: e.currentTarget.value })}
             />
           )}
         </div>
       ) : null}
 
-      <Handle
-        id={name}
-        type="target"
-        position={Position.Left}
-        isValidConnection={(connection: Connection) => isValidConnection(connection, instance)}
-        style={{
-          borderColor: valueColorsMap[valueType],
-          backgroundColor: connected ? "#262626" : "#ffffff",
-        }}
-      />
+      {!isJsonPath && (
+        <Handle
+          id={name}
+          type="target"
+          position={Position.Left}
+          isValidConnection={(connection: Connection) => isValidConnection(connection, instance)}
+          style={{
+            borderColor: valueColorsMap[valueType],
+            backgroundColor: connected ? "#262626" : "#ffffff",
+          }}
+        />
+      )}
     </div>
   );
 }

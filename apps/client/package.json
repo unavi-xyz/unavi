@@ -33,7 +33,7 @@
     "@trpc/next": "10.12.0",
     "@trpc/react-query": "10.12.0",
     "@trpc/server": "10.11.0",
-    "@wired-labs/behave-graph-core": "^0.9.14",
+    "@wired-labs/behave-graph-core": "^0.9.18",
     "boring-avatars": "^1.7.0",
     "contracts": "*",
     "engine": "*",

@@ -71,7 +71,7 @@ export default function CreateProjectPage() {
         <button
           onClick={handleCreate}
           disabled={loading}
-          className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white transition ${
+          className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400 transition ${
             loading ? "cursor-not-allowed opacity-40" : "hover:scale-105"
           }`}
         >

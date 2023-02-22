@@ -6384,10 +6384,10 @@
     "@webassemblyjs/ast" "1.11.1"
     "@xtuc/long" "4.2.2"
 
-"@wired-labs/behave-graph-core@^0.9.18":
-  version "0.9.18"
-  resolved "https://registry.yarnpkg.com/@wired-labs/behave-graph-core/-/behave-graph-core-0.9.18.tgz#81bb50edad3f985e72dc0450c121b46ee7437722"
-  integrity sha512-Xv5Zl72d6hnGkMtxLUhUYbq/9y6xEtBJ3v3AbbqZbpQKdwdMd5LLLH+zD+H69sEl26Eeu1jHzuZHvGZo+ANKHA==
+"@wired-labs/behave-graph-core@^0.9.19":
+  version "0.9.19"
+  resolved "https://registry.yarnpkg.com/@wired-labs/behave-graph-core/-/behave-graph-core-0.9.19.tgz#70dfb317565adf42f3c0d1b516df2164c606dd79"
+  integrity sha512-LbgBALqawFW0dFaJkdPhLa9m7z9iwIfcK1aLkI7yXiw8Ln3mC6ruez+HQcTz5MiarJLYMZx0+js8J/YiRQIEMA==
 
 "@xtuc/ieee754@^1.2.0":
   version "1.2.0"

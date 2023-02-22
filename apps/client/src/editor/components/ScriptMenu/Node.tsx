@@ -54,7 +54,7 @@ export default function Node({ id, data, spec, selected }: Props) {
 
         let variableType: string | undefined;
 
-        if (isVariable && i == 1) {
+        if (spec.type === "variable/get" || (spec.type === "variable/set" && i == 1)) {
           const variableJson = data["variable"];
           if (flowIsVariableJSON(variableJson)) {
             const variableId = variableJson.variableId;
@@ -65,17 +65,19 @@ export default function Node({ id, data, spec, selected }: Props) {
           }
         }
 
+        const inputPathType = spec.type.includes("scene/set")
+          ? pairs[i + 1]?.[0]?.valueType
+          : output?.valueType;
+
         return (
           <div key={i} className="relative flex flex-row justify-between gap-8 px-2">
-            {spec.type === "variable/get" && i == 1 && (
-              <VariableInput data={data} onChange={handleChange} />
-            )}
+            {spec.type === "variable/get" && <VariableInput data={data} onChange={handleChange} />}
 
             {input && (
               <InputSocket
                 name={input.name}
                 valueType={variableType ?? input.valueType}
-                pathType={output?.valueType ?? pairs[i + 1]?.[0]?.valueType}
+                pathType={inputPathType}
                 value={value}
                 onChange={handleChange}
                 connected={isHandleConnected(edges, id, input.name, "target")}

@@ -2,12 +2,13 @@ import { NodeCategory, NodeSpecJSON } from "@wired-labs/behave-graph-core";
 import { ConstantValue } from "engine";
 import { NodeProps, useEdges } from "reactflow";
 
+import { useEditorStore } from "../../store";
 import { useChangeNodeData } from "./hooks/useChangeNodeData";
 import InputSocket from "./InputSocket";
 import NodeContainer from "./NodeContainer";
 import OutputSocket from "./OutputSocket";
 import { FlowNodeData } from "./types";
-import { flowIsConstantJSON } from "./utils/filters";
+import { flowIsConstantJSON, flowIsVariableJSON } from "./utils/filters";
 import { isHandleConnected } from "./utils/isHandleConnected";
 import VariableInput from "./VariableInput";
 
@@ -31,7 +32,10 @@ export default function Node({ id, data, spec, selected }: Props) {
   const handleChange = useChangeNodeData(id);
   const pairs = getPairs(spec.inputs, spec.outputs);
 
-  const category = spec.type.includes("variable") ? NodeCategory.Variable : spec.category;
+  const variables = useEditorStore((state) => state.variables);
+
+  const isVariable = spec.type === "variable/get" || spec.type === "variable/set";
+  const category = isVariable ? NodeCategory.Variable : spec.category;
 
   return (
     <NodeContainer id={id} title={spec.label} category={category} selected={selected}>
@@ -48,6 +52,19 @@ export default function Node({ id, data, spec, selected }: Props) {
             : defaultValue
           : undefined;
 
+        let variableType: string | undefined;
+
+        if (isVariable && i == 1) {
+          const variableJson = data["variable"];
+          if (flowIsVariableJSON(variableJson)) {
+            const variableId = variableJson.variableId;
+            const variable = variables[variableId];
+            if (variable) {
+              variableType = variable.type;
+            }
+          }
+        }
+
         return (
           <div key={i} className="relative flex flex-row justify-between gap-8 px-2">
             {spec.type === "variable/get" && i == 1 && (
@@ -56,7 +73,8 @@ export default function Node({ id, data, spec, selected }: Props) {
 
             {input && (
               <InputSocket
-                {...input}
+                name={input.name}
+                valueType={variableType ?? input.valueType}
                 pathType={output?.valueType ?? pairs[i + 1]?.[0]?.valueType}
                 value={value}
                 onChange={handleChange}
@@ -66,7 +84,8 @@ export default function Node({ id, data, spec, selected }: Props) {
 
             {output && (
               <OutputSocket
-                {...output}
+                name={output.name}
+                valueType={variableType ?? output.valueType}
                 connected={isHandleConnected(edges, id, output.name, "source")}
               />
             )}

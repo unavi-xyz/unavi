@@ -65,7 +65,9 @@ export default function VariableInput({ data, onChange }: Props) {
       // Only change variable type if id didn't change
       if (!didChangeId) {
         const variable = variables[variableId];
-        if (variable) variable.type = valueType;
+        if (variable) {
+          variable.type = valueType;
+        }
       }
     }
 

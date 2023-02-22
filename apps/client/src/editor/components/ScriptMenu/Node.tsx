@@ -1,4 +1,4 @@
-import { NodeSpecJSON } from "@behave-graph/core";
+import { NodeCategory, NodeSpecJSON } from "@wired-labs/behave-graph-core";
 import { ConstantValue } from "engine";
 import { NodeProps, useEdges } from "reactflow";
 
@@ -31,9 +31,7 @@ export default function Node({ id, data, spec, selected }: Props) {
   const handleChange = useChangeNodeData(id);
   const pairs = getPairs(spec.inputs, spec.outputs);
 
-  if (spec.type === "variable/set") pairs.splice(1, 0, [undefined, undefined]);
-
-  const category = spec.type.includes("variable") ? "Variable" : spec.category;
+  const category = spec.type.includes("variable") ? NodeCategory.Variable : spec.category;
 
   return (
     <NodeContainer id={id} title={spec.label} category={category} selected={selected}>
@@ -52,8 +50,7 @@ export default function Node({ id, data, spec, selected }: Props) {
 
         return (
           <div key={i} className="relative flex flex-row justify-between gap-8 px-2">
-            {spec.type === "variable/get" && <VariableInput data={data} onChange={handleChange} />}
-            {spec.type === "variable/set" && i == 1 && (
+            {spec.type === "variable/get" && i == 1 && (
               <VariableInput data={data} onChange={handleChange} />
             )}
 
@@ -72,6 +69,10 @@ export default function Node({ id, data, spec, selected }: Props) {
                 {...output}
                 connected={isHandleConnected(edges, id, output.name, "source")}
               />
+            )}
+
+            {spec.type === "variable/set" && i == 1 && (
+              <VariableInput data={data} onChange={handleChange} />
             )}
           </div>
         );

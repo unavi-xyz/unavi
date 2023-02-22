@@ -2514,13 +2514,6 @@
     "@babel/helper-validator-identifier" "^7.19.1"
     to-fast-properties "^2.0.0"
 
-"@behave-graph/core@^0.9.13":
-  version "0.9.13"
-  resolved "https://registry.yarnpkg.com/@behave-graph/core/-/core-0.9.13.tgz#b6aef465b8b1cc4c672e7bcd83a0948013e337e8"
-  integrity sha512-RHF0KoiNUsIeSQPS4wLUBt6Mzxz54moOii5LeCwWBLrLcEW16sM4C/ab0J9TK6ddFQpXOTV5Z+bM8XrVboNWLg==
-  dependencies:
-    gl-matrix "^3.4.3"
-
 "@coinbase/wallet-sdk@^3.5.4":
   version "3.6.3"
   resolved "https://registry.yarnpkg.com/@coinbase/wallet-sdk/-/wallet-sdk-3.6.3.tgz#fd96f6f19d5a0090520c1b014ad4737bbc8e1267"
@@ -6391,6 +6384,11 @@
     "@webassemblyjs/ast" "1.11.1"
     "@xtuc/long" "4.2.2"
 
+"@wired-labs/behave-graph-core@^0.9.14":
+  version "0.9.14"
+  resolved "https://registry.yarnpkg.com/@wired-labs/behave-graph-core/-/behave-graph-core-0.9.14.tgz#c32531698a6b315b56b84073b7441b6ba6e76af5"
+  integrity sha512-vrEf3xKiWLBFIpDk1CbxrzA3Zkvxzh6f+JkeOjBl4JHaHrMg4uL+voneStkt6P1gdDI1KC5MqQzvNKSQlWIjWg==
+
 "@xtuc/ieee754@^1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@xtuc/ieee754/-/ieee754-1.2.0.tgz#eef014a3145ae477a1cbc00cd1e552336dceb790"
@@ -9918,11 +9916,6 @@ github-slugger@^1.4.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/github-slugger/-/github-slugger-1.5.0.tgz#17891bbc73232051474d68bd867a34625c955f7d"
   integrity sha512-wIh+gKBI9Nshz2o46B0B3f5k/W+WI9ZAv6y5Dn5WJ5SK1t0TnDimB4WE5rmTD05ZAIn8HALCZVmCsvj0w0v0lw==
-
-gl-matrix@^3.4.3:
-  version "3.4.3"
-  resolved "https://registry.yarnpkg.com/gl-matrix/-/gl-matrix-3.4.3.tgz#fc1191e8320009fd4d20e9339595c6041ddc22c9"
-  integrity sha512-wcCp8vu8FT22BnvKVPjXa/ICBWRq/zjFfdofZy1WSpQZpphblv12/bOQLBC1rMM7SGOFS9ltVmKOHil5+Ml7gA==
 
 glob-parent@^5.1.2, glob-parent@~5.1.2:
   version "5.1.2"

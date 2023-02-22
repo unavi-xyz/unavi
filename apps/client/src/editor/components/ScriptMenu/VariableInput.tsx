@@ -26,23 +26,31 @@ export default function VariableInput({ data, onChange }: Props) {
 
   const variables = useEditorStore((state) => state.variables);
 
-  // Load variable id
+  // Update variable type and id
   useEffect(() => {
+    const { engine } = useEditorStore.getState();
+    if (!engine) return;
+
     const param = data["variable"];
-    if (!param || !flowIsVariableJSON(param)) return;
 
-    setVariableId(param.variableId);
-  }, [data]);
+    // If no variables, create one
+    if (variables.length === 0) {
+      const newVariable = engine.scene.extensions.behavior.createVariable();
+      newVariable.setName(nanoid(8));
+      useEditorStore.setState({ variables: [...variables, newVariable] });
+    }
 
-  // Update variable type
-  useEffect(() => {
-    const param = data["variable"];
-    if (!param || !flowIsVariableJSON(param)) return;
+    if (param && flowIsVariableJSON(param)) {
+      const variable = variables[param.variableId];
+      if (!variable) return;
 
-    const variable = variables[param.variableId];
-    if (!variable) return;
-
-    setValueType(variable.type);
+      setVariableId(param.variableId);
+      setValueType(variable.type);
+    } else {
+      // Set default variable
+      setVariableId(0);
+      setValueType(ValueType.string);
+    }
   }, [variables, data]);
 
   // Update node data
@@ -81,7 +89,6 @@ export default function VariableInput({ data, onChange }: Props) {
             if (isNewVariable) {
               // Create new variable
               const newVariable = engine.scene.extensions.behavior.createVariable();
-              newVariable.type = valueType;
               newVariable.setName(nanoid(8));
               useEditorStore.setState({ variables: [...variables, newVariable] });
             }

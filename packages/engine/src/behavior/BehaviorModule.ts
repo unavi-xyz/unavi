@@ -1,12 +1,16 @@
 import {
+  DefaultLogger,
   Engine as BehaviorEngine,
   ManualLifecycleEventEmitter,
   readGraphFromJSON,
   registerCoreProfile,
+  registerLifecycleEventEmitter,
+  registerLogger,
+  registerSceneDependency,
   registerSceneProfile,
   Registry,
   validateGraph,
-} from "@behave-graph/core";
+} from "@wired-labs/behave-graph-core";
 
 import { Engine } from "../Engine";
 import { BehaviorScene } from "./BehaviorScene";
@@ -30,8 +34,11 @@ export class BehaviorModule {
   constructor(engine: Engine) {
     this.#engine = engine;
 
-    registerCoreProfile(this.registry, undefined, this.lifecycle);
-    registerSceneProfile(this.registry, new BehaviorScene(engine));
+    registerCoreProfile(this.registry);
+    registerSceneProfile(this.registry);
+    registerSceneDependency(this.registry.dependencies, new BehaviorScene(engine));
+    registerLogger(this.registry.dependencies, new DefaultLogger());
+    registerLifecycleEventEmitter(this.registry.dependencies, this.lifecycle);
   }
 
   #loadEngine() {

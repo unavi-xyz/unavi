@@ -1,5 +1,4 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { nanoid } from "nanoid";
 import { useEffect, useRef, useState } from "react";
 import { useReactFlow, XYPosition } from "reactflow";
 
@@ -81,16 +80,6 @@ export default function NodePicker({ position, addNode }: Props) {
                 onClick={() => {
                   const { engine } = useEditorStore.getState();
                   if (!engine) return;
-
-                  if (type.includes("variable")) {
-                    // If no variables, create one
-                    const { variables } = useEditorStore.getState();
-                    if (variables.length === 0) {
-                      const newVariable = engine.scene.extensions.behavior.createVariable();
-                      newVariable.setName(nanoid(8));
-                      useEditorStore.setState({ variables: [...variables, newVariable] });
-                    }
-                  }
 
                   if (position) addNode(type, instance.project(position));
                 }}

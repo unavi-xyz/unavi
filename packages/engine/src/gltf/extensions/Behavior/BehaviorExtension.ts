@@ -1,5 +1,5 @@
-import { GraphJSON, NodeJSON, VariableJSON } from "@behave-graph/core";
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
+import { GraphJSON, NodeJSON, VariableJSON } from "@wired-labs/behave-graph-core";
 
 import { parseJSONPath } from "../../../behavior";
 import { EXTENSION_NAME } from "../constants";

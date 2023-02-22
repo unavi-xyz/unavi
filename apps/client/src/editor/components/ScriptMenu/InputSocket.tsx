@@ -1,4 +1,4 @@
-import { InputSocketSpecJSON } from "@behave-graph/core";
+import { InputSocketSpecJSON } from "@wired-labs/behave-graph-core";
 import { ConstantValue, ValueType } from "engine";
 import { FaCaretRight } from "react-icons/fa";
 import { Connection, Handle, Position, useReactFlow } from "reactflow";

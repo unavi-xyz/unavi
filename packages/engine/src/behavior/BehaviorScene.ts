@@ -1,4 +1,4 @@
-import { IScene } from "@behave-graph/core";
+import { IScene } from "@wired-labs/behave-graph-core";
 
 import { Engine } from "../Engine";
 import { ValueType } from "../gltf/extensions/Behavior/types";
@@ -112,4 +112,5 @@ export class BehaviorScene implements IScene {
   }
 
   addOnClickedListener(jsonPath: string, callback: (jsonPath: string) => void): void {}
+  removeOnClickedListener(jsonPath: string, callback: (jsonPath: string) => void): void {}
 }

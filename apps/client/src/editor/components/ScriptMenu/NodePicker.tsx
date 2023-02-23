@@ -63,15 +63,17 @@ export default function NodePicker({ position, addNode }: Props) {
         </ContextMenu.Label>
 
         <div className="space-y-2 p-2">
-          <input
-            ref={filterInputRef}
-            type="text"
-            autoFocus
-            placeholder="Type to filter..."
-            onKeyDown={(e) => e.stopPropagation()}
-            onChange={(e) => setFilterString(e.target.value)}
-            className="w-full rounded-full bg-neutral-200 pl-4 leading-8 transition placeholder:text-neutral-600"
-          />
+          <ContextMenu.Item asChild>
+            <input
+              ref={filterInputRef}
+              type="text"
+              autoFocus
+              placeholder="Type to filter..."
+              onKeyDown={(e) => e.stopPropagation()}
+              onChange={(e) => setFilterString(e.target.value)}
+              className="w-full rounded-full bg-neutral-200 pl-4 leading-8 transition placeholder:text-neutral-600"
+            />
+          </ContextMenu.Item>
 
           <div className="max-h-56 overflow-y-auto">
             {filteredNodes.map(({ type }) => (
@@ -83,7 +85,7 @@ export default function NodePicker({ position, addNode }: Props) {
 
                   if (position) addNode(type, instance.project(position));
                 }}
-                className="select-none rounded px-4 py-0.5 outline-none hover:bg-neutral-200"
+                className="select-none rounded px-4 py-0.5 outline-none focus:bg-neutral-200"
               >
                 {type}
               </ContextMenu.Item>

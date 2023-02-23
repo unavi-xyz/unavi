@@ -110,14 +110,14 @@ export default function VariableInput({ data, onChange }: Props) {
             </div>
 
             <Select.Content className="w-36">
-              <Select.Viewport className="rounded bg-neutral-200 shadow-lg">
+              <Select.Viewport className="rounded-md bg-neutral-200 shadow-lg">
                 {variables.map((variable, i) => (
                   <VariableItem key={i} value={String(i)} variable={variable} />
                 ))}
 
                 <Select.Item
                   value={String(variables.length)}
-                  className="cursor-default px-4 hover:bg-neutral-300 focus:bg-neutral-300 focus:outline-none"
+                  className="cursor-default px-4 focus:bg-blue-500 focus:text-white focus:outline-none"
                 >
                   <Select.ItemText className="text-lg">+ New Variable</Select.ItemText>
                 </Select.Item>
@@ -154,7 +154,7 @@ function VariableItem({ value, variable }: { value: string; variable: Variable }
   return (
     <Select.Item
       value={value}
-      className="cursor-default px-4 hover:bg-neutral-300 focus:bg-neutral-300 focus:outline-none"
+      className="cursor-default px-4 focus:bg-blue-500 focus:text-white focus:outline-none"
     >
       <Select.ItemText className="text-lg">{name}</Select.ItemText>
     </Select.Item>

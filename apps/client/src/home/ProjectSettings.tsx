@@ -163,9 +163,8 @@ export default function ProjectSettings() {
       <div className="space-y-2 rounded-2xl">
         <div className="text-2xl font-bold">Connect Space</div>
         <div className="pb-1 text-lg text-neutral-500">
-          Connecting your project to a published space will allow you to push updates to it. This is
-          done automatically when you first publish your project, or you can set the space ID
-          manually here.
+          Connecting your project to a published space will allow you to push updates to it. If no
+          space ID is set, you will be prompted to mint a new space when you publish the project.
         </div>
 
         <div className="flex items-center space-x-2">

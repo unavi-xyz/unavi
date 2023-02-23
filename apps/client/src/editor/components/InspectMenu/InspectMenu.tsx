@@ -98,6 +98,7 @@ export default function InspectMenu() {
                           },
                         });
 
+                        mesh.setName(node.getName());
                         node.setMesh(mesh);
                       }}
                     >

@@ -76,6 +76,11 @@ export class Nodes extends Attribute<Node, NodeJSON> {
 
   create(json: Partial<NodeJSON> = {}, id?: string) {
     const node = this.#scene.doc.createNode();
+
+    // Add to scene
+    const scene = this.#scene.doc.getRoot().listScenes()[0];
+    scene?.addChild(node);
+
     this.applyJSON(node, json);
 
     const { id: nodeId } = this.process(node, id);

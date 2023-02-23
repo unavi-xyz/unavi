@@ -41,7 +41,7 @@ export default function SpecialsMenu() {
     <div className="py-2">
       <DropdownItem
         onClick={() => addObject("Spawn")}
-        className="flex w-full cursor-default items-center space-x-2 whitespace-nowrap px-6 outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+        className="flex w-full cursor-default items-center space-x-2 whitespace-nowrap px-6 outline-none focus:bg-neutral-200 active:opacity-80"
       >
         <div>Spawn</div>
         <div className={spawn ? "font-bold" : ""}>({spawn ? 1 : 0}/1)</div>
@@ -51,7 +51,7 @@ export default function SpecialsMenu() {
         <label
           onClick={(e) => e.stopPropagation()}
           htmlFor={id}
-          className="flex w-full items-center whitespace-nowrap px-6 outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+          className="flex w-full items-center whitespace-nowrap px-6 outline-none focus:bg-neutral-200 active:opacity-80"
         >
           Import glTF
         </label>

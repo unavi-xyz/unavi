@@ -167,7 +167,7 @@ export default function InspectMenu() {
 function ComponentButton({ children, ...props }: DropdownMenuItemProps) {
   return (
     <DropdownItem
-      className="w-full cursor-default px-10 text-left outline-none hover:bg-neutral-200 focus:bg-neutral-200 active:opacity-80"
+      className="w-full cursor-default px-10 text-left outline-none focus:bg-neutral-200 active:opacity-80"
       {...props}
     >
       {children}

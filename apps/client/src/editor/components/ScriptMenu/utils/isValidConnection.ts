@@ -28,7 +28,10 @@ export const isValidConnection = (connection: Connection, instance: ReactFlowIns
   // Only flow sockets can have two inputs
   if (
     targetSocket.valueType !== "flow" &&
-    isHandleConnected(edges, targetNode.id, targetSocket.name, "target")
+    isHandleConnected(edges, targetNode.id, targetSocket.name, "target", {
+      sourceId: sourceNode.id,
+      sourceHandle: sourceSocket.name,
+    })
   ) {
     return false;
   }

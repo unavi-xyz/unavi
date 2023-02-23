@@ -34,6 +34,10 @@ export class Variable extends ExtensionProperty<IVariable> {
     });
   }
 
+  get name() {
+    return this.getName();
+  }
+
   get type() {
     return this.get("type");
   }

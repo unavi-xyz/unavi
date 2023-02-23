@@ -60,7 +60,7 @@ export default function InputSocket({
           ) : (
             <AutoSizeInput
               type={inputType}
-              className="h-6 rounded bg-neutral-200 px-2 hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+              className="h-6 rounded bg-neutral-200 px-2 hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
               value={String(value?.value ?? "")}
               onChange={(e) => onChange(name, { value: e.currentTarget.value })}
             />

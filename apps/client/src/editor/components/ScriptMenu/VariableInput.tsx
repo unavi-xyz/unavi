@@ -1,8 +1,10 @@
-import { ValueType } from "engine";
-import { nanoid } from "nanoid";
+import * as Select from "@radix-ui/react-select";
+import { ValueType, Variable } from "engine";
 import { useEffect, useState } from "react";
+import { IoIosArrowDown } from "react-icons/io";
 
 import { useEditorStore } from "../../store";
+import { useVariableAttribute } from "./hooks/useVariableAttribute";
 import { FlowNodeData, FlowNodeParamter } from "./types";
 import { flowIsVariableJSON } from "./utils/filters";
 
@@ -21,12 +23,15 @@ interface Props {
 }
 
 export default function VariableInput({ data, onChange }: Props) {
-  const [valueType, setValueType] = useState<string>(ValueType.string);
   const [variableId, setVariableId] = useState<number>();
 
   const variables = useEditorStore((state) => state.variables);
+  const variable = variableId !== undefined ? variables[variableId] ?? null : null;
 
-  // Update variable type and id
+  const variableName = useVariableAttribute(variable, "name") ?? "";
+  const variableType = useVariableAttribute(variable, "type") ?? ValueType.string;
+
+  // Load initial variable
   useEffect(() => {
     const { engine } = useEditorStore.getState();
     if (!engine) return;
@@ -36,90 +41,101 @@ export default function VariableInput({ data, onChange }: Props) {
     // If no variables, create one
     if (variables.length === 0) {
       const newVariable = engine.scene.extensions.behavior.createVariable();
-      newVariable.setName(nanoid(8));
+      newVariable.setName(`Variable ${variables.length}`);
       useEditorStore.setState({ variables: [...variables, newVariable] });
     }
 
+    // If variable is set, use it
     if (param && flowIsVariableJSON(param)) {
       const variable = variables[param.variableId];
-      if (!variable) return;
-
-      setVariableId(param.variableId);
-      setValueType(variable.type);
-    } else {
-      // Set default variable
-      setVariableId(0);
-      setValueType(ValueType.string);
+      if (variable !== undefined) {
+        setVariableId(param.variableId);
+        return;
+      }
     }
-  }, [variables, data]);
+
+    // Set default variable
+    setVariableId(0);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   // Update node data
   useEffect(() => {
     if (variableId === undefined) return;
-
-    const param = data["variable"];
-
-    if (param && flowIsVariableJSON(param)) {
-      const didChangeId = param.variableId !== variableId;
-
-      // Only change variable type if id didn't change
-      if (!didChangeId) {
-        const variable = variables[variableId];
-        if (variable) {
-          variable.type = valueType;
-        }
-      }
-    }
-
     onChange("variable", { variableId });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange, variableId, valueType, variables]);
+  }, [onChange, variableId, variables]);
 
   return (
-    <div>
+    <div className="relative">
       <div className="flex h-7 items-center space-x-1">
         <div>Variable</div>
 
-        <select
-          value={variableId}
-          onChange={(e) => {
+        <Select.Root
+          value={String(variableId)}
+          onValueChange={(value) => {
             const { engine } = useEditorStore.getState();
             if (!engine) return;
 
-            const isNewVariable = Number(e.currentTarget.value) === variables.length;
+            const isNewVariable = Number(value) === variables.length;
 
             if (isNewVariable) {
               // Create new variable
               const newVariable = engine.scene.extensions.behavior.createVariable();
-              newVariable.setName(nanoid(8));
+              newVariable.setName(`Variable ${variables.length}`);
               useEditorStore.setState({ variables: [...variables, newVariable] });
             }
 
             // Set new variable id
-            const value = isNewVariable ? variables.length : Number(e.currentTarget.value);
-            setVariableId(value);
+            const newId = isNewVariable ? variables.length : Number(value);
+            setVariableId(newId);
           }}
-          // eslint-disable-next-line tailwindcss/no-custom-classname
-          className="nodrag h-6 rounded bg-neutral-200 px-1 hover:bg-neutral-300/80 focus:bg-neutral-300/80"
         >
-          {variables.map((variable, i) => (
-            <option key={i} value={i} className="text-lg">
-              {variable.getName()}
-            </option>
-          ))}
+          <div>
+            <div className="flex h-6 w-36 rounded bg-neutral-200">
+              <input
+                value={variableName}
+                onChange={(e) => {
+                  if (!variable) return;
 
-          <option value={variables.length} className="text-lg">
-            + New Variable
-          </option>
-        </select>
+                  variable.setName(e.currentTarget.value);
+                }}
+                // eslint-disable-next-line tailwindcss/no-custom-classname
+                className="nodrag h-full w-32 rounded-l bg-neutral-200 px-2 hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
+              />
+
+              <Select.Trigger className="flex h-full w-full items-center justify-center rounded-r hover:bg-neutral-300/80 focus:outline-none">
+                <IoIosArrowDown />
+              </Select.Trigger>
+            </div>
+
+            <Select.Content className="w-36">
+              <Select.Viewport className="rounded bg-neutral-200 shadow-lg">
+                {variables.map((variable, i) => (
+                  <VariableItem key={i} value={String(i)} variable={variable} />
+                ))}
+
+                <Select.Item
+                  value={String(variables.length)}
+                  className="cursor-default px-4 hover:bg-neutral-300 focus:bg-neutral-300 focus:outline-none"
+                >
+                  <Select.ItemText className="text-lg">+ New Variable</Select.ItemText>
+                </Select.Item>
+              </Select.Viewport>
+            </Select.Content>
+          </div>
+        </Select.Root>
 
         <div>as</div>
 
         <select
-          value={valueType}
-          onChange={(e) => setValueType(e.currentTarget.value)}
+          value={variableType}
+          onChange={(e) => {
+            if (!variable) return;
+            variable.type = e.currentTarget.value;
+          }}
           // eslint-disable-next-line tailwindcss/no-custom-classname
-          className="nodrag h-6 rounded bg-neutral-200 px-1 hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+          className="nodrag h-6 rounded bg-neutral-200 px-1 hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
         >
           {VALUE_TYPES.map((type) => (
             <option key={type} value={type} className="text-lg">
@@ -129,5 +145,18 @@ export default function VariableInput({ data, onChange }: Props) {
         </select>
       </div>
     </div>
+  );
+}
+
+function VariableItem({ value, variable }: { value: string; variable: Variable }) {
+  const name = useVariableAttribute(variable, "name") ?? "";
+
+  return (
+    <Select.Item
+      value={value}
+      className="cursor-default px-4 hover:bg-neutral-300 focus:bg-neutral-300 focus:outline-none"
+    >
+      <Select.ItemText className="text-lg">{name}</Select.ItemText>
+    </Select.Item>
   );
 }

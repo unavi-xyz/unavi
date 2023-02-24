@@ -22,6 +22,16 @@ export default function ProjectSettings() {
   const { mutateAsync: update } = trpc.project.update.useMutation();
   const { mutateAsync: deleteProject } = trpc.project.delete.useMutation();
   const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
+  const { data: modelUrl } = trpc.project.model.useQuery(
+    { id },
+    {
+      enabled: id !== undefined,
+      cacheTime: 0,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+    }
+  );
 
   const { data: session } = useSession();
 
@@ -100,6 +110,24 @@ export default function ProjectSettings() {
     await utils.project.get.invalidate({ id });
   }
 
+  async function handleDownload() {
+    if (!modelUrl) return;
+
+    const res = await fetch(modelUrl);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    const name = project?.name || `Project ${id}`;
+
+    a.href = url;
+    a.download = `${name}.glb`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+    a.remove();
+  }
+
   function handleDelete() {
     if (loadingDelete) return;
     setLoadingDelete(true);
@@ -120,13 +148,23 @@ export default function ProjectSettings() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2 rounded-2xl p-8">
+    <div className="space-y-12">
+      <div className="space-y-2 rounded-2xl">
+        <div className="text-2xl font-bold">Download Scene</div>
+        <div className="pb-1 text-lg text-neutral-500">
+          Download the scene as a raw, unoptimized{" "}
+          <span className="rounded-md bg-neutral-200 px-1.5 text-neutral-600">.glb</span> file.
+        </div>
+        <Button onClick={handleDownload} className="rounded-lg">
+          Download
+        </Button>
+      </div>
+
+      <div className="space-y-2 rounded-2xl">
         <div className="text-2xl font-bold">Connect Space</div>
         <div className="pb-1 text-lg text-neutral-500">
-          Connecting your project to a published space will allow you to push updates to it. This is
-          done automatically when you first publish your project, or you can set the space ID
-          manually here.
+          Connecting your project to a published space will allow you to push updates to it. If no
+          space ID is set, you will be prompted to mint a new space when you publish the project.
         </div>
 
         <div className="flex items-center space-x-2">

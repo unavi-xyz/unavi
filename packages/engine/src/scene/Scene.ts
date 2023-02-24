@@ -2,7 +2,6 @@ import { Document } from "@gltf-transform/core";
 
 import {
   BehaviorExtension,
-  BehaviorNode,
   ColliderExtension,
   SPAWN_TITLE,
   SpawnPoint,
@@ -43,50 +42,8 @@ export class Scene {
    * @param doc The document to merge.
    */
   async addDocument(doc: Document) {
+    // Merge documents
     this.doc.merge(doc);
-
-    // Transfer behavior nodes
-    const behaviorNodes = doc
-      .getRoot()
-      .listExtensionsUsed()
-      .filter((ext) => ext instanceof BehaviorExtension)
-      .flatMap((ext) =>
-        ext.listProperties().filter((p): p is BehaviorNode => p instanceof BehaviorNode)
-      );
-
-    const newBehaviorNodes = behaviorNodes.map((behaviorNode) => {
-      const newBehaviorNode = this.extensions.behavior.createBehaviorNode();
-      newBehaviorNode.name = behaviorNode.name;
-      newBehaviorNode.type = behaviorNode.type;
-      newBehaviorNode.parameters = behaviorNode.parameters;
-      newBehaviorNode.flow = behaviorNode.flow;
-      newBehaviorNode.setExtras(behaviorNode.getExtras());
-      return newBehaviorNode;
-    });
-
-    newBehaviorNodes.forEach((behaviorNode) => {
-      if (behaviorNode.parameters) {
-        Object.entries(behaviorNode.parameters).forEach(([key, value]) => {
-          if (typeof value === "object" && "link" in value) {
-            const newNode = newBehaviorNodes.find((node) => node.name === value.link.name);
-            if (!newNode) throw new Error("Invalid behavior node reference");
-
-            if (!behaviorNode.parameters) behaviorNode.parameters = {};
-            behaviorNode.parameters[key] = { link: newNode, socket: value.socket };
-          }
-        });
-      }
-
-      if (behaviorNode.flow) {
-        Object.entries(behaviorNode.flow).forEach(([key, value]) => {
-          const newNode = newBehaviorNodes.find((node) => node.name === value.name);
-          if (!newNode) throw new Error("Invalid behavior node reference");
-
-          if (!behaviorNode.flow) behaviorNode.flow = {};
-          behaviorNode.flow[key] = newNode;
-        });
-      }
-    });
 
     // Merge into one scene
     const scenes = this.doc.getRoot().listScenes();

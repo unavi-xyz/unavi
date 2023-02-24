@@ -1,15 +1,16 @@
 import {
   BehaviorNode,
   BehaviorNodeExtras,
-  BehaviorNodeParametersJSON,
   Engine,
   isJsonPath,
   isLink,
+  isVariableConfig,
   pathRefToString,
 } from "engine";
 import { nanoid } from "nanoid";
 import { Edge, Node } from "reactflow";
 
+import { FlowNodeData } from "../types";
 import { getNodeSpecJSON } from "./getNodeSpecJSON";
 
 const nodeSpecJSON = getNodeSpecJSON();
@@ -18,18 +19,29 @@ const nodeSpecJSON = getNodeSpecJSON();
  * Loads the engine nodes into reactflow
  */
 export function loadFlow(engine: Engine, scriptId: string) {
-  const nodes: Node<BehaviorNodeParametersJSON>[] = [];
+  const nodes: Node<FlowNodeData>[] = [];
   const edges: Edge[] = [];
 
-  engine.scene.extensions.behavior.listProperties().forEach((property) => {
-    if (!(property instanceof BehaviorNode)) return;
+  const variables = engine.scene.extensions.behavior.listVariables();
 
-    const { name, type, parameters, flow } = property;
-    const extras = property.getExtras() as BehaviorNodeExtras;
+  engine.scene.extensions.behavior.listBehaviorNodes().forEach((behaviorNode) => {
+    const { type, parameters, configuration } = behaviorNode;
+    const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
 
     if (extras.script !== scriptId) return;
 
-    const data: BehaviorNodeParametersJSON = {};
+    const data: FlowNodeData = {};
+
+    if (configuration) {
+      if (isVariableConfig(configuration)) {
+        const variable = behaviorNode.variable;
+        if (!variable) return;
+
+        const variableIndex = variables.findIndex((v) => v === variable);
+
+        data["variable"] = { variableId: variableIndex };
+      }
+    }
 
     if (parameters) {
       Object.entries(parameters).forEach(([key, value]) => {
@@ -38,15 +50,23 @@ export function loadFlow(engine: Engine, scriptId: string) {
       });
     }
 
-    nodes.push({ id: name, type, data, position: extras.position ?? { x: 0, y: 0 } });
+    nodes.push({
+      id: behaviorNode.getName(),
+      type,
+      data,
+      position: extras.position ?? { x: 0, y: 0 },
+    });
 
-    if (flow) {
-      Object.entries(flow).forEach(([key, value]) => {
+    if (behaviorNode.listFlowKeys().length > 0) {
+      behaviorNode.listFlowKeys().forEach((key) => {
+        const value = behaviorNode.getFlow(key);
+        if (!value) return;
+
         edges.push({
           id: nanoid(),
-          source: name,
+          source: behaviorNode.getName(),
           sourceHandle: key,
-          target: value.name,
+          target: value.getName(),
           targetHandle: "flow",
         });
       });
@@ -56,11 +76,14 @@ export function loadFlow(engine: Engine, scriptId: string) {
       Object.entries(parameters).forEach(([key, value]) => {
         if (!isLink(value)) return;
 
+        const linkedNode = behaviorNode.getLink(key);
+        if (!linkedNode) return;
+
         edges.push({
           id: nanoid(),
-          source: value.link.name,
-          sourceHandle: value.socket,
-          target: name,
+          source: linkedNode.getName(),
+          sourceHandle: value.link.socket,
+          target: behaviorNode.getName(),
           targetHandle: key,
         });
       });
@@ -76,7 +99,7 @@ export function loadFlow(engine: Engine, scriptId: string) {
       .listProperties()
       .find((property): property is BehaviorNode => {
         if (!(property instanceof BehaviorNode)) return false;
-        if (property.name !== node.id) return false;
+        if (property.getName() !== node.id) return false;
         return true;
       });
     if (!behaviorNode) return;
@@ -88,10 +111,13 @@ export function loadFlow(engine: Engine, scriptId: string) {
         const value = behaviorNode.parameters?.[name];
         if (!isJsonPath(value)) return;
 
-        const jsonPath = pathRefToString(value, engine);
+        const jsonNode = behaviorNode.getNode(name);
+        if (!jsonNode) return;
+
+        const jsonPath = pathRefToString(value, jsonNode, engine);
         if (!jsonPath) return;
 
-        node.data[name] = jsonPath;
+        node.data[name] = { value: jsonPath };
       });
     }
   });

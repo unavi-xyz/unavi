@@ -1,10 +1,10 @@
+import { Node } from "@gltf-transform/core";
+
 import { Engine } from "../Engine";
-import { JsonPathRef } from "../gltf/extensions/Behavior/types";
+import { ParamJsonPath } from "../gltf";
 
-export function pathRefToString(value: JsonPathRef, engine: Engine) {
-  const { node, property } = value;
-
-  const index = engine.scene.doc.getRoot().listNodes().indexOf(node);
+export function pathRefToString({ property }: ParamJsonPath, jsonNode: Node, engine: Engine) {
+  const index = engine.scene.doc.getRoot().listNodes().indexOf(jsonNode);
   if (index === -1) return;
 
   return `/nodes/${index}/${property}`;

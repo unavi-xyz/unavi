@@ -27,8 +27,8 @@ export default function ChatBox({ alwaysShow }: Props) {
 
   const focusedClass =
     isMobile || chatBoxFocused
-      ? "bg-neutral-800 placeholder:text-white/75"
-      : "bg-neutral-800/40 hover:bg-neutral-800/50 placeholder:text-white";
+      ? "bg-neutral-800 placeholder:text-white/70"
+      : "bg-neutral-800/40 hover:bg-neutral-800/50 placeholder:text-white/90";
 
   const scrollClass = isMobile || chatBoxFocused ? "overflow-auto" : "overflow-hidden";
 

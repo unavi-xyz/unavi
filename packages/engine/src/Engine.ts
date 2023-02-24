@@ -89,5 +89,6 @@ export class Engine {
     this.render.destroy();
     this.input.destroy();
     this.physics.destroy();
+    this.behavior.destroy();
   }
 }

@@ -6,18 +6,15 @@ import {
   Camera,
   Group,
   Mesh,
-  MeshBasicMaterial,
   Quaternion,
-  Shape,
-  ShapeGeometry,
   Vector3,
 } from "three";
-import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { INPUT_ARRAY_ROUNDING, PLAYER_HEIGHT, SPRINT_SPEED, WALK_SPEED } from "../../constants";
 import { deepDispose } from "../utils/deepDispose";
 import { loadMixamoAnimation } from "./loadMixamoAnimation";
+import { Nameplate } from "./Nameplate";
 
 const MIN_WALK_DETECT = 0.1;
 const MIN_WALK_SPEED = 2;
@@ -48,16 +45,13 @@ export class Avatar {
   #vec3 = new Vector3();
   #prevHeadRotation = new Quaternion();
 
-  #mode: "first-person" | "third-person" = "third-person";
-  #animationsPath: string | null = null;
   grounded = true;
   sprinting = false;
 
-  #name: string | null = null;
-  #font: Font | null = null;
-  #loadFontPromise: Promise<void> | null = null;
-  #nameplate: Mesh | null = null;
+  #mode: "first-person" | "third-person" = "third-person";
+  #animationsPath: string | null = null;
   #height: number = PLAYER_HEIGHT;
+  #nameplate = new Nameplate();
 
   velocity = new Vector3();
   targetPosition = new Vector3();
@@ -65,12 +59,11 @@ export class Avatar {
 
   inputPosition: Int16Array | null = null;
 
-  static NAMEPLATE_TEXT_MATERIAL = new MeshBasicMaterial({ color: 0xffffff });
-  static NAMEPLATE_BG_MATERIAL = new MeshBasicMaterial({ color: 0x010101 });
-
   constructor(uri: string, camera: Camera) {
     this.uri = uri;
     this.#camera = camera;
+
+    this.group.add(this.#nameplate.group);
 
     const loader = new GLTFLoader();
     loader.setCrossOrigin("anonymous");
@@ -109,7 +102,7 @@ export class Avatar {
     this.#height = height;
 
     if (this.#nameplate) {
-      this.#nameplate.position.y = height + 0.2;
+      this.#nameplate.group.position.y = height + 0.2;
     }
   }
 
@@ -132,78 +125,12 @@ export class Avatar {
   }
 
   get name() {
-    return this.#name;
+    return this.#nameplate.name;
   }
 
   set name(name: string | null) {
-    if (this.#name === name) return;
-    this.#name = name;
+    this.#nameplate.name = name;
     this.group.name = name ?? "";
-
-    if (name) {
-      if (!this.#loadFontPromise) this.#loadFontPromise = this.loadFont();
-      this.#loadFontPromise.then(() => this.#createNameplate(name));
-    }
-  }
-
-  async loadFont() {
-    if (this.#font) return;
-    const loader = new FontLoader();
-    this.#font = await loader.loadAsync(new URL("./font.json", import.meta.url).href);
-  }
-
-  #createNameplate(text: string) {
-    if (!this.#font) throw new Error("No font");
-
-    // Remove old nametag
-    if (this.#nameplate) {
-      this.group.remove(this.#nameplate);
-      this.#nameplate.traverse((object) => {
-        if (object instanceof Mesh) object.geometry.dispose();
-      });
-      this.#nameplate = null;
-    }
-
-    // Create text
-    const shapes = this.#font.generateShapes(text, 0.075);
-    const textGeometry = new ShapeGeometry(shapes);
-
-    // Center horizontally
-    textGeometry.computeBoundingBox();
-    if (!textGeometry.boundingBox) throw new Error("No bounding box");
-    const xMid = -0.5 * (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
-    textGeometry.translate(xMid, 0, 0);
-
-    this.#nameplate = new Mesh(textGeometry, Avatar.NAMEPLATE_TEXT_MATERIAL);
-    this.#nameplate.position.y = this.#height + 0.2;
-    this.#nameplate.rotation.y = Math.PI;
-
-    this.group.add(this.#nameplate);
-
-    // Create background
-    const width = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x + 0.15;
-    const height = textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y + 0.06;
-    const radius = height / 2;
-
-    const shape = new Shape();
-    shape.moveTo(0, radius);
-    shape.lineTo(0, height - radius);
-    shape.quadraticCurveTo(0, height, radius, height);
-    shape.lineTo(width - radius, height);
-    shape.quadraticCurveTo(width, height, width, height - radius);
-    shape.lineTo(width, radius);
-    shape.quadraticCurveTo(width, 0, width - radius, 0);
-    shape.lineTo(radius, 0);
-    shape.quadraticCurveTo(0, 0, 0, radius);
-
-    const roundedRectangle = new ShapeGeometry(shape);
-
-    const background = new Mesh(roundedRectangle, Avatar.NAMEPLATE_BG_MATERIAL);
-    background.position.x = -width / 2;
-    background.position.y = -height / 4;
-    background.position.z = -0.001;
-
-    this.#nameplate.add(background);
   }
 
   async loadAnimations(vrm: VRM) {
@@ -400,9 +327,9 @@ export class Avatar {
     // Update nameplate
     if (this.#nameplate) {
       // Hide if too far away
-      this.#nameplate.visible = this.#camera.position.distanceTo(this.group.position) < 12;
+      this.#nameplate.group.visible = this.#camera.position.distanceTo(this.group.position) < 12;
       // Rotate to face camera
-      this.#nameplate.lookAt(this.#camera.position);
+      this.#nameplate.group.lookAt(this.#camera.position);
     }
   }
 

@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useEditorStore } from "../store";
 import { useSave } from "./useSave";
 
-const AUTOSAVE_INTERVAL = 3 * 60 * 1000; // 3 minutes
+const AUTOSAVE_INTERVAL = 2 * 60 * 1000; // 2 minutes
 
 export function useAutosave() {
   const { save } = useSave();

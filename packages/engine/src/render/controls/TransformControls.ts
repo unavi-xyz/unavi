@@ -64,8 +64,7 @@ export class TransformControls {
           this.#transformControls.detach();
         } else {
           const object = this.#renderThread.renderScene.nodeObjects.get(data.nodeId);
-          if (!object) throw new Error("Object not found");
-          this.#transformControls.attach(object);
+          if (object) this.#transformControls.attach(object);
         }
 
         if (this.#renderThread.outlinePass) {

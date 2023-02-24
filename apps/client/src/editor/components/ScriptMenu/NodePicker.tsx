@@ -1,11 +1,38 @@
-import { NodeSpecJSON } from "@behave-graph/core";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useEffect, useRef, useState } from "react";
 import { useReactFlow, XYPosition } from "reactflow";
 
-import rawSpecJson from "./node-spec.json";
+import { useEditorStore } from "../../store";
+import { getNodeSpecJSON } from "./utils/getNodeSpecJSON";
 
-const usedNodes = rawSpecJson as NodeSpecJSON[];
+const allNodes = getNodeSpecJSON();
+
+const hiddenNodes = [
+  "scene/get/boolean",
+  "scene/get/float",
+  "scene/get/string",
+  "scene/get/vec2",
+  "scene/set/boolean",
+  "scene/set/float",
+  "scene/set/string",
+  "scene/set/vec2",
+];
+
+const usedNodes = allNodes.filter((node) => {
+  const type = node.type.toLowerCase();
+
+  if (type.includes("color")) return false;
+  if (type.includes("euler")) return false;
+  if (type.includes("integer")) return false;
+  if (type.includes("vec4")) return false;
+  if (type.includes("mat3")) return false;
+  if (type.includes("mat4")) return false;
+  if (type.includes("customevent")) return false;
+
+  if (hiddenNodes.includes(node.type)) return false;
+
+  return true;
+});
 
 interface Props {
   position?: XYPosition;
@@ -36,24 +63,29 @@ export default function NodePicker({ position, addNode }: Props) {
         </ContextMenu.Label>
 
         <div className="space-y-2 p-2">
-          <input
-            ref={filterInputRef}
-            type="text"
-            autoFocus
-            placeholder="Type to filter..."
-            onKeyDown={(e) => e.stopPropagation()}
-            onChange={(e) => setFilterString(e.target.value)}
-            className="w-full rounded-full bg-neutral-200 pl-4 leading-8 transition placeholder:text-neutral-600"
-          />
+          <ContextMenu.Item asChild>
+            <input
+              ref={filterInputRef}
+              type="text"
+              autoFocus
+              placeholder="Type to filter..."
+              onKeyDown={(e) => e.stopPropagation()}
+              onChange={(e) => setFilterString(e.target.value)}
+              className="w-full rounded-full bg-neutral-200 pl-4 leading-8 transition placeholder:text-neutral-600"
+            />
+          </ContextMenu.Item>
 
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-56 overflow-y-auto">
             {filteredNodes.map(({ type }) => (
               <ContextMenu.Item
                 key={type}
                 onClick={() => {
+                  const { engine } = useEditorStore.getState();
+                  if (!engine) return;
+
                   if (position) addNode(type, instance.project(position));
                 }}
-                className="select-none rounded px-4 py-0.5 outline-none hover:bg-neutral-200"
+                className="select-none rounded px-4 py-0.5 outline-none focus:bg-neutral-200"
               >
                 {type}
               </ContextMenu.Item>

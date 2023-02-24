@@ -1,4 +1,4 @@
-import { NodeSpecJSON } from "@behave-graph/core";
+import { NodeCategory, NodeSpecJSON } from "@wired-labs/behave-graph-core";
 
 import { useEditorStore } from "../../store";
 
@@ -18,16 +18,16 @@ export default function NodeContainer({ id, title, category, selected, children 
       ${selected ? "outline outline-2 outline-neutral-900" : ""}`}
     >
       <div
-        className={`rounded-t bg-gradient-to-t from-black/10 to-white/10 px-2 leading-normal text-white ${
-          category === "Action"
+        className={`rounded-t bg-gradient-to-t from-black/10 to-white/10 px-2 capitalize leading-normal text-white ${
+          category === NodeCategory.Action
             ? "bg-sky-500/80"
-            : category === "Query"
+            : category === NodeCategory.Query
             ? "bg-purple-500/80"
-            : category === "Logic"
+            : category === NodeCategory.Logic
             ? "bg-green-500/80"
-            : category === "Event"
+            : category === NodeCategory.Event
             ? "bg-red-500/80"
-            : category === "Variable"
+            : category === NodeCategory.Variable
             ? "bg-orange-500/80"
             : "bg-neutral-500/80"
         }`}

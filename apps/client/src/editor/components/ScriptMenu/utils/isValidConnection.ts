@@ -1,5 +1,7 @@
 import { Connection, ReactFlowInstance } from "reactflow";
 
+import { useEditorStore } from "../../../store";
+import { flowIsVariableJSON } from "./filters";
 import { getNodeSpecJSON } from "./getNodeSpecJSON";
 import { getSockets } from "./getSockets";
 import { isHandleConnected } from "./isHandleConnected";
@@ -26,10 +28,44 @@ export const isValidConnection = (connection: Connection, instance: ReactFlowIns
   // Only flow sockets can have two inputs
   if (
     targetSocket.valueType !== "flow" &&
-    isHandleConnected(edges, targetNode.id, targetSocket.name, "target")
+    isHandleConnected(edges, targetNode.id, targetSocket.name, "target", {
+      sourceId: sourceNode.id,
+      sourceHandle: sourceSocket.name,
+    })
   ) {
     return false;
   }
 
-  return sourceSocket.valueType === targetSocket.valueType;
+  // Use variable type as socket type for variable nodes
+  let sourceType = sourceSocket.valueType;
+
+  if (sourceType !== "flow") {
+    if (sourceNode.type === "variable/get" || sourceNode.type === "variable/set") {
+      const variableJson = sourceNode.data["variable"];
+      if (flowIsVariableJSON(variableJson)) {
+        const { variables } = useEditorStore.getState();
+        const variable = variables[variableJson.variableId];
+        if (variable) {
+          sourceType = variable.type;
+        }
+      }
+    }
+  }
+
+  let targetType = targetSocket.valueType;
+
+  if (targetType !== "flow") {
+    if (targetNode.type === "variable/get" || targetNode.type === "variable/set") {
+      const variableJson = targetNode.data["variable"];
+      if (flowIsVariableJSON(variableJson)) {
+        const { variables } = useEditorStore.getState();
+        const variable = variables[variableJson.variableId];
+        if (variable) {
+          targetType = variable.type;
+        }
+      }
+    }
+  }
+
+  return sourceType === targetType;
 };

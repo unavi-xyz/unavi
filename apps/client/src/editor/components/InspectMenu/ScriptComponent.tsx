@@ -44,6 +44,11 @@ export default function ScriptComponent({ nodeId, scriptId }: Props) {
           const extras = property.getExtras() as BehaviorNodeExtras;
           if (extras.script === scriptId) property.dispose();
         });
+
+        // Remove unused variables
+        engine.scene.extensions.behavior.listVariables().forEach((variable) => {
+          if (variable.listParents().length === 0) variable.dispose();
+        });
       }}
     >
       <MenuRows titles={["Name"]}>

@@ -21,9 +21,9 @@ import { useScript } from "../../hooks/useScript";
 import { useEditorStore } from "../../store";
 import NodeContextMenu from "./NodeContextMenu";
 import NodePicker from "./NodePicker";
+import SaveFlow from "./SaveFlow";
 import { loadFlow } from "./utils/loadFlow";
 import { nodeTypes } from "./utils/nodeTypes";
-import { saveFlow } from "./utils/saveFlow";
 
 interface Props {
   scriptId: string;
@@ -96,22 +96,22 @@ export default function ScriptMenu({ scriptId }: Props) {
   );
 
   useEffect(() => {
+    if (!engine) return;
+    // Load variables
+    const variables = engine.scene.extensions.behavior.listVariables();
+    useEditorStore.setState({ variables });
+  }, [engine]);
+
+  useEffect(() => {
     if (!engine || !scriptId) return;
 
-    // Load from the engine
+    // Load nodes from engine
     const { nodes, edges } = loadFlow(engine, scriptId);
 
     setNodes(nodes);
     setEdges(edges);
     setLoaded(scriptId);
   }, [engine, scriptId, setNodes, setEdges]);
-
-  useEffect(() => {
-    if (!engine || !loaded || !scriptId || loaded !== scriptId) return;
-
-    // Save to the engine
-    saveFlow(nodes, edges, engine, scriptId);
-  }, [engine, loaded, nodes, edges, scriptId]);
 
   if (!script) return null;
 
@@ -167,6 +167,13 @@ export default function ScriptMenu({ scriptId }: Props) {
 
               <Controls />
               <Background />
+              <SaveFlow
+                scriptId={scriptId}
+                loaded={loaded}
+                nodes={nodes}
+                edges={edges}
+                setEdges={setEdges}
+              />
             </ReactFlow>
           </ContextMenu.Trigger>
         </ContextMenu.Root>

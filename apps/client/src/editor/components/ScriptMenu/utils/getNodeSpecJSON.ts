@@ -4,7 +4,7 @@ import {
   registerSceneProfile,
   Registry,
   writeNodeSpecsToJSON,
-} from "@behave-graph/core";
+} from "@wired-labs/behave-graph-core";
 
 let nodeSpecJSON: NodeSpecJSON[] | undefined = undefined;
 
@@ -13,7 +13,7 @@ export function getNodeSpecJSON() {
     const registry = new Registry();
     registerCoreProfile(registry);
     registerSceneProfile(registry);
-    nodeSpecJSON = writeNodeSpecsToJSON(registry);
+    nodeSpecJSON = writeNodeSpecsToJSON(registry).sort((a, b) => a.type.localeCompare(b.type));
   }
 
   return nodeSpecJSON;

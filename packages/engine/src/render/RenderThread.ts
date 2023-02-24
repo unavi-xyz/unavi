@@ -37,7 +37,7 @@ const CAMERA_NEAR = 0.05;
 const CAMERA_FAR = 500;
 
 const SHADOW_CASCADES = 2;
-const SHADOW_BIAS = -0.0001;
+const SHADOW_BIAS = -0.00002;
 
 /**
  * The render thread is responsible for rendering to the canvas.

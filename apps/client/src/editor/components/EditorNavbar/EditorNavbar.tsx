@@ -50,7 +50,7 @@ export default function EditorNavbar() {
         {isPublished ? <UpdatePage onClose={() => setOpenPublishDialog(false)} /> : <PublishPage />}
       </Dialog>
 
-      <div className="flex h-full items-center justify-between px-4 py-1">
+      <div className="group flex h-full items-center justify-between px-4 py-1">
         <div className="flex w-full items-center space-x-2 text-lg">
           <button
             onClick={handleBack}
@@ -66,7 +66,18 @@ export default function EditorNavbar() {
               onChange={(e) => useEditorStore.setState({ name: e.target.value })}
             />
 
-            {isSaving && <div className="pl-2 pt-0.5 text-sm text-neutral-500">Saving...</div>}
+            <div className="flex items-center pt-0.5 pl-2">
+              {isSaving ? (
+                <div className="text-sm text-neutral-500">Saving...</div>
+              ) : (
+                <button
+                  onClick={save}
+                  className="rounded-md px-2 py-0.5 text-sm text-neutral-500 opacity-0 transition hover:bg-neutral-200 hover:text-neutral-900 focus:bg-neutral-200 focus:text-neutral-900 focus:opacity-100 active:bg-neutral-200 group-hover:opacity-100"
+                >
+                  Save
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

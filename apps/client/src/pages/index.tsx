@@ -28,7 +28,7 @@ export default function Index() {
                 The Wired
               </div>
 
-              <div className="text-center text-xl text-neutral-900 md:text-start md:text-3xl">
+              <div className="text-center text-xl md:text-start md:text-3xl">
                 An open metaverse platform.
               </div>
 
@@ -36,7 +36,7 @@ export default function Index() {
                 <div className="w-full md:w-fit">
                   <Link
                     href="/play/0x0d"
-                    className="flex h-12 items-center justify-center rounded-full bg-neutral-900 px-10 text-2xl font-bold text-white outline-neutral-400 transition hover:scale-105 active:opacity-90"
+                    className="flex h-12 items-center justify-center rounded-full bg-neutral-900 px-10 text-2xl font-bold text-white outline-neutral-400 transition hover:scale-105"
                   >
                     Enter
                   </Link>
@@ -119,10 +119,10 @@ export default function Index() {
               <div className="text-center text-3xl font-black md:text-start md:text-4xl">
                 The Spatial Web
               </div>
-              <div className="text-center text-lg text-neutral-600 md:text-start md:text-xl">
+              <div className="text-center text-lg text-neutral-500 md:text-start md:text-xl">
                 The Wired reimagines the web as an interconnected network of 3D spaces, instead of
                 2D websites.{" "}
-                <strong className="text-neutral-900">
+                <strong className="text-black">
                   Anyone can host their own space, on their own servers.
                 </strong>
               </div>
@@ -134,10 +134,10 @@ export default function Index() {
               <div className="text-center text-3xl font-black md:text-start md:text-4xl">
                 Cross Platform
               </div>
-              <div className="text-center text-lg text-neutral-600 md:text-start md:text-xl">
-                All you need is a <strong className="text-neutral-900">web browser</strong> -
-                explore the Wired from your phone, laptop, or VR headset. Wherever you are, you can
-                stay connected with your friends.
+              <div className="text-center text-lg text-neutral-500 md:text-start md:text-xl">
+                All you need is a <strong className="text-black">web browser</strong> - explore the
+                Wired from your phone, laptop, or VR headset. Wherever you are, you can stay
+                connected with your friends.
               </div>
             </div>
 
@@ -157,7 +157,7 @@ export default function Index() {
           <section className="show-on-scroll mt-40 space-y-4 rounded-3xl p-8 outline outline-2 outline-black md:p-12">
             <div className="text-center text-3xl font-black md:text-4xl">Open by Design</div>
 
-            <div className="mx-auto text-center text-lg text-neutral-600 md:w-1/2 md:text-xl">
+            <div className="mx-auto text-center text-lg text-neutral-500 md:w-1/2 md:text-xl">
               Each layer is open for others to build on. Mod your client, run your own servers - the
               possibilities are endless.
             </div>
@@ -168,7 +168,7 @@ export default function Index() {
                   href={DOCS_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-11 items-center justify-center rounded-full bg-neutral-900 px-8 text-lg font-bold text-white outline-neutral-400 transition hover:scale-105 active:opacity-90"
+                  className="flex h-11 items-center justify-center rounded-full bg-neutral-900 px-8 text-lg font-bold text-white outline-neutral-400 transition hover:scale-105 active:scale-100"
                 >
                   View Docs
                 </a>

@@ -10,7 +10,7 @@ import {
   textureCompress,
   weld,
 } from "@gltf-transform/functions";
-import { extensions } from "engine";
+import { BehaviorExtension, extensions } from "engine";
 import { MeshoptSimplifier } from "meshoptimizer";
 import sharp from "sharp";
 
@@ -84,6 +84,29 @@ export class Project {
       .registerDependencies({ "draco3d.encoder": await createEncoderModule() });
 
     const doc = await io.readBinary(array);
+
+    // Remove extras
+    doc
+      .getRoot()
+      .listNodes()
+      .forEach((node) => node.setExtras({}));
+
+    doc
+      .getRoot()
+      .listMeshes()
+      .forEach((mesh) => {
+        mesh.listPrimitives().forEach((primitive) => primitive.setExtras({}));
+        mesh.setExtras({});
+      });
+
+    doc
+      .getRoot()
+      .listExtensionsUsed()
+      .forEach((extension) => {
+        if (extension instanceof BehaviorExtension) {
+          extension.listBehaviorNodes().forEach((behaviorNode) => behaviorNode.setExtras({}));
+        }
+      });
 
     // Optimize model
     // Ignore large models, it takes too long

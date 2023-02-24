@@ -30,6 +30,7 @@ const config = {
         tsconfig: "../../packages/engine/tsconfig.json",
         excludePrivate: true,
         readme: "none",
+        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
           position: 100,
         },

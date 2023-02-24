@@ -1,4 +1,4 @@
-import { Engine } from "engine";
+import { Engine, Variable } from "engine";
 import { create } from "zustand";
 
 import { Tool } from "./types";
@@ -26,6 +26,7 @@ export interface IEditorStore {
 
   openScriptId: string | null;
   contextMenuNodeId: string | null;
+  variables: Variable[];
 }
 
 export const useEditorStore = create<IEditorStore>(() => ({
@@ -50,4 +51,5 @@ export const useEditorStore = create<IEditorStore>(() => ({
 
   openScriptId: null,
   contextMenuNodeId: null,
+  variables: [],
 }));

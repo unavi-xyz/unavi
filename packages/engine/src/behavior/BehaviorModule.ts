@@ -84,4 +84,9 @@ export class BehaviorModule {
   #execute() {
     this.#behaviorEngine?.executeAllSync(1 / TICK_HZ);
   }
+
+  destroy() {
+    this.stop();
+    this.#behaviorEngine?.dispose();
+  }
 }

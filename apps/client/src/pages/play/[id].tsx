@@ -15,7 +15,7 @@ import LoadingScreen from "../../play/ui/LoadingScreen";
 import Overlay from "../../play/ui/Overlay";
 import { prisma } from "../../server/prisma";
 import { appRouter } from "../../server/router/_app";
-import { hexDisplayToNumber } from "../../utils/numberToHexDisplay";
+import { hexDisplayToNumber, numberToHexDisplay } from "../../utils/numberToHexDisplay";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   const ONE_MINUTE_IN_SECONDS = 60;
@@ -92,10 +92,12 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
   const loaded = loadingProgress === 1;
   const loadedClass = loaded ? "opacity-100" : "opacity-0";
 
+  const hexId = numberToHexDisplay(id);
+
   return (
     <>
       <MetaTags
-        title={space?.metadata?.name}
+        title={space?.metadata?.name ?? `Space ${hexId}`}
         description={space?.metadata?.description}
         image={space?.metadata?.image}
         card="summary_large_image"

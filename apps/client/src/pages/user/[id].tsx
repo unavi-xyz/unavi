@@ -102,11 +102,9 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
   return (
     <>
       <MetaTags
-        title={
-          profile ? (profile.handle ? profile.handle.string : numberToHexDisplay(profile.id)) : id
-        }
-        description={profile?.metadata?.description ?? undefined}
-        image={profile?.metadata?.image ?? undefined}
+        title={profile?.handle ? profile.handle.string : isAddress ? id : `User ${id}`}
+        description={profile?.metadata?.description ?? ""}
+        image={profile?.metadata?.image}
       />
 
       <Head>

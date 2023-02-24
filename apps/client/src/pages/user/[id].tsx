@@ -56,7 +56,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
 
   const isAddress = id.length === 42;
 
-  const { data: profileAddress, isLoading: isLoadingAddress } =
+  const { data: profileByAddress, isLoading: isLoadingAddress } =
     trpc.social.profile.byAddress.useQuery(
       { address: id },
       {
@@ -65,7 +65,7 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
       }
     );
 
-  const { data: profileId, isLoading: isLoadingId } = trpc.social.profile.byId.useQuery(
+  const { data: profileById, isLoading: isLoadingId } = trpc.social.profile.byId.useQuery(
     { id: hexDisplayToNumber(id) },
     {
       enabled: !isAddress,
@@ -73,13 +73,14 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
     }
   );
 
-  const profile = isAddress ? profileAddress : profileId;
+  const profile = isAddress ? profileByAddress : profileById;
   const isLoading = isAddress ? isLoadingAddress : isLoadingId;
   const isUser = status === "authenticated" && profile?.owner === session?.address;
+  const owner = isAddress ? id : profile?.owner;
 
   const { data: spaces } = trpc.space.latest.useQuery(
-    { limit: 20, owner: profile?.owner },
-    { enabled: profile?.owner !== undefined }
+    { limit: 40, owner },
+    { enabled: owner !== undefined }
   );
 
   // Force change page on hash change

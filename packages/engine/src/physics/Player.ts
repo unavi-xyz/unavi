@@ -28,7 +28,7 @@ const RIGID_BODY_FEET_OFFSET = PLAYER_HEIGHT / 2 + PLAYER_RADIUS + CHARACTER_OFF
 
 /**
  * Represents the player in the physics thread.
- * Reads input from the main thread, and updates the player's position.
+ * Reads input from the main thread, and updates the player's rigid body position.
  */
 export class Player {
   #world: World;
@@ -46,6 +46,8 @@ export class Player {
   sprinting = false;
   shouldJump = false;
   #isGrounded = false;
+  #groundedChanged = false;
+  #baseYVelocity = 0;
   #ground: RigidBody | null = null;
 
   constructor(world: World, scene: PhysicsScene, postMessage: PostMessage<FromPhysicsMessage>) {
@@ -76,6 +78,7 @@ export class Player {
   set isGrounded(value: boolean) {
     if (value === this.#isGrounded) return;
     this.#isGrounded = value;
+    this.#groundedChanged = true;
     this.#postMessage({ subject: "set_grounded", data: value });
   }
 
@@ -112,46 +115,61 @@ export class Player {
     const rotatedX = inputY * sin - inputX * cos;
     const rotatedZ = inputX * sin + inputY * cos;
 
-    // Get input velocity
-    const inputVelocity = this.rigidBody.linvel();
+    // Apply input
+    const velocity = this.rigidBody.linvel();
     const speed = this.sprinting ? SPRINT_SPEED : WALK_SPEED;
-    inputVelocity.x = (rotatedX * speed) / 10;
-    inputVelocity.z = (rotatedZ * speed) / 10;
+    velocity.x = rotatedX * speed * 0.1;
+    velocity.z = rotatedZ * speed * 0.1;
 
     this.isGrounded = this.controller.computedGrounded();
 
+    if (this.#groundedChanged) {
+      this.#groundedChanged = false;
+      velocity.y = this.#baseYVelocity;
+      this.#baseYVelocity = 0;
+
+      // Reset ground
+      this.#ground = null;
+    }
+
+    // Apply gravity
+    velocity.y += this.#world.gravity.y * delta;
+
     if (this.isGrounded) {
-      inputVelocity.y = this.#world.gravity.y * delta;
+      velocity.y = this.#world.gravity.y;
 
       // Get ground from latest collision event
       const groundCollision = this.controller.computedCollision(0);
       const groundRigidBody = groundCollision?.collider?.parent();
       if (groundRigidBody) this.#ground = groundRigidBody;
+    }
 
-      // Move player with ground
-      if (this.#ground) {
-        const groundVelocity = this.#ground.linvel();
-        inputVelocity.x += groundVelocity.x * delta;
-        inputVelocity.z += groundVelocity.z * delta;
+    // Move player with ground
+    if (this.#ground) {
+      const groundVelocity = this.#ground.linvel();
+      velocity.x += groundVelocity.x * delta;
+      velocity.z += groundVelocity.z * delta;
+
+      if (groundVelocity.y > 0) {
+        velocity.y += groundVelocity.y;
+        this.#baseYVelocity = groundVelocity.y;
       }
-    } else {
-      // Reset ground
-      this.#ground = null;
-      // Apply gravity
-      inputVelocity.y += this.#world.gravity.y * delta;
     }
 
     // Jump
     if (this.shouldJump) {
       this.shouldJump = false;
-      if (this.isGrounded) inputVelocity.y = 6;
+      if (this.isGrounded) {
+        velocity.y = 6;
+        this.#baseYVelocity = velocity.y;
+      }
     }
 
     // Compute movement
     const inputTranslation: Vector3 = {
-      x: inputVelocity.x * delta,
-      y: inputVelocity.y * delta,
-      z: inputVelocity.z * delta,
+      x: velocity.x * delta,
+      y: velocity.y * delta,
+      z: velocity.z * delta,
     };
 
     this.controller.computeColliderMovement(this.collider, inputTranslation);

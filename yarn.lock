@@ -3366,14 +3366,7 @@
     "@floating-ui/dom" "^0.5.3"
     use-isomorphic-layout-effect "^1.1.1"
 
-"@gltf-transform/core@3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.0.1.tgz#9d15c61f9f55131f63333514d91e9e9c3a0f477a"
-  integrity sha512-IGBq5T2+Bei2aVdWqTj8lYSS86FEhlGvmn70Tc/8NYGwgcuti9wPDB1jX5CtsZmTifucFM36SlisSMLflY+OnQ==
-  dependencies:
-    property-graph "^1.0.0"
-
-"@gltf-transform/core@^3.0.1", "@gltf-transform/core@^3.0.4":
+"@gltf-transform/core@3.0.4", "@gltf-transform/core@^3.0.1", "@gltf-transform/core@^3.0.4":
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.0.4.tgz#a3ad31735d21af821197ed9f95d68e45d953a298"
   integrity sha512-Qi6rB2TOHkRT8lyIEeebIjw6WZuWJcUBlGymGds8PiTSkkUZmfIHHLsiY7KyAFKCp0L/F/mf8FJQCuS507JzjA==
@@ -13432,12 +13425,7 @@ prop-types@^15.5.7, prop-types@^15.6.2, prop-types@^15.7.2, prop-types@^15.8.1:
     object-assign "^4.1.1"
     react-is "^16.13.1"
 
-property-graph@^1.0.0, property-graph@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/property-graph/-/property-graph-1.0.3.tgz#b10d7578856fb187987f1fd765639edb6224b556"
-  integrity sha512-LhNLXmbUfWio8R6H+KEzhnQ9EYmo7/qe7v9jmZuvkZPgIdLhRNPSP1wrfUG0hJhamT9u0bRSfIKJxSKfotQ+zQ==
-
-property-graph@^1.1.0:
+property-graph@^1.0.3, property-graph@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/property-graph/-/property-graph-1.1.0.tgz#4914a9dac0be48d2e9f5f14b2de2e65ab3be90fa"
   integrity sha512-zaS0ktlJ4TDS0fnlQyFw+YgRzhhvjJISq4OjS7glBuB5FtSIpqvzrr5E2yz7QcuiEfLO/OLgDvxCpwOEV78k7Q==

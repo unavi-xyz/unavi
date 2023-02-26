@@ -23,7 +23,7 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
-import { DEFAULT_CONTROLS } from "../constants";
+import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
 import { ControlsType } from "../Engine";
 import { isSceneMessage } from "../scene/messages";
 import { PostMessage, Transferable } from "../types";
@@ -60,11 +60,16 @@ export class RenderThread {
   camera = new PerspectiveCamera(75, 1, CAMERA_NEAR, CAMERA_FAR);
   clock = new Clock();
   #animationFrame: number | null = null;
+  #visuals = DEFAULT_VISUALS;
 
   outlinePass: ThreeOutlinePass | null = null;
   composer: EffectComposer | null = null;
   csm: CSM | null = null;
+
   debugLines: LineSegments;
+  #debugVertices = new Float32Array(0);
+  #debugColors = new Float32Array(0);
+  #debugFrame = 0;
 
   transform = new TransformControls(this);
   orbit = new OrbitControls(this.camera, this.transform);
@@ -174,6 +179,7 @@ export class RenderThread {
       }
 
       case "toggle_visuals": {
+        this.#visuals = data;
         this.debugLines.visible = data;
         break;
       }
@@ -192,8 +198,9 @@ export class RenderThread {
       }
 
       case "set_debug_buffers": {
-        this.debugLines.geometry.setAttribute("position", new BufferAttribute(data.vertices, 3));
-        this.debugLines.geometry.setAttribute("color", new BufferAttribute(data.colors, 4));
+        this.#debugVertices = data.vertices;
+        this.#debugColors = data.colors;
+
         break;
       }
     }
@@ -290,6 +297,17 @@ export class RenderThread {
     }
 
     if (this.size.width === 0 || this.size.height === 0) return;
+
+    if (this.#visuals) {
+      // Only update debug lines every 60 frames
+      if (this.#debugFrame++ % 60 === 0) {
+        this.debugLines.geometry.setAttribute(
+          "position",
+          new BufferAttribute(this.#debugVertices, 3)
+        );
+        this.debugLines.geometry.setAttribute("color", new BufferAttribute(this.#debugColors, 4));
+      }
+    }
 
     this.players.update(delta);
     this.csm?.update();

@@ -1,17 +1,8 @@
 import { DeleteObjectsCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NodeIO } from "@gltf-transform/core";
-import {
-  dedup,
-  draco,
-  resample,
-  simplify,
-  sparse,
-  textureCompress,
-  weld,
-} from "@gltf-transform/functions";
+import { dedup, draco, resample, sparse, textureCompress, weld } from "@gltf-transform/functions";
 import { BehaviorExtension, extensions } from "engine";
-import { MeshoptSimplifier } from "meshoptimizer";
 import sharp from "sharp";
 
 import createEncoderModule from "../../../public/scripts/draco_encoder";
@@ -112,13 +103,7 @@ export class Project {
     // Ignore large models, it takes too long
     if (array.byteLength < 30 * MEGABYTE) {
       try {
-        await doc.transform(
-          dedup(),
-          weld(),
-          simplify({ simplifier: MeshoptSimplifier, lockBorder: true }),
-          resample(),
-          sparse()
-        );
+        await doc.transform(dedup(), weld(), resample(), sparse());
       } catch (e) {
         console.warn("Failed to optimize model: ", e);
       }

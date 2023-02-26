@@ -23,6 +23,9 @@ export class PhysicsThread {
 
   #visuals = DEFAULT_VISUALS;
   #visualsFrame = 0;
+  #debugVertices = new Float32Array(0);
+  #debugColors = new Float32Array(0);
+
   #interval: NodeJS.Timeout | null = null;
   #postMessage: PostMessage<FromPhysicsMessage>;
 
@@ -110,10 +113,39 @@ export class PhysicsThread {
     this.world.step();
 
     if (this.#visuals) {
-      // Only update the debug buffers every 4 frames.
-      if (this.#visualsFrame++ % 4 === 0) {
+      // Only update the debug buffers every 30 frames
+      if (this.#visualsFrame++ % 30 === 0) {
         const buffers = this.world.debugRender();
-        this.#postMessage({ subject: "set_debug_buffers", data: buffers });
+
+        // Change the size of the shared buffers if needed
+        let didChange = false;
+
+        if (buffers.vertices.length !== this.#debugVertices.length) {
+          const newBuffer = new SharedArrayBuffer(
+            buffers.vertices.length * Float32Array.BYTES_PER_ELEMENT
+          );
+          this.#debugVertices = new Float32Array(newBuffer);
+          didChange = true;
+        }
+
+        if (buffers.colors.length !== this.#debugColors.length) {
+          const newBuffer = new SharedArrayBuffer(
+            buffers.colors.length * Float32Array.BYTES_PER_ELEMENT
+          );
+          this.#debugColors = new Float32Array(newBuffer);
+          didChange = true;
+        }
+
+        if (didChange) {
+          this.#postMessage({
+            subject: "set_debug_buffers",
+            data: { vertices: this.#debugVertices, colors: this.#debugColors },
+          });
+        }
+
+        // Copy data to shared buffers
+        this.#debugVertices.set(buffers.vertices);
+        this.#debugColors.set(buffers.colors);
       }
     }
   };

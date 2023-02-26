@@ -83,16 +83,13 @@ export default function Editor() {
 
           e.preventDefault();
 
-          const item = e.dataTransfer.items[0];
-          if (item?.kind !== "file") return;
+          const files = Array.from(e.dataTransfer.files);
 
-          const file = item.getAsFile();
-          if (!file) return;
+          const glbs = files.filter((file) => file.name.endsWith(".glb"));
+          const other = files.filter((file) => !file.name.endsWith(".glb"));
 
-          const isGLTF = file.name.endsWith(".gltf") || file.name.endsWith(".glb");
-          if (!isGLTF) return;
-
-          await engine.scene.addFile(file);
+          glbs.forEach((file) => engine.scene.addFile(file));
+          if (other.length) engine.scene.addFiles(other);
         }}
       >
         <div className="h-12 w-full border-b">

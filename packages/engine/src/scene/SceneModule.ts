@@ -1,4 +1,13 @@
-import { Accessor, ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform/core";
+import {
+  Accessor,
+  Document,
+  ExtensionProperty,
+  GLTF,
+  Mesh,
+  Node,
+  Primitive,
+  WebIO,
+} from "@gltf-transform/core";
 import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
 
 import { Engine } from "../Engine";
@@ -98,12 +107,52 @@ export class SceneModule extends Scene {
     await this.addDocument(doc);
   }
 
-  async addFile(file: File) {
-    const buffer = await file.arrayBuffer();
-    const array = new Uint8Array(buffer);
+  async addFiles(files: File[]) {
+    const root = files.find((file) => file.name.endsWith(".gltf"));
+    if (!root) throw new Error("No root file found");
 
+    // Replace uris with blob urls
+    const rootText = await root.text();
+    const rootJSON = JSON.parse(rootText) as GLTF.IGLTF;
+
+    const urls = files.map((file) => URL.createObjectURL(file));
+    const getRelativeUrl = (url: string | undefined) => url?.split("/").pop();
+
+    // Buffers
+    rootJSON.buffers?.forEach((buffer) => {
+      const fileIndex = files.findIndex((file) => file.name === buffer.uri);
+      if (fileIndex !== -1) buffer.uri = getRelativeUrl(urls[fileIndex]);
+    });
+
+    // Images
+    rootJSON.images?.forEach((image) => {
+      const fileIndex = files.findIndex((file) => file.name === image.uri);
+      if (fileIndex !== -1) image.uri = getRelativeUrl(urls[fileIndex]);
+    });
+
+    // Load root file
+    const newRoot = new File([JSON.stringify(rootJSON)], root.name);
+    await this.addFile(newRoot);
+
+    urls.forEach((url) => URL.revokeObjectURL(url));
+  }
+
+  async addFile(file: File) {
     const io = await this.#createIO();
-    const doc = await io.readBinary(array);
+
+    let doc: Document | undefined;
+
+    if (file.name.endsWith(".glb")) {
+      const buffer = await file.arrayBuffer();
+      const array = new Uint8Array(buffer);
+      doc = await io.readBinary(array);
+    } else if (file.name.endsWith(".gltf")) {
+      const url = URL.createObjectURL(file);
+      doc = await io.read(url);
+      URL.revokeObjectURL(url);
+    }
+
+    if (!doc) throw new Error("Invalid file");
 
     const scene = doc.getRoot().getDefaultScene();
 
@@ -119,6 +168,8 @@ export class SceneModule extends Scene {
       .getRoot()
       .listNodes()
       .forEach((node) => {
+        if (!doc) throw new Error("Document not found");
+
         const mesh = node.getMesh();
         if (!mesh) return;
 

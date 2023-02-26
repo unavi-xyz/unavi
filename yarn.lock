@@ -5005,10 +5005,10 @@
     "@tanstack/query-core" "4.24.4"
     use-sync-external-store "^1.2.0"
 
-"@trpc/client@10.11.0":
-  version "10.11.0"
-  resolved "https://registry.yarnpkg.com/@trpc/client/-/client-10.11.0.tgz#1132ad1d07f9c71c3cf1b873c40b805d169923d5"
-  integrity sha512-GdSfyJxYI3Z9zyz2fEdJBGWLzqrpaonRtG1BtYLR5/63/eaW3/weA3JcEl2H3/CvqSNZfptNMZqLmaZyChTxdg==
+"@trpc/client@10.12.0":
+  version "10.12.0"
+  resolved "https://registry.yarnpkg.com/@trpc/client/-/client-10.12.0.tgz#635b02a2d10ffa07029428f250bcbe19b54a6b63"
+  integrity sha512-CUBRaE0FpYiRnPGkFB9oLD2cdFd5fSzQwPSR7/zXNKMjwdE+5P7q5mtgbh3bFey3lYidmpKDFgYRnl9Cz2Z7OQ==
 
 "@trpc/next@10.12.0":
   version "10.12.0"

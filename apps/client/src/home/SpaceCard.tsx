@@ -15,7 +15,9 @@ export default function SpaceCard({ id, sizes, animateEnter }: Props) {
   const { data: space, isLoading } = trpc.space.byId.useQuery({ id });
   const { data: playerCount } = trpc.public.playerCount.useQuery({ id });
 
-  if (!isLoading && !space?.metadata) return null;
+  if (isLoading) return <Card animateEnter={animateEnter} loading />;
+
+  if (!space?.metadata) return null;
 
   return (
     <Link href={`/space/${numberToHexDisplay(id)}`} className="rounded-xl">
@@ -24,7 +26,6 @@ export default function SpaceCard({ id, sizes, animateEnter }: Props) {
         image={space?.metadata?.image}
         sizes={sizes}
         animateEnter={animateEnter}
-        loading={isLoading}
       >
         <div className="absolute flex h-full w-full items-start p-2 tracking-wide">
           {playerCount !== undefined && playerCount > 0 && (

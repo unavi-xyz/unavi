@@ -13,7 +13,6 @@ import Head from "next/head";
 import { Session } from "next-auth";
 import React from "react";
 
-import ClientSideProviders from "../client/ClientSideProviders";
 import { CACHED_PATHS } from "../constants";
 import { AppRouter } from "../server/router/_app";
 import { getBaseUrl } from "../utils/getBaseUrl";
@@ -22,6 +21,7 @@ import { getBaseUrl } from "../utils/getBaseUrl";
 export { reportWebVitals } from "next-axiom";
 
 const Toaster = dynamic(() => import("react-hot-toast").then((mod) => mod.Toaster));
+const ClientSideProviders = dynamic(() => import("../client/ClientSideProviders"));
 
 const font = Nunito({
   subsets: ["latin"],

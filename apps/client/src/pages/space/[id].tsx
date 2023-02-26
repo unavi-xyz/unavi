@@ -106,13 +106,13 @@ export default function Space({ id }: InferGetServerSidePropsType<typeof getServ
 
                     {author ? (
                       <Link href={`/user/${numberToHexDisplay(author.id)}`}>
-                        <div className="w-64 cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:w-full">
+                        <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
                           {author.handle?.string ?? author.owner}
                         </div>
                       </Link>
                     ) : space?.owner ? (
                       <Link href={`/user/${space.owner}`}>
-                        <div className="w-64 cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:w-full">
+                        <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
                           {space.owner}
                         </div>
                       </Link>

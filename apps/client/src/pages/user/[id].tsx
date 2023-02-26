@@ -91,6 +91,8 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
   if (!isAddress && !isLoading && profile === null)
     return <div className="pt-12 text-center text-lg">User not found.</div>;
 
+  const sortedSpaces = spaces?.sort((a, b) => b - a);
+
   return (
     <>
       <MetaTags
@@ -165,8 +167,8 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
         </section>
 
         <div className="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 md:grid-cols-3">
-          {spaces
-            ? spaces.map((id) => {
+          {sortedSpaces
+            ? sortedSpaces.map((id) => {
                 return <SpaceCard key={id} id={id} sizes="512" animateEnter />;
               })
             : Array.from({ length: 3 }, (_, i) => (

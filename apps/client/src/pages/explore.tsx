@@ -37,6 +37,8 @@ export default function Explore() {
     }
   );
 
+  const sortedSpaces = spaces?.sort((a, b) => b - a);
+
   return (
     <>
       <MetaTags title="Explore" />
@@ -46,7 +48,7 @@ export default function Explore() {
           <div className="text-center text-3xl font-black">Explore</div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {spaces?.map((id) => {
+            {sortedSpaces?.map((id) => {
               return <SpaceCard key={id} id={id} sizes="512" animateEnter />;
             })}
           </div>

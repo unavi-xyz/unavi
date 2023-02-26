@@ -75,6 +75,11 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
         this.dispatchEvent({ type: "user_grounded", data });
         break;
       }
+
+      case "set_debug_buffers": {
+        this.engine.render.send({ subject: "set_debug_buffers", data });
+        break;
+      }
     }
   };
 

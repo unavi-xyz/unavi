@@ -1,6 +1,6 @@
 import { World } from "@dimforge/rapier3d";
 
-import { DEFAULT_CONTROLS } from "../constants";
+import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
 import { ControlsType } from "../Engine";
 import { isSceneMessage } from "../scene/messages";
 import { PostMessage } from "../types";
@@ -21,9 +21,14 @@ export class PhysicsThread {
   scene = new PhysicsScene(this.world);
   player: Player;
 
+  #visuals = DEFAULT_VISUALS;
+  #visualsFrame = 0;
   #interval: NodeJS.Timeout | null = null;
+  #postMessage: PostMessage<FromPhysicsMessage>;
 
   constructor(postMessage: PostMessage<FromPhysicsMessage>) {
+    this.#postMessage = postMessage;
+
     this.player = new Player(this.world, this.scene, postMessage);
 
     postMessage({ subject: "ready", data: null });
@@ -79,6 +84,11 @@ export class PhysicsThread {
         this.player.respawn();
         break;
       }
+
+      case "toggle_visuals": {
+        this.#visuals = data;
+        break;
+      }
     }
   };
 
@@ -98,5 +108,13 @@ export class PhysicsThread {
     }
 
     this.world.step();
+
+    if (this.#visuals) {
+      // Only update the debug buffers every 4 frames.
+      if (this.#visualsFrame++ % 4 === 0) {
+        const buffers = this.world.debugRender();
+        this.#postMessage({ subject: "set_debug_buffers", data: buffers });
+      }
+    }
   };
 }

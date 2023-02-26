@@ -11,6 +11,9 @@ export default function VisualsButton() {
     const { engine } = useEditorStore.getState();
     if (!engine) return;
 
+    if (visuals) engine.physics.send({ subject: "stop", data: null });
+    else engine.physics.send({ subject: "start", data: null });
+
     engine.visuals = !visuals;
     useEditorStore.setState({ visuals: !visuals });
   }

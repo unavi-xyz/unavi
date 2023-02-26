@@ -70,6 +70,7 @@ export class Engine {
   }
 
   set controls(value: ControlsType) {
+    if (value === this.#controls) return;
     this.#controls = value;
     this.input.keyboard.controls = value;
     this.render.send({ subject: "set_controls", data: value });
@@ -81,8 +82,10 @@ export class Engine {
   }
 
   set visuals(value: boolean) {
+    if (value === this.#visuals) return;
     this.#visuals = value;
     this.render.send({ subject: "toggle_visuals", data: value });
+    this.physics.send({ subject: "toggle_visuals", data: value });
   }
 
   destroy() {

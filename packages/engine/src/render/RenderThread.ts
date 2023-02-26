@@ -1,8 +1,12 @@
 import {
   AmbientLight,
+  BufferAttribute,
+  BufferGeometry,
   CanvasTexture,
   Clock,
   EquirectangularReflectionMapping,
+  LineBasicMaterial,
+  LineSegments,
   PCFSoftShadowMap,
   PerspectiveCamera,
   Scene,
@@ -60,6 +64,7 @@ export class RenderThread {
   outlinePass: ThreeOutlinePass | null = null;
   composer: EffectComposer | null = null;
   csm: CSM | null = null;
+  debugLines: LineSegments;
 
   transform = new TransformControls(this);
   orbit = new OrbitControls(this.camera, this.transform);
@@ -92,6 +97,13 @@ export class RenderThread {
     this.scene.add(this.player.group);
     this.scene.add(this.players.group);
     this.scene.add(new AmbientLight(0xffffff, 0.2));
+
+    this.debugLines = new LineSegments(
+      new BufferGeometry(),
+      new LineBasicMaterial({ vertexColors: true })
+    );
+    this.debugLines.frustumCulled = false;
+    this.scene.add(this.debugLines);
 
     this.clock.start();
     this.render();
@@ -162,7 +174,7 @@ export class RenderThread {
       }
 
       case "toggle_visuals": {
-        this.renderScene.visualsEnabled = data;
+        this.debugLines.visible = data;
         break;
       }
 
@@ -176,6 +188,12 @@ export class RenderThread {
         this.transform.destroy();
         this.orbit.destroy();
         deepDispose(this.scene);
+        break;
+      }
+
+      case "set_debug_buffers": {
+        this.debugLines.geometry.setAttribute("position", new BufferAttribute(data.vertices, 3));
+        this.debugLines.geometry.setAttribute("color", new BufferAttribute(data.colors, 4));
         break;
       }
     }

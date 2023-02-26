@@ -1,24 +1,15 @@
 import { Accessor, Mesh, Node, Primitive, Texture, TextureInfo } from "@gltf-transform/core";
 import {
-  BoxGeometry,
   BufferAttribute,
-  BufferGeometry,
-  CapsuleGeometry,
-  CylinderGeometry,
   DoubleSide,
   FrontSide,
   Mesh as ThreeMesh,
-  MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
-  SphereGeometry,
   sRGBEncoding,
 } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
-import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
 
-import { DEFAULT_VISUALS } from "../../constants";
-import { Collider, ColliderExtension } from "../../gltf";
 import { AccessorJSON, MeshJSON, NodeJSON } from "../../scene";
 import { MaterialJSON } from "../../scene/attributes/Materials";
 import { PrimitiveJSON } from "../../scene/attributes/Primitives";
@@ -50,11 +41,6 @@ export class RenderScene extends Scene {
   meshObjects = new Map<MeshId, Object3D>();
   instancedMeshObjects = new Map<NodeId, Object3D>();
   nodeObjects = new Map<NodeId, Object3D>();
-  colliderObjects = new Map<NodeId, ThreeMesh>();
-
-  colliderMaterial = new MeshBasicMaterial({ color: "#000000", wireframe: true });
-  visuals = new Object3D();
-  #visualsEnabled = DEFAULT_VISUALS;
 
   static DEFAULT_MATERIAL = new MeshStandardMaterial();
 
@@ -62,30 +48,6 @@ export class RenderScene extends Scene {
     super();
 
     this.#toMainThread = toMainThread;
-  }
-
-  get visualsEnabled() {
-    return this.#visualsEnabled;
-  }
-
-  set visualsEnabled(enabled: boolean) {
-    this.#visualsEnabled = enabled;
-
-    if (enabled) {
-      this.doc
-        .getRoot()
-        .listNodes()
-        .forEach((node) => {
-          const id = this.node.getId(node);
-          if (!id) throw new Error("Node not found");
-          this.updateColliderVisual(id);
-        });
-    } else {
-      this.colliderObjects.forEach((object) => {
-        object.removeFromParent();
-        object.geometry.dispose();
-      });
-    }
   }
 
   get csm() {
@@ -331,10 +293,6 @@ export class RenderScene extends Scene {
 
     // Apply node JSON
     this.node.applyJSON(node, json);
-
-    if (json.mesh !== undefined || json.extensions?.OMI_collider !== undefined) {
-      this.updateColliderVisual(id);
-    }
   }
 
   updateMesh(id: string, json: Partial<MeshJSON>) {
@@ -446,15 +404,6 @@ export class RenderScene extends Scene {
         });
       }
     }
-
-    mesh.listParents().forEach((parent) => {
-      if (parent instanceof Node) {
-        const nodeId = this.node.getId(parent);
-        if (!nodeId) throw new Error("Node not found");
-
-        this.updateColliderVisual(nodeId);
-      }
-    });
   }
 
   createPrimitive(json: Partial<PrimitiveJSON>, primitiveId?: string) {
@@ -752,92 +701,6 @@ export class RenderScene extends Scene {
     }
 
     object.needsUpdate = true;
-  }
-
-  updateColliderVisual(nodeId: string) {
-    if (!this.visualsEnabled) return;
-
-    const node = this.node.store.get(nodeId);
-    if (!node) throw new Error("Node not found");
-
-    const object = this.nodeObjects.get(nodeId);
-    if (!object) throw new Error("Object not found");
-
-    const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
-
-    // Remove old collider
-    const prevCollider = this.colliderObjects.get(nodeId);
-    if (prevCollider) {
-      object.remove(prevCollider);
-      prevCollider.geometry.dispose();
-      this.colliderObjects.delete(nodeId);
-    }
-
-    if (collider) {
-      // Add new collider
-      let colliderGeometry: BufferGeometry | null = null;
-
-      switch (collider.type) {
-        case "box": {
-          if (!collider.size) break;
-          colliderGeometry = new BoxGeometry(collider.size[0], collider.size[1], collider.size[2]);
-          break;
-        }
-
-        case "sphere": {
-          if (!collider.radius) break;
-          colliderGeometry = new SphereGeometry(collider.radius);
-          break;
-        }
-
-        case "capsule": {
-          if (!collider.radius || !collider.height) break;
-          colliderGeometry = new CapsuleGeometry(collider.radius, collider.height);
-          break;
-        }
-
-        case "cylinder": {
-          if (!collider.radius || !collider.height) break;
-          colliderGeometry = new CylinderGeometry(
-            collider.radius,
-            collider.radius,
-            collider.height
-          );
-          break;
-        }
-
-        case "trimesh": {
-          const meshId =
-            collider.mesh instanceof Mesh ? this.mesh.getId(collider.mesh) : collider.mesh;
-          if (!meshId) break;
-
-          const mesh = this.mesh.store.get(meshId);
-          if (!mesh) throw new Error("Mesh not found");
-
-          const primitiveGeometries = mesh.listPrimitives().map((primitive) => {
-            const primitiveId = this.primitive.getId(primitive);
-            if (!primitiveId) throw new Error("Primitive not found");
-
-            const primitiveObject = this.primitiveObjects.get(primitiveId);
-            if (!primitiveObject) throw new Error("Primitive object not found");
-
-            return primitiveObject.geometry;
-          });
-
-          if (primitiveGeometries.length === 0) break;
-
-          colliderGeometry = mergeBufferGeometries(primitiveGeometries);
-          break;
-        }
-      }
-
-      if (colliderGeometry) {
-        const colliderObject = new ThreeMesh(colliderGeometry, this.colliderMaterial);
-        object.add(colliderObject);
-
-        this.colliderObjects.set(nodeId, colliderObject);
-      }
-    }
   }
 
   getInstancedMeshNodeId(object: Object3D): string | null {

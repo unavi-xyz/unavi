@@ -13,7 +13,7 @@ import { getNavbarLayout } from "../../home/NavbarLayout/NavbarLayout";
 import SpaceCard from "../../home/SpaceCard";
 import { prisma } from "../../server/prisma";
 import { appRouter } from "../../server/router/_app";
-import { hexDisplayToNumber, numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { hexDisplayToNumber } from "../../utils/numberToHexDisplay";
 
 export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
   const ONE_MINUTE_IN_SECONDS = 60;
@@ -174,12 +174,8 @@ export default function User({ id }: InferGetServerSidePropsType<typeof getServe
 
         <div className="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 md:grid-cols-3">
           {spaces
-            ? spaces.map(({ id, metadata }) => {
-                return (
-                  <Link href={`/space/${numberToHexDisplay(id)}`} key={id} className="rounded-xl">
-                    <SpaceCard id={id} metadata={metadata} sizes="512" animateEnter />
-                  </Link>
-                );
+            ? spaces.map((id) => {
+                return <SpaceCard key={id} id={id} sizes="512" animateEnter />;
               })
             : Array.from({ length: 3 }, (_, i) => (
                 <div

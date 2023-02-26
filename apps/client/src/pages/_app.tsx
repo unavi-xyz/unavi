@@ -14,6 +14,7 @@ import { Session } from "next-auth";
 import React from "react";
 
 import ClientSideProviders from "../client/ClientSideProviders";
+import { CACHED_PATHS } from "../constants";
 import { AppRouter } from "../server/router/_app";
 import { getBaseUrl } from "../utils/getBaseUrl";
 
@@ -68,7 +69,7 @@ export default withTRPC<AppRouter>({
 
         splitLink({
           condition(op) {
-            return op.context.skipBatch === true;
+            return CACHED_PATHS.includes(op.path);
           },
           true: httpLink({ url }),
           false: httpBatchLink({ url }),

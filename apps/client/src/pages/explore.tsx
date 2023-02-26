@@ -1,10 +1,7 @@
-import Link from "next/link";
-
 import { trpc } from "../client/trpc";
 import MetaTags from "../home/MetaTags";
 import { getNavbarLayout } from "../home/NavbarLayout/NavbarLayout";
 import SpaceCard from "../home/SpaceCard";
-import { numberToHexDisplay } from "../utils/numberToHexDisplay";
 
 export default function Explore() {
   const { data: spaces } = trpc.space.latest.useQuery(
@@ -26,14 +23,10 @@ export default function Explore() {
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {spaces
-              ? spaces.map(({ id, metadata }) => {
-                  return (
-                    <Link key={id} href={`/space/${numberToHexDisplay(id)}`} className="rounded-xl">
-                      <SpaceCard id={id} metadata={metadata} sizes="512" animateEnter />
-                    </Link>
-                  );
+              ? spaces.map((id) => {
+                  return <SpaceCard key={id} id={id} sizes="512" animateEnter />;
                 })
-              : Array.from({ length: 4 }, (_, i) => (
+              : Array.from({ length: 8 }, (_, i) => (
                   <div
                     key={i}
                     className="aspect-card h-full w-full animate-pulse rounded-xl bg-neutral-300"

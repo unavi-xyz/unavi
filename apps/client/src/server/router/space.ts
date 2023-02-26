@@ -51,11 +51,11 @@ export const spaceRouter = router({
             if (owner !== input.owner) return;
           }
 
-          // Check if metadata exists
-          const metadata = await getSpaceMetadata(tokenId);
-          if (!metadata) return;
+          // Check if uri exists
+          const uri = await spaceContract.tokenURI(tokenId);
+          if (!uri) return;
 
-          return { id: tokenId, metadata };
+          return tokenId;
         } catch {
           // Ignore
         }

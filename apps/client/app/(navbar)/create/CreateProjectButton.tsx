@@ -9,7 +9,7 @@ export default async function CreateProjectButton() {
 
   return (
     <DialogRoot>
-      <DialogContent>
+      <DialogContent title="Create Project">
         <CreateProjectPage />
       </DialogContent>
 

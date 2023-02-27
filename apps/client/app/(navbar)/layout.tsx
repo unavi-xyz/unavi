@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import Logo from "../../public/images/Logo.png";
 import { getServerSession } from "../../src/server/helpers/getServerSession";
-import NavbarTab from "./NavbarTab";
+import NavigationTab from "../../src/ui/NavigationTab";
 import ProfileButton from "./ProfileButton";
 import SignInButton from "./SignInButton";
 
@@ -29,10 +29,10 @@ export default async function NavbarLayout({ children }: { children: React.React
 
             <div className="flex items-center justify-center space-x-1 md:space-x-4">
               <div>
-                <NavbarTab text="Explore" href="/explore" />
+                <NavigationTab text="Explore" href="/explore" />
               </div>
               <div className="hidden md:block">
-                <NavbarTab text="Create" href="/create" />
+                <NavigationTab text="Create" href="/create" />
               </div>
             </div>
 

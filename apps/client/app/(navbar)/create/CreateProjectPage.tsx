@@ -4,8 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import TextField from "../../../src/ui/TextField";
-import { getProjectImageUpload } from "../../api/project/[id]/image/upload/helper";
-import { getProjectModelUpload } from "../../api/project/[id]/model/upload/helper";
+import { getProjectFileUpload } from "../../api/project/[id]/[file]/upload/helper";
 import { createProject } from "../../api/project/helper";
 
 const DEFAULT_NAME = "New Project";
@@ -23,7 +22,7 @@ export default function CreateProjectPage() {
     async function uploadDefaultImage(id: string) {
       const res = await fetch("/images/Default-Space.jpg");
       const blob = await res.blob();
-      const url = await getProjectImageUpload(id);
+      const url = await getProjectFileUpload(id, "image");
 
       await fetch(url, {
         method: "PUT",
@@ -35,7 +34,7 @@ export default function CreateProjectPage() {
     async function uploadDefaultModel(id: string) {
       const res = await fetch("/models/Default-Space.glb");
       const blob = await res.blob();
-      const url = await getProjectModelUpload(id);
+      const url = await getProjectFileUpload(id, "model");
 
       await fetch(url, {
         method: "PUT",

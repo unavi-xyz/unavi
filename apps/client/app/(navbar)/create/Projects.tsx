@@ -7,8 +7,12 @@ export default async function Projects() {
   const projects = await fetchProjects();
   const unpublishedProjects = projects.filter((p) => !p.Publication?.spaceId);
 
+  if (unpublishedProjects.length === 0) {
+    return <div className="text-neutral-500">No projects found.</div>;
+  }
+
   return unpublishedProjects.map(({ id, name, image }) => (
-    <Link key={id} href={`/project/${id}`} className="rounded-xl">
+    <Link key={id} href={`/create/${id}`} className="rounded-xl">
       <Card text={name} image={image} sizes="333px" animateEnter />
     </Link>
   ));

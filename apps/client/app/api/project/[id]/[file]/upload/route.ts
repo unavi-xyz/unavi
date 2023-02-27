@@ -3,12 +3,15 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "../../../../../../src/server/helpers/getServerSession";
 import { prisma } from "../../../../../../src/server/prisma";
 import { getUpload } from "../../../files";
-import { GetModelUploadResponse } from "./types";
+import { Params, paramsSchema } from "../types";
+import { GetFileUploadResponse } from "./types";
 
-// Get model upload URL
-export async function GET(request: Request, { id }: { id: string }) {
+// Get file upload URL
+export async function GET(request: Request, { params }: Params) {
   const session = await getServerSession();
-  if (!session || !session.address) throw new Error("Not authenticated");
+  if (!session || !session.address) throw new Error("Unauthorized");
+
+  const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
@@ -16,8 +19,8 @@ export async function GET(request: Request, { id }: { id: string }) {
   });
   if (!found) throw new Error("Not found");
 
-  const url = await getUpload(id, "model");
+  const url = await getUpload(id, file);
 
-  const json: GetModelUploadResponse = { url };
+  const json: GetFileUploadResponse = { url };
   return NextResponse.json(json);
 }

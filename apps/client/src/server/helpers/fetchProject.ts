@@ -5,7 +5,7 @@ import { getServerSession } from "./getServerSession";
 
 export const fetchProject = cache(async (id: string) => {
   const session = await getServerSession();
-  if (!session) throw new Error("Not authenticated");
+  if (!session) throw new Error("Unauthorized");
 
   const project = await prisma.project.findFirst({
     // Verify user owns the project

@@ -14,7 +14,7 @@ const nanoid = customAlphabet(
 // Create a new project
 export async function POST(request: Request) {
   const session = await getServerSession();
-  if (!session || !session.address) throw new Error("Not authenticated");
+  if (!session || !session.address) throw new Error("Unauthorized");
 
   const { name } = schema.parse(await request.json());
   const id = nanoid();

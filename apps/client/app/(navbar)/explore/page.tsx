@@ -1,9 +1,11 @@
+import { Metadata } from "next";
+
 import { fetchLatestSpaces } from "../../../src/server/helpers/fetchLatestSpaces";
 import SpaceCard from "./SpaceCard";
 
 export const revalidate = 60;
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Explore",
 };
 

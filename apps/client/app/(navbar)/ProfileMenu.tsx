@@ -5,7 +5,7 @@ import { MdLogout, MdOutlinePersonOutline, MdOutlineSettings } from "react-icons
 
 import { useLogout } from "../../src/client/auth/useLogout";
 import { CustomSession } from "../../src/client/auth/useSession";
-import { Profile } from "../../src/server/helpers/fetchProfileFromAddress";
+import { Profile } from "../../src/server/helpers/fetchProfile";
 import { DropdownItem } from "../../src/ui/DropdownMenu";
 import { numberToHexDisplay } from "../../src/utils/numberToHexDisplay";
 

@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -11,7 +12,7 @@ import Twitter from "../../public/images/svg/Twitter.svg";
 import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../../src/constants";
 import AnimateOnEnter from "./AnimateOnEnter";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Home",
 };
 

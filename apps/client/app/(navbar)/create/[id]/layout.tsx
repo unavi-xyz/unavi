@@ -1,25 +1,34 @@
+import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { fetchProject } from "../../../../src/server/helpers/fetchProject";
-import { fetchProjectImage } from "../../../../src/server/helpers/fetchProjectImage";
 import NavigationTab from "../../../../src/ui/NavigationTab";
 import { isFromCDN } from "../../../../src/utils/isFromCDN";
 
-export const metadata = {
-  title: "Project",
-};
+type Params = { id: string };
+
+export async function generateMetadata({ params: { id } }: { params: Params }): Promise<Metadata> {
+  const project = await fetchProject(id);
+
+  if (!project) return {};
+
+  return {
+    title: project.name,
+    description: project.description,
+  };
+}
 
 interface Props {
   children: React.ReactNode;
-  params: { id: string };
+  params: Params;
 }
 
 export default async function Project({ children, params: { id } }: Props) {
-  const [project, image] = await Promise.all([fetchProject(id), fetchProjectImage(id)]).catch(
-    notFound
-  );
+  const project = await fetchProject(id);
+
+  if (!project) notFound();
 
   return (
     <div className="flex justify-center">
@@ -27,10 +36,10 @@ export default async function Project({ children, params: { id } }: Props) {
         <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
           <div className="aspect-card h-full w-full rounded-2xl bg-neutral-200">
             <div className="relative h-full w-full object-cover">
-              {image &&
-                (isFromCDN(image) ? (
+              {project.image &&
+                (isFromCDN(project.image) ? (
                   <Image
-                    src={image}
+                    src={project.image}
                     priority
                     fill
                     sizes="40vw"
@@ -39,7 +48,7 @@ export default async function Project({ children, params: { id } }: Props) {
                   />
                 ) : (
                   <img
-                    src={image}
+                    src={project.image}
                     alt=""
                     className="h-full w-full rounded-2xl object-cover"
                     crossOrigin="anonymous"

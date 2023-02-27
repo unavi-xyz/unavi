@@ -1,5 +1,5 @@
 import "@rainbow-me/rainbowkit/styles.css";
-import "../styles/globals.css";
+import "../../styles/globals.css";
 
 import { Nunito } from "@next/font/google";
 import { httpLink } from "@trpc/client";

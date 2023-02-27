@@ -1,8 +1,9 @@
 import { Profile__factory, PROFILE_ADDRESS } from "contracts";
+import { cache } from "react";
 
 import { ethersProvider } from "../constants";
 
-export async function getProfileHandle(profileId: number) {
+export const fetchProfileHandle = cache(async (profileId: number) => {
   const contract = Profile__factory.connect(PROFILE_ADDRESS, ethersProvider);
 
   // Fetch handle
@@ -17,4 +18,4 @@ export async function getProfileHandle(profileId: number) {
     string: handleString,
     full: `${handleString}#${handleId.toString().padStart(4, "0")}`,
   };
-}
+});

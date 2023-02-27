@@ -10,7 +10,7 @@ import { CustomSession } from "../../../client/auth/useSession";
 import { env } from "../../../env/server.mjs";
 import { prisma } from "../../../server/prisma";
 
-export function getAuthOptions(req: IncomingMessage): NextAuthOptions {
+export function getAuthOptions(req: IncomingMessage | null = null): NextAuthOptions {
   const providers = [
     CredentialsProvider({
       name: "Ethereum",
@@ -27,7 +27,7 @@ export function getAuthOptions(req: IncomingMessage): NextAuthOptions {
         },
       },
       async authorize(credentials) {
-        if (!credentials) return null;
+        if (!credentials || !req) return null;
 
         try {
           const siwe = new SiweMessage(JSON.parse(credentials.message));

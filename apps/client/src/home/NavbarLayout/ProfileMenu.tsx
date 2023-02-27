@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { MdLogout, MdOutlinePersonOutline, MdOutlineSettings } from "react-icons/md";
 

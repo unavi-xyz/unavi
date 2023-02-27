@@ -1,12 +1,14 @@
+"use client";
+
 import * as DropdownPrimitive from "@radix-ui/react-dropdown-menu";
 import React from "react";
 
 interface Props extends DropdownPrimitive.DropdownMenuProps {
-  open: boolean;
+  open?: boolean;
 }
 
 export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
-  ({ open, children, ...rest }, ref) => {
+  ({ open = true, children, ...rest }, ref) => {
     return (
       <DropdownPrimitive.Content
         ref={ref}

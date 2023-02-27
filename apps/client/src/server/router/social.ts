@@ -4,10 +4,10 @@ import { z } from "zod";
 
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
 import { ethersProvider } from "../constants";
-import { getProfileFromAddress } from "../helpers/getProfileFromAddress";
-import { getProfileHandle } from "../helpers/getProfileHandle";
-import { getProfileMetadata } from "../helpers/getProfileMetadata";
-import { getProfileOwner } from "../helpers/getProfileOwner";
+import { fetchProfileFromAddress } from "../helpers/fetchProfileFromAddress";
+import { fetchProfileHandle } from "../helpers/fetchProfileHandle";
+import { fetchProfileMetadata } from "../helpers/fetchProfileMetadata";
+import { fetchProfileOwner } from "../helpers/fetchProfileOwner";
 import { Profile } from "../s3/Profile";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
 
@@ -22,9 +22,9 @@ export const socialRouter = router({
       .query(async ({ input }) => {
         try {
           const [owner, handle, metadata] = await Promise.all([
-            getProfileOwner(input.id),
-            getProfileHandle(input.id),
-            getProfileMetadata(input.id),
+            fetchProfileOwner(input.id),
+            fetchProfileHandle(input.id),
+            fetchProfileMetadata(input.id),
           ]);
 
           return {
@@ -46,7 +46,7 @@ export const socialRouter = router({
       )
       .query(async ({ input }) => {
         try {
-          return await getProfileFromAddress(input.address);
+          return await fetchProfileFromAddress(input.address);
         } catch {
           return null;
         }
@@ -67,9 +67,9 @@ export const socialRouter = router({
           const id = idBigNumber.toNumber();
 
           const [owner, handle, metadata] = await Promise.all([
-            getProfileOwner(id),
-            getProfileHandle(id),
-            getProfileMetadata(id),
+            fetchProfileOwner(id),
+            fetchProfileHandle(id),
+            fetchProfileMetadata(id),
           ]);
 
           return {
@@ -91,7 +91,7 @@ export const socialRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         // Verify that the user is the owner of the profile
-        const owner = await getProfileOwner(input.id);
+        const owner = await fetchProfileOwner(input.id);
         if (owner !== ctx.session.address) throw new TRPCError({ code: "UNAUTHORIZED" });
 
         const hexId = numberToHexDisplay(input.id);
@@ -109,7 +109,7 @@ export const socialRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         // Verify that the user is the owner of the profile
-        const owner = await getProfileOwner(input.id);
+        const owner = await fetchProfileOwner(input.id);
         if (owner !== ctx.session.address) throw new TRPCError({ code: "UNAUTHORIZED" });
 
         const hexId = numberToHexDisplay(input.id);
@@ -127,7 +127,7 @@ export const socialRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         // Verify that the user is the owner of the profile
-        const owner = await getProfileOwner(input.id);
+        const owner = await fetchProfileOwner(input.id);
         if (owner !== ctx.session.address) throw new TRPCError({ code: "UNAUTHORIZED" });
         const hexId = numberToHexDisplay(input.id);
         const profile = new Profile(hexId);

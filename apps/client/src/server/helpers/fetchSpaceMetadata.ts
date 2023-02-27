@@ -1,8 +1,9 @@
 import { ERC721MetadataSchema, Space__factory, SPACE_ADDRESS } from "contracts";
+import { cache } from "react";
 
 import { ethersProvider } from "../constants";
 
-export async function getSpaceMetadata(spaceId: number) {
+export const fetchSpaceMetadata = cache(async (spaceId: number) => {
   const contract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
 
   // Fetch metadata uri
@@ -12,7 +13,7 @@ export async function getSpaceMetadata(spaceId: number) {
   if (!uri) return null;
 
   try {
-    const res = await fetch(uri);
+    const res = await fetch(uri, { next: { revalidate: 60 } });
     const data = await res.json();
     const metadata = ERC721MetadataSchema.parse(data);
 
@@ -20,4 +21,4 @@ export async function getSpaceMetadata(spaceId: number) {
   } catch {
     return null;
   }
-}
+});

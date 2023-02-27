@@ -2,16 +2,11 @@ import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { env } from "../../env/client.mjs";
-import { getSpaceMetadata } from "../helpers/getSpaceMetadata";
+import { fetchPlayerCount } from "../helpers/fetchPlayerCount";
+import { fetchSpaceMetadata } from "../helpers/fetchSpaceMetadata";
 import { serverGetModelStats } from "../helpers/serverGetModelStats";
 import { getTempUpload } from "../s3/temp";
 import { publicProcedure, router } from "./trpc";
-
-const HOST_URL =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:4000"
-    : `https://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
 export const publicRouter = router({
   tempUploadURL: publicProcedure.mutation(async () => {
@@ -27,13 +22,7 @@ export const publicRouter = router({
         id: z.number(),
       })
     )
-    .query(async ({ input }) => {
-      const response = await fetch(`${HOST_URL}/playercount/${input.id}`);
-      const playerCountText = await response.text();
-      const playerCount = parseInt(playerCountText);
-
-      return playerCount;
-    }),
+    .query(({ input }) => fetchPlayerCount(input.id)),
 
   addView: publicProcedure
     .input(
@@ -45,7 +34,7 @@ export const publicRouter = router({
       const promises: Promise<any>[] = [];
 
       // Verify space exists
-      const found = await getSpaceMetadata(input.spaceId);
+      const found = await fetchSpaceMetadata(input.spaceId);
       if (!found) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get space id

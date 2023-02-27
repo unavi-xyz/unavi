@@ -8,17 +8,17 @@ import Screenshot4 from "../../public/images/Screenshot4.png";
 import Discord from "../../public/images/svg/Discord.svg";
 import GitHub from "../../public/images/svg/GitHub.svg";
 import Twitter from "../../public/images/svg/Twitter.svg";
-import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../constants";
-import { useAnimateOnEnter } from "../home/hooks/useAnimateOnEnter";
-import MetaTags from "../home/MetaTags";
-import { getNavbarLayout } from "../home/NavbarLayout/NavbarLayout";
+import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../../src/constants";
+import AnimateOnEnter from "./AnimateOnEnter";
 
-export default function Index() {
-  useAnimateOnEnter();
+export const metadata = {
+  title: "Home",
+};
 
+export default function Home() {
   return (
     <>
-      <MetaTags />
+      <AnimateOnEnter />
 
       <main className="flex h-full justify-center">
         <div className="max-w-content mx-4">
@@ -55,7 +55,7 @@ export default function Index() {
               </div>
             </div>
 
-            <div className="show-on-scroll flex w-full flex-col items-end justify-center pb-24 md:pb-0">
+            <div className="flex w-full flex-col items-end justify-center pb-24 md:pb-0">
               <div className="z-10 pr-36">
                 <Image
                   src={Screenshot1}
@@ -214,5 +214,3 @@ export default function Index() {
     </>
   );
 }
-
-Index.getLayout = getNavbarLayout;

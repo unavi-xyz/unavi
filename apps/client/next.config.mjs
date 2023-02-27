@@ -79,6 +79,9 @@ export default defineNextConfig({
   images: {
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT, env.NEXT_PUBLIC_IPFS_GATEWAY.split(":")[0]],
   },
+  experimental: {
+    appDir: true,
+  },
   reactStrictMode: true,
   async headers() {
     return [

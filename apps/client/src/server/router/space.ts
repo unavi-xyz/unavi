@@ -2,8 +2,7 @@ import { Space__factory, SPACE_ADDRESS } from "contracts";
 import { z } from "zod";
 
 import { ethersProvider } from "../constants";
-import { getSpaceAuthor } from "../helpers/getSpaceAuthor";
-import { getSpaceMetadata } from "../helpers/getSpaceMetadata";
+import { fetchSpace } from "../helpers/fetchSpace";
 import { publicProcedure, router } from "./trpc";
 
 export const spaceRouter = router({
@@ -13,23 +12,7 @@ export const spaceRouter = router({
         id: z.number(),
       })
     )
-    .query(async ({ input }) => {
-      try {
-        const [{ address, profile }, metadata] = await Promise.all([
-          getSpaceAuthor(input.id),
-          getSpaceMetadata(input.id),
-        ]);
-
-        return {
-          id: input.id,
-          owner: address,
-          author: profile,
-          metadata,
-        };
-      } catch {
-        return null;
-      }
-    }),
+    .query(({ input }) => fetchSpace(input.id)),
 
   latest: publicProcedure
     .input(

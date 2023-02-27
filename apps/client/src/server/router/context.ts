@@ -1,7 +1,7 @@
 import { inferAsyncReturnType } from "@trpc/server";
 import { CreateNextContextOptions } from "@trpc/server/adapters/next";
 import { type GetServerSidePropsContext } from "next";
-import { unstable_getServerSession } from "next-auth";
+import { getServerSession } from "next-auth";
 
 import { CustomSession } from "../../client/auth/useSession";
 import { getAuthOptions } from "../../pages/api/auth/[...nextauth]";
@@ -13,13 +13,13 @@ type CreateContextOptions = {
 };
 
 /*
- * Wrapper for unstable_getServerSession https://next-auth.js.org/configuration/nextjs
+ * Wrapper for getServerSession https://next-auth.js.org/configuration/nextjs
  */
 export const getServerAuthSession = async (ctx: {
   req: GetServerSidePropsContext["req"];
   res: GetServerSidePropsContext["res"];
 }) => {
-  return (await unstable_getServerSession(ctx.req, ctx.res, {
+  return (await getServerSession(ctx.req, ctx.res, {
     ...getAuthOptions(ctx.req),
   })) as CustomSession | null;
 };
@@ -40,7 +40,7 @@ export const createContextInner = async (opts: CreateContextOptions) => {
 export const createContext = async (opts: CreateNextContextOptions) => {
   const { req, res } = opts;
 
-  // Get the session from the server using the unstable_getServerSession wrapper function
+  // Get the session from the server using the getServerSession wrapper function
   const session = await getServerAuthSession({ req, res });
 
   return await createContextInner({

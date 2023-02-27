@@ -46,10 +46,8 @@ export default function Space({ id }: InferGetServerSidePropsType<typeof getServ
   const { data: playerCount } = trpc.public.playerCount.useQuery({ id });
 
   const metadata = space?.metadata;
-  const author = space?.author;
-
   const { data: session } = useSession();
-  const isAuthor = session && session.address === author?.owner;
+  const isAuthor = session && session.address === space?.owner;
 
   const hexId = numberToHexDisplay(id);
 
@@ -96,10 +94,10 @@ export default function Space({ id }: InferGetServerSidePropsType<typeof getServ
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-neutral-500">By</div>
 
-                    {author ? (
-                      <Link href={`/user/${numberToHexDisplay(author.id)}`}>
+                    {space?.profile ? (
+                      <Link href={`/user/${numberToHexDisplay(space.profile.id)}`}>
                         <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                          {author.handle?.string ?? author.owner}
+                          {space.profile.handle?.string ?? space.owner}
                         </div>
                       </Link>
                     ) : space?.owner ? (

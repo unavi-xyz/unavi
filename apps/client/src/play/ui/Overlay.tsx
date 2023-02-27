@@ -6,7 +6,7 @@ import { MdMic, MdMicOff } from "react-icons/md";
 
 import { useSession } from "../../client/auth/useSession";
 import { trpc } from "../../client/trpc";
-import Dialog from "../../ui/Dialog";
+import DialogContent, { DialogRoot } from "../../ui/Dialog";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "../hooks/useHost";
@@ -112,15 +112,16 @@ export default function Overlay() {
 
   return (
     <>
-      <Dialog
+      <DialogRoot
         open={openSettings}
         onOpenChange={(open) => {
           if (!open) handleClose();
         }}
-        title="Settings"
       >
-        <Settings onClose={handleClose} />
-      </Dialog>
+        <DialogContent open={openSettings} title="Settings">
+          <Settings onClose={handleClose} />
+        </DialogContent>
+      </DialogRoot>
 
       <div className="absolute top-0 left-0 z-20 p-4">
         <Link href={`/space/${id}`} className="rounded-full">

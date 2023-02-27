@@ -1,16 +1,17 @@
+import { fetchProfileFromAddress } from "./fetchProfileFromAddress";
 import { fetchSpaceMetadata } from "./fetchSpaceMetadata";
 import { fetchSpaceOwner } from "./fetchSpaceOwner";
 
 export async function fetchSpace(id: number) {
-  const [{ address, profile }, metadata] = await Promise.all([
-    fetchSpaceOwner(id),
-    fetchSpaceMetadata(id),
-  ]);
+  const metadataPromise = fetchSpaceMetadata(id);
+  const owner = await fetchSpaceOwner(id);
+  const profile = await fetchProfileFromAddress(owner);
+  const metadata = await metadataPromise;
 
   return {
     id,
-    owner: address,
-    author: profile,
+    owner,
+    profile,
     metadata,
   };
 }

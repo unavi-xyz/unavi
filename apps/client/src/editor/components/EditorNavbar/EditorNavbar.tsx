@@ -6,7 +6,7 @@ import { useSigner } from "wagmi";
 import { trpc } from "../../../client/trpc";
 import SignInButton from "../../../home/NavbarLayout/SignInButton";
 import Button from "../../../ui/Button";
-import Dialog from "../../../ui/Dialog";
+import DialogContent, { DialogRoot } from "../../../ui/Dialog";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import AutoGrowInput from "../ui/AutoGrowInput";
@@ -42,13 +42,18 @@ export default function EditorNavbar() {
 
   return (
     <>
-      <Dialog
-        open={openPublishDialog}
-        onOpenChange={setOpenPublishDialog}
-        title={isPublished ? "Update Space" : "Publish Space"}
-      >
-        {isPublished ? <UpdatePage onClose={() => setOpenPublishDialog(false)} /> : <PublishPage />}
-      </Dialog>
+      <DialogRoot open={openPublishDialog} onOpenChange={setOpenPublishDialog}>
+        <DialogContent
+          open={openPublishDialog}
+          title={isPublished ? "Update Space" : "Publish Space"}
+        >
+          {isPublished ? (
+            <UpdatePage onClose={() => setOpenPublishDialog(false)} />
+          ) : (
+            <PublishPage />
+          )}
+        </DialogContent>
+      </DialogRoot>
 
       <div className="group flex h-full items-center justify-between px-4 py-1">
         <div className="flex w-full items-center space-x-2 text-lg">

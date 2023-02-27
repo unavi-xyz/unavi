@@ -1,16 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 
 import Logo from "../../public/images/Logo.png";
-import { CustomSession } from "../../src/client/auth/useSession";
-import { getAuthOptions } from "../../src/pages/api/auth/[...nextauth]";
+import { getServerSession } from "../../src/server/helpers/getServerSession";
 import NavbarTab from "./NavbarTab";
 import ProfileButton from "./ProfileButton";
 import SignInButton from "./SignInButton";
 
 export default async function NavbarLayout({ children }: { children: React.ReactNode }) {
-  const session = (await getServerSession(getAuthOptions())) as CustomSession | null;
+  const session = await getServerSession();
 
   return (
     <>

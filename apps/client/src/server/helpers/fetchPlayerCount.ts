@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { env } from "../../env/server.mjs";
 
 const HOST_URL =
@@ -5,7 +7,7 @@ const HOST_URL =
     ? "http://localhost:4000"
     : `https://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
-export async function fetchPlayerCount(id: number) {
+export const fetchPlayerCount = cache(async (id: number) => {
   try {
     const response = await fetch(`${HOST_URL}/playercount/${id}`, { cache: "no-store" });
     const playerCountText = await response.text();
@@ -13,4 +15,4 @@ export async function fetchPlayerCount(id: number) {
   } catch {
     return 0;
   }
-}
+});

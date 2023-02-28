@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
-import { paramsSchema } from "./types";
-
-type Params = { params: { id: string } };
+import { Params, paramsSchema } from "./types";
 
 // Get space
 export async function GET(request: Request, { params }: Params) {

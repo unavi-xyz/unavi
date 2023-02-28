@@ -1,4 +1,5 @@
 import { Engine } from "engine";
+import { useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
@@ -11,11 +12,11 @@ import { usePlayStore } from "../../play/store";
 import LoadingScreen from "../../play/ui/LoadingScreen";
 import Overlay from "../../play/ui/Overlay";
 
-interface Props {
-  id: number;
-}
+export default function App() {
+  const params = useSearchParams();
+  const id = params?.get("id");
+  const spaceId = parseInt(id ?? "");
 
-export default function App({ id }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -28,7 +29,7 @@ export default function App({ id }: Props) {
   useLoadUser();
   useHotkeys();
 
-  const { space, loadingText, loadingProgress, join } = useSpace(id);
+  const { space, loadingText, loadingProgress, join } = useSpace(spaceId);
 
   useEffect(() => {
     if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;
@@ -93,7 +94,7 @@ export default function App({ id }: Props) {
           setAvatar(url);
         }}
       >
-        {loaded && <Overlay id={id} />}
+        {loaded && <Overlay id={spaceId} />}
 
         <div className="h-full">
           <div ref={containerRef} className="relative h-full w-full overflow-hidden">

@@ -1,14 +1,13 @@
 import { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import Avatar from "../../../../src/home/Avatar";
 import { fetchProfile } from "../../../../src/server/helpers/fetchProfile";
 import { fetchProfileFromAddress } from "../../../../src/server/helpers/fetchProfileFromAddress";
-import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import Card from "../../../../src/ui/Card";
 import { hexDisplayToNumber, numberToHexDisplay } from "../../../../src/utils/numberToHexDisplay";
+import EditProfileButton from "./EditProfileButton";
 import Spaces from "./Spaces";
 
 export const revalidate = 60;
@@ -49,8 +48,6 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
 }
 
 export default async function User({ params: { id } }: { params: Params }) {
-  const session = await getServerSession();
-
   const isAddress = id.length === 42;
 
   const profile = isAddress
@@ -58,8 +55,6 @@ export default async function User({ params: { id } }: { params: Params }) {
     : await fetchProfile(hexDisplayToNumber(id));
 
   if (!isAddress && !profile) notFound();
-
-  const isUser = isAddress ? session?.address === id : session?.address === profile?.owner;
 
   return (
     <div className="max-w-content mx-auto">
@@ -108,16 +103,7 @@ export default async function User({ params: { id } }: { params: Params }) {
             </div>
           )}
 
-          {isUser && (
-            <div className="flex w-full justify-center space-x-2">
-              <Link
-                href="/settings"
-                className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
-              >
-                Edit profile
-              </Link>
-            </div>
-          )}
+          <EditProfileButton id={id} profile={profile} />
         </div>
       </section>
 

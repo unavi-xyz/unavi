@@ -1,15 +1,18 @@
-import { MdPeople } from "react-icons/md";
+"use client";
 
-import { fetchPlayerCount } from "../../../src/server/helpers/fetchPlayerCount";
+import { MdPeople } from "react-icons/md";
+import useSWR from "swr";
+
+import { fetcher } from "../../../src/play/utils/fetcher";
 
 interface Props {
   id: number;
 }
 
-export default async function PlayerCount({ id }: Props) {
-  const playerCount = await fetchPlayerCount(id);
+export default function PlayerCount({ id }: Props) {
+  const { data: playerCount } = useSWR<number>(`/api/space/${id}/player-count`, fetcher);
 
-  if (playerCount === 0) return null;
+  if (!playerCount) return null;
 
   return (
     <div className="absolute flex h-full w-full items-start p-2 tracking-wide">

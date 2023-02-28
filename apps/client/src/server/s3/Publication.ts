@@ -58,15 +58,15 @@ export class Publication {
   getKey(type: PublicationFile) {
     switch (type) {
       case PUBLICATION_FILE.IMAGE: {
-        return `publication/${this.id}/image.jpg`;
+        return `publications/${this.id}/image.jpg`;
       }
 
       case PUBLICATION_FILE.MODEL: {
-        return `publication/${this.id}/model.glb`;
+        return `publications/${this.id}/model.glb`;
       }
 
       case PUBLICATION_FILE.METADATA: {
-        return `publication/${this.id}/metadata.json`;
+        return `publications/${this.id}/metadata.json`;
       }
     }
   }

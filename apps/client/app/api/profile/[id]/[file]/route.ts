@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { fetchProfileOwner } from "../../../../../src/server/helpers/fetchProfileOwner";
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
-import { prisma } from "../../../../../src/server/prisma";
 import { getDownload } from "../../files";
-import { Params } from "../types";
+import { Params } from "./types";
 import { GetFileDownloadResponse, paramsSchema } from "./types";
 
 // Get file download URL
@@ -12,14 +12,13 @@ export async function GET(request: Request, { params }: Params) {
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
   const { id, file } = paramsSchema.parse(params);
+  const profileId = parseInt(id);
 
-  // Verify user owns the project
-  const found = await prisma.project.findFirst({
-    where: { id, owner: session.address },
-  });
-  if (!found) return new Response("Project not found", { status: 404 });
+  // Verify user owns the profile
+  const owner = await fetchProfileOwner(profileId);
+  if (owner !== session.address) return new Response("Unauthorized", { status: 401 });
 
-  const url = await getDownload(id, file);
+  const url = await getDownload(profileId, file);
 
   const json: GetFileDownloadResponse = { url };
   return NextResponse.json(json);

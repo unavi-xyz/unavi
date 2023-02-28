@@ -9,7 +9,7 @@ export type Profile = {
   metadata: Awaited<ReturnType<typeof fetchProfileMetadata>>;
 };
 
-export async function fetchProfile(id: number) {
+export async function fetchProfile(id: number): Promise<Profile | null> {
   try {
     const [owner, handle, metadata] = await Promise.all([
       fetchProfileOwner(id),

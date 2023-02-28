@@ -16,11 +16,11 @@ import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
 
 function cdnModelURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/model.glb`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/model.glb`;
 }
 
 function cdnImageURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/image.jpg`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/image.jpg`;
 }
 
 interface Props {

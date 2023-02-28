@@ -8,7 +8,7 @@ import { Params, paramsSchema, patchSchema } from "./types";
 // Update project
 export async function PATCH(request: Request, { params }: Params) {
   const session = await getServerSession();
-  if (!session || !session.address) throw new Error("Unauthorized");
+  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
   const { name, description, publicationId } = patchSchema.parse(await request.json());
@@ -18,14 +18,14 @@ export async function PATCH(request: Request, { params }: Params) {
     where: { id, owner: session.address },
     include: { Publication: true },
   });
-  if (!found) throw new Error("Not found");
+  if (!found) return new Response("Project not found", { status: 404 });
 
   // Verify user owns the publication
   if (publicationId) {
     const publication = await prisma.publication.findFirst({
       where: { id: publicationId, owner: session.address },
     });
-    if (!publication) throw new Error("Publication not found");
+    if (!publication) return new Response("Publication not found", { status: 404 });
   }
 
   // Delete old publication if not in use
@@ -45,7 +45,7 @@ export async function PATCH(request: Request, { params }: Params) {
 // Delete project
 export async function DELETE(request: Request, { params }: Params) {
   const session = await getServerSession();
-  if (!session || !session.address) throw new Error("Unauthorized");
+  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
@@ -54,7 +54,7 @@ export async function DELETE(request: Request, { params }: Params) {
     where: { id, owner: session.address },
     include: { Publication: true },
   });
-  if (!found) throw new Error("Not found");
+  if (!found) return new Response("Project not found", { status: 404 });
 
   const publicationInUse = Boolean(found.Publication && found.Publication.spaceId !== null);
 

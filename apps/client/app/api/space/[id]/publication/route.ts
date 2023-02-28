@@ -9,7 +9,7 @@ type Params = { params: { id: string } };
 // Get publication
 export async function GET(request: Request, { params }: Params) {
   const session = await getServerSession();
-  if (!session || !session.address) throw new Error("Unauthorized");
+  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
   const spaceId = parseInt(id);

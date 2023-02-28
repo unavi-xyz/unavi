@@ -11,7 +11,7 @@ import { PublishProjectResponse } from "./types";
 // Publish project
 export async function POST(request: Request, { params }: Params) {
   const session = await getServerSession();
-  if (!session || !session.address) throw new Error("Unauthorized");
+  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: Params) {
     where: { id, owner: session.address },
     include: { Publication: true },
   });
-  if (!found) throw new Error("Not found");
+  if (!found) return new Response("Project not found", { status: 404 });
 
   // Create new publication if it doesn't exist
   let publicationId = found.Publication?.id;

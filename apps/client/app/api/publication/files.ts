@@ -1,4 +1,4 @@
-import { DeleteObjectsCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { env } from "../../../src/env/server.mjs";
@@ -29,27 +29,18 @@ export async function getDownload(id: string, type: PublicationFile) {
   return url;
 }
 
-export async function deleteFiles(id: string) {
-  const command = new DeleteObjectsCommand({
-    Bucket: env.S3_BUCKET,
-    Delete: { Objects: Object.values(PUBLICATION_FILE).map((type) => ({ Key: getKey(id, type) })) },
-  });
-
-  await s3Client.send(command);
-}
-
 export function getKey(id: string, type: PublicationFile) {
   switch (type) {
     case PUBLICATION_FILE.IMAGE: {
-      return `publication/${id}/image.jpg`;
+      return `publications/${id}/image.jpg`;
     }
 
     case PUBLICATION_FILE.MODEL: {
-      return `publication/${id}/model.glb`;
+      return `publications/${id}/model.glb`;
     }
 
     case PUBLICATION_FILE.METADATA: {
-      return `publication/${id}/metadata.json`;
+      return `publications/${id}/metadata.json`;
     }
   }
 }

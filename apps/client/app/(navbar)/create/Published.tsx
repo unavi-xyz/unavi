@@ -5,7 +5,7 @@ import { fetchProjects } from "../../../src/server/helpers/fetchProjects";
 import Card from "../../../src/ui/Card";
 
 function cdnImageURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publication/${id}/image.jpg`;
+  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/image.jpg`;
 }
 
 export default async function Published() {

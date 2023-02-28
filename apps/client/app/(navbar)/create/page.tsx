@@ -26,11 +26,7 @@ export default async function Create() {
 
         <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
           {session ? (
-            <Suspense
-              fallback={Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} loading />
-              ))}
-            >
+            <Suspense fallback={new Array(4).fill(<Card loading />)}>
               {/* @ts-expect-error Server Component */}
               <Projects />
             </Suspense>

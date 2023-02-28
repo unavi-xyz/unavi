@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { env } from "../../../src/env/server.mjs";
@@ -27,6 +27,15 @@ export async function getDownload(id: string, type: PublicationFile) {
   const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key });
   const url = await getSignedUrl(s3Client, command, { expiresIn });
   return url;
+}
+
+export async function deleteFiles(id: string) {
+  const command = new DeleteObjectsCommand({
+    Bucket: env.S3_BUCKET,
+    Delete: { Objects: Object.values(PUBLICATION_FILE).map((type) => ({ Key: getKey(id, type) })) },
+  });
+
+  await s3Client.send(command);
 }
 
 export function getKey(id: string, type: PublicationFile) {

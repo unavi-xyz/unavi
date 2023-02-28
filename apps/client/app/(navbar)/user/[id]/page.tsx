@@ -11,6 +11,8 @@ import Card from "../../../../src/ui/Card";
 import { hexDisplayToNumber, numberToHexDisplay } from "../../../../src/utils/numberToHexDisplay";
 import Spaces from "./Spaces";
 
+export const revalidate = 60;
+
 type Params = { id: string };
 
 export async function generateMetadata({ params: { id } }: { params: Params }): Promise<Metadata> {
@@ -120,11 +122,7 @@ export default async function User({ params: { id } }: { params: Params }) {
       </section>
 
       <div className="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 md:grid-cols-3">
-        <Suspense
-          fallback={Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} loading />
-          ))}
-        >
+        <Suspense fallback={new Array(3).fill(<Card loading />)}>
           {/* @ts-expect-error Server Component */}
           <Spaces owner={isAddress ? id : profile.owner} />
         </Suspense>

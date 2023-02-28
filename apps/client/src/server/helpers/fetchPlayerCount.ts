@@ -6,7 +6,11 @@ const HOST_URL =
     : `https://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
 export async function fetchPlayerCount(id: number) {
-  const response = await fetch(`${HOST_URL}/playercount/${id}`, { cache: "no-store" });
-  const playerCountText = await response.text();
-  return parseInt(playerCountText);
+  try {
+    const response = await fetch(`${HOST_URL}/playercount/${id}`, { cache: "no-store" });
+    const playerCountText = await response.text();
+    return parseInt(playerCountText);
+  } catch {
+    return 0;
+  }
 }

@@ -21,7 +21,7 @@ export default function Loading() {
 
         <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} loading />
+            <Card key={i} loading loadingAnimation={false} />
           ))}
         </div>
       </div>

@@ -1,13 +1,14 @@
 import { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import Avatar from "../../../../src/home/Avatar";
 import { fetchProfile } from "../../../../src/server/helpers/fetchProfile";
 import { fetchProfileFromAddress } from "../../../../src/server/helpers/fetchProfileFromAddress";
+import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import Card from "../../../../src/ui/Card";
 import { hexDisplayToNumber, numberToHexDisplay } from "../../../../src/utils/numberToHexDisplay";
-import EditProfileButton from "./EditProfileButton";
 import Spaces from "./Spaces";
 
 export const revalidate = 60;
@@ -56,6 +57,14 @@ export default async function User({ params: { id } }: { params: Params }) {
 
   if (!isAddress && !profile) notFound();
 
+  const session = await getServerSession();
+
+  const isUser = !session?.address
+    ? false
+    : isAddress
+    ? session.address === id
+    : session.address === profile?.owner;
+
   return (
     <div className="max-w-content mx-auto">
       <div className="h-48 w-full bg-neutral-200 md:h-64 xl:rounded-xl">
@@ -103,12 +112,25 @@ export default async function User({ params: { id } }: { params: Params }) {
             </div>
           )}
 
-          <EditProfileButton id={id} profile={profile} />
+          {isUser && (
+            <div className="flex w-full justify-center space-x-2">
+              <Link
+                href="/settings"
+                className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
+              >
+                Edit profile
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
       <div className="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 md:grid-cols-3">
-        <Suspense fallback={new Array(3).fill(<Card loading />)}>
+        <Suspense
+          fallback={Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} loading />
+          ))}
+        >
           {/* @ts-expect-error Server Component */}
           <Spaces owner={isAddress ? id : profile.owner} />
         </Suspense>

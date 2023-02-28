@@ -29,9 +29,9 @@ export default function Card({
   return (
     <div className={`h-full w-full transition ${loading ? "" : "hover:scale-105"}`}>
       <div
-        className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl ${
-          loading ? "bg-neutral-300" : "bg-neutral-200"
-        } ${loading && loadingAnimation ? "animate-pulse" : ""} ${animateCss} ${aspectCss}`}
+        className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-neutral-200 ${
+          loading && loadingAnimation ? "animate-pulse" : ""
+        } ${animateCss} ${aspectCss}`}
       >
         {image &&
           (isFromCDN(image) ? (

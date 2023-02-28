@@ -5,8 +5,7 @@ import { PhysicsModule } from "./physics/PhysicsModule";
 import { PlayerModules } from "./player/PlayerModule";
 import { RenderModule } from "./render/RenderModule";
 import { SceneModule } from "./scene/SceneModule";
-
-export type ControlsType = "orbit" | "player";
+import { ControlsType } from "./types";
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;

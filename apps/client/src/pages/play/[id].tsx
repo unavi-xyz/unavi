@@ -1,10 +1,7 @@
-import { createProxySSGHelpers } from "@trpc/react-query/ssg";
 import { Engine } from "engine";
-import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
-import MetaTags from "../../home/MetaTags";
 import { useHotkeys } from "../../play/hooks/useHotkeys";
 import { useLoadUser } from "../../play/hooks/useLoadUser";
 import { useResizeCanvas } from "../../play/hooks/useResizeCanvas";
@@ -13,40 +10,18 @@ import { useSpace } from "../../play/hooks/useSpace";
 import { usePlayStore } from "../../play/store";
 import LoadingScreen from "../../play/ui/LoadingScreen";
 import Overlay from "../../play/ui/Overlay";
-import { prisma } from "../../server/prisma";
-import { appRouter } from "../../server/router/_app";
-import { hexDisplayToNumber, numberToHexDisplay } from "../../utils/numberToHexDisplay";
 
-export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
-  const hexId = query.id as string;
-  const id = hexDisplayToNumber(hexId);
+interface Props {
+  id: number;
+}
 
-  const ssg = await createProxySSGHelpers({
-    router: appRouter,
-    ctx: {
-      prisma,
-      res,
-      session: null,
-    },
-  });
-
-  await ssg.space.byId.prefetch({ id });
-
-  return {
-    props: {
-      trpcState: ssg.dehydrate(),
-      id,
-    },
-  };
-};
-
-export default function Play({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function App({ id }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
 
-  const engine = usePlayStore((state) => state.engine);
   const [scriptsReady, setScriptsReady] = useState(false);
+  const engine = usePlayStore((state) => state.engine);
 
   const setAvatar = useSetAvatar();
   useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
@@ -84,17 +59,8 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
   const loaded = loadingProgress === 1;
   const loadedClass = loaded ? "opacity-100" : "opacity-0";
 
-  const hexId = numberToHexDisplay(id);
-
   return (
     <>
-      <MetaTags
-        title={space?.metadata?.name ?? `Space ${hexId}`}
-        description={space?.metadata?.description}
-        image={space?.metadata?.image}
-        card="summary_large_image"
-      />
-
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
 
       <LoadingScreen
@@ -127,7 +93,7 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
           setAvatar(url);
         }}
       >
-        {loaded && <Overlay />}
+        {loaded && <Overlay id={id} />}
 
         <div className="h-full">
           <div ref={containerRef} className="relative h-full w-full overflow-hidden">

@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { IoMdArrowRoundBack, IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
-import { useSession } from "../../client/auth/useSession";
-import { trpc } from "../../client/trpc";
 import DialogContent, { DialogRoot } from "../../ui/Dialog";
+import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "../hooks/useHost";
@@ -16,7 +14,11 @@ import ChatBox from "./ChatBox";
 import MobileChatBox from "./MobileChatBox";
 import Settings from "./Settings";
 
-export default function Overlay() {
+interface Props {
+  id: number;
+}
+
+export default function Overlay({ id }: Props) {
   const engine = usePlayStore((state) => state.engine);
   const [openSettings, setOpenSettings] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -24,16 +26,6 @@ export default function Overlay() {
 
   const isMobile = useIsMobile();
   const setAvatar = useSetAvatar();
-  const utils = trpc.useContext();
-  const router = useRouter();
-  const { data: session } = useSession();
-
-  const id = router.query.id as string;
-
-  useEffect(() => {
-    if (!session?.address) return;
-    utils.social.profile.byAddress.prefetch({ address: session.address });
-  }, [session, utils]);
 
   async function handleClose() {
     setOpenSettings(false);
@@ -124,7 +116,7 @@ export default function Overlay() {
       </DialogRoot>
 
       <div className="absolute top-0 left-0 z-20 p-4">
-        <Link href={`/space/${id}`} className="rounded-full">
+        <Link href={`/space/${numberToHexDisplay(id)}`} className="rounded-full">
           <div className="rounded-full bg-white/80 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/90 hover:shadow-md active:scale-95">
             <IoMdArrowRoundBack />
           </div>

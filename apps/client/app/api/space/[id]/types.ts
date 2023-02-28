@@ -6,4 +6,4 @@ export const paramsSchema = z.object({
   id: z.string().max(100),
 });
 
-export type GetSpaceResponse = ReturnType<typeof fetchSpace>;
+export type GetSpaceResponse = Awaited<ReturnType<typeof fetchSpace>>;

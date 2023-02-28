@@ -1,9 +1,8 @@
 import { DebugRenderBuffers } from "@dimforge/rapier3d";
 
-import { ControlsType } from "../Engine";
 import { InputMessage } from "../input/messages";
 import { SceneMessage } from "../scene/messages";
-import { MessageJSON, Vec2, Vec3, Vec4 } from "../types";
+import { ControlsType, MessageJSON, Vec2, Vec3, Vec4 } from "../types";
 
 export type ToRenderMessage =
   | InputMessage

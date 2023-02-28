@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
+import useSWR from "swr";
 
-import { trpc } from "../../client/trpc";
+import { GetSpaceResponse } from "../../../app/api/space/[id]/types";
 import { env } from "../../env/client.mjs";
 import { usePlayStore } from "../../play/store";
+import { fetcher } from "../utils/fetcher";
 import { useHost } from "./useHost";
 
 const host =
@@ -11,7 +13,7 @@ const host =
     : `wss://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
 /**
- * Hook to get space data and join the space.
+ * Hook to fetch space data and join the space.
  *
  * @param id Space ID
  * @returns Space data, loading text, loading progress, and join function
@@ -19,19 +21,11 @@ const host =
 export function useSpace(id: number) {
   const [sceneDownloaded, setSceneDownloaded] = useState(false);
   const [sceneLoaded, setSceneLoaded] = useState(false);
-
   const engine = usePlayStore((state) => state.engine);
 
-  const { spaceJoined } = useHost(id, host);
+  const { data: space } = useSWR<GetSpaceResponse>(`/api/space/${id}`, fetcher);
 
-  const { data: space } = trpc.space.byId.useQuery(
-    { id },
-    {
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-    }
-  );
+  const { spaceJoined } = useHost(id, host);
 
   const join = useMemo(() => {
     return async () => {

@@ -1,8 +1,7 @@
 import { DebugRenderBuffers } from "@dimforge/rapier3d";
 
-import { ControlsType } from "../Engine";
 import { SceneMessage } from "../scene/messages";
-import { MessageJSON } from "../types";
+import { ControlsType, MessageJSON } from "../types";
 
 export type ToPhysicsMessage =
   | SceneMessage

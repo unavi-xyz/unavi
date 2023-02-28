@@ -3,13 +3,13 @@ import { MdClose, MdLogout } from "react-icons/md";
 
 import { useLogout } from "../../client/auth/useLogout";
 import { useSession } from "../../client/auth/useSession";
-import { trpc } from "../../client/trpc";
 import Avatar from "../../home/Avatar";
 import SignInButton from "../../home/NavbarLayout/SignInButton";
 import FileInput from "../../ui/FileInput";
 import TextField from "../../ui/TextField";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
 import { ModelStats } from "../../utils/getModelStats";
+import { useProfileByAddress } from "../hooks/useProfileByAddress";
 import { usePlayStore } from "../store";
 import { avatarPerformanceRank } from "../utils/avatarPerformanceRank";
 import { clientGetModelStats } from "../utils/clientGetModelStats";
@@ -28,10 +28,7 @@ export default function Settings({ onClose }: Props) {
   const { data: session } = useSession();
   const { logout } = useLogout();
 
-  const { data: profile, isLoading: isLoadingProfile } = trpc.social.profile.byAddress.useQuery(
-    { address: session?.address ?? "" },
-    { enabled: session?.address !== undefined }
-  );
+  const { profile, isLoading: isLoadingProfile } = useProfileByAddress(session?.address);
 
   useEffect(() => {
     if (!avatar) {
@@ -160,7 +157,7 @@ export default function Settings({ onClose }: Props) {
               <div className="h-5 w-40 animate-pulse rounded-md bg-neutral-300" />
             ) : (
               <div>
-                <span className="text-xl font-medium">{profile?.handle?.string}</span>
+                <span className="text-xl font-bold">{profile?.handle?.string}</span>
                 <span className="text-lg text-neutral-400">
                   #{profile?.handle?.id.toString().padStart(4, "0")}
                 </span>

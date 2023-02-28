@@ -1,16 +1,14 @@
-import { trpc } from "../../client/trpc";
+import { getTempUpload } from "../../../app/api/temp/helper";
 import { env } from "../../env/client.mjs";
 import { usePlayStore } from "../../play/store";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "./useHost";
 
-export function getTempURL(fileId: string) {
+export function tempURL(fileId: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/temp/${fileId}`;
 }
 
 export function useSetAvatar() {
-  const { mutateAsync: createTempUpload } = trpc.public.tempUploadURL.useMutation();
-
   async function setAvatar(avatar: string) {
     const { engine } = usePlayStore.getState();
     if (!engine) return;
@@ -23,7 +21,7 @@ export function useSetAvatar() {
     if (!isUrl) {
       // Get avatar file
       const body = await fetch(avatar).then((res) => res.blob());
-      const { url, fileId } = await createTempUpload();
+      const { url, fileId } = await getTempUpload();
 
       // Upload to S3
       const res = await fetch(url, {
@@ -33,7 +31,7 @@ export function useSetAvatar() {
       });
       if (!res.ok) throw new Error("Failed to upload avatar");
 
-      avatarURL = getTempURL(fileId);
+      avatarURL = tempURL(fileId);
     }
 
     usePlayStore.setState({ avatar: avatarURL });

@@ -1,4 +1,4 @@
-import { ControlsType } from "./Engine";
+import { ControlsType } from "./types";
 
 export const DEFAULT_CONTROLS: ControlsType = "player";
 export const DEFAULT_VISUALS = false;

@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import Logo from "../../public/images/Logo.png";
+import Avatar from "../../src/home/Avatar";
 import { getServerSession } from "../../src/server/helpers/getServerSession";
 import NavigationTab from "../../src/ui/NavigationTab";
 import ProfileButton from "./ProfileButton";
@@ -37,8 +39,10 @@ export default async function NavbarLayout({ children }: { children: React.React
             </div>
 
             <div className="flex items-center justify-end">
-              {/* @ts-expect-error Server Component */}
-              {session ? <ProfileButton session={session} /> : <SignInButton />}
+              <Suspense fallback={<Avatar loading circle size={36} />}>
+                {/* @ts-expect-error Server Component */}
+                {session ? <ProfileButton session={session} /> : <SignInButton />}
+              </Suspense>
             </div>
           </div>
         </nav>

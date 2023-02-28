@@ -23,3 +23,5 @@ export const fetchProject = cache(async (id: string) => {
     return null;
   }
 });
+
+export type Project = Exclude<Awaited<ReturnType<typeof fetchProject>>, null>;

@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { MdAdd } from "react-icons/md";
 
 import Card from "../../../src/ui/Card";
 import CreateProjectButton from "./CreateProjectButton";
@@ -19,23 +18,18 @@ export default function Create() {
         <div className="flex items-center justify-between">
           <div className="text-2xl font-bold">⚒️ Projects</div>
 
-          <Suspense
-            fallback={
-              <button
-                disabled
-                className="cursor-not-allowed rounded-lg px-5 py-1.5 opacity-40 ring-1 ring-neutral-700 transition"
-              >
-                <MdAdd className="text-lg" />
-              </button>
-            }
-          >
+          <Suspense fallback={null}>
             {/* @ts-expect-error Server Component */}
             <CreateProjectButton />
           </Suspense>
         </div>
 
         <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
-          <Suspense fallback={new Array(4).fill(<Card loading />)}>
+          <Suspense
+            fallback={Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} loading />
+            ))}
+          >
             {/* @ts-expect-error Server Component */}
             <Projects />
           </Suspense>

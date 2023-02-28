@@ -23,5 +23,6 @@ export async function fetchLatestSpaces(limit: number, owner?: string) {
 
   await Promise.all(Array.from({ length }).map(fetchSpace));
 
+  // Sort oldest to newest
   return spaces.sort((a, b) => b.id - a.id);
 }

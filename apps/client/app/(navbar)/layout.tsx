@@ -4,16 +4,12 @@ import { Suspense } from "react";
 
 import Logo from "../../public/images/Logo.png";
 import Avatar from "../../src/home/Avatar";
-import { getServerSession } from "../../src/server/helpers/getServerSession";
 import NavigationTab from "../../src/ui/NavigationTab";
-import ProfileButton from "./ProfileButton";
-import SignInButton from "./SignInButton";
+import ClientButtons from "./ClientButtons";
 
-export default async function NavbarLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession();
-
+export default function NavbarLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <div>
       <div className="absolute z-20 h-14 w-full">
         <nav
           className="flex h-full w-full justify-center bg-white"
@@ -41,7 +37,7 @@ export default async function NavbarLayout({ children }: { children: React.React
             <div className="flex items-center justify-end">
               <Suspense fallback={<Avatar loading circle size={36} />}>
                 {/* @ts-expect-error Server Component */}
-                {session ? <ProfileButton session={session} /> : <SignInButton />}
+                <ClientButtons />
               </Suspense>
             </div>
           </div>
@@ -49,6 +45,6 @@ export default async function NavbarLayout({ children }: { children: React.React
       </div>
 
       <div className="h-screen pt-14">{children}</div>
-    </>
+    </div>
   );
 }

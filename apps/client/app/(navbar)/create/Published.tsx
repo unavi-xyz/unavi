@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { env } from "../../../src/env/server.mjs";
 import { fetchProjects } from "../../../src/server/helpers/fetchProjects";
+import { getServerSession } from "../../../src/server/helpers/getServerSession";
 import Card from "../../../src/ui/Card";
 
 function cdnImageURL(id: string) {
@@ -9,6 +10,10 @@ function cdnImageURL(id: string) {
 }
 
 export default async function Published() {
+  const session = await getServerSession();
+
+  if (!session) return null;
+
   const projects = await fetchProjects();
   const publishedProjects = projects.filter((p) => p.Publication?.spaceId);
 

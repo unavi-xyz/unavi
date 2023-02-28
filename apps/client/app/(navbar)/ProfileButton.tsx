@@ -1,29 +1,36 @@
+"use client";
+
+import useSWR from "swr";
+
 import { CustomSession } from "../../src/client/auth/useSession";
 import Avatar from "../../src/home/Avatar";
-import { fetchProfileFromAddress } from "../../src/server/helpers/fetchProfileFromAddress";
 import { DropdownContent, DropdownMenu, DropdownTrigger } from "../../src/ui/DropdownMenu";
+import { getProfileByAddress } from "../api/profile/address/[address]/helper";
 import ProfileMenu from "./ProfileMenu";
 
 interface Props {
   session: CustomSession;
 }
 
-export default async function ProfileButton({ session }: Props) {
-  const profile = session?.address ? await fetchProfileFromAddress(session.address) : null;
+export default function ProfileButton({ session }: Props) {
+  if (!session.address) throw new Error("No address found");
+
+  const { data, isLoading } = useSWR(session.address, getProfileByAddress);
 
   return (
     <DropdownMenu>
       <DropdownTrigger className="rounded-full">
         <Avatar
-          src={profile?.metadata?.image}
-          uniqueKey={profile?.handle?.full ?? session?.address ?? ""}
+          src={data?.metadata?.image}
+          uniqueKey={data?.handle?.full ?? session?.address ?? ""}
+          loading={isLoading}
           circle
           size={36}
         />
       </DropdownTrigger>
 
       <DropdownContent>
-        <ProfileMenu profile={profile} session={session} />
+        {data !== undefined && <ProfileMenu profile={data} session={session} />}
       </DropdownContent>
     </DropdownMenu>
   );

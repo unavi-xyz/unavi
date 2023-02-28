@@ -1,10 +1,20 @@
-import { getServerSession } from "../../src/server/helpers/getServerSession";
+"use client";
+
+import { SessionProvider } from "next-auth/react";
+
+import { useSession } from "../../src/client/auth/useSession";
 import ProfileButton from "./ProfileButton";
 import SignInButton from "./SignInButton";
 
-export default async function ClientButtons() {
-  const session = await getServerSession();
+export default function ClientButtons() {
+  return (
+    <SessionProvider>
+      <Buttons />
+    </SessionProvider>
+  );
+}
 
-  // @ts-expect-error Server Component
-  return session ? <ProfileButton session={session} /> : <SignInButton />;
+function Buttons() {
+  const { data: session } = useSession();
+  return session && session.address ? <ProfileButton session={session} /> : <SignInButton />;
 }

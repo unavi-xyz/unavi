@@ -15177,6 +15177,13 @@ svgo@^2.7.0, svgo@^2.8.0:
     picocolors "^1.0.0"
     stable "^0.1.8"
 
+swr@^2.0.4:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/swr/-/swr-2.0.4.tgz#e68a5cc2e87b2a7f5f7ebf8a472cea24fc1c5fce"
+  integrity sha512-4GUiTjknRUVuw4MWUHR7mzJ9G/DWL+yZz/TgWDfiA0OZ9tL6qyrTkN2wPeboBpL3OJTkej3pexh3mWCnv8cFkQ==
+  dependencies:
+    use-sync-external-store "^1.2.0"
+
 synckit@0.8.5, synckit@^0.8.4:
   version "0.8.5"
   resolved "https://registry.yarnpkg.com/synckit/-/synckit-0.8.5.tgz#b7f4358f9bb559437f9f167eb6bc46b3c9818fa3"

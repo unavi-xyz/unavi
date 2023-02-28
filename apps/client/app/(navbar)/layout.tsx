@@ -1,9 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
 
 import Logo from "../../public/images/Logo.png";
-import Avatar from "../../src/home/Avatar";
 import NavigationTab from "../../src/ui/NavigationTab";
 import ClientButtons from "./ClientButtons";
 
@@ -35,10 +33,7 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
             </div>
 
             <div className="flex items-center justify-end">
-              <Suspense fallback={<Avatar loading circle size={36} />}>
-                {/* @ts-expect-error Server Component */}
-                <ClientButtons />
-              </Suspense>
+              <ClientButtons />
             </div>
           </div>
         </nav>

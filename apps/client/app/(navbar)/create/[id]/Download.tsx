@@ -1,7 +1,7 @@
 "use client";
 
-import Button from "../../../../../src/ui/Button";
-import { getProjectFileDownload } from "../../../../api/projects/[id]/[file]/helper";
+import Button from "../../../../src/ui/Button";
+import { getProjectFileDownload } from "../../../api/projects/[id]/[file]/helper";
 
 interface Props {
   id: string;

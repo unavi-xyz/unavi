@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
-import Button from "../../../../../src/ui/Button";
-import { deleteProject } from "../../../../api/projects/[id]/helper";
+import Button from "../../../../src/ui/Button";
+import { deleteProject } from "../../../api/projects/[id]/helper";
 
 interface Props {
   id: string;

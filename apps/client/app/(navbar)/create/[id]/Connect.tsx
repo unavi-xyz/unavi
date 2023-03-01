@@ -4,15 +4,12 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
-import Button from "../../../../../src/ui/Button";
-import {
-  hexDisplayToNumber,
-  numberToHexDisplay,
-} from "../../../../../src/utils/numberToHexDisplay";
-import { publishProject } from "../../../../api/projects/[id]/publication/helper";
-import { getSpace } from "../../../../api/spaces/[id]/helper";
-import { getSpacePublication } from "../../../../api/spaces/[id]/publication/helper";
-import { updateProject } from "../.././../../api/projects/[id]/helper";
+import Button from "../../../../src/ui/Button";
+import { hexDisplayToNumber, numberToHexDisplay } from "../../../../src/utils/numberToHexDisplay";
+import { updateProject } from "../../../api/projects/[id]/helper";
+import { publishProject } from "../../../api/projects/[id]/publication/helper";
+import { getSpace } from "../../../api/spaces/[id]/helper";
+import { getSpacePublication } from "../../../api/spaces/[id]/publication/helper";
 
 interface Props {
   id: string;

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { fetchProject } from "../../../../../src/server/helpers/fetchProject";
+import { fetchProject } from "../../../../src/server/helpers/fetchProject";
 import Connect from "./Connect";
 import Delete from "./Delete";
 import Download from "./Download";

@@ -8,7 +8,12 @@ export default function Loading() {
           <div className="flex flex-col justify-between space-y-8 md:w-2/3">
             <div className="space-y-4">
               <div className="flex justify-center">
-                <div className="h-10 w-56 animate-pulse rounded-md bg-neutral-200" />
+                <div className="h-10 w-56 animate-pulse rounded-lg bg-neutral-200" />
+              </div>
+
+              <div className="space-y-2">
+                <div className="h-7 w-full animate-pulse rounded-lg bg-neutral-200" />
+                <div className="h-7 w-full animate-pulse rounded-lg bg-neutral-200" />
               </div>
             </div>
           </div>

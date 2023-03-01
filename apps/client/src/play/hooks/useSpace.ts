@@ -1,6 +1,6 @@
+import { ERC721Metadata } from "contracts";
 import { useMemo, useState } from "react";
 
-import { trpc } from "../../client/trpc";
 import { env } from "../../env/client.mjs";
 import { usePlayStore } from "../../play/store";
 import { useHost } from "./useHost";
@@ -11,34 +11,23 @@ const host =
     : `wss://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
 /**
- * Hook to get space data and join the space.
+ * Hook to fetch space data and join the space.
  *
  * @param id Space ID
  * @returns Space data, loading text, loading progress, and join function
  */
-export function useSpace(id: number) {
+export function useSpace(id: number, metadata: ERC721Metadata | null) {
   const [sceneDownloaded, setSceneDownloaded] = useState(false);
   const [sceneLoaded, setSceneLoaded] = useState(false);
-
   const engine = usePlayStore((state) => state.engine);
 
   const { spaceJoined } = useHost(id, host);
 
-  const { data: space } = trpc.space.byId.useQuery(
-    { id },
-    {
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-    }
-  );
-
   const join = useMemo(() => {
     return async () => {
-      if (!engine) return;
-      if (!space?.metadata) return;
+      if (!engine || !metadata) return;
 
-      const res = await fetch(space.metadata.animation_url);
+      const res = await fetch(metadata.animation_url);
       const buffer = await res.arrayBuffer();
       const array = new Uint8Array(buffer);
 
@@ -51,7 +40,7 @@ export function useSpace(id: number) {
 
       setSceneLoaded(true);
     };
-  }, [engine, space]);
+  }, [engine, metadata]);
 
   const loadingText = !sceneDownloaded
     ? "Downloading scene..."
@@ -64,7 +53,6 @@ export function useSpace(id: number) {
   const loadingProgress = !sceneDownloaded ? 0.1 : !sceneLoaded ? 0.4 : !spaceJoined ? 0.75 : 1;
 
   return {
-    space,
     loadingText,
     loadingProgress,
     join,

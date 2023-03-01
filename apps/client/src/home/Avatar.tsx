@@ -5,7 +5,7 @@ interface Props {
   circle?: boolean;
   draggable?: boolean;
   loading?: boolean;
-  uniqueKey: string;
+  uniqueKey?: string;
   size: number;
 }
 

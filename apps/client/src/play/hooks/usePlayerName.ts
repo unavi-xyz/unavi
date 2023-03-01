@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-import { trpc } from "../../client/trpc";
 import { PlayerName } from "../networking/PlayerName";
 import { usePlayStore } from "../store";
 
@@ -8,8 +7,6 @@ export function usePlayerName(playerId: number | null) {
   const players = usePlayStore((state) => state.players);
 
   const [player, setPlayer] = useState<PlayerName | null>(null);
-
-  const utils = trpc.useContext();
 
   useEffect(() => {
     if (!players || playerId === null) return;
@@ -20,7 +17,7 @@ export function usePlayerName(playerId: number | null) {
     return () => {
       setPlayer(null);
     };
-  }, [playerId, players, utils]);
+  }, [playerId, players]);
 
   return player;
 }

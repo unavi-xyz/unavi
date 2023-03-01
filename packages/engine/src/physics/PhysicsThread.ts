@@ -1,9 +1,8 @@
 import { World } from "@dimforge/rapier3d";
 
 import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
-import { ControlsType } from "../Engine";
 import { isSceneMessage } from "../scene/messages";
-import { PostMessage } from "../types";
+import { ControlsType, PostMessage } from "../types";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
 import { PhysicsScene } from "./PhysicsScene";
 import { Player } from "./Player";

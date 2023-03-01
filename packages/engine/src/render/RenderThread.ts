@@ -24,9 +24,8 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
 import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
-import { ControlsType } from "../Engine";
 import { isSceneMessage } from "../scene/messages";
-import { PostMessage, Transferable } from "../types";
+import { ControlsType, PostMessage, Transferable } from "../types";
 import { OrbitControls } from "./controls/OrbitControls";
 import { PlayerControls } from "./controls/PlayerControls";
 import { RaycastControls } from "./controls/RaycastControls";

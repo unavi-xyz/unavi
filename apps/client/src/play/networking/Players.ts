@@ -2,7 +2,6 @@ import { Engine } from "engine";
 import { nanoid } from "nanoid";
 import { FromHostMessage } from "protocol";
 
-import { TrpcContext } from "../../client/trpc";
 import { usePlayStore } from "../store";
 import { addChatMessage } from "../utils/addChatMessage";
 import { PlayerName } from "./PlayerName";
@@ -12,13 +11,11 @@ import { PlayerName } from "./PlayerName";
  * Reads messages from the host and updates the engine.
  */
 export class Players {
-  #trpc: TrpcContext;
   #engine: Engine;
 
   names = new Map<number, PlayerName>();
 
-  constructor(trpc: TrpcContext, engine: Engine) {
-    this.#trpc = trpc;
+  constructor(engine: Engine) {
     this.#engine = engine;
   }
 
@@ -30,7 +27,7 @@ export class Players {
         const player = this.#engine.player.addPlayer(data.playerId);
         player.avatar = data.avatar;
 
-        const name = new PlayerName(data.playerId, this.#trpc, this.#engine);
+        const name = new PlayerName(data.playerId, this.#engine);
         name.address = data.address;
         name.nickname = data.name;
         this.names.set(data.playerId, name);

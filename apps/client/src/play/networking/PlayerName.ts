@@ -1,29 +1,27 @@
 import { Engine } from "engine";
 import { nanoid } from "nanoid";
 
-import { TrpcContext } from "../../client/trpc";
-import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { getProfileByAddress } from "../../../app/api/profiles/address/[address]/helper";
+import { toHex } from "../../utils/toHex";
 import { usePlayStore } from "../store";
 import { addChatMessage } from "../utils/addChatMessage";
 
 export class PlayerName {
   readonly id: number;
   #engine: Engine;
-  #trpc: TrpcContext;
 
   #displayName = "Guest";
   #nickname: string | null = null;
   #address: string | null = null;
 
-  constructor(id: number, trpc: TrpcContext, engine: Engine) {
+  constructor(id: number, engine: Engine) {
     this.id = id;
-    this.#trpc = trpc;
     this.#engine = engine;
     this.displayName = `Guest ${this.hexId}`;
   }
 
   get hexId() {
-    return numberToHexDisplay(this.id);
+    return toHex(this.id);
   }
 
   get displayName() {
@@ -62,7 +60,7 @@ export class PlayerName {
 
   async #updateDisplayName() {
     if (this.address) {
-      const profile = await this.#trpc.social.profile.byAddress.fetch({ address: this.address });
+      const profile = await getProfileByAddress(this.address);
       if (profile?.handle) {
         this.displayName = profile.handle.string;
         return;

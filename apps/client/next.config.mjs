@@ -79,6 +79,9 @@ export default defineNextConfig({
   images: {
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT, env.NEXT_PUBLIC_IPFS_GATEWAY.split(":")[0]],
   },
+  experimental: {
+    appDir: true,
+  },
   reactStrictMode: true,
   async headers() {
     return [
@@ -107,13 +110,6 @@ export default defineNextConfig({
       ...config.experiments,
       asyncWebAssembly: true,
       syncWebAssembly: true,
-    };
-    return config;
-  },
-  webpackDevMiddleware: (config) => {
-    config.watchOptions = {
-      poll: 1000,
-      aggregateTimeout: 300,
     };
     return config;
   },

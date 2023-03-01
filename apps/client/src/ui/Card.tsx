@@ -9,6 +9,7 @@ interface Props {
   aspect?: "card" | "vertical";
   animateEnter?: boolean;
   loading?: boolean;
+  loadingAnimation?: boolean;
   children?: React.ReactNode;
 }
 
@@ -19,16 +20,17 @@ export default function Card({
   aspect = "card",
   animateEnter = false,
   loading = false,
+  loadingAnimation = true,
   children,
 }: Props) {
   const aspectCss = aspect === "card" ? "aspect-card" : "aspect-vertical";
   const animateCss = animateEnter ? "animate-floatIn" : "";
 
   return (
-    <div className="h-full w-full transition hover:scale-105">
+    <div className={`h-full w-full transition ${loading ? "" : "hover:scale-105"}`}>
       <div
-        className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl ${
-          loading ? "animate-pulse bg-neutral-300" : "bg-neutral-200"
+        className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-neutral-200 ${
+          loading && loadingAnimation ? "animate-pulse" : ""
         } ${animateCss} ${aspectCss}`}
       >
         {image &&

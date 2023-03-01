@@ -5,7 +5,7 @@ import { fromHostMessageSchema, ToHostMessage } from "protocol";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "../../play/store";
-import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { toHex } from "../../utils/toHex";
 import { PlayerName } from "../networking/PlayerName";
 import { Players } from "../networking/Players";
 
@@ -94,7 +94,7 @@ export function useHost(id: number, host: string) {
       switch (subject) {
         case "join_success": {
           setSpaceJoined(true);
-          console.info(`🌏 Joined space as player ${numberToHexDisplay(data.playerId)}`);
+          console.info(`🌏 Joined space as player ${toHex(data.playerId)}`);
           const name = new PlayerName(data.playerId, engine);
           players.names.set(data.playerId, name);
           usePlayStore.setState({ playerId: data.playerId });

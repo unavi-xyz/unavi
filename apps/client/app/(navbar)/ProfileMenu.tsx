@@ -7,7 +7,7 @@ import { useLogout } from "../../src/client/auth/useLogout";
 import { CustomSession } from "../../src/client/auth/useSession";
 import { Profile } from "../../src/server/helpers/fetchProfile";
 import { DropdownItem } from "../../src/ui/DropdownMenu";
-import { numberToHexDisplay } from "../../src/utils/numberToHexDisplay";
+import { toHex } from "../../src/utils/toHex";
 
 interface Props {
   profile: Profile | null;
@@ -21,7 +21,7 @@ export default function ProfileMenu({ profile, session }: Props) {
     <div className="py-2">
       <DropdownItem asChild>
         <Link
-          href={`/user/${profile?.id ? numberToHexDisplay(profile.id) : session?.address}`}
+          href={`/user/${profile?.id ? toHex(profile.id) : session?.address}`}
           draggable={false}
           className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none focus:bg-neutral-200 active:opacity-80"
         >

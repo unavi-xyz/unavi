@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import Button from "../../../../src/ui/Button";
-import { hexDisplayToNumber, numberToHexDisplay } from "../../../../src/utils/numberToHexDisplay";
+import { toHex } from "../../../../src/utils/toHex";
 import { updateProject } from "../../../api/projects/[id]/helper";
 import { publishProject } from "../../../api/projects/[id]/publication/helper";
 import { getSpace } from "../../../api/spaces/[id]/helper";
@@ -24,7 +24,7 @@ export default function Connect({ id, connectedSpaceId }: Props) {
     if (loading) return;
 
     const hexId = inputRef.current?.value ?? "";
-    const spaceId = hexDisplayToNumber(hexId);
+    const spaceId = parseInt(hexId);
 
     if (!hexId) {
       // Disconnect project
@@ -108,7 +108,7 @@ export default function Connect({ id, connectedSpaceId }: Props) {
 
         {connectedSpaceId !== undefined && (
           <Link
-            href={`/space/${numberToHexDisplay(connectedSpaceId)}`}
+            href={`/space/${toHex(connectedSpaceId)}`}
             className="flex h-9 items-center justify-center rounded-lg px-4 font-bold hover:bg-neutral-200 active:opacity-80"
           >
             View

@@ -3,7 +3,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { env } from "../../../src/env/server.mjs";
 import { s3Client } from "../../../src/server/client";
-import { numberToHexDisplay } from "../../../src/utils/numberToHexDisplay";
+import { toHex } from "../../../src/utils/toHex";
 
 export const expiresIn = 600; // 10 minutes
 
@@ -40,7 +40,7 @@ export async function deleteFiles(id: number) {
 }
 
 export function getKey(id: number, type: ProfileFile) {
-  const hexId = numberToHexDisplay(id);
+  const hexId = toHex(id);
 
   switch (type) {
     case PROFILE_FILE.IMAGE: {

@@ -9,7 +9,7 @@ import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import ButtonTabs, { TabContent } from "../../../../src/ui/ButtonTabs";
 import { isFromCDN } from "../../../../src/utils/isFromCDN";
-import { numberToHexDisplay } from "../../../../src/utils/numberToHexDisplay";
+import { toHex } from "../../../../src/utils/toHex";
 import About from "./About";
 import PlayerCount from "./PlayerCount";
 import Settings from "./Settings";
@@ -96,7 +96,7 @@ export default async function Space({ params }: Props) {
                   <div className="text-neutral-500">By</div>
 
                   {space?.profile ? (
-                    <Link href={`/user/${numberToHexDisplay(space.profile.id)}`}>
+                    <Link href={`/user/${toHex(space.profile.id)}`}>
                       <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
                         {space.profile.handle?.string ?? space.owner}
                       </div>

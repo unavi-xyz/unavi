@@ -1,5 +1,5 @@
 import { Engine } from "engine";
-import { useSearchParams } from "next/navigation";
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
@@ -12,13 +12,18 @@ import { useSpace } from "../../play/hooks/useSpace";
 import { usePlayStore } from "../../play/store";
 import LoadingScreen from "../../play/ui/LoadingScreen";
 import Overlay from "../../play/ui/Overlay";
-import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { toHex } from "../../utils/toHex";
 
-export default function App() {
-  const params = useSearchParams();
-  const id = params?.get("id");
-  const spaceId = parseInt(id ?? "");
+export const getServerSideProps = async ({ query }: GetServerSidePropsContext) => {
+  const hexId = query.id as string;
+  const id = parseInt(hexId);
 
+  return {
+    props: { id },
+  };
+};
+
+export default function Play({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -31,7 +36,7 @@ export default function App() {
   useLoadUser();
   useHotkeys();
 
-  const { space, loadingText, loadingProgress, join } = useSpace(spaceId);
+  const { space, loadingText, loadingProgress, join } = useSpace(id);
 
   useEffect(() => {
     if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;
@@ -65,9 +70,10 @@ export default function App() {
   return (
     <>
       <MetaTags
-        title={space?.metadata?.name ?? `Space ${numberToHexDisplay(spaceId)}`}
+        title={space?.metadata?.name ?? `Space ${toHex(id)}`}
         description={space?.metadata?.description ?? ""}
         image={space?.metadata?.image ?? ""}
+        card="summary_large_image"
       />
 
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
@@ -102,7 +108,7 @@ export default function App() {
           setAvatar(url);
         }}
       >
-        {loaded && <Overlay id={spaceId} />}
+        {loaded && <Overlay id={id} />}
 
         <div className="h-full">
           <div ref={containerRef} className="relative h-full w-full overflow-hidden">

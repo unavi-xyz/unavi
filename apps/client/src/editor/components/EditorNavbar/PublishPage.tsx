@@ -18,7 +18,7 @@ import Button from "../../../ui/Button";
 import ImageInput from "../../../ui/ImageInput";
 import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
-import { numberToHexDisplay } from "../../../utils/numberToHexDisplay";
+import { toHex } from "../../../utils/toHex";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
@@ -107,10 +107,8 @@ export default function PublishPage() {
           animation_url: modelURL,
           description,
           external_url: spaceId
-            ? `https://thewired.space/space/${numberToHexDisplay(spaceId)}`
-            : `https://thewired.space/user/${
-                profile ? numberToHexDisplay(profile.id) : session?.address
-              }`,
+            ? `https://thewired.space/space/${toHex(spaceId)}`
+            : `https://thewired.space/user/${profile ? toHex(profile.id) : session?.address}`,
           image: imageURL,
           name,
         };
@@ -164,10 +162,10 @@ export default function PublishPage() {
 
       if (spaceId !== undefined) {
         // Redirect to space
-        router.push(`/space/${numberToHexDisplay(spaceId)}`);
+        router.push(`/space/${toHex(spaceId)}`);
       } else {
         // Redirect to profile
-        router.push(`/user/${profile ? numberToHexDisplay(profile.id) : session?.address}`);
+        router.push(`/user/${profile ? toHex(profile.id) : session?.address}`);
       }
     }
 

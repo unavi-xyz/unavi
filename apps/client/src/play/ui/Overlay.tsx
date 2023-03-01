@@ -4,7 +4,7 @@ import { IoMdArrowRoundBack, IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
 import DialogContent, { DialogRoot } from "../../ui/Dialog";
-import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { toHex } from "../../utils/toHex";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "../hooks/useHost";
@@ -116,7 +116,7 @@ export default function Overlay({ id }: Props) {
       </DialogRoot>
 
       <div className="absolute top-0 left-0 z-20 p-4">
-        <Link href={`/space/${numberToHexDisplay(id)}`} className="rounded-full">
+        <Link href={`/space/${toHex(id)}`} className="rounded-full">
           <div className="rounded-full bg-white/80 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/90 hover:shadow-md active:scale-95">
             <IoMdArrowRoundBack />
           </div>

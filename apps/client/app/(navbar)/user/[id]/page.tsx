@@ -8,7 +8,7 @@ import { fetchProfile } from "../../../../src/server/helpers/fetchProfile";
 import { fetchProfileFromAddress } from "../../../../src/server/helpers/fetchProfileFromAddress";
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import Card from "../../../../src/ui/Card";
-import { hexDisplayToNumber, numberToHexDisplay } from "../../../../src/utils/numberToHexDisplay";
+import { toHex } from "../../../../src/utils/toHex";
 import Spaces from "./Spaces";
 
 export const revalidate = 60;
@@ -18,9 +18,7 @@ type Params = { id: string };
 export async function generateMetadata({ params: { id } }: { params: Params }): Promise<Metadata> {
   const isAddress = id.length === 42;
 
-  const profile = isAddress
-    ? await fetchProfileFromAddress(id)
-    : await fetchProfile(hexDisplayToNumber(id));
+  const profile = isAddress ? await fetchProfileFromAddress(id) : await fetchProfile(parseInt(id));
 
   if (isAddress && !profile) {
     const title = id.substring(0, 6) + "...";
@@ -38,13 +36,14 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
       twitter: {
         title,
         description,
+        card: "summary",
       },
     };
   }
 
   if (!profile) return {};
 
-  const title = profile.handle?.string ?? `User ${numberToHexDisplay(profile.id)}`;
+  const title = profile.handle?.string ?? `User ${toHex(profile.id)}`;
   const description = profile.metadata?.description ?? "";
 
   return {
@@ -62,6 +61,7 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
       title,
       description,
       images: profile.metadata?.image ? [profile.metadata.image] : undefined,
+      card: profile.metadata?.image ? "summary_large_image" : "summary",
     },
   };
 }
@@ -69,9 +69,7 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
 export default async function User({ params: { id } }: { params: Params }) {
   const isAddress = id.length === 42;
 
-  const profile = isAddress
-    ? await fetchProfileFromAddress(id)
-    : await fetchProfile(hexDisplayToNumber(id));
+  const profile = isAddress ? await fetchProfileFromAddress(id) : await fetchProfile(parseInt(id));
 
   if (!isAddress && !profile) notFound();
 

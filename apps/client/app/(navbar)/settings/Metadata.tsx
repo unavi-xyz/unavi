@@ -12,21 +12,21 @@ import { Profile } from "../../../src/server/helpers/fetchProfile";
 import Button from "../../../src/ui/Button";
 import ImageInput from "../../../src/ui/ImageInput";
 import TextArea from "../../../src/ui/TextArea";
-import { numberToHexDisplay } from "../../../src/utils/numberToHexDisplay";
+import { toHex } from "../../../src/utils/toHex";
 import { getProfileFileUpload } from "../../api/profiles/[id]/[file]/upload/helper";
 
 function cdnMetadataURL(id: number) {
-  const hexId = numberToHexDisplay(id);
+  const hexId = toHex(id);
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/profiles/${hexId}/metadata.json`;
 }
 
 function cdnImageURL(id: number) {
-  const hexId = numberToHexDisplay(id);
+  const hexId = toHex(id);
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/profiles/${hexId}/image.jpg`;
 }
 
 function cdnCoverURL(id: number) {
-  const hexId = numberToHexDisplay(id);
+  const hexId = toHex(id);
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/profiles/${hexId}/cover.jpg`;
 }
 
@@ -55,7 +55,7 @@ export default function Metadata({ profile }: Props) {
       if (!profile) throw new Error("No profile found");
       if (!signer) throw new Error("No signer found");
 
-      const hexId = numberToHexDisplay(profile.id);
+      const hexId = toHex(profile.id);
 
       const metadata: ERC721Metadata = {
         animation_url: coverImage,

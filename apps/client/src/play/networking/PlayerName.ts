@@ -2,7 +2,7 @@ import { Engine } from "engine";
 import { nanoid } from "nanoid";
 
 import { getProfileByAddress } from "../../../app/api/profiles/address/[address]/helper";
-import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { toHex } from "../../utils/toHex";
 import { usePlayStore } from "../store";
 import { addChatMessage } from "../utils/addChatMessage";
 
@@ -21,7 +21,7 @@ export class PlayerName {
   }
 
   get hexId() {
-    return numberToHexDisplay(this.id);
+    return toHex(this.id);
   }
 
   get displayName() {

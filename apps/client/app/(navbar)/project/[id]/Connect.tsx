@@ -96,6 +96,7 @@ export default function Connect({ id, connectedSpaceId }: Props) {
       <div className="flex items-center space-x-2">
         <input
           ref={inputRef}
+          defaultValue={connectedSpaceId ? toHex(connectedSpaceId) : undefined}
           type="text"
           placeholder="0x01"
           pattern="0x[0-9a-fA-F]{1,8}"

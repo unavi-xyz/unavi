@@ -1,9 +1,9 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import "../../styles/globals.css";
 
-import { Nunito } from "@next/font/google";
 import { AppType } from "next/app";
 import dynamic from "next/dynamic";
+import { Nunito } from "next/font/google";
 import Head from "next/head";
 import { Session } from "next-auth";
 import React from "react";

@@ -12,18 +12,31 @@ import { useSpace } from "../../play/hooks/useSpace";
 import { usePlayStore } from "../../play/store";
 import LoadingScreen from "../../play/ui/LoadingScreen";
 import Overlay from "../../play/ui/Overlay";
+import { fetchSpaceMetadata } from "../../server/helpers/fetchSpaceMetadata";
 import { toHex } from "../../utils/toHex";
 
-export const getServerSideProps = async ({ query }: GetServerSidePropsContext) => {
+export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
+  const ONE_MINUTE = 60;
+  const ONE_MONTH = 60 * 60 * 24 * 30;
+
+  res.setHeader(
+    "Cache-Control",
+    `public, max-age=0, s-maxage=${ONE_MINUTE}, stale-while-revalidate=${ONE_MONTH}`
+  );
+
   const hexId = query.id as string;
   const id = parseInt(hexId);
 
+  const metadata = await fetchSpaceMetadata(id);
+
   return {
-    props: { id },
+    props: { id, metadata },
   };
 };
 
-export default function Play({ id }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
+
+export default function Play({ id, metadata }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -36,7 +49,7 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
   useLoadUser();
   useHotkeys();
 
-  const { space, loadingText, loadingProgress, join } = useSpace(id);
+  const { loadingText, loadingProgress, join } = useSpace(id, metadata);
 
   useEffect(() => {
     if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;
@@ -70,17 +83,16 @@ export default function Play({ id }: InferGetServerSidePropsType<typeof getServe
   return (
     <>
       <MetaTags
-        title={space?.metadata?.name ?? `Space ${toHex(id)}`}
-        description={space?.metadata?.description ?? ""}
-        image={space?.metadata?.image ?? ""}
-        card="summary_large_image"
+        title={metadata?.name ?? `Space ${toHex(id)}`}
+        description={metadata?.description ?? ""}
+        image={metadata?.image ?? ""}
       />
 
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
 
       <LoadingScreen
-        text={space?.metadata?.name}
-        image={space?.metadata?.image}
+        text={metadata?.name}
+        image={metadata?.image}
         loadingProgress={loadingProgress}
         loadingText={loadingText}
       />

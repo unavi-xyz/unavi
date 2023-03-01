@@ -23,27 +23,45 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
     : await fetchProfile(hexDisplayToNumber(id));
 
   if (isAddress && !profile) {
+    const title = id.substring(0, 6) + "...";
+    const description = "";
+
     return {
-      title: id.substring(0, 6) + "...",
-      description: "",
+      title,
+      description,
       openGraph: {
         type: "profile",
+        title,
+        description,
         username: id,
-        description: "",
+      },
+      twitter: {
+        title,
+        description,
       },
     };
   }
 
   if (!profile) return {};
 
+  const title = profile.handle?.string ?? `User ${numberToHexDisplay(profile.id)}`;
+  const description = profile.metadata?.description ?? "";
+
   return {
-    title: profile.handle?.string ?? `User ${numberToHexDisplay(profile.id)}`,
-    description: profile.metadata?.description ?? "",
+    title,
+    description,
     openGraph: {
       type: "profile",
+      title,
+      description,
       username: profile.handle?.full,
       firstName: profile.handle?.string,
-      description: profile.metadata?.description ?? "",
+      images: profile.metadata?.image ? [{ url: profile.metadata.image }] : undefined,
+    },
+    twitter: {
+      title,
+      description,
+      images: profile.metadata?.image ? [profile.metadata.image] : undefined,
     },
   };
 }

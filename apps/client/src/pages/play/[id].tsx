@@ -3,6 +3,7 @@ import { useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
+import MetaTags from "../../home/MetaTags";
 import { useHotkeys } from "../../play/hooks/useHotkeys";
 import { useLoadUser } from "../../play/hooks/useLoadUser";
 import { useResizeCanvas } from "../../play/hooks/useResizeCanvas";
@@ -11,6 +12,7 @@ import { useSpace } from "../../play/hooks/useSpace";
 import { usePlayStore } from "../../play/store";
 import LoadingScreen from "../../play/ui/LoadingScreen";
 import Overlay from "../../play/ui/Overlay";
+import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
 
 export default function App() {
   const params = useSearchParams();
@@ -62,6 +64,12 @@ export default function App() {
 
   return (
     <>
+      <MetaTags
+        title={space?.metadata?.name ?? `Space ${numberToHexDisplay(spaceId)}`}
+        description={space?.metadata?.description ?? ""}
+        image={space?.metadata?.image ?? ""}
+      />
+
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
 
       <LoadingScreen

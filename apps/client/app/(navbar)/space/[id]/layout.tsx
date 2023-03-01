@@ -23,9 +23,23 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
 
   if (!space) return {};
 
+  const title = space.metadata?.name ?? `Space ${id}`;
+  const description = space.metadata?.description ?? "";
+
   return {
-    title: space.metadata?.name ?? `Space ${id}`,
-    description: space.metadata?.description ?? "",
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      creators: space?.profile?.handle?.full ? [space.profile.handle.full] : undefined,
+      images: space.metadata?.image ? [{ url: space.metadata.image }] : undefined,
+    },
+    twitter: {
+      title,
+      description,
+      images: space.metadata?.image ? [space.metadata.image] : undefined,
+    },
   };
 }
 

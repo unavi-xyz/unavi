@@ -1,27 +1,29 @@
 import "../styles/globals.css";
 
 import { Nunito } from "@next/font/google";
+import { Metadata } from "next";
 
-const font = Nunito({
-  subsets: ["latin"],
-});
+const font = Nunito({ subsets: ["latin"] });
 
 const title = {
   default: "The Wired",
   template: "%s / The Wired",
 };
+
 const description = "An open metaverse platform";
 const hero = "/images/Hero.png";
+const logo = "/images/Logo.png";
 
-export const metadata = {
+export const metadata: Metadata = {
   title,
   description,
+
   keywords: ["Metaverse", "WebXR", "Web3"],
   themeColor: "#191919",
   colorScheme: "light",
   manifest: "/manifest.json",
   icons: {
-    icon: "/images/Logo.png",
+    icon: logo,
   },
   openGraph: {
     title,
@@ -44,8 +46,10 @@ export const metadata = {
     site: "@wired_xr",
     images: [hero],
   },
-  appleWebApps: {
-    title,
+  appleWebApp: {
+    title: "The Wired",
+    capable: true,
+    startupImage: { url: logo },
   },
 };
 

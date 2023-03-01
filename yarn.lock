@@ -5023,28 +5023,6 @@
     "@tanstack/query-core" "4.24.4"
     use-sync-external-store "^1.2.0"
 
-"@trpc/client@10.12.0":
-  version "10.12.0"
-  resolved "https://registry.yarnpkg.com/@trpc/client/-/client-10.12.0.tgz#635b02a2d10ffa07029428f250bcbe19b54a6b63"
-  integrity sha512-CUBRaE0FpYiRnPGkFB9oLD2cdFd5fSzQwPSR7/zXNKMjwdE+5P7q5mtgbh3bFey3lYidmpKDFgYRnl9Cz2Z7OQ==
-
-"@trpc/next@10.12.0":
-  version "10.12.0"
-  resolved "https://registry.yarnpkg.com/@trpc/next/-/next-10.12.0.tgz#e00e47ccfd34f3452a4e9c8d90882c7f9e4e737c"
-  integrity sha512-Ux6jKkRfmeL8csfhQFUBs9or0MCXeA/S1rbf2OY22GUwldhfaXQXhlaQy9Ae0f/D8Xqlip0i6BVYaG4isKejwA==
-  dependencies:
-    react-ssr-prepass "^1.5.0"
-
-"@trpc/react-query@10.12.0":
-  version "10.12.0"
-  resolved "https://registry.yarnpkg.com/@trpc/react-query/-/react-query-10.12.0.tgz#efca20783b4716d1fe514633b4e89e48643f7dea"
-  integrity sha512-f8RmXy8kPqel6nVLRykE3f7wk0dkVveGK+nyaO29jXViRPnTtn8HI94PaHZGEyqpi5VBcc+FGlMgk1ckkFNjQA==
-
-"@trpc/server@10.12.0":
-  version "10.12.0"
-  resolved "https://registry.yarnpkg.com/@trpc/server/-/server-10.12.0.tgz#0293100080478ec724ab3c27a352ac5cc16285f4"
-  integrity sha512-gD5FCNCIDgx1fuYbCfFQgIYT1HVUzsXtQUrvG+nTLBL19eWJctwHetWYB2b71NmfLvq/b+QSH1OzPq1WvsHeag==
-
 "@trysound/sax@0.2.0":
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@trysound/sax/-/sax-0.2.0.tgz#cccaab758af56761eb7bf37af6f03f326dd798ad"
@@ -13823,11 +13801,6 @@ react-split@^2.0.14:
   dependencies:
     prop-types "^15.5.7"
     split.js "^1.6.0"
-
-react-ssr-prepass@^1.5.0:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/react-ssr-prepass/-/react-ssr-prepass-1.5.0.tgz#bc4ca7fcb52365e6aea11cc254a3d1bdcbd030c5"
-  integrity sha512-yFNHrlVEReVYKsLI5lF05tZoHveA5pGzjFbFJY/3pOqqjGOmMmqx83N4hIjN2n6E1AOa+eQEUxs3CgRnPmT0RQ==
 
 react-style-singleton@^2.2.1:
   version "2.2.1"

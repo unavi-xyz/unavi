@@ -4,7 +4,7 @@ import { MdArrowBackIosNew } from "react-icons/md";
 import useSWR from "swr";
 import { useSigner } from "wagmi";
 
-import SignInButton from "../../../home/NavbarLayout/SignInButton";
+import SignInButton from "../../../home/SignInButton";
 import { fetcher } from "../../../play/utils/fetcher";
 import { Project } from "../../../server/helpers/fetchProject";
 import Button from "../../../ui/Button";

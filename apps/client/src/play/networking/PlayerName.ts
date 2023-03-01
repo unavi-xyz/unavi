@@ -1,7 +1,7 @@
 import { Engine } from "engine";
 import { nanoid } from "nanoid";
 
-import { getProfileByAddress } from "../../../app/api/profile/address/[address]/helper";
+import { getProfileByAddress } from "../../../app/api/profiles/address/[address]/helper";
 import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
 import { usePlayStore } from "../store";
 import { addChatMessage } from "../utils/addChatMessage";

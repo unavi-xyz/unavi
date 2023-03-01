@@ -9,10 +9,10 @@ import {
   hexDisplayToNumber,
   numberToHexDisplay,
 } from "../../../../../src/utils/numberToHexDisplay";
-import { publishProject } from "../../../../api/project/[id]/publication/helper";
-import { getSpace } from "../../../../api/space/[id]/helper";
-import { getSpacePublication } from "../../../../api/space/[id]/publication/helper";
-import { updateProject } from "../.././../../api/project/[id]/helper";
+import { publishProject } from "../../../../api/projects/[id]/publication/helper";
+import { getSpace } from "../../../../api/spaces/[id]/helper";
+import { getSpacePublication } from "../../../../api/spaces/[id]/publication/helper";
+import { updateProject } from "../.././../../api/projects/[id]/helper";
 
 interface Props {
   id: string;

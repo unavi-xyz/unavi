@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import TextField from "../../../src/ui/TextField";
-import { getProjectFileUpload } from "../../api/project/[id]/[file]/upload/helper";
-import { createProject } from "../../api/project/helper";
+import { getProjectFileUpload } from "../../api/projects/[id]/[file]/upload/helper";
+import { createProject } from "../../api/projects/helper";
 
 const DEFAULT_NAME = "New Project";
 

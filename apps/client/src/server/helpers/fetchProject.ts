@@ -1,6 +1,6 @@
 import { cache } from "react";
 
-import { getDownload } from "../../../app/api/project/files";
+import { getDownload } from "../../../app/api/projects/files";
 import { prisma } from "../prisma";
 import { getServerSession } from "./getServerSession";
 

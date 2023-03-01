@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 
 import Button from "../../../../../src/ui/Button";
-import { deleteProject } from "../../../../api/project/[id]/helper";
+import { deleteProject } from "../../../../api/projects/[id]/helper";
 
 interface Props {
   id: string;

@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function PlayerCount({ id }: Props) {
-  const { data: playerCount } = useSWR<number>(`/api/space/${id}/player-count`, fetcher);
+  const { data: playerCount } = useSWR<number>(`/api/spaces/${id}/player-count`, fetcher);
 
   if (!playerCount) return null;
 

@@ -5,7 +5,7 @@ import { dedup, draco, resample, sparse, textureCompress, weld } from "@gltf-tra
 import { BehaviorExtension, extensions } from "engine";
 import sharp from "sharp";
 
-import { getContentType, getKey } from "../../../app/api/project/files";
+import { getContentType, getKey } from "../../../app/api/projects/files";
 import createEncoderModule from "../../../public/scripts/draco_encoder";
 import { env } from "../../env/server.mjs";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";

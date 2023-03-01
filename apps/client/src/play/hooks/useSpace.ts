@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 
-import { GetSpaceResponse } from "../../../app/api/space/[id]/types";
+import { GetSpaceResponse } from "../../../app/api/spaces/[id]/types";
 import { env } from "../../env/client.mjs";
 import { usePlayStore } from "../../play/store";
 import { fetcher } from "../utils/fetcher";
@@ -23,7 +23,7 @@ export function useSpace(id: number) {
   const [sceneLoaded, setSceneLoaded] = useState(false);
   const engine = usePlayStore((state) => state.engine);
 
-  const { data: space } = useSWR<GetSpaceResponse>(`/api/space/${id}`, fetcher);
+  const { data: space } = useSWR<GetSpaceResponse>(`/api/spaces/${id}`, fetcher);
 
   const { spaceJoined } = useHost(id, host);
 

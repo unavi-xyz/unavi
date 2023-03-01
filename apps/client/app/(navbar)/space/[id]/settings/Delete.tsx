@@ -8,7 +8,7 @@ import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
 import Button from "../../../../../src/ui/Button";
-import { deletePublication } from "../../../../api/publication/[id]/helper";
+import { deletePublication } from "../../../../api/publications/[id]/helper";
 
 interface Props {
   id: number;

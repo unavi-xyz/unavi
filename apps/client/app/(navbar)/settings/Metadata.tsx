@@ -13,7 +13,7 @@ import Button from "../../../src/ui/Button";
 import ImageInput from "../../../src/ui/ImageInput";
 import TextArea from "../../../src/ui/TextArea";
 import { numberToHexDisplay } from "../../../src/utils/numberToHexDisplay";
-import { getProfileFileUpload } from "../../api/profile/[id]/[file]/upload/helper";
+import { getProfileFileUpload } from "../../api/profiles/[id]/[file]/upload/helper";
 
 function cdnMetadataURL(id: number) {
   const hexId = numberToHexDisplay(id);

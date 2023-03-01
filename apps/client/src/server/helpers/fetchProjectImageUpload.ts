@@ -1,4 +1,4 @@
-import { getUpload } from "../../../app/api/project/files";
+import { getUpload } from "../../../app/api/projects/files";
 import { prisma } from "../prisma";
 import { getServerSession } from "./getServerSession";
 

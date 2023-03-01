@@ -2,7 +2,7 @@ import { CreateProjectArgs, CreateProjectResponse } from "./types";
 
 export async function createProject(name?: string) {
   const args: CreateProjectArgs = { name };
-  const response = await fetch("/api/project", {
+  const response = await fetch("/api/projects", {
     method: "POST",
     body: JSON.stringify(args),
     headers: { "Content-Type": "application/json" },

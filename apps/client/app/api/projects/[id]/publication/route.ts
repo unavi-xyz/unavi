@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
 import { optimizeProject } from "../../../../../src/server/helpers/optimizeProject";
 import { prisma } from "../../../../../src/server/prisma";
-import { getContentType, getUpload } from "../../../publication/files";
+import { getContentType, getUpload } from "../../../publications/files";
 import { getDownload } from "../../files";
 import { Params, paramsSchema } from "../types";
 import { PublishProjectResponse } from "./types";

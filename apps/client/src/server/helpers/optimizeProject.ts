@@ -5,12 +5,11 @@ import { dedup, draco, resample, sparse, textureCompress, weld } from "@gltf-tra
 import { BehaviorExtension, extensions } from "engine";
 import sharp from "sharp";
 
-import { getContentType, getKey } from "../../../app/api/projects/files";
+import { getContentType, getKey, PROJECT_FILE } from "../../../app/api/projects/files";
 import createEncoderModule from "../../../public/scripts/draco_encoder";
 import { env } from "../../env/server.mjs";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
-import { s3Client } from "../s3/client";
-import { PROJECT_FILE } from "../s3/Project";
+import { s3Client } from "../client";
 
 const expiresIn = 600; // 10 minutes
 const MEGABYTE = 1024 * 1024;

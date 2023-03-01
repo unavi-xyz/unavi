@@ -19,7 +19,7 @@ export default async function Projects() {
   }
 
   return unpublishedProjects.map(({ id, name, image }) => (
-    <Link key={id} href={`/create/${id}`} className="rounded-xl">
+    <Link key={id} href={`/project/${id}`} className="rounded-xl">
       <Card text={name} image={image} sizes="333px" animateEnter />
     </Link>
   ));

@@ -37,7 +37,7 @@ export default function EditorNavbar() {
 
   async function handleBack() {
     await save();
-    router.push(`/create/${id}`);
+    router.push(`/project/${id}`);
   }
 
   async function handleOpenPublish() {

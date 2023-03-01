@@ -29,7 +29,7 @@ export default async function Published() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {publishedProjects.map(({ id, name }, i) => (
-          <Link key={id} href={`/create/${id}`} className="rounded-xl">
+          <Link key={id} href={`/project/${id}`} className="rounded-xl">
             <Card text={name} image={publishedImages[i]} sizes="333px" animateEnter />
           </Link>
         ))}

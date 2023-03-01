@@ -1,19 +1,16 @@
-import { useRouter } from "next/router";
+import { useSearchParams } from "next/navigation";
 
-import { trpc } from "../../client/trpc";
+import { getProjectFileUpload } from "../../../app/api/projects/[id]/[file]/upload/helper";
+import { updateProject } from "../../../app/api/projects/[id]/helper";
 import { useEditorStore } from "../store";
 
 export function useSave() {
-  const router = useRouter();
-  const id = router.query.id as string;
-
-  const { mutateAsync: getImageUpload } = trpc.project.getImageUpload.useMutation();
-  const { mutateAsync: getModelUpload } = trpc.project.getModelUpload.useMutation();
-  const { mutateAsync: update } = trpc.project.update.useMutation();
-
-  const utils = trpc.useContext();
+  const params = useSearchParams();
+  const id = params?.get("id");
 
   async function saveImage() {
+    if (!id) return;
+
     const { engine, canvas } = useEditorStore.getState();
     if (!engine || !canvas) throw new Error("No engine");
 
@@ -23,7 +20,8 @@ export function useSave() {
     const body = await response.blob();
 
     // Upload to S3
-    const url = await getImageUpload({ id });
+    const url = await getProjectFileUpload(id, "image");
+
     const res = await fetch(url, {
       method: "PUT",
       body,
@@ -31,13 +29,11 @@ export function useSave() {
     });
 
     if (!res.ok) throw new Error("Failed to upload image");
-
-    utils.project.image.invalidate({ id });
-    utils.project.get.invalidate({ id });
-    utils.project.getAll.invalidate();
   }
 
   async function saveModel() {
+    if (!id) return;
+
     const { engine } = useEditorStore.getState();
     if (!engine) throw new Error("No engine");
 
@@ -45,7 +41,8 @@ export function useSave() {
     const glb = await engine.scene.export();
 
     // Upload to S3
-    const url = await getModelUpload({ id });
+    const url = await getProjectFileUpload(id, "model");
+
     const res = await fetch(url, {
       method: "PUT",
       body: glb,
@@ -56,11 +53,11 @@ export function useSave() {
   }
 
   async function saveMetadata() {
-    const { name, description } = useEditorStore.getState();
-    await update({ id, name, description });
+    if (!id) return;
 
-    utils.project.get.invalidate({ id });
-    utils.project.getAll.invalidate();
+    const { name, description } = useEditorStore.getState();
+
+    await updateProject(id, { name, description });
   }
 
   async function save() {

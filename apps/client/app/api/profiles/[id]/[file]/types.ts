@@ -3,6 +3,7 @@ import { z } from "zod";
 import { PROFILE_FILE } from "../../files";
 
 export type Params = { params: { id: string; file: string } };
+
 export const paramsSchema = z.object({
   id: z.string(),
   file: z.union([

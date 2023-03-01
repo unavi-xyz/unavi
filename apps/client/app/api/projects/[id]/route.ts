@@ -5,6 +5,23 @@ import { prisma } from "../../../../src/server/prisma";
 import { deleteFiles } from "../files";
 import { Params, paramsSchema, patchSchema } from "./types";
 
+// Get project
+export async function GET(request: Request, { params }: Params) {
+  const session = await getServerSession();
+  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+
+  const { id } = paramsSchema.parse(params);
+
+  // Verify user owns the project
+  const project = await prisma.project.findFirst({
+    where: { id, owner: session.address },
+    include: { Publication: true },
+  });
+  if (!project) return new Response("Project not found", { status: 404 });
+
+  return NextResponse.json(project);
+}
+
 // Update project
 export async function PATCH(request: Request, { params }: Params) {
   const session = await getServerSession();

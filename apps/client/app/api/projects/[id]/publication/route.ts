@@ -48,10 +48,14 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // Upload optimized model to publication
   const uploadUrl = await getUpload(publicationId, "model");
+
   await fetch(uploadUrl, {
     method: "PUT",
     body: array,
-    headers: { "Content-Type": getContentType("model") },
+    headers: {
+      "Content-Type": getContentType("model"),
+      "x-amz-acl": "public-read",
+    },
   });
 
   const json: PublishProjectResponse = { id: publicationId };

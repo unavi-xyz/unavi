@@ -15,11 +15,13 @@ export function useLoad() {
 
   const { data: project } = useSWR<Project | null>(
     () => (id ? `/api/projects/${id}` : null),
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
   const { data: modelUrl } = useSWR<GetFileDownloadResponse>(
     () => (id ? `/api/projects/${id}/model` : null),
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
 
   useEffect(() => {

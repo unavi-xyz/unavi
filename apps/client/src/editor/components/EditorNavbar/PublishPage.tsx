@@ -48,10 +48,14 @@ export default function PublishPage() {
   const { save } = useSave();
 
   const { profile } = useProfileByAddress(session?.address);
-  const { data: project } = useSWR<Project | null>(`/api/projects/${id}`, fetcher);
+  const { data: project } = useSWR<Project | null>(`/api/projects/${id}`, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
   const { data: imageDownload } = useSWR<GetFileDownloadResponse>(
     `/api/projects/${id}/image`,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
 
   const [imageFile, setImageFile] = useState<File>();

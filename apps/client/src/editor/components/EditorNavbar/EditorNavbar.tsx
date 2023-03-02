@@ -31,7 +31,8 @@ export default function EditorNavbar() {
 
   const { data: project } = useSWR<Project | null>(
     () => (id ? `/api/projects/${id}` : null),
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
   const isPublished = Boolean(project?.Publication?.spaceId);
 

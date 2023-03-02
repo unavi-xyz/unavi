@@ -1,33 +1,23 @@
 "use client";
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { useRouter } from "next/navigation";
-import { useEffect, useTransition } from "react";
 
-import { useSession } from "../../src/client/auth/useSession";
 import RainbowkitWrapper from "./RainbowkitWrapper";
 
-export default function SignInButton() {
+interface Props {
+  isLoading?: boolean;
+}
+
+export default function SignInButton(props: Props) {
   return (
     <RainbowkitWrapper>
-      <Button />
+      <Button {...props} />
     </RainbowkitWrapper>
   );
 }
 
-function Button() {
+function Button({ isLoading }: Props) {
   const { openConnectModal } = useConnectModal();
-  const { status } = useSession();
-  const router = useRouter();
-  const [isLoading, startTransition] = useTransition();
-
-  useEffect(() => {
-    if (status !== "authenticated") return;
-
-    startTransition(() => {
-      router.refresh();
-    });
-  }, [status, router, startTransition]);
 
   return (
     <button

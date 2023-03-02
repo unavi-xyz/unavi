@@ -6,9 +6,15 @@ import { useProfileByAddress } from "../../src/play/hooks/useProfileByAddress";
 import { DropdownContent, DropdownMenu, DropdownTrigger } from "../../src/ui/DropdownMenu";
 import ProfileMenu from "./ProfileMenu";
 
-export default function ProfileButton() {
+interface Props {
+  isLoading?: boolean;
+}
+
+export default function ProfileButton({ isLoading: isLoadingAuth }: Props) {
   const { data: session } = useSession();
-  const { profile, isLoading } = useProfileByAddress(session?.address);
+  const { profile, isLoading: isLoadingProfile } = useProfileByAddress(session?.address);
+
+  const isLoading = isLoadingAuth || isLoadingProfile;
 
   return (
     <DropdownMenu>

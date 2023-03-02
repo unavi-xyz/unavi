@@ -7,7 +7,6 @@ import {
   GetSiweMessageOptions,
   RainbowKitSiweNextAuthProvider,
 } from "@rainbow-me/rainbowkit-siwe-next-auth";
-import { SessionProvider } from "next-auth/react";
 import { WagmiConfig } from "wagmi";
 
 import { theme } from "../../src/client/rainbow";
@@ -23,14 +22,12 @@ interface Props {
 
 export default function RainbowkitWrapper({ children }: Props) {
   return (
-    <SessionProvider>
-      <WagmiConfig client={wagmiClient}>
-        <RainbowKitSiweNextAuthProvider getSiweMessageOptions={getSiweMessageOptions}>
-          <RainbowKitProvider theme={theme} chains={chains}>
-            {children}
-          </RainbowKitProvider>
-        </RainbowKitSiweNextAuthProvider>
-      </WagmiConfig>
-    </SessionProvider>
+    <WagmiConfig client={wagmiClient}>
+      <RainbowKitSiweNextAuthProvider getSiweMessageOptions={getSiweMessageOptions}>
+        <RainbowKitProvider theme={theme} chains={chains}>
+          {children}
+        </RainbowKitProvider>
+      </RainbowKitSiweNextAuthProvider>
+    </WagmiConfig>
   );
 }

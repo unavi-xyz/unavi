@@ -16,5 +16,5 @@ export default function ClientButtons() {
 
 function Buttons() {
   const { data: session } = useSession();
-  return session && session.address ? <ProfileButton session={session} /> : <SignInButton />;
+  return session?.address ? <ProfileButton /> : <SignInButton />;
 }

@@ -1,3 +1,5 @@
+import { SessionProvider } from "next-auth/react";
+
 import { fetchProfileFromAddress } from "../../../src/server/helpers/fetchProfileFromAddress";
 import { getServerSession } from "../../../src/server/helpers/getServerSession";
 import RainbowkitWrapper from "../RainbowkitWrapper";
@@ -12,14 +14,16 @@ export default async function Settings() {
   const profile = await fetchProfileFromAddress(session.address);
 
   return (
-    <RainbowkitWrapper>
-      <div className="flex w-full justify-center">
-        <div className="mx-4 w-full max-w-lg space-y-4 py-8">
-          <div className="text-center text-3xl font-black">Settings</div>
-          <Handle profile={profile} />
-          {profile && <Metadata profile={profile} />}
+    <SessionProvider>
+      <RainbowkitWrapper>
+        <div className="flex w-full justify-center">
+          <div className="mx-4 w-full max-w-lg space-y-4 py-8">
+            <div className="text-center text-3xl font-black">Settings</div>
+            <Handle profile={profile} />
+            {profile && <Metadata profile={profile} />}
+          </div>
         </div>
-      </div>
-    </RainbowkitWrapper>
+      </RainbowkitWrapper>
+    </SessionProvider>
   );
 }

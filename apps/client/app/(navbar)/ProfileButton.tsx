@@ -1,19 +1,14 @@
 "use client";
 
-import { CustomSession } from "../../src/client/auth/useSession";
+import { useSession } from "../../src/client/auth/useSession";
 import Avatar from "../../src/home/Avatar";
 import { useProfileByAddress } from "../../src/play/hooks/useProfileByAddress";
 import { DropdownContent, DropdownMenu, DropdownTrigger } from "../../src/ui/DropdownMenu";
 import ProfileMenu from "./ProfileMenu";
 
-interface Props {
-  session: CustomSession;
-}
-
-export default function ProfileButton({ session }: Props) {
-  if (!session.address) throw new Error("No address found");
-
-  const { profile, isLoading } = useProfileByAddress(session.address);
+export default function ProfileButton() {
+  const { data: session } = useSession();
+  const { profile, isLoading } = useProfileByAddress(session?.address);
 
   return (
     <DropdownMenu>
@@ -28,7 +23,9 @@ export default function ProfileButton({ session }: Props) {
       </DropdownTrigger>
 
       <DropdownContent>
-        {profile !== undefined && <ProfileMenu profile={profile} session={session} />}
+        {profile !== undefined && session?.address ? (
+          <ProfileMenu profile={profile} session={session} />
+        ) : null}
       </DropdownContent>
     </DropdownMenu>
   );

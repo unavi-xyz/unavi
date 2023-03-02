@@ -1,3 +1,5 @@
+import { SessionProvider } from "next-auth/react";
+
 import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import RainbowkitWrapper from "../../RainbowkitWrapper";
@@ -16,10 +18,12 @@ export default async function Settings({ params: { id } }: { params: Params }) {
   if (!isOwner) return null;
 
   return (
-    <RainbowkitWrapper>
-      <div className="space-y-12">
-        <Delete id={spaceId} address={session.address} />
-      </div>
-    </RainbowkitWrapper>
+    <SessionProvider>
+      <RainbowkitWrapper>
+        <div className="space-y-12">
+          <Delete id={spaceId} address={session.address} />
+        </div>
+      </RainbowkitWrapper>
+    </SessionProvider>
   );
 }

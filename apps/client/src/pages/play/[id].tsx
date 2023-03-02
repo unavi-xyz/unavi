@@ -62,6 +62,7 @@ export default function Play({ id, metadata }: Props) {
     engine.render.send({ subject: "set_animations_path", data: "/models" });
     engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
     engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
+    engine.render.send({ subject: "toggle_animations", data: true });
     engine.physics.send({ subject: "start", data: null });
 
     usePlayStore.setState({ engine });

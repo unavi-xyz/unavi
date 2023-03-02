@@ -1,8 +1,7 @@
-import { SessionProvider } from "next-auth/react";
-
 import { fetchProfileFromAddress } from "../../../src/server/helpers/fetchProfileFromAddress";
 import { getServerSession } from "../../../src/server/helpers/getServerSession";
 import RainbowkitWrapper from "../RainbowkitWrapper";
+import SessionProvider from "../SessionProvider";
 import Handle from "./Handle";
 import Metadata from "./Metadata";
 

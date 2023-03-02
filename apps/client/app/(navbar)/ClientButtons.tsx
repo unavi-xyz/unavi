@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { SessionProvider } from "next-auth/react";
 import { useEffect, useTransition } from "react";
 
 import { useSession } from "../../src/client/auth/useSession";
 import ProfileButton from "./ProfileButton";
+import SessionProvider from "./SessionProvider";
 import SignInButton from "./SignInButton";
 
 export default function ClientButtons() {

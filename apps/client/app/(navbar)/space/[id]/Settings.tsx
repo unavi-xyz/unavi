@@ -1,8 +1,7 @@
-import { SessionProvider } from "next-auth/react";
-
 import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import RainbowkitWrapper from "../../RainbowkitWrapper";
+import SessionProvider from "../../SessionProvider";
 import Delete from "./Delete";
 
 type Params = { id: string };

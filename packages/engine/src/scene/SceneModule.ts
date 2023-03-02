@@ -15,6 +15,7 @@ import { BehaviorExtension, Collider, ColliderExtension, SpawnPointExtension } f
 import { extensions } from "../gltf/constants";
 import { PhysicsModule } from "../physics/PhysicsModule";
 import { RenderModule } from "../render/RenderModule";
+import { AnimationJSON } from "./attributes/Animations";
 import { MaterialJSON } from "./attributes/Materials";
 import { MeshJSON } from "./attributes/Meshes";
 import { NodeJSON } from "./attributes/Nodes";
@@ -71,7 +72,7 @@ export class SceneModule extends Scene {
     });
   }
 
-  async export() {
+  async export(log = false) {
     const io = await this.#createIO();
 
     // Merge all buffers into one
@@ -97,6 +98,8 @@ export class SceneModule extends Scene {
           extension.dispose();
         }
       });
+
+    if (log) console.info("Exporting:", await io.writeJSON(this.doc));
 
     return await io.writeBinary(this.doc);
   }
@@ -187,6 +190,7 @@ export class SceneModule extends Scene {
   }
 
   clear() {
+    this.animation.store.forEach((animation) => animation.dispose());
     this.node.store.forEach((node) => node.dispose());
     this.mesh.store.forEach((mesh) => mesh.dispose());
     this.primitive.store.forEach((primitive) => primitive.dispose());
@@ -268,6 +272,27 @@ export class SceneModule extends Scene {
 
     this.node.processChanges().forEach((node) => {
       this.#onNodeCreate(node);
+    });
+
+    this.animation.processChanges().forEach((animation) => {
+      const id = this.animation.getId(animation);
+      if (!id) throw new Error("Id not found");
+
+      const json = this.animation.toJSON(animation);
+
+      this.#publish({ subject: "create_animation", data: { id, json } });
+
+      animation.addEventListener("change", (e) => {
+        const attribute = e.attribute as keyof AnimationJSON;
+        const json = this.animation.toJSON(animation);
+        const value = json[attribute];
+
+        this.#publish({ subject: "change_animation", data: { id, json: { [attribute]: value } } });
+      });
+
+      animation.addEventListener("dispose", () => {
+        this.#publish({ subject: "dispose_animation", data: id });
+      });
     });
   }
 

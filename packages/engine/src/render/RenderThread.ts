@@ -199,7 +199,11 @@ export class RenderThread {
       case "set_debug_buffers": {
         this.#debugVertices = data.vertices;
         this.#debugColors = data.colors;
+        break;
+      }
 
+      case "toggle_animations": {
+        this.renderScene.toggleAnimations(data);
         break;
       }
     }
@@ -289,11 +293,8 @@ export class RenderThread {
     this.#animationFrame = requestAnimationFrame(() => this.render());
     const delta = this.clock.getDelta();
 
-    if (this.controls === "player") {
-      this.player.update(delta);
-    } else {
-      this.orbit.update();
-    }
+    if (this.controls === "player") this.player.update(delta);
+    else this.orbit.update();
 
     if (this.size.width === 0 || this.size.height === 0) return;
 
@@ -308,8 +309,10 @@ export class RenderThread {
       }
     }
 
+    this.renderScene.mixer.update(delta);
     this.players.update(delta);
     this.csm?.update();
+
     this.composer?.render();
   }
 

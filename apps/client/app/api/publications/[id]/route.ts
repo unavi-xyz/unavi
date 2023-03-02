@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import { prisma } from "../../../../src/server/prisma";
@@ -24,6 +24,4 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     // Delete files from S3
     deleteFiles(id),
   ]);
-
-  return NextResponse.redirect("/create");
 }

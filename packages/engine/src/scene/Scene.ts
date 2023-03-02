@@ -8,6 +8,7 @@ import {
   SpawnPointExtension,
 } from "../gltf";
 import { Accessors } from "./attributes/Accessors";
+import { Animations } from "./attributes/Animations";
 import { Buffers } from "./attributes/Buffers";
 import { Materials } from "./attributes/Materials";
 import { Meshes } from "./attributes/Meshes";
@@ -36,6 +37,7 @@ export class Scene {
   primitive = new Primitives(this.doc, this.accessor, this.material);
   mesh = new Meshes(this.doc, this.primitive);
   node = new Nodes(this);
+  animation = new Animations(this.doc, this.node, this.accessor);
 
   /**
    * Adds the given document to the scene.
@@ -70,6 +72,7 @@ export class Scene {
     this.primitive.processChanges();
     this.mesh.processChanges();
     this.node.processChanges();
+    this.animation.processChanges();
   }
 
   getSpawn(title: (typeof SPAWN_TITLE)[keyof typeof SPAWN_TITLE] = "Default") {

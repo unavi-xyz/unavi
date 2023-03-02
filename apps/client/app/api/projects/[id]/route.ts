@@ -81,6 +81,4 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     // Delete files from S3
     deleteFiles(id),
   ]);
-
-  return NextResponse.redirect("/create");
 }

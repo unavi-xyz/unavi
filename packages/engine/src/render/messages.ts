@@ -39,7 +39,8 @@ export type ToRenderMessage =
   | MessageJSON<"set_player_avatar", { playerId: number; uri: string | null }>
   | MessageJSON<"set_player_grounded", { playerId: number; grounded: boolean }>
   | MessageJSON<"set_player_name", { playerId: number; name: string | null }>
-  | MessageJSON<"set_debug_buffers", DebugRenderBuffers>;
+  | MessageJSON<"set_debug_buffers", DebugRenderBuffers>
+  | MessageJSON<"toggle_animations", boolean>;
 
 export type FromRenderMessage =
   | SceneMessage

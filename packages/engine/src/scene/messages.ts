@@ -1,5 +1,6 @@
 import { MessageJSON } from "../types";
 import { AccessorJSON } from "./attributes/Accessors";
+import { AnimationJSON } from "./attributes/Animations";
 import { BufferJSON } from "./attributes/Buffers";
 import { MaterialJSON } from "./attributes/Materials";
 import { MeshJSON } from "./attributes/Meshes";
@@ -32,6 +33,10 @@ const subjects = [
   "create_node",
   "change_node",
   "dispose_node",
+
+  "create_animation",
+  "change_animation",
+  "dispose_animation",
 ] as const;
 
 type SceneMessageSubject = (typeof subjects)[number];
@@ -62,7 +67,11 @@ export type SceneMessage =
   // Node
   | SceneWorkerMessage<"create_node", { id: string; json: NodeJSON }>
   | SceneWorkerMessage<"change_node", { id: string; json: Partial<NodeJSON> }>
-  | SceneWorkerMessage<"dispose_node", string>;
+  | SceneWorkerMessage<"dispose_node", string>
+  // Animation
+  | SceneWorkerMessage<"create_animation", { id: string; json: AnimationJSON }>
+  | SceneWorkerMessage<"change_animation", { id: string; json: Partial<AnimationJSON> }>
+  | SceneWorkerMessage<"dispose_animation", string>;
 
 export function isSceneMessage(message: MessageJSON): message is SceneMessage {
   return subjects.includes(message.subject as SceneMessageSubject);

@@ -1,12 +1,21 @@
 import { Accessor, Mesh, Node, Primitive, Texture, TextureInfo } from "@gltf-transform/core";
 import {
+  AnimationAction,
+  AnimationClip,
+  AnimationMixer,
   BufferAttribute,
   DoubleSide,
   FrontSide,
+  InterpolateDiscrete,
+  InterpolateLinear,
+  KeyframeTrack,
   Mesh as ThreeMesh,
   MeshStandardMaterial,
+  NumberKeyframeTrack,
   Object3D,
+  QuaternionKeyframeTrack,
   sRGBEncoding,
+  VectorKeyframeTrack,
 } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
 
@@ -19,6 +28,10 @@ import { Scene } from "../../scene/Scene";
 import { deepDispose } from "../utils/deepDispose";
 import { THREE_ATTRIBUTE_NAMES } from "./constants";
 import { createTexture } from "./createTexture";
+import {
+  GLTFCubicSplineInterpolant,
+  GLTFCubicSplineQuaternionInterpolant,
+} from "./CubicSplineInterpolation";
 import { getCustomMeshData } from "./getCustomMeshData";
 
 type NodeId = string;
@@ -35,12 +48,16 @@ export class RenderScene extends Scene {
   #toMainThread: (message: SceneMessage) => void;
 
   root = new Object3D();
+  mixer = new AnimationMixer(this.root);
+
+  #animationsEnabled = false;
 
   materialObjects = new Map<MaterialId, MeshStandardMaterial>();
   primitiveObjects = new Map<PrimitiveId, ThreeMesh>();
   meshObjects = new Map<MeshId, Object3D>();
   instancedMeshObjects = new Map<NodeId, Object3D>();
   nodeObjects = new Map<NodeId, Object3D>();
+  animationObjects = new Map<NodeId, AnimationAction>();
 
   static DEFAULT_MATERIAL = new MeshStandardMaterial();
 
@@ -209,6 +226,173 @@ export class RenderScene extends Scene {
       case "dispose_node": {
         const node = this.node.store.get(data);
         if (node) node.dispose();
+        break;
+      }
+
+      case "create_animation": {
+        this.animation.create(data.json, data.id);
+
+        const animation = this.animation.store.get(data.id);
+        if (!animation) throw new Error("Animation not found");
+
+        const tracks: KeyframeTrack[] = [];
+
+        animation.listChannels().forEach((channel) => {
+          // Get keyframe track type
+          const path = channel.getTargetPath();
+          if (!path) return;
+
+          let threePath: string;
+          let TypedKeyframeTrack:
+            | typeof NumberKeyframeTrack
+            | typeof VectorKeyframeTrack
+            | typeof QuaternionKeyframeTrack;
+
+          switch (path) {
+            case "weights": {
+              TypedKeyframeTrack = NumberKeyframeTrack;
+              threePath = "morphTargetInfluences";
+              break;
+            }
+
+            case "rotation": {
+              TypedKeyframeTrack = QuaternionKeyframeTrack;
+              threePath = "quaternion";
+              break;
+            }
+
+            case "translation": {
+              TypedKeyframeTrack = VectorKeyframeTrack;
+              threePath = "position";
+              break;
+            }
+
+            case "scale": {
+              TypedKeyframeTrack = VectorKeyframeTrack;
+              threePath = "scale";
+              break;
+            }
+
+            default:
+              throw new Error(`Unknown target path: ${path}`);
+          }
+
+          // Get interpolation mode
+          const sampler = channel.getSampler();
+          if (!sampler) return;
+
+          let interpolationMode: typeof InterpolateLinear | typeof InterpolateDiscrete | undefined;
+
+          switch (sampler.getInterpolation()) {
+            case "LINEAR": {
+              interpolationMode = InterpolateLinear;
+              break;
+            }
+
+            case "STEP": {
+              interpolationMode = InterpolateDiscrete;
+              break;
+            }
+
+            case "CUBICSPLINE": {
+              interpolationMode = undefined;
+              break;
+            }
+
+            default:
+              throw new Error("Unknown interpolation");
+          }
+
+          // Get target object ids
+          const target = channel.getTargetNode();
+          if (!target) return;
+
+          const targetid = this.node.getId(target);
+          if (!targetid) return;
+
+          const targetObject = this.nodeObjects.get(targetid);
+          if (!targetObject) return;
+
+          const targetIds = [];
+          if (path === "weights") {
+            targetObject.traverse((child) => {
+              if ("morphTargetInfluences" in child) targetIds.push(child.uuid);
+            });
+          } else {
+            targetIds.push(targetObject.uuid);
+          }
+
+          // Get input and output data
+          const inputAccessor = sampler.getInput();
+          if (!inputAccessor) return;
+
+          const outputAccessor = sampler.getOutput();
+          if (!outputAccessor) return;
+
+          const inputArray = inputAccessor.getArray();
+          if (!inputArray) return;
+
+          const outputArray = outputAccessor.getArray();
+          if (!outputArray) return;
+
+          // Create keyframe track
+          targetIds.forEach((id) => {
+            const track = new TypedKeyframeTrack(
+              `${id}.${threePath}`,
+              inputArray,
+              outputArray,
+              interpolationMode
+            );
+
+            tracks.push(track);
+
+            // Create a custom interpolant for cubic spline interpolation
+            // The built in three.js cubic interpolant is not compatible with the glTF spec
+            if (sampler.getInterpolation() === "CUBICSPLINE") {
+              // @ts-ignore
+              track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline(
+                result: any
+              ) {
+                // A CUBICSPLINE keyframe in glTF has three output values for each input value,
+                // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
+                // must be divided by three to get the interpolant's sampleSize argument.
+                const InterpolantType =
+                  this instanceof QuaternionKeyframeTrack
+                    ? GLTFCubicSplineQuaternionInterpolant
+                    : GLTFCubicSplineInterpolant;
+
+                return new InterpolantType(
+                  this.times,
+                  this.values,
+                  this.getValueSize() / 3,
+                  result
+                );
+              };
+              // @ts-ignore
+              track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline = true;
+            }
+          });
+        });
+
+        const clip = new AnimationClip(animation.getName(), undefined, tracks);
+
+        const action = this.mixer.clipAction(clip);
+        if (this.#animationsEnabled) action.play();
+
+        this.animationObjects.set(data.id, action);
+        break;
+      }
+
+      case "change_animation": {
+        const animation = this.animation.store.get(data.id);
+        if (!animation) throw new Error("Animation not found");
+        this.animation.applyJSON(animation, data.json);
+        break;
+      }
+
+      case "dispose_animation": {
+        const animation = this.animation.store.get(data);
+        if (animation) animation.dispose();
         break;
       }
     }
@@ -779,6 +963,13 @@ export class RenderScene extends Scene {
     if (clonedMeshId) return clonedMeshId;
 
     return null;
+  }
+
+  toggleAnimations(enabled: boolean) {
+    this.#animationsEnabled = enabled;
+
+    if (enabled) this.animationObjects.forEach((clip) => clip.play());
+    else this.animationObjects.forEach((clip) => clip.reset());
   }
 
   destroy() {

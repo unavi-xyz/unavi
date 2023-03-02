@@ -1,10 +1,12 @@
+import { NextRequest } from "next/server";
+
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
 import { prisma } from "../../../../../src/server/prisma";
 import { Params, paramsSchema } from "../types";
 import { putSchema } from "./types";
 
 // Link publication
-export async function PUT(request: Request, { params }: Params) {
+export async function PUT(request: NextRequest, { params }: Params) {
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 

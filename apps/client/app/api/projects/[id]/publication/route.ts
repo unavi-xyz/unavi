@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
 import { optimizeProject } from "../../../../../src/server/helpers/optimizeProject";
@@ -9,7 +9,7 @@ import { Params, paramsSchema } from "../types";
 import { PublishProjectResponse } from "./types";
 
 // Publish project
-export async function POST(request: Request, { params }: Params) {
+export async function POST(request: NextRequest, { params }: Params) {
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 

@@ -89,7 +89,9 @@ export default async function Space({ params }: Props) {
 
           <div className="flex flex-col justify-between space-y-8 md:w-2/3">
             <div className="space-y-4">
-              <div className="text-center text-3xl font-black">{space.metadata?.name}</div>
+              <div className="text-center text-3xl font-black">
+                {space.metadata?.name ?? `Space ${id}`}
+              </div>
 
               <div className="space-y-1">
                 <div className="flex justify-center space-x-1 font-bold md:justify-start">

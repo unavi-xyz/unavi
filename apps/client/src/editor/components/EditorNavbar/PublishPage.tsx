@@ -48,12 +48,16 @@ export default function PublishPage() {
   const { save } = useSave();
 
   const { profile } = useProfileByAddress(session?.address);
-  const { data: project } = useSWR<Project | null>(`/api/projects/${id}`, fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-  });
+  const { data: project } = useSWR<Project | null>(
+    () => (id ? `/api/projects/${id}` : null),
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
   const { data: imageDownload } = useSWR<GetFileDownloadResponse>(
-    `/api/projects/${id}/image`,
+    () => (id ? `/api/projects/${id}/image` : null),
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
@@ -76,7 +80,8 @@ export default function PublishPage() {
 
       await save();
 
-      const publicationId = project?.Publication?.id ?? (await publishProject(id));
+      const publicationId = await publishProject(id);
+      let spaceId = project?.Publication?.spaceId ?? undefined;
 
       async function uploadImage() {
         if (!imageFile) throw new Error("Image not found");
@@ -87,7 +92,7 @@ export default function PublishPage() {
         const body = await res.blob();
 
         // Upload to S3
-        const url = await getPublicationFileUpload(id, "image");
+        const url = await getPublicationFileUpload(publicationId, "image");
 
         const response = await fetch(url, {
           method: "PUT",
@@ -102,8 +107,6 @@ export default function PublishPage() {
       }
 
       async function uploadMetadata(spaceId: number | undefined) {
-        if (!id) throw new Error("Project ID not found");
-
         const modelURL = cdnModelURL(publicationId);
         const imageURL = cdnImageURL(publicationId);
 
@@ -118,7 +121,7 @@ export default function PublishPage() {
         };
 
         // Upload to S3
-        const url = await getPublicationFileUpload(id, "model");
+        const url = await getPublicationFileUpload(publicationId, "metadata");
 
         const response = await fetch(url, {
           method: "PUT",
@@ -132,29 +135,30 @@ export default function PublishPage() {
         if (!response.ok) throw new Error("Failed to upload metadata");
       }
 
-      // Mint space NFT
-      const contentURI = cdnMetadataURL(publicationId);
-      const contract = Space__factory.connect(SPACE_ADDRESS, signer);
-      const tx = await contract.mintWithTokenURI(contentURI);
-      await tx.wait();
+      if (spaceId === undefined) {
+        // Mint space NFT
+        const contentURI = cdnMetadataURL(publicationId);
+        const contract = Space__factory.connect(SPACE_ADDRESS, signer);
+        const tx = await contract.mintWithTokenURI(contentURI);
+        await tx.wait();
 
-      // Get space ID
-      // Loop backwards through all spaces until we find the matching content URI
-      const count = (await contract.count()).toNumber();
-      let spaceId = project?.Publication?.spaceId ?? undefined;
-      let i = 0;
+        // Get space ID
+        // Loop backwards through all spaces until we find the matching content URI
+        const count = (await contract.count()).toNumber();
+        let i = 0;
 
-      while (spaceId === undefined && i < count) {
-        i++;
-        const tokenId = count - i;
+        while (spaceId === undefined && i < count) {
+          i++;
+          const tokenId = count - i;
 
-        const owner = await contract.ownerOf(tokenId);
-        if (owner !== session.address) continue;
+          const owner = await contract.ownerOf(tokenId);
+          if (owner !== session.address) continue;
 
-        const uri = await contract.tokenURI(tokenId);
-        if (uri !== contentURI) continue;
+          const uri = await contract.tokenURI(tokenId);
+          if (uri !== contentURI) continue;
 
-        spaceId = tokenId;
+          spaceId = tokenId;
+        }
       }
 
       const promises: Promise<unknown>[] = [uploadImage(), uploadMetadata(spaceId)];
@@ -162,14 +166,18 @@ export default function PublishPage() {
       if (spaceId !== undefined) promises.push(linkPublication(publicationId, spaceId));
 
       await Promise.all(promises);
-      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      if (spaceId !== undefined) {
-        // Redirect to space
-        router.push(`/space/${toHex(spaceId)}`);
-      } else {
-        // Redirect to profile
-        router.push(`/user/${profile ? toHex(profile.id) : session?.address}`);
+      // Redirect to space if new space was created
+      if (!project?.Publication?.spaceId) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        if (spaceId !== undefined) {
+          // Redirect to space
+          router.push(`/space/${toHex(spaceId)}`);
+        } else {
+          // Redirect to profile
+          router.push(`/user/${profile ? toHex(profile.id) : session?.address}`);
+        }
       }
     }
 

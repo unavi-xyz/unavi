@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import { prisma } from "../../../../src/server/prisma";
@@ -6,7 +6,7 @@ import { deleteFiles } from "../files";
 import { Params, paramsSchema, patchSchema } from "./types";
 
 // Get project
-export async function GET(request: Request, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
@@ -23,7 +23,7 @@ export async function GET(request: Request, { params }: Params) {
 }
 
 // Update project
-export async function PATCH(request: Request, { params }: Params) {
+export async function PATCH(request: NextRequest, { params }: Params) {
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
@@ -60,7 +60,7 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 // Delete project
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(request: NextRequest, { params }: Params) {
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 

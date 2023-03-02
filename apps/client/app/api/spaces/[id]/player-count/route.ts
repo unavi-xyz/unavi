@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { fetchPlayerCount } from "../../../../../src/server/helpers/fetchPlayerCount";
 import { Params, paramsSchema } from "../types";
 
 // Get player count
-export async function GET(request: Request, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
   const spaceId = parseInt(id);
 

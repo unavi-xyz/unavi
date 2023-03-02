@@ -1,5 +1,5 @@
 import { customAlphabet } from "nanoid";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "../../../src/server/helpers/getServerSession";
 import { prisma } from "../../../src/server/prisma";
@@ -12,7 +12,7 @@ const nanoid = customAlphabet(
 );
 
 // Create a new project
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 

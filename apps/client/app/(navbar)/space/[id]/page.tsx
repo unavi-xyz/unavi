@@ -6,13 +6,10 @@ import { Suspense } from "react";
 
 import { env } from "../../../../src/env/client.mjs";
 import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
-import { getServerSession } from "../../../../src/server/helpers/getServerSession";
-import ButtonTabs, { TabContent } from "../../../../src/ui/ButtonTabs";
 import { isFromCDN } from "../../../../src/utils/isFromCDN";
 import { toHex } from "../../../../src/utils/toHex";
-import About from "./About";
 import PlayerCount from "./PlayerCount";
-import Settings from "./Settings";
+import Tabs from "./Tabs";
 
 const host =
   process.env.NODE_ENV === "development" ? "localhost:4000" : env.NEXT_PUBLIC_DEFAULT_HOST;
@@ -54,11 +51,9 @@ interface Props {
 export default async function Space({ params }: Props) {
   const { id } = params;
   const spaceId = parseInt(id);
-  const [session, space] = await Promise.all([getServerSession(), fetchSpace(spaceId)]);
+  const space = await fetchSpace(spaceId);
 
   if (!space) notFound();
-
-  const isOwner = session?.address === space.owner;
 
   return (
     <div className="flex justify-center">
@@ -133,21 +128,10 @@ export default async function Space({ params }: Props) {
           </div>
         </div>
 
-        {isOwner ? (
-          <ButtonTabs titles={["About", "Settings"]}>
-            <TabContent value="About">
-              {/* @ts-expect-error Server Component */}
-              <About params={params} />
-            </TabContent>
-            <TabContent value="Settings">
-              {/* @ts-expect-error Server Component */}
-              <Settings params={params} />
-            </TabContent>
-          </ButtonTabs>
-        ) : (
-          // @ts-expect-error Server Component
-          <About params={params} />
-        )}
+        <Suspense fallback={null}>
+          {/* @ts-expect-error Server Component */}
+          <Tabs owner={space.owner} params={params} />
+        </Suspense>
       </div>
     </div>
   );

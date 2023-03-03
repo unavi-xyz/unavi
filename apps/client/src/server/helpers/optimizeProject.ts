@@ -66,13 +66,23 @@ export async function optimizeProject(id: string) {
   }
 
   // Compress model
-  await doc.transform(
-    textureCompress({ encoder: sharp, targetFormat: "webp", resize: [4096, 4096] }),
-    draco()
-  );
+  try {
+    await doc.transform(
+      textureCompress({ encoder: sharp, targetFormat: "webp", resize: [4096, 4096] }),
+      draco()
+    );
+  } catch (e) {
+    console.warn("Failed to compress model: ", e);
+  }
 
   // Write model
-  const optimizedArray = await io.writeBinary(doc);
+  let optimizedArray = array;
+
+  try {
+    optimizedArray = await io.writeBinary(doc);
+  } catch (e) {
+    console.warn("Failed to write model: ", e);
+  }
 
   console.info(
     "⚙️ Optimized model:",

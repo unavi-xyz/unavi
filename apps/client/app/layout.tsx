@@ -2,6 +2,9 @@ import "../styles/globals.css";
 
 import { Metadata } from "next";
 import { Nunito } from "next/font/google";
+import { Suspense } from "react";
+
+import Toast from "./Toast";
 
 const font = Nunito({ subsets: ["latin"] });
 
@@ -17,7 +20,6 @@ const logo = "/images/Logo.png";
 export const metadata: Metadata = {
   title,
   description,
-
   keywords: ["Metaverse", "WebXR", "Web3"],
   themeColor: "#191919",
   colorScheme: "light",
@@ -56,7 +58,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={font.className}>{children}</body>
+      <body className={font.className}>
+        {children}
+
+        <Suspense>
+          <Toast />
+        </Suspense>
+      </body>
     </html>
   );
 }

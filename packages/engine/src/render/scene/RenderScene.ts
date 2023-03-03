@@ -455,8 +455,10 @@ export class RenderScene extends Scene {
           weights.forEach((weight, i) => {
             instance.traverse((child) => {
               if (child instanceof ThreeMesh) {
-                if (!child.morphTargetInfluences) child.morphTargetInfluences = [];
-                child.morphTargetInfluences[i] = weight;
+                if ("morphTargetInfluences" in child) {
+                  if (!child.morphTargetInfluences) return;
+                  child.morphTargetInfluences[i] = weight;
+                }
               }
             });
           });
@@ -525,7 +527,7 @@ export class RenderScene extends Scene {
 
         // Apply weights
         mesh.getWeights().forEach((weight, i) => {
-          if (!primitiveObject.morphTargetInfluences) primitiveObject.morphTargetInfluences = [];
+          if (!primitiveObject.morphTargetInfluences) return;
           primitiveObject.morphTargetInfluences[i] = weight;
         });
 
@@ -698,6 +700,8 @@ export class RenderScene extends Scene {
     }
 
     if (json.targets) {
+      object.morphTargetInfluences = [];
+
       // Remove previous morph attributes
       Object.values(THREE_ATTRIBUTE_NAMES).forEach((name) => {
         delete object.geometry.morphAttributes[name];

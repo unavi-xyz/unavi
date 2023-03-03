@@ -443,10 +443,24 @@ export class RenderScene extends Scene {
         const meshObject = this.meshObjects.get(json.mesh);
         if (!meshObject) throw new Error("Mesh object not found");
 
-        const instanceCount = mesh.listParents().filter((p) => p instanceof Node).length;
+        const weights = node.getWeights();
 
-        if (instanceCount > 1) {
+        const instanceCount = mesh.listParents().filter((p) => p instanceof Node).length;
+        const shouldClone = instanceCount > 1 || weights.length > 0;
+
+        if (shouldClone) {
           const instance = meshObject.clone();
+
+          // Apply weights
+          weights.forEach((weight, i) => {
+            instance.traverse((child) => {
+              if (child instanceof ThreeMesh) {
+                if (!child.morphTargetInfluences) child.morphTargetInfluences = [];
+                child.morphTargetInfluences[i] = weight;
+              }
+            });
+          });
+
           this.instancedMeshObjects.set(id, instance);
           object.add(instance);
         } else {
@@ -508,6 +522,12 @@ export class RenderScene extends Scene {
 
         const primitiveObject = this.primitiveObjects.get(primitiveId);
         if (!primitiveObject) throw new Error("Primitive object not found");
+
+        // Apply weights
+        mesh.getWeights().forEach((weight, i) => {
+          if (!primitiveObject.morphTargetInfluences) primitiveObject.morphTargetInfluences = [];
+          primitiveObject.morphTargetInfluences[i] = weight;
+        });
 
         object.add(primitiveObject);
       });
@@ -605,10 +625,10 @@ export class RenderScene extends Scene {
     }
 
     const object = new ThreeMesh();
-    this.primitiveObjects.set(id, object);
-
+    object.geometry.morphTargetsRelative = true;
     object.castShadow = true;
     object.receiveShadow = true;
+    this.primitiveObjects.set(id, object);
 
     primitive.addEventListener("dispose", () => {
       object.removeFromParent();

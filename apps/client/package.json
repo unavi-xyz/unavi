@@ -12,8 +12,8 @@
     "start": "next start"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "~3.204.0",
-    "@aws-sdk/s3-request-presigner": "~3.204.0",
+    "@aws-sdk/client-s3": "~3.282.0",
+    "@aws-sdk/s3-request-presigner": "~3.282.0",
     "@gltf-transform/core": "3.0.4",
     "@gltf-transform/functions": "3.0.4",
     "@next-auth/prisma-adapter": "^1.0.5",

@@ -23,7 +23,7 @@ export default function Handle({ profile }: Props) {
 
   const disabled = savingUsername || username.length === 0 || username === profile?.handle?.string;
 
-  async function handleSaveName() {
+  async function handleSubmit() {
     if (disabled) return;
 
     if (!signer) {
@@ -67,7 +67,7 @@ export default function Handle({ profile }: Props) {
   }
 
   return (
-    <section className="space-y-2">
+    <form onSubmit={handleSubmit} className="space-y-2">
       <TextField
         value={username}
         onChange={(e) => setName(e.target.value)}
@@ -77,10 +77,10 @@ export default function Handle({ profile }: Props) {
       />
 
       <div className="flex justify-end">
-        <Button disabled={disabled} onClick={handleSaveName}>
+        <Button disabled={disabled} type="submit">
           Save
         </Button>
       </div>
-    </section>
+    </form>
   );
 }

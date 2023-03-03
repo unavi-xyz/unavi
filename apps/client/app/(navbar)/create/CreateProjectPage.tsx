@@ -15,7 +15,7 @@ export default function CreateProjectPage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleCreate() {
+  async function handleSubmit() {
     if (loading) return;
     setLoading(true);
 
@@ -57,7 +57,7 @@ export default function CreateProjectPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <TextField
         inputRef={nameRef}
         name="Name"
@@ -68,8 +68,8 @@ export default function CreateProjectPage() {
 
       <div className="flex justify-end">
         <button
-          onClick={handleCreate}
           disabled={loading}
+          type="submit"
           className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400 transition ${
             loading ? "cursor-not-allowed opacity-40" : "hover:scale-105"
           }`}
@@ -77,6 +77,6 @@ export default function CreateProjectPage() {
           Create
         </button>
       </div>
-    </div>
+    </form>
   );
 }

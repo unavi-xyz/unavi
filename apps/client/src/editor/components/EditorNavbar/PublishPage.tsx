@@ -70,7 +70,7 @@ export default function PublishPage() {
     cropImage(imageDownload.url).then((file) => setImageFile(file));
   }, [imageFile, imageDownload]);
 
-  function handlePublish() {
+  function handleSubmit() {
     if (loading || !signer || !id) return;
 
     async function publish() {
@@ -196,7 +196,7 @@ export default function PublishPage() {
   const image = imageFile ? URL.createObjectURL(imageFile) : undefined;
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <TextField
         name="Name"
         onChange={(e) => {
@@ -235,10 +235,10 @@ export default function PublishPage() {
       </div>
 
       <div className="flex justify-end">
-        <Button disabled={loading} onClick={handlePublish}>
+        <Button disabled={loading} type="submit">
           Submit
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

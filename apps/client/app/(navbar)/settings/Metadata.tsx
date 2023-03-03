@@ -43,7 +43,7 @@ export default function Metadata({ profile }: Props) {
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
 
-  async function handleSaveMetadata() {
+  async function handleSubmit() {
     if (saving) return;
 
     if (!signer) {
@@ -146,7 +146,7 @@ export default function Metadata({ profile }: Props) {
   return (
     <div className="mx-auto max-w-xl">
       {profile ? (
-        <section className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-2">
           <TextArea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -205,11 +205,11 @@ export default function Metadata({ profile }: Props) {
           </div>
 
           <div className="flex justify-end">
-            <Button disabled={saving} onClick={handleSaveMetadata}>
+            <Button disabled={saving} type="submit">
               Save
             </Button>
           </div>
-        </section>
+        </form>
       ) : null}
     </div>
   );

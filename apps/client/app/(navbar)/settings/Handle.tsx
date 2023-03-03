@@ -23,7 +23,9 @@ export default function Handle({ profile }: Props) {
 
   const disabled = savingUsername || username.length === 0 || username === profile?.handle?.string;
 
-  async function handleSubmit() {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
     if (disabled) return;
 
     if (!signer) {

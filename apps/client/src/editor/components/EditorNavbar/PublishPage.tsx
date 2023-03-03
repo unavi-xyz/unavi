@@ -70,7 +70,9 @@ export default function PublishPage() {
     cropImage(imageDownload.url).then((file) => setImageFile(file));
   }, [imageFile, imageDownload]);
 
-  function handleSubmit() {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
     if (loading || !signer || !id) return;
 
     async function publish() {

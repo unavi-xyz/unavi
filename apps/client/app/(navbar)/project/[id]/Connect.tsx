@@ -20,7 +20,9 @@ export default function Connect({ id, connectedSpaceId }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleConnect() {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
     if (loading) return;
 
     const hexId = inputRef.current?.value ?? "";
@@ -93,7 +95,7 @@ export default function Connect({ id, connectedSpaceId }: Props) {
         space ID is set, you will be prompted to mint a new space when you publish the project.
       </div>
 
-      <div className="flex items-center space-x-2">
+      <form onSubmit={handleSubmit} className="flex items-center space-x-2">
         <input
           ref={inputRef}
           defaultValue={connectedSpaceId ? toHex(connectedSpaceId) : undefined}
@@ -103,7 +105,7 @@ export default function Connect({ id, connectedSpaceId }: Props) {
           className="h-9 w-24 rounded-lg py-1 pr-1 text-center ring-1 ring-inset ring-neutral-500"
         />
 
-        <Button disabled={loading} onClick={handleConnect} className="h-9 rounded-lg">
+        <Button disabled={loading} type="submit" className="h-9 rounded-lg">
           Connect
         </Button>
 
@@ -115,7 +117,7 @@ export default function Connect({ id, connectedSpaceId }: Props) {
             View
           </Link>
         )}
-      </div>
+      </form>
     </div>
   );
 }

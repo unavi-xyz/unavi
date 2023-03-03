@@ -43,7 +43,9 @@ export default function Metadata({ profile }: Props) {
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
 
-  async function handleSubmit() {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
     if (saving) return;
 
     if (!signer) {

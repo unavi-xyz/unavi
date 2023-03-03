@@ -15,7 +15,9 @@ export default function CreateProjectPage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit() {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
     if (loading) return;
     setLoading(true);
 

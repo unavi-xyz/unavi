@@ -209,19 +209,18 @@ export class PhysicsScene extends Scene {
           }
         }
 
-        if (!colliderDesc) return;
+        if (colliderDesc) {
+          colliderDesc.setCollisionGroups(COLLISION_GROUP.static);
 
-        colliderDesc.setCollisionGroups(COLLISION_GROUP.static);
+          const rigidBodyDesc = RigidBodyDesc.kinematicPositionBased();
+          const rigidBody = this.#world.createRigidBody(rigidBodyDesc);
+          const collider = this.#world.createCollider(colliderDesc, rigidBody);
 
-        const rigidBodyDesc = RigidBodyDesc.kinematicPositionBased();
-        const rigidBody = this.#world.createRigidBody(rigidBodyDesc);
-        const collider = this.#world.createCollider(colliderDesc, rigidBody);
-
-        this.colliders.set(nodeId, collider);
-
-        this.#updateNodeTransform(nodeId);
+          this.colliders.set(nodeId, collider);
+        }
       }
     }
+    this.#updateNodeTransform(nodeId);
   }
 
   #removeNodeCollider(nodeId: string) {

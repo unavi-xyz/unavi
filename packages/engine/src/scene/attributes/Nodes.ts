@@ -151,6 +151,15 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       }
     }
 
+    if (json.skin !== undefined) {
+      if (json.skin === null) {
+        node.setSkin(null);
+      } else {
+        const skin = this.#scene.skin.store.get(json.skin);
+        if (skin) node.setSkin(skin);
+      }
+    }
+
     if (json.children) {
       for (const childId of json.children) {
         const child = this.store.get(childId);
@@ -207,6 +216,10 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     const meshId = mesh ? this.#scene.mesh.getId(mesh) : null;
     if (meshId === undefined) throw new Error("Mesh not found");
 
+    const skin = node.getSkin();
+    const skinId = skin ? this.#scene.skin.getId(skin) : null;
+    if (skinId === undefined) throw new Error("Skin not found");
+
     const childrenIds = node.listChildren().map((child) => {
       for (const [id, node] of this.store) {
         if (node === child) return id;
@@ -249,7 +262,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       rotation: node.getRotation(),
       scale: node.getScale(),
       mesh: meshId,
-      skin: null,
+      skin: skinId,
       children: childrenIds,
       extensions,
       extras: node.getExtras() as NodeExtras,

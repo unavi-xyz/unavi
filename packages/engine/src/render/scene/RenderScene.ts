@@ -1,8 +1,9 @@
-import { Accessor, Mesh, Node, Primitive, Texture, TextureInfo } from "@gltf-transform/core";
+import { Accessor, Mesh, Node, Primitive, Skin, Texture, TextureInfo } from "@gltf-transform/core";
 import {
   AnimationAction,
   AnimationClip,
   AnimationMixer,
+  Bone,
   BufferAttribute,
   DoubleSide,
   FrontSide,
@@ -14,6 +15,8 @@ import {
   NumberKeyframeTrack,
   Object3D,
   QuaternionKeyframeTrack,
+  Skeleton,
+  SkinnedMesh,
   sRGBEncoding,
   VectorKeyframeTrack,
 } from "three";
@@ -38,6 +41,7 @@ type NodeId = string;
 type MeshId = string;
 type PrimitiveId = string;
 type MaterialId = string;
+type SkinId = string;
 
 /**
  * Instants of a {@link Scene} for the render thread.
@@ -53,10 +57,11 @@ export class RenderScene extends Scene {
   #animationsEnabled = false;
 
   materialObjects = new Map<MaterialId, MeshStandardMaterial>();
-  primitiveObjects = new Map<PrimitiveId, ThreeMesh>();
+  primitiveObjects = new Map<PrimitiveId, ThreeMesh | SkinnedMesh>();
   meshObjects = new Map<MeshId, Object3D>();
   instancedMeshObjects = new Map<NodeId, Object3D>();
-  nodeObjects = new Map<NodeId, Object3D>();
+  nodeObjects = new Map<NodeId, Object3D | Bone>();
+  skeletonObjects = new Map<SkinId, Skeleton>();
   animationObjects = new Map<NodeId, AnimationAction>();
 
   static DEFAULT_MATERIAL = new MeshStandardMaterial();
@@ -206,15 +211,7 @@ export class RenderScene extends Scene {
       case "create_node": {
         const { object: node } = this.node.create(data.json, data.id);
 
-        const object = new Object3D();
-        this.root.add(object);
-        this.nodeObjects.set(data.id, object);
-
-        node.addEventListener("dispose", () => {
-          this.nodeObjects.delete(data.id);
-        });
-
-        this.updateNode(data.id, data.json);
+        this.createNodeObject(node);
         break;
       }
 
@@ -226,6 +223,28 @@ export class RenderScene extends Scene {
       case "dispose_node": {
         const node = this.node.store.get(data);
         if (node) node.dispose();
+        break;
+      }
+
+      case "create_skin": {
+        const { object: skin } = this.skin.create(data.json, data.id);
+        this.updateSkin(skin);
+        break;
+      }
+
+      case "dispose_skin": {
+        const skin = this.skin.store.get(data);
+
+        if (skin) {
+          const joints = skin.listJoints();
+
+          skin.dispose();
+
+          // Update joint objects
+          joints.forEach((node) => {
+            this.updateNodeObject(node);
+          });
+        }
         break;
       }
 
@@ -427,7 +446,12 @@ export class RenderScene extends Scene {
     if (json.rotation) object.quaternion.fromArray(json.rotation);
     if (json.scale) object.scale.fromArray(json.scale);
 
+    let oldMesh: Mesh | null = null;
+    let newMesh: Mesh | null = null;
+
     if (json.mesh !== undefined) {
+      oldMesh = node.getMesh();
+
       // Remove old mesh
       object.children.forEach((child) => {
         const id = this.getMeshId(child) ?? this.getInstancedMeshNodeId(child);
@@ -437,15 +461,15 @@ export class RenderScene extends Scene {
 
       // Add new mesh
       if (json.mesh) {
-        const mesh = this.mesh.store.get(json.mesh);
-        if (!mesh) throw new Error("Mesh not found");
+        newMesh = this.mesh.store.get(json.mesh) ?? null;
+        if (!newMesh) throw new Error("Mesh not found");
 
         const meshObject = this.meshObjects.get(json.mesh);
         if (!meshObject) throw new Error("Mesh object not found");
 
         const weights = node.getWeights();
 
-        const instanceCount = mesh.listParents().filter((p) => p instanceof Node).length;
+        const instanceCount = newMesh.listParents().filter((p) => p instanceof Node).length;
         const shouldClone = instanceCount > 1 || weights.length > 0;
 
         if (shouldClone) {
@@ -471,6 +495,25 @@ export class RenderScene extends Scene {
       }
     }
 
+    node.setMesh(newMesh);
+
+    if (json.skin !== undefined) {
+      const oldSkin = node.getSkin();
+
+      // Remove old skin
+      node.setSkin(null);
+
+      const newSkin = json.skin ? this.skin.store.get(json.skin) : null;
+      if (newSkin === undefined) throw new Error("Skin not found");
+
+      // Add new skin
+      node.setSkin(newSkin);
+
+      // Update skin
+      if (oldSkin) this.updateSkin(oldSkin);
+      if (newSkin) this.updateSkin(newSkin);
+    }
+
     if (json.children) {
       // Remove old children
       object.children.forEach((child) => {
@@ -493,6 +536,147 @@ export class RenderScene extends Scene {
 
     // Apply node JSON
     this.node.applyJSON(node, json);
+
+    // Update primitive objects if mesh changed
+    if (oldMesh) {
+      oldMesh.listPrimitives().forEach((primitive) => this.updatePrimitiveObject(primitive));
+    }
+
+    if (newMesh) {
+      newMesh.listPrimitives().forEach((primitive) => this.updatePrimitiveObject(primitive));
+    }
+  }
+
+  #isNodeJoint(node: Node) {
+    return node.listParents().some((parent) => parent instanceof Skin);
+  }
+
+  updateNodeObject(node: Node) {
+    const id = this.node.getId(node);
+    if (!id) throw new Error("Node not found");
+
+    const previousObject = this.nodeObjects.get(id);
+
+    if (previousObject) {
+      // Check if node is a joint
+      const isJoint = this.#isNodeJoint(node);
+
+      if (isJoint !== previousObject instanceof Bone) {
+        this.createNodeObject(node);
+      }
+    } else {
+      this.createNodeObject(node);
+    }
+  }
+
+  createNodeObject(node: Node) {
+    const id = this.node.getId(node);
+    if (!id) throw new Error("Node not found");
+
+    const previousObject = this.nodeObjects.get(id);
+
+    const parent = previousObject?.parent;
+    const children = previousObject?.children;
+
+    // Remove previous object
+    if (previousObject) {
+      previousObject.removeFromParent();
+      this.nodeObjects.delete(id);
+    }
+
+    // Create new object
+    const isJoint = this.#isNodeJoint(node);
+    const object = isJoint ? new Bone() : new Object3D();
+    object.name = node.getName();
+
+    this.root.add(object);
+
+    // Add previous parent and children
+    if (parent) parent.add(object);
+    if (children) children.forEach((child) => object.add(child));
+
+    this.nodeObjects.set(id, object);
+
+    node.addEventListener("dispose", () => {
+      this.nodeObjects.delete(id);
+    });
+  }
+
+  updateSkin(skin: Skin) {
+    const id = this.skin.getId(skin);
+    if (!id) throw new Error("Skin not found");
+
+    // Update joint objects
+    skin.listJoints().forEach((node) => {
+      this.updateNodeObject(node);
+    });
+
+    // Update skinned mesh objects
+    const parents = skin.listParents().filter((p): p is Node => p instanceof Node);
+
+    parents.forEach((node) => {
+      const mesh = node.getMesh();
+      if (!mesh) return;
+
+      mesh.listPrimitives().forEach((primitive) => {
+        this.updatePrimitiveObject(primitive);
+      });
+    });
+
+    // Get bones
+    const bones = skin.listJoints().map((node) => {
+      const id = this.node.getId(node);
+      if (!id) throw new Error("Node id not found");
+
+      const object = this.nodeObjects.get(id);
+      if (!object) throw new Error("Node object not found");
+      if (!(object instanceof Bone)) throw new Error("Node object is not a bone");
+
+      return object;
+    });
+
+    // Apply inverse bind matrices
+    const inverseBindMatrices = skin.getInverseBindMatrices();
+    if (inverseBindMatrices) {
+      const array = inverseBindMatrices.getArray();
+      if (array) {
+        bones.forEach((bone, i) => {
+          bone.matrix.fromArray(array, i * 16);
+        });
+      }
+    }
+
+    // Remove old skeleton
+    const oldSkeleton = this.skeletonObjects.get(id);
+    if (oldSkeleton) {
+      oldSkeleton.dispose();
+      this.skeletonObjects.delete(id);
+    }
+
+    // Create skeleton
+    const skeleton = new Skeleton(bones);
+    this.skeletonObjects.set(id, skeleton);
+
+    // Bind skeleton to mesh
+    parents.forEach((node) => {
+      const mesh = node.getMesh();
+      if (!mesh) return;
+
+      mesh.listPrimitives().forEach((primitive) => {
+        const id = this.primitive.getId(primitive);
+        if (!id) throw new Error("Primitive id not found");
+
+        const object = this.primitiveObjects.get(id);
+        if (!object) throw new Error("Primitive object not found");
+        if (!(object instanceof SkinnedMesh)) return;
+
+        object.bind(skeleton, object.matrixWorld);
+      });
+    });
+
+    skin.addEventListener("dispose", () => {
+      skeleton.dispose();
+    });
   }
 
   updateMesh(id: string, json: Partial<MeshJSON>) {
@@ -503,8 +687,10 @@ export class RenderScene extends Scene {
     if (!object) throw new Error("Mesh object not found");
 
     if (json.primitives) {
+      const oldPrimitives = mesh.listPrimitives();
+
       // Remove previous primitives
-      mesh.listPrimitives().forEach((primitive) => {
+      oldPrimitives.forEach((primitive) => {
         const primitiveId = this.primitive.getId(primitive);
         if (!primitiveId) throw new Error("Primitive not found");
 
@@ -533,6 +719,10 @@ export class RenderScene extends Scene {
 
         object.add(primitiveObject);
       });
+
+      // Update both new and old primitive objects
+      oldPrimitives.forEach((primitive) => this.updatePrimitiveObject(primitive));
+      mesh.listPrimitives().forEach((primitive) => this.updatePrimitiveObject(primitive));
     }
 
     if (json.extras) {
@@ -626,10 +816,78 @@ export class RenderScene extends Scene {
       this.#toMainThread({ subject: "create_primitive", data: { id, json: fullJSON } });
     }
 
-    const object = new ThreeMesh();
+    this.updatePrimitiveObject(primitive);
+
+    this.updatePrimitive(id, fullJSON);
+
+    return { id, primitive };
+  }
+
+  #isPrimitiveSkinnedMesh(primitive: Primitive) {
+    return primitive
+      .listParents()
+      .filter((parent): parent is Mesh => parent instanceof Mesh)
+      .flatMap((mesh) =>
+        mesh.listParents().filter((parent): parent is Node => parent instanceof Node)
+      )
+      .some((node) => node.getSkin() !== null);
+  }
+
+  updatePrimitiveObject(primitive: Primitive) {
+    const id = this.primitive.getId(primitive);
+    if (!id) throw new Error("Primitive id not found");
+
+    const previousObject = this.primitiveObjects.get(id);
+
+    if (previousObject) {
+      // Check if primitive is skinned mesh
+      const isSkinnedMesh = this.#isPrimitiveSkinnedMesh(primitive);
+
+      if (isSkinnedMesh !== previousObject instanceof SkinnedMesh) {
+        this.createPrimitiveObject(primitive);
+      }
+    } else {
+      this.createPrimitiveObject(primitive);
+    }
+  }
+
+  createPrimitiveObject(primitive: Primitive) {
+    const id = this.primitive.getId(primitive);
+    if (!id) throw new Error("Primitive id not found");
+
+    const previousObject = this.primitiveObjects.get(id);
+
+    const parent = previousObject?.parent;
+    const children = previousObject?.children;
+    const geometry = previousObject?.geometry;
+    const material = previousObject?.material;
+
+    // Remove previous object
+    if (previousObject) {
+      previousObject.removeFromParent();
+      this.primitiveObjects.delete(id);
+    }
+
+    // Create new object
+    const isSkinnedMesh = this.#isPrimitiveSkinnedMesh(primitive);
+    const object = isSkinnedMesh
+      ? new SkinnedMesh(geometry, material)
+      : new ThreeMesh(geometry, material);
+
+    if (object instanceof SkinnedMesh) {
+      const normalized = object.geometry.attributes.skinWeight.normalized;
+      if (!normalized) object.normalizeSkinWeights();
+    }
+
+    object.name = primitive.getName();
     object.geometry.morphTargetsRelative = true;
     object.castShadow = true;
     object.receiveShadow = true;
+
+    // Add previous parent and children
+    if (parent) parent.add(object);
+    if (children) children.forEach((child) => object.add(child));
+
     this.primitiveObjects.set(id, object);
 
     primitive.addEventListener("dispose", () => {
@@ -637,10 +895,6 @@ export class RenderScene extends Scene {
       object.geometry.dispose();
       this.primitiveObjects.delete(id);
     });
-
-    this.updatePrimitive(id, fullJSON);
-
-    return { id, primitive };
   }
 
   updatePrimitive(id: string, json: Partial<PrimitiveJSON>) {
@@ -700,7 +954,9 @@ export class RenderScene extends Scene {
     }
 
     if (json.targets) {
-      object.morphTargetInfluences = [];
+      // Reset morph influences
+      if (json.targets.length === 0) object.morphTargetInfluences = undefined;
+      else object.morphTargetInfluences = [];
 
       // Remove previous morph attributes
       Object.values(THREE_ATTRIBUTE_NAMES).forEach((name) => {

@@ -1,6 +1,7 @@
 import { Document, Mesh } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
+import { Scene } from "../Scene";
 import { Attribute } from "./Attribute";
 import { Primitives } from "./Primitives";
 
@@ -51,11 +52,11 @@ export class Meshes extends Attribute<Mesh, MeshJSON> {
 
   store = new Map<string, Mesh>();
 
-  constructor(doc: Document, primitive: Primitives) {
+  constructor(scene: Scene) {
     super();
 
-    this.#doc = doc;
-    this.#primitive = primitive;
+    this.#doc = scene.doc;
+    this.#primitive = scene.primitive;
   }
 
   getId(mesh: Mesh) {

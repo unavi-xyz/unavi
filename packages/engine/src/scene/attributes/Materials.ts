@@ -2,6 +2,7 @@ import { Document, GLTF, Material } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
 import { Vec3, Vec4 } from "../../types";
+import { Scene } from "../Scene";
 import { Attribute } from "./Attribute";
 import { TextureInfoJSON, TextureInfoUtils } from "./TextureInfoUtils";
 import { Textures } from "./Textures";
@@ -45,11 +46,11 @@ export class Materials extends Attribute<Material, MaterialJSON> {
   #texture: Textures;
   store = new Map<string, Material>();
 
-  constructor(doc: Document, texture: Textures) {
+  constructor(scene: Scene) {
     super();
 
-    this.#doc = doc;
-    this.#texture = texture;
+    this.#doc = scene.doc;
+    this.#texture = scene.texture;
   }
 
   getId(material: Material) {

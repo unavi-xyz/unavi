@@ -60,7 +60,14 @@ export class SceneModule extends Scene {
     this.node.addEventListener("create", ({ data }) => {
       const node = this.node.store.get(data.id);
       if (!node) throw new Error("Node not found");
+
       this.#onNodeCreate(node);
+
+      const id = this.node.getId(node);
+      if (!id) throw new Error("Id not found");
+
+      const json = this.node.toJSON(node);
+      this.#publish({ subject: "change_node", data: { id, json } });
     });
   }
 
@@ -191,6 +198,7 @@ export class SceneModule extends Scene {
 
   clear() {
     this.animation.store.forEach((animation) => animation.dispose());
+    this.skin.store.forEach((skin) => skin.dispose());
     this.node.store.forEach((node) => node.dispose());
     this.mesh.store.forEach((mesh) => mesh.dispose());
     this.primitive.store.forEach((primitive) => primitive.dispose());
@@ -270,8 +278,33 @@ export class SceneModule extends Scene {
       this.#onMeshCreate(mesh);
     });
 
-    this.node.processChanges().forEach((node) => {
+    // Create nodes, then skins, then send node json
+    // This is because skins and nodes reference each other
+    const nodes = this.node.processChanges();
+    const skins = this.skin.processChanges();
+
+    nodes.forEach((node) => {
       this.#onNodeCreate(node);
+    });
+
+    skins.forEach((skin) => {
+      const id = this.skin.getId(skin);
+      if (!id) throw new Error("Id not found");
+
+      const json = this.skin.toJSON(skin);
+      this.#render.send({ subject: "create_skin", data: { id, json } });
+
+      skin.addEventListener("dispose", () => {
+        this.#render.send({ subject: "dispose_skin", data: id });
+      });
+    });
+
+    nodes.forEach((node) => {
+      const id = this.node.getId(node);
+      if (!id) throw new Error("Id not found");
+
+      const json = this.node.toJSON(node);
+      this.#publish({ subject: "change_node", data: { id, json } });
     });
 
     this.animation.processChanges().forEach((animation) => {
@@ -279,7 +312,6 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
 
       const json = this.animation.toJSON(animation);
-
       this.#publish({ subject: "create_animation", data: { id, json } });
 
       animation.addEventListener("change", (e) => {
@@ -312,8 +344,7 @@ export class SceneModule extends Scene {
     const id = this.node.getId(node);
     if (!id) throw new Error("Id not found");
 
-    const json = this.node.toJSON(node);
-    this.#publish({ subject: "create_node", data: { id, json } });
+    this.#publish({ subject: "create_node", data: { id, json: {} } });
 
     let extensionListeners: Array<{ extension: ExtensionProperty; listener: () => void }> = [];
 

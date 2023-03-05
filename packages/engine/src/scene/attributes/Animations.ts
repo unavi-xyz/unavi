@@ -1,6 +1,7 @@
 import { Animation, AnimationSampler, Document, GLTF } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
+import { Scene } from "../Scene";
 import { Accessors } from "./Accessors";
 import { Attribute } from "./Attribute";
 import { Nodes } from "./Nodes";
@@ -35,12 +36,12 @@ export class Animations extends Attribute<Animation, AnimationJSON> {
 
   store = new Map<string, Animation>();
 
-  constructor(doc: Document, node: Nodes, accessor: Accessors) {
+  constructor(scene: Scene) {
     super();
 
-    this.#doc = doc;
-    this.#node = node;
-    this.#accessor = accessor;
+    this.#doc = scene.doc;
+    this.#node = scene.node;
+    this.#accessor = scene.accessor;
   }
 
   getId(animation: Animation) {

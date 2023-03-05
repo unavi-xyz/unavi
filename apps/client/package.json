@@ -61,7 +61,7 @@
     "@types/sharp": "^0.31.1",
     "autoprefixer": "^10.4.13",
     "dotenv-cli": "^7.0.0",
-    "eslint": "^8.33.0",
+    "eslint": "^8.35.0",
     "eslint-config-custom": "*",
     "postcss": "^8.4.21",
     "prisma": "^4.10.1",

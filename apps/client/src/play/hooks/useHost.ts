@@ -4,9 +4,8 @@ import { Transport } from "mediasoup-client/lib/Transport";
 import { fromHostMessageSchema, ToHostMessage } from "protocol";
 import { useEffect, useState } from "react";
 
-import { trpc } from "../../client/trpc";
 import { usePlayStore } from "../../play/store";
-import { numberToHexDisplay } from "../../utils/numberToHexDisplay";
+import { toHex } from "../../utils/toHex";
 import { PlayerName } from "../networking/PlayerName";
 import { Players } from "../networking/Players";
 
@@ -23,7 +22,6 @@ const PUBLISH_HZ = 15; // X times per second
  */
 export function useHost(id: number, host: string) {
   const engine = usePlayStore((state) => state.engine);
-  const utils = trpc.useContext();
 
   const [spaceJoined, setSpaceJoined] = useState(false);
   const [reconnectCount, setReconnectCount] = useState(0);
@@ -33,7 +31,7 @@ export function useHost(id: number, host: string) {
     if (!engine) return;
 
     const ws = new WebSocket(host);
-    const players = new Players(utils, engine);
+    const players = new Players(engine);
     const device = new Device();
     const audioContext = new AudioContext();
     const panners = new Map<number, PannerNode>();
@@ -96,8 +94,8 @@ export function useHost(id: number, host: string) {
       switch (subject) {
         case "join_success": {
           setSpaceJoined(true);
-          console.info(`🌏 Joined space as player ${numberToHexDisplay(data.playerId)}`);
-          const name = new PlayerName(data.playerId, utils, engine);
+          console.info(`🌏 Joined space as player ${toHex(data.playerId)}`);
+          const name = new PlayerName(data.playerId, engine);
           players.names.set(data.playerId, name);
           usePlayStore.setState({ playerId: data.playerId });
           break;
@@ -356,7 +354,7 @@ export function useHost(id: number, host: string) {
       document.removeEventListener("touchstart", play);
       audioContext.close();
     };
-  }, [engine, utils, id, host, reconnectCount]);
+  }, [engine, id, host, reconnectCount]);
 
   return { spaceJoined };
 }

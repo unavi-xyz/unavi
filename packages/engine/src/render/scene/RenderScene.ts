@@ -1,24 +1,27 @@
-import { Accessor, Mesh, Node, Primitive, Texture, TextureInfo } from "@gltf-transform/core";
+import { Accessor, Mesh, Node, Primitive, Skin, Texture, TextureInfo } from "@gltf-transform/core";
 import {
-  BoxGeometry,
+  AnimationAction,
+  AnimationClip,
+  AnimationMixer,
+  Bone,
   BufferAttribute,
-  BufferGeometry,
-  CapsuleGeometry,
-  CylinderGeometry,
   DoubleSide,
   FrontSide,
+  InterpolateDiscrete,
+  InterpolateLinear,
+  KeyframeTrack,
   Mesh as ThreeMesh,
-  MeshBasicMaterial,
   MeshStandardMaterial,
+  NumberKeyframeTrack,
   Object3D,
-  SphereGeometry,
+  QuaternionKeyframeTrack,
+  Skeleton,
+  SkinnedMesh,
   sRGBEncoding,
+  VectorKeyframeTrack,
 } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
-import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
 
-import { DEFAULT_VISUALS } from "../../constants";
-import { Collider, ColliderExtension } from "../../gltf";
 import { AccessorJSON, MeshJSON, NodeJSON } from "../../scene";
 import { MaterialJSON } from "../../scene/attributes/Materials";
 import { PrimitiveJSON } from "../../scene/attributes/Primitives";
@@ -28,12 +31,17 @@ import { Scene } from "../../scene/Scene";
 import { deepDispose } from "../utils/deepDispose";
 import { THREE_ATTRIBUTE_NAMES } from "./constants";
 import { createTexture } from "./createTexture";
+import {
+  GLTFCubicSplineInterpolant,
+  GLTFCubicSplineQuaternionInterpolant,
+} from "./CubicSplineInterpolation";
 import { getCustomMeshData } from "./getCustomMeshData";
 
 type NodeId = string;
 type MeshId = string;
 type PrimitiveId = string;
 type MaterialId = string;
+type SkinId = string;
 
 /**
  * Instants of a {@link Scene} for the render thread.
@@ -44,17 +52,17 @@ export class RenderScene extends Scene {
   #toMainThread: (message: SceneMessage) => void;
 
   root = new Object3D();
+  mixer = new AnimationMixer(this.root);
+
+  #animationsEnabled = false;
 
   materialObjects = new Map<MaterialId, MeshStandardMaterial>();
-  primitiveObjects = new Map<PrimitiveId, ThreeMesh>();
+  primitiveObjects = new Map<PrimitiveId, ThreeMesh | SkinnedMesh>();
   meshObjects = new Map<MeshId, Object3D>();
   instancedMeshObjects = new Map<NodeId, Object3D>();
-  nodeObjects = new Map<NodeId, Object3D>();
-  colliderObjects = new Map<NodeId, ThreeMesh>();
-
-  colliderMaterial = new MeshBasicMaterial({ color: "#000000", wireframe: true });
-  visuals = new Object3D();
-  #visualsEnabled = DEFAULT_VISUALS;
+  nodeObjects = new Map<NodeId, Object3D | Bone>();
+  skeletonObjects = new Map<SkinId, Skeleton>();
+  animationObjects = new Map<NodeId, AnimationAction>();
 
   static DEFAULT_MATERIAL = new MeshStandardMaterial();
 
@@ -62,30 +70,6 @@ export class RenderScene extends Scene {
     super();
 
     this.#toMainThread = toMainThread;
-  }
-
-  get visualsEnabled() {
-    return this.#visualsEnabled;
-  }
-
-  set visualsEnabled(enabled: boolean) {
-    this.#visualsEnabled = enabled;
-
-    if (enabled) {
-      this.doc
-        .getRoot()
-        .listNodes()
-        .forEach((node) => {
-          const id = this.node.getId(node);
-          if (!id) throw new Error("Node not found");
-          this.updateColliderVisual(id);
-        });
-    } else {
-      this.colliderObjects.forEach((object) => {
-        object.removeFromParent();
-        object.geometry.dispose();
-      });
-    }
   }
 
   get csm() {
@@ -227,15 +211,7 @@ export class RenderScene extends Scene {
       case "create_node": {
         const { object: node } = this.node.create(data.json, data.id);
 
-        const object = new Object3D();
-        this.root.add(object);
-        this.nodeObjects.set(data.id, object);
-
-        node.addEventListener("dispose", () => {
-          this.nodeObjects.delete(data.id);
-        });
-
-        this.updateNode(data.id, data.json);
+        this.createNodeObject(node);
         break;
       }
 
@@ -247,6 +223,195 @@ export class RenderScene extends Scene {
       case "dispose_node": {
         const node = this.node.store.get(data);
         if (node) node.dispose();
+        break;
+      }
+
+      case "create_skin": {
+        const { object: skin } = this.skin.create(data.json, data.id);
+        this.updateSkin(skin);
+        break;
+      }
+
+      case "dispose_skin": {
+        const skin = this.skin.store.get(data);
+
+        if (skin) {
+          const joints = skin.listJoints();
+
+          skin.dispose();
+
+          // Update joint objects
+          joints.forEach((node) => {
+            this.updateNodeObject(node);
+          });
+        }
+        break;
+      }
+
+      case "create_animation": {
+        this.animation.create(data.json, data.id);
+
+        const animation = this.animation.store.get(data.id);
+        if (!animation) throw new Error("Animation not found");
+
+        const tracks: KeyframeTrack[] = [];
+
+        animation.listChannels().forEach((channel) => {
+          // Get keyframe track type
+          const path = channel.getTargetPath();
+          if (!path) return;
+
+          let threePath: string;
+          let TypedKeyframeTrack:
+            | typeof NumberKeyframeTrack
+            | typeof VectorKeyframeTrack
+            | typeof QuaternionKeyframeTrack;
+
+          switch (path) {
+            case "weights": {
+              TypedKeyframeTrack = NumberKeyframeTrack;
+              threePath = "morphTargetInfluences";
+              break;
+            }
+
+            case "rotation": {
+              TypedKeyframeTrack = QuaternionKeyframeTrack;
+              threePath = "quaternion";
+              break;
+            }
+
+            case "translation": {
+              TypedKeyframeTrack = VectorKeyframeTrack;
+              threePath = "position";
+              break;
+            }
+
+            case "scale": {
+              TypedKeyframeTrack = VectorKeyframeTrack;
+              threePath = "scale";
+              break;
+            }
+
+            default:
+              throw new Error(`Unknown target path: ${path}`);
+          }
+
+          // Get interpolation mode
+          const sampler = channel.getSampler();
+          if (!sampler) return;
+
+          let interpolationMode: typeof InterpolateLinear | typeof InterpolateDiscrete | undefined;
+
+          switch (sampler.getInterpolation()) {
+            case "LINEAR": {
+              interpolationMode = InterpolateLinear;
+              break;
+            }
+
+            case "STEP": {
+              interpolationMode = InterpolateDiscrete;
+              break;
+            }
+
+            case "CUBICSPLINE": {
+              interpolationMode = undefined;
+              break;
+            }
+
+            default:
+              throw new Error("Unknown interpolation");
+          }
+
+          // Get target object ids
+          const target = channel.getTargetNode();
+          if (!target) return;
+
+          const targetid = this.node.getId(target);
+          if (!targetid) return;
+
+          const targetObject = this.nodeObjects.get(targetid);
+          if (!targetObject) return;
+
+          const targetIds = [];
+          if (path === "weights") {
+            targetObject.traverse((child) => {
+              if ("morphTargetInfluences" in child) targetIds.push(child.uuid);
+            });
+          } else {
+            targetIds.push(targetObject.uuid);
+          }
+
+          // Get input and output data
+          const inputAccessor = sampler.getInput();
+          if (!inputAccessor) return;
+
+          const outputAccessor = sampler.getOutput();
+          if (!outputAccessor) return;
+
+          const inputArray = inputAccessor.getArray();
+          if (!inputArray) return;
+
+          const outputArray = outputAccessor.getArray();
+          if (!outputArray) return;
+
+          // Create keyframe track
+          targetIds.forEach((id) => {
+            const track = new TypedKeyframeTrack(
+              `${id}.${threePath}`,
+              inputArray,
+              outputArray,
+              interpolationMode
+            );
+
+            tracks.push(track);
+
+            // Create a custom interpolant for cubic spline interpolation
+            // The built in three.js cubic interpolant is not compatible with the glTF spec
+            if (sampler.getInterpolation() === "CUBICSPLINE") {
+              // @ts-ignore
+              track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline(
+                result: any
+              ) {
+                // A CUBICSPLINE keyframe in glTF has three output values for each input value,
+                // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
+                // must be divided by three to get the interpolant's sampleSize argument.
+                const InterpolantType =
+                  this instanceof QuaternionKeyframeTrack
+                    ? GLTFCubicSplineQuaternionInterpolant
+                    : GLTFCubicSplineInterpolant;
+
+                return new InterpolantType(
+                  this.times,
+                  this.values,
+                  this.getValueSize() / 3,
+                  result
+                );
+              };
+              // @ts-ignore
+              track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline = true;
+            }
+          });
+        });
+
+        const clip = new AnimationClip(animation.getName(), undefined, tracks);
+
+        const action = this.mixer.clipAction(clip);
+        if (this.#animationsEnabled) action.play();
+
+        this.animationObjects.set(data.id, action);
+        break;
+      }
+
+      case "change_animation": {
+        const animation = this.animation.store.get(data.id);
+        if (!animation) throw new Error("Animation not found");
+        this.animation.applyJSON(animation, data.json);
+        break;
+      }
+
+      case "dispose_animation": {
+        const animation = this.animation.store.get(data);
+        if (animation) animation.dispose();
         break;
       }
     }
@@ -281,7 +446,12 @@ export class RenderScene extends Scene {
     if (json.rotation) object.quaternion.fromArray(json.rotation);
     if (json.scale) object.scale.fromArray(json.scale);
 
+    let oldMesh: Mesh | null = null;
+    let newMesh: Mesh | null = null;
+
     if (json.mesh !== undefined) {
+      oldMesh = node.getMesh();
+
       // Remove old mesh
       object.children.forEach((child) => {
         const id = this.getMeshId(child) ?? this.getInstancedMeshNodeId(child);
@@ -291,22 +461,57 @@ export class RenderScene extends Scene {
 
       // Add new mesh
       if (json.mesh) {
-        const mesh = this.mesh.store.get(json.mesh);
-        if (!mesh) throw new Error("Mesh not found");
+        newMesh = this.mesh.store.get(json.mesh) ?? null;
+        if (!newMesh) throw new Error("Mesh not found");
 
         const meshObject = this.meshObjects.get(json.mesh);
         if (!meshObject) throw new Error("Mesh object not found");
 
-        const instanceCount = mesh.listParents().filter((p) => p instanceof Node).length;
+        const weights = node.getWeights();
 
-        if (instanceCount > 1) {
+        const instanceCount = newMesh.listParents().filter((p) => p instanceof Node).length;
+        const shouldClone = instanceCount > 1 || weights.length > 0;
+
+        if (shouldClone) {
           const instance = meshObject.clone();
+
+          // Apply weights
+          weights.forEach((weight, i) => {
+            instance.traverse((child) => {
+              if (child instanceof ThreeMesh) {
+                if ("morphTargetInfluences" in child) {
+                  if (!child.morphTargetInfluences) return;
+                  child.morphTargetInfluences[i] = weight;
+                }
+              }
+            });
+          });
+
           this.instancedMeshObjects.set(id, instance);
           object.add(instance);
         } else {
           object.add(meshObject);
         }
       }
+    }
+
+    node.setMesh(newMesh);
+
+    if (json.skin !== undefined) {
+      const oldSkin = node.getSkin();
+
+      // Remove old skin
+      node.setSkin(null);
+
+      const newSkin = json.skin ? this.skin.store.get(json.skin) : null;
+      if (newSkin === undefined) throw new Error("Skin not found");
+
+      // Add new skin
+      node.setSkin(newSkin);
+
+      // Update skin
+      if (oldSkin) this.updateSkin(oldSkin);
+      if (newSkin) this.updateSkin(newSkin);
     }
 
     if (json.children) {
@@ -332,9 +537,146 @@ export class RenderScene extends Scene {
     // Apply node JSON
     this.node.applyJSON(node, json);
 
-    if (json.mesh !== undefined || json.extensions?.OMI_collider !== undefined) {
-      this.updateColliderVisual(id);
+    // Update primitive objects if mesh changed
+    if (oldMesh) {
+      oldMesh.listPrimitives().forEach((primitive) => this.updatePrimitiveObject(primitive));
     }
+
+    if (newMesh) {
+      newMesh.listPrimitives().forEach((primitive) => this.updatePrimitiveObject(primitive));
+    }
+  }
+
+  #isNodeJoint(node: Node) {
+    return node.listParents().some((parent) => parent instanceof Skin);
+  }
+
+  updateNodeObject(node: Node) {
+    const id = this.node.getId(node);
+    if (!id) throw new Error("Node not found");
+
+    const previousObject = this.nodeObjects.get(id);
+
+    if (previousObject) {
+      // Check if node is a joint
+      const isJoint = this.#isNodeJoint(node);
+
+      if (isJoint !== previousObject instanceof Bone) {
+        this.createNodeObject(node);
+      }
+    } else {
+      this.createNodeObject(node);
+    }
+  }
+
+  createNodeObject(node: Node) {
+    const id = this.node.getId(node);
+    if (!id) throw new Error("Node not found");
+
+    const previousObject = this.nodeObjects.get(id);
+
+    const parent = previousObject?.parent;
+    const children = previousObject?.children;
+
+    // Remove previous object
+    if (previousObject) {
+      previousObject.removeFromParent();
+      this.nodeObjects.delete(id);
+    }
+
+    // Create new object
+    const isJoint = this.#isNodeJoint(node);
+    const object = isJoint ? new Bone() : new Object3D();
+    object.name = node.getName();
+
+    this.root.add(object);
+
+    // Add previous parent and children
+    if (parent) parent.add(object);
+    if (children) children.forEach((child) => object.add(child));
+
+    this.nodeObjects.set(id, object);
+
+    node.addEventListener("dispose", () => {
+      this.nodeObjects.delete(id);
+    });
+  }
+
+  updateSkin(skin: Skin) {
+    const id = this.skin.getId(skin);
+    if (!id) throw new Error("Skin not found");
+
+    // Update joint objects
+    skin.listJoints().forEach((node) => {
+      this.updateNodeObject(node);
+    });
+
+    // Update skinned mesh objects
+    const parents = skin.listParents().filter((p): p is Node => p instanceof Node);
+
+    parents.forEach((node) => {
+      const mesh = node.getMesh();
+      if (!mesh) return;
+
+      mesh.listPrimitives().forEach((primitive) => {
+        this.updatePrimitiveObject(primitive);
+      });
+    });
+
+    // Get bones
+    const bones = skin.listJoints().map((node) => {
+      const id = this.node.getId(node);
+      if (!id) throw new Error("Node id not found");
+
+      const object = this.nodeObjects.get(id);
+      if (!object) throw new Error("Node object not found");
+      if (!(object instanceof Bone)) throw new Error("Node object is not a bone");
+
+      return object;
+    });
+
+    // Apply inverse bind matrices
+    const inverseBindMatrices = skin.getInverseBindMatrices();
+    if (inverseBindMatrices) {
+      const array = inverseBindMatrices.getArray();
+      if (array) {
+        bones.forEach((bone, i) => {
+          bone.matrix.fromArray(array, i * 16);
+        });
+      }
+    }
+
+    // Remove old skeleton
+    const oldSkeleton = this.skeletonObjects.get(id);
+    if (oldSkeleton) {
+      oldSkeleton.dispose();
+      this.skeletonObjects.delete(id);
+    }
+
+    // Create skeleton
+    const skeleton = new Skeleton(bones);
+    this.skeletonObjects.set(id, skeleton);
+
+    // Bind skeleton to mesh
+    parents.forEach((node) => {
+      const mesh = node.getMesh();
+      if (!mesh) return;
+
+      mesh.listPrimitives().forEach((primitive) => {
+        const id = this.primitive.getId(primitive);
+        if (!id) throw new Error("Primitive id not found");
+
+        const object = this.primitiveObjects.get(id);
+        if (!object) throw new Error("Primitive object not found");
+        if (!(object instanceof SkinnedMesh)) return;
+
+        object.bind(skeleton, object.matrixWorld);
+      });
+    });
+
+    skin.addEventListener("dispose", () => {
+      skeleton.dispose();
+    });
   }
 
   updateMesh(id: string, json: Partial<MeshJSON>) {
@@ -345,8 +687,10 @@ export class RenderScene extends Scene {
     if (!object) throw new Error("Mesh object not found");
 
     if (json.primitives) {
+      const oldPrimitives = mesh.listPrimitives();
+
       // Remove previous primitives
-      mesh.listPrimitives().forEach((primitive) => {
+      oldPrimitives.forEach((primitive) => {
         const primitiveId = this.primitive.getId(primitive);
         if (!primitiveId) throw new Error("Primitive not found");
 
@@ -367,8 +711,18 @@ export class RenderScene extends Scene {
         const primitiveObject = this.primitiveObjects.get(primitiveId);
         if (!primitiveObject) throw new Error("Primitive object not found");
 
+        // Apply weights
+        mesh.getWeights().forEach((weight, i) => {
+          if (!primitiveObject.morphTargetInfluences) return;
+          primitiveObject.morphTargetInfluences[i] = weight;
+        });
+
         object.add(primitiveObject);
       });
+
+      // Update both new and old primitive objects
+      oldPrimitives.forEach((primitive) => this.updatePrimitiveObject(primitive));
+      mesh.listPrimitives().forEach((primitive) => this.updatePrimitiveObject(primitive));
     }
 
     if (json.extras) {
@@ -446,15 +800,6 @@ export class RenderScene extends Scene {
         });
       }
     }
-
-    mesh.listParents().forEach((parent) => {
-      if (parent instanceof Node) {
-        const nodeId = this.node.getId(parent);
-        if (!nodeId) throw new Error("Node not found");
-
-        this.updateColliderVisual(nodeId);
-      }
-    });
   }
 
   createPrimitive(json: Partial<PrimitiveJSON>, primitiveId?: string) {
@@ -471,21 +816,85 @@ export class RenderScene extends Scene {
       this.#toMainThread({ subject: "create_primitive", data: { id, json: fullJSON } });
     }
 
-    const object = new ThreeMesh();
-    this.primitiveObjects.set(id, object);
+    this.updatePrimitiveObject(primitive);
 
+    this.updatePrimitive(id, fullJSON);
+
+    return { id, primitive };
+  }
+
+  #isPrimitiveSkinnedMesh(primitive: Primitive) {
+    return primitive
+      .listParents()
+      .filter((parent): parent is Mesh => parent instanceof Mesh)
+      .flatMap((mesh) =>
+        mesh.listParents().filter((parent): parent is Node => parent instanceof Node)
+      )
+      .some((node) => node.getSkin() !== null);
+  }
+
+  updatePrimitiveObject(primitive: Primitive) {
+    const id = this.primitive.getId(primitive);
+    if (!id) throw new Error("Primitive id not found");
+
+    const previousObject = this.primitiveObjects.get(id);
+
+    if (previousObject) {
+      // Check if primitive is skinned mesh
+      const isSkinnedMesh = this.#isPrimitiveSkinnedMesh(primitive);
+
+      if (isSkinnedMesh !== previousObject instanceof SkinnedMesh) {
+        this.createPrimitiveObject(primitive);
+      }
+    } else {
+      this.createPrimitiveObject(primitive);
+    }
+  }
+
+  createPrimitiveObject(primitive: Primitive) {
+    const id = this.primitive.getId(primitive);
+    if (!id) throw new Error("Primitive id not found");
+
+    const previousObject = this.primitiveObjects.get(id);
+
+    const parent = previousObject?.parent;
+    const children = previousObject?.children;
+    const geometry = previousObject?.geometry;
+    const material = previousObject?.material;
+
+    // Remove previous object
+    if (previousObject) {
+      previousObject.removeFromParent();
+      this.primitiveObjects.delete(id);
+    }
+
+    // Create new object
+    const isSkinnedMesh = this.#isPrimitiveSkinnedMesh(primitive);
+    const object = isSkinnedMesh
+      ? new SkinnedMesh(geometry, material)
+      : new ThreeMesh(geometry, material);
+
+    if (object instanceof SkinnedMesh) {
+      const normalized = object.geometry.attributes.skinWeight.normalized;
+      if (!normalized) object.normalizeSkinWeights();
+    }
+
+    object.name = primitive.getName();
+    object.geometry.morphTargetsRelative = true;
     object.castShadow = true;
     object.receiveShadow = true;
+
+    // Add previous parent and children
+    if (parent) parent.add(object);
+    if (children) children.forEach((child) => object.add(child));
+
+    this.primitiveObjects.set(id, object);
 
     primitive.addEventListener("dispose", () => {
       object.removeFromParent();
       object.geometry.dispose();
       this.primitiveObjects.delete(id);
     });
-
-    this.updatePrimitive(id, fullJSON);
-
-    return { id, primitive };
   }
 
   updatePrimitive(id: string, json: Partial<PrimitiveJSON>) {
@@ -545,6 +954,10 @@ export class RenderScene extends Scene {
     }
 
     if (json.targets) {
+      // Reset morph influences
+      if (json.targets.length === 0) object.morphTargetInfluences = undefined;
+      else object.morphTargetInfluences = [];
+
       // Remove previous morph attributes
       Object.values(THREE_ATTRIBUTE_NAMES).forEach((name) => {
         delete object.geometry.morphAttributes[name];
@@ -754,92 +1167,6 @@ export class RenderScene extends Scene {
     object.needsUpdate = true;
   }
 
-  updateColliderVisual(nodeId: string) {
-    if (!this.visualsEnabled) return;
-
-    const node = this.node.store.get(nodeId);
-    if (!node) throw new Error("Node not found");
-
-    const object = this.nodeObjects.get(nodeId);
-    if (!object) throw new Error("Object not found");
-
-    const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
-
-    // Remove old collider
-    const prevCollider = this.colliderObjects.get(nodeId);
-    if (prevCollider) {
-      object.remove(prevCollider);
-      prevCollider.geometry.dispose();
-      this.colliderObjects.delete(nodeId);
-    }
-
-    if (collider) {
-      // Add new collider
-      let colliderGeometry: BufferGeometry | null = null;
-
-      switch (collider.type) {
-        case "box": {
-          if (!collider.size) break;
-          colliderGeometry = new BoxGeometry(collider.size[0], collider.size[1], collider.size[2]);
-          break;
-        }
-
-        case "sphere": {
-          if (!collider.radius) break;
-          colliderGeometry = new SphereGeometry(collider.radius);
-          break;
-        }
-
-        case "capsule": {
-          if (!collider.radius || !collider.height) break;
-          colliderGeometry = new CapsuleGeometry(collider.radius, collider.height);
-          break;
-        }
-
-        case "cylinder": {
-          if (!collider.radius || !collider.height) break;
-          colliderGeometry = new CylinderGeometry(
-            collider.radius,
-            collider.radius,
-            collider.height
-          );
-          break;
-        }
-
-        case "trimesh": {
-          const meshId =
-            collider.mesh instanceof Mesh ? this.mesh.getId(collider.mesh) : collider.mesh;
-          if (!meshId) break;
-
-          const mesh = this.mesh.store.get(meshId);
-          if (!mesh) throw new Error("Mesh not found");
-
-          const primitiveGeometries = mesh.listPrimitives().map((primitive) => {
-            const primitiveId = this.primitive.getId(primitive);
-            if (!primitiveId) throw new Error("Primitive not found");
-
-            const primitiveObject = this.primitiveObjects.get(primitiveId);
-            if (!primitiveObject) throw new Error("Primitive object not found");
-
-            return primitiveObject.geometry;
-          });
-
-          if (primitiveGeometries.length === 0) break;
-
-          colliderGeometry = mergeBufferGeometries(primitiveGeometries);
-          break;
-        }
-      }
-
-      if (colliderGeometry) {
-        const colliderObject = new ThreeMesh(colliderGeometry, this.colliderMaterial);
-        object.add(colliderObject);
-
-        this.colliderObjects.set(nodeId, colliderObject);
-      }
-    }
-  }
-
   getInstancedMeshNodeId(object: Object3D): string | null {
     for (const [id, clonedMeshObject] of this.instancedMeshObjects.entries()) {
       let found = false;
@@ -916,6 +1243,13 @@ export class RenderScene extends Scene {
     if (clonedMeshId) return clonedMeshId;
 
     return null;
+  }
+
+  toggleAnimations(enabled: boolean) {
+    this.#animationsEnabled = enabled;
+
+    if (enabled) this.animationObjects.forEach((clip) => clip.play());
+    else this.animationObjects.forEach((clip) => clip.reset());
   }
 
   destroy() {

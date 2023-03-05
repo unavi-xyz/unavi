@@ -16,7 +16,7 @@
     "start": "node --experimental-specifier-resolution=node ./build/server.js"
   },
   "dependencies": {
-    "mediasoup": "^3.11.8",
+    "mediasoup": "^3.11.12",
     "nanoid": "^4.0.1",
     "protocol": "*",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.19.0",
@@ -24,9 +24,9 @@
   },
   "devDependencies": {
     "@types/node": "^18.14.0",
-    "eslint": "^8.33.0",
+    "eslint": "^8.35.0",
     "eslint-config-custom": "*",
-    "nodemon": "^2.0.20",
+    "nodemon": "^2.0.21",
     "ts-node": "^10.9.1",
     "tsconfig": "*",
     "typescript": "~4.9.5"

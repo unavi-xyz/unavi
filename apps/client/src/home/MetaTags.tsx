@@ -17,8 +17,10 @@ interface Props {
   card?: "summary" | "summary_large_image";
 }
 
+const DEFAULT_TITLE = "Welcome to the Wired";
+
 export default function MetaTags({
-  title = "Welcome to the Wired",
+  title = DEFAULT_TITLE,
   description = "An open metaverse platform.",
   image = "/images/Hero.png",
   card = "summary_large_image",
@@ -35,7 +37,7 @@ export default function MetaTags({
 
   return (
     <Head>
-      {title === "The Wired" ? <title>{title}</title> : <title>{`${title} / The Wired`}</title>}
+      {title === DEFAULT_TITLE ? <title>{title}</title> : <title>{`${title} / The Wired`}</title>}
 
       <meta name="name" content={title} />
       <meta name="description" content={description} />

@@ -24,6 +24,7 @@ export default function PlayButton() {
     engine.controls = "player";
     engine.physics.send({ subject: "respawn", data: null });
     engine.physics.send({ subject: "start", data: null });
+    engine.render.send({ subject: "toggle_animations", data: true });
     engine.behavior.start();
 
     useEditorStore.setState({ isPlaying: true });
@@ -36,6 +37,7 @@ export default function PlayButton() {
     engine.behavior.stop();
     engine.controls = "orbit";
     engine.physics.send({ subject: "stop", data: null });
+    engine.render.send({ subject: "toggle_animations", data: false });
 
     // Reset scene
     if (scene) {

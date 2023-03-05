@@ -1,6 +1,7 @@
 import { Buffer, Document } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
+import { Scene } from "../Scene";
 import { Attribute } from "./Attribute";
 
 export interface BufferJSON {
@@ -17,10 +18,10 @@ export class Buffers extends Attribute<Buffer, BufferJSON> {
 
   store = new Map<string, Buffer>();
 
-  constructor(doc: Document) {
+  constructor(scene: Scene) {
     super();
 
-    this.#doc = doc;
+    this.#doc = scene.doc;
   }
 
   getId(buffer: Buffer) {

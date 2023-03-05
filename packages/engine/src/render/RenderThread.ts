@@ -1,8 +1,12 @@
 import {
   AmbientLight,
+  BufferAttribute,
+  BufferGeometry,
   CanvasTexture,
   Clock,
   EquirectangularReflectionMapping,
+  LineBasicMaterial,
+  LineSegments,
   PCFSoftShadowMap,
   PerspectiveCamera,
   Scene,
@@ -19,10 +23,9 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
-import { DEFAULT_CONTROLS } from "../constants";
-import { ControlsType } from "../Engine";
+import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
 import { isSceneMessage } from "../scene/messages";
-import { PostMessage, Transferable } from "../types";
+import { ControlsType, PostMessage, Transferable } from "../types";
 import { OrbitControls } from "./controls/OrbitControls";
 import { PlayerControls } from "./controls/PlayerControls";
 import { RaycastControls } from "./controls/RaycastControls";
@@ -56,10 +59,16 @@ export class RenderThread {
   camera = new PerspectiveCamera(75, 1, CAMERA_NEAR, CAMERA_FAR);
   clock = new Clock();
   #animationFrame: number | null = null;
+  #visuals = DEFAULT_VISUALS;
 
   outlinePass: ThreeOutlinePass | null = null;
   composer: EffectComposer | null = null;
   csm: CSM | null = null;
+
+  debugLines: LineSegments;
+  #debugVertices = new Float32Array(0);
+  #debugColors = new Float32Array(0);
+  #debugFrame = 0;
 
   transform = new TransformControls(this);
   orbit = new OrbitControls(this.camera, this.transform);
@@ -92,6 +101,13 @@ export class RenderThread {
     this.scene.add(this.player.group);
     this.scene.add(this.players.group);
     this.scene.add(new AmbientLight(0xffffff, 0.2));
+
+    this.debugLines = new LineSegments(
+      new BufferGeometry(),
+      new LineBasicMaterial({ vertexColors: true })
+    );
+    this.debugLines.frustumCulled = false;
+    this.scene.add(this.debugLines);
 
     this.clock.start();
     this.render();
@@ -162,7 +178,8 @@ export class RenderThread {
       }
 
       case "toggle_visuals": {
-        this.renderScene.visualsEnabled = data;
+        this.#visuals = data;
+        this.debugLines.visible = data;
         break;
       }
 
@@ -176,6 +193,17 @@ export class RenderThread {
         this.transform.destroy();
         this.orbit.destroy();
         deepDispose(this.scene);
+        break;
+      }
+
+      case "set_debug_buffers": {
+        this.#debugVertices = data.vertices;
+        this.#debugColors = data.colors;
+        break;
+      }
+
+      case "toggle_animations": {
+        this.renderScene.toggleAnimations(data);
         break;
       }
     }
@@ -265,16 +293,26 @@ export class RenderThread {
     this.#animationFrame = requestAnimationFrame(() => this.render());
     const delta = this.clock.getDelta();
 
-    if (this.controls === "player") {
-      this.player.update(delta);
-    } else {
-      this.orbit.update();
-    }
+    if (this.controls === "player") this.player.update(delta);
+    else this.orbit.update();
 
     if (this.size.width === 0 || this.size.height === 0) return;
 
+    if (this.#visuals) {
+      // Only update debug lines every 60 frames
+      if (this.#debugFrame++ % 60 === 0) {
+        this.debugLines.geometry.setAttribute(
+          "position",
+          new BufferAttribute(this.#debugVertices, 3)
+        );
+        this.debugLines.geometry.setAttribute("color", new BufferAttribute(this.#debugColors, 4));
+      }
+    }
+
+    this.renderScene.mixer.update(delta);
     this.players.update(delta);
     this.csm?.update();
+
     this.composer?.render();
   }
 

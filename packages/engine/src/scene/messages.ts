@@ -1,10 +1,12 @@
 import { MessageJSON } from "../types";
 import { AccessorJSON } from "./attributes/Accessors";
+import { AnimationJSON } from "./attributes/Animations";
 import { BufferJSON } from "./attributes/Buffers";
 import { MaterialJSON } from "./attributes/Materials";
 import { MeshJSON } from "./attributes/Meshes";
 import { NodeJSON } from "./attributes/Nodes";
 import { PrimitiveJSON } from "./attributes/Primitives";
+import { SkinJSON } from "./attributes/Skins";
 import { TextureJSON } from "./attributes/Textures";
 
 const subjects = [
@@ -32,6 +34,13 @@ const subjects = [
   "create_node",
   "change_node",
   "dispose_node",
+
+  "create_skin",
+  "dispose_skin",
+
+  "create_animation",
+  "change_animation",
+  "dispose_animation",
 ] as const;
 
 type SceneMessageSubject = (typeof subjects)[number];
@@ -60,9 +69,16 @@ export type SceneMessage =
   | SceneWorkerMessage<"change_mesh", { id: string; json: Partial<MeshJSON> }>
   | SceneWorkerMessage<"dispose_mesh", string>
   // Node
-  | SceneWorkerMessage<"create_node", { id: string; json: NodeJSON }>
+  | SceneWorkerMessage<"create_node", { id: string; json: Partial<NodeJSON> }>
   | SceneWorkerMessage<"change_node", { id: string; json: Partial<NodeJSON> }>
-  | SceneWorkerMessage<"dispose_node", string>;
+  | SceneWorkerMessage<"dispose_node", string>
+  // Skin
+  | SceneWorkerMessage<"create_skin", { id: string; json: SkinJSON }>
+  | SceneWorkerMessage<"dispose_skin", string>
+  // Animation
+  | SceneWorkerMessage<"create_animation", { id: string; json: AnimationJSON }>
+  | SceneWorkerMessage<"change_animation", { id: string; json: Partial<AnimationJSON> }>
+  | SceneWorkerMessage<"dispose_animation", string>;
 
 export function isSceneMessage(message: MessageJSON): message is SceneMessage {
   return subjects.includes(message.subject as SceneMessageSubject);

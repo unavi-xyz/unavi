@@ -1,4 +1,4 @@
-import { Material, Mesh, Node, Primitive } from "@gltf-transform/core";
+import { Animation, AnimationChannel, Material, Mesh, Node, Primitive } from "@gltf-transform/core";
 
 export function deepDisposeNode(node: Node) {
   const children = node.listChildren();
@@ -21,6 +21,51 @@ export function disposeNode(node: Node) {
     const isSkinUsed = skin.listParents().filter((parent) => parent instanceof Node).length > 1;
     if (!isSkinUsed) skin.dispose();
   }
+
+  // Dispose animations if not used by other nodes
+  node
+    .listParents()
+    .filter((parent): parent is AnimationChannel => parent instanceof AnimationChannel)
+    .forEach((channel) => {
+      const isChannelUsed = channel.listParents().length > 1;
+
+      const animations = channel
+        .listParents()
+        .filter((parent): parent is Animation => parent instanceof Animation);
+
+      if (!isChannelUsed) {
+        const sampler = channel.getSampler();
+
+        if (sampler) {
+          const isSamplerUsed =
+            sampler.listParents().filter((parent) => parent instanceof AnimationChannel).length > 1;
+
+          if (!isSamplerUsed) {
+            const input = sampler.getInput();
+            const output = sampler.getOutput();
+
+            if (input) {
+              const isInputUsed = input.listParents().length > 2; // Root node + sampler
+              if (!isInputUsed) input.dispose();
+            }
+
+            if (output) {
+              const isOutputUsed = output.listParents().length > 2; // Root node + sampler
+              if (!isOutputUsed) output.dispose();
+            }
+
+            sampler.dispose();
+          }
+        }
+
+        channel.dispose();
+      }
+
+      animations.forEach((animation) => {
+        const isAnimationUsed = animation.listParents().length === 0;
+        if (!isAnimationUsed) animation.dispose();
+      });
+    });
 
   node.dispose();
 }

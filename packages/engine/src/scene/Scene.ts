@@ -8,11 +8,13 @@ import {
   SpawnPointExtension,
 } from "../gltf";
 import { Accessors } from "./attributes/Accessors";
+import { Animations } from "./attributes/Animations";
 import { Buffers } from "./attributes/Buffers";
 import { Materials } from "./attributes/Materials";
 import { Meshes } from "./attributes/Meshes";
 import { Nodes } from "./attributes/Nodes";
 import { Primitives } from "./attributes/Primitives";
+import { Skins } from "./attributes/Skins";
 import { Textures } from "./attributes/Textures";
 
 /**
@@ -29,13 +31,15 @@ export class Scene {
     spawn: this.doc.createExtension(SpawnPointExtension),
   };
 
-  buffer = new Buffers(this.doc);
-  accessor = new Accessors(this.doc, this.buffer);
-  texture = new Textures(this.doc);
-  material = new Materials(this.doc, this.texture);
-  primitive = new Primitives(this.doc, this.accessor, this.material);
-  mesh = new Meshes(this.doc, this.primitive);
+  buffer = new Buffers(this);
+  accessor = new Accessors(this);
+  texture = new Textures(this);
+  material = new Materials(this);
+  primitive = new Primitives(this);
+  mesh = new Meshes(this);
   node = new Nodes(this);
+  skin = new Skins(this);
+  animation = new Animations(this);
 
   /**
    * Adds the given document to the scene.
@@ -70,6 +74,8 @@ export class Scene {
     this.primitive.processChanges();
     this.mesh.processChanges();
     this.node.processChanges();
+    this.skin.processChanges();
+    this.animation.processChanges();
   }
 
   getSpawn(title: (typeof SPAWN_TITLE)[keyof typeof SPAWN_TITLE] = "Default") {

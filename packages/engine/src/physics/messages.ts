@@ -1,6 +1,7 @@
-import { ControlsType } from "../Engine";
+import { DebugRenderBuffers } from "@dimforge/rapier3d";
+
 import { SceneMessage } from "../scene/messages";
-import { MessageJSON } from "../types";
+import { ControlsType, MessageJSON } from "../types";
 
 export type ToPhysicsMessage =
   | SceneMessage
@@ -11,6 +12,7 @@ export type ToPhysicsMessage =
   | MessageJSON<"set_controls", ControlsType>
   | MessageJSON<"set_sprinting", boolean>
   | MessageJSON<"respawn", null>
+  | MessageJSON<"toggle_visuals", boolean>
   | MessageJSON<
       "set_user_arrays",
       {
@@ -20,4 +22,7 @@ export type ToPhysicsMessage =
       }
     >;
 
-export type FromPhysicsMessage = MessageJSON<"ready"> | MessageJSON<"set_grounded", boolean>;
+export type FromPhysicsMessage =
+  | MessageJSON<"ready">
+  | MessageJSON<"set_grounded", boolean>
+  | MessageJSON<"set_debug_buffers", DebugRenderBuffers>;

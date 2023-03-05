@@ -1,32 +1,40 @@
-import { useRouter } from "next/router";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
+import useSWR from "swr";
 import { useSigner } from "wagmi";
 
-import { trpc } from "../../../client/trpc";
-import SignInButton from "../../../home/NavbarLayout/SignInButton";
+import SignInButton from "../../../home/SignInButton";
+import { fetcher } from "../../../play/utils/fetcher";
+import { Project } from "../../../server/helpers/fetchProject";
 import Button from "../../../ui/Button";
-import Dialog from "../../../ui/Dialog";
+import DialogContent, { DialogRoot } from "../../../ui/Dialog";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import AutoGrowInput from "../ui/AutoGrowInput";
 import PlayButton from "./PlayButton";
 import PublishPage from "./PublishPage";
 import ToolButtons from "./ToolButtons";
-import UpdatePage from "./UpdatePage";
 import VisualsButton from "./VisualsButton";
 
 export default function EditorNavbar() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const id = params?.get("id");
+
   const name = useEditorStore((state) => state.name);
   const isSaving = useEditorStore((state) => state.isSaving);
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
   const { save, saveImage } = useSave();
   const { data: signer } = useSigner();
-  const router = useRouter();
-  const id = router.query.id as string;
 
-  const { data: project } = trpc.project.get.useQuery({ id }, { enabled: id !== undefined });
+  const { data: project } = useSWR<Project | null>(
+    () => (id ? `/api/projects/${id}` : null),
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
+  );
+  const isPublished = Boolean(project?.Publication?.spaceId);
 
   async function handleBack() {
     await save();
@@ -38,17 +46,16 @@ export default function EditorNavbar() {
     setOpenPublishDialog(true);
   }
 
-  const isPublished = project?.Publication?.spaceId;
-
   return (
     <>
-      <Dialog
-        open={openPublishDialog}
-        onOpenChange={setOpenPublishDialog}
-        title={isPublished ? "Update Space" : "Publish Space"}
-      >
-        {isPublished ? <UpdatePage onClose={() => setOpenPublishDialog(false)} /> : <PublishPage />}
-      </Dialog>
+      <DialogRoot open={openPublishDialog} onOpenChange={setOpenPublishDialog}>
+        <DialogContent
+          open={openPublishDialog}
+          title={isPublished ? "Update Space" : "Publish Space"}
+        >
+          <PublishPage />
+        </DialogContent>
+      </DialogRoot>
 
       <div className="group flex h-full items-center justify-between px-4 py-1">
         <div className="flex w-full items-center space-x-2 text-lg">

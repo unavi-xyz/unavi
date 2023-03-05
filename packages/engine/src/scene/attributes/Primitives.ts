@@ -1,6 +1,7 @@
 import { Document, GLTF, Primitive } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
+import { Scene } from "../Scene";
 import { Accessors } from "./Accessors";
 import { Attribute } from "./Attribute";
 import { Materials } from "./Materials";
@@ -32,12 +33,12 @@ export class Primitives extends Attribute<Primitive, PrimitiveJSON> {
 
   store = new Map<string, Primitive>();
 
-  constructor(doc: Document, accessor: Accessors, material: Materials) {
+  constructor(scene: Scene) {
     super();
 
-    this.#doc = doc;
-    this.#accessor = accessor;
-    this.#material = material;
+    this.#doc = scene.doc;
+    this.#accessor = scene.accessor;
+    this.#material = scene.material;
   }
 
   getId(primitive: Primitive) {

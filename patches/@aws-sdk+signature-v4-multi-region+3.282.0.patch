@@ -1,0 +1,13 @@
+diff --git a/node_modules/@aws-sdk/signature-v4-multi-region/dist-cjs/SignatureV4MultiRegion.js b/node_modules/@aws-sdk/signature-v4-multi-region/dist-cjs/SignatureV4MultiRegion.js
+index 1bad845..bc7a900 100644
+--- a/node_modules/@aws-sdk/signature-v4-multi-region/dist-cjs/SignatureV4MultiRegion.js
++++ b/node_modules/@aws-sdk/signature-v4-multi-region/dist-cjs/SignatureV4MultiRegion.js
+@@ -27,7 +27,7 @@ class SignatureV4MultiRegion {
+         if (!this.sigv4aSigner) {
+             let CrtSignerV4;
+             try {
+-                CrtSignerV4 = typeof require === "function" && require("@aws-sdk/signature-v4-crt").CrtSignerV4;
++                CrtSignerV4 = undefined;
+                 if (typeof CrtSignerV4 !== "function")
+                     throw new Error();
+             }

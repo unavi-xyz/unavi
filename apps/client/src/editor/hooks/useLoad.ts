@@ -1,35 +1,27 @@
-import { useRouter } from "next/router";
+import { Project } from "@prisma/client";
+import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+import useSWR from "swr";
 
-import { trpc } from "../../client/trpc";
+import { GetFileDownloadResponse } from "../../../app/api/projects/[id]/[file]/types";
+import { fetcher } from "../../play/utils/fetcher";
 import { useEditorStore } from "../store";
 
 export function useLoad() {
-  const router = useRouter();
-  const id = router.query.id as string;
+  const params = useSearchParams();
+  const id = params?.get("id");
 
   const engine = useEditorStore((state) => state.engine);
 
-  const { data: project } = trpc.project.get.useQuery(
-    { id },
-    {
-      enabled: id !== undefined,
-      cacheTime: 0,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      refetchOnMount: false,
-    }
+  const { data: project } = useSWR<Project | null>(
+    () => (id ? `/api/projects/${id}` : null),
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
-
-  const { data: modelUrl } = trpc.project.model.useQuery(
-    { id },
-    {
-      enabled: id !== undefined,
-      cacheTime: 0,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      refetchOnMount: false,
-    }
+  const { data: modelUrl } = useSWR<GetFileDownloadResponse>(
+    () => (id ? `/api/projects/${id}/model` : null),
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
 
   useEffect(() => {
@@ -50,7 +42,7 @@ export function useLoad() {
     async function load() {
       if (!engine || !modelUrl) return;
 
-      const res = await fetch(modelUrl);
+      const res = await fetch(modelUrl.url);
       const buffer = await res.arrayBuffer();
       const array = new Uint8Array(buffer);
 

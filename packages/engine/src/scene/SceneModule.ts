@@ -1,4 +1,13 @@
-import { Accessor, ExtensionProperty, Mesh, Node, Primitive, WebIO } from "@gltf-transform/core";
+import {
+  Accessor,
+  Document,
+  ExtensionProperty,
+  GLTF,
+  Mesh,
+  Node,
+  Primitive,
+  WebIO,
+} from "@gltf-transform/core";
 import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
 
 import { Engine } from "../Engine";
@@ -6,6 +15,7 @@ import { BehaviorExtension, Collider, ColliderExtension, SpawnPointExtension } f
 import { extensions } from "../gltf/constants";
 import { PhysicsModule } from "../physics/PhysicsModule";
 import { RenderModule } from "../render/RenderModule";
+import { AnimationJSON } from "./attributes/Animations";
 import { MaterialJSON } from "./attributes/Materials";
 import { MeshJSON } from "./attributes/Meshes";
 import { NodeJSON } from "./attributes/Nodes";
@@ -50,7 +60,14 @@ export class SceneModule extends Scene {
     this.node.addEventListener("create", ({ data }) => {
       const node = this.node.store.get(data.id);
       if (!node) throw new Error("Node not found");
+
       this.#onNodeCreate(node);
+
+      const id = this.node.getId(node);
+      if (!id) throw new Error("Id not found");
+
+      const json = this.node.toJSON(node);
+      this.#publish({ subject: "change_node", data: { id, json } });
     });
   }
 
@@ -62,7 +79,7 @@ export class SceneModule extends Scene {
     });
   }
 
-  async export() {
+  async export(log = false) {
     const io = await this.#createIO();
 
     // Merge all buffers into one
@@ -89,6 +106,8 @@ export class SceneModule extends Scene {
         }
       });
 
+    if (log) console.info("Exporting:", await io.writeJSON(this.doc));
+
     return await io.writeBinary(this.doc);
   }
 
@@ -98,12 +117,52 @@ export class SceneModule extends Scene {
     await this.addDocument(doc);
   }
 
-  async addFile(file: File) {
-    const buffer = await file.arrayBuffer();
-    const array = new Uint8Array(buffer);
+  async addFiles(files: File[]) {
+    const root = files.find((file) => file.name.endsWith(".gltf"));
+    if (!root) throw new Error("No root file found");
 
+    // Replace uris with blob urls
+    const rootText = await root.text();
+    const rootJSON = JSON.parse(rootText) as GLTF.IGLTF;
+
+    const urls = files.map((file) => URL.createObjectURL(file));
+    const getRelativeUrl = (url: string | undefined) => url?.split("/").pop();
+
+    // Buffers
+    rootJSON.buffers?.forEach((buffer) => {
+      const fileIndex = files.findIndex((file) => file.name === buffer.uri);
+      if (fileIndex !== -1) buffer.uri = getRelativeUrl(urls[fileIndex]);
+    });
+
+    // Images
+    rootJSON.images?.forEach((image) => {
+      const fileIndex = files.findIndex((file) => file.name === image.uri);
+      if (fileIndex !== -1) image.uri = getRelativeUrl(urls[fileIndex]);
+    });
+
+    // Load root file
+    const newRoot = new File([JSON.stringify(rootJSON)], root.name);
+    await this.addFile(newRoot);
+
+    urls.forEach((url) => URL.revokeObjectURL(url));
+  }
+
+  async addFile(file: File) {
     const io = await this.#createIO();
-    const doc = await io.readBinary(array);
+
+    let doc: Document | undefined;
+
+    if (file.name.endsWith(".glb")) {
+      const buffer = await file.arrayBuffer();
+      const array = new Uint8Array(buffer);
+      doc = await io.readBinary(array);
+    } else if (file.name.endsWith(".gltf")) {
+      const url = URL.createObjectURL(file);
+      doc = await io.read(url);
+      URL.revokeObjectURL(url);
+    }
+
+    if (!doc) throw new Error("Invalid file");
 
     const scene = doc.getRoot().getDefaultScene();
 
@@ -119,6 +178,8 @@ export class SceneModule extends Scene {
       .getRoot()
       .listNodes()
       .forEach((node) => {
+        if (!doc) throw new Error("Document not found");
+
         const mesh = node.getMesh();
         if (!mesh) return;
 
@@ -136,6 +197,8 @@ export class SceneModule extends Scene {
   }
 
   clear() {
+    this.animation.store.forEach((animation) => animation.dispose());
+    this.skin.store.forEach((skin) => skin.dispose());
     this.node.store.forEach((node) => node.dispose());
     this.mesh.store.forEach((mesh) => mesh.dispose());
     this.primitive.store.forEach((primitive) => primitive.dispose());
@@ -215,8 +278,53 @@ export class SceneModule extends Scene {
       this.#onMeshCreate(mesh);
     });
 
-    this.node.processChanges().forEach((node) => {
+    // Create nodes, then skins, then send node json
+    // This is because skins and nodes reference each other
+    const nodes = this.node.processChanges();
+    const skins = this.skin.processChanges();
+
+    nodes.forEach((node) => {
       this.#onNodeCreate(node);
+    });
+
+    skins.forEach((skin) => {
+      const id = this.skin.getId(skin);
+      if (!id) throw new Error("Id not found");
+
+      const json = this.skin.toJSON(skin);
+      this.#render.send({ subject: "create_skin", data: { id, json } });
+
+      skin.addEventListener("dispose", () => {
+        this.#render.send({ subject: "dispose_skin", data: id });
+      });
+    });
+
+    nodes.forEach((node) => {
+      const id = this.node.getId(node);
+      if (!id) throw new Error("Id not found");
+
+      const json = this.node.toJSON(node);
+      this.#publish({ subject: "change_node", data: { id, json } });
+    });
+
+    this.animation.processChanges().forEach((animation) => {
+      const id = this.animation.getId(animation);
+      if (!id) throw new Error("Id not found");
+
+      const json = this.animation.toJSON(animation);
+      this.#publish({ subject: "create_animation", data: { id, json } });
+
+      animation.addEventListener("change", (e) => {
+        const attribute = e.attribute as keyof AnimationJSON;
+        const json = this.animation.toJSON(animation);
+        const value = json[attribute];
+
+        this.#publish({ subject: "change_animation", data: { id, json: { [attribute]: value } } });
+      });
+
+      animation.addEventListener("dispose", () => {
+        this.#publish({ subject: "dispose_animation", data: id });
+      });
     });
   }
 
@@ -236,8 +344,7 @@ export class SceneModule extends Scene {
     const id = this.node.getId(node);
     if (!id) throw new Error("Id not found");
 
-    const json = this.node.toJSON(node);
-    this.#publish({ subject: "create_node", data: { id, json } });
+    this.#publish({ subject: "create_node", data: { id, json: {} } });
 
     let extensionListeners: Array<{ extension: ExtensionProperty; listener: () => void }> = [];
 

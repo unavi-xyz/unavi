@@ -1,6 +1,14 @@
 {
   "extends": "tsconfig/nextjs.json",
-  "include": ["**/*.ts", "**/*.mjs", "**/*.js", "**/*.tsx", "src/**/*.json", "next-env.d.ts"],
+  "include": [
+    "**/*.ts",
+    "**/*.mjs",
+    "**/*.js",
+    "**/*.tsx",
+    "src/**/*.json",
+    "next-env.d.ts",
+    ".next/types/**/*.ts"
+  ],
   "references": [
     {
       "path": "../../packages/contracts"

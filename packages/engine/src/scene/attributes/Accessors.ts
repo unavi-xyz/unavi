@@ -1,6 +1,7 @@
 import { Accessor, Document, GLTF, TypedArray } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
+import { Scene } from "../Scene";
 import { Attribute } from "./Attribute";
 import { Buffers } from "./Buffers";
 
@@ -25,11 +26,11 @@ export class Accessors extends Attribute<Accessor, AccessorJSON> {
 
   store = new Map<string, Accessor>();
 
-  constructor(doc: Document, buffer: Buffers) {
+  constructor(scene: Scene) {
     super();
 
-    this.#doc = doc;
-    this.#buffer = buffer;
+    this.#doc = scene.doc;
+    this.#buffer = scene.buffer;
   }
 
   getId(accessor: Accessor) {

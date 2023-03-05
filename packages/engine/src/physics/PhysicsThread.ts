@@ -1,9 +1,8 @@
 import { World } from "@dimforge/rapier3d";
 
-import { DEFAULT_CONTROLS } from "../constants";
-import { ControlsType } from "../Engine";
+import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
 import { isSceneMessage } from "../scene/messages";
-import { PostMessage } from "../types";
+import { ControlsType, PostMessage } from "../types";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
 import { PhysicsScene } from "./PhysicsScene";
 import { Player } from "./Player";
@@ -21,9 +20,17 @@ export class PhysicsThread {
   scene = new PhysicsScene(this.world);
   player: Player;
 
+  #visuals = DEFAULT_VISUALS;
+  #visualsFrame = 0;
+  #debugVertices = new Float32Array(0);
+  #debugColors = new Float32Array(0);
+
   #interval: NodeJS.Timeout | null = null;
+  #postMessage: PostMessage<FromPhysicsMessage>;
 
   constructor(postMessage: PostMessage<FromPhysicsMessage>) {
+    this.#postMessage = postMessage;
+
     this.player = new Player(this.world, this.scene, postMessage);
 
     postMessage({ subject: "ready", data: null });
@@ -79,6 +86,11 @@ export class PhysicsThread {
         this.player.respawn();
         break;
       }
+
+      case "toggle_visuals": {
+        this.#visuals = data;
+        break;
+      }
     }
   };
 
@@ -98,5 +110,42 @@ export class PhysicsThread {
     }
 
     this.world.step();
+
+    if (this.#visuals) {
+      // Only update the debug buffers every 30 frames
+      if (this.#visualsFrame++ % 30 === 0) {
+        const buffers = this.world.debugRender();
+
+        // Change the size of the shared buffers if needed
+        let didChange = false;
+
+        if (buffers.vertices.length !== this.#debugVertices.length) {
+          const newBuffer = new SharedArrayBuffer(
+            buffers.vertices.length * Float32Array.BYTES_PER_ELEMENT
+          );
+          this.#debugVertices = new Float32Array(newBuffer);
+          didChange = true;
+        }
+
+        if (buffers.colors.length !== this.#debugColors.length) {
+          const newBuffer = new SharedArrayBuffer(
+            buffers.colors.length * Float32Array.BYTES_PER_ELEMENT
+          );
+          this.#debugColors = new Float32Array(newBuffer);
+          didChange = true;
+        }
+
+        if (didChange) {
+          this.#postMessage({
+            subject: "set_debug_buffers",
+            data: { vertices: this.#debugVertices, colors: this.#debugColors },
+          });
+        }
+
+        // Copy data to shared buffers
+        this.#debugVertices.set(buffers.vertices);
+        this.#debugColors.set(buffers.colors);
+      }
+    }
   };
 }

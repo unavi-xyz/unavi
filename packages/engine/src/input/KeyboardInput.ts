@@ -1,5 +1,5 @@
 import { INPUT_ARRAY_ROUNDING } from "../constants";
-import { ControlsType } from "../Engine";
+import { ControlsType } from "../types";
 import { InputModule } from "./InputModule";
 import { PointerData } from "./messages";
 

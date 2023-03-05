@@ -1,6 +1,7 @@
 import { Document, Texture } from "@gltf-transform/core";
 import { nanoid } from "nanoid";
 
+import { Scene } from "../Scene";
 import { Attribute } from "./Attribute";
 
 export interface TextureJSON {
@@ -19,10 +20,10 @@ export class Textures extends Attribute<Texture, TextureJSON> {
 
   store = new Map<string, Texture>();
 
-  constructor(doc: Document) {
+  constructor(scene: Scene) {
     super();
 
-    this.#doc = doc;
+    this.#doc = scene.doc;
   }
 
   getId(texture: Texture) {

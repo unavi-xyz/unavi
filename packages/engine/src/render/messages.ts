@@ -1,7 +1,8 @@
-import { ControlsType } from "../Engine";
+import { DebugRenderBuffers } from "@dimforge/rapier3d";
+
 import { InputMessage } from "../input/messages";
 import { SceneMessage } from "../scene/messages";
-import { MessageJSON, Vec2, Vec3, Vec4 } from "../types";
+import { ControlsType, MessageJSON, Vec2, Vec3, Vec4 } from "../types";
 
 export type ToRenderMessage =
   | InputMessage
@@ -37,7 +38,9 @@ export type ToRenderMessage =
   | MessageJSON<"remove_player", number>
   | MessageJSON<"set_player_avatar", { playerId: number; uri: string | null }>
   | MessageJSON<"set_player_grounded", { playerId: number; grounded: boolean }>
-  | MessageJSON<"set_player_name", { playerId: number; name: string | null }>;
+  | MessageJSON<"set_player_name", { playerId: number; name: string | null }>
+  | MessageJSON<"set_debug_buffers", DebugRenderBuffers>
+  | MessageJSON<"toggle_animations", boolean>;
 
 export type FromRenderMessage =
   | SceneMessage

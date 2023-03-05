@@ -1,0 +1,21 @@
+diff --git a/node_modules/pino/lib/tools.js b/node_modules/pino/lib/tools.js
+index 3dd5e18..0800f14 100644
+--- a/node_modules/pino/lib/tools.js
++++ b/node_modules/pino/lib/tools.js
+@@ -215,16 +215,6 @@ function getPrettyStream (opts, prettifier, dest, instance) {
+     prettifier = prettifier.bind(instance)
+     return prettifierMetaWrapper(prettifier(opts), dest, opts)
+   }
+-  try {
+-    const prettyFactory = require('pino-pretty').prettyFactory
+-    prettyFactory.asMetaWrapper = prettifierMetaWrapper
+-    return prettifierMetaWrapper(prettyFactory(opts), dest, opts)
+-  } catch (e) {
+-    if (e.message.startsWith("Cannot find module 'pino-pretty'")) {
+-      throw Error('Missing `pino-pretty` module: `pino-pretty` must be installed separately')
+-    };
+-    throw e
+-  }
+ }
+ 
+ function prettifierMetaWrapper (pretty, dest, opts) {

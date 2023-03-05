@@ -11373,10 +11373,10 @@ mediasoup-client@^3.6.82:
     sdp-transform "^2.14.1"
     supports-color "^9.3.1"
 
-mediasoup@^3.11.8:
-  version "3.11.8"
-  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.11.8.tgz#cd9313f4ea33cd6a37c3b6660efecb46851011f6"
-  integrity sha512-fiQw7L0BUbhfpnyM+8l1nHZn9d1aLymBkH4am44nKEF1hWXuQ2bnOQuq7Y7Yt/Pl7vA5rScNnlRT0ATI3qKwMw==
+mediasoup@^3.11.12:
+  version "3.11.12"
+  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.11.12.tgz#63d448125bb82d7d1d82aa8c779c538f619f4136"
+  integrity sha512-f0Yf4y9NPdSsDL7ogoivRicoP7zd3C6NUXrR8ik9/ggfDOiOhKd36cjUdUj40MiKnR1ZQM/kGkUxlrkI2NjN0w==
   dependencies:
     debug "^4.3.4"
     h264-profile-level-id "^1.0.1"

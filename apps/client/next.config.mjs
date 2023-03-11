@@ -75,14 +75,15 @@ export default defineNextConfig({
   eslint: {
     ignoreDuringBuilds: true,
   },
-  transpilePackages: ["engine", "contracts", "protocol"],
-  images: {
-    domains: [env.NEXT_PUBLIC_CDN_ENDPOINT],
-  },
   experimental: {
     appDir: true,
   },
+  images: {
+    domains: [env.NEXT_PUBLIC_CDN_ENDPOINT],
+  },
+  output: "standalone",
   reactStrictMode: true,
+  transpilePackages: ["engine", "contracts", "protocol"],
   async headers() {
     return [
       {

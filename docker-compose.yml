@@ -42,43 +42,20 @@ services:
     working_dir: /var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password --lower_case_table_names=1
 
-  # ipfs:
-  #   container_name: ipfs
-  #   build:
-  #     context: .
-  #     dockerfile: ./docker/ipfs.Dockerfile
-  #   restart: unless-stopped
-  #   ports:
-  #     - 5001:5001
-  #     - 8080:8080
-  #   volumes:
-  #     - ipfs:/data/ipfs
-
-  turbo:
-    container_name: turbo
+  client:
+    container_name: client
     build:
       context: .
-      dockerfile: ./docker/turbo.Dockerfile
+      dockerfile: ./apps/client/Dockerfile
     restart: unless-stopped
     env_file:
       - .env
+    ports:
+      - 3000:3000
     depends_on:
       - aws
       - db
-      # - ipfs
-    ports:
-      - 3000:3000/tcp
-      - 3000:3000/udp
-      - 4000:4000
-      - ${RTC_MIN_PORT}-${RTC_MAX_PORT}:${RTC_MIN_PORT}-${RTC_MAX_PORT}/tcp
-      - ${RTC_MIN_PORT}-${RTC_MAX_PORT}:${RTC_MIN_PORT}-${RTC_MAX_PORT}/udp
-    volumes:
-      - ./apps:/app/apps
-      - ./packages:/app/packages
-      - turbo:/app/node_modules
 
 volumes:
   aws:
   db:
-  # ipfs:
-  turbo:

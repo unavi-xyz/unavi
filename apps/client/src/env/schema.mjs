@@ -17,6 +17,7 @@ export const serverSchema = z.object({
   S3_ENDPOINT: z.string(),
   S3_REGION: z.string(),
   S3_SECRET: z.string(),
+  VERCEL_URL: z.string().optional(),
 });
 
 /*

@@ -1,6 +1,33 @@
 version: "3"
 
 services:
+  aws:
+    container_name: aws
+    image: minio/minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET}
+    ports:
+      - 9000:9000
+      - 9090:9090
+    volumes:
+      - aws:/data
+    command: server /data --console-address ":9090"
+
+  aws-init:
+    container_name: aws-init
+    image: minio/mc
+    depends_on:
+      - aws
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        /usr/bin/mc alias set myminio http://aws:9000 ${S3_ACCESS_KEY_ID} ${S3_SECRET};
+        /usr/bin/mc mb myminio/${S3_BUCKET};
+        /usr/bin/mc policy set public myminio/${S3_BUCKET};
+
   db:
     container_name: db
     image: mysql:8
@@ -27,33 +54,6 @@ services:
   #   volumes:
   #     - ipfs:/data/ipfs
 
-  minio:
-    container_name: minio
-    image: minio/minio
-    restart: unless-stopped
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET}
-    ports:
-      - 9000:9000
-      - 9090:9090
-    volumes:
-      - minio:/data
-    command: server /data --console-address ":9090"
-
-  minio-init:
-    container_name: minio-init
-    image: minio/mc
-    depends_on:
-      - minio
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        /usr/bin/mc alias set myminio http://minio:9000 ${S3_ACCESS_KEY_ID} ${S3_SECRET};
-        /usr/bin/mc mb myminio/${S3_BUCKET};
-        /usr/bin/mc policy set public myminio/${S3_BUCKET};
-
   turbo:
     container_name: turbo
     build:
@@ -63,9 +63,9 @@ services:
     env_file:
       - .env
     depends_on:
+      - aws
       - db
       # - ipfs
-      - minio
     ports:
       - 3000:3000/tcp
       - 3000:3000/udp
@@ -78,7 +78,7 @@ services:
       - turbo:/app/node_modules
 
 volumes:
+  aws:
   db:
   # ipfs:
-  minio:
   turbo:

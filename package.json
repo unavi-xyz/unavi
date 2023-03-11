@@ -10,7 +10,7 @@
   "scripts": {
     "build": "turbo build",
     "deploy": "turbo deploy",
-    "dev": "turbo dev --parallel",
+    "dev": "turbo dev",
     "format": "prettier --write .",
     "generate": "turbo generate",
     "postinstall": "patch-package",

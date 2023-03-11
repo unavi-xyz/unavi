@@ -12,7 +12,8 @@ out/
 build
 
 # other
-dist/
+.turbo
+.vscode
 
 # misc
 .DS_Store
@@ -30,17 +31,8 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# turbo
-.turbo
-
 # typescript
 *.tsbuildinfo
 
-# vscode
-.vscode
-
 # codegen
 generated
-
-# vercel
-.vercel

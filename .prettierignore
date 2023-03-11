@@ -12,7 +12,9 @@ out/
 build
 
 # other
-dist/
+.turbo
+.docusaurus
+.vscode
 
 # misc
 .DS_Store
@@ -30,21 +32,16 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# turbo
-.turbo
-
 # typescript
 *.tsbuildinfo
-
-# docusaurus
-.docusaurus
 
 # codegen
 generated
 packages/contracts/contracts
 
-# public
-public
+# client
+apps/client/public
+.vercel
 
 # engine
 draco_decoder_gltf.js

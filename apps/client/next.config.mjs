@@ -110,7 +110,6 @@ export default defineNextConfig({
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
-      syncWebAssembly: true,
     };
     return config;
   },

@@ -15,6 +15,9 @@ RUN apk add --no-cache libc6-compat git
 RUN apk update
 WORKDIR /app
 
+# Install dotenv-cli
+RUN yarn global add dotenv-cli
+
 # First install the dependencies (as they change less often)
 COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
@@ -25,8 +28,9 @@ RUN yarn install
 COPY patches patches
 RUN yarn patch-package
 
-# Copy env file
-COPY .env /app/apps/client/.env
+# Copy over .env files
+COPY .env .env
+COPY .env.local .env.local
 
 # Build the project
 COPY --from=builder /app/out/full/ .
@@ -39,10 +43,13 @@ COPY turbo.json turbo.json
 # ARG TURBO_TOKEN
 # ENV TURBO_TOKEN=$TURBO_TOKEN
 
-RUN yarn turbo run build --filter=client...
+RUN dotenv -c -- yarn turbo run build --filter=client...
 
 FROM node:alpine AS runner
 WORKDIR /app
+
+# Install dotenv-cli
+RUN yarn global add dotenv-cli
 
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
@@ -58,4 +65,8 @@ COPY --from=installer --chown=nextjs:nodejs /app/apps/client/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs /app/apps/client/.next/static ./apps/client/.next/static
 COPY --from=installer --chown=nextjs:nodejs /app/apps/client/public ./apps/client/public
 
-CMD node apps/client/server.js
+# Copy over .env files
+COPY .env .env
+COPY .env.local .env.local
+
+CMD ["dotenv", "-c", "--", "node", "apps/client/server.js"]

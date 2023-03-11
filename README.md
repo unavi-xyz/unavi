@@ -61,7 +61,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 The client can be run locally using Docker. To do so, run the following command:
 
 ```bash
-docker compose up -d
+docker compose up
 ```
 
 This will start the client on port 3000. You can then access it at [http://localhost:3000](http://localhost:3000).

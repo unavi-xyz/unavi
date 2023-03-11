@@ -77,7 +77,7 @@ export default defineNextConfig({
   },
   transpilePackages: ["engine", "contracts", "protocol"],
   images: {
-    domains: [env.NEXT_PUBLIC_CDN_ENDPOINT, env.NEXT_PUBLIC_IPFS_GATEWAY.split(":")[0]],
+    domains: [env.NEXT_PUBLIC_CDN_ENDPOINT],
   },
   experimental: {
     appDir: true,

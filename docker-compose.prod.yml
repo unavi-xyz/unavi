@@ -11,7 +11,7 @@ services:
       - ./apps/client/.env.local
       - ./apps/client/.env
     ports:
-      - 3030:3000
+      - 3000:3000
     depends_on:
       - aws
       - db

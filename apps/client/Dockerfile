@@ -5,6 +5,8 @@ RUN apk update
 
 # Set working directory
 WORKDIR /app
+
+# Prune the repo to only include files needed for the build
 RUN yarn global add turbo
 COPY . .
 RUN turbo prune --scope=client --docker

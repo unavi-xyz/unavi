@@ -36,6 +36,19 @@ const config = {
         },
       },
     ],
+    [
+      "@docusaurus/plugin-ideal-image",
+      {
+        max: 2048,
+        disableInDev: false,
+      },
+    ],
+    [
+      "@docusaurus/plugin-sitemap",
+      {
+        ignorePatterns: ["/api/**"],
+      },
+    ],
   ],
 
   presets: [

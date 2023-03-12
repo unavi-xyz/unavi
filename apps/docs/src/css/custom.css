@@ -41,15 +41,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 1rem 0 1rem 0;
 }
 
-.large-img > img {
+.large-img > div > img {
   border-radius: 0.5rem;
   border: 1px solid #dadde1;
 }
 
-[data-theme="dark"] .large-img > img {
+[data-theme="dark"] .large-img > div > img {
   border: 0px;
 }

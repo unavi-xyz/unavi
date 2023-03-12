@@ -9,7 +9,6 @@
       "dependsOn": ["^build", "generate"],
       "outputs": [".next/**"],
       "env": [
-        "BUNDLE_ANALYZE",
         "DATABASE_URL",
         "ETH_PROVIDER",
         "NEXT_PUBLIC_ALCHEMY_ID",

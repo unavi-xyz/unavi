@@ -8,50 +8,58 @@ import Toast from "./Toast";
 
 const font = Nunito({ subsets: ["latin"] });
 
-const title = {
-  default: "The Wired",
-  template: "%s / The Wired",
-};
-
-const description = "An open metaverse platform";
-const hero = "/images/Hero.png";
+const APP_NAME = "The Wired";
+const TITLE = { default: APP_NAME, template: `%s / ${APP_NAME}` };
+const DESCRIPTION = "An open metaverse platform";
+const HERO = "/images/Hero.png";
 
 export const metadata: Metadata = {
-  title,
-  description,
-  keywords: ["Metaverse", "WebXR", "Web3"],
-  themeColor: "#191919",
+  applicationName: APP_NAME,
   colorScheme: "light",
+  description: DESCRIPTION,
+  keywords: ["Metaverse", "WebXR", "Web3"],
   manifest: "/manifest.json",
+  themeColor: "#191919",
+  title: TITLE,
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
+    shortcut: "/images/Icon-512.png",
     icon: "/images/Icon-512.png",
+    apple: [
+      {
+        url: "/images/Icon-192.png",
+        sizes: "192x192",
+      },
+    ],
   },
   openGraph: {
-    title,
-    description,
+    description: DESCRIPTION,
+    siteName: APP_NAME,
+    title: TITLE,
+    type: "website",
     url: "https://thewired.space",
-    siteName: "The Wired",
     images: [
       {
-        url: hero,
+        url: HERO,
         width: 888,
         height: 500,
       },
     ],
-    type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title,
-    description,
+    description: DESCRIPTION,
+    images: [HERO],
     site: "@wired_xr",
-    images: [hero],
+    title: TITLE,
   },
   appleWebApp: {
-    title: "The Wired",
     capable: true,
+    title: APP_NAME,
     startupImage: {
-      url: "/images/Icon-192.png",
+      url: "/images/Icon-512.png",
     },
   },
 };

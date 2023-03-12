@@ -15,7 +15,6 @@ const title = {
 
 const description = "An open metaverse platform";
 const hero = "/images/Hero.png";
-const logo = "/images/Logo.png";
 
 export const metadata: Metadata = {
   title,
@@ -25,7 +24,7 @@ export const metadata: Metadata = {
   colorScheme: "light",
   manifest: "/manifest.json",
   icons: {
-    icon: logo,
+    icon: "/images/Icon-512.png",
   },
   openGraph: {
     title,
@@ -51,7 +50,9 @@ export const metadata: Metadata = {
   appleWebApp: {
     title: "The Wired",
     capable: true,
-    startupImage: { url: logo },
+    startupImage: {
+      url: "/images/Icon-192.png",
+    },
   },
 };
 

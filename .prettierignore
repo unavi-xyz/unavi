@@ -37,7 +37,8 @@ generated
 packages/contracts/contracts
 
 # client
-apps/client/public
+apps/client/public/images
+apps/client/public/scripts
 .vercel
 
 # engine

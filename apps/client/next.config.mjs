@@ -74,6 +74,7 @@ export default defineNextConfig({
   experimental: {
     appDir: true,
     outputFileTracingRoot: path.join(__dirname, "../../"),
+    outputFileTracingExcludes: ["**swc/core**"],
   },
   images: {
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT],

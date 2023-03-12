@@ -21,8 +21,8 @@ function Button({ isLoading }: Props) {
 
   return (
     <button
-      className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400 transition hover:scale-105 active:scale-100 ${
-        isLoading ? "opacity-70" : ""
+      className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400 transition active:scale-100 ${
+        isLoading ? "opacity-70" : "hover:scale-105"
       }`}
       disabled={isLoading}
       onClick={openConnectModal}

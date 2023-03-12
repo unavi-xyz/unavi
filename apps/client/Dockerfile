@@ -57,4 +57,6 @@ COPY --from=installer --chown=nextjs:nodejs /app/apps/client/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs /app/apps/client/.next/static ./apps/client/.next/static
 COPY --from=installer --chown=nextjs:nodejs /app/apps/client/public ./apps/client/public
 
+ENV NODE_ENV=production
+
 CMD ["node", "apps/client/server.js"]

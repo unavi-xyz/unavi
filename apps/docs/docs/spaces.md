@@ -4,15 +4,12 @@ sidebar_label: 🌏 Spaces
 title: Spaces
 ---
 
-import Image from "@theme/IdealImage";
-import editor from "/img/Editor.png";
-
 Spaces are 3D multiplayer environments that serve as the core building blocks of the platform.
 
 ## 🏗️ Creation
 
 <div class="large-img">
-  <Image img={editor} />
+  <img src="/img/Editor.png" />
 </div>
 
 Spaces can be created for free using the [Editor](https://www.thewired.space/create).

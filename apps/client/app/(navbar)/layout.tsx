@@ -13,7 +13,7 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
           className="flex h-full w-full justify-center bg-white"
           style={{ paddingLeft: "calc(100vw - 100%)" }}
         >
-          <div className="max-w-content mx-4 flex justify-between md:grid md:grid-cols-3">
+          <div className="max-w-content mx-4 flex justify-between lg:grid lg:grid-cols-3">
             <div className="flex items-center">
               <Link
                 href="/"
@@ -23,11 +23,11 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
               </Link>
             </div>
 
-            <div className="flex items-center justify-center space-x-1 md:space-x-4">
+            <div className="flex items-center justify-center space-x-1 lg:space-x-4">
               <div>
                 <NavigationTab text="Explore" href="/explore" />
               </div>
-              <div className="hidden md:block">
+              <div className="hidden lg:block">
                 <NavigationTab text="Create" href="/create" />
               </div>
             </div>

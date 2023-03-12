@@ -1,13 +1,8 @@
-import createBundleAnalyzer from "@next/bundle-analyzer";
 import { withAxiom } from "next-axiom";
 import createPWA from "next-pwa";
 import runtimeCaching from "next-pwa/cache.js";
 
 import { env } from "./src/env/server.mjs";
-
-const withBundleAnalyzer = createBundleAnalyzer({
-  enabled: env.BUNDLE_ANALYZE === "true" && env.NODE_ENV === "production",
-});
 
 const withPWA = createPWA({
   dest: "public",
@@ -66,7 +61,7 @@ const isolationHeaders = [
  * @constraint {{import('next').NextConfig}}
  */
 function defineNextConfig(config) {
-  const plugins = [withBundleAnalyzer, withAxiom, withPWA];
+  const plugins = [withAxiom, withPWA];
   return plugins.reduce((acc, plugin) => plugin(acc), config);
 }
 

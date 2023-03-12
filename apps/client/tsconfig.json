@@ -3,7 +3,6 @@
   "include": [
     "**/*.ts",
     "**/*.mjs",
-    "**/*.js",
     "**/*.tsx",
     "src/**/*.json",
     "next-env.d.ts",

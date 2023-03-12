@@ -61,7 +61,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 The client can be run locally using Docker. To do so, run the following command:
 
 ```bash
-docker compose up
+yarn docker:prod
 ```
 
 This will start the client on port 3000. You can then access it at [http://localhost:3000](http://localhost:3000).
@@ -69,7 +69,7 @@ This will start the client on port 3000. You can then access it at [http://local
 To stop the client, run the following command:
 
 ```bash
-docker compose down
+yarn docker:stop
 ```
 
 ## ⚙️ Development
@@ -94,7 +94,13 @@ yarn build
 
 ### Develop
 
-To develop all apps and packages, run the following command:
+To work on the client, you will need to use Docker to run services it relies on (such as the database). To do so, run the following command:
+
+```bash
+yarn docker:dev
+```
+
+If you don't need that, you can run all apps and packages in development mode using the following command:
 
 ```bash
 yarn dev

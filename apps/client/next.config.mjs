@@ -75,7 +75,7 @@ export default defineNextConfig({
     appDir: true,
     outputFileTracingRoot: path.join(__dirname, "../../"),
     outputFileTracingExcludes: {
-      "/api/*": ["**swc/core**"],
+      "**": ["**swc/core**"],
     },
   },
   images: {

@@ -52,7 +52,7 @@
     "swr": "^2.0.4",
     "wagmi": "^0.11.7",
     "zod": "^3.21.4",
-    "zustand": "^4.3.3"
+    "zustand": "^4.3.6"
   },
   "devDependencies": {
     "@types/offscreencanvas": "^2019.7.0",
@@ -60,8 +60,8 @@
     "@types/react-dom": "^18.0.10",
     "@types/sharp": "^0.31.1",
     "autoprefixer": "^10.4.13",
-    "dotenv-cli": "^7.0.0",
-    "eslint": "^8.35.0",
+    "dotenv-cli": "^7.1.0",
+    "eslint": "^8.36.0",
     "eslint-config-custom": "*",
     "postcss": "^8.4.21",
     "prisma": "^4.10.1",

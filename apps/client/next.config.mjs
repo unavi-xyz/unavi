@@ -1,13 +1,11 @@
+import createPWA from "@ducanh2912/next-pwa";
 import { withAxiom } from "next-axiom";
-import createPWA from "next-pwa";
-import runtimeCaching from "next-pwa/cache.js";
 
 import { env } from "./src/env/server.mjs";
 
 const withPWA = createPWA({
   dest: "public",
   disable: env.NODE_ENV === "development",
-  runtimeCaching,
 });
 
 const securityHeaders = [

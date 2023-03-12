@@ -50,7 +50,7 @@ export default function Home() {
                     rel="noreferrer"
                     className="flex h-12 items-center justify-center rounded-full px-10 text-2xl font-bold text-neutral-900 ring-neutral-900 transition hover:ring-2 active:bg-neutral-200"
                   >
-                    Learn More
+                    View Docs
                   </a>
                 </div>
               </div>

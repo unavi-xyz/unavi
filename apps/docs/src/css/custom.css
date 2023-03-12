@@ -44,11 +44,12 @@
   padding: 1rem 0 1rem 0;
 }
 
-.large-img > div > img {
+.large-img > div {
   border-radius: 0.5rem;
   border: 1px solid #dadde1;
+  overflow: hidden;
 }
 
-[data-theme="dark"] .large-img > div > img {
+[data-theme="dark"] .large-img > div {
   border: 0px;
 }

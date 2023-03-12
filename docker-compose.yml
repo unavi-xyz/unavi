@@ -33,7 +33,8 @@ services:
     image: mysql:8
     restart: unless-stopped
     env_file:
-      - .env
+      - ./apps/client/.env.local
+      - ./apps/client/.env
     ports:
       - 3306:3306
       - 33060:33060

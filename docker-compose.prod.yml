@@ -8,9 +8,10 @@ services:
       dockerfile: ./apps/client/Dockerfile
     restart: unless-stopped
     env_file:
-      - .env
+      - ./apps/client/.env.local
+      - ./apps/client/.env
     ports:
-      - 3000:3000
+      - 3030:3000
     depends_on:
       - aws
       - db

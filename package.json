@@ -8,11 +8,11 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "dotenv -c -- turbo build",
+    "build": "turbo build",
     "deploy": "turbo deploy",
-    "dev": "dotenv -c -- turbo dev",
-    "docker:dev": "docker compose up -d && yarn dev",
-    "docker:prod": "docker compose -f docker-compose.yml -f docker-compose.prod.yml up",
+    "dev": "turbo dev",
+    "docker:dev": "docker compose up --build -d && yarn dev",
+    "docker:prod": "docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build",
     "docker:stop": "docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
     "format": "prettier --write .",
     "generate": "turbo generate",
@@ -20,7 +20,6 @@
     "lint": "turbo lint"
   },
   "devDependencies": {
-    "dotenv-cli": "^7.1.0",
     "patch-package": "^6.5.1",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.8.4",

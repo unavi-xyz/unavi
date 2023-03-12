@@ -16,7 +16,6 @@ export const serverSchema = z.object({
   S3_ENDPOINT: z.string(),
   S3_REGION: z.string(),
   S3_SECRET: z.string(),
-  VERCEL_URL: z.string().optional(),
 });
 
 /*
@@ -29,6 +28,7 @@ export const clientSchema = z.object({
   NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT: z.string().optional(),
   NEXT_PUBLIC_CDN_ENDPOINT: z.string(),
   NEXT_PUBLIC_DEFAULT_HOST: z.string(),
+  VERCEL_URL: z.string().optional(),
 });
 
 /**

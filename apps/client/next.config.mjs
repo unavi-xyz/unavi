@@ -1,7 +1,10 @@
 import createPWA from "@ducanh2912/next-pwa";
 import { withAxiom } from "next-axiom";
+import path from "path";
 
 import { env } from "./src/env/server.mjs";
+
+const __dirname = path.resolve();
 
 const withPWA = createPWA({
   dest: "public",
@@ -70,6 +73,7 @@ export default defineNextConfig({
   },
   experimental: {
     appDir: true,
+    outputFileTracingRoot: path.join(__dirname, "../../"),
   },
   images: {
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT],

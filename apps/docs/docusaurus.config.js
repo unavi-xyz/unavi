@@ -43,12 +43,6 @@ const config = {
         disableInDev: false,
       },
     ],
-    [
-      "@docusaurus/plugin-sitemap",
-      {
-        ignorePatterns: ["/api/**"],
-      },
-    ],
   ],
 
   presets: [

@@ -56,7 +56,29 @@ export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh>
             const materialObject = this.scene.builders.material.getObject(materialId);
             if (!materialObject) throw new Error("Material object not found.");
 
-            object.material = materialObject;
+            return subscribe(primitive, "Semantics", (names) => {
+              const useDerivativeTangents = !names.includes("TANGENT");
+              const useVertexColors = names.includes("COLOR_0");
+              const useFlatShading = !names.includes("NORMAL");
+
+              if (useDerivativeTangents || useVertexColors || useFlatShading) {
+                // Clone material to avoid modifying the original
+                const clonedMaterial = materialObject.clone();
+
+                if (useDerivativeTangents) clonedMaterial.normalScale.y *= -1;
+                if (useVertexColors) clonedMaterial.vertexColors = true;
+                if (useFlatShading) clonedMaterial.flatShading = true;
+
+                object.material = clonedMaterial;
+
+                return () => {
+                  // Dispose of cloned material
+                  clonedMaterial.dispose();
+                };
+              } else {
+                object.material = materialObject;
+              }
+            });
           } else {
             object.material = DEFAULT_MATERIAL;
           }

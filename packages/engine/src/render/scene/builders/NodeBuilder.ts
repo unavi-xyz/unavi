@@ -208,6 +208,10 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
         ...primitiveObject.morphTargetDictionary,
       };
 
+    // Normalize skin weights
+    if (!newPrimitiveObject.geometry.attributes.skinWeight?.normalized)
+      newPrimitiveObject.normalizeSkinWeights();
+
     // Remove old primitive object
     primitiveObject.removeFromParent();
 

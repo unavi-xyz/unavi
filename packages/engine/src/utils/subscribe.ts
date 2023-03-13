@@ -98,9 +98,18 @@ export function subscribe<Property extends ExtensibleProperty, Key extends Value
   // Get initial value
   onChange({ type: "change", target: property, attribute: attribute.toLowerCase() });
 
+  // Listen for changes
   property.addEventListener("change", onChange);
+
+  // Cleanup on dispose
+  const onDispose = () => {
+    if (cleanup) cleanup();
+  };
+
+  property.addEventListener("dispose", onDispose);
 
   return () => {
     property.removeEventListener("change", onChange);
+    property.removeEventListener("dispose", onDispose);
   };
 }

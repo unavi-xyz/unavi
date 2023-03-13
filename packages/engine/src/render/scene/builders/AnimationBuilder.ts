@@ -31,14 +31,15 @@ export class AnimationBuilder extends Builder<AnimationJSON, AnimationClip> {
 
     const { object: animation } = this.scene.animation.create(json, id);
 
-    const object = new AnimationClip(undefined, undefined, []);
-    this.setObject(id, object);
-
-    subscribe(animation, "Name", (value) => {
-      object.name = value;
+    this.subscribeToObject(id, (object) => {
+      return subscribe(animation, "Name", (value) => {
+        if (object) object.name = value;
+      });
     });
 
     subscribe(animation, "Channels", (channels) => {
+      const cleanup: Array<() => void> = [];
+
       channels.forEach((channel) => {
         // Get keyframe track type
         const path = channel.getTargetPath();
@@ -109,71 +110,82 @@ export class AnimationBuilder extends Builder<AnimationJSON, AnimationClip> {
         const target = channel.getTargetNode();
         if (!target) return;
 
-        const targetid = this.scene.node.getId(target);
-        if (!targetid) return;
+        const targetId = this.scene.node.getId(target);
+        if (!targetId) return;
 
-        const targetObject = this.scene.builders.node.getObject(targetid);
-        if (!targetObject) return;
+        cleanup.push(
+          this.scene.builders.node.subscribeToObject(targetId, (targetObject) => {
+            if (!targetObject) return;
 
-        const targetIds = [];
-        if (path === "weights") {
-          targetObject.traverse((child) => {
-            if ("morphTargetInfluences" in child) targetIds.push(child.uuid);
-          });
-        } else {
-          targetIds.push(targetObject.uuid);
-        }
+            const targetIds = [];
+            if (path === "weights") {
+              targetObject.traverse((child) => {
+                if ("morphTargetInfluences" in child) targetIds.push(child.uuid);
+              });
+            } else {
+              targetIds.push(targetObject.uuid);
+            }
 
-        // Get input and output data
-        const inputAccessor = sampler.getInput();
-        if (!inputAccessor) return;
+            // Get input and output data
+            const inputAccessor = sampler.getInput();
+            if (!inputAccessor) return;
 
-        const outputAccessor = sampler.getOutput();
-        if (!outputAccessor) return;
+            const outputAccessor = sampler.getOutput();
+            if (!outputAccessor) return;
 
-        const inputArray = inputAccessor.getArray();
-        if (!inputArray) return;
+            const inputArray = inputAccessor.getArray();
+            if (!inputArray) return;
 
-        const outputArray = outputAccessor.getArray();
-        if (!outputArray) return;
+            const outputArray = outputAccessor.getArray();
+            if (!outputArray) return;
 
-        // Create keyframe track
-        targetIds.forEach((id) => {
-          const track = new TypedKeyframeTrack(
-            `${id}.${threePath}`,
-            inputArray,
-            outputArray,
-            interpolationMode
-          );
+            // Create keyframe tracks
+            const tracks = targetIds.map((id) => {
+              const track = new TypedKeyframeTrack(
+                `${id}.${threePath}`,
+                inputArray,
+                outputArray,
+                interpolationMode
+              );
 
-          object.tracks.push(track);
+              // Create a custom interpolant for cubic spline interpolation
+              // The built in three.js cubic interpolant is not compatible with the glTF spec
+              if (sampler.getInterpolation() === "CUBICSPLINE") {
+                // @ts-ignore
+                track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline(
+                  result: any
+                ) {
+                  // A CUBICSPLINE keyframe in glTF has three output values for each input value,
+                  // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
+                  // must be divided by three to get the interpolant's sampleSize argument.
+                  const InterpolantType =
+                    this instanceof QuaternionKeyframeTrack
+                      ? GLTFCubicSplineQuaternionInterpolant
+                      : GLTFCubicSplineInterpolant;
 
-          // Create a custom interpolant for cubic spline interpolation
-          // The built in three.js cubic interpolant is not compatible with the glTF spec
-          if (sampler.getInterpolation() === "CUBICSPLINE") {
-            // @ts-ignore
-            track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline(
-              result: any
-            ) {
-              // A CUBICSPLINE keyframe in glTF has three output values for each input value,
-              // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
-              // must be divided by three to get the interpolant's sampleSize argument.
-              const InterpolantType =
-                this instanceof QuaternionKeyframeTrack
-                  ? GLTFCubicSplineQuaternionInterpolant
-                  : GLTFCubicSplineInterpolant;
+                  return new InterpolantType(
+                    this.times,
+                    this.values,
+                    this.getValueSize() / 3,
+                    result
+                  );
+                };
+                // @ts-ignore
+                track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline = true;
+              }
 
-              return new InterpolantType(this.times, this.values, this.getValueSize() / 3, result);
+              return track;
+            });
+
+            const object = new AnimationClip(undefined, undefined, tracks);
+            this.setObject(id, object);
+
+            return () => {
+              this.setObject(id, null);
             };
-            // @ts-ignore
-            track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline = true;
-          }
-        });
+          })
+        );
       });
-
-      return () => {
-        object.tracks = [];
-      };
     });
 
     animation.addEventListener("dispose", () => {

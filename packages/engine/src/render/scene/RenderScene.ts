@@ -15,8 +15,7 @@ import { SkinBuilder } from "./builders/SkinBuilder";
 import { TextureBuilder } from "./builders/TextureBuilder";
 
 /**
- * Instants of a {@link Scene} for the render thread.
- * This class is responsible for creating and disposing Three.js objects.
+ * Instance of a {@link Scene} for the render thread.
  */
 export class RenderScene extends Scene {
   #csm: CSM | null = null;
@@ -290,7 +289,7 @@ export class RenderScene extends Scene {
     this.#animationsEnabled = enabled;
 
     if (enabled) this.#animationActions.forEach((action) => action.play());
-    else this.mixer.stopAllAction();
+    else this.#animationActions.forEach((action) => action.reset());
   }
 
   destroy() {

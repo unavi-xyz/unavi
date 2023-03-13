@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { Bone, Object3D, Skeleton } from "three";
+import { Bone, Matrix4, Object3D, Skeleton } from "three";
 
 import { SkinJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
@@ -26,19 +26,27 @@ export class SkinBuilder extends Builder<SkinJSON, Skeleton> {
         return this.#nodeToBone(node);
       });
 
+      // Create skeleton
+      const skeleton = new Skeleton(bones);
+      this.setObject(id, skeleton);
+
       // Apply inverse bind matrices
       cleanup.push(
         subscribe(skin, "InverseBindMatrices", (matrices) => {
           const array = matrices?.getArray();
           if (!array) return;
 
-          bones.forEach((bone, i) => bone.matrix.fromArray(array, i * 16));
+          const boneInverses = bones.map((bone, i) => {
+            return new Matrix4().fromArray(array, i * 16);
+          });
+
+          skeleton.boneInverses = boneInverses;
+
+          return () => {
+            skeleton.boneInverses = [];
+          };
         })
       );
-
-      // Create skeleton
-      const skeleton = new Skeleton(bones);
-      this.setObject(id, skeleton);
 
       return () => {
         // Convert joint objects back to nodes

@@ -63,7 +63,7 @@ export class TransformControls {
         if (data.nodeId === null) {
           this.#transformControls.detach();
         } else {
-          const object = this.#renderThread.renderScene.nodeObjects.get(data.nodeId);
+          const object = this.#renderThread.renderScene.builders.node.getObject(data.nodeId);
           if (object) this.#transformControls.attach(object);
         }
 

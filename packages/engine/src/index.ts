@@ -9,3 +9,4 @@ export * from "./render";
 export * from "./scene";
 export * from "./types";
 export * from "./utils/dispose";
+export * from "./utils/subscribe";

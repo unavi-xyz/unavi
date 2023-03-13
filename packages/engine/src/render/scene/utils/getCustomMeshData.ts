@@ -1,10 +1,10 @@
 import { BoxGeometry, BufferGeometry, CylinderGeometry, SphereGeometry } from "three";
 
-import { CustomMesh } from "../../scene";
-import { THREE_ATTRIBUTE_NAMES } from "./constants";
+import { CustomMesh } from "../../../scene";
+import { THREE_ATTRIBUTE_NAMES } from "../constants";
 
 /**
- * Get a custom mesh's geometry data.
+ * Get a custom mesh's geometry data using Three.js.
  *
  * @param json The custom mesh JSON.
  * @returns The geometry data.

@@ -57,6 +57,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     where: { id },
     data: { name, description, publicationId },
   });
+
+  return NextResponse.json({ success: true });
 }
 
 // Delete project
@@ -81,4 +83,6 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     // Delete files from S3
     deleteFiles(id),
   ]);
+
+  return NextResponse.json({ success: true });
 }

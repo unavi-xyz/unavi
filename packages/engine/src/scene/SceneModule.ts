@@ -81,7 +81,7 @@ export class SceneModule extends Scene {
     });
   }
 
-  async export(log = false) {
+  async export({ log = false } = {}) {
     const io = await this.#createIO();
 
     // Merge all buffers into one

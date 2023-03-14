@@ -65,11 +65,12 @@ export default function Connect({ id, connectedSpaceId }: Props) {
 
       // Fetch publication
       const publication = await getSpacePublication(spaceId);
-      let publicationId = publication?.id;
+      const publicationId = publication?.id;
 
       if (!publicationId) {
         // Create new publication if there is not already one
-        publicationId = await publishProject(id);
+        const { id: newPublicationId } = await publishProject(id);
+        return newPublicationId;
       }
 
       // Link project to publication

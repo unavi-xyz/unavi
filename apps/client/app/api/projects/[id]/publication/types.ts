@@ -1,1 +1,1 @@
-export type PublishProjectResponse = { id: string };
+export type PublishProjectResponse = { id: string; modelSize: number };

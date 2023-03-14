@@ -4,7 +4,6 @@ import { getServerSession } from "../../../../../src/server/helpers/getServerSes
 import { optimizeProject } from "../../../../../src/server/helpers/optimizeProject";
 import { prisma } from "../../../../../src/server/prisma";
 import { getContentType, getUpload } from "../../../publications/files";
-import { getDownload } from "../../files";
 import { Params, paramsSchema } from "../types";
 import { PublishProjectResponse } from "./types";
 
@@ -38,26 +37,23 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
 
   // Create optimized model
-  await optimizeProject(id);
-
-  // Download optimized model
-  const url = await getDownload(id, "optimized_model");
-  const response = await fetch(url);
-  const buffer = await response.arrayBuffer();
-  const array = new Uint8Array(buffer);
+  const optimizedModel = await optimizeProject(id);
 
   // Upload optimized model to publication
   const uploadUrl = await getUpload(publicationId, "model");
 
   await fetch(uploadUrl, {
     method: "PUT",
-    body: array,
+    body: new Blob([optimizedModel], { type: getContentType("model") }),
     headers: {
       "Content-Type": getContentType("model"),
       "x-amz-acl": "public-read",
     },
   });
 
-  const json: PublishProjectResponse = { id: publicationId };
+  const json: PublishProjectResponse = {
+    id: publicationId,
+    modelSize: optimizedModel.byteLength,
+  };
   return NextResponse.json(json);
 }

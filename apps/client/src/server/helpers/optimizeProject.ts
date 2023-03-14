@@ -1,19 +1,30 @@
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NodeIO } from "@gltf-transform/core";
-import { dedup, draco, resample, sparse, textureCompress, weld } from "@gltf-transform/functions";
+import {
+  dedup,
+  draco,
+  metalRough,
+  resample,
+  sparse,
+  textureCompress,
+} from "@gltf-transform/functions";
 import { BehaviorExtension, extensions } from "engine";
 import sharp from "sharp";
 
-import { getContentType, getKey, PROJECT_FILE } from "../../../app/api/projects/files";
+import { getKey, PROJECT_FILE } from "../../../app/api/projects/files";
 import createEncoderModule from "../../../public/scripts/draco_encoder";
 import { env } from "../../env/server.mjs";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
 import { s3Client } from "../client";
 
 const expiresIn = 600; // 10 minutes
-const MEGABYTE = 1024 * 1024;
 
+/**
+ * Compresses a project's model
+ * @param id Project ID
+ * @returns The compressed model
+ */
 export async function optimizeProject(id: string) {
   // Fetch model from S3
   const modelKey = getKey(id, PROJECT_FILE.MODEL);
@@ -56,13 +67,11 @@ export async function optimizeProject(id: string) {
     });
 
   // Optimize model
-  // Ignore large models, it takes too long
-  if (array.byteLength < 30 * MEGABYTE) {
-    try {
-      await doc.transform(dedup(), weld(), resample(), sparse());
-    } catch (e) {
-      console.warn("Failed to optimize model: ", e);
-    }
+  try {
+    await doc.transform(dedup(), metalRough(), resample(), sparse());
+  } catch (err) {
+    console.warn("Failed to optimize model.");
+    console.warn(err);
   }
 
   // Compress model
@@ -93,14 +102,5 @@ export async function optimizeProject(id: string) {
     `(${Math.round(performance.now() - start)}ms)`
   );
 
-  // Upload model to S3
-  const optimizedKey = getKey(id, PROJECT_FILE.OPTIMIZED_MODEL);
-  const optimizedCommand = new PutObjectCommand({
-    Bucket: env.S3_BUCKET,
-    Key: optimizedKey,
-    Body: optimizedArray,
-    ContentType: getContentType(PROJECT_FILE.OPTIMIZED_MODEL),
-  });
-
-  await s3Client.send(optimizedCommand);
+  return optimizedArray;
 }

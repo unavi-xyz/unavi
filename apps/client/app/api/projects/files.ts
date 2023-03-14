@@ -9,7 +9,6 @@ export const expiresIn = 600; // 10 minutes
 export const PROJECT_FILE = {
   IMAGE: "image",
   MODEL: "model",
-  OPTIMIZED_MODEL: "optimized_model",
 } as const;
 
 export type ProjectFile = (typeof PROJECT_FILE)[keyof typeof PROJECT_FILE];
@@ -47,10 +46,6 @@ export function getKey(id: string, type: ProjectFile) {
     case PROJECT_FILE.MODEL: {
       return `projects/${id}/model.glb`;
     }
-
-    case PROJECT_FILE.OPTIMIZED_MODEL: {
-      return `projects/${id}/optimized_model.glb`;
-    }
   }
 }
 
@@ -60,8 +55,7 @@ export function getContentType(type: ProjectFile) {
       return "image/jpeg";
     }
 
-    case PROJECT_FILE.MODEL:
-    case PROJECT_FILE.OPTIMIZED_MODEL: {
+    case PROJECT_FILE.MODEL: {
       return "model/gltf-binary";
     }
   }

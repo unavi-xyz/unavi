@@ -18,6 +18,7 @@ import Button from "../../../ui/Button";
 import ImageInput from "../../../ui/ImageInput";
 import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
+import { bytesToDisplay } from "../../../utils/bytesToDisplay";
 import { toHex } from "../../../utils/toHex";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
@@ -51,7 +52,7 @@ export default function PublishPage() {
 
   const { profile } = useProfileByAddress(session?.address);
   const { data: project } = useSWR<Project | null>(
-    () => (image ? null : id ? `/api/projects/${id}` : null),
+    () => (id ? `/api/projects/${id}` : null),
     fetcher,
     {
       revalidateOnFocus: false,
@@ -81,18 +82,20 @@ export default function PublishPage() {
     const toastId = "publish";
 
     async function publish() {
+      const { engine } = useEditorStore.getState();
+
+      if (!engine) throw new Error("Engine not found");
       if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
       if (!id) throw new Error("Project ID not found");
 
       toast.loading("Saving...", { id: toastId });
-
       await save();
 
       toast.loading("Optimizing model...", { id: toastId });
+      const { id: publicationId, modelSize } = await publishProject(id);
 
-      const publicationId = await publishProject(id);
-      let spaceId = project?.Publication?.spaceId ?? undefined;
+      console.info("📦 Published model size:", bytesToDisplay(modelSize));
 
       async function uploadImage() {
         if (!imageFile) throw new Error("Image not found");
@@ -146,6 +149,8 @@ export default function PublishPage() {
         if (!response.ok) throw new Error("Failed to upload metadata");
       }
 
+      let spaceId = project?.Publication?.spaceId ?? undefined;
+
       if (spaceId === undefined) {
         toast.loading("Waiting for signature...", { id: toastId });
 
@@ -178,7 +183,6 @@ export default function PublishPage() {
       }
 
       toast.loading("Uploading metadata...", { id: toastId });
-
       const promises: Promise<unknown>[] = [uploadImage(), uploadMetadata(spaceId)];
 
       if (spaceId !== undefined) promises.push(linkPublication(publicationId, spaceId));

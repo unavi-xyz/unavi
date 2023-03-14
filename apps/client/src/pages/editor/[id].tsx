@@ -59,6 +59,9 @@ export default function Editor() {
         openScriptId: null,
         isPlaying: false,
         isSaving: false,
+        name: "",
+        description: "",
+        image: null,
         treeIds: [],
         openIds: [],
       });

@@ -24,6 +24,7 @@ export default function EditorNavbar() {
 
   const name = useEditorStore((state) => state.name);
   const isSaving = useEditorStore((state) => state.isSaving);
+  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
   const { save, saveImage } = useSave();
@@ -41,8 +42,9 @@ export default function EditorNavbar() {
     router.push(`/project/${id}`);
   }
 
-  async function handleOpenPublish() {
-    await saveImage();
+  function handleOpenPublish() {
+    if (!sceneLoaded) return;
+    saveImage();
     setOpenPublishDialog(true);
   }
 
@@ -93,7 +95,13 @@ export default function EditorNavbar() {
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <PlayButton />
           <VisualsButton />
-          {signer ? <Button onClick={handleOpenPublish}>Publish</Button> : <SignInButton />}
+          {signer ? (
+            <Button disabled={!sceneLoaded} onClick={handleOpenPublish}>
+              Publish
+            </Button>
+          ) : (
+            <SignInButton />
+          )}
         </div>
       </div>
     </>

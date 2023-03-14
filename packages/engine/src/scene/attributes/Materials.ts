@@ -100,11 +100,11 @@ export class Materials extends Attribute<Material, MaterialJSON> {
   }
 
   applyJSON(material: Material, json: Partial<MaterialJSON>) {
-    if (json.alphaMode) material.setAlphaMode(json.alphaMode);
-    if (json.alphaCutoff) material.setAlphaCutoff(json.alphaCutoff);
-    if (json.doubleSided) material.setDoubleSided(json.doubleSided);
+    if (json.alphaMode !== undefined) material.setAlphaMode(json.alphaMode);
+    if (json.alphaCutoff !== undefined) material.setAlphaCutoff(json.alphaCutoff);
+    if (json.doubleSided !== undefined) material.setDoubleSided(json.doubleSided);
 
-    if (json.baseColorFactor) material.setBaseColorFactor(json.baseColorFactor);
+    if (json.baseColorFactor !== undefined) material.setBaseColorFactor(json.baseColorFactor);
     if (json.baseColorTexture) {
       const texture = this.#texture.store.get(json.baseColorTexture);
       if (texture) material.setBaseColorTexture(texture);
@@ -114,7 +114,7 @@ export class Materials extends Attribute<Material, MaterialJSON> {
       if (info) TextureInfoUtils.applyJSON(info, json.baseColorTextureInfo);
     }
 
-    if (json.emissiveFactor) material.setEmissiveFactor(json.emissiveFactor);
+    if (json.emissiveFactor !== undefined) material.setEmissiveFactor(json.emissiveFactor);
     if (json.emissiveTexture) {
       const texture = this.#texture.store.get(json.emissiveTexture);
       if (texture) material.setEmissiveTexture(texture);
@@ -124,7 +124,7 @@ export class Materials extends Attribute<Material, MaterialJSON> {
       if (info) TextureInfoUtils.applyJSON(info, json.emissiveTextureInfo);
     }
 
-    if (json.normalScale) material.setNormalScale(json.normalScale);
+    if (json.normalScale !== undefined) material.setNormalScale(json.normalScale);
     if (json.normalTexture) {
       const texture = this.#texture.store.get(json.normalTexture);
       if (texture) material.setNormalTexture(texture);
@@ -134,7 +134,7 @@ export class Materials extends Attribute<Material, MaterialJSON> {
       if (info) TextureInfoUtils.applyJSON(info, json.normalTextureInfo);
     }
 
-    if (json.occlusionStrength) material.setOcclusionStrength(json.occlusionStrength);
+    if (json.occlusionStrength !== undefined) material.setOcclusionStrength(json.occlusionStrength);
     if (json.occlusionTexture) {
       const texture = this.#texture.store.get(json.occlusionTexture);
       if (texture) material.setOcclusionTexture(texture);
@@ -144,8 +144,8 @@ export class Materials extends Attribute<Material, MaterialJSON> {
       if (info) TextureInfoUtils.applyJSON(info, json.occlusionTextureInfo);
     }
 
-    if (json.roughnessFactor) material.setRoughnessFactor(json.roughnessFactor);
-    if (json.metallicFactor) material.setMetallicFactor(json.metallicFactor);
+    if (json.roughnessFactor !== undefined) material.setRoughnessFactor(json.roughnessFactor);
+    if (json.metallicFactor !== undefined) material.setMetallicFactor(json.metallicFactor);
     if (json.metallicRoughnessTexture) {
       const texture = this.#texture.store.get(json.metallicRoughnessTexture);
       if (texture) material.setMetallicRoughnessTexture(texture);

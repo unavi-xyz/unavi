@@ -1,4 +1,3 @@
-import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { NodeIO } from "@gltf-transform/core";
 import {
   dedup,
@@ -11,26 +10,15 @@ import {
 import { BehaviorExtension, extensions } from "engine";
 import sharp from "sharp";
 
-import { getKey, PROJECT_FILE } from "../../../app/api/projects/files";
 import createEncoderModule from "../../../public/scripts/draco_encoder";
-import { env } from "../../env/server.mjs";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
-import { s3Client } from "../client";
 
 /**
  * Compresses a project's model
  * @param id Project ID
  * @returns The compressed model
  */
-export async function optimizeProject(id: string) {
-  // Fetch model from S3
-  const modelKey = getKey(id, PROJECT_FILE.MODEL);
-  const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: modelKey });
-  const { Body } = await s3Client.send(command);
-  if (!Body) throw new Error("Model not found");
-
-  const array = await Body.transformToByteArray();
-
+export async function optimizeModel(model: Uint8Array) {
   const start = performance.now();
 
   // Load model
@@ -38,7 +26,7 @@ export async function optimizeProject(id: string) {
     .registerExtensions(extensions)
     .registerDependencies({ "draco3d.encoder": await createEncoderModule() });
 
-  const doc = await io.readBinary(array);
+  const doc = await io.readBinary(model);
 
   // Remove extras
   doc
@@ -82,22 +70,22 @@ export async function optimizeProject(id: string) {
   }
 
   // Write model
-  let optimizedArray = array;
+  let optimizedModel = model;
 
   try {
-    optimizedArray = await io.writeBinary(doc);
+    optimizedModel = await io.writeBinary(doc);
   } catch (e) {
     console.warn("Failed to write model: ", e);
   }
 
   console.info(
     "⚙️ Optimized model:",
-    bytesToDisplay(array.byteLength),
+    bytesToDisplay(model.byteLength),
     "->",
-    bytesToDisplay(optimizedArray.byteLength),
-    `(-${Math.round((1 - optimizedArray.byteLength / array.byteLength) * 100)}%)`,
+    bytesToDisplay(optimizedModel.byteLength),
+    `(-${Math.round((1 - optimizedModel.byteLength / model.byteLength) * 100)}%)`,
     `(${Math.round(performance.now() - start)}ms)`
   );
 
-  return optimizedArray;
+  return optimizedModel;
 }

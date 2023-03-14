@@ -117,7 +117,7 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
               }
             }
 
-            // Apply skin to mesh
+            // Bind mesh to skeleton
             meshCleanup.push(
               subscribe(node, "Skin", (skin) => {
                 if (!skin) return;
@@ -129,11 +129,26 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
                   if (!skeleton) return;
 
                   return subscribe(mesh, "Primitives", (primitives) => {
+                    const primitivesCleanup: Array<() => void> = [];
+
                     primitives.forEach((primitive) => {
-                      const newPrimitiveObject = this.#primitiveToSkinnedMesh(primitive);
+                      const primitiveId = this.scene.primitive.getId(primitive);
+                      if (!primitiveId) throw new Error("Primitive id not found.");
+
+                      // Convert mesh to skinned mesh
+                      this.#primitiveToSkinnedMesh(primitive);
 
                       // Bind mesh to skeleton
-                      newPrimitiveObject.bind(skeleton, newPrimitiveObject.matrixWorld);
+                      primitivesCleanup.push(
+                        this.scene.builders.primitive.subscribeToObject(
+                          primitiveId,
+                          (primitiveObject) => {
+                            if (!(primitiveObject instanceof SkinnedMesh)) return;
+
+                            primitiveObject.bind(skeleton, primitiveObject.matrixWorld);
+                          }
+                        )
+                      );
                     });
 
                     return () => {
@@ -141,6 +156,8 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
                       primitives.forEach((primitive) => {
                         this.#primitiveToMesh(primitive);
                       });
+
+                      primitivesCleanup.forEach((fn) => fn());
                     };
                   });
                 });
@@ -199,6 +216,8 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
     const newPrimitiveObject = new SkinnedMesh();
     this.scene.builders.primitive.setObject(primitiveId, newPrimitiveObject);
 
+    newPrimitiveObject.castShadow = primitiveObject.castShadow;
+    newPrimitiveObject.receiveShadow = primitiveObject.receiveShadow;
     newPrimitiveObject.geometry = primitiveObject.geometry;
     newPrimitiveObject.material = primitiveObject.material;
     if (primitiveObject.morphTargetInfluences)
@@ -229,6 +248,8 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
     const newPrimitiveObject = new ThreeMesh();
     this.scene.builders.primitive.setObject(primitiveId, newPrimitiveObject);
 
+    newPrimitiveObject.castShadow = primitiveObject.castShadow;
+    newPrimitiveObject.receiveShadow = primitiveObject.receiveShadow;
     newPrimitiveObject.geometry = primitiveObject.geometry;
     newPrimitiveObject.material = primitiveObject.material;
     if (primitiveObject.morphTargetInfluences)

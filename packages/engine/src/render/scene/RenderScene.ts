@@ -2,7 +2,6 @@ import { Mesh, Primitive } from "@gltf-transform/core";
 import { AnimationAction, AnimationMixer, Object3D } from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
 
-import { AccessorJSON } from "../../scene";
 import { SceneMessage } from "../../scene/messages";
 import { Scene } from "../../scene/Scene";
 import { deepDispose } from "../utils/deepDispose";
@@ -19,7 +18,6 @@ import { TextureBuilder } from "./builders/TextureBuilder";
  */
 export class RenderScene extends Scene {
   #csm: CSM | null = null;
-  #toMainThread: (message: SceneMessage) => void;
 
   root = new Object3D();
   mixer = new AnimationMixer(this.root);
@@ -36,12 +34,6 @@ export class RenderScene extends Scene {
     skin: new SkinBuilder(this),
     animation: new AnimationBuilder(this),
   };
-
-  constructor(toMainThread: (message: SceneMessage) => void) {
-    super();
-
-    this.#toMainThread = toMainThread;
-  }
 
   get csm() {
     return this.#csm;
@@ -70,7 +62,7 @@ export class RenderScene extends Scene {
       }
 
       case "create_accessor": {
-        this.createAccessor(data.json, data.id);
+        this.accessor.create(data.json, data.id);
         break;
       }
 
@@ -191,34 +183,6 @@ export class RenderScene extends Scene {
     }
   }
 
-  createAccessor(json: Partial<AccessorJSON>, accessorId?: string) {
-    if (accessorId) {
-      const accessor = this.accessor.store.get(accessorId);
-      if (accessor) return { id: accessorId, accessor };
-    }
-
-    const { id, object: accessor } = this.accessor.create(json, accessorId);
-
-    if (!accessorId) {
-      const fullJSON = this.accessor.toJSON(accessor);
-      this.#toMainThread({ subject: "create_accessor", data: { id, json: fullJSON } });
-    }
-
-    return { id, accessor };
-  }
-
-  getInstancedMeshNodeId(object: Object3D): string | null {
-    // for (const [id, clonedMeshObject] of this.instancedMeshObjects.entries()) {
-    //   let found = false;
-    //   clonedMeshObject.traverse((child) => {
-    //     if (child === object) found = true;
-    //   });
-    //   if (found) return id;
-    // }
-
-    return null;
-  }
-
   getPrimitiveId(object: Object3D): string | null {
     for (const [id, primitiveObject] of this.builders.primitive.listObjects()) {
       if (primitiveObject === object) return id;
@@ -277,10 +241,6 @@ export class RenderScene extends Scene {
 
       return nodeId;
     }
-
-    // Check cloned meshes
-    const clonedMeshId = this.getInstancedMeshNodeId(object);
-    if (clonedMeshId) return clonedMeshId;
 
     return null;
   }

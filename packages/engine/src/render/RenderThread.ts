@@ -83,7 +83,7 @@ export class RenderThread {
   constructor(postMessage: PostMessage<FromRenderMessage>, canvas?: HTMLCanvasElement) {
     this.postMessage = postMessage;
 
-    this.renderScene = new RenderScene(this.postMessage);
+    this.renderScene = new RenderScene();
     this.player = new PlayerControls(this.camera, this.renderScene.root);
 
     if (canvas) {

@@ -59,10 +59,8 @@ export class SkinBuilder extends Builder<SkinJSON, Skeleton> {
     });
 
     skin.addEventListener("dispose", () => {
-      // Convert joint objects back to nodes
-      skin.listJoints().forEach((node) => {
-        this.#nodeToObject(node);
-      });
+      const skeleton = this.getObject(id);
+      if (skeleton) skeleton.dispose();
     });
 
     return skin;

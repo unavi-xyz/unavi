@@ -1,5 +1,4 @@
 import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NodeIO } from "@gltf-transform/core";
 import {
   dedup,
@@ -18,8 +17,6 @@ import { env } from "../../env/server.mjs";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
 import { s3Client } from "../client";
 
-const expiresIn = 600; // 10 minutes
-
 /**
  * Compresses a project's model
  * @param id Project ID
@@ -28,11 +25,11 @@ const expiresIn = 600; // 10 minutes
 export async function optimizeProject(id: string) {
   // Fetch model from S3
   const modelKey = getKey(id, PROJECT_FILE.MODEL);
-  const modelCommand = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: modelKey });
-  const url = await getSignedUrl(s3Client, modelCommand, { expiresIn });
-  const response = await fetch(url);
-  const buffer = await response.arrayBuffer();
-  const array = new Uint8Array(buffer);
+  const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: modelKey });
+  const { Body } = await s3Client.send(command);
+  if (!Body) throw new Error("Model not found");
+
+  const array = await Body.transformToByteArray();
 
   const start = performance.now();
 

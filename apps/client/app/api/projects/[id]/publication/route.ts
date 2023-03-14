@@ -1,9 +1,12 @@
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
+import { env } from "../../../../../src/env/server.mjs";
+import { s3Client } from "../../../../../src/server/client";
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
 import { optimizeProject } from "../../../../../src/server/helpers/optimizeProject";
 import { prisma } from "../../../../../src/server/prisma";
-import { getContentType, getUpload } from "../../../publications/files";
+import { getContentType, getKey } from "../../../publications/files";
 import { Params, paramsSchema } from "../types";
 import { PublishProjectResponse } from "./types";
 
@@ -39,17 +42,17 @@ export async function POST(request: NextRequest, { params }: Params) {
   // Create optimized model
   const optimizedModel = await optimizeProject(id);
 
-  // Upload optimized model to publication
-  const uploadUrl = await getUpload(publicationId, "model");
-
-  await fetch(uploadUrl, {
-    method: "PUT",
-    body: new Blob([optimizedModel], { type: getContentType("model") }),
-    headers: {
-      "Content-Type": getContentType("model"),
-      "x-amz-acl": "public-read",
-    },
+  // Upload optimized model to publication bucket
+  const Key = getKey(publicationId, "model");
+  const ContentType = getContentType("model");
+  const command = new PutObjectCommand({
+    Bucket: env.S3_BUCKET,
+    Key,
+    ContentType,
+    Body: optimizedModel,
   });
+
+  await s3Client.send(command);
 
   const json: PublishProjectResponse = {
     id: publicationId,

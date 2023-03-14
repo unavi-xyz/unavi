@@ -158,15 +158,26 @@ export class RenderScene extends Scene {
       }
 
       case "create_animation": {
-        this.builders.animation.add(data.json, data.id);
+        const animation = this.builders.animation.add(data.json, data.id);
 
-        const object = this.builders.animation.getObject(data.id);
-        if (!object) throw new Error("Animation not found");
+        const unsubscribe = this.builders.animation.subscribeToObject(data.id, (object) => {
+          if (!object) return;
 
-        const action = this.mixer.clipAction(object);
-        this.#animationActions.set(data.id, action);
+          // Stop old action
+          const oldAction = this.#animationActions.get(data.id);
+          if (oldAction) {
+            oldAction.reset();
+            this.mixer.uncacheClip(oldAction.getClip());
+          }
 
-        if (this.#animationsEnabled) action.play();
+          // Clip new action
+          const action = this.mixer.clipAction(object);
+          this.#animationActions.set(data.id, action);
+
+          if (this.#animationsEnabled) action.play();
+        });
+
+        animation.addEventListener("dispose", unsubscribe);
         break;
       }
 

@@ -1,5 +1,5 @@
 import { Primitive } from "@gltf-transform/core";
-import { Bone, Mesh as ThreeMesh, Object3D, SkinnedMesh } from "three";
+import { Bone, Mesh as ThreeMesh, Object3D, Skeleton, SkinnedMesh } from "three";
 
 import { NodeJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
@@ -140,17 +140,20 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
                         (primitiveObject) => {
                           if (!(primitiveObject instanceof SkinnedMesh)) return;
 
+                          let bindMatrix = primitiveObject.matrix;
+
                           const skeletonRoot = skin.getSkeleton();
-                          if (!skeletonRoot) throw new Error("Skeleton root not found.");
+                          if (skeletonRoot) {
+                            const skeletonRootId = this.scene.node.getId(skeletonRoot);
+                            if (skeletonRootId) {
+                              const skeletonRootObject = this.getObject(skeletonRootId);
+                              if (skeletonRootObject) {
+                                bindMatrix = skeletonRootObject.matrix;
+                              }
+                            }
+                          }
 
-                          const skeletonRootId = this.scene.node.getId(skeletonRoot);
-                          if (!skeletonRootId) throw new Error("Skeleton root id not found.");
-
-                          const skeletonRootObject = this.getObject(skeletonRootId);
-                          if (!skeletonRootObject)
-                            throw new Error("Skeleton root object not found.");
-
-                          primitiveObject.bind(skeleton, skeletonRootObject.matrix);
+                          primitiveObject.bind(skeleton, bindMatrix);
                         }
                       )
                     );
@@ -220,6 +223,7 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
 
     // Convert primitive to skinned mesh
     const newPrimitiveObject = new SkinnedMesh();
+    newPrimitiveObject.bind(new Skeleton([]));
     this.scene.builders.primitive.setObject(primitiveId, newPrimitiveObject);
 
     newPrimitiveObject.castShadow = primitiveObject.castShadow;

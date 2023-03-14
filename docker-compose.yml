@@ -32,9 +32,6 @@ services:
     container_name: db
     image: mysql:8
     restart: unless-stopped
-    env_file:
-      - ./apps/client/.env.local
-      - ./apps/client/.env
     ports:
       - 3306:3306
       - 33060:33060

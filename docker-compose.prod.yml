@@ -7,9 +7,6 @@ services:
       context: .
       dockerfile: ./apps/client/Dockerfile
     restart: unless-stopped
-    env_file:
-      - ./apps/client/.env.local
-      - ./apps/client/.env
     ports:
       - 3000:3000
     depends_on:

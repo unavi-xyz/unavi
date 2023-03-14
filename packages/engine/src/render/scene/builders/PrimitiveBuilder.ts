@@ -165,6 +165,12 @@ export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh>
     });
 
     primitive.addEventListener("dispose", () => {
+      const object = this.getObject(id);
+      if (object) {
+        object.removeFromParent();
+        object.geometry.dispose();
+      }
+
       this.setObject(id, null);
     });
 

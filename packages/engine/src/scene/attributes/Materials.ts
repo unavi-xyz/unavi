@@ -105,9 +105,13 @@ export class Materials extends Attribute<Material, MaterialJSON> {
     if (json.doubleSided !== undefined) material.setDoubleSided(json.doubleSided);
 
     if (json.baseColorFactor !== undefined) material.setBaseColorFactor(json.baseColorFactor);
-    if (json.baseColorTexture) {
-      const texture = this.#texture.store.get(json.baseColorTexture);
-      if (texture) material.setBaseColorTexture(texture);
+    if (json.baseColorTexture !== undefined) {
+      if (json.baseColorTexture === null) {
+        material.setBaseColorTexture(null);
+      } else {
+        const texture = this.#texture.store.get(json.baseColorTexture);
+        if (texture) material.setBaseColorTexture(texture);
+      }
     }
     if (json.baseColorTextureInfo) {
       const info = material.getBaseColorTextureInfo();
@@ -115,9 +119,13 @@ export class Materials extends Attribute<Material, MaterialJSON> {
     }
 
     if (json.emissiveFactor !== undefined) material.setEmissiveFactor(json.emissiveFactor);
-    if (json.emissiveTexture) {
-      const texture = this.#texture.store.get(json.emissiveTexture);
-      if (texture) material.setEmissiveTexture(texture);
+    if (json.emissiveTexture !== undefined) {
+      if (json.emissiveTexture === null) {
+        material.setEmissiveTexture(null);
+      } else {
+        const texture = this.#texture.store.get(json.emissiveTexture);
+        if (texture) material.setEmissiveTexture(texture);
+      }
     }
     if (json.emissiveTextureInfo) {
       const info = material.getEmissiveTextureInfo();
@@ -125,9 +133,13 @@ export class Materials extends Attribute<Material, MaterialJSON> {
     }
 
     if (json.normalScale !== undefined) material.setNormalScale(json.normalScale);
-    if (json.normalTexture) {
-      const texture = this.#texture.store.get(json.normalTexture);
-      if (texture) material.setNormalTexture(texture);
+    if (json.normalTexture !== undefined) {
+      if (json.normalTexture === null) {
+        material.setNormalTexture(null);
+      } else {
+        const texture = this.#texture.store.get(json.normalTexture);
+        if (texture) material.setNormalTexture(texture);
+      }
     }
     if (json.normalTextureInfo) {
       const info = material.getNormalTextureInfo();
@@ -135,9 +147,13 @@ export class Materials extends Attribute<Material, MaterialJSON> {
     }
 
     if (json.occlusionStrength !== undefined) material.setOcclusionStrength(json.occlusionStrength);
-    if (json.occlusionTexture) {
-      const texture = this.#texture.store.get(json.occlusionTexture);
-      if (texture) material.setOcclusionTexture(texture);
+    if (json.occlusionTexture !== undefined) {
+      if (json.occlusionTexture === null) {
+        material.setOcclusionTexture(null);
+      } else {
+        const texture = this.#texture.store.get(json.occlusionTexture);
+        if (texture) material.setOcclusionTexture(texture);
+      }
     }
     if (json.occlusionTextureInfo) {
       const info = material.getOcclusionTextureInfo();
@@ -146,9 +162,13 @@ export class Materials extends Attribute<Material, MaterialJSON> {
 
     if (json.roughnessFactor !== undefined) material.setRoughnessFactor(json.roughnessFactor);
     if (json.metallicFactor !== undefined) material.setMetallicFactor(json.metallicFactor);
-    if (json.metallicRoughnessTexture) {
-      const texture = this.#texture.store.get(json.metallicRoughnessTexture);
-      if (texture) material.setMetallicRoughnessTexture(texture);
+    if (json.metallicRoughnessTexture !== undefined) {
+      if (json.metallicRoughnessTexture === null) {
+        material.setMetallicRoughnessTexture(null);
+      } else {
+        const texture = this.#texture.store.get(json.metallicRoughnessTexture);
+        if (texture) material.setMetallicRoughnessTexture(texture);
+      }
     }
     if (json.metallicRoughnessTextureInfo) {
       const info = material.getMetallicRoughnessTextureInfo();

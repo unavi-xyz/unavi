@@ -81,10 +81,10 @@ export class Accessors extends Attribute<Accessor, AccessorJSON> {
 
   applyJSON(accessor: Accessor, json: Partial<AccessorJSON>) {
     if (json.array) accessor.setArray(json.array);
-    if (json.type) accessor.setType(json.type);
-    if (json.normalized) accessor.setNormalized(json.normalized);
+    if (json.type !== undefined) accessor.setType(json.type);
+    if (json.normalized !== undefined) accessor.setNormalized(json.normalized);
 
-    if (json.buffer) {
+    if (json.buffer !== undefined) {
       let buffer = json.buffer ? this.#buffer.store.get(json.buffer) : null;
       if (buffer === undefined) buffer = this.#buffer.create().object;
       accessor.setBuffer(buffer);

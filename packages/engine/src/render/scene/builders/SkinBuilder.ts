@@ -36,7 +36,7 @@ export class SkinBuilder extends Builder<SkinJSON, Skeleton> {
           const array = matrices?.getArray();
           if (!array) return;
 
-          const boneInverses = bones.map((bone, i) => {
+          const boneInverses = bones.map((_, i) => {
             return new Matrix4().fromArray(array, i * 16);
           });
 
@@ -54,13 +54,14 @@ export class SkinBuilder extends Builder<SkinJSON, Skeleton> {
           this.#nodeToObject(node);
         });
 
+        skeleton.dispose();
+
         cleanup.forEach((fn) => fn());
       };
     });
 
     skin.addEventListener("dispose", () => {
-      const skeleton = this.getObject(id);
-      if (skeleton) skeleton.dispose();
+      this.setObject(id, null);
     });
 
     return skin;
@@ -88,7 +89,6 @@ export class SkinBuilder extends Builder<SkinJSON, Skeleton> {
 
     newObject.parent = nodeObject.parent;
     newObject.children = [...nodeObject.children];
-    newObject.matrix.copy(nodeObject.matrix);
 
     nodeObject.removeFromParent();
 
@@ -108,8 +108,6 @@ export class SkinBuilder extends Builder<SkinJSON, Skeleton> {
 
     newObject.parent = nodeObject.parent;
     newObject.children = [...nodeObject.children];
-    newObject.matrix.copy(nodeObject.matrix);
-
     nodeObject.removeFromParent();
 
     this.scene.builders.node.setObject(nodeId, newObject);

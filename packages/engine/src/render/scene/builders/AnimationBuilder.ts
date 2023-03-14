@@ -2,6 +2,7 @@ import {
   AnimationClip,
   InterpolateDiscrete,
   InterpolateLinear,
+  KeyframeTrack,
   NumberKeyframeTrack,
   QuaternionKeyframeTrack,
   VectorKeyframeTrack,
@@ -38,7 +39,7 @@ export class AnimationBuilder extends Builder<AnimationJSON, AnimationClip> {
     });
 
     subscribe(animation, "Channels", (channels) => {
-      const cleanup: Array<() => void> = [];
+      const tracks: KeyframeTrack[] = [];
 
       channels.forEach((channel) => {
         // Get keyframe track type
@@ -113,81 +114,69 @@ export class AnimationBuilder extends Builder<AnimationJSON, AnimationClip> {
         const targetId = this.scene.node.getId(target);
         if (!targetId) return;
 
-        cleanup.push(
-          this.scene.builders.node.subscribeToObject(targetId, (targetObject) => {
-            if (!targetObject) return;
+        const targetObject = this.scene.builders.node.getObject(targetId);
+        if (!targetObject) return;
 
-            return subscribe(target, "Skin", () => {
-              return subscribe(target, "Mesh", () => {
-                // Get target object ids
-                const targetIds = [];
-                if (path === "weights") {
-                  targetObject.traverse((child) => {
-                    if ("morphTargetInfluences" in child) targetIds.push(child.uuid);
-                  });
-                } else {
-                  targetIds.push(targetObject.uuid);
-                }
+        // Get target object ids
+        const targetIds = [];
+        if (path === "weights") {
+          targetObject.traverse((child) => {
+            if ("morphTargetInfluences" in child) targetIds.push(child.uuid);
+          });
+        } else {
+          targetIds.push(targetObject.uuid);
+        }
 
-                // Get input and output data
-                const inputAccessor = sampler.getInput();
-                if (!inputAccessor) return;
+        // Get input and output data
+        const inputAccessor = sampler.getInput();
+        if (!inputAccessor) return;
 
-                const outputAccessor = sampler.getOutput();
-                if (!outputAccessor) return;
+        const outputAccessor = sampler.getOutput();
+        if (!outputAccessor) return;
 
-                const inputArray = inputAccessor.getArray();
-                if (!inputArray) return;
+        const inputArray = inputAccessor.getArray();
+        if (!inputArray) return;
 
-                const outputArray = outputAccessor.getArray();
-                if (!outputArray) return;
+        const outputArray = outputAccessor.getArray();
+        if (!outputArray) return;
 
-                // Create keyframe tracks
-                const tracks = targetIds.map((id) => {
-                  const track = new TypedKeyframeTrack(
-                    `${id}.${threePath}`,
-                    inputArray,
-                    outputArray,
-                    interpolationMode
-                  );
+        // Create keyframe tracks
+        targetIds.map((id) => {
+          const track = new TypedKeyframeTrack(
+            `${id}.${threePath}`,
+            inputArray,
+            outputArray,
+            interpolationMode
+          );
 
-                  // Create a custom interpolant for cubic spline interpolation
-                  // The built in three.js cubic interpolant is not compatible with the glTF spec
-                  if (sampler.getInterpolation() === "CUBICSPLINE") {
-                    // @ts-ignore
-                    track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline(
-                      result: any
-                    ) {
-                      // A CUBICSPLINE keyframe in glTF has three output values for each input value,
-                      // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
-                      // must be divided by three to get the interpolant's sampleSize argument.
-                      const InterpolantType =
-                        this instanceof QuaternionKeyframeTrack
-                          ? GLTFCubicSplineQuaternionInterpolant
-                          : GLTFCubicSplineInterpolant;
+          tracks.push(track);
 
-                      return new InterpolantType(
-                        this.times,
-                        this.values,
-                        this.getValueSize() / 3,
-                        result
-                      );
-                    };
-                  }
+          // Create a custom interpolant for cubic spline interpolation
+          // The built in three.js cubic interpolant is not compatible with the glTF spec
+          if (sampler.getInterpolation() === "CUBICSPLINE") {
+            // @ts-ignore
+            track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline(
+              result: any
+            ) {
+              // A CUBICSPLINE keyframe in glTF has three output values for each input value,
+              // representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
+              // must be divided by three to get the interpolant's sampleSize argument.
+              const InterpolantType =
+                this instanceof QuaternionKeyframeTrack
+                  ? GLTFCubicSplineQuaternionInterpolant
+                  : GLTFCubicSplineInterpolant;
 
-                  return track;
-                });
+              return new InterpolantType(this.times, this.values, this.getValueSize() / 3, result);
+            };
+          }
+        });
 
-                const object = new AnimationClip(undefined, undefined, tracks);
-                this.setObject(id, object);
+        const object = new AnimationClip(undefined, undefined, tracks);
+        this.setObject(id, object);
 
-                return () => {
-                  this.setObject(id, null);
-                };
-              });
-            });
-          })
-        );
+        return () => {
+          this.setObject(id, null);
+        };
       });
     });
 

@@ -84,88 +84,94 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
 
       cleanup.push(
         subscribe(node, "Mesh", (mesh) => {
+          if (!mesh) return;
+
           const meshCleanup: Array<() => void> = [];
 
-          // Add new mesh
-          if (mesh) {
-            const meshId = this.scene.mesh.getId(mesh);
-            if (meshId) {
-              const meshObject = this.scene.builders.mesh.getObject(meshId);
+          // Add mesh to object
+          const meshId = this.scene.mesh.getId(mesh);
+          if (!meshId) throw new Error("Mesh id not found.");
 
-              if (meshObject) {
-                object.add(meshObject);
+          const meshObject = this.scene.builders.mesh.getObject(meshId);
+          if (!meshObject) throw new Error("Mesh object not found.");
 
-                // Apply weights
-                cleanup.push(
-                  subscribe(node, "Weights", (weights) => {
-                    weights.forEach((weight, i) => {
-                      meshObject.traverse((child) => {
-                        if (child instanceof ThreeMesh) {
-                          if ("morphTargetInfluences" in child) {
-                            if (child.morphTargetInfluences)
-                              child.morphTargetInfluences[i] = weight;
-                          }
+          object.add(meshObject);
+
+          // Apply weights
+          meshCleanup.push(
+            subscribe(node, "Weights", (weights) => {
+              weights.forEach((weight, i) => {
+                meshObject.traverse((child) => {
+                  if (child instanceof ThreeMesh) {
+                    if ("morphTargetInfluences" in child) {
+                      if (child.morphTargetInfluences) child.morphTargetInfluences[i] = weight;
+                    }
+                  }
+                });
+              });
+            })
+          );
+
+          // Bind mesh to skeleton
+          meshCleanup.push(
+            subscribe(node, "Skin", (skin) => {
+              if (!skin) return;
+
+              const skinId = this.scene.skin.getId(skin);
+              if (!skinId) throw new Error("Skin id not found.");
+
+              return this.scene.builders.skin.subscribeToObject(skinId, (skeleton) => {
+                if (!skeleton) return;
+
+                return subscribe(mesh, "Primitives", (primitives) => {
+                  const primitivesCleanup: Array<() => void> = [];
+
+                  primitives.forEach((primitive) => {
+                    const primitiveId = this.scene.primitive.getId(primitive);
+                    if (!primitiveId) throw new Error("Primitive id not found.");
+
+                    // Convert mesh to skinned mesh
+                    this.#primitiveToSkinnedMesh(primitive);
+
+                    // Bind mesh to skeleton
+                    primitivesCleanup.push(
+                      this.scene.builders.primitive.subscribeToObject(
+                        primitiveId,
+                        (primitiveObject) => {
+                          if (!(primitiveObject instanceof SkinnedMesh)) return;
+
+                          const skeletonRoot = skin.getSkeleton();
+                          if (!skeletonRoot) throw new Error("Skeleton root not found.");
+
+                          const skeletonRootId = this.scene.node.getId(skeletonRoot);
+                          if (!skeletonRootId) throw new Error("Skeleton root id not found.");
+
+                          const skeletonRootObject = this.getObject(skeletonRootId);
+                          if (!skeletonRootObject)
+                            throw new Error("Skeleton root object not found.");
+
+                          primitiveObject.bind(skeleton, skeletonRootObject.matrix);
                         }
-                      });
-                    });
-                  })
-                );
-
-                meshCleanup.push(() => {
-                  object.remove(meshObject);
-                });
-              }
-            }
-
-            // Bind mesh to skeleton
-            meshCleanup.push(
-              subscribe(node, "Skin", (skin) => {
-                if (!skin) return;
-
-                const skinId = this.scene.skin.getId(skin);
-                if (!skinId) throw new Error("Skin id not found.");
-
-                return this.scene.builders.skin.subscribeToObject(skinId, (skeleton) => {
-                  if (!skeleton) return;
-
-                  return subscribe(mesh, "Primitives", (primitives) => {
-                    const primitivesCleanup: Array<() => void> = [];
-
-                    primitives.forEach((primitive) => {
-                      const primitiveId = this.scene.primitive.getId(primitive);
-                      if (!primitiveId) throw new Error("Primitive id not found.");
-
-                      // Convert mesh to skinned mesh
-                      this.#primitiveToSkinnedMesh(primitive);
-
-                      // Bind mesh to skeleton
-                      primitivesCleanup.push(
-                        this.scene.builders.primitive.subscribeToObject(
-                          primitiveId,
-                          (primitiveObject) => {
-                            if (!(primitiveObject instanceof SkinnedMesh)) return;
-
-                            primitiveObject.bind(skeleton, primitiveObject.matrixWorld);
-                          }
-                        )
-                      );
-                    });
-
-                    return () => {
-                      // Convert primitves back to normal meshes
-                      primitives.forEach((primitive) => {
-                        this.#primitiveToMesh(primitive);
-                      });
-
-                      primitivesCleanup.forEach((fn) => fn());
-                    };
+                      )
+                    );
                   });
+
+                  return () => {
+                    // Convert primitves back to normal meshes
+                    primitives.forEach((primitive) => {
+                      this.#primitiveToMesh(primitive);
+                    });
+
+                    primitivesCleanup.forEach((fn) => fn());
+                  };
                 });
-              })
-            );
-          }
+              });
+            })
+          );
 
           return () => {
+            object.remove(meshObject);
+
             meshCleanup.forEach((fn) => fn());
           };
         })

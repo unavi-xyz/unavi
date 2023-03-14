@@ -106,7 +106,7 @@ export class Meshes extends Attribute<Mesh, MeshJSON> {
   }
 
   applyJSON(mesh: Mesh, json: Partial<MeshJSON>) {
-    if (json.primitives) {
+    if (json.primitives !== undefined) {
       // Remove old primitives
       mesh.listPrimitives().forEach((primitive) => {
         const primitiveId = this.#primitive.getId(primitive);
@@ -126,8 +126,8 @@ export class Meshes extends Attribute<Mesh, MeshJSON> {
       });
     }
 
-    if (json.weights) mesh.setWeights(json.weights);
-    if (json.extras) mesh.setExtras(json.extras);
+    if (json.weights !== undefined) mesh.setWeights(json.weights);
+    if (json.extras !== undefined) mesh.setExtras(json.extras);
   }
 
   toJSON(mesh: Mesh): MeshJSON {

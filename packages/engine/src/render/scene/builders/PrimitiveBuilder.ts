@@ -14,8 +14,31 @@ export const DEFAULT_MATERIAL = new MeshStandardMaterial();
  * Handles the conversion of primitives to Three.js objects.
  */
 export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh> {
+  #setObjectTimeouts = new Map<string, NodeJS.Timeout>();
+
   constructor(scene: RenderScene) {
     super(scene);
+  }
+
+  override setObject(id: string, object: Mesh | SkinnedMesh | null) {
+    super.setObject(id, object);
+
+    if (object) {
+      // Clear any existing timeout
+      const prevTimeout = this.#setObjectTimeouts.get(id);
+      if (prevTimeout) clearTimeout(prevTimeout);
+
+      // Disable frustum culling initially, to force loading of all textures
+      object.frustumCulled = false;
+
+      // Enable frustum culling after a delay
+      const timeout = setTimeout(() => {
+        object.frustumCulled = true;
+        this.#setObjectTimeouts.delete(id);
+      }, 10000);
+
+      this.#setObjectTimeouts.set(id, timeout);
+    }
   }
 
   add(json: Partial<PrimitiveJSON>, id: string) {

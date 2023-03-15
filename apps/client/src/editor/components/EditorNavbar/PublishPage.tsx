@@ -97,21 +97,38 @@ export default function PublishPage() {
       let publicationId: string;
       let modelSize: number;
 
-      // Try to optimize model
-      // If it fails, publish without optimization
+      // Try to optimize model on the server
+      // If it fails, optimize locally (can't compress textures)
       try {
         const res = await publishProject(id);
         publicationId = res.id;
         modelSize = res.modelSize;
-      } catch (err) {
-        console.warn(err);
+      } catch {
+        console.info("Failed to optimize model on the server, optimizing locally...");
 
-        toast.error("Failed to optimize model");
-        toast.loading("Publishing model...", { id: toastId });
+        // Optimize model locally
+        const optimizedModelPromise = engine.scene.export({ optimize: true });
 
-        const res = await publishProject(id, { optimize: false });
-        publicationId = res.id;
-        modelSize = res.modelSize;
+        // Create publication
+        const publishResponse = await publishProject(id, { optimize: false });
+        publicationId = publishResponse.id;
+
+        // Upload model
+        const optimizedModel = await optimizedModelPromise;
+        modelSize = optimizedModel.byteLength;
+
+        const url = await getPublicationFileUpload(publicationId, "model");
+
+        const response = await fetch(url, {
+          method: "PUT",
+          body: optimizedModel,
+          headers: {
+            "Content-Type": "model/gltf-binary",
+            "x-amz-acl": "public-read",
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to upload model");
       }
 
       console.info("📦 Published model size:", bytesToDisplay(modelSize));

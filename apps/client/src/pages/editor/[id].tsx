@@ -78,6 +78,7 @@ export default function Editor() {
       <MetaTags title={name ? `${name} / Editor` : "Editor"} />
 
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
+      <Script src="/scripts/draco_encoder.js" />
 
       <div
         className="h-full w-full"

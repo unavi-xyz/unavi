@@ -9,11 +9,13 @@ import {
   WebIO,
 } from "@gltf-transform/core";
 import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
+import { draco } from "@gltf-transform/functions";
 
 import { Engine } from "../Engine";
 import { BehaviorExtension, Collider, ColliderExtension, SpawnPointExtension } from "../gltf";
 import { extensions } from "../gltf/constants";
 import { PhysicsModule } from "../physics/PhysicsModule";
+import { optimizeDocument } from "../render";
 import { RenderModule } from "../render/RenderModule";
 import { getCustomMeshData } from "../render/scene/utils/getCustomMeshData";
 import { subscribe } from "../utils/subscribe";
@@ -81,7 +83,7 @@ export class SceneModule extends Scene {
     });
   }
 
-  async export({ log = false } = {}) {
+  async export({ log = false, optimize = false } = {}) {
     const io = await this.#createIO();
 
     // Merge all buffers into one
@@ -108,9 +110,30 @@ export class SceneModule extends Scene {
         }
       });
 
-    if (log) console.info("Exporting:", await io.writeJSON(this.doc));
+    let exportedDoc = this.doc;
 
-    return await io.writeBinary(this.doc);
+    if (optimize) {
+      exportedDoc = this.doc.clone();
+
+      // Optimize model
+      await optimizeDocument(exportedDoc);
+
+      // Compress model
+      try {
+        await io.registerDependencies({
+          // @ts-ignore
+          "draco3d.encoder": await new DracoEncoderModule(),
+        });
+
+        await exportedDoc.transform(draco());
+      } catch (err) {
+        console.warn("Failed to compress model", err);
+      }
+    }
+
+    if (log) console.info("Exporting:", await io.writeJSON(exportedDoc));
+
+    return await io.writeBinary(exportedDoc);
   }
 
   async addBinary(array: Uint8Array) {

@@ -1,13 +1,6 @@
 import { NodeIO } from "@gltf-transform/core";
-import {
-  dedup,
-  draco,
-  metalRough,
-  resample,
-  sparse,
-  textureCompress,
-} from "@gltf-transform/functions";
-import { BehaviorExtension, extensions } from "engine";
+import { draco, textureCompress } from "@gltf-transform/functions";
+import { extensions, optimizeDocument } from "engine";
 import sharp from "sharp";
 
 import createEncoderModule from "../../../public/scripts/draco_encoder";
@@ -28,36 +21,8 @@ export async function optimizeModel(model: Uint8Array) {
 
   const doc = await io.readBinary(model);
 
-  // Remove extras
-  doc
-    .getRoot()
-    .listNodes()
-    .forEach((node) => node.setExtras({}));
-
-  doc
-    .getRoot()
-    .listMeshes()
-    .forEach((mesh) => {
-      mesh.listPrimitives().forEach((primitive) => primitive.setExtras({}));
-      mesh.setExtras({});
-    });
-
-  doc
-    .getRoot()
-    .listExtensionsUsed()
-    .forEach((extension) => {
-      if (extension instanceof BehaviorExtension) {
-        extension.listBehaviorNodes().forEach((behaviorNode) => behaviorNode.setExtras({}));
-      }
-    });
-
   // Optimize model
-  try {
-    await doc.transform(dedup(), metalRough(), resample(), sparse());
-  } catch (err) {
-    console.warn("Failed to optimize model.");
-    console.warn(err);
-  }
+  await optimizeDocument(doc);
 
   // Compress model
   try {

@@ -13,6 +13,7 @@ COPY yarn.lock yarn.lock
 COPY patches patches
 
 COPY apps/client/package.json apps/client/package.json
+COPY apps/docs/package.json apps/docs/package.json
 COPY apps/host/package.json apps/host/package.json
 
 COPY packages/contracts/package.json packages/contracts/package.json

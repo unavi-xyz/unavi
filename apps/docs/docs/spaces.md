@@ -9,7 +9,7 @@ Spaces are 3D multiplayer environments that serve as the core building blocks of
 ## 🏗️ Creation
 
 <div class="large-img">
-  <img src="/img/Editor.png" alt="Editor" />
+  <img src="/img/Editor.png" />
 </div>
 
 Spaces can be created for free using the [Editor](https://www.thewired.space/create).

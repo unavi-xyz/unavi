@@ -1,13 +1,13 @@
 {
   "extends": "tsconfig/nextjs.json",
   "include": [
-    "**/*.ts",
-    "**/*.mjs",
+    ".next/types/**/*.ts",
     "**/*.js",
+    "**/*.mjs",
+    "**/*.ts",
     "**/*.tsx",
-    "src/**/*.json",
     "next-env.d.ts",
-    ".next/types/**/*.ts"
+    "src/**/*.json"
   ],
   "references": [
     {

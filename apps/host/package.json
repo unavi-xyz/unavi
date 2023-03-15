@@ -20,11 +20,11 @@
     "nanoid": "^4.0.1",
     "protocol": "*",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.19.0",
-    "zod": "^3.20.6"
+    "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/node": "^18.14.0",
-    "eslint": "^8.35.0",
+    "@types/node": "^18.15.0",
+    "eslint": "^8.36.0",
     "eslint-config-custom": "*",
     "nodemon": "^2.0.21",
     "ts-node": "^10.9.1",

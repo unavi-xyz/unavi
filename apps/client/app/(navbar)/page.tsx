@@ -22,19 +22,19 @@ export default function Home() {
       <AnimateOnEnter />
 
       <main className="flex h-full justify-center">
-        <div className="max-w-content mx-4">
-          <section className="relative -mt-24 flex h-screen flex-col-reverse items-center justify-center md:flex-row md:justify-start">
+        <div className="max-w-content mx-4 lg:mx-16">
+          <section className="relative -mt-24 flex h-screen flex-col-reverse items-center justify-center lg:flex-row lg:justify-start">
             <div className="w-full space-y-2">
-              <div className="text-center text-6xl font-black transition md:text-start md:text-7xl">
+              <div className="text-center text-6xl font-black transition lg:text-start lg:text-7xl">
                 The Wired
               </div>
 
-              <div className="text-center text-xl md:text-start md:text-3xl">
+              <div className="text-center text-xl lg:text-start lg:text-3xl">
                 An open metaverse platform.
               </div>
 
-              <div className="flex w-full flex-col space-y-4 pt-4 md:flex-row md:space-y-0 md:space-x-4">
-                <div className="w-full md:w-fit">
+              <div className="flex w-full flex-col space-y-4 pt-4 lg:flex-row lg:space-y-0 lg:space-x-4">
+                <div className="mx-auto w-full max-w-lg lg:mx-0 lg:w-fit lg:max-w-none">
                   <Link
                     href="/play/0x0d"
                     className="flex h-12 items-center justify-center rounded-full bg-neutral-900 px-10 text-2xl font-bold text-white outline-neutral-400 transition hover:scale-105"
@@ -43,20 +43,20 @@ export default function Home() {
                   </Link>
                 </div>
 
-                <div className="w-full md:w-fit">
+                <div className="mx-auto w-full max-w-lg lg:mx-0 lg:w-fit lg:max-w-none">
                   <a
                     href={DOCS_URL}
                     target="_blank"
                     rel="noreferrer"
                     className="flex h-12 items-center justify-center rounded-full px-10 text-2xl font-bold text-neutral-900 ring-neutral-900 transition hover:ring-2 active:bg-neutral-200"
                   >
-                    Learn More
+                    View Docs
                   </a>
                 </div>
               </div>
             </div>
 
-            <div className="flex w-full flex-col items-end justify-center pb-24 md:pb-0">
+            <div className="flex w-full max-w-lg flex-col items-end justify-center pb-16 lg:max-w-none lg:pb-0">
               <div className="z-10 pr-36">
                 <Image
                   src={Screenshot1}
@@ -65,7 +65,7 @@ export default function Home() {
                   className="rounded-3xl"
                 />
               </div>
-              <div className="-mt-28 pl-36">
+              <div className="-mt-20 pl-36 lg:-mt-28">
                 <Image
                   src={Screenshot2}
                   alt="Screenshot of the Wired"
@@ -103,9 +103,9 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="show-on-scroll mt-32 flex flex-col space-y-8 md:flex-row md:space-y-0  md:space-x-20">
+          <section className="show-on-scroll mt-20 flex flex-col space-y-8 lg:mt-32 lg:flex-row lg:space-y-0  lg:space-x-20">
             <div className="w-full">
-              <div className="relative h-48 w-full md:h-80">
+              <div className="relative h-48 w-full sm:h-80">
                 <Image
                   src={Screenshot3}
                   alt="Screenshot of the Wired"
@@ -117,10 +117,10 @@ export default function Home() {
             </div>
 
             <div className="flex w-full flex-col justify-center space-y-4">
-              <div className="text-center text-3xl font-black md:text-start md:text-4xl">
+              <div className="text-center text-3xl font-black lg:text-start lg:text-4xl">
                 The Spatial Web
               </div>
-              <div className="text-center text-lg text-neutral-500 md:text-start md:text-xl">
+              <div className="text-center text-lg text-neutral-700 lg:text-start lg:text-xl">
                 The Wired reimagines the web as an interconnected network of 3D spaces, instead of
                 2D websites.{" "}
                 <strong className="text-black">
@@ -130,12 +130,12 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="show-on-scroll mt-40 flex flex-col-reverse space-y-8 md:flex-row md:space-y-0 md:space-x-20">
-            <div className="flex w-full flex-col justify-center space-y-4 pt-8 md:pt-0">
-              <div className="text-center text-3xl font-black md:text-start md:text-4xl">
+          <section className="show-on-scroll mt-24 flex flex-col-reverse space-y-8 lg:mt-40 lg:flex-row lg:space-y-0 lg:space-x-20">
+            <div className="flex w-full flex-col justify-center space-y-4 pt-8 lg:pt-0">
+              <div className="text-center text-3xl font-black lg:text-start lg:text-4xl">
                 Cross Platform
               </div>
-              <div className="text-center text-lg text-neutral-500 md:text-start md:text-xl">
+              <div className="text-center text-lg text-neutral-700 lg:text-start lg:text-xl">
                 All you need is a <strong className="text-black">web browser</strong> - explore the
                 Wired from your phone, laptop, or VR headset. Wherever you are, you can stay
                 connected with your friends.
@@ -143,7 +143,7 @@ export default function Home() {
             </div>
 
             <div className="w-full">
-              <div className="relative h-48 w-full md:h-80">
+              <div className="relative h-48 w-full sm:h-80">
                 <Image
                   src={Screenshot4}
                   alt="Screenshot of the Wired"
@@ -155,16 +155,16 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="show-on-scroll mt-40 space-y-4 rounded-3xl p-8 outline outline-2 outline-black md:p-12">
-            <div className="text-center text-3xl font-black md:text-4xl">Open by Design</div>
+          <section className="show-on-scroll mt-24 space-y-4 rounded-3xl p-8 outline outline-2 outline-black lg:mt-40 lg:p-12">
+            <div className="text-center text-3xl font-black lg:text-4xl">Open by Design</div>
 
-            <div className="mx-auto text-center text-lg text-neutral-500 md:w-1/2 md:text-xl">
+            <div className="mx-auto text-center text-lg text-neutral-700 lg:w-1/2 lg:text-xl">
               Each layer is open for others to build on. Mod your client, run your own servers - the
               possibilities are endless.
             </div>
 
             <div className="flex w-full justify-center">
-              <div className="w-full md:w-fit">
+              <div className="w-full lg:w-fit">
                 <a
                   href={DOCS_URL}
                   target="_blank"
@@ -177,11 +177,11 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="show-on-scroll mt-40 space-y-4 pb-40">
-            <div className="text-center text-3xl font-black md:text-4xl">Join the Community</div>
+          <section className="show-on-scroll mt-24 space-y-4 pb-32 lg:mt-40">
+            <div className="text-center text-3xl font-black lg:text-4xl">Join the Community</div>
 
-            <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl md:flex-row md:space-y-0 md:space-x-4">
-              <div className="w-full md:w-fit">
+            <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl lg:flex-row lg:space-y-0 lg:space-x-4">
+              <div className="w-full lg:w-fit">
                 <a
                   href={DISCORD_URL}
                   target="_blank"
@@ -195,7 +195,7 @@ export default function Home() {
                 </a>
               </div>
 
-              <div className="w-full md:w-fit">
+              <div className="w-full lg:w-fit">
                 <a
                   href={TWITTER_URL}
                   target="_blank"

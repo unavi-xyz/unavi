@@ -10,7 +10,10 @@
   "scripts": {
     "build": "turbo build",
     "deploy": "turbo deploy",
-    "dev": "turbo dev --parallel",
+    "dev": "turbo dev",
+    "docker:dev": "docker compose up --build -d && yarn dev",
+    "docker:prod": "docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build",
+    "docker:stop": "docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
     "format": "prettier --write .",
     "generate": "turbo generate",
     "postinstall": "patch-package",

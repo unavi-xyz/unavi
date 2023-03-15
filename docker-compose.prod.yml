@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  client:
+    container_name: client
+    build:
+      context: .
+      dockerfile: ./apps/client/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./apps/client/.env.local
+      - ./apps/client/.env
+    ports:
+      - 3000:3000
+    depends_on:
+      - aws
+      - db

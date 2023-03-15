@@ -56,6 +56,22 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 - [ESLint](https://eslint.org/) for code linting
 - [Prettier](https://prettier.io) for code formatting
 
+## 🐋 Docker
+
+The client can be run locally using Docker. To do so, run the following command:
+
+```bash
+yarn docker:prod
+```
+
+This will start the client on port 3000. You can then access it at [http://localhost:3000](http://localhost:3000).
+
+To stop the client, run the following command:
+
+```bash
+yarn docker:stop
+```
+
 ## ⚙️ Development
 
 ### Install
@@ -78,7 +94,13 @@ yarn build
 
 ### Develop
 
-To develop all apps and packages, run the following command:
+To work on the client, you will need to use Docker to run services it relies on (such as the database). To do so, run the following command:
+
+```bash
+yarn docker:dev
+```
+
+If you don't need that, you can run all apps and packages in development mode using the following command:
 
 ```bash
 yarn dev

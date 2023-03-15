@@ -93,7 +93,26 @@ export default function PublishPage() {
       await save();
 
       toast.loading("Optimizing model...", { id: toastId });
-      const { id: publicationId, modelSize } = await publishProject(id);
+
+      let publicationId: string;
+      let modelSize: number;
+
+      // Try to optimize model
+      // If it fails, publish without optimization
+      try {
+        const res = await publishProject(id);
+        publicationId = res.id;
+        modelSize = res.modelSize;
+      } catch (err) {
+        console.warn(err);
+
+        toast.error("Failed to optimize model");
+        toast.loading("Publishing model...", { id: toastId });
+
+        const res = await publishProject(id, { optimize: false });
+        publicationId = res.id;
+        modelSize = res.modelSize;
+      }
 
       console.info("📦 Published model size:", bytesToDisplay(modelSize));
 

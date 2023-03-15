@@ -9,7 +9,7 @@ import { prisma } from "../../../../../src/server/prisma";
 import { getContentType, getKey } from "../../../publications/files";
 import { PROJECT_FILE } from "../../files";
 import { Params, paramsSchema } from "../types";
-import { PublishProjectResponse } from "./types";
+import { postSchema, PublishProjectResponse } from "./types";
 
 // Publish project
 export async function POST(request: NextRequest, { params }: Params) {
@@ -17,6 +17,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
+  const { optimize } = postSchema.parse(await request.json());
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the project
@@ -43,14 +44,15 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // Fetch model
   const model = await fetchModel(publicationId);
+  let publishedModel = model;
 
   // Optimize model
-  let optimizedModel = model;
-
-  try {
-    optimizedModel = await optimizeModel(model);
-  } catch (error) {
-    console.error("Failed to process model", error);
+  if (optimize) {
+    try {
+      publishedModel = await optimizeModel(model);
+    } catch (error) {
+      console.error("Failed to process model", error);
+    }
   }
 
   // Upload model to publication bucket
@@ -60,14 +62,14 @@ export async function POST(request: NextRequest, { params }: Params) {
     Bucket: env.S3_BUCKET,
     Key,
     ContentType,
-    Body: optimizedModel,
+    Body: publishedModel,
   });
 
   await s3Client.send(command);
 
   const json: PublishProjectResponse = {
     id: publicationId,
-    modelSize: optimizedModel.byteLength,
+    modelSize: publishedModel.byteLength,
   };
   return NextResponse.json(json);
 }

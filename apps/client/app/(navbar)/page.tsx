@@ -9,7 +9,8 @@ import Screenshot4 from "../../public/images/Screenshot4.png";
 import Discord from "../../public/images/svg/Discord.svg";
 import GitHub from "../../public/images/svg/GitHub.svg";
 import Twitter from "../../public/images/svg/Twitter.svg";
-import { DISCORD_URL, DOCS_URL, GITHUB_URL, TWITTER_URL } from "../../src/constants";
+import { DISCORD_URL, GITHUB_URL, TWITTER_URL } from "../../src/constants";
+import { env } from "../../src/env/client.mjs";
 import AnimateOnEnter from "./AnimateOnEnter";
 
 export const metadata: Metadata = {
@@ -45,7 +46,7 @@ export default function Home() {
 
                 <div className="mx-auto w-full max-w-lg lg:mx-0 lg:w-fit lg:max-w-none">
                   <a
-                    href={DOCS_URL}
+                    href={env.NEXT_PUBLIC_DOCS_URL}
                     target="_blank"
                     rel="noreferrer"
                     className="flex h-12 items-center justify-center rounded-full px-10 text-2xl font-bold text-neutral-900 ring-neutral-900 transition hover:ring-2 active:bg-neutral-200"
@@ -166,7 +167,7 @@ export default function Home() {
             <div className="flex w-full justify-center">
               <div className="w-full lg:w-fit">
                 <a
-                  href={DOCS_URL}
+                  href={env.NEXT_PUBLIC_DOCS_URL}
                   target="_blank"
                   rel="noreferrer"
                   className="flex h-11 items-center justify-center rounded-full bg-neutral-900 px-8 text-lg font-bold text-white outline-neutral-400 transition hover:scale-105 active:scale-100"

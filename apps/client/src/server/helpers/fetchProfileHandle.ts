@@ -19,8 +19,7 @@ export const fetchProfileHandle = cache(async (profileId: number) => {
       string: handleString,
       full: `${handleString}#${handleId.toString().padStart(4, "0")}`,
     };
-  } catch (err) {
-    console.warn("Error fetching profile handle", profileId, err);
+  } catch {
     return null;
   }
 });

@@ -18,8 +18,7 @@ export const fetchProfileMetadata = cache(async (profileId: number) => {
     const metadata = ERC721MetadataSchema.parse(data);
 
     return metadata;
-  } catch (err) {
-    console.warn("Error fetching profile metadata", profileId, err);
+  } catch {
     return null;
   }
 });

@@ -19,8 +19,7 @@ export const fetchProject = cache(async (id: string) => {
     if (!project) throw new Error("Not found");
 
     return { ...project, image: await imagePromise };
-  } catch (err) {
-    console.warn("Error fetching project", id, err);
+  } catch {
     return null;
   }
 });

@@ -23,8 +23,7 @@ export async function fetchProfile(id: number): Promise<Profile | null> {
       handle,
       metadata,
     };
-  } catch (err) {
-    console.warn("Error fetching profile", id, err);
+  } catch {
     return null;
   }
 }

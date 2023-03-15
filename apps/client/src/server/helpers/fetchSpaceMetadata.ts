@@ -18,8 +18,7 @@ export const fetchSpaceMetadata = cache(async (id: number) => {
     const metadata = ERC721MetadataSchema.parse(data);
 
     return metadata;
-  } catch (err) {
-    console.warn("Error fetching space metadata", id, err);
+  } catch {
     return null;
   }
 });

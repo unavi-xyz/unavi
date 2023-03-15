@@ -38,7 +38,6 @@ export const metadata: Metadata = {
     siteName: APP_NAME,
     title: APP_NAME,
     type: "website",
-    url: "https://thewired.space",
     images: [
       {
         url: HERO,

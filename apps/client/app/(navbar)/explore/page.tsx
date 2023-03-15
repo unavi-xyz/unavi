@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 
 import { fetchLatestSpaces } from "../../../src/server/helpers/fetchLatestSpaces";
+import { metadata as baseMetadata } from "../../layout";
 import Search from "./Search";
 import Spaces from "./Spaces";
 
@@ -11,9 +12,11 @@ const TITLE = "Explore";
 export const metadata: Metadata = {
   title: TITLE,
   openGraph: {
+    ...baseMetadata.openGraph,
     title: TITLE,
   },
   twitter: {
+    ...baseMetadata.twitter,
     title: TITLE,
   },
 };

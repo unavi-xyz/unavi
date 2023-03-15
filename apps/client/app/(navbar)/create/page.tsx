@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 
+import { metadata as baseMetadata } from "../../layout";
 import CreateProjectButton from "./CreateProjectButton";
 import Projects from "./Projects";
 import Published from "./Published";
@@ -9,9 +10,11 @@ const TITLE = "Create";
 export const metadata: Metadata = {
   title: TITLE,
   openGraph: {
+    ...baseMetadata.openGraph,
     title: TITLE,
   },
   twitter: {
+    ...baseMetadata.twitter,
     title: TITLE,
   },
 };

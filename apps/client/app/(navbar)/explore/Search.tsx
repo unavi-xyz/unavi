@@ -13,11 +13,11 @@ export default function Search() {
     <div className="relative mb-2 w-full max-w-sm">
       <input
         id={id}
-        className="block h-full w-full rounded-md border border-neutral-200 p-2 pl-10 text-sm text-neutral-900 placeholder:text-neutral-400"
+        className="w-full rounded-lg border border-neutral-200 pt-2 pb-1.5 pl-10 text-sm text-neutral-900 outline-black placeholder:text-neutral-400"
         value={filter}
         name="filter"
         autoComplete="off"
-        placeholder="E.g. Lobby"
+        placeholder="Search"
         onChange={(e) => {
           useExploreStore.setState({ filter: e.target.value });
         }}

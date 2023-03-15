@@ -53,11 +53,3 @@ export const useEditorStore = create<IEditorStore>(() => ({
   contextMenuNodeId: null,
   variables: [],
 }));
-
-export interface IExploreStore {
-  filter: string;
-}
-
-export const useExploreStore = create<IExploreStore>(() => ({
-  filter: "",
-}));

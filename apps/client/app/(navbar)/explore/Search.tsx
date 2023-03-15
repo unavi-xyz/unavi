@@ -3,7 +3,7 @@
 import { useId } from "react";
 import { MdSearch } from "react-icons/md";
 
-import { useExploreStore } from "../../../src/editor/store";
+import { useExploreStore } from "./store";
 
 export default function Search() {
   const id = useId();

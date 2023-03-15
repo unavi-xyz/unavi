@@ -3,10 +3,10 @@
 import { ERC721Metadata } from "contracts";
 import Link from "next/link";
 
-import { useExploreStore } from "../../../src/editor/store";
 import Card from "../../../src/ui/Card";
 import { toHex } from "../../../src/utils/toHex";
 import PlayerCount from "./PlayerCount";
+import { useExploreStore } from "./store";
 
 interface Props {
   id: number;

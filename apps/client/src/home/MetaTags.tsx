@@ -1,8 +1,8 @@
 import Head from "next/head";
 
-import { getBaseUrl } from "../utils/getBaseUrl";
+import { env } from "../env/server.mjs";
 
-const origin = getBaseUrl();
+const origin = typeof window !== "undefined" ? window.location.origin : env.NEXTAUTH_URL;
 
 export type PageMetadata = {
   title: string | null;

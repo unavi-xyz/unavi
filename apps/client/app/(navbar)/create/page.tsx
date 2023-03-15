@@ -1,11 +1,20 @@
+import { Metadata } from "next";
+
 import CreateProjectButton from "./CreateProjectButton";
 import Projects from "./Projects";
 import Published from "./Published";
 
-export const metadata = {
-  title: "Create",
-};
+const TITLE = "Create";
 
+export const metadata: Metadata = {
+  title: TITLE,
+  openGraph: {
+    title: TITLE,
+  },
+  twitter: {
+    title: TITLE,
+  },
+};
 export default function Create() {
   return (
     <div className="flex justify-center">

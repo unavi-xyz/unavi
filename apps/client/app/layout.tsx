@@ -9,7 +9,6 @@ import Toast from "./Toast";
 const font = Nunito({ subsets: ["latin"] });
 
 const APP_NAME = "The Wired";
-const TITLE = { default: APP_NAME, template: `%s / ${APP_NAME}` };
 const DESCRIPTION = "An open metaverse platform";
 const HERO = "/images/Hero.png";
 
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
   keywords: ["Metaverse", "WebXR", "Web3"],
   manifest: "/manifest.json",
   themeColor: "#191919",
-  title: TITLE,
+  title: { default: APP_NAME, template: `%s / ${APP_NAME}` },
   formatDetection: {
     telephone: false,
   },
@@ -37,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     description: DESCRIPTION,
     siteName: APP_NAME,
-    title: TITLE,
+    title: APP_NAME,
     type: "website",
     url: "https://thewired.space",
     images: [
@@ -53,7 +52,7 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: [HERO],
     site: "@wired_xr",
-    title: TITLE,
+    title: APP_NAME,
   },
   appleWebApp: {
     capable: true,

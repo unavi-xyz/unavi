@@ -6,8 +6,16 @@ import Spaces from "./Spaces";
 
 export const revalidate = 60;
 
+const TITLE = "Explore";
+
 export const metadata: Metadata = {
-  title: "Explore",
+  title: TITLE,
+  openGraph: {
+    title: TITLE,
+  },
+  twitter: {
+    title: TITLE,
+  },
 };
 
 export default async function Explore() {

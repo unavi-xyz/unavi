@@ -1,10 +1,25 @@
-import { fetchLatestSpaces } from "../../../src/server/helpers/fetchLatestSpaces";
+"use client";
+
+import { ValidSpace } from "../../../src/server/helpers/validateSpace";
 import SpaceCard from "./SpaceCard";
+import { useExploreStore } from "./store";
 
-export default async function Spaces() {
-  const spaces = await fetchLatestSpaces(40);
+interface Props {
+  spaces: ValidSpace[];
+}
 
-  return spaces.map(({ id, metadata }) => (
-    <SpaceCard key={id} id={id} metadata={metadata} sizes="512" />
-  ));
+export default function Spaces({ spaces }: Props) {
+  const filter = useExploreStore((state) => state.filter);
+
+  const filteredSpaces = spaces.filter(
+    (space) => filter === "" || space.metadata.name?.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  return (
+    <>
+      {filteredSpaces.map(({ id, metadata }) => (
+        <SpaceCard key={id} id={id} metadata={metadata} sizes="512" />
+      ))}
+    </>
+  );
 }

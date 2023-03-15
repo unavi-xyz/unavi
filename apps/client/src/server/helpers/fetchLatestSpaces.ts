@@ -1,14 +1,14 @@
 import { Space__factory, SPACE_ADDRESS } from "contracts";
 
 import { ethersProvider } from "../constants";
-import { validateSpace, ValidResponse } from "./validateSpace";
+import { validateSpace, ValidSpace } from "./validateSpace";
 
 export async function fetchLatestSpaces(limit: number, owner?: string) {
   const spaceContract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
 
   const count = (await spaceContract.count()).toNumber();
 
-  const spaces: ValidResponse[] = [];
+  const spaces: ValidSpace[] = [];
   const length = Math.min(limit, count);
   let nextSpaceId = count - 1;
 

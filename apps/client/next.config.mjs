@@ -82,6 +82,7 @@ export default defineNextConfig({
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT],
   },
   output: "standalone",
+  productionBrowserSourceMaps: true,
   reactStrictMode: true,
   transpilePackages: ["engine", "contracts", "protocol"],
   async headers() {

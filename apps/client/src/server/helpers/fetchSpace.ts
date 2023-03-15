@@ -15,7 +15,8 @@ export async function fetchSpace(id: number) {
       profile,
       metadata,
     };
-  } catch {
+  } catch (err) {
+    console.warn("Error fetching space", id, err);
     return null;
   }
 }

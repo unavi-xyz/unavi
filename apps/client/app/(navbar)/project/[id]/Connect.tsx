@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
-import { useSession } from "../../../../src/client/auth/useSession";
 import { processError } from "../../../../src/editor/utils/processError";
 import Button from "../../../../src/ui/Button";
 import { toHex } from "../../../../src/utils/toHex";
@@ -15,14 +14,13 @@ import { getSpacePublication } from "../../../api/spaces/[id]/publication/helper
 
 interface Props {
   id: string;
+  owner: string;
   connectedSpaceId?: number;
 }
 
-export default function Connect({ id, connectedSpaceId }: Props) {
+export default function Connect({ id, owner, connectedSpaceId }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
-
-  const { data: session } = useSession();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -56,7 +54,7 @@ export default function Connect({ id, connectedSpaceId }: Props) {
       // Fetch space
       const space = await getSpace(spaceId);
       if (!space) throw new Error("Space not found");
-      if (space.owner !== session?.address) throw new Error("You do not own this space");
+      if (space.owner !== owner) throw new Error("You do not own this space");
 
       // Fetch publication
       const publication = await getSpacePublication(spaceId);

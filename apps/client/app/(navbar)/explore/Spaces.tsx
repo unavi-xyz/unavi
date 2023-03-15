@@ -12,7 +12,7 @@ export default function Spaces({ spaces }: Props) {
   const filter = useExploreStore((state) => state.filter);
 
   const filteredSpaces = spaces.filter(
-    (space) => filter === "" || space.metadata.name.toLowerCase().includes(filter.toLowerCase())
+    (space) => filter === "" || space.metadata.name?.toLowerCase().includes(filter.toLowerCase())
   );
 
   return (

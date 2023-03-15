@@ -19,4 +19,4 @@ export async function validateSpace(id: number, owner?: string) {
   }
 }
 
-export type ValidResponse = Exclude<Awaited<ReturnType<typeof validateSpace>>, null>;
+export type ValidSpace = Exclude<Awaited<ReturnType<typeof validateSpace>>, null>;

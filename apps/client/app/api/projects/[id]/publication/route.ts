@@ -6,19 +6,23 @@ import { s3Client } from "../../../../../src/server/client";
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
 import { optimizeModel } from "../../../../../src/server/helpers/optimizeProject";
 import { prisma } from "../../../../../src/server/prisma";
-import { getContentType, getKey } from "../../../publications/files";
-import { PROJECT_FILE } from "../../files";
+import { getContentType, getKey as getPublicationKey } from "../../../publications/files";
+import { getKey as getProjectKey, PROJECT_FILE } from "../../files";
 import { Params, paramsSchema } from "../types";
 import { postSchema, PublishProjectResponse } from "./types";
 
 // Publish project
 export async function POST(request: NextRequest, { params }: Params) {
+  const { id } = paramsSchema.parse(params);
+
+  // Begin fetching model
+  const modelPromise = fetchModel(id);
+
   // Verify user is authenticated
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
   const { optimize } = postSchema.parse(await request.json());
-  const { id } = paramsSchema.parse(params);
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
@@ -42,8 +46,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     await prisma.project.update({ where: { id }, data: { publicationId } });
   }
 
-  // Fetch model
-  const model = await fetchModel(publicationId);
+  const model = await modelPromise;
   let publishedModel = model;
 
   // Optimize model
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
 
   // Upload model to publication bucket
-  const Key = getKey(publicationId, "model");
+  const Key = getPublicationKey(publicationId, "model");
   const ContentType = getContentType("model");
   const command = new PutObjectCommand({
     Bucket: env.S3_BUCKET,
@@ -74,8 +77,8 @@ export async function POST(request: NextRequest, { params }: Params) {
   return NextResponse.json(json);
 }
 
-async function fetchModel(publicationId: string) {
-  const modelKey = getKey(publicationId, PROJECT_FILE.MODEL);
+async function fetchModel(projectId: string) {
+  const modelKey = getProjectKey(projectId, PROJECT_FILE.MODEL);
   const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: modelKey });
 
   const { Body } = await s3Client.send(command);

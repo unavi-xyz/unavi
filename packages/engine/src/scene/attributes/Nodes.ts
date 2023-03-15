@@ -137,9 +137,9 @@ export class Nodes extends Attribute<Node, NodeJSON> {
 
   applyJSON(node: Node, json: Partial<NodeJSON>) {
     if (json.name !== undefined) node.setName(json.name);
-    if (json.translation) node.setTranslation(json.translation);
-    if (json.rotation) node.setRotation(json.rotation);
-    if (json.scale) node.setScale(json.scale);
+    if (json.translation !== undefined) node.setTranslation(json.translation);
+    if (json.rotation !== undefined) node.setRotation(json.rotation);
+    if (json.scale !== undefined) node.setScale(json.scale);
 
     if (json.mesh !== undefined) {
       if (json.mesh === null) {
@@ -160,7 +160,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       }
     }
 
-    if (json.children) {
+    if (json.children !== undefined) {
       for (const childId of json.children) {
         const child = this.store.get(childId);
         if (!child) continue;
@@ -169,7 +169,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       }
     }
 
-    if (json.extensions) {
+    if (json.extensions !== undefined) {
       const colliderJSON = json.extensions[ColliderExtension.EXTENSION_NAME];
 
       if (!colliderJSON) {

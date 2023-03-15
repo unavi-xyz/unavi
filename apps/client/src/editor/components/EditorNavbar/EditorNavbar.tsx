@@ -24,6 +24,7 @@ export default function EditorNavbar() {
 
   const name = useEditorStore((state) => state.name);
   const isSaving = useEditorStore((state) => state.isSaving);
+  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
   const { save, saveImage } = useSave();
@@ -34,6 +35,7 @@ export default function EditorNavbar() {
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
+
   const isPublished = Boolean(project?.Publication?.spaceId);
 
   async function handleBack() {
@@ -41,8 +43,9 @@ export default function EditorNavbar() {
     router.push(`/project/${id}`);
   }
 
-  async function handleOpenPublish() {
-    await saveImage();
+  function handleOpenPublish() {
+    if (!sceneLoaded) return;
+    saveImage();
     setOpenPublishDialog(true);
   }
 
@@ -76,14 +79,16 @@ export default function EditorNavbar() {
             <div className="flex items-center pt-0.5 pl-2">
               {isSaving ? (
                 <div className="text-sm text-neutral-500">Saving...</div>
-              ) : (
+              ) : sceneLoaded ? (
                 <button
                   onClick={save}
-                  className="rounded-md px-2 py-0.5 text-sm text-neutral-500 opacity-0 transition hover:bg-neutral-200 hover:text-neutral-900 focus:bg-neutral-200 focus:text-neutral-900 focus:opacity-100 active:bg-neutral-200 group-hover:opacity-100"
+                  className={
+                    "rounded-md px-2 py-0.5 text-sm text-neutral-500 opacity-0 transition hover:bg-neutral-200 hover:text-neutral-900 focus:bg-neutral-200 focus:text-neutral-900 focus:opacity-100 active:bg-neutral-200 group-hover:opacity-100"
+                  }
                 >
                   Save
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -93,7 +98,13 @@ export default function EditorNavbar() {
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <PlayButton />
           <VisualsButton />
-          {signer ? <Button onClick={handleOpenPublish}>Publish</Button> : <SignInButton />}
+          {signer ? (
+            <Button disabled={!sceneLoaded} onClick={handleOpenPublish}>
+              Publish
+            </Button>
+          ) : (
+            <SignInButton />
+          )}
         </div>
       </div>
     </>

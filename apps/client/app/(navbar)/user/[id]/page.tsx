@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { z } from "zod";
 
 import Avatar from "../../../../src/home/Avatar";
 import { fetchProfile } from "../../../../src/server/helpers/fetchProfile";
@@ -13,10 +14,13 @@ import Spaces from "./Spaces";
 
 export const revalidate = 60;
 
+const addressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/);
+const validateAddress = (id: string): id is `0x${string}` => addressSchema.safeParse(id).success;
+
 type Params = { id: string };
 
 export async function generateMetadata({ params: { id } }: { params: Params }): Promise<Metadata> {
-  const isAddress = id.length === 42;
+  const isAddress = validateAddress(id);
 
   const profile = isAddress ? await fetchProfileFromAddress(id) : await fetchProfile(parseInt(id));
 
@@ -67,7 +71,7 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
 }
 
 export default async function User({ params: { id } }: { params: Params }) {
-  const isAddress = id.length === 42;
+  const isAddress = validateAddress(id);
 
   const profile = isAddress ? await fetchProfileFromAddress(id) : await fetchProfile(parseInt(id));
 

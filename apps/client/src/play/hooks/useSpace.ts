@@ -25,7 +25,7 @@ export function useSpace(id: number, metadata: ERC721Metadata | null) {
 
   const join = useMemo(() => {
     return async () => {
-      if (!engine || !metadata) return;
+      if (!engine || !metadata?.animation_url) return;
 
       const res = await fetch(metadata.animation_url);
       const buffer = await res.arrayBuffer();

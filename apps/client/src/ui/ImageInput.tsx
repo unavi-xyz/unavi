@@ -32,7 +32,14 @@ export default function ImageInput({ src, disabled, className = "w-full h-full",
         />
       )}
 
-      <input id={id} disabled={disabled} type="file" className="hidden" {...rest} />
+      <input
+        id={id}
+        disabled={disabled}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        {...rest}
+      />
     </div>
   );
 }

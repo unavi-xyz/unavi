@@ -16,6 +16,8 @@ export function useSave() {
 
     // Take screenshot of canvas
     const image = canvas.toDataURL("image/jpeg");
+    useEditorStore.setState({ image });
+
     const response = await fetch(image);
     const body = await response.blob();
 

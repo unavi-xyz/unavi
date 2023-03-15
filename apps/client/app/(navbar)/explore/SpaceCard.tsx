@@ -14,7 +14,7 @@ interface Props {
 export default function SpaceCard({ id, metadata, sizes }: Props) {
   return (
     <Link href={`/space/${toHex(id)}`} className="rounded-xl">
-      <Card text={metadata?.name} image={metadata?.image} sizes={sizes} animateEnter>
+      <Card text={metadata.name} image={metadata.image} sizes={sizes}>
         <PlayerCount id={id} />
       </Card>
     </Link>

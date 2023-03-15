@@ -19,6 +19,7 @@ export default function Editor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
 
+  const name = useEditorStore((state) => state.name);
   const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
   const openScriptId = useEditorStore((state) => state.openScriptId);
@@ -59,6 +60,9 @@ export default function Editor() {
         openScriptId: null,
         isPlaying: false,
         isSaving: false,
+        name: "",
+        description: "",
+        image: null,
         treeIds: [],
         openIds: [],
       });
@@ -71,7 +75,7 @@ export default function Editor() {
 
   return (
     <>
-      <MetaTags title="Editor" />
+      <MetaTags title={name ? `${name} / Editor` : "Editor"} />
 
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
 

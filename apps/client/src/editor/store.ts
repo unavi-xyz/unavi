@@ -17,6 +17,7 @@ export interface IEditorStore {
 
   name: string;
   description: string;
+  image: string | null;
   publicationId: string | null;
 
   treeIds: string[];
@@ -42,6 +43,7 @@ export const useEditorStore = create<IEditorStore>(() => ({
 
   name: "",
   description: "",
+  image: null,
   publicationId: null,
 
   treeIds: [],

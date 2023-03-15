@@ -1,18 +1,23 @@
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
+import { env } from "../../../../../src/env/server.mjs";
+import { s3Client } from "../../../../../src/server/client";
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
-import { optimizeProject } from "../../../../../src/server/helpers/optimizeProject";
+import { optimizeModel } from "../../../../../src/server/helpers/optimizeProject";
 import { prisma } from "../../../../../src/server/prisma";
-import { getContentType, getUpload } from "../../../publications/files";
-import { getDownload } from "../../files";
+import { getContentType, getKey } from "../../../publications/files";
+import { PROJECT_FILE } from "../../files";
 import { Params, paramsSchema } from "../types";
-import { PublishProjectResponse } from "./types";
+import { postSchema, PublishProjectResponse } from "./types";
 
 // Publish project
 export async function POST(request: NextRequest, { params }: Params) {
+  // Verify user is authenticated
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
+  const { optimize } = postSchema.parse(await request.json());
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the project
@@ -37,27 +42,44 @@ export async function POST(request: NextRequest, { params }: Params) {
     await prisma.project.update({ where: { id }, data: { publicationId } });
   }
 
-  // Create optimized model
-  await optimizeProject(id);
+  // Fetch model
+  const model = await fetchModel(publicationId);
+  let publishedModel = model;
 
-  // Download optimized model
-  const url = await getDownload(id, "optimized_model");
-  const response = await fetch(url);
-  const buffer = await response.arrayBuffer();
-  const array = new Uint8Array(buffer);
+  // Optimize model
+  if (optimize) {
+    try {
+      publishedModel = await optimizeModel(model);
+    } catch (error) {
+      console.error("Failed to process model", error);
+    }
+  }
 
-  // Upload optimized model to publication
-  const uploadUrl = await getUpload(publicationId, "model");
-
-  await fetch(uploadUrl, {
-    method: "PUT",
-    body: array,
-    headers: {
-      "Content-Type": getContentType("model"),
-      "x-amz-acl": "public-read",
-    },
+  // Upload model to publication bucket
+  const Key = getKey(publicationId, "model");
+  const ContentType = getContentType("model");
+  const command = new PutObjectCommand({
+    Bucket: env.S3_BUCKET,
+    Key,
+    ContentType,
+    Body: publishedModel,
   });
 
-  const json: PublishProjectResponse = { id: publicationId };
+  await s3Client.send(command);
+
+  const json: PublishProjectResponse = {
+    id: publicationId,
+    modelSize: publishedModel.byteLength,
+  };
   return NextResponse.json(json);
+}
+
+async function fetchModel(publicationId: string) {
+  const modelKey = getKey(publicationId, PROJECT_FILE.MODEL);
+  const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: modelKey });
+
+  const { Body } = await s3Client.send(command);
+  if (!Body) throw new Error("Model not found");
+
+  return await Body.transformToByteArray();
 }

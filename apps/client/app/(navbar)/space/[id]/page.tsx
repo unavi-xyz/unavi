@@ -128,10 +128,8 @@ export default async function Space({ params }: Props) {
           </div>
         </div>
 
-        <Suspense fallback={null}>
-          {/* @ts-expect-error Server Component */}
-          <Tabs owner={space.owner} params={params} />
-        </Suspense>
+        {/* @ts-expect-error Server Component */}
+        <Tabs owner={space.owner} params={params} />
       </div>
     </div>
   );

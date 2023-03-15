@@ -1,7 +1,5 @@
 import { Metadata } from "next";
-import { Suspense } from "react";
 
-import Card from "../../../src/ui/Card";
 import Spaces from "./Spaces";
 
 export const revalidate = 60;
@@ -17,14 +15,8 @@ export default function Explore() {
         <div className="text-center text-3xl font-black">Explore</div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          <Suspense
-            fallback={Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} loading />
-            ))}
-          >
-            {/* @ts-expect-error Server Component */}
-            <Spaces />
-          </Suspense>
+          {/* @ts-expect-error Server Component */}
+          <Spaces />
         </div>
       </div>
     </div>

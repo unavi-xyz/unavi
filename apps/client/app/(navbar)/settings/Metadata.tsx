@@ -62,7 +62,7 @@ export default function Metadata({ profile }: Props) {
       const metadata: ERC721Metadata = {
         animation_url: coverImage,
         description: bio,
-        external_url: `https://thewired.space/user/${hexId}`,
+        external_url: `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${hexId}`,
         image: profilePicture,
         name: profile.handle?.string ?? "",
       };

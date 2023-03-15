@@ -147,8 +147,10 @@ export default function PublishPage() {
           animation_url: modelURL,
           description,
           external_url: spaceId
-            ? `https://thewired.space/space/${toHex(spaceId)}`
-            : `https://thewired.space/user/${profile ? toHex(profile.id) : session?.address}`,
+            ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/space/${toHex(spaceId)}`
+            : `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${
+                profile ? toHex(profile.id) : session?.address
+              }`,
           image: imageURL,
           name,
         };

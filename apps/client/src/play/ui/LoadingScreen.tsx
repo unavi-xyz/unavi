@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import LoadingBar from "../../ui/LoadingBar";
 import { isFromCDN } from "../../utils/isFromCDN";
+import { usePlayStore } from "../store";
 
 interface Props {
   text?: string | null;
@@ -14,6 +15,8 @@ interface Props {
 export default function LoadingScreen({ text, image, loadingProgress, loadingText }: Props) {
   const [entered, setEntered] = useState(false);
   const [enterTransitionFinished, setEnterTransitionFinished] = useState(false);
+
+  const errorLoading = usePlayStore((state) => state.errorLoading);
 
   useEffect(() => {
     if (loadingProgress === 1) setEntered(true);
@@ -72,7 +75,19 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
           </div>
 
           <div className="flex w-full justify-center">
-            <LoadingBar progress={loadingProgress} text={loadingText} />
+            {errorLoading ? (
+              <div className="space-y-2 text-center text-lg">
+                <div className="text-red-900">Error loading space. {errorLoading}</div>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="rounded-lg border border-neutral-500 px-4 py-1 hover:bg-neutral-100 active:bg-neutral-200"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : (
+              <LoadingBar progress={loadingProgress} text={loadingText} />
+            )}
           </div>
         </div>
       </div>

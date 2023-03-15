@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
-import { processError } from "../../../../src/editor/utils/processError";
+import { parseError } from "../../../../src/editor/utils/parseError";
 import Button from "../../../../src/ui/Button";
 import { toHex } from "../../../../src/utils/toHex";
 import { updateProject } from "../../../api/projects/[id]/helper";
@@ -76,7 +76,7 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
       await connect();
       toast.success("Project connected!", { id: toastId });
     } catch (err) {
-      toast.error(processError(err, "Failed to connect project."), { id: toastId });
+      toast.error(parseError(err, "Failed to connect project."), { id: toastId });
       console.error(err);
     }
 

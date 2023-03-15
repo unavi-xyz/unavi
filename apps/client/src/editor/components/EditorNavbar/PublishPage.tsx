@@ -23,7 +23,7 @@ import { toHex } from "../../../utils/toHex";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
-import { processError } from "../../utils/processError";
+import { parseError } from "../../utils/parseError";
 
 function cdnModelURL(id: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/model.glb`;
@@ -228,7 +228,7 @@ export default function PublishPage() {
       await publish();
       toast.success("Published!", { id: toastId });
     } catch (err) {
-      toast.error(processError(err, "Failed to publish."), { id: toastId });
+      toast.error(parseError(err, "Failed to publish."), { id: toastId });
       console.error(err);
     }
 

@@ -20,7 +20,7 @@ export default async function Explore() {
 
         <Search />
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <Spaces spaces={spaces} />
         </div>
       </div>

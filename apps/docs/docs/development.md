@@ -4,11 +4,11 @@ sidebar_label: 🛠️ Development
 title: Development
 ---
 
-This guide aims to provide a unified development process for developers of The Wired, ensuring its maintainability and scalability. The processes and steps outlined in this document are based on best practices and past experiences, but may also be modified and adjusted according to the specific needs of your setup.
+This guide aims to provide a unified development process for developers of The Wired, ensuring its maintainability and scalability.
 
 ## 🛠️ Environment Setup
 
-### Step 1 - Install tools
+### Step 0 - Install tools
 
 Before starting development, ensure that you have the following tools:
 
@@ -18,20 +18,20 @@ Before starting development, ensure that you have the following tools:
 - [Docker compose plugin](https://docs.docker.com/compose/install/) installed
 - Ethereum RPC provider (such as [Alchemy](https://www.alchemy.com/))
 
-### Step 2 - Clone the repository
+### Step 1 - Clone the repository
 
 ```bash
 git clone https://github.com/wired-labs/wired.git
 cd wired
 ```
 
-### Step 3 - Install dependencies
+### Step 2 - Install dependencies
 
 ```bash
 yarn install
 ```
 
-### Step 4 - Update environment variables
+### Step 3 - Update environment variables
 
 :::warning
 
@@ -50,15 +50,30 @@ The only environment variable you need to set before running the app is `ETH_PRO
 ETH_PROVIDER="..." # Your Ethereum RPC provider
 ```
 
-## 📝 Branch Management
+## 🏗️ Running the app
 
-Use [Git](https://git-scm.com/) as the version control system, create `dev` branches and `main` branches. Developers work on `dev` branches and initiate merge requests to the main branch after completing tasks.
+Run one of the following commands to start the app. This will make the client available at [http://localhost:3000](http://localhost:3000).
 
-## 🏗️ Building
+### Production mode
+
+Use this if you want to run your own local instance of the client.
 
 ```bash
-# Run the apps in development mode
+yarn docker:prod
+```
+
+### Development mode
+
+Use this if you are actively developing the client and want to see any changes you make immediately.
+
+```bash
 yarn docker:dev
 ```
 
-The client is hosted at [http://localhost:3000](http://localhost:3000), and the documentation at [http://localhost:3100](http://localhost:3100).
+### Stopping
+
+To stop the app, press `Ctrl+C` in the terminal where you ran the command. Additionally, you can run the following command to shut down the docker containers:
+
+```bash
+yarn docker:stop
+```

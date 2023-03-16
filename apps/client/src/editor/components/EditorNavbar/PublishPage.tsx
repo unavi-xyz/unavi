@@ -281,20 +281,17 @@ export default function PublishPage() {
         disabled={loading}
       />
 
-      <div className="space-y-2">
-        <div className="text-lg font-bold">Image</div>
-
-        <ImageInput
-          src={imageUrl}
-          disabled={loading}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
-          }}
-          className="h-72 w-full"
-        />
-      </div>
+      <ImageInput
+        name="Image"
+        src={imageUrl}
+        disabled={loading}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
+        }}
+        className="h-72 w-full"
+      />
 
       <div className="flex justify-end">
         <Button disabled={loading} type="submit">

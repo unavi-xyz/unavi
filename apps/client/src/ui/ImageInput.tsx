@@ -1,17 +1,30 @@
-import { useId } from "react";
-
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "children">;
 
-export default function ImageInput({ src, disabled, className = "w-full h-full", ...rest }: Props) {
-  const id = useId();
-
+export default function ImageInput({
+  src,
+  disabled,
+  name,
+  className = "w-full h-full",
+  ...rest
+}: Props) {
   return (
     <div className="relative">
-      <label htmlFor={id}>
+      <label>
+        {name && <div className="pb-1 text-lg font-bold">{name}</div>}
+
         <div
           className={`absolute cursor-pointer rounded-lg transition ${
             disabled ? "" : "hover:bg-black/30 active:bg-black/20"
           } ${className}`}
+        />
+
+        <input
+          name={name}
+          disabled={disabled}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          {...rest}
         />
       </label>
 
@@ -31,15 +44,6 @@ export default function ImageInput({ src, disabled, className = "w-full h-full",
           } ${className}`}
         />
       )}
-
-      <input
-        id={id}
-        disabled={disabled}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        {...rest}
-      />
     </div>
   );
 }

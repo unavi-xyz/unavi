@@ -1,5 +1,4 @@
 import { SPAWN_TITLE, SpawnPointExtension } from "engine";
-import { useId } from "react";
 
 import { DropdownItem } from "../../../ui/DropdownMenu";
 import { useSpawn } from "../../hooks/useSpawn";
@@ -13,9 +12,7 @@ const OBJECT_NAME = {
 type ObjectName = (typeof OBJECT_NAME)[keyof typeof OBJECT_NAME];
 
 export default function SpecialsMenu() {
-  const id = useId();
   const spawn = useSpawn();
-
   const engine = useEditorStore((state) => state.engine);
 
   function addObject(name: ObjectName) {
@@ -50,25 +47,23 @@ export default function SpecialsMenu() {
       <DropdownItem className="outline-none focus:bg-neutral-200">
         <label
           onClick={(e) => e.stopPropagation()}
-          htmlFor={id}
           className="flex w-full items-center whitespace-nowrap px-6 outline-none focus:bg-neutral-200 active:opacity-80"
         >
-          Import glTF
+          <div>Import glTF</div>
+
+          <input
+            type="file"
+            accept=".gltf,.glb"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+
+              engine?.scene.addFile(file);
+            }}
+          />
         </label>
       </DropdownItem>
-
-      <input
-        id={id}
-        type="file"
-        accept=".gltf,.glb"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-
-          engine?.scene.addFile(file);
-        }}
-      />
     </div>
   );
 }

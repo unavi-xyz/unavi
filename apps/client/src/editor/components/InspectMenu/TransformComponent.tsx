@@ -26,15 +26,15 @@ export default function TransformComponent({ nodeId }: Props) {
         <div className="grid grid-cols-3 gap-x-2">
           {translation?.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
-            const name = `translation-${letter}`;
+            const id = `translation-${letter}`;
 
             const rounded = Math.round(value * 1000) / 1000;
 
             return (
-              <div key={name} className="flex items-center space-x-1">
-                <label htmlFor={name}>{letter}</label>
+              <div key={id} className="flex items-center space-x-1">
+                <label htmlFor={id}>{letter}</label>
                 <NumberInput
-                  name={name}
+                  id={id}
                   value={rounded}
                   step={0.1}
                   onChange={(e) => {
@@ -59,16 +59,16 @@ export default function TransformComponent({ nodeId }: Props) {
         <div className="grid grid-cols-3 gap-x-2">
           {euler?.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
-            const name = `rotation-${letter}`;
+            const id = `rotation-${letter}`;
 
             const degress = Math.round((value * 180) / Math.PI);
             const rounded = Math.round(degress * 1000) / 1000;
 
             return (
-              <div key={name} className="flex items-center space-x-1">
-                <label htmlFor={name}>{letter}</label>
+              <div key={id} className="flex items-center space-x-1">
+                <label htmlFor={id}>{letter}</label>
                 <NumberInput
-                  name={name}
+                  id={id}
                   value={rounded}
                   step={1}
                   onChange={(e) => {
@@ -96,15 +96,15 @@ export default function TransformComponent({ nodeId }: Props) {
         <div className="grid grid-cols-3 gap-x-2">
           {scale?.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
-            const name = `scale-${letter}`;
+            const id = `scale-${letter}`;
 
             const rounded = Math.round(value * 1000) / 1000;
 
             return (
-              <div key={name} className="flex items-center space-x-1">
-                <label htmlFor={name}>{letter}</label>
+              <div key={id} className="flex items-center space-x-1">
+                <label htmlFor={id}>{letter}</label>
                 <NumberInput
-                  name={name}
+                  id={id}
                   value={rounded}
                   step={0.1}
                   onChange={(e) => {

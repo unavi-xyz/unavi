@@ -158,53 +158,47 @@ export default function Metadata({ profile }: Props) {
             disabled={saving}
           />
 
-          <div className="space-y-2">
-            <div className="text-lg font-bold">Profile Picture</div>
+          <ImageInput
+            name="Profile Picture"
+            src={profilePicture}
+            disabled={saving}
+            onChange={async (e) => {
+              if (!e.target.files) return;
 
-            <ImageInput
-              src={profilePicture}
-              disabled={saving}
-              onChange={async (e) => {
-                if (!e.target.files) return;
+              const file = e.target.files[0];
+              if (!file) return;
 
-                const file = e.target.files[0];
-                if (!file) return;
+              const url = URL.createObjectURL(file);
 
-                const url = URL.createObjectURL(file);
+              // Crop image
+              const croppedFile = await cropImage(url, 1);
+              const croppedUrl = URL.createObjectURL(croppedFile);
 
-                // Crop image
-                const croppedFile = await cropImage(url, 1);
-                const croppedUrl = URL.createObjectURL(croppedFile);
+              setProfilePicture(croppedUrl);
+            }}
+            className="h-48 w-48 rounded-full object-cover"
+          />
 
-                setProfilePicture(croppedUrl);
-              }}
-              className="h-48 w-48 rounded-full object-cover"
-            />
-          </div>
+          <ImageInput
+            name="Cover Picture"
+            src={coverImage}
+            disabled={saving}
+            onChange={async (e) => {
+              if (!e.target.files) return;
 
-          <div className="space-y-2">
-            <div className="text-lg font-bold">Cover Picture</div>
+              const file = e.target.files[0];
+              if (!file) return;
 
-            <ImageInput
-              src={coverImage}
-              disabled={saving}
-              onChange={async (e) => {
-                if (!e.target.files) return;
+              const url = URL.createObjectURL(file);
 
-                const file = e.target.files[0];
-                if (!file) return;
+              // Crop image
+              const croppedFile = await cropImage(url, 4);
+              const croppedUrl = URL.createObjectURL(croppedFile);
 
-                const url = URL.createObjectURL(file);
-
-                // Crop image
-                const croppedFile = await cropImage(url, 4);
-                const croppedUrl = URL.createObjectURL(croppedFile);
-
-                setCoverImage(croppedUrl);
-              }}
-              className="h-40 w-full rounded-xl object-cover"
-            />
-          </div>
+              setCoverImage(croppedUrl);
+            }}
+            className="h-40 w-full rounded-xl object-cover"
+          />
 
           <div className="flex justify-end">
             <Button disabled={saving} type="submit">

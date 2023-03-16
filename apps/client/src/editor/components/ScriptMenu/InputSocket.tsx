@@ -3,6 +3,7 @@ import { ConstantValue, ValueType } from "engine";
 import { FaCaretRight } from "react-icons/fa";
 import { Connection, Handle, Position, useReactFlow } from "reactflow";
 
+import { useEditorStore } from "../../store";
 import AutoSizeInput from "./AutoSizeInput";
 import JsonPathInput from "./JsonPathInput";
 import { FlowNodeParamter } from "./types";
@@ -25,6 +26,7 @@ export default function InputSocket({
   pathType,
 }: InputSocketProps) {
   const instance = useReactFlow();
+  const isPlaying = useEditorStore((state) => state.isPlaying);
 
   const isFlowSocket = valueType === "flow";
   const isJsonPath = name === "jsonPath";
@@ -53,16 +55,21 @@ export default function InputSocket({
         <div className="nodrag">
           {isJsonPath ? (
             <JsonPathInput
-              onChange={onChange}
-              value={String(value?.value ?? "")}
               pathType={pathType}
+              value={String(value?.value ?? "")}
+              onChange={onChange}
             />
           ) : (
             <AutoSizeInput
               type={inputType}
-              className="h-6 rounded bg-neutral-200 px-2 hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
               value={String(value?.value ?? "")}
+              disabled={isPlaying}
               onChange={(e) => onChange(name, { value: e.currentTarget.value })}
+              className={`h-6 rounded bg-neutral-200 px-2 ${
+                isPlaying
+                  ? ""
+                  : "hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
+              }`}
             />
           )}
         </div>

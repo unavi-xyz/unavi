@@ -22,6 +22,7 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
   }, [pathType]);
 
   const engine = useEditorStore((state) => state.engine);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
   const nodes = useNodes();
 
   const nodeIds = useMemo(() => {
@@ -64,8 +65,11 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
     <div className="flex items-center space-x-1">
       <select
         value={pathNode}
+        disabled={isPlaying}
         onChange={(e) => setPathNode(e.currentTarget.value)}
-        className="h-6 rounded bg-neutral-200 px-1 hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+        className={`h-6 rounded bg-neutral-200 px-1 ${
+          isPlaying ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+        }`}
       >
         {nodeIds.map((id) => (
           <NodeOption key={id} id={id} />
@@ -76,10 +80,13 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
 
       <select
         value={capitalizedProperty}
+        disabled={isPlaying}
         onChange={(e) => {
           setPathProperty(e.currentTarget.value.toLowerCase());
         }}
-        className="h-6 rounded bg-neutral-200 px-1 hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+        className={`h-6 rounded bg-neutral-200 px-1 ${
+          isPlaying ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+        }`}
       >
         {pathOptions.map((option) => {
           return (

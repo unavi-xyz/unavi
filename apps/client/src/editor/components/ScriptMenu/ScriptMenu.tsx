@@ -36,6 +36,7 @@ export default function ScriptMenu({ scriptId }: Props) {
   const [contextMenuType, setContextMenuType] = useState<"node" | "pane">("pane");
   const [loaded, setLoaded] = useState<string>();
   const engine = useEditorStore((state) => state.engine);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
 
   const script = useScript(scriptId);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -65,18 +66,20 @@ export default function ScriptMenu({ scriptId }: Props) {
 
   const onEdgeUpdate = useCallback(
     (oldEdge: Edge, newConnection: Connection) => {
+      if (isPlaying) return;
       edgeUpdateSuccessful.current = true;
       setEdges((els) => updateEdge(oldEdge, newConnection, els));
     },
-    [setEdges]
+    [setEdges, isPlaying]
   );
 
   const onEdgeUpdateEnd = useCallback(
     (_: any, edge: Edge) => {
+      if (isPlaying) return;
       if (!edgeUpdateSuccessful.current) setEdges((eds) => eds.filter((e) => e.id !== edge.id));
       edgeUpdateSuccessful.current = true;
     },
-    [setEdges]
+    [setEdges, isPlaying]
   );
 
   const addNode = useCallback(
@@ -136,7 +139,7 @@ export default function ScriptMenu({ scriptId }: Props) {
             if (!open) setNodePickerPosition(undefined);
           }}
         >
-          <ContextMenu.Trigger>
+          <ContextMenu.Trigger disabled={isPlaying}>
             <ReactFlow
               nodeTypes={nodeTypes}
               nodes={nodes}

@@ -112,32 +112,37 @@ export class SceneModule extends Scene {
 
     if (log) console.info("Exporting:", await io.writeJSON(this.doc));
 
-    let exportedDoc = this.doc;
-
     if (optimize) {
-      exportedDoc = this.doc.clone();
+      // Clone document to avoid modifying the original
+      const optimizedDoc = this.doc.clone();
 
       // Optimize model
-      await optimizeDocument(exportedDoc);
+      await optimizeDocument(optimizedDoc);
 
       // Compress model
       try {
+        // Create another clone to avoid modifying the optimized model
+        // Sometimes compression fails, so we want to return the optimized model in that case
+        const compressedDoc = optimizedDoc.clone();
+
         await io.registerDependencies({
           // @ts-ignore
           "draco3d.encoder": await new DracoEncoderModule(),
         });
 
-        await exportedDoc.transform(draco());
+        await compressedDoc.transform(draco());
 
-        // Sometimes writing the compressed model fails on the first try, so we try here
-        // I don't know why this happens
-        return await io.writeBinary(exportedDoc);
+        // Return the compressed model
+        return await io.writeBinary(compressedDoc);
       } catch (err) {
         console.warn("Failed to compress model", err);
       }
+
+      // Return the optimized model
+      return await io.writeBinary(optimizedDoc);
     }
 
-    return await io.writeBinary(exportedDoc);
+    return await io.writeBinary(this.doc);
   }
 
   async addBinary(array: Uint8Array) {

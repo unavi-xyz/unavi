@@ -221,8 +221,8 @@ export class SceneModule extends Scene {
         if (collider) return;
 
         const meshCollider = new Collider(doc.getGraph());
-        meshCollider.type = "trimesh";
-        meshCollider.mesh = mesh;
+        meshCollider.setType("trimesh");
+        meshCollider.setMesh(mesh);
 
         node.setExtension<Collider>(ColliderExtension.EXTENSION_NAME, meshCollider);
       });
@@ -456,10 +456,10 @@ export class SceneModule extends Scene {
         extension.addEventListener("change", listener);
 
         if (extension instanceof Collider) {
-          if (extension.type === "trimesh") {
+          if (extension.getType() === "trimesh") {
             // Set collider mesh
             const mesh = node.getMesh();
-            extension.mesh = mesh;
+            extension.setMesh(mesh);
           }
         }
 
@@ -480,15 +480,15 @@ export class SceneModule extends Scene {
         // Update mesh collider
         const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
 
-        if (collider?.type === "trimesh") {
+        if (collider?.getType() === "trimesh") {
           const meshId = value as string | null;
 
           if (meshId) {
             const mesh = this.mesh.store.get(meshId);
             if (!mesh) throw new Error("Mesh not found");
-            collider.mesh = mesh;
+            collider.setMesh(mesh);
           } else {
-            collider.mesh = null;
+            collider.setMesh(null);
           }
         }
       }

@@ -42,15 +42,15 @@ export class ColliderExtension extends Extension {
 
     const colliders = rootDef.colliders.map((colliderDef) => {
       const collider = this.createCollider();
-      collider.type = colliderDef.type;
+      collider.setType(colliderDef.type);
 
-      if (colliderDef.size !== undefined) collider.size = colliderDef.size;
-      if (colliderDef.radius !== undefined) collider.radius = colliderDef.radius;
-      if (colliderDef.height !== undefined) collider.height = colliderDef.height;
+      if (colliderDef.size !== undefined) collider.setSize(colliderDef.size);
+      if (colliderDef.radius !== undefined) collider.setRadius(colliderDef.radius);
+      if (colliderDef.height !== undefined) collider.setHeight(colliderDef.height);
       if (colliderDef.mesh !== undefined) {
         const mesh = context.meshes[colliderDef.mesh];
         if (!mesh) throw new Error("Mesh not found");
-        collider.mesh = mesh;
+        collider.setMesh(mesh);
       }
 
       return collider;
@@ -84,11 +84,11 @@ export class ColliderExtension extends Extension {
 
     for (const property of this.properties) {
       if (property instanceof Collider) {
-        const colliderDef = { type: property.type } as ColliderDef;
+        const colliderDef = { type: property.getType() } as ColliderDef;
 
-        switch (property.type) {
+        switch (property.getType()) {
           case "box": {
-            const size = property.size;
+            const size = property.getSize();
             if (!size) throw new Error("Size not set");
 
             colliderDef.size = size;
@@ -96,7 +96,7 @@ export class ColliderExtension extends Extension {
           }
 
           case "sphere": {
-            const radius = property.radius;
+            const radius = property.getRadius();
             if (radius === null) throw new Error("Radius not set");
 
             colliderDef.radius = radius;
@@ -105,10 +105,10 @@ export class ColliderExtension extends Extension {
 
           case "capsule":
           case "cylinder": {
-            const radius = property.radius;
+            const radius = property.getRadius();
             if (radius === null) throw new Error("Radius not set");
 
-            const height = property.height;
+            const height = property.getHeight();
             if (height === null) throw new Error("Height not set");
 
             colliderDef.radius = radius;
@@ -117,7 +117,7 @@ export class ColliderExtension extends Extension {
           }
 
           case "trimesh": {
-            const mesh = property.mesh;
+            const mesh = property.getMesh();
             if (!mesh) break;
 
             const meshIndex = context.meshIndexMap.get(mesh);

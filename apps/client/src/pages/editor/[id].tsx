@@ -113,7 +113,7 @@ export default function Editor() {
             onMouseUp={resize}
           >
             <Split
-              sizes={[15, 65, 20]}
+              sizes={[15, 65, 25]}
               minSize={[50, 400, 50]}
               direction="horizontal"
               gutterSize={4}

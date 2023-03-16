@@ -84,7 +84,7 @@ export class Scene {
       .listNodes()
       .find((node) => {
         const spawn = node.getExtension<SpawnPoint>(SpawnPointExtension.EXTENSION_NAME);
-        return spawn && spawn.title === title;
+        return spawn && spawn.getTitle() === title;
       });
   }
 }

@@ -2,7 +2,8 @@ import { useEffect, useMemo } from "react";
 import { HiOutlineCube } from "react-icons/hi";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
-import { useNodeAttribute } from "../../hooks/useNodeAttribute";
+import { useNode } from "../../hooks/useNode";
+import { useSubscribe } from "../../hooks/useSubscribe";
 import { useEditorStore } from "../../store";
 import { isAncestor } from "./utils/isAncestor";
 import { moveNode } from "./utils/moveNode";
@@ -14,8 +15,9 @@ interface Props {
 export default function TreeItem({ id }: Props) {
   const engine = useEditorStore((state) => state.engine);
   const draggingId = useEditorStore((state) => state.draggingId);
-  const name = useNodeAttribute(id, "name");
-  const childrenIds = useNodeAttribute(id, "children") ?? [];
+  const node = useNode(id);
+  const name = useSubscribe(node, "Name");
+  const children = useSubscribe(node, "Children") ?? [];
   const selectedId = useEditorStore((state) => state.selectedId);
   const openIds = useEditorStore((state) => state.openIds);
   const treeIds = useEditorStore((state) => state.treeIds);
@@ -47,7 +49,7 @@ export default function TreeItem({ id }: Props) {
 
   const isOpen = openIds.includes(id);
   const isSelected = selectedId === id;
-  const hasChildren = childrenIds.length > 0;
+  const hasChildren = children.length > 0;
 
   return (
     <div className="relative select-none">

@@ -1,17 +1,17 @@
+import { Node } from "@gltf-transform/core";
+
 import { useCollider } from "../../../hooks/useExtension";
-import { useExtensionAttribute } from "../../../hooks/useExtensionAttribute";
-import { useNode } from "../../../hooks/useNode";
+import { useSubscribe } from "../../../hooks/useSubscribe";
 import NumberInput from "../../ui/NumberInput";
 import MenuRows from "../ui/MenuRows";
 
 interface Props {
-  nodeId: string;
+  node: Node;
 }
 
-export default function SphereColliderComponent({ nodeId }: Props) {
-  const node = useNode(nodeId);
+export default function SphereColliderComponent({ node }: Props) {
   const collider = useCollider(node);
-  const radius = useExtensionAttribute(collider, "radius");
+  const radius = useSubscribe(collider, "Radius");
 
   return (
     <MenuRows titles={["Radius"]}>
@@ -29,7 +29,7 @@ export default function SphereColliderComponent({ nodeId }: Props) {
           const num = parseFloat(value);
           const rounded = Math.round(num * 1000) / 1000;
 
-          collider.radius = rounded;
+          collider.setRadius(rounded);
         }}
       />
     </MenuRows>

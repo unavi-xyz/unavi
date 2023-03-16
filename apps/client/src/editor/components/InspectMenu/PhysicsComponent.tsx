@@ -1,8 +1,8 @@
+import { Node } from "@gltf-transform/core";
 import { Collider, ColliderExtension, ColliderType } from "engine";
 
 import { useCollider } from "../../hooks/useExtension";
-import { useExtensionAttribute } from "../../hooks/useExtensionAttribute";
-import { useNode } from "../../hooks/useNode";
+import { useSubscribe } from "../../hooks/useSubscribe";
 import { capitalize } from "../../utils/capitalize";
 import SelectMenu from "../ui/SelectMenu";
 import BoxColliderComponent from "./collider/BoxColliderComponent";
@@ -12,13 +12,12 @@ import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 
 interface Props {
-  nodeId: string;
+  node: Node;
 }
 
-export default function PhysicsComponent({ nodeId }: Props) {
-  const node = useNode(nodeId);
+export default function PhysicsComponent({ node }: Props) {
   const collider = useCollider(node);
-  const type = useExtensionAttribute(collider, "type");
+  const type = useSubscribe(collider, "Type");
 
   if (!type) return null;
 
@@ -39,34 +38,34 @@ export default function PhysicsComponent({ nodeId }: Props) {
             const extension = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
 
             if (extension) {
-              extension.size = null;
-              extension.height = null;
-              extension.radius = null;
-              extension.mesh = null;
+              extension.setSize(null);
+              extension.setHeight(null);
+              extension.setRadius(null);
+              extension.setMesh(null);
 
               const value = e.target.value.toLowerCase() as ColliderType;
-              extension.type = value;
+              extension.setType(value);
 
               switch (value) {
                 case "box": {
-                  extension.size = [1, 1, 1];
+                  extension.setSize([1, 1, 1]);
                   break;
                 }
 
                 case "sphere": {
-                  extension.radius = 0.5;
+                  extension.setRadius(0.5);
                   break;
                 }
 
                 case "cylinder": {
-                  extension.height = 1;
-                  extension.radius = 0.5;
+                  extension.setHeight(1);
+                  extension.setRadius(0.5);
                   break;
                 }
 
                 case "trimesh": {
                   const mesh = node.getMesh();
-                  extension.mesh = mesh;
+                  extension.setMesh(mesh);
                   break;
                 }
               }
@@ -76,11 +75,11 @@ export default function PhysicsComponent({ nodeId }: Props) {
       </MenuRows>
 
       {type === "box" ? (
-        <BoxColliderComponent nodeId={nodeId} />
+        <BoxColliderComponent node={node} />
       ) : type === "sphere" ? (
-        <SphereColliderComponent nodeId={nodeId} />
+        <SphereColliderComponent node={node} />
       ) : type === "cylinder" ? (
-        <CylinderColliderComponent nodeId={nodeId} />
+        <CylinderColliderComponent node={node} />
       ) : null}
     </ComponentMenu>
   );

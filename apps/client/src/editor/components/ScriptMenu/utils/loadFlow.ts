@@ -25,16 +25,17 @@ export function loadFlow(engine: Engine, scriptId: string) {
   const variables = engine.scene.extensions.behavior.listVariables();
 
   engine.scene.extensions.behavior.listBehaviorNodes().forEach((behaviorNode) => {
-    const { type, parameters, configuration } = behaviorNode;
     const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
 
     if (extras.script !== scriptId) return;
 
     const data: FlowNodeData = {};
 
-    if (configuration) {
-      if (isVariableConfig(configuration)) {
-        const variable = behaviorNode.variable;
+    const config = behaviorNode.getConfiguration();
+
+    if (config) {
+      if (isVariableConfig(config)) {
+        const variable = behaviorNode.getVariable();
         if (!variable) return;
 
         const variableIndex = variables.findIndex((v) => v === variable);
@@ -43,8 +44,10 @@ export function loadFlow(engine: Engine, scriptId: string) {
       }
     }
 
-    if (parameters) {
-      Object.entries(parameters).forEach(([key, value]) => {
+    const params = behaviorNode.getParameters();
+
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
         if (isJsonPath(value) || isLink(value)) return;
         data[key] = value;
       });
@@ -52,7 +55,7 @@ export function loadFlow(engine: Engine, scriptId: string) {
 
     nodes.push({
       id: behaviorNode.getName(),
-      type,
+      type: behaviorNode.getType(),
       data,
       position: extras.position ?? { x: 0, y: 0 },
     });
@@ -72,8 +75,8 @@ export function loadFlow(engine: Engine, scriptId: string) {
       });
     }
 
-    if (parameters) {
-      Object.entries(parameters).forEach(([key, value]) => {
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
         if (!isLink(value)) return;
 
         const linkedNode = behaviorNode.getLink(key);
@@ -108,7 +111,10 @@ export function loadFlow(engine: Engine, scriptId: string) {
       nodeSpec.inputs.forEach(({ name }) => {
         if (name !== "jsonPath") return;
 
-        const value = behaviorNode.parameters?.[name];
+        const parameters = behaviorNode.getParameters();
+        if (!parameters) return;
+
+        const value = parameters[name];
         if (!isJsonPath(value)) return;
 
         const jsonNode = behaviorNode.getNode(name);

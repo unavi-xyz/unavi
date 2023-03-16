@@ -79,7 +79,7 @@ function createNode(name: ObjectName) {
   switch (name) {
     case OBJECT_NAME.Spawn: {
       const spawnPoint = engine.scene.extensions.spawn.createSpawnPoint();
-      spawnPoint.title = SPAWN_TITLE.Default;
+      spawnPoint.setTitle(SPAWN_TITLE.Default);
       node.setExtension(SpawnPointExtension.EXTENSION_NAME, spawnPoint);
       break;
     }

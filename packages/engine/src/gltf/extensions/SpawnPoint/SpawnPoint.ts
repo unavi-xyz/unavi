@@ -31,11 +31,11 @@ export class SpawnPoint extends ExtensionProperty<ISpawnPoint> {
     });
   }
 
-  get title() {
+  getTitle() {
     return this.get("title");
   }
 
-  set title(title: string) {
+  setTitle(title: string) {
     this.set("title", title);
   }
 }

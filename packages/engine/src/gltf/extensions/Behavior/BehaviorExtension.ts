@@ -78,7 +78,7 @@ export class BehaviorExtension extends Extension {
     // Read behavior nodes
     const behaviorNodes = rootDef.behaviorNodes.map((behaviorNodeDef) => {
       const behaviorNode = this.createBehaviorNode();
-      behaviorNode.type = behaviorNodeDef.type;
+      behaviorNode.setType(behaviorNodeDef.type);
       behaviorNode.setName(behaviorNodeDef.name);
       if (behaviorNodeDef.extras) behaviorNode.setExtras(behaviorNodeDef.extras);
       return behaviorNode;
@@ -92,36 +92,48 @@ export class BehaviorExtension extends Extension {
         if (isVariableConfigJSON(configuration)) {
           const variable = variables.find((_, i) => i === configuration.variableId);
           if (variable) {
-            behaviorNode.configuration = { isVariable: true };
-            behaviorNode.variable = variable;
+            behaviorNode.setConfiguration({ isVariable: true });
+            behaviorNode.setVariable(variable);
           }
         } else {
-          behaviorNode.configuration = configuration;
+          behaviorNode.setConfiguration(configuration);
         }
       }
 
       if (parameters) {
         Object.entries(parameters).forEach(([key, value]) => {
-          if (!behaviorNode.parameters) behaviorNode.parameters = {};
+          if (!behaviorNode.getParameters()) behaviorNode.setParameters({});
 
           if (isLinkJSON(value)) {
             const linkedNode = behaviorNodes[value.link.nodeId];
             if (!linkedNode) throw new Error("Invalid behavior node reference");
 
-            behaviorNode.parameters[key] = {
-              link: { socket: value.link.socket },
-            };
+            behaviorNode.setParameters({
+              ...behaviorNode.getParameters(),
+              [key]: {
+                link: { socket: value.link.socket },
+              },
+            });
+
             behaviorNode.setLink(key, linkedNode);
           } else if (isJsonPathJSON(key, value)) {
             const path = parseJSONPath(value.value);
             if (path) {
               const node = context.nodes[path.index];
               if (!node) throw new Error("Invalid behavior node reference");
-              behaviorNode.parameters[key] = { isJsonPath: true, property: path.property };
+
+              behaviorNode.setParameters({
+                ...behaviorNode.getParameters(),
+                [key]: { isJsonPath: true, property: path.property },
+              });
+
               behaviorNode.setNode(key, node);
             }
           } else {
-            behaviorNode.parameters[key] = value;
+            behaviorNode.setParameters({
+              ...behaviorNode.getParameters(),
+              [key]: value,
+            });
           }
         });
       }
@@ -154,16 +166,18 @@ export class BehaviorExtension extends Extension {
     const behaviorNodes = this.listBehaviorNodes();
     const behaviorNodeDefs: BehaviorNodeDef[] = behaviorNodes.map((behaviorNode) => {
       const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
-      return { type: behaviorNode.type, name: behaviorNode.getName(), extras };
+      return { type: behaviorNode.getType(), name: behaviorNode.getName(), extras };
     });
 
     behaviorNodeDefs.forEach((behaviorNodeDef, i) => {
       const behaviorNode = behaviorNodes[i];
       if (!behaviorNode) throw new Error("Invalid behavior node reference");
 
-      if (behaviorNode.configuration) {
-        if (isVariableConfig(behaviorNode.configuration)) {
-          const variable = behaviorNode.variable;
+      const config = behaviorNode.getConfiguration();
+
+      if (config) {
+        if (isVariableConfig(config)) {
+          const variable = behaviorNode.getVariable();
           if (!variable) throw new Error("Invalid variable reference");
 
           const variableIndex = variables.indexOf(variable);
@@ -171,12 +185,14 @@ export class BehaviorExtension extends Extension {
 
           behaviorNodeDef.configuration = { variableId: variableIndex };
         } else {
-          behaviorNodeDef.configuration = behaviorNode.configuration;
+          behaviorNodeDef.configuration = config;
         }
       }
 
-      if (behaviorNode.parameters) {
-        Object.entries(behaviorNode.parameters).forEach(([key, value]) => {
+      const params = behaviorNode.getParameters();
+
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
           if (!behaviorNodeDef.parameters) behaviorNodeDef.parameters = {};
 
           if (isLink(value)) {
@@ -250,7 +266,7 @@ export class BehaviorExtension extends Extension {
       return {
         id: String(i),
         label: behaviorNode.getName(),
-        type: behaviorNode.type,
+        type: behaviorNode.getType(),
       };
     });
 
@@ -274,9 +290,11 @@ export class BehaviorExtension extends Extension {
         });
       }
 
-      if (behaviorNode.configuration) {
-        if (isVariableConfig(behaviorNode.configuration)) {
-          const variable = behaviorNode.variable;
+      const config = behaviorNode.getConfiguration();
+
+      if (config) {
+        if (isVariableConfig(config)) {
+          const variable = behaviorNode.getVariable();
           if (!variable) throw new Error("Invalid variable reference");
 
           const variableIndex = variables.indexOf(variable);
@@ -284,12 +302,14 @@ export class BehaviorExtension extends Extension {
 
           node.configuration = { variableId: variableIndex };
         } else {
-          node.configuration = behaviorNode.configuration;
+          node.configuration = config;
         }
       }
 
-      if (behaviorNode.parameters) {
-        Object.entries(behaviorNode.parameters).forEach(([key, value]) => {
+      const params = behaviorNode.getParameters();
+
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
           if (!node.parameters) node.parameters = {};
 
           if (isLink(value)) {

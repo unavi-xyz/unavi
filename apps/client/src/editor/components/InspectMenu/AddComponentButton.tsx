@@ -25,7 +25,7 @@ export type ComponentType = (typeof COMPONENT_TYPE)[keyof typeof COMPONENT_TYPE]
 interface Props {
   availableComponents: ComponentType[];
   node: Node;
-  extras: NodeExtras | null;
+  extras?: NodeExtras;
 }
 
 export default function AddComponentButton({ availableComponents, node, extras }: Props) {
@@ -82,7 +82,7 @@ export default function AddComponentButton({ availableComponents, node, extras }
                   if (!engine) return;
 
                   const collider = engine.scene.extensions.collider.createCollider();
-                  collider.type = "trimesh";
+                  collider.setType("trimesh");
 
                   node.setExtension(ColliderExtension.EXTENSION_NAME, collider);
                 }}
@@ -116,7 +116,7 @@ export default function AddComponentButton({ availableComponents, node, extras }
                   if (!engine) return;
 
                   const spawnPoint = engine.scene.extensions.spawn.createSpawnPoint();
-                  spawnPoint.title = SPAWN_TITLE.Default;
+                  spawnPoint.setTitle(SPAWN_TITLE.Default);
                   node.setExtension("OMI_spawn_point", spawnPoint);
                 }}
               >

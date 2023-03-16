@@ -1,6 +1,7 @@
 import { useNode } from "../../hooks/useNode";
-import { useNodeAttribute } from "../../hooks/useNodeAttribute";
+import { useNodeExtras } from "../../hooks/useNodeExtras";
 import { useSpawn } from "../../hooks/useSpawn";
+import { useSubscribe } from "../../hooks/useSubscribe";
 import { useEditorStore } from "../../store";
 import AddComponentButton, { COMPONENT_TYPE, ComponentType } from "./AddComponentButton";
 import MeshComponent from "./mesh/MeshComponent";
@@ -13,17 +14,17 @@ export default function InspectMenu() {
   const isPlaying = useEditorStore((state) => state.isPlaying);
   const selectedId = useEditorStore((state) => state.selectedId);
   const node = useNode(selectedId);
-  const name = useNodeAttribute(selectedId, "name");
-  const meshId = useNodeAttribute(selectedId, "mesh");
-  const extensions = useNodeAttribute(selectedId, "extensions");
-  const extras = useNodeAttribute(selectedId, "extras");
+  const name = useSubscribe(node, "Name");
+  const mesh = useSubscribe(node, "Mesh");
+  const extensions = useSubscribe(node, "Extensions") as any;
+  const extras = useNodeExtras(node);
   const spawn = useSpawn();
 
   if (!node || !selectedId) return null;
 
   const availableComponents: ComponentType[] = [COMPONENT_TYPE.Script];
 
-  if (!meshId) availableComponents.push(COMPONENT_TYPE.Mesh);
+  if (!mesh) availableComponents.push(COMPONENT_TYPE.Mesh);
   if (!extensions?.OMI_collider) availableComponents.push(COMPONENT_TYPE.Physics);
   if (!extensions?.OMI_spawn_point && !spawn) availableComponents.push(COMPONENT_TYPE.SpawnPoint);
 
@@ -42,14 +43,14 @@ export default function InspectMenu() {
       </div>
 
       <div className="space-y-4 px-1">
-        <TransformComponent nodeId={selectedId} />
+        <TransformComponent node={node} />
 
-        {meshId && <MeshComponent meshId={meshId} />}
-        {extensions?.OMI_collider && <PhysicsComponent nodeId={selectedId} />}
-        {extensions?.OMI_spawn_point && <SpawnPointComponent nodeId={selectedId} />}
+        {mesh && <MeshComponent mesh={mesh} />}
+        {extensions?.OMI_collider && <PhysicsComponent node={node} />}
+        {extensions?.OMI_spawn_point && <SpawnPointComponent node={node} />}
 
         {extras?.scripts?.map(({ id }) => {
-          return <ScriptComponent key={id} nodeId={selectedId} scriptId={id} />;
+          return <ScriptComponent key={id} node={node} scriptId={id} />;
         })}
 
         {availableComponents.length > 0 && (

@@ -45,11 +45,11 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     });
   }
 
-  get variable() {
+  getVariable() {
     return this.getRef("variable");
   }
 
-  set variable(variable: Variable | null) {
+  setVariable(variable: Variable | null) {
     this.setRef("variable", variable);
   }
 
@@ -69,11 +69,11 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     this.setRefMap("nodes", nodeId, node);
   }
 
-  get configuration() {
+  getConfiguration() {
     return this.get("configuration");
   }
 
-  set configuration(configuration: BehaviorNodeConfiguration | null) {
+  setConfiguration(configuration: BehaviorNodeConfiguration | null) {
     this.set("configuration", configuration);
   }
 
@@ -89,19 +89,19 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     this.setRefMap("flow", key, behaviorNode);
   }
 
-  get parameters() {
+  getParameters() {
     return this.get("parameters");
   }
 
-  set parameters(parameters: BehaviorNodeParameters | null) {
+  setParameters(parameters: BehaviorNodeParameters | null) {
     this.set("parameters", parameters);
   }
 
-  get type() {
+  getType() {
     return this.get("type");
   }
 
-  set type(type: string) {
+  setType(type: string) {
     this.set("type", type);
   }
 }

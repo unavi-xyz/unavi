@@ -39,13 +39,32 @@ export default function EditorNavbar() {
   const isPublished = Boolean(project?.Publication?.spaceId);
 
   async function handleBack() {
+    // Exit play mode
+    const { stopPlaying } = useEditorStore.getState();
+    await stopPlaying();
+
     await save();
     router.push(`/project/${id}`);
   }
 
-  function handleOpenPublish() {
+  async function handleSave() {
+    // Exit play mode
+    const { stopPlaying } = useEditorStore.getState();
+    await stopPlaying();
+
+    await save();
+  }
+
+  async function handleOpenPublish() {
     if (!sceneLoaded) return;
+
+    // Exit play mode
+    const { stopPlaying } = useEditorStore.getState();
+    await stopPlaying();
+
+    // Start saving image
     saveImage();
+
     setOpenPublishDialog(true);
   }
 
@@ -83,7 +102,7 @@ export default function EditorNavbar() {
                 <div className="text-sm text-neutral-500">Saving...</div>
               ) : sceneLoaded ? (
                 <button
-                  onClick={save}
+                  onClick={handleSave}
                   className={
                     "rounded-md px-2 py-0.5 text-sm text-neutral-500 opacity-0 transition hover:bg-neutral-200 hover:text-neutral-900 focus:bg-neutral-200 focus:text-neutral-900 focus:opacity-100 active:bg-neutral-200 group-hover:opacity-100"
                   }

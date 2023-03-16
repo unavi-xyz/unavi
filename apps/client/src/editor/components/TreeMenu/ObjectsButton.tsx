@@ -8,13 +8,22 @@ import ObjectsMenu from "./ObjectsMenu";
 
 export default function ObjectsButton() {
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
 
   const [open, setOpen] = useState(false);
 
+  const disabled = !sceneLoaded || isPlaying;
+
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu
+      open={open}
+      onOpenChange={(open) => {
+        if (open && disabled) return;
+        setOpen(open);
+      }}
+    >
       <DropdownTrigger asChild>
-        <IconButton disabled={!sceneLoaded}>
+        <IconButton disabled={disabled}>
           <HiOutlineCube className="text-2xl" />
         </IconButton>
       </DropdownTrigger>

@@ -15,7 +15,7 @@ export default function PlayButton() {
     if (!engine || !sceneLoaded) return;
 
     // Export scene
-    useEditorStore.setState({ sceneLoaded: false });
+    useEditorStore.setState({ sceneLoaded: false, selectedId: null });
     const glb = await engine.scene.export();
     setScene(glb);
     useEditorStore.setState({ sceneLoaded: true });

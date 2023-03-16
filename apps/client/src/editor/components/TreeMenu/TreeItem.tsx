@@ -19,6 +19,7 @@ export default function TreeItem({ id }: Props) {
   const selectedId = useEditorStore((state) => state.selectedId);
   const openIds = useEditorStore((state) => state.openIds);
   const treeIds = useEditorStore((state) => state.treeIds);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
 
   const depth = useMemo(() => {
     const getDepth = (id: string): number => {
@@ -52,10 +53,14 @@ export default function TreeItem({ id }: Props) {
     <div className="relative select-none">
       <div
         style={{ paddingLeft: `${depth + 1}rem` }}
-        className={`flex items-center space-x-1 text-sm text-neutral-800 active:opacity-80 ${
+        className={`flex items-center space-x-1 text-sm text-neutral-800 ${
+          isPlaying ? "" : "active:opacity-80"
+        } ${
           isSelected ? "bg-neutral-200 text-black hover:bg-neutral-300" : "hover:bg-neutral-200"
         }`}
         onMouseDown={(e) => {
+          if (isPlaying) return;
+
           e.stopPropagation();
           useEditorStore.setState({ selectedId: id });
 
@@ -65,6 +70,8 @@ export default function TreeItem({ id }: Props) {
           document.body.style.cursor = "grabbing";
         }}
         onMouseUp={(e) => {
+          if (isPlaying) return;
+
           useEditorStore.setState({ selectedId: id });
 
           if (
@@ -124,7 +131,13 @@ export default function TreeItem({ id }: Props) {
           style={{ paddingLeft: `${depth + 2}rem` }}
           className="absolute left-0 -top-0.5 h-2 w-full opacity-0 hover:opacity-100"
           onMouseUp={() => {
-            if (!engine || !draggingId || draggingId === id || isAncestor(draggingId, id, engine))
+            if (
+              !engine ||
+              !draggingId ||
+              draggingId === id ||
+              isAncestor(draggingId, id, engine) ||
+              isPlaying
+            )
               return;
 
             const draggedNode = engine.scene.node.store.get(draggingId);

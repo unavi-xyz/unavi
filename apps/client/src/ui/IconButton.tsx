@@ -16,8 +16,10 @@ const IconButton = React.forwardRef<HTMLButtonElement, Props>(
       <button
         ref={ref}
         disabled={disabled}
-        className={`flex aspect-square h-full items-center justify-center text-2xl transition active:opacity-80 ${cursorClass} ${roundedClass} ${
-          disabled ? "cursor-not-allowed" : selectedClass
+        className={`flex aspect-square h-full items-center justify-center text-2xl transition ${cursorClass} ${roundedClass} ${
+          disabled
+            ? "cursor-not-allowed hover:bg-neutral-100"
+            : "active:opacity-80" && selectedClass
         }`}
         {...rest}
       >

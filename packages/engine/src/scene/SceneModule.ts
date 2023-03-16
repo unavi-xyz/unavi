@@ -310,62 +310,6 @@ export class SceneModule extends Scene {
 
     this.mesh.processChanges().forEach((mesh) => {
       this.#onMeshCreate(mesh);
-
-      subscribe(mesh, "Extras", (extras: MeshExtras) => {
-        if (!extras.customMesh) return;
-
-        // Dispose primitives if custom mesh is used
-        mesh.listPrimitives().forEach((primitive) => {
-          // Dispose accessors if they are not used by other primitives
-          primitive.listAttributes().forEach((accessor) => {
-            if (accessor.listParents().length === 1) accessor.dispose();
-          });
-
-          const indices = primitive.getIndices();
-          if (indices && indices.listParents().length === 1) indices.dispose();
-
-          primitive.dispose();
-        });
-
-        // Create acessors
-        const { positions, normals, indices } = getCustomMeshData(extras.customMesh);
-
-        const { id: positionsId, object: position } = this.accessor.create({
-          array: new Float32Array(positions),
-          type: "VEC3",
-          componentType: 5126,
-        });
-
-        const { id: normalsId, object: normal } = this.accessor.create({
-          array: new Float32Array(normals),
-          type: "VEC3",
-          componentType: 5126,
-        });
-
-        const { id: indicesId, object: index } = this.accessor.create({
-          array: new Uint16Array(indices),
-          type: "SCALAR",
-          componentType: 5121,
-        });
-
-        // Create new primitive
-        const { object: primitive } = this.primitive.create({
-          attributes: { POSITION: positionsId, NORMAL: normalsId },
-          indices: indicesId,
-        });
-
-        // Add to mesh
-        mesh.addPrimitive(primitive);
-
-        return () => {
-          // Dispose primitive
-          mesh.removePrimitive(primitive);
-          primitive.dispose();
-          position.dispose();
-          normal.dispose();
-          index.dispose();
-        };
-      });
     });
 
     // Create nodes, then skins, then send node json
@@ -520,6 +464,63 @@ export class SceneModule extends Scene {
 
     mesh.addEventListener("dispose", () => {
       this.#publish({ subject: "dispose_mesh", data: id });
+    });
+
+    // Create custom mesh
+    subscribe(mesh, "Extras", (extras: MeshExtras) => {
+      if (!extras.customMesh) return;
+
+      // Dispose primitives if custom mesh is used
+      mesh.listPrimitives().forEach((primitive) => {
+        // Dispose accessors if they are not used by other primitives
+        primitive.listAttributes().forEach((accessor) => {
+          if (accessor.listParents().length === 1) accessor.dispose();
+        });
+
+        const indices = primitive.getIndices();
+        if (indices && indices.listParents().length === 1) indices.dispose();
+
+        primitive.dispose();
+      });
+
+      // Create acessors
+      const { positions, normals, indices } = getCustomMeshData(extras.customMesh);
+
+      const { id: positionsId, object: position } = this.accessor.create({
+        array: new Float32Array(positions),
+        type: "VEC3",
+        componentType: 5126,
+      });
+
+      const { id: normalsId, object: normal } = this.accessor.create({
+        array: new Float32Array(normals),
+        type: "VEC3",
+        componentType: 5126,
+      });
+
+      const { id: indicesId, object: index } = this.accessor.create({
+        array: new Uint16Array(indices),
+        type: "SCALAR",
+        componentType: 5121,
+      });
+
+      // Create new primitive
+      const { object: primitive } = this.primitive.create({
+        attributes: { POSITION: positionsId, NORMAL: normalsId },
+        indices: indicesId,
+      });
+
+      // Add to mesh
+      mesh.addPrimitive(primitive);
+
+      return () => {
+        // Dispose primitive
+        mesh.removePrimitive(primitive);
+        primitive.dispose();
+        position.dispose();
+        normal.dispose();
+        index.dispose();
+      };
     });
   }
 

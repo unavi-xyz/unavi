@@ -1,3 +1,5 @@
+import { EXTENSION_NAME } from "engine";
+
 import { useNode } from "../../hooks/useNode";
 import { useNodeExtras } from "../../hooks/useNodeExtras";
 import { useSpawn } from "../../hooks/useSpawn";
@@ -16,7 +18,7 @@ export default function InspectMenu() {
   const node = useNode(selectedId);
   const name = useSubscribe(node, "Name");
   const mesh = useSubscribe(node, "Mesh");
-  const extensions = useSubscribe(node, "Extensions") as any;
+  const extensions = useSubscribe(node, "Extensions") ?? [];
   const extras = useNodeExtras(node);
   const spawn = useSpawn();
 
@@ -24,9 +26,12 @@ export default function InspectMenu() {
 
   const availableComponents: ComponentType[] = [COMPONENT_TYPE.Script];
 
+  const hasCollider = extensions.find((ext) => ext.extensionName === EXTENSION_NAME.Collider);
+  const hasSpawnPoint = extensions.find((ext) => ext.extensionName === EXTENSION_NAME.SpawnPoint);
+
   if (!mesh) availableComponents.push(COMPONENT_TYPE.Mesh);
-  if (!extensions?.OMI_collider) availableComponents.push(COMPONENT_TYPE.Physics);
-  if (!extensions?.OMI_spawn_point && !spawn) availableComponents.push(COMPONENT_TYPE.SpawnPoint);
+  if (!hasCollider) availableComponents.push(COMPONENT_TYPE.Physics);
+  if (!spawn) availableComponents.push(COMPONENT_TYPE.SpawnPoint);
 
   return (
     <div className="pr-2 pb-4">
@@ -46,8 +51,8 @@ export default function InspectMenu() {
         <TransformComponent node={node} />
 
         {mesh && <MeshComponent mesh={mesh} />}
-        {extensions?.OMI_collider && <PhysicsComponent node={node} />}
-        {extensions?.OMI_spawn_point && <SpawnPointComponent node={node} />}
+        {hasCollider && <PhysicsComponent node={node} />}
+        {hasSpawnPoint && <SpawnPointComponent node={node} />}
 
         {extras?.scripts?.map(({ id }) => {
           return <ScriptComponent key={id} node={node} scriptId={id} />;

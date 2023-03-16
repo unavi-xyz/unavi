@@ -95,8 +95,7 @@ export class Accessors extends Attribute<Accessor, AccessorJSON> {
     const buffer = accessor.getBuffer();
     if (!buffer) accessor.setBuffer(this.#buffer.create().object);
 
-    const bufferId = buffer ? this.#buffer.getId(buffer) : null;
-    if (bufferId === undefined) throw new Error("Buffer not found");
+    const bufferId = buffer ? this.#buffer.getId(buffer) ?? null : null;
 
     return {
       array: accessor.getArray(),

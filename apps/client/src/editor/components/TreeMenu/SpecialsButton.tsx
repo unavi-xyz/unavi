@@ -17,9 +17,9 @@ export default function SpecialsButton() {
   return (
     <DropdownMenu
       open={open}
-      onOpenChange={(open) => {
-        if (open && disabled) return;
-        setOpen(open);
+      onOpenChange={(value) => {
+        if (value && disabled) return;
+        setOpen(value);
       }}
     >
       <DropdownTrigger asChild>

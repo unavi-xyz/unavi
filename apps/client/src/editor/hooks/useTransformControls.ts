@@ -24,9 +24,11 @@ export function useTransformControls() {
   useEffect(() => {
     if (!engine) return;
 
+    const { isPlaying } = useEditorStore.getState();
+
     engine.render.send({
       subject: "set_transform_controls_target",
-      data: { nodeId: selectedId },
+      data: { nodeId: selectedId, attach: !isPlaying },
     });
   }, [engine, selectedId]);
 

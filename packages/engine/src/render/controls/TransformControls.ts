@@ -61,21 +61,24 @@ export class TransformControls {
     switch (subject) {
       case "set_transform_controls_target": {
         if (data.nodeId === null) {
+          // Detach if null
           this.#transformControls.detach();
         } else {
           const object = this.#renderThread.renderScene.builders.node.getObject(data.nodeId);
-          if (object) this.#transformControls.attach(object);
-        }
 
-        if (this.#renderThread.outlinePass) {
-          const selectedObjects: Object3D[] = [];
+          if (object) {
+            // Attach controls
+            if (data.attach) this.#transformControls.attach(object);
 
-          if (this.#transformControls.object) {
-            selectedObjects.push(this.#transformControls.object);
+            // Add outline pass
+            if (this.#renderThread.outlinePass) {
+              const selectedObjects: Object3D[] = [];
+              selectedObjects.push(object);
+              this.#renderThread.outlinePass.selectedObjects = selectedObjects;
+            }
           }
-
-          this.#renderThread.outlinePass.selectedObjects = selectedObjects;
         }
+
         break;
       }
 
@@ -101,17 +104,6 @@ export class TransformControls {
         this.#target.dispatchEvent(pointerUpEvent);
         break;
       }
-
-      // case "remove_node": {
-      //   const attachedObject = this.#transformControls.object;
-      //   if (attachedObject) {
-      //     const id = this.#sceneLoader.findId(attachedObject);
-      //     if (id === undefined) throw new Error("Object id not found");
-      //     // Detach if attached object is removed
-      //     if (id === data.nodeId) this.#transformControls.detach();
-      //   }
-      //   break;
-      // }
     }
   }
 

@@ -15,7 +15,7 @@ export default function PlayButton() {
     if (!engine || !sceneLoaded) return;
 
     // Export scene
-    useEditorStore.setState({ sceneLoaded: false, selectedId: null });
+    useEditorStore.setState({ sceneLoaded: false });
     const glb = await engine.scene.export();
     setScene(glb);
     useEditorStore.setState({ sceneLoaded: true });
@@ -41,7 +41,7 @@ export default function PlayButton() {
 
     // Reset scene
     if (scene) {
-      useEditorStore.setState({ sceneLoaded: false });
+      useEditorStore.setState({ sceneLoaded: false, selectedId: null });
       engine.scene.clear();
       await engine.scene.addBinary(scene);
       setScene(undefined);

@@ -59,19 +59,15 @@ export default function TreeItem({ id }: Props) {
           isSelected ? "bg-neutral-200 text-black hover:bg-neutral-300" : "hover:bg-neutral-200"
         }`}
         onMouseDown={(e) => {
-          if (isPlaying) return;
-
           e.stopPropagation();
           useEditorStore.setState({ selectedId: id });
 
-          if (e.button !== 0) return;
+          if (e.button !== 0 || isPlaying) return;
 
           useEditorStore.setState({ draggingId: id });
           document.body.style.cursor = "grabbing";
         }}
         onMouseUp={(e) => {
-          if (isPlaying) return;
-
           useEditorStore.setState({ selectedId: id });
 
           if (
@@ -79,7 +75,8 @@ export default function TreeItem({ id }: Props) {
             !engine ||
             !draggingId ||
             draggingId === id ||
-            isAncestor(draggingId, id, engine)
+            isAncestor(draggingId, id, engine) ||
+            isPlaying
           )
             return;
 

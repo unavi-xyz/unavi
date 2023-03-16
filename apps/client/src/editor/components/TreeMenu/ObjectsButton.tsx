@@ -17,9 +17,9 @@ export default function ObjectsButton() {
   return (
     <DropdownMenu
       open={open}
-      onOpenChange={(open) => {
-        if (open && disabled) return;
-        setOpen(open);
+      onOpenChange={(value) => {
+        if (value && disabled) return;
+        setOpen(value);
       }}
     >
       <DropdownTrigger asChild>

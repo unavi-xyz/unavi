@@ -110,6 +110,8 @@ export class SceneModule extends Scene {
         }
       });
 
+    if (log) console.info("Exporting:", await io.writeJSON(this.doc));
+
     let exportedDoc = this.doc;
 
     if (optimize) {
@@ -126,12 +128,14 @@ export class SceneModule extends Scene {
         });
 
         await exportedDoc.transform(draco());
+
+        // Sometimes writing the compressed model fails on the first try, so we try here
+        // I don't know why this happens
+        return await io.writeBinary(exportedDoc);
       } catch (err) {
         console.warn("Failed to compress model", err);
       }
     }
-
-    if (log) console.info("Exporting:", await io.writeJSON(exportedDoc));
 
     return await io.writeBinary(exportedDoc);
   }

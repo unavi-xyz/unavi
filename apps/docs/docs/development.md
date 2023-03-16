@@ -25,44 +25,29 @@ git clone https://github.com/wired-labs/wired.git
 cd wired
 ```
 
-### Step 3 - Update environment variables
+### Step 3 - Install dependencies
+
+```bash
+yarn install
+```
+
+### Step 4 - Update environment variables
 
 :::warning
 
 Keep your secrets safe, do not commit them to the repository. You can copy the `.env` file to `.env.local` and update the variables there.
-
-:::
 
 ```bash
 # Create .env.local
 cp apps/client/.env apps/client/.env.local
 ```
 
-When you develop locally, It's recommended to use the default environment variables.
+:::
 
-| Variable                 | Description                                                              |
-| ------------------------ | ------------------------------------------------------------------------ |
-| MYSQL_ROOT_HOST          | Database root for container                                              |
-| MYSQL_DATABASE           | Database name                                                            |
-| MYSQL_USER               | Database username                                                        |
-| MYSQL_PASSWORD           | Database user password                                                   |
-| MYSQL_ROOT_PASSWORD      | Database root user password                                              |
-| NEXT_PUBLIC_CDN_ENDPOINT | CDN endpoint for S3                                                      |
-| NEXT_PUBLIC_DEFAULT_HOST | Host app endpoint                                                        |
-| DATABASE_URL             | Database connection URI                                                  |
-| NEXTAUTH_SECRET          | [NextAuth secret](https://next-auth.js.org/configuration/options#secret) |
-| NEXTAUTH_URL             | Client app endpoint                                                      |
-| S3_ACCESS_KEY_ID         | AWS S3 key ID                                                            |
-| S3_BUCKET                | AWS S3 bucket name                                                       |
-| S3_ENDPOINT              | AWS S3 source endpoint                                                   |
-| S3_REGION                | AWS S3 source region                                                     |
-| S3_SECRET                | AWS S3 secret                                                            |
-| ETH_PROVIDER             | Ethereum rpc http URI                                                    |
+The only environment variable you need to set before running the app is `ETH_PROVIDER`. This is the Ethereum HTTP RPC provider that will be used to connect to the blockchain. You can get one from [Alchemy](https://www.alchemy.com/) or [Infura](https://infura.io/) for free.
 
-### Step 4 - Install dependencies
-
-```bash
-yarn install
+```env title=".env.local"
+ETH_PROVIDER="..." # Your Ethereum RPC provider
 ```
 
 ## 📝 Branch Management

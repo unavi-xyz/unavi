@@ -10,8 +10,6 @@ Read [official Next.js docs](https://nextjs.org/docs/deployment) to handle deplo
 
 :::
 
-Please refer to our [development docs](/development) first. then update [./apps/client/.env.local](/development#step-3---update-environment-variables) for production. please make sure you are not commit them to the repository.
-
 ## Requirements
 
 - Hosting provider (such as [AWS EC2](https://aws.amazon.com/ec2/) or [Vercel](https://vercel.com/))
@@ -20,28 +18,62 @@ Please refer to our [development docs](/development) first. then update [./apps/
 
 ## Hosting
 
-### Step 1 - Update security inbound
+### Step 1 - Expose ports
 
-The wired using webRTC to handle connection, default is 20000~20020 port, you can adjust the env `RTC_MIN_PORT` and `RTC_MAX_PORT`, make sure you have expose the following ports:
+The Wired uses WebRTC on ports 20000-20020 by default, you can adjust this by setting the `RTC_MIN_PORT` and `RTC_MAX_PORT` enviornment variables. Make sure you have the following ports exposed:
 
-- TCP 20000-20010
-- UDP 20000-20010
+- TCP 20000-20020
+- UDP 20000-20020
 
-### Step 2 - Update cors
+### Step 2 - Update CORS
 
-Adjust CORS configuration to allow fetch to object storage from your domain. please refer to [AWS S3 CORS](https://docs.aws.amazon.com/AmazonS3/latest/userguide/add-cors-configuration.html) or [DigitalOcean Spaces CORS](https://docs.digitalocean.com/products/spaces/how-to/configure-cors/).
+Adjust your CORS configuration to allow communication with your S3 provider from your domain (check out [AWS S3 CORS](https://docs.aws.amazon.com/AmazonS3/latest/userguide/add-cors-configuration.html) or [DigitalOcean Spaces CORS](https://docs.digitalocean.com/products/spaces/how-to/configure-cors/)).
 
-### Step 3 - Run database and client app
+### Step 3 - Update environment variables
 
-You can simply run following command to start the wired app:
+:::warning
+
+Keep your secrets safe, do not commit them to the repository. You can copy the `.env` file to `.env.local` and update the variables there.
+
+```bash
+# Create .env.local
+cp apps/client/.env apps/client/.env.local
+```
+
+:::
+
+The following environment variables need to be set for the client:
+
+| Variable                 | Description                                                              |
+| ------------------------ | ------------------------------------------------------------------------ |
+| MYSQL_ROOT_HOST          | Database root for container                                              |
+| MYSQL_DATABASE           | Database name                                                            |
+| MYSQL_USER               | Database username                                                        |
+| MYSQL_PASSWORD           | Database user password                                                   |
+| MYSQL_ROOT_PASSWORD      | Database root user password                                              |
+| NEXT_PUBLIC_CDN_ENDPOINT | CDN endpoint for S3                                                      |
+| NEXT_PUBLIC_DEFAULT_HOST | Host app endpoint                                                        |
+| DATABASE_URL             | Database connection URI                                                  |
+| NEXTAUTH_SECRET          | [NextAuth secret](https://next-auth.js.org/configuration/options#secret) |
+| NEXTAUTH_URL             | Client app endpoint                                                      |
+| S3_ACCESS_KEY_ID         | AWS S3 key ID                                                            |
+| S3_BUCKET                | AWS S3 bucket name                                                       |
+| S3_ENDPOINT              | AWS S3 source endpoint                                                   |
+| S3_REGION                | AWS S3 source region                                                     |
+| S3_SECRET                | AWS S3 secret                                                            |
+| ETH_PROVIDER             | Ethereum rpc http URI                                                    |
+
+### Step 4 - Run database and client
+
+Run following command to start the apps in production mode:
 
 ```bash
 yarn docker:prod
 ```
 
-### Step 4 - Run host app
+### Step 5 - Run host
 
-Run following script to start the host app, please make sure you have update the `MEDIASOUP_ANNOUNCED_IP` and `SSL_CERT` and `SSL_KEY` path:
+Run following script to start the host. Make sure to update `MEDIASOUP_ANNOUNCED_IP`, `SSL_CERT`, and `SSL_KEY`:
 
 ```bash
 # /home/deploy.sh
@@ -76,11 +108,11 @@ docker run -d --name host \
   ghcr.io/wired-labs/host
 ```
 
-### Step 5 - Proxy pass
+### Step 6 - Proxy pass
 
-Now, you have client app listen on port `3000` and host app listen on port `4000`, you can use nginx to proxy pass to the app.
+Currently the client is listening on port `3000`, and the host on port `4000`. You can use nginx to proxy pass to the apps.
 
-listen path `NEXTAUTH_URL` then pass to your client app, and listen `NEXT_PUBLIC_DEFAULT_HOST` then pass to your host app.
+Listen path `NEXTAUTH_URL` then pass to your client, and listen `NEXT_PUBLIC_DEFAULT_HOST` then pass to your host.
 
 :::info
 If you are facing any issues, please join our [Discord](https://discord.gg/cazUfCCgHJ) to get help.

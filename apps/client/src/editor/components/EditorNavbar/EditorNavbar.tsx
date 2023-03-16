@@ -2,8 +2,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import useSWR from "swr";
-import { useSigner } from "wagmi";
 
+import { useSession } from "../../../client/auth/useSession";
 import SignInButton from "../../../home/SignInButton";
 import { fetcher } from "../../../play/utils/fetcher";
 import { Project } from "../../../server/helpers/fetchProject";
@@ -28,10 +28,10 @@ export default function EditorNavbar() {
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
   const { save, saveImage } = useSave();
-  const { data: signer } = useSigner();
+  const { status } = useSession();
 
   const { data: project } = useSWR<Project | null>(
-    () => (id ? `/api/projects/${id}` : null),
+    () => (status === "authenticated" && id ? `/api/projects/${id}` : null),
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
@@ -70,11 +70,13 @@ export default function EditorNavbar() {
           </button>
 
           <div className="flex w-96 items-center">
-            <AutoGrowInput
-              type="text"
-              value={name}
-              onChange={(e) => useEditorStore.setState({ name: e.target.value })}
-            />
+            {status === "authenticated" ? (
+              <AutoGrowInput
+                type="text"
+                value={name}
+                onChange={(e) => useEditorStore.setState({ name: e.target.value })}
+              />
+            ) : null}
 
             <div className="flex items-center pt-0.5 pl-2">
               {isSaving ? (
@@ -98,7 +100,7 @@ export default function EditorNavbar() {
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <PlayButton />
           <VisualsButton />
-          {signer ? (
+          {status === "authenticated" ? (
             <Button disabled={!sceneLoaded} onClick={handleOpenPublish}>
               Publish
             </Button>

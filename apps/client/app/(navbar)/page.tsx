@@ -63,14 +63,17 @@ export default function Home() {
                   src={Screenshot1}
                   alt="Screenshot of the Wired"
                   priority
+                  sizes="(min-width: 1024px) 40vw, 75vw"
                   className="rounded-3xl"
                 />
               </div>
+
               <div className="-mt-20 pl-36 lg:-mt-28">
                 <Image
                   src={Screenshot2}
                   alt="Screenshot of the Wired"
                   priority
+                  sizes="(min-width: 1024px) 40vw, 75vw"
                   className="rounded-3xl"
                 />
               </div>
@@ -111,7 +114,7 @@ export default function Home() {
                   src={Screenshot3}
                   alt="Screenshot of the Wired"
                   fill
-                  sizes="728"
+                  sizes="(min-width: 1024px) 50vw, 100vw"
                   className="rounded-3xl object-cover"
                 />
               </div>
@@ -149,7 +152,7 @@ export default function Home() {
                   src={Screenshot4}
                   alt="Screenshot of the Wired"
                   fill
-                  sizes="728"
+                  sizes="(min-width: 1024px) 50vw, 100vw"
                   className="rounded-3xl object-cover"
                 />
               </div>

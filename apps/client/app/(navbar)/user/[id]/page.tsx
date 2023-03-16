@@ -86,75 +86,81 @@ export default async function User({ params: { id } }: { params: Params }) {
     : session.address === profile?.owner;
 
   return (
-    <div className="max-w-content mx-auto">
-      <div className="h-48 w-full bg-neutral-200 md:h-64 xl:rounded-xl">
-        <div className="relative h-full w-full object-cover">
-          {profile?.metadata?.animation_url && (
-            <img
-              src={profile.metadata.animation_url}
-              alt=""
-              className="h-full w-full object-cover xl:rounded-xl"
-              crossOrigin="anonymous"
-            />
-          )}
-        </div>
-      </div>
-
-      <section className="flex justify-center px-4 pb-6 md:px-0">
-        <div className="flex w-full flex-col items-center space-y-2">
-          <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
-            <Avatar
-              src={profile?.metadata?.image}
-              circle
-              uniqueKey={profile?.handle?.full ?? id}
-              size={128}
-            />
+    <>
+      <div className="flex justify-center">
+        <div className="max-w-content">
+          <div className="h-48 w-full bg-neutral-200 md:h-64 xl:rounded-xl">
+            <div className="relative h-full w-full object-cover">
+              {profile?.metadata?.animation_url && (
+                <img
+                  src={profile.metadata.animation_url}
+                  alt=""
+                  className="h-full w-full object-cover xl:rounded-xl"
+                  crossOrigin="anonymous"
+                />
+              )}
+            </div>
           </div>
 
-          <div className="flex w-full flex-col items-center">
-            {profile?.handle ? (
-              <div>
-                <span className="text-2xl font-black">{profile.handle.string}</span>
-                <span className="text-xl font-bold text-neutral-400">
-                  #{profile.handle.id.toString().padStart(4, "0")}
-                </span>
+          <section className="flex justify-center px-4 pb-6 md:px-0">
+            <div className="flex w-full flex-col items-center space-y-2">
+              <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
+                <Avatar
+                  src={profile?.metadata?.image}
+                  circle
+                  uniqueKey={profile?.handle?.full ?? id}
+                  size={128}
+                />
               </div>
-            ) : null}
 
-            <div className="w-full overflow-x-hidden text-ellipsis text-center text-neutral-400">
-              {isAddress ? id : profile?.owner}
-            </div>
-          </div>
+              <div className="flex w-full flex-col items-center">
+                {profile?.handle ? (
+                  <div>
+                    <span className="text-2xl font-black">{profile.handle.string}</span>
+                    <span className="text-xl font-bold text-neutral-400">
+                      #{profile.handle.id.toString().padStart(4, "0")}
+                    </span>
+                  </div>
+                ) : null}
 
-          {profile?.metadata?.description && (
-            <div className="w-full whitespace-pre-line text-center">
-              {profile.metadata.description}
-            </div>
-          )}
+                <div className="w-full overflow-x-hidden text-ellipsis text-center text-neutral-400">
+                  {isAddress ? id : profile?.owner}
+                </div>
+              </div>
 
-          {isUser && (
-            <div className="flex w-full justify-center space-x-2">
-              <Link
-                href="/settings"
-                className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
-              >
-                Edit profile
-              </Link>
+              {profile?.metadata?.description && (
+                <div className="w-full whitespace-pre-line text-center">
+                  {profile.metadata.description}
+                </div>
+              )}
+
+              {isUser && (
+                <div className="flex w-full justify-center space-x-2">
+                  <Link
+                    href="/settings"
+                    className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
+                  >
+                    Edit profile
+                  </Link>
+                </div>
+              )}
             </div>
-          )}
+          </section>
         </div>
-      </section>
-
-      <div className="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 md:grid-cols-3">
-        <Suspense
-          fallback={Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} loading />
-          ))}
-        >
-          {/* @ts-expect-error Server Component */}
-          <Spaces owner={isAddress ? id : profile.owner} />
-        </Suspense>
       </div>
-    </div>
+
+      <div className="flex justify-center">
+        <div className="max-w-content mx-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Suspense
+            fallback={Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} loading />
+            ))}
+          >
+            {/* @ts-expect-error Server Component */}
+            <Spaces owner={isAddress ? id : profile.owner} />
+          </Suspense>
+        </div>
+      </div>
+    </>
   );
 }

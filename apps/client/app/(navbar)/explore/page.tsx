@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 
 import { fetchLatestSpaces } from "../../../src/server/helpers/fetchLatestSpaces";
+import CardGrid from "../../../src/ui/CardGrid";
 import { metadata as baseMetadata } from "../../layout";
 import Search from "./Search";
 import Spaces from "./Spaces";
@@ -31,9 +32,9 @@ export default async function Explore() {
 
         <Search />
 
-        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <CardGrid>
           <Spaces spaces={spaces} />
-        </div>
+        </CardGrid>
       </div>
     </div>
   );

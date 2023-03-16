@@ -44,7 +44,7 @@ export default async function Project({ params }: Props) {
                     src={project.image}
                     priority
                     fill
-                    sizes="40vw"
+                    sizes="(min-width: 768px) 60vw, 100vw"
                     alt=""
                     className="rounded-2xl object-cover"
                   />
@@ -52,6 +52,7 @@ export default async function Project({ params }: Props) {
                   <img
                     src={project.image}
                     alt=""
+                    sizes="(min-width: 768px) 60vw, 100vw"
                     className="h-full w-full rounded-2xl object-cover"
                     crossOrigin="anonymous"
                   />

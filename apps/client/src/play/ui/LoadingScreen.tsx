@@ -56,13 +56,14 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
                           src={image}
                           priority
                           fill
-                          sizes="30vw"
+                          sizes="(min-width: 768px) 50vw, 100vw"
                           alt=""
                           className="rounded-3xl object-cover"
                         />
                       ) : (
                         <img
                           src={image}
+                          sizes="(min-width: 768px) 50vw, 100vw"
                           alt=""
                           className="h-full w-full rounded-3xl object-cover"
                           crossOrigin="anonymous"

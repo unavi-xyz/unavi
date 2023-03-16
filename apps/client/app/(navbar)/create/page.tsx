@@ -31,10 +31,8 @@ export default function Create() {
           <CreateProjectButton />
         </div>
 
-        <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
-          {/* @ts-expect-error Server Component */}
-          <Projects />
-        </div>
+        {/* @ts-expect-error Server Component */}
+        <Projects />
 
         {/* @ts-expect-error Server Component */}
         <Published />

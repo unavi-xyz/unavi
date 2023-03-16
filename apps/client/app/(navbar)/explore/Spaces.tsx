@@ -18,7 +18,7 @@ export default function Spaces({ spaces }: Props) {
   return (
     <>
       {filteredSpaces.map(({ id, metadata }) => (
-        <SpaceCard key={id} id={id} metadata={metadata} sizes="512" />
+        <SpaceCard key={id} id={id} metadata={metadata} />
       ))}
     </>
   );

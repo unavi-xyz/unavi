@@ -17,7 +17,6 @@ Before starting development, ensure that you have the following tools:
 - [Docker](https://www.docker.com/) installed
 - [Docker compose plugin](https://docs.docker.com/compose/install/) installed
 - Ethereum RPC provider (such as [Alchemy](https://www.alchemy.com/))
-- [AWS S3](https://aws.amazon.com/tw/s3/) or S3-compatible storage (such as [DigitalOcean Spaces](https://www.digitalocean.com/products/spaces))
 
 ### Step 2 - Clone the repository
 
@@ -39,24 +38,26 @@ Keep your secrets safe, do not commit them to the repository. You can copy the `
 cp apps/client/.env apps/client/.env.local
 ```
 
-|         Variable         |                               Description                                |
-| :----------------------: | :----------------------------------------------------------------------: |
-|     MYSQL_ROOT_HOST      |                       Database root for container                        |
-|      MYSQL_DATABASE      |                              Database name                               |
-|        MYSQL_USER        |                            Database username                             |
-|      MYSQL_PASSWORD      |                          Database user password                          |
-|   MYSQL_ROOT_PASSWORD    |                       Database root user password                        |
-| NEXT_PUBLIC_CDN_ENDPOINT |                           CDN endpoint for S3                            |
-| NEXT_PUBLIC_DEFAULT_HOST |                            Host app endpoint                             |
-|       DATABASE_URL       |                         Database connection URI                          |
-|     NEXTAUTH_SECRET      | [NextAuth secret](https://next-auth.js.org/configuration/options#secret) |
-|       NEXTAUTH_URL       |                           Client app endpoint                            |
-|     S3_ACCESS_KEY_ID     |                              AWS S3 key ID                               |
-|        S3_BUCKET         |                            AWS S3 bucket name                            |
-|       S3_ENDPOINT        |                          AWS S3 source endpoint                          |
-|        S3_REGION         |                           AWS S3 source region                           |
-|        S3_SECRET         |                              AWS S3 secret                               |
-|       ETH_PROVIDER       |                          Ethereum rpc http url                           |
+When you develop locally, It's recommended to use the default environment variables.
+
+| Variable                 | Description                                                              |
+| ------------------------ | ------------------------------------------------------------------------ |
+| MYSQL_ROOT_HOST          | Database root for container                                              |
+| MYSQL_DATABASE           | Database name                                                            |
+| MYSQL_USER               | Database username                                                        |
+| MYSQL_PASSWORD           | Database user password                                                   |
+| MYSQL_ROOT_PASSWORD      | Database root user password                                              |
+| NEXT_PUBLIC_CDN_ENDPOINT | CDN endpoint for S3                                                      |
+| NEXT_PUBLIC_DEFAULT_HOST | Host app endpoint                                                        |
+| DATABASE_URL             | Database connection URI                                                  |
+| NEXTAUTH_SECRET          | [NextAuth secret](https://next-auth.js.org/configuration/options#secret) |
+| NEXTAUTH_URL             | Client app endpoint                                                      |
+| S3_ACCESS_KEY_ID         | AWS S3 key ID                                                            |
+| S3_BUCKET                | AWS S3 bucket name                                                       |
+| S3_ENDPOINT              | AWS S3 source endpoint                                                   |
+| S3_REGION                | AWS S3 source region                                                     |
+| S3_SECRET                | AWS S3 secret                                                            |
+| ETH_PROVIDER             | Ethereum rpc http URI                                                    |
 
 ### Step 4 - Install dependencies
 

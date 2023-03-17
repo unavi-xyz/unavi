@@ -59,8 +59,8 @@ export class Player {
     this.controller.enableSnapToGround(0.5);
     this.controller.enableAutostep(PLAYER_HEIGHT / 5, PLAYER_RADIUS / 2, false);
     this.controller.setSlideEnabled(true);
-    this.controller.setMaxSlopeClimbAngle((60 * Math.PI) / 180);
-    this.controller.setMinSlopeSlideAngle((30 * Math.PI) / 180);
+    this.controller.setMaxSlopeClimbAngle((70 * Math.PI) / 180);
+    this.controller.setMinSlopeSlideAngle((50 * Math.PI) / 180);
 
     const colliderDesc = ColliderDesc.capsule(PLAYER_HEIGHT / 2, PLAYER_RADIUS);
     colliderDesc.setCollisionGroups(COLLISION_GROUP.player);

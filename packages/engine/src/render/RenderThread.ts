@@ -41,8 +41,9 @@ const CAMERA_NEAR = 0.05;
 const CAMERA_FAR = 500;
 
 const SHADOW_CASCADES = 2;
-const SHADOW_BIAS = -0.00008;
+const SHADOW_BIAS = -0.00007;
 
+const TOTAL_LIGHT_INTENSITY = 1.2;
 const AMBIENT_LIGHT_INTENSITY = 0.1;
 
 /**
@@ -262,7 +263,7 @@ export class RenderThread {
     this.csm = new CSM({
       maxFar: 40,
       cascades: SHADOW_CASCADES,
-      lightIntensity: (1 - AMBIENT_LIGHT_INTENSITY) / SHADOW_CASCADES,
+      lightIntensity: (TOTAL_LIGHT_INTENSITY - AMBIENT_LIGHT_INTENSITY) / SHADOW_CASCADES,
       lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
       shadowMapSize: 2048,
       camera: this.camera,
@@ -296,6 +297,8 @@ export class RenderThread {
     this.#animationFrame = requestAnimationFrame(() => this.render());
     const delta = this.clock.getDelta();
 
+    if (!this.composer || !this.csm) return;
+
     if (this.controls === "player") this.player.update(delta);
     else this.orbit.update();
 
@@ -314,9 +317,9 @@ export class RenderThread {
 
     this.renderScene.mixer.update(delta);
     this.players.update(delta);
-    this.csm?.update();
+    this.csm.update();
 
-    this.composer?.render();
+    this.composer.render();
   }
 
   toMainThread(message: FromRenderMessage, transfer?: Transferable[]) {

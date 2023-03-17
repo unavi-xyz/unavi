@@ -88,6 +88,9 @@ export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh>
                 // Clone material to avoid modifying the original
                 const clonedMaterial = materialObject.clone();
 
+                // Setup CSM
+                this.scene.csm?.setupMaterial(clonedMaterial);
+
                 if (useDerivativeTangents) clonedMaterial.normalScale.y *= -1;
                 if (useVertexColors) clonedMaterial.vertexColors = true;
                 if (useFlatShading) clonedMaterial.flatShading = true;

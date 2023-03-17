@@ -42,6 +42,10 @@ export function useSpace(id: number, metadata: ERC721Metadata | null) {
         engine.physics.send({ subject: "respawn", data: null });
         engine.behavior.start();
 
+        // Add delay to allow scene to load
+        const mbs = Math.max(Math.round(array.byteLength / 1024 / 1024), 5);
+        await new Promise((resolve) => setTimeout(resolve, mbs * 300));
+
         setSceneLoaded(true);
       } catch (err) {
         console.error(err);

@@ -2,6 +2,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import useSWR from "swr";
+import { useSigner } from "wagmi";
 
 import { useSession } from "../../../client/auth/useSession";
 import SignInButton from "../../../home/SignInButton";
@@ -29,6 +30,7 @@ export default function EditorNavbar() {
 
   const { save, saveImage } = useSave();
   const { status } = useSession();
+  const { data: signer } = useSigner();
 
   const { data: project } = useSWR<Project | null>(
     () => (status === "authenticated" && id ? `/api/projects/${id}` : null),
@@ -119,7 +121,7 @@ export default function EditorNavbar() {
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <PlayButton />
           <VisualsButton />
-          {status === "authenticated" ? (
+          {status === "authenticated" && signer ? (
             <Button disabled={!sceneLoaded} onClick={handleOpenPublish}>
               Publish
             </Button>

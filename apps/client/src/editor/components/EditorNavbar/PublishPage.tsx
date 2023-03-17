@@ -77,7 +77,9 @@ export default function PublishPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (loading || !signer || !id) return;
+    if (loading) return;
+    if (!signer) throw new Error("Signer not found");
+    if (!id) throw new Error("Project ID not found");
 
     const toastId = "publish";
 

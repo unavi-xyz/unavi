@@ -41,7 +41,9 @@ const CAMERA_NEAR = 0.05;
 const CAMERA_FAR = 500;
 
 const SHADOW_CASCADES = 2;
-const SHADOW_BIAS = -0.00002;
+const SHADOW_BIAS = -0.00008;
+
+const AMBIENT_LIGHT_INTENSITY = 0.1;
 
 /**
  * The render thread is responsible for rendering to the canvas.
@@ -101,7 +103,7 @@ export class RenderThread {
     this.scene.add(this.renderScene.root);
     this.scene.add(this.player.group);
     this.scene.add(this.players.group);
-    this.scene.add(new AmbientLight(0xffffff, 0.2));
+    this.scene.add(new AmbientLight(0xffffff, AMBIENT_LIGHT_INTENSITY));
 
     this.debugLines = new LineSegments(
       new BufferGeometry(),
@@ -260,7 +262,7 @@ export class RenderThread {
     this.csm = new CSM({
       maxFar: 40,
       cascades: SHADOW_CASCADES,
-      lightIntensity: 1 / SHADOW_CASCADES,
+      lightIntensity: (1 - AMBIENT_LIGHT_INTENSITY) / SHADOW_CASCADES,
       lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
       shadowMapSize: 2048,
       camera: this.camera,

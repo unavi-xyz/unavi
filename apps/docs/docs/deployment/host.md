@@ -42,7 +42,7 @@ docker run -d --name host \
   -e SSL_KEY \
   -v /home/$SSL_CERT:/app/cert.pem \
   -v /home/$SSL_KEY:/app/key.pem \
-  -p 4000:4000 \
+  -p 443:4000 \
   -p $RTC_MIN_PORT-$RTC_MAX_PORT:$RTC_MIN_PORT-$RTC_MAX_PORT/tcp \
   -p $RTC_MIN_PORT-$RTC_MAX_PORT:$RTC_MIN_PORT-$RTC_MAX_PORT/udp \
   -p $RTC_MIN_PORT-$RTC_MAX_PORT:$RTC_MIN_PORT-$RTC_MAX_PORT/sctp \
@@ -63,8 +63,8 @@ If you want to run the host behind a reverse proxy, there are a few things to co
 
 ### Ports
 
-By default, the host listens to port `4000` for WebSocket and HTTP connections, and ports `20000-20020` for WebRTC connections. Make sure you have the following ports exposed.
+By default, the host listens to port `443` for WebSocket and HTTP connections, and ports `20000-20020` for WebRTC connections. Make sure you have the following ports exposed.
 
-- `4000/tcp`
+- `443/tcp`
 - `20000-20020/tcp`
 - `20000-20020/udp`

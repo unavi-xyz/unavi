@@ -102,7 +102,7 @@ export default async function User({ params: { id } }: { params: Params }) {
             </div>
           </div>
 
-          <section className="flex justify-center px-4 pb-6 md:px-0">
+          <section className="flex justify-center px-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
                 <Avatar
@@ -135,21 +135,19 @@ export default async function User({ params: { id } }: { params: Params }) {
               )}
 
               {isUser && (
-                <div className="flex w-full justify-center space-x-2">
-                  <Link
-                    href="/settings"
-                    className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
-                  >
-                    Edit profile
-                  </Link>
-                </div>
+                <Link
+                  href="/settings"
+                  className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
+                >
+                  Edit profile
+                </Link>
               )}
             </div>
           </section>
         </div>
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center pt-4 pb-8">
         <div className="max-w-content mx-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Suspense
             fallback={Array.from({ length: 3 }).map((_, i) => (

@@ -1,21 +1,18 @@
 import { Vec3, Vec4 } from "engine";
 
-export function eulerToQuaternion(euler: Vec3): Vec4 {
-  const x = euler[0] * 0.5;
-  const y = euler[1] * 0.5;
-  const z = euler[2] * 0.5;
+export function eulerToQuaternion([x, y, z]: Vec3): Vec4 {
+  const c1 = Math.cos(x / 2);
+  const c2 = Math.cos(y / 2);
+  const c3 = Math.cos(z / 2);
 
-  const sx = Math.sin(x);
-  const cx = Math.cos(x);
-  const sy = Math.sin(y);
-  const cy = Math.cos(y);
-  const sz = Math.sin(z);
-  const cz = Math.cos(z);
+  const s1 = Math.sin(x / 2);
+  const s2 = Math.sin(y / 2);
+  const s3 = Math.sin(z / 2);
 
-  const qw = cx * cy * cz + sx * sy * sz;
-  const qx = sx * cy * cz - cx * sy * sz;
-  const qy = cx * sy * cz + sx * cy * sz;
-  const qz = cx * cy * sz - sx * sy * cz;
+  const qx = s1 * c2 * c3 + c1 * s2 * s3;
+  const qy = c1 * s2 * c3 - s1 * c2 * s3;
+  const qz = c1 * c2 * s3 + s1 * s2 * c3;
+  const qw = c1 * c2 * c3 - s1 * s2 * s3;
 
   return [qx, qy, qz, qw];
 }

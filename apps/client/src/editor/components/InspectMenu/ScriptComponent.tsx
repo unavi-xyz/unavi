@@ -1,20 +1,19 @@
+import { Node } from "@gltf-transform/core";
 import { BehaviorNode, BehaviorNodeExtras } from "engine";
 
-import { useNode } from "../../hooks/useNode";
-import { useNodeAttribute } from "../../hooks/useNodeAttribute";
+import { useNodeExtras } from "../../hooks/useNodeExtras";
 import { useEditorStore } from "../../store";
 import TextInput from "../ui/TextInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 
 interface Props {
-  nodeId: string;
+  node: Node;
   scriptId: string;
 }
 
-export default function ScriptComponent({ nodeId, scriptId }: Props) {
-  const node = useNode(nodeId);
-  const extras = useNodeAttribute(nodeId, "extras");
+export default function ScriptComponent({ node, scriptId }: Props) {
+  const extras = useNodeExtras(node);
 
   if (!node || !extras) return null;
 

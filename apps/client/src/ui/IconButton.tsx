@@ -7,7 +7,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const IconButton = React.forwardRef<HTMLButtonElement, Props>(
-  ({ selected, rounded = "small", cursor = "default", children, ...rest }, ref) => {
+  ({ selected, disabled, rounded = "small", cursor = "default", children, ...rest }, ref) => {
     const selectedClass = selected ? "bg-neutral-200 hover:bg-neutral-300" : "hover:bg-neutral-200";
     const roundedClass = rounded === "full" ? "rounded-full" : "rounded-lg";
     const cursorClass = cursor === "pointer" ? "cursor-pointer" : "cursor-default";
@@ -15,7 +15,12 @@ const IconButton = React.forwardRef<HTMLButtonElement, Props>(
     return (
       <button
         ref={ref}
-        className={`flex aspect-square h-full items-center justify-center text-2xl transition active:opacity-80 ${cursorClass} ${roundedClass} ${selectedClass}`}
+        disabled={disabled}
+        className={`flex aspect-square h-full items-center justify-center text-2xl transition ${cursorClass} ${roundedClass} ${
+          disabled
+            ? "cursor-not-allowed hover:bg-neutral-100"
+            : "active:opacity-80" && selectedClass
+        }`}
         {...rest}
       >
         {children}

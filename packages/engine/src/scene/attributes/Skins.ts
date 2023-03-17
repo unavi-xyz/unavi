@@ -81,7 +81,7 @@ export class Skins extends Attribute<Skin, SkinJSON> {
   applyJSON(skin: Skin, json: Partial<SkinJSON>) {
     const { jointIds, inverseBindMatricesId, skeletonId } = json;
 
-    if (jointIds) {
+    if (jointIds !== undefined) {
       skin.listJoints().forEach((joint) => skin.removeJoint(joint));
 
       jointIds.forEach((jointId) => {

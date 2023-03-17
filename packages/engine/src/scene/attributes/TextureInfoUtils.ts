@@ -21,6 +21,20 @@ export class TextureInfoUtils {
     if (json.minFilter) info.setMinFilter(json.minFilter);
     if (json.wrapS) info.setWrapS(json.wrapS);
     if (json.wrapT) info.setWrapT(json.wrapT);
+
+    // Texture transform
+    let transform = info?.getExtension<Transform>("KHR_texture_transform");
+
+    if (!transform && (json.offset || json.rotation || json.scale)) {
+      transform = new Transform(info.getGraph());
+      info.setExtension("KHR_texture_transform", transform);
+    }
+
+    if (transform) {
+      if (json.offset) transform.setOffset(json.offset);
+      if (json.rotation) transform.setRotation(json.rotation);
+      if (json.scale) transform.setScale(json.scale);
+    }
   }
 
   static toJSON(info: TextureInfo): TextureInfoJSON {

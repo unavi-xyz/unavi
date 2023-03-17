@@ -11,8 +11,9 @@
   },
   "dependencies": {
     "@dimforge/rapier3d": "^0.11.1",
-    "@gltf-transform/core": "3.0.4",
-    "@gltf-transform/extensions": "3.0.4",
+    "@gltf-transform/core": "3.1.1",
+    "@gltf-transform/extensions": "3.1.1",
+    "@gltf-transform/functions": "3.1.1",
     "@pixiv/three-vrm": "^1.0.8",
     "@wired-labs/behave-graph-core": "^0.9.19",
     "nanoid": "^4.0.1",

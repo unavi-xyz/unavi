@@ -1,4 +1,5 @@
 import { Node } from "@gltf-transform/core";
+import { subscribe } from "engine";
 import { useEffect, useState } from "react";
 
 import { useEditorStore } from "../store";
@@ -11,21 +12,7 @@ export function useNodes() {
   useEffect(() => {
     if (!engine) return;
     const root = engine.scene.doc.getRoot();
-
-    const initialNodes = root.listNodes();
-    setNodes(initialNodes);
-
-    function onChange(e: any) {
-      if (e.attribute !== "nodes") return;
-      const newNodes = root.listNodes();
-      setNodes(newNodes);
-    }
-
-    root.addEventListener("change", onChange);
-
-    return () => {
-      root.removeEventListener("change", onChange);
-    };
+    return subscribe(root, "Nodes", setNodes);
   }, [engine]);
 
   return nodes;

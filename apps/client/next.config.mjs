@@ -1,18 +1,14 @@
-import createBundleAnalyzer from "@next/bundle-analyzer";
+import createPWA from "@ducanh2912/next-pwa";
 import { withAxiom } from "next-axiom";
-import createPWA from "next-pwa";
-import runtimeCaching from "next-pwa/cache.js";
+import path from "path";
 
 import { env } from "./src/env/server.mjs";
 
-const withBundleAnalyzer = createBundleAnalyzer({
-  enabled: env.BUNDLE_ANALYZE === "true" && env.NODE_ENV === "production",
-});
+const __dirname = path.resolve();
 
 const withPWA = createPWA({
   dest: "public",
   disable: env.NODE_ENV === "development",
-  runtimeCaching,
 });
 
 const securityHeaders = [
@@ -66,7 +62,7 @@ const isolationHeaders = [
  * @constraint {{import('next').NextConfig}}
  */
 function defineNextConfig(config) {
-  const plugins = [withBundleAnalyzer, withAxiom, withPWA];
+  const plugins = [withAxiom, withPWA];
   return plugins.reduce((acc, plugin) => plugin(acc), config);
 }
 
@@ -75,14 +71,20 @@ export default defineNextConfig({
   eslint: {
     ignoreDuringBuilds: true,
   },
-  transpilePackages: ["engine", "contracts", "protocol"],
-  images: {
-    domains: [env.NEXT_PUBLIC_CDN_ENDPOINT, env.NEXT_PUBLIC_IPFS_GATEWAY.split(":")[0]],
-  },
   experimental: {
     appDir: true,
+    outputFileTracingRoot: path.join(__dirname, "../../"),
+    outputFileTracingExcludes: {
+      "**": ["**swc/core**"],
+    },
   },
+  images: {
+    domains: [env.NEXT_PUBLIC_CDN_ENDPOINT],
+  },
+  output: "standalone",
+  productionBrowserSourceMaps: true,
   reactStrictMode: true,
+  transpilePackages: ["engine", "contracts", "protocol"],
   async headers() {
     return [
       {
@@ -109,7 +111,6 @@ export default defineNextConfig({
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
-      syncWebAssembly: true,
     };
     return config;
   },

@@ -1,17 +1,17 @@
+import { Node } from "@gltf-transform/core";
+
 import { useSpawnPoint } from "../../hooks/useExtension";
-import { useExtensionAttribute } from "../../hooks/useExtensionAttribute";
-import { useNode } from "../../hooks/useNode";
+import { useSubscribe } from "../../hooks/useSubscribe";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 
 interface Props {
-  nodeId: string;
+  node: Node;
 }
 
-export default function SpawnPointComponent({ nodeId }: Props) {
-  const node = useNode(nodeId);
+export default function SpawnPointComponent({ node }: Props) {
   const spawnPoint = useSpawnPoint(node);
-  const title = useExtensionAttribute(spawnPoint, "title");
+  const title = useSubscribe(spawnPoint, "Title");
 
   if (!spawnPoint) return null;
 

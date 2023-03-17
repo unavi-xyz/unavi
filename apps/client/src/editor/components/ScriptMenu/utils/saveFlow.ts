@@ -43,8 +43,8 @@ export function saveFlow(
         if (flowIsVariableJSON(value)) {
           const variable = variables[value.variableId];
           if (variable) {
-            behaviorNode.configuration = { isVariable: true };
-            behaviorNode.variable = variable;
+            behaviorNode.setConfiguration({ isVariable: true });
+            behaviorNode.setVariable(variable);
           }
         } else {
           parameters[key] = value;
@@ -52,8 +52,8 @@ export function saveFlow(
       });
 
       behaviorNode.setName(id);
-      behaviorNode.type = type;
-      behaviorNode.parameters = parameters;
+      behaviorNode.setType(type);
+      behaviorNode.setParameters(parameters);
 
       const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
       extras.position = position;
@@ -77,8 +77,10 @@ export function saveFlow(
           const node = engine.scene.doc.getRoot().listNodes()[index];
           if (!node) return;
 
-          if (!behaviorNode.parameters) behaviorNode.parameters = {};
-          behaviorNode.parameters[name] = { isJsonPath: true, property };
+          const parameters = behaviorNode.getParameters() ?? {};
+          parameters[name] = { isJsonPath: true, property };
+          behaviorNode.setParameters(parameters);
+
           behaviorNode.setNode(name, node);
         });
       }
@@ -94,7 +96,7 @@ export function saveFlow(
     const targetNode = behaviorNodes.find((node) => node.getName() === target);
     if (!sourceNode || !targetNode) return;
 
-    const sourceSpec = nodeSpecJSON.find((nodeSpec) => nodeSpec.type === sourceNode.type);
+    const sourceSpec = nodeSpecJSON.find((nodeSpec) => nodeSpec.type === sourceNode.getType());
     if (!sourceSpec) return;
 
     const outputSpec = sourceSpec.outputs.find((output) => output.name === sourceHandle);
@@ -103,8 +105,10 @@ export function saveFlow(
     if (outputSpec.valueType === "flow") {
       sourceNode.setFlow(sourceHandle, targetNode);
     } else {
-      if (!targetNode.parameters) targetNode.parameters = {};
-      targetNode.parameters[targetHandle] = { link: { socket: sourceHandle } };
+      const parameters = targetNode.getParameters() ?? {};
+      parameters[targetHandle] = { link: { socket: sourceHandle } };
+      targetNode.setParameters(parameters);
+
       targetNode.setLink(targetHandle, sourceNode);
     }
   });

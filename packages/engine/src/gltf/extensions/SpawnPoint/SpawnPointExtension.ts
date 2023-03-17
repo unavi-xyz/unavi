@@ -32,7 +32,7 @@ export class SpawnPointExtension extends Extension {
       const spawnPoint = this.createSpawnPoint();
 
       const rootDef = nodeDef.extensions[this.extensionName] as SpawnPointDef;
-      spawnPoint.title = rootDef.title;
+      spawnPoint.setTitle(rootDef.title);
 
       node.setExtension(this.extensionName, spawnPoint);
     });
@@ -59,7 +59,7 @@ export class SpawnPointExtension extends Extension {
 
           nodeDef.extensions = nodeDef.extensions || {};
 
-          const def: SpawnPointDef = { title: spawnPoint.title };
+          const def: SpawnPointDef = { title: spawnPoint.getTitle() };
           nodeDef.extensions[this.extensionName] = def;
         }
       });

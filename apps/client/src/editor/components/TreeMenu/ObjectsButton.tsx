@@ -3,15 +3,27 @@ import { HiOutlineCube } from "react-icons/hi";
 
 import { DropdownContent, DropdownMenu, DropdownTrigger } from "../../../ui/DropdownMenu";
 import IconButton from "../../../ui/IconButton";
+import { useEditorStore } from "../../store";
 import ObjectsMenu from "./ObjectsMenu";
 
 export default function ObjectsButton() {
+  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
+
   const [open, setOpen] = useState(false);
 
+  const disabled = !sceneLoaded || isPlaying;
+
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu
+      open={open}
+      onOpenChange={(value) => {
+        if (value && disabled) return;
+        setOpen(value);
+      }}
+    >
       <DropdownTrigger asChild>
-        <IconButton>
+        <IconButton disabled={disabled}>
           <HiOutlineCube className="text-2xl" />
         </IconButton>
       </DropdownTrigger>

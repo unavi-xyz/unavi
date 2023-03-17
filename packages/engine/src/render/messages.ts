@@ -19,7 +19,7 @@ export type ToRenderMessage =
   | MessageJSON<"set_size", { width: number; height: number }>
   | MessageJSON<"set_skybox", { uri: string | null }>
   | MessageJSON<"set_transform_controls_mode", "translate" | "rotate" | "scale">
-  | MessageJSON<"set_transform_controls_target", { nodeId: string | null }>
+  | MessageJSON<"set_transform_controls_target", { nodeId: string | null; attach: boolean }>
   | MessageJSON<
       "set_user_arrays",
       {

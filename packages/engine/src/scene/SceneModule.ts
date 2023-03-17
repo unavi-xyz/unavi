@@ -9,15 +9,19 @@ import {
   WebIO,
 } from "@gltf-transform/core";
 import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
+import { draco } from "@gltf-transform/functions";
 
 import { Engine } from "../Engine";
 import { BehaviorExtension, Collider, ColliderExtension, SpawnPointExtension } from "../gltf";
 import { extensions } from "../gltf/constants";
 import { PhysicsModule } from "../physics/PhysicsModule";
+import { optimizeDocument } from "../render";
 import { RenderModule } from "../render/RenderModule";
+import { getCustomMeshData } from "../render/scene/utils/getCustomMeshData";
+import { subscribe } from "../utils/subscribe";
 import { AnimationJSON } from "./attributes/Animations";
 import { MaterialJSON } from "./attributes/Materials";
-import { MeshJSON } from "./attributes/Meshes";
+import { MeshExtras, MeshJSON } from "./attributes/Meshes";
 import { NodeJSON } from "./attributes/Nodes";
 import { PrimitiveJSON } from "./attributes/Primitives";
 import { SceneMessage } from "./messages";
@@ -79,7 +83,7 @@ export class SceneModule extends Scene {
     });
   }
 
-  async export(log = false) {
+  async export({ log = false, optimize = false } = {}) {
     const io = await this.#createIO();
 
     // Merge all buffers into one
@@ -107,6 +111,36 @@ export class SceneModule extends Scene {
       });
 
     if (log) console.info("Exporting:", await io.writeJSON(this.doc));
+
+    if (optimize) {
+      // Clone document to avoid modifying the original
+      const optimizedDoc = this.doc.clone();
+
+      // Optimize model
+      await optimizeDocument(optimizedDoc);
+
+      // Compress model
+      try {
+        // Create another clone to avoid modifying the optimized model
+        // Sometimes compression fails, so we want to return the optimized model in that case
+        const compressedDoc = optimizedDoc.clone();
+
+        await io.registerDependencies({
+          // @ts-ignore
+          "draco3d.encoder": await new DracoEncoderModule(),
+        });
+
+        await compressedDoc.transform(draco());
+
+        // Return the compressed model
+        return await io.writeBinary(compressedDoc);
+      } catch (err) {
+        console.warn("Failed to compress model", err);
+      }
+
+      // Return the optimized model
+      return await io.writeBinary(optimizedDoc);
+    }
 
     return await io.writeBinary(this.doc);
   }
@@ -187,8 +221,8 @@ export class SceneModule extends Scene {
         if (collider) return;
 
         const meshCollider = new Collider(doc.getGraph());
-        meshCollider.type = "trimesh";
-        meshCollider.mesh = mesh;
+        meshCollider.setType("trimesh");
+        meshCollider.setMesh(mesh);
 
         node.setExtension<Collider>(ColliderExtension.EXTENSION_NAME, meshCollider);
       });
@@ -366,10 +400,10 @@ export class SceneModule extends Scene {
         extension.addEventListener("change", listener);
 
         if (extension instanceof Collider) {
-          if (extension.type === "trimesh") {
+          if (extension.getType() === "trimesh") {
             // Set collider mesh
             const mesh = node.getMesh();
-            extension.mesh = mesh;
+            extension.setMesh(mesh);
           }
         }
 
@@ -390,15 +424,15 @@ export class SceneModule extends Scene {
         // Update mesh collider
         const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
 
-        if (collider?.type === "trimesh") {
+        if (collider?.getType() === "trimesh") {
           const meshId = value as string | null;
 
           if (meshId) {
             const mesh = this.mesh.store.get(meshId);
             if (!mesh) throw new Error("Mesh not found");
-            collider.mesh = mesh;
+            collider.setMesh(mesh);
           } else {
-            collider.mesh = null;
+            collider.setMesh(null);
           }
         }
       }
@@ -430,6 +464,63 @@ export class SceneModule extends Scene {
 
     mesh.addEventListener("dispose", () => {
       this.#publish({ subject: "dispose_mesh", data: id });
+    });
+
+    // Create custom mesh
+    subscribe(mesh, "Extras", (extras: MeshExtras) => {
+      if (!extras.customMesh) return;
+
+      // Dispose primitives if custom mesh is used
+      mesh.listPrimitives().forEach((primitive) => {
+        // Dispose accessors if they are not used by other primitives
+        primitive.listAttributes().forEach((accessor) => {
+          if (accessor.listParents().length === 1) accessor.dispose();
+        });
+
+        const indices = primitive.getIndices();
+        if (indices && indices.listParents().length === 1) indices.dispose();
+
+        primitive.dispose();
+      });
+
+      // Create acessors
+      const { positions, normals, indices } = getCustomMeshData(extras.customMesh);
+
+      const { id: positionsId, object: position } = this.accessor.create({
+        array: new Float32Array(positions),
+        type: "VEC3",
+        componentType: 5126,
+      });
+
+      const { id: normalsId, object: normal } = this.accessor.create({
+        array: new Float32Array(normals),
+        type: "VEC3",
+        componentType: 5126,
+      });
+
+      const { id: indicesId, object: index } = this.accessor.create({
+        array: new Uint16Array(indices),
+        type: "SCALAR",
+        componentType: 5121,
+      });
+
+      // Create new primitive
+      const { object: primitive } = this.primitive.create({
+        attributes: { POSITION: positionsId, NORMAL: normalsId },
+        indices: indicesId,
+      });
+
+      // Add to mesh
+      mesh.addPrimitive(primitive);
+
+      return () => {
+        // Dispose primitive
+        mesh.removePrimitive(primitive);
+        primitive.dispose();
+        position.dispose();
+        normal.dispose();
+        index.dispose();
+      };
     });
   }
 

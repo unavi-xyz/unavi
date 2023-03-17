@@ -1,8 +1,9 @@
+import { Node } from "@gltf-transform/core";
 import { parseJSONPath, ValueType } from "engine";
 import { useEffect, useMemo, useState } from "react";
 
-import { useNodeAttribute } from "../../hooks/useNodeAttribute";
 import { useNodes } from "../../hooks/useNodes";
+import { useSubscribe } from "../../hooks/useSubscribe";
 import { useEditorStore } from "../../store";
 import { FlowNodeParamter } from "./types";
 
@@ -21,18 +22,10 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
     return [];
   }, [pathType]);
 
-  const engine = useEditorStore((state) => state.engine);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
   const nodes = useNodes();
 
-  const nodeIds = useMemo(() => {
-    const ids = nodes
-      .map((node) => engine?.scene.node.getId(node))
-      .filter((id) => id !== undefined) as string[];
-
-    return ids;
-  }, [nodes, engine]);
-
-  const [pathNode, setPathNode] = useState<string>();
+  const [pathNode, setPathNode] = useState<Node>();
   const [pathProperty, setPathProperty] = useState("");
 
   useEffect(() => {
@@ -43,32 +36,38 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
     const path = parseJSONPath(value ?? "");
 
     if (!path) {
-      setPathNode(nodeIds[0]);
+      setPathNode(nodes[0]);
       return;
     }
 
-    const nodeId = nodeIds[Number(path.index)];
+    const nodeId = nodes[Number(path.index)];
     setPathNode(nodeId);
     setPathProperty(path.property);
-  }, [nodeIds, value]);
+  }, [nodes, value]);
 
   useEffect(() => {
     if (!pathNode) return;
-    const index = nodeIds.indexOf(pathNode);
+    const index = nodes.indexOf(pathNode);
     onChange("jsonPath", { value: `/nodes/${index}/${pathProperty}` });
-  }, [pathNode, pathProperty, nodeIds, onChange]);
+  }, [pathNode, pathProperty, nodes, onChange]);
 
   const capitalizedProperty = pathProperty.charAt(0).toUpperCase() + pathProperty.slice(1);
 
   return (
     <div className="flex items-center space-x-1">
       <select
-        value={pathNode}
-        onChange={(e) => setPathNode(e.currentTarget.value)}
-        className="h-6 rounded bg-neutral-200 px-1 hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+        value={pathNode ? nodes.indexOf(pathNode) : 0}
+        disabled={isPlaying}
+        onChange={(e) => {
+          const newNode = nodes[Number(e.currentTarget.value)];
+          setPathNode(newNode);
+        }}
+        className={`h-6 rounded bg-neutral-200 px-1 ${
+          isPlaying ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+        }`}
       >
-        {nodeIds.map((id) => (
-          <NodeOption key={id} id={id} />
+        {nodes.map((node, i) => (
+          <NodeOption key={i} value={i} node={node} />
         ))}
       </select>
 
@@ -76,10 +75,13 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
 
       <select
         value={capitalizedProperty}
+        disabled={isPlaying}
         onChange={(e) => {
           setPathProperty(e.currentTarget.value.toLowerCase());
         }}
-        className="h-6 rounded bg-neutral-200 px-1 hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+        className={`h-6 rounded bg-neutral-200 px-1 ${
+          isPlaying ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+        }`}
       >
         {pathOptions.map((option) => {
           return (
@@ -93,11 +95,11 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
   );
 }
 
-function NodeOption({ id }: { id: string }) {
-  const name = useNodeAttribute(id, "name");
+function NodeOption({ node, value }: { node: Node; value: number }) {
+  const name = useSubscribe(node, "Name");
 
   return (
-    <option key={id} value={id} className="text-lg">
+    <option value={value} className="text-lg">
       {name}
     </option>
   );

@@ -1,31 +1,40 @@
 import { Metadata } from "next";
-import { Suspense } from "react";
 
-import Card from "../../../src/ui/Card";
+import { fetchLatestSpaces } from "../../../src/server/helpers/fetchLatestSpaces";
+import CardGrid from "../../../src/ui/CardGrid";
+import { metadata as baseMetadata } from "../../layout";
+import Search from "./Search";
 import Spaces from "./Spaces";
 
 export const revalidate = 60;
 
+const TITLE = "Explore";
+
 export const metadata: Metadata = {
-  title: "Explore",
+  title: TITLE,
+  openGraph: {
+    ...baseMetadata.openGraph,
+    title: TITLE,
+  },
+  twitter: {
+    ...baseMetadata.twitter,
+    title: TITLE,
+  },
 };
 
-export default function Explore() {
+export default async function Explore() {
+  const spaces = await fetchLatestSpaces(40);
+
   return (
     <div className="flex justify-center">
-      <div className="max-w-content mx-4 space-y-8 py-8">
+      <div className="max-w-content mx-4 flex flex-col items-center space-y-8 py-8">
         <div className="text-center text-3xl font-black">Explore</div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          <Suspense
-            fallback={Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} loading />
-            ))}
-          >
-            {/* @ts-expect-error Server Component */}
-            <Spaces />
-          </Suspense>
-        </div>
+        <Search />
+
+        <CardGrid>
+          <Spaces spaces={spaces} />
+        </CardGrid>
       </div>
     </div>
   );

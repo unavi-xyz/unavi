@@ -1,9 +1,26 @@
+import { Metadata as NextMetadata } from "next";
+
 import { fetchProfileFromAddress } from "../../../src/server/helpers/fetchProfileFromAddress";
 import { getServerSession } from "../../../src/server/helpers/getServerSession";
+import { metadata as baseMetadata } from "../../layout";
 import RainbowkitWrapper from "../RainbowkitWrapper";
 import SessionProvider from "../SessionProvider";
 import Handle from "./Handle";
 import Metadata from "./Metadata";
+
+const TITLE = "Settings";
+
+export const metadata: NextMetadata = {
+  title: TITLE,
+  openGraph: {
+    ...baseMetadata.openGraph,
+    title: TITLE,
+  },
+  twitter: {
+    ...baseMetadata.twitter,
+    title: TITLE,
+  },
+};
 
 export default async function Settings() {
   const session = await getServerSession();

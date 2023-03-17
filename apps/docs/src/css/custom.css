@@ -41,13 +41,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 1rem 0 1rem 0;
 }
 
 .large-img > img {
   border-radius: 0.5rem;
   border: 1px solid #dadde1;
+  overflow: hidden;
 }
 
 [data-theme="dark"] .large-img > img {

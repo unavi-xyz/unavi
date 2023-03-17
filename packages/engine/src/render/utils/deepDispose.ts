@@ -2,7 +2,7 @@
 
 import { BufferGeometry, IUniform, Material, Object3D, Skeleton, Texture } from "three";
 
-function disposeMaterial(material: Material): void {
+export function disposeMaterial(material: Material): void {
   Object.values(material).forEach((value) => {
     if (value?.isTexture) {
       const texture = value as Texture;

@@ -24,6 +24,8 @@ export interface PlayStore {
   didChangeAvatar: boolean;
   chatBoxFocused: boolean;
   chatMessages: ChatMessage[];
+
+  errorLoading: string | null;
 }
 
 export const usePlayStore = create<PlayStore>(() => ({
@@ -44,4 +46,6 @@ export const usePlayStore = create<PlayStore>(() => ({
   didChangeAvatar: false,
   chatBoxFocused: false,
   chatMessages: [],
+
+  errorLoading: null,
 }));

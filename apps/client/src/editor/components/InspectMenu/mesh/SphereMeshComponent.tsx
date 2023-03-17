@@ -1,15 +1,15 @@
-import { useMesh } from "../../../hooks/useMesh";
-import { useMeshAttribute } from "../../../hooks/useMeshAttribute";
+import { Mesh } from "@gltf-transform/core";
+
+import { useMeshExtras } from "../../../hooks/useMeshExtras";
 import NumberInput from "../../ui/NumberInput";
 import MenuRows from "../ui/MenuRows";
 
 interface Props {
-  meshId: string;
+  mesh: Mesh;
 }
 
-export default function SphereMeshComponent({ meshId }: Props) {
-  const mesh = useMesh(meshId);
-  const extras = useMeshAttribute(meshId, "extras");
+export default function SphereMeshComponent({ mesh }: Props) {
+  const extras = useMeshExtras(mesh);
 
   if (!mesh || extras?.customMesh?.type !== "Sphere") return null;
 

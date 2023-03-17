@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
 import { prisma } from "../../../../../src/server/prisma";
@@ -21,4 +21,6 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   // Link publication to space
   await prisma.publication.update({ where: { id }, data: { spaceId } });
+
+  return NextResponse.json({ success: true });
 }

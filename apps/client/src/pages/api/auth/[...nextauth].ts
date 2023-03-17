@@ -32,7 +32,7 @@ export function getAuthOptions(req: IncomingMessage | null = null): NextAuthOpti
         try {
           const siwe = new SiweMessage(JSON.parse(credentials.message));
 
-          const url = env.NEXTAUTH_URL || `https://${process.env.VERCEL_URL}`;
+          const url = env.NEXTAUTH_URL || `https://${env.VERCEL_URL}`;
           const domain = new URL(url).host;
           if (siwe.domain !== domain) return null;
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
+import { parseError } from "../../../../src/editor/utils/parseError";
 import Button from "../../../../src/ui/Button";
 import { toHex } from "../../../../src/utils/toHex";
 import { updateProject } from "../../../api/projects/[id]/helper";
@@ -13,10 +14,11 @@ import { getSpacePublication } from "../../../api/spaces/[id]/publication/helper
 
 interface Props {
   id: string;
+  owner: string;
   connectedSpaceId?: number;
 }
 
-export default function Connect({ id, connectedSpaceId }: Props) {
+export default function Connect({ id, owner, connectedSpaceId }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
 
@@ -27,6 +29,7 @@ export default function Connect({ id, connectedSpaceId }: Props) {
 
     const hexId = inputRef.current?.value ?? "";
     const spaceId = parseInt(hexId);
+    const toastId = "connect";
 
     if (!hexId) {
       // Disconnect project
@@ -47,29 +50,20 @@ export default function Connect({ id, connectedSpaceId }: Props) {
       return;
     }
 
-    let error = "Failed to connect project";
-
     async function connect() {
       // Fetch space
       const space = await getSpace(spaceId);
-
-      if (!space) {
-        error = "Space not found";
-        throw new Error(error);
-      }
-
-      // if (space.owner !== address) {
-      //   error = "You do not own this space";
-      //   throw new Error(error);
-      // }
+      if (!space) throw new Error("Space not found");
+      if (space.owner !== owner) throw new Error("You do not own this space");
 
       // Fetch publication
       const publication = await getSpacePublication(spaceId);
-      let publicationId = publication?.id;
+      const publicationId = publication?.id;
 
       if (!publicationId) {
         // Create new publication if there is not already one
-        publicationId = await publishProject(id);
+        const { id: newPublicationId } = await publishProject(id);
+        return newPublicationId;
       }
 
       // Link project to publication
@@ -78,11 +72,13 @@ export default function Connect({ id, connectedSpaceId }: Props) {
 
     setLoading(true);
 
-    await toast.promise(connect(), {
-      loading: "Connecting project...",
-      success: "Project connected",
-      error: () => error,
-    });
+    try {
+      await connect();
+      toast.success("Project connected!", { id: toastId });
+    } catch (err) {
+      toast.error(parseError(err, "Failed to connect project."), { id: toastId });
+      console.error(err);
+    }
 
     setLoading(false);
   }

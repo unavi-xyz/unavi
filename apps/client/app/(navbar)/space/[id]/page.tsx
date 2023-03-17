@@ -67,13 +67,14 @@ export default async function Space({ params }: Props) {
                     src={space.metadata.image}
                     priority
                     fill
-                    sizes="40vw"
+                    sizes="(min-width: 768px) 60vw, 100vw"
                     alt=""
                     className="rounded-2xl object-cover"
                   />
                 ) : (
                   <img
                     src={space.metadata.image}
+                    sizes="(min-width: 768px) 60vw, 100vw"
                     alt=""
                     className="h-full w-full rounded-2xl object-cover"
                     crossOrigin="anonymous"
@@ -128,10 +129,8 @@ export default async function Space({ params }: Props) {
           </div>
         </div>
 
-        <Suspense fallback={null}>
-          {/* @ts-expect-error Server Component */}
-          <Tabs owner={space.owner} params={params} />
-        </Suspense>
+        {/* @ts-expect-error Server Component */}
+        <Tabs owner={space.owner} params={params} />
       </div>
     </div>
   );

@@ -41,7 +41,7 @@ export default function PlayButton() {
 
     // Reset scene
     if (scene) {
-      useEditorStore.setState({ sceneLoaded: false });
+      useEditorStore.setState({ sceneLoaded: false, selectedId: null });
       engine.scene.clear();
       await engine.scene.addBinary(scene);
       setScene(undefined);
@@ -57,7 +57,7 @@ export default function PlayButton() {
 
   return (
     <Tooltip text={`${isPlaying ? "Stop" : "Play"}`} side="bottom">
-      <IconButton onClick={isPlaying ? stopPlaying : startPlaying}>
+      <IconButton disabled={!sceneLoaded} onClick={isPlaying ? stopPlaying : startPlaying}>
         {isPlaying ? <FaStop className="text-sm" /> : <FaPlay className="text-sm" />}
       </IconButton>
     </Tooltip>

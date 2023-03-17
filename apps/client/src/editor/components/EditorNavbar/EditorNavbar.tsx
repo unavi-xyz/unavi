@@ -2,8 +2,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import useSWR from "swr";
-import { useSigner } from "wagmi";
 
+import { useSession } from "../../../client/auth/useSession";
 import SignInButton from "../../../home/SignInButton";
 import { fetcher } from "../../../play/utils/fetcher";
 import { Project } from "../../../server/helpers/fetchProject";
@@ -24,25 +24,47 @@ export default function EditorNavbar() {
 
   const name = useEditorStore((state) => state.name);
   const isSaving = useEditorStore((state) => state.isSaving);
+  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
   const { save, saveImage } = useSave();
-  const { data: signer } = useSigner();
+  const { status } = useSession();
 
   const { data: project } = useSWR<Project | null>(
-    () => (id ? `/api/projects/${id}` : null),
+    () => (status === "authenticated" && id ? `/api/projects/${id}` : null),
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
+
   const isPublished = Boolean(project?.Publication?.spaceId);
 
   async function handleBack() {
+    // Exit play mode
+    const { stopPlaying } = useEditorStore.getState();
+    await stopPlaying();
+
     await save();
     router.push(`/project/${id}`);
   }
 
+  async function handleSave() {
+    // Exit play mode
+    const { stopPlaying } = useEditorStore.getState();
+    await stopPlaying();
+
+    await save();
+  }
+
   async function handleOpenPublish() {
-    await saveImage();
+    if (!sceneLoaded) return;
+
+    // Exit play mode
+    const { stopPlaying } = useEditorStore.getState();
+    await stopPlaying();
+
+    // Start saving image
+    saveImage();
+
     setOpenPublishDialog(true);
   }
 
@@ -67,23 +89,27 @@ export default function EditorNavbar() {
           </button>
 
           <div className="flex w-96 items-center">
-            <AutoGrowInput
-              type="text"
-              value={name}
-              onChange={(e) => useEditorStore.setState({ name: e.target.value })}
-            />
+            {status === "authenticated" ? (
+              <AutoGrowInput
+                type="text"
+                value={name}
+                onChange={(e) => useEditorStore.setState({ name: e.target.value })}
+              />
+            ) : null}
 
             <div className="flex items-center pt-0.5 pl-2">
               {isSaving ? (
                 <div className="text-sm text-neutral-500">Saving...</div>
-              ) : (
+              ) : sceneLoaded ? (
                 <button
-                  onClick={save}
-                  className="rounded-md px-2 py-0.5 text-sm text-neutral-500 opacity-0 transition hover:bg-neutral-200 hover:text-neutral-900 focus:bg-neutral-200 focus:text-neutral-900 focus:opacity-100 active:bg-neutral-200 group-hover:opacity-100"
+                  onClick={handleSave}
+                  className={
+                    "rounded-md px-2 py-0.5 text-sm text-neutral-500 opacity-0 transition hover:bg-neutral-200 hover:text-neutral-900 focus:bg-neutral-200 focus:text-neutral-900 focus:opacity-100 active:bg-neutral-200 group-hover:opacity-100"
+                  }
                 >
                   Save
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -93,7 +119,13 @@ export default function EditorNavbar() {
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <PlayButton />
           <VisualsButton />
-          {signer ? <Button onClick={handleOpenPublish}>Publish</Button> : <SignInButton />}
+          {status === "authenticated" ? (
+            <Button disabled={!sceneLoaded} onClick={handleOpenPublish}>
+              Publish
+            </Button>
+          ) : (
+            <SignInButton />
+          )}
         </div>
       </div>
     </>

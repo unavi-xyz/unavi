@@ -49,43 +49,43 @@ export class Collider extends ExtensionProperty<ICollider> {
     });
   }
 
-  get type() {
+  getType() {
     return this.get("type");
   }
 
-  set type(type: ColliderType) {
+  setType(type: ColliderType) {
     this.set("type", type);
   }
 
-  get size() {
+  getSize() {
     return this.get("size");
   }
 
-  set size(size: Vec3 | null) {
+  setSize(size: Vec3 | null) {
     this.set("size", size);
   }
 
-  get radius() {
+  getRadius() {
     return this.get("radius");
   }
 
-  set radius(radius: number | null) {
+  setRadius(radius: number | null) {
     this.set("radius", radius);
   }
 
-  get height() {
+  getHeight() {
     return this.get("height");
   }
 
-  set height(height: number | null) {
+  setHeight(height: number | null) {
     this.set("height", height);
   }
 
-  get mesh() {
+  getMesh() {
     return this.getRef("mesh");
   }
 
-  set mesh(mesh: Mesh | null) {
+  setMesh(mesh: Mesh | null) {
     this.setRef("mesh", mesh);
   }
 }

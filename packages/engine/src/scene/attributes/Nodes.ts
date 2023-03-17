@@ -137,9 +137,9 @@ export class Nodes extends Attribute<Node, NodeJSON> {
 
   applyJSON(node: Node, json: Partial<NodeJSON>) {
     if (json.name !== undefined) node.setName(json.name);
-    if (json.translation) node.setTranslation(json.translation);
-    if (json.rotation) node.setRotation(json.rotation);
-    if (json.scale) node.setScale(json.scale);
+    if (json.translation !== undefined) node.setTranslation(json.translation);
+    if (json.rotation !== undefined) node.setRotation(json.rotation);
+    if (json.scale !== undefined) node.setScale(json.scale);
 
     if (json.mesh !== undefined) {
       if (json.mesh === null) {
@@ -160,7 +160,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       }
     }
 
-    if (json.children) {
+    if (json.children !== undefined) {
       for (const childId of json.children) {
         const child = this.store.get(childId);
         if (!child) continue;
@@ -169,7 +169,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       }
     }
 
-    if (json.extensions) {
+    if (json.extensions !== undefined) {
       const colliderJSON = json.extensions[ColliderExtension.EXTENSION_NAME];
 
       if (!colliderJSON) {
@@ -179,15 +179,15 @@ export class Nodes extends Attribute<Node, NodeJSON> {
           node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME) ??
           this.#scene.extensions.collider.createCollider();
 
-        collider.type = colliderJSON.type;
-        collider.size = colliderJSON.size;
-        collider.height = colliderJSON.height;
-        collider.radius = colliderJSON.radius;
+        collider.setType(colliderJSON.type);
+        collider.setSize(colliderJSON.size);
+        collider.setHeight(colliderJSON.height);
+        collider.setRadius(colliderJSON.radius);
 
         if (colliderJSON.mesh) {
           const mesh = this.#scene.mesh.store.get(colliderJSON.mesh);
           if (!mesh) throw new Error("Mesh not found");
-          collider.mesh = mesh;
+          collider.setMesh(mesh);
         }
 
         node.setExtension(ColliderExtension.EXTENSION_NAME, collider);
@@ -202,7 +202,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
           node.getExtension<SpawnPoint>(SpawnPointExtension.EXTENSION_NAME) ??
           this.#scene.extensions.spawn.createSpawnPoint();
 
-        spawnPoint.title = spawnPointJSON.title;
+        spawnPoint.setTitle(spawnPointJSON.title);
 
         node.setExtension(SpawnPointExtension.EXTENSION_NAME, spawnPoint);
       }
@@ -235,15 +235,15 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
 
     if (collider) {
-      const mesh = collider.mesh;
+      const mesh = collider.getMesh();
       const meshId = mesh ? this.#scene.mesh.getId(mesh) : null;
       if (meshId === undefined) throw new Error("Mesh not found");
 
       extensions[ColliderExtension.EXTENSION_NAME] = {
-        type: collider.type,
-        size: collider.size,
-        height: collider.height,
-        radius: collider.radius,
+        type: collider.getType(),
+        size: collider.getSize(),
+        height: collider.getHeight(),
+        radius: collider.getRadius(),
         mesh: meshId,
       };
     }
@@ -252,7 +252,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
 
     if (spawnPoint) {
       extensions[SpawnPointExtension.EXTENSION_NAME] = {
-        title: spawnPoint.title,
+        title: spawnPoint.getTitle(),
       };
     }
 

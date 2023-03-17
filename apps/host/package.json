@@ -8,10 +8,10 @@
     "build": "tsc --build tsconfig.json",
     "deploy": "yarn docker:build && docker push ghcr.io/wired-labs/host",
     "dev": "nodemon ./src/server.ts",
-    "docker:build": "yarn docker:clean && cd ../.. && docker build -t ghcr.io/wired-labs/host -f apps/host/Dockerfile .",
-    "docker:clean": "yarn docker:stop && docker rmi ghcr.io/wired-labs/host || true",
-    "docker:start": "yarn docker:stop && docker run --rm -e RTC_MIN_PORT=20000 -e RTC_MAX_PORT=20020 -e MEDIASOUP_ANNOUNCED_IP=127.0.0.1 -p 4000:4000 -p 20000-20020:20000-20020/tcp -p 20000-20020:20000-20020/udp --name wired-host ghcr.io/wired-labs/host",
-    "docker:stop": "docker stop wired-host || true",
+    "docker:build": "yarn docker:clean || cd ../.. && docker build -t ghcr.io/wired-labs/host -f apps/host/Dockerfile .",
+    "docker:clean": "yarn docker:stop || docker rmi ghcr.io/wired-labs/host",
+    "docker:start": "yarn docker:stop || docker run --rm -e RTC_MIN_PORT=20000 -e RTC_MAX_PORT=20020 -e MEDIASOUP_ANNOUNCED_IP=127.0.0.1 -p 4000:4000 -p 20000-20020:20000-20020/tcp -p 20000-20020:20000-20020/udp --name wired-host ghcr.io/wired-labs/host",
+    "docker:stop": "docker stop wired-host",
     "lint": "cd ../.. && eslint --fix apps/host --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore",
     "start": "node --experimental-specifier-resolution=node ./build/server.js"
   },
@@ -20,11 +20,11 @@
     "nanoid": "^4.0.1",
     "protocol": "*",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.19.0",
-    "zod": "^3.20.6"
+    "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/node": "^18.14.0",
-    "eslint": "^8.35.0",
+    "@types/node": "^18.15.0",
+    "eslint": "^8.36.0",
     "eslint-config-custom": "*",
     "nodemon": "^2.0.21",
     "ts-node": "^10.9.1",

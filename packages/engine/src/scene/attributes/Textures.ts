@@ -74,8 +74,8 @@ export class Textures extends Attribute<Texture, TextureJSON> {
 
   applyJSON(texture: Texture, json: Partial<TextureJSON>) {
     if (json.image) texture.setImage(json.image);
-    if (json.mimeType) texture.setMimeType(json.mimeType);
-    if (json.uri) texture.setURI(json.uri);
+    if (json.mimeType !== undefined) texture.setMimeType(json.mimeType);
+    if (json.uri !== undefined) texture.setURI(json.uri);
   }
 
   toJSON(texture: Texture): TextureJSON {

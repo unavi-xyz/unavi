@@ -16,7 +16,7 @@ interface Props {
 export default function Card({
   image,
   text,
-  sizes,
+  sizes = "(min-width: 1320px) 25vw, (min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw",
   aspect = "card",
   animateEnter = false,
   loading = false,

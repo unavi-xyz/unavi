@@ -4,6 +4,7 @@ import {
   injectedWallet,
   metaMaskWallet,
   rainbowWallet,
+  walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { ChainProviderFn, configureChains, createClient } from "wagmi";
 import { arbitrumGoerli } from "wagmi/chains";
@@ -34,6 +35,10 @@ const connectors = connectorsForWallets([
       coinbaseWallet({ chains, appName: "The Wired" }),
       ...(needsInjectedWalletFallback ? [injectedWallet({ chains })] : []),
     ],
+  },
+  {
+    groupName: "Other",
+    wallets: [walletConnectWallet({ chains })],
   },
 ]);
 

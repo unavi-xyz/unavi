@@ -1,18 +1,18 @@
+import { Node } from "@gltf-transform/core";
+
 import { useCollider } from "../../../hooks/useExtension";
-import { useExtensionAttribute } from "../../../hooks/useExtensionAttribute";
-import { useNode } from "../../../hooks/useNode";
+import { useSubscribe } from "../../../hooks/useSubscribe";
 import NumberInput from "../../ui/NumberInput";
 import MenuRows from "../ui/MenuRows";
 
 interface Props {
-  nodeId: string;
+  node: Node;
 }
 
-export default function CylinderColliderComponent({ nodeId }: Props) {
-  const node = useNode(nodeId);
+export default function CylinderColliderComponent({ node }: Props) {
   const collider = useCollider(node);
-  const radius = useExtensionAttribute(collider, "radius");
-  const height = useExtensionAttribute(collider, "height");
+  const radius = useSubscribe(collider, "Radius");
+  const height = useSubscribe(collider, "Height");
 
   return (
     <MenuRows titles={["Radius", "Height"]}>
@@ -35,7 +35,8 @@ export default function CylinderColliderComponent({ nodeId }: Props) {
               const num = parseFloat(value);
               const rounded = Math.round(num * 1000) / 1000;
 
-              collider[property] = rounded;
+              if (property === "radius") collider.setRadius(rounded);
+              if (property === "height") collider.setHeight(rounded);
             }}
           />
         );

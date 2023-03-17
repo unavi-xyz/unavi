@@ -32,6 +32,7 @@ import { RaycastControls } from "./controls/RaycastControls";
 import { TransformControls } from "./controls/TransformControls";
 import { FromRenderMessage, ToRenderMessage } from "./messages";
 import { Players } from "./players/Players";
+import { DEFAULT_MATERIAL } from "./scene/builders/PrimitiveBuilder";
 import { RenderScene } from "./scene/RenderScene";
 import { ThreeOutlinePass } from "./three/ThreeOutlinePass";
 import { deepDispose } from "./utils/deepDispose";
@@ -82,7 +83,7 @@ export class RenderThread {
   constructor(postMessage: PostMessage<FromRenderMessage>, canvas?: HTMLCanvasElement) {
     this.postMessage = postMessage;
 
-    this.renderScene = new RenderScene(this.postMessage);
+    this.renderScene = new RenderScene();
     this.player = new PlayerControls(this.camera, this.renderScene.root);
 
     if (canvas) {
@@ -267,7 +268,7 @@ export class RenderThread {
       shadowBias: SHADOW_BIAS,
     });
     this.csm.fade = true;
-    this.csm.setupMaterial(RenderScene.DEFAULT_MATERIAL);
+    this.csm.setupMaterial(DEFAULT_MATERIAL);
     this.renderScene.csm = this.csm;
 
     // Post-processing

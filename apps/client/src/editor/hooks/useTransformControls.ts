@@ -12,6 +12,9 @@ export function useTransformControls() {
     if (!engine) return;
 
     engine.render.addEventListener("clicked_node", (e) => {
+      const { isPlaying } = useEditorStore.getState();
+      if (isPlaying) return;
+
       const nodeId = e.data.nodeId;
       useEditorStore.setState({ selectedId: nodeId });
     });
@@ -21,9 +24,11 @@ export function useTransformControls() {
   useEffect(() => {
     if (!engine) return;
 
+    const { isPlaying } = useEditorStore.getState();
+
     engine.render.send({
       subject: "set_transform_controls_target",
-      data: { nodeId: selectedId },
+      data: { nodeId: selectedId, attach: !isPlaying },
     });
   }, [engine, selectedId]);
 

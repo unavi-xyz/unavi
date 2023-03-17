@@ -1,25 +1,31 @@
 import { Project } from "@prisma/client";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { GetFileDownloadResponse } from "../../../app/api/projects/[id]/[file]/types";
+import { useSession } from "../../client/auth/useSession";
 import { fetcher } from "../../play/utils/fetcher";
 import { useEditorStore } from "../store";
+import { parseError } from "../utils/parseError";
+
+export const ERROR_NOT_SIGNED_IN = "You must be signed in to edit a project.";
 
 export function useLoad() {
   const params = useSearchParams();
   const id = params?.get("id");
 
+  const { status } = useSession();
   const engine = useEditorStore((state) => state.engine);
+  const [errorLoading, setErrorLoading] = useState<string>("");
 
-  const { data: project } = useSWR<Project | null>(
-    () => (id ? `/api/projects/${id}` : null),
+  const { data: project, error: errorProject } = useSWR<Project | null>(
+    () => (status === "authenticated" && id ? `/api/projects/${id}` : null),
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
-  const { data: modelUrl } = useSWR<GetFileDownloadResponse>(
-    () => (id ? `/api/projects/${id}/model` : null),
+  const { data: modelUrl, error: errorModel } = useSWR<GetFileDownloadResponse>(
+    () => (status === "authenticated" && id ? `/api/projects/${id}/model` : null),
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
@@ -52,6 +58,7 @@ export function useLoad() {
         await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (err) {
         console.error(err);
+        setErrorLoading(parseError(err, "Failed to load project."));
       }
 
       useEditorStore.setState({ sceneLoaded: true });
@@ -61,6 +68,13 @@ export function useLoad() {
 
     return () => {
       useEditorStore.setState({ sceneLoaded: false });
+      setErrorLoading("");
     };
   }, [engine, modelUrl]);
+
+  const errorAuth = status === "unauthenticated" ? ERROR_NOT_SIGNED_IN : "";
+
+  return {
+    error: parseError(errorProject, "") || parseError(errorModel, "") || errorLoading || errorAuth,
+  };
 }

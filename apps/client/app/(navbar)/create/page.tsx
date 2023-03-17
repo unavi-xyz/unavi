@@ -1,14 +1,23 @@
-import { Suspense } from "react";
+import { Metadata } from "next";
 
-import Card from "../../../src/ui/Card";
+import { metadata as baseMetadata } from "../../layout";
 import CreateProjectButton from "./CreateProjectButton";
 import Projects from "./Projects";
 import Published from "./Published";
 
-export const metadata = {
-  title: "Create",
-};
+const TITLE = "Create";
 
+export const metadata: Metadata = {
+  title: TITLE,
+  openGraph: {
+    ...baseMetadata.openGraph,
+    title: TITLE,
+  },
+  twitter: {
+    ...baseMetadata.twitter,
+    title: TITLE,
+  },
+};
 export default function Create() {
   return (
     <div className="flex justify-center">
@@ -18,27 +27,15 @@ export default function Create() {
         <div className="flex items-center justify-between">
           <div className="text-2xl font-bold">⚒️ Projects</div>
 
-          <Suspense fallback={null}>
-            {/* @ts-expect-error Server Component */}
-            <CreateProjectButton />
-          </Suspense>
-        </div>
-
-        <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
-          <Suspense
-            fallback={Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} loading />
-            ))}
-          >
-            {/* @ts-expect-error Server Component */}
-            <Projects />
-          </Suspense>
-        </div>
-
-        <Suspense fallback={null}>
           {/* @ts-expect-error Server Component */}
-          <Published />
-        </Suspense>
+          <CreateProjectButton />
+        </div>
+
+        {/* @ts-expect-error Server Component */}
+        <Projects />
+
+        {/* @ts-expect-error Server Component */}
+        <Published />
       </div>
     </div>
   );

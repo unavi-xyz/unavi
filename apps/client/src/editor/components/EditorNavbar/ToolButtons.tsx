@@ -11,11 +11,13 @@ import { Tool } from "../../types";
 
 export default function ToolButtons() {
   const tool = useEditorStore((state) => state.tool);
+  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
 
   return (
     <ToggleGroup.Root
       type="single"
       value={tool}
+      disabled={!sceneLoaded}
       onValueChange={(value: Tool | "") => {
         if (value) useEditorStore.setState({ tool: value });
       }}

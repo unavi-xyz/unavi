@@ -1,8 +1,7 @@
-import { Node } from "@gltf-transform/core";
+import { Mesh, Node } from "@gltf-transform/core";
 import { MeshExtras } from "engine";
 
-import { useMesh } from "../../../hooks/useMesh";
-import { useMeshAttribute } from "../../../hooks/useMeshAttribute";
+import { useMeshExtras } from "../../../hooks/useMeshExtras";
 import { useEditorStore } from "../../../store";
 import SelectMenu from "../../ui/SelectMenu";
 import ComponentMenu from "../ComponentMenu";
@@ -21,12 +20,11 @@ const MESH_TYPE = {
 type MeshType = (typeof MESH_TYPE)[keyof typeof MESH_TYPE];
 
 interface Props {
-  meshId: string;
+  mesh: Mesh;
 }
 
-export default function MeshComponent({ meshId }: Props) {
-  const mesh = useMesh(meshId);
-  const extras = useMeshAttribute(meshId, "extras");
+export default function MeshComponent({ mesh }: Props) {
+  const extras = useMeshExtras(mesh);
 
   if (!mesh) return null;
 
@@ -124,11 +122,11 @@ export default function MeshComponent({ meshId }: Props) {
       </MenuRows>
 
       {meshType === MESH_TYPE.Box ? (
-        <BoxMeshComponent meshId={meshId} />
+        <BoxMeshComponent mesh={mesh} />
       ) : meshType === MESH_TYPE.Sphere ? (
-        <SphereMeshComponent meshId={meshId} />
+        <SphereMeshComponent mesh={mesh} />
       ) : meshType === MESH_TYPE.Cylinder ? (
-        <CylinderMeshComponent meshId={meshId} />
+        <CylinderMeshComponent mesh={mesh} />
       ) : null}
     </ComponentMenu>
   );

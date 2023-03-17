@@ -1,6 +1,7 @@
 import { ERC721Metadata } from "contracts";
 import { useMemo, useState } from "react";
 
+import { parseError } from "../../editor/utils/parseError";
 import { env } from "../../env/client.mjs";
 import { usePlayStore } from "../../play/store";
 import { useHost } from "./useHost";
@@ -25,7 +26,9 @@ export function useSpace(id: number, metadata: ERC721Metadata | null) {
 
   const join = useMemo(() => {
     return async () => {
-      if (!engine || !metadata) return;
+      usePlayStore.setState({ errorLoading: null });
+
+      if (!engine || !metadata?.animation_url) return;
 
       const res = await fetch(metadata.animation_url);
       const buffer = await res.arrayBuffer();
@@ -33,12 +36,18 @@ export function useSpace(id: number, metadata: ERC721Metadata | null) {
 
       setSceneDownloaded(true);
 
-      await engine.scene.addBinary(array);
+      try {
+        await engine.scene.addBinary(array);
 
-      engine.physics.send({ subject: "respawn", data: null });
-      engine.behavior.start();
+        engine.physics.send({ subject: "respawn", data: null });
+        engine.behavior.start();
 
-      setSceneLoaded(true);
+        setSceneLoaded(true);
+      } catch (err) {
+        console.error(err);
+        const message = parseError(err, "Failed to load scene.");
+        usePlayStore.setState({ errorLoading: message });
+      }
     };
   }, [engine, metadata]);
 

@@ -6,7 +6,6 @@ import { z } from "zod";
  * This way you can ensure the app isn't built with invalid env vars.
  */
 export const serverSchema = z.object({
-  BUNDLE_ANALYZE: z.string().optional(),
   DATABASE_URL: z.string().url(),
   ETH_PROVIDER: z.string().url(),
   NEXTAUTH_SECRET: z.string(),
@@ -29,9 +28,9 @@ export const clientSchema = z.object({
   NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT: z.string().optional(),
   NEXT_PUBLIC_CDN_ENDPOINT: z.string(),
   NEXT_PUBLIC_DEFAULT_HOST: z.string(),
-  NEXT_PUBLIC_IPFS_AUTH: z.string().optional(),
-  NEXT_PUBLIC_IPFS_ENDPOINT: z.string(),
-  NEXT_PUBLIC_IPFS_GATEWAY: z.string(),
+  NEXT_PUBLIC_DEPLOYED_URL: z.string().url(),
+  NEXT_PUBLIC_DOCS_URL: z.string().url(),
+  VERCEL_URL: z.string().optional(),
 });
 
 /**
@@ -45,7 +44,6 @@ export const clientEnv = {
   NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT: process.env.NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT,
   NEXT_PUBLIC_CDN_ENDPOINT: process.env.NEXT_PUBLIC_CDN_ENDPOINT,
   NEXT_PUBLIC_DEFAULT_HOST: process.env.NEXT_PUBLIC_DEFAULT_HOST,
-  NEXT_PUBLIC_IPFS_AUTH: process.env.NEXT_PUBLIC_IPFS_AUTH,
-  NEXT_PUBLIC_IPFS_ENDPOINT: process.env.NEXT_PUBLIC_IPFS_ENDPOINT,
-  NEXT_PUBLIC_IPFS_GATEWAY: process.env.NEXT_PUBLIC_IPFS_GATEWAY,
+  NEXT_PUBLIC_DEPLOYED_URL: process.env.NEXT_PUBLIC_DEPLOYED_URL,
+  NEXT_PUBLIC_DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL,
 };

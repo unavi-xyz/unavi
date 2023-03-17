@@ -20,6 +20,7 @@ module.exports = {
       },
       animation: {
         fadeIn: "fadeIn 150ms ease-in forwards",
+        fadeInDelayed: "fadeIn 500ms ease-in forwards",
         fadeOut: "fadeOut 150ms ease-in forwards",
         floatIn: "floatIn 150ms ease-in forwards",
         floatInSlow: "floatIn 1s ease-in forwards",
@@ -32,6 +33,11 @@ module.exports = {
       keyframes: {
         fadeIn: {
           "0%": { opacity: 0 },
+          "100%": { opacity: 1 },
+        },
+        fadeInDelayed: {
+          "0%": { opacity: 0 },
+          "50%": { opacity: 0 },
           "100%": { opacity: 1 },
         },
         fadeOut: {

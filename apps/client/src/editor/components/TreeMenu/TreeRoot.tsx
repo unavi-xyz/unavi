@@ -10,6 +10,7 @@ export default function TreeRoot() {
   const engine = useEditorStore((state) => state.engine);
   const treeIds = useEditorStore((state) => state.treeIds);
   const openIds = useEditorStore((state) => state.openIds);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
 
   const nodes = useNodes();
   const nodeIds = useMemo(() => {
@@ -122,7 +123,7 @@ export default function TreeRoot() {
   return (
     <ContextMenu.Root>
       <div onMouseDown={() => useEditorStore.setState({ selectedId: null })} className="h-full">
-        <ContextMenu.Trigger>
+        <ContextMenu.Trigger disabled={isPlaying}>
           {visibleIds.map((id) => {
             return <TreeItem key={id} id={id} />;
           })}

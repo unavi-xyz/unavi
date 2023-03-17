@@ -1,5 +1,7 @@
 import { MdClose } from "react-icons/md";
 
+import { useEditorStore } from "../../store";
+
 interface Props {
   title?: string;
   removeable?: boolean;
@@ -8,7 +10,9 @@ interface Props {
 }
 
 export default function ComponentMenu({ title, removeable = true, onRemove, children }: Props) {
-  const outlineClass = removeable ? "hover:ring-1" : "";
+  const isPlaying = useEditorStore((state) => state.isPlaying);
+
+  const outlineClass = !isPlaying && removeable ? "hover:ring-1" : "";
 
   return (
     <div className={`group rounded-xl px-4 py-3 ring-neutral-300 transition ${outlineClass}`}>
@@ -17,8 +21,14 @@ export default function ComponentMenu({ title, removeable = true, onRemove, chil
 
         {removeable && (
           <button
-            onClick={onRemove}
-            className="text-neutral-500 opacity-0 transition hover:text-black focus:opacity-100 group-hover:opacity-100"
+            onClick={() => {
+              if (isPlaying) return;
+              if (onRemove) onRemove();
+            }}
+            disabled={isPlaying}
+            className={`text-neutral-500 opacity-0 transition hover:text-black ${
+              isPlaying ? "" : "focus:opacity-100 group-hover:opacity-100"
+            }`}
           >
             <MdClose />
           </button>

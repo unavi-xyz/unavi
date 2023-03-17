@@ -1,19 +1,18 @@
+import { Node } from "@gltf-transform/core";
 import { Vec3 } from "engine";
 
 import { useCollider } from "../../../hooks/useExtension";
-import { useExtensionAttribute } from "../../../hooks/useExtensionAttribute";
-import { useNode } from "../../../hooks/useNode";
+import { useSubscribe } from "../../../hooks/useSubscribe";
 import NumberInput from "../../ui/NumberInput";
 import MenuRows from "../ui/MenuRows";
 
 interface Props {
-  nodeId: string;
+  node: Node;
 }
 
-export default function BoxColliderComponent({ nodeId }: Props) {
-  const node = useNode(nodeId);
+export default function BoxColliderComponent({ node }: Props) {
   const collider = useCollider(node);
-  const size = useExtensionAttribute(collider, "size") ?? [0, 0, 0];
+  const size = useSubscribe(collider, "Size") ?? [0, 0, 0];
 
   return (
     <MenuRows titles={["Width", "Height", "Depth"]}>
@@ -38,7 +37,7 @@ export default function BoxColliderComponent({ nodeId }: Props) {
               const newSize: Vec3 = [...size];
               newSize[i] = rounded;
 
-              collider.size = newSize;
+              collider.setSize(newSize);
             }}
           />
         );

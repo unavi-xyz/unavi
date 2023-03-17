@@ -25,6 +25,7 @@ interface Props {
 export default function VariableInput({ data, onChange }: Props) {
   const [variableId, setVariableId] = useState<number>();
 
+  const isPlaying = useEditorStore((state) => state.isPlaying);
   const variables = useEditorStore((state) => state.variables);
   const variable = variableId !== undefined ? variables[variableId] ?? null : null;
 
@@ -73,6 +74,7 @@ export default function VariableInput({ data, onChange }: Props) {
 
         <Select.Root
           value={String(variableId)}
+          disabled={isPlaying}
           onValueChange={(value) => {
             const { engine } = useEditorStore.getState();
             if (!engine) return;
@@ -95,16 +97,22 @@ export default function VariableInput({ data, onChange }: Props) {
             <div className="flex h-6 w-36 rounded bg-neutral-200">
               <input
                 value={variableName}
+                disabled={isPlaying}
                 onChange={(e) => {
                   if (!variable) return;
-
                   variable.setName(e.currentTarget.value);
                 }}
                 // eslint-disable-next-line tailwindcss/no-custom-classname
-                className="nodrag h-full w-32 rounded-l bg-neutral-200 px-2 hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
+                className={`nodrag h-full w-32 rounded-l bg-neutral-200 px-2 focus:outline-none ${
+                  isPlaying ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+                }`}
               />
 
-              <Select.Trigger className="flex h-full w-full items-center justify-center rounded-r hover:bg-neutral-300/80 focus:outline-none">
+              <Select.Trigger
+                className={`flex h-full w-full items-center justify-center rounded-r ${
+                  isPlaying ? "" : "hover:bg-neutral-300/80 focus:outline-none"
+                }`}
+              >
                 <IoIosArrowDown />
               </Select.Trigger>
             </div>
@@ -130,12 +138,15 @@ export default function VariableInput({ data, onChange }: Props) {
 
         <select
           value={variableType}
+          disabled={isPlaying}
           onChange={(e) => {
             if (!variable) return;
             variable.type = e.currentTarget.value;
           }}
           // eslint-disable-next-line tailwindcss/no-custom-classname
-          className="nodrag h-6 rounded bg-neutral-200 px-1 hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
+          className={`nodrag h-6 rounded bg-neutral-200 px-1 ${
+            isPlaying ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
+          }`}
         >
           {VALUE_TYPES.map((type) => (
             <option key={type} value={type} className="text-lg">

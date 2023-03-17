@@ -1,4 +1,4 @@
-import Card from "../../../../src/ui/Card";
+import Card from "../../../src/ui/Card";
 
 export default function Loading() {
   return (

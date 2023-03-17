@@ -2,7 +2,8 @@ import { useEffect, useMemo } from "react";
 import { HiOutlineCube } from "react-icons/hi";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
-import { useNodeAttribute } from "../../hooks/useNodeAttribute";
+import { useNode } from "../../hooks/useNode";
+import { useSubscribe } from "../../hooks/useSubscribe";
 import { useEditorStore } from "../../store";
 import { isAncestor } from "./utils/isAncestor";
 import { moveNode } from "./utils/moveNode";
@@ -14,11 +15,13 @@ interface Props {
 export default function TreeItem({ id }: Props) {
   const engine = useEditorStore((state) => state.engine);
   const draggingId = useEditorStore((state) => state.draggingId);
-  const name = useNodeAttribute(id, "name");
-  const childrenIds = useNodeAttribute(id, "children") ?? [];
+  const node = useNode(id);
+  const name = useSubscribe(node, "Name");
+  const children = useSubscribe(node, "Children") ?? [];
   const selectedId = useEditorStore((state) => state.selectedId);
   const openIds = useEditorStore((state) => state.openIds);
   const treeIds = useEditorStore((state) => state.treeIds);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
 
   const depth = useMemo(() => {
     const getDepth = (id: string): number => {
@@ -46,20 +49,22 @@ export default function TreeItem({ id }: Props) {
 
   const isOpen = openIds.includes(id);
   const isSelected = selectedId === id;
-  const hasChildren = childrenIds.length > 0;
+  const hasChildren = children.length > 0;
 
   return (
     <div className="relative select-none">
       <div
         style={{ paddingLeft: `${depth + 1}rem` }}
-        className={`flex items-center space-x-1 text-sm text-neutral-800 active:opacity-80 ${
+        className={`flex items-center space-x-1 text-sm text-neutral-800 ${
+          isPlaying ? "" : "active:opacity-80"
+        } ${
           isSelected ? "bg-neutral-200 text-black hover:bg-neutral-300" : "hover:bg-neutral-200"
         }`}
         onMouseDown={(e) => {
           e.stopPropagation();
           useEditorStore.setState({ selectedId: id });
 
-          if (e.button !== 0) return;
+          if (e.button !== 0 || isPlaying) return;
 
           useEditorStore.setState({ draggingId: id });
           document.body.style.cursor = "grabbing";
@@ -72,7 +77,8 @@ export default function TreeItem({ id }: Props) {
             !engine ||
             !draggingId ||
             draggingId === id ||
-            isAncestor(draggingId, id, engine)
+            isAncestor(draggingId, id, engine) ||
+            isPlaying
           )
             return;
 
@@ -124,7 +130,13 @@ export default function TreeItem({ id }: Props) {
           style={{ paddingLeft: `${depth + 2}rem` }}
           className="absolute left-0 -top-0.5 h-2 w-full opacity-0 hover:opacity-100"
           onMouseUp={() => {
-            if (!engine || !draggingId || draggingId === id || isAncestor(draggingId, id, engine))
+            if (
+              !engine ||
+              !draggingId ||
+              draggingId === id ||
+              isAncestor(draggingId, id, engine) ||
+              isPlaying
+            )
               return;
 
             const draggedNode = engine.scene.node.store.get(draggingId);

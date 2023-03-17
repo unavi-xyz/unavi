@@ -1,7 +1,7 @@
+import { Node } from "@gltf-transform/core";
 import { Vec3 } from "engine";
 
-import { useNode } from "../../hooks/useNode";
-import { useNodeAttribute } from "../../hooks/useNodeAttribute";
+import { useSubscribe } from "../../hooks/useSubscribe";
 import { eulerToQuaternion } from "../../utils/eulerToQuaternion";
 import { quaternionToEuler } from "../../utils/quaternionToEuler";
 import NumberInput from "../ui/NumberInput";
@@ -9,32 +9,33 @@ import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 
 interface Props {
-  nodeId: string;
+  node: Node;
 }
 
-export default function TransformComponent({ nodeId }: Props) {
-  const translation = useNodeAttribute(nodeId, "translation");
-  const rotation = useNodeAttribute(nodeId, "rotation");
-  const scale = useNodeAttribute(nodeId, "scale");
-  const node = useNode(nodeId);
+export default function TransformComponent({ node }: Props) {
+  const translation = useSubscribe(node, "Translation");
+  const rotation = useSubscribe(node, "Rotation");
+  const scale = useSubscribe(node, "Scale");
 
-  const euler = rotation ? quaternionToEuler(rotation) : null;
+  if (!translation || !rotation || !scale || !node) return null;
+
+  const euler = quaternionToEuler(rotation);
 
   return (
     <ComponentMenu removeable={false}>
       <MenuRows titles={["Translation", "Rotation", "Scale"]}>
         <div className="grid grid-cols-3 gap-x-2">
-          {translation?.map((value, i) => {
+          {translation.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
-            const name = `translation-${letter}`;
+            const id = `translation-${letter}`;
 
             const rounded = Math.round(value * 1000) / 1000;
 
             return (
-              <div key={name} className="flex items-center space-x-1">
-                <label htmlFor={name}>{letter}</label>
+              <div key={id} className="flex items-center space-x-1">
+                <label htmlFor={id}>{letter}</label>
                 <NumberInput
-                  name={name}
+                  id={id}
                   value={rounded}
                   step={0.1}
                   onChange={(e) => {
@@ -48,7 +49,7 @@ export default function TransformComponent({ nodeId }: Props) {
                     const newTranslation: Vec3 = [...translation];
                     newTranslation[i] = rounded;
 
-                    node?.setTranslation(newTranslation);
+                    node.setTranslation(newTranslation);
                   }}
                 />
               </div>
@@ -57,18 +58,18 @@ export default function TransformComponent({ nodeId }: Props) {
         </div>
 
         <div className="grid grid-cols-3 gap-x-2">
-          {euler?.map((value, i) => {
+          {euler.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
-            const name = `rotation-${letter}`;
+            const id = `rotation-${letter}`;
 
-            const degress = Math.round((value * 180) / Math.PI);
+            const degress = (value * 180) / Math.PI;
             const rounded = Math.round(degress * 1000) / 1000;
 
             return (
-              <div key={name} className="flex items-center space-x-1">
-                <label htmlFor={name}>{letter}</label>
+              <div key={id} className="flex items-center space-x-1">
+                <label htmlFor={id}>{letter}</label>
                 <NumberInput
-                  name={name}
+                  id={id}
                   value={rounded}
                   step={1}
                   onChange={(e) => {
@@ -85,7 +86,7 @@ export default function TransformComponent({ nodeId }: Props) {
 
                     const newRotation = eulerToQuaternion(newEuler);
 
-                    node?.setRotation(newRotation);
+                    node.setRotation(newRotation);
                   }}
                 />
               </div>
@@ -94,17 +95,17 @@ export default function TransformComponent({ nodeId }: Props) {
         </div>
 
         <div className="grid grid-cols-3 gap-x-2">
-          {scale?.map((value, i) => {
+          {scale.map((value, i) => {
             const letter = ["X", "Y", "Z"][i];
-            const name = `scale-${letter}`;
+            const id = `scale-${letter}`;
 
             const rounded = Math.round(value * 1000) / 1000;
 
             return (
-              <div key={name} className="flex items-center space-x-1">
-                <label htmlFor={name}>{letter}</label>
+              <div key={id} className="flex items-center space-x-1">
+                <label htmlFor={id}>{letter}</label>
                 <NumberInput
-                  name={name}
+                  id={id}
                   value={rounded}
                   step={0.1}
                   onChange={(e) => {
@@ -118,7 +119,7 @@ export default function TransformComponent({ nodeId }: Props) {
                     const newScale: Vec3 = [...scale];
                     newScale[i] = rounded;
 
-                    node?.setScale(newScale);
+                    node.setScale(newScale);
                   }}
                 />
               </div>

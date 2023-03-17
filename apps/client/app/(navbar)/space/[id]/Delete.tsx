@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
+import { parseError } from "../../../../src/editor/utils/parseError";
 import Button from "../../../../src/ui/Button";
 import { deletePublication } from "../../../api/publications/[id]/helper";
 
@@ -30,28 +31,35 @@ export default function Delete({ id, address }: Props) {
       return;
     }
 
+    const toastId = "delete";
+
     setLoading(true);
 
     async function deleteSpace() {
       if (!signer) throw new Error("No signer");
 
-      // Burn NFT
+      toast.loading("Waiting for signature...", { id: toastId });
       const contract = Space__factory.connect(SPACE_ADDRESS, signer);
-      await contract.burn(id);
+      const tx = await contract.burn(id);
 
-      // Remove from database
+      toast.loading("Deleting from database...", { id: toastId });
       await deletePublication(id);
+
+      toast.loading("Burning space...", { id: toastId });
+      await tx.wait();
     }
 
-    toast
-      .promise(deleteSpace(), {
-        loading: "Deleting space...",
-        success: "Space deleted",
-        error: "Failed to delete space",
-      })
-      .then(() => router.push(`/user/${address}`))
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
+    try {
+      await deleteSpace();
+      toast.success("Space deleted.", { id: toastId });
+
+      router.push(`/user/${address}`);
+    } catch (err) {
+      console.error(err);
+      toast.error(parseError(err, "Failed to delete space."), { id: toastId });
+    }
+
+    setLoading(false);
   }
 
   return (

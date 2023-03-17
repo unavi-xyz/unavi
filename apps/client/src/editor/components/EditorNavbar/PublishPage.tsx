@@ -18,10 +18,12 @@ import Button from "../../../ui/Button";
 import ImageInput from "../../../ui/ImageInput";
 import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
+import { bytesToDisplay } from "../../../utils/bytesToDisplay";
 import { toHex } from "../../../utils/toHex";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
+import { parseError } from "../../utils/parseError";
 
 function cdnModelURL(id: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/model.glb`;
@@ -42,6 +44,7 @@ export default function PublishPage() {
 
   const name = useEditorStore((state) => state.name);
   const description = useEditorStore((state) => state.description);
+  const image = useEditorStore((state) => state.image);
 
   const { data: session } = useSession();
   const { data: signer } = useSigner();
@@ -66,24 +69,69 @@ export default function PublishPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (imageFile || !imageDownload) return;
-    cropImage(imageDownload.url).then((file) => setImageFile(file));
-  }, [imageFile, imageDownload]);
+    if (imageFile) return;
+    if (image) cropImage(image).then(setImageFile);
+    else if (imageDownload) cropImage(imageDownload.url).then(setImageFile);
+  }, [imageFile, imageDownload, image]);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (loading || !signer || !id) return;
 
+    const toastId = "publish";
+
     async function publish() {
+      const { engine } = useEditorStore.getState();
+
+      if (!engine) throw new Error("Engine not found");
       if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
       if (!id) throw new Error("Project ID not found");
 
+      toast.loading("Saving...", { id: toastId });
       await save();
 
-      const publicationId = await publishProject(id);
-      let spaceId = project?.Publication?.spaceId ?? undefined;
+      toast.loading("Optimizing model...", { id: toastId });
+
+      let publicationId: string;
+      let modelSize: number;
+
+      // Try to optimize model on the server
+      // If it fails, optimize locally (can't compress textures)
+      try {
+        const res = await publishProject(id);
+        publicationId = res.id;
+        modelSize = res.modelSize;
+      } catch {
+        console.info("Failed to optimize model on the server, optimizing locally...");
+
+        // Optimize model locally
+        const optimizedModelPromise = engine.scene.export({ optimize: true });
+
+        // Create publication
+        const publishResponse = await publishProject(id, { optimize: false });
+        publicationId = publishResponse.id;
+
+        // Upload model
+        const optimizedModel = await optimizedModelPromise;
+        modelSize = optimizedModel.byteLength;
+
+        const url = await getPublicationFileUpload(publicationId, "model");
+
+        const response = await fetch(url, {
+          method: "PUT",
+          body: optimizedModel,
+          headers: {
+            "Content-Type": "model/gltf-binary",
+            "x-amz-acl": "public-read",
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to upload model");
+      }
+
+      console.info("📦 Published model size:", bytesToDisplay(modelSize));
 
       async function uploadImage() {
         if (!imageFile) throw new Error("Image not found");
@@ -116,8 +164,10 @@ export default function PublishPage() {
           animation_url: modelURL,
           description,
           external_url: spaceId
-            ? `https://thewired.space/space/${toHex(spaceId)}`
-            : `https://thewired.space/user/${profile ? toHex(profile.id) : session?.address}`,
+            ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/space/${toHex(spaceId)}`
+            : `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${
+                profile ? toHex(profile.id) : session?.address
+              }`,
           image: imageURL,
           name,
         };
@@ -137,11 +187,18 @@ export default function PublishPage() {
         if (!response.ok) throw new Error("Failed to upload metadata");
       }
 
+      let spaceId = project?.Publication?.spaceId ?? undefined;
+
       if (spaceId === undefined) {
+        toast.loading("Waiting for signature...", { id: toastId });
+
         // Mint space NFT
         const contentURI = cdnMetadataURL(publicationId);
         const contract = Space__factory.connect(SPACE_ADDRESS, signer);
         const tx = await contract.mintWithTokenURI(contentURI);
+
+        toast.loading("Minting space...", { id: toastId });
+
         await tx.wait();
 
         // Get space ID
@@ -163,6 +220,7 @@ export default function PublishPage() {
         }
       }
 
+      toast.loading("Uploading metadata...", { id: toastId });
       const promises: Promise<unknown>[] = [uploadImage(), uploadMetadata(spaceId)];
 
       if (spaceId !== undefined) promises.push(linkPublication(publicationId, spaceId));
@@ -185,17 +243,18 @@ export default function PublishPage() {
 
     setLoading(true);
 
-    toast
-      .promise(publish(), {
-        loading: "Publishing...",
-        success: "Published!",
-        error: "Failed to publish",
-      })
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
+    try {
+      await publish();
+      toast.success("Published!", { id: toastId });
+    } catch (err) {
+      toast.error(parseError(err, "Failed to publish."), { id: toastId });
+      console.error(err);
+    }
+
+    setLoading(false);
   }
 
-  const image = imageFile ? URL.createObjectURL(imageFile) : undefined;
+  const imageUrl = imageFile ? URL.createObjectURL(imageFile) : undefined;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -222,19 +281,17 @@ export default function PublishPage() {
         disabled={loading}
       />
 
-      <div className="space-y-2">
-        <div className="text-lg font-bold">Image</div>
-
-        <ImageInput
-          src={image}
-          disabled={loading}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
-          }}
-        />
-      </div>
+      <ImageInput
+        name="Image"
+        src={imageUrl}
+        disabled={loading}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          cropImage(URL.createObjectURL(file)).then((file) => setImageFile(file));
+        }}
+        className="h-72 w-full"
+      />
 
       <div className="flex justify-end">
         <Button disabled={loading} type="submit">

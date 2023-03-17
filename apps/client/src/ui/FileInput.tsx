@@ -1,4 +1,4 @@
-import { ChangeEvent, useId, useState } from "react";
+import { ChangeEvent, useState } from "react";
 
 interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   displayName?: string | null;
@@ -13,8 +13,6 @@ export default function FileInput({
   onChange,
   ...rest
 }: Props) {
-  const id = useId();
-
   const [file, setFile] = useState<File>();
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
@@ -26,29 +24,15 @@ export default function FileInput({
   const fileName = displayName === undefined ? file?.name : displayName;
 
   return (
-    <div className="flex flex-col space-y-1">
-      <label
-        htmlFor={id}
-        className="block cursor-pointer rounded-lg bg-neutral-100 transition hover:bg-neutral-200 active:opacity-80"
-      >
-        <div className="flex items-center py-2.5 px-4">
-          <div className="select-none border-r border-neutral-400 pr-4">Choose File</div>
-          <div className={`select-none break-all pl-4 ${fileName ? "" : "text-neutral-500"}`}>
-            {fileName ?? placeholder}
-          </div>
+    <label>
+      <div className="flex cursor-pointer items-center rounded-lg bg-neutral-100 py-2.5 px-4 transition hover:bg-neutral-200 active:opacity-80">
+        <div className="select-none border-r border-neutral-400 pr-4">Choose File</div>
+        <div className={`select-none break-all pl-4 ${fileName ? "" : "text-neutral-500"}`}>
+          {fileName ?? placeholder}
         </div>
-      </label>
-
-      <div>
-        <input
-          ref={inputRef}
-          id={id}
-          type="file"
-          className="hidden"
-          onChange={handleChange}
-          {...rest}
-        />
       </div>
-    </div>
+
+      <input ref={inputRef} type="file" className="hidden" onChange={handleChange} {...rest} />
+    </label>
   );
 }

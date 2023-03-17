@@ -30,10 +30,21 @@ const config = {
         tsconfig: "../../packages/engine/tsconfig.json",
         excludePrivate: true,
         readme: "none",
+        out: "../docs-api/engine",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
           position: 100,
+          categoryLabel: "Engine",
         },
+      },
+    ],
+    [
+      "@docusaurus/plugin-content-docs",
+      {
+        id: "docs-api",
+        path: "docs-api",
+        routeBasePath: "api",
+        sidebarPath: require.resolve("./sidebars.js"),
       },
     ],
   ],
@@ -83,6 +94,18 @@ const config = {
           src: "img/Logo-Dark.png",
         },
         items: [
+          {
+            to: "/",
+            label: "Docs",
+            position: "left",
+            activeBaseRegex: `/docs/`,
+          },
+          {
+            to: "/api",
+            label: "API",
+            position: "left",
+            activeBaseRegex: `/docs-api/`,
+          },
           {
             href: "https://github.com/wired-labs/wired",
             position: "right",

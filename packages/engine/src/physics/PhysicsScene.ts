@@ -8,7 +8,7 @@ import { Vec3 } from "../types";
 import { COLLISION_GROUP } from "./groups";
 
 /**
- * Instants of a {@link Scene} for the physics thread.
+ * Instance of a {@link Scene} for the physics thread.
  * This class is responsible for creating and disposing physics objects.
  */
 export class PhysicsScene extends Scene {

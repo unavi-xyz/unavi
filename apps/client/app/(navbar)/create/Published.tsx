@@ -4,6 +4,7 @@ import { env } from "../../../src/env/server.mjs";
 import { fetchProjects } from "../../../src/server/helpers/fetchProjects";
 import { getServerSession } from "../../../src/server/helpers/getServerSession";
 import Card from "../../../src/ui/Card";
+import CardGrid from "../../../src/ui/CardGrid";
 
 function cdnImageURL(id: string) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/image.jpg`;
@@ -27,13 +28,13 @@ export default async function Published() {
     <>
       <div className="pt-4 text-2xl font-bold">🌍 Published</div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <CardGrid>
         {publishedProjects.map(({ id, name }, i) => (
           <Link key={id} href={`/project/${id}`} className="rounded-xl">
             <Card text={name} image={publishedImages[i]} sizes="333px" animateEnter />
           </Link>
         ))}
-      </div>
+      </CardGrid>
     </>
   );
 }

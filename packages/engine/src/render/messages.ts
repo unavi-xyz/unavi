@@ -1,13 +1,21 @@
 import { DebugRenderBuffers } from "@dimforge/rapier3d";
+import { WebGLInfo } from "three";
 
 import { InputMessage } from "../input/messages";
 import { SceneMessage } from "../scene/messages";
 import { ControlsType, MessageJSON, Vec2, Vec3, Vec4 } from "../types";
 
+export type RenderStats = {
+  memory: WebGLInfo["memory"];
+  render: WebGLInfo["render"];
+  fps: number;
+};
+
 export type ToRenderMessage =
   | InputMessage
   | SceneMessage
   | MessageJSON<"destroy">
+  | MessageJSON<"get_stats">
   | MessageJSON<"player_input_direction", Vec2>
   | MessageJSON<"set_animations_path", string>
   | MessageJSON<"set_default_avatar", string>
@@ -46,6 +54,7 @@ export type FromRenderMessage =
   | SceneMessage
   | MessageJSON<"clicked_node", { nodeId: string | null }>
   | MessageJSON<"ready">
+  | MessageJSON<"stats", RenderStats>
   | MessageJSON<
       "set_node_transform",
       { nodeId: string; translation: Vec3; rotation: Vec4; scale: Vec3 }

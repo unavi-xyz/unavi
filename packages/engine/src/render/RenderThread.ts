@@ -64,6 +64,7 @@ export class RenderThread {
   clock = new Clock();
   #animationFrame: number | null = null;
   #visuals = DEFAULT_VISUALS;
+  #delta = 1;
 
   outlinePass: ThreeOutlinePass | null = null;
   composer: EffectComposer | null = null;
@@ -139,6 +140,21 @@ export class RenderThread {
       case "set_canvas": {
         this.#canvas = data;
         this.init();
+        break;
+      }
+
+      case "get_stats": {
+        const info = this.renderer?.info;
+        if (!info) break;
+
+        this.postMessage({
+          subject: "stats",
+          data: {
+            memory: info.memory,
+            render: info.render,
+            fps: 1 / this.#delta,
+          },
+        });
         break;
       }
 
@@ -254,6 +270,7 @@ export class RenderThread {
     this.renderer.outputEncoding = sRGBEncoding;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.info.autoReset = false;
 
     if (process.env.NODE_ENV === "production") {
       this.renderer.debug.checkShaderErrors = false;
@@ -296,8 +313,11 @@ export class RenderThread {
   render() {
     this.#animationFrame = requestAnimationFrame(() => this.render());
     const delta = this.clock.getDelta();
+    this.#delta = delta;
 
-    if (!this.composer || !this.csm) return;
+    if (!this.composer || !this.csm || !this.renderer) return;
+
+    this.renderer.info.reset();
 
     if (this.controls === "player") this.player.update(delta);
     else this.orbit.update();

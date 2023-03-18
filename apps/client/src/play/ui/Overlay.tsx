@@ -9,6 +9,7 @@ import { useIsMobile } from "../../utils/useIsMobile";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "../hooks/useHost";
 import { useSetAvatar } from "../hooks/useSetAvatar";
+import Stats from "../Stats";
 import { usePlayStore } from "../store";
 import ChatBox from "./ChatBox";
 import MobileChatBox from "./MobileChatBox";
@@ -121,6 +122,10 @@ export default function Overlay({ id }: Props) {
             <IoMdArrowRoundBack />
           </div>
         </Link>
+      </div>
+
+      <div className="absolute top-16 left-0 z-20 p-4">
+        <Stats />
       </div>
 
       <div className="absolute top-0 right-0 z-20 space-x-2 p-4">

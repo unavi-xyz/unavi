@@ -4,7 +4,7 @@ import { Engine } from "../Engine";
 import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderEvent } from "./events";
-import { FromRenderMessage, ToRenderMessage } from "./messages";
+import { FromRenderMessage, RenderStats, ToRenderMessage } from "./messages";
 
 /**
  * Acts as an interface between the main thread and the render thread.
@@ -19,6 +19,8 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
 
   ready = false;
   messageQueue: Array<{ message: ToRenderMessage; transferables?: Transferable[] }> = [];
+
+  stats: RenderStats | null = null;
 
   constructor(engine: Engine) {
     super();
@@ -86,6 +88,11 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
         });
 
         this.messageQueue = [];
+        break;
+      }
+
+      case "stats": {
+        this.stats = data;
         break;
       }
 

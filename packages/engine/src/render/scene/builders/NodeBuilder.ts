@@ -76,7 +76,10 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
               if (!childId) throw new Error("Child id not found.");
 
               const childObject = this.getObject(childId);
-              if (childObject) object.remove(childObject);
+              if (childObject) {
+                object.remove(childObject);
+                this.scene.root.add(childObject);
+              }
             });
           };
         })

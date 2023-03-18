@@ -17,6 +17,7 @@ export class NodeBuilder {
 
   rigidBodies = new Map<Node, RigidBody>();
   primitiveColliders = new Map<Node, Collider[]>();
+  previousChildren = new Map<Node, Node[]>();
 
   constructor(scene: PhysicsScene) {
     this.#scene = scene;
@@ -25,20 +26,35 @@ export class NodeBuilder {
   add(json: Partial<NodeJSON>, id: string) {
     const { object: node } = this.#scene.node.create(json, id);
 
-    subscribe(node, "Children", () =>
-      subscribe(node, "Translation", () =>
+    subscribe(node, "Children", (children) => {
+      const previousChildren = this.previousChildren.get(node) ?? [];
+      const removedChildren = previousChildren.filter((child) => !children.includes(child));
+
+      removedChildren.forEach((child) => {
+        setTimeout(() => {
+          this.#updateWorldTransform(child);
+        });
+      });
+
+      this.previousChildren.set(node, children);
+
+      return subscribe(node, "Translation", () =>
         subscribe(node, "Rotation", () =>
           subscribe(node, "Scale", () => {
             // Was facing issue where child nodes wouldn't have a parent
             // But the parent would have the node as a child
             // idk, this fixes it
-            setTimeout(() => {
+            const timeout = setTimeout(() => {
               this.#updateWorldTransform(node);
             });
+
+            return () => {
+              clearTimeout(timeout);
+            };
           })
         )
-      )
-    );
+      );
+    });
 
     subscribe(node, "Extensions", (extensions) => {
       const cleanup: (() => void)[] = [];
@@ -124,10 +140,7 @@ export class NodeBuilder {
 
             case "trimesh": {
               return subscribe(colliderExtension, "Mesh", (mesh) => {
-                if (!mesh) {
-                  this.#updatePrimitiveColliders(node);
-                  return;
-                }
+                if (!mesh) return;
 
                 return subscribe(mesh, "Primitives", (primitives) => {
                   const currentColliders = this.primitiveColliders.get(node);
@@ -197,6 +210,8 @@ export class NodeBuilder {
       const rigidBody = this.rigidBodies.get(node);
       if (rigidBody) this.#removeRigidBody(rigidBody);
 
+      this.previousChildren.delete(node);
+      this.primitiveColliders.delete(node);
       this.rigidBodies.delete(node);
     });
   }

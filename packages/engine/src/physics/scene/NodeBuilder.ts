@@ -166,6 +166,16 @@ export class NodeBuilder {
                   }
 
                   this.#updatePrimitiveColliders(node);
+
+                  return () => {
+                    const primitiveColliders = this.primitiveColliders.get(node);
+
+                    primitiveColliders?.forEach((collider) => {
+                      this.#scene.world.removeCollider(collider, true);
+                    });
+
+                    this.primitiveColliders.delete(node);
+                  };
                 });
               });
             }

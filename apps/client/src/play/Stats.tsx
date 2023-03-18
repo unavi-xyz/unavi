@@ -47,6 +47,9 @@ function StatsMenu() {
     // Get stats every on an interval
     const interval = setInterval(getStats, 1000);
 
+    // Get stats once on mount
+    getStats();
+
     return () => {
       clearInterval(interval);
     };

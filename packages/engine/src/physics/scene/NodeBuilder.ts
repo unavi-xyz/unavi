@@ -168,6 +168,8 @@ export class NodeBuilder {
                       const index = indices[i];
                       if (!index) return;
 
+                      if (vertex.length === 0 || index.length === 0) return;
+
                       // Create new collider
                       const colliderDesc = ColliderDesc.trimesh(vertex, index);
                       colliderDesc.setCollisionGroups(COLLISION_GROUP.static);

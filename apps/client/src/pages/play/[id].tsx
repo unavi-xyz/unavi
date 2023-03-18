@@ -83,6 +83,17 @@ export default function Play({ id, metadata }: Props) {
     };
   }, [engine, join]);
 
+  useEffect(() => {
+    if (!engine) return;
+
+    // Attach engine to window for debugging
+    (window as any).engine = engine;
+
+    return () => {
+      delete (window as any).engine;
+    };
+  }, [engine, join]);
+
   const loaded = loadingProgress === 1;
   const loadedClass = loaded ? "opacity-100" : "opacity-0";
 

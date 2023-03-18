@@ -38,7 +38,7 @@ export const useEditorStore = create<IEditorStore>(() => ({
   isPlaying: false,
   stopPlaying: async () => {},
 
-  visuals: false,
+  visuals: true,
   tool: "translate",
 
   name: "",

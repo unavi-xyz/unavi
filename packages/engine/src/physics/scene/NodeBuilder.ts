@@ -25,6 +25,21 @@ export class NodeBuilder {
   add(json: Partial<NodeJSON>, id: string) {
     const { object: node } = this.#scene.node.create(json, id);
 
+    subscribe(node, "Children", () =>
+      subscribe(node, "Translation", () =>
+        subscribe(node, "Rotation", () =>
+          subscribe(node, "Scale", () => {
+            // Was facing issue where child nodes wouldn't have a parent
+            // But the parent would have the node as a child
+            // idk, this fixes it
+            setTimeout(() => {
+              this.#updateWorldTransform(node);
+            });
+          })
+        )
+      )
+    );
+
     subscribe(node, "Extensions", (extensions) => {
       const cleanup: (() => void)[] = [];
 
@@ -38,17 +53,9 @@ export class NodeBuilder {
         const rigidBodyDesc = RigidBodyDesc.kinematicPositionBased();
         const rigidBody = this.#scene.world.createRigidBody(rigidBodyDesc);
         this.rigidBodies.set(node, rigidBody);
-      }
 
-      cleanup.push(
-        subscribe(node, "Children", () =>
-          subscribe(node, "Translation", () =>
-            subscribe(node, "Rotation", () =>
-              subscribe(node, "Scale", () => this.#updateWorldTransform(node))
-            )
-          )
-        )
-      );
+        this.#updateWorldTransform(node);
+      }
 
       // Create colliders
       cleanup.push(
@@ -117,7 +124,10 @@ export class NodeBuilder {
 
             case "trimesh": {
               return subscribe(colliderExtension, "Mesh", (mesh) => {
-                if (!mesh) return;
+                if (!mesh) {
+                  this.#updatePrimitiveColliders(node);
+                  return;
+                }
 
                 return subscribe(mesh, "Primitives", (primitives) => {
                   const currentColliders = this.primitiveColliders.get(node);
@@ -155,7 +165,7 @@ export class NodeBuilder {
                     this.primitiveColliders.set(node, colliders);
                   }
 
-                  this.#updateWorldTransform(node);
+                  this.#updatePrimitiveColliders(node);
                 });
               });
             }
@@ -220,6 +230,13 @@ export class NodeBuilder {
       y: worldTranslation[1],
       z: worldTranslation[2],
     });
+
+    this.#updatePrimitiveColliders(node);
+  }
+
+  #updatePrimitiveColliders(node: Node) {
+    const rigidBody = this.rigidBodies.get(node);
+    if (!rigidBody) return;
 
     // Update trimesh colliders
     const colliderExtension = node.getExtension<ColliderExt>(ColliderExt.EXTENSION_NAME);

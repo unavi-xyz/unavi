@@ -75,7 +75,12 @@ export default function Play({ id, metadata }: Props) {
 
   useEffect(() => {
     if (!engine) return;
+
     join();
+
+    return () => {
+      engine.scene.clear();
+    };
   }, [engine, join]);
 
   const loaded = loadingProgress === 1;

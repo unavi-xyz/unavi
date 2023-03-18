@@ -14,8 +14,8 @@ import { COLLISION_GROUP } from "./groups";
 export class PhysicsScene extends Scene {
   #world: World;
 
-  colliders = new Map<string, Collider>();
-  colliderScale = new Map<string, Vec3>();
+  colliders = new Map<string, Collider[]>();
+  colliderScales = new Map<string, Vec3[]>();
 
   constructor(world: World) {
     super();
@@ -152,25 +152,25 @@ export class PhysicsScene extends Scene {
 
       // Create new collider
       if (colliderJSON) {
-        let colliderDesc: ColliderDesc | undefined;
+        const colliderDescs: ColliderDesc[] = [];
 
         switch (colliderJSON.type) {
           case "box": {
             const size = colliderJSON.size ?? [1, 1, 1];
-            colliderDesc = ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2);
+            colliderDescs.push(ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2));
             break;
           }
 
           case "sphere": {
             const radius = colliderJSON.radius ?? 0.5;
-            colliderDesc = ColliderDesc.ball(radius);
+            colliderDescs.push(ColliderDesc.ball(radius));
             break;
           }
 
           case "cylinder": {
             const height = colliderJSON.height ?? 1;
             const radius = colliderJSON.radius ?? 0.5;
-            colliderDesc = ColliderDesc.cylinder(height / 2, radius);
+            colliderDescs.push(ColliderDesc.cylinder(height / 2, radius));
             break;
           }
 
@@ -180,7 +180,7 @@ export class PhysicsScene extends Scene {
             const mesh = this.mesh.store.get(colliderJSON.mesh);
             if (!mesh) throw new Error("Mesh not found");
 
-            const vertices = mesh.listPrimitives().flatMap((primitive) => {
+            const vertices = mesh.listPrimitives().map((primitive) => {
               const attribute = primitive.getAttribute("POSITION");
               if (!attribute) return [];
 
@@ -190,7 +190,7 @@ export class PhysicsScene extends Scene {
               return Array.from(array);
             });
 
-            const indices = mesh.listPrimitives().flatMap((primitive) => {
+            const indices = mesh.listPrimitives().map((primitive) => {
               const indicesAttribute = primitive.getIndices();
               if (!indicesAttribute) return [];
 
@@ -200,23 +200,27 @@ export class PhysicsScene extends Scene {
               return Array.from(array);
             });
 
-            if (vertices.length === 0 || indices.length === 0) break;
+            vertices.forEach((vertices, i) => {
+              const index = indices[i];
+              if (!index) throw new Error("Indices not found");
 
-            colliderDesc = ColliderDesc.trimesh(
-              Float32Array.from(vertices),
-              Uint32Array.from(indices)
-            );
+              colliderDescs.push(
+                ColliderDesc.trimesh(Float32Array.from(vertices), Uint32Array.from(index))
+              );
+            });
           }
         }
 
-        if (colliderDesc) {
-          colliderDesc.setCollisionGroups(COLLISION_GROUP.static);
-
+        if (colliderDescs.length > 0) {
           const rigidBodyDesc = RigidBodyDesc.kinematicPositionBased();
           const rigidBody = this.#world.createRigidBody(rigidBodyDesc);
-          const collider = this.#world.createCollider(colliderDesc, rigidBody);
 
-          this.colliders.set(nodeId, collider);
+          const colliders = colliderDescs.map((colliderDesc) => {
+            colliderDesc.setCollisionGroups(COLLISION_GROUP.static);
+            return this.#world.createCollider(colliderDesc, rigidBody);
+          });
+
+          this.colliders.set(nodeId, colliders);
         }
       }
     }
@@ -224,17 +228,17 @@ export class PhysicsScene extends Scene {
   }
 
   #removeNodeCollider(nodeId: string) {
-    const collider = this.colliders.get(nodeId);
-    if (collider) {
+    const colliders = this.colliders.get(nodeId);
+    if (colliders) {
       // Remove rigid body
-      const rigidBody = collider.parent();
+      const collider = colliders[0];
+      const rigidBody = collider?.parent();
       if (rigidBody) this.#world.removeRigidBody(rigidBody);
 
-      // Remove collider
-      this.#world.removeCollider(collider, true);
-
+      // Remove colliders
+      colliders.forEach((collider) => this.#world.removeCollider(collider, true));
       this.colliders.delete(nodeId);
-      this.colliderScale.delete(nodeId);
+      this.colliderScales.delete(nodeId);
     }
   }
 
@@ -255,57 +259,66 @@ export class PhysicsScene extends Scene {
     const worldRotation = node.getWorldRotation();
     const worldScale = node.getWorldScale();
 
-    const collider = this.colliders.get(nodeId);
+    const colliders = this.colliders.get(nodeId);
 
-    if (collider) {
-      if (collider.shape instanceof TriMesh) {
-        const prevScale = this.colliderScale.get(nodeId) ?? [1, 1, 1];
-        const sameScale = prevScale.every((value, index) => value === worldScale[index]);
+    if (colliders) {
+      colliders.forEach((collider, i) => {
+        if (collider.shape instanceof TriMesh) {
+          const prevScales = this.colliderScales.get(nodeId);
+          const prevScale: Vec3 = prevScales ? prevScales[i] ?? [1, 1, 1] : [1, 1, 1];
 
-        if (!sameScale) {
-          // Apply scale to vertices
-          const vertices = collider.shape.vertices;
+          const sameScale = prevScale.every((value, index) => value === worldScale[index]);
 
-          for (let i = 0; i < vertices.length; i += 3) {
-            vertices[i] *= worldScale[0] / prevScale[0];
-            vertices[i + 1] *= worldScale[1] / prevScale[1];
-            vertices[i + 2] *= worldScale[2] / prevScale[2];
+          if (!sameScale) {
+            // Apply scale to vertices
+            const vertices = collider.shape.vertices;
+
+            for (let i = 0; i < vertices.length; i += 3) {
+              vertices[i] *= worldScale[0] / prevScale[0];
+              vertices[i + 1] *= worldScale[1] / prevScale[1];
+              vertices[i + 2] *= worldScale[2] / prevScale[2];
+            }
+
+            // Create new collider
+            const newColliderDesc = ColliderDesc.trimesh(vertices, collider.shape.indices);
+            newColliderDesc.setCollisionGroups(COLLISION_GROUP.static);
+
+            const rigidBody = collider.parent();
+            if (!rigidBody) throw new Error("RigidBody not found");
+
+            // Update colliders array
+            const newCollider = this.#world.createCollider(newColliderDesc, rigidBody);
+            const newColliders = [...(colliders ?? [])];
+            newColliders[i] = newCollider;
+            this.colliders.set(nodeId, newColliders);
+
+            // Remove old collider
+            this.#world.removeCollider(collider, true);
+
+            // Update scale array
+            const newScales = [...(prevScales ?? [])];
+            newScales[i] = worldScale;
+            this.colliderScales.set(nodeId, newScales);
           }
-
-          // Create new collider
-          const newColliderDesc = ColliderDesc.trimesh(vertices, collider.shape.indices);
-          newColliderDesc.setCollisionGroups(COLLISION_GROUP.static);
-
-          const rigidBody = collider.parent();
-          if (!rigidBody) throw new Error("RigidBody not found");
-
-          const newCollider = this.#world.createCollider(newColliderDesc, rigidBody);
-          this.colliders.set(nodeId, newCollider);
-
-          // Remove old collider
-          this.#world.removeCollider(collider, true);
-
-          // Update scale
-          this.colliderScale.set(nodeId, worldScale);
         }
-      }
 
-      const rigidBody = collider.parent();
+        const rigidBody = collider.parent();
 
-      if (rigidBody) {
-        rigidBody.setNextKinematicTranslation({
-          x: worldTranslation[0],
-          y: worldTranslation[1],
-          z: worldTranslation[2],
-        });
+        if (rigidBody) {
+          rigidBody.setNextKinematicTranslation({
+            x: worldTranslation[0],
+            y: worldTranslation[1],
+            z: worldTranslation[2],
+          });
 
-        rigidBody.setNextKinematicRotation({
-          x: worldRotation[0],
-          y: worldRotation[1],
-          z: worldRotation[2],
-          w: worldRotation[3],
-        });
-      }
+          rigidBody.setNextKinematicRotation({
+            x: worldRotation[0],
+            y: worldRotation[1],
+            z: worldRotation[2],
+            w: worldRotation[3],
+          });
+        }
+      });
     }
 
     // Update children

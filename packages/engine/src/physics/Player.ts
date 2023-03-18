@@ -20,7 +20,7 @@ import {
 import { PostMessage } from "../types";
 import { COLLISION_GROUP } from "./groups";
 import { FromPhysicsMessage } from "./messages";
-import { PhysicsScene } from "./PhysicsScene";
+import { PhysicsScene } from "./scene/PhysicsScene";
 
 const VOID_HEIGHT = -100;
 const CHARACTER_OFFSET = 0.05;

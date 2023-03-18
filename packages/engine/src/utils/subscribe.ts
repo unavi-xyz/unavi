@@ -93,12 +93,21 @@ export function subscribe<P extends Property, Key extends SubscribeValues<P>>(
 
   // Cleanup on dispose
   const onDispose = () => {
-    if (cleanup) cleanup();
+    if (cleanup) {
+      cleanup();
+      cleanup = undefined;
+    }
   };
 
   property.addEventListener("dispose", onDispose);
 
   return () => {
+    // Call cleanup function
+    if (cleanup) {
+      cleanup();
+      cleanup = undefined;
+    }
+
     property.removeEventListener("change", onChange);
     property.removeEventListener("dispose", onDispose);
   };

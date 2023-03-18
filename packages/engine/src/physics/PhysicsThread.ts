@@ -1,11 +1,10 @@
 import { World } from "@dimforge/rapier3d";
 
 import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
-import { isSceneMessage } from "../scene/messages";
 import { ControlsType, PostMessage } from "../types";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
-import { PhysicsScene } from "./PhysicsScene";
 import { Player } from "./Player";
+import { PhysicsScene } from "./scene/PhysicsScene";
 
 const PHYSICS_LOOP_HZ = 60;
 
@@ -37,10 +36,7 @@ export class PhysicsThread {
   }
 
   onmessage = (event: MessageEvent<ToPhysicsMessage>) => {
-    if (isSceneMessage(event.data)) {
-      this.scene.onmessage(event.data);
-      return;
-    }
+    this.scene.onmessage(event.data);
 
     const { subject, data } = event.data;
 

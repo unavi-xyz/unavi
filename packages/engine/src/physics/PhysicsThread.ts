@@ -23,6 +23,7 @@ export class PhysicsThread {
   #visualsFrame = 0;
   #debugVertices = new Float32Array(0);
   #debugColors = new Float32Array(0);
+  #debugInterval = 30;
 
   #interval: NodeJS.Timeout | null = null;
   #postMessage: PostMessage<FromPhysicsMessage>;
@@ -109,7 +110,7 @@ export class PhysicsThread {
 
     if (this.#visuals) {
       // Only update the debug buffers every 30 frames
-      if (this.#visualsFrame++ % 30 === 0) {
+      if (this.#visualsFrame++ % this.#debugInterval === 0) {
         const buffers = this.world.debugRender();
 
         // Change the size of the shared buffers if needed
@@ -141,6 +142,9 @@ export class PhysicsThread {
         // Copy data to shared buffers
         this.#debugVertices.set(buffers.vertices);
         this.#debugColors.set(buffers.colors);
+
+        // Update interval based on the number of debug vertices
+        this.#debugInterval = Math.max(8, Math.floor(this.#debugVertices.length / 40000));
       }
     }
   };

@@ -74,6 +74,7 @@ export class RenderThread {
   #debugVertices = new Float32Array(0);
   #debugColors = new Float32Array(0);
   #debugFrame = 0;
+  #debugInterval = 60;
 
   transform = new TransformControls(this);
   orbit = new OrbitControls(this.camera, this.transform);
@@ -326,12 +327,15 @@ export class RenderThread {
 
     if (this.#visuals) {
       // Only update debug lines every 60 frames
-      if (this.#debugFrame++ % 60 === 0) {
+      if (this.#debugFrame++ % this.#debugInterval === 0) {
         this.debugLines.geometry.setAttribute(
           "position",
           new BufferAttribute(this.#debugVertices, 3)
         );
         this.debugLines.geometry.setAttribute("color", new BufferAttribute(this.#debugColors, 4));
+
+        // Adjust debug interval based on number vertices
+        this.#debugInterval = Math.max(8, Math.floor(this.#debugVertices.length / 40000)) * 2;
       }
     }
 

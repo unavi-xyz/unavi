@@ -23,8 +23,8 @@ import { FromPhysicsMessage } from "./messages";
 import { PhysicsScene } from "./PhysicsScene";
 
 const VOID_HEIGHT = -100;
-const CHARACTER_OFFSET = 0.02;
-const RIGID_BODY_FEET_OFFSET = PLAYER_HEIGHT / 2 + PLAYER_RADIUS + CHARACTER_OFFSET;
+const CHARACTER_OFFSET = 0.05;
+const RIGID_BODY_FEET_OFFSET = (PLAYER_HEIGHT + CHARACTER_OFFSET) / 2 + PLAYER_RADIUS;
 
 /**
  * Represents the player in the physics thread.

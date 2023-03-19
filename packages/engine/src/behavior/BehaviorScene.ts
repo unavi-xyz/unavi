@@ -1,5 +1,5 @@
 import { IScene } from "@wired-labs/behave-graph-core";
-import { parseJSONPath, ValueType } from "gltf-extensions";
+import { parseJSONPath, ValueType } from "@wired-labs/gltf-extensions";
 
 import { Engine } from "../Engine";
 

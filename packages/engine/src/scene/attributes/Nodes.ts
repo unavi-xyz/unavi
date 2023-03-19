@@ -5,7 +5,7 @@ import {
   ColliderType,
   SpawnPoint,
   SpawnPointExtension,
-} from "gltf-extensions";
+} from "@wired-labs/gltf-extensions";
 import { nanoid } from "nanoid";
 
 import { Vec3, Vec4 } from "../../types";

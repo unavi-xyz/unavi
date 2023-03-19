@@ -1,10 +1,10 @@
-import { Engine } from "engine";
 import {
   BehaviorNode,
   BehaviorNodeExtras,
   BehaviorNodeParameters,
   parseJSONPath,
-} from "gltf-extensions";
+} from "@wired-labs/gltf-extensions";
+import { Engine } from "engine";
 import { Edge, Node as FlowNode } from "reactflow";
 
 import { FlowNodeData } from "../types";

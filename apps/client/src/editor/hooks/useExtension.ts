@@ -1,5 +1,10 @@
 import { ExtensibleProperty, ExtensionProperty } from "@gltf-transform/core";
-import { Collider, ColliderExtension, SpawnPoint, SpawnPointExtension } from "gltf-extensions";
+import {
+  Collider,
+  ColliderExtension,
+  SpawnPoint,
+  SpawnPointExtension,
+} from "@wired-labs/gltf-extensions";
 import { useEffect, useState } from "react";
 
 export function useExtension<T extends ExtensionProperty>(

@@ -1,11 +1,11 @@
-import { Engine, pathRefToString } from "engine";
 import {
   BehaviorNode,
   BehaviorNodeExtras,
   isJsonPath,
   isLink,
   isVariableConfig,
-} from "gltf-extensions";
+} from "@wired-labs/gltf-extensions";
+import { Engine, pathRefToString } from "engine";
 import { nanoid } from "nanoid";
 import { Edge, Node } from "reactflow";
 

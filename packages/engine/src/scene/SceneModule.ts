@@ -15,7 +15,7 @@ import {
   Collider,
   ColliderExtension,
   SpawnPointExtension,
-} from "gltf-extensions";
+} from "@wired-labs/gltf-extensions";
 
 import { Engine } from "../Engine";
 import { extensions } from "../extensions";

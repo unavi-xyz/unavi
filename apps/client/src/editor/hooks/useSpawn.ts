@@ -1,4 +1,4 @@
-import { SPAWN_TITLE } from "gltf-extensions";
+import { SPAWN_TITLE } from "@wired-labs/gltf-extensions";
 
 import { useEditorStore } from "../store";
 

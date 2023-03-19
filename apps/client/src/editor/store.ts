@@ -1,5 +1,5 @@
+import { Variable } from "@wired-labs/gltf-extensions";
 import { Engine } from "engine";
-import { Variable } from "gltf-extensions";
 import { create } from "zustand";
 
 import { Tool } from "./types";

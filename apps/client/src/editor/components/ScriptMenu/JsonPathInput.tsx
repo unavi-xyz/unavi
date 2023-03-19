@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { parseJSONPath, ValueType } from "gltf-extensions";
+import { parseJSONPath, ValueType } from "@wired-labs/gltf-extensions";
 import { useEffect, useMemo, useState } from "react";
 
 import { useNodes } from "../../hooks/useNodes";

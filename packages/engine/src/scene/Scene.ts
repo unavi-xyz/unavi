@@ -5,7 +5,7 @@ import {
   SPAWN_TITLE,
   SpawnPoint,
   SpawnPointExtension,
-} from "gltf-extensions";
+} from "@wired-labs/gltf-extensions";
 
 import { Accessors } from "./attributes/Accessors";
 import { Animations } from "./attributes/Animations";

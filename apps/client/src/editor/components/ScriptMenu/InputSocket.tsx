@@ -1,5 +1,5 @@
 import { InputSocketSpecJSON } from "@wired-labs/behave-graph-core";
-import { ConstantValue, ValueType } from "gltf-extensions";
+import { ConstantValue, ValueType } from "@wired-labs/gltf-extensions";
 import { FaCaretRight } from "react-icons/fa";
 import { Connection, Handle, Position, useReactFlow } from "reactflow";
 

@@ -51,6 +51,7 @@ export class PhysicsThread {
 
       case "set_controls": {
         this.controls = data;
+        this.player.enabled = data === "player";
         break;
       }
 

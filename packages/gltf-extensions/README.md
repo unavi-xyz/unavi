@@ -2,9 +2,9 @@
 
 Contains [glTF-Transform](https://github.com/donmccurdy/glTF-Transform) implementations of the following glTF extensions:
 
-- [KHR_behavior](src/Behavior/)
-- [OMI_collider](src/Collider/)
-- [OMI_spawn_point](src/SpawnPoint/)
+- [KHR_behavior](https://github.com/ux3d/glTF/tree/extensions/KHR_behavior/extensions/2.0/Khronos/KHR_behavior)
+- [OMI_collider](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_collider)
+- [OMI_spawn_point](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point)
 
 ## Installation
 

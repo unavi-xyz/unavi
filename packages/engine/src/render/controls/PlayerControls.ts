@@ -124,8 +124,8 @@ export class PlayerControls {
           const currentX = Atomics.load(this.inputRotation, 0) / INPUT_ARRAY_ROUNDING;
           const currentY = Atomics.load(this.inputRotation, 1) / INPUT_ARRAY_ROUNDING;
 
-          const x = currentX - (data.x * this.#delta) / 14;
-          const y = currentY - (data.y * this.#delta) / 14;
+          const x = currentX - data.x / 1000;
+          const y = currentY - data.y / 1000;
 
           Atomics.store(this.inputRotation, 0, x * INPUT_ARRAY_ROUNDING);
           Atomics.store(this.inputRotation, 1, y * INPUT_ARRAY_ROUNDING);
@@ -134,7 +134,7 @@ export class PlayerControls {
       }
 
       case "wheel": {
-        this.#targetOrbitDistance += data.deltaY * this.#delta * 0.75;
+        this.#targetOrbitDistance += data.deltaY / 100;
         this.#targetOrbitDistance = Math.max(
           0,
           Math.min(MAX_ORBIT_DISTANCE, this.#targetOrbitDistance)

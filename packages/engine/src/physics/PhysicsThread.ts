@@ -1,11 +1,10 @@
 import { World } from "@dimforge/rapier3d";
 
 import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
-import { isSceneMessage } from "../scene/messages";
 import { ControlsType, PostMessage } from "../types";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
-import { PhysicsScene } from "./PhysicsScene";
 import { Player } from "./Player";
+import { PhysicsScene } from "./scene/PhysicsScene";
 
 const PHYSICS_LOOP_HZ = 60;
 
@@ -24,6 +23,7 @@ export class PhysicsThread {
   #visualsFrame = 0;
   #debugVertices = new Float32Array(0);
   #debugColors = new Float32Array(0);
+  #debugInterval = 30;
 
   #interval: NodeJS.Timeout | null = null;
   #postMessage: PostMessage<FromPhysicsMessage>;
@@ -37,10 +37,7 @@ export class PhysicsThread {
   }
 
   onmessage = (event: MessageEvent<ToPhysicsMessage>) => {
-    if (isSceneMessage(event.data)) {
-      this.scene.onmessage(event.data);
-      return;
-    }
+    this.scene.onmessage(event.data);
 
     const { subject, data } = event.data;
 
@@ -54,6 +51,7 @@ export class PhysicsThread {
 
       case "set_controls": {
         this.controls = data;
+        this.player.enabled = data === "player";
         break;
       }
 
@@ -113,7 +111,7 @@ export class PhysicsThread {
 
     if (this.#visuals) {
       // Only update the debug buffers every 30 frames
-      if (this.#visualsFrame++ % 30 === 0) {
+      if (this.#visualsFrame++ % this.#debugInterval === 0) {
         const buffers = this.world.debugRender();
 
         // Change the size of the shared buffers if needed
@@ -145,6 +143,9 @@ export class PhysicsThread {
         // Copy data to shared buffers
         this.#debugVertices.set(buffers.vertices);
         this.#debugColors.set(buffers.colors);
+
+        // Update interval based on the number of debug vertices
+        this.#debugInterval = Math.max(1, Math.floor(this.#debugVertices.length / 40000));
       }
     }
   };

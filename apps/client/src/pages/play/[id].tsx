@@ -75,7 +75,23 @@ export default function Play({ id, metadata }: Props) {
 
   useEffect(() => {
     if (!engine) return;
+
     join();
+
+    return () => {
+      engine.scene.clear();
+    };
+  }, [engine, join]);
+
+  useEffect(() => {
+    if (!engine) return;
+
+    // Attach engine to window for debugging
+    (window as any).engine = engine;
+
+    return () => {
+      delete (window as any).engine;
+    };
   }, [engine, join]);
 
   const loaded = loadingProgress === 1;

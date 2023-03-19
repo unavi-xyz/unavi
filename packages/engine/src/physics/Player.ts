@@ -20,11 +20,11 @@ import {
 import { PostMessage } from "../types";
 import { COLLISION_GROUP } from "./groups";
 import { FromPhysicsMessage } from "./messages";
-import { PhysicsScene } from "./PhysicsScene";
+import { PhysicsScene } from "./scene/PhysicsScene";
 
 const VOID_HEIGHT = -100;
-const CHARACTER_OFFSET = 0.02;
-const RIGID_BODY_FEET_OFFSET = PLAYER_HEIGHT / 2 + PLAYER_RADIUS + CHARACTER_OFFSET;
+const CHARACTER_OFFSET = 0.05;
+const RIGID_BODY_FEET_OFFSET = (PLAYER_HEIGHT + CHARACTER_OFFSET) / 2 + PLAYER_RADIUS;
 
 /**
  * Represents the player in the physics thread.
@@ -36,8 +36,8 @@ export class Player {
   #postMessage: PostMessage<FromPhysicsMessage>;
 
   controller: KinematicCharacterController;
-  collider: Collider;
-  rigidBody: RigidBody;
+  collider: Collider | null = null;
+  rigidBody: RigidBody | null = null;
 
   input: Int16Array | null = null;
   cameraYaw: Int16Array | null = null;
@@ -49,6 +49,7 @@ export class Player {
   #groundedChanged = false;
   #baseYVelocity = 0;
   #ground: RigidBody | null = null;
+  #enabled = true;
 
   constructor(world: World, scene: PhysicsScene, postMessage: PostMessage<FromPhysicsMessage>) {
     this.#world = world;
@@ -57,18 +58,12 @@ export class Player {
 
     this.controller = this.#world.createCharacterController(CHARACTER_OFFSET);
     this.controller.enableSnapToGround(0.5);
-    this.controller.enableAutostep(PLAYER_HEIGHT / 5, PLAYER_RADIUS / 2, false);
+    this.controller.enableAutostep(PLAYER_HEIGHT / 5, PLAYER_RADIUS, false);
     this.controller.setSlideEnabled(true);
-    this.controller.setMaxSlopeClimbAngle((60 * Math.PI) / 180);
-    this.controller.setMinSlopeSlideAngle((30 * Math.PI) / 180);
+    this.controller.setMaxSlopeClimbAngle((70 * Math.PI) / 180);
+    this.controller.setMinSlopeSlideAngle((50 * Math.PI) / 180);
 
-    const colliderDesc = ColliderDesc.capsule(PLAYER_HEIGHT / 2, PLAYER_RADIUS);
-    colliderDesc.setCollisionGroups(COLLISION_GROUP.player);
-
-    const rigidBodyDesc = RigidBodyDesc.kinematicVelocityBased();
-    this.rigidBody = this.#world.createRigidBody(rigidBodyDesc);
-
-    this.collider = this.#world.createCollider(colliderDesc, this.rigidBody);
+    this.#createPlayer();
   }
 
   get isGrounded() {
@@ -82,11 +77,43 @@ export class Player {
     this.#postMessage({ subject: "set_grounded", data: value });
   }
 
+  get enabled() {
+    return this.#enabled;
+  }
+
+  set enabled(value: boolean) {
+    if (value === this.#enabled) return;
+    this.#enabled = value;
+
+    if (value) this.#createPlayer();
+    else this.#removePlayer();
+  }
+
+  #createPlayer() {
+    const colliderDesc = ColliderDesc.capsule(PLAYER_HEIGHT / 2, PLAYER_RADIUS);
+    colliderDesc.setCollisionGroups(COLLISION_GROUP.player);
+
+    const rigidBodyDesc = RigidBodyDesc.kinematicVelocityBased();
+    this.rigidBody = this.#world.createRigidBody(rigidBodyDesc);
+
+    this.collider = this.#world.createCollider(colliderDesc, this.rigidBody);
+  }
+
+  #removePlayer() {
+    if (this.collider) this.#world.removeCollider(this.collider, true);
+    if (this.rigidBody) this.#world.removeRigidBody(this.rigidBody);
+
+    this.collider = null;
+    this.rigidBody = null;
+  }
+
   jump() {
     this.shouldJump = true;
   }
 
   respawn() {
+    if (!this.rigidBody) return;
+
     const spawn = this.#scene.getSpawn();
     const position = spawn?.getWorldTranslation() ?? [0, 0, 0];
     this.rigidBody.setTranslation(
@@ -101,7 +128,8 @@ export class Player {
   }
 
   update() {
-    if (!this.input || !this.cameraYaw || !this.userPosition) return;
+    if (!this.input || !this.cameraYaw || !this.userPosition || !this.rigidBody || !this.collider)
+      return;
     const delta = this.#world.timestep;
 
     // Read input

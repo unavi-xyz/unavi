@@ -78,15 +78,6 @@ const config = {
         { name: "twitter:card", content: "summary" },
       ],
 
-      announcementBar: {
-        id: "discord",
-        content:
-          '🎉 Welcome to The Wired! Join the discord <a target="_blank" rel="noopener noreferrer" href="https://discord.gg/VCsAEneUMn">here</a>.',
-        backgroundColor: "#191919",
-        textColor: "#ffffff",
-        isCloseable: true,
-      },
-
       navbar: {
         title: "The Wired",
         logo: {
@@ -105,6 +96,12 @@ const config = {
             label: "API",
             position: "left",
             activeBaseRegex: `/docs-api/`,
+          },
+          {
+            label: "Discord",
+            href: "https://discord.gg/VCsAEneUMn",
+            position: "right",
+            "aria-label": "Discord invite",
           },
           {
             href: "https://github.com/wired-labs/wired",

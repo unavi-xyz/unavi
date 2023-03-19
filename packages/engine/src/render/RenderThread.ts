@@ -41,7 +41,10 @@ const CAMERA_NEAR = 0.05;
 const CAMERA_FAR = 500;
 
 const SHADOW_CASCADES = 2;
-const SHADOW_BIAS = -0.00002;
+const SHADOW_BIAS = -0.00007;
+
+const TOTAL_LIGHT_INTENSITY = 1.2;
+const AMBIENT_LIGHT_INTENSITY = 0.1;
 
 /**
  * The render thread is responsible for rendering to the canvas.
@@ -61,6 +64,7 @@ export class RenderThread {
   clock = new Clock();
   #animationFrame: number | null = null;
   #visuals = DEFAULT_VISUALS;
+  #delta = 1;
 
   outlinePass: ThreeOutlinePass | null = null;
   composer: EffectComposer | null = null;
@@ -70,6 +74,7 @@ export class RenderThread {
   #debugVertices = new Float32Array(0);
   #debugColors = new Float32Array(0);
   #debugFrame = 0;
+  #debugInterval = 60;
 
   transform = new TransformControls(this);
   orbit = new OrbitControls(this.camera, this.transform);
@@ -101,7 +106,7 @@ export class RenderThread {
     this.scene.add(this.renderScene.root);
     this.scene.add(this.player.group);
     this.scene.add(this.players.group);
-    this.scene.add(new AmbientLight(0xffffff, 0.2));
+    this.scene.add(new AmbientLight(0xffffff, AMBIENT_LIGHT_INTENSITY));
 
     this.debugLines = new LineSegments(
       new BufferGeometry(),
@@ -136,6 +141,21 @@ export class RenderThread {
       case "set_canvas": {
         this.#canvas = data;
         this.init();
+        break;
+      }
+
+      case "get_stats": {
+        const info = this.renderer?.info;
+        if (!info) break;
+
+        this.postMessage({
+          subject: "stats",
+          data: {
+            memory: info.memory,
+            render: info.render,
+            fps: 1 / this.#delta,
+          },
+        });
         break;
       }
 
@@ -251,6 +271,7 @@ export class RenderThread {
     this.renderer.outputEncoding = sRGBEncoding;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.info.autoReset = false;
 
     if (process.env.NODE_ENV === "production") {
       this.renderer.debug.checkShaderErrors = false;
@@ -260,7 +281,7 @@ export class RenderThread {
     this.csm = new CSM({
       maxFar: 40,
       cascades: SHADOW_CASCADES,
-      lightIntensity: 1 / SHADOW_CASCADES,
+      lightIntensity: (TOTAL_LIGHT_INTENSITY - AMBIENT_LIGHT_INTENSITY) / SHADOW_CASCADES,
       lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
       shadowMapSize: 2048,
       camera: this.camera,
@@ -293,6 +314,11 @@ export class RenderThread {
   render() {
     this.#animationFrame = requestAnimationFrame(() => this.render());
     const delta = this.clock.getDelta();
+    this.#delta = delta;
+
+    if (!this.composer || !this.csm || !this.renderer) return;
+
+    this.renderer.info.reset();
 
     if (this.controls === "player") this.player.update(delta);
     else this.orbit.update();
@@ -301,20 +327,23 @@ export class RenderThread {
 
     if (this.#visuals) {
       // Only update debug lines every 60 frames
-      if (this.#debugFrame++ % 60 === 0) {
+      if (this.#debugFrame++ % this.#debugInterval === 0) {
         this.debugLines.geometry.setAttribute(
           "position",
           new BufferAttribute(this.#debugVertices, 3)
         );
         this.debugLines.geometry.setAttribute("color", new BufferAttribute(this.#debugColors, 4));
+
+        // Adjust debug interval based on number vertices
+        this.#debugInterval = Math.max(1, Math.floor(this.#debugVertices.length / 40000)) * 2;
       }
     }
 
     this.renderScene.mixer.update(delta);
     this.players.update(delta);
-    this.csm?.update();
+    this.csm.update();
 
-    this.composer?.render();
+    this.composer.render();
   }
 
   toMainThread(message: FromRenderMessage, transfer?: Transferable[]) {

@@ -13,7 +13,6 @@ type ObjectName = (typeof OBJECT_NAME)[keyof typeof OBJECT_NAME];
 
 export default function SpecialsMenu() {
   const spawn = useSpawn();
-  const engine = useEditorStore((state) => state.engine);
 
   function addObject(name: ObjectName) {
     const { engine } = useEditorStore.getState();
@@ -55,11 +54,14 @@ export default function SpecialsMenu() {
             type="file"
             accept=".gltf,.glb"
             className="hidden"
-            onChange={(e) => {
+            onChange={async (e) => {
+              const { engine } = useEditorStore.getState();
+              if (!engine) return;
+
               const file = e.target.files?.[0];
               if (!file) return;
 
-              engine?.scene.addFile(file);
+              await engine.scene.addFile(file);
             }}
           />
         </label>

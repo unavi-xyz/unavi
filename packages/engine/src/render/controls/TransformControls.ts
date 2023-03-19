@@ -63,6 +63,11 @@ export class TransformControls {
         if (data.nodeId === null) {
           // Detach if null
           this.#transformControls.detach();
+
+          // Remove outline pass
+          if (this.#renderThread.outlinePass) {
+            this.#renderThread.outlinePass.selectedObjects = [];
+          }
         } else {
           const object = this.#renderThread.renderScene.builders.node.getObject(data.nodeId);
 

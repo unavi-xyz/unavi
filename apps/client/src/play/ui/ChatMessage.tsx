@@ -52,8 +52,9 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
       className={`my-0.5 w-fit max-w-full rounded-lg bg-white px-4 py-1 transition duration-500 ${hiddenClass} ${fadeClass}`}
     >
       {message.type === "chat" ? (
-        <div className="whitespace-pre break-words">
-          <span className="font-bold">{message.displayName}</span>: <span>{message.text}</span>
+        <div className="whitespace-pre-wrap break-words">
+          <span className="font-semibold">{message.displayName}</span>:{" "}
+          <span className="text-neutral-800">{message.text}</span>
         </div>
       ) : message.type === "system" ? (
         <span className="text-neutral-500">

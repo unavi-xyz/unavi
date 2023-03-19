@@ -167,6 +167,18 @@ export class Nodes extends Attribute<Node, NodeJSON> {
 
         node.addChild(child);
       }
+
+      // Remove children that are not in the json
+      const children = node.listChildren();
+
+      for (const child of children) {
+        const childId = this.getId(child);
+        if (!childId) continue;
+
+        if (!json.children.includes(childId)) {
+          node.removeChild(child);
+        }
+      }
     }
 
     if (json.extensions !== undefined) {

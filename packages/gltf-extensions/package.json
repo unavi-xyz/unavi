@@ -1,7 +1,6 @@
 {
   "name": "gltf-extensions",
   "version": "0.0.0",
-  "private": true,
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./build/index.js",
@@ -13,11 +12,7 @@
   },
   "dependencies": {
     "@gltf-transform/core": "3.1.1",
-    "@gltf-transform/extensions": "3.1.1",
-    "@gltf-transform/functions": "3.1.1",
-    "@wired-labs/behave-graph-core": "^0.9.19",
-    "nanoid": "^4.0.1",
-    "property-graph": "^1.1.0"
+    "@wired-labs/behave-graph-core": "^0.9.19"
   },
   "devDependencies": {
     "tsconfig": "*",

@@ -46,7 +46,7 @@ const config = {
       {
         id: "gltf-extensions",
         entryPoints: ["../../packages/gltf-extensions/src/index.ts"],
-        tsconfig: "../../packages/engine/tsconfig.json",
+        tsconfig: "../../packages/gltf-extensions/tsconfig.json",
         excludePrivate: true,
         readme: "none",
         out: "../docs-api/gltf-extensions",

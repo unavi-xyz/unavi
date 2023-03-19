@@ -40,6 +40,7 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
       title,
       description,
       images: space.metadata?.image ? [space.metadata.image] : undefined,
+      card: space.metadata?.image ? "summary_large_image" : "summary",
     },
   };
 }

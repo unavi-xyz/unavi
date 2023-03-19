@@ -2565,10 +2565,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@dimforge/rapier3d@^0.11.1":
-  version "0.11.1"
-  resolved "https://registry.yarnpkg.com/@dimforge/rapier3d/-/rapier3d-0.11.1.tgz#75f94156012dbc76f90c322a72e797d427c91bd0"
-  integrity sha512-rJT944tfEPZ2h+yEe2mqsl6yIsEtriEfpKt6pmuGwC9aodMO+p0sHbUMPC32Kw8aIpDo/Ok+nJopwkeJsUZSZA==
+"@dimforge/rapier3d@^0.11.2":
+  version "0.11.2"
+  resolved "https://registry.yarnpkg.com/@dimforge/rapier3d/-/rapier3d-0.11.2.tgz#b81d64a6a86b5f04805da29ce7eec57424769c6a"
+  integrity sha512-B+AKkPmtJxED3goMTGU8v0ju8hUAUQGLgghzCos4G4OeN9X+mJ5lfN2xtNA0n8tJRJk2YfsMk9BOj/6AN89Acg==
 
 "@discoveryjs/json-ext@0.5.7":
   version "0.5.7"

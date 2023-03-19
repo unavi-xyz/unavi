@@ -10,7 +10,7 @@
     "lint": "cd ../.. && eslint --fix packages/engine --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
-    "@dimforge/rapier3d": "^0.11.1",
+    "@dimforge/rapier3d": "^0.11.2",
     "@gltf-transform/core": "3.1.1",
     "@gltf-transform/extensions": "3.1.1",
     "@gltf-transform/functions": "3.1.1",

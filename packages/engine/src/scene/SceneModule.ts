@@ -10,10 +10,15 @@ import {
 } from "@gltf-transform/core";
 import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
 import { draco } from "@gltf-transform/functions";
+import {
+  BehaviorExtension,
+  Collider,
+  ColliderExtension,
+  SpawnPointExtension,
+} from "gltf-extensions";
 
 import { Engine } from "../Engine";
-import { BehaviorExtension, Collider, ColliderExtension, SpawnPointExtension } from "../gltf";
-import { extensions } from "../gltf/constants";
+import { extensions } from "../extensions";
 import { PhysicsModule } from "../physics/PhysicsModule";
 import { optimizeDocument } from "../render";
 import { RenderModule } from "../render/RenderModule";

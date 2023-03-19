@@ -1,5 +1,5 @@
 import { NodeCategory, NodeSpecJSON } from "@wired-labs/behave-graph-core";
-import { ConstantValue } from "engine";
+import { ConstantValue } from "gltf-extensions";
 import { NodeProps, useEdges } from "reactflow";
 
 import { useEditorStore } from "../../store";

@@ -1,4 +1,4 @@
-import { ParameterJSON } from "engine";
+import { ParameterJSON } from "gltf-extensions";
 
 export type FlowVariableParamter = { variableId: number };
 export type FlowNodeParamter = ParameterJSON | FlowVariableParamter;

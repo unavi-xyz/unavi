@@ -1,9 +1,13 @@
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 import { GraphJSON, NodeJSON, VariableJSON } from "@wired-labs/behave-graph-core";
 
-import { parseJSONPath } from "../../../behavior";
 import { EXTENSION_NAME } from "../constants";
 import { BehaviorNode } from "./BehaviorNode";
+import {
+  BehaviorNodeConfigurationJSON,
+  BehaviorNodeExtras,
+  BehaviorNodeParametersJSON,
+} from "./types";
 import {
   isJsonPath,
   isJsonPathJSON,
@@ -11,12 +15,8 @@ import {
   isLinkJSON,
   isVariableConfig,
   isVariableConfigJSON,
-} from "./filters";
-import {
-  BehaviorNodeConfigurationJSON,
-  BehaviorNodeExtras,
-  BehaviorNodeParametersJSON,
-} from "./types";
+} from "./utils/filters";
+import { parseJSONPath } from "./utils/parseJsonPath";
 import { Variable } from "./Variable";
 
 type BehaviorNodeDef = {

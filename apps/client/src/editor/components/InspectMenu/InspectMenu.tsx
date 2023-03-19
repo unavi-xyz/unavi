@@ -1,4 +1,4 @@
-import { EXTENSION_NAME } from "engine";
+import { EXTENSION_NAME } from "gltf-extensions";
 
 import { useNode } from "../../hooks/useNode";
 import { useNodeExtras } from "../../hooks/useNodeExtras";

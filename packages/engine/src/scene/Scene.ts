@@ -1,12 +1,12 @@
 import { Document } from "@gltf-transform/core";
-
 import {
   BehaviorExtension,
   ColliderExtension,
   SPAWN_TITLE,
   SpawnPoint,
   SpawnPointExtension,
-} from "../gltf";
+} from "gltf-extensions";
+
 import { Accessors } from "./attributes/Accessors";
 import { Animations } from "./attributes/Animations";
 import { Buffers } from "./attributes/Buffers";

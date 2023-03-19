@@ -1,4 +1,4 @@
-import { ConstantValue, ParamLinkJSON, Value } from "engine";
+import { ConstantValue, ParamLinkJSON, Value } from "gltf-extensions";
 
 import { FlowNodeParamter, FlowVariableParamter } from "../types";
 

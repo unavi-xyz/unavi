@@ -1,10 +1,13 @@
 import { Node } from "@gltf-transform/core";
+import {
+  Collider,
+  ColliderExtension,
+  ColliderType,
+  SpawnPoint,
+  SpawnPointExtension,
+} from "gltf-extensions";
 import { nanoid } from "nanoid";
 
-import { SpawnPoint, SpawnPointExtension } from "../../gltf";
-import { Collider } from "../../gltf/extensions/Collider/Collider";
-import { ColliderExtension } from "../../gltf/extensions/Collider/ColliderExtension";
-import { ColliderType } from "../../gltf/extensions/Collider/types";
 import { Vec3, Vec4 } from "../../types";
 import { Scene } from "../Scene";
 import { Attribute } from "./Attribute";

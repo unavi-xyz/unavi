@@ -1,7 +1,6 @@
 import { Document } from "@gltf-transform/core";
 import { dedup, metalRough, resample, sparse, weld } from "@gltf-transform/functions";
-
-import { BehaviorExtension } from "../../../gltf";
+import { BehaviorExtension } from "gltf-extensions";
 
 /**
  * Optimizes a glTF document. Does not apply compression.

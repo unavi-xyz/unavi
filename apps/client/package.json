@@ -33,6 +33,7 @@
     "contracts": "*",
     "engine": "*",
     "ethers": "^5.7.2",
+    "gltf-extensions": "*",
     "mediasoup-client": "^3.6.82",
     "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.1",

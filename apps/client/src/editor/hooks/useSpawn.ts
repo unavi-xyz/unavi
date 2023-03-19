@@ -1,4 +1,4 @@
-import { SPAWN_TITLE } from "engine";
+import { SPAWN_TITLE } from "gltf-extensions";
 
 import { useEditorStore } from "../store";
 

@@ -1,5 +1,6 @@
 import { Node } from "@gltf-transform/core";
-import { ColliderExtension, NodeExtras, SPAWN_TITLE } from "engine";
+import { NodeExtras } from "engine";
+import { ColliderExtension, SPAWN_TITLE } from "gltf-extensions";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 

@@ -1,4 +1,4 @@
-import { SPAWN_TITLE, SpawnPointExtension } from "engine";
+import { SPAWN_TITLE, SpawnPointExtension } from "gltf-extensions";
 
 import { DropdownItem } from "../../../ui/DropdownMenu";
 import { useSpawn } from "../../hooks/useSpawn";

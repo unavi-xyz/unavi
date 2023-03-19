@@ -1,10 +1,10 @@
+import { Engine } from "engine";
 import {
   BehaviorNode,
   BehaviorNodeExtras,
   BehaviorNodeParameters,
-  Engine,
   parseJSONPath,
-} from "engine";
+} from "gltf-extensions";
 import { Edge, Node as FlowNode } from "reactflow";
 
 import { FlowNodeData } from "../types";

@@ -1,4 +1,5 @@
-import { Engine, Variable } from "engine";
+import { Engine } from "engine";
+import { Variable } from "gltf-extensions";
 import { create } from "zustand";
 
 import { Tool } from "./types";

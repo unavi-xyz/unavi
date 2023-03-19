@@ -1,29 +1,25 @@
 {
-  "name": "engine",
+  "name": "gltf-extensions",
   "version": "0.0.0",
   "private": true,
   "license": "GPL-3.0-or-later",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./build/index.js",
   "types": "./src/index.ts",
   "scripts": {
-    "lint": "cd ../.. && eslint --fix packages/engine --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "cd ../.. && eslint --fix packages/gltf-extensions --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
-    "@dimforge/rapier3d": "^0.11.2",
     "@gltf-transform/core": "3.1.1",
     "@gltf-transform/extensions": "3.1.1",
     "@gltf-transform/functions": "3.1.1",
-    "@pixiv/three-vrm": "^1.0.8",
     "@wired-labs/behave-graph-core": "^0.9.19",
-    "gltf-extensions": "*",
     "nanoid": "^4.0.1",
-    "property-graph": "^1.1.0",
-    "three": "^0.148.0"
+    "property-graph": "^1.1.0"
   },
   "devDependencies": {
-    "@types/offscreencanvas": "^2019.7.0",
-    "@types/three": "^0.148.0",
     "tsconfig": "*",
     "typescript": "~5.0.2"
   }

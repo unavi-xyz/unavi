@@ -4,10 +4,7 @@ import {
   KHRMeshQuantization,
   KHRTextureTransform,
 } from "@gltf-transform/extensions";
-
-import { BehaviorExtension } from "./extensions/Behavior/BehaviorExtension";
-import { ColliderExtension } from "./extensions/Collider/ColliderExtension";
-import { SpawnPointExtension } from "./extensions/SpawnPoint/SpawnPointExtension";
+import { BehaviorExtension, ColliderExtension, SpawnPointExtension } from "gltf-extensions";
 
 /**
  * List of extensions supported by the engine.

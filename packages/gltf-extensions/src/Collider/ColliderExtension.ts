@@ -1,7 +1,7 @@
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
-import { Vec3 } from "../../../types";
 import { EXTENSION_NAME } from "../constants";
+import { Vec3 } from "../types";
 import { Collider } from "./Collider";
 import { ColliderType } from "./types";
 

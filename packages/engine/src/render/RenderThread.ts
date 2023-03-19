@@ -335,7 +335,7 @@ export class RenderThread {
         this.debugLines.geometry.setAttribute("color", new BufferAttribute(this.#debugColors, 4));
 
         // Adjust debug interval based on number vertices
-        this.#debugInterval = Math.max(8, Math.floor(this.#debugVertices.length / 40000)) * 2;
+        this.#debugInterval = Math.max(1, Math.floor(this.#debugVertices.length / 40000)) * 2;
       }
     }
 

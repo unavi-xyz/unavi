@@ -145,7 +145,7 @@ export class PhysicsThread {
         this.#debugColors.set(buffers.colors);
 
         // Update interval based on the number of debug vertices
-        this.#debugInterval = Math.max(8, Math.floor(this.#debugVertices.length / 40000));
+        this.#debugInterval = Math.max(1, Math.floor(this.#debugVertices.length / 40000));
       }
     }
   };

@@ -3,7 +3,7 @@ import { ControlsType } from "./types";
 export const DEFAULT_CONTROLS: ControlsType = "player";
 export const DEFAULT_VISUALS = false;
 
-export const PLAYER_HEIGHT = 1.6;
+export const PLAYER_HEIGHT = 1.4;
 export const PLAYER_RADIUS = 0.25;
 
 export const WALK_SPEED = 40;

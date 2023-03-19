@@ -1,4 +1,4 @@
-# glTf Extensions
+# glTF Extensions
 
 Contains [glTF-Transform](https://github.com/donmccurdy/glTF-Transform) implementations of the following glTF extensions:
 

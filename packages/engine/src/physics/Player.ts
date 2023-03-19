@@ -58,7 +58,7 @@ export class Player {
 
     this.controller = this.#world.createCharacterController(CHARACTER_OFFSET);
     this.controller.enableSnapToGround(0.5);
-    this.controller.enableAutostep(PLAYER_HEIGHT / 5, PLAYER_RADIUS / 2, false);
+    this.controller.enableAutostep(PLAYER_HEIGHT / 5, PLAYER_RADIUS, false);
     this.controller.setSlideEnabled(true);
     this.controller.setMaxSlopeClimbAngle((70 * Math.PI) / 180);
     this.controller.setMinSlopeSlideAngle((50 * Math.PI) / 180);

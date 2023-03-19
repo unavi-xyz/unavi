@@ -39,12 +39,12 @@ export function useSpace(id: number, metadata: ERC721Metadata | null) {
       try {
         await engine.scene.addBinary(array);
 
-        engine.physics.send({ subject: "respawn", data: null });
-        engine.behavior.start();
-
         // Add delay to allow scene to load
         const mbs = Math.max(Math.round(array.byteLength / 1024 / 1024), 5);
         await new Promise((resolve) => setTimeout(resolve, mbs * 300));
+
+        engine.physics.send({ subject: "respawn", data: null });
+        engine.behavior.start();
 
         setSceneLoaded(true);
       } catch (err) {

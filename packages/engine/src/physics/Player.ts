@@ -62,6 +62,8 @@ export class Player {
     this.controller.setSlideEnabled(true);
     this.controller.setMaxSlopeClimbAngle((70 * Math.PI) / 180);
     this.controller.setMinSlopeSlideAngle((50 * Math.PI) / 180);
+
+    this.#createPlayer();
   }
 
   get isGrounded() {

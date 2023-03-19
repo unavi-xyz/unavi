@@ -10,7 +10,7 @@ interface ISpawnPoint extends IProperty {
 /**
  * Represents a spawn point.
  *
- * @group GLTF Extensions
+ * @group OMI_spawn_point
  * @see {@link SpawnPointExtension}
  */
 export class SpawnPoint extends ExtensionProperty<ISpawnPoint> {

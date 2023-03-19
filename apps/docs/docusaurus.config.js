@@ -26,6 +26,7 @@ const config = {
 
       /** @type {import('typedoc').TypeDocOptions} */
       {
+        id: "engine",
         entryPoints: ["../../packages/engine/src/index.ts"],
         tsconfig: "../../packages/engine/tsconfig.json",
         excludePrivate: true,
@@ -35,6 +36,24 @@ const config = {
         sidebar: {
           position: 100,
           categoryLabel: "Engine",
+        },
+      },
+    ],
+    [
+      "docusaurus-plugin-typedoc",
+
+      /** @type {import('typedoc').TypeDocOptions} */
+      {
+        id: "gltf-extensions",
+        entryPoints: ["../../packages/gltf-extensions/src/index.ts"],
+        tsconfig: "../../packages/engine/tsconfig.json",
+        excludePrivate: true,
+        readme: "none",
+        out: "../docs-api/gltf-extensions",
+        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
+        sidebar: {
+          position: 90,
+          categoryLabel: "glTF Extensions",
         },
       },
     ],

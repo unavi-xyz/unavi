@@ -11,7 +11,7 @@ interface IVariable extends IProperty {
 /**
  * Represents a variable in the behavior graph.
  *
- * @group GLTF Extensions
+ * @group KHR_behavior
  * @see {@link BehaviorExtension}
  */
 export class Variable extends ExtensionProperty<IVariable> {

@@ -95,7 +95,7 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
           const meshId = this.scene.mesh.getId(mesh);
           if (!meshId) throw new Error("Mesh id not found.");
 
-          const meshObject = this.scene.builders.mesh.getObject(meshId);
+          const meshObject = this.scene.builders.mesh.getUniqueObject(meshId, id);
           if (!meshObject) throw new Error("Mesh object not found.");
 
           object.add(meshObject);
@@ -176,8 +176,7 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
           );
 
           return () => {
-            object.remove(meshObject);
-
+            this.scene.builders.mesh.removeObject(meshObject);
             meshCleanup.forEach((fn) => fn());
           };
         })

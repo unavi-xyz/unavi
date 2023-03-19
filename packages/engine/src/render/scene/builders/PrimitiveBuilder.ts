@@ -14,6 +14,7 @@ export const DEFAULT_MATERIAL = new MeshStandardMaterial();
  * Handles the conversion of primitives to Three.js objects.
  */
 export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh> {
+  objectClones = new Map<string, Mesh[]>();
   #setObjectTimeouts = new Map<string, NodeJS.Timeout>();
 
   constructor(scene: RenderScene) {
@@ -38,6 +39,37 @@ export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh>
       }, 10000);
 
       this.#setObjectTimeouts.set(id, timeout);
+    }
+  }
+
+  getUniqueObject(id: string): Mesh | SkinnedMesh | undefined {
+    const baseObject = this.getObject(id);
+    if (!baseObject) return undefined;
+
+    // If base object is not used yet, use it
+    if (!baseObject.parent) return baseObject;
+
+    // Any additional uses of the base object will be clones
+    const clone = baseObject.clone();
+    const clones = this.objectClones.get(id) ?? [];
+    clones.push(clone);
+    this.objectClones.set(id, clones);
+
+    return clone;
+  }
+
+  removeObject(object: Mesh | SkinnedMesh) {
+    // Remove from scene
+    object.removeFromParent();
+
+    // Remove from list of clones
+    for (const [id, clones] of this.objectClones) {
+      const index = clones.indexOf(object);
+      if (index === -1) continue;
+
+      clones.splice(index, 1);
+      if (clones.length === 0) this.objectClones.delete(id);
+      break;
     }
   }
 

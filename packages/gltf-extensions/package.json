@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "license": "GPL-3.0-or-later",
   "type": "module",
-  "main": "./build/index.js",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "yarn build -- --watch",
     "lint": "cd ../.. && eslint --fix packages/gltf-extensions --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "tsconfig": "*",
+    "tsup": "^6.7.0",
     "typescript": "~5.0.2"
   }
 }

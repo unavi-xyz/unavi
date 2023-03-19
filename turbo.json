@@ -3,7 +3,7 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build", "generate"],
-      "outputs": ["build/**"]
+      "outputs": ["build/**", "dist/**"]
     },
     "client#build": {
       "dependsOn": ["^build", "generate"],

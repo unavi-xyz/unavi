@@ -65,6 +65,6 @@
     "prisma": "^4.10.1",
     "tailwindcss": "^3.2.7",
     "tsconfig": "*",
-    "typescript": "~4.9.5"
+    "typescript": "~5.0.2"
   }
 }

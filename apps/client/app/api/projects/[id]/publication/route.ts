@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
 import { cdnURL, pathAsset } from "../../../../../src/editor/utils/s3Paths";
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   // Verify user owns the project
   const found = await prisma.project.findFirst({
     where: { id, owner: session.address },
-    include: { Publication: true, Assets: true },
+    include: { Publication: true, Assets: { select: { id: true, PublicationAsset: true } } },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
@@ -53,23 +53,47 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const assets = await getUsedAssets(model);
   const usedAssets = found.Assets.filter((asset) => assets.has(cdnURL(pathAsset(asset.id))));
-  const unusedAssets = found.Assets.filter((asset) => !assets.has(cdnURL(pathAsset(asset.id))));
+  const unusedAssets = found.Assets.filter((asset) => {
+    return (
+      !assets.has(cdnURL(pathAsset(asset.id))) &&
+      (asset.PublicationAsset.length === 0 ||
+        (asset.PublicationAsset.length === 1 &&
+          asset.PublicationAsset[0]?.publicationId === publicationId))
+    );
+  });
 
   await Promise.all([
-    // Delete unused assets
-    prisma.asset.deleteMany({
-      where: {
-        OR: [{ publicationId: null }, { publicationId }],
-        id: { in: unusedAssets.map((asset) => asset.id) },
-      },
-    }),
-    // Update used assets publicationId
-    prisma.asset.updateMany({
-      where: {
-        id: { in: usedAssets.map((asset) => asset.id) },
-      },
-      data: { publicationId },
-    }),
+    // Delete unused assets from S3
+    Promise.all(
+      unusedAssets.map((asset) => {
+        const command = new DeleteObjectCommand({
+          Bucket: env.S3_BUCKET,
+          Key: pathAsset(asset.id),
+        });
+        return s3Client.send(command);
+      })
+    ),
+
+    prisma.$transaction([
+      // Delete unused assets from database
+      prisma.asset.deleteMany({
+        where: {
+          id: { in: unusedAssets.map((asset) => asset.id) },
+        },
+      }),
+      prisma.publicationAsset.deleteMany({
+        where: {
+          assetId: { in: unusedAssets.map((asset) => asset.id) },
+        },
+      }),
+      // Update used assets publicationId
+      prisma.asset.updateMany({
+        where: {
+          id: { in: usedAssets.map((asset) => asset.id) },
+        },
+        data: {},
+      }),
+    ]),
   ]);
 
   // Optimize model

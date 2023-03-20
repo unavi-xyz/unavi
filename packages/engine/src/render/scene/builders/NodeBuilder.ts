@@ -191,16 +191,16 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
 
       cleanup.push(
         subscribe(node, "Extensions", (extensions) => {
-          const avatar = extensions.find((ext): ext is Avatar => ext instanceof Avatar);
-          if (!avatar) return;
-
-          const uri = avatar.getURI();
-          if (uri === vrmUri) return;
-
           if (vrmObject) {
             object.remove(vrmObject);
             deepDispose(vrmObject);
           }
+
+          const avatar = extensions.find((ext): ext is Avatar => ext instanceof Avatar);
+          if (!avatar) return;
+
+          const uri = avatar.getURI();
+          if (!uri || uri === vrmUri) return;
 
           vrmUri = uri;
 

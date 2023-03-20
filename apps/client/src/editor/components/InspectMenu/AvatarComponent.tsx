@@ -24,9 +24,8 @@ export default function AvatarComponent({ node }: Props) {
 
   if (uri === undefined) return null;
 
-  const fileName = avatar
-    ? avatar.getName() || `File ${uri.split("/").pop()?.substring(0, 6)}`
-    : undefined;
+  const fileName = avatar ? avatar.getName() : undefined;
+  const uriName = uri ? `File ${uri.split("/").pop()?.substring(0, 6)}` : undefined;
 
   return (
     <ComponentMenu
@@ -36,7 +35,7 @@ export default function AvatarComponent({ node }: Props) {
       }}
     >
       <FileInput
-        displayName={fileName}
+        displayName={fileName || uriName}
         placeholder="Upload VRM File"
         accept=".vrm"
         disabled={loading}

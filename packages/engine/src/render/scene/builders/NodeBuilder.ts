@@ -1,8 +1,12 @@
 import { Primitive } from "@gltf-transform/core";
-import { Bone, Mesh as ThreeMesh, Object3D, Skeleton, SkinnedMesh } from "three";
+import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
+import { Avatar } from "@wired-labs/gltf-extensions";
+import { Bone, Mesh, Mesh as ThreeMesh, Object3D, Skeleton, SkinnedMesh } from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { NodeJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
+import { deepDispose } from "../../utils/deepDispose";
 import { RenderScene } from "../RenderScene";
 import { Builder } from "./Builder";
 
@@ -182,8 +186,54 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
         })
       );
 
+      let vrmUri = "";
+      let vrmObject: Object3D | undefined;
+
+      cleanup.push(
+        subscribe(node, "Extensions", (extensions) => {
+          const avatar = extensions.find((ext): ext is Avatar => ext instanceof Avatar);
+          if (!avatar) return;
+
+          const uri = avatar.getURI();
+          if (uri === vrmUri) return;
+
+          if (vrmObject) {
+            object.remove(vrmObject);
+            deepDispose(vrmObject);
+          }
+
+          vrmUri = uri;
+
+          const loader = new GLTFLoader();
+          loader.setCrossOrigin("anonymous");
+          loader.register((parser) => new VRMLoaderPlugin(parser));
+
+          loader.load(uri, (gltf) => {
+            const vrm = gltf.userData.vrm as VRM;
+            vrm.scene.rotateY(Math.PI);
+
+            VRMUtils.removeUnnecessaryVertices(vrm.scene);
+            VRMUtils.removeUnnecessaryJoints(vrm.scene);
+            VRMUtils.rotateVRM0(vrm);
+
+            vrm.scene.traverse((object) => {
+              if (object instanceof Mesh) object.castShadow = true;
+            });
+
+            // Add VRM to object
+            vrmObject = vrm.scene;
+            object.add(vrmObject);
+          });
+        })
+      );
+
       return () => {
         cleanup.forEach((fn) => fn());
+
+        if (vrmObject) {
+          object.remove(vrmObject);
+          deepDispose(vrmObject);
+        }
       };
     });
 

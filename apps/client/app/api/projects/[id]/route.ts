@@ -71,15 +71,32 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   // Verify user owns the project
   const found = await prisma.project.findFirst({
     where: { id, owner: session.address },
-    include: { Publication: true },
+    include: { Publication: true, Assets: true },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
   const publicationInUse = Boolean(found.Publication && found.Publication.spaceId !== null);
 
   await Promise.all([
-    // Delete from database
-    prisma.project.delete({ where: { id }, include: { Publication: !publicationInUse } }),
+    // Remove projectId from assets
+    prisma.asset.updateMany({ where: { projectId: id }, data: { projectId: null } }),
+    // Delete project, publication, and assets from database
+    prisma.project.delete({
+      where: { id },
+      include: {
+        Publication: !publicationInUse,
+        Assets: {
+          where: {
+            OR: [
+              { publicationId: null },
+              {
+                publicationId: !publicationInUse ? found.Publication?.id : undefined,
+              },
+            ],
+          },
+        },
+      },
+    }),
     // Delete files from S3
     deleteFiles(id),
   ]);

@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { ColliderExtension, SPAWN_TITLE } from "@wired-labs/gltf-extensions";
+import { SPAWN_TITLE } from "@wired-labs/gltf-extensions";
 import { NodeExtras } from "engine";
 import { nanoid } from "nanoid";
 import { useState } from "react";
@@ -15,6 +15,7 @@ import {
 import { useEditorStore } from "../../store";
 
 export const COMPONENT_TYPE = {
+  Avatar: "Avatar",
   Mesh: "Mesh",
   Physics: "Physics",
   SpawnPoint: "Spawn Point",
@@ -51,7 +52,23 @@ export default function AddComponentButton({ availableComponents, node, extras }
 
         <DropdownContent open={open}>
           <div className="py-2">
-            {availableComponents.includes("Mesh") && (
+            {availableComponents.includes(COMPONENT_TYPE.Avatar) && (
+              <ComponentButton
+                onClick={() => {
+                  const { engine } = useEditorStore.getState();
+                  if (!engine) return;
+
+                  const avatar = engine.scene.extensions.avatar.createAvatar();
+                  avatar.setURI("");
+
+                  node.setExtension(avatar.extensionName, avatar);
+                }}
+              >
+                {COMPONENT_TYPE.Avatar}
+              </ComponentButton>
+            )}
+
+            {availableComponents.includes(COMPONENT_TYPE.Mesh) && (
               <ComponentButton
                 onClick={() => {
                   const { engine } = useEditorStore.getState();
@@ -85,7 +102,7 @@ export default function AddComponentButton({ availableComponents, node, extras }
                   const collider = engine.scene.extensions.collider.createCollider();
                   collider.setType("trimesh");
 
-                  node.setExtension(ColliderExtension.EXTENSION_NAME, collider);
+                  node.setExtension(collider.extensionName, collider);
                 }}
               >
                 {COMPONENT_TYPE.Physics}
@@ -118,7 +135,8 @@ export default function AddComponentButton({ availableComponents, node, extras }
 
                   const spawnPoint = engine.scene.extensions.spawn.createSpawnPoint();
                   spawnPoint.setTitle(SPAWN_TITLE.Default);
-                  node.setExtension("OMI_spawn_point", spawnPoint);
+
+                  node.setExtension(spawnPoint.extensionName, spawnPoint);
                 }}
               >
                 {COMPONENT_TYPE.SpawnPoint}

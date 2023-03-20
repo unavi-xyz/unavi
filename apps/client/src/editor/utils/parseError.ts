@@ -9,9 +9,9 @@ export const ERROR_MESSAGE = {
  * @param fallbackMessage The message to display if the error cannot be processed.
  */
 export function parseError(err: unknown, fallbackMessage: string): string {
-  if (err instanceof Error) {
-    return parseErrorMessage(err.message);
-  }
+  if (err instanceof Error) return parseErrorMessage(err.message);
+
+  if (hasMessage(err)) return parseErrorMessage(err.message);
 
   if (typeof err === "string") return parseErrorMessage(err);
 
@@ -26,4 +26,8 @@ function parseErrorMessage(message: string) {
   if (lowercase.includes("unauthorized")) return ERROR_MESSAGE.UNAUTHORIZED;
 
   return message;
+}
+
+function hasMessage(err: unknown): err is { message: string } {
+  return typeof err === "object" && err !== null && "message" in err;
 }

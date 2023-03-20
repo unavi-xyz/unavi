@@ -30,6 +30,7 @@ model Publication {
   viewCount  Int         @default(0)
 
   Projects Project[]
+  Asset    Asset[]
 }
 
 model Project {
@@ -45,6 +46,23 @@ model Project {
   Publication   Publication? @relation(fields: [publicationId], references: [id])
   publicationId String?
 
+  Assets Asset[]
+
+  @@index([publicationId])
+}
+
+model Asset {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?
+
+  Publication   Publication? @relation(fields: [publicationId], references: [id])
+  publicationId String?
+
+  @@index([projectId])
   @@index([publicationId])
 }
 

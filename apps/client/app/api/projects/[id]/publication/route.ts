@@ -1,9 +1,11 @@
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
+import { cdnURL, pathAsset } from "../../../../../src/editor/utils/s3Paths";
 import { env } from "../../../../../src/env/server.mjs";
 import { s3Client } from "../../../../../src/server/client";
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
+import { getUsedAssets } from "../../../../../src/server/helpers/getUsedAssets";
 import { optimizeModel } from "../../../../../src/server/helpers/optimizeProject";
 import { prisma } from "../../../../../src/server/prisma";
 import { getContentType, getKey as getPublicationKey } from "../../../publications/files";
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   // Verify user owns the project
   const found = await prisma.project.findFirst({
     where: { id, owner: session.address },
-    include: { Publication: true },
+    include: { Publication: true, Assets: true },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
@@ -49,6 +51,27 @@ export async function POST(request: NextRequest, { params }: Params) {
   const model = await modelPromise;
   let publishedModel = model;
 
+  const assets = await getUsedAssets(model);
+  const usedAssets = found.Assets.filter((asset) => assets.has(cdnURL(pathAsset(asset.id))));
+  const unusedAssets = found.Assets.filter((asset) => !assets.has(cdnURL(pathAsset(asset.id))));
+
+  await Promise.all([
+    // Delete unused assets
+    prisma.asset.deleteMany({
+      where: {
+        OR: [{ publicationId: null }, { publicationId }],
+        id: { in: unusedAssets.map((asset) => asset.id) },
+      },
+    }),
+    // Update used assets publicationId
+    prisma.asset.updateMany({
+      where: {
+        id: { in: usedAssets.map((asset) => asset.id) },
+      },
+      data: { publicationId },
+    }),
+  ]);
+
   // Optimize model
   if (optimize) {
     try {
@@ -66,6 +89,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     Key,
     ContentType,
     Body: publishedModel,
+    ACL: "public-read",
   });
 
   await s3Client.send(command);

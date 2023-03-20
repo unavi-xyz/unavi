@@ -4,17 +4,19 @@ import { EXTENSION_NAME } from "../constants";
 import { Avatar } from "./Avatar";
 
 type AvatarDef = {
+  name: string;
+  equippable: boolean;
   uri: string;
 };
 
 /**
- * Implementation of the WIRED_avatar_equip extension.
+ * Implementation of the WIRED_avatar extension.
  *
- * @group WIRED_avatar_equip
+ * @group WIRED_avatar
  */
-export class AvatarEquipExtension extends Extension {
-  static override readonly EXTENSION_NAME = EXTENSION_NAME.AvatarEquip;
-  override readonly extensionName = EXTENSION_NAME.AvatarEquip;
+export class AvatarExtension extends Extension {
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.Avatar;
+  override readonly extensionName = EXTENSION_NAME.Avatar;
 
   createAvatar(): Avatar {
     return new Avatar(this.document.getGraph());
@@ -33,6 +35,8 @@ export class AvatarEquipExtension extends Extension {
       const avatar = this.createAvatar();
 
       const avatarDef = nodeDef.extensions[this.extensionName] as AvatarDef;
+      avatar.setName(avatarDef.name);
+      avatar.setEquippable(avatarDef.equippable);
       avatar.setURI(avatarDef.uri);
 
       node.setExtension(this.extensionName, avatar);
@@ -60,7 +64,11 @@ export class AvatarEquipExtension extends Extension {
 
         nodeDef.extensions ??= {};
 
-        const avatarDef: AvatarDef = { uri: avatar.getURI() };
+        const avatarDef: AvatarDef = {
+          name: avatar.getName(),
+          equippable: avatar.getEquippable(),
+          uri: avatar.getURI(),
+        };
         nodeDef.extensions[this.extensionName] = avatarDef;
       });
 

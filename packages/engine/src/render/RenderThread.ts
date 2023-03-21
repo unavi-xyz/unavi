@@ -7,7 +7,6 @@ import {
   EquirectangularReflectionMapping,
   LineBasicMaterial,
   LineSegments,
-  Mesh,
   PCFSoftShadowMap,
   PerspectiveCamera,
   Scene,
@@ -18,6 +17,7 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from "three";
+import * as THREE from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
@@ -48,9 +48,9 @@ const SHADOW_BIAS = -0.00007;
 const TOTAL_LIGHT_INTENSITY = 1.2;
 const AMBIENT_LIGHT_INTENSITY = 0.1;
 
-BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
-BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
-Mesh.prototype.raycast = acceleratedRaycast;
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 /**
  * The render thread is responsible for rendering to the canvas.

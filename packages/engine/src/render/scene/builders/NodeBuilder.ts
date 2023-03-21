@@ -278,7 +278,10 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
             VRMUtils.rotateVRM0(vrm);
 
             vrm.scene.traverse((obj) => {
-              if (obj instanceof Mesh) object.castShadow = true;
+              if (obj instanceof Mesh) {
+                obj.castShadow = true;
+                obj.geometry.computeBoundsTree();
+              }
             });
 
             // Generate BVH

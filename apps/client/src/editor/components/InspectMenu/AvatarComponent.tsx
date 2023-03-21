@@ -6,6 +6,7 @@ import { getNewProjectAssetUpload } from "../../../../app/api/projects/[id]/asse
 import FileInput from "../../../ui/FileInput";
 import { useAvatar } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";
+import { useEditorStore } from "../../store";
 import { cdnURL, pathAsset } from "../../utils/s3Paths";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
@@ -21,6 +22,7 @@ export default function AvatarComponent({ node }: Props) {
   const avatar = useAvatar(node);
   const uri = useSubscribe(avatar, "URI");
   const equippable = useSubscribe(avatar, "Equippable");
+  const isPlaying = useEditorStore((state) => state.isPlaying);
 
   const [loading, setLoading] = useState(false);
 
@@ -40,7 +42,7 @@ export default function AvatarComponent({ node }: Props) {
         displayName={fileName || uriName}
         placeholder="Upload VRM File"
         accept=".vrm"
-        disabled={loading}
+        disabled={loading || isPlaying}
         onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!avatar || !id || !file || loading) return;
@@ -75,6 +77,7 @@ export default function AvatarComponent({ node }: Props) {
       <MenuRows titles={["Equippable"]}>
         <input
           type="checkbox"
+          disabled={loading || isPlaying}
           checked={equippable ?? false}
           onChange={(e) => {
             avatar?.setEquippable(e.target.checked);

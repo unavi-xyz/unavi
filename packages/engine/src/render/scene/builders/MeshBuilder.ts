@@ -2,7 +2,6 @@ import { Event, Mesh, Object3D } from "three";
 
 import { MeshJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
-import { RenderScene } from "../RenderScene";
 import { Builder } from "./Builder";
 
 /**
@@ -14,10 +13,6 @@ export class MeshBuilder extends Builder<MeshJSON, Object3D> {
   primitiveClones = new Map<string, Object3D[]>();
 
   #uniqueObjectCleanup = new Map<Object3D, () => void>();
-
-  constructor(scene: RenderScene) {
-    super(scene);
-  }
 
   getUniqueObject(id: string, nodeId: string): Object3D<Event> | undefined {
     const baseObject = this.getObject(id);

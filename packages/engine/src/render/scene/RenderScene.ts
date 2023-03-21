@@ -194,6 +194,18 @@ export class RenderScene extends Scene {
     }
   }
 
+  getAvatarNodeId(object: Object3D): string | null {
+    for (const [id, avatar] of this.builders.node.avatarObjects) {
+      let found = false;
+      avatar.traverse((child) => {
+        if (child === object) found = true;
+      });
+      if (found) return id;
+    }
+
+    return null;
+  }
+
   getInstancedPrimitiveNodeId(object: Object3D): string | null {
     for (const [nodeId, primitiveObjects] of this.builders.mesh.primitiveClones.entries()) {
       if (primitiveObjects.includes(object)) return nodeId;
@@ -235,6 +247,11 @@ export class RenderScene extends Scene {
   }
 
   getObjectNodeId(object: Object3D): string | null {
+    // Check avatars
+    const avatarNodeId = this.getAvatarNodeId(object);
+    if (avatarNodeId) return avatarNodeId;
+
+    // Check instanced primitives
     const instancedNodeId = this.getInstancedPrimitiveNodeId(object);
     if (instancedNodeId) return instancedNodeId;
 

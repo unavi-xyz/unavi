@@ -79,7 +79,7 @@ export class RenderThread {
   transform = new TransformControls(this);
   orbit = new OrbitControls(this.camera, this.transform);
   player: PlayerControls;
-  raycaster: RaycastControls;
+  raycaster = new RaycastControls(this);
   players = new Players(this.camera);
 
   controls: ControlsType = DEFAULT_CONTROLS;
@@ -95,13 +95,6 @@ export class RenderThread {
       this.#canvas = canvas;
       this.init();
     }
-
-    this.raycaster = new RaycastControls(
-      this.camera,
-      this.renderScene,
-      this.postMessage,
-      this.transform
-    );
 
     this.scene.add(this.renderScene.root);
     this.scene.add(this.player.group);
@@ -125,11 +118,9 @@ export class RenderThread {
     this.transform.onmessage(event.data);
     this.player.onmessage(event.data);
     this.players.onmessage(event.data);
+    this.raycaster.onmessage(event.data);
 
-    if (this.controls === "orbit") {
-      this.orbit.onmessage(event.data);
-      this.raycaster.onmessage(event.data);
-    }
+    if (this.controls === "orbit") this.orbit.onmessage(event.data);
 
     if (isSceneMessage(event.data)) {
       this.renderScene.onmessage(event.data);
@@ -316,14 +307,16 @@ export class RenderThread {
     const delta = this.clock.getDelta();
     this.#delta = delta;
 
-    if (!this.composer || !this.csm || !this.renderer) return;
+    if (
+      !this.composer ||
+      !this.csm ||
+      !this.renderer ||
+      this.size.width === 0 ||
+      this.size.height === 0
+    )
+      return;
 
     this.renderer.info.reset();
-
-    if (this.controls === "player") this.player.update(delta);
-    else this.orbit.update();
-
-    if (this.size.width === 0 || this.size.height === 0) return;
 
     if (this.#visuals) {
       // Only update debug lines every 60 frames
@@ -337,6 +330,13 @@ export class RenderThread {
         // Adjust debug interval based on number vertices
         this.#debugInterval = Math.max(1, Math.floor(this.#debugVertices.length / 40000)) * 2;
       }
+    }
+
+    if (this.controls === "player") {
+      this.player.update(delta);
+      this.raycaster.update();
+    } else {
+      this.orbit.update();
     }
 
     this.renderScene.mixer.update(delta);

@@ -8,6 +8,7 @@ import { useAvatar } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";
 import { cdnURL, pathAsset } from "../../utils/s3Paths";
 import ComponentMenu from "./ComponentMenu";
+import MenuRows from "./ui/MenuRows";
 
 interface Props {
   node: Node;
@@ -19,6 +20,7 @@ export default function AvatarComponent({ node }: Props) {
 
   const avatar = useAvatar(node);
   const uri = useSubscribe(avatar, "URI");
+  const equippable = useSubscribe(avatar, "Equippable");
 
   const [loading, setLoading] = useState(false);
 
@@ -69,6 +71,17 @@ export default function AvatarComponent({ node }: Props) {
           setLoading(false);
         }}
       />
+
+      <MenuRows titles={["Equippable"]}>
+        <input
+          type="checkbox"
+          checked={equippable ?? false}
+          onChange={(e) => {
+            avatar?.setEquippable(e.target.checked);
+          }}
+          className="h-full w-4"
+        />
+      </MenuRows>
     </ComponentMenu>
   );
 }

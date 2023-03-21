@@ -15,6 +15,8 @@ import { Builder } from "./Builder";
  * Handles the conversion of nodes to Three.js objects.
  */
 export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
+  avatarObjects = new Map<string, Object3D>();
+
   constructor(scene: RenderScene) {
     super(scene);
   }
@@ -187,20 +189,30 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
       );
 
       let vrmUri = "";
-      let vrmObject: Object3D | undefined;
 
       cleanup.push(
         subscribe(node, "Extensions", (extensions) => {
-          if (vrmObject) {
-            object.remove(vrmObject);
-            deepDispose(vrmObject);
-          }
+          const avatarObject = this.avatarObjects.get(id);
 
           const avatar = extensions.find((ext): ext is Avatar => ext instanceof Avatar);
-          if (!avatar) return;
+          if (!avatar) {
+            vrmUri = "";
+            if (avatarObject) {
+              object.remove(avatarObject);
+              deepDispose(avatarObject);
+              this.avatarObjects.delete(id);
+            }
+            return;
+          }
 
           const uri = avatar.getURI();
           if (!uri || uri === vrmUri) return;
+
+          if (avatarObject) {
+            object.remove(avatarObject);
+            deepDispose(avatarObject);
+            this.avatarObjects.delete(id);
+          }
 
           vrmUri = uri;
 
@@ -221,8 +233,8 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
             });
 
             // Add VRM to object
-            vrmObject = vrm.scene;
-            object.add(vrmObject);
+            object.add(vrm.scene);
+            this.avatarObjects.set(id, vrm.scene);
           });
         })
       );
@@ -230,9 +242,11 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
       return () => {
         cleanup.forEach((fn) => fn());
 
-        if (vrmObject) {
-          object.remove(vrmObject);
-          deepDispose(vrmObject);
+        const avatarObject = this.avatarObjects.get(id);
+        if (avatarObject) {
+          object.remove(avatarObject);
+          deepDispose(avatarObject);
+          this.avatarObjects.delete(id);
         }
       };
     });

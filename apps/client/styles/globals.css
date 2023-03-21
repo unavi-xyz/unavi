@@ -53,3 +53,30 @@ html {
   height: calc(100%);
   cursor: col-resize;
 }
+
+/* Crosshair */
+.crosshair {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(calc(-50% + 1px), calc(-100% + 1px));
+  z-index: 30;
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+
+.crosshair::before {
+  content: "";
+  display: block;
+  height: 11px;
+  border-left: 1px solid #fff;
+  margin-bottom: -6px;
+}
+
+.crosshair::after {
+  content: "";
+  display: block;
+  width: 11px;
+  border-top: 1px solid #fff;
+  margin-left: -5px;
+}

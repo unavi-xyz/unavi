@@ -7,6 +7,7 @@ import DialogContent, { DialogRoot } from "../../ui/Dialog";
 import { toHex } from "../../utils/toHex";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { LocalStorageKey } from "../constants";
+import CrosshairTooltip, { CrosshairAction } from "../CrosshairTooltip";
 import { sendToHost } from "../hooks/useHost";
 import { useSetAvatar } from "../hooks/useSetAvatar";
 import Stats from "../Stats";
@@ -17,9 +18,10 @@ import Settings from "./Settings";
 
 interface Props {
   id: number;
+  action: CrosshairAction;
 }
 
-export default function Overlay({ id }: Props) {
+export default function Overlay({ id, action }: Props) {
   const engine = usePlayStore((state) => state.engine);
   const [openSettings, setOpenSettings] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -127,6 +129,9 @@ export default function Overlay({ id }: Props) {
       <div className="absolute top-16 left-0 z-20 p-4">
         <Stats />
       </div>
+
+      <div className="crosshair" />
+      <CrosshairTooltip action={action} />
 
       <div className="absolute top-0 right-0 z-20 space-x-2 p-4">
         <button

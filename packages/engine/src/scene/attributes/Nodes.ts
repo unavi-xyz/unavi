@@ -15,6 +15,8 @@ import { Scene } from "../Scene";
 import { Attribute } from "./Attribute";
 
 export type AvatarJSON = {
+  name: string;
+  equippable: boolean;
   uri: string;
 };
 
@@ -200,6 +202,8 @@ export class Nodes extends Attribute<Node, NodeJSON> {
           node.getExtension<Avatar>(AvatarExtension.EXTENSION_NAME) ??
           this.#scene.extensions.avatar.createAvatar();
 
+        avatar.setName(avatarJSON.name);
+        avatar.setEquippable(avatarJSON.equippable);
         avatar.setURI(avatarJSON.uri);
 
         node.setExtension(AvatarExtension.EXTENSION_NAME, avatar);
@@ -269,6 +273,8 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     const avatar = node.getExtension<Avatar>(AvatarExtension.EXTENSION_NAME);
     if (avatar) {
       extensions[AvatarExtension.EXTENSION_NAME] = {
+        name: avatar.getName(),
+        equippable: avatar.getEquippable(),
         uri: avatar.getURI(),
       };
     }

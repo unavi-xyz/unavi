@@ -15,6 +15,7 @@ export class RaycastControls {
 
   constructor(renderThread: RenderThread) {
     this.#renderThread = renderThread;
+    this.#raycaster.firstHitOnly = true;
   }
 
   onmessage({ subject, data }: ToRenderMessage) {
@@ -41,20 +42,31 @@ export class RaycastControls {
     // Set raycaster to middle of camera position
     this.#raycaster.setFromCamera({ x: 0, y: 0 }, this.#renderThread.camera);
 
-    // Get intersected objects
-    const intersections = this.#raycaster.intersectObject(this.#renderThread.renderScene.root);
+    // Get intersected avatar object
+    const avatars = Array.from(this.#renderThread.renderScene.builders.node.avatarObjects.values());
+    const intersections = this.#raycaster.intersectObjects(avatars);
 
-    const { nodeId, isAvatar, intersection } = this.#findIntersection(intersections);
+    let nodeId: string | null = null;
+
+    const intersection = intersections.find((intersection) => {
+      const avatarNodeId = this.#renderThread.renderScene.getAvatarNodeId(intersection.object);
+      if (avatarNodeId) {
+        nodeId = avatarNodeId;
+        return true;
+      }
+
+      return false;
+    });
 
     if (nodeId !== this.#hoveredNodeId) {
       this.#hoveredNodeId = nodeId;
 
-      this.#renderThread.postMessage({ subject: "hovered_node", data: { nodeId, isAvatar } });
+      this.#renderThread.postMessage({ subject: "hovered_node", data: { nodeId, isAvatar: true } });
 
       if (this.#renderThread.outlinePass) {
         this.#renderThread.outlinePass.selectedObjects = [];
 
-        if (intersection && isAvatar) {
+        if (intersection) {
           // Highlight object
           this.#renderThread.outlinePass.selectedObjects = [intersection.object];
         }
@@ -78,9 +90,8 @@ export class RaycastControls {
       this.#renderThread.camera
     );
 
-    // Get intersected objects
+    // Get intersected object
     const intersections = this.#raycaster.intersectObject(this.#renderThread.renderScene.root);
-
     const { nodeId, isAvatar } = this.#findIntersection(intersections);
 
     this.#renderThread.postMessage({ subject: "clicked_node", data: { nodeId, isAvatar } });

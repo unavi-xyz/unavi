@@ -20,7 +20,6 @@ import {
 import { MaterialJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
 import { WEBGL_CONSTANTS } from "../../constants";
-import { RenderScene } from "../RenderScene";
 import { Builder } from "./Builder";
 
 /**
@@ -28,10 +27,6 @@ import { Builder } from "./Builder";
  * Handles the conversion of materials to Three.js objects.
  */
 export class MaterialBuilder extends Builder<MaterialJSON, MeshStandardMaterial> {
-  constructor(scene: RenderScene) {
-    super(scene);
-  }
-
   add(json: Partial<MaterialJSON>, id: string) {
     const previousObject = this.getObject(id);
     if (previousObject) throw new Error(`Material with id ${id} already exists.`);

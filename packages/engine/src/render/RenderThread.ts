@@ -7,6 +7,7 @@ import {
   EquirectangularReflectionMapping,
   LineBasicMaterial,
   LineSegments,
+  Mesh,
   PCFSoftShadowMap,
   PerspectiveCamera,
   Scene,
@@ -22,6 +23,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
+import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-mesh-bvh";
 
 import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
 import { isSceneMessage } from "../scene/messages";
@@ -46,6 +48,10 @@ const SHADOW_BIAS = -0.00007;
 const TOTAL_LIGHT_INTENSITY = 1.2;
 const AMBIENT_LIGHT_INTENSITY = 0.1;
 
+BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+Mesh.prototype.raycast = acceleratedRaycast;
+
 /**
  * The render thread is responsible for rendering to the canvas.
  * The render loop runs at the browser's requestAnimationFrame rate.
@@ -65,6 +71,8 @@ export class RenderThread {
   #animationFrame: number | null = null;
   #visuals = DEFAULT_VISUALS;
   #delta = 1;
+  #raycastFrame = 0;
+  #bvhFrame = 0;
 
   outlinePass: ThreeOutlinePass | null = null;
   composer: EffectComposer | null = null;
@@ -334,9 +342,18 @@ export class RenderThread {
 
     if (this.controls === "player") {
       this.player.update(delta);
-      this.raycaster.update();
+
+      // Update raycast every 8 frames
+      if (this.#raycastFrame++ % 8 === 0) {
+        this.raycaster.update();
+      }
     } else {
       this.orbit.update();
+    }
+
+    // Update bvh meshes every 300  frames
+    if (this.#bvhFrame++ % 300 === 0) {
+      this.renderScene.builders.node.regenerateMeshBVH();
     }
 
     this.renderScene.mixer.update(delta);

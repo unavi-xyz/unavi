@@ -4,7 +4,6 @@ import { BufferAttribute, Mesh, MeshStandardMaterial, SkinnedMesh } from "three"
 import { PrimitiveJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
 import { THREE_ATTRIBUTE_NAMES } from "../constants";
-import { RenderScene } from "../RenderScene";
 import { Builder } from "./Builder";
 
 export const DEFAULT_MATERIAL = new MeshStandardMaterial();
@@ -16,10 +15,6 @@ export const DEFAULT_MATERIAL = new MeshStandardMaterial();
 export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh> {
   objectClones = new Map<string, Mesh[]>();
   #setObjectTimeouts = new Map<string, NodeJS.Timeout>();
-
-  constructor(scene: RenderScene) {
-    super(scene);
-  }
 
   override setObject(id: string, object: Mesh | SkinnedMesh | null) {
     super.setObject(id, object);
@@ -170,11 +165,17 @@ export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh>
               else object.geometry.deleteAttribute(threeName);
             });
 
+            // Calculate BVH
+            object.geometry.computeBoundsTree();
+
             return () => {
               // Remove all attributes
               Object.values(THREE_ATTRIBUTE_NAMES).forEach((name) => {
                 object.geometry.deleteAttribute(name);
               });
+
+              // Calculate BVH
+              object.geometry.computeBoundsTree();
             };
           });
         })

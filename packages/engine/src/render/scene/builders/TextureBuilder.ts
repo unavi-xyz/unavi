@@ -2,7 +2,6 @@ import { Texture } from "three";
 
 import { TextureJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
-import { RenderScene } from "../RenderScene";
 import { Builder } from "./Builder";
 
 /**
@@ -10,10 +9,6 @@ import { Builder } from "./Builder";
  * Handles the conversion of textures to Three.js objects.
  */
 export class TextureBuilder extends Builder<TextureJSON, Texture> {
-  constructor(scene: RenderScene) {
-    super(scene);
-  }
-
   add(json: Partial<TextureJSON>, id: string) {
     const previousObject = this.getObject(id);
     if (previousObject) throw new Error(`Texture with id ${id} already exists.`);

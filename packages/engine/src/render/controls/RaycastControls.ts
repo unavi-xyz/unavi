@@ -48,7 +48,7 @@ export class RaycastControls {
 
     let nodeId: string | null = null;
 
-    const intersection = intersections.find((intersection) => {
+    intersections.find((intersection) => {
       const avatarNodeId = this.#renderThread.renderScene.getAvatarNodeId(intersection.object);
       if (avatarNodeId) {
         nodeId = avatarNodeId;
@@ -66,9 +66,14 @@ export class RaycastControls {
       if (this.#renderThread.outlinePass) {
         this.#renderThread.outlinePass.selectedObjects = [];
 
-        if (intersection) {
-          // Highlight object
-          this.#renderThread.outlinePass.selectedObjects = [intersection.object];
+        if (nodeId) {
+          const avatarObject =
+            this.#renderThread.renderScene.builders.node.avatarObjects.get(nodeId);
+
+          if (avatarObject) {
+            // Highlight object
+            this.#renderThread.outlinePass.selectedObjects = [avatarObject];
+          }
         }
       }
     }

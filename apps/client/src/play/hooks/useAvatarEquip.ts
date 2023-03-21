@@ -1,13 +1,14 @@
 import { Avatar } from "@wired-labs/gltf-extensions";
-import { RenderEvent } from "engine";
+import { Engine, RenderEvent } from "engine";
 import { useEffect, useState } from "react";
 
 import { CrosshairAction } from "../CrosshairTooltip";
-import { usePlayStore } from "../store";
 
-export function useAvatarEquip(setAvatar: (uri: string) => void): CrosshairAction {
-  const engine = usePlayStore((state) => state.engine);
-  const equippedAvatarUri = usePlayStore((state) => state.avatar);
+export function useAvatarEquip(
+  engine: Engine | null,
+  equippedAvatar: string | null,
+  setAvatar: (uri: string) => void
+): CrosshairAction {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export function useAvatarEquip(setAvatar: (uri: string) => void): CrosshairActio
       if (!equippable) return;
 
       const uri = avatar.getURI();
-      if (uri === equippedAvatarUri) return;
+      if (uri === equippedAvatar) return;
 
       // Show tooltip
       setHoveredNode(e.data.nodeId);
@@ -40,7 +41,7 @@ export function useAvatarEquip(setAvatar: (uri: string) => void): CrosshairActio
       engine.render.removeEventListener("hovered_node", listener);
       setHoveredNode(null);
     };
-  }, [engine, equippedAvatarUri]);
+  }, [engine, equippedAvatar]);
 
   useEffect(() => {
     if (!engine) return;
@@ -60,8 +61,10 @@ export function useAvatarEquip(setAvatar: (uri: string) => void): CrosshairActio
       const equippable = avatar.getEquippable();
       if (!equippable) return;
 
-      // Equip avatar
       const uri = avatar.getURI();
+      if (uri === equippedAvatar) return;
+
+      // Equip avatar
       setAvatar(uri);
     };
 
@@ -70,7 +73,7 @@ export function useAvatarEquip(setAvatar: (uri: string) => void): CrosshairActio
     return () => {
       engine.render.removeEventListener("clicked_node", listener);
     };
-  }, [engine, setAvatar]);
+  }, [engine, equippedAvatar, setAvatar]);
 
   return hoveredNode ? "equip_avatar" : null;
 }

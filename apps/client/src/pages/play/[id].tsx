@@ -44,9 +44,10 @@ export default function Play({ id, metadata }: Props) {
 
   const [scriptsReady, setScriptsReady] = useState(false);
   const engine = usePlayStore((state) => state.engine);
+  const avatar = usePlayStore((state) => state.avatar);
 
   const setAvatar = useSetAvatar();
-  const equipAction = useAvatarEquip(setAvatar);
+  const equipAction = useAvatarEquip(engine, avatar, setAvatar);
   useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
   useLoadUser();
   useHotkeys();

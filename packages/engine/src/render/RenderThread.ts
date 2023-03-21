@@ -200,6 +200,7 @@ export class RenderThread {
       case "toggle_visuals": {
         this.#visuals = data;
         this.debugLines.visible = data;
+        this.renderScene.builders.node.setBvhVisuals(data);
         break;
       }
 

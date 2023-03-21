@@ -166,7 +166,7 @@ export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh>
             });
 
             // Calculate BVH
-            object.geometry.computeBoundsTree();
+            if (object.geometry.attributes.position) object.geometry.computeBoundsTree();
 
             return () => {
               // Remove all attributes
@@ -175,7 +175,7 @@ export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh>
               });
 
               // Calculate BVH
-              object.geometry.computeBoundsTree();
+              if (object.geometry.attributes.position) object.geometry.computeBoundsTree();
             };
           });
         })

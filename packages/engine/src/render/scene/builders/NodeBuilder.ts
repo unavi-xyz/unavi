@@ -13,6 +13,7 @@ import {
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { MeshBVHVisualizer, StaticGeometryGenerator } from "three-mesh-bvh";
 
+import { DEFAULT_VISUALS } from "../../../constants";
 import { NodeJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
 import { deepDispose } from "../../utils/deepDispose";
@@ -29,15 +30,17 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
   meshHelpers = new Map<StaticGeometryGenerator, Mesh>();
   bvhGenerators = new Map<string, StaticGeometryGenerator>();
 
+  #visuals = DEFAULT_VISUALS;
+
   #newMeshHelper(generator: StaticGeometryGenerator) {
     const meshHelper = new Mesh(new BufferGeometry());
     meshHelper.visible = false;
     this.scene.root.add(meshHelper);
+    this.meshHelpers.set(generator, meshHelper);
 
     const bvhHelper = new MeshBVHVisualizer(meshHelper, 10);
-    bvhHelper.visible = process.env.NODE_ENV === "development";
+    bvhHelper.visible = this.#visuals;
     bvhHelper.frustumCulled = false;
-
     this.scene.root.add(bvhHelper);
     this.bvhHelpers.set(generator, bvhHelper);
 
@@ -57,6 +60,13 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
       else meshHelper.geometry.computeBoundsTree();
 
       bvhHelper.update();
+    });
+  }
+
+  setBvhVisuals(visible: boolean) {
+    this.#visuals = visible;
+    this.bvhHelpers.forEach((bvhHelper) => {
+      bvhHelper.visible = visible;
     });
   }
 
@@ -274,8 +284,6 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
             // Generate BVH
             const generator = new StaticGeometryGenerator(vrm.scene);
             this.bvhGenerators.set(id, generator);
-
-            this.regenerateMeshBVH();
 
             // Add VRM to object
             object.add(vrm.scene);

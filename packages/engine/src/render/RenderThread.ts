@@ -25,7 +25,7 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-mesh-bvh";
 
-import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
+import { DEFAULT_CONTROLS } from "../constants";
 import { isSceneMessage } from "../scene/messages";
 import { ControlsType, PostMessage, Transferable } from "../types";
 import { OrbitControls } from "./controls/OrbitControls";
@@ -69,7 +69,7 @@ export class RenderThread {
   camera = new PerspectiveCamera(75, 1, CAMERA_NEAR, CAMERA_FAR);
   clock = new Clock();
   #animationFrame: number | null = null;
-  #visuals = DEFAULT_VISUALS;
+  #showColliderVisuals = false;
   #delta = 1;
   #raycastFrame = 0;
   #bvhFrame = 0;
@@ -197,9 +197,13 @@ export class RenderThread {
         break;
       }
 
-      case "toggle_visuals": {
-        this.#visuals = data;
+      case "toggle_collider_visuals": {
+        this.#showColliderVisuals = data;
         this.debugLines.visible = data;
+        break;
+      }
+
+      case "toggle_bvh_visuals": {
         this.renderScene.builders.node.setBvhVisuals(data);
         break;
       }
@@ -327,7 +331,7 @@ export class RenderThread {
 
     this.renderer.info.reset();
 
-    if (this.#visuals) {
+    if (this.#showColliderVisuals) {
       // Only update debug lines every 60 frames
       if (this.#debugFrame++ % this.#debugInterval === 0) {
         this.debugLines.geometry.setAttribute(

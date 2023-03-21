@@ -1,7 +1,6 @@
 import { ControlsType } from "./types";
 
 export const DEFAULT_CONTROLS: ControlsType = "player";
-export const DEFAULT_VISUALS = process.env.NODE_ENV === "production" ? false : true;
 
 export const PLAYER_HEIGHT = 1.5;
 export const PLAYER_RADIUS = 0.3;

@@ -35,7 +35,7 @@ export default function Editor() {
   useEffect(() => {
     if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;
 
-    const { visuals } = useEditorStore.getState();
+    const { showColliders } = useEditorStore.getState();
 
     const engine = new Engine({
       canvas: canvasRef.current,
@@ -43,7 +43,7 @@ export default function Editor() {
     });
 
     engine.controls = "orbit";
-    engine.visuals = visuals;
+    engine.showColliders = showColliders;
 
     engine.render.send({ subject: "set_animations_path", data: "/models" });
     engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });

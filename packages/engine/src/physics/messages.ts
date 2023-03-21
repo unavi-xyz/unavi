@@ -12,7 +12,7 @@ export type ToPhysicsMessage =
   | MessageJSON<"set_controls", ControlsType>
   | MessageJSON<"set_sprinting", boolean>
   | MessageJSON<"respawn", null>
-  | MessageJSON<"toggle_visuals", boolean>
+  | MessageJSON<"toggle_collider_visuals", boolean>
   | MessageJSON<
       "set_user_arrays",
       {

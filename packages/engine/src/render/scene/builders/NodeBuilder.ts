@@ -13,7 +13,6 @@ import {
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { MeshBVHVisualizer, StaticGeometryGenerator } from "three-mesh-bvh";
 
-import { DEFAULT_VISUALS } from "../../../constants";
 import { NodeJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
 import { deepDispose } from "../../utils/deepDispose";
@@ -30,7 +29,7 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
   meshHelpers = new Map<StaticGeometryGenerator, Mesh>();
   bvhGenerators = new Map<string, StaticGeometryGenerator>();
 
-  #visuals = DEFAULT_VISUALS;
+  #showBvhVisuals = false;
 
   #newMeshHelper(generator: StaticGeometryGenerator) {
     const meshHelper = new Mesh(new BufferGeometry());
@@ -39,7 +38,7 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
     this.meshHelpers.set(generator, meshHelper);
 
     const bvhHelper = new MeshBVHVisualizer(meshHelper, 10);
-    bvhHelper.visible = this.#visuals;
+    bvhHelper.visible = this.#showBvhVisuals;
     bvhHelper.frustumCulled = false;
     this.scene.root.add(bvhHelper);
     this.bvhHelpers.set(generator, bvhHelper);
@@ -64,7 +63,7 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
   }
 
   setBvhVisuals(visible: boolean) {
-    this.#visuals = visible;
+    this.#showBvhVisuals = visible;
     this.bvhHelpers.forEach((bvhHelper) => {
       bvhHelper.visible = visible;
     });

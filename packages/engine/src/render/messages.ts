@@ -40,7 +40,8 @@ export type ToRenderMessage =
       }
     >
   | MessageJSON<"set_user_avatar", string | null>
-  | MessageJSON<"toggle_visuals", boolean>
+  | MessageJSON<"toggle_collider_visuals", boolean>
+  | MessageJSON<"toggle_bvh_visuals", boolean>
   // Players
   | MessageJSON<"add_player", { id: number; position: Int32Array; rotation: Int16Array }>
   | MessageJSON<"remove_player", number>

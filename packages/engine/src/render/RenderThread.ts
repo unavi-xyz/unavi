@@ -17,13 +17,15 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from "three";
+import * as THREE from "three";
 import { CSM } from "three/examples/jsm/csm/CSM";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
+import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-mesh-bvh";
 
-import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
+import { DEFAULT_CONTROLS } from "../constants";
 import { isSceneMessage } from "../scene/messages";
 import { ControlsType, PostMessage, Transferable } from "../types";
 import { OrbitControls } from "./controls/OrbitControls";
@@ -46,6 +48,10 @@ const SHADOW_BIAS = -0.00007;
 const TOTAL_LIGHT_INTENSITY = 1.2;
 const AMBIENT_LIGHT_INTENSITY = 0.1;
 
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
 /**
  * The render thread is responsible for rendering to the canvas.
  * The render loop runs at the browser's requestAnimationFrame rate.
@@ -63,8 +69,10 @@ export class RenderThread {
   camera = new PerspectiveCamera(75, 1, CAMERA_NEAR, CAMERA_FAR);
   clock = new Clock();
   #animationFrame: number | null = null;
-  #visuals = DEFAULT_VISUALS;
+  #showColliderVisuals = false;
   #delta = 1;
+  #raycastFrame = 0;
+  #bvhFrame = 0;
 
   outlinePass: ThreeOutlinePass | null = null;
   composer: EffectComposer | null = null;
@@ -79,7 +87,7 @@ export class RenderThread {
   transform = new TransformControls(this);
   orbit = new OrbitControls(this.camera, this.transform);
   player: PlayerControls;
-  raycaster: RaycastControls;
+  raycaster = new RaycastControls(this);
   players = new Players(this.camera);
 
   controls: ControlsType = DEFAULT_CONTROLS;
@@ -95,13 +103,6 @@ export class RenderThread {
       this.#canvas = canvas;
       this.init();
     }
-
-    this.raycaster = new RaycastControls(
-      this.camera,
-      this.renderScene,
-      this.postMessage,
-      this.transform
-    );
 
     this.scene.add(this.renderScene.root);
     this.scene.add(this.player.group);
@@ -125,11 +126,9 @@ export class RenderThread {
     this.transform.onmessage(event.data);
     this.player.onmessage(event.data);
     this.players.onmessage(event.data);
+    this.raycaster.onmessage(event.data);
 
-    if (this.controls === "orbit") {
-      this.orbit.onmessage(event.data);
-      this.raycaster.onmessage(event.data);
-    }
+    if (this.controls === "orbit") this.orbit.onmessage(event.data);
 
     if (isSceneMessage(event.data)) {
       this.renderScene.onmessage(event.data);
@@ -198,9 +197,14 @@ export class RenderThread {
         break;
       }
 
-      case "toggle_visuals": {
-        this.#visuals = data;
+      case "toggle_collider_visuals": {
+        this.#showColliderVisuals = data;
         this.debugLines.visible = data;
+        break;
+      }
+
+      case "toggle_bvh_visuals": {
+        this.renderScene.builders.node.setBvhVisuals(data);
         break;
       }
 
@@ -316,16 +320,18 @@ export class RenderThread {
     const delta = this.clock.getDelta();
     this.#delta = delta;
 
-    if (!this.composer || !this.csm || !this.renderer) return;
+    if (
+      !this.composer ||
+      !this.csm ||
+      !this.renderer ||
+      this.size.width === 0 ||
+      this.size.height === 0
+    )
+      return;
 
     this.renderer.info.reset();
 
-    if (this.controls === "player") this.player.update(delta);
-    else this.orbit.update();
-
-    if (this.size.width === 0 || this.size.height === 0) return;
-
-    if (this.#visuals) {
+    if (this.#showColliderVisuals) {
       // Only update debug lines every 60 frames
       if (this.#debugFrame++ % this.#debugInterval === 0) {
         this.debugLines.geometry.setAttribute(
@@ -337,6 +343,22 @@ export class RenderThread {
         // Adjust debug interval based on number vertices
         this.#debugInterval = Math.max(1, Math.floor(this.#debugVertices.length / 40000)) * 2;
       }
+    }
+
+    if (this.controls === "player") {
+      this.player.update(delta);
+
+      // Update raycast every 8 frames
+      if (this.#raycastFrame++ % 8 === 0) {
+        this.raycaster.update();
+      }
+    } else {
+      this.orbit.update();
+    }
+
+    // Update bvh meshes every 300  frames
+    if (this.#bvhFrame++ % 300 === 0) {
+      this.renderScene.builders.node.regenerateMeshBVH();
     }
 
     this.renderScene.mixer.update(delta);

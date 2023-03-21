@@ -6,6 +6,7 @@ import { useSpawn } from "../../hooks/useSpawn";
 import { useSubscribe } from "../../hooks/useSubscribe";
 import { useEditorStore } from "../../store";
 import AddComponentButton, { COMPONENT_TYPE, ComponentType } from "./AddComponentButton";
+import AvatarComponent from "./AvatarComponent";
 import MeshComponent from "./mesh/MeshComponent";
 import PhysicsComponent from "./PhysicsComponent";
 import ScriptComponent from "./ScriptComponent";
@@ -26,10 +27,12 @@ export default function InspectMenu() {
 
   const availableComponents: ComponentType[] = [COMPONENT_TYPE.Script];
 
+  const hasAvatar = extensions.find((ext) => ext.extensionName === EXTENSION_NAME.Avatar);
   const hasCollider = extensions.find((ext) => ext.extensionName === EXTENSION_NAME.Collider);
   const hasSpawnPoint = extensions.find((ext) => ext.extensionName === EXTENSION_NAME.SpawnPoint);
 
   if (!mesh) availableComponents.push(COMPONENT_TYPE.Mesh);
+  if (!hasAvatar) availableComponents.push(COMPONENT_TYPE.Avatar);
   if (!hasCollider) availableComponents.push(COMPONENT_TYPE.Physics);
   if (!spawn) availableComponents.push(COMPONENT_TYPE.SpawnPoint);
 
@@ -51,6 +54,8 @@ export default function InspectMenu() {
         <TransformComponent node={node} />
 
         {mesh && <MeshComponent mesh={mesh} />}
+
+        {hasAvatar && <AvatarComponent node={node} />}
         {hasCollider && <PhysicsComponent node={node} />}
         {hasSpawnPoint && <SpawnPointComponent node={node} />}
 

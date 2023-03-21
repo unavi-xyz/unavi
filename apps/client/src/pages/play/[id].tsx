@@ -4,6 +4,7 @@ import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
 import MetaTags from "../../home/MetaTags";
+import { useAvatarEquip } from "../../play/hooks/useAvatarEquip";
 import { useHotkeys } from "../../play/hooks/useHotkeys";
 import { useLoadUser } from "../../play/hooks/useLoadUser";
 import { useResizeCanvas } from "../../play/hooks/useResizeCanvas";
@@ -43,8 +44,10 @@ export default function Play({ id, metadata }: Props) {
 
   const [scriptsReady, setScriptsReady] = useState(false);
   const engine = usePlayStore((state) => state.engine);
+  const avatar = usePlayStore((state) => state.avatar);
 
   const setAvatar = useSetAvatar();
+  const equipAction = useAvatarEquip(engine, avatar, setAvatar);
   useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
   useLoadUser();
   useHotkeys();
@@ -137,7 +140,7 @@ export default function Play({ id, metadata }: Props) {
           setAvatar(url);
         }}
       >
-        {loaded && <Overlay id={id} />}
+        {loaded && <Overlay id={id} action={equipAction} />}
 
         <div className="h-full">
           <div ref={containerRef} className="relative h-full w-full overflow-hidden">

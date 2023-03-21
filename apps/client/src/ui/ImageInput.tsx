@@ -8,7 +8,7 @@ export default function ImageInput({
   ...rest
 }: Props) {
   return (
-    <div>
+    <div className="relative">
       <label>
         {name && <div className="pb-1 text-lg font-bold">{name}</div>}
 

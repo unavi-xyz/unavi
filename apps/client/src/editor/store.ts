@@ -13,7 +13,7 @@ export interface IEditorStore {
   isPlaying: boolean;
   stopPlaying: () => Promise<void>;
 
-  visuals: boolean;
+  showColliders: boolean;
   tool: Tool;
 
   name: string;
@@ -39,7 +39,7 @@ export const useEditorStore = create<IEditorStore>(() => ({
   isPlaying: false,
   stopPlaying: async () => {},
 
-  visuals: true,
+  showColliders: true,
   tool: "translate",
 
   name: "",

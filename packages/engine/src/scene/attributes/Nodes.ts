@@ -1,5 +1,7 @@
 import { Node } from "@gltf-transform/core";
 import {
+  Avatar,
+  AvatarExtension,
   Collider,
   ColliderExtension,
   ColliderType,
@@ -11,6 +13,12 @@ import { nanoid } from "nanoid";
 import { Vec3, Vec4 } from "../../types";
 import { Scene } from "../Scene";
 import { Attribute } from "./Attribute";
+
+export type AvatarJSON = {
+  name: string;
+  equippable: boolean;
+  uri: string;
+};
 
 export type ColliderJSON = {
   type: ColliderType;
@@ -25,6 +33,7 @@ export type SpawnPointJSON = {
 };
 
 type NodeExtensionsJSON = {
+  [AvatarExtension.EXTENSION_NAME]: AvatarJSON | null;
   [ColliderExtension.EXTENSION_NAME]: ColliderJSON | null;
   [SpawnPointExtension.EXTENSION_NAME]: SpawnPointJSON | null;
 };
@@ -185,8 +194,22 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     }
 
     if (json.extensions !== undefined) {
-      const colliderJSON = json.extensions[ColliderExtension.EXTENSION_NAME];
+      const avatarJSON = json.extensions[AvatarExtension.EXTENSION_NAME];
+      if (!avatarJSON) {
+        node.setExtension(AvatarExtension.EXTENSION_NAME, null);
+      } else {
+        const avatar =
+          node.getExtension<Avatar>(AvatarExtension.EXTENSION_NAME) ??
+          this.#scene.extensions.avatar.createAvatar();
 
+        avatar.setName(avatarJSON.name);
+        avatar.setEquippable(avatarJSON.equippable);
+        avatar.setURI(avatarJSON.uri);
+
+        node.setExtension(AvatarExtension.EXTENSION_NAME, avatar);
+      }
+
+      const colliderJSON = json.extensions[ColliderExtension.EXTENSION_NAME];
       if (!colliderJSON) {
         node.setExtension(ColliderExtension.EXTENSION_NAME, null);
       } else {
@@ -209,7 +232,6 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       }
 
       const spawnPointJSON = json.extensions[SpawnPointExtension.EXTENSION_NAME];
-
       if (!spawnPointJSON) {
         node.setExtension(SpawnPointExtension.EXTENSION_NAME, null);
       } else {
@@ -243,12 +265,21 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     });
 
     const extensions: NodeExtensionsJSON = {
+      [AvatarExtension.EXTENSION_NAME]: null,
       [ColliderExtension.EXTENSION_NAME]: null,
       [SpawnPointExtension.EXTENSION_NAME]: null,
     };
 
-    const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
+    const avatar = node.getExtension<Avatar>(AvatarExtension.EXTENSION_NAME);
+    if (avatar) {
+      extensions[AvatarExtension.EXTENSION_NAME] = {
+        name: avatar.getName(),
+        equippable: avatar.getEquippable(),
+        uri: avatar.getURI(),
+      };
+    }
 
+    const collider = node.getExtension<Collider>(ColliderExtension.EXTENSION_NAME);
     if (collider) {
       const mesh = collider.getMesh();
       const meshId = mesh ? this.#scene.mesh.getId(mesh) : null;
@@ -264,7 +295,6 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     }
 
     const spawnPoint = node.getExtension<SpawnPoint>(SpawnPointExtension.EXTENSION_NAME);
-
     if (spawnPoint) {
       extensions[SpawnPointExtension.EXTENSION_NAME] = {
         title: spawnPoint.getTitle(),

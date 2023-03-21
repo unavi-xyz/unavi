@@ -1,9 +1,21 @@
 import { Primitive } from "@gltf-transform/core";
-import { Bone, Mesh as ThreeMesh, Object3D, Skeleton, SkinnedMesh } from "three";
+import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
+import { Avatar } from "@wired-labs/gltf-extensions";
+import {
+  Bone,
+  BufferGeometry,
+  Mesh,
+  Mesh as ThreeMesh,
+  Object3D,
+  Skeleton,
+  SkinnedMesh,
+} from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { MeshBVHVisualizer, StaticGeometryGenerator } from "three-mesh-bvh";
 
 import { NodeJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
-import { RenderScene } from "../RenderScene";
+import { deepDispose } from "../../utils/deepDispose";
 import { Builder } from "./Builder";
 
 /**
@@ -11,8 +23,50 @@ import { Builder } from "./Builder";
  * Handles the conversion of nodes to Three.js objects.
  */
 export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
-  constructor(scene: RenderScene) {
-    super(scene);
+  avatarObjects = new Map<string, Object3D>();
+
+  bvhHelpers = new Map<StaticGeometryGenerator, MeshBVHVisualizer>();
+  meshHelpers = new Map<StaticGeometryGenerator, Mesh>();
+  bvhGenerators = new Map<string, StaticGeometryGenerator>();
+
+  #showBvhVisuals = false;
+
+  #newMeshHelper(generator: StaticGeometryGenerator) {
+    const meshHelper = new Mesh(new BufferGeometry());
+    meshHelper.visible = false;
+    this.scene.root.add(meshHelper);
+    this.meshHelpers.set(generator, meshHelper);
+
+    const bvhHelper = new MeshBVHVisualizer(meshHelper, 10);
+    bvhHelper.visible = this.#showBvhVisuals;
+    bvhHelper.frustumCulled = false;
+    this.scene.root.add(bvhHelper);
+    this.bvhHelpers.set(generator, bvhHelper);
+
+    return meshHelper;
+  }
+
+  regenerateMeshBVH() {
+    this.bvhGenerators.forEach((generator) => {
+      const meshHelper = this.meshHelpers.get(generator) ?? this.#newMeshHelper(generator);
+
+      const bvhHelper = this.bvhHelpers.get(generator);
+      if (!bvhHelper) throw new Error("BVH helper not found.");
+
+      generator.generate(meshHelper.geometry);
+
+      if (meshHelper.geometry.boundsTree) meshHelper.geometry.boundsTree.refit();
+      else meshHelper.geometry.computeBoundsTree();
+
+      bvhHelper.update();
+    });
+  }
+
+  setBvhVisuals(visible: boolean) {
+    this.#showBvhVisuals = visible;
+    this.bvhHelpers.forEach((bvhHelper) => {
+      bvhHelper.visible = visible;
+    });
   }
 
   add(json: Partial<NodeJSON>, id: string) {
@@ -182,8 +236,98 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
         })
       );
 
+      let vrmUri = "";
+
+      cleanup.push(
+        subscribe(node, "Extensions", (extensions) => {
+          const avatarObject = this.avatarObjects.get(id);
+
+          const avatar = extensions.find((ext): ext is Avatar => ext instanceof Avatar);
+          if (!avatar) {
+            vrmUri = "";
+            if (avatarObject) {
+              object.remove(avatarObject);
+              deepDispose(avatarObject);
+              this.avatarObjects.delete(id);
+            }
+            return;
+          }
+
+          const uri = avatar.getURI();
+          if (!uri || uri === vrmUri) return;
+
+          if (avatarObject) {
+            object.remove(avatarObject);
+            deepDispose(avatarObject);
+            this.avatarObjects.delete(id);
+          }
+
+          vrmUri = uri;
+
+          const loader = new GLTFLoader();
+          loader.setCrossOrigin("anonymous");
+          loader.register((parser) => new VRMLoaderPlugin(parser));
+
+          loader.load(uri, (gltf) => {
+            const vrm = gltf.userData.vrm as VRM;
+            vrm.scene.rotateY(Math.PI);
+
+            VRMUtils.removeUnnecessaryVertices(vrm.scene);
+            VRMUtils.removeUnnecessaryJoints(vrm.scene);
+            VRMUtils.rotateVRM0(vrm);
+
+            vrm.scene.traverse((obj) => {
+              if (obj instanceof Mesh) {
+                obj.castShadow = true;
+                obj.geometry.computeBoundsTree();
+              }
+            });
+
+            // Generate BVH
+            const generator = new StaticGeometryGenerator(vrm.scene);
+            this.bvhGenerators.set(id, generator);
+
+            // Add VRM to object
+            object.add(vrm.scene);
+            this.avatarObjects.set(id, vrm.scene);
+          });
+
+          return () => {
+            const generator = this.bvhGenerators.get(id);
+            if (generator) {
+              this.bvhGenerators.delete(id);
+              const helper = this.meshHelpers.get(generator);
+              const bvhHelper = this.bvhHelpers.get(generator);
+
+              if (helper) {
+                this.meshHelpers.delete(generator);
+                helper.removeFromParent();
+                helper.geometry.dispose();
+              }
+
+              if (bvhHelper) {
+                this.bvhHelpers.delete(generator);
+                bvhHelper.removeFromParent();
+                bvhHelper.traverse((obj) => {
+                  if (obj instanceof Mesh) {
+                    obj.geometry.dispose();
+                  }
+                });
+              }
+            }
+          };
+        })
+      );
+
       return () => {
         cleanup.forEach((fn) => fn());
+
+        const avatarObject = this.avatarObjects.get(id);
+        if (avatarObject) {
+          object.remove(avatarObject);
+          deepDispose(avatarObject);
+          this.avatarObjects.delete(id);
+        }
       };
     });
 

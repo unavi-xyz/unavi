@@ -43,7 +43,6 @@ export class PlayerControls {
   #vec3 = new Vector3();
   #vec3b = new Vector3();
   #quat = new Quaternion();
-  #delta = 0;
 
   #mode: "first-person" | "third-person" = "first-person";
   #animationsPath: string | null = null;
@@ -233,7 +232,6 @@ export class PlayerControls {
   }
 
   update(delta: number) {
-    this.#delta = delta;
     if (
       !this.inputRotation ||
       !this.userPosition ||

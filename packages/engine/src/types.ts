@@ -22,3 +22,8 @@ export type Vec3 = [number, number, number];
 export type Vec4 = [number, number, number, number];
 
 export type ControlsType = "orbit" | "player";
+
+export type Visuals = {
+  collider: boolean;
+  bvh: boolean;
+};

@@ -91,13 +91,14 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
         break;
       }
 
-      case "stats": {
-        this.stats = data;
+      case "hovered_node":
+      case "clicked_node": {
+        this.dispatchEvent({ type: subject, data });
         break;
       }
 
-      case "clicked_node": {
-        this.dispatchEvent({ type: subject, data });
+      case "stats": {
+        this.stats = data;
         break;
       }
 

@@ -1,5 +1,7 @@
 import { ExtensibleProperty, ExtensionProperty } from "@gltf-transform/core";
 import {
+  Avatar,
+  AvatarExtension,
   Collider,
   ColliderExtension,
   SpawnPoint,
@@ -24,6 +26,10 @@ export function useExtension<T extends ExtensionProperty>(
   }, [property, extensionName]);
 
   return extension;
+}
+
+export function useAvatar(property: ExtensibleProperty | null) {
+  return useExtension<Avatar>(property, AvatarExtension.EXTENSION_NAME);
 }
 
 export function useCollider(property: ExtensibleProperty | null) {

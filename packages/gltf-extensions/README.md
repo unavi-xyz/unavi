@@ -5,6 +5,7 @@ Contains [glTF-Transform](https://github.com/donmccurdy/glTF-Transform) implemen
 - [KHR_behavior](https://github.com/ux3d/glTF/tree/extensions/KHR_behavior/extensions/2.0/Khronos/KHR_behavior)
 - [OMI_collider](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_collider)
 - [OMI_spawn_point](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point)
+- WIRED_avatar
 
 ## Installation
 
@@ -14,7 +15,7 @@ yarn install @wired-labs/gltf-extensions
 
 ## Usage
 
-Simply register the extensions with your glTF-Transform `io` instance:
+Simply register the extensions you want with your glTF-Transform `io` instance:
 
 ```typescript
 import { NodeIO } from "@gltf-transform/core";

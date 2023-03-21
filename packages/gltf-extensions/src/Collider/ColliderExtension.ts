@@ -40,6 +40,7 @@ export class ColliderExtension extends Extension {
 
     const rootDef = context.jsonDoc.json.extensions[this.extensionName] as ColliderExtensionDef;
 
+    // Create colliders
     const colliders = rootDef.colliders.map((colliderDef) => {
       const collider = this.createCollider();
       collider.setType(colliderDef.type);
@@ -56,6 +57,7 @@ export class ColliderExtension extends Extension {
       return collider;
     });
 
+    // Add colliders to nodes
     const nodeDefs = context.jsonDoc.json.nodes ?? [];
 
     nodeDefs.forEach((nodeDef, nodeIndex) => {
@@ -79,6 +81,7 @@ export class ColliderExtension extends Extension {
 
     if (this.properties.size === 0) return this;
 
+    // Create collider definitions
     const colliderDefs = [];
     const colliderIndexMap = new Map<Collider, number>();
 
@@ -133,6 +136,7 @@ export class ColliderExtension extends Extension {
       }
     }
 
+    // Add collider references to nodes
     this.document
       .getRoot()
       .listNodes()
@@ -149,13 +153,17 @@ export class ColliderExtension extends Extension {
           const nodeDef = nodes[nodeIndex];
           if (!nodeDef) throw new Error("Node def not found");
 
-          nodeDef.extensions = nodeDef.extensions ?? {};
-          nodeDef.extensions[this.extensionName] = {
-            collider: colliderIndexMap.get(collider),
-          };
+          const colliderIndex = colliderIndexMap.get(collider);
+          if (colliderIndex === undefined) throw new Error("Collider index not found");
+
+          nodeDef.extensions ??= {};
+
+          const colliderDef: NodeColliderDef = { collider: colliderIndex };
+          nodeDef.extensions[this.extensionName] = colliderDef;
         }
       });
 
+    // Add extension definition to root
     if (colliderDefs.length > 0) {
       const rootDef: ColliderExtensionDef = { colliders: colliderDefs };
 

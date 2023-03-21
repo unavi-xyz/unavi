@@ -11,6 +11,7 @@ import {
 import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
 import { draco } from "@gltf-transform/functions";
 import {
+  AvatarExtension,
   BehaviorExtension,
   Collider,
   ColliderExtension,
@@ -246,11 +247,10 @@ export class SceneModule extends Scene {
     this.texture.store.forEach((texture) => texture.dispose());
     this.material.store.forEach((material) => material.dispose());
 
-    this.extensions.behavior.dispose();
-    this.extensions.collider.dispose();
-    this.extensions.spawn.dispose();
+    Object.values(this.extensions).forEach((extension) => extension.dispose());
 
     this.extensions = {
+      avatar: this.doc.createExtension(AvatarExtension),
       behavior: this.doc.createExtension(BehaviorExtension),
       collider: this.doc.createExtension(ColliderExtension),
       spawn: this.doc.createExtension(SpawnPointExtension),

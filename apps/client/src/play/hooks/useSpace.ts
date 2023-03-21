@@ -30,13 +30,15 @@ export function useSpace(id: number, metadata: ERC721Metadata | null) {
 
       if (!engine || !metadata?.animation_url) return;
 
-      const res = await fetch(metadata.animation_url);
-      const buffer = await res.arrayBuffer();
-      const array = new Uint8Array(buffer);
-
-      setSceneDownloaded(true);
-
       try {
+        const res = await fetch(metadata.animation_url);
+        if (!res.ok) throw new Error("Failed to download scene.");
+
+        const buffer = await res.arrayBuffer();
+        const array = new Uint8Array(buffer);
+
+        setSceneDownloaded(true);
+
         await engine.scene.addBinary(array);
 
         // Add delay to allow scene to load

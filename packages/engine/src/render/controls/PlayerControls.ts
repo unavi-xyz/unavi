@@ -250,6 +250,7 @@ export class PlayerControls {
     const posY = Atomics.load(this.userPosition, 1) / POSITION_ARRAY_ROUNDING;
     const posZ = Atomics.load(this.userPosition, 2) / POSITION_ARRAY_ROUNDING;
     this.avatar.targetPosition.set(posX, posY, posZ);
+    this.avatar.group.position.set(posX, posY, posZ);
 
     this.avatar.update(delta);
 

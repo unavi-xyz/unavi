@@ -53,9 +53,10 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 
 ### Utilities
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
+- [Changesets](https://github.com/changesets/changesets) for package versioning
 - [ESLint](https://eslint.org/) for code linting
 - [Prettier](https://prettier.io) for code formatting
+- [TypeScript](https://www.typescriptlang.org/) for static type checking
 
 ## 🐋 Docker
 

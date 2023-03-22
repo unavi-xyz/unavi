@@ -3,7 +3,7 @@ name: Publish Host
 on:
   push:
     tags:
-      - host@*
+      - "host@*.*.*"
 
 env:
   REGISTRY: ghcr.io

@@ -44,6 +44,10 @@ apps/client/public/**/*.js
 apps/client/public/**/*.svg
 .vercel
 
+# docs
+apps/docs/docs-api/engine
+apps/docs/docs-api/gltf-extensions
+
 # engine
 draco_decoder_gltf.js
 font.json

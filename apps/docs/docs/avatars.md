@@ -12,7 +12,7 @@ You can upload and use custom VRM avatars within The Wired.
 
 The Wired supports both the VRM 0.0 and 1.0 standards.
 
-## 🚀 Perfomance Ranks
+## 🚀 Performance Ranks
 
 The Wired categorizes avatars into performance ranks based on their optimization levels. This is not a perfect system, but it should give you a rough idea of how well an avatar will perform in The Wired.
 

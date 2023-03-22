@@ -1,12 +1,13 @@
 import { Document } from "@gltf-transform/core";
-
 import {
+  AvatarExtension,
   BehaviorExtension,
   ColliderExtension,
   SPAWN_TITLE,
   SpawnPoint,
   SpawnPointExtension,
-} from "../gltf";
+} from "@wired-labs/gltf-extensions";
+
 import { Accessors } from "./attributes/Accessors";
 import { Animations } from "./attributes/Animations";
 import { Buffers } from "./attributes/Buffers";
@@ -26,6 +27,7 @@ export class Scene {
   doc = new Document();
 
   extensions = {
+    avatar: this.doc.createExtension(AvatarExtension),
     behavior: this.doc.createExtension(BehaviorExtension),
     collider: this.doc.createExtension(ColliderExtension),
     spawn: this.doc.createExtension(SpawnPointExtension),

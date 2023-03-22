@@ -14,6 +14,8 @@ import { useEditorStore } from "../../editor/store";
 import { ERROR_MESSAGE } from "../../editor/utils/parseError";
 import MetaTags from "../../home/MetaTags";
 import SignInButton from "../../home/SignInButton";
+import CrosshairTooltip from "../../play/CrosshairTooltip";
+import { useAvatarEquip } from "../../play/hooks/useAvatarEquip";
 import { useResizeCanvas } from "../../play/hooks/useResizeCanvas";
 
 export default function Editor() {
@@ -25,6 +27,7 @@ export default function Editor() {
   const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
   const openScriptId = useEditorStore((state) => state.openScriptId);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
   const [scriptsReady, setScriptsReady] = useState(false);
 
   const resize = useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
@@ -32,10 +35,16 @@ export default function Editor() {
   useAutosave();
   useTransformControls();
 
+  const [equippedAvatar, setEquippedAvatar] = useState("");
+  const equipAction = useAvatarEquip(engine, equippedAvatar, (uri) => {
+    engine?.render.send({ subject: "set_user_avatar", data: uri });
+    setEquippedAvatar(uri);
+  });
+
   useEffect(() => {
     if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;
 
-    const { visuals } = useEditorStore.getState();
+    const { showColliders } = useEditorStore.getState();
 
     const engine = new Engine({
       canvas: canvasRef.current,
@@ -43,7 +52,7 @@ export default function Editor() {
     });
 
     engine.controls = "orbit";
-    engine.visuals = visuals;
+    engine.showColliders = showColliders;
 
     engine.render.send({ subject: "set_animations_path", data: "/models" });
     engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
@@ -153,6 +162,13 @@ export default function Editor() {
                       sceneLoaded ? "opacity-100" : "opacity-0"
                     }`}
                   >
+                    {isPlaying ? (
+                      <>
+                        <div className="crosshair" />
+                        <CrosshairTooltip action={equipAction} />
+                      </>
+                    ) : null}
+
                     <canvas ref={canvasRef} className="h-full w-full" />
                     <canvas ref={overlayRef} className="absolute top-0 left-0 z-10 h-full w-full" />
                   </div>

@@ -1,7 +1,7 @@
 import { ExtensionProperty, IProperty, Mesh, Nullable, PropertyType } from "@gltf-transform/core";
 
-import { Vec3 } from "../../../types";
 import { EXTENSION_NAME } from "../constants";
+import { Vec3 } from "../types";
 import { ColliderType } from "./types";
 
 interface ICollider extends IProperty {
@@ -15,7 +15,7 @@ interface ICollider extends IProperty {
 /**
  * Represents a physics collider.
  *
- * @group GLTF Extensions
+ * @group OMI_collider
  * @see {@link ColliderExtension}
  */
 export class Collider extends ExtensionProperty<ICollider> {

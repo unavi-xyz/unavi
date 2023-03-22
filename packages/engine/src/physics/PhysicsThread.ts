@@ -1,6 +1,6 @@
 import { World } from "@dimforge/rapier3d";
 
-import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "../constants";
+import { DEFAULT_CONTROLS } from "../constants";
 import { ControlsType, PostMessage } from "../types";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
 import { Player } from "./Player";
@@ -19,7 +19,7 @@ export class PhysicsThread {
   scene = new PhysicsScene(this.world);
   player: Player;
 
-  #visuals = DEFAULT_VISUALS;
+  #showColliders = false;
   #visualsFrame = 0;
   #debugVertices = new Float32Array(0);
   #debugColors = new Float32Array(0);
@@ -85,8 +85,8 @@ export class PhysicsThread {
         break;
       }
 
-      case "toggle_visuals": {
-        this.#visuals = data;
+      case "toggle_collider_visuals": {
+        this.#showColliders = data;
         break;
       }
     }
@@ -109,7 +109,7 @@ export class PhysicsThread {
 
     this.world.step();
 
-    if (this.#visuals) {
+    if (this.#showColliders) {
       // Only update the debug buffers every 30 frames
       if (this.#visualsFrame++ % this.#debugInterval === 0) {
         const buffers = this.world.debugRender();

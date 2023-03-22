@@ -9,7 +9,7 @@ import {
   Value,
   VariableConfig,
   VariableConfigJSON,
-} from "./types";
+} from "../types";
 
 // Parameter
 export function isLink(param?: Parameter): param is ParamLink {

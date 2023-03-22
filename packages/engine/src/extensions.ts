@@ -4,15 +4,18 @@ import {
   KHRMeshQuantization,
   KHRTextureTransform,
 } from "@gltf-transform/extensions";
-
-import { BehaviorExtension } from "./extensions/Behavior/BehaviorExtension";
-import { ColliderExtension } from "./extensions/Collider/ColliderExtension";
-import { SpawnPointExtension } from "./extensions/SpawnPoint/SpawnPointExtension";
+import {
+  AvatarExtension,
+  BehaviorExtension,
+  ColliderExtension,
+  SpawnPointExtension,
+} from "@wired-labs/gltf-extensions";
 
 /**
  * List of extensions supported by the engine.
  */
 export const extensions = [
+  AvatarExtension,
   BehaviorExtension,
   ColliderExtension,
   EXTTextureWebP,

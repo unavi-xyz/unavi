@@ -47,6 +47,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 - [contracts](packages/contracts): generated contract types
 - [engine](packages/engine): a multi-threaded 3D game engine
 - [eslint-config-custom](packages/eslint-config-custom): custom eslint config used throughout the repo
+- [gltf-extensions](packages/gltf-extensions): glTF-Transform implementations of extensions used by the engine
 - [protocol](packages/protocol): types describing the interface between client and host
 - [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
 

@@ -1,4 +1,4 @@
-import { Vec2, Vec3, Vec4 } from "../../../types";
+import { Vec2, Vec3, Vec4 } from "../types";
 
 export type ParamJsonPath = { isJsonPath: true; property: string };
 

@@ -1,8 +1,7 @@
 import { IScene } from "@wired-labs/behave-graph-core";
+import { parseJSONPath, ValueType } from "@wired-labs/gltf-extensions";
 
 import { Engine } from "../Engine";
-import { ValueType } from "../gltf/extensions/Behavior/types";
-import { parseJSONPath } from "./parseJsonPath";
 
 /**
  * Used by behavior nodes to access the scene.
@@ -111,6 +110,8 @@ export class BehaviorScene implements IScene {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   addOnClickedListener(jsonPath: string, callback: (jsonPath: string) => void): void {}
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   removeOnClickedListener(jsonPath: string, callback: (jsonPath: string) => void): void {}
 }

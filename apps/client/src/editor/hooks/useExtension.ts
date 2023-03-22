@@ -1,5 +1,12 @@
 import { ExtensibleProperty, ExtensionProperty } from "@gltf-transform/core";
-import { Collider, ColliderExtension, SpawnPoint, SpawnPointExtension } from "engine";
+import {
+  Avatar,
+  AvatarExtension,
+  Collider,
+  ColliderExtension,
+  SpawnPoint,
+  SpawnPointExtension,
+} from "@wired-labs/gltf-extensions";
 import { useEffect, useState } from "react";
 
 export function useExtension<T extends ExtensionProperty>(
@@ -19,6 +26,10 @@ export function useExtension<T extends ExtensionProperty>(
   }, [property, extensionName]);
 
   return extension;
+}
+
+export function useAvatar(property: ExtensibleProperty | null) {
+  return useExtension<Avatar>(property, AvatarExtension.EXTENSION_NAME);
 }
 
 export function useCollider(property: ExtensibleProperty | null) {

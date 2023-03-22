@@ -10,7 +10,7 @@ type SpawnPointDef = {
 /**
  * Implementation of the {@link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point OMI_spawn_point} extension.
  *
- * @group GLTF Extensions
+ * @group OMI_spawn_point
  */
 export class SpawnPointExtension extends Extension {
   static override readonly EXTENSION_NAME = EXTENSION_NAME.SpawnPoint;
@@ -23,6 +23,7 @@ export class SpawnPointExtension extends Extension {
   public read(context: ReaderContext) {
     const nodeDefs = context.jsonDoc.json.nodes || [];
 
+    // Add spawn points to nodes
     nodeDefs.forEach((nodeDef, nodeIndex) => {
       if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName]) return;
 
@@ -46,22 +47,21 @@ export class SpawnPointExtension extends Extension {
       .listNodes()
       .forEach((node) => {
         const spawnPoint = node.getExtension<SpawnPoint>(this.extensionName);
+        if (!spawnPoint) return;
 
-        if (spawnPoint) {
-          const nodeIndex = context.nodeIndexMap.get(node);
-          if (nodeIndex === undefined) throw new Error("Node index not found");
+        const nodeIndex = context.nodeIndexMap.get(node);
+        if (nodeIndex === undefined) throw new Error("Node index not found");
 
-          const nodes = context.jsonDoc.json.nodes;
-          if (!nodes) throw new Error("Nodes not found");
+        const nodes = context.jsonDoc.json.nodes;
+        if (!nodes) throw new Error("Nodes not found");
 
-          const nodeDef = nodes[nodeIndex];
-          if (!nodeDef) throw new Error("Node def not found");
+        const nodeDef = nodes[nodeIndex];
+        if (!nodeDef) throw new Error("Node def not found");
 
-          nodeDef.extensions = nodeDef.extensions || {};
+        nodeDef.extensions ??= {};
 
-          const def: SpawnPointDef = { title: spawnPoint.getTitle() };
-          nodeDef.extensions[this.extensionName] = def;
-        }
+        const spawnPointDef: SpawnPointDef = { title: spawnPoint.getTitle() };
+        nodeDef.extensions[this.extensionName] = spawnPointDef;
       });
 
     return this;

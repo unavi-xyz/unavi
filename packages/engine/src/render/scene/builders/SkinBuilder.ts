@@ -3,7 +3,6 @@ import { Bone, Matrix4, Object3D, Skeleton } from "three";
 
 import { SkinJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
-import { RenderScene } from "../RenderScene";
 import { Builder } from "./Builder";
 
 /**
@@ -11,10 +10,6 @@ import { Builder } from "./Builder";
  * Handles the conversion of skins to Three.js objects.
  */
 export class SkinBuilder extends Builder<SkinJSON, Skeleton> {
-  constructor(scene: RenderScene) {
-    super(scene);
-  }
-
   add(json: Partial<SkinJSON>, id: string) {
     const { object: skin } = this.scene.skin.create(json, id);
 

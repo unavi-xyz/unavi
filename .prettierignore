@@ -3,10 +3,13 @@ node_modules
 .pnp
 .pnp.js
 
+# build
+build/
+dist/
+
 # next.js
 .next/
 out/
-build
 
 # other
 .turbo

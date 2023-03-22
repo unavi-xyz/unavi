@@ -16,9 +16,11 @@
     "@gltf-transform/functions": "3.1.1",
     "@pixiv/three-vrm": "^1.0.8",
     "@wired-labs/behave-graph-core": "^0.9.19",
+    "@wired-labs/gltf-extensions": "*",
     "nanoid": "^4.0.1",
     "property-graph": "^1.1.0",
-    "three": "^0.148.0"
+    "three": "^0.148.0",
+    "three-mesh-bvh": "^0.5.23"
   },
   "devDependencies": {
     "@types/offscreencanvas": "^2019.7.0",

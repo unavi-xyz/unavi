@@ -10,10 +10,16 @@ import {
 } from "@gltf-transform/core";
 import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
 import { draco } from "@gltf-transform/functions";
+import {
+  AvatarExtension,
+  BehaviorExtension,
+  Collider,
+  ColliderExtension,
+  SpawnPointExtension,
+} from "@wired-labs/gltf-extensions";
 
 import { Engine } from "../Engine";
-import { BehaviorExtension, Collider, ColliderExtension, SpawnPointExtension } from "../gltf";
-import { extensions } from "../gltf/constants";
+import { extensions } from "../extensions";
 import { PhysicsModule } from "../physics/PhysicsModule";
 import { optimizeDocument } from "../render";
 import { RenderModule } from "../render/RenderModule";
@@ -241,11 +247,10 @@ export class SceneModule extends Scene {
     this.texture.store.forEach((texture) => texture.dispose());
     this.material.store.forEach((material) => material.dispose());
 
-    this.extensions.behavior.dispose();
-    this.extensions.collider.dispose();
-    this.extensions.spawn.dispose();
+    Object.values(this.extensions).forEach((extension) => extension.dispose());
 
     this.extensions = {
+      avatar: this.doc.createExtension(AvatarExtension),
       behavior: this.doc.createExtension(BehaviorExtension),
       collider: this.doc.createExtension(ColliderExtension),
       spawn: this.doc.createExtension(SpawnPointExtension),

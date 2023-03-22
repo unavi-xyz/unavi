@@ -1,4 +1,5 @@
-import { Engine, Variable } from "engine";
+import { Variable } from "@wired-labs/gltf-extensions";
+import { Engine } from "engine";
 import { create } from "zustand";
 
 import { Tool } from "./types";
@@ -12,7 +13,7 @@ export interface IEditorStore {
   isPlaying: boolean;
   stopPlaying: () => Promise<void>;
 
-  visuals: boolean;
+  showColliders: boolean;
   tool: Tool;
 
   name: string;
@@ -38,7 +39,7 @@ export const useEditorStore = create<IEditorStore>(() => ({
   isPlaying: false,
   stopPlaying: async () => {},
 
-  visuals: true,
+  showColliders: true,
   tool: "translate",
 
   name: "",

@@ -1,5 +1,5 @@
 import { BehaviorModule } from "./behavior/BehaviorModule";
-import { DEFAULT_CONTROLS, DEFAULT_VISUALS } from "./constants";
+import { DEFAULT_CONTROLS } from "./constants";
 import { InputModule } from "./input/InputModule";
 import { PhysicsModule } from "./physics/PhysicsModule";
 import { PlayerModules } from "./player/PlayerModule";
@@ -37,7 +37,8 @@ export class Engine {
   cameraYaw: Int16Array;
 
   #controls: ControlsType = DEFAULT_CONTROLS;
-  #visuals = DEFAULT_VISUALS;
+  #showColliders = false;
+  #showBVH = false;
 
   /**
    * Creates a new engine instance.
@@ -76,15 +77,25 @@ export class Engine {
     this.physics.send({ subject: "set_controls", data: value });
   }
 
-  get visuals() {
-    return this.#visuals;
+  get showColliders() {
+    return this.#showColliders;
   }
 
-  set visuals(value: boolean) {
-    if (value === this.#visuals) return;
-    this.#visuals = value;
-    this.render.send({ subject: "toggle_visuals", data: value });
-    this.physics.send({ subject: "toggle_visuals", data: value });
+  set showColliders(value: boolean) {
+    if (value === this.#showColliders) return;
+    this.#showColliders = value;
+    this.render.send({ subject: "toggle_collider_visuals", data: value });
+    this.physics.send({ subject: "toggle_collider_visuals", data: value });
+  }
+
+  get showBVH() {
+    return this.#showBVH;
+  }
+
+  set showBVH(value: boolean) {
+    if (value === this.#showBVH) return;
+    this.#showBVH = value;
+    this.render.send({ subject: "toggle_bvh_visuals", data: value });
   }
 
   destroy() {

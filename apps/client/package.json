@@ -29,6 +29,7 @@
     "@rainbow-me/rainbowkit": "^0.11.0",
     "@rainbow-me/rainbowkit-siwe-next-auth": "^0.1.8",
     "@wired-labs/behave-graph-core": "^0.9.19",
+    "@wired-labs/gltf-extensions": "*",
     "boring-avatars": "^1.7.0",
     "contracts": "*",
     "engine": "*",

@@ -43,7 +43,6 @@ export class PlayerControls {
   #vec3 = new Vector3();
   #vec3b = new Vector3();
   #quat = new Quaternion();
-  #delta = 0;
 
   #mode: "first-person" | "third-person" = "first-person";
   #animationsPath: string | null = null;
@@ -233,7 +232,6 @@ export class PlayerControls {
   }
 
   update(delta: number) {
-    this.#delta = delta;
     if (
       !this.inputRotation ||
       !this.userPosition ||
@@ -252,6 +250,7 @@ export class PlayerControls {
     const posY = Atomics.load(this.userPosition, 1) / POSITION_ARRAY_ROUNDING;
     const posZ = Atomics.load(this.userPosition, 2) / POSITION_ARRAY_ROUNDING;
     this.avatar.targetPosition.set(posX, posY, posZ);
+    this.avatar.group.position.set(posX, posY, posZ);
 
     this.avatar.update(delta);
 

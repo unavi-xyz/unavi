@@ -10,7 +10,6 @@ import {
 
 import { AnimationJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
-import { RenderScene } from "../RenderScene";
 import {
   GLTFCubicSplineInterpolant,
   GLTFCubicSplineQuaternionInterpolant,
@@ -22,10 +21,6 @@ import { Builder } from "./Builder";
  * Handles the conversion of animations to Three.js objects.
  */
 export class AnimationBuilder extends Builder<AnimationJSON, AnimationClip> {
-  constructor(scene: RenderScene) {
-    super(scene);
-  }
-
   add(json: Partial<AnimationJSON>, id: string) {
     const previousObject = this.getObject(id);
     if (previousObject) throw new Error(`Animation with id ${id} already exists.`);

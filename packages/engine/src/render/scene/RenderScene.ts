@@ -194,6 +194,26 @@ export class RenderScene extends Scene {
     }
   }
 
+  getAvatarNodeId(object: Object3D): string | null {
+    for (const [id, avatar] of this.builders.node.avatarObjects) {
+      let found = false;
+      avatar.traverse((child) => {
+        if (child === object) found = true;
+      });
+      if (found) return id;
+    }
+
+    return null;
+  }
+
+  getInstancedPrimitiveNodeId(object: Object3D): string | null {
+    for (const [nodeId, primitiveObjects] of this.builders.mesh.primitiveClones.entries()) {
+      if (primitiveObjects.includes(object)) return nodeId;
+    }
+
+    return null;
+  }
+
   getPrimitiveId(object: Object3D): string | null {
     for (const [id, primitiveObject] of this.builders.primitive.listObjects()) {
       if (primitiveObject === object) return id;
@@ -205,14 +225,6 @@ export class RenderScene extends Scene {
   getPrimitiveMeshId(primitive: Primitive): string | null {
     for (const [id, mesh] of this.mesh.store.entries()) {
       if (mesh.listPrimitives().includes(primitive)) return id;
-    }
-
-    return null;
-  }
-
-  getMeshId(object: Object3D): string | null {
-    for (const [id, meshObject] of this.builders.mesh.listObjects()) {
-      if (meshObject === object) return id;
     }
 
     return null;
@@ -235,25 +247,31 @@ export class RenderScene extends Scene {
   }
 
   getObjectNodeId(object: Object3D): string | null {
+    // Check avatars
+    const avatarNodeId = this.getAvatarNodeId(object);
+    if (avatarNodeId) return avatarNodeId;
+
+    // Check instanced primitives
+    const instancedNodeId = this.getInstancedPrimitiveNodeId(object);
+    if (instancedNodeId) return instancedNodeId;
+
     // Check primitives
     const primitiveId = this.getPrimitiveId(object);
-    if (primitiveId) {
-      const primitive = this.primitive.store.get(primitiveId);
-      if (!primitive) throw new Error("Primitive not found");
+    if (!primitiveId) return null;
 
-      const meshId = this.getPrimitiveMeshId(primitive);
-      if (!meshId) return null;
+    const primitive = this.primitive.store.get(primitiveId);
+    if (!primitive) throw new Error("Primitive not found");
 
-      const mesh = this.mesh.store.get(meshId);
-      if (!mesh) throw new Error("Mesh not found");
+    const meshId = this.getPrimitiveMeshId(primitive);
+    if (!meshId) return null;
 
-      const nodeId = this.getMeshNodeId(mesh);
-      if (!nodeId) return null;
+    const mesh = this.mesh.store.get(meshId);
+    if (!mesh) throw new Error("Mesh not found");
 
-      return nodeId;
-    }
+    const nodeId = this.getMeshNodeId(mesh);
+    if (!nodeId) return null;
 
-    return null;
+    return nodeId;
   }
 
   toggleAnimations(enabled: boolean) {

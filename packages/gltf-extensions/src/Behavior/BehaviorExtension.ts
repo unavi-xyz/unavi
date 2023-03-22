@@ -1,9 +1,13 @@
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 import { GraphJSON, NodeJSON, VariableJSON } from "@wired-labs/behave-graph-core";
 
-import { parseJSONPath } from "../../../behavior";
 import { EXTENSION_NAME } from "../constants";
 import { BehaviorNode } from "./BehaviorNode";
+import {
+  BehaviorNodeConfigurationJSON,
+  BehaviorNodeExtras,
+  BehaviorNodeParametersJSON,
+} from "./types";
 import {
   isJsonPath,
   isJsonPathJSON,
@@ -11,12 +15,8 @@ import {
   isLinkJSON,
   isVariableConfig,
   isVariableConfigJSON,
-} from "./filters";
-import {
-  BehaviorNodeConfigurationJSON,
-  BehaviorNodeExtras,
-  BehaviorNodeParametersJSON,
-} from "./types";
+} from "./utils/filters";
+import { parseJSONPath } from "./utils/parseJsonPath";
 import { Variable } from "./Variable";
 
 type BehaviorNodeDef = {
@@ -46,7 +46,7 @@ export type BehaviorEvent = {
 /**
  * Implementation of the {@link https://github.com/ux3d/glTF/tree/extensions/KHR_behavior/extensions/2.0/Khronos/KHR_behavior KHR_behavior} extension.
  *
- * @group GLTF Extensions
+ * @group KHR_behavior
  */
 export class BehaviorExtension extends Extension {
   static override readonly EXTENSION_NAME = EXTENSION_NAME.Behavior;

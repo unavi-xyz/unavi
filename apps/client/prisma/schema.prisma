@@ -29,7 +29,8 @@ model Publication {
   ViewEvents ViewEvent[]
   viewCount  Int         @default(0)
 
-  Projects Project[]
+  Projects         Project[]
+  PublicationAsset PublicationAsset[]
 }
 
 model Project {
@@ -45,7 +46,40 @@ model Project {
   Publication   Publication? @relation(fields: [publicationId], references: [id])
   publicationId String?
 
+  Assets Asset[]
+
   @@index([publicationId])
+}
+
+// Connects a publication to an asset
+// Allows for multiple publications to share the same asset
+model PublicationAsset {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Publication   Publication @relation(fields: [publicationId], references: [id])
+  publicationId String
+
+  Asset   Asset  @relation(fields: [assetId], references: [id])
+  assetId String
+
+  @@index([publicationId])
+  @@index([assetId])
+}
+
+// Represents an asset file within s3
+model Asset {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?
+
+  PublicationAsset PublicationAsset[]
+
+  @@index([projectId])
 }
 
 // Next auth

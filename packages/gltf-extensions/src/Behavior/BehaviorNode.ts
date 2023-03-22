@@ -17,7 +17,7 @@ interface IBehaviorNode extends IProperty {
 /**
  * Represents a single node in the behavior graph.
  *
- * @group GLTF Extensions
+ * @group KHR_behavior
  * @see {@link BehaviorExtension}
  */
 export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {

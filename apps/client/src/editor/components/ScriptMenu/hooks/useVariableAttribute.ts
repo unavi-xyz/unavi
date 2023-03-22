@@ -1,4 +1,4 @@
-import { Variable } from "engine";
+import { Variable } from "@wired-labs/gltf-extensions";
 import { useEffect, useState } from "react";
 
 export function useVariableAttribute<T extends Variable, A extends keyof T>(

@@ -18,7 +18,11 @@
     "format": "prettier --write .",
     "generate": "turbo generate",
     "postinstall": "patch-package",
-    "lint": "turbo lint"
+    "lint": "turbo lint",
+    "release": "turbo run lint build && changeset version && changeset publish"
+  },
+  "dependencies": {
+    "@changesets/cli": "^2.26.0"
   },
   "devDependencies": {
     "dotenv-cli": "^7.1.0",

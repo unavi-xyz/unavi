@@ -1,5 +1,0 @@
----
-"host": minor
----
-
-Initial release

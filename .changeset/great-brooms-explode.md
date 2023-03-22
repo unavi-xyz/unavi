@@ -1,0 +1,5 @@
+---
+"host": patch
+---
+
+Upgrade mediasoup

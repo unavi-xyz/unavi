@@ -1,9 +1,9 @@
 name: Publish Host
 
 on:
-  release:
-    types: [released]
-    GITHUB_REF: refs/tags/host@*
+  push:
+    tags:
+      - host@*
 
 env:
   REGISTRY: ghcr.io

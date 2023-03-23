@@ -17,7 +17,7 @@ const host =
  * @param id Space ID
  * @returns Space data, loading text, loading progress, and join function
  */
-export function useSpace(id: number, metadata: ERC721Metadata | null) {
+export function useSpace(id: number, metadata: ERC721Metadata) {
   const [sceneDownloaded, setSceneDownloaded] = useState(false);
   const [sceneLoaded, setSceneLoaded] = useState(false);
   const engine = usePlayStore((state) => state.engine);
@@ -28,7 +28,7 @@ export function useSpace(id: number, metadata: ERC721Metadata | null) {
     return async () => {
       usePlayStore.setState({ errorLoading: null });
 
-      if (!engine || !metadata?.animation_url) return;
+      if (!engine || !metadata.animation_url) return;
 
       try {
         const res = await fetch(metadata.animation_url);

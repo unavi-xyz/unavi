@@ -27,21 +27,8 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
 
     this.engine = engine;
 
-    // If OffscreenCanvas is supported, render in a worker
-    if (typeof OffscreenCanvas !== "undefined" && process.env.NODE_ENV === "production") {
-      const offscreen = engine.canvas.transferControlToOffscreen();
-
-      this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
-        type: "module",
-        name: "render",
-      });
-
-      this.#worker.onmessage = this.onmessage.bind(this);
-
-      // Send canvas to worker
-      this.send({ subject: "set_canvas", data: offscreen }, [offscreen]);
-    } else {
-      // Otherwise render on the main thread, using a fake worker
+    // If OffscreenCanvas not supported, or in development, render on the main thread
+    if (typeof OffscreenCanvas === "undefined" || process.env.NODE_ENV === "development") {
       import("./RenderThread").then(({ RenderThread }) => {
         this.#worker = new FakeWorker();
 
@@ -53,6 +40,18 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
         this.#worker.insidePort.onmessage = thread.onmessage.bind(thread);
         this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
       });
+    } else {
+      const offscreen = engine.canvas.transferControlToOffscreen();
+
+      this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
+        type: "module",
+        name: "render",
+      });
+
+      this.#worker.onmessage = this.onmessage.bind(this);
+
+      // Send canvas to worker
+      this.send({ subject: "set_canvas", data: offscreen }, [offscreen]);
     }
 
     this.send({

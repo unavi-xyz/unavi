@@ -49,7 +49,7 @@ export default async function Play({ params }: Props) {
 
   return (
     <SessionProvider>
-      <App id={id} metadata={metadata} />;
+      <App id={id} metadata={metadata} />
     </SessionProvider>
   );
 }

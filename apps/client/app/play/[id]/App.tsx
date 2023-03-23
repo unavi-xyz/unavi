@@ -49,7 +49,7 @@ export default function App({ id, metadata }: Props) {
     engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
     engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
     engine.render.send({ subject: "toggle_animations", data: true });
-    engine.physics.send({ subject: "start", data: null });
+    engine.start();
 
     usePlayStore.setState({ engine });
 
@@ -60,14 +60,14 @@ export default function App({ id, metadata }: Props) {
   }, [scriptsReady]);
 
   useEffect(() => {
-    if (!engine) return;
+    if (!engine || !metadata.animation_url) return;
 
     join();
 
     return () => {
-      engine.scene.clear();
+      engine.reset();
     };
-  }, [engine, join]);
+  }, [engine, metadata, join]);
 
   useEffect(() => {
     if (!engine) return;

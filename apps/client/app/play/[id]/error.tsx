@@ -9,7 +9,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
 
   return (
     <div className="space-y-2 pt-10 text-center">
-      <h2>Error loading page.</h2>
+      <h2>Error loading space.</h2>
 
       <button
         onClick={() => reset()}

@@ -1,43 +1,26 @@
+"use client";
+
+import { ERC721Metadata } from "contracts";
 import { Engine } from "engine";
-import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
-import MetaTags from "../../home/MetaTags";
-import { useAvatarEquip } from "../../play/hooks/useAvatarEquip";
-import { useHotkeys } from "../../play/hooks/useHotkeys";
-import { useLoadUser } from "../../play/hooks/useLoadUser";
-import { useResizeCanvas } from "../../play/hooks/useResizeCanvas";
-import { useSetAvatar } from "../../play/hooks/useSetAvatar";
-import { useSpace } from "../../play/hooks/useSpace";
-import { usePlayStore } from "../../play/store";
-import LoadingScreen from "../../play/ui/LoadingScreen";
-import Overlay from "../../play/ui/Overlay";
-import { fetchSpaceMetadata } from "../../server/helpers/fetchSpaceMetadata";
-import { toHex } from "../../utils/toHex";
+import { useAvatarEquip } from "../../../src/play/hooks/useAvatarEquip";
+import { useHotkeys } from "../../../src/play/hooks/useHotkeys";
+import { useLoadUser } from "../../../src/play/hooks/useLoadUser";
+import { useResizeCanvas } from "../../../src/play/hooks/useResizeCanvas";
+import { useSetAvatar } from "../../../src/play/hooks/useSetAvatar";
+import { useSpace } from "../../../src/play/hooks/useSpace";
+import { usePlayStore } from "../../../src/play/store";
+import LoadingScreen from "../../../src/play/ui/LoadingScreen";
+import Overlay from "../../../src/play/ui/Overlay";
 
-export const getServerSideProps = async ({ res, query }: GetServerSidePropsContext) => {
-  const ONE_MINUTE = 60;
-  const ONE_MONTH = 60 * 60 * 24 * 30;
+interface Props {
+  id: number;
+  metadata: ERC721Metadata;
+}
 
-  res.setHeader(
-    "Cache-Control",
-    `public, max-age=0, s-maxage=${ONE_MINUTE}, stale-while-revalidate=${ONE_MONTH}`
-  );
-
-  const hexId = query.id as string;
-  const id = parseInt(hexId);
-
-  const metadata = await fetchSpaceMetadata(id);
-
-  return {
-    props: { id, metadata },
-  };
-};
-
-type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
-
-export default function Play({ id, metadata }: Props) {
+export default function App({ id, metadata }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -102,12 +85,6 @@ export default function Play({ id, metadata }: Props) {
 
   return (
     <>
-      <MetaTags
-        title={metadata?.name ?? `Space ${toHex(id)}`}
-        description={metadata?.description ?? ""}
-        image={metadata?.image ?? ""}
-      />
-
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
 
       <LoadingScreen
@@ -118,7 +95,7 @@ export default function Play({ id, metadata }: Props) {
       />
 
       <div
-        className="h-screen w-screen"
+        className="fixed h-screen w-screen"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           const { engine } = usePlayStore.getState();

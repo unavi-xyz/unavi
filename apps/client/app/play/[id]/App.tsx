@@ -11,9 +11,9 @@ import { useLoadUser } from "../../../src/play/hooks/useLoadUser";
 import { useResizeCanvas } from "../../../src/play/hooks/useResizeCanvas";
 import { useSetAvatar } from "../../../src/play/hooks/useSetAvatar";
 import { useSpace } from "../../../src/play/hooks/useSpace";
-import { usePlayStore } from "../../../src/play/store";
 import LoadingScreen from "../../../src/play/ui/LoadingScreen";
 import Overlay from "../../../src/play/ui/Overlay";
+import { usePlayStore } from "./store";
 
 interface Props {
   id: number;

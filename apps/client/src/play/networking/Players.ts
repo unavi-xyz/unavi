@@ -2,7 +2,7 @@ import { Engine } from "engine";
 import { nanoid } from "nanoid";
 import { FromHostMessage } from "protocol";
 
-import { usePlayStore } from "../store";
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { addChatMessage } from "../utils/addChatMessage";
 import { PlayerName } from "./PlayerName";
 

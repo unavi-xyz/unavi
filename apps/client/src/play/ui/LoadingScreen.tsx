@@ -1,9 +1,9 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+import { usePlayStore } from "../../../app/play/[id]/store";
 import LoadingBar from "../../ui/LoadingBar";
 import { isFromCDN } from "../../utils/isFromCDN";
-import { usePlayStore } from "../store";
 
 interface Props {
   text?: string | null;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MdClose, MdLogout } from "react-icons/md";
 
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { useLogout } from "../../client/auth/useLogout";
 import { useSession } from "../../client/auth/useSession";
 import Avatar from "../../home/Avatar";
@@ -10,7 +11,6 @@ import TextField from "../../ui/TextField";
 import Tooltip from "../../ui/Tooltip";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
 import { useProfileByAddress } from "../hooks/useProfileByAddress";
-import { usePlayStore } from "../store";
 import { avatarPerformanceRank } from "../utils/avatarPerformanceRank";
 import { getVRMStats, VRMStats } from "../utils/getVRMStats";
 

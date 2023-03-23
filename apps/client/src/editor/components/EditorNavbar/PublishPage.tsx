@@ -19,23 +19,12 @@ import ImageInput from "../../../ui/ImageInput";
 import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
 import { bytesToDisplay } from "../../../utils/bytesToDisplay";
+import { cdnURL, S3Path } from "../../../utils/s3Paths";
 import { toHex } from "../../../utils/toHex";
 import { useSave } from "../../hooks/useSave";
 import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
 import { parseError } from "../../utils/parseError";
-
-function cdnModelURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/model.glb`;
-}
-
-function cdnImageURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/image.jpg`;
-}
-
-function cdnMetadataURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/metadata.json`;
-}
 
 export default function PublishPage() {
   const router = useRouter();
@@ -159,8 +148,8 @@ export default function PublishPage() {
       }
 
       async function uploadMetadata(spaceId: number | undefined) {
-        const modelURL = cdnModelURL(publicationId);
-        const imageURL = cdnImageURL(publicationId);
+        const modelURL = cdnURL(S3Path.publication(publicationId).model);
+        const imageURL = cdnURL(S3Path.publication(publicationId).image);
 
         const metadata: ERC721Metadata = {
           animation_url: modelURL,
@@ -195,7 +184,7 @@ export default function PublishPage() {
         toast.loading("Waiting for signature...", { id: toastId });
 
         // Mint space NFT
-        const contentURI = cdnMetadataURL(publicationId);
+        const contentURI = cdnURL(S3Path.publication(publicationId).metadata);
         const contract = Space__factory.connect(SPACE_ADDRESS, signer);
         const tx = await contract.mintWithTokenURI(contentURI);
 

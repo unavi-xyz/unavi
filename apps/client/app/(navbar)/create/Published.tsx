@@ -1,14 +1,10 @@
 import Link from "next/link";
 
-import { env } from "../../../src/env/server.mjs";
 import { fetchProjects } from "../../../src/server/helpers/fetchProjects";
 import { getServerSession } from "../../../src/server/helpers/getServerSession";
 import Card from "../../../src/ui/Card";
 import CardGrid from "../../../src/ui/CardGrid";
-
-function cdnImageURL(id: string) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/publications/${id}/image.jpg`;
-}
+import { cdnURL, S3Path } from "../../../src/utils/s3Paths";
 
 export default async function Published() {
   const session = await getServerSession();
@@ -21,7 +17,7 @@ export default async function Published() {
   if (publishedProjects.length === 0) return null;
 
   const publishedImages = publishedProjects.map((p) =>
-    p.publicationId ? cdnImageURL(p.publicationId) : p.image
+    p.publicationId ? cdnURL(S3Path.publication(p.publicationId).image) : p.image
   );
 
   return (

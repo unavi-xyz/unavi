@@ -12,23 +12,9 @@ import { Profile } from "../../../src/server/helpers/fetchProfile";
 import Button from "../../../src/ui/Button";
 import ImageInput from "../../../src/ui/ImageInput";
 import TextArea from "../../../src/ui/TextArea";
+import { cdnURL, S3Path } from "../../../src/utils/s3Paths";
 import { toHex } from "../../../src/utils/toHex";
 import { getProfileFileUpload } from "../../api/profiles/[id]/[file]/upload/helper";
-
-function cdnMetadataURL(id: number) {
-  const hexId = toHex(id);
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/profiles/${hexId}/metadata.json`;
-}
-
-function cdnImageURL(id: number) {
-  const hexId = toHex(id);
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/profiles/${hexId}/image.jpg`;
-}
-
-function cdnCoverURL(id: number) {
-  const hexId = toHex(id);
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/profiles/${hexId}/cover.jpg`;
-}
 
 interface Props {
   profile: Profile | null;
@@ -84,7 +70,7 @@ export default function Metadata({ profile }: Props) {
 
         if (!imageResponse.ok) throw new Error("Failed to upload profile picture");
 
-        metadata.image = cdnImageURL(profile.id);
+        metadata.image = cdnURL(S3Path.profile(profile.id).image);
       }
 
       // Upload cover image to S3 if it's a new one
@@ -105,7 +91,7 @@ export default function Metadata({ profile }: Props) {
 
         if (!coverImageResponse.ok) throw new Error("Failed to upload cover image");
 
-        metadata.animation_url = cdnCoverURL(profile.id);
+        metadata.animation_url = cdnURL(S3Path.profile(profile.id).cover);
       }
 
       // Upload metadata to S3
@@ -126,7 +112,7 @@ export default function Metadata({ profile }: Props) {
       const contract = Profile__factory.connect(PROFILE_ADDRESS, signer);
       const currentTokenURI = await contract.tokenURI(profile.id);
 
-      const targetTokenURI = cdnMetadataURL(profile.id);
+      const targetTokenURI = cdnURL(S3Path.profile(profile.id).metadata);
 
       if (currentTokenURI !== targetTokenURI) {
         const tx = await contract.setTokenURI(profile.id, targetTokenURI);

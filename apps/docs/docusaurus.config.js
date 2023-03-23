@@ -34,7 +34,6 @@ const config = {
         out: "../docs-api/engine",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
-          position: 100,
           categoryLabel: "Engine",
         },
       },
@@ -52,8 +51,24 @@ const config = {
         out: "../docs-api/gltf-extensions",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
-          position: 90,
           categoryLabel: "glTF Extensions",
+        },
+      },
+    ],
+    [
+      "docusaurus-plugin-typedoc",
+
+      /** @type {import('typedoc').TypeDocOptions} */
+      {
+        id: "protocol",
+        entryPoints: ["../../packages/protocol/src/index.ts"],
+        tsconfig: "../../packages/protocol/tsconfig.json",
+        excludePrivate: true,
+        readme: "none",
+        out: "../docs-api/protocol",
+        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
+        sidebar: {
+          categoryLabel: "Protocol",
         },
       },
     ],

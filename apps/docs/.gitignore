@@ -9,6 +9,7 @@
 .cache-loader
 docs-api/engine
 docs-api/gltf-extensions
+docs-api/protocol
 
 # Misc
 .DS_Store

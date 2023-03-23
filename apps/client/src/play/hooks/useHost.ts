@@ -4,7 +4,7 @@ import { Transport } from "mediasoup-client/lib/Transport";
 import { fromHostMessageSchema, ToHostMessage } from "protocol";
 import { useEffect, useState } from "react";
 
-import { usePlayStore } from "../../play/store";
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { toHex } from "../../utils/toHex";
 import { PlayerName } from "../networking/PlayerName";
 import { Players } from "../networking/Players";

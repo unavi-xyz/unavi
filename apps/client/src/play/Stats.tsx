@@ -1,7 +1,7 @@
 import { RenderStats } from "engine";
 import { useEffect, useState } from "react";
 
-import { usePlayStore } from "./store";
+import { usePlayStore } from "../../app/play/[id]/store";
 
 const ENABLE_STATS = process.env.NODE_ENV === "development";
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { usePlayStore } from "../store";
+import { usePlayStore } from "../../../app/play/[id]/store";
 
 export type ChatMessage =
   | {

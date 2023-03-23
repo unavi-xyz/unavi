@@ -1,9 +1,9 @@
 import { ERC721Metadata } from "contracts";
 import { useMemo, useState } from "react";
 
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { parseError } from "../../editor/utils/parseError";
 import { env } from "../../env/client.mjs";
-import { usePlayStore } from "../../play/store";
 import { useHost } from "./useHost";
 
 const host =

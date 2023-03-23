@@ -16,9 +16,9 @@ import ReactFlow, {
   XYPosition,
 } from "reactflow";
 
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import IconButton from "../../../ui/IconButton";
 import { useScript } from "../../hooks/useScript";
-import { useEditorStore } from "../../store";
 import NodeContextMenu from "./NodeContextMenu";
 import NodePicker from "./NodePicker";
 import SaveFlow from "./SaveFlow";

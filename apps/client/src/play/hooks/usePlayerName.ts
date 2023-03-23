@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { PlayerName } from "../networking/PlayerName";
-import { usePlayStore } from "../store";
 
 export function usePlayerName(playerId: number | null) {
   const players = usePlayStore((state) => state.players);

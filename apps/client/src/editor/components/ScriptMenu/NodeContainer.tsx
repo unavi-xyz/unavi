@@ -1,6 +1,6 @@
 import { NodeCategory, NodeSpecJSON } from "@wired-labs/behave-graph-core";
 
-import { useEditorStore } from "../../store";
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 
 interface Props {
   id: string;

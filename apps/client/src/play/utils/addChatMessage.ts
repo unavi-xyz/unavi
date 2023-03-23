@@ -1,4 +1,4 @@
-import { usePlayStore } from "../store";
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { ChatMessage } from "../ui/ChatMessage";
 
 export function addChatMessage(message: ChatMessage) {

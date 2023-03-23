@@ -16,7 +16,7 @@ export default async function Settings({ params: { id } }: { params: { id: strin
       <Connect
         id={id}
         owner={project.owner}
-        connectedSpaceId={project.Publication?.spaceId ?? undefined}
+        connectedSpaceId={project.publication?.spaceId ?? undefined}
       />
       <Delete id={id} />
     </div>

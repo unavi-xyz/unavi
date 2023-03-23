@@ -6,10 +6,11 @@ import { getServerSession } from "./getServerSession";
 
 export const fetchProject = cache(async (id: string) => {
   try {
+    const imagePromise = getDownload(id, "image");
+    const modelPromise = getDownload(id, "model");
+
     const session = await getServerSession();
     if (!session) throw new Error("Unauthorized");
-
-    const imagePromise = getDownload(id, "image");
 
     const project = await prisma.project.findFirst({
       // Verify user owns the project
@@ -18,7 +19,20 @@ export const fetchProject = cache(async (id: string) => {
     });
     if (!project) throw new Error("Not found");
 
-    return { ...project, image: await imagePromise };
+    return {
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      owner: project.owner,
+      publicationId: project.publicationId,
+      publication: project.Publication
+        ? {
+            spaceId: project.Publication.spaceId,
+          }
+        : null,
+      image: await imagePromise,
+      model: await modelPromise,
+    };
   } catch {
     return null;
   }

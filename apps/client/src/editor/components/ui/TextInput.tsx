@@ -1,4 +1,4 @@
-import { useEditorStore } from "../../store";
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 
 type Props = React.InputHTMLAttributes<HTMLInputElement>;
 

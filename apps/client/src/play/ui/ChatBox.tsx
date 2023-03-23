@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { usePlayStore } from "../../play/store";
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { sendToHost } from "../hooks/useHost";
 import ChatMessage from "./ChatMessage";

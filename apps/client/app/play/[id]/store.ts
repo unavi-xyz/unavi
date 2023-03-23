@@ -3,8 +3,8 @@ import { Producer } from "mediasoup-client/lib/Producer";
 import { Transport } from "mediasoup-client/lib/Transport";
 import { create } from "zustand";
 
-import { Players } from "./networking/Players";
-import { ChatMessage } from "./ui/ChatMessage";
+import { Players } from "../../../src/play/networking/Players";
+import { ChatMessage } from "../../../src/play/ui/ChatMessage";
 
 export interface PlayStore {
   engine: Engine | null;

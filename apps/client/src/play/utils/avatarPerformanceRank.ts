@@ -1,4 +1,4 @@
-import { ModelStats } from "../../utils/getModelStats";
+import { ModelStats } from "./getModelStats";
 
 export type AvatarPerformanceRank = "Excellent" | "Good" | "Medium" | "Poor" | "Very Poor";
 

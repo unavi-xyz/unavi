@@ -1,7 +1,7 @@
 import { ERC721MetadataSchema, Profile__factory, PROFILE_ADDRESS } from "contracts";
 import { cache } from "react";
 
-import { ethersProvider } from "../constants";
+import { ethersProvider } from "../ethers";
 
 export const fetchProfileMetadata = cache(async (profileId: number) => {
   try {

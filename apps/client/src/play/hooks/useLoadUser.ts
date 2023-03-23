@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { useSession } from "../../client/auth/useSession";
-import { usePlayStore } from "../../play/store";
 import { LocalStorageKey } from "../constants";
 import { sendToHost } from "./useHost";
 import { usePlayerName } from "./usePlayerName";

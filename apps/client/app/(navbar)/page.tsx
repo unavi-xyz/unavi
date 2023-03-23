@@ -9,9 +9,12 @@ import Screenshot4 from "../../public/images/Screenshot4.png";
 import Discord from "../../public/images/svg/Discord.svg";
 import GitHub from "../../public/images/svg/GitHub.svg";
 import Twitter from "../../public/images/svg/Twitter.svg";
-import { DISCORD_URL, GITHUB_URL, TWITTER_URL } from "../../src/constants";
 import { env } from "../../src/env/client.mjs";
 import AnimateOnEnter from "./AnimateOnEnter";
+
+const DISCORD_URL = "https://discord.gg/cazUfCCgHJ";
+const TWITTER_URL = "https://twitter.com/wired_xr";
+const GITHUB_URL = "https://github.com/wired-labs/wired";
 
 export const metadata: Metadata = {
   title: "Home",

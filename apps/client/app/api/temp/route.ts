@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 
 import { env } from "../../../src/env/server.mjs";
-import { s3Client } from "../../../src/server/client";
+import { s3Client } from "../../../src/server/s3";
 
 const expiresIn = 600; // 10 minutes
 

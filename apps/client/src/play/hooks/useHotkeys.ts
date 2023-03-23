@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { usePlayStore } from "../store";
+import { usePlayStore } from "../../../app/play/[id]/store";
 
 export function useHotkeys() {
   useEffect(() => {

@@ -1,8 +1,8 @@
 import { SPAWN_TITLE, SpawnPointExtension } from "@wired-labs/gltf-extensions";
 
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { DropdownItem } from "../../../ui/DropdownMenu";
 import { useSpawn } from "../../hooks/useSpawn";
-import { useEditorStore } from "../../store";
 
 const OBJECT_NAME = {
   Spawn: "Spawn",

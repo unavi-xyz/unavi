@@ -2,8 +2,8 @@ import { Engine } from "engine";
 import { nanoid } from "nanoid";
 
 import { getProfileByAddress } from "../../../app/api/profiles/address/[address]/helper";
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { toHex } from "../../utils/toHex";
-import { usePlayStore } from "../store";
 import { addChatMessage } from "../utils/addChatMessage";
 
 export class PlayerName {

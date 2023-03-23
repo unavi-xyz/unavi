@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { IoMdArrowRoundBack, IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
+import { usePlayStore } from "../../../app/play/[id]/store";
 import DialogContent, { DialogRoot } from "../../ui/Dialog";
 import { toHex } from "../../utils/toHex";
 import { useIsMobile } from "../../utils/useIsMobile";
@@ -11,7 +12,6 @@ import CrosshairTooltip, { CrosshairAction } from "../CrosshairTooltip";
 import { sendToHost } from "../hooks/useHost";
 import { useSetAvatar } from "../hooks/useSetAvatar";
 import Stats from "../Stats";
-import { usePlayStore } from "../store";
 import ChatBox from "./ChatBox";
 import MobileChatBox from "./MobileChatBox";
 import Settings from "./Settings";

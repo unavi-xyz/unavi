@@ -4,10 +4,9 @@ import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { MdSync } from "react-icons/md";
 
+import { Tool, useEditorStore } from "../../../../app/editor/[id]/store";
 import IconButton from "../../../ui/IconButton";
 import Tooltip from "../../../ui/Tooltip";
-import { useEditorStore } from "../../store";
-import { Tool } from "../../types";
 
 export default function ToolButtons() {
   const tool = useEditorStore((state) => state.tool);

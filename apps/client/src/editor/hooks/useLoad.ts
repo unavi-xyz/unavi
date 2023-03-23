@@ -1,5 +1,4 @@
 import { Project } from "@prisma/client";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 
@@ -11,21 +10,18 @@ import { parseError } from "../utils/parseError";
 
 export const ERROR_NOT_SIGNED_IN = "You must be signed in to edit a project.";
 
-export function useLoad() {
-  const params = useSearchParams();
-  const id = params?.get("id");
-
+export function useLoad(id: string) {
   const { status } = useSession();
   const engine = useEditorStore((state) => state.engine);
   const [errorLoading, setErrorLoading] = useState<string>("");
 
   const { data: project, error: errorProject } = useSWR<Project | null>(
-    () => (status === "authenticated" && id ? `/api/projects/${id}` : null),
+    () => (status === "authenticated" ? `/api/projects/${id}` : null),
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
   const { data: modelUrl, error: errorModel } = useSWR<GetFileDownloadResponse>(
-    () => (status === "authenticated" && id ? `/api/projects/${id}/model` : null),
+    () => (status === "authenticated" ? `/api/projects/${id}/model` : null),
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );

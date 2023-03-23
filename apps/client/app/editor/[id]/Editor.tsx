@@ -1,29 +1,38 @@
+"use client";
+
 import { Engine } from "engine";
+import { Metadata } from "next";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import Split from "react-split";
 
-import EditorNavbar from "../../editor/components/EditorNavbar/EditorNavbar";
-import InspectMenu from "../../editor/components/InspectMenu/InspectMenu";
-import ScriptMenu from "../../editor/components/ScriptMenu/ScriptMenu";
-import TreeMenu from "../../editor/components/TreeMenu/TreeMenu";
-import { useAutosave } from "../../editor/hooks/useAutosave";
-import { ERROR_NOT_SIGNED_IN, useLoad } from "../../editor/hooks/useLoad";
-import { useTransformControls } from "../../editor/hooks/useTransformControls";
-import { useEditorStore } from "../../editor/store";
-import { ERROR_MESSAGE } from "../../editor/utils/parseError";
-import MetaTags from "../../home/MetaTags";
-import SignInButton from "../../home/SignInButton";
-import CrosshairTooltip from "../../play/CrosshairTooltip";
-import { useAvatarEquip } from "../../play/hooks/useAvatarEquip";
-import { useResizeCanvas } from "../../play/hooks/useResizeCanvas";
+import EditorNavbar from "../../../src/editor/components/EditorNavbar/EditorNavbar";
+import InspectMenu from "../../../src/editor/components/InspectMenu/InspectMenu";
+import ScriptMenu from "../../../src/editor/components/ScriptMenu/ScriptMenu";
+import TreeMenu from "../../../src/editor/components/TreeMenu/TreeMenu";
+import { useAutosave } from "../../../src/editor/hooks/useAutosave";
+import { ERROR_NOT_SIGNED_IN, useLoad } from "../../../src/editor/hooks/useLoad";
+import { useTransformControls } from "../../../src/editor/hooks/useTransformControls";
+import { useEditorStore } from "../../../src/editor/store";
+import { ERROR_MESSAGE } from "../../../src/editor/utils/parseError";
+import CrosshairTooltip from "../../../src/play/CrosshairTooltip";
+import { useAvatarEquip } from "../../../src/play/hooks/useAvatarEquip";
+import { useResizeCanvas } from "../../../src/play/hooks/useResizeCanvas";
+import SignInButton from "../../(navbar)/SignInButton";
 
-export default function Editor() {
+export const metadata: Metadata = {
+  title: "Editor",
+};
+
+interface Props {
+  id: string;
+}
+
+export default function Editor({ id }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
 
-  const name = useEditorStore((state) => state.name);
   const engine = useEditorStore((state) => state.engine);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
   const openScriptId = useEditorStore((state) => state.openScriptId);
@@ -31,7 +40,7 @@ export default function Editor() {
   const [scriptsReady, setScriptsReady] = useState(false);
 
   const resize = useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
-  const { error } = useLoad();
+  const { error } = useLoad(id);
   useAutosave();
   useTransformControls();
 
@@ -86,8 +95,6 @@ export default function Editor() {
 
   return (
     <>
-      <MetaTags title={name ? `${name} / Editor` : "Editor"} />
-
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
       <Script src="/scripts/draco_encoder.js" />
 

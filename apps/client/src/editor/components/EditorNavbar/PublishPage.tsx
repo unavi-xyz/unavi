@@ -9,6 +9,7 @@ import { GetFileDownloadResponse } from "../../../../app/api/projects/[id]/[file
 import { publishProject } from "../../../../app/api/projects/[id]/publication/helper";
 import { getPublicationFileUpload } from "../../../../app/api/publications/[id]/[file]/helper";
 import { linkPublication } from "../../../../app/api/publications/[id]/link/helper";
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { useSession } from "../../../client/auth/useSession";
 import { env } from "../../../env/client.mjs";
 import { useProfileByAddress } from "../../../play/hooks/useProfileByAddress";
@@ -22,11 +23,14 @@ import { bytesToDisplay } from "../../../utils/bytesToDisplay";
 import { cdnURL, S3Path } from "../../../utils/s3Paths";
 import { toHex } from "../../../utils/toHex";
 import { useSave } from "../../hooks/useSave";
-import { useEditorStore } from "../../store";
 import { cropImage } from "../../utils/cropImage";
 import { parseError } from "../../utils/parseError";
 
-export default function PublishPage() {
+interface Props {
+  project: Project;
+}
+
+export default function PublishPage({ project }: Props) {
   const router = useRouter();
   const params = useSearchParams();
   const id = params?.get("id");
@@ -40,14 +44,6 @@ export default function PublishPage() {
   const { save } = useSave();
 
   const { profile } = useProfileByAddress(session?.address);
-  const { data: project } = useSWR<Project | null>(
-    () => (id ? `/api/projects/${id}` : null),
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    }
-  );
   const { data: imageDownload } = useSWR<GetFileDownloadResponse>(
     () => (id ? `/api/projects/${id}/image` : null),
     fetcher,
@@ -178,7 +174,7 @@ export default function PublishPage() {
         if (!response.ok) throw new Error("Failed to upload metadata");
       }
 
-      let spaceId = project?.Publication?.spaceId ?? undefined;
+      let spaceId = project?.publication?.spaceId ?? undefined;
 
       if (spaceId === undefined) {
         toast.loading("Waiting for signature...", { id: toastId });
@@ -219,7 +215,7 @@ export default function PublishPage() {
       await Promise.all(promises);
 
       // Redirect to space if new space was created
-      if (!project?.Publication?.spaceId) {
+      if (!project?.publication?.spaceId) {
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         if (spaceId !== undefined) {

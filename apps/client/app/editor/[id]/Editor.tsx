@@ -13,22 +13,23 @@ import TreeMenu from "../../../src/editor/components/TreeMenu/TreeMenu";
 import { useAutosave } from "../../../src/editor/hooks/useAutosave";
 import { ERROR_NOT_SIGNED_IN, useLoad } from "../../../src/editor/hooks/useLoad";
 import { useTransformControls } from "../../../src/editor/hooks/useTransformControls";
-import { useEditorStore } from "../../../src/editor/store";
 import { ERROR_MESSAGE } from "../../../src/editor/utils/parseError";
 import CrosshairTooltip from "../../../src/play/CrosshairTooltip";
 import { useAvatarEquip } from "../../../src/play/hooks/useAvatarEquip";
 import { useResizeCanvas } from "../../../src/play/hooks/useResizeCanvas";
+import { Project } from "../../../src/server/helpers/fetchProject";
 import SignInButton from "../../(navbar)/SignInButton";
+import { useEditorStore } from "./store";
 
 export const metadata: Metadata = {
   title: "Editor",
 };
 
 interface Props {
-  id: string;
+  project: Project;
 }
 
-export default function Editor({ id }: Props) {
+export default function Editor({ project }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -40,7 +41,7 @@ export default function Editor({ id }: Props) {
   const [scriptsReady, setScriptsReady] = useState(false);
 
   const resize = useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
-  const { error } = useLoad(id);
+  const { error } = useLoad(project);
   useAutosave();
   useTransformControls();
 
@@ -116,7 +117,7 @@ export default function Editor({ id }: Props) {
         }}
       >
         <div className="h-12 w-full border-b">
-          <EditorNavbar />
+          <EditorNavbar project={project} />
         </div>
 
         <div className="fixed h-full w-full animate-fadeInDelayed">

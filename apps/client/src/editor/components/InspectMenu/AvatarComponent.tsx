@@ -3,11 +3,11 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { getNewProjectAssetUpload } from "../../../../app/api/projects/[id]/assets/helper";
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import FileInput from "../../../ui/FileInput";
 import { cdnURL, S3Path } from "../../../utils/s3Paths";
 import { useAvatar } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";
-import { useEditorStore } from "../../store";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 

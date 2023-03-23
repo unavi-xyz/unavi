@@ -1,27 +1,27 @@
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
-import useSWR from "swr";
 import { useSigner } from "wagmi";
 
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { useSession } from "../../../client/auth/useSession";
 import SignInButton from "../../../home/SignInButton";
-import { fetcher } from "../../../play/utils/fetcher";
 import { Project } from "../../../server/helpers/fetchProject";
 import Button from "../../../ui/Button";
 import DialogContent, { DialogRoot } from "../../../ui/Dialog";
 import { useSave } from "../../hooks/useSave";
-import { useEditorStore } from "../../store";
 import AutoGrowInput from "../ui/AutoGrowInput";
 import PlayButton from "./PlayButton";
 import PublishPage from "./PublishPage";
 import ToolButtons from "./ToolButtons";
 import VisualsButton from "./VisualsButton";
 
-export default function EditorNavbar() {
+interface Props {
+  project: Project;
+}
+
+export default function EditorNavbar({ project }: Props) {
   const router = useRouter();
-  const params = useSearchParams();
-  const id = params?.get("id");
 
   const name = useEditorStore((state) => state.name);
   const isSaving = useEditorStore((state) => state.isSaving);
@@ -32,13 +32,7 @@ export default function EditorNavbar() {
   const { status } = useSession();
   const { data: signer } = useSigner();
 
-  const { data: project } = useSWR<Project | null>(
-    () => (status === "authenticated" && id ? `/api/projects/${id}` : null),
-    fetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
-  );
-
-  const isPublished = Boolean(project?.Publication?.spaceId);
+  const isPublished = Boolean(project?.publication?.spaceId);
 
   async function handleBack() {
     // Exit play mode
@@ -46,7 +40,7 @@ export default function EditorNavbar() {
     await stopPlaying();
 
     await save();
-    router.push(`/project/${id}`);
+    router.push(`/project/${project.id}`);
   }
 
   async function handleSave() {
@@ -77,7 +71,7 @@ export default function EditorNavbar() {
           open={openPublishDialog}
           title={isPublished ? "Update Space" : "Publish Space"}
         >
-          <PublishPage />
+          <PublishPage project={project} />
         </DialogContent>
       </DialogRoot>
 

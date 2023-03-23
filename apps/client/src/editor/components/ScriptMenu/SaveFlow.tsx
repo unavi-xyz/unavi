@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Edge, Node, useReactFlow } from "reactflow";
 
-import { useEditorStore } from "../../store";
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { isValidConnection } from "./utils/isValidConnection";
 import { saveFlow } from "./utils/saveFlow";
 

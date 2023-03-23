@@ -2,7 +2,7 @@ import { Variable } from "@wired-labs/gltf-extensions";
 import { Engine } from "engine";
 import { create } from "zustand";
 
-import { Tool } from "./types";
+export type Tool = "translate" | "rotate" | "scale";
 
 export interface IEditorStore {
   engine: Engine | null;

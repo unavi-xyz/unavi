@@ -1,30 +1,14 @@
-import { Project } from "@prisma/client";
 import { useEffect, useState } from "react";
-import useSWR from "swr";
 
-import { GetFileDownloadResponse } from "../../../app/api/projects/[id]/[file]/types";
-import { useSession } from "../../client/auth/useSession";
-import { fetcher } from "../../play/utils/fetcher";
-import { useEditorStore } from "../store";
+import { useEditorStore } from "../../../app/editor/[id]/store";
+import { Project } from "../../server/helpers/fetchProject";
 import { parseError } from "../utils/parseError";
 
 export const ERROR_NOT_SIGNED_IN = "You must be signed in to edit a project.";
 
-export function useLoad(id: string) {
-  const { status } = useSession();
+export function useLoad(project: Project) {
   const engine = useEditorStore((state) => state.engine);
-  const [errorLoading, setErrorLoading] = useState<string>("");
-
-  const { data: project, error: errorProject } = useSWR<Project | null>(
-    () => (status === "authenticated" ? `/api/projects/${id}` : null),
-    fetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
-  );
-  const { data: modelUrl, error: errorModel } = useSWR<GetFileDownloadResponse>(
-    () => (status === "authenticated" ? `/api/projects/${id}/model` : null),
-    fetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
-  );
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!engine || !project) return;
@@ -42,9 +26,9 @@ export function useLoad(id: string) {
 
   useEffect(() => {
     async function load() {
-      if (!engine || !modelUrl) return;
+      if (!engine) return;
 
-      const res = await fetch(modelUrl.url);
+      const res = await fetch(project.model);
       const buffer = await res.arrayBuffer();
       const array = new Uint8Array(buffer);
 
@@ -54,7 +38,7 @@ export function useLoad(id: string) {
         await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (err) {
         console.error(err);
-        setErrorLoading(parseError(err, "Failed to load project."));
+        setError(parseError(err, "Failed to load project."));
       }
 
       useEditorStore.setState({ sceneLoaded: true });
@@ -64,13 +48,11 @@ export function useLoad(id: string) {
 
     return () => {
       useEditorStore.setState({ sceneLoaded: false });
-      setErrorLoading("");
+      setError("");
     };
-  }, [engine, modelUrl]);
-
-  const errorAuth = status === "unauthenticated" ? ERROR_NOT_SIGNED_IN : "";
+  }, [engine, project]);
 
   return {
-    error: parseError(errorProject, "") || parseError(errorModel, "") || errorLoading || errorAuth,
+    error,
   };
 }

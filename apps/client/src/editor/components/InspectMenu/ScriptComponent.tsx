@@ -1,8 +1,8 @@
 import { Node } from "@gltf-transform/core";
 import { BehaviorNode, BehaviorNodeExtras } from "@wired-labs/gltf-extensions";
 
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { useNodeExtras } from "../../hooks/useNodeExtras";
-import { useEditorStore } from "../../store";
 import TextInput from "../ui/TextInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";

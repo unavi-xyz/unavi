@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { HiOutlineLightningBolt } from "react-icons/hi";
 
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { DropdownContent, DropdownMenu, DropdownTrigger } from "../../../ui/DropdownMenu";
 import IconButton from "../../../ui/IconButton";
-import { useEditorStore } from "../../store";
 import SpecialsMenu from "./SpecialsMenu";
 
 export default function SpecialsButton() {

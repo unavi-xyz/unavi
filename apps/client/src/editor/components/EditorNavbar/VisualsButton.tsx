@@ -1,8 +1,8 @@
 import { HiCubeTransparent } from "react-icons/hi";
 
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import IconButton from "../../../ui/IconButton";
 import Tooltip from "../../../ui/Tooltip";
-import { useEditorStore } from "../../store";
 
 export default function VisualsButton() {
   const showColliders = useEditorStore((state) => state.showColliders);

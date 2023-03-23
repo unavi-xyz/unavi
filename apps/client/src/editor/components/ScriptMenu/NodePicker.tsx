@@ -2,7 +2,7 @@ import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useEffect, useRef, useState } from "react";
 import { useReactFlow, XYPosition } from "reactflow";
 
-import { useEditorStore } from "../../store";
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { getNodeSpecJSON } from "./utils/getNodeSpecJSON";
 
 const allNodes = getNodeSpecJSON();

@@ -1,4 +1,4 @@
-import { useEditorStore } from "../../../store";
+import { useEditorStore } from "../../../../../app/editor/[id]/store";
 import { deepNodeChildren } from "./deepNodeChildren";
 
 export function moveNode(nodeId: string, targetIndex: number) {

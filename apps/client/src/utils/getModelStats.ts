@@ -1,17 +1,15 @@
-import { Node, PlatformIO } from "@gltf-transform/core";
+import { Document, Node } from "@gltf-transform/core";
 
-export type ModelStats = {
+export interface ModelStats {
   fileSize: number;
   materialCount: number;
   meshCount: number;
   skinCount: number;
   boneCount: number;
   triangleCount: number;
-};
+}
 
-export async function getModelStats(io: PlatformIO, array: Uint8Array): Promise<ModelStats> {
-  const doc = await io.readBinary(array);
-
+export async function getModelStats(doc: Document, array: Uint8Array): Promise<ModelStats> {
   // Get stats
   const materialCount = doc.getRoot().listMaterials().length;
   const meshCount = doc.getRoot().listMeshes().length;

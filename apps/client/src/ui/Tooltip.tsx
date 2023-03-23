@@ -42,7 +42,7 @@ const Tooltip = React.forwardRef<HTMLDivElement, Props>(
               ref={ref}
               side={side}
               sideOffset={10}
-              className={`z-40 rounded-lg bg-neutral-800 px-3 py-2 text-xs font-bold leading-none text-white shadow transition ${
+              className={`z-50 rounded-lg bg-neutral-800 px-3 py-2 text-xs font-bold leading-none text-white shadow transition ${
                 visible ? "animate-scaleInFull" : "animate-scaleOutFull"
               }`}
             >

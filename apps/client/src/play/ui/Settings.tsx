@@ -7,12 +7,12 @@ import Avatar from "../../home/Avatar";
 import SignInButton from "../../home/SignInButton";
 import FileInput from "../../ui/FileInput";
 import TextField from "../../ui/TextField";
+import Tooltip from "../../ui/Tooltip";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
-import { ModelStats } from "../../utils/getModelStats";
 import { useProfileByAddress } from "../hooks/useProfileByAddress";
 import { usePlayStore } from "../store";
 import { avatarPerformanceRank } from "../utils/avatarPerformanceRank";
-import { clientGetModelStats } from "../utils/clientGetModelStats";
+import { getVRMStats, VRMStats } from "../utils/getVRMStats";
 
 interface Props {
   onClose: () => void;
@@ -23,7 +23,8 @@ export default function Settings({ onClose }: Props) {
   const avatar = usePlayStore((state) => state.avatar);
   const playerId = usePlayStore((state) => state.playerId);
   const [avatarName, setAvatarName] = useState<string>();
-  const [stats, setStats] = useState<ModelStats | null>(null);
+  const [stats, setStats] = useState<VRMStats | null>(null);
+  const [statsError, setStatsError] = useState(false);
 
   const { data: session } = useSession();
   const { logout } = useLogout();
@@ -31,15 +32,20 @@ export default function Settings({ onClose }: Props) {
   const { profile, isLoading: isLoadingProfile } = useProfileByAddress(session?.address);
 
   useEffect(() => {
-    if (!avatar) {
-      setStats(null);
-      return;
-    }
+    setStatsError(false);
+    setStats(null);
 
     async function getStats() {
       if (!avatar) return;
-      const stats = await clientGetModelStats(avatar);
-      setStats(stats);
+
+      try {
+        const stats = await getVRMStats(avatar);
+        setStats(stats);
+      } catch (e) {
+        console.error(e);
+        setStatsError(true);
+        setStats(null);
+      }
     }
 
     getStats();
@@ -69,56 +75,71 @@ export default function Settings({ onClose }: Props) {
       <section className="space-y-1">
         <div className="text-lg font-bold">Avatar</div>
 
-        {avatar && (
-          <div className="flex items-center rounded-lg px-4 py-3 ring-1 ring-inset ring-neutral-300">
-            <div className="flex h-full items-stretch space-x-4">
-              <div className="flex w-1/3 min-w-fit flex-col justify-between">
-                <div className="text-neutral-700">Performance:</div>
-                <div className="text-neutral-700">Size:</div>
-              </div>
-
-              <div className="flex w-full flex-col justify-between">
-                {rank ? (
-                  <div
-                    className={`font-medium ${
-                      rank === "Very Poor"
-                        ? "text-red-500"
-                        : rank === "Poor"
-                        ? "text-orange-500"
-                        : rank === "Medium"
-                        ? "text-yellow-500"
-                        : rank === "Good"
-                        ? "text-green-500"
-                        : "animate-textScroll bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 bg-clip-text text-transparent"
-                    }`}
-                  >
-                    {rank}
-                  </div>
-                ) : (
-                  <div className="h-5 w-24 animate-pulse rounded-md bg-neutral-200" />
-                )}
-
-                {stats ? (
-                  <div className="font-medium">{bytesToDisplay(stats.fileSize)}</div>
-                ) : (
-                  <div className="h-5 w-24 animate-pulse rounded-md bg-neutral-200" />
-                )}
-              </div>
+        {avatar ? (
+          statsError ? (
+            <div className="rounded-lg bg-red-100 py-2.5 px-4 text-red-900">
+              Failed to load avatar information
             </div>
+          ) : (
+            <div className="flex items-center rounded-lg px-4 py-3 ring-1 ring-inset ring-neutral-300">
+              <div className="flex h-full items-stretch space-x-4">
+                <div className="flex w-1/3 min-w-fit flex-col justify-between">
+                  {stats && !stats.name ? null : <div className="text-neutral-700">Name</div>}
+                  <div className="text-neutral-700">Performance</div>
+                  <div className="text-neutral-700">Size</div>
+                </div>
 
-            <div className="grow" />
+                <div className="flex w-full flex-col justify-between">
+                  {stats ? (
+                    <div className="font-medium">{stats.name}</div>
+                  ) : (
+                    <div className="h-5 w-24 animate-pulse rounded-md bg-neutral-200" />
+                  )}
 
-            <button
-              onClick={() => {
-                setAvatarName(undefined);
-                usePlayStore.setState({ didChangeAvatar: true, avatar: null });
-              }}
-              className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
-            >
-              <MdClose />
-            </button>
-          </div>
-        )}
+                  {rank ? (
+                    <div
+                      className={`font-bold ${
+                        rank === "Very Poor"
+                          ? "text-red-500"
+                          : rank === "Poor"
+                          ? "text-orange-500"
+                          : rank === "Medium"
+                          ? "text-yellow-500"
+                          : rank === "Good"
+                          ? "text-green-500"
+                          : "animate-textScroll bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 bg-clip-text text-transparent"
+                      }`}
+                    >
+                      {rank}
+                    </div>
+                  ) : (
+                    <div className="h-5 w-24 animate-pulse rounded-md bg-neutral-200" />
+                  )}
+
+                  {stats ? (
+                    <div className="font-medium">{bytesToDisplay(stats.fileSize)}</div>
+                  ) : (
+                    <div className="h-5 w-24 animate-pulse rounded-md bg-neutral-200" />
+                  )}
+                </div>
+              </div>
+
+              <div className="grow" />
+
+              <Tooltip text="Remove Avatar" side="bottom">
+                <button
+                  onClick={() => {
+                    setAvatarName(undefined);
+                    usePlayStore.setState({ didChangeAvatar: true, avatar: null });
+                  }}
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
+                >
+                  <MdClose />
+                </button>
+              </Tooltip>
+            </div>
+          )
+        ) : null}
 
         <div className="flex space-x-1">
           <div className="grow">
@@ -167,12 +188,14 @@ export default function Settings({ onClose }: Props) {
             <div className="grow" />
 
             {!isLoadingProfile && (
-              <button
-                onClick={logout}
-                className="flex h-12 w-12 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
-              >
-                <MdLogout />
-              </button>
+              <Tooltip text="Logout" side="bottom">
+                <button
+                  onClick={logout}
+                  className="flex h-12 w-12 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
+                >
+                  <MdLogout />
+                </button>
+              </Tooltip>
             )}
           </div>
         ) : (

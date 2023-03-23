@@ -113,7 +113,7 @@ export default function Overlay({ id, action }: Props) {
           if (!open) handleClose();
         }}
       >
-        <DialogContent open={openSettings} title="Settings">
+        <DialogContent open={openSettings} autoFocus={false} title="Settings">
           <Settings onClose={handleClose} />
         </DialogContent>
       </DialogRoot>

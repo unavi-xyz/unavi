@@ -1,6 +1,6 @@
+import { FromHostMessage } from "@wired-labs/protocol";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
 import { Producer } from "mediasoup/node/lib/Producer";
-import { FromHostMessage } from "protocol";
 
 import { Player } from "./Player";
 import { SpaceRegistry } from "./SpaceRegistry";

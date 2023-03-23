@@ -1,4 +1,4 @@
-import { toHostMessageSchema } from "protocol";
+import { toHostMessageSchema } from "@wired-labs/protocol";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";

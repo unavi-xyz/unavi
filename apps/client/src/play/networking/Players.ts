@@ -1,6 +1,6 @@
+import { FromHostMessage } from "@wired-labs/protocol";
 import { Engine } from "engine";
 import { nanoid } from "nanoid";
-import { FromHostMessage } from "protocol";
 
 import { usePlayStore } from "../../../app/play/[id]/store";
 import { addChatMessage } from "../utils/addChatMessage";

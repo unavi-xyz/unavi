@@ -5,7 +5,7 @@ import { WebRtcServer } from "mediasoup/node/lib/WebRtcServer";
 export async function createMediasoupWorker() {
   const worker = await mediasoup.createWorker({
     rtcMinPort: parseInt(process.env.RTC_MIN_PORT || "20000"),
-    rtcMaxPort: parseInt(process.env.RTC_MAX_PORT || "20040"),
+    rtcMaxPort: parseInt(process.env.RTC_MAX_PORT || "20020"),
   });
 
   worker.on("died", () => {
@@ -19,12 +19,12 @@ export async function createMediasoupWorker() {
       {
         protocol: "udp",
         ip: process.env.MEDIASOUP_LISTEN_IP || "0.0.0.0",
-        announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP,
+        announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || "127.0.0.1",
       },
       {
         protocol: "tcp",
         ip: process.env.MEDIASOUP_LISTEN_IP || "0.0.0.0",
-        announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP,
+        announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || "127.0.0.1",
       },
     ],
   });

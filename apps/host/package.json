@@ -5,8 +5,8 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "build": "tsc --build tsconfig.json",
-    "dev": "nodemon ./src/server.ts",
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "concurrently \"yarn build -- --watch\" \"nodemon ./dist/index.js\"",
     "docker:build": "yarn docker:clean || cd ../.. && docker build -t ghcr.io/wired-labs/host -f apps/host/Dockerfile .",
     "docker:clean": "yarn docker:stop || docker rmi ghcr.io/wired-labs/host",
     "docker:start": "yarn docker:stop || docker run --rm -e RTC_MIN_PORT=20000 -e RTC_MAX_PORT=20020 -e MEDIASOUP_ANNOUNCED_IP=127.0.0.1 -p 4000:4000 -p 20000-20020:20000-20020/tcp -p 20000-20020:20000-20020/udp --name wired-host ghcr.io/wired-labs/host",
@@ -15,19 +15,20 @@
     "start": "node --experimental-specifier-resolution=node ./build/server.js"
   },
   "dependencies": {
+    "@wired-labs/protocol": "*",
     "mediasoup": "^3.11.15",
     "nanoid": "^4.0.1",
-    "protocol": "*",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.19.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
     "@types/node": "^18.15.3",
+    "concurrently": "^7.6.0",
     "eslint": "^8.36.0",
     "eslint-config-custom": "*",
     "nodemon": "^2.0.21",
-    "ts-node": "^10.9.1",
     "tsconfig": "*",
+    "tsup": "^6.7.0",
     "typescript": "~5.0.2"
   }
 }

@@ -1,13 +1,9 @@
 {
   "compilerOptions": {
     "rootDir": "./src",
-    "outDir": "./build"
+    "composite": false,
+    "incremental": false
   },
-  "include": ["src"],
   "extends": "tsconfig/base.json",
-  "references": [
-    {
-      "path": "../../packages/protocol"
-    }
-  ]
+  "include": ["src"]
 }

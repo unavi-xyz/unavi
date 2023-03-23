@@ -1,14 +1,18 @@
 {
-  "name": "protocol",
+  "name": "@wired-labs/protocol",
   "version": "0.0.0",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wired-labs/wired.git",
+    "directory": "packages/protocol"
+  },
   "license": "GPL-3.0-or-later",
   "type": "module",
-  "main": "./build/index.js",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "yarn build -- --watch",
     "lint": "cd ../.. && eslint --fix packages/protocol --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
@@ -17,6 +21,10 @@
   "devDependencies": {
     "mediasoup-client": "^3.6.82",
     "tsconfig": "*",
+    "tsup": "^6.7.0",
     "typescript": "~5.0.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

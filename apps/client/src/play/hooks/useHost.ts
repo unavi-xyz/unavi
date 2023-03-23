@@ -1,7 +1,7 @@
+import { fromHostMessageSchema, ToHostMessage } from "@wired-labs/protocol";
 import { POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "engine";
 import { Device } from "mediasoup-client";
 import { Transport } from "mediasoup-client/lib/Transport";
-import { fromHostMessageSchema, ToHostMessage } from "protocol";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "../../../app/play/[id]/store";

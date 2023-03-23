@@ -2,11 +2,11 @@ import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sd
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "../../../../../src/env/server.mjs";
-import { s3Client } from "../../../../../src/server/client";
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
 import { getUsedAssets } from "../../../../../src/server/helpers/getUsedAssets";
 import { optimizeModel } from "../../../../../src/server/helpers/optimizeProject";
 import { prisma } from "../../../../../src/server/prisma";
+import { s3Client } from "../../../../../src/server/s3";
 import { cdnURL, S3Path } from "../../../../../src/utils/s3Paths";
 import { getContentType } from "../../../publications/files";
 import { Params, paramsSchema } from "../types";

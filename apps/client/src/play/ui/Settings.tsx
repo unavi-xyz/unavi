@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { MdClose, MdLogout } from "react-icons/md";
 
+import SignInButton from "../../../app/(navbar)/SignInButton";
 import { usePlayStore } from "../../../app/play/[id]/store";
 import { useLogout } from "../../client/auth/useLogout";
 import { useSession } from "../../client/auth/useSession";
-import Avatar from "../../home/Avatar";
-import SignInButton from "../../home/SignInButton";
+import Avatar from "../../ui/Avatar";
 import FileInput from "../../ui/FileInput";
 import TextField from "../../ui/TextField";
 import Tooltip from "../../ui/Tooltip";

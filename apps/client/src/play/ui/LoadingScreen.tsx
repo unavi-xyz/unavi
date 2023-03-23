@@ -2,7 +2,6 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "../../../app/play/[id]/store";
-import LoadingBar from "../../ui/LoadingBar";
 import { isFromCDN } from "../../utils/isFromCDN";
 
 interface Props {
@@ -92,6 +91,28 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface LoadingBarProps {
+  progress: number;
+  text?: string;
+}
+
+function LoadingBar({ progress, text = "Loading..." }: LoadingBarProps) {
+  return (
+    <div className="space-y-2">
+      <div className="relative h-2 w-64">
+        <div className="absolute h-full w-full rounded-full bg-neutral-300" />
+        <div
+          className="absolute h-full rounded-full bg-black transition-all"
+          style={{
+            width: `${Math.min(Math.max(progress * 100, 0), 100)}%`,
+          }}
+        />
+      </div>
+      <div className="text-center text-lg">{text}</div>
     </div>
   );
 }

@@ -2,9 +2,9 @@ import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "../../../../src/env/server.mjs";
-import { s3Client } from "../../../../src/server/client";
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import { prisma } from "../../../../src/server/prisma";
+import { s3Client } from "../../../../src/server/s3";
 import { S3Path } from "../../../../src/utils/s3Paths";
 import { deleteFiles } from "../files";
 import { Params, paramsSchema, patchSchema } from "./types";

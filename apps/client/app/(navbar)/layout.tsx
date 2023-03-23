@@ -2,8 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import Logo from "../../public/images/Logo.png";
-import NavigationTab from "../../src/ui/NavigationTab";
 import ClientButtons from "./ClientButtons";
+import NavbarTab from "./NavbarTab";
 
 export default function NavbarLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,10 +25,11 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
 
             <div className="flex items-center justify-center space-x-1 lg:space-x-4">
               <div>
-                <NavigationTab text="Explore" href="/explore" />
+                <NavbarTab text="Explore" href="/explore" />
               </div>
+
               <div className="hidden lg:block">
-                <NavigationTab text="Create" href="/create" />
+                <NavbarTab text="Create" href="/create" />
               </div>
             </div>
 

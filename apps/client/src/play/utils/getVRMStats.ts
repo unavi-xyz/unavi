@@ -7,7 +7,7 @@ import {
 } from "@wired-labs/gltf-extensions";
 import { extensions } from "engine";
 
-import { getModelStats, ModelStats } from "../../utils/getModelStats";
+import { getModelStats, ModelStats } from "./getModelStats";
 
 export interface VRMStats extends ModelStats {
   name: string;

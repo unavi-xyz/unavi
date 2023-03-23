@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
 import { prisma } from "../../../../../src/server/prisma";
-import { getDownload } from "../../files";
+import { getUpload } from "../../files";
 import { Params } from "../types";
-import { GetFileDownloadResponse, paramsSchema } from "./types";
+import { GetFileUploadResponse, paramsSchema } from "./types";
 
-// Get file download URL
-export async function GET(request: NextRequest, { params }: Params) {
+// Get file upload URL
+export async function PUT(request: NextRequest, { params }: Params) {
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
@@ -19,8 +19,8 @@ export async function GET(request: NextRequest, { params }: Params) {
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
-  const url = await getDownload(id, file);
+  const url = await getUpload(id, file);
 
-  const json: GetFileDownloadResponse = { url };
+  const json: GetFileUploadResponse = { url };
   return NextResponse.json(json);
 }

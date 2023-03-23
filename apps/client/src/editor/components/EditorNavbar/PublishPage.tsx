@@ -7,7 +7,7 @@ import { useSigner } from "wagmi";
 
 import { GetFileDownloadResponse } from "../../../../app/api/projects/[id]/[file]/types";
 import { publishProject } from "../../../../app/api/projects/[id]/publication/helper";
-import { getPublicationFileUpload } from "../../../../app/api/publications/[id]/[file]/upload/helper";
+import { getPublicationFileUpload } from "../../../../app/api/publications/[id]/[file]/helper";
 import { linkPublication } from "../../../../app/api/publications/[id]/link/helper";
 import { useSession } from "../../../client/auth/useSession";
 import { env } from "../../../env/client.mjs";

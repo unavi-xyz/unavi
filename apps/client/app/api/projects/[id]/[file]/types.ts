@@ -11,3 +11,4 @@ export const paramsSchema = z.object({
 });
 
 export type GetFileDownloadResponse = { url: string };
+export type GetFileUploadResponse = { url: string };

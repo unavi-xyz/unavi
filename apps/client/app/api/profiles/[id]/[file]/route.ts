@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { fetchProfileOwner } from "../../../../../src/server/helpers/fetchProfileOwner";
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
-import { getDownload } from "../../files";
-import { Params } from "./types";
-import { GetFileDownloadResponse, paramsSchema } from "./types";
+import { getUpload } from "../../files";
+import { GetFileUploadResponse, Params } from "./types";
+import { paramsSchema } from "./types";
 
-// Get file download URL
-export async function GET(request: NextRequest, { params }: Params) {
+// Get file upload URL
+export async function PUT(request: NextRequest, { params }: Params) {
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
@@ -18,8 +18,8 @@ export async function GET(request: NextRequest, { params }: Params) {
   const owner = await fetchProfileOwner(profileId);
   if (owner !== session.address) return new Response("Unauthorized", { status: 401 });
 
-  const url = await getDownload(profileId, file);
+  const url = await getUpload(profileId, file);
 
-  const json: GetFileDownloadResponse = { url };
+  const json: GetFileUploadResponse = { url };
   return NextResponse.json(json);
 }

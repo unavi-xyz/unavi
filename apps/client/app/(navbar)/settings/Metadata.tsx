@@ -14,7 +14,7 @@ import ImageInput from "../../../src/ui/ImageInput";
 import TextArea from "../../../src/ui/TextArea";
 import { cdnURL, S3Path } from "../../../src/utils/s3Paths";
 import { toHex } from "../../../src/utils/toHex";
-import { getProfileFileUpload } from "../../api/profiles/[id]/[file]/upload/helper";
+import { getProfileFileUpload } from "../../api/profiles/[id]/[file]/helper";
 
 interface Props {
   profile: Profile | null;

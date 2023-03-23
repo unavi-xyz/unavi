@@ -37,7 +37,7 @@
     "mediasoup-client": "^3.6.82",
     "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.1",
-    "next": "13.2.1",
+    "next": "13.2.4",
     "next-auth": "4.20.1",
     "next-axiom": "^0.17.0",
     "protocol": "*",

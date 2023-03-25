@@ -24,7 +24,7 @@ export default function App({ spaceId, metadata }: Props) {
           <Client
             spaceId={spaceId}
             metadata={metadata}
-            host="wss://host.thewired.space"
+            host={process.env.NEXT_PUBLIC_DEFAULT_HOST}
             animations="/models"
             defaultAvatar="/models/Wired-chan.vrm"
             skybox="/images/Skybox.jpg"

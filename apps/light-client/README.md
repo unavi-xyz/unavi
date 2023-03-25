@@ -1,3 +1,3 @@
 # Light Client
 
-A minimal client for accessing a space within the Wired.
+A lightweight client for accessing a specific space within the Wired. Provides a minimal example for how to use the `@wired-labs/react-client` library.

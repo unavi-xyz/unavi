@@ -1,5 +1,6 @@
 "use client";
 
+import { useResizeCanvas } from "@wired-labs/react-client";
 import { Engine } from "engine";
 import { Metadata } from "next";
 import Script from "next/script";
@@ -16,7 +17,6 @@ import { useTransformControls } from "../../../src/editor/hooks/useTransformCont
 import { ERROR_MESSAGE } from "../../../src/editor/utils/parseError";
 import CrosshairTooltip from "../../../src/play/CrosshairTooltip";
 import { useAvatarEquip } from "../../../src/play/hooks/useAvatarEquip";
-import { useResizeCanvas } from "../../../src/play/hooks/useResizeCanvas";
 import { Project } from "../../../src/server/helpers/fetchProject";
 import SignInButton from "../../(navbar)/SignInButton";
 import { useEditorStore } from "./store";

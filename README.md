@@ -49,6 +49,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 - [eslint-config-custom](packages/eslint-config-custom): custom eslint config used throughout the repo
 - [gltf-extensions](packages/gltf-extensions): glTF-Transform implementations of extensions used by the engine
 - [protocol](packages/protocol): types describing the interface between client and host
+- [react-client](packages/react-client): React components used by the client
 - [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
 
 ### Utilities

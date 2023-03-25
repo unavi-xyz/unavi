@@ -11,12 +11,12 @@ interface Props {
 export default function SignInButton(props: Props) {
   return (
     <RainbowkitWrapper>
-      <Button {...props} />
+      <ClientSignInButton {...props} />
     </RainbowkitWrapper>
   );
 }
 
-function Button({ isLoading }: Props) {
+export function ClientSignInButton({ isLoading }: Props) {
   const { openConnectModal } = useConnectModal();
 
   return (

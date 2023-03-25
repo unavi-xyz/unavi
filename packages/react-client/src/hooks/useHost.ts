@@ -21,13 +21,12 @@ import { useTransports } from "./useTransports";
  */
 export function useHost(id: number, host: string) {
   const engine = useEngine();
-  const { ws, setWs } = useContext(ClientContext);
+  const { ws, setWs, playerId, setPlayerId } = useContext(ClientContext);
 
   const [device, setDevice] = useState<Device | null>(null);
   const [audioContext, setAudioContext] = useState(new AudioContext());
   const [isConnected, setIsConnected] = useState(false);
   const [reconnectCount, setReconnectCount] = useState(0);
-  const [playerId, setPlayerId] = useState<number | null>(null);
 
   const { dataProducer } = useTransports(device, audioContext);
   usePlayers();
@@ -149,10 +148,11 @@ export function useHost(id: number, host: string) {
       ws.removeEventListener("close", onClose);
       ws.removeEventListener("message", onMessage);
 
+      setPlayerId(null);
       setIsConnected(false);
       setReconnectCount(0);
     };
-  }, [audioContext, device, engine, id, ws]);
+  }, [audioContext, device, engine, id, setPlayerId, ws]);
 
   return { isConnected };
 }

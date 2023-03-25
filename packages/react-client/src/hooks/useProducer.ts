@@ -16,25 +16,20 @@ import { useWebSocket } from "./useWebSocket";
  */
 export function useProducer(transport: Transport | null) {
   const { ws } = useWebSocket();
-  const { micEnabled } = useMic();
+  const { micEnabled, micTrack } = useMic();
 
   const [producer, setProducer] = useState<Producer | null>(null);
   const [producerIdCallback, setProducerIdCallback] = useState<((id: string) => void) | null>(null);
   const [dataProducerIdCallback, setDataProducerIdCallback] = useState<
     ((id: string) => void) | null
   >(null);
+  const [transportConnected, setTransportConnected] = useState(false);
 
   useEffect(() => {
     if (!ws || !transport) return;
 
     transport.on("connectionstatechange", async (state) => {
-      if (state === "connected") {
-        // TODO Produce audio on connect - get produced track from user
-        // if (producedTrack) {
-        //   const newProducer = await transport.produce({ track: producedTrack });
-        //   setProducer(newProducer);
-        // }
-      }
+      if (state === "connected") setTransportConnected(true);
     });
 
     transport.on("produce", async ({ kind, rtpParameters }, callback) => {
@@ -84,6 +79,10 @@ export function useProducer(transport: Transport | null) {
 
     return () => {
       ws.removeEventListener("message", onMessage);
+
+      setTransportConnected(false);
+      setProducerIdCallback(null);
+      setDataProducerIdCallback(null);
     };
   }, [ws, transport, producerIdCallback, dataProducerIdCallback]);
 
@@ -102,6 +101,14 @@ export function useProducer(transport: Transport | null) {
       producer.close();
     };
   }, [producer]);
+
+  useEffect(() => {
+    if (!transport || !transportConnected || !micTrack) return;
+
+    transport.produce({ track: micTrack }).then((newProducer) => {
+      setProducer(newProducer);
+    });
+  }, [transportConnected, micTrack, transport]);
 
   return producer;
 }

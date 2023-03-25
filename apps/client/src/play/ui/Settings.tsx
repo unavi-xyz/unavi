@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { ClientContext } from "@wired-labs/react-client";
+import { useContext, useEffect, useState } from "react";
 import { MdClose, MdLogout } from "react-icons/md";
 
-import SignInButton from "../../../app/(navbar)/SignInButton";
+import { ClientSignInButton } from "../../../app/(navbar)/SignInButton";
 import { usePlayStore } from "../../../app/play/[id]/store";
 import { useLogout } from "../../client/auth/useLogout";
 import { useSession } from "../../client/auth/useSession";
@@ -10,6 +11,7 @@ import FileInput from "../../ui/FileInput";
 import TextField from "../../ui/TextField";
 import Tooltip from "../../ui/Tooltip";
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
+import { toHex } from "../../utils/toHex";
 import { useProfileByAddress } from "../hooks/useProfileByAddress";
 import { avatarPerformanceRank } from "../utils/avatarPerformanceRank";
 import { getVRMStats, VRMStats } from "../utils/getVRMStats";
@@ -21,11 +23,12 @@ interface Props {
 export default function Settings({ onClose }: Props) {
   const nickname = usePlayStore((state) => state.nickname);
   const avatar = usePlayStore((state) => state.avatar);
-  const playerId = usePlayStore((state) => state.playerId);
+
   const [avatarName, setAvatarName] = useState<string>();
   const [stats, setStats] = useState<VRMStats | null>(null);
   const [statsError, setStatsError] = useState(false);
 
+  const { playerId } = useContext(ClientContext);
   const { data: session } = useSession();
   const { logout } = useLogout();
 
@@ -54,9 +57,7 @@ export default function Settings({ onClose }: Props) {
   const rank = stats ? avatarPerformanceRank(stats) : null;
 
   const guestName =
-    playerId == null || playerId === undefined
-      ? "Guest"
-      : `Guest 0x${playerId.toString(16).padStart(2, "0")}`;
+    playerId == null || playerId === undefined ? "Guest" : `Guest 0x${toHex(playerId)}`;
 
   return (
     <div className="space-y-4">
@@ -201,7 +202,7 @@ export default function Settings({ onClose }: Props) {
         ) : (
           <div className="flex justify-center">
             <div onClick={onClose}>
-              <SignInButton />
+              <ClientSignInButton />
             </div>
           </div>
         )}

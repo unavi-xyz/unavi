@@ -57,7 +57,7 @@ export default function Settings({ onClose }: Props) {
   const rank = stats ? avatarPerformanceRank(stats) : null;
 
   const guestName =
-    playerId == null || playerId === undefined ? "Guest" : `Guest 0x${toHex(playerId)}`;
+    playerId == null || playerId === undefined ? "Guest" : `Guest ${toHex(playerId)}`;
 
   return (
     <div className="space-y-4">

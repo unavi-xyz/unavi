@@ -37,6 +37,8 @@ export function useScene(metadata: ERC721Metadata) {
         const mbs = Math.max(Math.round(array.byteLength / 1024 / 1024), 5);
         await new Promise((resolve) => setTimeout(resolve, mbs * 300));
 
+        engine.start();
+
         engine.physics.send({ subject: "respawn", data: null });
         engine.behavior.start();
 

@@ -184,9 +184,32 @@ export function Client({
         setChatMessages,
       }}
     >
-      <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-        <canvas ref={canvasRef} className="h-full w-full" />
-        <canvas ref={overlayRef} className="absolute top-0 left-0 z-10 h-full w-full" />
+      <div
+        ref={containerRef}
+        style={{
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          overflow: "hidden",
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{
+            width: "100%",
+            height: "100%",
+          }}
+        />
+        <canvas
+          ref={overlayRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 10,
+            width: "100%",
+            height: "100%",
+          }}
+        />
       </div>
 
       {spaceId !== undefined && metadata ? (

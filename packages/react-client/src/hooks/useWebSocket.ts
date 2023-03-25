@@ -11,7 +11,8 @@ export function useWebSocket() {
       if (!ws || ws.readyState !== ws.OPEN) return;
       ws.send(JSON.stringify(message));
     },
-    [ws]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ws, ws?.readyState]
   );
 
   return { ws, send };

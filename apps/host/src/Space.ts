@@ -21,7 +21,7 @@ export class Space {
     return `space/${this.id}`;
   }
 
-  get playercount() {
+  get playerCount() {
     return this.players.size;
   }
 
@@ -114,7 +114,7 @@ export class Space {
 
     console.info(`👋 Player ${toHex(playerId)} left space ${toHex(this.id)}.`);
 
-    if (this.playercount === 0) this.#registry.removeSpace(this.id);
+    if (this.playerCount === 0) this.#registry.removeSpace(this.id);
   }
 
   chat(player: Player, text: string) {

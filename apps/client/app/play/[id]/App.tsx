@@ -30,7 +30,7 @@ export default function App({ id, metadata }: Props) {
             <Client
               spaceId={id}
               metadata={metadata}
-              host={env.NEXT_PUBLIC_DEFAULT_HOST}
+              host={`wss://${env.NEXT_PUBLIC_DEFAULT_HOST}`}
               animations="/models"
               avatar="/models/Wired-chan.vrm"
               skybox="/images/Skybox.jpg"

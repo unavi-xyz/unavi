@@ -4,7 +4,7 @@ import { DataConsumer } from "mediasoup-client/lib/DataConsumer";
 import { Transport } from "mediasoup-client/lib/Transport";
 import { useEffect, useState } from "react";
 
-import { sendMessage } from "../utils/sendToHost";
+import { sendMessage } from "../utils/sendMessage";
 import { useConsumer } from "./useConsumer";
 import { useDataConsumer } from "./useDataConsumer";
 import { useDataProducer } from "./useDataProducer";

@@ -1,5 +1,8 @@
 import { Engine } from "engine";
 
+/**
+ * Used to store information about a player as it comes in from the server, whether the engine is ready yet or not. Once the engine is provided, the player will be added to the engine.
+ */
 export class Player {
   readonly id: number;
 

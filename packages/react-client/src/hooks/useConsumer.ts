@@ -3,7 +3,7 @@ import { Consumer } from "mediasoup-client/lib/Consumer";
 import { Transport } from "mediasoup-client/lib/Transport";
 import { useEffect, useState } from "react";
 
-import { sendMessage } from "../utils/sendToHost";
+import { sendMessage } from "../utils/sendMessage";
 import { useWebSocket } from "./useWebSocket";
 
 /**

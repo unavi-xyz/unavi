@@ -3,7 +3,7 @@ import { Device } from "mediasoup-client";
 import { useContext, useEffect, useState } from "react";
 
 import { ClientContext } from "../Client";
-import { sendMessage } from "../utils/sendToHost";
+import { sendMessage } from "../utils/sendMessage";
 import { toHex } from "../utils/toHex";
 import { useEngine } from "./useEngine";
 import { usePlayers } from "./usePlayers";

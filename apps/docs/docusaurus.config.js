@@ -33,6 +33,7 @@ const config = {
         out: "../docs-api/engine",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
+          position: 10,
           categoryLabel: "Engine",
         },
       },
@@ -49,6 +50,7 @@ const config = {
         out: "../docs-api/gltf-extensions",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
+          position: 10,
           categoryLabel: "glTF Extensions",
         },
       },
@@ -65,6 +67,7 @@ const config = {
         out: "../docs-api/protocol",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
+          position: 10,
           categoryLabel: "Protocol",
         },
       },
@@ -81,6 +84,7 @@ const config = {
         out: "../docs-api/react-client",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
+          position: 10,
           categoryLabel: "React Client",
         },
       },

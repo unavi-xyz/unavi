@@ -5,6 +5,7 @@ import { ERC721Metadata } from "contracts";
 import Script from "next/script";
 import { useState } from "react";
 
+import { env } from "../../../src/env/client.mjs";
 import { useHotkeys } from "../../../src/play/hooks/useHotkeys";
 import RainbowkitWrapper from "../../(navbar)/RainbowkitWrapper";
 import ClientApp from "./ClientApp";
@@ -29,6 +30,7 @@ export default function App({ id, metadata }: Props) {
             <Client
               spaceId={id}
               metadata={metadata}
+              host={env.NEXT_PUBLIC_DEFAULT_HOST}
               animations="/models"
               avatar="/models/Wired-chan.vrm"
               skybox="/images/Skybox.jpg"

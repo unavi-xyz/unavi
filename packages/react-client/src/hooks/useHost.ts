@@ -29,7 +29,7 @@ export function useHost(id: number, host: string) {
   const [reconnectCount, setReconnectCount] = useState(0);
   const [playerId, setPlayerId] = useState<number | null>(null);
 
-  const { dataProducer, consumerTransport } = useTransports(device, audioContext);
+  const { dataProducer } = useTransports(device, audioContext);
   usePlayers();
   usePublishData(dataProducer, playerId, audioContext);
 
@@ -152,7 +152,7 @@ export function useHost(id: number, host: string) {
       setIsConnected(false);
       setReconnectCount(0);
     };
-  }, [engine, id, ws, device, audioContext, consumerTransport]);
+  }, [audioContext, device, engine, id, ws]);
 
   return { isConnected };
 }

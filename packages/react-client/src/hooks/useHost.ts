@@ -2,10 +2,9 @@ import { fromHostMessageSchema, ToHostMessage } from "@wired-labs/protocol";
 import { Device } from "mediasoup-client";
 import { useContext, useEffect, useState } from "react";
 
-import { ClientContext } from "../Client";
+import { ClientContext } from "../components/Client";
 import { sendMessage } from "../utils/sendMessage";
 import { toHex } from "../utils/toHex";
-import { useEngine } from "./useEngine";
 import { usePlayers } from "./usePlayers";
 import { usePublishData } from "./usePublishData";
 import { useTransports } from "./useTransports";
@@ -20,8 +19,7 @@ import { useTransports } from "./useTransports";
  * @returns Space joined status, list of players and chat messages
  */
 export function useHost(id: number, host: string) {
-  const engine = useEngine();
-  const { ws, setWs, playerId, setPlayerId } = useContext(ClientContext);
+  const { engine, ws, setWs, playerId, setPlayerId } = useContext(ClientContext);
 
   const [device, setDevice] = useState<Device | null>(null);
   const [audioContext, setAudioContext] = useState(new AudioContext());

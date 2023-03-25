@@ -27,12 +27,17 @@ export class S3Path {
       image: `projects/${projectId}/image.jpg`,
       model: `projects/${projectId}/model.glb`,
     } as const);
+
+  static temp(fileId: string) {
+    return `temp/${fileId}` as const;
+  }
 }
 
 type PublicPath =
   | ReturnType<typeof S3Path.asset>
   | ReturnType<typeof S3Path.publication>[keyof ReturnType<typeof S3Path.publication>]
-  | ReturnType<typeof S3Path.profile>[keyof ReturnType<typeof S3Path.profile>];
+  | ReturnType<typeof S3Path.profile>[keyof ReturnType<typeof S3Path.profile>]
+  | ReturnType<typeof S3Path.temp>;
 
 export function cdnURL(path: PublicPath) {
   return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/${path}`;

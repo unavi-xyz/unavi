@@ -5,11 +5,11 @@ import { Transport } from "mediasoup-client/lib/Transport";
 import { useEffect, useState } from "react";
 
 import { sendMessage } from "../utils/sendMessage";
+import { useClient } from "./useClient";
 import { useConsumer } from "./useConsumer";
 import { useDataConsumer } from "./useDataConsumer";
 import { useDataProducer } from "./useDataProducer";
 import { useProducer } from "./useProducer";
-import { useWebSocket } from "./useWebSocket";
 
 /**
  * Manages WebRTC transports.
@@ -20,7 +20,7 @@ import { useWebSocket } from "./useWebSocket";
  * @returns Transports and producers
  */
 export function useTransports(device: Device | null, audioContext: AudioContext) {
-  const { ws } = useWebSocket();
+  const { ws } = useClient();
 
   const [consumerTransport, setConsumerTransport] = useState<Transport | null>(null);
   const [producerTransport, setProducerTransport] = useState<Transport | null>(null);

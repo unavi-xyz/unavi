@@ -2,7 +2,7 @@ import { POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "engine";
 import { DataProducer } from "mediasoup-client/lib/DataProducer";
 import { useEffect } from "react";
 
-import { useEngine } from "./useEngine";
+import { useClient } from "./useClient";
 
 const PUBLISH_HZ = 15;
 
@@ -11,7 +11,7 @@ export function usePublishData(
   playerId: number | null,
   audioContext: AudioContext
 ) {
-  const engine = useEngine();
+  const { engine } = useClient();
 
   useEffect(() => {
     if (!engine || !dataProducer || playerId === null) return;

@@ -1,7 +1,7 @@
 import { ERC721Metadata } from "contracts";
 import { useEffect, useState } from "react";
 
-import { useEngine } from "./useEngine";
+import { useClient } from "./useClient";
 
 /**
  * Hook to load a space scene.
@@ -10,7 +10,7 @@ import { useEngine } from "./useEngine";
  * @returns Scene download status and scene load status
  */
 export function useScene(metadata: ERC721Metadata) {
-  const engine = useEngine();
+  const { engine } = useClient();
 
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -36,6 +36,8 @@ export function useScene(metadata: ERC721Metadata) {
         // Add delay to allow scene to load
         const mbs = Math.max(Math.round(array.byteLength / 1024 / 1024), 5);
         await new Promise((resolve) => setTimeout(resolve, mbs * 300));
+
+        engine.start();
 
         engine.physics.send({ subject: "respawn", data: null });
         engine.behavior.start();

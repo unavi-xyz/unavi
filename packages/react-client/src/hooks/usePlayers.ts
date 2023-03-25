@@ -1,12 +1,10 @@
 import { fromHostMessageSchema } from "@wired-labs/protocol";
 import { nanoid } from "nanoid";
-import { useContext, useEffect } from "react";
+import { useEffect } from "react";
 
 import { Player } from "../classes/Player";
-import { ClientContext } from "../Client";
 import { toHex } from "../utils/toHex";
-import { useEngine } from "./useEngine";
-import { useWebSocket } from "./useWebSocket";
+import { useClient } from "./useClient";
 
 /**
  * Handles the creation and removal of players from the engine.
@@ -15,10 +13,7 @@ import { useWebSocket } from "./useWebSocket";
  * @returns List of players and chat messages
  */
 export function usePlayers() {
-  const engine = useEngine();
-  const { ws } = useWebSocket();
-
-  const { players, setPlayers, setChatMessages } = useContext(ClientContext);
+  const { engine, ws, players, setPlayers, setChatMessages } = useClient();
 
   useEffect(() => {
     if (!ws) return;

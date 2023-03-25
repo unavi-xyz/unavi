@@ -25,7 +25,7 @@ export default function App() {
       metadata={{...}}
       host="wss://host.thewired.space"
       skybox="/skybox.jpg"
-      avatar="/default-avatar.vrm"
+      defaultAvatar="/default-avatar.vrm"
       animations="/animations"
     />
   );

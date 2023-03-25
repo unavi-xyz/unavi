@@ -1,4 +1,4 @@
-import { useEngine, useWebSocket } from "@wired-labs/react-client";
+import { useClient } from "@wired-labs/react-client";
 import { useEffect } from "react";
 
 import { usePlayStore } from "../../../app/play/[id]/store";
@@ -7,8 +7,7 @@ import { LocalStorageKey } from "../constants";
 
 export function useLoadUser() {
   const { data: session } = useSession();
-  const engine = useEngine();
-  const { send } = useWebSocket();
+  const { engine, send, setAvatar } = useClient();
 
   // Load nickname from local storage on initial load
   useEffect(() => {
@@ -27,11 +26,8 @@ export function useLoadUser() {
     usePlayStore.setState({ avatar: localAvatar });
 
     // Update engine
-    engine.render.send({ subject: "set_user_avatar", data: localAvatar });
-
-    // Publish to host
-    send({ subject: "set_avatar", data: localAvatar });
-  }, [engine, send]);
+    setAvatar(localAvatar);
+  }, [engine, setAvatar]);
 
   // Publish address on change
   useEffect(() => {

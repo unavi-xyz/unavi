@@ -41,6 +41,7 @@ packages/contracts/contracts
 
 # client
 apps/client/public/**/*.js
+apps/light-client/public/**/*.js
 apps/client/public/**/*.svg
 .vercel
 

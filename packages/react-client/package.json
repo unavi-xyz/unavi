@@ -1,0 +1,38 @@
+{
+  "name": "@wired-labs/react-client",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wired-labs/wired.git",
+    "directory": "packages/react-client"
+  },
+  "license": "GPL-3.0-or-later",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "yarn build -- --watch",
+    "lint": "cd ../.. && eslint --fix packages/react-client --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
+  },
+  "dependencies": {
+    "@wired-labs/protocol": "*",
+    "contracts": "*",
+    "engine": "*",
+    "mediasoup-client": "^3.6.82",
+    "nanoid": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.10",
+    "tsconfig": "*",
+    "tsup": "^6.7.0",
+    "typescript": "~5.0.2"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

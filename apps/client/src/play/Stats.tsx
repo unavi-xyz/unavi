@@ -1,7 +1,6 @@
+import { useEngine } from "@wired-labs/react-client";
 import { RenderStats } from "engine";
 import { useEffect, useState } from "react";
-
-import { usePlayStore } from "../../app/play/[id]/store";
 
 const ENABLE_STATS = process.env.NODE_ENV === "development";
 
@@ -23,7 +22,7 @@ export default function Stats() {
 const FPS_SAMPLES = 4;
 
 function StatsMenu() {
-  const engine = usePlayStore((state) => state.engine);
+  const engine = useEngine();
 
   const [renderStats, setRenderStats] = useState<RenderStats | null>();
   const [fpsSamplesBuffer, setFpsSamplesBuffer] = useState<number[]>([]);

@@ -10,6 +10,11 @@ import { useHotkeys } from "../../../src/play/hooks/useHotkeys";
 import RainbowkitWrapper from "../../(navbar)/RainbowkitWrapper";
 import ClientApp from "./ClientApp";
 
+const HOST =
+  process.env.NODE_ENV === "development"
+    ? "ws://localhost:4000"
+    : `wss://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
+
 interface Props {
   id: number;
   metadata: ERC721Metadata;
@@ -30,7 +35,7 @@ export default function App({ id, metadata }: Props) {
             <Client
               spaceId={id}
               metadata={metadata}
-              host={`wss://${env.NEXT_PUBLIC_DEFAULT_HOST}`}
+              host={HOST}
               animations="/models"
               defaultAvatar="/models/Wired-chan.vrm"
               skybox="/images/Skybox.jpg"

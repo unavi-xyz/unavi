@@ -2,7 +2,7 @@ import { fromHostMessageSchema, ToHostMessage } from "@wired-labs/protocol";
 import { Device } from "mediasoup-client";
 import { useContext, useEffect, useState } from "react";
 
-import { ClientContext } from "../Client";
+import { ClientContext } from "../components/Client";
 import { sendMessage } from "../utils/sendMessage";
 import { toHex } from "../utils/toHex";
 import { useEngine } from "./useEngine";

@@ -1,5 +1,6 @@
 export * from "./classes/Player";
-export * from "./Client";
+export * from "./components/Client";
+export * from "./components/MicButton";
 export * from "./hooks/useEngine";
 export * from "./hooks/useLoading";
 export * from "./hooks/useMic";

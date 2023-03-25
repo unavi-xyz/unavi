@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { useContext, useEffect } from "react";
 
 import { Player } from "../classes/Player";
-import { ClientContext } from "../Client";
+import { ClientContext } from "../components/Client";
 import { toHex } from "../utils/toHex";
 import { useEngine } from "./useEngine";
 import { useWebSocket } from "./useWebSocket";

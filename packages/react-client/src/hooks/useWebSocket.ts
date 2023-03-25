@@ -1,7 +1,7 @@
 import { ToHostMessage } from "@wired-labs/protocol";
 import { useCallback, useContext } from "react";
 
-import { ClientContext } from "../Client";
+import { ClientContext } from "../components/Client";
 
 export function useWebSocket() {
   const { ws } = useContext(ClientContext);

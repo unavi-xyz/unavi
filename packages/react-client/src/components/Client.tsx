@@ -10,9 +10,9 @@ import {
   useState,
 } from "react";
 
-import { Player } from "./classes/Player";
-import { useResizeCanvas } from "./hooks/useResizeCanvas";
-import { useSpace } from "./hooks/useSpace";
+import { Player } from "../classes/Player";
+import { useResizeCanvas } from "../hooks/useResizeCanvas";
+import { useSpace } from "../hooks/useSpace";
 
 export type SystemMessage = {
   type: "system";

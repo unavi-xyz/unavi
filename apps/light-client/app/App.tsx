@@ -5,6 +5,8 @@ import { ERC721Metadata } from "contracts";
 import Script from "next/script";
 import { useState } from "react";
 
+import Overlay from "./Overlay";
+
 interface Props {
   spaceId: number;
   metadata: ERC721Metadata;
@@ -26,7 +28,9 @@ export default function App({ spaceId, metadata }: Props) {
             animations="/models"
             avatar="/models/Wired-chan.vrm"
             skybox="/images/Skybox.jpg"
-          />
+          >
+            <Overlay />
+          </Client>
         ) : null}
       </div>
     </>

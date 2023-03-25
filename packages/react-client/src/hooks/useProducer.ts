@@ -4,8 +4,7 @@ import { Transport } from "mediasoup-client/lib/Transport";
 import { useEffect, useState } from "react";
 
 import { sendMessage } from "../utils/sendMessage";
-import { useMic } from "./useMic";
-import { useWebSocket } from "./useWebSocket";
+import { useClient } from "./useClient";
 
 /**
  * Manages a mediasoup producer transport.
@@ -15,8 +14,7 @@ import { useWebSocket } from "./useWebSocket";
  * @returns Producer
  */
 export function useProducer(transport: Transport | null) {
-  const { ws } = useWebSocket();
-  const { micEnabled, micTrack } = useMic();
+  const { ws, micEnabled, micTrack } = useClient();
 
   const [producer, setProducer] = useState<Producer | null>(null);
   const [producerIdCallback, setProducerIdCallback] = useState<((id: string) => void) | null>(null);

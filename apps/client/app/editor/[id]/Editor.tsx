@@ -16,7 +16,6 @@ import { ERROR_NOT_SIGNED_IN, useLoad } from "../../../src/editor/hooks/useLoad"
 import { useTransformControls } from "../../../src/editor/hooks/useTransformControls";
 import { ERROR_MESSAGE } from "../../../src/editor/utils/parseError";
 import CrosshairTooltip from "../../../src/play/CrosshairTooltip";
-import { useAvatarEquip } from "../../../src/play/hooks/useAvatarEquip";
 import { Project } from "../../../src/server/helpers/fetchProject";
 import SignInButton from "../../(navbar)/SignInButton";
 import { useEditorStore } from "./store";
@@ -44,12 +43,6 @@ export default function Editor({ project }: Props) {
   const { error } = useLoad(project);
   useAutosave();
   useTransformControls();
-
-  const [equippedAvatar, setEquippedAvatar] = useState("");
-  const equipAction = useAvatarEquip(engine, equippedAvatar, (uri) => {
-    engine?.render.send({ subject: "set_user_avatar", data: uri });
-    setEquippedAvatar(uri);
-  });
 
   useEffect(() => {
     if (!scriptsReady || !canvasRef.current || !overlayRef.current) return;
@@ -173,7 +166,7 @@ export default function Editor({ project }: Props) {
                     {isPlaying ? (
                       <>
                         <div className="crosshair" />
-                        <CrosshairTooltip action={equipAction} />
+                        <CrosshairTooltip />
                       </>
                     ) : null}
 

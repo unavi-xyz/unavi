@@ -4,7 +4,7 @@ import { Transport } from "mediasoup-client/lib/Transport";
 import { useEffect, useState } from "react";
 
 import { sendMessage } from "../utils/sendMessage";
-import { useWebSocket } from "./useWebSocket";
+import { useClient } from "./useClient";
 
 /**
  * Manages WebRTC consumers.
@@ -14,7 +14,7 @@ import { useWebSocket } from "./useWebSocket";
  * @param audioContext Audio context
  */
 export function useConsumer(transport: Transport | null, audioContext: AudioContext) {
-  const { ws } = useWebSocket();
+  const { ws } = useClient();
 
   const [consumer, setConsumer] = useState<Consumer | null>(null);
   const [panners] = useState(new Map<number, PannerNode>());

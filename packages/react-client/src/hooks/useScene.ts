@@ -1,7 +1,7 @@
 import { ERC721Metadata } from "contracts";
 import { useEffect, useState } from "react";
 
-import { useEngine } from "./useEngine";
+import { useClient } from "./useClient";
 
 /**
  * Hook to load a space scene.
@@ -10,7 +10,7 @@ import { useEngine } from "./useEngine";
  * @returns Scene download status and scene load status
  */
 export function useScene(metadata: ERC721Metadata) {
-  const engine = useEngine();
+  const { engine } = useClient();
 
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);

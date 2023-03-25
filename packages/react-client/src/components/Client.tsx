@@ -1,9 +1,11 @@
+import { ToHostMessage } from "@wired-labs/protocol";
 import { ERC721Metadata } from "contracts";
 import { Engine } from "engine";
 import {
   createContext,
   Dispatch,
   SetStateAction,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -11,6 +13,7 @@ import {
 } from "react";
 
 import { Player } from "../classes/Player";
+import { useAvatarEquip } from "../hooks/useAvatarEquip";
 import { useResizeCanvas } from "../hooks/useResizeCanvas";
 import { useSpace } from "../hooks/useSpace";
 
@@ -32,24 +35,32 @@ export type PlayerMessage = {
 
 export type ChatMessage = SystemMessage | PlayerMessage;
 
-interface IClientContext {
+export type HoverState = null | "avatar";
+
+export interface IClientContext {
   engine: Engine | null;
   spaceId: number | null;
 
-  playerId: number | null;
-  setPlayerId: Dispatch<SetStateAction<number | null>>;
+  hoverState: HoverState;
+  setHoverState: Dispatch<SetStateAction<HoverState>>;
 
   ws: WebSocket | null;
   setWs: Dispatch<SetStateAction<WebSocket | null>>;
+  send: (message: ToHostMessage) => void;
+
+  playerId: number | null;
+  setPlayerId: Dispatch<SetStateAction<number | null>>;
+  avatar: string | null;
+  setAvatar: (avatar: string | null) => void;
 
   loadingProgress: number;
-  loadingText: string;
   setLoadingProgress: (progress: number) => void;
+  loadingText: string;
   setLoadingText: (text: string) => void;
 
   players: Player[];
-  chatMessages: ChatMessage[];
   setPlayers: Dispatch<SetStateAction<Player[]>>;
+  chatMessages: ChatMessage[];
   setChatMessages: Dispatch<SetStateAction<ChatMessage[]>>;
 
   micTrack: MediaStreamTrack | null;
@@ -62,20 +73,26 @@ const defaultContext: IClientContext = {
   engine: null,
   spaceId: null,
 
-  playerId: null,
-  setPlayerId: () => {},
+  hoverState: null,
+  setHoverState: () => {},
 
   ws: null,
   setWs: () => {},
+  send: () => {},
+
+  playerId: null,
+  setPlayerId: () => {},
+  avatar: null,
+  setAvatar: () => {},
 
   loadingProgress: 0,
-  loadingText: "",
   setLoadingProgress: () => {},
+  loadingText: "",
   setLoadingText: () => {},
 
   players: [],
-  chatMessages: [],
   setPlayers: () => {},
+  chatMessages: [],
   setChatMessages: () => {},
 
   micTrack: null,
@@ -88,7 +105,7 @@ export const ClientContext = createContext<IClientContext>(defaultContext);
 
 interface Props {
   animations?: string;
-  avatar?: string;
+  defaultAvatar?: string;
   children?: React.ReactNode;
   host?: string;
   skybox?: string;
@@ -109,7 +126,7 @@ interface Props {
  */
 export function Client({
   animations,
-  avatar,
+  defaultAvatar,
   children,
   host = "ws://localhost:4000",
   metadata,
@@ -120,17 +137,29 @@ export function Client({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
 
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [engine, setEngine] = useState<Engine | null>(defaultContext.engine);
-  const [micEnabled, setMicEnabled] = useState<boolean>(defaultContext.micEnabled);
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [hoverState, setHoverState] = useState<HoverState>(defaultContext.hoverState);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingText, setLoadingText] = useState("");
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [micEnabled, setMicEnabled] = useState<boolean>(defaultContext.micEnabled);
   const [micTrack, setMicTrack] = useState<MediaStreamTrack | null>(null);
   const [playerId, setPlayerId] = useState<number | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [ws, setWs] = useState<WebSocket | null>(null);
 
   useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
+  useAvatarEquip(engine, avatar, setAvatar, setHoverState);
+
+  const send = useCallback(
+    (message: ToHostMessage) => {
+      if (!ws || ws.readyState !== ws.OPEN) return;
+      ws.send(JSON.stringify(message));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ws, ws?.readyState]
+  );
 
   useEffect(() => {
     if (!canvasRef.current || !overlayRef.current) return;
@@ -152,35 +181,46 @@ export function Client({
   }, [engine, animations]);
 
   useEffect(() => {
-    if (!engine || !avatar) return;
-    engine.render.send({ subject: "set_default_avatar", data: avatar });
-  }, [engine, avatar]);
+    if (!engine || !defaultAvatar) return;
+    engine.render.send({ subject: "set_default_avatar", data: defaultAvatar });
+  }, [engine, defaultAvatar]);
 
   useEffect(() => {
     if (!engine || !skybox) return;
     engine.render.send({ subject: "set_skybox", data: { uri: skybox } });
   }, [engine, skybox]);
 
+  useEffect(() => {
+    if (!engine) return;
+    send({ subject: "set_avatar", data: avatar });
+    engine.render.send({ subject: "set_user_avatar", data: avatar });
+  }, [avatar, engine, send]);
+
   return (
     <ClientContext.Provider
       value={{
         engine,
         spaceId: spaceId ?? null,
-        playerId,
-        setPlayerId,
+        hoverState,
+        setHoverState,
         ws,
         setWs,
+        send,
+        playerId,
+        setPlayerId,
+        avatar,
+        setAvatar,
         micTrack,
         setMicTrack,
         micEnabled,
         setMicEnabled,
         loadingProgress,
-        loadingText,
         setLoadingProgress,
+        loadingText,
         setLoadingText,
         players,
-        chatMessages,
         setPlayers,
+        chatMessages,
         setChatMessages,
       }}
     >

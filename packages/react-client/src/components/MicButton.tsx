@@ -1,7 +1,6 @@
 import React from "react";
 
-import { useEngine } from "../hooks/useEngine";
-import { useMic } from "../hooks/useMic";
+import { useClient } from "../hooks/useClient";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
@@ -9,8 +8,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement>;
  * A button for the user to toggle their microphone.
  */
 export const MicButton = React.forwardRef<HTMLButtonElement, Props>((props, ref) => {
-  const engine = useEngine();
-  const { micEnabled, micTrack, setMicEnabled, setMicTrack } = useMic();
+  const { engine, micEnabled, micTrack, setMicEnabled, setMicTrack } = useClient();
 
   async function toggleMic() {
     if (!engine) return;

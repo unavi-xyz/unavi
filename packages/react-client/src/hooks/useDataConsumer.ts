@@ -2,13 +2,13 @@ import { POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "engine";
 import { DataConsumer } from "mediasoup-client/lib/DataConsumer";
 import { useEffect } from "react";
 
-import { useEngine } from "./useEngine";
+import { useClient } from "./useClient";
 
 export function useDataConsumer(
   dataConsumer: DataConsumer | null,
   panners: Map<number, PannerNode>
 ) {
-  const engine = useEngine();
+  const { engine } = useClient();
 
   useEffect(() => {
     if (!dataConsumer) return;

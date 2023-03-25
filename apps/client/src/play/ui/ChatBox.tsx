@@ -1,5 +1,5 @@
-import { ClientContext, useWebSocket } from "@wired-labs/react-client";
-import { useContext, useEffect, useRef } from "react";
+import { useClient } from "@wired-labs/react-client";
+import { useEffect, useRef } from "react";
 
 import { usePlayStore } from "../../../app/play/[id]/store";
 import { useIsMobile } from "../../utils/useIsMobile";
@@ -14,8 +14,7 @@ export default function ChatBox({ alwaysShow }: Props) {
   const chatBoxFocused = usePlayStore((state) => state.chatBoxFocused);
 
   const isMobile = useIsMobile();
-  const { send } = useWebSocket();
-  const { chatMessages, playerId } = useContext(ClientContext);
+  const { chatMessages, playerId, send } = useClient();
 
   useEffect(() => {
     if (!inputRef.current) return;

@@ -1,8 +1,8 @@
-import { MicButton, useMic } from "@wired-labs/react-client";
+import { MicButton, useClient } from "@wired-labs/react-client";
 import { MdMic, MdMicOff } from "react-icons/md";
 
 export default function Overlay() {
-  const { micEnabled } = useMic();
+  const { micEnabled } = useClient();
 
   return (
     <div className="absolute top-0 right-0 z-20 p-4">

@@ -1,4 +1,4 @@
-import { useEngine } from "@wired-labs/react-client";
+import { useClient } from "@wired-labs/react-client";
 import { RenderStats } from "engine";
 import { useEffect, useState } from "react";
 
@@ -22,7 +22,7 @@ export default function Stats() {
 const FPS_SAMPLES = 4;
 
 function StatsMenu() {
-  const engine = useEngine();
+  const { engine } = useClient();
 
   const [renderStats, setRenderStats] = useState<RenderStats | null>();
   const [fpsSamplesBuffer, setFpsSamplesBuffer] = useState<number[]>([]);

@@ -26,7 +26,7 @@ export default function App({ spaceId, metadata }: Props) {
             metadata={metadata}
             host="wss://host.thewired.space"
             animations="/models"
-            avatar="/models/Wired-chan.vrm"
+            defaultAvatar="/models/Wired-chan.vrm"
             skybox="/images/Skybox.jpg"
           >
             <Overlay />

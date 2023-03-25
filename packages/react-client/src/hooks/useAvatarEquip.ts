@@ -1,21 +1,20 @@
 import { Avatar } from "@wired-labs/gltf-extensions";
 import { Engine, RenderEvent } from "engine";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-import { CrosshairAction } from "../CrosshairTooltip";
+import { HoverState } from "../components/Client";
 
 export function useAvatarEquip(
   engine: Engine | null,
   equippedAvatar: string | null,
-  setAvatar: (uri: string) => void
-): CrosshairAction {
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-
+  setAvatar: (uri: string) => void,
+  setHoverState: (state: HoverState) => void
+) {
   useEffect(() => {
     if (!engine) return;
 
     const listener = (e: RenderEvent) => {
-      setHoveredNode(null);
+      setHoverState(null);
 
       if (!e.data.isAvatar || !e.data.nodeId) return;
 
@@ -32,22 +31,22 @@ export function useAvatarEquip(
       if (uri === equippedAvatar) return;
 
       // Show tooltip
-      setHoveredNode(e.data.nodeId);
+      setHoverState("avatar");
     };
 
     engine.render.addEventListener("hovered_node", listener);
 
     return () => {
       engine.render.removeEventListener("hovered_node", listener);
-      setHoveredNode(null);
+      setHoverState(null);
     };
-  }, [engine, equippedAvatar]);
+  }, [engine, equippedAvatar, setHoverState]);
 
   useEffect(() => {
     if (!engine) return;
 
     const listener = (e: RenderEvent) => {
-      // Ignore if not pointerlocked
+      // Ignore click if not pointerlocked
       if (!engine.input.keyboard.isLocked) return;
 
       if (!e.data.isAvatar || !e.data.nodeId) return;
@@ -74,6 +73,4 @@ export function useAvatarEquip(
       engine.render.removeEventListener("clicked_node", listener);
     };
   }, [engine, equippedAvatar, setAvatar]);
-
-  return hoveredNode ? "equip_avatar" : null;
 }

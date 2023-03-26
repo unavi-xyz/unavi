@@ -3,11 +3,11 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { getNewProjectAssetUpload } from "../../../../app/api/projects/[id]/assets/helper";
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import FileInput from "../../../ui/FileInput";
+import { cdnURL, S3Path } from "../../../utils/s3Paths";
 import { useAvatar } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";
-import { useEditorStore } from "../../store";
-import { cdnURL, pathAsset } from "../../utils/s3Paths";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 
@@ -64,7 +64,7 @@ export default function AvatarComponent({ node }: Props) {
 
             if (!res.ok) return;
 
-            avatar.setURI(cdnURL(pathAsset(assetId)));
+            avatar.setURI(cdnURL(S3Path.asset(assetId)));
           } catch (e) {
             console.error(e);
             avatar.setName("");

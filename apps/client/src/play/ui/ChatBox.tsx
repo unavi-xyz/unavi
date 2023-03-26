@@ -1,8 +1,8 @@
+import { useClient } from "@wired-labs/react-client";
 import { useEffect, useRef } from "react";
 
-import { usePlayStore } from "../../play/store";
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { useIsMobile } from "../../utils/useIsMobile";
-import { sendToHost } from "../hooks/useHost";
 import ChatMessage from "./ChatMessage";
 
 interface Props {
@@ -11,10 +11,10 @@ interface Props {
 
 export default function ChatBox({ alwaysShow }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-
   const chatBoxFocused = usePlayStore((state) => state.chatBoxFocused);
-  const chatMessages = usePlayStore((state) => state.chatMessages);
+
   const isMobile = useIsMobile();
+  const { chatMessages, playerId, send } = useClient();
 
   useEffect(() => {
     if (!inputRef.current) return;
@@ -38,9 +38,11 @@ export default function ChatBox({ alwaysShow }: Props) {
         className={`flex w-full flex-col-reverse ${scrollClass}`}
         style={{ maxHeight: "calc(100vh - 140px)" }}
       >
-        {chatMessages?.map((message) => (
-          <ChatMessage key={message.id} message={message} alwaysShow={alwaysShow} />
-        ))}
+        {chatMessages
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .map((message) => (
+            <ChatMessage key={message.id} message={message} alwaysShow={alwaysShow} />
+          ))}
       </div>
 
       <div>
@@ -50,8 +52,7 @@ export default function ChatBox({ alwaysShow }: Props) {
             if (e.key === "Enter") {
               e.preventDefault();
 
-              const { playerId, players } = usePlayStore.getState();
-              if (playerId === null || !players) return;
+              if (playerId === null) return;
 
               const text = e.currentTarget.value;
               if (!text) return;
@@ -59,7 +60,7 @@ export default function ChatBox({ alwaysShow }: Props) {
               e.currentTarget.value = "";
 
               // Send message to server
-              sendToHost({ subject: "chat", data: text });
+              send({ subject: "chat", data: text });
             }
           }}
           onFocus={() => usePlayStore.setState({ chatBoxFocused: true })}

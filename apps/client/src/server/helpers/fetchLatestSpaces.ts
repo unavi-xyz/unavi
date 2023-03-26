@@ -1,6 +1,6 @@
 import { Space__factory, SPACE_ADDRESS } from "contracts";
 
-import { ethersProvider } from "../constants";
+import { ethersProvider } from "../ethers";
 import { validateSpace, ValidSpace } from "./validateSpace";
 
 export async function fetchLatestSpaces(limit: number, owner?: string) {

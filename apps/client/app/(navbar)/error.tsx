@@ -10,6 +10,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
   return (
     <div className="space-y-2 pt-10 text-center">
       <h2>Error loading page.</h2>
+
       <button
         onClick={() => reset()}
         className="rounded-lg border border-neutral-500 px-4 py-1 hover:bg-neutral-100 active:bg-neutral-200"

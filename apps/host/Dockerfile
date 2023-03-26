@@ -35,4 +35,4 @@ RUN adduser --system --uid 1001 nodejs
 USER nodejs
 COPY --from=installer /app .
 
-CMD node --experimental-specifier-resolution=node apps/host/build/server.js
+CMD node --experimental-specifier-resolution=node apps/host/dist/server.js

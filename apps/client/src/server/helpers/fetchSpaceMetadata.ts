@@ -1,7 +1,7 @@
 import { ERC721MetadataSchema, Space__factory, SPACE_ADDRESS } from "contracts";
 import { cache } from "react";
 
-import { ethersProvider } from "../constants";
+import { ethersProvider } from "../ethers";
 
 export const fetchSpaceMetadata = cache(async (id: number) => {
   try {

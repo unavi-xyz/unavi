@@ -1,9 +1,8 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-import LoadingBar from "../../ui/LoadingBar";
+import { usePlayStore } from "../../../app/play/[id]/store";
 import { isFromCDN } from "../../utils/isFromCDN";
-import { usePlayStore } from "../store";
 
 interface Props {
   text?: string | null;
@@ -35,11 +34,13 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
 
   if (enterTransitionFinished) return null;
 
-  const transitionClass = entered ? "opacity-0 backdrop-blur-0" : "opacity-100 backdrop-blur-3xl";
+  const isLoading = loadingProgress < 1;
 
   return (
     <div
-      className={`absolute z-50 h-screen w-screen bg-white/50 pb-8 transition duration-500 ${transitionClass}`}
+      className={`fixed inset-0 z-50 h-full w-full bg-white pb-8 transition duration-500 ${
+        entered ? "opacity-0" : "opacity-100"
+      } ${isLoading ? "opacity-100" : "opacity-0"}`}
     >
       <div className="flex h-full animate-floatInSlow flex-col items-center justify-center">
         <div className="max-w-content space-y-6">
@@ -92,6 +93,28 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface LoadingBarProps {
+  progress: number;
+  text?: string;
+}
+
+function LoadingBar({ progress, text = "Loading..." }: LoadingBarProps) {
+  return (
+    <div className="space-y-2">
+      <div className="relative h-2 w-64">
+        <div className="absolute h-full w-full rounded-full bg-neutral-300" />
+        <div
+          className="absolute h-full rounded-full bg-black transition-all"
+          style={{
+            width: `${Math.min(Math.max(progress * 100, 0), 100)}%`,
+          }}
+        />
+      </div>
+      <div className="text-center text-lg">{text}</div>
     </div>
   );
 }

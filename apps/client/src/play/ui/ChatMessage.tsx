@@ -1,27 +1,11 @@
+import { ChatMessage as IChatMessage } from "@wired-labs/react-client";
 import { useEffect, useState } from "react";
 
-import { usePlayStore } from "../store";
-
-export type ChatMessage =
-  | {
-      type: "chat";
-      id: string;
-      timestamp: number;
-      playerId: number;
-      displayName: string;
-      text: string;
-    }
-  | {
-      type: "system";
-      variant: "player_joined" | "player_left";
-      id: string;
-      timestamp: number;
-      playerId: number;
-      displayName: string;
-    };
+import { usePlayStore } from "../../../app/play/[id]/store";
+import { usePlayerName } from "../hooks/usePlayerName";
 
 interface Props {
-  message: ChatMessage;
+  message: IChatMessage;
   alwaysShow?: boolean;
 }
 
@@ -29,6 +13,8 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
   const chatBoxFocused = usePlayStore((state) => state.chatBoxFocused);
   const [visible, setVisible] = useState(false);
   const [hidden, setHidden] = useState(false);
+
+  const name = usePlayerName(message.playerId);
 
   useEffect(() => {
     setVisible(true);
@@ -51,14 +37,14 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
     <div
       className={`my-0.5 w-fit max-w-full rounded-lg bg-white px-4 py-1 transition duration-500 ${hiddenClass} ${fadeClass}`}
     >
-      {message.type === "chat" ? (
+      {message.type === "player" ? (
         <div className="whitespace-pre-wrap break-words">
-          <span className="font-semibold">{message.displayName}</span>:{" "}
+          <span className="font-semibold">{name}</span>:{" "}
           <span className="text-neutral-800">{message.text}</span>
         </div>
       ) : message.type === "system" ? (
         <span className="text-neutral-500">
-          <span>{message.displayName}</span>
+          <span>{message.playerId}</span>
           {message.variant === "player_joined"
             ? " joined"
             : message.variant === "player_left"

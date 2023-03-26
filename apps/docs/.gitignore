@@ -9,6 +9,8 @@
 .cache-loader
 docs-api/engine
 docs-api/gltf-extensions
+docs-api/protocol
+docs-api/react-client
 
 # Misc
 .DS_Store

@@ -4,6 +4,7 @@ import { NodeExtras } from "engine";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import Button from "../../../ui/Button";
 import {
   DropdownContent,
@@ -12,7 +13,6 @@ import {
   DropdownMenuItemProps,
   DropdownTrigger,
 } from "../../../ui/DropdownMenu";
-import { useEditorStore } from "../../store";
 
 export const COMPONENT_TYPE = {
   Avatar: "Avatar",

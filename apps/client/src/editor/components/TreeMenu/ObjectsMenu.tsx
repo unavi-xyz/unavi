@@ -1,7 +1,7 @@
 import { MeshExtras } from "engine";
 
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { DropdownItem } from "../../../ui/DropdownMenu";
-import { useEditorStore } from "../../store";
 
 const OBJECT_NAME = {
   Box: "Box",

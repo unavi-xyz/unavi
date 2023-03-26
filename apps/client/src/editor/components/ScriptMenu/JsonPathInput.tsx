@@ -2,9 +2,9 @@ import { Node } from "@gltf-transform/core";
 import { parseJSONPath, ValueType } from "@wired-labs/gltf-extensions";
 import { useEffect, useMemo, useState } from "react";
 
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { useNodes } from "../../hooks/useNodes";
 import { useSubscribe } from "../../hooks/useSubscribe";
-import { useEditorStore } from "../../store";
 import { FlowNodeParamter } from "./types";
 
 interface Props {

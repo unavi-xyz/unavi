@@ -2,7 +2,7 @@ import { NodeCategory, NodeSpecJSON } from "@wired-labs/behave-graph-core";
 import { ConstantValue } from "@wired-labs/gltf-extensions";
 import { NodeProps, useEdges } from "reactflow";
 
-import { useEditorStore } from "../../store";
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { useChangeNodeData } from "./hooks/useChangeNodeData";
 import { useVariableAttribute } from "./hooks/useVariableAttribute";
 import InputSocket from "./InputSocket";

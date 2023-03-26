@@ -24,14 +24,14 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
 
     this.engine = engine;
 
+    this.#createWorker();
+  }
+
+  #createWorker() {
+    this.ready = false;
+
     // Use a fake worker in development, for better HMR support
-    if (process.env.NODE_ENV === "production") {
-      this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
-        type: "module",
-        name: "physics",
-      });
-      this.#worker.onmessage = this.onmessage;
-    } else {
+    if (process.env.NODE_ENV === "development") {
       import("./PhysicsThread").then(({ PhysicsThread }) => {
         this.#worker = new FakeWorker();
 
@@ -42,6 +42,12 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
         this.#worker.insidePort.onmessage = thread.onmessage.bind(thread);
         this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
       });
+    } else {
+      this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
+        type: "module",
+        name: "physics",
+      });
+      this.#worker.onmessage = this.onmessage;
     }
 
     this.send({
@@ -52,6 +58,10 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
         cameraYaw: this.engine.cameraYaw,
       },
     });
+
+    this.send({ subject: "set_controls", data: this.engine.controls });
+    this.send({ subject: "toggle_collider_visuals", data: this.engine.showColliders });
+    if (this.engine.isPlaying) this.send({ subject: "start", data: this.engine.showColliders });
   }
 
   onmessage = (event: MessageEvent<FromPhysicsMessage>) => {
@@ -63,7 +73,8 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
 
         // Send queued messages
         this.messageQueue.forEach(({ message, transferables }) => {
-          this.#worker?.postMessage(message, transferables);
+          if (!this.#worker) throw new Error("Worker not found");
+          this.#worker.postMessage(message, transferables);
         });
 
         this.messageQueue = [];
@@ -99,8 +110,24 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
     this.#worker?.postMessage(message, transferables);
   }
 
-  destroy() {
+  /**
+   * Destroy and re-create the physics thread.
+   */
+  async reset() {
+    await this.destroy();
+    this.#createWorker();
+  }
+
+  async destroy() {
     this.send({ subject: "destroy", data: null });
-    setTimeout(() => this.#worker?.terminate(), 100);
+    this.ready = false;
+
+    // Wait for the worker to process the message
+    await new Promise<void>((resolve) => {
+      setTimeout(() => {
+        this.#worker?.terminate();
+        resolve();
+      }, 100);
+    });
   }
 }

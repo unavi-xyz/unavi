@@ -1,3 +1,4 @@
+import { FromHostMessage } from "@wired-labs/protocol";
 import { Consumer } from "mediasoup/node/lib/Consumer";
 import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
@@ -5,7 +6,6 @@ import { Producer } from "mediasoup/node/lib/Producer";
 import { RtpCapabilities, RtpParameters } from "mediasoup/node/lib/RtpParameters";
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { Transport } from "mediasoup/node/lib/Transport";
-import { FromHostMessage } from "protocol";
 
 import { Space } from "./Space";
 import { SpaceRegistry } from "./SpaceRegistry";

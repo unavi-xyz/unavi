@@ -4,7 +4,8 @@ import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 
 import { env } from "../../../src/env/server.mjs";
-import { s3Client } from "../../../src/server/client";
+import { s3Client } from "../../../src/server/s3";
+import { S3Path } from "../../../src/utils/s3Paths";
 
 const expiresIn = 600; // 10 minutes
 
@@ -14,7 +15,7 @@ export async function GET() {
 
   const command = new PutObjectCommand({
     Bucket: env.S3_BUCKET,
-    Key: `temp/${fileId}`,
+    Key: S3Path.temp(fileId),
     ACL: "public-read",
   });
 

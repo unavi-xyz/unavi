@@ -1,15 +1,14 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
-import { cdnURL, pathAsset } from "../../../../../src/editor/utils/s3Paths";
 import { env } from "../../../../../src/env/server.mjs";
-import { s3Client } from "../../../../../src/server/client";
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
 import { getUsedAssets } from "../../../../../src/server/helpers/getUsedAssets";
 import { optimizeModel } from "../../../../../src/server/helpers/optimizeProject";
 import { prisma } from "../../../../../src/server/prisma";
-import { getContentType, getKey as getPublicationKey } from "../../../publications/files";
-import { getKey as getProjectKey, PROJECT_FILE } from "../../files";
+import { s3Client } from "../../../../../src/server/s3";
+import { cdnURL, S3Path } from "../../../../../src/utils/s3Paths";
+import { getContentType } from "../../../publications/files";
 import { Params, paramsSchema } from "../types";
 import { postSchema, PublishProjectResponse } from "./types";
 
@@ -52,10 +51,10 @@ export async function POST(request: NextRequest, { params }: Params) {
   let publishedModel = model;
 
   const assets = await getUsedAssets(model);
-  const usedAssets = found.Assets.filter((asset) => assets.has(cdnURL(pathAsset(asset.id))));
+  const usedAssets = found.Assets.filter((asset) => assets.has(cdnURL(S3Path.asset(asset.id))));
   const unusedAssets = found.Assets.filter((asset) => {
     return (
-      !assets.has(cdnURL(pathAsset(asset.id))) &&
+      !assets.has(cdnURL(S3Path.asset(asset.id))) &&
       (asset.PublicationAsset.length === 0 ||
         (asset.PublicationAsset.length === 1 &&
           asset.PublicationAsset[0]?.publicationId === publicationId))
@@ -68,7 +67,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       unusedAssets.map((asset) => {
         const command = new DeleteObjectCommand({
           Bucket: env.S3_BUCKET,
-          Key: pathAsset(asset.id),
+          Key: S3Path.asset(asset.id),
         });
         return s3Client.send(command);
       })
@@ -106,7 +105,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
 
   // Upload model to publication bucket
-  const Key = getPublicationKey(publicationId, "model");
+  const Key = S3Path.publication(publicationId).model;
   const ContentType = getContentType("model");
   const command = new PutObjectCommand({
     Bucket: env.S3_BUCKET,
@@ -126,8 +125,8 @@ export async function POST(request: NextRequest, { params }: Params) {
 }
 
 async function fetchModel(projectId: string) {
-  const modelKey = getProjectKey(projectId, PROJECT_FILE.MODEL);
-  const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: modelKey });
+  const Key = S3Path.project(projectId).model;
+  const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key });
 
   const { Body } = await s3Client.send(command);
   if (!Body) throw new Error("Model not found");

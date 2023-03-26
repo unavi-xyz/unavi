@@ -1,16 +1,14 @@
-export type CrosshairAction = "equip_avatar" | null;
+import { useClient } from "@wired-labs/react-client";
 
-interface Props {
-  action: CrosshairAction;
-}
+export default function CrosshairTooltip() {
+  const { hoverState } = useClient();
 
-export default function CrosshairTooltip({ action }: Props) {
   return (
     <div className="pointer-events-none absolute top-1/2 left-1/2 z-20 -translate-y-1/2 pl-6">
       <div>
-        {action === null ? null : (
+        {hoverState === "avatar" ? (
           <Tooltip icon={<div className="text-xl">💃</div>} text="Equip Avatar" />
-        )}
+        ) : null}
       </div>
     </div>
   );

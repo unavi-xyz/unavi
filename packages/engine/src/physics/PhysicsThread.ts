@@ -76,7 +76,7 @@ export class PhysicsThread {
       }
 
       case "destroy": {
-        this.stop();
+        this.destroy();
         break;
       }
 
@@ -102,10 +102,17 @@ export class PhysicsThread {
     if (this.#interval) clearInterval(this.#interval);
   }
 
+  destroy() {
+    this.stop();
+    this.world.colliders.forEach((collider) => {
+      const parent = collider.parent();
+      if (parent) this.world.removeRigidBody(parent);
+      this.world.removeCollider(collider, true);
+    });
+  }
+
   update = () => {
-    if (this.controls === "player") {
-      this.player.update();
-    }
+    if (this.controls === "player") this.player.update();
 
     this.world.step();
 

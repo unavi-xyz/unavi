@@ -84,7 +84,7 @@ export default defineNextConfig({
   output: "standalone",
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  transpilePackages: ["engine", "contracts", "protocol"],
+  transpilePackages: ["engine", "contracts"],
   async headers() {
     return [
       {

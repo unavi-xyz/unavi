@@ -1,6 +1,6 @@
 import { MdClose } from "react-icons/md";
 
-import { useEditorStore } from "../../store";
+import { useEditorStore } from "../../../../app/editor/[id]/store";
 
 interface Props {
   title?: string;

@@ -130,7 +130,6 @@ export class Player {
   update() {
     if (!this.input || !this.cameraYaw || !this.userPosition || !this.rigidBody || !this.collider)
       return;
-    const delta = this.#world.timestep;
 
     // Read input
     const inputX = Atomics.load(this.input, 0) / INPUT_ARRAY_ROUNDING;
@@ -161,6 +160,7 @@ export class Player {
     }
 
     // Apply gravity
+    const delta = this.#world.timestep;
     velocity.y += this.#world.gravity.y * delta;
 
     if (this.isGrounded) {

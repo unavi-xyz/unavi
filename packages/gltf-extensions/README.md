@@ -7,6 +7,11 @@ Contains [glTF-Transform](https://github.com/donmccurdy/glTF-Transform) implemen
 - [OMI_spawn_point](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point)
 - WIRED_avatar
 
+Also contains partial implementations of the following extensions:
+
+- [VRMC_vrm](https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_vrm-1.0)
+- [VRM 0.0](https://github.com/vrm-c/vrm-specification/tree/master/specification/0.0)
+
 ## Installation
 
 ```bash

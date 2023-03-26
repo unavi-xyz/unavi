@@ -41,6 +41,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 - [client](apps/client): the main website used to access the Wired
 - [docs](apps/docs): a documentation website
 - [host](apps/host): dockerized server for hosting spaces
+- [light-client](apps/light-client): a minimal client for accessing a space within the Wired
 
 ### Packages
 
@@ -49,6 +50,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 - [eslint-config-custom](packages/eslint-config-custom): custom eslint config used throughout the repo
 - [gltf-extensions](packages/gltf-extensions): glTF-Transform implementations of extensions used by the engine
 - [protocol](packages/protocol): types describing the interface between client and host
+- [react-client](packages/react-client): React components and hooks used by the client
 - [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
 
 ### Utilities

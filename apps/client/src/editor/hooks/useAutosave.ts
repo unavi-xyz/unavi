@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { useEditorStore } from "../store";
+import { useEditorStore } from "../../../app/editor/[id]/store";
 import { useSave } from "./useSave";
 
 const AUTOSAVE_INTERVAL = 2 * 60 * 1000; // 2 minutes

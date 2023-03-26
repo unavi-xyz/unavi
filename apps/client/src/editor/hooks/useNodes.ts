@@ -2,7 +2,7 @@ import { Node } from "@gltf-transform/core";
 import { subscribe } from "engine";
 import { useEffect, useState } from "react";
 
-import { useEditorStore } from "../store";
+import { useEditorStore } from "../../../app/editor/[id]/store";
 
 export function useNodes() {
   const engine = useEditorStore((state) => state.engine);

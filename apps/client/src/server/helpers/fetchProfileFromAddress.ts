@@ -1,7 +1,7 @@
 import { Profile__factory, PROFILE_ADDRESS } from "contracts";
 import { cache } from "react";
 
-import { ethersProvider } from "../constants";
+import { ethersProvider } from "../ethers";
 import { fetchProfile } from "./fetchProfile";
 
 export const fetchProfileFromAddress = cache(async (address: string) => {

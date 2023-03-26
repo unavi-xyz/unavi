@@ -1,11 +1,16 @@
 import { z } from "zod";
 
+/**
+ * Contains zod schemas for mediasoup types.
+ */
 export class MediasoupSchema {
   static dltsParameters = z.object({
     role: z.union([z.literal("auto"), z.literal("client"), z.literal("server")]).optional(),
     fingerprints: z.array(z.object({ algorithm: z.string(), value: z.string() })),
   });
+
   static rtcpFeedback = z.object({ type: z.string(), parameter: z.string().optional() });
+
   static rtpHeaderExtension = z.object({
     kind: z.union([z.literal("audio"), z.literal("video")]),
     uri: z.string(),
@@ -20,12 +25,14 @@ export class MediasoupSchema {
       ])
       .optional(),
   });
+
   static rtpHeaderExtensionParameters = z.object({
     uri: z.string(),
     id: z.number(),
     encrypt: z.boolean().optional(),
     parameters: z.record(z.any()).optional(),
   });
+
   static rtpParameters = z.object({
     mid: z.string().optional(),
     codecs: z.array(
@@ -79,6 +86,7 @@ export class MediasoupSchema {
       })
       .optional(),
   });
+
   static rtpCapabilities = z.object({
     codecs: z
       .array(
@@ -95,6 +103,7 @@ export class MediasoupSchema {
       .optional(),
     headerExtensions: z.array(MediasoupSchema.rtpHeaderExtension).optional(),
   });
+
   static sctpStreamParameters = z.object({
     streamId: z.number().optional(),
     ordered: z.boolean().optional(),
@@ -103,6 +112,7 @@ export class MediasoupSchema {
     label: z.string().optional(),
     protocol: z.string().optional(),
   });
+
   static transportOptions = z.object({
     id: z.string(),
     iceParameters: z.object({

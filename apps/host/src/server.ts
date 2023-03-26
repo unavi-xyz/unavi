@@ -1,11 +1,10 @@
-import { toHostMessageSchema } from "protocol";
+import { toHostMessageSchema } from "@wired-labs/protocol";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
 import { Player } from "./Player";
 import { SpaceRegistry } from "./SpaceRegistry";
 import { UserData, uWebSocket } from "./types";
-import { toHex } from "./utils/toHex";
 
 const textDecoder = new TextDecoder();
 const PORT = 4000;
@@ -155,12 +154,14 @@ server.ws<UserData>("/*", {
 });
 
 // Handle HTTP requests
-server.get("/playercount/*", (res, req) => {
-  const id = parseInt(req.getUrl().slice(13));
-  const space = spaces.getSpace(id);
-  const playerCount = space ? space.playercount : 0;
+server.get("/spaces/:id/player-count", (res, req) => {
+  const idString = req.getParameter(0);
+  const id = parseInt(idString);
 
-  console.info(`/playercount/${toHex(id)}: ${playerCount}`);
+  const space = spaces.getSpace(id);
+  const playerCount = space ? space.playerCount : 0;
+
+  console.info(`/spaces/${id}/player-count: ${playerCount}`);
 
   res.write(String(playerCount));
   res.writeStatus("200 OK");

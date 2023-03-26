@@ -24,7 +24,7 @@ export class Engine {
 
   readonly behavior: BehaviorModule;
   readonly input: InputModule;
-  readonly physics: PhysicsModule;
+  physics: PhysicsModule;
   readonly player: PlayerModules;
   readonly render: RenderModule;
   readonly scene: SceneModule;
@@ -36,6 +36,7 @@ export class Engine {
   cameraPosition: Int32Array;
   cameraYaw: Int16Array;
 
+  #isPlaying = false;
   #controls: ControlsType = DEFAULT_CONTROLS;
   #showColliders = false;
   #showBVH = false;
@@ -96,6 +97,31 @@ export class Engine {
     if (value === this.#showBVH) return;
     this.#showBVH = value;
     this.render.send({ subject: "toggle_bvh_visuals", data: value });
+  }
+
+  get isPlaying() {
+    return this.#isPlaying;
+  }
+
+  start() {
+    if (this.#isPlaying) return;
+    this.#isPlaying = true;
+    this.physics.send({ subject: "start", data: null });
+  }
+
+  stop() {
+    if (!this.#isPlaying) return;
+    this.#isPlaying = false;
+    this.physics.send({ subject: "stop", data: null });
+  }
+
+  /**
+   * Used to refresh the engine (such as during a hot reload).
+   * The physics thread needs to be destroyed and recreated, something to do with wasm.
+   */
+  async reset() {
+    this.scene.clear();
+    await this.physics.reset();
   }
 
   destroy() {

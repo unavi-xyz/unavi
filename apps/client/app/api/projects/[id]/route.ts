@@ -1,11 +1,11 @@
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
-import { pathAsset } from "../../../../src/editor/utils/s3Paths";
 import { env } from "../../../../src/env/server.mjs";
-import { s3Client } from "../../../../src/server/client";
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import { prisma } from "../../../../src/server/prisma";
+import { s3Client } from "../../../../src/server/s3";
+import { S3Path } from "../../../../src/utils/s3Paths";
 import { deleteFiles } from "../files";
 import { Params, paramsSchema, patchSchema } from "./types";
 
@@ -96,7 +96,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       unusedAssets.map((asset) => {
         const command = new DeleteObjectCommand({
           Bucket: env.S3_BUCKET,
-          Key: pathAsset(asset.id),
+          Key: S3Path.asset(asset.id),
         });
         return s3Client.send(command);
       })

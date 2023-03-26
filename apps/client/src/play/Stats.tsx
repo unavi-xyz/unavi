@@ -1,7 +1,6 @@
+import { useClient } from "@wired-labs/react-client";
 import { RenderStats } from "engine";
 import { useEffect, useState } from "react";
-
-import { usePlayStore } from "./store";
 
 const ENABLE_STATS = process.env.NODE_ENV === "development";
 
@@ -23,7 +22,7 @@ export default function Stats() {
 const FPS_SAMPLES = 4;
 
 function StatsMenu() {
-  const engine = usePlayStore((state) => state.engine);
+  const { engine } = useClient();
 
   const [renderStats, setRenderStats] = useState<RenderStats | null>();
   const [fpsSamplesBuffer, setFpsSamplesBuffer] = useState<number[]>([]);
@@ -60,7 +59,7 @@ function StatsMenu() {
   const averageFPS = fpsSamplesBuffer.reduce((a, b) => a + b, 0) / fpsSamplesBuffer.length;
 
   return (
-    <div className="space-y-2 rounded-lg bg-white/80 px-4 py-2 backdrop-blur">
+    <div className="space-y-2 rounded-lg bg-white/95 px-4 py-2">
       <StatDisplay label="FPS" data={Math.round(averageFPS)} />
 
       <div>

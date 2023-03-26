@@ -1,0 +1,12 @@
+{
+  "root": true,
+  "extends": ["custom"],
+  "settings": {
+    "next": {
+      "rootDir": "apps/light-client"
+    },
+    "tailwindcss": {
+      "config": "apps/client/tailwind.config.cjs"
+    }
+  }
+}

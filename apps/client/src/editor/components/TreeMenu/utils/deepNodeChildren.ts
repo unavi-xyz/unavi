@@ -1,6 +1,6 @@
 import { Node } from "@gltf-transform/core";
 
-import { useEditorStore } from "../../../store";
+import { useEditorStore } from "../../../../../app/editor/[id]/store";
 
 export function deepNodeChildren(node: Node): Node[] {
   const { engine } = useEditorStore.getState();

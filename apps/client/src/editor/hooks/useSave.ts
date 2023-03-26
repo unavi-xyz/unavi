@@ -1,8 +1,8 @@
 import { useSearchParams } from "next/navigation";
 
-import { getProjectFileUpload } from "../../../app/api/projects/[id]/[file]/upload/helper";
+import { getProjectFileUpload } from "../../../app/api/projects/[id]/[file]/helper";
 import { updateProject } from "../../../app/api/projects/[id]/helper";
-import { useEditorStore } from "../store";
+import { useEditorStore } from "../../../app/editor/[id]/store";
 
 export function useSave() {
   const params = useSearchParams();

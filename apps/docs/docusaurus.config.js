@@ -30,11 +30,10 @@ const config = {
         entryPoints: ["../../packages/engine/src/index.ts"],
         tsconfig: "../../packages/engine/tsconfig.json",
         excludePrivate: true,
-        readme: "none",
         out: "../docs-api/engine",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
-          position: 100,
+          position: 10,
           categoryLabel: "Engine",
         },
       },
@@ -48,12 +47,45 @@ const config = {
         entryPoints: ["../../packages/gltf-extensions/src/index.ts"],
         tsconfig: "../../packages/gltf-extensions/tsconfig.json",
         excludePrivate: true,
-        readme: "none",
         out: "../docs-api/gltf-extensions",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
-          position: 90,
+          position: 10,
           categoryLabel: "glTF Extensions",
+        },
+      },
+    ],
+    [
+      "docusaurus-plugin-typedoc",
+
+      /** @type {import('typedoc').TypeDocOptions} */
+      {
+        id: "protocol",
+        entryPoints: ["../../packages/protocol/src/index.ts"],
+        tsconfig: "../../packages/protocol/tsconfig.json",
+        excludePrivate: true,
+        out: "../docs-api/protocol",
+        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
+        sidebar: {
+          position: 10,
+          categoryLabel: "Protocol",
+        },
+      },
+    ],
+    [
+      "docusaurus-plugin-typedoc",
+
+      /** @type {import('typedoc').TypeDocOptions} */
+      {
+        id: "react-client",
+        entryPoints: ["../../packages/react-client/src/index.ts"],
+        tsconfig: "../../packages/react-client/tsconfig.json",
+        excludePrivate: true,
+        out: "../docs-api/react-client",
+        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
+        sidebar: {
+          position: 10,
+          categoryLabel: "React Client",
         },
       },
     ],

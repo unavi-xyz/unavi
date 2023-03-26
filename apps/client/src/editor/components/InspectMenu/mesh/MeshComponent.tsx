@@ -1,8 +1,8 @@
 import { Mesh, Node } from "@gltf-transform/core";
 import { MeshExtras } from "engine";
 
+import { useEditorStore } from "../../../../../app/editor/[id]/store";
 import { useMeshExtras } from "../../../hooks/useMeshExtras";
-import { useEditorStore } from "../../../store";
 import SelectMenu from "../../ui/SelectMenu";
 import ComponentMenu from "../ComponentMenu";
 import MenuRows from "../ui/MenuRows";

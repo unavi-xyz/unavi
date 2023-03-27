@@ -1,5 +1,11 @@
 # client
 
+## 0.1.1
+
+### Patch Changes
+
+- 468dd79: fix editor saving broken
+
 ## 0.1.0
 
 ### Minor Changes

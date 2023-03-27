@@ -109,7 +109,7 @@ const config = {
 
         docs: {
           sidebarPath: require.resolve("./sidebars.js"),
-          editUrl: "https://github.com/wired-labs/docs/tree/main",
+          editUrl: "https://github.com/wired-labs/wired/tree/main/apps/docs/docs",
           routeBasePath: "/",
         },
 

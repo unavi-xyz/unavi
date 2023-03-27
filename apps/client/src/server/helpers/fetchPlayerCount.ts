@@ -14,7 +14,8 @@ export const fetchPlayerCount = cache(async (id: number) => {
       cache: "no-store",
     });
     const playerCountText = await response.text();
-    return parseInt(playerCountText);
+    const playerCount = parseInt(playerCountText);
+    return isNaN(playerCount) ? 0 : playerCount;
   } catch {
     return 0;
   }

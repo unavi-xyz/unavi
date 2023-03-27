@@ -34,10 +34,7 @@ jobs:
           labels: |
             org.opencontainers.image.description="Host server for The Wired"
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=match,pattern=\d.\d.\d
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4

@@ -1,4 +1,4 @@
-import { fromHostMessageSchema } from "@wired-labs/protocol";
+import { MessageSchema } from "@wired-labs/protocol";
 import { nanoid } from "nanoid";
 import { useEffect } from "react";
 
@@ -21,7 +21,7 @@ export function usePlayers() {
     const localPlayers: Player[] = [];
 
     const onMessage = async (event: MessageEvent) => {
-      const parsed = fromHostMessageSchema.safeParse(JSON.parse(event.data));
+      const parsed = MessageSchema.fromHost.safeParse(JSON.parse(event.data));
 
       if (!parsed.success) {
         console.warn(parsed.error);

@@ -1,4 +1,4 @@
-import { fromHostMessageSchema } from "@wired-labs/protocol";
+import { MessageSchema } from "@wired-labs/protocol";
 import { Device } from "mediasoup-client";
 import { DataConsumer } from "mediasoup-client/lib/DataConsumer";
 import { Transport } from "mediasoup-client/lib/Transport";
@@ -38,7 +38,7 @@ export function useTransports(device: Device | null, audioContext: AudioContext)
     let localConsumerTransport: Transport | null = null;
 
     const onMessage = async (event: MessageEvent) => {
-      const parsed = fromHostMessageSchema.safeParse(JSON.parse(event.data));
+      const parsed = MessageSchema.fromHost.safeParse(JSON.parse(event.data));
 
       if (!parsed.success) {
         console.warn(parsed.error);

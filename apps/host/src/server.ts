@@ -1,4 +1,4 @@
-import { toHostMessageSchema } from "@wired-labs/protocol";
+import { MessageSchema } from "@wired-labs/protocol";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
@@ -36,7 +36,7 @@ server.ws<UserData>("/*", {
     if (!player) return;
 
     const text = textDecoder.decode(buffer);
-    const parsed = toHostMessageSchema.safeParse(JSON.parse(text));
+    const parsed = MessageSchema.toHost.safeParse(JSON.parse(text));
 
     if (!parsed.success) {
       console.warn(parsed.error);

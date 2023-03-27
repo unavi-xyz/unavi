@@ -1,3 +1,5 @@
+export * from "./FromHostSchema";
 export * from "./HostAPI";
-export * from "./mediasoup";
-export * from "./messages";
+export * from "./MediasoupSchema";
+export * from "./MessageSchema";
+export * from "./ToHostSchema";

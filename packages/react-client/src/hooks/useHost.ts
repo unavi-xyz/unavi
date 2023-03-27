@@ -1,4 +1,4 @@
-import { fromHostMessageSchema, ToHostMessage } from "@wired-labs/protocol";
+import { MessageSchema, ToHostMessage } from "@wired-labs/protocol";
 import { Device } from "mediasoup-client";
 import { useContext, useEffect, useState } from "react";
 
@@ -102,7 +102,7 @@ export function useHost(id: number, host: string) {
     };
 
     const onMessage = async (event: MessageEvent<string>) => {
-      const parsed = fromHostMessageSchema.safeParse(JSON.parse(event.data));
+      const parsed = MessageSchema.fromHost.safeParse(JSON.parse(event.data));
 
       if (!parsed.success) {
         console.warn(parsed.error);

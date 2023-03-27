@@ -10,7 +10,7 @@ import { S3Path } from "../../../src/utils/s3Paths";
 const expiresIn = 600; // 10 minutes
 
 // Get temp upload URL
-export async function GET() {
+export async function POST() {
   const fileId = nanoid();
 
   const command = new PutObjectCommand({

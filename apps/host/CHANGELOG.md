@@ -1,5 +1,13 @@
 # host
 
+## 0.2.1
+
+### Patch Changes
+
+- 94c1f53: upgrade uWebsocket.js to v20.20.0
+- Updated dependencies [2f029aa]
+  - @wired-labs/protocol@0.2.0
+
 ## 0.2.0
 
 ### Minor Changes

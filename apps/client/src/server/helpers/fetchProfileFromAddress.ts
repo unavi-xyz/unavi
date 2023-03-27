@@ -15,7 +15,8 @@ export const fetchProfileFromAddress = cache(async (address: string) => {
     if (profileId === 0) return null;
 
     return await fetchProfile(profileId);
-  } catch {
+  } catch (e) {
+    console.warn("fetchProfileFromAddress", e);
     return null;
   }
 });

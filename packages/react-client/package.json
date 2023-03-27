@@ -7,10 +7,11 @@
     "directory": "packages/react-client"
   },
   "license": "GPL-3.0-or-later",
-  "main": "./dist/index.mjs",
+  "type": "module",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsup",
+    "build": "tsup src/index.ts --format esm --dts --onSuccess \"tsc --emitDeclarationOnly\"",
     "dev": "yarn build -- --watch",
     "lint": "cd ../.. && eslint --fix packages/react-client --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },

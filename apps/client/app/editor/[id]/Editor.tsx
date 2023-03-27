@@ -41,7 +41,7 @@ export default function Editor({ project }: Props) {
 
   const resize = useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
   const { error } = useLoad(project);
-  useAutosave();
+  useAutosave(project.id);
   useTransformControls();
 
   useEffect(() => {

@@ -47,6 +47,7 @@ export function useLoad(project: Project) {
     load();
 
     return () => {
+      engine?.reset();
       useEditorStore.setState({ sceneLoaded: false });
       setError("");
     };

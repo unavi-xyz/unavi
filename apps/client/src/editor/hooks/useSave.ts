@@ -1,16 +1,9 @@
-import { useSearchParams } from "next/navigation";
-
 import { getProjectFileUpload } from "../../../app/api/projects/[id]/[file]/helper";
 import { updateProject } from "../../../app/api/projects/[id]/helper";
 import { useEditorStore } from "../../../app/editor/[id]/store";
 
-export function useSave() {
-  const params = useSearchParams();
-  const id = params?.get("id");
-
+export function useSave(projectId: string) {
   async function saveImage() {
-    if (!id) return;
-
     const { engine, canvas } = useEditorStore.getState();
     if (!engine || !canvas) throw new Error("No engine");
 
@@ -22,7 +15,7 @@ export function useSave() {
     const body = await response.blob();
 
     // Upload to S3
-    const url = await getProjectFileUpload(id, "image");
+    const url = await getProjectFileUpload(projectId, "image");
 
     const res = await fetch(url, {
       method: "PUT",
@@ -34,8 +27,6 @@ export function useSave() {
   }
 
   async function saveModel() {
-    if (!id) return;
-
     const { engine } = useEditorStore.getState();
     if (!engine) throw new Error("No engine");
 
@@ -43,7 +34,7 @@ export function useSave() {
     const glb = await engine.scene.export();
 
     // Upload to S3
-    const url = await getProjectFileUpload(id, "model");
+    const url = await getProjectFileUpload(projectId, "model");
 
     const res = await fetch(url, {
       method: "PUT",
@@ -55,11 +46,9 @@ export function useSave() {
   }
 
   async function saveMetadata() {
-    if (!id) return;
-
     const { name, description } = useEditorStore.getState();
 
-    await updateProject(id, { name, description });
+    await updateProject(projectId, { name, description });
   }
 
   async function save() {

@@ -28,7 +28,7 @@ export default function EditorNavbar({ project }: Props) {
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
-  const { save, saveImage } = useSave();
+  const { save, saveImage } = useSave(project.id);
   const { status } = useSession();
   const { data: signer } = useSigner();
 

@@ -1,5 +1,5 @@
 import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import useSWR from "swr";
@@ -32,8 +32,6 @@ interface Props {
 
 export default function PublishPage({ project }: Props) {
   const router = useRouter();
-  const params = useSearchParams();
-  const id = params?.get("id");
 
   const name = useEditorStore((state) => state.name);
   const description = useEditorStore((state) => state.description);
@@ -41,11 +39,11 @@ export default function PublishPage({ project }: Props) {
 
   const { data: session } = useSession();
   const { data: signer } = useSigner();
-  const { save } = useSave();
+  const { save } = useSave(project.id);
 
   const { profile } = useProfileByAddress(session?.address);
   const { data: imageDownload } = useSWR<GetFileDownloadResponse>(
-    () => (id ? `/api/projects/${id}/image` : null),
+    () => `/api/projects/${project.id}/image`,
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
@@ -64,7 +62,6 @@ export default function PublishPage({ project }: Props) {
 
     if (loading) return;
     if (!signer) throw new Error("Signer not found");
-    if (!id) throw new Error("Project ID not found");
 
     const toastId = "publish";
 
@@ -74,7 +71,6 @@ export default function PublishPage({ project }: Props) {
       if (!engine) throw new Error("Engine not found");
       if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
-      if (!id) throw new Error("Project ID not found");
 
       toast.loading("Saving...", { id: toastId });
       await save();
@@ -87,7 +83,7 @@ export default function PublishPage({ project }: Props) {
       // Try to optimize model on the server
       // If it fails, optimize locally (can't compress textures)
       try {
-        const res = await publishProject(id);
+        const res = await publishProject(project.id);
         publicationId = res.id;
         modelSize = res.modelSize;
       } catch {
@@ -97,7 +93,7 @@ export default function PublishPage({ project }: Props) {
         const optimizedModelPromise = engine.scene.export({ optimize: true });
 
         // Create publication
-        const publishResponse = await publishProject(id, { optimize: false });
+        const publishResponse = await publishProject(project.id, { optimize: false });
         publicationId = publishResponse.id;
 
         // Upload model
@@ -122,7 +118,6 @@ export default function PublishPage({ project }: Props) {
 
       async function uploadImage() {
         if (!imageFile) throw new Error("Image not found");
-        if (!id) throw new Error("Project ID not found");
 
         // Get image
         const res = await fetch(URL.createObjectURL(imageFile));

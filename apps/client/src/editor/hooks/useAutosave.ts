@@ -5,8 +5,8 @@ import { useSave } from "./useSave";
 
 const AUTOSAVE_INTERVAL = 2 * 60 * 1000; // 2 minutes
 
-export function useAutosave() {
-  const { save } = useSave();
+export function useAutosave(projectId: string) {
+  const { save } = useSave(projectId);
 
   useEffect(() => {
     // Auto save on an interval

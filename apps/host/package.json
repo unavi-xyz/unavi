@@ -18,7 +18,7 @@
     "@wired-labs/protocol": "*",
     "mediasoup": "^3.11.15",
     "nanoid": "^4.0.1",
-    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.19.0",
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.20.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {

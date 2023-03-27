@@ -26,66 +26,20 @@ const config = {
 
       /** @type {import('typedoc').TypeDocOptions} */
       {
-        id: "engine",
-        entryPoints: ["../../packages/engine/src/index.ts"],
-        tsconfig: "../../packages/engine/tsconfig.json",
+        id: "typedoc",
+        entryPointStrategy: "packages",
+        entryPoints: [
+          "../../packages/engine",
+          "../../packages/gltf-extensions",
+          "../../packages/protocol",
+          "../../packages/react-client",
+        ],
+        readme: "none",
         excludePrivate: true,
-        out: "../docs-api/engine",
+        out: "../docs-api",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
-          position: 10,
-          categoryLabel: "Engine",
-        },
-      },
-    ],
-    [
-      "docusaurus-plugin-typedoc",
-
-      /** @type {import('typedoc').TypeDocOptions} */
-      {
-        id: "gltf-extensions",
-        entryPoints: ["../../packages/gltf-extensions/src/index.ts"],
-        tsconfig: "../../packages/gltf-extensions/tsconfig.json",
-        excludePrivate: true,
-        out: "../docs-api/gltf-extensions",
-        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
-        sidebar: {
-          position: 10,
-          categoryLabel: "glTF Extensions",
-        },
-      },
-    ],
-    [
-      "docusaurus-plugin-typedoc",
-
-      /** @type {import('typedoc').TypeDocOptions} */
-      {
-        id: "protocol",
-        entryPoints: ["../../packages/protocol/src/index.ts"],
-        tsconfig: "../../packages/protocol/tsconfig.json",
-        excludePrivate: true,
-        out: "../docs-api/protocol",
-        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
-        sidebar: {
-          position: 10,
-          categoryLabel: "Protocol",
-        },
-      },
-    ],
-    [
-      "docusaurus-plugin-typedoc",
-
-      /** @type {import('typedoc').TypeDocOptions} */
-      {
-        id: "react-client",
-        entryPoints: ["../../packages/react-client/src/index.ts"],
-        tsconfig: "../../packages/react-client/tsconfig.json",
-        excludePrivate: true,
-        out: "../docs-api/react-client",
-        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
-        sidebar: {
-          position: 10,
-          categoryLabel: "React Client",
+          fullNames: true,
         },
       },
     ],

@@ -26,5 +26,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "typedoc": {
+    "displayName": "Protocol",
+    "entryPoint": "./src/index.ts"
   }
 }

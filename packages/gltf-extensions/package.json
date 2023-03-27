@@ -26,5 +26,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "typedoc": {
+    "displayName": "glTF-Extensions",
+    "entryPoint": "./src/index.ts"
   }
 }

@@ -35,5 +35,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "typedoc": {
+    "displayName": "React-Client",
+    "entryPoint": "./src/index.ts"
   }
 }

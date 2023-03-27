@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
 import { Params, paramsSchema } from "./types";
 
+export const runtime = "edge";
+
 // Get space
 export async function GET(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);

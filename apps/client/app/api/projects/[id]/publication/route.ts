@@ -1,7 +1,7 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
-import { env } from "../../../../../src/env/server.mjs";
+import { env } from "../../../../../src/env.mjs";
 import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
 import { getUsedAssets } from "../../../../../src/server/helpers/getUsedAssets";
 import { optimizeModel } from "../../../../../src/server/helpers/optimizeProject";

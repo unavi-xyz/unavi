@@ -11,7 +11,7 @@ import { arbitrumGoerli } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
-import { env } from "../env/client.mjs";
+import { env } from "../env.mjs";
 
 const providers: ChainProviderFn<typeof arbitrumGoerli>[] = [publicProvider()];
 

@@ -9,7 +9,7 @@ import Screenshot4 from "../../public/images/Screenshot4.png";
 import Discord from "../../public/images/svg/Discord.svg";
 import GitHub from "../../public/images/svg/GitHub.svg";
 import Twitter from "../../public/images/svg/Twitter.svg";
-import { env } from "../../src/env/client.mjs";
+import { env } from "../../src/env.mjs";
 import AnimateOnEnter from "./AnimateOnEnter";
 
 const DISCORD_URL = "https://discord.gg/cazUfCCgHJ";

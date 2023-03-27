@@ -7,7 +7,7 @@ import { getCsrfToken } from "next-auth/react";
 import { SiweMessage } from "siwe";
 
 import { CustomSession } from "../../../client/auth/useSession";
-import { env } from "../../../env/server.mjs";
+import { env } from "../../../env.mjs";
 import { prisma } from "../../../server/prisma";
 
 export function getAuthOptions(req: IncomingMessage | null = null): NextAuthOptions {

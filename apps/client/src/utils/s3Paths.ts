@@ -1,4 +1,4 @@
-import { env } from "../env/client.mjs";
+import { env } from "../env.mjs";
 import { toHex } from "./toHex";
 
 export class S3Path {

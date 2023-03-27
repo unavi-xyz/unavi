@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { env } from "../../../../src/env/client.mjs";
+import { env } from "../../../../src/env.mjs";
 import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
 import { isFromCDN } from "../../../../src/utils/isFromCDN";
 import { toHex } from "../../../../src/utils/toHex";
@@ -130,8 +130,10 @@ export default async function Space({ params }: Props) {
           </div>
         </div>
 
-        {/* @ts-expect-error Server Component */}
-        <Tabs owner={space.owner} params={params} />
+        <Suspense fallback={null}>
+          {/* @ts-expect-error Server Component */}
+          <Tabs owner={space.owner} params={params} />
+        </Suspense>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { ERC721Metadata } from "contracts";
 import Script from "next/script";
 import { useState } from "react";
 
-import { env } from "../../../src/env/client.mjs";
+import { env } from "../../../src/env.mjs";
 import { useHotkeys } from "../../../src/play/hooks/useHotkeys";
 import RainbowkitWrapper from "../../(navbar)/RainbowkitWrapper";
 import ClientApp from "./ClientApp";

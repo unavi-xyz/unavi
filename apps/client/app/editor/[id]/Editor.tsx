@@ -177,7 +177,7 @@ export default function Editor({ project }: Props) {
               )}
 
               <div className="overflow-y-auto">
-                <InspectMenu />
+                <InspectMenu projectId={project.id} />
               </div>
             </Split>
 

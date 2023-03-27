@@ -13,7 +13,11 @@ import ScriptComponent from "./ScriptComponent";
 import SpawnPointComponent from "./SpawnPointComponent";
 import TransformComponent from "./TransformComponent";
 
-export default function InspectMenu() {
+interface Props {
+  projectId: string;
+}
+
+export default function InspectMenu({ projectId }: Props) {
   const isPlaying = useEditorStore((state) => state.isPlaying);
   const selectedId = useEditorStore((state) => state.selectedId);
   const node = useNode(selectedId);
@@ -55,7 +59,7 @@ export default function InspectMenu() {
 
         {mesh && <MeshComponent mesh={mesh} />}
 
-        {hasAvatar && <AvatarComponent node={node} />}
+        {hasAvatar && <AvatarComponent projectId={projectId} node={node} />}
         {hasCollider && <PhysicsComponent node={node} />}
         {hasSpawnPoint && <SpawnPointComponent node={node} />}
 

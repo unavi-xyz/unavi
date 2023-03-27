@@ -1,5 +1,4 @@
 import { Node } from "@gltf-transform/core";
-import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { getNewProjectAssetUpload } from "../../../../app/api/projects/[id]/assets/helper";
@@ -12,13 +11,11 @@ import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 
 interface Props {
+  projectId: string;
   node: Node;
 }
 
-export default function AvatarComponent({ node }: Props) {
-  const params = useSearchParams();
-  const id = params?.get("id");
-
+export default function AvatarComponent({ projectId, node }: Props) {
   const avatar = useAvatar(node);
   const uri = useSubscribe(avatar, "URI");
   const equippable = useSubscribe(avatar, "Equippable");
@@ -45,13 +42,13 @@ export default function AvatarComponent({ node }: Props) {
         disabled={loading || isPlaying}
         onChange={async (e) => {
           const file = e.target.files?.[0];
-          if (!avatar || !id || !file || loading) return;
+          if (!avatar || !file || loading) return;
 
           avatar.setName(file.name);
           setLoading(true);
 
           try {
-            const { url, assetId } = await getNewProjectAssetUpload(id);
+            const { url, assetId } = await getNewProjectAssetUpload(projectId);
 
             const res = await fetch(url, {
               method: "PUT",
@@ -61,7 +58,6 @@ export default function AvatarComponent({ node }: Props) {
                 "x-amz-acl": "public-read",
               },
             });
-
             if (!res.ok) return;
 
             avatar.setURI(cdnURL(S3Path.asset(assetId)));

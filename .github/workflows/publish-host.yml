@@ -33,11 +33,8 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           labels: |
             org.opencontainers.image.description="Host server for The Wired"
-          flavor: |
-            prefix=host@
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=match,pattern=\d.\d.\d
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4

@@ -236,84 +236,104 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
         })
       );
 
-      let vrmUri = "";
-
       cleanup.push(
         subscribe(node, "Extensions", (extensions) => {
-          const avatarObject = this.avatarObjects.get(id);
+          const extensionsCleanup: Array<() => void> = [];
 
           const avatar = extensions.find((ext): ext is Avatar => ext instanceof Avatar);
-          if (!avatar) {
-            vrmUri = "";
+          if (!avatar) return;
+
+          let loadedAvatarUri = "";
+
+          extensionsCleanup.push(
+            subscribe(avatar, "URI", (uri) => {
+              const avatarObject = this.avatarObjects.get(id);
+
+              if (!avatar || !uri) {
+                loadedAvatarUri = "";
+
+                if (avatarObject) {
+                  object.remove(avatarObject);
+                  deepDispose(avatarObject);
+                  this.avatarObjects.delete(id);
+                }
+                return;
+              }
+
+              if (uri === loadedAvatarUri) return;
+
+              if (avatarObject) {
+                object.remove(avatarObject);
+                deepDispose(avatarObject);
+                this.avatarObjects.delete(id);
+              }
+
+              loadedAvatarUri = uri;
+
+              const loader = new GLTFLoader();
+              loader.setCrossOrigin("anonymous");
+              loader.register((parser) => new VRMLoaderPlugin(parser));
+
+              loader.load(uri, (gltf) => {
+                const vrm = gltf.userData.vrm as VRM;
+                vrm.scene.rotateY(Math.PI);
+
+                VRMUtils.removeUnnecessaryVertices(vrm.scene);
+                VRMUtils.removeUnnecessaryJoints(vrm.scene);
+                VRMUtils.rotateVRM0(vrm);
+
+                vrm.scene.traverse((obj) => {
+                  if (obj instanceof Mesh) {
+                    obj.castShadow = true;
+                    obj.geometry.computeBoundsTree();
+                  }
+                });
+
+                // Generate BVH
+                const generator = new StaticGeometryGenerator(vrm.scene);
+                this.bvhGenerators.set(id, generator);
+
+                // Add VRM to object
+                object.add(vrm.scene);
+                this.avatarObjects.set(id, vrm.scene);
+              });
+
+              return () => {
+                const generator = this.bvhGenerators.get(id);
+                if (generator) {
+                  this.bvhGenerators.delete(id);
+                  const helper = this.meshHelpers.get(generator);
+                  const bvhHelper = this.bvhHelpers.get(generator);
+
+                  if (helper) {
+                    this.meshHelpers.delete(generator);
+                    helper.removeFromParent();
+                    helper.geometry.dispose();
+                  }
+
+                  if (bvhHelper) {
+                    this.bvhHelpers.delete(generator);
+                    bvhHelper.removeFromParent();
+                    bvhHelper.traverse((obj) => {
+                      if (obj instanceof Mesh) {
+                        obj.geometry.dispose();
+                      }
+                    });
+                  }
+                }
+              };
+            })
+          );
+
+          return () => {
+            extensionsCleanup.forEach((fn) => fn());
+
+            const avatarObject = this.avatarObjects.get(id);
+
             if (avatarObject) {
               object.remove(avatarObject);
               deepDispose(avatarObject);
               this.avatarObjects.delete(id);
-            }
-            return;
-          }
-
-          const uri = avatar.getURI();
-          if (!uri || uri === vrmUri) return;
-
-          if (avatarObject) {
-            object.remove(avatarObject);
-            deepDispose(avatarObject);
-            this.avatarObjects.delete(id);
-          }
-
-          vrmUri = uri;
-
-          const loader = new GLTFLoader();
-          loader.setCrossOrigin("anonymous");
-          loader.register((parser) => new VRMLoaderPlugin(parser));
-
-          loader.load(uri, (gltf) => {
-            const vrm = gltf.userData.vrm as VRM;
-            vrm.scene.rotateY(Math.PI);
-
-            VRMUtils.removeUnnecessaryVertices(vrm.scene);
-            VRMUtils.removeUnnecessaryJoints(vrm.scene);
-            VRMUtils.rotateVRM0(vrm);
-
-            vrm.scene.traverse((obj) => {
-              if (obj instanceof Mesh) {
-                obj.castShadow = true;
-                obj.geometry.computeBoundsTree();
-              }
-            });
-
-            // Generate BVH
-            const generator = new StaticGeometryGenerator(vrm.scene);
-            this.bvhGenerators.set(id, generator);
-
-            // Add VRM to object
-            object.add(vrm.scene);
-            this.avatarObjects.set(id, vrm.scene);
-          });
-
-          return () => {
-            const generator = this.bvhGenerators.get(id);
-            if (generator) {
-              this.bvhGenerators.delete(id);
-              const helper = this.meshHelpers.get(generator);
-              const bvhHelper = this.bvhHelpers.get(generator);
-
-              if (helper) {
-                this.meshHelpers.delete(generator);
-                helper.removeFromParent();
-                helper.geometry.dispose();
-              }
-
-              if (bvhHelper) {
-                this.bvhHelpers.delete(generator);
-                bvhHelper.removeFromParent();
-                bvhHelper.traverse((obj) => {
-                  if (obj instanceof Mesh) {
-                    obj.geometry.dispose();
-                  }
-                });
-              }
             }
           };
         })
@@ -321,13 +341,6 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
 
       return () => {
         cleanup.forEach((fn) => fn());
-
-        const avatarObject = this.avatarObjects.get(id);
-        if (avatarObject) {
-          object.remove(avatarObject);
-          deepDispose(avatarObject);
-          this.avatarObjects.delete(id);
-        }
       };
     });
 

@@ -198,15 +198,16 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       if (!avatarJSON) {
         node.setExtension(AvatarExtension.EXTENSION_NAME, null);
       } else {
-        const avatar =
-          node.getExtension<Avatar>(AvatarExtension.EXTENSION_NAME) ??
-          this.#scene.extensions.avatar.createAvatar();
+        let avatar = node.getExtension<Avatar>(AvatarExtension.EXTENSION_NAME);
+
+        if (!avatar) {
+          avatar = this.#scene.extensions.avatar.createAvatar();
+          node.setExtension(AvatarExtension.EXTENSION_NAME, avatar);
+        }
 
         avatar.setName(avatarJSON.name);
         avatar.setEquippable(avatarJSON.equippable);
         avatar.setURI(avatarJSON.uri);
-
-        node.setExtension(AvatarExtension.EXTENSION_NAME, avatar);
       }
 
       const colliderJSON = json.extensions[ColliderExtension.EXTENSION_NAME];

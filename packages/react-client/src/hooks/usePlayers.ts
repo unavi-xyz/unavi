@@ -13,7 +13,7 @@ import { useClient } from "./useClient";
  * @returns List of players and chat messages
  */
 export function usePlayers() {
-  const { engine, ws, players, setPlayers, setChatMessages } = useClient();
+  const { engine, ws, ethersProvider, players, setPlayers, setChatMessages } = useClient();
 
   useEffect(() => {
     if (!ws) return;
@@ -61,8 +61,10 @@ export function usePlayers() {
 
           if (player) {
             player.remove();
+
+            // Remove from localPlayers, but keep in state
+            // so that the player's name can be displayed in chat
             localPlayers.splice(localPlayers.indexOf(player), 1);
-            setPlayers((players) => players.filter((player) => player.id !== data.playerId));
 
             setChatMessages((messages) => [
               ...messages,
@@ -140,4 +142,10 @@ export function usePlayers() {
       if (player.engine !== engine) player.engine = engine;
     });
   }, [players, engine]);
+
+  useEffect(() => {
+    players.forEach((player) => {
+      if (player.ethersProvider !== ethersProvider) player.ethersProvider = ethersProvider;
+    });
+  }, [players, ethersProvider]);
 }

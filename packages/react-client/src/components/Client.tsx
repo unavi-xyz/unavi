@@ -1,6 +1,7 @@
 import { ToHostMessage } from "@wired-labs/protocol";
 import { ERC721Metadata } from "contracts";
 import { Engine } from "engine";
+import { providers, Signer } from "ethers";
 import {
   createContext,
   Dispatch,
@@ -40,6 +41,7 @@ export type HoverState = null | "avatar";
 export interface IClientContext {
   engine: Engine | null;
   spaceId: number | null;
+  ethersProvider: providers.Provider | Signer | null;
 
   hoverState: HoverState;
   setHoverState: Dispatch<SetStateAction<HoverState>>;
@@ -72,6 +74,7 @@ export interface IClientContext {
 const defaultContext: IClientContext = {
   engine: null,
   spaceId: null,
+  ethersProvider: null,
 
   hoverState: null,
   setHoverState: () => {},
@@ -105,8 +108,9 @@ export const ClientContext = createContext<IClientContext>(defaultContext);
 
 interface Props {
   animations?: string;
-  defaultAvatar?: string;
   children?: React.ReactNode;
+  defaultAvatar?: string;
+  ethers?: providers.Provider | Signer;
   host?: string;
   skybox?: string;
   spaceId?: number;
@@ -117,8 +121,9 @@ interface Props {
  * A self-contained client for connecting to the Wired.
  *
  * @param animations The path to the animations folder.
- * @param avatar The path to the default avatar.
  * @param children Any children to render.
+ * @param defaultAvatar The path to the default avatar.
+ * @param ethers The ethers provider to use.
  * @param host The host to connect to.
  * @param skybox The path to the skybox.
  * @param spaceId The space to connect to.
@@ -126,8 +131,9 @@ interface Props {
  */
 export function Client({
   animations,
-  defaultAvatar,
   children,
+  defaultAvatar,
+  ethers,
   host = "ws://localhost:4000",
   metadata,
   skybox,
@@ -140,6 +146,9 @@ export function Client({
   const [avatar, setAvatar] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [engine, setEngine] = useState<Engine | null>(defaultContext.engine);
+  const [ethersProvider, setEthersProvider] = useState<providers.Provider | Signer | null>(
+    defaultContext.ethersProvider
+  );
   const [hoverState, setHoverState] = useState<HoverState>(defaultContext.hoverState);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingText, setLoadingText] = useState("");
@@ -160,6 +169,15 @@ export function Client({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [ws, ws?.readyState]
   );
+
+  useEffect(() => {
+    if (!ethers) {
+      setEthersProvider(null);
+      return;
+    }
+
+    setEthersProvider(ethers);
+  }, [ethers]);
 
   useEffect(() => {
     if (!canvasRef.current || !overlayRef.current) return;
@@ -201,6 +219,7 @@ export function Client({
       value={{
         engine,
         spaceId: spaceId ?? null,
+        ethersProvider,
         hoverState,
         setHoverState,
         ws,

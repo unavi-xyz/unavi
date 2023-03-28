@@ -44,21 +44,7 @@ export function usePlayerName(playerId: number | null) {
 
       // Otherwise, find the player
       const player = players.find((p) => p.id === playerId);
-
-      if (player) {
-        if (player.address) {
-          const profile = await getProfileByAddress(player.address);
-
-          if (profile?.handle) displayName = profile.handle.string;
-          else if (!player.name) displayName = player.address.substring(0, 6);
-        }
-
-        if (!displayName && player.name) displayName = player.name;
-      }
-
-      if (!displayName) displayName = `Guest ${toHex(playerId)}`;
-
-      setName(displayName);
+      if (player) setName(player.displayName);
     }
 
     getName();

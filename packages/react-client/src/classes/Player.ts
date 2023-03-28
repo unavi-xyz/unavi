@@ -1,4 +1,9 @@
 import { Engine } from "engine";
+import { providers, Signer } from "ethers";
+
+import { fetchDefaultProfileId } from "../helpers/fetchDefaultProfile";
+import { fetchProfileHandle } from "../helpers/fetchProfileHandle";
+import { toHex } from "../utils/toHex";
 
 /**
  * Used to store information about a player as it comes in from the server, whether the engine is ready yet or not. Once the engine is provided, the player will be added to the engine.
@@ -6,28 +11,26 @@ import { Engine } from "engine";
 export class Player {
   readonly id: number;
 
-  #name: string | null = null;
   #address: string | null = null;
   #avatar: string | null = null;
-  #grounded = false;
-
   #engine: Engine | null = null;
+  #ethersProvider: providers.Provider | Signer | null = null;
+  #grounded = false;
+  #name: string | null = null;
+
+  #displayName = "";
 
   constructor(id: number) {
     this.id = id;
   }
 
-  get name() {
-    return this.#name;
+  get address() {
+    return this.#address;
   }
 
-  set name(name: string | null) {
-    this.#name = name;
-
-    if (this.#engine) {
-      const player = this.#engine.player.getPlayer(this.id);
-      if (player) player.name = name;
-    }
+  set address(address: string | null) {
+    this.#address = address;
+    this.#updateDisplayName();
   }
 
   get avatar() {
@@ -43,12 +46,32 @@ export class Player {
     }
   }
 
-  get address() {
-    return this.#address;
+  get displayName() {
+    return this.#displayName;
   }
 
-  set address(address: string | null) {
-    this.#address = address;
+  get engine() {
+    return this.#engine;
+  }
+
+  set engine(engine: Engine | null) {
+    this.#engine = engine;
+    if (!engine) return;
+
+    const player = engine.player.getPlayer(this.id) || engine.player.addPlayer(this.id);
+
+    player.name = this.displayName;
+    player.avatar = this.avatar;
+    player.grounded = this.grounded;
+  }
+
+  get ethersProvider() {
+    return this.#ethersProvider;
+  }
+
+  set ethersProvider(ethersProvider: providers.Provider | Signer | null) {
+    this.#ethersProvider = ethersProvider;
+    this.#updateDisplayName();
   }
 
   get grounded() {
@@ -64,22 +87,43 @@ export class Player {
     }
   }
 
-  get engine() {
-    return this.#engine;
+  get name() {
+    return this.#name;
   }
 
-  set engine(engine: Engine | null) {
-    this.#engine = engine;
-    if (!engine) return;
-
-    const player = engine.player.getPlayer(this.id) || engine.player.addPlayer(this.id);
-
-    player.name = this.#name;
-    player.avatar = this.#avatar;
-    player.grounded = this.#grounded;
+  set name(name: string | null) {
+    this.#name = name;
+    this.#updateDisplayName();
   }
 
   remove() {
     if (this.#engine) this.#engine.player.removePlayer(this.id);
+  }
+
+  async #updateDisplayName() {
+    let newDisplayName = "";
+
+    if (this.address && this.ethersProvider) {
+      const profileId = await fetchDefaultProfileId(this.address, this.ethersProvider);
+
+      if (profileId !== null) {
+        const handle = await fetchProfileHandle(profileId, this.ethersProvider);
+
+        if (handle) newDisplayName = handle.string;
+        else if (!this.name) newDisplayName = this.address.substring(0, 6);
+      }
+    }
+
+    if (!newDisplayName && this.name) newDisplayName = this.name;
+    if (!newDisplayName) newDisplayName = `Guest ${toHex(this.id)}`;
+
+    if (newDisplayName === this.#displayName) return;
+
+    this.#displayName = newDisplayName;
+
+    if (this.#engine) {
+      const player = this.#engine.player.getPlayer(this.id);
+      if (player) player.name = newDisplayName;
+    }
   }
 }

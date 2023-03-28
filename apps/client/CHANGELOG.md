@@ -1,5 +1,21 @@
 # client
 
+## 0.2.0
+
+### Minor Changes
+
+- f5af4ee: add max distance to avatar equip
+
+### Patch Changes
+
+- 51b061d: fix system chat messages not using player name
+- Updated dependencies [f5af4ee]
+- Updated dependencies [73c1b21]
+- Updated dependencies [51b061d]
+- Updated dependencies [f46f168]
+  - @wired-labs/react-client@0.2.0
+  - engine@0.1.0
+
 ## 0.1.1
 
 ### Patch Changes

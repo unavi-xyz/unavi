@@ -1,7 +1,7 @@
 import { HostAPI } from "@wired-labs/protocol";
 import { cache } from "react";
 
-import { env } from "../../env/server.mjs";
+import { env } from "../../env.mjs";
 
 const HOST_URL =
   process.env.NODE_ENV === "development"

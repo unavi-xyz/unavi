@@ -1,4 +1,7 @@
 import BoringAvatar from "boring-avatars";
+import Image from "next/image";
+
+import { isFromCDN } from "../utils/isFromCDN";
 
 interface Props {
   src?: string | null;
@@ -25,14 +28,28 @@ export default function Avatar({
       style={{ width: size, height: size }}
     >
       {loading ? null : src ? (
-        <img
-          src={src}
-          alt=""
-          crossOrigin="anonymous"
-          draggable={draggable}
-          className={`${circle ? "rounded-full" : "rounded-lg"}`}
-          style={{ width: size, height: size }}
-        />
+        isFromCDN(src) ? (
+          <Image
+            src={src}
+            priority
+            width={size}
+            height={size}
+            sizes={`${size}px`}
+            alt=""
+            draggable={draggable}
+            className={`${circle ? "rounded-full" : "rounded-lg"}`}
+          />
+        ) : (
+          <img
+            src={src}
+            sizes={`${size}px`}
+            alt=""
+            draggable={draggable}
+            className={`${circle ? "rounded-full" : "rounded-lg"}`}
+            style={{ width: size, height: size }}
+            crossOrigin="anonymous"
+          />
+        )
       ) : (
         <BoringAvatar
           size={size}

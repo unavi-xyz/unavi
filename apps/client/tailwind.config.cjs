@@ -5,12 +5,11 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}", "./app/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
-      backgroundImage: {
-        arrow: "url('/images/svg/arrow.svg')",
-      },
       aspectRatio: {
         card: "5/3",
-        vertical: "3/5",
+      },
+      backgroundImage: {
+        arrow: "url('/images/svg/arrow.svg')",
       },
       boxShadow: {
         dark: "0 1px 3px 0 rgb(0 0 0 / 0.3)",
@@ -28,7 +27,7 @@ module.exports = {
         scaleOut: "scaleOut 150ms ease-in-out forwards",
         scaleInFull: "scaleInFull 200ms ease forwards",
         scaleOutFull: "scaleOutFull 200ms ease forwards",
-        textScroll: "textScroll 5s ease infinite",
+        backgroundScroll: "backgroundScroll 5s ease infinite",
       },
       keyframes: {
         fadeIn: {
@@ -64,7 +63,7 @@ module.exports = {
           "0%": { transform: "scale(1)" },
           "100%": { transform: "scale(0)" },
         },
-        textScroll: {
+        backgroundScroll: {
           "0%, 100%": {
             "background-size": "200% 200%",
             "background-position": "left center",

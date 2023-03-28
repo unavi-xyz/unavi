@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { fetchProjects } from "../../../src/server/helpers/fetchProjects";
 import { getServerSession } from "../../../src/server/helpers/getServerSession";
 import Card from "../../../src/ui/Card";
@@ -26,9 +24,7 @@ export default async function Published() {
 
       <CardGrid>
         {publishedProjects.map(({ id, name }, i) => (
-          <Link key={id} href={`/project/${id}`} className="rounded-xl">
-            <Card text={name} image={publishedImages[i]} sizes="333px" animateEnter />
-          </Link>
+          <Card key={id} href={`/project/${id}`} text={name} image={publishedImages[i]} />
         ))}
       </CardGrid>
     </>

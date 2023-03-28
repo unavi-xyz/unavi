@@ -1,5 +1,6 @@
 import { Intersection, Object3D, Raycaster } from "three";
 
+import { MAX_AVATAR_EQUIP_DISTANCE } from "../../constants";
 import { PointerData } from "../../input/messages";
 import { ToRenderMessage } from "../messages";
 import { RenderThread } from "../RenderThread";
@@ -12,6 +13,7 @@ export class RaycastControls {
   #startMoveTime = 0;
   #moveCount = 0;
   #hoveredNodeId: string | null = null;
+  #hoveredWithinDistance = false;
 
   constructor(renderThread: RenderThread) {
     this.#renderThread = renderThread;
@@ -42,31 +44,26 @@ export class RaycastControls {
     // Set raycaster to middle of camera position
     this.#raycaster.setFromCamera({ x: 0, y: 0 }, this.#renderThread.camera);
 
-    // Get intersected avatar object
-    const avatars = Array.from(this.#renderThread.renderScene.builders.node.avatarObjects.values());
-    const intersections = this.#raycaster.intersectObjects(avatars);
+    const intersections = this.#raycaster.intersectObject(this.#renderThread.renderScene.root);
+    const { intersection, isAvatar, nodeId } = this.#findIntersection(intersections);
 
-    let nodeId: string | null = null;
+    const withinDistance = intersection
+      ? intersection.distance <= MAX_AVATAR_EQUIP_DISTANCE
+      : false;
 
-    intersections.find((intersection) => {
-      const avatarNodeId = this.#renderThread.renderScene.getAvatarNodeId(intersection.object);
-      if (avatarNodeId) {
-        nodeId = avatarNodeId;
-        return true;
-      }
-
-      return false;
-    });
-
-    if (nodeId !== this.#hoveredNodeId) {
+    if (nodeId !== this.#hoveredNodeId || withinDistance !== this.#hoveredWithinDistance) {
       this.#hoveredNodeId = nodeId;
+      this.#hoveredWithinDistance = withinDistance;
 
-      this.#renderThread.postMessage({ subject: "hovered_node", data: { nodeId, isAvatar: true } });
+      this.#renderThread.postMessage({
+        subject: "hovered_node",
+        data: { nodeId, isAvatar, distance: intersection?.distance ?? null },
+      });
 
       if (this.#renderThread.outlinePass) {
         this.#renderThread.outlinePass.selectedObjects = [];
 
-        if (nodeId) {
+        if (nodeId && withinDistance) {
           const avatarObject =
             this.#renderThread.renderScene.builders.node.avatarObjects.get(nodeId);
 
@@ -97,11 +94,18 @@ export class RaycastControls {
 
     // Get intersected object
     const intersections = this.#raycaster.intersectObject(this.#renderThread.renderScene.root);
-    const { nodeId, isAvatar } = this.#findIntersection(intersections);
+    const { intersection, nodeId, isAvatar } = this.#findIntersection(intersections);
 
-    this.#renderThread.postMessage({ subject: "clicked_node", data: { nodeId, isAvatar } });
+    this.#renderThread.postMessage({
+      subject: "clicked_node",
+      data: { nodeId, isAvatar, distance: intersection?.distance ?? null },
+    });
   }
 
+  /**
+   * Finds the first valid intersection in the list of intersections.
+   * A valid intersection is one that can be traced to a node.
+   */
   #findIntersection(intersections: Intersection<Object3D>[]) {
     let nodeId: string | null = null;
     let isAvatar = false;

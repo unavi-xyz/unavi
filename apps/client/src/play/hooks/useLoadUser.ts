@@ -7,7 +7,7 @@ import { LocalStorageKey } from "../constants";
 
 export function useLoadUser() {
   const { data: session } = useSession();
-  const { engine, send, setAvatar } = useClient();
+  const { send } = useClient();
 
   // Load nickname from local storage on initial load
   useEffect(() => {
@@ -17,17 +17,6 @@ export function useLoadUser() {
     // Publish to host
     send({ subject: "set_name", data: localName });
   }, [send]);
-
-  // Load avatar from local storage on initial load
-  useEffect(() => {
-    if (!engine) return;
-
-    const localAvatar = localStorage.getItem(LocalStorageKey.Avatar);
-    usePlayStore.setState({ avatar: localAvatar });
-
-    // Update engine
-    setAvatar(localAvatar);
-  }, [engine, setAvatar]);
 
   // Publish address on change
   useEffect(() => {

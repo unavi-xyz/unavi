@@ -1,72 +1,106 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import { isFromCDN } from "../utils/isFromCDN";
 
 interface Props {
+  href?: string;
   image?: string | null;
   text?: string | null;
   sizes?: string;
-  aspect?: "card" | "vertical";
-  animateEnter?: boolean;
   loading?: boolean;
   loadingAnimation?: boolean;
   children?: React.ReactNode;
 }
 
 export default function Card({
+  href,
   image,
   text,
+  sizes,
+  loading,
+  loadingAnimation,
+  children,
+}: Props) {
+  return (
+    <div>
+      {href ? (
+        <Link href={href} className="block">
+          <CardImage
+            image={image}
+            sizes={sizes}
+            loading={loading}
+            loadingAnimation={loadingAnimation}
+          >
+            {children}
+          </CardImage>
+        </Link>
+      ) : (
+        <CardImage
+          image={image}
+          sizes={sizes}
+          loading={loading}
+          loadingAnimation={loadingAnimation}
+        >
+          {children}
+        </CardImage>
+      )}
+
+      {loading ? null : <CardText text={text} />}
+    </div>
+  );
+}
+
+export function CardText({ text }: { text?: string | null }) {
+  return <div className="pt-2.5 pb-1 text-xl font-bold text-neutral-900">{text}</div>;
+}
+
+interface CardImageProps {
+  group?: boolean;
+  image?: string | null;
+  sizes?: string;
+  loading?: boolean;
+  loadingAnimation?: boolean;
+  children: React.ReactNode;
+}
+
+export function CardImage({
+  group = false,
+  image,
   sizes = "(min-width: 1320px) 25vw, (min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw",
-  aspect = "card",
-  animateEnter = false,
   loading = false,
   loadingAnimation = true,
   children,
-}: Props) {
-  const aspectCss = aspect === "card" ? "aspect-card" : "aspect-vertical";
-  const animateCss = animateEnter ? "animate-floatIn" : "";
-
+}: CardImageProps) {
   return (
-    <div className={`h-full w-full transition ${loading ? "" : "hover:scale-105"}`}>
-      <div
-        className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-neutral-200 ${
-          loading && loadingAnimation ? "animate-pulse" : ""
-        } ${animateCss} ${aspectCss}`}
-      >
-        {image &&
-          (isFromCDN(image) ? (
-            <Image
-              src={image}
-              priority
-              fill
-              sizes={sizes}
-              draggable={false}
-              alt=""
-              className="rounded-xl object-cover"
-            />
-          ) : (
-            <img
-              src={image}
-              draggable={false}
-              alt=""
-              className="h-full w-full rounded-xl object-cover"
-              crossOrigin="anonymous"
-            />
-          ))}
+    <div
+      className={`relative flex aspect-card h-full w-full flex-col overflow-hidden rounded-3xl bg-neutral-200 shadow-lg transition duration-100 ease-out ${
+        loading ? "" : group ? "group-hover:scale-105" : "hover:scale-105"
+      } ${loading && loadingAnimation ? "animate-pulse" : ""}`}
+    >
+      {loading ? null : image ? (
+        isFromCDN(image) ? (
+          <Image
+            src={image}
+            priority
+            fill
+            sizes={sizes}
+            draggable={false}
+            alt=""
+            className="rounded-3xl object-cover"
+          />
+        ) : (
+          <img
+            src={image}
+            draggable={false}
+            alt=""
+            className="h-full w-full rounded-3xl object-cover"
+            crossOrigin="anonymous"
+          />
+        )
+      ) : null}
 
-        <div className="absolute flex h-full w-full items-end tracking-wide text-white">
-          {text && (
-            <div
-              className="w-full overflow-hidden px-3 pb-2 text-xl font-black drop-shadow-dark"
-              style={{ textShadow: "0 0 6px rgba(0, 0, 0, 0.6)" }}
-            >
-              {text}
-            </div>
-          )}
-        </div>
-
-        {children}
-      </div>
+      {children}
     </div>
   );
 }

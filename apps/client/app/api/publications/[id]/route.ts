@@ -1,7 +1,7 @@
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { NextRequest } from "next/server";
 
-import { env } from "../../../../src/env/server.mjs";
+import { env } from "../../../../src/env.mjs";
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import { prisma } from "../../../../src/server/prisma";
 import { s3Client } from "../../../../src/server/s3";

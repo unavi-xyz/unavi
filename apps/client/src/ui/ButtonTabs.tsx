@@ -19,12 +19,12 @@ export default function ButtonTabs({ titles, children }: Props) {
       className="space-y-4"
     >
       {titles.length > 1 && (
-        <Tabs.List className="flex space-x-2">
+        <Tabs.List className="flex space-x-4">
           {titles.map((title) => (
             <Tabs.Trigger
               key={title}
               value={title}
-              className={`flex-1 rounded-lg py-1 text-lg font-bold transition active:opacity-80 ${
+              className={`flex-1 rounded-xl py-1 text-lg font-bold transition active:opacity-80 ${
                 value === title ? "bg-neutral-200 hover:bg-neutral-300" : " hover:bg-neutral-200"
               }`}
             >

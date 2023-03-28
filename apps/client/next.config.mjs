@@ -2,7 +2,7 @@ import createPWA from "@ducanh2912/next-pwa";
 import { withAxiom } from "next-axiom";
 import path from "path";
 
-import { env } from "./src/env/server.mjs";
+import { env } from "./src/env.mjs";
 
 const __dirname = path.resolve();
 

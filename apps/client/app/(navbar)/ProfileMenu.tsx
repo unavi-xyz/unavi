@@ -18,15 +18,15 @@ export default function ProfileMenu({ profile, session }: Props) {
   const { logout } = useLogout();
 
   return (
-    <div className="py-2">
+    <div className="py-2 text-lg">
       <DropdownItem asChild>
         <Link
           href={`/user/${profile?.id ? toHex(profile.id) : session?.address}`}
           draggable={false}
           className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none focus:bg-neutral-200 active:opacity-80"
         >
-          <MdOutlinePersonOutline className="mr-2 text-lg" />
-          <div>Your Profile</div>
+          <MdOutlinePersonOutline className="mr-2 text-xl" />
+          <div>Your profile</div>
         </Link>
       </DropdownItem>
 
@@ -36,7 +36,7 @@ export default function ProfileMenu({ profile, session }: Props) {
           draggable={false}
           className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none focus:bg-neutral-200 active:opacity-80"
         >
-          <MdOutlineSettings className="mr-2 text-lg" />
+          <MdOutlineSettings className="mr-2 text-xl" />
           <div>Settings</div>
         </Link>
       </DropdownItem>
@@ -45,8 +45,8 @@ export default function ProfileMenu({ profile, session }: Props) {
         onClick={logout}
         className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none focus:bg-neutral-200 active:opacity-80"
       >
-        <MdLogout className="mr-2 text-lg" />
-        <div>Log Out</div>
+        <MdLogout className="mr-2 text-xl" />
+        <div>Sign out</div>
       </DropdownItem>
     </div>
   );

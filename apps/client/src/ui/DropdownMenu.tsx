@@ -3,19 +3,16 @@
 import * as DropdownPrimitive from "@radix-ui/react-dropdown-menu";
 import React from "react";
 
-interface Props extends DropdownPrimitive.DropdownMenuProps {
-  open?: boolean;
-}
+type Props = DropdownPrimitive.DropdownMenuProps;
 
 export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
-  ({ open = true, children, ...rest }, ref) => {
+  ({ children, ...rest }, ref) => {
     return (
       <DropdownPrimitive.Content
         ref={ref}
         sideOffset={4}
-        className={`z-40 rounded-lg border border-neutral-400 bg-white shadow-md ${
-          open ? "animate-scaleIn" : "animate-scaleOut"
-        }`}
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        className="z-40 animate-scaleIn rounded-xl shadow-md"
         {...rest}
       >
         {children}

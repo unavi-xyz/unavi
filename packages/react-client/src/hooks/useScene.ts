@@ -34,8 +34,8 @@ export function useScene(metadata: ERC721Metadata) {
         await engine.scene.addBinary(array);
 
         // Add delay to allow scene to load
-        const mbs = Math.max(Math.round(array.byteLength / 1024 / 1024), 5);
-        await new Promise((resolve) => setTimeout(resolve, mbs * 300));
+        const mbs = Math.max(Math.round(array.byteLength / 1000 / 1000), 5);
+        await new Promise((resolve) => setTimeout(resolve, mbs * 400));
 
         engine.start();
 

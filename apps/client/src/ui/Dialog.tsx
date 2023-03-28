@@ -23,7 +23,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, Props>(
         <DialogPrimitive.Content
           ref={ref}
           onOpenAutoFocus={autoFocus ? undefined : (e) => e.preventDefault()}
-          className={`fixed inset-0 z-50 m-auto h-fit w-full max-w-xl rounded-2xl bg-white py-8 px-10 shadow-md ${
+          className={`fixed inset-0 z-50 m-auto h-fit w-full max-w-xl rounded-3xl bg-white py-8 px-10 shadow-md ${
             open ? "animate-scaleIn" : "animate-scaleOut"
           }`}
           {...rest}

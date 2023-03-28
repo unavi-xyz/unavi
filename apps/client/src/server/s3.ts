@@ -1,6 +1,6 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
-import { env } from "../env/server.mjs";
+import { env } from "../env.mjs";
 
 const host = env.S3_ENDPOINT.split(":")[0];
 const http = host === "localhost" || host === "127.0.0.1" ? "http" : "https";

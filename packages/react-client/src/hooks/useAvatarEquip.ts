@@ -1,5 +1,5 @@
 import { Avatar } from "@wired-labs/gltf-extensions";
-import { Engine, RenderEvent } from "engine";
+import { Engine, MAX_AVATAR_EQUIP_DISTANCE, RenderEvent } from "engine";
 import { useEffect } from "react";
 
 import { HoverState } from "../components/Client";
@@ -16,7 +16,12 @@ export function useAvatarEquip(
     const listener = (e: RenderEvent) => {
       setHoverState(null);
 
-      if (!e.data.isAvatar || !e.data.nodeId) return;
+      if (
+        !e.data.isAvatar ||
+        !e.data.nodeId ||
+        (e.data.distance !== null && e.data.distance > MAX_AVATAR_EQUIP_DISTANCE)
+      )
+        return;
 
       const node = engine.scene.node.store.get(e.data.nodeId);
       if (!node) throw new Error(`Node ${e.data.nodeId} not found`);
@@ -28,10 +33,10 @@ export function useAvatarEquip(
       if (!equippable) return;
 
       const uri = avatar.getURI();
-      if (uri === equippedAvatar) return;
 
       // Show tooltip
-      setHoverState("avatar");
+      if (uri === equippedAvatar) setHoverState("avatar_equipped");
+      else setHoverState("equip_avatar");
     };
 
     engine.render.addEventListener("hovered_node", listener);
@@ -49,7 +54,12 @@ export function useAvatarEquip(
       // Ignore click if not pointerlocked
       if (!engine.input.keyboard.isLocked) return;
 
-      if (!e.data.isAvatar || !e.data.nodeId) return;
+      if (
+        !e.data.isAvatar ||
+        !e.data.nodeId ||
+        (e.data.distance !== null && e.data.distance > MAX_AVATAR_EQUIP_DISTANCE)
+      )
+        return;
 
       const node = engine.scene.node.store.get(e.data.nodeId);
       if (!node) throw new Error(`Node ${e.data.nodeId} not found`);

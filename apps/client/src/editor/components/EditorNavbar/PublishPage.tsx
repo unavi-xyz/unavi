@@ -11,7 +11,7 @@ import { getPublicationFileUpload } from "../../../../app/api/publications/[id]/
 import { linkPublication } from "../../../../app/api/publications/[id]/link/helper";
 import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { useSession } from "../../../client/auth/useSession";
-import { env } from "../../../env/client.mjs";
+import { env } from "../../../env.mjs";
 import { useProfileByAddress } from "../../../play/hooks/useProfileByAddress";
 import { fetcher } from "../../../play/utils/fetcher";
 import { Project } from "../../../server/helpers/fetchProject";

@@ -4,11 +4,9 @@ import { getTempUpload } from "../../../app/api/temp/helper";
 import { usePlayStore } from "../../../app/play/[id]/store";
 import { cdnURL } from "../../utils/s3Paths";
 import { S3Path } from "../../utils/s3Paths";
-import { LocalStorageKey } from "../constants";
 
 /**
- * Wraps around the client's setAvatar function to update local storage,
- * and support uploading avatars to S3
+ * Wraps around the client's setAvatar function to support uploading avatars to S3.
  */
 export function useSetAvatar() {
   const { setAvatar: clientSetAvatar } = useClient();
@@ -19,39 +17,30 @@ export function useSetAvatar() {
     if (avatar) {
       let avatarURL = avatar;
 
-      const isUrl = avatarURL.startsWith("http");
-      if (!isUrl) {
+      // Upload avatar to S3 if it's a local uri
+      if (!avatarURL.startsWith("http")) {
         // Get avatar file
-        const body = await fetch(avatar).then((res) => res.blob());
-        const { url, fileId } = await getTempUpload();
+        const [blob, { url, fileId }] = await Promise.all([
+          fetch(avatar).then((res) => res.blob()),
+          getTempUpload(),
+        ]);
 
         // Upload to S3
         const res = await fetch(url, {
           method: "PUT",
-          body,
-          headers: { "Content-Type": body.type, "x-amz-acl": "public-read" },
+          body: blob,
+          headers: { "Content-Type": blob.type, "x-amz-acl": "public-read" },
         });
         if (!res.ok) throw new Error("Failed to upload avatar");
 
         avatarURL = cdnURL(S3Path.temp(fileId));
       }
 
-      usePlayStore.setState({ avatar: avatarURL });
-
       // Update client
       clientSetAvatar(avatarURL);
-
-      // Save to local storage
-      localStorage.setItem(LocalStorageKey.Avatar, avatarURL);
     } else {
-      // Remove avatar
-      usePlayStore.setState({ avatar: null });
-
       // Update client
       clientSetAvatar(null);
-
-      // Remove from local storage
-      localStorage.removeItem(LocalStorageKey.Avatar);
     }
   }
 

@@ -5,7 +5,7 @@ import { fetcher } from "../utils/fetcher";
 
 export function useProfileByAddress(address?: string) {
   const { data, error, isLoading } = useSWR<Profile | null>(
-    () => (address ? `/api/profiles/address/${address}` : null),
+    () => (address ? `/api/profiles/by-address/${address}` : null),
     fetcher
   );
 

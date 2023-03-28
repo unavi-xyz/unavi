@@ -53,8 +53,14 @@ export type ToRenderMessage =
 
 export type FromRenderMessage =
   | SceneMessage
-  | MessageJSON<"clicked_node", { nodeId: string | null; isAvatar: boolean }>
-  | MessageJSON<"hovered_node", { nodeId: string | null; isAvatar: boolean }>
+  | MessageJSON<
+      "clicked_node",
+      { nodeId: string | null; isAvatar: boolean; distance: number | null }
+    >
+  | MessageJSON<
+      "hovered_node",
+      { nodeId: string | null; isAvatar: boolean; distance: number | null }
+    >
   | MessageJSON<"ready">
   | MessageJSON<"stats", RenderStats>
   | MessageJSON<

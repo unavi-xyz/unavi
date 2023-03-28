@@ -13,7 +13,7 @@ export default function Search() {
     <div className="relative mb-2 w-full max-w-sm">
       <input
         id={id}
-        className="w-full rounded-lg border border-neutral-200 pt-2 pb-1.5 pl-10 text-sm text-neutral-900 outline-black placeholder:text-neutral-400"
+        className="w-full rounded-xl border border-neutral-200 pt-2 pb-1.5 pl-10 text-neutral-900 outline-black placeholder:text-neutral-400 hover:border-neutral-400"
         value={filter}
         name="filter"
         autoComplete="off"

@@ -1,3 +1,3 @@
 export enum LocalStorageKey {
-  Name = "name",
+  Avatar = "wired/avatar",
 }

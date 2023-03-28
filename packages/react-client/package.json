@@ -19,6 +19,7 @@
     "@wired-labs/protocol": "*",
     "contracts": "*",
     "engine": "*",
+    "ethers": "^5.7.2",
     "mediasoup-client": "^3.6.82",
     "nanoid": "^4.0.1"
   },

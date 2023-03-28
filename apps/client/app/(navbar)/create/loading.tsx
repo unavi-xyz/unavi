@@ -1,6 +1,7 @@
 import { MdAdd } from "react-icons/md";
 
 import Card from "../../../src/ui/Card";
+import CardGrid from "../../../src/ui/CardGrid";
 
 export default function Loading() {
   return (
@@ -19,11 +20,11 @@ export default function Loading() {
           </button>
         </div>
 
-        <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
+        <CardGrid>
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i} loading loadingAnimation={false} />
           ))}
-        </div>
+        </CardGrid>
       </div>
     </div>
   );

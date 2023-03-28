@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { fetchProjects } from "../../../src/server/helpers/fetchProjects";
 import { getServerSession } from "../../../src/server/helpers/getServerSession";
 import Card from "../../../src/ui/Card";
@@ -22,9 +20,7 @@ export default async function Projects() {
   return (
     <CardGrid>
       {unpublishedProjects.map(({ id, name, image }) => (
-        <Link key={id} href={`/project/${id}`} className="rounded-xl">
-          <Card text={name} image={image} animateEnter />
-        </Link>
+        <Card key={id} href={`/project/${id}`} text={name} image={image} />
       ))}
     </CardGrid>
   );

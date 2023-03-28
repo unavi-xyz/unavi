@@ -27,10 +27,12 @@ export default async function Explore() {
 
   return (
     <div className="flex justify-center">
-      <div className="max-w-content mx-4 flex flex-col items-center space-y-8 py-8">
+      <div className="max-w-content mx-4 flex flex-col items-center py-8">
         <div className="text-center text-3xl font-black">Explore</div>
 
-        <Search />
+        <div className="flex w-full justify-center pb-8 pt-6">
+          <Search />
+        </div>
 
         <CardGrid>
           <Spaces spaces={spaces} />

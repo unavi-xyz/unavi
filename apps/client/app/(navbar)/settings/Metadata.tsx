@@ -7,7 +7,7 @@ import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
 import { cropImage } from "../../../src/editor/utils/cropImage";
-import { env } from "../../../src/env/client.mjs";
+import { env } from "../../../src/env.mjs";
 import { Profile } from "../../../src/server/helpers/fetchProfile";
 import Button from "../../../src/ui/Button";
 import ImageInput from "../../../src/ui/ImageInput";

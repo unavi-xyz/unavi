@@ -22,27 +22,30 @@ interface Props {
 
 export default function Settings({ onClose }: Props) {
   const nickname = usePlayStore((state) => state.nickname);
-  const avatar = usePlayStore((state) => state.avatar);
 
   const [avatarName, setAvatarName] = useState<string>();
   const [stats, setStats] = useState<VRMStats | null>(null);
   const [statsError, setStatsError] = useState(false);
+  const [showStats, setShowStats] = useState(true);
+  const [uploadedAvatar, setUploadedAvatar] = useState<string | null>(null);
 
-  const { playerId } = useContext(ClientContext);
+  const { playerId, avatar } = useContext(ClientContext);
   const { data: session } = useSession();
   const { logout } = useLogout();
 
   const { profile, isLoading: isLoadingProfile } = useProfileByAddress(session?.address);
 
   useEffect(() => {
+    setShowStats(true);
     setStatsError(false);
     setStats(null);
 
     async function getStats() {
-      if (!avatar) return;
+      const usedAvatar = uploadedAvatar ?? avatar;
+      if (!usedAvatar) return;
 
       try {
-        const stats = await getVRMStats(avatar);
+        const stats = await getVRMStats(usedAvatar);
         setStats(stats);
       } catch (e) {
         console.error(e);
@@ -52,7 +55,7 @@ export default function Settings({ onClose }: Props) {
     }
 
     getStats();
-  }, [avatar]);
+  }, [avatar, uploadedAvatar]);
 
   const rank = stats ? avatarPerformanceRank(stats) : null;
 
@@ -76,7 +79,7 @@ export default function Settings({ onClose }: Props) {
       <section className="space-y-1">
         <div className="text-lg font-bold">Avatar</div>
 
-        {avatar ? (
+        {showStats && avatar ? (
           statsError ? (
             <div className="rounded-lg bg-red-100 py-2.5 px-4 text-red-900">
               Failed to load avatar information
@@ -108,7 +111,7 @@ export default function Settings({ onClose }: Props) {
                           ? "text-yellow-500"
                           : rank === "Good"
                           ? "text-green-500"
-                          : "animate-textScroll bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 bg-clip-text text-transparent"
+                          : "animate-backgroundScroll bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent"
                       }`}
                     >
                       {rank}
@@ -127,10 +130,11 @@ export default function Settings({ onClose }: Props) {
 
               <div className="grow" />
 
-              <Tooltip text="Remove Avatar" side="bottom">
+              <Tooltip text="Unequip Avatar" side="bottom">
                 <button
                   onClick={() => {
                     setAvatarName(undefined);
+                    setShowStats(false);
                     usePlayStore.setState({ didChangeAvatar: true, avatar: null });
                   }}
                   className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
@@ -155,6 +159,7 @@ export default function Settings({ onClose }: Props) {
                 const url = URL.createObjectURL(file);
                 usePlayStore.setState({ didChangeAvatar: true, avatar: url });
                 setAvatarName(file.name);
+                setUploadedAvatar(url);
               }}
             />
           </div>

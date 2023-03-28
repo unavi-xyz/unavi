@@ -21,7 +21,7 @@ export default function NavbarTab({ href, text, exact = false, className }: Prop
   return (
     <Link
       href={href}
-      className={`cursor-pointer rounded-md px-4 py-1 text-center font-bold transition ${selectedClass} ${className}`}
+      className={`cursor-pointer rounded-xl px-4 py-1 text-center text-lg font-bold transition ${selectedClass} ${className}`}
     >
       {text}
     </Link>

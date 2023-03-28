@@ -137,7 +137,7 @@ export default async function User({ params: { id } }: { params: Params }) {
               {isUser && (
                 <Link
                   href="/settings"
-                  className="rounded-md px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
+                  className="rounded-xl px-10 py-1.5 font-bold ring-1 ring-neutral-700 transition hover:bg-neutral-200 active:bg-neutral-300"
                 >
                   Edit profile
                 </Link>
@@ -148,7 +148,7 @@ export default async function User({ params: { id } }: { params: Params }) {
       </div>
 
       <div className="flex justify-center pt-4 pb-8">
-        <div className="max-w-content mx-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="max-w-content mx-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <Suspense
             fallback={Array.from({ length: 3 }).map((_, i) => (
               <Card key={i} loading />

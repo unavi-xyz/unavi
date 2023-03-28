@@ -27,7 +27,7 @@ export default async function Published() {
       <CardGrid>
         {publishedProjects.map(({ id, name }, i) => (
           <Link key={id} href={`/project/${id}`} className="rounded-xl">
-            <Card text={name} image={publishedImages[i]} sizes="333px" animateEnter />
+            <Card text={name} image={publishedImages[i]} sizes="333px" />
           </Link>
         ))}
       </CardGrid>

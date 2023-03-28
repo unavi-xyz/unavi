@@ -8,10 +8,6 @@ module.exports = {
       backgroundImage: {
         arrow: "url('/images/svg/arrow.svg')",
       },
-      aspectRatio: {
-        card: "5/3",
-        vertical: "3/5",
-      },
       boxShadow: {
         dark: "0 1px 3px 0 rgb(0 0 0 / 0.3)",
       },

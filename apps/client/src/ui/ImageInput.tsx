@@ -13,7 +13,7 @@ export default function ImageInput({
         {name && <div className="pb-1 text-lg font-bold">{name}</div>}
 
         <div
-          className={`absolute cursor-pointer rounded-lg transition ${
+          className={`absolute cursor-pointer rounded-2xl transition ${
             disabled ? "" : "hover:bg-black/30 active:bg-black/20"
           } ${className}`}
         />
@@ -33,13 +33,13 @@ export default function ImageInput({
           src={src}
           alt=""
           crossOrigin="anonymous"
-          className={`rounded-lg transition ${
+          className={`rounded-2xl transition ${
             disabled ? "cursor-not-allowed opacity-70" : ""
           } ${className}`}
         />
       ) : (
         <div
-          className={`rounded-lg bg-neutral-200 transition ${
+          className={`rounded-2xl bg-neutral-200 transition ${
             disabled ? "cursor-not-allowed opacity-70" : ""
           } ${className}`}
         />

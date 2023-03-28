@@ -16,9 +16,11 @@ export default function CrosshairTooltip() {
 
 function Tooltip({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="flex items-center space-x-2 whitespace-nowrap rounded-lg border border-neutral-300 bg-white/90 px-3 py-1 text-lg font-semibold backdrop-blur">
-      <div>{icon}</div>
-      <div>{text}</div>
+    <div className="animate-backgroundScroll rounded-2xl bg-gradient-to-r from-pink-500/90 via-red-500/90 to-yellow-500/90 p-1">
+      <div className="flex items-center space-x-2 whitespace-nowrap rounded-xl bg-white py-1.5 pl-3 pr-4 text-lg font-bold">
+        <div>{icon}</div>
+        <div>{text}</div>
+      </div>
     </div>
   );
 }

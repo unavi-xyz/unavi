@@ -24,7 +24,7 @@ module.exports = {
         scaleOut: "scaleOut 150ms ease-in-out forwards",
         scaleInFull: "scaleInFull 200ms ease forwards",
         scaleOutFull: "scaleOutFull 200ms ease forwards",
-        textScroll: "textScroll 5s ease infinite",
+        backgroundScroll: "backgroundScroll 5s ease infinite",
       },
       keyframes: {
         fadeIn: {
@@ -60,7 +60,7 @@ module.exports = {
           "0%": { transform: "scale(1)" },
           "100%": { transform: "scale(0)" },
         },
-        textScroll: {
+        backgroundScroll: {
           "0%, 100%": {
             "background-size": "200% 200%",
             "background-position": "left center",

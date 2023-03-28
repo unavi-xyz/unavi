@@ -107,7 +107,7 @@ export default function Settings({ onClose }: Props) {
                           ? "text-yellow-500"
                           : rank === "Good"
                           ? "text-green-500"
-                          : "animate-textScroll bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 bg-clip-text text-transparent"
+                          : "animate-backgroundScroll bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent"
                       }`}
                     >
                       {rank}

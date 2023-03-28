@@ -42,26 +42,13 @@ export class RaycastControls {
     // Set raycaster to middle of camera position
     this.#raycaster.setFromCamera({ x: 0, y: 0 }, this.#renderThread.camera);
 
-    // Get intersected avatar object
-    const avatars = Array.from(this.#renderThread.renderScene.builders.node.avatarObjects.values());
-    const intersections = this.#raycaster.intersectObjects(avatars);
-
-    let nodeId: string | null = null;
-
-    intersections.find((intersection) => {
-      const avatarNodeId = this.#renderThread.renderScene.getAvatarNodeId(intersection.object);
-      if (avatarNodeId) {
-        nodeId = avatarNodeId;
-        return true;
-      }
-
-      return false;
-    });
+    const intersections = this.#raycaster.intersectObject(this.#renderThread.renderScene.root);
+    const { isAvatar, nodeId } = this.#findIntersection(intersections);
 
     if (nodeId !== this.#hoveredNodeId) {
       this.#hoveredNodeId = nodeId;
 
-      this.#renderThread.postMessage({ subject: "hovered_node", data: { nodeId, isAvatar: true } });
+      this.#renderThread.postMessage({ subject: "hovered_node", data: { nodeId, isAvatar } });
 
       if (this.#renderThread.outlinePass) {
         this.#renderThread.outlinePass.selectedObjects = [];
@@ -102,6 +89,10 @@ export class RaycastControls {
     this.#renderThread.postMessage({ subject: "clicked_node", data: { nodeId, isAvatar } });
   }
 
+  /**
+   * Finds the first valid intersection in the list of intersections.
+   * A valid intersection is one that can be traced to a node.
+   */
   #findIntersection(intersections: Intersection<Object3D>[]) {
     let nodeId: string | null = null;
     let isAvatar = false;

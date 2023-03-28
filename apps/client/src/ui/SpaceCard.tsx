@@ -29,12 +29,12 @@ export default function SpaceCard({ id, metadata, sizes }: Props) {
           <div className="absolute bottom-0 z-10 h-full w-full rounded-b-3xl bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition duration-100 ease-out group-hover:scale-105 group-hover:opacity-100" />
         </Link>
 
-        <div className="absolute bottom-0 left-0 z-20 hidden animate-fadeIn pl-4 pb-4 group-hover:block">
+        <div className="absolute bottom-0 left-0 z-20 hidden animate-fadeIn pl-3 pb-4 group-hover:block">
           <Link
             href={`/play/${toHex(id)}`}
-            className="rounded-xl bg-neutral-900 px-4 py-1.5 text-xl font-bold text-white shadow transition hover:bg-neutral-700 hover:shadow-md active:bg-neutral-800"
+            className="rounded-xl bg-white px-4 py-1.5 text-xl font-bold shadow transition hover:bg-neutral-200 hover:shadow-md active:bg-neutral-300"
           >
-            Enter
+            Play
           </Link>
         </div>
       </div>

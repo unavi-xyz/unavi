@@ -125,7 +125,7 @@ export default async function Space({ params }: Props) {
               href={`/play/${id}`}
               className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white outline-neutral-400 transition hover:scale-105"
             >
-              Enter Space
+              Play
             </Link>
           </div>
         </div>

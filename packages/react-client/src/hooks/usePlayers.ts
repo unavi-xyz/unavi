@@ -80,7 +80,10 @@ export function usePlayers() {
 
         case "player_address": {
           const player = localPlayers.find((player) => player.id === data.playerId);
-          if (player) player.address = data.address;
+          if (player) {
+            player.address = data.address;
+            setPlayers((players) => [...players]);
+          }
           break;
         }
 
@@ -98,7 +101,10 @@ export function usePlayers() {
 
         case "player_name": {
           const player = localPlayers.find((player) => player.id === data.playerId);
-          if (player) player.name = data.name;
+          if (player) {
+            player.name = data.name;
+            setPlayers((players) => [...players]);
+          }
           break;
         }
 

@@ -14,13 +14,13 @@ export function usePlayerName(playerId: number | null) {
   const { data: session } = useSession();
 
   useEffect(() => {
-    if (!playerId) {
+    if (playerId === null) {
       setName("");
       return;
     }
 
     async function getName() {
-      if (!playerId) return;
+      if (playerId === null) return;
 
       let displayName = "";
 

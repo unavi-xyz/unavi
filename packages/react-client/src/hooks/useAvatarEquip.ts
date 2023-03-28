@@ -33,10 +33,10 @@ export function useAvatarEquip(
       if (!equippable) return;
 
       const uri = avatar.getURI();
-      if (uri === equippedAvatar) return;
 
       // Show tooltip
-      setHoverState("avatar");
+      if (uri === equippedAvatar) setHoverState("avatar_equipped");
+      else setHoverState("equip_avatar");
     };
 
     engine.render.addEventListener("hovered_node", listener);

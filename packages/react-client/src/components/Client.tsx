@@ -37,7 +37,7 @@ export type PlayerMessage = {
 
 export type ChatMessage = SystemMessage | PlayerMessage;
 
-export type HoverState = null | "avatar";
+export type HoverState = null | "equip_avatar" | "avatar_equipped";
 
 export interface IClientContext {
   engine: Engine | null;

@@ -60,7 +60,7 @@ export default async function Space({ params }: Props) {
     <div className="flex justify-center">
       <div className="max-w-content mx-4 space-y-8 py-8">
         <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
-          <div className="aspect-card h-full w-full rounded-2xl bg-neutral-200">
+          <div className="aspect-card h-full w-full rounded-3xl bg-neutral-200">
             <div className="relative h-full w-full object-cover">
               {space.metadata?.image &&
                 (isFromCDN(space.metadata.image) ? (
@@ -70,14 +70,14 @@ export default async function Space({ params }: Props) {
                     fill
                     sizes="(min-width: 768px) 60vw, 100vw"
                     alt=""
-                    className="rounded-2xl object-cover"
+                    className="rounded-3xl object-cover"
                   />
                 ) : (
                   <img
                     src={space.metadata.image}
                     sizes="(min-width: 768px) 60vw, 100vw"
                     alt=""
-                    className="h-full w-full rounded-2xl object-cover"
+                    className="h-full w-full rounded-3xl object-cover"
                     crossOrigin="anonymous"
                   />
                 ))}

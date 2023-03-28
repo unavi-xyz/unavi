@@ -5,6 +5,9 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}", "./app/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      aspectRatio: {
+        card: "5/3",
+      },
       backgroundImage: {
         arrow: "url('/images/svg/arrow.svg')",
       },

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -9,6 +10,7 @@ import { fetchProfileFromAddress } from "../../../../src/server/helpers/fetchPro
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import Avatar from "../../../../src/ui/Avatar";
 import Card from "../../../../src/ui/Card";
+import { isFromCDN } from "../../../../src/utils/isFromCDN";
 import { toHex } from "../../../../src/utils/toHex";
 import Spaces from "./Spaces";
 
@@ -89,27 +91,39 @@ export default async function User({ params: { id } }: { params: Params }) {
     <>
       <div className="flex justify-center">
         <div className="max-w-content">
-          <div className="h-48 w-full bg-neutral-200 md:h-64 xl:rounded-xl">
+          <div className="h-48 w-full bg-neutral-200 md:h-64 xl:rounded-2xl">
             <div className="relative h-full w-full object-cover">
-              {profile?.metadata?.animation_url && (
-                <img
-                  src={profile.metadata.animation_url}
-                  alt=""
-                  className="h-full w-full object-cover xl:rounded-xl"
-                  crossOrigin="anonymous"
-                />
-              )}
+              {profile?.metadata?.animation_url ? (
+                isFromCDN(profile.metadata.animation_url) ? (
+                  <Image
+                    src={profile.metadata.animation_url}
+                    priority
+                    fill
+                    sizes="100vw"
+                    alt=""
+                    className="h-full w-full object-cover xl:rounded-2xl"
+                  />
+                ) : (
+                  <img
+                    src={profile.metadata.animation_url}
+                    sizes="100vw"
+                    alt=""
+                    className="h-full w-full object-cover xl:rounded-2xl"
+                    crossOrigin="anonymous"
+                  />
+                )
+              ) : null}
             </div>
           </div>
 
           <section className="flex justify-center px-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
-              <div className="z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
+              <div className="z-10 -mt-24 flex w-48 rounded-full ring-4 ring-white">
                 <Avatar
                   src={profile?.metadata?.image}
                   circle
                   uniqueKey={profile?.handle?.full ?? id}
-                  size={128}
+                  size={192}
                 />
               </div>
 

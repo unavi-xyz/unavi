@@ -45,7 +45,8 @@ export class Players {
 
       case "set_player_avatar": {
         const player = this.#store.get(data.playerId);
-        if (player) player.setAvatarUri(data.uri);
+        const uri = data.uri ?? this.#defaultAvatar;
+        if (player) player.setAvatarUri(uri);
         break;
       }
 

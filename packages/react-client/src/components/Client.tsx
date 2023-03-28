@@ -14,6 +14,7 @@ import {
 } from "react";
 
 import { Player } from "../classes/Player";
+import { LocalStorageKey } from "../constants";
 import { useAvatarEquip } from "../hooks/useAvatarEquip";
 import { useResizeCanvas } from "../hooks/useResizeCanvas";
 import { useSpace } from "../hooks/useSpace";
@@ -210,9 +211,23 @@ export function Client({
 
   useEffect(() => {
     if (!engine) return;
+
+    // Send to host
     send({ subject: "set_avatar", data: avatar });
+
+    // Send to engine
     engine.render.send({ subject: "set_user_avatar", data: avatar });
+
+    // Save to local storage
+    if (avatar) localStorage.setItem(LocalStorageKey.Avatar, avatar);
+    else localStorage.removeItem(LocalStorageKey.Avatar);
   }, [avatar, engine, send]);
+
+  // Load avatar from local storage
+  useEffect(() => {
+    const localAvatar = localStorage.getItem(LocalStorageKey.Avatar);
+    if (localAvatar) setAvatar(localAvatar);
+  }, []);
 
   return (
     <ClientContext.Provider

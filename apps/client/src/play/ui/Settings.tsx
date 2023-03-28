@@ -22,13 +22,12 @@ interface Props {
 
 export default function Settings({ onClose }: Props) {
   const nickname = usePlayStore((state) => state.nickname);
-  const avatar = usePlayStore((state) => state.avatar);
 
   const [avatarName, setAvatarName] = useState<string>();
   const [stats, setStats] = useState<VRMStats | null>(null);
   const [statsError, setStatsError] = useState(false);
 
-  const { playerId } = useContext(ClientContext);
+  const { playerId, avatar } = useContext(ClientContext);
   const { data: session } = useSession();
   const { logout } = useLogout();
 

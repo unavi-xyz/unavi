@@ -74,7 +74,7 @@ export function CardImage({
 }: CardImageProps) {
   return (
     <div
-      className={`relative flex aspect-square h-full w-full flex-col overflow-hidden rounded-[2rem] bg-neutral-200 shadow-lg transition duration-100 ease-out ${
+      className={`relative flex aspect-card h-full w-full flex-col overflow-hidden rounded-3xl bg-neutral-200 shadow-lg transition duration-100 ease-out ${
         loading ? "" : group ? "group-hover:scale-105" : "hover:scale-105"
       } ${loading && loadingAnimation ? "animate-pulse" : ""}`}
     >

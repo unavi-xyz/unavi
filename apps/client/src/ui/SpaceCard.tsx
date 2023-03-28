@@ -21,12 +21,12 @@ export default function SpaceCard({ id, metadata, sizes }: Props) {
   return (
     <div>
       <div className="group relative">
-        <Link href={`/space/${toHex(id)}`} className="rounded-[2rem]">
+        <Link href={`/space/${toHex(id)}`} className="rounded-3xl">
           <CardImage group image={metadata.image} sizes={sizes}>
             <PlayerCount id={id} />
           </CardImage>
 
-          <div className="absolute bottom-0 z-10 h-full w-full rounded-b-[2rem] bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition duration-100 ease-out group-hover:scale-105 group-hover:opacity-100" />
+          <div className="absolute bottom-0 z-10 h-full w-full rounded-b-3xl bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition duration-100 ease-out group-hover:scale-105 group-hover:opacity-100" />
         </Link>
 
         <div className="absolute bottom-0 left-0 z-20 hidden animate-fadeIn pl-4 pb-4 group-hover:block">

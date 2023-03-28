@@ -1,5 +1,6 @@
 import { Intersection, Object3D, Raycaster } from "three";
 
+import { MAX_AVATAR_EQUIP_DISTANCE } from "../../constants";
 import { PointerData } from "../../input/messages";
 import { ToRenderMessage } from "../messages";
 import { RenderThread } from "../RenderThread";
@@ -12,6 +13,7 @@ export class RaycastControls {
   #startMoveTime = 0;
   #moveCount = 0;
   #hoveredNodeId: string | null = null;
+  #hoveredWithinDistance = false;
 
   constructor(renderThread: RenderThread) {
     this.#renderThread = renderThread;
@@ -43,17 +45,25 @@ export class RaycastControls {
     this.#raycaster.setFromCamera({ x: 0, y: 0 }, this.#renderThread.camera);
 
     const intersections = this.#raycaster.intersectObject(this.#renderThread.renderScene.root);
-    const { isAvatar, nodeId } = this.#findIntersection(intersections);
+    const { intersection, isAvatar, nodeId } = this.#findIntersection(intersections);
 
-    if (nodeId !== this.#hoveredNodeId) {
+    const withinDistance = intersection
+      ? intersection.distance <= MAX_AVATAR_EQUIP_DISTANCE
+      : false;
+
+    if (nodeId !== this.#hoveredNodeId || withinDistance !== this.#hoveredWithinDistance) {
       this.#hoveredNodeId = nodeId;
+      this.#hoveredWithinDistance = withinDistance;
 
-      this.#renderThread.postMessage({ subject: "hovered_node", data: { nodeId, isAvatar } });
+      this.#renderThread.postMessage({
+        subject: "hovered_node",
+        data: { nodeId, isAvatar, distance: intersection?.distance ?? null },
+      });
 
       if (this.#renderThread.outlinePass) {
         this.#renderThread.outlinePass.selectedObjects = [];
 
-        if (nodeId) {
+        if (nodeId && withinDistance) {
           const avatarObject =
             this.#renderThread.renderScene.builders.node.avatarObjects.get(nodeId);
 
@@ -84,9 +94,12 @@ export class RaycastControls {
 
     // Get intersected object
     const intersections = this.#raycaster.intersectObject(this.#renderThread.renderScene.root);
-    const { nodeId, isAvatar } = this.#findIntersection(intersections);
+    const { intersection, nodeId, isAvatar } = this.#findIntersection(intersections);
 
-    this.#renderThread.postMessage({ subject: "clicked_node", data: { nodeId, isAvatar } });
+    this.#renderThread.postMessage({
+      subject: "clicked_node",
+      data: { nodeId, isAvatar, distance: intersection?.distance ?? null },
+    });
   }
 
   /**

@@ -34,22 +34,20 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
 
   if (enterTransitionFinished) return null;
 
-  const isLoading = loadingProgress < 1;
-
   return (
     <div
       className={`fixed inset-0 z-50 h-full w-full bg-white pb-8 transition duration-500 ${
-        entered ? "opacity-0" : "opacity-100"
-      } ${isLoading ? "opacity-100" : "opacity-0"}`}
+        entered ? "scale-110 opacity-0" : "scale-100 opacity-100"
+      }`}
     >
       <div className="flex h-full animate-floatInSlow flex-col items-center justify-center">
-        <div className="max-w-content space-y-6">
+        <div className="max-w-content space-y-8">
           <div className="flex w-full min-w-fit flex-col justify-between">
             <div className="space-y-4">
               <div className="flex justify-center text-3xl font-black">{text}</div>
 
-              <div className="mx-auto px-8 md:w-1/2">
-                <div className="aspect-card h-full w-full rounded-3xl bg-neutral-200">
+              <div className="mx-auto px-8 md:w-2/5">
+                <div className="aspect-square h-full w-full rounded-3xl bg-neutral-200">
                   <div className="relative h-full w-full object-cover">
                     {image &&
                       (isFromCDN(image) ? (
@@ -105,7 +103,7 @@ interface LoadingBarProps {
 function LoadingBar({ progress, text = "Loading..." }: LoadingBarProps) {
   return (
     <div className="space-y-2">
-      <div className="relative h-2 w-64">
+      <div className="relative h-2.5 w-72">
         <div className="absolute h-full w-full rounded-full bg-neutral-300" />
         <div
           className="absolute h-full rounded-full bg-black transition-all"
@@ -114,6 +112,7 @@ function LoadingBar({ progress, text = "Loading..." }: LoadingBarProps) {
           }}
         />
       </div>
+
       <div className="text-center text-lg">{text}</div>
     </div>
   );

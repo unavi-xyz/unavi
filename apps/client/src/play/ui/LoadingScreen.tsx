@@ -46,8 +46,8 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
             <div className="space-y-4">
               <div className="flex justify-center text-3xl font-black">{text}</div>
 
-              <div className="mx-auto px-8 md:w-2/5">
-                <div className="aspect-square h-full w-full rounded-3xl bg-neutral-200">
+              <div className="mx-auto px-8 md:w-1/2">
+                <div className="aspect-card h-full w-full rounded-3xl bg-neutral-200">
                   <div className="relative h-full w-full object-cover">
                     {image &&
                       (isFromCDN(image) ? (

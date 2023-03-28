@@ -15,7 +15,7 @@ import { useAutosave } from "../../../src/editor/hooks/useAutosave";
 import { ERROR_NOT_SIGNED_IN, useLoad } from "../../../src/editor/hooks/useLoad";
 import { useTransformControls } from "../../../src/editor/hooks/useTransformControls";
 import { ERROR_MESSAGE } from "../../../src/editor/utils/parseError";
-import CrosshairTooltip from "../../../src/play/CrosshairTooltip";
+import Crosshair from "../../../src/play/Crosshair";
 import { Project } from "../../../src/server/helpers/fetchProject";
 import SignInButton from "../../(navbar)/SignInButton";
 import { useEditorStore } from "./store";
@@ -163,12 +163,7 @@ export default function Editor({ project }: Props) {
                       sceneLoaded ? "opacity-100" : "opacity-0"
                     }`}
                   >
-                    {isPlaying ? (
-                      <>
-                        <div className="crosshair" />
-                        <CrosshairTooltip />
-                      </>
-                    ) : null}
+                    {isPlaying ? <Crosshair /> : null}
 
                     <canvas ref={canvasRef} className="h-full w-full" />
                     <canvas ref={overlayRef} className="absolute top-0 left-0 z-10 h-full w-full" />

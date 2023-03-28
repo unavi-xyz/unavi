@@ -9,7 +9,7 @@ import DialogContent, { DialogRoot } from "../../ui/Dialog";
 import { toHex } from "../../utils/toHex";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { LocalStorageKey } from "../constants";
-import CrosshairTooltip from "../CrosshairTooltip";
+import Crosshair from "../Crosshair";
 import { useSetAvatar } from "../hooks/useSetAvatar";
 import Stats from "../Stats";
 import ChatBox from "./ChatBox";
@@ -72,8 +72,7 @@ export default function Overlay({ id }: Props) {
         <Stats />
       </div>
 
-      <div className="crosshair" />
-      <CrosshairTooltip />
+      <Crosshair />
 
       <div className="fixed top-0 right-0 z-20 space-x-2 p-4">
         <MicButton className="rounded-full bg-white/80 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/90 hover:shadow-md active:scale-95">

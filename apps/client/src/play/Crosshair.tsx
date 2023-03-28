@@ -30,7 +30,7 @@ export default function Crosshair() {
 
 function Tooltip({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="rounded-[14px] bg-red-500/90 p-0.5">
+    <div className="rounded-[14px] p-0.5 backdrop-blur-lg backdrop-invert">
       <div className="flex items-center space-x-2 whitespace-nowrap rounded-xl bg-white py-1.5 pl-3 pr-4 text-lg font-bold">
         <div>{icon}</div>
         <div>{text}</div>

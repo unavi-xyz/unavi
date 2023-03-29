@@ -35,7 +35,7 @@ interface AvatarsProps {
 
 function Avatars({ onClose }: AvatarsProps) {
   const { data, isLoading, error } = useSWR(
-    `https://api.cryptoavatars.io/v1/nfts/avatars?chainId=${CHAIN_ID}&collectionAddress=${COLLECTION_ADDRESS}`,
+    `https://api.cryptoavatars.io/v1/nfts/avatars?license=CC0&chainId=${CHAIN_ID}&collectionAddress=${COLLECTION_ADDRESS}`,
     avatarFetcher
   );
 

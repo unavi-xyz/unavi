@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
 import { usePlayStore } from "../../../../app/play/[id]/store";
+import { env } from "../../../env.mjs";
 import FileInput from "../../../ui/FileInput";
 import Tooltip from "../../../ui/Tooltip";
 import { bytesToDisplay } from "../../../utils/bytesToDisplay";
@@ -119,12 +120,14 @@ export default function AvatarSettings({ setPage }: Props) {
       ) : null}
 
       <div className="flex items-center space-x-2 pt-1">
-        <button
-          onClick={() => setPage("Browse Avatars")}
-          className="w-1/3 rounded-xl bg-neutral-200/70 py-2.5 transition hover:bg-neutral-300 active:opacity-80"
-        >
-          Browse
-        </button>
+        {env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY ? (
+          <button
+            onClick={() => setPage("Browse Avatars")}
+            className="w-1/3 rounded-xl bg-neutral-200/70 py-2.5 transition hover:bg-neutral-300 active:opacity-80"
+          >
+            Browse
+          </button>
+        ) : null}
 
         <div className="flex w-full space-x-1">
           <div className="grow">

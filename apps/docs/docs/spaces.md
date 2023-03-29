@@ -8,13 +8,13 @@ Spaces are 3D multiplayer environments that serve as the core building blocks of
 
 ## 🏗️ Creation
 
+Spaces can be created for free using the [Editor](https://www.thewired.space/create).
+
 <div class="large-img">
   <img src="/img/Editor.png" />
 </div>
 
-Spaces can be created for free using the [Editor](https://www.thewired.space/create).
-
-Space scenes are stored as a single [glTF](https://github.com/KhronosGroup/glTF) file, an open file format supported by various engines and tools like Blender. Within the editor, you can import your glTF models and add game logic, such as physics colliders or spawn locations (stored as glTF extensions within the file). A node-based scripting system can also be used to add dynamic and interactive behaviors to your scene.
+Space scenes are stored internally as a single [glTF](https://github.com/KhronosGroup/glTF) file, an open file format supported by various engines and tools like Blender. Within the editor, you can import glTF models and add game logic, such as physics colliders or spawn locations (stored as [glTF extensions](https://github.com/KhronosGroup/glTF/blob/main/extensions/README.md)). A node-based scripting system can also be used to add dynamic and interactive behaviors to your scene.
 
 ## 🏙️ Publishing
 

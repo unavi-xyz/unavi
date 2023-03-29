@@ -62,7 +62,7 @@ export default function Overlay({ id }: Props) {
 
       <div className="fixed top-0 left-0 z-20 p-4">
         <Link href={`/space/${toHex(id)}`} className="rounded-full">
-          <div className="rounded-full bg-white/80 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/90 hover:shadow-md active:scale-95">
+          <div className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95">
             <IoMdArrowRoundBack />
           </div>
         </Link>
@@ -75,13 +75,13 @@ export default function Overlay({ id }: Props) {
       <Crosshair />
 
       <div className="fixed top-0 right-0 z-20 space-x-2 p-4">
-        <MicButton className="rounded-full bg-white/80 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/90 hover:shadow-md active:scale-95">
+        <MicButton className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95">
           {micEnabled ? <MdMic /> : <MdMicOff className="text-red-700" />}
         </MicButton>
 
         <button
           onClick={() => setOpenSettings(true)}
-          className="rounded-full bg-white/80 p-3 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/90 hover:shadow-md active:scale-95"
+          className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95"
         >
           <IoMdSettings />
         </button>

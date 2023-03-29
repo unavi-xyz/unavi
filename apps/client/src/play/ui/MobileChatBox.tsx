@@ -27,7 +27,7 @@ export default function MobileChatBox() {
 
       <button
         onClick={() => setOpenChat(true)}
-        className="rounded-full bg-white/80 p-4 text-2xl text-neutral-900 shadow backdrop-blur-xl transition hover:bg-white/90 hover:shadow-md active:scale-95"
+        className="rounded-full bg-white/70 p-4 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95"
       >
         <MdOutlineChat />
       </button>

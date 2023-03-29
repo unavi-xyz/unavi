@@ -8,10 +8,14 @@ interface Props extends DialogPrimitive.DialogContentProps {
   title?: string;
   description?: string;
   autoFocus?: boolean;
+  size?: "normal" | "large";
 }
 
 const DialogContent = React.forwardRef<HTMLDivElement, Props>(
-  ({ open = true, autoFocus = true, title, description, children, ...rest }, ref) => {
+  (
+    { open = true, autoFocus = true, title, description, size = "normal", children, ...rest },
+    ref
+  ) => {
     return (
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay
@@ -23,9 +27,9 @@ const DialogContent = React.forwardRef<HTMLDivElement, Props>(
         <DialogPrimitive.Content
           ref={ref}
           onOpenAutoFocus={autoFocus ? undefined : (e) => e.preventDefault()}
-          className={`fixed inset-0 z-50 m-auto h-fit w-full max-w-xl rounded-3xl bg-white py-8 px-10 shadow-md ${
+          className={`fixed inset-0 z-50 m-auto h-fit max-h-screen w-full rounded-3xl bg-white py-8 px-10 shadow-md ${
             open ? "animate-scaleIn" : "animate-scaleOut"
-          }`}
+          } ${size === "normal" ? "max-w-xl" : "max-w-4xl"}`}
           {...rest}
         >
           <DialogPrimitive.Title className="text-center text-3xl font-bold">

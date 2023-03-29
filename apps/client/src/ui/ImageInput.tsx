@@ -10,7 +10,7 @@ export default function ImageInput({
   return (
     <div className="relative">
       <label>
-        {name && <div className="pb-1 text-lg font-bold">{name}</div>}
+        {name && <div className="pb-1 text-xl font-bold">{name}</div>}
 
         <div
           className={`absolute cursor-pointer rounded-2xl transition ${

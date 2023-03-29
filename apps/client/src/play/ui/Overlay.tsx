@@ -4,17 +4,13 @@ import { useState } from "react";
 import { IoMdArrowRoundBack, IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
-import { usePlayStore } from "../../../app/play/[id]/store";
-import DialogContent, { DialogRoot } from "../../ui/Dialog";
 import { toHex } from "../../utils/toHex";
 import { useIsMobile } from "../../utils/useIsMobile";
-import { LocalStorageKey } from "../constants";
 import Crosshair from "../Crosshair";
-import { useSetAvatar } from "../hooks/useSetAvatar";
 import Stats from "../Stats";
 import ChatBox from "./ChatBox";
 import MobileChatBox from "./MobileChatBox";
-import Settings from "./Settings";
+import SettingsDialog from "./Settings/SettingsDialog";
 
 interface Props {
   id: number;
@@ -24,41 +20,11 @@ export default function Overlay({ id }: Props) {
   const [openSettings, setOpenSettings] = useState(false);
 
   const isMobile = useIsMobile();
-  const setAvatar = useSetAvatar();
-  const { engine, send, micEnabled } = useClient();
-
-  async function handleClose() {
-    setOpenSettings(false);
-    if (!engine) return;
-
-    const { didChangeName, didChangeAvatar, nickname, avatar } = usePlayStore.getState();
-
-    if (didChangeName) {
-      usePlayStore.setState({ didChangeName: false });
-
-      // Save to local storage
-      if (nickname) localStorage.setItem(LocalStorageKey.Name, nickname);
-      else localStorage.removeItem(LocalStorageKey.Name);
-
-      // Publish name change
-      send({ subject: "set_name", data: nickname });
-    }
-
-    if (didChangeAvatar) setAvatar(avatar);
-  }
+  const { micEnabled } = useClient();
 
   return (
     <>
-      <DialogRoot
-        open={openSettings}
-        onOpenChange={(open) => {
-          if (!open) handleClose();
-        }}
-      >
-        <DialogContent open={openSettings} autoFocus={false} title="Settings">
-          <Settings onClose={handleClose} />
-        </DialogContent>
-      </DialogRoot>
+      <SettingsDialog open={openSettings} setOpen={setOpenSettings} />
 
       <div className="fixed top-0 left-0 z-20 p-4">
         <Link href={`/space/${toHex(id)}`} className="rounded-full">

@@ -7,7 +7,7 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
 export default function TextField({ name, inputRef, ...rest }: Props) {
   return (
     <label className="block">
-      {name && <div className="pb-1 text-lg font-bold">{name}</div>}
+      {name && <div className="pb-1 text-xl font-bold">{name}</div>}
 
       <input
         ref={inputRef}

@@ -1,11 +1,11 @@
 import { MdLogout } from "react-icons/md";
 
-import { ClientSignInButton } from "../../../app/(navbar)/SignInButton";
-import { useLogout } from "../../client/auth/useLogout";
-import { useSession } from "../../client/auth/useSession";
-import Avatar from "../../ui/Avatar";
-import Tooltip from "../../ui/Tooltip";
-import { useProfileByAddress } from "../hooks/useProfileByAddress";
+import { ClientSignInButton } from "../../../../app/(navbar)/SignInButton";
+import { useLogout } from "../../../client/auth/useLogout";
+import { useSession } from "../../../client/auth/useSession";
+import Avatar from "../../../ui/Avatar";
+import Tooltip from "../../../ui/Tooltip";
+import { useProfileByAddress } from "../../hooks/useProfileByAddress";
 
 interface Props {
   onClose: () => void;
@@ -18,7 +18,7 @@ export default function AccountSettings({ onClose }: Props) {
 
   return (
     <section className="space-y-1">
-      <div className="text-lg font-bold">Account</div>
+      <div className="text-xl font-bold">Account</div>
 
       {session?.address ? (
         <div className="flex items-center space-x-4 pt-2">
@@ -45,7 +45,7 @@ export default function AccountSettings({ onClose }: Props) {
           <div className="grow" />
 
           {!isLoadingProfile && (
-            <Tooltip text="Logout" side="bottom">
+            <Tooltip text="Sign out" side="bottom">
               <button
                 onClick={logout}
                 className="flex h-12 w-12 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"

@@ -27,10 +27,10 @@ export default function FileInput({
   return (
     <label>
       <div
-        className={`flex items-center rounded-xl bg-neutral-100 py-2.5 px-4 transition ${
+        className={`flex items-center rounded-xl bg-neutral-200/70 py-2.5 px-4 transition ${
           disabled
             ? "cursor-not-allowed opacity-80"
-            : "cursor-pointer hover:bg-neutral-200 active:opacity-80"
+            : "cursor-pointer hover:bg-neutral-300 active:opacity-80"
         }`}
       >
         <div className="select-none border-r border-neutral-400 pr-4">Choose File</div>

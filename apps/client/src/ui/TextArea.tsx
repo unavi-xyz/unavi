@@ -1,20 +1,23 @@
-import { RefObject } from "react";
+import React from "react";
 
 interface Props extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  textAreaRef?: RefObject<HTMLTextAreaElement>;
+  label?: string;
 }
 
-export default function TextArea({ name, textAreaRef, ...rest }: Props) {
+const TextArea = React.forwardRef<HTMLTextAreaElement, Props>(({ label, ...rest }, ref) => {
   return (
     <label className="block">
-      {name && <div className="pb-1 text-lg font-bold">{name}</div>}
+      {label && <div className="pb-1 text-lg font-bold">{label}</div>}
 
       <textarea
-        ref={textAreaRef}
-        name={name}
-        className="h-full max-h-64 w-full rounded-xl border border-neutral-200 px-3 py-2 text-neutral-900 placeholder:text-neutral-400"
+        ref={ref}
+        className="h-full max-h-64 w-full rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-400"
         {...rest}
       />
     </label>
   );
-}
+});
+
+TextArea.displayName = "TextArea";
+
+export default TextArea;

@@ -25,9 +25,10 @@ export default function Settings({ onClose }: Props) {
     <div className="space-y-4">
       {!session?.address && (
         <TextField
-          name="Name"
-          placeholder={guestName}
+          label="Name"
+          name="name"
           value={nickname ?? ""}
+          placeholder={guestName}
           onChange={(e) => {
             usePlayStore.setState({ didChangeName: true, nickname: e.target.value });
           }}

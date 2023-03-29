@@ -36,7 +36,7 @@ export default function Download({ id, projectName }: Props) {
         <span className="rounded-md bg-neutral-200 px-1.5 text-neutral-700">.glb</span> file.
       </div>
 
-      <Button onClick={handleDownload} className="rounded-lg">
+      <Button onClick={handleDownload} className="rounded-xl">
         Download
       </Button>
     </div>

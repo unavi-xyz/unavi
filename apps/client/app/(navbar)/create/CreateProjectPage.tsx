@@ -61,8 +61,9 @@ export default function CreateProjectPage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <TextField
-        inputRef={nameRef}
-        name="Name"
+        ref={nameRef}
+        label="Name"
+        name="name"
         autoComplete="off"
         placeholder={DEFAULT_NAME}
         disabled={loading}

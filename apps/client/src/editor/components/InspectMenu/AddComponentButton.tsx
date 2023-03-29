@@ -45,7 +45,7 @@ export default function AddComponentButton({ availableComponents, node, extras }
         }}
       >
         <DropdownTrigger asChild>
-          <Button disabled={isPlaying} className="rounded-lg px-8">
+          <Button disabled={isPlaying} className="rounded-xl px-8">
             Add Component
           </Button>
         </DropdownTrigger>

@@ -136,12 +136,13 @@ export default function Metadata({ profile }: Props) {
       {profile ? (
         <form onSubmit={handleSubmit} className="space-y-2">
           <TextArea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            name="Bio"
+            label="Bio"
+            name="bio"
             autoComplete="off"
             rows={4}
             disabled={saving}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
           />
 
           <ImageInput

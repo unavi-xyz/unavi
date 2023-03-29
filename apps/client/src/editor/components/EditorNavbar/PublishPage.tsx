@@ -241,26 +241,28 @@ export default function PublishPage({ project }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <TextField
-        name="Name"
+        label="Name"
+        name="name"
+        autoComplete="off"
+        defaultValue={name}
+        disabled={loading}
         onChange={(e) => {
           const value = e.target.value;
           useEditorStore.setState({ name: value });
         }}
-        autoComplete="off"
-        defaultValue={name}
-        disabled={loading}
       />
 
       <TextArea
-        name="Description"
-        onChange={(e) => {
-          const value = e.target.value;
-          useEditorStore.setState({ description: value });
-        }}
+        label="Description"
+        name="description"
         autoComplete="off"
         rows={4}
         defaultValue={description}
         disabled={loading}
+        onChange={(e) => {
+          const value = e.target.value;
+          useEditorStore.setState({ description: value });
+        }}
       />
 
       <ImageInput

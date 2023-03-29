@@ -10,6 +10,7 @@ import { toHex } from "../../utils/toHex";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { LocalStorageKey } from "../constants";
 import Crosshair from "../Crosshair";
+import { usePointerLocked } from "../hooks/usePointerLocked";
 import { useSetAvatar } from "../hooks/useSetAvatar";
 import Stats from "../Stats";
 import ChatBox from "./ChatBox";
@@ -24,6 +25,7 @@ export default function Overlay({ id }: Props) {
   const [openSettings, setOpenSettings] = useState(false);
 
   const isMobile = useIsMobile();
+  const isPointerLocked = usePointerLocked();
   const setAvatar = useSetAvatar();
   const { engine, send, micEnabled } = useClient();
 
@@ -60,13 +62,15 @@ export default function Overlay({ id }: Props) {
         </DialogContent>
       </DialogRoot>
 
-      <div className="fixed top-0 left-0 z-20 p-4">
-        <Link href={`/space/${toHex(id)}`} className="rounded-full">
-          <div className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95">
-            <IoMdArrowRoundBack />
-          </div>
-        </Link>
-      </div>
+      {!isPointerLocked && (
+        <div className="fixed top-0 left-0 z-20 p-4">
+          <Link href={`/space/${toHex(id)}`} className="rounded-full">
+            <div className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95">
+              <IoMdArrowRoundBack />
+            </div>
+          </Link>
+        </div>
+      )}
 
       <div className="fixed top-16 left-0 z-20 p-4">
         <Stats />
@@ -79,12 +83,14 @@ export default function Overlay({ id }: Props) {
           {micEnabled ? <MdMic /> : <MdMicOff className="text-red-700" />}
         </MicButton>
 
-        <button
-          onClick={() => setOpenSettings(true)}
-          className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95"
-        >
-          <IoMdSettings />
-        </button>
+        {!isPointerLocked && (
+          <button
+            onClick={() => setOpenSettings(true)}
+            className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95"
+          >
+            <IoMdSettings />
+          </button>
+        )}
       </div>
 
       <div className="fixed bottom-0 left-0 z-20 p-4">

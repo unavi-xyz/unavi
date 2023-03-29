@@ -23,3 +23,9 @@ export const fetchProfileHandle = cache(async (profileId: number) => {
     return null;
   }
 });
+
+export type Handle = {
+  id: number;
+  string: string;
+  full: string;
+};

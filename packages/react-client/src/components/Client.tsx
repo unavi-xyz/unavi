@@ -135,7 +135,7 @@ export function Client({
   children,
   defaultAvatar,
   ethers,
-  host = "ws://localhost:4000",
+  host = "localhost:4000",
   metadata,
   skybox,
   spaceId,

@@ -1,13 +1,11 @@
 import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
 
-export const revalidate = 60;
+interface Props {
+  id: number;
+}
 
-type Params = { id: string };
-
-export default async function About({ params }: { params: Params }) {
-  const { id } = params;
-  const spaceId = parseInt(id);
-  const space = await fetchSpace(spaceId);
+export default async function About({ id }: Props) {
+  const space = await fetchSpace(id);
 
   if (!space) return null;
 

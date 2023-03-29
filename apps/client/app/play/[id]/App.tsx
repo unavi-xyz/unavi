@@ -1,7 +1,7 @@
 "use client";
 
 import { Client } from "@wired-labs/react-client";
-import { ERC721Metadata } from "contracts";
+import { ERC721Metadata, getHostFromMetadata } from "contracts";
 import Script from "next/script";
 import { useState } from "react";
 import { useProvider, useSigner } from "wagmi";
@@ -9,11 +9,6 @@ import { useProvider, useSigner } from "wagmi";
 import { env } from "../../../src/env.mjs";
 import { useHotkeys } from "../../../src/play/hooks/useHotkeys";
 import ClientApp from "./ClientApp";
-
-const HOST =
-  process.env.NODE_ENV === "development"
-    ? "ws://localhost:4000"
-    : `wss://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
 
 interface Props {
   id: number;
@@ -28,6 +23,11 @@ export default function App({ id, metadata }: Props) {
 
   useHotkeys();
 
+  const host =
+    process.env.NODE_ENV === "development"
+      ? "localhost:4000"
+      : getHostFromMetadata(metadata) ?? env.NEXT_PUBLIC_DEFAULT_HOST;
+
   return (
     <>
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
@@ -37,7 +37,7 @@ export default function App({ id, metadata }: Props) {
           <Client
             spaceId={id}
             metadata={metadata}
-            host={HOST}
+            host={host}
             animations="/models"
             defaultAvatar="/models/Wired-chan.vrm"
             ethers={signer ?? provider}

@@ -2,7 +2,7 @@ import { fetchProfileFromAddress } from "./fetchProfileFromAddress";
 import { fetchSpaceMetadata } from "./fetchSpaceMetadata";
 import { fetchSpaceOwner } from "./fetchSpaceOwner";
 
-export async function fetchSpace(id: number) {
+export async function fetchSpace(id: number): Promise<Space | null> {
   try {
     const metadataPromise = fetchSpaceMetadata(id);
     const owner = await fetchSpaceOwner(id);
@@ -19,3 +19,10 @@ export async function fetchSpace(id: number) {
     return null;
   }
 }
+
+export type Space = {
+  id: number;
+  owner: Awaited<ReturnType<typeof fetchSpaceOwner>>;
+  profile: Awaited<ReturnType<typeof fetchProfileFromAddress>>;
+  metadata: Awaited<ReturnType<typeof fetchSpaceMetadata>>;
+};

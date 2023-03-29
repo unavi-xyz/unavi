@@ -1,4 +1,4 @@
-import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
+import { ATTRIBUTE_TYPES, ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -152,6 +152,12 @@ export default function PublishPage({ project }: Props) {
               }`,
           image: imageURL,
           name,
+          attributes: [
+            {
+              trait_type: ATTRIBUTE_TYPES.HOST,
+              value: env.NEXT_PUBLIC_DEFAULT_HOST,
+            },
+          ],
         };
 
         // Upload to S3

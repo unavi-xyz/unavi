@@ -22,6 +22,7 @@ const server = z.object({
   S3_ENDPOINT: z.string(),
   S3_REGION: z.string(),
   S3_SECRET: z.string(),
+  VERCEL_URL: z.string().optional(),
 });
 
 /**
@@ -35,7 +36,6 @@ const client = z.object({
   NEXT_PUBLIC_DEFAULT_HOST: z.string(),
   NEXT_PUBLIC_DEPLOYED_URL: z.string().url(),
   NEXT_PUBLIC_DOCS_URL: z.string().url(),
-  VERCEL_URL: z.string().optional(),
 });
 
 /**

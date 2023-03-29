@@ -34,7 +34,14 @@ export function useHost(id: number, host: string) {
     if (!engine) return;
 
     // Create WebSocket connection
-    const newWs = new WebSocket(host);
+    const hostURL =
+      host.startsWith("ws://") || host.startsWith("wss://")
+        ? host
+        : host.startsWith("localhost")
+        ? `ws://${host}`
+        : `wss://${host}`;
+
+    const newWs = new WebSocket(hostURL);
     setWs(newWs);
 
     // Create mediasoup device

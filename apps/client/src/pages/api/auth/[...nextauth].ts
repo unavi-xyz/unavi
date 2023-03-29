@@ -32,8 +32,7 @@ export function getAuthOptions(req: IncomingMessage | null = null): NextAuthOpti
         try {
           const siwe = new SiweMessage(JSON.parse(credentials.message));
 
-          const url = env.VERCEL_URL || env.NEXTAUTH_URL;
-          const domain = new URL(url).host;
+          const domain = env.VERCEL_URL || new URL(env.NEXTAUTH_URL).host;
           if (siwe.domain !== domain) return null;
 
           const nonce = await getCsrfToken({ req });

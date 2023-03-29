@@ -88,9 +88,14 @@ export class PlayerControls {
 
   set avatar(avatar: Avatar | null) {
     if (avatar?.uri === this.#avatar?.uri) return;
-    if (this.#avatar) this.#avatar.destroy();
 
-    this.#avatar = avatar;
+    if (avatar && this.#avatar) {
+      avatar.velocity.copy(this.#avatar.velocity);
+      avatar.group.position.copy(this.#avatar.group.position);
+      avatar.group.rotation.copy(this.#avatar.group.rotation);
+      avatar.targetPosition.copy(this.#avatar.targetPosition);
+      avatar.targetRotation.copy(this.#avatar.targetRotation);
+    }
 
     if (avatar) {
       avatar.mode = this.mode;
@@ -100,6 +105,9 @@ export class PlayerControls {
       avatar.inputPosition = this.inputPosition;
       this.body.add(avatar.group);
     }
+
+    if (this.#avatar) this.#avatar.destroy();
+    this.#avatar = avatar;
   }
 
   onmessage({ subject, data }: ToRenderMessage) {
@@ -249,8 +257,7 @@ export class PlayerControls {
     const posX = Atomics.load(this.userPosition, 0) / POSITION_ARRAY_ROUNDING;
     const posY = Atomics.load(this.userPosition, 1) / POSITION_ARRAY_ROUNDING;
     const posZ = Atomics.load(this.userPosition, 2) / POSITION_ARRAY_ROUNDING;
-    this.avatar.targetPosition.set(posX, posY, posZ);
-    this.avatar.group.position.set(posX, posY, posZ);
+    this.body.position.set(posX, posY, posZ);
 
     this.avatar.update(delta);
 

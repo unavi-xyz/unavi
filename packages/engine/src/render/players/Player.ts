@@ -39,8 +39,14 @@ export class Player {
 
   set avatar(value: Avatar | null) {
     if (this.#avatar?.uri === value?.uri) return;
-    this.#avatar?.destroy();
-    this.#avatar = value;
+
+    if (value && this.#avatar) {
+      value.velocity.copy(this.#avatar.velocity);
+      value.group.position.copy(this.#avatar.group.position);
+      value.group.quaternion.copy(this.#avatar.group.quaternion);
+      value.targetPosition.copy(this.#avatar.targetPosition);
+      value.targetRotation.copy(this.#avatar.targetRotation);
+    }
 
     if (value) {
       value.animationsPath = this.animationsPath;
@@ -48,6 +54,9 @@ export class Player {
       value.name = this.name;
       this.group.add(value.group);
     }
+
+    this.#avatar?.destroy();
+    this.#avatar = value;
   }
 
   get grounded() {

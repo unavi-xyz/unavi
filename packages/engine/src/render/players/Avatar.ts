@@ -72,7 +72,6 @@ export class Avatar {
     loader.load(uri, async (gltf) => {
       const vrm = gltf.userData.vrm as VRM;
       vrm.scene.rotateY(Math.PI);
-      this.vrm = vrm;
 
       VRMUtils.removeUnnecessaryVertices(vrm.scene);
       VRMUtils.removeUnnecessaryJoints(vrm.scene);
@@ -91,6 +90,7 @@ export class Avatar {
       await this.loadAnimations(vrm);
 
       this.group.add(vrm.scene);
+      this.vrm = vrm;
     });
   }
 

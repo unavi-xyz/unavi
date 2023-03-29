@@ -1,5 +1,5 @@
 import { ToHostMessage } from "@wired-labs/protocol";
-import { ERC721Metadata } from "contracts";
+import { ERC721Metadata, getHostFromMetadata } from "contracts";
 import { Engine } from "engine";
 import { providers, Signer } from "ethers";
 import {
@@ -135,7 +135,7 @@ export function Client({
   children,
   defaultAvatar,
   ethers,
-  host = "localhost:4000",
+  host,
   metadata,
   skybox,
   spaceId,
@@ -298,12 +298,14 @@ export function Client({
 interface SpaceProps {
   spaceId: number;
   metadata: ERC721Metadata;
-  host: string;
+  host?: string;
 }
 
 function Space({ spaceId, metadata, host }: SpaceProps) {
   const { setLoadingProgress, setLoadingText } = useContext(ClientContext);
-  const { loadingProgress, loadingText } = useSpace(spaceId, metadata, host);
+
+  const spaceHost = getHostFromMetadata(metadata);
+  const { loadingProgress, loadingText } = useSpace(spaceId, metadata, host ?? spaceHost ?? "");
 
   useEffect(() => {
     setLoadingProgress(loadingProgress);

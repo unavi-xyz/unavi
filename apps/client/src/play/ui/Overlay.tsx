@@ -65,11 +65,11 @@ export default function Overlay({ id }: Props) {
       </DialogRoot>
 
       {!isPointerLocked && (
-        <div className="fixed top-4 left-4 z-20">
-          <div className="flex items-center space-x-4 rounded-full bg-white/80 pr-10 backdrop-blur-lg">
+        <div className="fixed top-4 left-5 z-20">
+          <div className="flex items-center space-x-3 rounded-full bg-white/80 pr-10 backdrop-blur-lg">
             <Link href={`/space/${toHex(id)}`}>
-              <div className="relative h-12 w-12">
-                <Image src={Logo} alt="Logo" fill />
+              <div className="relative -ml-1 h-12 w-12">
+                <Image src={Logo} alt="Logo" fill draggable={false} />
               </div>
             </Link>
 

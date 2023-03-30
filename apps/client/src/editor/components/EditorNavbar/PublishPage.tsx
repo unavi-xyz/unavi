@@ -7,6 +7,7 @@ import { useSigner } from "wagmi";
 
 import { GetFileDownloadResponse } from "../../../../app/api/projects/[id]/[file]/types";
 import { publishProject } from "../../../../app/api/projects/[id]/publication/helper";
+import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from "../../../../app/api/projects/constants";
 import { getPublicationFileUpload } from "../../../../app/api/publications/[id]/[file]/helper";
 import { linkPublication } from "../../../../app/api/publications/[id]/link/helper";
 import { useEditorStore } from "../../../../app/editor/[id]/store";
@@ -250,6 +251,7 @@ export default function PublishPage({ project }: Props) {
         label="Name"
         name="name"
         autoComplete="off"
+        maxLength={MAX_NAME_LENGTH}
         defaultValue={name}
         disabled={loading}
         onChange={(e) => {
@@ -263,6 +265,7 @@ export default function PublishPage({ project }: Props) {
         name="description"
         autoComplete="off"
         rows={4}
+        maxLength={MAX_DESCRIPTION_LENGTH}
         defaultValue={description}
         disabled={loading}
         onChange={(e) => {

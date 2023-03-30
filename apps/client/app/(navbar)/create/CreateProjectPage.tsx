@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 
 import TextField from "../../../src/ui/TextField";
 import { getProjectFileUpload } from "../../api/projects/[id]/[file]/helper";
+import { MAX_NAME_LENGTH } from "../../api/projects/constants";
 import { createProject } from "../../api/projects/helper";
 
 const DEFAULT_NAME = "New Project";
@@ -65,6 +66,7 @@ export default function CreateProjectPage() {
         label="Name"
         name="name"
         autoComplete="off"
+        maxLength={MAX_NAME_LENGTH}
         placeholder={DEFAULT_NAME}
         disabled={loading}
       />

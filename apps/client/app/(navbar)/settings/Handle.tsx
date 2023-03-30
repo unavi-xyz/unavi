@@ -71,11 +71,12 @@ export default function Handle({ profile }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
       <TextField
-        value={username}
-        onChange={(e) => setName(e.target.value)}
-        name="Username"
+        label="Username"
+        name="username"
         autoComplete="off"
+        value={username}
         disabled={savingUsername}
+        onChange={(e) => setName(e.target.value)}
       />
 
       <div className="flex justify-end">

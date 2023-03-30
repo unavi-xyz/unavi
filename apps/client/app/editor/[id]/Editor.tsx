@@ -58,7 +58,7 @@ export default function Editor({ project }: Props) {
     engine.showColliders = showColliders;
 
     engine.render.send({ subject: "set_animations_path", data: "/models" });
-    engine.render.send({ subject: "set_default_avatar", data: "/models/Wired-chan.vrm" });
+    engine.render.send({ subject: "set_default_avatar", data: "/models/Robot.vrm" });
     engine.render.send({ subject: "set_skybox", data: { uri: "/images/Skybox.jpg" } });
     engine.start();
 

@@ -1,15 +1,15 @@
+import { fetchSpaceOwner } from "../../../../src/server/helpers/fetchSpaceOwner";
 import { getServerSession } from "../../../../src/server/helpers/getServerSession";
 import ButtonTabs, { TabContent } from "../../../../src/ui/ButtonTabs";
 import About from "./About";
 import Settings from "./Settings";
 
 interface Props {
-  owner: string;
-  params: { id: string };
+  id: number;
 }
 
-export default async function Tabs({ owner, params }: Props) {
-  const session = await getServerSession();
+export default async function Tabs({ id }: Props) {
+  const [session, owner] = await Promise.all([getServerSession(), fetchSpaceOwner(id)]);
 
   const isOwner = session?.address === owner;
 
@@ -19,16 +19,16 @@ export default async function Tabs({ owner, params }: Props) {
         <ButtonTabs titles={["About", "Settings"]}>
           <TabContent value="About">
             {/* @ts-expect-error Server Component */}
-            <About params={params} />
+            <About id={id} />
           </TabContent>
           <TabContent value="Settings">
             {/* @ts-expect-error Server Component */}
-            <Settings params={params} />
+            <Settings id={id} />
           </TabContent>
         </ButtonTabs>
       ) : (
         // @ts-expect-error Server Component
-        <About params={params} />
+        <About id={id} />
       )}
     </>
   );

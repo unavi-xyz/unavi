@@ -2,7 +2,7 @@ import { useClient } from "@wired-labs/react-client";
 import { useEffect, useRef } from "react";
 
 import { usePlayStore } from "../../../app/play/[id]/store";
-import { useIsMobile } from "../../utils/useIsMobile";
+import { usePointerLocked } from "../hooks/usePointerLocked";
 import ChatMessage from "./ChatMessage";
 
 interface Props {
@@ -11,9 +11,10 @@ interface Props {
 
 export default function ChatBox({ alwaysShow }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
   const chatBoxFocused = usePlayStore((state) => state.chatBoxFocused);
 
-  const isMobile = useIsMobile();
+  const isPointerLocked = usePointerLocked();
   const { chatMessages, playerId, send } = useClient();
 
   useEffect(() => {
@@ -25,18 +26,18 @@ export default function ChatBox({ alwaysShow }: Props) {
     }
   }, [chatBoxFocused]);
 
-  const focusedClass =
-    isMobile || chatBoxFocused
-      ? "bg-neutral-800 placeholder:text-white/70"
-      : "bg-neutral-800/40 hover:bg-neutral-800/50 placeholder:text-white/90";
-
-  const scrollClass = isMobile || chatBoxFocused ? "overflow-auto" : "overflow-hidden";
+  useEffect(() => {
+    if (chatBoxFocused || !isPointerLocked) {
+      // Scroll to bottom of chat
+      if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [chatBoxFocused, isPointerLocked]);
 
   return (
     <div className="space-y-1">
       <div
-        className={`flex w-full flex-col-reverse ${scrollClass}`}
-        style={{ maxHeight: "calc(100vh - 140px)" }}
+        ref={chatRef}
+        className="flex max-h-[30vh] w-full flex-col-reverse overflow-hidden hover:overflow-y-scroll"
       >
         {chatMessages
           .sort((a, b) => b.timestamp - a.timestamp)
@@ -45,7 +46,7 @@ export default function ChatBox({ alwaysShow }: Props) {
           ))}
       </div>
 
-      <div>
+      <div className="h-9">
         <input
           ref={inputRef}
           onKeyDown={(e) => {
@@ -67,7 +68,7 @@ export default function ChatBox({ alwaysShow }: Props) {
           onBlur={() => usePlayStore.setState({ chatBoxFocused: false })}
           type="text"
           placeholder="Send a message..."
-          className={`h-full w-full rounded-lg px-4 py-2 text-white outline-none drop-shadow backdrop-blur-2xl transition placeholder:drop-shadow ${focusedClass}`}
+          className="h-full w-full rounded-lg bg-neutral-800/40 px-4 text-white outline-none backdrop-blur-xl transition placeholder:text-white/90 hover:bg-neutral-800/50 focus:bg-neutral-800 focus:placeholder:text-white/75"
         />
       </div>
     </div>

@@ -54,6 +54,8 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
       // Fetch space
       const space = await getSpace(spaceId);
       if (!space) throw new Error("Space not found");
+
+      // Check if space is owned by user
       if (space.owner !== owner) throw new Error("You do not own this space");
 
       // Fetch publication
@@ -101,7 +103,7 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
           className="h-9 w-24 rounded-lg py-1 pr-1 text-center ring-1 ring-inset ring-neutral-500"
         />
 
-        <Button disabled={loading} type="submit" className="h-9 rounded-lg">
+        <Button disabled={loading} type="submit" className="h-9 rounded-xl">
           Connect
         </Button>
 

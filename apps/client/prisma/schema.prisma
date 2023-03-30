@@ -40,8 +40,8 @@ model Project {
 
   owner String
 
-  name        String
-  description String?
+  name        String @db.VarChar(80)
+  description String @db.VarChar(1200)
 
   Publication   Publication? @relation(fields: [publicationId], references: [id])
   publicationId String?

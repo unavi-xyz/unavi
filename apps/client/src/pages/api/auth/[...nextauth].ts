@@ -32,15 +32,23 @@ export function getAuthOptions(req: IncomingMessage | null = null): NextAuthOpti
         try {
           const siwe = new SiweMessage(JSON.parse(credentials.message));
 
-          const url = env.NEXTAUTH_URL || `https://${env.VERCEL_URL}`;
-          const domain = new URL(url).host;
-          if (siwe.domain !== domain) return null;
+          const domain = new URL(env.NEXTAUTH_URL).host;
+          if (siwe.domain !== domain) {
+            console.warn(`Domain mismatch: ${siwe.domain} !== ${domain}`);
+            return null;
+          }
 
           const nonce = await getCsrfToken({ req });
-          if (siwe.nonce !== nonce) return null;
+          if (siwe.nonce !== nonce) {
+            console.warn(`Nonce mismatch: ${siwe.nonce} !== ${nonce}`);
+            return null;
+          }
 
           const result = await siwe.verify({ signature: credentials.signature, domain, nonce });
-          if (!result.success) return null;
+          if (!result.success) {
+            console.warn(`Signature verification failed: ${result.error}`);
+            return null;
+          }
 
           return { id: siwe.address };
         } catch (e) {

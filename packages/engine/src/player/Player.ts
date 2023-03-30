@@ -25,6 +25,13 @@ export class Player {
     const rotationBuffer = new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 4);
     this.rotation = new Int16Array(rotationBuffer);
 
+    const spawn = engine.scene.getSpawn();
+    const spawnPosition = spawn?.getWorldTranslation() ?? [0, 0, 0];
+    const spawnRotation = spawn?.getWorldRotation() ?? [0, 0, 0, 1];
+
+    this.setPosition(spawnPosition[0], spawnPosition[1], spawnPosition[2]);
+    this.setRotation(spawnRotation[0], spawnRotation[1], spawnRotation[2], spawnRotation[3]);
+
     engine.render.send({
       subject: "add_player",
       data: { id, position: this.position, rotation: this.rotation },

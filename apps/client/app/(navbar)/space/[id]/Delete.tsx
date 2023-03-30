@@ -67,7 +67,7 @@ export default function Delete({ id, address }: Props) {
       <div className="text-2xl font-bold">Danger Zone</div>
       <div className="pb-1 text-lg">Deleting a space is permanent and cannot be undone.</div>
 
-      <Button disabled={loading} onClick={handleDelete} className="rounded-lg bg-red-700">
+      <Button disabled={loading} onClick={handleDelete} className="rounded-xl bg-red-700">
         Delete Space
       </Button>
     </div>

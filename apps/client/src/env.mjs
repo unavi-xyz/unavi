@@ -13,7 +13,7 @@ const server = z.object({
   NEXTAUTH_URL: z.preprocess(
     // This makes Vercel deployments not fail if you don't set NEXTAUTH_URL
     // Since NextAuth.js automatically uses the VERCEL_URL if present.
-    (str) => process.env.VERCEL_URL ?? str,
+    (str) => str || process.env.VERCEL_URL,
     // VERCEL_URL doesn't include `https` so it cant be validated as a URL
     process.env.VERCEL ? z.string().min(1) : z.string().url()
   ),
@@ -22,6 +22,7 @@ const server = z.object({
   S3_ENDPOINT: z.string(),
   S3_REGION: z.string(),
   S3_SECRET: z.string(),
+  VERCEL_URL: z.string().optional(),
 });
 
 /**
@@ -32,10 +33,10 @@ const client = z.object({
   NEXT_PUBLIC_ALCHEMY_ID: z.string().optional(),
   NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT: z.string().optional(),
   NEXT_PUBLIC_CDN_ENDPOINT: z.string(),
+  NEXT_PUBLIC_CRYPTOAVATARS_API_KEY: z.string().optional(),
   NEXT_PUBLIC_DEFAULT_HOST: z.string(),
   NEXT_PUBLIC_DEPLOYED_URL: z.string().url(),
   NEXT_PUBLIC_DOCS_URL: z.string().url(),
-  VERCEL_URL: z.string().optional(),
 });
 
 /**
@@ -58,6 +59,7 @@ const processEnv = {
   NEXT_PUBLIC_ALCHEMY_ID: process.env.NEXT_PUBLIC_ALCHEMY_ID,
   NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT: process.env.NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT,
   NEXT_PUBLIC_CDN_ENDPOINT: process.env.NEXT_PUBLIC_CDN_ENDPOINT,
+  NEXT_PUBLIC_CRYPTOAVATARS_API_KEY: process.env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY,
   NEXT_PUBLIC_DEFAULT_HOST: process.env.NEXT_PUBLIC_DEFAULT_HOST,
   NEXT_PUBLIC_DEPLOYED_URL: process.env.NEXT_PUBLIC_DEPLOYED_URL,
   NEXT_PUBLIC_DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL,

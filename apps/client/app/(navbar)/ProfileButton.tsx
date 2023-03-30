@@ -29,9 +29,7 @@ export default function ProfileButton({ isLoading: isLoadingAuth }: Props) {
       }}
     >
       <DropdownTrigger
-        className={`rounded-full transition ${
-          isLoading ? "cursor-not-allowed" : "hover:opacity-90"
-        }`}
+        className={`rounded-full transition ${isLoading ? "cursor-default" : "hover:opacity-90"}`}
       >
         <Avatar
           src={profile?.metadata?.image}

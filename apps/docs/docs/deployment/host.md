@@ -3,7 +3,7 @@ sidebar_label: ☁️ Host
 title: Host
 ---
 
-The host is the server that adds multiplayer functionality to spaces. It is a Node.js server, and is available as a Docker image for easy deployment.
+The host server adds multiplayer functionality to spaces. It is a Node.js server, and is available as a Docker image for easy deployment.
 
 ## Requirements
 

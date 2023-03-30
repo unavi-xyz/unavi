@@ -1,5 +1,5 @@
 import { ToHostMessage } from "@wired-labs/protocol";
-import { ERC721Metadata } from "contracts";
+import { ERC721Metadata, getHostFromMetadata } from "contracts";
 import { Engine } from "engine";
 import { providers, Signer } from "ethers";
 import {
@@ -40,9 +40,12 @@ export type ChatMessage = SystemMessage | PlayerMessage;
 export type HoverState = null | "equip_avatar" | "avatar_equipped";
 
 export interface IClientContext {
-  engine: Engine | null;
-  spaceId: number | null;
   ethersProvider: providers.Provider | Signer | null;
+  host: string | null;
+  metadata: ERC721Metadata | null;
+  spaceId: number | null;
+
+  engine: Engine | null;
 
   hoverState: HoverState;
   setHoverState: Dispatch<SetStateAction<HoverState>>;
@@ -73,9 +76,12 @@ export interface IClientContext {
 }
 
 const defaultContext: IClientContext = {
-  engine: null,
-  spaceId: null,
   ethersProvider: null,
+  host: null,
+  metadata: null,
+  spaceId: null,
+
+  engine: null,
 
   hoverState: null,
   setHoverState: () => {},
@@ -135,7 +141,7 @@ export function Client({
   children,
   defaultAvatar,
   ethers,
-  host = "ws://localhost:4000",
+  host,
   metadata,
   skybox,
   spaceId,
@@ -161,6 +167,9 @@ export function Client({
 
   useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
   useAvatarEquip(engine, avatar, setAvatar, setHoverState);
+
+  const spaceHost = metadata ? getHostFromMetadata(metadata) : "";
+  const usedHost = host || spaceHost;
 
   const send = useCallback(
     (message: ToHostMessage) => {
@@ -232,9 +241,11 @@ export function Client({
   return (
     <ClientContext.Provider
       value={{
-        engine,
-        spaceId: spaceId ?? null,
         ethersProvider,
+        host: usedHost || null,
+        metadata: metadata ?? null,
+        spaceId: spaceId ?? null,
+        engine,
         hoverState,
         setHoverState,
         ws,
@@ -286,23 +297,15 @@ export function Client({
         />
       </div>
 
-      {spaceId !== undefined && metadata ? (
-        <Space spaceId={spaceId} metadata={metadata} host={host} />
-      ) : null}
+      <Space />
 
       {children}
     </ClientContext.Provider>
   );
 }
 
-interface SpaceProps {
-  spaceId: number;
-  metadata: ERC721Metadata;
-  host: string;
-}
-
-function Space({ spaceId, metadata, host }: SpaceProps) {
-  const { setLoadingProgress, setLoadingText } = useContext(ClientContext);
+function Space() {
+  const { spaceId, metadata, host, setLoadingProgress, setLoadingText } = useContext(ClientContext);
   const { loadingProgress, loadingText } = useSpace(spaceId, metadata, host);
 
   useEffect(() => {

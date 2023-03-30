@@ -10,7 +10,7 @@ export default function ImageInput({
   return (
     <div className="relative">
       <label>
-        {name && <div className="pb-1 text-lg font-bold">{name}</div>}
+        {name && <div className="pb-1 text-xl font-bold">{name}</div>}
 
         <div
           className={`absolute cursor-pointer rounded-2xl transition ${
@@ -34,13 +34,13 @@ export default function ImageInput({
           alt=""
           crossOrigin="anonymous"
           className={`rounded-2xl transition ${
-            disabled ? "cursor-not-allowed opacity-70" : ""
+            disabled ? "cursor-default opacity-70" : ""
           } ${className}`}
         />
       ) : (
         <div
           className={`rounded-2xl bg-neutral-200 transition ${
-            disabled ? "cursor-not-allowed opacity-70" : ""
+            disabled ? "cursor-default opacity-70" : ""
           } ${className}`}
         />
       )}

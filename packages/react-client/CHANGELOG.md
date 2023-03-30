@@ -1,5 +1,16 @@
 # @wired-labs/react-client
 
+## 0.3.0
+
+### Minor Changes
+
+- 6ae91ef: expose metadata and host to ClientContext
+
+### Patch Changes
+
+- 632bd65: fix initial player data not being set
+- c75e6b9: wrap host url with WebSocket protocol (wss://) if not provided
+
 ## 0.2.0
 
 ### Minor Changes

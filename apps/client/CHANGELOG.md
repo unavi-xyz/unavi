@@ -1,5 +1,22 @@
 # client
 
+## 0.3.0
+
+### Minor Changes
+
+- e7ac7b4: adds an avatar browser menu to the settings dialog
+- 83ba811: add VRM file drop support
+- 6ae91ef: add space info ui to overlay
+- c75e6b9: add host to space metadata
+- ceed3ac: add new default avatar
+
+### Patch Changes
+
+- Updated dependencies [632bd65]
+- Updated dependencies [c75e6b9]
+- Updated dependencies [6ae91ef]
+  - @wired-labs/react-client@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,4 +1,4 @@
-import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
+import { ATTRIBUTE_TYPES, ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -7,6 +7,7 @@ import { useSigner } from "wagmi";
 
 import { GetFileDownloadResponse } from "../../../../app/api/projects/[id]/[file]/types";
 import { publishProject } from "../../../../app/api/projects/[id]/publication/helper";
+import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from "../../../../app/api/projects/constants";
 import { getPublicationFileUpload } from "../../../../app/api/publications/[id]/[file]/helper";
 import { linkPublication } from "../../../../app/api/publications/[id]/link/helper";
 import { useEditorStore } from "../../../../app/editor/[id]/store";
@@ -152,6 +153,12 @@ export default function PublishPage({ project }: Props) {
               }`,
           image: imageURL,
           name,
+          attributes: [
+            {
+              trait_type: ATTRIBUTE_TYPES.HOST,
+              value: env.NEXT_PUBLIC_DEFAULT_HOST,
+            },
+          ],
         };
 
         // Upload to S3
@@ -241,26 +248,30 @@ export default function PublishPage({ project }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <TextField
-        name="Name"
+        label="Name"
+        name="name"
+        autoComplete="off"
+        maxLength={MAX_NAME_LENGTH}
+        defaultValue={name}
+        disabled={loading}
         onChange={(e) => {
           const value = e.target.value;
           useEditorStore.setState({ name: value });
         }}
-        autoComplete="off"
-        defaultValue={name}
-        disabled={loading}
       />
 
       <TextArea
-        name="Description"
+        label="Description"
+        name="description"
+        autoComplete="off"
+        rows={4}
+        maxLength={MAX_DESCRIPTION_LENGTH}
+        defaultValue={description}
+        disabled={loading}
         onChange={(e) => {
           const value = e.target.value;
           useEditorStore.setState({ description: value });
         }}
-        autoComplete="off"
-        rows={4}
-        defaultValue={description}
-        disabled={loading}
       />
 
       <ImageInput

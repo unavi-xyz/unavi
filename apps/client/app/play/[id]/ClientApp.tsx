@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useLoadUser } from "../../../src/play/hooks/useLoadUser";
 import LoadingScreen from "../../../src/play/ui/LoadingScreen";
 import Overlay from "../../../src/play/ui/Overlay";
+import FileDrop from "./FileDrop";
 
 interface Props {
   spaceId: number;
@@ -30,6 +31,8 @@ export default function ClientApp({ spaceId, metadata }: Props) {
   return (
     <>
       {loadingProgress == 1 ? <Overlay id={spaceId} /> : null}
+
+      <FileDrop />
 
       <LoadingScreen
         text={metadata.name}

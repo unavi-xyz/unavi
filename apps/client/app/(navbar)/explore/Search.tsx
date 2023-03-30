@@ -1,26 +1,23 @@
 "use client";
 
-import { useId } from "react";
 import { MdSearch } from "react-icons/md";
 
+import TextField from "../../../src/ui/TextField";
 import { useExploreStore } from "./store";
 
 export default function Search() {
-  const id = useId();
   const filter = useExploreStore((state) => state.filter);
 
   return (
     <div className="relative mb-2 w-full max-w-sm">
-      <input
-        id={id}
-        className="w-full rounded-xl border border-neutral-200 pt-2 pb-1.5 pl-10 text-neutral-900 outline-black placeholder:text-neutral-400 hover:border-neutral-400"
-        value={filter}
+      <TextField
         name="filter"
-        autoComplete="off"
         placeholder="Search"
+        value={filter}
         onChange={(e) => {
           useExploreStore.setState({ filter: e.target.value });
         }}
+        className="pl-10"
       />
 
       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">

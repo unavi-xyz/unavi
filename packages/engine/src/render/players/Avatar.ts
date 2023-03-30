@@ -69,10 +69,9 @@ export class Avatar {
     loader.setCrossOrigin("anonymous");
     loader.register((parser) => new VRMLoaderPlugin(parser));
 
-    loader.load(uri, (gltf) => {
+    loader.load(uri, async (gltf) => {
       const vrm = gltf.userData.vrm as VRM;
       vrm.scene.rotateY(Math.PI);
-      this.vrm = vrm;
 
       VRMUtils.removeUnnecessaryVertices(vrm.scene);
       VRMUtils.removeUnnecessaryJoints(vrm.scene);
@@ -88,9 +87,10 @@ export class Avatar {
       const size = boundingBox.getSize(this.#vec3);
       this.height = size.y;
 
-      this.group.add(vrm.scene);
+      await this.loadAnimations(vrm);
 
-      this.loadAnimations(vrm);
+      this.group.add(vrm.scene);
+      this.vrm = vrm;
     });
   }
 

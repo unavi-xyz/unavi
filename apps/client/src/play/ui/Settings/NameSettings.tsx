@@ -18,7 +18,8 @@ export default function NameSettings() {
 
   return (
     <TextField
-      name="Name"
+      label="Name"
+      name="name"
       placeholder={guestName}
       value={nickname ?? ""}
       onChange={(e) => {

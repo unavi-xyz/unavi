@@ -34,13 +34,13 @@ export default function ImageInput({
           alt=""
           crossOrigin="anonymous"
           className={`rounded-2xl transition ${
-            disabled ? "cursor-not-allowed opacity-70" : ""
+            disabled ? "cursor-default opacity-70" : ""
           } ${className}`}
         />
       ) : (
         <div
           className={`rounded-2xl bg-neutral-200 transition ${
-            disabled ? "cursor-not-allowed opacity-70" : ""
+            disabled ? "cursor-default opacity-70" : ""
           } ${className}`}
         />
       )}

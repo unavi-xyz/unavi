@@ -2,10 +2,8 @@ import { useClient } from "@wired-labs/react-client";
 import { RenderStats } from "engine";
 import { useEffect, useState } from "react";
 
-const ENABLE_STATS = process.env.NODE_ENV === "development";
-
 export default function Stats() {
-  const [visible, setVisible] = useState(ENABLE_STATS);
+  const [visible, setVisible] = useState(false);
 
   // Add stats control to window for debugging
   useEffect(() => {
@@ -59,7 +57,7 @@ function StatsMenu() {
   const averageFPS = fpsSamplesBuffer.reduce((a, b) => a + b, 0) / fpsSamplesBuffer.length;
 
   return (
-    <div className="space-y-2 rounded-lg bg-white/95 px-4 py-2">
+    <div className="space-y-2 rounded-xl bg-white/70 px-4 py-2 shadow backdrop-blur-lg">
       <StatDisplay label="FPS" data={Math.round(averageFPS)} />
 
       <div>

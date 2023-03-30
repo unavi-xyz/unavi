@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { usePlayStore } from "../../../app/play/[id]/store";
 import { usePlayerName } from "../hooks/usePlayerName";
+import { usePointerLocked } from "../hooks/usePointerLocked";
 
 interface Props {
   message: IChatMessage;
@@ -15,6 +16,7 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
   const [hidden, setHidden] = useState(false);
 
   const name = usePlayerName(message.playerId);
+  const isPointerLocked = usePointerLocked();
 
   useEffect(() => {
     setVisible(true);
@@ -30,8 +32,10 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
     };
   }, [message]);
 
-  const fadeClass = alwaysShow || visible || chatBoxFocused ? "opacity-100" : "opacity-0";
-  const hiddenClass = alwaysShow || !hidden || chatBoxFocused ? "" : "hidden";
+  const showChat = alwaysShow || chatBoxFocused || !isPointerLocked;
+
+  const fadeClass = showChat || visible ? "opacity-100" : "opacity-0";
+  const hiddenClass = showChat || !hidden ? "" : "hidden";
 
   return (
     <div

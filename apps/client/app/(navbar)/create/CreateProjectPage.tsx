@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 
 import TextField from "../../../src/ui/TextField";
 import { getProjectFileUpload } from "../../api/projects/[id]/[file]/helper";
+import { MAX_NAME_LENGTH } from "../../api/projects/constants";
 import { createProject } from "../../api/projects/helper";
 
 const DEFAULT_NAME = "New Project";
@@ -61,9 +62,11 @@ export default function CreateProjectPage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <TextField
-        inputRef={nameRef}
-        name="Name"
+        ref={nameRef}
+        label="Name"
+        name="name"
         autoComplete="off"
+        maxLength={MAX_NAME_LENGTH}
         placeholder={DEFAULT_NAME}
         disabled={loading}
       />

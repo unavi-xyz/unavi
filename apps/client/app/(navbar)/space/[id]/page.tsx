@@ -1,3 +1,4 @@
+import { getHostFromMetadata } from "contracts";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,9 +11,6 @@ import { isFromCDN } from "../../../../src/utils/isFromCDN";
 import { toHex } from "../../../../src/utils/toHex";
 import PlayerCount from "./PlayerCount";
 import Tabs from "./Tabs";
-
-const host =
-  process.env.NODE_ENV === "development" ? "localhost:4000" : env.NEXT_PUBLIC_DEFAULT_HOST;
 
 type Params = { id: string };
 
@@ -55,6 +53,9 @@ export default async function Space({ params }: Props) {
   const space = await fetchSpace(spaceId);
 
   if (!space) notFound();
+
+  const spaceHost = space.metadata ? getHostFromMetadata(space.metadata) : null;
+  const host = spaceHost || env.NEXT_PUBLIC_DEFAULT_HOST;
 
   return (
     <div className="flex justify-center">
@@ -132,7 +133,7 @@ export default async function Space({ params }: Props) {
 
         <Suspense fallback={null}>
           {/* @ts-expect-error Server Component */}
-          <Tabs owner={space.owner} params={params} />
+          <Tabs id={id} />
         </Suspense>
       </div>
     </div>

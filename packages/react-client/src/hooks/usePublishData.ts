@@ -25,7 +25,7 @@ export function usePublishData(
     const view = new DataView(buffer);
 
     const publishInterval = setInterval(() => {
-      if (playerId === null || dataProducer.readyState !== "open") return;
+      if (!engine.isPlaying || dataProducer.readyState !== "open") return;
 
       // Set audio listener location
       const camPosX = Atomics.load(engine.cameraPosition, 0) / POSITION_ARRAY_ROUNDING;

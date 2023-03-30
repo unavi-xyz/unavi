@@ -13,7 +13,7 @@ import { env } from "../../src/env.mjs";
 import AnimateOnEnter from "./AnimateOnEnter";
 
 const DISCORD_URL = "https://discord.gg/cazUfCCgHJ";
-const TWITTER_URL = "https://twitter.com/wired_xr";
+const TWITTER_URL = "https://twitter.com/TheWiredXR";
 const GITHUB_URL = "https://github.com/wired-labs/wired";
 
 export const metadata: Metadata = {

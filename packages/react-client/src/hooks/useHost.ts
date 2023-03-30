@@ -18,7 +18,7 @@ import { useTransports } from "./useTransports";
  * @param host Host URL
  * @returns Space joined status, list of players and chat messages
  */
-export function useHost(id: number, host: string) {
+export function useHost(id: number | null, host: string | null) {
   const { engine, ws, setWs, playerId, setPlayerId } = useContext(ClientContext);
 
   const [device, setDevice] = useState<Device | null>(null);
@@ -31,10 +31,17 @@ export function useHost(id: number, host: string) {
   usePublishData(dataProducer, playerId, audioContext);
 
   useEffect(() => {
-    if (!engine) return;
+    if (!engine || !host) return;
 
     // Create WebSocket connection
-    const newWs = new WebSocket(host);
+    const hostURL =
+      host.startsWith("ws://") || host.startsWith("wss://")
+        ? host
+        : host.startsWith("localhost")
+        ? `ws://${host}`
+        : `wss://${host}`;
+
+    const newWs = new WebSocket(hostURL);
     setWs(newWs);
 
     // Create mediasoup device
@@ -71,7 +78,7 @@ export function useHost(id: number, host: string) {
 
   // Handle WebSocket messages
   useEffect(() => {
-    if (!ws || !device || !engine) return;
+    if (id === null || !ws || !device || !engine) return;
 
     const send = (message: ToHostMessage) => {
       sendMessage(ws, message);

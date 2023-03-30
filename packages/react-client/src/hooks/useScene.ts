@@ -9,7 +9,7 @@ import { useClient } from "./useClient";
  * @param metadata ERC721 metadata for the space
  * @returns Scene download status and scene load status
  */
-export function useScene(metadata: ERC721Metadata) {
+export function useScene(metadata: ERC721Metadata | null) {
   const { engine } = useClient();
 
   const [isDownloaded, setIsDownloaded] = useState(false);
@@ -20,7 +20,7 @@ export function useScene(metadata: ERC721Metadata) {
       setIsDownloaded(false);
       setIsLoaded(false);
 
-      if (!engine || !metadata.animation_url) return;
+      if (!engine || !metadata || !metadata.animation_url) return;
 
       try {
         const res = await fetch(metadata.animation_url);
@@ -53,7 +53,7 @@ export function useScene(metadata: ERC721Metadata) {
     }
 
     load();
-  }, [engine, metadata.animation_url]);
+  }, [engine, metadata]);
 
   return {
     isDownloaded,

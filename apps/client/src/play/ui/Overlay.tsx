@@ -1,10 +1,12 @@
 import { MicButton, useClient } from "@wired-labs/react-client";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { IoMdArrowRoundBack, IoMdSettings } from "react-icons/io";
+import { IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
 import { usePlayStore } from "../../../app/play/[id]/store";
+import Logo from "../../../public/images/Logo.png";
 import DialogContent, { DialogRoot } from "../../ui/Dialog";
 import { toHex } from "../../utils/toHex";
 import { useIsMobile } from "../../utils/useIsMobile";
@@ -27,7 +29,7 @@ export default function Overlay({ id }: Props) {
   const isMobile = useIsMobile();
   const isPointerLocked = usePointerLocked();
   const setAvatar = useSetAvatar();
-  const { engine, send, micEnabled } = useClient();
+  const { engine, host, metadata, send, micEnabled } = useClient();
 
   async function handleClose() {
     setOpenSettings(false);
@@ -63,12 +65,19 @@ export default function Overlay({ id }: Props) {
       </DialogRoot>
 
       {!isPointerLocked && (
-        <div className="fixed top-0 left-0 z-20 p-4">
-          <Link href={`/space/${toHex(id)}`} className="rounded-full">
-            <div className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95">
-              <IoMdArrowRoundBack />
+        <div className="fixed top-4 left-4 z-20">
+          <div className="flex items-center space-x-4 rounded-full bg-white/80 pr-10 backdrop-blur-lg">
+            <Link href={`/space/${toHex(id)}`}>
+              <div className="relative h-12 w-12">
+                <Image src={Logo} alt="Logo" fill />
+              </div>
+            </Link>
+
+            <div>
+              <div className="text-lg font-bold leading-6">{metadata?.name}</div>
+              <div className="text-sm leading-4 text-neutral-700">{host}</div>
             </div>
-          </Link>
+          </div>
         </div>
       )}
 

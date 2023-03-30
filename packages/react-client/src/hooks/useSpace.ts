@@ -11,7 +11,7 @@ import { useScene } from "./useScene";
  * @param host Space host
  * @returns Space loading text and progress
  */
-export function useSpace(id: number, metadata: ERC721Metadata, host: string) {
+export function useSpace(id: number | null, metadata: ERC721Metadata | null, host: string | null) {
   const { isDownloaded, isLoaded } = useScene(metadata);
   const { isConnected } = useHost(id, host);
 

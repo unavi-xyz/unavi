@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     description: DESCRIPTION,
     images: [HERO],
-    site: "@wired_xr",
+    site: "@TheWiredXR",
     title: APP_NAME,
   },
   appleWebApp: {

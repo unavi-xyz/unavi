@@ -32,7 +32,7 @@ export function getAuthOptions(req: IncomingMessage | null = null): NextAuthOpti
         try {
           const siwe = new SiweMessage(JSON.parse(credentials.message));
 
-          const domain = new URL(env.NEXT_PUBLIC_DEPLOYED_URL).host;
+          const domain = new URL(env.NEXTAUTH_URL).host;
           if (siwe.domain !== domain) {
             console.warn(`Domain mismatch: ${siwe.domain} !== ${domain}`);
             return null;

@@ -285,6 +285,10 @@ export class PlayerControls {
 
     // Set avatar rotation
     this.#camera.getWorldQuaternion(this.avatar.targetRotation);
+    this.avatar.group.quaternion.copy(this.avatar.targetRotation);
+    this.avatar.group.quaternion.x = 0;
+    this.avatar.group.quaternion.z = 0;
+    this.avatar.group.quaternion.normalize();
 
     // Move camera
     const head = this.avatar.vrm?.humanoid.getNormalizedBoneNode("head");

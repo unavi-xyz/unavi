@@ -39,7 +39,7 @@ export default function App({ id, metadata }: Props) {
             metadata={metadata}
             host={host}
             animations="/models"
-            defaultAvatar="/models/Wired-chan.vrm"
+            defaultAvatar="/models/Robot.vrm"
             ethers={signer ?? provider}
             skybox="/images/Skybox.jpg"
           >

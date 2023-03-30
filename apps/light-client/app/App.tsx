@@ -26,7 +26,7 @@ export default function App({ spaceId, metadata }: Props) {
             metadata={metadata}
             host={process.env.NEXT_PUBLIC_DEFAULT_HOST}
             animations="/models"
-            defaultAvatar="/models/Wired-chan.vrm"
+            defaultAvatar="/models/Robot.vrm"
             skybox="/images/Skybox.jpg"
           >
             <Overlay />

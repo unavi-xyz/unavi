@@ -35,6 +35,9 @@ export function usePlayers() {
           console.info("👋 Player", toHex(data.playerId), "joined");
 
           const player = new Player(data.playerId);
+          player.name = data.name;
+          player.avatar = data.avatar;
+          player.address = data.address;
           localPlayers.push(player);
           setPlayers((players) => [...players, player]);
 

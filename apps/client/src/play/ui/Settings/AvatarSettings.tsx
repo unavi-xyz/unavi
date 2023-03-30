@@ -2,14 +2,20 @@ import { ClientContext } from "@wired-labs/react-client";
 import { useContext, useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
-import { usePlayStore } from "../../../app/play/[id]/store";
-import FileInput from "../../ui/FileInput";
-import Tooltip from "../../ui/Tooltip";
-import { bytesToDisplay } from "../../utils/bytesToDisplay";
-import { avatarPerformanceRank } from "../utils/avatarPerformanceRank";
-import { getVRMStats, VRMStats } from "../utils/getVRMStats";
+import { usePlayStore } from "../../../../app/play/[id]/store";
+import { env } from "../../../env.mjs";
+import FileInput from "../../../ui/FileInput";
+import Tooltip from "../../../ui/Tooltip";
+import { bytesToDisplay } from "../../../utils/bytesToDisplay";
+import { avatarPerformanceRank } from "../../utils/avatarPerformanceRank";
+import { getVRMStats, VRMStats } from "../../utils/getVRMStats";
+import { SettingsPage } from "./SettingsDialog";
 
-export default function AvatarSettings() {
+interface Props {
+  setPage: (page: SettingsPage) => void;
+}
+
+export default function AvatarSettings({ setPage }: Props) {
   const [avatarName, setAvatarName] = useState<string>();
   const [stats, setStats] = useState<VRMStats | null>(null);
   const [statsError, setStatsError] = useState(false);
@@ -44,15 +50,15 @@ export default function AvatarSettings() {
 
   return (
     <section className="space-y-1">
-      <div className="text-lg font-bold">Avatar</div>
+      <div className="text-xl font-bold">Avatar</div>
 
       {showStats && avatar ? (
         statsError ? (
-          <div className="rounded-lg bg-red-100 py-2.5 px-4 text-red-900">
+          <div className="rounded-xl bg-red-100 py-2.5 px-4 text-red-900">
             Failed to load avatar information
           </div>
         ) : (
-          <div className="flex items-center rounded-lg px-4 py-3 ring-1 ring-inset ring-neutral-300">
+          <div className="flex items-center rounded-xl px-4 py-3 ring-1 ring-inset ring-neutral-300">
             <div className="flex h-full items-stretch space-x-4">
               <div className="flex w-1/3 min-w-fit flex-col justify-between">
                 {stats && !stats.name ? null : <div className="text-neutral-700">Name</div>}
@@ -113,22 +119,33 @@ export default function AvatarSettings() {
         )
       ) : null}
 
-      <div className="flex space-x-1">
-        <div className="grow">
-          <FileInput
-            displayName={avatarName ?? null}
-            placeholder="Upload VRM File"
-            accept=".vrm"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
+      <div className="flex items-center space-x-2 pt-1">
+        {env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY ? (
+          <button
+            onClick={() => setPage("Browse Avatars")}
+            className="w-1/3 rounded-xl bg-neutral-200/70 py-2.5 transition hover:bg-neutral-300 active:opacity-80"
+          >
+            Browse
+          </button>
+        ) : null}
 
-              const url = URL.createObjectURL(file);
-              usePlayStore.setState({ didChangeAvatar: true, avatar: url });
-              setAvatarName(file.name);
-              setUploadedAvatar(url);
-            }}
-          />
+        <div className="flex w-full space-x-1">
+          <div className="grow">
+            <FileInput
+              displayName={avatarName ?? null}
+              placeholder="Upload VRM File"
+              accept=".vrm"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const url = URL.createObjectURL(file);
+                usePlayStore.setState({ didChangeAvatar: true, avatar: url });
+                setAvatarName(file.name);
+                setUploadedAvatar(url);
+              }}
+            />
+          </div>
         </div>
       </div>
     </section>

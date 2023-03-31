@@ -134,7 +134,12 @@ export class PlayerControls {
           const x = currentX - data.x / 1000;
           const y = currentY - data.y / 1000;
 
-          Atomics.store(this.inputRotation, 0, x * INPUT_ARRAY_ROUNDING);
+          // Keep within -2 to 2, so we don't overflow the array
+          // A rotation of 2 in either direction is a full rotation
+          // So we can change it to 0 and it will be the same
+          const x2 = x < -2 ? x + 2 : x > 2 ? x - 2 : x;
+
+          Atomics.store(this.inputRotation, 0, x2 * INPUT_ARRAY_ROUNDING);
           Atomics.store(this.inputRotation, 1, y * INPUT_ARRAY_ROUNDING);
         }
         break;

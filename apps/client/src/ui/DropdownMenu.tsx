@@ -8,15 +8,17 @@ type Props = DropdownPrimitive.DropdownMenuProps;
 export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
   ({ children, ...rest }, ref) => {
     return (
-      <DropdownPrimitive.Content
-        ref={ref}
-        sideOffset={4}
-        onCloseAutoFocus={(event) => event.preventDefault()}
-        className="z-40 animate-scaleIn rounded-xl bg-white shadow-md"
-        {...rest}
-      >
-        {children}
-      </DropdownPrimitive.Content>
+      <DropdownPrimitive.DropdownMenuPortal>
+        <DropdownPrimitive.Content
+          ref={ref}
+          sideOffset={4}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          className="z-40 animate-scaleIn rounded-xl bg-neutral-50 shadow-md"
+          {...rest}
+        >
+          {children}
+        </DropdownPrimitive.Content>
+      </DropdownPrimitive.DropdownMenuPortal>
     );
   }
 );

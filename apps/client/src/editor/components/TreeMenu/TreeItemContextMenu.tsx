@@ -18,10 +18,10 @@ export default function TreeItemContextMenu() {
 
   return (
     <ContextMenu.Portal>
-      <ContextMenu.Content className="overflow-hidden rounded bg-white shadow">
+      <ContextMenu.Content className="rounded-lg bg-neutral-50 shadow">
         <ContextMenu.Item
           onClick={handleDelete}
-          className="flex cursor-pointer select-none items-center space-x-2 rounded px-3 py-1 outline-none hover:bg-red-200 hover:text-red-900"
+          className="flex cursor-pointer select-none items-center space-x-2 rounded-lg px-3 py-1 outline-none hover:bg-red-200 hover:text-red-900"
         >
           <MdClose className="text-lg" />
           <div>Delete</div>

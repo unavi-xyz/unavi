@@ -13,7 +13,7 @@ export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
           ref={ref}
           sideOffset={4}
           onCloseAutoFocus={(event) => event.preventDefault()}
-          className="z-40 animate-scaleIn rounded-xl bg-neutral-50 shadow-md"
+          className="animate-scaleIn rounded-xl bg-neutral-50 shadow-md"
           {...rest}
         >
           {children}
@@ -28,5 +28,24 @@ DropdownContent.displayName = "DropdownContent";
 export const DropdownMenu = DropdownPrimitive.Root;
 export const DropdownTrigger = DropdownPrimitive.Trigger;
 export const DropdownItem = DropdownPrimitive.Item;
+export const DropdownSub = DropdownPrimitive.Sub;
+export const DropdownSubTrigger = DropdownPrimitive.SubTrigger;
+
+export const DropdownSubContent = React.forwardRef<HTMLDivElement, Props>(
+  ({ children, ...rest }, ref) => {
+    return (
+      <DropdownPrimitive.SubContent
+        ref={ref}
+        sideOffset={4}
+        className="rounded-xl bg-neutral-50 shadow-md"
+        {...rest}
+      >
+        {children}
+      </DropdownPrimitive.SubContent>
+    );
+  }
+);
+
+DropdownSubContent.displayName = "DropdownSubContent";
 
 export type DropdownMenuItemProps = DropdownPrimitive.DropdownMenuItemProps;

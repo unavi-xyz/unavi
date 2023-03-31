@@ -43,7 +43,7 @@ export default function Home() {
                     href="/play/0x4d"
                     className="flex h-12 items-center justify-center rounded-full bg-neutral-900 px-10 text-2xl font-bold text-white outline-neutral-400 transition hover:scale-105"
                   >
-                    Enter
+                    Play
                   </Link>
                 </div>
 

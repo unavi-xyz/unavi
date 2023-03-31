@@ -29,7 +29,7 @@ export default function FileInput({
       <div
         className={`flex items-center rounded-xl bg-neutral-200/70 py-2.5 px-4 transition ${
           disabled
-            ? "cursor-not-allowed opacity-80"
+            ? "cursor-default opacity-80"
             : "cursor-pointer hover:bg-neutral-300 active:opacity-80"
         }`}
       >

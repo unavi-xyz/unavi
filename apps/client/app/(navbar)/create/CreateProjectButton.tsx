@@ -17,7 +17,7 @@ export default async function CreateProjectButton() {
         <button
           disabled={!session}
           className={`rounded-lg px-5 py-1.5 ring-1 ring-neutral-700 transition ${
-            session ? "hover:bg-neutral-200 active:opacity-80" : "cursor-not-allowed opacity-40"
+            session ? "hover:bg-neutral-200 active:opacity-80" : "cursor-default opacity-40"
           }`}
         >
           <MdAdd className="text-lg" />

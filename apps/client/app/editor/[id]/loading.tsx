@@ -43,7 +43,7 @@ export default function Loading() {
             <HiCubeTransparent />
           </SkeletonIconButton>
 
-          <div className="cursor-not-allowed rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400">
+          <div className="cursor-default rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400">
             Sign in
           </div>
         </div>
@@ -54,7 +54,7 @@ export default function Loading() {
 
 function SkeletonIconButton({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex aspect-square h-full cursor-not-allowed items-center justify-center text-2xl">
+    <div className="flex aspect-square h-full cursor-default items-center justify-center text-2xl">
       {children}
     </div>
   );

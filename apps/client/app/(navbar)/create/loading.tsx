@@ -14,7 +14,7 @@ export default function Loading() {
 
           <button
             disabled
-            className="cursor-not-allowed rounded-lg px-5 py-1.5 opacity-40 ring-1 ring-neutral-700 transition"
+            className="cursor-default rounded-lg px-5 py-1.5 opacity-40 ring-1 ring-neutral-700 transition"
           >
             <MdAdd className="text-lg" />
           </button>

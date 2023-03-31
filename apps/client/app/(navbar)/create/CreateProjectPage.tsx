@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
+import Button from "../../../src/ui/Button";
 import TextField from "../../../src/ui/TextField";
 import { getProjectFileUpload } from "../../api/projects/[id]/[file]/helper";
 import { MAX_NAME_LENGTH } from "../../api/projects/constants";
@@ -72,15 +73,9 @@ export default function CreateProjectPage() {
       />
 
       <div className="flex justify-end">
-        <button
-          disabled={loading}
-          type="submit"
-          className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400 transition ${
-            loading ? "cursor-not-allowed opacity-40" : "hover:scale-105"
-          }`}
-        >
+        <Button disabled={loading} type="submit">
           Create
-        </button>
+        </Button>
       </div>
     </form>
   );

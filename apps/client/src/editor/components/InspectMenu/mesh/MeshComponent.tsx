@@ -38,7 +38,7 @@ export default function MeshComponent({ mesh }: Props) {
         </div>
 
         <MenuRows titles={["Type"]}>
-          <div className="w-full cursor-not-allowed select-none rounded border border-neutral-300 bg-neutral-50 pl-1.5">
+          <div className="w-full cursor-default select-none rounded border border-neutral-300 bg-neutral-50 pl-1.5">
             Primitives
           </div>
         </MenuRows>

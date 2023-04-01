@@ -69,12 +69,16 @@ export type ColliderDef = z.infer<typeof colliderSchema>;
 
 export const colliderExtensionSchema = z.object({
   colliders: z.array(colliderSchema).min(1),
+  extensions: z.unknown().optional(),
+  extras: z.unknown().optional(),
 });
 
 export type ColliderExtensionDef = z.infer<typeof colliderExtensionSchema>;
 
 export const nodeColliderSchema = z.object({
   collider: glTFid,
+  extensions: z.unknown().optional(),
+  extras: z.unknown().optional(),
 });
 
 export type NodeColliderDef = z.infer<typeof nodeColliderSchema>;

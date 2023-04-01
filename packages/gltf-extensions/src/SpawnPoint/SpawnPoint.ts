@@ -5,6 +5,8 @@ import { EXTENSION_NAME } from "../constants";
 
 interface ISpawnPoint extends IProperty {
   title: string;
+  team: string;
+  group: string;
 }
 
 /**
@@ -28,6 +30,8 @@ export class SpawnPoint extends ExtensionProperty<ISpawnPoint> {
   protected override getDefaults(): Nullable<ISpawnPoint> {
     return Object.assign(super.getDefaults(), {
       title: null,
+      team: null,
+      group: null,
     });
   }
 
@@ -37,5 +41,21 @@ export class SpawnPoint extends ExtensionProperty<ISpawnPoint> {
 
   setTitle(title: string) {
     this.set("title", title);
+  }
+
+  getTeam() {
+    return this.get("team");
+  }
+
+  setTeam(team: string) {
+    this.set("team", team);
+  }
+
+  getGroup() {
+    return this.get("group");
+  }
+
+  setGroup(group: string) {
+    this.set("group", group);
   }
 }

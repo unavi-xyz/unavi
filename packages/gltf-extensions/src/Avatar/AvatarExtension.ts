@@ -2,12 +2,7 @@ import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
 import { Avatar } from "./Avatar";
-
-type AvatarDef = {
-  name: string;
-  equippable: boolean;
-  uri: string;
-};
+import { AvatarDef, avatarSchema } from "./schemas";
 
 /**
  * Implementation of the WIRED_avatar extension.
@@ -34,7 +29,7 @@ export class AvatarExtension extends Extension {
 
       const avatar = this.createAvatar();
 
-      const avatarDef = nodeDef.extensions[this.extensionName] as AvatarDef;
+      const avatarDef = avatarSchema.parse(nodeDef.extensions[this.extensionName]);
       avatar.setName(avatarDef.name);
       avatar.setEquippable(avatarDef.equippable);
       avatar.setURI(avatarDef.uri);

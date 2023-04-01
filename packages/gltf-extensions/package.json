@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@gltf-transform/core": "3.1.2",
-    "@wired-labs/behave-graph-core": "^0.9.19"
+    "@wired-labs/behave-graph-core": "^0.9.19",
+    "zod": "^3.21.4"
   },
   "devDependencies": {
     "tsconfig": "*",

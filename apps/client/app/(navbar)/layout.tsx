@@ -41,7 +41,7 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
         </nav>
       </div>
 
-      <div className="h-screen">{children}</div>
+      <div className="h-full">{children}</div>
     </div>
   );
 }

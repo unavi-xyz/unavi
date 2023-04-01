@@ -120,8 +120,19 @@ export class Engine {
    * The physics thread needs to be destroyed and recreated, something to do with wasm.
    */
   async reset() {
+    const wasPlaying = this.#isPlaying;
+    if (wasPlaying) this.stop();
+
+    this.render.send({
+      subject: "set_transform_controls_target",
+      data: { nodeId: null, attach: false },
+    });
+
     this.scene.clear();
+
     await this.physics.reset();
+
+    if (wasPlaying) this.start();
   }
 
   destroy() {

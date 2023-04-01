@@ -17,9 +17,6 @@ export function useScene(metadata: ERC721Metadata | null) {
 
   useEffect(() => {
     async function load() {
-      setIsDownloaded(false);
-      setIsLoaded(false);
-
       if (!engine || !metadata || !metadata.animation_url) return;
 
       try {
@@ -53,6 +50,12 @@ export function useScene(metadata: ERC721Metadata | null) {
     }
 
     load();
+
+    return () => {
+      engine?.reset();
+      setIsDownloaded(false);
+      setIsLoaded(false);
+    };
   }, [engine, metadata]);
 
   return {

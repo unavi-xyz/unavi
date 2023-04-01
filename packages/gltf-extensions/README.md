@@ -2,6 +2,7 @@
 
 Contains [glTF-Transform](https://github.com/donmccurdy/glTF-Transform) implementations of the following glTF extensions:
 
+- [KHR_audio](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/KHR_audio)
 - [KHR_behavior](https://github.com/ux3d/glTF/tree/extensions/KHR_behavior/extensions/2.0/Khronos/KHR_behavior)
 - [OMI_collider](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_collider)
 - [OMI_spawn_point](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point)
@@ -24,18 +25,10 @@ Simply register the extensions you want with your glTF-Transform `io` instance:
 
 ```typescript
 import { NodeIO } from "@gltf-transform/core";
-import {
-  BehaviorExtension,
-  ColliderExtension,
-  SpawnPointExtension,
-} from "@wired-labs/gltf-extensions";
+import { ColliderExtension, SpawnPointExtension } from "@wired-labs/gltf-extensions";
 
 // Register extensions
-const io = new NodeIO().registerExtensions([
-  BehaviorExtension,
-  ColliderExtension,
-  SpawnPointExtension,
-]);
+const io = new NodeIO().registerExtensions([ColliderExtension, SpawnPointExtension]);
 
 // Read from URL
 const document = await io.read("path/to/model.glb");

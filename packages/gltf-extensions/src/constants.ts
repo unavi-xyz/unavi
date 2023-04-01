@@ -1,4 +1,5 @@
 export const EXTENSION_NAME = {
+  Audio: "KHR_audio",
   Avatar: "WIRED_avatar",
   Behavior: "KHR_behavior",
   Collider: "OMI_collider",

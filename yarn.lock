@@ -3725,19 +3725,26 @@
     "@floating-ui/dom" "^0.5.3"
     use-isomorphic-layout-effect "^1.1.1"
 
-"@gltf-transform/core@3.1.2", "@gltf-transform/core@^3.1.1":
+"@gltf-transform/core@3.1.2":
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.1.2.tgz#4454ac32c0becd548df06ab3b1fbd66f26148eab"
   integrity sha512-F2GdE0e7o3Fri3W4pkNSD89Hpvc84pyi+uQ5XpcV6JtAuIVp7kwqONnOUYO3yhGX/rWd/mgG4QTeJYU/Z0UE6g==
   dependencies:
     property-graph "^1.1.0"
 
-"@gltf-transform/extensions@3.1.1", "@gltf-transform/extensions@^3.1.1":
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-3.1.1.tgz#6d9602d402a7087ed3c5298883e3aa37f911e33d"
-  integrity sha512-9nFMSgx52IeZD4VmgBtWQxufeJZCKRh0BM6nZRsO91Had5Na3fbiueRGp9rQEIxaXNRGZZ6YrOkLGOeqERNEzw==
+"@gltf-transform/core@^3.1.1", "@gltf-transform/core@^3.1.7":
+  version "3.1.7"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.1.7.tgz#6397861f06551c59c63615a5ebbeaf8f75210a27"
+  integrity sha512-QbpnjkFLc/bkewbCpdJKoR6/wi/ADwTpG+LlaTGn6iVsDDlyMSs/XsHDZMM0jhwek17CSuDhTrw7CDoraS1M8g==
   dependencies:
-    "@gltf-transform/core" "^3.1.1"
+    property-graph "^1.1.0"
+
+"@gltf-transform/extensions@3.1.7", "@gltf-transform/extensions@^3.1.1":
+  version "3.1.7"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-3.1.7.tgz#084b50b0a4bd83a67e898721a2900730848225bf"
+  integrity sha512-N4wSwTL1fdsIaYfnNfB8VDGby+rduSg9tG2/wC0XDYhkLUhOQzUlR3iyIta+Hdy4M8sgszfeOZjWn/geU6GjmA==
+  dependencies:
+    "@gltf-transform/core" "^3.1.7"
     ktx-parse "^0.5.0"
 
 "@gltf-transform/functions@3.1.1":

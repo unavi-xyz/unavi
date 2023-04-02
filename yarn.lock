@@ -12376,10 +12376,10 @@ mediasoup-client@^3.6.82:
     sdp-transform "^2.14.1"
     supports-color "^9.3.1"
 
-mediasoup@^3.11.15:
-  version "3.11.15"
-  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.11.15.tgz#8b8db647807e68f3fa628a8166d77ab5a70342ae"
-  integrity sha512-GkPztFLbM2Qyq05W7prhIsZqPgkO1LRJfXjRwXpzO/I6iHy2D0yVcVQIQEdp6xoVlc6cPNYEbChgKli5BKBJFg==
+mediasoup@^3.11.20:
+  version "3.11.20"
+  resolved "https://registry.yarnpkg.com/mediasoup/-/mediasoup-3.11.20.tgz#d171f50016d7e96019c41dab043ac43f467c4d76"
+  integrity sha512-FQ4PILwNZ2BnPcKTWqxG3aCDlPfhbJaZuM0nENkDgUry+VNJ96MOzup5HFFdQe5krzRlgkg9cQjQRFH1Qzak7A==
   dependencies:
     debug "^4.3.4"
     h264-profile-level-id "^1.0.1"

@@ -20,7 +20,7 @@ interface ICollider extends IProperty {
  * @see {@link ColliderExtension}
  */
 export class Collider extends ExtensionProperty<ICollider> {
-  static override EXTENSION_NAME = EXTENSION_NAME.Collider;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.Collider;
   declare extensionName: typeof EXTENSION_NAME.Collider;
   declare propertyType: "Collider";
   declare parentTypes: [PropertyType.NODE];

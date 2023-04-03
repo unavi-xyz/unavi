@@ -14,7 +14,7 @@ interface IAvatar extends IProperty {
  * @see {@link AvatarExtension}
  */
 export class Avatar extends ExtensionProperty<IAvatar> {
-  static override EXTENSION_NAME = EXTENSION_NAME.Avatar;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.Avatar;
   declare extensionName: typeof EXTENSION_NAME.Avatar;
   declare propertyType: "Avatar";
   declare parentTypes: [PropertyType.NODE];

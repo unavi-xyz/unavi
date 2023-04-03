@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const glTFid = z.number().min(0);
 
-export const audioSchema = z
+export const audioDataSchema = z
   .object({
     uri: z.string().optional(),
     mimeType: z.union([z.literal("audio/mpeg"), z.string()]).optional(),
@@ -27,9 +27,9 @@ export const audioSchema = z
     { message: 'If "bufferView" is defined, "mimeType" must also be provided.' }
   );
 
-export type AudioDef = z.infer<typeof audioSchema>;
+export type AudioDataDef = z.infer<typeof audioDataSchema>;
 
-export const sourceSchema = z.object({
+export const audioSourceSchema = z.object({
   autoPlay: z.boolean().default(false),
   gain: z.number().min(0).default(1.0),
   loop: z.boolean().default(false),
@@ -39,7 +39,7 @@ export const sourceSchema = z.object({
   extras: z.unknown().optional(),
 });
 
-export type SourceDef = z.infer<typeof sourceSchema>;
+export type AudioSourceDef = z.infer<typeof audioSourceSchema>;
 
 const positionalEmitterSchema = z.object({
   coneInnerAngle: z.number().min(0.0).max(6.283185307179586).default(6.283185307179586),
@@ -57,7 +57,7 @@ const positionalEmitterSchema = z.object({
 
 export type PositionalEmitterDef = z.infer<typeof positionalEmitterSchema>;
 
-export const emitterSchema = z
+export const audioEmitterSchema = z
   .object({
     type: z.union([z.literal("positional"), z.literal("global"), z.string()]),
     gain: z.number().min(0.0).default(1.0),
@@ -76,7 +76,7 @@ export const emitterSchema = z
     }
   );
 
-export type EmitterDef = z.infer<typeof emitterSchema>;
+export type AudioEmitterDef = z.infer<typeof audioEmitterSchema>;
 
 export const sceneAudioSchema = z.object({
   emitters: z.array(glTFid).min(1),
@@ -95,9 +95,9 @@ export const nodeAudioSchema = z.object({
 export type NodeAudioDef = z.infer<typeof nodeAudioSchema>;
 
 export const audioExtensionSchema = z.object({
-  audio: z.array(audioSchema).min(1),
-  sources: z.array(sourceSchema).min(1),
-  emitters: z.array(emitterSchema).min(1),
+  audio: z.array(audioDataSchema).min(1),
+  sources: z.array(audioSourceSchema).min(1),
+  emitters: z.array(audioEmitterSchema).min(1),
   extensions: z.unknown().optional(),
   extras: z.unknown().optional(),
 });

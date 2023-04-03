@@ -34,7 +34,7 @@ export class AudioData extends ExtensionProperty<IAudio> {
   }
 
   protected override getDefaults(): Nullable<IAudio> {
-    return Object.assign(super.getDefaults(), {
+    return Object.assign(super.getDefaults() as IProperty, {
       uri: "",
       mimeType: "",
       data: null,

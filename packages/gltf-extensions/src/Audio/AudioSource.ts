@@ -30,9 +30,9 @@ export class AudioSource extends ExtensionProperty<IAudioSource> {
   }
 
   protected override getDefaults(): Nullable<IAudioSource> {
-    return Object.assign(super.getDefaults(), {
-      gain: 1,
+    return Object.assign(super.getDefaults() as IProperty, {
       autoPlay: false,
+      gain: 1,
       loop: false,
       audio: null,
     });

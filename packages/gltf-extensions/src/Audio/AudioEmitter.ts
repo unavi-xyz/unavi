@@ -31,7 +31,20 @@ export class AudioEmitter extends ExtensionProperty<IAudioEmitter> {
   }
 
   protected override getDefaults(): Nullable<IAudioEmitter> {
-    return Object.assign(super.getDefaults(), {});
+    return Object.assign(super.getDefaults() as IProperty, {
+      type: "global" as const,
+      gain: 1,
+      sources: [],
+      positional: {
+        coneInnerAngle: Math.PI * 2,
+        coneOuterAngle: Math.PI * 2,
+        coneOuterGain: 0,
+        distanceModel: "inverse" as const,
+        maxDistance: 10000,
+        refDistance: 1,
+        rolloffFactor: 1,
+      },
+    });
   }
 
   getType() {

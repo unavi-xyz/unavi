@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 
+import { parseError } from "../../../src/editor/utils/parseError";
 import Button from "../../../src/ui/Button";
 import TextField from "../../../src/ui/TextField";
 import { getProjectFileUpload } from "../../api/projects/[id]/[file]/helper";
@@ -22,6 +24,8 @@ export default function CreateProjectPage() {
 
     if (loading) return;
     setLoading(true);
+
+    const toastId = "create-project";
 
     async function uploadDefaultImage(id: string) {
       const res = await fetch("/images/Default-Space.jpg");
@@ -48,14 +52,18 @@ export default function CreateProjectPage() {
     }
 
     try {
+      toast.loading("Creating project...", { id: toastId });
+
       // Create new project
       const id = await createProject(nameRef.current?.value || DEFAULT_NAME);
-
       await Promise.all([uploadDefaultImage(id), uploadDefaultModel(id)]);
 
+      toast.success("Project created!", { id: toastId });
+
       router.push(`/editor/${id}`);
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
+      toast.error(parseError(e, "Failed to create project"), { id: toastId });
       setLoading(false);
     }
   }

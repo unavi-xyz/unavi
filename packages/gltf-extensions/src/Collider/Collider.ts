@@ -43,6 +43,7 @@ export class Collider extends ExtensionProperty<ICollider> {
   protected override getDefaults(): Nullable<ICollider> {
     return Object.assign(super.getDefaults(), {
       type: null,
+      isTrigger: false,
       size: null,
       radius: null,
       height: null,

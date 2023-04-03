@@ -52,7 +52,14 @@ export class AudioExtension extends Extension {
 
     if (!json.extensions || !json.extensions[this.extensionName]) return this;
 
-    const rootDef = audioExtensionSchema.parse(json.extensions[this.extensionName]);
+    const parsedRootDef = audioExtensionSchema.safeParse(json.extensions[this.extensionName]);
+
+    if (!parsedRootDef.success) {
+      console.warn(parsedRootDef.error);
+      return this;
+    }
+
+    const rootDef = parsedRootDef.data;
 
     const audioDatas = rootDef.audio.map((audioDef) => {
       const audioData = this.createAudioData();
@@ -118,7 +125,17 @@ export class AudioExtension extends Extension {
     sceneDefs.forEach((sceneDef, sceneIndex) => {
       if (!sceneDef.extensions || !sceneDef.extensions[this.extensionName]) return;
 
-      const sceneEmitterDef = sceneAudioSchema.parse(sceneDef.extensions[this.extensionName]);
+      const parsedSceneEmitterDef = sceneAudioSchema.safeParse(
+        sceneDef.extensions[this.extensionName]
+      );
+
+      if (!parsedSceneEmitterDef.success) {
+        console.warn(parsedSceneEmitterDef.error);
+        return;
+      }
+
+      const sceneEmitterDef = parsedSceneEmitterDef.data;
+
       const sceneAudioEmitters = this.createSceneAudioEmitters();
 
       for (const emitterIndex of sceneEmitterDef.emitters) {
@@ -136,7 +153,16 @@ export class AudioExtension extends Extension {
     nodeDefs.forEach((nodeDef, nodeIndex) => {
       if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName]) return;
 
-      const nodeEmitterDef = nodeAudioSchema.parse(nodeDef.extensions[this.extensionName]);
+      const parsedNodeEmitterDef = nodeAudioSchema.safeParse(
+        nodeDef.extensions[this.extensionName]
+      );
+
+      if (!parsedNodeEmitterDef.success) {
+        console.warn(parsedNodeEmitterDef.error);
+        return;
+      }
+
+      const nodeEmitterDef = parsedNodeEmitterDef.data;
 
       const audioEmitter = audioEmitters[nodeEmitterDef.emitter];
       if (!audioEmitter) throw new Error("Audio emitter not found");

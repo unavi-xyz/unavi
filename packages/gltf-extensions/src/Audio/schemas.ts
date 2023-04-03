@@ -41,13 +41,19 @@ export const audioSourceSchema = z.object({
 
 export type AudioSourceDef = z.infer<typeof audioSourceSchema>;
 
+const audioEmitterDistanceModelSchema = z.union([
+  z.literal("linear"),
+  z.literal("inverse"),
+  z.literal("exponential"),
+]);
+
+export type AudioEmitterDistanceModel = z.infer<typeof audioEmitterDistanceModelSchema>;
+
 const positionalEmitterSchema = z.object({
   coneInnerAngle: z.number().min(0.0).max(6.283185307179586).default(6.283185307179586),
   coneOuterAngle: z.number().min(0.0).max(6.283185307179586).default(6.283185307179586),
   coneOuterGain: z.number().min(0.0).max(1.0).default(0.0),
-  distanceModel: z
-    .union([z.literal("linear"), z.literal("inverse"), z.literal("exponential")])
-    .default("inverse"),
+  distanceModel: audioEmitterDistanceModelSchema.default("inverse"),
   maxDistance: z.number().gt(0.0).default(10000.0),
   refDistance: z.number().min(0.0).default(1.0),
   rolloffFactor: z.number().min(0.0).default(1.0),
@@ -55,14 +61,18 @@ const positionalEmitterSchema = z.object({
   extras: z.unknown().optional(),
 });
 
-export type PositionalEmitterDef = z.infer<typeof positionalEmitterSchema>;
+export type AudioEmitterPositionalDef = Partial<z.infer<typeof positionalEmitterSchema>>;
+
+const audioEmitterTypeSchema = z.union([z.literal("positional"), z.literal("global")]);
+
+export type AudioEmitterType = z.infer<typeof audioEmitterTypeSchema>;
 
 export const audioEmitterSchema = z
   .object({
-    type: z.union([z.literal("positional"), z.literal("global"), z.string()]),
+    type: audioEmitterTypeSchema,
     gain: z.number().min(0.0).default(1.0),
     sources: z.array(glTFid),
-    positional: positionalEmitterSchema.optional(),
+    positional: positionalEmitterSchema.partial().optional(),
     name: z.string(),
     extensions: z.unknown().optional(),
     extras: z.unknown().optional(),

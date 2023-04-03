@@ -2,14 +2,20 @@ import { ExtensionProperty, IProperty, Nullable, PropertyType } from "@gltf-tran
 
 import { EXTENSION_NAME } from "../constants";
 import { AudioSource } from "./AudioSource";
-import { PositionalEmitterDef } from "./schemas";
+import { AudioEmitterDistanceModel, AudioEmitterType } from "./schemas";
 import { AudioPropertyType } from "./types";
 
 interface IAudioEmitter extends IProperty {
-  type: "positional" | "global" | string;
+  type: AudioEmitterType;
   gain: number;
   sources: AudioSource[];
-  positional: PositionalEmitterDef;
+  coneInnerAngle: number;
+  coneOuterAngle: number;
+  coneOuterGain: number;
+  distanceModel: AudioEmitterDistanceModel;
+  maxDistance: number;
+  refDistance: number;
+  rolloffFactor: number;
 }
 
 /**
@@ -24,6 +30,17 @@ export class AudioEmitter extends ExtensionProperty<IAudioEmitter> {
   declare propertyType: typeof AudioPropertyType.AudioEmitter;
   declare parentTypes: [PropertyType.NODE, AudioPropertyType.SceneAudioEmitters];
 
+  static Type: Record<string, AudioEmitterType> = {
+    GLOBAL: "global",
+    POSITIONAL: "positional",
+  };
+
+  static DistanceModel: Record<string, AudioEmitterDistanceModel> = {
+    INVERSE: "inverse",
+    LINEAR: "linear",
+    EXPONENTIAL: "exponential",
+  };
+
   protected init() {
     this.extensionName = EXTENSION_NAME.Audio;
     this.propertyType = AudioPropertyType.AudioEmitter;
@@ -35,15 +52,13 @@ export class AudioEmitter extends ExtensionProperty<IAudioEmitter> {
       type: "global" as const,
       gain: 1,
       sources: [],
-      positional: {
-        coneInnerAngle: Math.PI * 2,
-        coneOuterAngle: Math.PI * 2,
-        coneOuterGain: 0,
-        distanceModel: "inverse" as const,
-        maxDistance: 10000,
-        refDistance: 1,
-        rolloffFactor: 1,
-      },
+      coneInnerAngle: Math.PI * 2,
+      coneOuterAngle: Math.PI * 2,
+      coneOuterGain: 0,
+      distanceModel: "inverse" as const,
+      maxDistance: 10000,
+      refDistance: 1,
+      rolloffFactor: 1,
     });
   }
 
@@ -51,7 +66,7 @@ export class AudioEmitter extends ExtensionProperty<IAudioEmitter> {
     return this.get("type");
   }
 
-  setType(type: string) {
+  setType(type: AudioEmitterType) {
     this.set("type", type);
     return this;
   }
@@ -77,12 +92,59 @@ export class AudioEmitter extends ExtensionProperty<IAudioEmitter> {
     return this.removeRef("sources", source);
   }
 
-  getPositional() {
-    return this.get("positional");
+  getConeInnerAngle(): number {
+    return this.get("coneInnerAngle");
   }
 
-  setPositional(positional: PositionalEmitterDef) {
-    this.set("positional", positional);
-    return this;
+  setConeInnerAngle(coneInnerAngle: number): this {
+    return this.set("coneInnerAngle", coneInnerAngle);
+  }
+
+  getConeOuterAngle(): number {
+    return this.get("coneOuterAngle");
+  }
+
+  setConeOuterAngle(coneOuterAngle: number): this {
+    return this.set("coneOuterAngle", coneOuterAngle);
+  }
+
+  getConeOuterGain(): number {
+    return this.get("coneOuterGain");
+  }
+
+  setConeOuterGain(coneOuterGain: number): this {
+    return this.set("coneOuterGain", coneOuterGain);
+  }
+
+  getDistanceModel(): AudioEmitterDistanceModel {
+    return this.get("distanceModel");
+  }
+
+  setDistanceModel(distanceModel: AudioEmitterDistanceModel): this {
+    return this.set("distanceModel", distanceModel);
+  }
+
+  getMaxDistance(): number {
+    return this.get("maxDistance");
+  }
+
+  setMaxDistance(maxDistance: number): this {
+    return this.set("maxDistance", maxDistance);
+  }
+
+  getRefDistance(): number {
+    return this.get("refDistance");
+  }
+
+  setRefDistance(refDistance: number): this {
+    return this.set("refDistance", refDistance);
+  }
+
+  getRolloffFactor(): number {
+    return this.get("rolloffFactor");
+  }
+
+  setRolloffFactor(rolloffFactor: number): this {
+    return this.set("rolloffFactor", rolloffFactor);
   }
 }

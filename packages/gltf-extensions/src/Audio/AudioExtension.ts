@@ -14,6 +14,7 @@ import { SceneAudioEmitters } from "./SceneAudioEmitters";
 import {
   AudioDataDef,
   AudioEmitterDef,
+  AudioEmitterPositionalDef,
   AudioExtensionDef,
   audioExtensionSchema,
   AudioSourceDef,
@@ -115,7 +116,24 @@ export class AudioExtension extends Extension {
         emitter.addSource(source);
       });
 
-      if (emitterDef.positional) emitter.setPositional(emitterDef.positional);
+      const positionalDef = emitterDef.positional;
+
+      if (positionalDef) {
+        if (positionalDef.coneInnerAngle !== undefined)
+          emitter.setConeInnerAngle(positionalDef.coneInnerAngle);
+        if (positionalDef.coneOuterAngle !== undefined)
+          emitter.setConeOuterAngle(positionalDef.coneOuterAngle);
+        if (positionalDef.coneOuterGain !== undefined)
+          emitter.setConeOuterGain(positionalDef.coneOuterGain);
+        if (positionalDef.distanceModel !== undefined)
+          emitter.setDistanceModel(positionalDef.distanceModel);
+        if (positionalDef.maxDistance !== undefined)
+          emitter.setMaxDistance(positionalDef.maxDistance);
+        if (positionalDef.refDistance !== undefined)
+          emitter.setRefDistance(positionalDef.refDistance);
+        if (positionalDef.rolloffFactor !== undefined)
+          emitter.setRolloffFactor(positionalDef.rolloffFactor);
+      }
 
       return emitter;
     });
@@ -268,7 +286,53 @@ export class AudioExtension extends Extension {
         audioEmitterDef.sources.push(index);
       });
 
-      if (audioEmitter.getPositional()) audioEmitterDef.positional = audioEmitter.getPositional();
+      const positionalDef: AudioEmitterPositionalDef = {};
+
+      const coneInnerAngle = audioEmitter.getConeInnerAngle();
+
+      if (coneInnerAngle !== Math.PI * 2) {
+        positionalDef.coneInnerAngle = coneInnerAngle;
+      }
+
+      const coneOuterAngle = audioEmitter.getConeOuterAngle();
+
+      if (coneOuterAngle !== Math.PI * 2) {
+        positionalDef.coneOuterAngle = coneOuterAngle;
+      }
+
+      const coneOuterGain = audioEmitter.getConeOuterGain();
+
+      if (coneOuterGain !== 0) {
+        positionalDef.coneOuterGain = coneOuterGain;
+      }
+
+      const distanceModel = audioEmitter.getDistanceModel();
+
+      if (distanceModel !== AudioEmitter.DistanceModel.INVERSE) {
+        positionalDef.distanceModel = distanceModel;
+      }
+
+      const maxDistance = audioEmitter.getMaxDistance();
+
+      if (maxDistance !== 10000) {
+        positionalDef.maxDistance = maxDistance;
+      }
+
+      const refDistance = audioEmitter.getRefDistance();
+
+      if (refDistance !== 1) {
+        positionalDef.refDistance = refDistance;
+      }
+
+      const rolloffFactor = audioEmitter.getRolloffFactor();
+
+      if (rolloffFactor !== 1) {
+        positionalDef.rolloffFactor = rolloffFactor;
+      }
+
+      if (Object.keys(positionalDef).length > 0) {
+        audioEmitterDef.positional = positionalDef;
+      }
 
       audioEmitterIndexMap.set(audioEmitter, rootDef.emitters.length);
       rootDef.emitters.push(audioEmitterDef);

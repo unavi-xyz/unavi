@@ -2,7 +2,7 @@ import { ExtensionProperty, IProperty, Nullable, PropertyType } from "@gltf-tran
 
 import { EXTENSION_NAME } from "../constants";
 import { AudioEmitter } from "./AudioEmitter";
-import { PROPERTY_TYPES } from "./constants";
+import { AudioPropertyType } from "./types";
 
 interface ISceneAudioEmitters extends IProperty {
   emitters: AudioEmitter[];
@@ -11,12 +11,12 @@ interface ISceneAudioEmitters extends IProperty {
 export class SceneAudioEmitters extends ExtensionProperty<ISceneAudioEmitters> {
   static override readonly EXTENSION_NAME = EXTENSION_NAME.Audio;
   declare extensionName: typeof EXTENSION_NAME.Audio;
-  declare propertyType: typeof PROPERTY_TYPES.SceneAudioEmitters;
+  declare propertyType: AudioPropertyType.SceneAudioEmitters;
   declare parentTypes: [PropertyType.SCENE];
 
   protected init(): void {
     this.extensionName = EXTENSION_NAME.Audio;
-    this.propertyType = PROPERTY_TYPES.SceneAudioEmitters;
+    this.propertyType = AudioPropertyType.SceneAudioEmitters;
     this.parentTypes = [PropertyType.SCENE];
   }
 

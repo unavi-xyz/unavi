@@ -2,7 +2,7 @@ import { ExtensionProperty, IProperty, Nullable } from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
 import { AudioData } from "./AudioData";
-import { PROPERTY_TYPES } from "./constants";
+import { AudioPropertyType } from "./types";
 
 interface IAudioSource extends IProperty {
   gain: number;
@@ -20,13 +20,13 @@ interface IAudioSource extends IProperty {
 export class AudioSource extends ExtensionProperty<IAudioSource> {
   static override readonly EXTENSION_NAME = EXTENSION_NAME.Audio;
   declare extensionName: typeof EXTENSION_NAME.Audio;
-  declare propertyType: typeof PROPERTY_TYPES.AudioSource;
-  declare parentTypes: [];
+  declare propertyType: AudioPropertyType.AudioSource;
+  declare parentTypes: [AudioPropertyType.AudioEmitter];
 
   protected init() {
     this.extensionName = EXTENSION_NAME.Audio;
-    this.propertyType = PROPERTY_TYPES.AudioSource;
-    this.parentTypes = [];
+    this.propertyType = AudioPropertyType.AudioSource;
+    this.parentTypes = [AudioPropertyType.AudioEmitter];
   }
 
   protected override getDefaults(): Nullable<IAudioSource> {

@@ -3,7 +3,7 @@ import { ExtensionProperty, IProperty, Nullable } from "@gltf-transform/core";
 import { EXTENSION_NAME } from "../constants";
 import { ValueType } from "./types";
 
-interface IVariable extends IProperty {
+interface IBehaviorVariable extends IProperty {
   type: string;
   initialValue: any;
 }
@@ -14,8 +14,8 @@ interface IVariable extends IProperty {
  * @group KHR_behavior
  * @see {@link BehaviorExtension}
  */
-export class Variable extends ExtensionProperty<IVariable> {
-  static override EXTENSION_NAME = EXTENSION_NAME.Behavior;
+export class BehaviorVariable extends ExtensionProperty<IBehaviorVariable> {
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.Behavior;
   declare extensionName: typeof EXTENSION_NAME.Behavior;
   declare propertyType: "Variable";
   declare parentTypes: [];
@@ -26,7 +26,7 @@ export class Variable extends ExtensionProperty<IVariable> {
     this.parentTypes = [];
   }
 
-  protected override getDefaults(): Nullable<IVariable> {
+  protected override getDefaults(): Nullable<IBehaviorVariable> {
     return Object.assign(super.getDefaults(), {
       type: ValueType.string,
       name: null,

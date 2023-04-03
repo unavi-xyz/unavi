@@ -1,7 +1,7 @@
-import { Variable } from "@wired-labs/gltf-extensions";
+import { BehaviorVariable } from "@wired-labs/gltf-extensions";
 import { useEffect, useState } from "react";
 
-export function useVariableAttribute<T extends Variable, A extends keyof T>(
+export function useVariableAttribute<T extends BehaviorVariable, A extends keyof T>(
   variable: T | null,
   attribute: A
 ): T[A] | null {

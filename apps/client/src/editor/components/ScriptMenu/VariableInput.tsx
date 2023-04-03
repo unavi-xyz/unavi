@@ -1,5 +1,5 @@
 import * as Select from "@radix-ui/react-select";
-import { ValueType, Variable } from "@wired-labs/gltf-extensions";
+import { BehaviorVariable, ValueType } from "@wired-labs/gltf-extensions";
 import { useEffect, useState } from "react";
 import { IoIosArrowDown } from "react-icons/io";
 
@@ -159,7 +159,7 @@ export default function VariableInput({ data, onChange }: Props) {
   );
 }
 
-function VariableItem({ value, variable }: { value: string; variable: Variable }) {
+function VariableItem({ value, variable }: { value: string; variable: BehaviorVariable }) {
   const name = useVariableAttribute(variable, "name") ?? "";
 
   return (

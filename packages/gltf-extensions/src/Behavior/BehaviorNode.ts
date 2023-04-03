@@ -1,8 +1,8 @@
 import { ExtensionProperty, IProperty, Node, Nullable } from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
+import { BehaviorVariable } from "./BehaviorVariable";
 import { BehaviorNodeConfiguration, BehaviorNodeParameters } from "./types";
-import { Variable } from "./Variable";
 
 interface IBehaviorNode extends IProperty {
   configuration: BehaviorNodeConfiguration | null;
@@ -11,7 +11,7 @@ interface IBehaviorNode extends IProperty {
   nodes: { [key: string]: Node };
   parameters: BehaviorNodeParameters | null;
   type: string;
-  variable: Variable;
+  variable: BehaviorVariable;
 }
 
 /**
@@ -21,7 +21,7 @@ interface IBehaviorNode extends IProperty {
  * @see {@link BehaviorExtension}
  */
 export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
-  static override EXTENSION_NAME = EXTENSION_NAME.Behavior;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.Behavior;
   declare extensionName: typeof EXTENSION_NAME.Behavior;
   declare propertyType: "BehaviorNode";
   declare parentTypes: [];
@@ -49,7 +49,7 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     return this.getRef("variable");
   }
 
-  setVariable(variable: Variable | null) {
+  setVariable(variable: BehaviorVariable | null) {
     this.setRef("variable", variable);
   }
 

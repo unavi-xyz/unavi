@@ -2,4 +2,4 @@
 *
 # Except these files
 !.gitignore
-!index.md
+!_category_.yml

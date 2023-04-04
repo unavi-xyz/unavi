@@ -161,7 +161,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     this.ready = false;
 
     if (this.#worker instanceof FakeWorker) {
-      this.send({ subject: "destroy", data: null });
+      this.#worker.postMessage({ subject: "destroy", data: null });
 
       // Wait for the worker to process the message
       await new Promise<void>((resolve) => {

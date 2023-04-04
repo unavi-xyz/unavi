@@ -3,9 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { fetchProject } from "../../../../src/server/helpers/fetchProject";
-import ButtonTabs, { TabContent } from "../../../../src/ui/ButtonTabs";
-import { isFromCDN } from "../../../../src/utils/isFromCDN";
+import { fetchProject } from "@/src/server/helpers/fetchProject";
+import ButtonTabs, { TabContent } from "@/src/ui/ButtonTabs";
+import { isFromCDN } from "@/src/utils/isFromCDN";
+
 import About from "./About";
 import Settings from "./Settings";
 

@@ -5,6 +5,7 @@ import {
   KHRTextureTransform,
 } from "@gltf-transform/extensions";
 import {
+  AudioExtension,
   AvatarExtension,
   BehaviorExtension,
   ColliderExtension,
@@ -15,6 +16,7 @@ import {
  * List of extensions supported by the engine.
  */
 export const extensions = [
+  AudioExtension,
   AvatarExtension,
   BehaviorExtension,
   ColliderExtension,

@@ -3,7 +3,7 @@ import { Vec3 } from "engine";
 
 import { useCollider } from "../../../hooks/useExtension";
 import { useSubscribe } from "../../../hooks/useSubscribe";
-import NumberInput from "../../ui/NumberInput";
+import EditorInput from "../../ui/EditorInput";
 import MenuRows from "../ui/MenuRows";
 
 interface Props {
@@ -20,7 +20,8 @@ export default function BoxColliderComponent({ node }: Props) {
         const name = ["Width", "Height", "Depth"][i];
 
         return (
-          <NumberInput
+          <EditorInput
+            type="number"
             key={name}
             name={name}
             value={value}

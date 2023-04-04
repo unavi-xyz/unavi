@@ -8,19 +8,15 @@ import { useClient } from "./useClient";
 
 /**
  * Manages WebRTC consumers.
- *
- * @param ws WebSocket connection
- * @param transport mediasoup-client transport
- * @param audioContext Audio context
  */
-export function useConsumer(transport: Transport | null, audioContext: AudioContext) {
-  const { ws } = useClient();
+export function useConsumer(transport: Transport | null) {
+  const { ws, engine } = useClient();
 
   const [consumer, setConsumer] = useState<Consumer | null>(null);
   const [panners] = useState(new Map<number, PannerNode>());
 
   useEffect(() => {
-    if (!ws || !transport) return;
+    if (!engine || !ws || !transport) return;
 
     const onMessage = async (event: MessageEvent) => {
       const parsed = MessageSchema.fromHost.safeParse(JSON.parse(event.data));
@@ -57,8 +53,8 @@ export function useConsumer(transport: Transport | null, audioContext: AudioCont
 
           // Play audio on user interaction
           const play = () => {
-            if (audioContext.state === "suspended") audio.play();
-            if (audioContext.state === "running") {
+            if (engine.audio.context.state === "suspended") audio.play();
+            if (engine.audio.context.state === "running") {
               document.removeEventListener("click", play);
               document.removeEventListener("touchstart", play);
             }
@@ -67,17 +63,13 @@ export function useConsumer(transport: Transport | null, audioContext: AudioCont
           document.addEventListener("click", play);
           document.addEventListener("touchstart", play);
 
-          // Create audio source
-          const source = audioContext.createMediaStreamSource(audio.srcObject);
-
           // Create panner
-          const panner = audioContext.createPanner();
-          panner.panningModel = "HRTF";
+          const panner = engine.audio.createAudioPanner();
           panner.rolloffFactor = 0.5;
 
-          // Connect nodes
+          // Create audio source
+          const source = engine.audio.context.createMediaStreamSource(audio.srcObject);
           source.connect(panner);
-          panner.connect(audioContext.destination);
 
           // Store panner
           panners.set(data.playerId, panner);
@@ -97,7 +89,7 @@ export function useConsumer(transport: Transport | null, audioContext: AudioCont
         panner.disconnect();
       });
     };
-  }, [ws, transport, audioContext, panners]);
+  }, [ws, transport, engine, panners]);
 
   useEffect(() => {
     if (!consumer) return;

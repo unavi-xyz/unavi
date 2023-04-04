@@ -8,37 +8,44 @@ datasource db {
   relationMode = "prisma"
 }
 
-model ViewEvent {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-
-  Publication   Publication @relation(fields: [publicationId], references: [id])
-  publicationId String
-
-  @@index([publicationId])
-}
-
+// A space NFT created from the client will point to the S3 bucket of a publication
+// This makes the NFT metadata mutable, so that the NFT can be updated
+// without having to send a new transaction and update the NFT uri
 model Publication {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner   String?
+  owner   String? @db.Char(42)
   spaceId Int?
 
-  ViewEvents ViewEvent[]
-  viewCount  Int         @default(0)
+  PublishedModel PublishedModel?
 
-  Projects         Project[]
-  PublicationAsset PublicationAsset[]
+  Projects Project[]
 }
 
+// A published model is a model that has been published to the S3 bucket of a publication
+// It has a unique id and is immutable (so it can be cached)
+// To update the model, a new PublishedModel is created, and the publication metadata is updated
+model PublishedModel {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Publication   Publication @relation(fields: [publicationId], references: [id])
+  publicationId String      @unique
+
+  @@index([publicationId])
+}
+
+// A project can be linked to a publication,
+// allowing the user to push updates to the publication from the project
 model Project {
   id        String   @id
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner String
+  owner String @db.Char(42)
 
   name        String @db.VarChar(80)
   description String @db.VarChar(1200)
@@ -46,38 +53,19 @@ model Project {
   Publication   Publication? @relation(fields: [publicationId], references: [id])
   publicationId String?
 
-  Assets Asset[]
+  ProjectAsset ProjectAsset[]
 
   @@index([publicationId])
 }
 
-// Connects a publication to an asset
-// Allows for multiple publications to share the same asset
-model PublicationAsset {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  Publication   Publication @relation(fields: [publicationId], references: [id])
-  publicationId String
-
-  Asset   Asset  @relation(fields: [assetId], references: [id])
-  assetId String
-
-  @@index([publicationId])
-  @@index([assetId])
-}
-
-// Represents an asset file within s3
-model Asset {
+// A project asset is a file that is uploaded to the project S3 bucket
+model ProjectAsset {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   Project   Project? @relation(fields: [projectId], references: [id])
   projectId String?
-
-  PublicationAsset PublicationAsset[]
 
   @@index([projectId])
 }

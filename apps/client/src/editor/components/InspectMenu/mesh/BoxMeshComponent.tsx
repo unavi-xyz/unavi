@@ -1,7 +1,7 @@
 import { Mesh } from "@gltf-transform/core";
 
 import { useMeshExtras } from "../../../hooks/useMeshExtras";
-import NumberInput from "../../ui/NumberInput";
+import EditorInput from "../../ui/EditorInput";
 import MenuRows from "../ui/MenuRows";
 
 interface Props {
@@ -22,9 +22,10 @@ export default function BoxMeshComponent({ mesh }: Props) {
         const name = ["Width", "Height", "Depth"][i];
 
         return (
-          <NumberInput
+          <EditorInput
             key={name}
             name={name}
+            type="number"
             value={value ?? 0}
             step={0.1}
             onChange={(e) => {

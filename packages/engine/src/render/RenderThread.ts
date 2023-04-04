@@ -143,6 +143,11 @@ export class RenderThread {
         break;
       }
 
+      case "set_base_uri": {
+        this.renderScene.baseURI = data;
+        break;
+      }
+
       case "get_stats": {
         const info = this.renderer?.info;
         if (!info) break;

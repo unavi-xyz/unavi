@@ -1,10 +1,9 @@
-import { PostSchema, PublishProjectResponse } from "./types";
+import { PublishProjectResponse } from "./types";
 
-export async function publishProject(id: string, args: PostSchema = { optimize: true }) {
-  const response = await fetch(`/api/projects/${id}/publication`, {
-    method: "POST",
-    body: JSON.stringify(args),
-  });
+export async function publishProject(id: string) {
+  const response = await fetch(`/api/projects/${id}/publication`, { method: "POST" });
+  if (!response.ok) throw new Error(response.statusText);
+
   const json = (await response.json()) as PublishProjectResponse;
   return json;
 }

@@ -2,7 +2,8 @@ import * as ContextMenu from "@radix-ui/react-context-menu";
 import { IoIosArrowForward } from "react-icons/io";
 import { XYPosition } from "reactflow";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { categories, categorizedNodes } from "./nodes";
 
 interface Props {

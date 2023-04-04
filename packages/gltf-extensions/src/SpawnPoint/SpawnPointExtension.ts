@@ -27,7 +27,14 @@ export class SpawnPointExtension extends Extension {
       const node = context.nodes[nodeIndex];
       if (!node) throw new Error("Node not found");
 
-      const spawnPointDef = spawnPointSchema.parse(nodeDef.extensions[this.extensionName]);
+      const parsed = spawnPointSchema.safeParse(nodeDef.extensions[this.extensionName]);
+
+      if (!parsed.success) {
+        console.warn(parsed.error);
+        return;
+      }
+
+      const spawnPointDef = parsed.data;
 
       const spawnPoint = this.createSpawnPoint();
       spawnPoint.setTitle(spawnPointDef.title);

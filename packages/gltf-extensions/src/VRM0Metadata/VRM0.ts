@@ -12,7 +12,7 @@ interface IVRM0 extends IProperty, VRM0Def {}
  * @see {@link VRM0MetadataExtension}
  */
 export class VRM0 extends ExtensionProperty<IVRM0> {
-  static override EXTENSION_NAME = EXTENSION_NAME.VRM0;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.VRM0;
   declare extensionName: typeof EXTENSION_NAME.VRM0;
   declare propertyType: "VRM0";
   declare parentTypes: [PropertyType.ROOT];

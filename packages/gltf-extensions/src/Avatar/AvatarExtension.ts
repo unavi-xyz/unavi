@@ -25,11 +25,19 @@ export class AvatarExtension extends Extension {
       if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName]) return;
 
       const node = context.nodes[nodeIndex];
-      if (!node) throw new Error("Node not found");
+      if (!node) throw new Error(`Node ${nodeIndex} not found.`);
 
       const avatar = this.createAvatar();
 
-      const avatarDef = avatarSchema.parse(nodeDef.extensions[this.extensionName]);
+      const parsedAvatarDef = avatarSchema.safeParse(nodeDef.extensions[this.extensionName]);
+
+      if (!parsedAvatarDef.success) {
+        console.warn(parsedAvatarDef.error);
+        return;
+      }
+
+      const avatarDef = parsedAvatarDef.data;
+
       avatar.setName(avatarDef.name);
       avatar.setEquippable(avatarDef.equippable);
       avatar.setURI(avatarDef.uri);
@@ -49,13 +57,13 @@ export class AvatarExtension extends Extension {
         if (!avatar) return;
 
         const nodeIndex = context.nodeIndexMap.get(node);
-        if (nodeIndex === undefined) throw new Error("Node index not found");
+        if (nodeIndex === undefined) return;
 
         const nodes = context.jsonDoc.json.nodes;
-        if (!nodes) throw new Error("Nodes not found");
+        if (!nodes) return;
 
         const nodeDef = nodes[nodeIndex];
-        if (!nodeDef) throw new Error("Node def not found");
+        if (!nodeDef) return;
 
         nodeDef.extensions ??= {};
 

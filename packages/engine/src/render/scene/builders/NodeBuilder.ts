@@ -268,13 +268,16 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
                 this.avatarObjects.delete(id);
               }
 
-              loadedAvatarUri = uri;
+              const needsBaseURI = uri.startsWith("/");
+              const fullURI = needsBaseURI ? `${this.scene.baseURI}${uri}` : uri;
+
+              loadedAvatarUri = fullURI;
 
               const loader = new GLTFLoader();
               loader.setCrossOrigin("anonymous");
               loader.register((parser) => new VRMLoaderPlugin(parser));
 
-              loader.load(uri, (gltf) => {
+              loader.load(loadedAvatarUri, (gltf) => {
                 const vrm = gltf.userData.vrm as VRM;
                 vrm.scene.rotateY(Math.PI);
 

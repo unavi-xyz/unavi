@@ -3,6 +3,7 @@ import { GraphJSON, NodeJSON, VariableJSON } from "@wired-labs/behave-graph-core
 
 import { EXTENSION_NAME } from "../constants";
 import { BehaviorNode } from "./BehaviorNode";
+import { BehaviorVariable } from "./BehaviorVariable";
 import {
   BehaviorNodeConfigurationJSON,
   BehaviorNodeExtras,
@@ -17,7 +18,6 @@ import {
   isVariableConfigJSON,
 } from "./utils/filters";
 import { parseJSONPath } from "./utils/parseJsonPath";
-import { Variable } from "./Variable";
 
 type BehaviorNodeDef = {
   configuration?: BehaviorNodeConfigurationJSON;
@@ -56,8 +56,8 @@ export class BehaviorExtension extends Extension {
     return new BehaviorNode(this.document.getGraph());
   }
 
-  createVariable(): Variable {
-    return new Variable(this.document.getGraph());
+  createVariable(): BehaviorVariable {
+    return new BehaviorVariable(this.document.getGraph());
   }
 
   read(context: ReaderContext) {
@@ -349,9 +349,9 @@ export class BehaviorExtension extends Extension {
     );
   }
 
-  listVariables(): Variable[] {
+  listVariables(): BehaviorVariable[] {
     return this.listProperties().filter(
-      (property): property is Variable => property instanceof Variable
+      (property): property is BehaviorVariable => property instanceof BehaviorVariable
     );
   }
 }

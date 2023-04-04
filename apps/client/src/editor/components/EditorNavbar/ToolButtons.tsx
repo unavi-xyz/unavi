@@ -4,7 +4,8 @@ import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { MdSync } from "react-icons/md";
 
-import { Tool, useEditorStore } from "../../../../app/editor/[id]/store";
+import { Tool, useEditorStore } from "@/app/editor/[id]/store";
+
 import IconButton from "../../../ui/IconButton";
 import Tooltip from "../../../ui/Tooltip";
 

@@ -1,4 +1,4 @@
-import { POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "engine";
+import { POSITION_ARRAY_ROUNDING, quaternionToEuler, ROTATION_ARRAY_ROUNDING } from "engine";
 import { DataConsumer } from "mediasoup-client/lib/DataConsumer";
 import { useEffect } from "react";
 
@@ -47,6 +47,16 @@ export function useDataConsumer(
           panner.positionZ.value = posZ;
         } else {
           panner.setPosition(posX, posY, posZ);
+        }
+
+        const [eulX, eulY, eulZ] = quaternionToEuler([rotX, rotY, rotZ, rotW]);
+
+        if (panner.orientationX !== undefined) {
+          panner.orientationX.value = eulX;
+          panner.orientationY.value = eulY;
+          panner.orientationZ.value = eulZ;
+        } else {
+          panner.setOrientation(eulX, eulY, eulZ);
         }
       }
 

@@ -1,4 +1,3 @@
-import { POSITION_ARRAY_ROUNDING, ROTATION_ARRAY_ROUNDING } from "engine";
 import { DataProducer } from "mediasoup-client/lib/DataProducer";
 import { useEffect } from "react";
 
@@ -6,11 +5,7 @@ import { useClient } from "./useClient";
 
 const PUBLISH_HZ = 15;
 
-export function usePublishData(
-  dataProducer: DataProducer | null,
-  playerId: number | null,
-  audioContext: AudioContext
-) {
+export function usePublishData(dataProducer: DataProducer | null, playerId: number | null) {
   const { engine } = useClient();
 
   useEffect(() => {
@@ -26,30 +21,6 @@ export function usePublishData(
 
     const publishInterval = setInterval(() => {
       if (!engine.isPlaying || dataProducer.readyState !== "open") return;
-
-      // Set audio listener location
-      const camPosX = Atomics.load(engine.cameraPosition, 0) / POSITION_ARRAY_ROUNDING;
-      const camPosY = Atomics.load(engine.cameraPosition, 1) / POSITION_ARRAY_ROUNDING;
-      const camPosZ = Atomics.load(engine.cameraPosition, 2) / POSITION_ARRAY_ROUNDING;
-
-      const camYaw = Atomics.load(engine.cameraYaw, 0) / ROTATION_ARRAY_ROUNDING;
-
-      const listener = audioContext.listener;
-
-      if (listener.positionX !== undefined) {
-        listener.positionX.value = camPosX;
-        listener.positionY.value = camPosY;
-        listener.positionZ.value = camPosZ;
-      } else {
-        listener.setPosition(camPosX, camPosY, camPosZ);
-      }
-
-      if (listener.forwardX !== undefined) {
-        listener.forwardX.value = Math.sin(camYaw);
-        listener.forwardZ.value = Math.cos(camYaw);
-      } else {
-        listener.setOrientation(Math.sin(camYaw), 0, Math.cos(camYaw), 0, 1, 0);
-      }
 
       // Read location
       const posX = Atomics.load(engine.userPosition, 0);
@@ -80,5 +51,5 @@ export function usePublishData(
     return () => {
       clearInterval(publishInterval);
     };
-  }, [dataProducer, engine, audioContext, playerId]);
+  }, [dataProducer, engine, playerId]);
 }

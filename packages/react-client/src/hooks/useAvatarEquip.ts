@@ -33,9 +33,11 @@ export function useAvatarEquip(
       if (!equippable) return;
 
       const uri = avatar.getURI();
+      const needsBaseURI = uri.startsWith("/");
+      const fullURI = needsBaseURI ? `${engine.scene.baseURI}${uri}` : uri;
 
       // Show tooltip
-      if (uri === equippedAvatar) setHoverState("avatar_equipped");
+      if (fullURI === equippedAvatar) setHoverState("avatar_equipped");
       else setHoverState("equip_avatar");
     };
 
@@ -71,10 +73,13 @@ export function useAvatarEquip(
       if (!equippable) return;
 
       const uri = avatar.getURI();
-      if (uri === equippedAvatar) return;
+      const needsBaseURI = uri.startsWith("/");
+      const fullURI = needsBaseURI ? `${engine.scene.baseURI}${uri}` : uri;
+
+      if (fullURI === equippedAvatar) return;
 
       // Equip avatar
-      setAvatar(uri);
+      setAvatar(fullURI);
     };
 
     engine.render.addEventListener("clicked_node", listener);

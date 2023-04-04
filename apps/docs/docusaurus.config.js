@@ -1,5 +1,4 @@
 // @ts-check
-// Note: type annotations allow type checking and IDEs autocompletion
 
 const lightCodeTheme = require("prism-react-renderer/themes/github");
 const darkCodeTheme = require("prism-react-renderer/themes/dracula");
@@ -26,29 +25,71 @@ const config = {
 
       /** @type {import('typedoc').TypeDocOptions} */
       {
-        id: "typedoc",
-        entryPointStrategy: "packages",
-        entryPoints: [
-          "../../packages/engine",
-          "../../packages/gltf-extensions",
-          "../../packages/protocol",
-          "../../packages/react-client",
-        ],
-        readme: "none",
+        id: "engine",
+        entryPoints: ["../../packages/engine/src/index.ts"],
+        tsconfig: "../../packages/engine/tsconfig.json",
         excludePrivate: true,
-        out: "../docs-api",
+        out: "packages/engine",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
-          fullNames: true,
+          categoryLabel: "Engine",
+        },
+      },
+    ],
+    [
+      "docusaurus-plugin-typedoc",
+
+      /** @type {import('typedoc').TypeDocOptions} */
+      {
+        id: "gltf-extensions",
+        entryPoints: ["../../packages/gltf-extensions/src/index.ts"],
+        tsconfig: "../../packages/gltf-extensions/tsconfig.json",
+        excludePrivate: true,
+        out: "packages/gltf-extensions",
+        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
+        sidebar: {
+          categoryLabel: "glTF Extensions",
+        },
+      },
+    ],
+    [
+      "docusaurus-plugin-typedoc",
+
+      /** @type {import('typedoc').TypeDocOptions} */
+      {
+        id: "protocol",
+        entryPoints: ["../../packages/protocol/src/index.ts"],
+        tsconfig: "../../packages/protocol/tsconfig.json",
+        excludePrivate: true,
+        out: "packages/protocol",
+        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
+        sidebar: {
+          categoryLabel: "Protocol",
+        },
+      },
+    ],
+    [
+      "docusaurus-plugin-typedoc",
+
+      /** @type {import('typedoc').TypeDocOptions} */
+      {
+        id: "react-client",
+        entryPoints: ["../../packages/react-client/src/index.ts"],
+        tsconfig: "../../packages/react-client/tsconfig.json",
+        excludePrivate: true,
+        out: "packages/react-client",
+        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
+        sidebar: {
+          categoryLabel: "React Client",
         },
       },
     ],
     [
       "@docusaurus/plugin-content-docs",
       {
-        id: "docs-api",
-        path: "docs-api",
-        routeBasePath: "api",
+        id: "packages",
+        path: "./docs/packages",
+        routeBasePath: "/packages",
         sidebarPath: require.resolve("./sidebars.js"),
       },
     ],
@@ -62,9 +103,10 @@ const config = {
         blog: false,
 
         docs: {
-          sidebarPath: require.resolve("./sidebars.js"),
           editUrl: "https://github.com/wired-labs/wired/tree/main/apps/docs",
+          path: "./docs/main",
           routeBasePath: "/",
+          sidebarPath: require.resolve("./sidebars.js"),
         },
 
         theme: {
@@ -94,13 +136,13 @@ const config = {
             to: "/",
             label: "Docs",
             position: "left",
-            activeBaseRegex: `/docs/`,
+            activeBaseRegex: `^(?!/packages.*$).*`,
           },
           {
-            to: "/api",
-            label: "API",
+            to: "/packages",
+            label: "Packages",
             position: "left",
-            activeBaseRegex: `/docs-api/`,
+            activeBaseRegex: `/packages`,
           },
           {
             label: "Discord",

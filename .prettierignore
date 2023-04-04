@@ -37,7 +37,8 @@ yarn-error.log*
 
 # codegen
 generated
-apps/docs/docs-api/
+apps/docs/docs/packages/*
+!apps/docs/docs/packages/index.md
 packages/contracts/contracts
 
 # client

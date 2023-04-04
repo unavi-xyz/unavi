@@ -5842,10 +5842,10 @@
   resolved "https://registry.yarnpkg.com/@types/ndarray/-/ndarray-1.0.11.tgz#a78730ac1fd10ea01cda6954dba7b3bf4fa126f4"
   integrity sha512-hOZVTN24zDHwCHaW7mF9n1vHJt83fZhNZ0YYRBwQGhA96yBWWDPTDDlqJatagHIOJB0a4xoNkNc+t/Cxd+6qUA==
 
-"@types/node@*", "@types/node@^18.15.3":
-  version "18.15.3"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.15.3.tgz#f0b991c32cfc6a4e7f3399d6cb4b8cf9a0315014"
-  integrity sha512-p6ua9zBxz5otCmbpb5D3U4B5Nanw6Pk3PPyX05xnxbB/fRv71N7CPmORg7uAD5P70T0xmx1pzAx/FUfa5X+3cw==
+"@types/node@*", "@types/node@^18.15.11":
+  version "18.15.11"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.15.11.tgz#b3b790f09cb1696cffcec605de025b088fa4225f"
+  integrity sha512-E5Kwq2n4SbMzQOn6wnmBjuK9ouqlURrcZDVfbo9ftDDTFt3nk7ZKK4GMOzoYgnpQJKcxwQw+lGaBvvlMo0qN/Q==
 
 "@types/node@^12.12.54", "@types/node@^12.7.1":
   version "12.20.55"
@@ -13904,10 +13904,10 @@ prettier-plugin-prisma@^4.10.0:
   dependencies:
     "@prisma/prisma-fmt-wasm" "4.10.0-85.d02666423b9d2b618381d5bee85532527a012123"
 
-prettier@^2.3.1, prettier@^2.7.1, prettier@^2.8.4:
-  version "2.8.4"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.4.tgz#34dd2595629bfbb79d344ac4a91ff948694463c3"
-  integrity sha512-vIS4Rlc2FNh0BySk3Wkd6xmwxB0FpOndW5fisM5H8hsZSxU2VWVB5CWIkIjWvrHjIhxk2g3bfMKM87zNTrZddw==
+prettier@^2.3.1, prettier@^2.7.1, prettier@^2.8.7:
+  version "2.8.7"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.7.tgz#bb79fc8729308549d28fe3a98fce73d2c0656450"
+  integrity sha512-yPngTo3aXUUmyuTjeTUT75txrf+aMh9FiD7q9ZE/i6r0bPb22g4FsE6Y338PQX1bmfy08i9QQCB7/rcUAVntfw==
 
 pretty-bytes@^5.3.0, pretty-bytes@^5.4.1:
   version "5.6.0"

@@ -27,9 +27,5 @@
     "@types/three": "^0.148.0",
     "tsconfig": "*",
     "typescript": "~5.0.2"
-  },
-  "typedoc": {
-    "displayName": "Engine",
-    "entryPoint": "./src/index.ts"
   }
 }

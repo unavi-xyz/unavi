@@ -4,7 +4,8 @@ import { NodeExtras } from "engine";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import Button from "../../../ui/Button";
 import {
   DropdownContent,
@@ -15,6 +16,7 @@ import {
 } from "../../../ui/DropdownMenu";
 
 export const COMPONENT_TYPE = {
+  Audio: "Audio",
   Avatar: "Avatar",
   Mesh: "Mesh",
   Physics: "Physics",
@@ -52,6 +54,30 @@ export default function AddComponentButton({ availableComponents, node, extras }
 
         <DropdownContent open={open}>
           <div className="py-2">
+            {availableComponents.includes(COMPONENT_TYPE.Audio) && (
+              <ComponentButton
+                onClick={() => {
+                  const { engine } = useEditorStore.getState();
+                  if (!engine) return;
+
+                  const audioData = engine.scene.extensions.audio.createAudioData();
+
+                  const audioSource = engine.scene.extensions.audio.createAudioSource();
+                  audioSource.setAudio(audioData);
+                  audioSource.setAutoPlay(true);
+                  audioSource.setLoop(true);
+                  audioSource.setGain(0.75);
+
+                  const audioEmitter = engine.scene.extensions.audio.createAudioEmitter();
+                  audioEmitter.addSource(audioSource);
+
+                  node.setExtension(audioEmitter.extensionName, audioEmitter);
+                }}
+              >
+                {COMPONENT_TYPE.Audio}
+              </ComponentButton>
+            )}
+
             {availableComponents.includes(COMPONENT_TYPE.Avatar) && (
               <ComponentButton
                 onClick={() => {

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { fetchProfileOwner } from "../../../../../src/server/helpers/fetchProfileOwner";
-import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
+import { fetchProfileOwner } from "@/src/server/helpers/fetchProfileOwner";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+
 import { getUpload } from "../../files";
 import { GetFileUploadResponse, Params } from "./types";
 import { paramsSchema } from "./types";

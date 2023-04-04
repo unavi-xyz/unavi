@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 
-import { fetchLatestSpaces } from "../../../src/server/helpers/fetchLatestSpaces";
-import CardGrid from "../../../src/ui/CardGrid";
+import { fetchLatestSpaces } from "@/src/server/helpers/fetchLatestSpaces";
+import CardGrid from "@/src/ui/CardGrid";
+
 import { metadata as baseMetadata } from "../../layout";
 import Search from "./Search";
 import Spaces from "./Spaces";

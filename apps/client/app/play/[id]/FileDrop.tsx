@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useSetAvatar } from "../../../src/play/hooks/useSetAvatar";
+import { useSetAvatar } from "@/src/play/hooks/useSetAvatar";
 
 export default function FileDrop() {
   const [isDragging, setIsDragging] = useState(false);

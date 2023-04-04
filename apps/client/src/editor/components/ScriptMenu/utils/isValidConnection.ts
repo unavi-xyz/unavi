@@ -1,6 +1,7 @@
 import { Connection, ReactFlowInstance } from "reactflow";
 
-import { useEditorStore } from "../../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { flowIsVariableJSON } from "./filters";
 import { getNodeSpecJSON } from "./getNodeSpecJSON";
 import { getSockets } from "./getSockets";

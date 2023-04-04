@@ -27,9 +27,16 @@ export class ColliderExtension extends Extension {
     if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[this.extensionName])
       return this;
 
-    const rootDef = colliderExtensionSchema.parse(
+    const parsedRootDef = colliderExtensionSchema.safeParse(
       context.jsonDoc.json.extensions[this.extensionName]
     );
+
+    if (!parsedRootDef.success) {
+      console.warn(parsedRootDef.error);
+      return this;
+    }
+
+    const rootDef = parsedRootDef.data;
 
     // Create colliders
     const colliders = rootDef.colliders.map((colliderDef) => {
@@ -47,8 +54,7 @@ export class ColliderExtension extends Extension {
       if (colliderDef.height !== undefined) collider.setHeight(colliderDef.height);
       if (colliderDef.mesh !== undefined) {
         const mesh = context.meshes[colliderDef.mesh];
-        if (!mesh) throw new Error("Mesh not found");
-        collider.setMesh(mesh);
+        if (mesh) collider.setMesh(mesh);
       }
 
       return collider;
@@ -59,13 +65,23 @@ export class ColliderExtension extends Extension {
 
     nodeDefs.forEach((nodeDef, nodeIndex) => {
       if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName]) return;
-      const colliderNodeDef = nodeColliderSchema.parse(nodeDef.extensions[this.extensionName]);
+
+      const parsedColliderNodeDef = nodeColliderSchema.safeParse(
+        nodeDef.extensions[this.extensionName]
+      );
+
+      if (!parsedColliderNodeDef.success) {
+        console.warn(parsedColliderNodeDef.error);
+        return;
+      }
+
+      const colliderNodeDef = parsedColliderNodeDef.data;
 
       const node = context.nodes[nodeIndex];
-      if (!node) throw new Error("Node not found");
+      if (!node) return;
 
       const collider = colliders[colliderNodeDef.collider];
-      if (!collider) throw new Error("Collider not found");
+      if (!collider) return;
 
       node.setExtension(this.extensionName, collider);
     });

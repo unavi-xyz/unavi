@@ -3,9 +3,9 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 
-import { env } from "../../../src/env.mjs";
-import { s3Client } from "../../../src/server/s3";
-import { S3Path } from "../../../src/utils/s3Paths";
+import { env } from "@/src/env.mjs";
+import { s3Client } from "@/src/server/s3";
+import { S3Path } from "@/src/utils/s3Paths";
 
 export const runtime = "edge";
 

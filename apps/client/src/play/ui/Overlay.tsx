@@ -5,7 +5,8 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
-import Logo from "../../../public/images/Logo.png";
+import Logo from "@/public/images/Logo.png";
+
 import { toHex } from "../../utils/toHex";
 import { useIsMobile } from "../../utils/useIsMobile";
 import Crosshair from "../Crosshair";

@@ -5,10 +5,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { env } from "../../../../src/env.mjs";
-import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
-import { isFromCDN } from "../../../../src/utils/isFromCDN";
-import { toHex } from "../../../../src/utils/toHex";
+import { env } from "@/src/env.mjs";
+import { fetchSpace } from "@/src/server/helpers/fetchSpace";
+import { isFromCDN } from "@/src/utils/isFromCDN";
+import { toHex } from "@/src/utils/toHex";
+
 import PlayerCount from "./PlayerCount";
 import Tabs from "./Tabs";
 

@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import Logo from "../../public/images/Logo.png";
+import Logo from "@/public/images/Logo.png";
+
 import ClientButtons from "./ClientButtons";
 import NavbarTab from "./NavbarTab";
 

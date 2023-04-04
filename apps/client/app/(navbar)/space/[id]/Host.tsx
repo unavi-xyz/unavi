@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
-import { parseError } from "../../../../src/editor/utils/parseError";
-import { env } from "../../../../src/env.mjs";
-import Button from "../../../../src/ui/Button";
-import TextField from "../../../../src/ui/TextField";
-import { getPublicationFileUpload } from "../../../api/publications/[id]/[file]/helper";
-import { getSpacePublication } from "../../../api/spaces/[id]/publication/helper";
+import { getPublicationFileUpload } from "@/app/api/publications/[id]/files/[file]/helper";
+import { getSpacePublication } from "@/app/api/spaces/[id]/publication/helper";
+import { parseError } from "@/src/editor/utils/parseError";
+import { env } from "@/src/env.mjs";
+import Button from "@/src/ui/Button";
+import TextField from "@/src/ui/TextField";
 
 interface Props {
   id: number;

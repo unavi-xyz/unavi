@@ -16,7 +16,7 @@ interface ISpawnPoint extends IProperty {
  * @see {@link SpawnPointExtension}
  */
 export class SpawnPoint extends ExtensionProperty<ISpawnPoint> {
-  static override EXTENSION_NAME = EXTENSION_NAME.SpawnPoint;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.SpawnPoint;
   declare extensionName: typeof EXTENSION_NAME.SpawnPoint;
   declare propertyType: "SpawnPoint";
   declare parentTypes: [PropertyType.NODE];
@@ -29,9 +29,9 @@ export class SpawnPoint extends ExtensionProperty<ISpawnPoint> {
 
   protected override getDefaults(): Nullable<ISpawnPoint> {
     return Object.assign(super.getDefaults(), {
-      title: null,
-      team: null,
-      group: null,
+      title: "",
+      team: "",
+      group: "",
     });
   }
 

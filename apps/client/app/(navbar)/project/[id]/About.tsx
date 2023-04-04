@@ -1,4 +1,4 @@
-import { fetchProject } from "../../../../src/server/helpers/fetchProject";
+import { fetchProject } from "@/src/server/helpers/fetchProject";
 
 export default async function About({ params: { id } }: { params: { id: string } }) {
   const project = await fetchProject(id);

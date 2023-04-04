@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { fetchProject } from "../../../src/server/helpers/fetchProject";
+import { fetchProject } from "@/src/server/helpers/fetchProject";
+
 import RainbowkitWrapper from "../../(navbar)/RainbowkitWrapper";
 import SessionProvider from "../../(navbar)/SessionProvider";
 import Editor from "./Editor";

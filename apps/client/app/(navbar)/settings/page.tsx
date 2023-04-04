@@ -1,7 +1,8 @@
 import { Metadata as NextMetadata } from "next";
 
-import { fetchProfileFromAddress } from "../../../src/server/helpers/fetchProfileFromAddress";
-import { getServerSession } from "../../../src/server/helpers/getServerSession";
+import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+
 import { metadata as baseMetadata } from "../../layout";
 import RainbowkitWrapper from "../RainbowkitWrapper";
 import SessionProvider from "../SessionProvider";

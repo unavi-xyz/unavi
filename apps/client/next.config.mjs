@@ -73,6 +73,7 @@ export default defineNextConfig({
   },
   experimental: {
     appDir: true,
+    typedRoutes: true,
     outputFileTracingRoot: path.join(__dirname, "../../"),
     outputFileTracingExcludes: {
       "**": ["**swc/core**"],

@@ -1,8 +1,9 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { fetchSpace } from "../../../src/server/helpers/fetchSpace";
-import { fetchSpaceMetadata } from "../../../src/server/helpers/fetchSpaceMetadata";
+import { fetchSpace } from "@/src/server/helpers/fetchSpace";
+import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
+
 import RainbowkitWrapper from "../../(navbar)/RainbowkitWrapper";
 import SessionProvider from "../../(navbar)/SessionProvider";
 import App from "./App";

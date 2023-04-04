@@ -1,11 +1,13 @@
 import { EXTENSION_NAME } from "@wired-labs/gltf-extensions";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { useNode } from "../../hooks/useNode";
 import { useNodeExtras } from "../../hooks/useNodeExtras";
 import { useSpawn } from "../../hooks/useSpawn";
 import { useSubscribe } from "../../hooks/useSubscribe";
 import AddComponentButton, { COMPONENT_TYPE, ComponentType } from "./AddComponentButton";
+import AudioComponent from "./AudioComponent";
 import AvatarComponent from "./AvatarComponent";
 import MeshComponent from "./mesh/MeshComponent";
 import PhysicsComponent from "./PhysicsComponent";
@@ -31,11 +33,13 @@ export default function InspectMenu({ projectId }: Props) {
 
   const availableComponents: ComponentType[] = [COMPONENT_TYPE.Script];
 
+  const hasAudioEmitter = extensions.find((ext) => ext.extensionName === EXTENSION_NAME.Audio);
   const hasAvatar = extensions.find((ext) => ext.extensionName === EXTENSION_NAME.Avatar);
   const hasCollider = extensions.find((ext) => ext.extensionName === EXTENSION_NAME.Collider);
   const hasSpawnPoint = extensions.find((ext) => ext.extensionName === EXTENSION_NAME.SpawnPoint);
 
   if (!mesh) availableComponents.push(COMPONENT_TYPE.Mesh);
+  if (!hasAudioEmitter) availableComponents.push(COMPONENT_TYPE.Audio);
   if (!hasAvatar) availableComponents.push(COMPONENT_TYPE.Avatar);
   if (!hasCollider) availableComponents.push(COMPONENT_TYPE.Physics);
   if (!spawn) availableComponents.push(COMPONENT_TYPE.SpawnPoint);
@@ -59,6 +63,7 @@ export default function InspectMenu({ projectId }: Props) {
 
         {mesh && <MeshComponent mesh={mesh} />}
 
+        {hasAudioEmitter && <AudioComponent projectId={projectId} node={node} />}
         {hasAvatar && <AvatarComponent projectId={projectId} node={node} />}
         {hasCollider && <PhysicsComponent node={node} />}
         {hasSpawnPoint && <SpawnPointComponent node={node} />}

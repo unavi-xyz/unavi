@@ -5,12 +5,16 @@ import { toast } from "react-hot-toast";
 import useSWR from "swr";
 import { useSigner } from "wagmi";
 
-import { GetFileDownloadResponse } from "../../../../app/api/projects/[id]/[file]/types";
-import { publishProject } from "../../../../app/api/projects/[id]/publication/helper";
-import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from "../../../../app/api/projects/constants";
-import { getPublicationFileUpload } from "../../../../app/api/publications/[id]/[file]/helper";
-import { linkPublication } from "../../../../app/api/publications/[id]/link/helper";
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { GetFileDownloadResponse } from "@/app/api/projects/[id]/[file]/types";
+import { publishProject } from "@/app/api/projects/[id]/publication/helper";
+import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from "@/app/api/projects/constants";
+import { getPublicationFileUpload } from "@/app/api/publications/[id]/files/[file]/helper";
+import { linkPublication } from "@/app/api/publications/[id]/link/helper";
+import { copyProjectToModel } from "@/app/api/publications/[id]/models/[modelId]/copy-project/helper";
+import { getPublishedModelFileUpload } from "@/app/api/publications/[id]/models/[modelId]/files/[file]/helper";
+import { createPublishedModel } from "@/app/api/publications/[id]/models/helper";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { useSession } from "../../../client/auth/useSession";
 import { env } from "../../../env.mjs";
 import { useProfileByAddress } from "../../../play/hooks/useProfileByAddress";
@@ -73,35 +77,23 @@ export default function PublishPage({ project }: Props) {
       if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
 
+      // Save project
       toast.loading("Saving...", { id: toastId });
       await save();
 
-      toast.loading("Optimizing model...", { id: toastId });
+      // Start optimizing model
+      toast.loading("Creating publication...", { id: toastId });
+      const optimizedModelPromise = engine.scene.export({ optimize: true });
 
-      let publicationId: string;
-      let modelSize: number;
+      // Publish project
+      const { id: publicationId } = await publishProject(project.id);
 
-      // Try to optimize model on the server
-      // If it fails, optimize locally (can't compress textures)
-      try {
-        const res = await publishProject(project.id);
-        publicationId = res.id;
-        modelSize = res.modelSize;
-      } catch {
-        console.info("Failed to optimize model on the server, optimizing locally...");
+      // Create published model
+      const modelId = await createPublishedModel(publicationId);
 
-        // Optimize model locally
-        const optimizedModelPromise = engine.scene.export({ optimize: true });
-
-        // Create publication
-        const publishResponse = await publishProject(project.id, { optimize: false });
-        publicationId = publishResponse.id;
-
-        // Upload model
+      async function uploadModel() {
+        const url = await getPublishedModelFileUpload(publicationId, modelId, "model");
         const optimizedModel = await optimizedModelPromise;
-        modelSize = optimizedModel.byteLength;
-
-        const url = await getPublicationFileUpload(publicationId, "model");
 
         const response = await fetch(url, {
           method: "PUT",
@@ -113,9 +105,9 @@ export default function PublishPage({ project }: Props) {
         });
 
         if (!response.ok) throw new Error("Failed to upload model");
-      }
 
-      console.info("📦 Published model size:", bytesToDisplay(modelSize));
+        console.info("📦 Published model size:", bytesToDisplay(optimizedModel.byteLength));
+      }
 
       async function uploadImage() {
         if (!imageFile) throw new Error("Image not found");
@@ -125,7 +117,7 @@ export default function PublishPage({ project }: Props) {
         const body = await res.blob();
 
         // Upload to S3
-        const url = await getPublicationFileUpload(publicationId, "image");
+        const url = await getPublishedModelFileUpload(publicationId, modelId, "image");
 
         const response = await fetch(url, {
           method: "PUT",
@@ -140,8 +132,8 @@ export default function PublishPage({ project }: Props) {
       }
 
       async function uploadMetadata(spaceId: number | undefined) {
-        const modelURL = cdnURL(S3Path.publication(publicationId).model);
-        const imageURL = cdnURL(S3Path.publication(publicationId).image);
+        const modelURL = cdnURL(S3Path.publication(publicationId).model(modelId).model);
+        const imageURL = cdnURL(S3Path.publication(publicationId).model(modelId).image);
 
         const metadata: ERC721Metadata = {
           animation_url: modelURL,
@@ -210,7 +202,13 @@ export default function PublishPage({ project }: Props) {
       }
 
       toast.loading("Uploading metadata...", { id: toastId });
-      const promises: Promise<unknown>[] = [uploadImage(), uploadMetadata(spaceId)];
+
+      const promises: Promise<unknown>[] = [
+        copyProjectToModel(publicationId, modelId, { projectId: project.id }),
+        uploadModel(),
+        uploadImage(),
+        uploadMetadata(spaceId),
+      ];
 
       if (spaceId !== undefined) promises.push(linkPublication(publicationId, spaceId));
 
@@ -218,9 +216,10 @@ export default function PublishPage({ project }: Props) {
 
       // Redirect to space if new space was created
       if (!project?.publication?.spaceId) {
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-
         if (spaceId !== undefined) {
+          // Wait for eth provider to update
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+
           // Redirect to space
           router.push(`/space/${toHex(spaceId)}`);
         } else {

@@ -1,6 +1,6 @@
-import { getProjectFileUpload } from "../../../app/api/projects/[id]/[file]/helper";
-import { updateProject } from "../../../app/api/projects/[id]/helper";
-import { useEditorStore } from "../../../app/editor/[id]/store";
+import { getProjectFileUpload } from "@/app/api/projects/[id]/[file]/helper";
+import { updateProject } from "@/app/api/projects/[id]/helper";
+import { useEditorStore } from "@/app/editor/[id]/store";
 
 export function useSave(projectId: string) {
   async function saveImage() {

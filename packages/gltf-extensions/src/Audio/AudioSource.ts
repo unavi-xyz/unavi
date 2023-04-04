@@ -1,13 +1,14 @@
 import { ExtensionProperty, IProperty, Nullable } from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
-import { Audio } from "./Audio";
+import { AudioData } from "./AudioData";
+import { AudioPropertyType } from "./types";
 
-interface ISource extends IProperty {
+interface IAudioSource extends IProperty {
   gain: number;
   autoPlay: boolean;
   loop: boolean;
-  audio: Audio;
+  audio: AudioData;
 }
 
 /**
@@ -16,22 +17,22 @@ interface ISource extends IProperty {
  * @group KHR_audio
  * @see {@link AudioExtension}
  */
-export class Source extends ExtensionProperty<ISource> {
-  static override EXTENSION_NAME = EXTENSION_NAME.Audio;
+export class AudioSource extends ExtensionProperty<IAudioSource> {
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.Audio;
   declare extensionName: typeof EXTENSION_NAME.Audio;
-  declare propertyType: "Source";
-  declare parentTypes: [];
+  declare propertyType: AudioPropertyType.AudioSource;
+  declare parentTypes: [AudioPropertyType.AudioEmitter];
 
   protected init() {
     this.extensionName = EXTENSION_NAME.Audio;
-    this.propertyType = "Source";
-    this.parentTypes = [];
+    this.propertyType = AudioPropertyType.AudioSource;
+    this.parentTypes = [AudioPropertyType.AudioEmitter];
   }
 
-  protected override getDefaults(): Nullable<ISource> {
-    return Object.assign(super.getDefaults(), {
-      gain: 1,
+  protected override getDefaults(): Nullable<IAudioSource> {
+    return Object.assign(super.getDefaults() as IProperty, {
       autoPlay: false,
+      gain: 1,
       loop: false,
       audio: null,
     });
@@ -68,7 +69,7 @@ export class Source extends ExtensionProperty<ISource> {
     return this.getRef("audio");
   }
 
-  setAudio(audio: Audio) {
+  setAudio(audio: AudioData) {
     this.setRef("audio", audio);
     return this;
   }

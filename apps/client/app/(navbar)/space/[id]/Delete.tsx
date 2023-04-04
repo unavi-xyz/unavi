@@ -7,9 +7,9 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
-import { parseError } from "../../../../src/editor/utils/parseError";
-import Button from "../../../../src/ui/Button";
-import { deletePublication } from "../../../api/publications/[id]/helper";
+import { deletePublication } from "@/app/api/publications/[id]/helper";
+import { parseError } from "@/src/editor/utils/parseError";
+import Button from "@/src/ui/Button";
 
 interface Props {
   id: number;

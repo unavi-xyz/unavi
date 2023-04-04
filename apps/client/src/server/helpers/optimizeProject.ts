@@ -3,7 +3,8 @@ import { draco, textureCompress } from "@gltf-transform/functions";
 import { extensions, optimizeDocument } from "engine";
 import sharp from "sharp";
 
-import createEncoderModule from "../../../public/scripts/draco_encoder";
+import createEncoderModule from "@/public/scripts/draco_encoder";
+
 import { bytesToDisplay } from "../../utils/bytesToDisplay";
 
 /**

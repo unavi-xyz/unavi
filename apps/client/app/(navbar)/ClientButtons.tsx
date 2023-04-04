@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useTransition } from "react";
 
-import { useSession } from "../../src/client/auth/useSession";
+import { useSession } from "@/src/client/auth/useSession";
+
 import ProfileButton from "./ProfileButton";
 import SessionProvider from "./SessionProvider";
 import SignInButton from "./SignInButton";

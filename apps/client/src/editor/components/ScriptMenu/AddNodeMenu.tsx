@@ -1,6 +1,7 @@
 import { IoIosArrowForward } from "react-icons/io";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import {
   DropdownContent,
   DropdownItem,

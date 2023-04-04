@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
+import { fetchSpace } from "@/src/server/helpers/fetchSpace";
+
 import { Params, paramsSchema } from "./types";
 
 // Get space

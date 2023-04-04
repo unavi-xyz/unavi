@@ -5,13 +5,14 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
 
-import { fetchProfile } from "../../../../src/server/helpers/fetchProfile";
-import { fetchProfileFromAddress } from "../../../../src/server/helpers/fetchProfileFromAddress";
-import { getServerSession } from "../../../../src/server/helpers/getServerSession";
-import Avatar from "../../../../src/ui/Avatar";
-import Card from "../../../../src/ui/Card";
-import { isFromCDN } from "../../../../src/utils/isFromCDN";
-import { toHex } from "../../../../src/utils/toHex";
+import { fetchProfile } from "@/src/server/helpers/fetchProfile";
+import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+import Avatar from "@/src/ui/Avatar";
+import Card from "@/src/ui/Card";
+import { isFromCDN } from "@/src/utils/isFromCDN";
+import { toHex } from "@/src/utils/toHex";
+
 import Spaces from "./Spaces";
 
 export const revalidate = 60;

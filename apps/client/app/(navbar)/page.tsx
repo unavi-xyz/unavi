@@ -2,14 +2,15 @@ import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import Screenshot1 from "../../public/images/Screenshot1.png";
-import Screenshot2 from "../../public/images/Screenshot2.png";
-import Screenshot3 from "../../public/images/Screenshot3.png";
-import Screenshot4 from "../../public/images/Screenshot4.png";
-import Discord from "../../public/images/svg/Discord.svg";
-import GitHub from "../../public/images/svg/GitHub.svg";
-import Twitter from "../../public/images/svg/Twitter.svg";
-import { env } from "../../src/env.mjs";
+import Screenshot1 from "@/public/images/Screenshot1.png";
+import Screenshot2 from "@/public/images/Screenshot2.png";
+import Screenshot3 from "@/public/images/Screenshot3.png";
+import Screenshot4 from "@/public/images/Screenshot4.png";
+import Discord from "@/public/images/svg/Discord.svg";
+import GitHub from "@/public/images/svg/GitHub.svg";
+import Twitter from "@/public/images/svg/Twitter.svg";
+import { env } from "@/src/env.mjs";
+
 import AnimateOnEnter from "./AnimateOnEnter";
 
 const DISCORD_URL = "https://discord.gg/cazUfCCgHJ";

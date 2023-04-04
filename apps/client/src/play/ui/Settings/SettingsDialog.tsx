@@ -1,7 +1,8 @@
 import { useClient } from "@wired-labs/react-client";
 import { useEffect, useState } from "react";
 
-import { usePlayStore } from "../../../../app/play/[id]/store";
+import { usePlayStore } from "@/app/play/[id]/store";
+
 import DialogContent, { DialogRoot } from "../../../ui/Dialog";
 import { LocalStorageKey } from "../../constants";
 import { useSetAvatar } from "../../hooks/useSetAvatar";

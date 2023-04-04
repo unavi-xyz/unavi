@@ -2,15 +2,17 @@ import { env } from "../env.mjs";
 import { toHex } from "./toHex";
 
 export class S3Path {
-  static asset(assetId: string) {
-    return `assets/${assetId}` as const;
-  }
-
   static publication = (publicationId: string) =>
     ({
-      image: `publications/${publicationId}/image.jpg`,
       metadata: `publications/${publicationId}/metadata.json`,
-      model: `publications/${publicationId}/model.glb`,
+      model: (modelId: string) =>
+        ({
+          directory: `publications/${publicationId}/models/${modelId}`,
+          image: `publications/${publicationId}/models/${modelId}/image.jpg`,
+          model: `publications/${publicationId}/models/${modelId}/model.glb`,
+          asset: (assetId: string) =>
+            `publications/${publicationId}/models/${modelId}/assets/${assetId}` as const,
+        } as const),
     } as const);
 
   static profile = (profileId: number) => {
@@ -24,6 +26,7 @@ export class S3Path {
 
   static project = (projectId: string) =>
     ({
+      asset: (assetId: string) => `projects/${projectId}/assets/${assetId}` as const,
       image: `projects/${projectId}/image.jpg`,
       model: `projects/${projectId}/model.glb`,
     } as const);
@@ -34,8 +37,9 @@ export class S3Path {
 }
 
 type PublicPath =
-  | ReturnType<typeof S3Path.asset>
-  | ReturnType<typeof S3Path.publication>[keyof ReturnType<typeof S3Path.publication>]
+  | ReturnType<typeof S3Path.publication>["metadata"]
+  | ReturnType<ReturnType<typeof S3Path.publication>["model"]>["image" | "model"]
+  | ReturnType<ReturnType<ReturnType<typeof S3Path.publication>["model"]>["asset"]>
   | ReturnType<typeof S3Path.profile>[keyof ReturnType<typeof S3Path.profile>]
   | ReturnType<typeof S3Path.temp>;
 

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
-import { prisma } from "../../../../../src/server/prisma";
-import { getUpload } from "../../files";
-import { Params } from "../types";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { prisma } from "@/src/server/prisma";
+
+import { getPublicationUpload } from "../../files";
+import { Params } from "../../types";
 import { GetFileUploadResponse, paramsSchema } from "./types";
 
 // Get file upload URL
@@ -19,7 +20,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
-  const url = await getUpload(id, file);
+  const url = await getPublicationUpload(id, file);
 
   const json: GetFileUploadResponse = { url };
   return NextResponse.json(json);

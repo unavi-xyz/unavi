@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { useEditorStore } from "../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
 
 export function useTransformControls() {
   const engine = useEditorStore((state) => state.engine);

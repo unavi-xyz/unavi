@@ -6,15 +6,15 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
-import { cropImage } from "../../../src/editor/utils/cropImage";
-import { env } from "../../../src/env.mjs";
-import { Profile } from "../../../src/server/helpers/fetchProfile";
-import Button from "../../../src/ui/Button";
-import ImageInput from "../../../src/ui/ImageInput";
-import TextArea from "../../../src/ui/TextArea";
-import { cdnURL, S3Path } from "../../../src/utils/s3Paths";
-import { toHex } from "../../../src/utils/toHex";
-import { getProfileFileUpload } from "../../api/profiles/[id]/[file]/helper";
+import { getProfileFileUpload } from "@/app/api/profiles/[id]/[file]/helper";
+import { cropImage } from "@/src/editor/utils/cropImage";
+import { env } from "@/src/env.mjs";
+import { Profile } from "@/src/server/helpers/fetchProfile";
+import Button from "@/src/ui/Button";
+import ImageInput from "@/src/ui/ImageInput";
+import TextArea from "@/src/ui/TextArea";
+import { cdnURL, S3Path } from "@/src/utils/s3Paths";
+import { toHex } from "@/src/utils/toHex";
 
 interface Props {
   profile: Profile | null;

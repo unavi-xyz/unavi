@@ -23,7 +23,7 @@ export default function SpawnPointComponent({ node }: Props) {
       }}
     >
       <MenuRows titles={["Title"]}>
-        <div className="w-full cursor-default select-none rounded border border-neutral-300 bg-neutral-50 pl-1.5">
+        <div className="w-full cursor-default select-none rounded-md border border-neutral-300 bg-neutral-50 pl-1.5">
           {title}
         </div>
       </MenuRows>

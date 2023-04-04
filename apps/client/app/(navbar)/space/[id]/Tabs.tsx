@@ -1,6 +1,7 @@
-import { fetchSpaceOwner } from "../../../../src/server/helpers/fetchSpaceOwner";
-import { getServerSession } from "../../../../src/server/helpers/getServerSession";
-import ButtonTabs, { TabContent } from "../../../../src/ui/ButtonTabs";
+import { fetchSpaceOwner } from "@/src/server/helpers/fetchSpaceOwner";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+import ButtonTabs, { TabContent } from "@/src/ui/ButtonTabs";
+
 import About from "./About";
 import Settings from "./Settings";
 

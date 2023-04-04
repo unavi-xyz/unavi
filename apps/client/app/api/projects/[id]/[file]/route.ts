@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getServerSession } from "../../../../../src/server/helpers/getServerSession";
-import { prisma } from "../../../../../src/server/prisma";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { prisma } from "@/src/server/prisma";
+
 import { getDownload, getUpload } from "../../files";
 import { Params } from "../types";
 import { GetFileDownloadResponse, GetFileUploadResponse, paramsSchema } from "./types";

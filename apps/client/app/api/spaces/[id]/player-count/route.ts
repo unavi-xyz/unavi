@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { fetchPlayerCount } from "../../../../../src/server/helpers/fetchPlayerCount";
+import { fetchPlayerCount } from "@/src/server/helpers/fetchPlayerCount";
+
 import { Params, paramsSchema } from "../types";
 
 export const runtime = "edge";

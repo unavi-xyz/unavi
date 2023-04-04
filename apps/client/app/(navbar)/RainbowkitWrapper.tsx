@@ -9,7 +9,7 @@ import {
 } from "@rainbow-me/rainbowkit-siwe-next-auth";
 import { WagmiConfig } from "wagmi";
 
-import { chains, wagmiClient } from "../../src/client/wagmi";
+import { chains, wagmiClient } from "@/src/client/wagmi";
 
 const theme = lightTheme({
   accentColor: "#191919",

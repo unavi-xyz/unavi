@@ -22,13 +22,12 @@ export function useHost(id: number | null, host: string | null) {
   const { engine, ws, setWs, playerId, setPlayerId } = useContext(ClientContext);
 
   const [device, setDevice] = useState<Device | null>(null);
-  const [audioContext, setAudioContext] = useState(new AudioContext());
   const [isConnected, setIsConnected] = useState(false);
   const [reconnectCount, setReconnectCount] = useState(0);
 
-  const { dataProducer } = useTransports(device, audioContext);
+  const { dataProducer } = useTransports(device);
   usePlayers();
-  usePublishData(dataProducer, playerId, audioContext);
+  usePublishData(dataProducer, playerId);
 
   useEffect(() => {
     if (!engine || !host) return;
@@ -48,14 +47,10 @@ export function useHost(id: number | null, host: string | null) {
     const newDevice = new Device();
     setDevice(newDevice);
 
-    // Create audio context
-    const newAudioContext = new AudioContext();
-    setAudioContext(newAudioContext);
-
     // Play audio on user interaction
     const play = () => {
-      if (newAudioContext.state === "suspended") newAudioContext.resume();
-      if (newAudioContext.state === "running") {
+      if (engine.audio.context.state === "suspended") engine.audio.context.resume();
+      if (engine.audio.context.state === "running") {
         document.removeEventListener("click", play);
         document.removeEventListener("touchstart", play);
       }
@@ -69,7 +64,6 @@ export function useHost(id: number | null, host: string | null) {
       document.removeEventListener("touchstart", play);
 
       newWs.close();
-      newAudioContext.close();
 
       setWs(null);
       setDevice(null);
@@ -85,7 +79,7 @@ export function useHost(id: number | null, host: string | null) {
     };
 
     // Try to play audio
-    if (audioContext.state === "suspended") audioContext.resume();
+    if (engine.audio.context.state === "suspended") engine.audio.context.resume();
 
     const onOpen = () => {
       console.info("WebSocket - ✅ Connected to host");
@@ -157,7 +151,7 @@ export function useHost(id: number | null, host: string | null) {
       setIsConnected(false);
       setReconnectCount(0);
     };
-  }, [audioContext, device, engine, id, setPlayerId, ws]);
+  }, [device, engine, id, setPlayerId, ws]);
 
   return { isConnected };
 }

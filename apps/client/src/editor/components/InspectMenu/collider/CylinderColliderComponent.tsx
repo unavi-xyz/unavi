@@ -2,7 +2,7 @@ import { Node } from "@gltf-transform/core";
 
 import { useCollider } from "../../../hooks/useExtension";
 import { useSubscribe } from "../../../hooks/useSubscribe";
-import NumberInput from "../../ui/NumberInput";
+import EditorInput from "../../ui/EditorInput";
 import MenuRows from "../ui/MenuRows";
 
 interface Props {
@@ -21,9 +21,10 @@ export default function CylinderColliderComponent({ node }: Props) {
         const name = ["Radius", "Height"][i];
 
         return (
-          <NumberInput
+          <EditorInput
             key={name}
             name={name}
+            type="number"
             value={value ?? 0}
             step={0.1}
             onChange={(e) => {

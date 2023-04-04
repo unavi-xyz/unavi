@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 
-import { useSession } from "../../src/client/auth/useSession";
-import { useProfileByAddress } from "../../src/play/hooks/useProfileByAddress";
-import Avatar from "../../src/ui/Avatar";
-import { DropdownContent, DropdownMenu, DropdownTrigger } from "../../src/ui/DropdownMenu";
+import { useSession } from "@/src/client/auth/useSession";
+import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
+import Avatar from "@/src/ui/Avatar";
+import { DropdownContent, DropdownMenu, DropdownTrigger } from "@/src/ui/DropdownMenu";
+
 import ProfileMenu from "./ProfileMenu";
 
 interface Props {

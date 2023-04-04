@@ -1,8 +1,9 @@
 import { customAlphabet } from "nanoid";
 import { NextRequest, NextResponse } from "next/server";
 
-import { getServerSession } from "../../../src/server/helpers/getServerSession";
-import { prisma } from "../../../src/server/prisma";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { prisma } from "@/src/server/prisma";
+
 import { PROJECT_ID_LENGTH } from "./constants";
 import { CreateProjectResponse, schema } from "./types";
 

@@ -28,6 +28,7 @@ export function useScene(metadata: ERC721Metadata | null) {
 
         setIsDownloaded(true);
 
+        engine.scene.baseURI = metadata.animation_url.split("/").slice(0, -1).join("/");
         await engine.scene.addBinary(array);
 
         engine.physics.send({ subject: "respawn", data: null });
@@ -38,6 +39,7 @@ export function useScene(metadata: ERC721Metadata | null) {
 
         engine.start();
         engine.behavior.start();
+        engine.audio.start();
 
         // Respawn player again to ensure they are in the correct position
         // (sometimes would fall through the floor while scene loads due to lag)

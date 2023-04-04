@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
+import { fetchSpace } from "@/src/server/helpers/fetchSpace";
 
 export type Params = { params: { id: string } };
 

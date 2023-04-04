@@ -1,4 +1,4 @@
-import { Variable } from "@wired-labs/gltf-extensions";
+import { BehaviorVariable } from "@wired-labs/gltf-extensions";
 import { Engine } from "engine";
 import { ReactFlowInstance, XYPosition } from "reactflow";
 import { create } from "zustand";
@@ -29,7 +29,7 @@ export interface IEditorStore {
 
   openScriptId: string | null;
   contextMenuNodeId: string | null;
-  variables: Variable[];
+  variables: BehaviorVariable[];
   addNode: (type: string, position: XYPosition) => void;
   reactflow: ReactFlowInstance | null;
 }

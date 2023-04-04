@@ -1,11 +1,12 @@
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
-import { env } from "../../../../src/env.mjs";
-import { getServerSession } from "../../../../src/server/helpers/getServerSession";
-import { prisma } from "../../../../src/server/prisma";
-import { s3Client } from "../../../../src/server/s3";
-import { S3Path } from "../../../../src/utils/s3Paths";
+import { env } from "@/src/env.mjs";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { prisma } from "@/src/server/prisma";
+import { s3Client } from "@/src/server/s3";
+import { S3Path } from "@/src/utils/s3Paths";
+
 import { deleteFiles } from "../files";
 import { Params, paramsSchema, patchSchema } from "./types";
 
@@ -75,50 +76,36 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   // Verify user owns the project
   const found = await prisma.project.findFirst({
     where: { id, owner: session.address },
-    include: { Publication: true, Assets: { select: { id: true, PublicationAsset: true } } },
+    include: { Publication: true, ProjectAsset: true },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
   const publicationInUse = Boolean(found.Publication && found.Publication.spaceId !== null);
 
-  const unusedAssets = found.Assets.filter((asset) => {
-    return (
-      asset.PublicationAsset.length === 0 ||
-      (!publicationInUse &&
-        asset.PublicationAsset.length === 1 &&
-        asset.PublicationAsset[0]?.publicationId === found.Publication?.id)
-    );
-  });
-
   await Promise.all([
-    // Delete asset files from S3
-    Promise.all(
-      unusedAssets.map((asset) => {
-        const command = new DeleteObjectCommand({
-          Bucket: env.S3_BUCKET,
-          Key: S3Path.asset(asset.id),
-        });
-        return s3Client.send(command);
+    // Delete assets from S3
+    s3Client.send(
+      new DeleteObjectsCommand({
+        Bucket: env.S3_BUCKET,
+        Delete: {
+          Objects: found.ProjectAsset.map((asset) => ({
+            Key: S3Path.project(id).asset(asset.id),
+          })),
+        },
       })
     ),
-    // Remove projectId from assets
-    prisma.asset.updateMany({ where: { projectId: id }, data: { projectId: null } }),
-    // Delete project, publication, and assets from database
+
+    // Delete project, assets, and publication from database
+    // If publication is in use, don't delete it
     prisma.project.delete({
       where: { id },
       include: {
+        ProjectAsset: true,
         Publication: !publicationInUse,
-        Assets: {
-          where: {
-            id: {
-              in: unusedAssets.map((asset) => asset.id),
-            },
-          },
-          include: { PublicationAsset: true },
-        },
       },
     }),
-    // Delete files from S3
+
+    // Delete project files from S3
     deleteFiles(id),
   ]);
 

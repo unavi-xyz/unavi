@@ -1,10 +1,8 @@
 import { Node } from "@gltf-transform/core";
-import { Vec3 } from "engine";
+import { eulerToQuaternion, quaternionToEuler, Vec3 } from "engine";
 
 import { useSubscribe } from "../../hooks/useSubscribe";
-import { eulerToQuaternion } from "../../utils/eulerToQuaternion";
-import { quaternionToEuler } from "../../utils/quaternionToEuler";
-import NumberInput from "../ui/NumberInput";
+import EditorInput from "../ui/EditorInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 
@@ -34,7 +32,8 @@ export default function TransformComponent({ node }: Props) {
             return (
               <div key={id} className="flex items-center space-x-1">
                 <label htmlFor={id}>{letter}</label>
-                <NumberInput
+                <EditorInput
+                  type="number"
                   id={id}
                   value={rounded}
                   step={0.1}
@@ -68,7 +67,8 @@ export default function TransformComponent({ node }: Props) {
             return (
               <div key={id} className="flex items-center space-x-1">
                 <label htmlFor={id}>{letter}</label>
-                <NumberInput
+                <EditorInput
+                  type="number"
                   id={id}
                   value={rounded}
                   step={1}
@@ -104,7 +104,8 @@ export default function TransformComponent({ node }: Props) {
             return (
               <div key={id} className="flex items-center space-x-1">
                 <label htmlFor={id}>{letter}</label>
-                <NumberInput
+                <EditorInput
+                  type="number"
                   id={id}
                   value={rounded}
                   step={0.1}

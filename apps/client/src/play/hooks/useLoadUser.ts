@@ -1,7 +1,8 @@
 import { useClient } from "@wired-labs/react-client";
 import { useEffect } from "react";
 
-import { usePlayStore } from "../../../app/play/[id]/store";
+import { usePlayStore } from "@/app/play/[id]/store";
+
 import { useSession } from "../../client/auth/useSession";
 import { LocalStorageKey } from "../constants";
 

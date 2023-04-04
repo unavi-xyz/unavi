@@ -3,7 +3,7 @@
 import { MdPeople } from "react-icons/md";
 import useSWR from "swr";
 
-import { fetcher } from "../../../src/play/utils/fetcher";
+import { fetcher } from "@/src/play/utils/fetcher";
 
 interface Props {
   id: number;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { fetchProfileFromAddress } from "../../../../../src/server/helpers/fetchProfileFromAddress";
+import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
+
 import { Params } from "./types";
 
 // Get profile

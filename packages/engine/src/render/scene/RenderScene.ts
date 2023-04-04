@@ -22,6 +22,8 @@ export class RenderScene extends Scene {
   root = new Object3D();
   mixer = new AnimationMixer(this.root);
 
+  baseURI = "";
+
   #animationsEnabled = false;
   #animationActions = new Map<string, AnimationAction>();
 

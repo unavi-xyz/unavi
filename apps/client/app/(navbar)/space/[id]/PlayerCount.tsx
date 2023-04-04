@@ -1,4 +1,4 @@
-import { fetchPlayerCount } from "../../../../src/server/helpers/fetchPlayerCount";
+import { fetchPlayerCount } from "@/src/server/helpers/fetchPlayerCount";
 
 interface Props {
   id: number;

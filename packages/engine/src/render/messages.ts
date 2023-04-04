@@ -16,6 +16,7 @@ export type ToRenderMessage =
   | SceneMessage
   | MessageJSON<"destroy">
   | MessageJSON<"get_stats">
+  | MessageJSON<"set_base_uri", string>
   | MessageJSON<"player_input_direction", Vec2>
   | MessageJSON<"set_animations_path", string>
   | MessageJSON<"set_default_avatar", string>

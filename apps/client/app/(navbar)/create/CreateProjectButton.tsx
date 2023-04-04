@@ -1,7 +1,8 @@
 import { MdAdd } from "react-icons/md";
 
-import { getServerSession } from "../../../src/server/helpers/getServerSession";
-import DialogContent, { DialogRoot, DialogTrigger } from "../../../src/ui/Dialog";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+import DialogContent, { DialogRoot, DialogTrigger } from "@/src/ui/Dialog";
+
 import CreateProjectPage from "./CreateProjectPage";
 
 export default async function CreateProjectButton() {

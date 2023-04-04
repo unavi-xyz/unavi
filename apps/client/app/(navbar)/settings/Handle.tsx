@@ -6,9 +6,9 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
-import { Profile } from "../../../src/server/helpers/fetchProfile";
-import Button from "../../../src/ui/Button";
-import TextField from "../../../src/ui/TextField";
+import { Profile } from "@/src/server/helpers/fetchProfile";
+import Button from "@/src/ui/Button";
+import TextField from "@/src/ui/TextField";
 
 interface Props {
   profile: Profile | null;

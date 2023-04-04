@@ -1,5 +1,6 @@
 import { Document } from "@gltf-transform/core";
 import {
+  AudioExtension,
   AvatarExtension,
   BehaviorExtension,
   ColliderExtension,
@@ -27,6 +28,7 @@ export class Scene {
   doc = new Document();
 
   extensions = {
+    audio: this.doc.createExtension(AudioExtension),
     avatar: this.doc.createExtension(AvatarExtension),
     behavior: this.doc.createExtension(BehaviorExtension),
     collider: this.doc.createExtension(ColliderExtension),

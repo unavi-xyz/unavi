@@ -3,7 +3,7 @@ import { BehaviorNode, BehaviorNodeExtras } from "@wired-labs/gltf-extensions";
 
 import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { useNodeExtras } from "../../hooks/useNodeExtras";
-import TextInput from "../ui/TextInput";
+import EditorInput from "../ui/EditorInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 
@@ -51,7 +51,7 @@ export default function ScriptComponent({ node, scriptId }: Props) {
       }}
     >
       <MenuRows titles={["Name"]}>
-        <TextInput
+        <EditorInput
           value={script.name}
           onChange={(e) => {
             const newExtras = { ...extras };

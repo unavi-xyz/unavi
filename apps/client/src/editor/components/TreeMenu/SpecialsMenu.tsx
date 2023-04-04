@@ -1,4 +1,4 @@
-import { SPAWN_TITLE, SpawnPointExtension } from "@wired-labs/gltf-extensions";
+import { SPAWN_TITLE } from "@wired-labs/gltf-extensions";
 
 import { useEditorStore } from "../../../../app/editor/[id]/store";
 import { DropdownItem } from "../../../ui/DropdownMenu";
@@ -18,7 +18,7 @@ export default function SpecialsMenu() {
     const { engine } = useEditorStore.getState();
     if (!engine) return;
 
-    if (spawn) {
+    if (name === "Spawn" && spawn) {
       // Select existing node
       const spawnId = engine.scene.node.getId(spawn);
       if (!spawnId) throw new Error("Spawn node not found");
@@ -29,6 +29,7 @@ export default function SpecialsMenu() {
 
     // Create node
     const id = createNode(name);
+
     // Select new node
     useEditorStore.setState({ selectedId: id });
   }
@@ -82,7 +83,7 @@ function createNode(name: ObjectName) {
     case OBJECT_NAME.Spawn: {
       const spawnPoint = engine.scene.extensions.spawn.createSpawnPoint();
       spawnPoint.setTitle(SPAWN_TITLE.Default);
-      node.setExtension(SpawnPointExtension.EXTENSION_NAME, spawnPoint);
+      node.setExtension(spawnPoint.extensionName, spawnPoint);
       break;
     }
   }

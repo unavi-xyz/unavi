@@ -38,6 +38,7 @@ export function useScene(metadata: ERC721Metadata | null) {
 
         engine.start();
         engine.behavior.start();
+        engine.audio.start();
 
         // Respawn player again to ensure they are in the correct position
         // (sometimes would fall through the floor while scene loads due to lag)

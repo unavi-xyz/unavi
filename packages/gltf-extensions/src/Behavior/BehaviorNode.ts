@@ -37,10 +37,9 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
       configuration: null,
       flow: {},
       links: {},
-      name: null,
       nodes: {},
       parameters: null,
-      type: null,
+      type: "",
       variable: null,
     });
   }

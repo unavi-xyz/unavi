@@ -1,3 +1,4 @@
+import { AudioModule } from "./audio/AudioModule";
 import { BehaviorModule } from "./behavior/BehaviorModule";
 import { DEFAULT_CONTROLS } from "./constants";
 import { InputModule } from "./input/InputModule";
@@ -22,6 +23,7 @@ export class Engine {
   readonly canvas: HTMLCanvasElement;
   readonly overlayCanvas: HTMLCanvasElement;
 
+  readonly audio: AudioModule;
   readonly behavior: BehaviorModule;
   readonly input: InputModule;
   physics: PhysicsModule;
@@ -58,6 +60,7 @@ export class Engine {
     this.cameraPosition = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));
     this.cameraYaw = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT));
 
+    this.audio = new AudioModule(this);
     this.behavior = new BehaviorModule(this);
     this.input = new InputModule(this);
     this.physics = new PhysicsModule(this);
@@ -140,5 +143,6 @@ export class Engine {
     this.input.destroy();
     this.physics.destroy();
     this.behavior.destroy();
+    this.audio.destroy();
   }
 }

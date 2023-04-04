@@ -330,7 +330,7 @@ export class AudioExtension extends Extension {
         positionalDef.rolloffFactor = rolloffFactor;
       }
 
-      if (Object.keys(positionalDef).length > 0) {
+      if (audioEmitterDef.type === AudioEmitter.Type.POSITIONAL) {
         audioEmitterDef.positional = positionalDef;
       }
 

@@ -27,8 +27,8 @@ export class Avatar extends ExtensionProperty<IAvatar> {
 
   protected override getDefaults(): Nullable<IAvatar> {
     return Object.assign(super.getDefaults(), {
-      equippable: null,
-      uri: null,
+      equippable: false,
+      uri: "",
     });
   }
 

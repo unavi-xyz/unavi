@@ -29,7 +29,6 @@ export class BehaviorVariable extends ExtensionProperty<IBehaviorVariable> {
   protected override getDefaults(): Nullable<IBehaviorVariable> {
     return Object.assign(super.getDefaults(), {
       type: ValueType.string,
-      name: null,
       initialValue: "",
     });
   }

@@ -138,11 +138,14 @@ export class Engine {
     if (wasPlaying) this.start();
   }
 
-  destroy() {
-    this.render.destroy();
+  async destroy() {
+    this.stop();
+
+    this.scene.clear();
     this.input.destroy();
-    this.physics.destroy();
     this.behavior.destroy();
     this.audio.destroy();
+
+    await Promise.all([this.render.destroy(), this.physics.destroy()]);
   }
 }

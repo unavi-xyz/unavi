@@ -157,8 +157,21 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     this.#worker?.postMessage(message, transferables);
   }
 
-  destroy() {
-    this.send({ subject: "destroy", data: null });
-    setTimeout(() => this.#worker?.terminate(), 100);
+  async destroy() {
+    this.ready = false;
+
+    if (this.#worker instanceof FakeWorker) {
+      this.send({ subject: "destroy", data: null });
+
+      // Wait for the worker to process the message
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          this.#worker?.terminate();
+          resolve();
+        }, 100);
+      });
+    } else {
+      this.#worker?.terminate();
+    }
   }
 }

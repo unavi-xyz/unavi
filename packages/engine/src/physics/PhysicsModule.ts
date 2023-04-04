@@ -119,15 +119,20 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
   }
 
   async destroy() {
-    this.send({ subject: "destroy", data: null });
     this.ready = false;
 
-    // Wait for the worker to process the message
-    await new Promise<void>((resolve) => {
-      setTimeout(() => {
-        this.#worker?.terminate();
-        resolve();
-      }, 100);
-    });
+    if (this.#worker instanceof FakeWorker) {
+      this.send({ subject: "destroy", data: null });
+
+      // Wait for the worker to process the message
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          this.#worker?.terminate();
+          resolve();
+        }, 100);
+      });
+    } else {
+      this.#worker?.terminate();
+    }
   }
 }

@@ -121,6 +121,8 @@ export class AudioModule {
   }
 
   destroy() {
+    this.stop();
     this.context.close();
+    this.audios.forEach((audio) => this.removeAudio(audio));
   }
 }

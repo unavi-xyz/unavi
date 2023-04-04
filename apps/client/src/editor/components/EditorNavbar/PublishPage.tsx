@@ -218,9 +218,10 @@ export default function PublishPage({ project }: Props) {
 
       // Redirect to space if new space was created
       if (!project?.publication?.spaceId) {
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-
         if (spaceId !== undefined) {
+          // Wait for eth provider to update
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+
           // Redirect to space
           router.push(`/space/${toHex(spaceId)}`);
         } else {

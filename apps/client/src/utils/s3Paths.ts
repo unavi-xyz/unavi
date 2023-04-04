@@ -10,6 +10,8 @@ export class S3Path {
           directory: `publications/${publicationId}/models/${modelId}`,
           image: `publications/${publicationId}/models/${modelId}/image.jpg`,
           model: `publications/${publicationId}/models/${modelId}/model.glb`,
+          asset: (assetId: string) =>
+            `publications/${publicationId}/models/${modelId}/assets/${assetId}` as const,
         } as const),
     } as const);
 
@@ -37,6 +39,7 @@ export class S3Path {
 type PublicPath =
   | ReturnType<typeof S3Path.publication>["metadata"]
   | ReturnType<ReturnType<typeof S3Path.publication>["model"]>["image" | "model"]
+  | ReturnType<ReturnType<ReturnType<typeof S3Path.publication>["model"]>["asset"]>
   | ReturnType<typeof S3Path.profile>[keyof ReturnType<typeof S3Path.profile>]
   | ReturnType<typeof S3Path.temp>;
 

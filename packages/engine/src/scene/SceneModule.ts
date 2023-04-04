@@ -48,6 +48,8 @@ declare const DracoEncoderModule: any;
 export class SceneModule extends Scene {
   readonly #engine: Engine;
 
+  #baseURI = "";
+
   constructor(engine: Engine) {
     super();
 
@@ -83,6 +85,16 @@ export class SceneModule extends Scene {
       const json = this.node.toJSON(node);
       this.#publish({ subject: "change_node", data: { id, json } });
     });
+  }
+
+  get baseURI() {
+    return this.#baseURI;
+  }
+
+  set baseURI(value: string) {
+    if (value === this.#baseURI) return;
+    this.#baseURI = value;
+    this.#engine.render.send({ subject: "set_base_uri", data: value });
   }
 
   async #createIO() {
@@ -540,7 +552,10 @@ export class SceneModule extends Scene {
                             const blob = new Blob([data], { type: mimeType });
                             audio.src = URL.createObjectURL(blob);
                           } else {
-                            audio.src = uri;
+                            const needsBaseURI = uri.startsWith("/");
+                            const fullURI = needsBaseURI ? `${this.baseURI}${uri}` : uri;
+
+                            audio.src = fullURI;
                           }
                         })
                       )

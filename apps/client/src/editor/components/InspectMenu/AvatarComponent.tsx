@@ -5,7 +5,6 @@ import { getNewProjectAssetUpload } from "@/app/api/projects/[id]/assets/helper"
 import { useEditorStore } from "@/app/editor/[id]/store";
 
 import FileInput from "../../../ui/FileInput";
-import { S3Path } from "../../../utils/s3Paths";
 import { useAvatar } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";
 import ComponentMenu from "./ComponentMenu";
@@ -61,7 +60,7 @@ export default function AvatarComponent({ projectId, node }: Props) {
             });
             if (!res.ok) return;
 
-            avatar.setURI(S3Path.project(projectId).asset(assetId));
+            avatar.setURI(`/assets/${assetId}`);
           } catch (e) {
             console.error(e);
             avatar.setName("");

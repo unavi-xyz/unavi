@@ -124,7 +124,8 @@ export class Engine {
    */
   async reset() {
     const wasPlaying = this.#isPlaying;
-    if (wasPlaying) this.stop();
+
+    this.stop();
 
     this.render.send({
       subject: "set_transform_controls_target",

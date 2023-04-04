@@ -34,7 +34,9 @@ export function useLoad(project: Project) {
       const array = new Uint8Array(buffer);
 
       try {
+        engine.scene.baseURI = project.model.split("/").slice(0, -1).join("/");
         await engine.scene.addBinary(array);
+
         // Wait to let scene to load
         await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (err) {
@@ -54,7 +56,5 @@ export function useLoad(project: Project) {
     };
   }, [engine, project]);
 
-  return {
-    error,
-  };
+  return { error };
 }

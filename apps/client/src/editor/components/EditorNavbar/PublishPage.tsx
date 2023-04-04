@@ -10,6 +10,7 @@ import { publishProject } from "@/app/api/projects/[id]/publication/helper";
 import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from "@/app/api/projects/constants";
 import { getPublicationFileUpload } from "@/app/api/publications/[id]/files/[file]/helper";
 import { linkPublication } from "@/app/api/publications/[id]/link/helper";
+import { copyProjectToModel } from "@/app/api/publications/[id]/models/[modelId]/copy-project/helper";
 import { getPublishedModelFileUpload } from "@/app/api/publications/[id]/models/[modelId]/files/[file]/helper";
 import { createPublishedModel } from "@/app/api/publications/[id]/models/helper";
 import { useEditorStore } from "@/app/editor/[id]/store";
@@ -80,8 +81,8 @@ export default function PublishPage({ project }: Props) {
       toast.loading("Saving...", { id: toastId });
       await save();
 
-      // Optimize model
-      toast.loading("Optimizing model...", { id: toastId });
+      // Start optimizing model
+      toast.loading("Creating publication...", { id: toastId });
       const optimizedModelPromise = engine.scene.export({ optimize: true });
 
       // Publish project
@@ -90,22 +91,23 @@ export default function PublishPage({ project }: Props) {
       // Create published model
       const modelId = await createPublishedModel(publicationId);
 
-      // Upload model
-      const url = await getPublishedModelFileUpload(publicationId, modelId, "model");
-      const optimizedModel = await optimizedModelPromise;
+      async function uploadModel() {
+        const url = await getPublishedModelFileUpload(publicationId, modelId, "model");
+        const optimizedModel = await optimizedModelPromise;
 
-      const response = await fetch(url, {
-        method: "PUT",
-        body: optimizedModel,
-        headers: {
-          "Content-Type": "model/gltf-binary",
-          "x-amz-acl": "public-read",
-        },
-      });
+        const response = await fetch(url, {
+          method: "PUT",
+          body: optimizedModel,
+          headers: {
+            "Content-Type": "model/gltf-binary",
+            "x-amz-acl": "public-read",
+          },
+        });
 
-      if (!response.ok) throw new Error("Failed to upload model");
+        if (!response.ok) throw new Error("Failed to upload model");
 
-      console.info("📦 Published model size:", bytesToDisplay(optimizedModel.byteLength));
+        console.info("📦 Published model size:", bytesToDisplay(optimizedModel.byteLength));
+      }
 
       async function uploadImage() {
         if (!imageFile) throw new Error("Image not found");
@@ -200,7 +202,13 @@ export default function PublishPage({ project }: Props) {
       }
 
       toast.loading("Uploading metadata...", { id: toastId });
-      const promises: Promise<unknown>[] = [uploadImage(), uploadMetadata(spaceId)];
+
+      const promises: Promise<unknown>[] = [
+        copyProjectToModel(publicationId, modelId, { projectId: project.id }),
+        uploadModel(),
+        uploadImage(),
+        uploadMetadata(spaceId),
+      ];
 
       if (spaceId !== undefined) promises.push(linkPublication(publicationId, spaceId));
 

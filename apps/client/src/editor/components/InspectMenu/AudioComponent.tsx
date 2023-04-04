@@ -6,7 +6,6 @@ import { getNewProjectAssetUpload } from "@/app/api/projects/[id]/assets/helper"
 import { useEditorStore } from "@/app/editor/[id]/store";
 
 import FileInput from "../../../ui/FileInput";
-import { S3Path } from "../../../utils/s3Paths";
 import { useAudioEmitter } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";
 import EditorInput from "../ui/EditorInput";
@@ -75,7 +74,7 @@ export default function AudioComponent({ node, projectId }: Props) {
             });
             if (!res.ok) return;
 
-            audioData.setURI(S3Path.project(projectId).asset(assetId));
+            audioData.setURI(`/assets/${assetId}`);
           } catch (e) {
             console.error(e);
             source.setName("");

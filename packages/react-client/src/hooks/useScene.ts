@@ -28,6 +28,7 @@ export function useScene(metadata: ERC721Metadata | null) {
 
         setIsDownloaded(true);
 
+        engine.scene.baseURI = metadata.animation_url.split("/").slice(0, -1).join("/");
         await engine.scene.addBinary(array);
 
         engine.physics.send({ subject: "respawn", data: null });

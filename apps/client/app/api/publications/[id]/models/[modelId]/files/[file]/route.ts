@@ -16,7 +16,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const found = await prisma.publication.findFirst({
     where: { id, owner: session.address, PublishedModel: { id: modelId } },
   });
-  if (!found) return new Response("Project not found", { status: 404 });
+  if (!found) return new Response("Publication not found", { status: 404 });
 
   const url = await getPublishedModelUpload(id, modelId, file);
 

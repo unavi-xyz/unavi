@@ -28,16 +28,8 @@ export class AudioModule {
     this.#playAudio();
 
     // Play audio on user interaction
-    const play = () => {
-      if (this.context.state === "suspended") this.#playAudio();
-      if (this.context.state === "running") {
-        document.removeEventListener("click", play);
-        document.removeEventListener("touchstart", play);
-      }
-    };
-
-    document.addEventListener("click", play);
-    document.addEventListener("touchstart", play);
+    document.addEventListener("click", this.#playListener);
+    document.addEventListener("touchstart", this.#playListener);
 
     this.#interval = setInterval(() => {
       const camPosX = Atomics.load(this.#engine.cameraPosition, 0) / POSITION_ARRAY_ROUNDING;
@@ -65,11 +57,19 @@ export class AudioModule {
     }, 1000 / UPDATE_HZ);
   }
 
+  #playListener = () => {
+    if (this.context.state === "suspended") this.#playAudio();
+    if (this.context.state === "running") {
+      document.removeEventListener("click", this.#playListener);
+      document.removeEventListener("touchstart", this.#playListener);
+    }
+  };
+
   #playAudio() {
     if (!this.#engine.isPlaying) return;
 
     this.audios.forEach((audio) => {
-      if (this.autoPlay.get(audio) === true) {
+      if (this.autoPlay.get(audio) && this.#engine.isPlaying) {
         audio.play();
       }
     });
@@ -77,6 +77,9 @@ export class AudioModule {
 
   stop() {
     if (this.#interval) clearInterval(this.#interval);
+
+    document.removeEventListener("click", this.#playListener);
+    document.removeEventListener("touchstart", this.#playListener);
 
     this.context.suspend();
 
@@ -122,7 +125,7 @@ export class AudioModule {
 
   destroy() {
     this.stop();
-    this.context.close();
+    if (this.context.state !== "closed") this.context.close();
     this.audios.forEach((audio) => this.removeAudio(audio));
   }
 }

@@ -93,5 +93,21 @@ export function useTransports(device: Device | null) {
     };
   }, [ws, device]);
 
+  useEffect(() => {
+    if (!consumerTransport) return;
+
+    return () => {
+      consumerTransport.close();
+    };
+  }, [consumerTransport]);
+
+  useEffect(() => {
+    if (!producerTransport) return;
+
+    return () => {
+      producerTransport.close();
+    };
+  }, [producerTransport]);
+
   return { consumerTransport, producerTransport, producer, dataProducer };
 }

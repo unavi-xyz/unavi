@@ -1,7 +1,8 @@
 "use client";
 
-import { ValidSpace } from "../../../src/server/helpers/validateSpace";
-import SpaceCard from "../../../src/ui/SpaceCard";
+import { ValidSpace } from "@/src/server/helpers/validateSpace";
+import SpaceCard from "@/src/ui/SpaceCard";
+
 import { useExploreStore } from "./store";
 
 interface Props {

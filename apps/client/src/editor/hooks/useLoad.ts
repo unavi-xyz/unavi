@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { useEditorStore } from "../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { Project } from "../../server/helpers/fetchProject";
 import { parseError } from "../utils/parseError";
 

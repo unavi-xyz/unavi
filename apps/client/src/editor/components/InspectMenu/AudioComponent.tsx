@@ -2,10 +2,11 @@ import { Node } from "@gltf-transform/core";
 import { AudioEmitterDistanceModel, AudioEmitterType } from "@wired-labs/gltf-extensions";
 import { useState } from "react";
 
-import { getNewProjectAssetUpload } from "../../../../app/api/projects/[id]/assets/helper";
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { getNewProjectAssetUpload } from "@/app/api/projects/[id]/assets/helper";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import FileInput from "../../../ui/FileInput";
-import { cdnURL, S3Path } from "../../../utils/s3Paths";
+import { S3Path } from "../../../utils/s3Paths";
 import { useAudioEmitter } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";
 import EditorInput from "../ui/EditorInput";
@@ -74,7 +75,7 @@ export default function AudioComponent({ node, projectId }: Props) {
             });
             if (!res.ok) return;
 
-            audioData.setURI(cdnURL(S3Path.asset(assetId)));
+            audioData.setURI(S3Path.project(projectId).asset(assetId));
           } catch (e) {
             console.error(e);
             source.setName("");

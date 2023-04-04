@@ -2,7 +2,8 @@
 
 import { MdSearch } from "react-icons/md";
 
-import TextField from "../../../src/ui/TextField";
+import TextField from "@/src/ui/TextField";
+
 import { useExploreStore } from "./store";
 
 export default function Search() {

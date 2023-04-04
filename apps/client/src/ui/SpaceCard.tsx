@@ -1,7 +1,8 @@
 import { ERC721Metadata } from "contracts";
 import Link from "next/link";
 
-import PlayerCount from "../../app/(navbar)/explore/PlayerCount";
+import PlayerCount from "@/app/(navbar)/explore/PlayerCount";
+
 import { toHex } from "../utils/toHex";
 import { CardImage } from "./Card";
 import { CardText } from "./Card";

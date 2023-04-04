@@ -1,6 +1,7 @@
 import { MdLogout } from "react-icons/md";
 
-import { ClientSignInButton } from "../../../../app/(navbar)/SignInButton";
+import { ClientSignInButton } from "@/app/(navbar)/SignInButton";
+
 import { useLogout } from "../../../client/auth/useLogout";
 import { useSession } from "../../../client/auth/useSession";
 import Avatar from "../../../ui/Avatar";

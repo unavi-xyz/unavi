@@ -4,7 +4,8 @@ import { NodeExtras } from "engine";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import Button from "../../../ui/Button";
 import {
   DropdownContent,

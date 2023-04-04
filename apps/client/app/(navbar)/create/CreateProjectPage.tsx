@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
-import { parseError } from "../../../src/editor/utils/parseError";
-import Button from "../../../src/ui/Button";
-import TextField from "../../../src/ui/TextField";
-import { getProjectFileUpload } from "../../api/projects/[id]/[file]/helper";
-import { MAX_NAME_LENGTH } from "../../api/projects/constants";
-import { createProject } from "../../api/projects/helper";
+import { getProjectFileUpload } from "@/app/api/projects/[id]/[file]/helper";
+import { MAX_NAME_LENGTH } from "@/app/api/projects/constants";
+import { createProject } from "@/app/api/projects/helper";
+import { parseError } from "@/src/editor/utils/parseError";
+import Button from "@/src/ui/Button";
+import TextField from "@/src/ui/TextField";
 
 const DEFAULT_NAME = "New Project";
 

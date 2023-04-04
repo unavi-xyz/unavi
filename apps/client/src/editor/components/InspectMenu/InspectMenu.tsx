@@ -1,6 +1,7 @@
 import { EXTENSION_NAME } from "@wired-labs/gltf-extensions";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { useNode } from "../../hooks/useNode";
 import { useNodeExtras } from "../../hooks/useNodeExtras";
 import { useSpawn } from "../../hooks/useSpawn";

@@ -1,7 +1,8 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useEffect, useMemo } from "react";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { useNodes } from "../../hooks/useNodes";
 import TreeItem from "./TreeItem";
 import TreeItemContextMenu from "./TreeItemContextMenu";

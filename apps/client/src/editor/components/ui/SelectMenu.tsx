@@ -1,4 +1,4 @@
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
 
 interface Props extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options: string[];

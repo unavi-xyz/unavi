@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { FaPlay, FaStop } from "react-icons/fa";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import IconButton from "../../../ui/IconButton";
 import Tooltip from "../../../ui/Tooltip";
 

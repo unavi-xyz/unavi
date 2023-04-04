@@ -1,5 +1,5 @@
-import { fetchLatestSpaces } from "../../../../src/server/helpers/fetchLatestSpaces";
-import SpaceCard from "../../../../src/ui/SpaceCard";
+import { fetchLatestSpaces } from "@/src/server/helpers/fetchLatestSpaces";
+import SpaceCard from "@/src/ui/SpaceCard";
 
 interface Props {
   owner: string;

@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { MdLogout, MdOutlinePersonOutline, MdOutlineSettings } from "react-icons/md";
 
-import { useLogout } from "../../src/client/auth/useLogout";
-import { CustomSession } from "../../src/client/auth/useSession";
-import { Profile } from "../../src/server/helpers/fetchProfile";
-import { DropdownItem } from "../../src/ui/DropdownMenu";
-import { toHex } from "../../src/utils/toHex";
+import { useLogout } from "@/src/client/auth/useLogout";
+import { CustomSession } from "@/src/client/auth/useSession";
+import { Profile } from "@/src/server/helpers/fetchProfile";
+import { DropdownItem } from "@/src/ui/DropdownMenu";
+import { toHex } from "@/src/utils/toHex";
 
 interface Props {
   profile: Profile | null;

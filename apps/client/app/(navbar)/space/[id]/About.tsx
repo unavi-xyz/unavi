@@ -1,4 +1,4 @@
-import { fetchSpace } from "../../../../src/server/helpers/fetchSpace";
+import { fetchSpace } from "@/src/server/helpers/fetchSpace";
 
 interface Props {
   id: number;

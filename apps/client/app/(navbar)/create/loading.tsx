@@ -1,7 +1,7 @@
 import { MdAdd } from "react-icons/md";
 
-import Card from "../../../src/ui/Card";
-import CardGrid from "../../../src/ui/CardGrid";
+import Card from "@/src/ui/Card";
+import CardGrid from "@/src/ui/CardGrid";
 
 export default function Loading() {
   return (

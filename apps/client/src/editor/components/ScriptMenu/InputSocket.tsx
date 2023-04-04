@@ -3,7 +3,8 @@ import { ConstantValue, ValueType } from "@wired-labs/gltf-extensions";
 import { FaCaretRight } from "react-icons/fa";
 import { Connection, Handle, Position, useReactFlow } from "reactflow";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import AutoSizeInput from "./AutoSizeInput";
 import JsonPathInput from "./JsonPathInput";
 import { FlowNodeParamter } from "./types";

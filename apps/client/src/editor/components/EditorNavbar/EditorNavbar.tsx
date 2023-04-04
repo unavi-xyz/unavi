@@ -3,9 +3,10 @@ import { useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { useSigner } from "wagmi";
 
-import SignInButton from "../../../../app/(navbar)/SignInButton";
-import { MAX_NAME_LENGTH } from "../../../../app/api/projects/constants";
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import SignInButton from "@/app/(navbar)/SignInButton";
+import { MAX_NAME_LENGTH } from "@/app/api/projects/constants";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { useSession } from "../../../client/auth/useSession";
 import { Project } from "../../../server/helpers/fetchProject";
 import Button from "../../../ui/Button";

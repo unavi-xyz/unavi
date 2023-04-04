@@ -1,6 +1,7 @@
-import { fetchSpaceMetadata } from "../../../../src/server/helpers/fetchSpaceMetadata";
-import { fetchSpaceOwner } from "../../../../src/server/helpers/fetchSpaceOwner";
-import { getServerSession } from "../../../../src/server/helpers/getServerSession";
+import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
+import { fetchSpaceOwner } from "@/src/server/helpers/fetchSpaceOwner";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+
 import RainbowkitWrapper from "../../RainbowkitWrapper";
 import SessionProvider from "../../SessionProvider";
 import Delete from "./Delete";

@@ -17,7 +17,8 @@ import ReactFlow, {
   XYPosition,
 } from "reactflow";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { DropdownMenu, DropdownTrigger } from "../../../ui/DropdownMenu";
 import IconButton from "../../../ui/IconButton";
 import { useScript } from "../../hooks/useScript";

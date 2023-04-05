@@ -30,7 +30,9 @@ export default function AudioComponent({ node, projectId }: Props) {
   const rolloffFactor = useSubscribe(audioEmitter, "RolloffFactor");
 
   const source = sources[0] ?? null;
-  const sourceName = useSubscribe(source, "Name") ?? "";
+  const sourceName = useSubscribe(source, "Name");
+  const audio = useSubscribe(source, "Audio");
+  const uri = useSubscribe(audio ?? null, "URI");
   const autoPlay = useSubscribe(source, "AutoPlay") ?? false;
   const loop = useSubscribe(source, "Loop") ?? false;
 
@@ -47,7 +49,7 @@ export default function AudioComponent({ node, projectId }: Props) {
       }}
     >
       <FileInput
-        displayName={sourceName}
+        displayName={uri ? sourceName : undefined}
         placeholder="Upload MP3 File"
         accept=".mp3"
         disabled={loadingFileUpload || isPlaying}
@@ -165,6 +167,7 @@ export default function AudioComponent({ node, projectId }: Props) {
             name="Rolloff Factor"
             type="number"
             min={0}
+            step={0.01}
             value={rolloffFactor ?? 1}
             onChange={(e) => {
               audioEmitter.setRolloffFactor(parseFloat(e.target.value));

@@ -5,7 +5,7 @@ import { z } from "zod";
  * built with invalid env vars.
  */
 const server = z.object({
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string().url().optional(),
   ETH_PROVIDER: z.string().url(),
   NODE_ENV: z.enum(["development", "test", "production"]),
   NEXTAUTH_SECRET:
@@ -17,11 +17,11 @@ const server = z.object({
     // VERCEL_URL doesn't include `https` so it cant be validated as a URL
     process.env.VERCEL ? z.string().min(1) : z.string().url()
   ),
-  S3_ACCESS_KEY_ID: z.string(),
-  S3_BUCKET: z.string(),
-  S3_ENDPOINT: z.string(),
-  S3_REGION: z.string(),
-  S3_SECRET: z.string(),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_BUCKET: z.string().optional(),
+  S3_ENDPOINT: z.string().optional(),
+  S3_REGION: z.string().optional(),
+  S3_SECRET: z.string().optional(),
   VERCEL_URL: z.string().optional(),
 });
 
@@ -32,11 +32,13 @@ const server = z.object({
 const client = z.object({
   NEXT_PUBLIC_ALCHEMY_ID: z.string().optional(),
   NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT: z.string().optional(),
-  NEXT_PUBLIC_CDN_ENDPOINT: z.string(),
+  NEXT_PUBLIC_CDN_ENDPOINT: z.string().optional(),
   NEXT_PUBLIC_CRYPTOAVATARS_API_KEY: z.string().optional(),
   NEXT_PUBLIC_DEFAULT_HOST: z.string(),
   NEXT_PUBLIC_DEPLOYED_URL: z.string().url(),
   NEXT_PUBLIC_DOCS_URL: z.string().url(),
+  NEXT_PUBLIC_HAS_DATABASE: z.boolean(),
+  NEXT_PUBLIC_HAS_S3: z.boolean(),
 });
 
 /**
@@ -63,6 +65,14 @@ const processEnv = {
   NEXT_PUBLIC_DEFAULT_HOST: process.env.NEXT_PUBLIC_DEFAULT_HOST,
   NEXT_PUBLIC_DEPLOYED_URL: process.env.NEXT_PUBLIC_DEPLOYED_URL,
   NEXT_PUBLIC_DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL,
+  NEXT_PUBLIC_HAS_DATABASE: Boolean(process.env.DATABASE_URL),
+  NEXT_PUBLIC_HAS_S3: Boolean(
+    process.env.S3_BUCKET &&
+      process.env.S3_SECRET &&
+      process.env.S3_REGION &&
+      process.env.S3_ENDPOINT &&
+      process.env.S3_ACCESS_KEY_ID
+  ),
   VERCEL_URL: process.env.VERCEL_URL,
 };
 

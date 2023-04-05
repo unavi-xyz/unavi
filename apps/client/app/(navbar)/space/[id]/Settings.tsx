@@ -1,3 +1,4 @@
+import { env } from "@/src/env.mjs";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { fetchSpaceOwner } from "@/src/server/helpers/fetchSpaceOwner";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
@@ -28,7 +29,7 @@ export default async function Settings({ id }: Props) {
     <SessionProvider>
       <RainbowkitWrapper>
         <div className="space-y-12">
-          <Host id={id} metadata={metadata} />
+          {env.NEXT_PUBLIC_HAS_S3 ? <Host id={id} metadata={metadata} /> : null}
           <Delete id={id} address={session.address} />
         </div>
       </RainbowkitWrapper>

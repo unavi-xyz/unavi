@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import Logo from "@/public/images/Logo.png";
+import { env } from "@/src/env.mjs";
 
 import ClientButtons from "./ClientButtons";
 import NavbarTab from "./NavbarTab";
@@ -30,9 +31,11 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
                 <NavbarTab text="Explore" href="/explore" />
               </div>
 
-              <div className="hidden lg:block">
-                <NavbarTab text="Create" href="/create" />
-              </div>
+              {env.NEXT_PUBLIC_HAS_DATABASE && env.NEXT_PUBLIC_HAS_S3 ? (
+                <div className="hidden lg:block">
+                  <NavbarTab text="Create" href="/create" />
+                </div>
+              ) : null}
             </div>
 
             <div className="flex items-center justify-end">

@@ -1,5 +1,6 @@
 import { Node } from "@gltf-transform/core";
 import { eulerToQuaternion, quaternionToEuler, Vec3 } from "engine";
+import { useEffect, useRef, useState } from "react";
 
 import { useSubscribe } from "../../hooks/useSubscribe";
 import EditorInput from "../ui/EditorInput";
@@ -11,13 +12,26 @@ interface Props {
 }
 
 export default function TransformComponent({ node }: Props) {
+  const justSetEuler = useRef(false);
+
   const translation = useSubscribe(node, "Translation");
   const rotation = useSubscribe(node, "Rotation");
   const scale = useSubscribe(node, "Scale");
 
-  if (!translation || !rotation || !scale || !node) return null;
+  const [euler, setEuler] = useState(quaternionToEuler(node.getRotation()));
 
-  const euler = quaternionToEuler(rotation);
+  useEffect(() => {
+    if (justSetEuler.current) {
+      justSetEuler.current = false;
+      return;
+    }
+
+    if (!rotation) return;
+
+    setEuler(quaternionToEuler(rotation));
+  }, [rotation]);
+
+  if (!translation || !rotation || !scale || !node) return null;
 
   return (
     <ComponentMenu removeable={false}>
@@ -83,9 +97,10 @@ export default function TransformComponent({ node }: Props) {
 
                     const newEuler: Vec3 = [...euler];
                     newEuler[i] = radians;
+                    setEuler(newEuler);
+                    justSetEuler.current = true;
 
                     const newRotation = eulerToQuaternion(newEuler);
-
                     node.setRotation(newRotation);
                   }}
                 />

@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { listObjectsRecursive } from "@/src/server/helpers/listObjectsRecursive";
 import { prisma } from "@/src/server/prisma";
 import { s3Client } from "@/src/server/s3";
 import { S3Path } from "@/src/utils/s3Paths";
 
-import { deleteFiles } from "../files";
 import { Params, paramsSchema, patchSchema } from "./types";
 
 // Get project
@@ -76,37 +76,40 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   // Verify user owns the project
   const found = await prisma.project.findFirst({
     where: { id, owner: session.address },
-    include: { Publication: true, ProjectAsset: true },
+    include: { Publication: true },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
   const publicationInUse = Boolean(found.Publication && found.Publication.spaceId !== null);
 
+  // Get objects from S3
+  // If publication is in use, don't delete it
+  const [projectObjects, publicationObjects] = await Promise.all([
+    listObjectsRecursive(S3Path.project(id).directory),
+    publicationInUse ? Promise.resolve([]) : listObjectsRecursive(S3Path.publication(id).directory),
+  ]);
+
+  const allObjects = [...projectObjects, ...publicationObjects];
+
   await Promise.all([
-    // Delete assets from S3
+    // Delete objects from S3
     s3Client.send(
       new DeleteObjectsCommand({
         Bucket: env.S3_BUCKET,
         Delete: {
-          Objects: found.ProjectAsset.map((asset) => ({
-            Key: S3Path.project(id).asset(asset.id),
-          })),
+          Objects: allObjects.map(({ Key }) => ({ Key })),
         },
       })
     ),
 
-    // Delete project, assets, and publication from database
+    // Delete project and publication from database
     // If publication is in use, don't delete it
     prisma.project.delete({
       where: { id },
       include: {
-        ProjectAsset: true,
         Publication: !publicationInUse,
       },
     }),
-
-    // Delete project files from S3
-    deleteFiles(id),
   ]);
 
   return NextResponse.json({ success: true });

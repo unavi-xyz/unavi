@@ -1,4 +1,9 @@
-import { CopyObjectCommand, DeleteObjectsCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  CopyObjectCommand,
+  DeleteObjectsCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
+} from "@aws-sdk/client-s3";
 import { NextRequest } from "next/server";
 
 import { env } from "@/src/env.mjs";
@@ -16,30 +21,32 @@ export async function POST(request: NextRequest, { params }: Params) {
   const json = await request.json();
   const { projectId } = postSchema.parse(json);
 
-  // Begin fetching model
+  // Begin fetching
   const modelPromise = fetchModel(projectId);
+  const assetsPromise = fetchAssets(projectId);
 
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
   const { id, modelId } = paramsSchema.parse(params);
 
-  // Verify user owns the publication and project
+  // Verify user owns the publication
   const foundPublication = await prisma.publication.findFirst({
     where: { id, owner: session.address, PublishedModel: { id: modelId } },
   });
   if (!foundPublication) return new Response("Publication not found", { status: 404 });
 
+  // Verify user owns the project
   const foundProject = await prisma.project.findFirst({
     where: { id: projectId, owner: session.address },
-    include: { ProjectAsset: true },
   });
   if (!foundProject) return new Response("Project not found", { status: 404 });
 
-  // Get used assets
-  const assets = await getUsedAssets(await modelPromise);
-  const usedAssets = foundProject.ProjectAsset.filter((asset) => assets.has(`/assets/${asset.id}`));
-  const unusedAssets = foundProject.ProjectAsset.filter((asset) => !usedAssets.includes(asset));
+  // Get assets from S3 and model
+  const [allAssets, assets] = await Promise.all([assetsPromise, getUsedAssets(await modelPromise)]);
+
+  const usedAssets = allAssets.filter((asset) => assets.has(`/assets/${asset}`));
+  const unusedAssets = allAssets.filter((asset) => !usedAssets.includes(asset));
 
   await Promise.all([
     // Delete unused assets from S3
@@ -48,30 +55,21 @@ export async function POST(request: NextRequest, { params }: Params) {
         Bucket: env.S3_BUCKET,
         Delete: {
           Objects: unusedAssets.map((asset) => ({
-            Key: S3Path.project(id).asset(asset.id),
+            Key: S3Path.project(projectId).asset(asset),
           })),
         },
       })
     ),
 
-    // Delete unused assets from database
-    prisma.projectAsset.deleteMany({
-      where: {
-        id: { in: unusedAssets.map((asset) => asset.id) },
-      },
-    }),
-
     // Copy used assets to S3
-    Promise.all(
-      usedAssets.map((asset) =>
-        s3Client.send(
-          new CopyObjectCommand({
-            Bucket: env.S3_BUCKET,
-            CopySource: `${env.S3_BUCKET}/${S3Path.project(projectId).asset(asset.id)}`,
-            Key: S3Path.publication(id).model(modelId).asset(asset.id),
-            ACL: "public-read",
-          })
-        )
+    ...usedAssets.map((asset) =>
+      s3Client.send(
+        new CopyObjectCommand({
+          Bucket: env.S3_BUCKET,
+          CopySource: `${env.S3_BUCKET}/${S3Path.project(projectId).asset(asset)}`,
+          Key: S3Path.publication(id).model(modelId).asset(asset),
+          ACL: "public-read",
+        })
       )
     ),
   ]);
@@ -87,4 +85,19 @@ async function fetchModel(projectId: string) {
   if (!Body) throw new Error("Model not found");
 
   return await Body.transformToByteArray();
+}
+
+async function fetchAssets(projectId: string) {
+  const { Contents } = await s3Client.send(
+    new ListObjectsV2Command({
+      Bucket: env.S3_BUCKET,
+      Prefix: S3Path.project(projectId).assets,
+    })
+  );
+
+  const allAssets = Contents ?? [];
+  const assetKeys = allAssets.map((asset) => asset.Key ?? "");
+  const assetIds = assetKeys.map((asset) => asset.split("/").pop() ?? "");
+
+  return assetIds;
 }

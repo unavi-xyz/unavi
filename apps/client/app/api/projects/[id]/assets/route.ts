@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "@/src/server/helpers/getServerSession";
@@ -20,13 +21,10 @@ export async function POST(request: NextRequest, { params }: Params) {
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
-  // Create new asset
-  const asset = await prisma.projectAsset.create({
-    data: { projectId: id },
-  });
+  // Create asset upload URL
+  const assetId = nanoid();
+  const url = await getAssetUpload(id, assetId);
 
-  const url = await getAssetUpload(id, asset.id);
-
-  const json: PostAssetsResponse = { url, assetId: asset.id };
+  const json: PostAssetsResponse = { url, assetId };
   return NextResponse.json(json);
 }

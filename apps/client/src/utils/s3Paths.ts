@@ -4,6 +4,7 @@ import { toHex } from "./toHex";
 export class S3Path {
   static publication = (publicationId: string) =>
     ({
+      directory: `publications/${publicationId}`,
       metadata: `publications/${publicationId}/metadata.json`,
       model: (modelId: string) =>
         ({
@@ -27,6 +28,8 @@ export class S3Path {
   static project = (projectId: string) =>
     ({
       asset: (assetId: string) => `projects/${projectId}/assets/${assetId}` as const,
+      assets: `projects/${projectId}/assets`,
+      directory: `projects/${projectId}`,
       image: `projects/${projectId}/image.jpg`,
       model: `projects/${projectId}/model.glb`,
     } as const);

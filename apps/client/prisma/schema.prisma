@@ -53,21 +53,7 @@ model Project {
   Publication   Publication? @relation(fields: [publicationId], references: [id])
   publicationId String?
 
-  ProjectAsset ProjectAsset[]
-
   @@index([publicationId])
-}
-
-// A project asset is a file that is uploaded to the project S3 bucket
-model ProjectAsset {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  Project   Project? @relation(fields: [projectId], references: [id])
-  projectId String?
-
-  @@index([projectId])
 }
 
 // Next auth

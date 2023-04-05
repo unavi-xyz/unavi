@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   // Verify user owns the project
   const found = await prisma.project.findFirst({
     where: { id, owner: session.address },
-    include: { Publication: true, ProjectAsset: true },
+    include: { Publication: true },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 

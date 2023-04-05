@@ -6,6 +6,7 @@ import { z } from "zod";
  */
 const server = z.object({
   DATABASE_URL: z.string().url().optional(),
+  DISABLE_PWA: z.string().optional(),
   ETH_PROVIDER: z.string().url(),
   NODE_ENV: z.enum(["development", "test", "production"]),
   NEXTAUTH_SECRET:
@@ -49,6 +50,7 @@ const client = z.object({
  */
 const processEnv = {
   DATABASE_URL: process.env.DATABASE_URL,
+  DISABLE_PWA: process.env.DISABLE_PWA,
   ETH_PROVIDER: process.env.ETH_PROVIDER,
   NODE_ENV: process.env.NODE_ENV,
   NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,

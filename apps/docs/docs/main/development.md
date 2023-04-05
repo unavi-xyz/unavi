@@ -1,22 +1,22 @@
 ---
 sidebar_position: 40
-sidebar_label: 🛠️ Development
+sidebar_label: ⚒️ Development
 title: Development
 ---
 
-This guide aims to provide a unified development process for developers of The Wired, ensuring its maintainability and scalability.
+This page will walk you through the steps to run a Wired client locally on your own machine.
 
-## 🛠️ Environment Setup
+## 🏔️ Environment Setup
 
-### Step 0 - Install tools
+### Requirements
 
-Before starting development, ensure that you have the following tools:
+Before starting, ensure that you have the following tools:
 
 - [Node.js](https://nodejs.org/) v18 or higher installed
 - [yarn](https://yarnpkg.com/) installed
 - [Docker](https://www.docker.com/) installed
 - [Docker compose plugin](https://docs.docker.com/compose/install/) installed
-- Ethereum RPC provider (such as [Alchemy](https://www.alchemy.com/))
+- Ethereum RPC provider (such as [Alchemy](https://www.alchemy.com/) or [Infura](https://infura.io/))
 
 ### Step 1 - Clone the repository
 

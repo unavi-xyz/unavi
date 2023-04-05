@@ -7,9 +7,7 @@
 # Generated files
 .docusaurus
 .cache-loader
-
-docs/packages/*
-!docs/packages/index.md
+docs/packages
 
 # Misc
 .DS_Store

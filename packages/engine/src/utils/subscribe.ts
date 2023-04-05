@@ -64,7 +64,7 @@ export function subscribe<P extends Property, Key extends SubscribeValues<P>>(
   let cleanup: (() => void) | void;
 
   const onChange = async (e: GraphNodeEvent) => {
-    if (e.attribute === attribute.toLowerCase()) {
+    if (typeof e.attribute === "string" && e.attribute.toLowerCase() === attribute.toLowerCase()) {
       // Call cleanup function
       if (cleanup) {
         cleanup();

@@ -2,7 +2,8 @@ import { useEffect, useMemo } from "react";
 import { HiOutlineCube } from "react-icons/hi";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { useNode } from "../../hooks/useNode";
 import { useSubscribe } from "../../hooks/useSubscribe";
 import { isAncestor } from "./utils/isAncestor";

@@ -28,7 +28,7 @@
     "access": "public"
   },
   "typedoc": {
-    "displayName": "Protocol",
-    "entryPoint": "./src/index.ts"
+    "entryPoint": "./src/index.ts",
+    "displayName": "Protocol"
   }
 }

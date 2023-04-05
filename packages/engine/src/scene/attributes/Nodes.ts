@@ -43,6 +43,7 @@ type SkinId = string;
 type NodeId = string;
 
 export type NodeExtras = {
+  euler?: Vec3;
   scripts?: Array<{ id: string; name: string }>;
 };
 

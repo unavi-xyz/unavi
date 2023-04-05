@@ -12,8 +12,8 @@
     "deploy": "turbo deploy",
     "dev": "turbo dev --filter=!tsconfig --filter=!eslint-config-custom --filter=!contracts --filter=!engine",
     "docker:build": "dotenv -e ./apps/client/.env -- docker compose -f docker-compose.yml -f docker-compose.prod.yml build",
-    "docker:dev": "yarn docker:stop || dotenv -e ./apps/client/.env -- docker compose up --build -d && yarn dev",
-    "docker:prod": "yarn docker:stop || dotenv -e ./apps/client/.env -- docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build",
+    "docker:dev": "yarn docker:stop && dotenv -e ./apps/client/.env -- docker compose up --build -d && yarn dev",
+    "docker:prod": "yarn docker:stop && dotenv -e ./apps/client/.env -- docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build",
     "docker:stop": "dotenv -e ./apps/client/.env -- docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
     "format": "prettier --write .",
     "generate": "turbo generate",
@@ -28,10 +28,10 @@
     "dotenv-cli": "^7.1.0",
     "patch-package": "^6.5.1",
     "postinstall-postinstall": "^2.1.0",
-    "prettier": "^2.8.4",
+    "prettier": "^2.8.7",
     "prettier-plugin-packagejson": "^2.4.3",
     "prettier-plugin-prisma": "^4.10.0",
-    "turbo": "^1.8.5"
+    "turbo": "^1.8.8"
   },
   "packageManager": "yarn@1.22.19",
   "engines": {

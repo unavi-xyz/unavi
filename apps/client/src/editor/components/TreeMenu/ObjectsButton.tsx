@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { HiOutlineCube } from "react-icons/hi";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { DropdownContent, DropdownMenu, DropdownTrigger } from "../../../ui/DropdownMenu";
 import IconButton from "../../../ui/IconButton";
 import ObjectsMenu from "./ObjectsMenu";

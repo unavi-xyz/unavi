@@ -2,7 +2,8 @@ import { ClientContext } from "@wired-labs/react-client";
 import { useContext, useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
-import { usePlayStore } from "../../../../app/play/[id]/store";
+import { usePlayStore } from "@/app/play/[id]/store";
+
 import { env } from "../../../env.mjs";
 import FileInput from "../../../ui/FileInput";
 import Tooltip from "../../../ui/Tooltip";
@@ -47,6 +48,8 @@ export default function AvatarSettings({ setPage }: Props) {
   }, [avatar, uploadedAvatar]);
 
   const rank = stats ? avatarPerformanceRank(stats) : null;
+
+  if (!env.NEXT_PUBLIC_HAS_S3 && !env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY && !avatar) return null;
 
   return (
     <section className="space-y-1">
@@ -129,24 +132,26 @@ export default function AvatarSettings({ setPage }: Props) {
           </button>
         ) : null}
 
-        <div className="flex w-full space-x-1">
-          <div className="grow">
-            <FileInput
-              displayName={avatarName ?? null}
-              placeholder="Upload VRM File"
-              accept=".vrm"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
+        {env.NEXT_PUBLIC_HAS_S3 ? (
+          <div className="flex w-full space-x-1">
+            <div className="grow">
+              <FileInput
+                displayName={avatarName ?? null}
+                placeholder="Upload VRM File"
+                accept=".vrm"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
 
-                const url = URL.createObjectURL(file);
-                usePlayStore.setState({ didChangeAvatar: true, avatar: url });
-                setAvatarName(file.name);
-                setUploadedAvatar(url);
-              }}
-            />
+                  const url = URL.createObjectURL(file);
+                  usePlayStore.setState({ didChangeAvatar: true, avatar: url });
+                  setAvatarName(file.name);
+                  setUploadedAvatar(url);
+                }}
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </section>
   );

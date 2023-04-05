@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 
-import TextField from "../../../src/ui/TextField";
-import { getProjectFileUpload } from "../../api/projects/[id]/[file]/helper";
-import { MAX_NAME_LENGTH } from "../../api/projects/constants";
-import { createProject } from "../../api/projects/helper";
+import { getProjectFileUpload } from "@/app/api/projects/[id]/[file]/helper";
+import { MAX_NAME_LENGTH } from "@/app/api/projects/constants";
+import { createProject } from "@/app/api/projects/helper";
+import { parseError } from "@/src/editor/utils/parseError";
+import Button from "@/src/ui/Button";
+import TextField from "@/src/ui/TextField";
 
 const DEFAULT_NAME = "New Project";
 
@@ -21,6 +24,8 @@ export default function CreateProjectPage() {
 
     if (loading) return;
     setLoading(true);
+
+    const toastId = "create-project";
 
     async function uploadDefaultImage(id: string) {
       const res = await fetch("/images/Default-Space.jpg");
@@ -47,14 +52,18 @@ export default function CreateProjectPage() {
     }
 
     try {
+      toast.loading("Creating project...", { id: toastId });
+
       // Create new project
       const id = await createProject(nameRef.current?.value || DEFAULT_NAME);
-
       await Promise.all([uploadDefaultImage(id), uploadDefaultModel(id)]);
 
+      toast.success("Project created!", { id: toastId });
+
       router.push(`/editor/${id}`);
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
+      toast.error(parseError(e, "Failed to create project"), { id: toastId });
       setLoading(false);
     }
   }
@@ -72,15 +81,9 @@ export default function CreateProjectPage() {
       />
 
       <div className="flex justify-end">
-        <button
-          disabled={loading}
-          type="submit"
-          className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400 transition ${
-            loading ? "cursor-not-allowed opacity-40" : "hover:scale-105"
-          }`}
-        >
+        <Button disabled={loading} type="submit">
           Create
-        </button>
+        </Button>
       </div>
     </form>
   );

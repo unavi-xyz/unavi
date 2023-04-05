@@ -1,6 +1,6 @@
 # Client
 
-The main website used to access the Wired.
+The main website used to access The Wired.
 
 ## Tech Stack
 

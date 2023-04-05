@@ -2,9 +2,10 @@ import { useClient } from "@wired-labs/react-client";
 import { ERC721Metadata } from "contracts";
 import { useEffect } from "react";
 
-import { useLoadUser } from "../../../src/play/hooks/useLoadUser";
-import LoadingScreen from "../../../src/play/ui/LoadingScreen";
-import Overlay from "../../../src/play/ui/Overlay";
+import { useLoadUser } from "@/src/play/hooks/useLoadUser";
+import LoadingScreen from "@/src/play/ui/LoadingScreen";
+import Overlay from "@/src/play/ui/Overlay";
+
 import FileDrop from "./FileDrop";
 
 interface Props {

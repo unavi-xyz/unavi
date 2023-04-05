@@ -7,16 +7,17 @@ import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import Split from "react-split";
 
-import EditorNavbar from "../../../src/editor/components/EditorNavbar/EditorNavbar";
-import InspectMenu from "../../../src/editor/components/InspectMenu/InspectMenu";
-import ScriptMenu from "../../../src/editor/components/ScriptMenu/ScriptMenu";
-import TreeMenu from "../../../src/editor/components/TreeMenu/TreeMenu";
-import { useAutosave } from "../../../src/editor/hooks/useAutosave";
-import { ERROR_NOT_SIGNED_IN, useLoad } from "../../../src/editor/hooks/useLoad";
-import { useTransformControls } from "../../../src/editor/hooks/useTransformControls";
-import { ERROR_MESSAGE } from "../../../src/editor/utils/parseError";
-import Crosshair from "../../../src/play/Crosshair";
-import { Project } from "../../../src/server/helpers/fetchProject";
+import EditorNavbar from "@/src/editor/components/EditorNavbar/EditorNavbar";
+import InspectMenu from "@/src/editor/components/InspectMenu/InspectMenu";
+import ScriptMenu from "@/src/editor/components/ScriptMenu/ScriptMenu";
+import TreeMenu from "@/src/editor/components/TreeMenu/TreeMenu";
+import { useAutosave } from "@/src/editor/hooks/useAutosave";
+import { ERROR_NOT_SIGNED_IN, useLoad } from "@/src/editor/hooks/useLoad";
+import { useTransformControls } from "@/src/editor/hooks/useTransformControls";
+import { ERROR_MESSAGE } from "@/src/editor/utils/parseError";
+import Crosshair from "@/src/play/Crosshair";
+import { Project } from "@/src/server/helpers/fetchProject";
+
 import SignInButton from "../../(navbar)/SignInButton";
 import { useEditorStore } from "./store";
 

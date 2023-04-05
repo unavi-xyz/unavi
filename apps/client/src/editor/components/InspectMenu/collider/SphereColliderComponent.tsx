@@ -2,7 +2,7 @@ import { Node } from "@gltf-transform/core";
 
 import { useCollider } from "../../../hooks/useExtension";
 import { useSubscribe } from "../../../hooks/useSubscribe";
-import NumberInput from "../../ui/NumberInput";
+import EditorInput from "../../ui/EditorInput";
 import MenuRows from "../ui/MenuRows";
 
 interface Props {
@@ -15,7 +15,8 @@ export default function SphereColliderComponent({ node }: Props) {
 
   return (
     <MenuRows titles={["Radius"]}>
-      <NumberInput
+      <EditorInput
+        type="number"
         name="Radius"
         value={radius ?? 0}
         step={0.1}

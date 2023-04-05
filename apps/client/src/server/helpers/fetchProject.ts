@@ -1,13 +1,14 @@
 import { cache } from "react";
 
-import { getDownload } from "../../../app/api/projects/files";
+import { getProjectDownload } from "@/app/api/projects/files";
+
 import { prisma } from "../prisma";
 import { getServerSession } from "./getServerSession";
 
 export const fetchProject = cache(async (id: string) => {
   try {
-    const imagePromise = getDownload(id, "image");
-    const modelPromise = getDownload(id, "model");
+    const imagePromise = getProjectDownload(id, "image");
+    const modelPromise = getProjectDownload(id, "model");
 
     const session = await getServerSession();
     if (!session) throw new Error("Unauthorized");

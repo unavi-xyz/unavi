@@ -10,6 +10,7 @@
       "outputs": [".next/**"],
       "env": [
         "DATABASE_URL",
+        "DISABLE_PWA",
         "ETH_PROVIDER",
         "NEXT_PUBLIC_ALCHEMY_ID",
         "NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT",

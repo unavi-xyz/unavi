@@ -1,3 +1,3 @@
-export function deletePublication(id: number) {
+export function deletePublication(id: string) {
   return fetch(`/api/publications/${id}`, { method: "DELETE" });
 }

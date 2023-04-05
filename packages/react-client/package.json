@@ -38,7 +38,7 @@
     "access": "public"
   },
   "typedoc": {
-    "displayName": "React-Client",
-    "entryPoint": "./src/index.ts"
+    "entryPoint": "./src/index.ts",
+    "displayName": "React-Client"
   }
 }

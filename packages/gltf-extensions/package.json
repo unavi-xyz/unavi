@@ -16,8 +16,9 @@
     "lint": "cd ../.. && eslint --fix packages/gltf-extensions --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
-    "@gltf-transform/core": "3.1.2",
-    "@wired-labs/behave-graph-core": "^0.9.19"
+    "@gltf-transform/core": "3.1.7",
+    "@wired-labs/behave-graph-core": "^0.9.19",
+    "zod": "^3.21.4"
   },
   "devDependencies": {
     "tsconfig": "*",
@@ -28,7 +29,7 @@
     "access": "public"
   },
   "typedoc": {
-    "displayName": "glTF-Extensions",
-    "entryPoint": "./src/index.ts"
+    "entryPoint": "./src/index.ts",
+    "displayName": "glTF-Extensions"
   }
 }

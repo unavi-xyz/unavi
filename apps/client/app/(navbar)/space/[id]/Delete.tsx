@@ -7,9 +7,10 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
-import { parseError } from "../../../../src/editor/utils/parseError";
-import Button from "../../../../src/ui/Button";
-import { deletePublication } from "../../../api/publications/[id]/helper";
+import { deletePublication } from "@/app/api/publications/[id]/helper";
+import { getSpacePublication } from "@/app/api/spaces/[id]/publication/helper";
+import { parseError } from "@/src/editor/utils/parseError";
+import Button from "@/src/ui/Button";
 
 interface Props {
   id: number;
@@ -42,10 +43,11 @@ export default function Delete({ id, address }: Props) {
       const contract = Space__factory.connect(SPACE_ADDRESS, signer);
       const tx = await contract.burn(id);
 
-      toast.loading("Deleting from database...", { id: toastId });
-      await deletePublication(id);
+      toast.loading("Deleting data...", { id: toastId });
+      const publication = await getSpacePublication(id);
+      if (publication) await deletePublication(publication.id);
 
-      toast.loading("Burning space...", { id: toastId });
+      toast.loading("Waiting for transaction...", { id: toastId });
       await tx.wait();
     }
 

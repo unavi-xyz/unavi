@@ -16,13 +16,13 @@
   },
   "dependencies": {
     "@wired-labs/protocol": "*",
-    "mediasoup": "^3.11.15",
+    "mediasoup": "^3.11.20",
     "nanoid": "^4.0.1",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.20.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/node": "^18.15.3",
+    "@types/node": "^18.15.11",
     "concurrently": "^7.6.0",
     "eslint": "^8.36.0",
     "eslint-config-custom": "*",

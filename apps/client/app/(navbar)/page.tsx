@@ -2,14 +2,15 @@ import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import Screenshot1 from "../../public/images/Screenshot1.png";
-import Screenshot2 from "../../public/images/Screenshot2.png";
-import Screenshot3 from "../../public/images/Screenshot3.png";
-import Screenshot4 from "../../public/images/Screenshot4.png";
-import Discord from "../../public/images/svg/Discord.svg";
-import GitHub from "../../public/images/svg/GitHub.svg";
-import Twitter from "../../public/images/svg/Twitter.svg";
-import { env } from "../../src/env.mjs";
+import Screenshot1 from "@/public/images/Screenshot1.png";
+import Screenshot2 from "@/public/images/Screenshot2.png";
+import Screenshot3 from "@/public/images/Screenshot3.png";
+import Screenshot4 from "@/public/images/Screenshot4.png";
+import Discord from "@/public/images/svg/Discord.svg";
+import GitHub from "@/public/images/svg/GitHub.svg";
+import Twitter from "@/public/images/svg/Twitter.svg";
+import { env } from "@/src/env.mjs";
+
 import AnimateOnEnter from "./AnimateOnEnter";
 
 const DISCORD_URL = "https://discord.gg/cazUfCCgHJ";
@@ -43,7 +44,7 @@ export default function Home() {
                     href="/play/0x4d"
                     className="flex h-12 items-center justify-center rounded-full bg-neutral-900 px-10 text-2xl font-bold text-white outline-neutral-400 transition hover:scale-105"
                   >
-                    Enter
+                    Play
                   </Link>
                 </div>
 
@@ -64,7 +65,7 @@ export default function Home() {
               <div className="z-10 pr-36">
                 <Image
                   src={Screenshot1}
-                  alt="Screenshot of the Wired"
+                  alt="Screenshot of The Wired"
                   priority
                   sizes="(min-width: 1024px) 40vw, 75vw"
                   className="rounded-3xl"
@@ -74,7 +75,7 @@ export default function Home() {
               <div className="-mt-20 pl-36 lg:-mt-28">
                 <Image
                   src={Screenshot2}
-                  alt="Screenshot of the Wired"
+                  alt="Screenshot of The Wired"
                   priority
                   sizes="(min-width: 1024px) 40vw, 75vw"
                   className="rounded-3xl"
@@ -115,7 +116,7 @@ export default function Home() {
               <div className="relative h-48 w-full sm:h-80">
                 <Image
                   src={Screenshot3}
-                  alt="Screenshot of the Wired"
+                  alt="Screenshot of The Wired"
                   fill
                   sizes="(min-width: 1024px) 50vw, 100vw"
                   className="rounded-3xl object-cover"
@@ -153,7 +154,7 @@ export default function Home() {
               <div className="relative h-48 w-full sm:h-80">
                 <Image
                   src={Screenshot4}
-                  alt="Screenshot of the Wired"
+                  alt="Screenshot of The Wired"
                   fill
                   sizes="(min-width: 1024px) 50vw, 100vw"
                   className="rounded-3xl object-cover"

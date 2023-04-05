@@ -1,7 +1,8 @@
 import { Mesh, Node } from "@gltf-transform/core";
 import { MeshExtras } from "engine";
 
-import { useEditorStore } from "../../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { useMeshExtras } from "../../../hooks/useMeshExtras";
 import SelectMenu from "../../ui/SelectMenu";
 import ComponentMenu from "../ComponentMenu";
@@ -38,7 +39,7 @@ export default function MeshComponent({ mesh }: Props) {
         </div>
 
         <MenuRows titles={["Type"]}>
-          <div className="w-full cursor-not-allowed select-none rounded border border-neutral-300 bg-neutral-50 pl-1.5">
+          <div className="w-full cursor-default select-none rounded border border-neutral-300 bg-neutral-50 pl-1.5">
             Primitives
           </div>
         </MenuRows>

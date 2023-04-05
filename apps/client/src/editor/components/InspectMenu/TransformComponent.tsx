@@ -1,10 +1,9 @@
 import { Node } from "@gltf-transform/core";
-import { Vec3 } from "engine";
+import { eulerToQuaternion, quaternionToEuler, Vec3 } from "engine";
+import { useEffect, useRef, useState } from "react";
 
 import { useSubscribe } from "../../hooks/useSubscribe";
-import { eulerToQuaternion } from "../../utils/eulerToQuaternion";
-import { quaternionToEuler } from "../../utils/quaternionToEuler";
-import NumberInput from "../ui/NumberInput";
+import EditorInput from "../ui/EditorInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 
@@ -13,13 +12,26 @@ interface Props {
 }
 
 export default function TransformComponent({ node }: Props) {
+  const justSetEuler = useRef(false);
+
   const translation = useSubscribe(node, "Translation");
   const rotation = useSubscribe(node, "Rotation");
   const scale = useSubscribe(node, "Scale");
 
-  if (!translation || !rotation || !scale || !node) return null;
+  const [euler, setEuler] = useState(quaternionToEuler(node.getRotation()));
 
-  const euler = quaternionToEuler(rotation);
+  useEffect(() => {
+    if (justSetEuler.current) {
+      justSetEuler.current = false;
+      return;
+    }
+
+    if (!rotation) return;
+
+    setEuler(quaternionToEuler(rotation));
+  }, [rotation]);
+
+  if (!translation || !rotation || !scale || !node) return null;
 
   return (
     <ComponentMenu removeable={false}>
@@ -34,7 +46,8 @@ export default function TransformComponent({ node }: Props) {
             return (
               <div key={id} className="flex items-center space-x-1">
                 <label htmlFor={id}>{letter}</label>
-                <NumberInput
+                <EditorInput
+                  type="number"
                   id={id}
                   value={rounded}
                   step={0.1}
@@ -68,7 +81,8 @@ export default function TransformComponent({ node }: Props) {
             return (
               <div key={id} className="flex items-center space-x-1">
                 <label htmlFor={id}>{letter}</label>
-                <NumberInput
+                <EditorInput
+                  type="number"
                   id={id}
                   value={rounded}
                   step={1}
@@ -83,9 +97,10 @@ export default function TransformComponent({ node }: Props) {
 
                     const newEuler: Vec3 = [...euler];
                     newEuler[i] = radians;
+                    setEuler(newEuler);
+                    justSetEuler.current = true;
 
                     const newRotation = eulerToQuaternion(newEuler);
-
                     node.setRotation(newRotation);
                   }}
                 />
@@ -104,7 +119,8 @@ export default function TransformComponent({ node }: Props) {
             return (
               <div key={id} className="flex items-center space-x-1">
                 <label htmlFor={id}>{letter}</label>
-                <NumberInput
+                <EditorInput
+                  type="number"
                   id={id}
                   value={rounded}
                   step={0.1}

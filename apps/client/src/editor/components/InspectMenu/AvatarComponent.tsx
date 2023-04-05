@@ -1,10 +1,10 @@
 import { Node } from "@gltf-transform/core";
 import { useState } from "react";
 
-import { getNewProjectAssetUpload } from "../../../../app/api/projects/[id]/assets/helper";
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { getNewProjectAssetUpload } from "@/app/api/projects/[id]/assets/helper";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import FileInput from "../../../ui/FileInput";
-import { cdnURL, S3Path } from "../../../utils/s3Paths";
 import { useAvatar } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";
 import ComponentMenu from "./ComponentMenu";
@@ -60,7 +60,7 @@ export default function AvatarComponent({ projectId, node }: Props) {
             });
             if (!res.ok) return;
 
-            avatar.setURI(cdnURL(S3Path.asset(assetId)));
+            avatar.setURI(`/assets/${assetId}`);
           } catch (e) {
             console.error(e);
             avatar.setName("");

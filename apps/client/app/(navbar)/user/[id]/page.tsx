@@ -5,13 +5,14 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
 
-import { fetchProfile } from "../../../../src/server/helpers/fetchProfile";
-import { fetchProfileFromAddress } from "../../../../src/server/helpers/fetchProfileFromAddress";
-import { getServerSession } from "../../../../src/server/helpers/getServerSession";
-import Avatar from "../../../../src/ui/Avatar";
-import Card from "../../../../src/ui/Card";
-import { isFromCDN } from "../../../../src/utils/isFromCDN";
-import { toHex } from "../../../../src/utils/toHex";
+import { fetchProfile } from "@/src/server/helpers/fetchProfile";
+import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+import Avatar from "@/src/ui/Avatar";
+import Card from "@/src/ui/Card";
+import { isFromCDN } from "@/src/utils/isFromCDN";
+import { toHex } from "@/src/utils/toHex";
+
 import Spaces from "./Spaces";
 
 export const revalidate = 60;
@@ -118,12 +119,12 @@ export default async function User({ params: { id } }: { params: Params }) {
 
           <section className="flex justify-center px-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
-              <div className="z-10 -mt-24 flex w-48 rounded-full ring-4 ring-white">
+              <div className="z-10 -mt-20 flex w-40 rounded-full ring-4 ring-white">
                 <Avatar
                   src={profile?.metadata?.image}
                   circle
                   uniqueKey={profile?.handle?.full ?? id}
-                  size={192}
+                  size={160}
                 />
               </div>
 

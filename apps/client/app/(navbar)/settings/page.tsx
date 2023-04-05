@@ -1,7 +1,9 @@
 import { Metadata as NextMetadata } from "next";
 
-import { fetchProfileFromAddress } from "../../../src/server/helpers/fetchProfileFromAddress";
-import { getServerSession } from "../../../src/server/helpers/getServerSession";
+import { env } from "@/src/env.mjs";
+import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
+import { getServerSession } from "@/src/server/helpers/getServerSession";
+
 import { metadata as baseMetadata } from "../../layout";
 import RainbowkitWrapper from "../RainbowkitWrapper";
 import SessionProvider from "../SessionProvider";
@@ -36,7 +38,7 @@ export default async function Settings() {
           <div className="mx-4 w-full max-w-lg space-y-4 py-8">
             <div className="text-center text-3xl font-black">Settings</div>
             <Handle profile={profile} />
-            {profile && <Metadata profile={profile} />}
+            {profile && env.NEXT_PUBLIC_HAS_S3 ? <Metadata profile={profile} /> : null}
           </div>
         </div>
       </RainbowkitWrapper>

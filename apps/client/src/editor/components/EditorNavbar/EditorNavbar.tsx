@@ -3,9 +3,10 @@ import { useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { useSigner } from "wagmi";
 
-import SignInButton from "../../../../app/(navbar)/SignInButton";
-import { MAX_NAME_LENGTH } from "../../../../app/api/projects/constants";
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import SignInButton from "@/app/(navbar)/SignInButton";
+import { MAX_NAME_LENGTH } from "@/app/api/projects/constants";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { useSession } from "../../../client/auth/useSession";
 import { Project } from "../../../server/helpers/fetchProject";
 import Button from "../../../ui/Button";
@@ -104,7 +105,7 @@ export default function EditorNavbar({ project }: Props) {
                 <button
                   onClick={handleSave}
                   className={
-                    "rounded-md px-2 py-0.5 text-sm text-neutral-500 opacity-0 transition hover:bg-neutral-200 hover:text-neutral-900 focus:bg-neutral-200 focus:text-neutral-900 focus:opacity-100 active:bg-neutral-200 group-hover:opacity-100"
+                    "rounded-md px-2 py-0.5 text-sm text-neutral-500 opacity-0 transition hover:bg-neutral-200 hover:text-neutral-900 focus:opacity-100 active:bg-neutral-200 group-hover:opacity-100"
                   }
                 >
                   Save

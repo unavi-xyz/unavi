@@ -1,11 +1,8 @@
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
+import { SpawnPointDef, spawnPointSchema } from "./schemas";
 import { SpawnPoint } from "./SpawnPoint";
-
-type SpawnPointDef = {
-  title: string;
-};
 
 /**
  * Implementation of the {@link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point OMI_spawn_point} extension.
@@ -30,10 +27,19 @@ export class SpawnPointExtension extends Extension {
       const node = context.nodes[nodeIndex];
       if (!node) throw new Error("Node not found");
 
-      const spawnPoint = this.createSpawnPoint();
+      const parsed = spawnPointSchema.safeParse(nodeDef.extensions[this.extensionName]);
 
-      const rootDef = nodeDef.extensions[this.extensionName] as SpawnPointDef;
-      spawnPoint.setTitle(rootDef.title);
+      if (!parsed.success) {
+        console.warn(parsed.error);
+        return;
+      }
+
+      const spawnPointDef = parsed.data;
+
+      const spawnPoint = this.createSpawnPoint();
+      spawnPoint.setTitle(spawnPointDef.title);
+      spawnPoint.setTeam(spawnPointDef.team);
+      spawnPoint.setGroup(spawnPointDef.group);
 
       node.setExtension(this.extensionName, spawnPoint);
     });
@@ -60,7 +66,12 @@ export class SpawnPointExtension extends Extension {
 
         nodeDef.extensions ??= {};
 
-        const spawnPointDef: SpawnPointDef = { title: spawnPoint.getTitle() };
+        const spawnPointDef: SpawnPointDef = {
+          title: spawnPoint.getTitle(),
+          team: spawnPoint.getTeam(),
+          group: spawnPoint.getGroup(),
+        };
+
         nodeDef.extensions[this.extensionName] = spawnPointDef;
       });
 

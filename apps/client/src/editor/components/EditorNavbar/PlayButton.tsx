@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { FaPlay, FaStop } from "react-icons/fa";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import IconButton from "../../../ui/IconButton";
 import Tooltip from "../../../ui/Tooltip";
 
@@ -25,6 +26,7 @@ export default function PlayButton() {
     engine.physics.send({ subject: "respawn", data: null });
     engine.render.send({ subject: "toggle_animations", data: true });
     engine.behavior.start();
+    await engine.audio.start();
 
     useEditorStore.setState({ isPlaying: true });
   }, [engine, sceneLoaded]);
@@ -33,6 +35,7 @@ export default function PlayButton() {
     if (!engine || !sceneLoaded) return;
 
     // Exit play mode
+    engine.audio.stop();
     engine.behavior.stop();
     engine.controls = "orbit";
     engine.render.send({ subject: "toggle_animations", data: false });

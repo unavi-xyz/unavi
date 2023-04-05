@@ -1,3 +1,4 @@
+export * from "./Audio";
 export * from "./Avatar";
 export * from "./Behavior";
 export * from "./Collider";

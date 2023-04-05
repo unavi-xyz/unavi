@@ -1,7 +1,8 @@
 import { ClientContext } from "@wired-labs/react-client";
 import { useContext } from "react";
 
-import { usePlayStore } from "../../../../app/play/[id]/store";
+import { usePlayStore } from "@/app/play/[id]/store";
+
 import { useSession } from "../../../client/auth/useSession";
 import TextField from "../../../ui/TextField";
 import { toHex } from "../../../utils/toHex";
@@ -25,7 +26,7 @@ export default function NameSettings() {
       onChange={(e) => {
         usePlayStore.setState({ didChangeName: true, nickname: e.target.value });
       }}
-      className="h-full w-full rounded-lg bg-neutral-200/50 px-4 py-2 text-center text-neutral-900 placeholder:text-neutral-400"
+      className="text-center"
     />
   );
 }

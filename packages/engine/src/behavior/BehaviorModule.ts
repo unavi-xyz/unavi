@@ -44,6 +44,8 @@ export class BehaviorModule {
   #loadEngine() {
     const json = this.#engine.scene.extensions.behavior.toGraphJSON();
 
+    if (!json.nodes || json.nodes.length === 0) return;
+
     const graph = readGraphFromJSON(json, this.registry);
     const errors = validateGraph(graph);
 

@@ -2,12 +2,7 @@ import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
 import { Avatar } from "./Avatar";
-
-type AvatarDef = {
-  name: string;
-  equippable: boolean;
-  uri: string;
-};
+import { AvatarDef, avatarSchema } from "./schemas";
 
 /**
  * Implementation of the WIRED_avatar extension.
@@ -30,11 +25,19 @@ export class AvatarExtension extends Extension {
       if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName]) return;
 
       const node = context.nodes[nodeIndex];
-      if (!node) throw new Error("Node not found");
+      if (!node) throw new Error(`Node ${nodeIndex} not found.`);
 
       const avatar = this.createAvatar();
 
-      const avatarDef = nodeDef.extensions[this.extensionName] as AvatarDef;
+      const parsedAvatarDef = avatarSchema.safeParse(nodeDef.extensions[this.extensionName]);
+
+      if (!parsedAvatarDef.success) {
+        console.warn(parsedAvatarDef.error);
+        return;
+      }
+
+      const avatarDef = parsedAvatarDef.data;
+
       avatar.setName(avatarDef.name);
       avatar.setEquippable(avatarDef.equippable);
       avatar.setURI(avatarDef.uri);
@@ -54,13 +57,13 @@ export class AvatarExtension extends Extension {
         if (!avatar) return;
 
         const nodeIndex = context.nodeIndexMap.get(node);
-        if (nodeIndex === undefined) throw new Error("Node index not found");
+        if (nodeIndex === undefined) return;
 
         const nodes = context.jsonDoc.json.nodes;
-        if (!nodes) throw new Error("Nodes not found");
+        if (!nodes) return;
 
         const nodeDef = nodes[nodeIndex];
-        if (!nodeDef) throw new Error("Node def not found");
+        if (!nodeDef) return;
 
         nodeDef.extensions ??= {};
 

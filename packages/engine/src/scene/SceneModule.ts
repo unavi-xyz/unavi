@@ -11,6 +11,8 @@ import {
 import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
 import { draco } from "@gltf-transform/functions";
 import {
+  AudioEmitter,
+  AudioExtension,
   AvatarExtension,
   BehaviorExtension,
   Collider,
@@ -20,10 +22,9 @@ import {
 
 import { Engine } from "../Engine";
 import { extensions } from "../extensions";
-import { PhysicsModule } from "../physics/PhysicsModule";
 import { optimizeDocument } from "../render";
-import { RenderModule } from "../render/RenderModule";
 import { getCustomMeshData } from "../render/scene/utils/getCustomMeshData";
+import { quaternionToEuler } from "../utils/quaternionToEuler";
 import { subscribe } from "../utils/subscribe";
 import { AnimationJSON } from "./attributes/Animations";
 import { MaterialJSON } from "./attributes/Materials";
@@ -33,6 +34,11 @@ import { PrimitiveJSON } from "./attributes/Primitives";
 import { SceneMessage } from "./messages";
 import { Scene } from "./Scene";
 
+// Global variables, needs to be set by the user of this library
+// see https://github.com/google/draco/tree/master/javascript/example
+declare const DracoDecoderModule: any;
+declare const DracoEncoderModule: any;
+
 /**
  * Handles scene related logic for the main thread.
  * Syncs changes to the scene with the worker threads.
@@ -40,14 +46,14 @@ import { Scene } from "./Scene";
  * @group Modules
  */
 export class SceneModule extends Scene {
-  #render: RenderModule;
-  #physics: PhysicsModule;
+  readonly #engine: Engine;
+
+  #baseURI = "";
 
   constructor(engine: Engine) {
     super();
 
-    this.#render = engine.render;
-    this.#physics = engine.physics;
+    this.#engine = engine;
 
     this.accessor.addEventListener("create", ({ data }) => {
       const accessor = this.accessor.store.get(data.id);
@@ -81,12 +87,26 @@ export class SceneModule extends Scene {
     });
   }
 
+  get baseURI() {
+    return this.#baseURI;
+  }
+
+  set baseURI(value: string) {
+    if (value === this.#baseURI) return;
+    this.#baseURI = value;
+    this.#engine.render.send({ subject: "set_base_uri", data: value });
+  }
+
   async #createIO() {
-    return new WebIO().registerExtensions(extensions).registerDependencies({
-      // DracoDecoderModule is a global variable, needs to be set by the user of this library
-      // @ts-ignore
-      "draco3d.decoder": await new DracoDecoderModule(),
-    });
+    const io = new WebIO().registerExtensions(extensions);
+
+    if (DracoDecoderModule !== undefined) {
+      io.registerDependencies({
+        "draco3d.decoder": await new DracoDecoderModule(),
+      });
+    }
+
+    return io;
   }
 
   async export({ log = false, optimize = false } = {}) {
@@ -125,23 +145,25 @@ export class SceneModule extends Scene {
       // Optimize model
       await optimizeDocument(optimizedDoc);
 
-      // Compress model
-      try {
-        // Create another clone to avoid modifying the optimized model
-        // Sometimes compression fails, so we want to return the optimized model in that case
-        const compressedDoc = optimizedDoc.clone();
+      if (DracoEncoderModule !== undefined) {
+        // Compress model
+        try {
+          // Create another clone to avoid modifying the optimized model
+          // Sometimes compression fails, so we want to return the optimized model in that case
+          const compressedDoc = optimizedDoc.clone();
 
-        await io.registerDependencies({
-          // @ts-ignore
-          "draco3d.encoder": await new DracoEncoderModule(),
-        });
+          await io.registerDependencies({
+            // @ts-ignore
+            "draco3d.encoder": await new DracoEncoderModule(),
+          });
 
-        await compressedDoc.transform(draco());
+          await compressedDoc.transform(draco());
 
-        // Return the compressed model
-        return await io.writeBinary(compressedDoc);
-      } catch (err) {
-        console.warn("Failed to compress model", err);
+          // Return the compressed model
+          return await io.writeBinary(compressedDoc);
+        } catch (err) {
+          console.warn("Failed to compress model", err);
+        }
       }
 
       // Return the optimized model
@@ -250,6 +272,7 @@ export class SceneModule extends Scene {
     Object.values(this.extensions).forEach((extension) => extension.dispose());
 
     this.extensions = {
+      audio: this.doc.createExtension(AudioExtension),
       avatar: this.doc.createExtension(AvatarExtension),
       behavior: this.doc.createExtension(BehaviorExtension),
       collider: this.doc.createExtension(ColliderExtension),
@@ -279,10 +302,10 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.texture.toJSON(texture);
 
-      this.#render.send({ subject: "create_texture", data: { id, json } });
+      this.#engine.render.send({ subject: "create_texture", data: { id, json } });
 
       texture.addEventListener("dispose", () => {
-        this.#render.send({ subject: "dispose_texture", data: id });
+        this.#engine.render.send({ subject: "dispose_texture", data: id });
       });
     });
 
@@ -291,21 +314,21 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.material.toJSON(material);
 
-      this.#render.send({ subject: "create_material", data: { id, json } });
+      this.#engine.render.send({ subject: "create_material", data: { id, json } });
 
       material.addEventListener("change", (e) => {
         const attribute = e.attribute as keyof MaterialJSON;
         const json = this.material.toJSON(material);
         const value = json[attribute];
 
-        this.#render.send({
+        this.#engine.render.send({
           subject: "change_material",
           data: { id, json: { [attribute]: value } },
         });
       });
 
       material.addEventListener("dispose", () => {
-        this.#render.send({ subject: "dispose_material", data: id });
+        this.#engine.render.send({ subject: "dispose_material", data: id });
       });
     });
 
@@ -331,10 +354,10 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
 
       const json = this.skin.toJSON(skin);
-      this.#render.send({ subject: "create_skin", data: { id, json } });
+      this.#engine.render.send({ subject: "create_skin", data: { id, json } });
 
       skin.addEventListener("dispose", () => {
-        this.#render.send({ subject: "dispose_skin", data: id });
+        this.#engine.render.send({ subject: "dispose_skin", data: id });
       });
     });
 
@@ -386,6 +409,182 @@ export class SceneModule extends Scene {
     this.#publish({ subject: "create_node", data: { id, json: {} } });
 
     let extensionListeners: Array<{ extension: ExtensionProperty; listener: () => void }> = [];
+
+    // Load audio
+    subscribe(node, "Extensions", (extensions) => {
+      const extensionsCleanup: Array<() => void> = [];
+
+      extensions.forEach((extension) => {
+        if (!(extension instanceof AudioEmitter)) return;
+
+        extensionsCleanup.push(
+          subscribe(extension, "Sources", (sources) => {
+            const sourcesCleanups = sources.map((source) => {
+              const sourceCleanup: Array<() => void> = [];
+
+              const audio = this.#engine.audio.createAudio();
+
+              sourceCleanup.push(
+                subscribe(source, "AutoPlay", (autoPlay) => {
+                  this.#engine.audio.setAutoPlay(audio, autoPlay);
+                })
+              );
+
+              sourceCleanup.push(
+                subscribe(source, "Loop", (loop) => {
+                  audio.loop = loop;
+                })
+              );
+
+              sourceCleanup.push(
+                subscribe(extension, "Gain", (emitterGain) =>
+                  subscribe(source, "Gain", (sourceGain) => {
+                    const gain = emitterGain * sourceGain;
+                    audio.volume = gain;
+                  })
+                )
+              );
+
+              sourceCleanup.push(
+                subscribe(extension, "Type", (type) => {
+                  const typeCleanup: Array<() => void> = [];
+
+                  let pannerNode: PannerNode | null = null;
+
+                  if (type === "positional") {
+                    pannerNode = this.#engine.audio.createAudioPanner();
+
+                    const sourceNode = this.#engine.audio.context.createMediaElementSource(audio);
+                    sourceNode.connect(pannerNode);
+
+                    typeCleanup.push(
+                      subscribe(extension, "ConeInnerAngle", (coneInnerAngle) => {
+                        if (pannerNode) pannerNode.coneInnerAngle = coneInnerAngle;
+                      })
+                    );
+
+                    typeCleanup.push(
+                      subscribe(extension, "ConeOuterAngle", (coneOuterAngle) => {
+                        if (pannerNode) pannerNode.coneOuterAngle = coneOuterAngle;
+                      })
+                    );
+
+                    typeCleanup.push(
+                      subscribe(extension, "ConeOuterGain", (coneOuterGain) => {
+                        if (pannerNode) pannerNode.coneOuterGain = coneOuterGain;
+                      })
+                    );
+
+                    typeCleanup.push(
+                      subscribe(extension, "DistanceModel", (distanceModel) => {
+                        if (pannerNode) pannerNode.distanceModel = distanceModel;
+                      })
+                    );
+
+                    typeCleanup.push(
+                      subscribe(extension, "MaxDistance", (maxDistance) => {
+                        if (pannerNode) pannerNode.maxDistance = maxDistance;
+                      })
+                    );
+
+                    typeCleanup.push(
+                      subscribe(extension, "RefDistance", (refDistance) => {
+                        if (pannerNode) pannerNode.refDistance = refDistance;
+                      })
+                    );
+
+                    typeCleanup.push(
+                      subscribe(extension, "RolloffFactor", (rolloffFactor) => {
+                        if (pannerNode) pannerNode.rolloffFactor = rolloffFactor;
+                      })
+                    );
+
+                    // TODO use world transform
+                    typeCleanup.push(
+                      subscribe(node, "Translation", (translation) => {
+                        if (!pannerNode) return;
+
+                        if (pannerNode.positionX !== undefined) {
+                          pannerNode.positionX.value = translation[0];
+                          pannerNode.positionY.value = translation[1];
+                          pannerNode.positionZ.value = translation[2];
+                        } else {
+                          pannerNode.setPosition(translation[0], translation[1], translation[2]);
+                        }
+                      })
+                    );
+
+                    typeCleanup.push(
+                      subscribe(node, "Rotation", (rotation) => {
+                        if (!pannerNode) return;
+
+                        const [eulX, eulY, eulZ] = quaternionToEuler(rotation);
+
+                        if (pannerNode.orientationX !== undefined) {
+                          pannerNode.orientationX.value = eulX;
+                          pannerNode.orientationY.value = eulY;
+                          pannerNode.orientationZ.value = eulZ;
+                        } else {
+                          pannerNode.setOrientation(eulX, eulY, eulZ);
+                        }
+                      })
+                    );
+                  }
+
+                  return () => {
+                    if (pannerNode) pannerNode.disconnect();
+                    typeCleanup.forEach((c) => c());
+                  };
+                })
+              );
+
+              sourceCleanup.push(
+                subscribe(source, "Audio", (audioData) => {
+                  if (!audioData) return;
+
+                  const audioCleanup: Array<() => void> = [];
+
+                  audioCleanup.push(
+                    subscribe(audioData, "Data", (data) =>
+                      subscribe(audioData, "MimeType", (mimeType) =>
+                        subscribe(audioData, "URI", (uri) => {
+                          if (data) {
+                            const blob = new Blob([data], { type: mimeType });
+                            audio.src = URL.createObjectURL(blob);
+                          } else {
+                            const needsBaseURI = uri.startsWith("/");
+                            const fullURI = needsBaseURI ? `${this.baseURI}${uri}` : uri;
+
+                            audio.src = fullURI;
+                          }
+                        })
+                      )
+                    )
+                  );
+
+                  return () => {
+                    audioCleanup.forEach((c) => c());
+                  };
+                })
+              );
+
+              return () => {
+                this.#engine.audio.removeAudio(audio);
+                sourceCleanup.forEach((c) => c());
+              };
+            });
+
+            return () => {
+              sourcesCleanups.forEach((c) => c());
+            };
+          })
+        );
+      });
+
+      return () => {
+        extensionsCleanup.forEach((c) => c());
+      };
+    });
 
     const setupExtensionListeners = () => {
       // Remove old listeners
@@ -550,7 +749,7 @@ export class SceneModule extends Scene {
   }
 
   #publish(message: SceneMessage) {
-    this.#render.send(message);
-    this.#physics.send(message);
+    this.#engine.render.send(message);
+    this.#engine.physics.send(message);
   }
 }

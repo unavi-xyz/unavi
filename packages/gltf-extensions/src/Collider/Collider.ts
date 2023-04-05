@@ -2,10 +2,11 @@ import { ExtensionProperty, IProperty, Mesh, Nullable, PropertyType } from "@glt
 
 import { EXTENSION_NAME } from "../constants";
 import { Vec3 } from "../types";
-import { ColliderType } from "./types";
+import { ColliderType } from "./schemas";
 
 interface ICollider extends IProperty {
   type: ColliderType;
+  isTrigger: boolean;
   size: Vec3 | null;
   radius: number | null;
   height: number | null;
@@ -19,7 +20,7 @@ interface ICollider extends IProperty {
  * @see {@link ColliderExtension}
  */
 export class Collider extends ExtensionProperty<ICollider> {
-  static override EXTENSION_NAME = EXTENSION_NAME.Collider;
+  static override readonly EXTENSION_NAME = EXTENSION_NAME.Collider;
   declare extensionName: typeof EXTENSION_NAME.Collider;
   declare propertyType: "Collider";
   declare parentTypes: [PropertyType.NODE];
@@ -42,6 +43,7 @@ export class Collider extends ExtensionProperty<ICollider> {
   protected override getDefaults(): Nullable<ICollider> {
     return Object.assign(super.getDefaults(), {
       type: null,
+      isTrigger: false,
       size: null,
       radius: null,
       height: null,
@@ -55,6 +57,14 @@ export class Collider extends ExtensionProperty<ICollider> {
 
   setType(type: ColliderType) {
     this.set("type", type);
+  }
+
+  getIsTrigger() {
+    return this.get("isTrigger");
+  }
+
+  setIsTrigger(isTrigger: boolean) {
+    this.set("isTrigger", isTrigger);
   }
 
   getSize() {

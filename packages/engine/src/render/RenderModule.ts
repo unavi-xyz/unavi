@@ -158,7 +158,12 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
   }
 
   destroy() {
-    this.send({ subject: "destroy", data: null });
-    setTimeout(() => this.#worker?.terminate(), 100);
+    this.ready = false;
+
+    if (this.#worker instanceof FakeWorker) {
+      this.#worker.postMessage({ subject: "destroy", data: null });
+    }
+
+    this.#worker?.terminate();
   }
 }

@@ -1,5 +1,4 @@
 // @ts-check
-// Note: type annotations allow type checking and IDEs autocompletion
 
 const lightCodeTheme = require("prism-react-renderer/themes/github");
 const darkCodeTheme = require("prism-react-renderer/themes/dracula");
@@ -36,7 +35,7 @@ const config = {
         ],
         readme: "none",
         excludePrivate: true,
-        out: "../docs-api",
+        out: "packages",
         sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
         sidebar: {
           fullNames: true,
@@ -46,9 +45,9 @@ const config = {
     [
       "@docusaurus/plugin-content-docs",
       {
-        id: "docs-api",
-        path: "docs-api",
-        routeBasePath: "api",
+        id: "packages",
+        path: "./docs/packages",
+        routeBasePath: "/packages",
         sidebarPath: require.resolve("./sidebars.js"),
       },
     ],
@@ -62,9 +61,10 @@ const config = {
         blog: false,
 
         docs: {
-          sidebarPath: require.resolve("./sidebars.js"),
           editUrl: "https://github.com/wired-labs/wired/tree/main/apps/docs",
+          path: "./docs/main",
           routeBasePath: "/",
+          sidebarPath: require.resolve("./sidebars.js"),
         },
 
         theme: {
@@ -94,13 +94,13 @@ const config = {
             to: "/",
             label: "Docs",
             position: "left",
-            activeBaseRegex: `/docs/`,
+            activeBaseRegex: `^(?!/packages.*$).*`,
           },
           {
-            to: "/api",
-            label: "API",
+            to: "/packages",
+            label: "Packages",
             position: "left",
-            activeBaseRegex: `/docs-api/`,
+            activeBaseRegex: `/packages`,
           },
           {
             label: "Discord",

@@ -1,15 +1,9 @@
-import createPWA from "@ducanh2912/next-pwa";
 import { withAxiom } from "next-axiom";
 import path from "path";
 
 import { env } from "./src/env.mjs";
 
 const __dirname = path.resolve();
-
-const withPWA = createPWA({
-  dest: "public",
-  disable: env.NODE_ENV === "development",
-});
 
 const securityHeaders = [
   {
@@ -61,18 +55,28 @@ const isolationHeaders = [
  * @param {T} config - A generic parameter that flows through to the return type
  * @constraint {{import('next').NextConfig}}
  */
-function defineNextConfig(config) {
-  const plugins = [withAxiom, withPWA];
+async function defineNextConfig(config) {
+  const plugins = [];
+
+  if (env.NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT) plugins.push(withAxiom);
+
+  if (env.NODE_ENV === "production" && env.DISABLE_PWA !== "true") {
+    const withPWAInit = (await import("@ducanh2912/next-pwa")).default;
+    const withPWA = withPWAInit({ dest: "public" });
+    plugins.push(withPWA);
+  }
+
   return plugins.reduce((acc, plugin) => plugin(acc), config);
 }
 
-export default defineNextConfig({
+export default await defineNextConfig({
   crossOrigin: "anonymous",
   eslint: {
     ignoreDuringBuilds: true,
   },
   experimental: {
     appDir: true,
+    typedRoutes: true,
     outputFileTracingRoot: path.join(__dirname, "../../"),
     outputFileTracingExcludes: {
       "**": ["**swc/core**"],

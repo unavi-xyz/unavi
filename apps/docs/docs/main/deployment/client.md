@@ -5,21 +5,7 @@ title: Client
 
 The client is the web app that users interact with. It is comprised of a Next.js website, a MySQL database, and an S3-compatible storage bucket.
 
-## Local instance
-
-The client can be run entirely locally on your own machine, giving you full control over your experience. This is ideal if you only want to run the client for yourself, and not share it with others.
-
-To run the client locally, refer to the [development guide](/development), and run the docker build in `production` mode. This will start the client, database, and storage bucket on your machine in Docker containers.
-
-:::info
-
-Even when running locally, the client is fully functional! You will still be able to join spaces and interact with other users.
-
-:::
-
 ## Deployment
-
-The client can also be deployed to a server, allowing you to share it with others. This is ideal if you want to run a public instance of the client.
 
 :::tip
 
@@ -30,8 +16,8 @@ Check out the [official Next.js docs](https://nextjs.org/docs/deployment) for mo
 ### Requirements
 
 - Hosting provider (such as [AWS EC2](https://aws.amazon.com/ec2/) or [Vercel](https://vercel.com/))
-- MySQL database provider (such as [Planetscale](https://planetscale.com/) or [AWS RDS](https://aws.amazon.com/rds/))
-- [AWS S3](https://aws.amazon.com/tw/s3/) or S3-compatible storage (such as [DigitalOcean Spaces](https://www.digitalocean.com/products/spaces))
+- MySQL database provider (such as [AWS RDS](https://aws.amazon.com/rds/) or [Planetscale](https://planetscale.com/))
+- S3-compatible storage (such as [AWS S3](https://aws.amazon.com/tw/s3/) or [DigitalOcean Spaces](https://www.digitalocean.com/products/spaces))
 
 ### Step 1 - Clone the repository
 

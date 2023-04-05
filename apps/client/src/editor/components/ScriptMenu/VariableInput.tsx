@@ -1,9 +1,10 @@
 import * as Select from "@radix-ui/react-select";
-import { ValueType, Variable } from "@wired-labs/gltf-extensions";
+import { BehaviorVariable, ValueType } from "@wired-labs/gltf-extensions";
 import { useEffect, useState } from "react";
 import { IoIosArrowDown } from "react-icons/io";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
 import { useVariableAttribute } from "./hooks/useVariableAttribute";
 import { FlowNodeData, FlowNodeParamter } from "./types";
 import { flowIsVariableJSON } from "./utils/filters";
@@ -159,7 +160,7 @@ export default function VariableInput({ data, onChange }: Props) {
   );
 }
 
-function VariableItem({ value, variable }: { value: string; variable: Variable }) {
+function VariableItem({ value, variable }: { value: string; variable: BehaviorVariable }) {
   const name = useVariableAttribute(variable, "name") ?? "";
 
   return (

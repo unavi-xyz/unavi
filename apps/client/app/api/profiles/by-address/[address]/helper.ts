@@ -1,4 +1,4 @@
-import { Profile } from "../../../../../src/server/helpers/fetchProfile";
+import { Profile } from "@/src/server/helpers/fetchProfile";
 
 export async function getProfileByAddress(address: string) {
   const response = await fetch(`/api/profiles/by-address/${address}`, {

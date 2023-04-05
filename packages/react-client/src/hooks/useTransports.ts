@@ -13,13 +13,8 @@ import { useProducer } from "./useProducer";
 
 /**
  * Manages WebRTC transports.
- *
- * @param ws WebSocket connection
- * @param device mediasoup-client device
- * @param playerId Player ID
- * @returns Transports and producers
  */
-export function useTransports(device: Device | null, audioContext: AudioContext) {
+export function useTransports(device: Device | null) {
   const { ws } = useClient();
 
   const [consumerTransport, setConsumerTransport] = useState<Transport | null>(null);
@@ -29,7 +24,7 @@ export function useTransports(device: Device | null, audioContext: AudioContext)
   const producer = useProducer(producerTransport);
   const dataProducer = useDataProducer(producerTransport);
 
-  const { panners } = useConsumer(consumerTransport, audioContext);
+  const { panners } = useConsumer(consumerTransport);
   useDataConsumer(dataConsumer, panners);
 
   useEffect(() => {
@@ -96,7 +91,23 @@ export function useTransports(device: Device | null, audioContext: AudioContext)
     return () => {
       ws.removeEventListener("message", onMessage);
     };
-  }, [ws, device, audioContext]);
+  }, [ws, device]);
+
+  useEffect(() => {
+    if (!consumerTransport) return;
+
+    return () => {
+      consumerTransport.close();
+    };
+  }, [consumerTransport]);
+
+  useEffect(() => {
+    if (!producerTransport) return;
+
+    return () => {
+      producerTransport.close();
+    };
+  }, [producerTransport]);
 
   return { consumerTransport, producerTransport, producer, dataProducer };
 }

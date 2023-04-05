@@ -1,25 +1,14 @@
 import { Extension, ReaderContext, WriterContext } from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
-import { Vec3 } from "../types";
 import { Collider } from "./Collider";
-import { ColliderType } from "./types";
-
-type NodeColliderDef = {
-  collider: number;
-};
-
-type ColliderDef = {
-  type: ColliderType;
-  size?: Vec3;
-  radius?: number;
-  height?: number;
-  mesh?: number;
-};
-
-type ColliderExtensionDef = {
-  colliders: ColliderDef[];
-};
+import {
+  ColliderDef,
+  ColliderExtensionDef,
+  colliderExtensionSchema,
+  NodeColliderDef,
+  nodeColliderSchema,
+} from "./schemas";
 
 /**
  * Implementation of the {@link https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_collider OMI_collider} extension.
@@ -38,20 +27,34 @@ export class ColliderExtension extends Extension {
     if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[this.extensionName])
       return this;
 
-    const rootDef = context.jsonDoc.json.extensions[this.extensionName] as ColliderExtensionDef;
+    const parsedRootDef = colliderExtensionSchema.safeParse(
+      context.jsonDoc.json.extensions[this.extensionName]
+    );
+
+    if (!parsedRootDef.success) {
+      console.warn(parsedRootDef.error);
+      return this;
+    }
+
+    const rootDef = parsedRootDef.data;
 
     // Create colliders
     const colliders = rootDef.colliders.map((colliderDef) => {
       const collider = this.createCollider();
       collider.setType(colliderDef.type);
+      collider.setIsTrigger(colliderDef.isTrigger);
 
-      if (colliderDef.size !== undefined) collider.setSize(colliderDef.size);
+      if (colliderDef.size !== undefined)
+        collider.setSize([
+          colliderDef.size[0] ?? 0,
+          colliderDef.size[1] ?? 0,
+          colliderDef.size[2] ?? 0,
+        ]);
       if (colliderDef.radius !== undefined) collider.setRadius(colliderDef.radius);
       if (colliderDef.height !== undefined) collider.setHeight(colliderDef.height);
       if (colliderDef.mesh !== undefined) {
         const mesh = context.meshes[colliderDef.mesh];
-        if (!mesh) throw new Error("Mesh not found");
-        collider.setMesh(mesh);
+        if (mesh) collider.setMesh(mesh);
       }
 
       return collider;
@@ -62,13 +65,23 @@ export class ColliderExtension extends Extension {
 
     nodeDefs.forEach((nodeDef, nodeIndex) => {
       if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName]) return;
-      const colliderNodeDef = nodeDef.extensions[this.extensionName] as NodeColliderDef;
+
+      const parsedColliderNodeDef = nodeColliderSchema.safeParse(
+        nodeDef.extensions[this.extensionName]
+      );
+
+      if (!parsedColliderNodeDef.success) {
+        console.warn(parsedColliderNodeDef.error);
+        return;
+      }
+
+      const colliderNodeDef = parsedColliderNodeDef.data;
 
       const node = context.nodes[nodeIndex];
-      if (!node) throw new Error("Node not found");
+      if (!node) return;
 
       const collider = colliders[colliderNodeDef.collider];
-      if (!collider) throw new Error("Collider not found");
+      if (!collider) return;
 
       node.setExtension(this.extensionName, collider);
     });
@@ -87,7 +100,10 @@ export class ColliderExtension extends Extension {
 
     for (const property of this.properties) {
       if (property instanceof Collider) {
-        const colliderDef = { type: property.getType() } as ColliderDef;
+        const colliderDef: ColliderDef = {
+          type: property.getType(),
+          isTrigger: property.getIsTrigger(),
+        };
 
         switch (property.getType()) {
           case "box": {

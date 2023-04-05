@@ -5,7 +5,8 @@ import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
-import Logo from "../../../public/images/Logo.png";
+import Logo from "@/public/images/Logo.png";
+
 import { toHex } from "../../utils/toHex";
 import { useIsMobile } from "../../utils/useIsMobile";
 import Crosshair from "../Crosshair";
@@ -33,11 +34,11 @@ export default function Overlay({ id }: Props) {
       {!isPointerLocked && (
         <div className="fixed top-4 left-5 z-20">
           <div className="flex items-center space-x-3 rounded-full bg-white/80 pr-10 backdrop-blur-lg">
-            <Link href={`/space/${toHex(id)}`}>
-              <div className="relative -ml-1 h-12 w-12">
-                <Image src={Logo} alt="Logo" fill draggable={false} />
-              </div>
-            </Link>
+            <div className="-ml-1">
+              <Link href={`/space/${toHex(id)}`}>
+                <Image src={Logo} alt="Logo" width={48} height={48} draggable={false} />
+              </Link>
+            </div>
 
             <div>
               <div className="text-lg font-bold leading-6">{metadata?.name}</div>

@@ -1,96 +1,57 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { useEffect, useRef, useState } from "react";
-import { useReactFlow, XYPosition } from "reactflow";
+import { IoIosArrowForward } from "react-icons/io";
+import { XYPosition } from "reactflow";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
-import { getNodeSpecJSON } from "./utils/getNodeSpecJSON";
+import { useEditorStore } from "@/app/editor/[id]/store";
 
-const allNodes = getNodeSpecJSON();
-
-const hiddenNodes = [
-  "scene/get/boolean",
-  "scene/get/float",
-  "scene/get/string",
-  "scene/get/vec2",
-  "scene/set/boolean",
-  "scene/set/float",
-  "scene/set/string",
-  "scene/set/vec2",
-];
-
-const usedNodes = allNodes.filter((node) => {
-  const type = node.type.toLowerCase();
-
-  if (type.includes("color")) return false;
-  if (type.includes("euler")) return false;
-  if (type.includes("integer")) return false;
-  if (type.includes("vec4")) return false;
-  if (type.includes("mat3")) return false;
-  if (type.includes("mat4")) return false;
-  if (type.includes("customevent")) return false;
-
-  if (hiddenNodes.includes(node.type)) return false;
-
-  return true;
-});
+import { categories, categorizedNodes } from "./nodes";
 
 interface Props {
   position?: XYPosition;
-  addNode: (type: string, position: XYPosition) => void;
 }
 
-export default function NodePicker({ position, addNode }: Props) {
-  const filterInputRef = useRef<HTMLInputElement>(null);
-  const [filterString, setFilterString] = useState("");
-
-  useEffect(() => {
-    setFilterString("");
-  }, [position]);
-
-  const instance = useReactFlow();
-
-  const filteredNodes = usedNodes.filter((node) =>
-    node.type.toLowerCase().includes(filterString.toLowerCase())
-  );
-
+export default function NodePicker({ position }: Props) {
   if (!position) return null;
 
   return (
     <ContextMenu.Portal>
-      <ContextMenu.Content className="overflow-hidden rounded bg-white shadow">
-        <ContextMenu.Label className="bg-neutral-500 bg-gradient-to-t from-black/10 to-white/10 px-3 py-0.5 text-white">
-          Add Node
-        </ContextMenu.Label>
+      <ContextMenu.Content className="rounded-xl bg-neutral-50 shadow-md">
+        <div className="py-2">
+          {categories.map((category) => (
+            <ContextMenu.Sub key={category}>
+              <ContextMenu.SubTrigger className="flex cursor-default items-center justify-between space-x-3 pl-6 pr-3 capitalize focus:bg-neutral-200 focus:outline-none">
+                <div>{category}</div>
+                <IoIosArrowForward className="text-neutral-500" />
+              </ContextMenu.SubTrigger>
 
-        <div className="space-y-2 p-2">
-          <ContextMenu.Item asChild>
-            <input
-              ref={filterInputRef}
-              type="text"
-              autoFocus
-              placeholder="Type to filter..."
-              onKeyDown={(e) => e.stopPropagation()}
-              onChange={(e) => setFilterString(e.target.value)}
-              className="w-full rounded-full bg-neutral-200 pl-4 leading-8 transition placeholder:text-neutral-600"
-            />
-          </ContextMenu.Item>
+              <ContextMenu.SubContent sideOffset={4} className="rounded-xl bg-neutral-50 shadow-md">
+                <div className="max-h-96 overflow-y-auto py-2">
+                  {categorizedNodes[category]?.map((node) => {
+                    // Remove category from node type
+                    const splitType = node.type.split("/");
+                    splitType.shift();
 
-          <div className="max-h-56 overflow-y-auto">
-            {filteredNodes.map(({ type }) => (
-              <ContextMenu.Item
-                key={type}
-                onClick={() => {
-                  const { engine } = useEditorStore.getState();
-                  if (!engine) return;
+                    const name = splitType.join("/");
 
-                  if (position) addNode(type, instance.project(position));
-                }}
-                className="select-none rounded px-4 py-0.5 outline-none focus:bg-neutral-200"
-              >
-                {type}
-              </ContextMenu.Item>
-            ))}
-          </div>
+                    return (
+                      <ContextMenu.Item
+                        key={node.type}
+                        onClick={() => {
+                          const { engine, addNode } = useEditorStore.getState();
+                          if (!engine) return;
+
+                          addNode(node.type, position);
+                        }}
+                        className="cursor-default px-6 capitalize focus:bg-neutral-200 focus:outline-none"
+                      >
+                        {name}
+                      </ContextMenu.Item>
+                    );
+                  })}
+                </div>
+              </ContextMenu.SubContent>
+            </ContextMenu.Sub>
+          ))}
         </div>
       </ContextMenu.Content>
     </ContextMenu.Portal>

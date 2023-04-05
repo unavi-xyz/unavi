@@ -13,12 +13,16 @@ import ReactFlow, {
   updateEdge,
   useEdgesState,
   useNodesState,
+  useReactFlow,
   XYPosition,
 } from "reactflow";
 
-import { useEditorStore } from "../../../../app/editor/[id]/store";
+import { useEditorStore } from "@/app/editor/[id]/store";
+
+import { DropdownMenu, DropdownTrigger } from "../../../ui/DropdownMenu";
 import IconButton from "../../../ui/IconButton";
 import { useScript } from "../../hooks/useScript";
+import AddNodeMenu from "./AddNodeMenu";
 import NodeContextMenu from "./NodeContextMenu";
 import NodePicker from "./NodePicker";
 import SaveFlow from "./SaveFlow";
@@ -106,6 +110,10 @@ export default function ScriptMenu({ scriptId }: Props) {
   }, [engine]);
 
   useEffect(() => {
+    useEditorStore.setState({ addNode });
+  }, [addNode]);
+
+  useEffect(() => {
     if (!engine || !scriptId) return;
 
     // Load nodes from engine
@@ -121,7 +129,19 @@ export default function ScriptMenu({ scriptId }: Props) {
   return (
     <div className="h-full">
       <div className="flex w-full items-center justify-between px-4 pb-1.5">
-        <div className="text-lg">{script.name}</div>
+        <div className="flex items-center space-x-8">
+          <div className="text-lg">{script.name}</div>
+
+          <DropdownMenu>
+            <DropdownTrigger asChild>
+              <button className="rounded-md px-2 py-0.5 text-sm text-neutral-500 transition hover:bg-neutral-200 hover:text-black active:bg-neutral-200">
+                Add
+              </button>
+            </DropdownTrigger>
+
+            <AddNodeMenu />
+          </DropdownMenu>
+        </div>
 
         <div className="h-8">
           <IconButton
@@ -165,11 +185,12 @@ export default function ScriptMenu({ scriptId }: Props) {
                   }}
                 />
               ) : contextMenuType === "pane" ? (
-                <NodePicker position={nodePickerPosition} addNode={addNode} />
+                <NodePicker position={nodePickerPosition} />
               ) : null}
 
               <Controls />
               <Background />
+
               <SaveFlow
                 scriptId={scriptId}
                 loaded={loaded}
@@ -177,10 +198,22 @@ export default function ScriptMenu({ scriptId }: Props) {
                 edges={edges}
                 setEdges={setEdges}
               />
+
+              <StoreInstance />
             </ReactFlow>
           </ContextMenu.Trigger>
         </ContextMenu.Root>
       </div>
     </div>
   );
+}
+
+function StoreInstance() {
+  const reactflow = useReactFlow();
+
+  useEffect(() => {
+    useEditorStore.setState({ reactflow });
+  }, [reactflow]);
+
+  return null;
 }

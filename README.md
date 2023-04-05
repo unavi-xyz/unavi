@@ -38,10 +38,10 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 
 ### Apps
 
-- [client](apps/client): the main website used to access the Wired
+- [client](apps/client): the main website used to access The Wired
 - [docs](apps/docs): a documentation website
 - [host](apps/host): dockerized server for hosting spaces
-- [light-client](apps/light-client): a minimal client for accessing a space within the Wired
+- [light-client](apps/light-client): a minimal client for accessing a space within The Wired
 
 ### Packages
 

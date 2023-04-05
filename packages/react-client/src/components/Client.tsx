@@ -125,7 +125,7 @@ interface Props {
 }
 
 /**
- * A self-contained client for connecting to the Wired.
+ * A self-contained client for connecting to The Wired.
  *
  * @param animations The path to the animations folder.
  * @param children Any children to render.

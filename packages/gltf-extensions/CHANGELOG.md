@@ -1,5 +1,17 @@
 # @wired-labs/gltf-extensions
 
+## 0.4.0
+
+### Minor Changes
+
+- f2fd61f: add KHR_audio extension
+- ac5cb1c: use zod schemas within Avatar, Collider, and SpawnPoint extensions to validate input from gltf file
+
+### Patch Changes
+
+- f285a6a: rename Variable -> BehaviorVariable
+- bf4a266: don't throw an error when reading an invalid extension, just console.warn it and continue
+
 ## 0.3.0
 
 ### Minor Changes

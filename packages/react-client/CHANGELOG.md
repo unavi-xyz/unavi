@@ -1,5 +1,20 @@
 # @wired-labs/react-client
 
+## 0.4.0
+
+### Minor Changes
+
+- 1b2e29e: add KHR_audio support
+
+### Patch Changes
+
+- b52c4eb: fix transports not closing immediately
+- Updated dependencies [4073902]
+- Updated dependencies [1b2e29e]
+- Updated dependencies [1b2e29e]
+- Updated dependencies [d569e98]
+  - engine@0.2.0
+
 ## 0.3.0
 
 ### Minor Changes

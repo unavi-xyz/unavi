@@ -42,7 +42,7 @@ export const useEditorStore = create<IEditorStore>(() => ({
   isPlaying: false,
   stopPlaying: async () => {},
 
-  showColliders: true,
+  showColliders: false,
   tool: "translate",
 
   name: "",

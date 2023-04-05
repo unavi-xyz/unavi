@@ -61,15 +61,15 @@ async function defineNextConfig(config) {
   if (env.NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT) plugins.push(withAxiom);
 
   if (env.NODE_ENV === "production" && env.DISABLE_PWA !== "true") {
-    const createPWA = await import("@ducanh2912/next-pwa");
-    const withPWA = createPWA({ dest: "public" });
+    const withPWAInit = await import("@ducanh2912/next-pwa");
+    const withPWA = withPWAInit({ dest: "public" });
     plugins.push(withPWA);
   }
 
   return plugins.reduce((acc, plugin) => plugin(acc), config);
 }
 
-export default defineNextConfig({
+export default await defineNextConfig({
   crossOrigin: "anonymous",
   eslint: {
     ignoreDuringBuilds: true,

@@ -1,6 +1,6 @@
 import { cache } from "react";
 
-import { getDownload } from "@/app/api/projects/files";
+import { getProjectDownload } from "@/app/api/projects/files";
 
 import { prisma } from "../prisma";
 import { getServerSession } from "./getServerSession";
@@ -15,7 +15,7 @@ export const fetchProjects = cache(async () => {
     orderBy: { updatedAt: "desc" },
   });
 
-  const images = await Promise.all(projects.map(({ id }) => getDownload(id, "image")));
+  const images = await Promise.all(projects.map(({ id }) => getProjectDownload(id, "image")));
 
   const response = projects.map((project, index) => ({
     ...project,

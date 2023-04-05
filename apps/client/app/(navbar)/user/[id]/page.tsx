@@ -119,12 +119,12 @@ export default async function User({ params: { id } }: { params: Params }) {
 
           <section className="flex justify-center px-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
-              <div className="z-10 -mt-24 flex w-48 rounded-full ring-4 ring-white">
+              <div className="z-10 -mt-20 flex w-40 rounded-full ring-4 ring-white">
                 <Avatar
                   src={profile?.metadata?.image}
                   circle
                   uniqueKey={profile?.handle?.full ?? id}
-                  size={192}
+                  size={160}
                 />
               </div>
 

@@ -1,33 +1,26 @@
 "use client";
 
 import { Client } from "@wired-labs/react-client";
-import { ERC721Metadata, getHostFromMetadata } from "contracts";
 import Script from "next/script";
 import { useState } from "react";
 import { useProvider, useSigner } from "wagmi";
 
-import { env } from "@/src/env.mjs";
 import { useHotkeys } from "@/src/play/hooks/useHotkeys";
+import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 
 import ClientApp from "./ClientApp";
 
 interface Props {
-  id: number;
-  metadata: ERC721Metadata;
+  metadata: SpaceMetadata;
 }
 
-export default function App({ id, metadata }: Props) {
+export default function App({ metadata }: Props) {
   const [scriptsReady, setScriptsReady] = useState(false);
 
   const provider = useProvider();
   const { data: signer } = useSigner();
 
   useHotkeys();
-
-  const host =
-    process.env.NODE_ENV === "development"
-      ? "localhost:4000"
-      : getHostFromMetadata(metadata) ?? env.NEXT_PUBLIC_DEFAULT_HOST;
 
   return (
     <>
@@ -36,15 +29,14 @@ export default function App({ id, metadata }: Props) {
       <div className="fixed h-screen w-screen">
         {scriptsReady && (
           <Client
-            spaceId={id}
-            metadata={metadata}
-            host={host}
+            uri={metadata.uri}
+            host={metadata.host}
             animations="/models"
             defaultAvatar="/models/Robot.vrm"
             ethers={signer ?? provider}
             skybox="/images/Skybox.jpg"
           >
-            <ClientApp spaceId={id} metadata={metadata} />
+            <ClientApp metadata={metadata} />
           </Client>
         )}
       </div>

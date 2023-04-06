@@ -1,13 +1,12 @@
 import { MicButton, useClient } from "@wired-labs/react-client";
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
 import Logo from "@/public/images/Logo.png";
+import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 
-import { toHex } from "../../utils/toHex";
 import { useIsMobile } from "../../utils/useIsMobile";
 import Crosshair from "../Crosshair";
 import { usePointerLocked } from "../hooks/usePointerLocked";
@@ -17,15 +16,15 @@ import MobileChatBox from "./MobileChatBox";
 import SettingsDialog from "./Settings/SettingsDialog";
 
 interface Props {
-  id: number;
+  metadata: SpaceMetadata;
 }
 
-export default function Overlay({ id }: Props) {
+export default function Overlay({ metadata }: Props) {
   const [openSettings, setOpenSettings] = useState(false);
 
   const isMobile = useIsMobile();
   const isPointerLocked = usePointerLocked();
-  const { host, metadata, micEnabled } = useClient();
+  const { host, micEnabled } = useClient();
 
   return (
     <>
@@ -35,13 +34,11 @@ export default function Overlay({ id }: Props) {
         <div className="fixed top-4 left-5 z-20">
           <div className="flex items-center space-x-3 rounded-full bg-white/80 pr-10 backdrop-blur-lg">
             <div className="-ml-1">
-              <Link href={`/space/${toHex(id)}`}>
-                <Image src={Logo} alt="Logo" width={48} height={48} draggable={false} />
-              </Link>
+              <Image src={Logo} alt="Logo" width={48} height={48} draggable={false} />
             </div>
 
             <div>
-              <div className="text-lg font-bold leading-6">{metadata?.name}</div>
+              <div className="text-lg font-bold leading-6">{metadata.title}</div>
               <div className="text-sm leading-4 text-neutral-700">{host}</div>
             </div>
           </div>

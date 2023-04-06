@@ -103,8 +103,8 @@ export class Player {
     if (dataProducer) this.spaces.forEach((space) => space.setDataProducer(this, dataProducer));
   }
 
-  join(spaceId: number) {
-    const space = this.#registry.getOrCreateSpace(spaceId);
+  join(uri: string) {
+    const space = this.#registry.getOrCreateSpace(uri);
     if (this.spaces.has(space)) return;
 
     space.join(this);
@@ -115,11 +115,11 @@ export class Player {
 
     this.ws?.subscribe(space.topic);
 
-    this.send({ subject: "join_success", data: { spaceId, playerId } });
+    this.send({ subject: "join_success", data: { uri, playerId } });
   }
 
-  leave(spaceId: number) {
-    const space = this.#registry.getSpace(spaceId);
+  leave(uri: string) {
+    const space = this.#registry.getSpace(uri);
     if (!space) return;
 
     this.ws?.unsubscribe(space.topic);
@@ -175,7 +175,7 @@ export class Player {
     }
   }
 
-  async consume(producer: Producer, spaceId: number, playerId: number) {
+  async consume(producer: Producer, spaceURI: string, playerId: number) {
     if (!this.consumerTransport || !this.rtpCapabilities) return;
 
     try {
@@ -185,7 +185,7 @@ export class Player {
         paused: true,
       });
 
-      const space = this.#registry.getSpace(spaceId);
+      const space = this.#registry.getSpace(spaceURI);
       if (!space) return;
 
       const consumers = this.consumers.get(space) ?? new Map();
@@ -207,7 +207,7 @@ export class Player {
     }
   }
 
-  async consumeData(dataProducer: DataProducer, spaceId: number, playerId: number) {
+  async consumeData(dataProducer: DataProducer, spaceURI: string, playerId: number) {
     if (!this.consumerTransport) return;
 
     try {
@@ -216,7 +216,7 @@ export class Player {
       });
       if (!dataConsumer.sctpStreamParameters) return;
 
-      const space = this.#registry.getSpace(spaceId);
+      const space = this.#registry.getSpace(spaceURI);
       if (!space) return;
 
       const dataConsumers = this.dataConsumers.get(space) ?? new Map();
@@ -250,16 +250,16 @@ export class Player {
     // Consume all other players
     this.spaces.forEach((space) =>
       space.players.forEach((otherPlayer, otherPlayerId) => {
-        if (otherPlayer.producer) this.consume(otherPlayer.producer, space.id, otherPlayerId);
+        if (otherPlayer.producer) this.consume(otherPlayer.producer, space.uri, otherPlayerId);
         if (otherPlayer.dataProducer)
-          this.consumeData(otherPlayer.dataProducer, space.id, otherPlayerId);
+          this.consumeData(otherPlayer.dataProducer, space.uri, otherPlayerId);
       })
     );
   }
 
   close() {
     this.ws = null;
-    this.spaces.forEach((space) => this.leave(space.id));
+    this.spaces.forEach((space) => this.leave(space.uri));
     this.consumerTransport?.close();
     this.producerTransport?.close();
   }

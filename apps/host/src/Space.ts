@@ -7,18 +7,18 @@ import { SpaceRegistry } from "./SpaceRegistry";
 import { toHex } from "./utils/toHex";
 
 export class Space {
-  readonly id: number;
+  readonly uri: string;
   #registry: SpaceRegistry;
 
   players = new Map<number, Player>();
 
-  constructor(id: number, registry: SpaceRegistry) {
-    this.id = id;
+  constructor(uri: string, registry: SpaceRegistry) {
+    this.uri = uri;
     this.#registry = registry;
   }
 
   get topic() {
-    return `space/${this.id}`;
+    return `space/${this.uri}`;
   }
 
   get playerCount() {
@@ -48,7 +48,7 @@ export class Space {
       i++;
       if (i === 256) {
         console.warn("❌ No open player ids.");
-        player.leave(this.id);
+        player.leave(this.uri);
         return;
       }
     }
@@ -76,16 +76,16 @@ export class Space {
       });
 
       // Consume current players
-      if (otherPlayer.producer) player.consume(otherPlayer.producer, this.id, otherPlayerId);
+      if (otherPlayer.producer) player.consume(otherPlayer.producer, this.uri, otherPlayerId);
       if (otherPlayer.dataProducer)
-        player.consumeData(otherPlayer.dataProducer, this.id, otherPlayerId);
+        player.consumeData(otherPlayer.dataProducer, this.uri, otherPlayerId);
     });
 
     // Start producing
     if (player.producer) this.setProducer(player, player.producer);
     if (player.dataProducer) this.setDataProducer(player, player.dataProducer);
 
-    console.info(`👋 Player ${toHex(playerId)} joined space ${toHex(this.id)}.`);
+    console.info(`👋 Player ${toHex(playerId)} joined space ${this.uri}.`);
   }
 
   leave(player: Player) {
@@ -112,9 +112,9 @@ export class Space {
 
     this.#publish({ subject: "player_left", data: { playerId } });
 
-    console.info(`👋 Player ${toHex(playerId)} left space ${toHex(this.id)}.`);
+    console.info(`👋 Player ${toHex(playerId)} left space ${this.uri}.`);
 
-    if (this.playerCount === 0) this.#registry.removeSpace(this.id);
+    if (this.playerCount === 0) this.#registry.removeSpace(this.uri);
   }
 
   chat(player: Player, text: string) {
@@ -159,7 +159,7 @@ export class Space {
     // Create a consumer for each player
     this.players.forEach((otherPlayer) => {
       if (otherPlayer === player) return;
-      otherPlayer.consume(producer, this.id, playerId);
+      otherPlayer.consume(producer, this.uri, playerId);
     });
   }
 
@@ -170,7 +170,7 @@ export class Space {
     // Create a data consumer for each player
     this.players.forEach((otherPlayer) => {
       if (otherPlayer === player) return;
-      otherPlayer.consumeData(dataProducer, this.id, playerId);
+      otherPlayer.consumeData(dataProducer, this.uri, playerId);
     });
   }
 

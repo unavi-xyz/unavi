@@ -1,28 +1,18 @@
 import { HostAPI } from "@wired-labs/protocol";
-import { ATTRIBUTE_TYPES } from "contracts";
 import { cache } from "react";
 
-import { env } from "../../env.mjs";
-import { fetchSpaceMetadata } from "./fetchSpaceMetadata";
+import { processSpaceURI } from "./processSpaceURI";
+import { readSpaceMetadata } from "./readSpaceMetadata";
 
-const DEFAULT_HOST =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:4000"
-    : `https://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
-
-export const fetchPlayerCount = cache(async (id: number) => {
+export const fetchPlayerCount = cache(async (uri: string) => {
   try {
-    const metadata = await fetchSpaceMetadata(id);
-    if (!metadata) throw new Error("Failed to fetch space metadata");
+    const spaceUri = await processSpaceURI(uri);
+    if (!spaceUri) throw new Error("Failed to process space URI");
 
-    const hostAttribute = metadata.attributes?.find(
-      (attr) => attr.trait_type === ATTRIBUTE_TYPES.HOST
-    );
+    const metadata = await readSpaceMetadata(spaceUri);
+    if (!metadata) throw new Error("Failed to read space metadata");
 
-    const spaceHost = hostAttribute?.value ? `https://${hostAttribute.value}` : DEFAULT_HOST;
-    const host = spaceHost ?? DEFAULT_HOST;
-
-    const response = await fetch(`${host}/${HostAPI.space(id).playerCount}`, {
+    const response = await fetch(`${metadata.host}/${HostAPI.space(spaceUri).playerCount}`, {
       cache: "no-store",
     });
 

@@ -13,12 +13,8 @@ import { useTransports } from "./useTransports";
  * Hook to connect to a host.
  * This hook will create a WebSocket and WebRTC connection to the host and handle all
  * incoming and outgoing messages.
- *
- * @param id Space ID
- * @param host Host URL
- * @returns Space joined status, list of players and chat messages
  */
-export function useHost(id: number | null, host: string | null) {
+export function useHost(uri: string | null, host: string | null) {
   const { engine, ws, setWs, playerId, setPlayerId } = useContext(ClientContext);
 
   const [device, setDevice] = useState<Device | null>(null);
@@ -72,7 +68,7 @@ export function useHost(id: number | null, host: string | null) {
 
   // Handle WebSocket messages
   useEffect(() => {
-    if (id === null || !ws || !device || !engine) return;
+    if (!uri || !ws || !device || !engine) return;
 
     const send = (message: ToHostMessage) => {
       sendMessage(ws, message);
@@ -88,7 +84,7 @@ export function useHost(id: number | null, host: string | null) {
       send({ subject: "get_router_rtp_capabilities", data: null });
 
       // Join space
-      send({ subject: "join", data: id });
+      send({ subject: "join", data: uri });
 
       engine.physics.addEventListener("user_grounded", (event) => {
         send({ subject: "set_grounded", data: event.data });
@@ -151,7 +147,7 @@ export function useHost(id: number | null, host: string | null) {
       setIsConnected(false);
       setReconnectCount(0);
     };
-  }, [device, engine, id, setPlayerId, ws]);
+  }, [device, engine, uri, setPlayerId, ws]);
 
   return { isConnected };
 }

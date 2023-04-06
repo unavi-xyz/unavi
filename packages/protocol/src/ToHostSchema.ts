@@ -2,12 +2,12 @@ import { z } from "zod";
 
 import { MediasoupSchema } from "./MediasoupSchema";
 
-const spaceId = z.number().int().positive();
+const spaceURI = z.string();
 
 export const ToHostSchema = {
   chat: z.string(),
-  join: spaceId,
-  leave: spaceId,
+  join: spaceURI,
+  leave: spaceURI,
   set_address: z.union([z.string(), z.null()]),
   set_avatar: z.union([z.string(), z.null()]),
   set_grounded: z.boolean(),

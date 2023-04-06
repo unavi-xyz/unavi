@@ -3,14 +3,19 @@
 import { MdPeople } from "react-icons/md";
 import useSWR from "swr";
 
-import { fetcher } from "@/src/play/utils/fetcher";
+import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
+
+export const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface Props {
-  id: number;
+  metadata: SpaceMetadata;
 }
 
-export default function PlayerCount({ id }: Props) {
-  const { data: playerCount } = useSWR<number>(`/api/spaces/${id}/player-count`, fetcher);
+export default function PlayerCount({ metadata }: Props) {
+  const { data: playerCount } = useSWR<number>(
+    `https://${metadata.host}/player-count/${metadata.uri}`,
+    fetcher
+  );
 
   if (!playerCount) return null;
 

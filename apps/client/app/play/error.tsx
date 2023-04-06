@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import { parseError } from "@/src/editor/utils/parseError";
+
 export default function Error({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
     console.error(error);
@@ -9,7 +11,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
 
   return (
     <div className="space-y-2 pt-10 text-center">
-      <h2>Error loading space.</h2>
+      <h2>Error loading space. {parseError(error)}</h2>
 
       <button
         onClick={() => reset()}

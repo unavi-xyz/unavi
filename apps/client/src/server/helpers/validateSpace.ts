@@ -1,17 +1,21 @@
-import { fetchSpaceMetadata } from "./fetchSpaceMetadata";
 import { fetchSpaceOwner } from "./fetchSpaceOwner";
+import { processSpaceURI } from "./processSpaceURI";
+import { readSpaceMetadata } from "./readSpaceMetadata";
 
 export async function validateSpace(id: number, owner?: string) {
   try {
     // Check if owned by owner
     if (owner) {
       const spaceOwner = await fetchSpaceOwner(id);
-      if (spaceOwner !== owner) return null;
+      if (spaceOwner !== owner) throw new Error("Space not owned by owner");
     }
 
-    // Check if metadata exists
-    const metadata = await fetchSpaceMetadata(id);
-    if (!metadata) return null;
+    const uri = `nft://${id}`;
+    const spaceURI = await processSpaceURI(uri);
+    if (!spaceURI) throw new Error("Invalid space URI");
+
+    const metadata = await readSpaceMetadata(spaceURI);
+    if (!metadata) throw new Error("Invalid space metadata");
 
     return { id, metadata };
   } catch {

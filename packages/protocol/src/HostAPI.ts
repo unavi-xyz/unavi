@@ -2,8 +2,8 @@
  * Static class for generating API paths.
  */
 export class HostAPI {
-  static space = (id: number) =>
+  static space = (uri: string) =>
     ({
-      playerCount: `spaces/${id}/player-count`,
+      playerCount: `player-count/${uri}`,
     } as const);
 }

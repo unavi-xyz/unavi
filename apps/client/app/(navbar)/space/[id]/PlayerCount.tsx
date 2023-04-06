@@ -1,11 +1,11 @@
 import { fetchPlayerCount } from "@/src/server/helpers/fetchPlayerCount";
 
 interface Props {
-  id: number;
+  uri: string;
 }
 
-export default async function PlayerCount({ id }: Props) {
-  const playerCount = await fetchPlayerCount(id);
+export default async function PlayerCount({ uri }: Props) {
+  const playerCount = await fetchPlayerCount(uri);
 
   if (playerCount === 0) return null;
 

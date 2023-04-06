@@ -1,4 +1,5 @@
 import { Document } from "@gltf-transform/core";
+import { KHRXMP } from "@gltf-transform/extensions";
 import {
   AudioExtension,
   AvatarExtension,
@@ -33,6 +34,7 @@ export class Scene {
     behavior: this.doc.createExtension(BehaviorExtension),
     collider: this.doc.createExtension(ColliderExtension),
     spawn: this.doc.createExtension(SpawnPointExtension),
+    xmp: this.doc.createExtension(KHRXMP),
   };
 
   buffer = new Buffers(this);

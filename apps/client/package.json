@@ -16,6 +16,7 @@
     "@aws-sdk/s3-request-presigner": "~3.282.0",
     "@ducanh2912/next-pwa": "^8.2.0",
     "@gltf-transform/core": "3.1.7",
+    "@gltf-transform/extensions": "3.1.7",
     "@gltf-transform/functions": "3.1.7",
     "@next-auth/prisma-adapter": "^1.0.5",
     "@prisma/client": "^4.10.1",

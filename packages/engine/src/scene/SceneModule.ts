@@ -8,7 +8,7 @@ import {
   Primitive,
   WebIO,
 } from "@gltf-transform/core";
-import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
+import { KHRDracoMeshCompression, KHRXMP } from "@gltf-transform/extensions";
 import { draco } from "@gltf-transform/functions";
 import {
   AudioEmitter,
@@ -173,6 +173,17 @@ export class SceneModule extends Scene {
     return await io.writeBinary(this.doc);
   }
 
+  async loadSpace(uri: string) {
+    const res = await fetch(uri, { cache: "force-cache" });
+    if (!res.ok) throw new Error("Failed to fetch model");
+
+    const buffer = await res.arrayBuffer();
+    const array = new Uint8Array(buffer);
+
+    this.baseURI = uri.split("/").slice(0, -1).join("/");
+    await this.addBinary(array);
+  }
+
   async addBinary(array: Uint8Array) {
     const io = await this.#createIO();
     const doc = await io.readBinary(array);
@@ -277,6 +288,7 @@ export class SceneModule extends Scene {
       behavior: this.doc.createExtension(BehaviorExtension),
       collider: this.doc.createExtension(ColliderExtension),
       spawn: this.doc.createExtension(SpawnPointExtension),
+      xmp: this.doc.createExtension(KHRXMP),
     };
   }
 

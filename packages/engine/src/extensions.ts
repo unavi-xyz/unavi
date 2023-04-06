@@ -3,6 +3,7 @@ import {
   KHRDracoMeshCompression,
   KHRMeshQuantization,
   KHRTextureTransform,
+  KHRXMP,
 } from "@gltf-transform/extensions";
 import {
   AudioExtension,
@@ -25,4 +26,5 @@ export const extensions = [
   KHRMeshQuantization,
   KHRTextureTransform,
   SpawnPointExtension,
+  KHRXMP,
 ];

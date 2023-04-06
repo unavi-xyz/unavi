@@ -67,14 +67,8 @@ const processEnv = {
   NEXT_PUBLIC_DEFAULT_HOST: process.env.NEXT_PUBLIC_DEFAULT_HOST,
   NEXT_PUBLIC_DEPLOYED_URL: process.env.NEXT_PUBLIC_DEPLOYED_URL,
   NEXT_PUBLIC_DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL,
-  NEXT_PUBLIC_HAS_DATABASE: Boolean(process.env.DATABASE_URL),
-  NEXT_PUBLIC_HAS_S3: Boolean(
-    process.env.S3_BUCKET &&
-      process.env.S3_SECRET &&
-      process.env.S3_REGION &&
-      process.env.S3_ENDPOINT &&
-      process.env.S3_ACCESS_KEY_ID
-  ),
+  NEXT_PUBLIC_HAS_DATABASE: Boolean(process.env.NEXT_PUBLIC_HAS_DATABASE),
+  NEXT_PUBLIC_HAS_S3: Boolean(process.env.NEXT_PUBLIC_HAS_S3),
   VERCEL_URL: process.env.VERCEL_URL,
 };
 

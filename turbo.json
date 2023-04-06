@@ -19,6 +19,8 @@
         "NEXT_PUBLIC_DEFAULT_HOST",
         "NEXT_PUBLIC_DEPLOYED_URL",
         "NEXT_PUBLIC_DOCS_URL",
+        "NEXT_PUBLIC_HAS_DATABASE",
+        "NEXT_PUBLIC_HAS_S3",
         "NEXTAUTH_SECRET",
         "NEXTAUTH_URL",
         "NODE_ENV",

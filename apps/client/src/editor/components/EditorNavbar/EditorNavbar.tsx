@@ -4,7 +4,7 @@ import { MdArrowBackIosNew } from "react-icons/md";
 import { useSigner } from "wagmi";
 
 import SignInButton from "@/app/(navbar)/SignInButton";
-import { MAX_NAME_LENGTH } from "@/app/api/projects/constants";
+import { MAX_TITLE_LENGTH } from "@/app/api/projects/constants";
 import { useEditorStore } from "@/app/editor/[id]/store";
 
 import { useSession } from "../../../client/auth/useSession";
@@ -25,7 +25,7 @@ interface Props {
 export default function EditorNavbar({ project }: Props) {
   const router = useRouter();
 
-  const name = useEditorStore((state) => state.name);
+  const name = useEditorStore((state) => state.title);
   const isSaving = useEditorStore((state) => state.isSaving);
   const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
@@ -90,11 +90,11 @@ export default function EditorNavbar({ project }: Props) {
             {status === "authenticated" ? (
               <AutoGrowInput
                 type="text"
-                name="name"
+                name="title"
                 autoComplete="off"
-                maxLength={MAX_NAME_LENGTH}
+                maxLength={MAX_TITLE_LENGTH}
                 value={name}
-                onChange={(e) => useEditorStore.setState({ name: e.target.value })}
+                onChange={(e) => useEditorStore.setState({ title: e.target.value })}
               />
             ) : null}
 

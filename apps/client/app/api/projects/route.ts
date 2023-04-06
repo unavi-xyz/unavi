@@ -17,11 +17,12 @@ export async function POST(request: NextRequest) {
   const session = await getServerSession();
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
-  const { name } = schema.parse(await request.json());
-  const id = nanoid();
+  const { title } = schema.parse(await request.json());
+
+  const id = nanoid(PROJECT_ID_LENGTH);
 
   await prisma.project.create({
-    data: { id, owner: session.address, name: name ?? "", description: "" },
+    data: { id, owner: session.address, title: title ?? "", name: "", description: "" },
   });
 
   const json: CreateProjectResponse = { id };

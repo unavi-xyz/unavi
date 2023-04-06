@@ -7,7 +7,7 @@ import { useSigner } from "wagmi";
 
 import { GetFileDownloadResponse } from "@/app/api/projects/[id]/[file]/types";
 import { publishProject } from "@/app/api/projects/[id]/publication/helper";
-import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from "@/app/api/projects/constants";
+import { MAX_DESCRIPTION_LENGTH, MAX_TITLE_LENGTH } from "@/app/api/projects/constants";
 import { getPublicationFileUpload } from "@/app/api/publications/[id]/files/[file]/helper";
 import { linkPublication } from "@/app/api/publications/[id]/link/helper";
 import { copyProjectToModel } from "@/app/api/publications/[id]/models/[modelId]/copy-project/helper";
@@ -38,7 +38,7 @@ interface Props {
 export default function PublishPage({ project }: Props) {
   const router = useRouter();
 
-  const name = useEditorStore((state) => state.name);
+  const title = useEditorStore((state) => state.title);
   const description = useEditorStore((state) => state.description);
   const image = useEditorStore((state) => state.image);
 
@@ -144,7 +144,7 @@ export default function PublishPage({ project }: Props) {
                 profile ? toHex(profile.id) : session?.address
               }`,
           image: imageURL,
-          name,
+          name: title,
           attributes: [
             {
               trait_type: ATTRIBUTE_TYPES.HOST,
@@ -247,15 +247,15 @@ export default function PublishPage({ project }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <TextField
-        label="Name"
-        name="name"
+        label="Title"
+        name="title"
         autoComplete="off"
-        maxLength={MAX_NAME_LENGTH}
-        defaultValue={name}
+        maxLength={MAX_TITLE_LENGTH}
+        defaultValue={title}
         disabled={loading}
         onChange={(e) => {
           const value = e.target.value;
-          useEditorStore.setState({ name: value });
+          useEditorStore.setState({ title: value });
         }}
       />
 

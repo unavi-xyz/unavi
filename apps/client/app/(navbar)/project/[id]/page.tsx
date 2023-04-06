@@ -18,7 +18,7 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
   if (!project) return {};
 
   return {
-    title: project.name,
+    title: project.title,
     description: project.description,
   };
 }
@@ -63,7 +63,7 @@ export default async function Project({ params }: Props) {
 
           <div className="flex flex-col justify-between space-y-8 md:w-2/3">
             <div className="space-y-4">
-              <div className="flex justify-center text-3xl font-black">{project?.name}</div>
+              <div className="flex justify-center text-3xl font-black">{project?.title}</div>
             </div>
 
             <Link

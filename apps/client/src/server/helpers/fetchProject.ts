@@ -22,7 +22,7 @@ export const fetchProject = cache(async (id: string) => {
 
     return {
       id: project.id,
-      name: project.name,
+      title: project.title || project.name,
       description: project.description,
       owner: project.owner,
       publicationId: project.publicationId,

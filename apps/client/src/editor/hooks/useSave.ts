@@ -46,9 +46,8 @@ export function useSave(projectId: string) {
   }
 
   async function saveMetadata() {
-    const { name, description } = useEditorStore.getState();
-
-    await updateProject(projectId, { name, description });
+    const { title, description } = useEditorStore.getState();
+    await updateProject(projectId, { title, description });
   }
 
   async function save() {
@@ -60,7 +59,7 @@ export function useSave(projectId: string) {
     await stopPlaying();
 
     try {
-      await Promise.all([saveImage(), saveModel(), saveMetadata()]);
+      await Promise.all([saveImage(), saveMetadata(), saveModel()]);
     } catch (err) {
       console.error(err);
     }

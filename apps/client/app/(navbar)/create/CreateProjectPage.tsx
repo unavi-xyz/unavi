@@ -5,18 +5,18 @@ import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { getProjectFileUpload } from "@/app/api/projects/[id]/[file]/helper";
-import { MAX_NAME_LENGTH } from "@/app/api/projects/constants";
+import { MAX_TITLE_LENGTH } from "@/app/api/projects/constants";
 import { createProject } from "@/app/api/projects/helper";
 import { parseError } from "@/src/editor/utils/parseError";
 import Button from "@/src/ui/Button";
 import TextField from "@/src/ui/TextField";
 
-const DEFAULT_NAME = "New Project";
+const DEFAULT_TITLE = "New Project";
 
 export default function CreateProjectPage() {
   const router = useRouter();
 
-  const nameRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -55,7 +55,7 @@ export default function CreateProjectPage() {
       toast.loading("Creating project...", { id: toastId });
 
       // Create new project
-      const id = await createProject(nameRef.current?.value || DEFAULT_NAME);
+      const id = await createProject(inputRef.current?.value || DEFAULT_TITLE);
       await Promise.all([uploadDefaultImage(id), uploadDefaultModel(id)]);
 
       toast.success("Project created!", { id: toastId });
@@ -71,12 +71,12 @@ export default function CreateProjectPage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <TextField
-        ref={nameRef}
-        label="Name"
-        name="name"
+        ref={inputRef}
+        label="Title"
+        name="title"
         autoComplete="off"
-        maxLength={MAX_NAME_LENGTH}
-        placeholder={DEFAULT_NAME}
+        maxLength={MAX_TITLE_LENGTH}
+        placeholder={DEFAULT_TITLE}
         disabled={loading}
       />
 

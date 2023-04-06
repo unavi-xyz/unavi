@@ -33,7 +33,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
-  const { name, description, publicationId } = patchSchema.parse(await request.json());
+  const { title, description, publicationId } = patchSchema.parse(await request.json());
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
@@ -60,7 +60,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   // Update project
   await prisma.project.update({
     where: { id },
-    data: { name, description, publicationId },
+    data: { title, description, publicationId },
   });
 
   return NextResponse.json({ success: true });

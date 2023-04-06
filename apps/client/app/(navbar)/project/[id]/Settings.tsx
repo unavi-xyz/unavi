@@ -13,7 +13,7 @@ export default async function Settings({ params: { id } }: { params: { id: strin
 
   return (
     <div className="space-y-12">
-      <Download id={id} projectName={project.name} />
+      <Download id={id} projectName={project.title} />
       <Connect
         id={id}
         owner={project.owner}

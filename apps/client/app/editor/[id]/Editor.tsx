@@ -75,7 +75,7 @@ export default function Editor({ project }: Props) {
         openScriptId: null,
         isPlaying: false,
         isSaving: false,
-        name: "",
+        title: "",
         description: "",
         image: null,
         treeIds: [],

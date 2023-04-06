@@ -5,7 +5,7 @@ import useSWR from "swr";
 
 import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 
-export const fetcher = (url: string) => fetch(url).then((r) => r.json());
+export const fetcher = (url: string) => fetch(url, { mode: "no-cors" }).then((r) => r.json());
 
 interface Props {
   metadata: SpaceMetadata;

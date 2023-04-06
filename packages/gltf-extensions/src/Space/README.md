@@ -4,7 +4,7 @@ The WIRED_space extension marks the glTF file as a space within The Wired. A spa
 
 ## Properties
 
-|       | Type           | Description                                    | Required |
-| ----- | -------------- | ---------------------------------------------- | -------- |
-| host  | `string (url)` | A URL of the host server for the space         | Yes      |
-| image | `string`       | A URI pointing to a preview image of the space | No       |
+|       | Type     | Description                                    | Required | Default |
+| ----- | -------- | ---------------------------------------------- | -------- | ------- |
+| host  | `string` | A URL of the host server for the space         | Yes      |         |
+| image | `string` | A URI pointing to a preview image of the space | No       |         |

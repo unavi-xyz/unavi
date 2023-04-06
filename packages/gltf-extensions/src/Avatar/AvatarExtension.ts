@@ -38,9 +38,10 @@ export class AvatarExtension extends Extension {
 
       const avatarDef = parsedAvatarDef.data;
 
-      avatar.setName(avatarDef.name);
-      avatar.setEquippable(avatarDef.equippable);
       avatar.setURI(avatarDef.uri);
+
+      if (avatarDef.name) avatar.setName(avatarDef.name);
+      if (avatarDef.equippable !== undefined) avatar.setEquippable(avatarDef.equippable);
 
       node.setExtension(this.extensionName, avatar);
     });

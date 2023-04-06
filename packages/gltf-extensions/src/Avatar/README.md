@@ -4,8 +4,8 @@ The WIRED_avatar extension represents a VRM avatar within the scene. It can be m
 
 ## Properties
 
-|            | Type     | Description                                  | Required |
-| ---------- | -------- | -------------------------------------------- | -------- |
-| uri        | `string` | A URI pointing to the VRM avatar             | Yes      |
-| equippable | `string` | Whether the avatar is equippable by the user | Yes      |
-| name       | `string` | The name of the avatar                       | Yes      |
+|            | Type      | Description                                  | Required | Default |
+| ---------- | --------- | -------------------------------------------- | -------- | ------- |
+| uri        | `string`  | A URI pointing to the VRM avatar             | Yes      |         |
+| equippable | `boolean` | Whether the avatar is equippable by the user | No       | `false` |
+| name       | `string`  | The name of the avatar                       | No       |         |

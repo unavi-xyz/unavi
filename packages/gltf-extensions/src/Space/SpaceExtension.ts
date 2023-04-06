@@ -30,7 +30,8 @@ export class SpaceExtension extends Extension {
 
     const space = this.createSpace();
     space.setHost(rootDef.data.host);
-    space.setImage(rootDef.data.image);
+
+    if (rootDef.data.image) space.setImage(rootDef.data.image);
 
     this.document.getRoot().setExtension(this.extensionName, space);
 

@@ -4,8 +4,6 @@ import { fetchPlayerCount } from "@/src/server/helpers/fetchPlayerCount";
 
 import { Params, paramsSchema } from "../types";
 
-export const runtime = "edge";
-
 // Get player count for a space
 export async function GET(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);

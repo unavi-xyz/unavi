@@ -1,5 +1,12 @@
 # client
 
+## 0.4.1
+
+### Patch Changes
+
+- 824c0e7: fix not fetching player coount from correct host server
+- dfba4bd: fix avatar upload not visible
+
 ## 0.4.0
 
 ### Minor Changes

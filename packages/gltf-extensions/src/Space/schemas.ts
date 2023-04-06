@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const spaceSchema = z.object({
-  host: z.string().url(),
+  host: z.string(),
   image: z.string().optional(),
 });
 

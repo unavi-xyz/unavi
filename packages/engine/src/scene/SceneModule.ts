@@ -17,6 +17,7 @@ import {
   BehaviorExtension,
   Collider,
   ColliderExtension,
+  SpaceExtension,
   SpawnPointExtension,
 } from "@wired-labs/gltf-extensions";
 
@@ -287,6 +288,7 @@ export class SceneModule extends Scene {
       avatar: this.doc.createExtension(AvatarExtension),
       behavior: this.doc.createExtension(BehaviorExtension),
       collider: this.doc.createExtension(ColliderExtension),
+      space: this.doc.createExtension(SpaceExtension),
       spawn: this.doc.createExtension(SpawnPointExtension),
       xmp: this.doc.createExtension(KHRXMP),
     };

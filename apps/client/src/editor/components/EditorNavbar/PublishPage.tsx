@@ -1,3 +1,4 @@
+import { Space } from "@wired-labs/gltf-extensions";
 import { ATTRIBUTE_TYPES, ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -83,7 +84,6 @@ export default function PublishPage({ project }: Props) {
 
       // Start optimizing model
       toast.loading("Creating publication...", { id: toastId });
-      const optimizedModelPromise = engine.scene.export({ optimize: true });
 
       // Publish project
       const { id: publicationId } = await publishProject(project.id);
@@ -91,9 +91,22 @@ export default function PublishPage({ project }: Props) {
       // Create published model
       const modelId = await createPublishedModel(publicationId);
 
+      const modelURL = cdnURL(S3Path.publication(publicationId).model(modelId).model);
+      const imageURL = cdnURL(S3Path.publication(publicationId).model(modelId).image);
+
+      // Update space image metadata
+      const space = engine.scene.doc.getRoot().getExtension<Space>(Space.EXTENSION_NAME);
+      if (!space) throw new Error("Space extension not found");
+
+      space.setImage(imageURL);
+
       async function uploadModel() {
-        const url = await getPublishedModelFileUpload(publicationId, modelId, "model");
-        const optimizedModel = await optimizedModelPromise;
+        if (!engine) throw new Error("Engine not found");
+
+        const [url, optimizedModel] = await Promise.all([
+          getPublishedModelFileUpload(publicationId, modelId, "model"),
+          engine.scene.export({ optimize: true }),
+        ]);
 
         const response = await fetch(url, {
           method: "PUT",
@@ -132,9 +145,6 @@ export default function PublishPage({ project }: Props) {
       }
 
       async function uploadMetadata(spaceId: number | undefined) {
-        const modelURL = cdnURL(S3Path.publication(publicationId).model(modelId).model);
-        const imageURL = cdnURL(S3Path.publication(publicationId).model(modelId).image);
-
         const metadata: ERC721Metadata = {
           animation_url: modelURL,
           description,

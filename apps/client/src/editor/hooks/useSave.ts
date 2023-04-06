@@ -1,4 +1,5 @@
 import { Packet } from "@gltf-transform/extensions";
+import { Space } from "@wired-labs/gltf-extensions";
 
 import { getProjectFileUpload } from "@/app/api/projects/[id]/[file]/helper";
 import { updateProject } from "@/app/api/projects/[id]/helper";
@@ -62,6 +63,16 @@ export function useSave(projectId: string) {
     xmpPacket.setProperty("dc:creator", creator);
     xmpPacket.setProperty("dc:date", date);
     xmpPacket.setProperty("dc:description", description);
+
+    // Save space metadata
+    let space = engine.scene.doc.getRoot().getExtension<Space>(Space.EXTENSION_NAME);
+
+    if (!space) {
+      space = engine.scene.extensions.space.createSpace();
+      engine.scene.doc.getRoot().setExtension(space.extensionName, space);
+    }
+
+    space.setHost(env.NEXT_PUBLIC_DEFAULT_HOST);
 
     // Export to GLB
     const glb = await engine.scene.export();

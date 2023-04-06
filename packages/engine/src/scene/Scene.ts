@@ -5,6 +5,7 @@ import {
   AvatarExtension,
   BehaviorExtension,
   ColliderExtension,
+  SpaceExtension,
   SPAWN_TITLE,
   SpawnPoint,
   SpawnPointExtension,
@@ -33,6 +34,7 @@ export class Scene {
     avatar: this.doc.createExtension(AvatarExtension),
     behavior: this.doc.createExtension(BehaviorExtension),
     collider: this.doc.createExtension(ColliderExtension),
+    space: this.doc.createExtension(SpaceExtension),
     spawn: this.doc.createExtension(SpawnPointExtension),
     xmp: this.doc.createExtension(KHRXMP),
   };

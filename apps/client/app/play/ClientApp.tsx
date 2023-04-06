@@ -1,9 +1,9 @@
 import { useClient } from "@wired-labs/react-client";
 import { useEffect } from "react";
 
+import Overlay from "@/app/play/Overlay";
 import { useLoadUser } from "@/src/play/hooks/useLoadUser";
 import LoadingScreen from "@/src/play/ui/LoadingScreen";
-import Overlay from "@/src/play/ui/Overlay";
 import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 
 import FileDrop from "./FileDrop";

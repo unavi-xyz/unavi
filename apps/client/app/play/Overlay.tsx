@@ -1,19 +1,22 @@
 import { MicButton, useClient } from "@wired-labs/react-client";
 import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
 import Logo from "@/public/images/Logo.png";
 import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
+import { toHex } from "@/src/utils/toHex";
 
-import { useIsMobile } from "../../utils/useIsMobile";
-import Crosshair from "../Crosshair";
-import { usePointerLocked } from "../hooks/usePointerLocked";
-import Stats from "../Stats";
-import ChatBox from "./ChatBox";
-import MobileChatBox from "./MobileChatBox";
-import SettingsDialog from "./Settings/SettingsDialog";
+import Crosshair from "../../src/play/Crosshair";
+import { usePointerLocked } from "../../src/play/hooks/usePointerLocked";
+import Stats from "../../src/play/Stats";
+import ChatBox from "../../src/play/ui/ChatBox";
+import MobileChatBox from "../../src/play/ui/MobileChatBox";
+import SettingsDialog from "../../src/play/ui/Settings/SettingsDialog";
+import { useIsMobile } from "../../src/utils/useIsMobile";
 
 interface Props {
   metadata: SpaceMetadata;
@@ -25,6 +28,10 @@ export default function Overlay({ metadata }: Props) {
   const isMobile = useIsMobile();
   const isPointerLocked = usePointerLocked();
   const { host, micEnabled } = useClient();
+  const searchParams = useSearchParams();
+
+  const spaceParam = searchParams?.get("space");
+  const nftId = spaceParam?.startsWith("nft://") ? parseInt(spaceParam.slice(6)) : null;
 
   return (
     <>
@@ -33,9 +40,11 @@ export default function Overlay({ metadata }: Props) {
       {!isPointerLocked && (
         <div className="fixed top-4 left-5 z-20">
           <div className="flex items-center space-x-3 rounded-full bg-white/80 pr-10 backdrop-blur-lg">
-            <div className="-ml-1">
-              <Image src={Logo} alt="Logo" width={48} height={48} draggable={false} />
-            </div>
+            <Link href={nftId !== null ? `/space/${toHex(nftId)}` : "/"}>
+              <div className="-ml-1">
+                <Image src={Logo} alt="Logo" width={48} height={48} draggable={false} />
+              </div>
+            </Link>
 
             <div>
               <div className="text-lg font-bold leading-6">{metadata.title}</div>

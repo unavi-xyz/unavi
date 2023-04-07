@@ -32,6 +32,8 @@ export interface ProfileInterface extends utils.Interface {
     "MAX_HANDLE_LENGTH()": FunctionFragment;
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
+    "burn(uint256)": FunctionFragment;
+    "count()": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
     "getDefaultProfile(address)": FunctionFragment;
     "getHandle(uint256)": FunctionFragment;
@@ -39,6 +41,7 @@ export interface ProfileInterface extends utils.Interface {
     "isApprovedForAll(address,address)": FunctionFragment;
     "mint()": FunctionFragment;
     "mintWithHandle(string)": FunctionFragment;
+    "mintWithTokenURI(string)": FunctionFragment;
     "name()": FunctionFragment;
     "ownerOf(uint256)": FunctionFragment;
     "safeTransferFrom(address,address,uint256)": FunctionFragment;
@@ -50,7 +53,6 @@ export interface ProfileInterface extends utils.Interface {
     "supportsInterface(bytes4)": FunctionFragment;
     "symbol()": FunctionFragment;
     "tokenURI(uint256)": FunctionFragment;
-    "totalSupply()": FunctionFragment;
     "transferFrom(address,address,uint256)": FunctionFragment;
   };
 
@@ -59,6 +61,8 @@ export interface ProfileInterface extends utils.Interface {
       | "MAX_HANDLE_LENGTH"
       | "approve"
       | "balanceOf"
+      | "burn"
+      | "count"
       | "getApproved"
       | "getDefaultProfile"
       | "getHandle"
@@ -66,6 +70,7 @@ export interface ProfileInterface extends utils.Interface {
       | "isApprovedForAll"
       | "mint"
       | "mintWithHandle"
+      | "mintWithTokenURI"
       | "name"
       | "ownerOf"
       | "safeTransferFrom(address,address,uint256)"
@@ -77,7 +82,6 @@ export interface ProfileInterface extends utils.Interface {
       | "supportsInterface"
       | "symbol"
       | "tokenURI"
-      | "totalSupply"
       | "transferFrom"
   ): FunctionFragment;
 
@@ -93,6 +97,11 @@ export interface ProfileInterface extends utils.Interface {
     functionFragment: "balanceOf",
     values: [PromiseOrValue<string>]
   ): string;
+  encodeFunctionData(
+    functionFragment: "burn",
+    values: [PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(functionFragment: "count", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "getApproved",
     values: [PromiseOrValue<BigNumberish>]
@@ -116,6 +125,10 @@ export interface ProfileInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "mint", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "mintWithHandle",
+    values: [PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "mintWithTokenURI",
     values: [PromiseOrValue<string>]
   ): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
@@ -166,10 +179,6 @@ export interface ProfileInterface extends utils.Interface {
     values: [PromiseOrValue<BigNumberish>]
   ): string;
   encodeFunctionData(
-    functionFragment: "totalSupply",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "transferFrom",
     values: [
       PromiseOrValue<string>,
@@ -184,6 +193,8 @@ export interface ProfileInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "burn", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "count", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getApproved",
     data: BytesLike
@@ -204,6 +215,10 @@ export interface ProfileInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "mint", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "mintWithHandle",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "mintWithTokenURI",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
@@ -235,10 +250,6 @@ export interface ProfileInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "tokenURI", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "totalSupply",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "transferFrom",
     data: BytesLike
@@ -331,6 +342,13 @@ export interface Profile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
+    burn(
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    count(overrides?: CallOverrides): Promise<[BigNumber]>;
+
     getApproved(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -364,6 +382,11 @@ export interface Profile extends BaseContract {
 
     mintWithHandle(
       handle: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    mintWithTokenURI(
+      tokenURI: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
@@ -424,8 +447,6 @@ export interface Profile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[string]>;
 
-    totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
-
     transferFrom(
       from: PromiseOrValue<string>,
       to: PromiseOrValue<string>,
@@ -446,6 +467,13 @@ export interface Profile extends BaseContract {
     owner: PromiseOrValue<string>,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
+
+  burn(
+    tokenId: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  count(overrides?: CallOverrides): Promise<BigNumber>;
 
   getApproved(
     tokenId: PromiseOrValue<BigNumberish>,
@@ -480,6 +508,11 @@ export interface Profile extends BaseContract {
 
   mintWithHandle(
     handle: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  mintWithTokenURI(
+    tokenURI: PromiseOrValue<string>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
@@ -540,8 +573,6 @@ export interface Profile extends BaseContract {
     overrides?: CallOverrides
   ): Promise<string>;
 
-  totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
-
   transferFrom(
     from: PromiseOrValue<string>,
     to: PromiseOrValue<string>,
@@ -562,6 +593,13 @@ export interface Profile extends BaseContract {
       owner: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    burn(
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    count(overrides?: CallOverrides): Promise<BigNumber>;
 
     getApproved(
       tokenId: PromiseOrValue<BigNumberish>,
@@ -596,6 +634,11 @@ export interface Profile extends BaseContract {
       handle: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<[BigNumber, BigNumber]>;
+
+    mintWithTokenURI(
+      tokenURI: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     name(overrides?: CallOverrides): Promise<string>;
 
@@ -654,8 +697,6 @@ export interface Profile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<string>;
 
-    totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
-
     transferFrom(
       from: PromiseOrValue<string>,
       to: PromiseOrValue<string>,
@@ -713,6 +754,13 @@ export interface Profile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    burn(
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    count(overrides?: CallOverrides): Promise<BigNumber>;
+
     getApproved(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -746,6 +794,11 @@ export interface Profile extends BaseContract {
 
     mintWithHandle(
       handle: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    mintWithTokenURI(
+      tokenURI: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
@@ -806,8 +859,6 @@ export interface Profile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
-
     transferFrom(
       from: PromiseOrValue<string>,
       to: PromiseOrValue<string>,
@@ -829,6 +880,13 @@ export interface Profile extends BaseContract {
       owner: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    burn(
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    count(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getApproved(
       tokenId: PromiseOrValue<BigNumberish>,
@@ -863,6 +921,11 @@ export interface Profile extends BaseContract {
 
     mintWithHandle(
       handle: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    mintWithTokenURI(
+      tokenURI: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -922,8 +985,6 @@ export interface Profile extends BaseContract {
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    totalSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     transferFrom(
       from: PromiseOrValue<string>,

@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { fetchProfile } from "@/src/server/helpers/fetchProfile";
-import { processSpaceURI } from "@/src/server/helpers/processSpaceURI";
 import { readSpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import { prisma } from "@/src/server/prisma";
 import { isFromCDN } from "@/src/utils/isFromCDN";
@@ -20,13 +19,15 @@ type Params = { id: string };
 export const revalidate = 60;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const uri = `nft://${params.id}`;
+  const space = await prisma.space.findFirst({
+    where: { publicId: params.id },
+    select: { SpaceModel: true, owner: true },
+  });
+  if (!space || !space.SpaceModel) return {};
 
-  const spaceURI = await processSpaceURI(uri);
-  if (!spaceURI) notFound();
-
-  const metadata = await readSpaceMetadata(spaceURI);
-  if (!metadata) notFound();
+  const modelURI = cdnURL(S3Path.space(space.SpaceModel.publicId).model);
+  const metadata = await readSpaceMetadata(modelURI);
+  if (!metadata) return {};
 
   const { title, description, creator, image } = metadata;
 

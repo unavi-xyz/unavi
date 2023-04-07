@@ -19,8 +19,8 @@ export default async function Projects() {
 
   return (
     <CardGrid>
-      {unpublishedProjects.map(({ id, name, image }) => (
-        <Card key={id} href={`/project/${id}`} text={name} image={image} />
+      {unpublishedProjects.map(({ publicId, title, image }) => (
+        <Card key={publicId} href={`/project/${publicId}`} text={title} image={image} />
       ))}
     </CardGrid>
   );

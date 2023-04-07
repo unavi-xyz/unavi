@@ -9,7 +9,7 @@ import { processSpaceURI } from "@/src/server/helpers/processSpaceURI";
 import { readSpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import { prisma } from "@/src/server/prisma";
 import { isFromCDN } from "@/src/utils/isFromCDN";
-import { S3Path } from "@/src/utils/s3Paths";
+import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 import { toHex } from "@/src/utils/toHex";
 
 import PlayerCount from "./PlayerCount";
@@ -59,7 +59,7 @@ export default async function Space({ params }: Props) {
   });
   if (!space || !space.SpaceModel) notFound();
 
-  const modelURI = S3Path.space(space.SpaceModel.publicId).model;
+  const modelURI = cdnURL(S3Path.space(space.SpaceModel.publicId).model);
   const metadata = await readSpaceMetadata(modelURI);
   if (!metadata) notFound();
 
@@ -130,13 +130,13 @@ export default async function Space({ params }: Props) {
 
                 <Suspense fallback={null}>
                   {/* @ts-expect-error Server Component */}
-                  <PlayerCount uri={uri} />
+                  <PlayerCount uri={modelURI} />
                 </Suspense>
               </div>
             </div>
 
             <Link
-              href={`/play?space=${modelURI}`}
+              href={`/play?id=${params.id}`}
               className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white outline-neutral-400 transition hover:scale-105"
             >
               Play
@@ -146,7 +146,7 @@ export default async function Space({ params }: Props) {
 
         <Suspense fallback={null}>
           {/* @ts-expect-error Server Component */}
-          <Tabs owner={space.owner} description={metadata.description} />
+          <Tabs id={params.id} owner={space.owner} description={metadata.description} />
         </Suspense>
       </div>
     </div>

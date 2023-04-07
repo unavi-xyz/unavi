@@ -14,10 +14,13 @@ export async function GET(request: NextRequest, { params }: Params) {
   const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the space
-  const found = await prisma.space.findFirst({ where: { publicId: id, owner: session.address } });
-  if (!found) return new Response("Space not found", { status: 404 });
+  const found = await prisma.space.findFirst({
+    where: { publicId: id, owner: session.address },
+    include: { SpaceModel: true },
+  });
+  if (!found?.SpaceModel) return new Response("Space not found", { status: 404 });
 
-  const url = await getSpaceModelDownloadURL(id, file);
+  const url = await getSpaceModelDownloadURL(found.SpaceModel.publicId, file);
 
   const json: GetFileDownloadResponse = { url };
   return NextResponse.json(json);
@@ -31,10 +34,13 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the space
-  const found = await prisma.space.findFirst({ where: { publicId: id, owner: session.address } });
-  if (!found) return new Response("Space not found", { status: 404 });
+  const found = await prisma.space.findFirst({
+    where: { publicId: id, owner: session.address },
+    include: { SpaceModel: true },
+  });
+  if (!found?.SpaceModel) return new Response("Space not found", { status: 404 });
 
-  const url = await getSpaceModelUploadURL(id, file);
+  const url = await getSpaceModelUploadURL(found.SpaceModel.publicId, file);
 
   const json: GetFileUploadResponse = { url };
   return NextResponse.json(json);

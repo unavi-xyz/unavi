@@ -5,11 +5,12 @@ import About from "./About";
 import Settings from "./Settings";
 
 interface Props {
+  id: string;
   owner: string;
   description: string;
 }
 
-export default async function Tabs({ owner, description }: Props) {
+export default async function Tabs({ id, owner, description }: Props) {
   const session = await getServerSession();
 
   const isOwner = session?.address === owner;

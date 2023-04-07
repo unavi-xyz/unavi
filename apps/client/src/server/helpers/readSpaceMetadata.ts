@@ -43,8 +43,7 @@ export const readSpaceMetadata = cache(async (uri: string): Promise<SpaceMetadat
     const title = parsedTitle.success ? parsedTitle.data : "";
 
     return { creator, description, host, image, title, uri };
-  } catch (e) {
-    console.warn(e);
+  } catch {
     return null;
   }
 });

@@ -15,15 +15,20 @@ export const SPACE_MODEL_FILE = {
 export type SpaceModelFile = (typeof SPACE_MODEL_FILE)[keyof typeof SPACE_MODEL_FILE];
 
 export async function getSpaceModelUploadURL(id: string, type: SpaceModelFile) {
-  const Key = S3Path.project(id)[type];
+  const Key = S3Path.space(id)[type];
   const ContentType = getContentType(type);
-  const command = new PutObjectCommand({ Bucket: env.S3_BUCKET, Key, ContentType });
+  const command = new PutObjectCommand({
+    Bucket: env.S3_BUCKET,
+    Key,
+    ContentType,
+    ACL: "public-read",
+  });
   const url = await getSignedUrl(s3Client, command, { expiresIn });
   return url;
 }
 
 export async function getSpaceModelDownloadURL(id: string, type: SpaceModelFile) {
-  const Key = S3Path.project(id)[type];
+  const Key = S3Path.space(id)[type];
   const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key });
   const url = await getSignedUrl(s3Client, command, { expiresIn });
   return url;

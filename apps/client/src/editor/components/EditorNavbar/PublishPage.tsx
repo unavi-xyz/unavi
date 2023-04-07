@@ -73,12 +73,10 @@ export default function PublishPage({ project }: Props) {
       if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
 
-      // Save project
-      toast.loading("Saving...", { id: toastId });
-      await save();
-
-      // Start optimizing model
       toast.loading("Creating space...", { id: toastId });
+
+      // Start saving
+      const savePromise = save();
 
       // Publish project
       const { spaceId } = await publishProject(project.id);
@@ -92,6 +90,8 @@ export default function PublishPage({ project }: Props) {
       if (!space) throw new Error("Space extension not found");
 
       space.setImage(imageURL);
+
+      await savePromise;
 
       async function uploadModel() {
         if (!engine) throw new Error("Engine not found");

@@ -1,8 +1,8 @@
 import { fetchSpaceNFTOwner } from "./fetchSpaceNFTOwner";
 import { processSpaceURI } from "./processSpaceURI";
-import { readSpaceMetadata } from "./readSpaceMetadata";
+import { readSpaceMetadata, SpaceMetadata } from "./readSpaceMetadata";
 
-export async function validateSpace(id: number, owner?: string) {
+export async function validateSpace(id: number, owner?: string): Promise<ValidNFTSpace | null> {
   try {
     // Check if owned by owner
     if (owner) {
@@ -23,4 +23,14 @@ export async function validateSpace(id: number, owner?: string) {
   }
 }
 
-export type ValidSpace = Exclude<Awaited<ReturnType<typeof validateSpace>>, null>;
+export type ValidNFTSpace = {
+  id: number;
+  metadata: SpaceMetadata;
+};
+
+export type ValidDatabaseSpace = {
+  id: string;
+  metadata: SpaceMetadata;
+};
+
+export type ValidSpace = ValidNFTSpace | ValidDatabaseSpace;

@@ -3,12 +3,11 @@ import Link from "next/link";
 import PlayerCount from "@/app/(navbar)/explore/PlayerCount";
 
 import { SpaceMetadata } from "../server/helpers/readSpaceMetadata";
-import { toHex } from "../utils/toHex";
 import { CardImage } from "./Card";
 import { CardText } from "./Card";
 
 interface Props {
-  id: number;
+  id: number | string;
   metadata: SpaceMetadata;
   sizes?: string;
 }
@@ -20,7 +19,7 @@ export default function SpaceCard({ id, metadata, sizes }: Props) {
   return (
     <div>
       <div className="group relative">
-        <Link href={`/space/${toHex(id)}`} className="rounded-3xl">
+        <Link href={`/space/${id}`} className="rounded-3xl">
           <CardImage group image={metadata.image} sizes={sizes}>
             <PlayerCount metadata={metadata} />
           </CardImage>
@@ -30,7 +29,7 @@ export default function SpaceCard({ id, metadata, sizes }: Props) {
 
         <div className="absolute bottom-0 left-0 z-20 hidden animate-fadeIn pl-3 pb-4 group-hover:block">
           <Link
-            href={`/play?space=nft://${toHex(id)}`}
+            href={`/play?id=${id}`}
             className="rounded-xl bg-white px-4 py-1.5 text-xl font-bold shadow transition hover:bg-neutral-200 hover:shadow-md active:bg-neutral-300"
           >
             Play

@@ -19,6 +19,6 @@ The Wired reimagines the web as an **interconnected network of 3D spaces**, inst
 
 :::info
 
-The Wired is currently in beta, and is live on the **Arbitrum Goerli Testnet**. You can visit the [Arbitrum Goerli Faucet](https://faucet.triangleplatform.com/arbitrum/goerli) to get some free testnet ETH.
+The Wired is currently in beta, and is live on the [Ethereum Sepolia Testnet](https://www.alchemy.com/overviews/sepolia-testnet). You can visit the [Alchemy Sepolia Faucet](https://sepoliafaucet.com/) to get some free testnet ETH.
 
 :::

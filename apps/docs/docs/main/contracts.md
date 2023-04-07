@@ -8,12 +8,12 @@ The Wired operates using smart contracts on the Ethereum blockchain. These contr
 
 ## 📜 Deployed Contracts
 
-Contracts are currently deployed to the **Arbitrum Goerli Testnet**.
+Contracts are currently deployed to the [Ethereum Sepolia Testnet](https://www.alchemy.com/overviews/sepolia-testnet).
 
-| Contract | Address                                                                                                                     |
-| -------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Profile  | [0xF758c4893667ac69F16134a66F19AED8827B1914](https://goerli.arbiscan.io/address/0xf758c4893667ac69f16134a66f19aed8827b1914) |
-| Space    | [0xE068Dffa00149408007B627bd092051915bB0736](https://goerli.arbiscan.io/address/0xE068Dffa00149408007B627bd092051915bB0736) |
+| Contract | Address                                                                                                                       |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Profile  | [0x4082Df45C81A6cb80492f506cd985EE8E2aac8b5](https://sepolia.etherscan.io/address/0x4082df45c81a6cb80492f506cd985ee8e2aac8b5) |
+| Space    | [0x9BC51fe51720D03C4A8c0bc7efE235b3d492D5f7](https://sepolia.etherscan.io/address/0x9bc51fe51720d03c4a8c0bc7efe235b3d492d5f7) |
 
 ## 🪪 Profile Contract
 

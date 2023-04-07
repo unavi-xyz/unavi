@@ -4,13 +4,11 @@ import { notFound } from "next/navigation";
 import React from "react";
 import { z } from "zod";
 
-import {
-  httpsSchema,
-  idSchema,
-  nftSchema,
-  processSpaceURI,
-} from "@/src/server/helpers/processSpaceURI";
+import { fetchSpaceNFTMetadata } from "@/src/server/helpers/fetchSpaceNFTMetadata";
+import { httpsSchema, idSchema, nftSchema } from "@/src/server/helpers/processSpaceURI";
 import { readSpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
+import { prisma } from "@/src/server/prisma";
+import { S3Path } from "@/src/utils/s3Paths";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
 import SessionProvider from "../(navbar)/SessionProvider";
@@ -24,10 +22,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const params = searchParamsSchema.safeParse(searchParams);
   if (!params.success) return {};
 
-  const uri = await processSpaceURI(params.data.space);
-  if (!uri) return {};
-
-  const metadata = await readSpaceMetadata(uri);
+  const metadata = await fetchSpaceMetdata(params.data);
   if (!metadata) return {};
 
   const { title, description, creator, image } = metadata;
@@ -58,10 +53,7 @@ export default async function Play({ searchParams }: Props) {
   const params = searchParamsSchema.safeParse(searchParams);
   if (!params.success) return notFound();
 
-  const uri = await processSpaceURI(params.data.space);
-  if (!uri) notFound();
-
-  const metadata = await readSpaceMetadata(uri);
+  const metadata = await fetchSpaceMetdata(params.data);
   if (!metadata) notFound();
 
   return (
@@ -73,4 +65,47 @@ export default async function Play({ searchParams }: Props) {
   );
 }
 
-const searchParamsSchema = z.object({ space: z.union([httpsSchema, nftSchema, idSchema]) });
+async function fetchSpaceMetdata(params: z.infer<typeof searchParamsSchema>) {
+  let uri: string | undefined;
+
+  if ("id" in params) {
+    try {
+      const space = await prisma.space.findFirst({
+        where: { publicId: params.id },
+        include: { SpaceModel: true },
+      });
+      if (!space?.SpaceModel) return null;
+
+      uri = S3Path.space(space.SpaceModel.publicId).model;
+    } catch {
+      return null;
+    }
+  } else if ("nft" in params) {
+    try {
+      // Fetch metadata
+      const tokenId = parseInt(params.nft);
+      const metadata = await fetchSpaceNFTMetadata(tokenId);
+
+      // No model
+      if (!metadata?.animation_url) return null;
+
+      uri = metadata.animation_url;
+    } catch {
+      return null;
+    }
+  } else if ("uri" in params) {
+    uri = params.uri;
+  }
+
+  if (!uri) return null;
+
+  const metadata = await readSpaceMetadata(uri);
+
+  return metadata;
+}
+
+const searchParamsSchema = z.union([
+  z.object({ id: idSchema }),
+  z.object({ nft: nftSchema }),
+  z.object({ uri: httpsSchema }),
+]);

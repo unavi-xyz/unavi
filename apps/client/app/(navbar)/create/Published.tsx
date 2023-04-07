@@ -9,7 +9,7 @@ export default async function Published() {
   if (!session) return null;
 
   const projects = await fetchProjects();
-  const publishedProjects = projects.filter((p) => p.Publication?.spaceId);
+  const publishedProjects = projects.filter((p) => p.spaceId);
 
   if (publishedProjects.length === 0) return null;
 

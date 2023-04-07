@@ -1,36 +1,31 @@
 import { cache } from "react";
 
-import { getProjectDownload } from "@/app/api/projects/files";
+import { getProjectDownloadURL } from "@/app/api/projects/[id]/files/[file]/files";
 
 import { prisma } from "../prisma";
 import { getServerSession } from "./getServerSession";
 
-export const fetchProject = cache(async (id: string) => {
+export const fetchProject = cache(async (id: string): Promise<Project | null> => {
   try {
-    const imagePromise = getProjectDownload(id, "image");
-    const modelPromise = getProjectDownload(id, "model");
+    const imagePromise = getProjectDownloadURL(id, "image");
+    const modelPromise = getProjectDownloadURL(id, "model");
 
     const session = await getServerSession();
     if (!session) throw new Error("Unauthorized");
 
+    // Verify user owns the project
     const project = await prisma.project.findFirst({
-      // Verify user owns the project
-      where: { id, owner: session.address },
-      include: { Publication: true },
+      where: { publicId: id, owner: session.address },
+      include: { Space: true },
     });
     if (!project) throw new Error("Not found");
 
     return {
-      id: project.id,
+      id: project.publicId,
       title: project.title || project.name,
       description: project.description,
+      spaceId: project.Space ? project.Space.publicId : null,
       owner: project.owner,
-      publicationId: project.publicationId,
-      publication: project.Publication
-        ? {
-            spaceId: project.Publication.spaceId,
-          }
-        : null,
       image: await imagePromise,
       model: await modelPromise,
     };
@@ -39,4 +34,12 @@ export const fetchProject = cache(async (id: string) => {
   }
 });
 
-export type Project = Exclude<Awaited<ReturnType<typeof fetchProject>>, null>;
+export type Project = {
+  id: string;
+  title: string;
+  description: string;
+  spaceId: string | null;
+  owner: string;
+  image: string;
+  model: string;
+};

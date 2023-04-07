@@ -1,35 +1,21 @@
-import { env } from "@/src/env.mjs";
-import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
-import { fetchSpaceOwner } from "@/src/server/helpers/fetchSpaceOwner";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
 
 import RainbowkitWrapper from "../../RainbowkitWrapper";
 import SessionProvider from "../../SessionProvider";
 import Delete from "./Delete";
-import Host from "./Host";
 
 interface Props {
-  id: number;
+  id: string;
 }
 
 export default async function Settings({ id }: Props) {
-  const [session, owner, metadata] = await Promise.all([
-    getServerSession(),
-    fetchSpaceOwner(id),
-    fetchSpaceMetadata(id),
-  ]);
-
+  const session = await getServerSession();
   if (!session?.address) return null;
-
-  const isOwner = session.address === owner;
-
-  if (!isOwner) return null;
 
   return (
     <SessionProvider>
       <RainbowkitWrapper>
         <div className="space-y-12">
-          {env.NEXT_PUBLIC_HAS_S3 ? <Host id={id} metadata={metadata} /> : null}
           <Delete id={id} address={session.address} />
         </div>
       </RainbowkitWrapper>

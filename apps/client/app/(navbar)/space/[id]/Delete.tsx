@@ -1,19 +1,17 @@
 "use client";
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { Space__factory, SPACE_ADDRESS } from "contracts";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
-import { deletePublication } from "@/app/api/publications/[id]/helper";
-import { getSpacePublication } from "@/app/api/spaces/[id]/publication/helper";
+import { deleteSpace } from "@/app/api/spaces/[id]/helper";
 import { parseError } from "@/src/editor/utils/parseError";
 import Button from "@/src/ui/Button";
 
 interface Props {
-  id: number;
+  id: string;
   address: string;
 }
 
@@ -36,23 +34,22 @@ export default function Delete({ id, address }: Props) {
 
     setLoading(true);
 
-    async function deleteSpace() {
+    async function handleDelete() {
       if (!signer) throw new Error("No signer");
 
-      toast.loading("Waiting for signature...", { id: toastId });
-      const contract = Space__factory.connect(SPACE_ADDRESS, signer);
-      const tx = await contract.burn(id);
+      // toast.loading("Waiting for signature...", { id: toastId });
+      // const contract = Space__factory.connect(SPACE_ADDRESS, signer);
+      // const tx = await contract.burn(id);
 
-      toast.loading("Deleting data...", { id: toastId });
-      const publication = await getSpacePublication(id);
-      if (publication) await deletePublication(publication.id);
+      toast.loading("Deleting space...", { id: toastId });
+      await deleteSpace(id);
 
-      toast.loading("Waiting for transaction...", { id: toastId });
-      await tx.wait();
+      // toast.loading("Waiting for transaction...", { id: toastId });
+      // await tx.wait();
     }
 
     try {
-      await deleteSpace();
+      await handleDelete();
       toast.success("Space deleted.", { id: toastId });
 
       router.push(`/user/${address}`);

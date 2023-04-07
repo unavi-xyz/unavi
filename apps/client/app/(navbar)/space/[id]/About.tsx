@@ -1,13 +1,7 @@
-import { fetchSpace } from "@/src/server/helpers/fetchSpace";
-
 interface Props {
-  id: number;
+  description: string;
 }
 
-export default async function About({ id }: Props) {
-  const space = await fetchSpace(id);
-
-  if (!space) return null;
-
-  return <div className="whitespace-pre-line">{space.metadata?.description}</div>;
+export default async function About({ description }: Props) {
+  return <div className="whitespace-pre-line">{description}</div>;
 }

@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-import { fetchSpaceMetadata } from "./fetchSpaceMetadata";
+import { SPACE_ID_LENGTH } from "@/app/api/projects/constants";
+
+import { fetchSpaceNFTMetadata } from "./fetchSpaceNFTMetadata";
 
 export async function processSpaceURI(uri: string) {
   const isHttps = httpsSchema.safeParse(uri).success;
@@ -14,7 +16,7 @@ export async function processSpaceURI(uri: string) {
     try {
       // Fetch metadata
       const tokenId = parseInt(uri.slice(6));
-      const metadata = await fetchSpaceMetadata(tokenId);
+      const metadata = await fetchSpaceNFTMetadata(tokenId);
 
       // No model
       if (!metadata?.animation_url) return null;
@@ -30,20 +32,10 @@ export async function processSpaceURI(uri: string) {
 
 export const httpsSchema = z.string().refine((param) => param.startsWith("https://"));
 
-export const nftSchema = z.string().refine((param) => {
-  if (!param.startsWith("nft://")) return;
-
-  const id = param.slice(6);
-  const int = parseInt(id);
-
-  return !isNaN(int) && int > 0;
+export const idSchema = z.string().refine((param) => {
+  return !param.startsWith("0x") && param.length === SPACE_ID_LENGTH;
 });
 
-export const idSchema = z.string().refine((param) => {
-  if (!param.startsWith("id://")) return false;
-
-  const id = param.slice(5);
-  const int = parseInt(id);
-
-  return !isNaN(int) && int > 0;
+export const nftSchema = z.string().refine((param) => {
+  return param.startsWith("0x");
 });

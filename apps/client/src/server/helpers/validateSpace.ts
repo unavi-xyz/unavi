@@ -1,4 +1,4 @@
-import { fetchSpaceOwner } from "./fetchSpaceOwner";
+import { fetchSpaceNFTOwner } from "./fetchSpaceNFTOwner";
 import { processSpaceURI } from "./processSpaceURI";
 import { readSpaceMetadata } from "./readSpaceMetadata";
 
@@ -6,7 +6,7 @@ export async function validateSpace(id: number, owner?: string) {
   try {
     // Check if owned by owner
     if (owner) {
-      const spaceOwner = await fetchSpaceOwner(id);
+      const spaceOwner = await fetchSpaceNFTOwner(id);
       if (spaceOwner !== owner) throw new Error("Space not owned by owner");
     }
 

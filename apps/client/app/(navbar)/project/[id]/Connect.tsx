@@ -5,17 +5,15 @@ import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { updateProject } from "@/app/api/projects/[id]/helper";
-import { publishProject } from "@/app/api/projects/[id]/publication/helper";
+import { linkProject } from "@/app/api/projects/[id]/link/helper";
 import { getSpace } from "@/app/api/spaces/[id]/helper";
-import { getSpacePublication } from "@/app/api/spaces/[id]/publication/helper";
 import { parseError } from "@/src/editor/utils/parseError";
 import Button from "@/src/ui/Button";
-import { toHex } from "@/src/utils/toHex";
 
 interface Props {
   id: string;
   owner: string;
-  connectedSpaceId?: number;
+  connectedSpaceId: string | null;
 }
 
 export default function Connect({ id, owner, connectedSpaceId }: Props) {
@@ -27,15 +25,14 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
 
     if (loading) return;
 
-    const hexId = inputRef.current?.value ?? "";
-    const spaceId = parseInt(hexId);
+    const newSpaceId = inputRef.current?.value ?? "";
     const toastId = "connect";
 
-    if (!hexId) {
+    if (!newSpaceId) {
       // Disconnect project
       setLoading(true);
 
-      await toast.promise(updateProject(id, { publicationId: null }), {
+      await toast.promise(updateProject(id, { spaceId: null }), {
         loading: "Disconnecting project...",
         success: "Project disconnected",
         error: "Failed to disconnect project",
@@ -45,31 +42,15 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
       return;
     }
 
-    if (Number.isNaN(spaceId)) {
-      toast.error("Invalid space ID");
-      return;
-    }
-
     async function connect() {
       // Fetch space
-      const space = await getSpace(spaceId);
-      if (!space) throw new Error("Space not found");
+      const space = await getSpace(newSpaceId);
 
       // Check if space is owned by user
-      if (space.owner !== owner) throw new Error("You do not own this space");
+      if (owner !== space.owner) throw new Error("You do not own this space");
 
-      // Fetch publication
-      const publication = await getSpacePublication(spaceId);
-      const publicationId = publication?.id;
-
-      if (!publicationId) {
-        // Create new publication if there is not already one
-        const { id: newPublicationId } = await publishProject(id);
-        return newPublicationId;
-      }
-
-      // Link project to publication
-      await updateProject(id, { publicationId });
+      // Link project to space
+      await linkProject(id, { spaceId: newSpaceId });
     }
 
     setLoading(true);
@@ -96,7 +77,7 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
       <form onSubmit={handleSubmit} className="flex items-center space-x-2">
         <input
           ref={inputRef}
-          defaultValue={connectedSpaceId ? toHex(connectedSpaceId) : undefined}
+          defaultValue={connectedSpaceId ?? undefined}
           type="text"
           placeholder="0x01"
           pattern="0x[0-9a-fA-F]{1,8}"
@@ -109,7 +90,7 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
 
         {connectedSpaceId !== undefined && (
           <Link
-            href={`/space/${toHex(connectedSpaceId)}`}
+            href={`/space/${connectedSpaceId}`}
             className="flex h-9 items-center justify-center rounded-lg px-4 font-bold hover:bg-neutral-200 active:opacity-80"
           >
             View

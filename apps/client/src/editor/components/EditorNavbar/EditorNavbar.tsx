@@ -34,7 +34,7 @@ export default function EditorNavbar({ project }: Props) {
   const { status } = useSession();
   const { data: signer } = useSigner();
 
-  const isPublished = Boolean(project?.publication?.spaceId);
+  const isPublished = Boolean(project?.spaceId);
 
   async function handleBack() {
     // Exit play mode

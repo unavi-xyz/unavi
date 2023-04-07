@@ -7,7 +7,9 @@ import { Suspense } from "react";
 import { fetchProfile } from "@/src/server/helpers/fetchProfile";
 import { processSpaceURI } from "@/src/server/helpers/processSpaceURI";
 import { readSpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
+import { prisma } from "@/src/server/prisma";
 import { isFromCDN } from "@/src/utils/isFromCDN";
+import { S3Path } from "@/src/utils/s3Paths";
 import { toHex } from "@/src/utils/toHex";
 
 import PlayerCount from "./PlayerCount";
@@ -51,12 +53,14 @@ interface Props {
 }
 
 export default async function Space({ params }: Props) {
-  const uri = `nft://${params.id}`;
+  const space = await prisma.space.findFirst({
+    where: { publicId: params.id },
+    select: { SpaceModel: true, owner: true },
+  });
+  if (!space || !space.SpaceModel) notFound();
 
-  const spaceURI = await processSpaceURI(uri);
-  if (!spaceURI) notFound();
-
-  const metadata = await readSpaceMetadata(spaceURI);
+  const modelURI = S3Path.space(space.SpaceModel.publicId).model;
+  const metadata = await readSpaceMetadata(modelURI);
   if (!metadata) notFound();
 
   const profileId = metadata.creator.split("/").pop();
@@ -132,7 +136,7 @@ export default async function Space({ params }: Props) {
             </div>
 
             <Link
-              href={`/play?space=${uri}`}
+              href={`/play?space=${modelURI}`}
               className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white outline-neutral-400 transition hover:scale-105"
             >
               Play
@@ -142,7 +146,7 @@ export default async function Space({ params }: Props) {
 
         <Suspense fallback={null}>
           {/* @ts-expect-error Server Component */}
-          <Tabs id={params.id} />
+          <Tabs owner={space.owner} description={metadata.description} />
         </Suspense>
       </div>
     </div>

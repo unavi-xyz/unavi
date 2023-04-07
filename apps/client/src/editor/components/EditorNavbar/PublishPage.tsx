@@ -97,7 +97,7 @@ export default function PublishPage({ project }: Props) {
         if (!engine) throw new Error("Engine not found");
 
         const [url, optimizedModel] = await Promise.all([
-          getSpaceModelFileUpload(modelId, "model"),
+          getSpaceModelFileUpload(spaceId, "model"),
           engine.scene.export({ optimize: true }),
         ]);
 
@@ -123,7 +123,7 @@ export default function PublishPage({ project }: Props) {
         const body = await res.blob();
 
         // Upload to S3
-        const url = await getSpaceModelFileUpload(modelId, "image");
+        const url = await getSpaceModelFileUpload(spaceId, "image");
 
         const response = await fetch(url, {
           method: "PUT",
@@ -210,7 +210,7 @@ export default function PublishPage({ project }: Props) {
         copyProjectToModel(spaceId, { projectId: project.id }),
         uploadModel(),
         uploadImage(),
-        linkProject(spaceId, { spaceId }),
+        linkProject(project.id, { spaceId }),
       ]);
 
       // Redirect to space

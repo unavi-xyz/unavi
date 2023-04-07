@@ -13,9 +13,9 @@ export async function GET(request: NextRequest, { params }: Params) {
 
   const { id, file } = paramsSchema.parse(params);
 
-  // Verify user owns the project
-  const found = await prisma.project.findFirst({ where: { publicId: id, owner: session.address } });
-  if (!found) return new Response("Space model not found", { status: 404 });
+  // Verify user owns the space
+  const found = await prisma.space.findFirst({ where: { publicId: id, owner: session.address } });
+  if (!found) return new Response("Space not found", { status: 404 });
 
   const url = await getSpaceModelDownloadURL(id, file);
 
@@ -30,9 +30,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   const { id, file } = paramsSchema.parse(params);
 
-  // Verify user owns the project
-  const found = await prisma.project.findFirst({ where: { publicId: id, owner: session.address } });
-  if (!found) return new Response("Space model not found", { status: 404 });
+  // Verify user owns the space
+  const found = await prisma.space.findFirst({ where: { publicId: id, owner: session.address } });
+  if (!found) return new Response("Space not found", { status: 404 });
 
   const url = await getSpaceModelUploadURL(id, file);
 

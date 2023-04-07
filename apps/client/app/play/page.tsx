@@ -8,7 +8,7 @@ import { fetchSpaceNFTMetadata } from "@/src/server/helpers/fetchSpaceNFTMetadat
 import { httpsSchema, idSchema, nftSchema } from "@/src/server/helpers/processSpaceURI";
 import { readSpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import { prisma } from "@/src/server/prisma";
-import { S3Path } from "@/src/utils/s3Paths";
+import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
 import SessionProvider from "../(navbar)/SessionProvider";
@@ -76,7 +76,7 @@ async function fetchSpaceMetdata(params: z.infer<typeof searchParamsSchema>) {
       });
       if (!space?.SpaceModel) return null;
 
-      uri = S3Path.space(space.SpaceModel.publicId).model;
+      uri = cdnURL(S3Path.space(space.SpaceModel.publicId).model);
     } catch {
       return null;
     }

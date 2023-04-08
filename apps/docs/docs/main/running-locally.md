@@ -1,7 +1,7 @@
 ---
 sidebar_position: 40
-sidebar_label: ⚒️ Development
-title: Development
+sidebar_label: ⚒️ Running Locally
+title: Running Locally
 ---
 
 This page will walk you through the steps to run a Wired client locally on your own machine.

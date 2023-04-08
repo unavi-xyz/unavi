@@ -1,18 +1,25 @@
-import { fetchSpaceOwner } from "@/src/server/helpers/fetchSpaceOwner";
+import { fetchNFTSpaceOwner } from "@/src/server/helpers/fetchNFTSpaceOwner";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
+import { prisma } from "@/src/server/prisma";
 import ButtonTabs, { TabContent } from "@/src/ui/ButtonTabs";
+import { SpaceId } from "@/src/utils/parseSpaceId";
 
 import About from "./About";
 import Settings from "./Settings";
 
 interface Props {
-  id: number;
+  id: SpaceId;
+  metadata: SpaceMetadata;
 }
 
-export default async function Tabs({ id }: Props) {
-  const [session, owner] = await Promise.all([getServerSession(), fetchSpaceOwner(id)]);
+export default async function Tabs({ id, metadata }: Props) {
+  const session = await getServerSession();
 
-  const isOwner = session?.address === owner;
+  const owner =
+    id.type === "tokenId" ? await fetchNFTSpaceOwner(id.value) : await fetchSpaceDBOwner(id.value);
+
+  const isOwner = owner ? session?.address === owner : false;
 
   return (
     <>
@@ -20,17 +27,26 @@ export default async function Tabs({ id }: Props) {
         <ButtonTabs titles={["About", "Settings"]}>
           <TabContent value="About">
             {/* @ts-expect-error Server Component */}
-            <About id={id} />
+            <About id={id} metadata={metadata} />
           </TabContent>
           <TabContent value="Settings">
             {/* @ts-expect-error Server Component */}
-            <Settings id={id} />
+            <Settings id={id} metadata={metadata} />
           </TabContent>
         </ButtonTabs>
       ) : (
         // @ts-expect-error Server Component
-        <About id={id} />
+        <About id={id} metadata={metadata} />
       )}
     </>
   );
+}
+
+async function fetchSpaceDBOwner(id: string) {
+  const space = await prisma.space.findFirst({
+    where: { publicId: id },
+    select: { owner: true },
+  });
+
+  return space?.owner;
 }

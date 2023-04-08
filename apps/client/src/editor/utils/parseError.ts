@@ -8,7 +8,7 @@ export const ERROR_MESSAGE = {
  * @param err The error to process.
  * @param fallbackMessage The message to display if the error cannot be processed.
  */
-export function parseError(err: unknown, fallbackMessage: string): string {
+export function parseError(err: unknown, fallbackMessage = ""): string {
   if (err instanceof Error) return parseErrorMessage(err.message);
 
   if (hasMessage(err)) return parseErrorMessage(err.message);

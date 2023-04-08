@@ -1,7 +1,7 @@
 import { Packet } from "@gltf-transform/extensions";
 import { Space } from "@wired-labs/gltf-extensions";
 
-import { getProjectFileUpload } from "@/app/api/projects/[id]/[file]/helper";
+import { getProjectFileUpload } from "@/app/api/projects/[id]/files/[file]/helper";
 import { updateProject } from "@/app/api/projects/[id]/helper";
 import { useEditorStore } from "@/app/editor/[id]/store";
 import { useSession } from "@/src/client/auth/useSession";

@@ -11,7 +11,7 @@ export default async function Projects() {
   }
 
   const projects = await fetchProjects();
-  const unpublishedProjects = projects.filter((p) => !p.Publication?.spaceId);
+  const unpublishedProjects = projects.filter((p) => !p.spaceId);
 
   if (unpublishedProjects.length === 0) {
     return <div className="text-neutral-500">No projects found.</div>;
@@ -19,8 +19,8 @@ export default async function Projects() {
 
   return (
     <CardGrid>
-      {unpublishedProjects.map(({ id, name, image }) => (
-        <Card key={id} href={`/project/${id}`} text={name} image={image} />
+      {unpublishedProjects.map(({ publicId, title, image }) => (
+        <Card key={publicId} href={`/project/${publicId}`} text={title} image={image} />
       ))}
     </CardGrid>
   );

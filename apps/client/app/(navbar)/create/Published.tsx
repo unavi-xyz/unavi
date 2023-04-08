@@ -9,7 +9,7 @@ export default async function Published() {
   if (!session) return null;
 
   const projects = await fetchProjects();
-  const publishedProjects = projects.filter((p) => p.Publication?.spaceId);
+  const publishedProjects = projects.filter((p) => p.spaceId);
 
   if (publishedProjects.length === 0) return null;
 
@@ -18,8 +18,8 @@ export default async function Published() {
       <div className="pt-4 text-2xl font-bold">🌍 Published</div>
 
       <CardGrid>
-        {publishedProjects.map(({ id, name, image }) => (
-          <Card key={id} href={`/project/${id}`} text={name} image={image} />
+        {publishedProjects.map(({ publicId, title, image }) => (
+          <Card key={publicId} href={`/project/${publicId}`} text={title} image={image} />
         ))}
       </CardGrid>
     </>

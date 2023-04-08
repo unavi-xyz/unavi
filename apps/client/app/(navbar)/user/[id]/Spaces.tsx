@@ -10,9 +10,10 @@ export default async function Spaces({ owner }: Props) {
 
   return spaces.map(({ id, metadata }) => (
     <SpaceCard
-      key={id}
+      key={id.value}
       id={id}
       metadata={metadata}
+      tokenId={id.type === "tokenId" ? id.value : undefined}
       sizes="(min-width: 1320px) 33vw, (min-width: 768px) 50vw, 100vw"
     />
   ));

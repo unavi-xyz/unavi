@@ -1,16 +1,10 @@
-import { customAlphabet } from "nanoid";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
 
-import { PROJECT_ID_LENGTH } from "./constants";
 import { CreateProjectResponse, schema } from "./types";
-
-const nanoid = customAlphabet(
-  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz",
-  PROJECT_ID_LENGTH
-);
 
 // Create a new project
 export async function POST(request: NextRequest) {
@@ -19,12 +13,9 @@ export async function POST(request: NextRequest) {
 
   const { title } = schema.parse(await request.json());
 
-  const id = nanoid(PROJECT_ID_LENGTH);
+  const publicId = nanoidShort();
+  await prisma.project.create({ data: { publicId, owner: session.address, title } });
 
-  await prisma.project.create({
-    data: { id, owner: session.address, title: title ?? "", name: "", description: "" },
-  });
-
-  const json: CreateProjectResponse = { id };
+  const json: CreateProjectResponse = { id: publicId };
   return NextResponse.json(json);
 }

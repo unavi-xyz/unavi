@@ -1,11 +1,20 @@
 import { z } from "zod";
 
-import { fetchSpace } from "@/src/server/helpers/fetchSpace";
+import { SPACE_ID_LENGTH } from "../../projects/constants";
 
 export type Params = { params: { id: string } };
 
 export const paramsSchema = z.object({
-  id: z.string().max(100),
+  id: z.string().length(SPACE_ID_LENGTH),
 });
 
-export type GetSpaceResponse = Awaited<ReturnType<typeof fetchSpace>>;
+export const patchSchema = z.object({
+  tokenId: z.number().int().min(0),
+});
+
+export type PatchSpaceRequest = z.infer<typeof patchSchema>;
+
+export type GetSpaceResponse = {
+  owner: string;
+  uri: string | null;
+};

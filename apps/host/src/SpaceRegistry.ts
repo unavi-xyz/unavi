@@ -5,26 +5,26 @@ import { Space } from "./Space";
 export class SpaceRegistry {
   readonly server: TemplatedApp;
 
-  #store = new Map<number, Space>();
+  #store = new Map<string, Space>();
 
   constructor(server: TemplatedApp) {
     this.server = server;
   }
 
-  getSpace(spaceId: number) {
-    return this.#store.get(spaceId);
+  getSpace(uri: string) {
+    return this.#store.get(uri);
   }
 
-  getOrCreateSpace(spaceId: number) {
-    const space = this.#store.get(spaceId);
+  getOrCreateSpace(uri: string) {
+    const space = this.#store.get(uri);
     if (space) return space;
 
-    const newSpace = new Space(spaceId, this);
-    this.#store.set(spaceId, newSpace);
+    const newSpace = new Space(uri, this);
+    this.#store.set(uri, newSpace);
     return newSpace;
   }
 
-  removeSpace(spaceId: number) {
-    this.#store.delete(spaceId);
+  removeSpace(uri: string) {
+    this.#store.delete(uri);
   }
 }

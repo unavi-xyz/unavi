@@ -8,99 +8,63 @@ datasource db {
   relationMode = "prisma"
 }
 
-// A space NFT created from the client will point to the S3 bucket of a publication
-// This makes the NFT metadata mutable, so that the NFT can be updated
-// without having to send a new transaction and update the NFT uri
-model Publication {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  owner   String? @db.Char(42)
-  spaceId Int?
-
-  PublishedModel PublishedModel?
-
-  Projects Project[]
-}
-
-// A published model is a model that has been published to the S3 bucket of a publication
-// It has a unique id and is immutable (so it can be cached)
-// To update the model, a new PublishedModel is created, and the publication metadata is updated
-model PublishedModel {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  Publication   Publication @relation(fields: [publicationId], references: [id])
-  publicationId String      @unique
-
-  @@index([publicationId])
-}
-
-// A project can be linked to a publication,
-// allowing the user to push updates to the publication from the project
-model Project {
-  id        String   @id
+// A published space
+model Space {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique @db.Char(14)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   owner String @db.Char(42)
 
-  name        String @default("") @db.VarChar(80)
+  // The token id of the NFT, if it exists
+  tokenId Int?
+
+  Project    Project[]
+  SpaceModel SpaceModel?
+  SpaceNFT   SpaceNFT?
+}
+
+// A model that has been published to S3
+// It has a unique id and is immutable, to help with caching
+model SpaceModel {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique @db.Char(14)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Space   Space @relation(fields: [spaceId], references: [id])
+  spaceId Int   @unique
+}
+
+// An NFT that is being stored within S3
+// It is linked to a space, so that it's metadata can be updated when the space is updated
+model SpaceNFT {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique @db.Char(14)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Space   Space @relation(fields: [spaceId], references: [id])
+  spaceId Int   @unique
+}
+
+// A project within the editor
+model Project {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique @db.Char(14)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner String @db.Char(42)
+
+  name        String @default("") @db.VarChar(80) // Deprecated, use title
   title       String @default("") @db.VarChar(80)
   description String @default("") @db.VarChar(1200)
 
-  Publication   Publication? @relation(fields: [publicationId], references: [id])
-  publicationId String?
+  // A project can be linked to a space, allowing the user to push updates to it
+  Space   Space? @relation(fields: [spaceId], references: [id])
+  spaceId Int?
 
-  @@index([publicationId])
-}
-
-// Next auth
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? // @db.Text
-  access_token      String? // @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? // @db.Text
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
+  @@index([spaceId])
 }

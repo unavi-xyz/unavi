@@ -17,11 +17,10 @@ export function useLoad(project: Project) {
     useEditorStore.setState({
       title: project.title,
       description: project.description ?? "",
-      publicationId: project.publicationId,
     });
 
     return () => {
-      useEditorStore.setState({ title: "", description: "", publicationId: undefined });
+      useEditorStore.setState({ title: "", description: "" });
     };
   }, [engine, project]);
 

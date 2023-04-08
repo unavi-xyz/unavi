@@ -1,13 +1,15 @@
-import { getHostFromMetadata } from "contracts";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
-import { env } from "@/src/env.mjs";
-import { fetchSpace } from "@/src/server/helpers/fetchSpace";
+import { fetchDBSpaceMetadata } from "@/src/server/helpers/fetchDBSpaceMetadata";
+import { fetchNFTSpaceMetadata } from "@/src/server/helpers/fetchNFTSpaceMetadata";
+import { fetchProfile } from "@/src/server/helpers/fetchProfile";
+import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
+import { parseSpaceId } from "@/src/utils/parseSpaceId";
 import { toHex } from "@/src/utils/toHex";
 
 import PlayerCount from "./PlayerCount";
@@ -17,14 +19,13 @@ type Params = { id: string };
 
 export const revalidate = 60;
 
-export async function generateMetadata({ params: { id } }: { params: Params }): Promise<Metadata> {
-  const spaceId = parseInt(id);
-  const space = await fetchSpace(spaceId);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const id = parseSpaceId(params.id);
 
-  if (!space) return {};
+  const metadata = await fetchSpaceMetadata(id);
+  if (!metadata) return {};
 
-  const title = space.metadata?.name ?? `Space ${id}`;
-  const description = space.metadata?.description ?? "";
+  const { title, description, creator, image } = metadata;
 
   return {
     title,
@@ -32,14 +33,14 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
     openGraph: {
       title,
       description,
-      creators: space?.profile?.handle?.full ? [space.profile.handle.full] : undefined,
-      images: space.metadata?.image ? [{ url: space.metadata.image }] : undefined,
+      creators: creator ? [creator] : undefined,
+      images: image ? [{ url: image }] : undefined,
     },
     twitter: {
       title,
       description,
-      images: space.metadata?.image ? [space.metadata.image] : undefined,
-      card: space.metadata?.image ? "summary_large_image" : "summary",
+      images: image ? [image] : undefined,
+      card: image ? "summary_large_image" : "summary",
     },
   };
 }
@@ -49,14 +50,23 @@ interface Props {
 }
 
 export default async function Space({ params }: Props) {
-  const { id } = params;
-  const spaceId = parseInt(id);
-  const space = await fetchSpace(spaceId);
+  const id = parseSpaceId(params.id);
 
-  if (!space) notFound();
+  let metadata;
 
-  const spaceHost = space.metadata ? getHostFromMetadata(space.metadata) : null;
-  const host = spaceHost || env.NEXT_PUBLIC_DEFAULT_HOST;
+  if (id.type === "tokenId") {
+    metadata = await fetchNFTSpaceMetadata(id.value);
+  } else {
+    metadata = await fetchDBSpaceMetadata(id.value);
+
+    // If space has a token, redirect to the token page
+    if (metadata && metadata.tokenId !== null) redirect(`/space/${toHex(metadata.tokenId)}`);
+  }
+
+  if (!metadata) notFound();
+
+  const profileId = metadata.creator.split("/").pop();
+  const profile = profileId ? await fetchProfile(parseInt(profileId)) : null;
 
   return (
     <div className="flex justify-center">
@@ -64,10 +74,10 @@ export default async function Space({ params }: Props) {
         <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
           <div className="aspect-card h-full w-full rounded-3xl bg-neutral-200">
             <div className="relative h-full w-full object-cover">
-              {space.metadata?.image &&
-                (isFromCDN(space.metadata.image) ? (
+              {metadata.image &&
+                (isFromCDN(metadata.image) ? (
                   <Image
-                    src={space.metadata.image}
+                    src={metadata.image}
                     priority
                     fill
                     sizes="(min-width: 768px) 60vw, 100vw"
@@ -76,7 +86,7 @@ export default async function Space({ params }: Props) {
                   />
                 ) : (
                   <img
-                    src={space.metadata.image}
+                    src={metadata.image}
                     sizes="(min-width: 768px) 60vw, 100vw"
                     alt=""
                     className="h-full w-full rounded-3xl object-cover"
@@ -89,42 +99,46 @@ export default async function Space({ params }: Props) {
           <div className="flex flex-col justify-between space-y-8 md:w-2/3">
             <div className="space-y-4">
               <div className="text-center text-3xl font-black">
-                {space.metadata?.name ?? `Space ${id}`}
+                {metadata.title || `Space ${params.id}`}
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                  <div className="text-neutral-500">By</div>
+              <div>
+                {profile ? (
+                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
+                    <div className="text-neutral-500">By</div>
 
-                  {space?.profile ? (
-                    <Link href={`/user/${toHex(space.profile.id)}`}>
+                    <Link href={`/user/${toHex(profile.id)}`}>
                       <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                        {space.profile.handle?.string ?? space.owner}
+                        {profile.handle?.string ? profile.handle.string : profile.owner}
                       </div>
                     </Link>
-                  ) : space?.owner ? (
-                    <Link href={`/user/${space.owner}`}>
+                  </div>
+                ) : (
+                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
+                    <div className="text-neutral-500">By</div>
+
+                    <a href={metadata.creator}>
                       <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                        {space.owner}
+                        {metadata.creator.split("/").pop()}
                       </div>
-                    </Link>
-                  ) : null}
-                </div>
+                    </a>
+                  </div>
+                )}
 
                 <div className="flex justify-center space-x-1 font-bold md:justify-start">
                   <div className="text-neutral-500">At</div>
-                  <div>{host}</div>
+                  <div>{metadata.host}</div>
                 </div>
 
                 <Suspense fallback={null}>
                   {/* @ts-expect-error Server Component */}
-                  <PlayerCount id={spaceId} />
+                  <PlayerCount uri={metadata.uri} />
                 </Suspense>
               </div>
             </div>
 
             <Link
-              href={`/play/${id}`}
+              href={id.type === "id" ? `/play?id=${id.value}` : `/play?tokenId=${toHex(id.value)}`}
               className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white outline-neutral-400 transition hover:scale-105"
             >
               Play
@@ -134,7 +148,7 @@ export default async function Space({ params }: Props) {
 
         <Suspense fallback={null}>
           {/* @ts-expect-error Server Component */}
-          <Tabs id={id} />
+          <Tabs id={id} metadata={metadata} />
         </Suspense>
       </div>
     </div>

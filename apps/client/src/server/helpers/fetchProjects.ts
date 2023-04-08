@@ -1,6 +1,6 @@
 import { cache } from "react";
 
-import { getProjectDownload } from "@/app/api/projects/files";
+import { getProjectDownloadURL } from "@/app/api/projects/[id]/files/[file]/files";
 
 import { prisma } from "../prisma";
 import { getServerSession } from "./getServerSession";
@@ -11,11 +11,12 @@ export const fetchProjects = cache(async () => {
 
   const projects = await prisma.project.findMany({
     where: { owner: session.address },
-    include: { Publication: true },
     orderBy: { updatedAt: "desc" },
   });
 
-  const images = await Promise.all(projects.map(({ id }) => getProjectDownload(id, "image")));
+  const images = await Promise.all(
+    projects.map(({ publicId }) => getProjectDownloadURL(publicId, "image"))
+  );
 
   const response = projects.map((project, index) => ({
     ...project,

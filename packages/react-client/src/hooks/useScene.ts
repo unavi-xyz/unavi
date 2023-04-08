@@ -1,15 +1,11 @@
-import { ERC721Metadata } from "contracts";
 import { useEffect, useState } from "react";
 
 import { useClient } from "./useClient";
 
 /**
  * Hook to load a space scene.
- *
- * @param metadata ERC721 metadata for the space
- * @returns Scene download status and scene load status
  */
-export function useScene(metadata: ERC721Metadata | null) {
+export function useScene(uri: string | null) {
   const { engine } = useClient();
 
   const [isDownloaded, setIsDownloaded] = useState(false);
@@ -17,18 +13,16 @@ export function useScene(metadata: ERC721Metadata | null) {
 
   useEffect(() => {
     async function load() {
-      if (!engine || !metadata || !metadata.animation_url) return;
+      if (!engine || !uri) return;
 
       try {
-        const res = await fetch(metadata.animation_url);
-        if (!res.ok) throw new Error("Failed to download scene.");
-
+        const res = await fetch(uri);
         const buffer = await res.arrayBuffer();
         const array = new Uint8Array(buffer);
 
         setIsDownloaded(true);
 
-        engine.scene.baseURI = metadata.animation_url.split("/").slice(0, -1).join("/");
+        engine.scene.baseURI = uri.split("/").slice(0, -1).join("/");
         await engine.scene.addBinary(array);
 
         engine.physics.send({ subject: "respawn", data: null });
@@ -58,7 +52,7 @@ export function useScene(metadata: ERC721Metadata | null) {
       setIsDownloaded(false);
       setIsLoaded(false);
     };
-  }, [engine, metadata]);
+  }, [engine, uri]);
 
   return {
     isDownloaded,

@@ -88,7 +88,7 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
           Connect
         </Button>
 
-        {connectedSpaceId !== undefined && (
+        {connectedSpaceId && (
           <Link
             href={`/space/${connectedSpaceId}`}
             className="flex h-9 items-center justify-center rounded-lg px-4 font-bold hover:bg-neutral-200 active:opacity-80"

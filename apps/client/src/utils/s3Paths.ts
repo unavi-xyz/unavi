@@ -4,6 +4,7 @@ import { toHex } from "./toHex";
 export class S3Path {
   static spaceNFT = (nftId: string) =>
     ({
+      directory: `nfts/${nftId}`,
       metadata: `nfts/${nftId}/metadata.json`,
     } as const);
 

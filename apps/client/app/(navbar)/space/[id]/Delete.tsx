@@ -8,8 +8,10 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
+import { getNFTSpace } from "@/app/api/nfts/[id]/space/helper";
 import { deleteSpace } from "@/app/api/spaces/[id]/helper";
 import { parseError } from "@/src/editor/utils/parseError";
+import { env } from "@/src/env.mjs";
 import Button from "@/src/ui/Button";
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
@@ -42,11 +44,29 @@ export default function Delete({ id, address }: Props) {
           return;
         }
 
-        toast.loading("Waiting for signature...", { id: toastId });
         const contract = Space__factory.connect(SPACE_ADDRESS, signer);
+
+        // Get token URI
+        const tokenURI = await contract.tokenURI(id.value);
+        const nftsPath = `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/nfts/`;
+
+        // Delete space NFT
+        toast.loading("Waiting for signature...", { id: toastId });
         const tx = await contract.burn(id.value);
 
         toast.loading("Deleting space...", { id: toastId });
+
+        if (tokenURI.startsWith(nftsPath)) {
+          // Get database nft id from token URI
+          const nftId = tokenURI.replace(nftsPath, "").replace("/metadata.json", "");
+
+          // Get space id
+          const { spaceId } = await getNFTSpace(nftId);
+
+          // Delete space from database
+          await deleteSpace(spaceId);
+        }
+
         await tx.wait();
       }
     }

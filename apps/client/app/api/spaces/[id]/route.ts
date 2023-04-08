@@ -63,28 +63,42 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   // Verify user owns the space
   const found = await prisma.space.findFirst({
     where: { publicId: id, owner: session.address },
-    include: { SpaceModel: true },
+    include: { SpaceModel: true, SpaceNFT: true },
   });
   if (!found) return new Response("Space not found", { status: 404 });
 
-  const allObjects = found.SpaceModel
-    ? await listObjectsRecursive(S3Path.spaceModel(found.SpaceModel.publicId).directory)
-    : [];
+  // Delete files from S3
+  const objectsPromise = Promise.all([
+    found.SpaceModel
+      ? await listObjectsRecursive(S3Path.spaceModel(found.SpaceModel.publicId).directory)
+      : [],
+    found.SpaceNFT
+      ? await listObjectsRecursive(S3Path.spaceNFT(found.SpaceNFT.publicId).directory)
+      : [],
+  ])
+    .then((results) => results.flat())
+    .then((objs) =>
+      objs.length > 0
+        ? s3Client.send(
+            new DeleteObjectsCommand({
+              Bucket: env.S3_BUCKET,
+              Delete: { Objects: objs.map(({ Key }) => ({ Key })) },
+            })
+          )
+        : null
+    );
 
   await Promise.all([
-    // Delete files from S3
-    allObjects.length > 0
-      ? s3Client.send(
-          new DeleteObjectsCommand({
-            Bucket: env.S3_BUCKET,
-            Delete: { Objects: allObjects.map(({ Key }) => ({ Key })) },
-          })
-        )
-      : null,
-
-    // Delete space from database
-    prisma.space.delete({ where: { id: found.id }, include: { SpaceModel: true, SpaceNFT: true } }),
+    found.SpaceModel ? prisma.spaceModel.delete({ where: { id: found.SpaceModel.id } }) : null,
+    found.SpaceNFT ? prisma.spaceNFT.delete({ where: { id: found.SpaceNFT.id } }) : null,
+    // Disconnect projects from space
+    prisma.project.updateMany({ where: { spaceId: found.id }, data: { spaceId: null } }),
   ]);
+
+  // Delete space from database
+  await prisma.space.delete({ where: { id: found.id } });
+
+  await objectsPromise;
 
   return NextResponse.json({ success: true });
 }

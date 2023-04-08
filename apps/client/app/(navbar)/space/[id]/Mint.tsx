@@ -14,7 +14,6 @@ import { getSpaceNFTFileUpload } from "@/app/api/spaces/[id]/nft/files/[file]/he
 import { useSession } from "@/src/client/auth/useSession";
 import { parseError } from "@/src/editor/utils/parseError";
 import { env } from "@/src/env.mjs";
-import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
 import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import Button from "@/src/ui/Button";
 import { SpaceDBId } from "@/src/utils/parseSpaceId";
@@ -33,7 +32,6 @@ export default function Mint({ id, metadata }: Props) {
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
   const { data: session } = useSession();
-  const { profile } = useProfileByAddress(session?.address);
 
   async function handleMint() {
     if (!signer) {
@@ -41,21 +39,19 @@ export default function Mint({ id, metadata }: Props) {
       return;
     }
 
-    if (!session?.address) throw new Error("Session not found");
+    if (!session?.address) return;
 
     setLoading(true);
 
     const toastId = nanoid();
 
     async function uploadMetadata(tokenId: number | undefined) {
-      if (!session?.address) throw new Error("Session not found");
-
       const erc721metadata: ERC721Metadata = {
         animation_url: metadata.uri,
         description: metadata.description,
         external_url: tokenId
           ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/space/${toHex(tokenId)}`
-          : `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${profile ? toHex(profile.id) : session.address}`,
+          : undefined,
         image: metadata.image,
         name: metadata.title,
       };
@@ -88,14 +84,18 @@ export default function Mint({ id, metadata }: Props) {
       toast.loading("Minting space...", { id: toastId });
       await tx.wait();
 
+      // Wait for token to be indexed
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
       let attempts = 0;
 
       const findTokenId = async (): Promise<number> => {
         // Loop backwards through past 10 tokens to find the one we just minted
-        const count = Math.min((await contract.count()).toNumber(), 10);
+        const count = (await contract.count()).toNumber();
+        const max = Math.min(count, 10);
         let i = 0;
 
-        while (i < count) {
+        while (i < max) {
           i++;
           const nextId = count - i;
 
@@ -125,9 +125,6 @@ export default function Mint({ id, metadata }: Props) {
         updateSpace(id.value, { tokenId }),
       ]);
 
-      // Wait for token to be indexed
-      await new Promise((resolve) => setTimeout(resolve, 4000));
-
       toast.success("Space minted!", { id: toastId });
 
       // Redirect to new space url
@@ -147,7 +144,7 @@ export default function Mint({ id, metadata }: Props) {
         Mint the space as an NFT, making it easier for others to discover.
       </div>
 
-      <Button disabled={loading} onClick={handleMint} className="rounded-xl bg-sky-700">
+      <Button disabled={loading || !session} onClick={handleMint} className="rounded-xl bg-sky-700">
         Mint
       </Button>
     </div>

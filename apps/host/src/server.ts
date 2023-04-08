@@ -154,8 +154,8 @@ server.ws<UserData>("/*", {
 });
 
 // Handle HTTP requests
-server.get("/player-count/*", (res, req) => {
-  const uri = req.getParameter(0);
+server.get("/player-count/*:uri", (res, req) => {
+  const uri = req.getUrl().slice(14);
 
   const space = spaces.getSpace(uri);
   const playerCount = space ? space.playerCount : 0;

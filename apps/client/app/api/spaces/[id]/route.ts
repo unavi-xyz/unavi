@@ -20,7 +20,9 @@ export async function GET(request: NextRequest, { params }: Params) {
   });
   if (!space) return new Response("Space not found", { status: 404 });
 
-  const modelURI = space.SpaceModel ? cdnURL(S3Path.space(space.SpaceModel.publicId).model) : null;
+  const modelURI = space.SpaceModel
+    ? cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).model)
+    : null;
 
   const json: GetSpaceResponse = {
     owner: space.owner,
@@ -44,7 +46,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   if (!found) return new Response("Space not found", { status: 404 });
 
   const allObjects = found.SpaceModel
-    ? await listObjectsRecursive(S3Path.space(found.SpaceModel.publicId).directory)
+    ? await listObjectsRecursive(S3Path.spaceModel(found.SpaceModel.publicId).directory)
     : [];
 
   await Promise.all([
@@ -59,7 +61,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       : null,
 
     // Delete space from database
-    prisma.space.delete({ where: { id: found.id } }),
+    prisma.space.delete({ where: { id: found.id }, include: { SpaceModel: true, SpaceNFT: true } }),
   ]);
 
   return NextResponse.json({ success: true });

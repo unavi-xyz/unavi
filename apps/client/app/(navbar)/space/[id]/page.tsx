@@ -5,10 +5,9 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { fetchProfile } from "@/src/server/helpers/fetchProfile";
-import { readSpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
-import { prisma } from "@/src/server/prisma";
+import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
-import { cdnURL, S3Path } from "@/src/utils/s3Paths";
+import { parseSpaceId } from "@/src/utils/parseSpaceId";
 import { toHex } from "@/src/utils/toHex";
 
 import PlayerCount from "./PlayerCount";
@@ -19,14 +18,9 @@ type Params = { id: string };
 export const revalidate = 60;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const space = await prisma.space.findFirst({
-    where: { publicId: params.id },
-    select: { SpaceModel: true, owner: true },
-  });
-  if (!space || !space.SpaceModel) return {};
+  const id = parseSpaceId(params.id);
 
-  const modelURI = cdnURL(S3Path.space(space.SpaceModel.publicId).model);
-  const metadata = await readSpaceMetadata(modelURI);
+  const metadata = await fetchSpaceMetadata(id);
   if (!metadata) return {};
 
   const { title, description, creator, image } = metadata;
@@ -54,14 +48,9 @@ interface Props {
 }
 
 export default async function Space({ params }: Props) {
-  const space = await prisma.space.findFirst({
-    where: { publicId: params.id },
-    select: { SpaceModel: true, owner: true },
-  });
-  if (!space || !space.SpaceModel) notFound();
+  const id = parseSpaceId(params.id);
 
-  const modelURI = cdnURL(S3Path.space(space.SpaceModel.publicId).model);
-  const metadata = await readSpaceMetadata(modelURI);
+  const metadata = await fetchSpaceMetadata(id);
   if (!metadata) notFound();
 
   const profileId = metadata.creator.split("/").pop();
@@ -131,13 +120,13 @@ export default async function Space({ params }: Props) {
 
                 <Suspense fallback={null}>
                   {/* @ts-expect-error Server Component */}
-                  <PlayerCount uri={modelURI} />
+                  <PlayerCount uri={metadata.uri} />
                 </Suspense>
               </div>
             </div>
 
             <Link
-              href={`/play?id=${params.id}`}
+              href={id.type === "id" ? `/play?id=${id.value}` : `/play?tokenId=${toHex(id.value)}`}
               className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white outline-neutral-400 transition hover:scale-105"
             >
               Play
@@ -147,7 +136,7 @@ export default async function Space({ params }: Props) {
 
         <Suspense fallback={null}>
           {/* @ts-expect-error Server Component */}
-          <Tabs id={params.id} owner={space.owner} description={metadata.description} />
+          <Tabs id={id} metadata={metadata} />
         </Suspense>
       </div>
     </div>

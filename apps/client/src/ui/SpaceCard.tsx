@@ -3,11 +3,13 @@ import Link from "next/link";
 import PlayerCount from "@/app/(navbar)/explore/PlayerCount";
 
 import { SpaceMetadata } from "../server/helpers/readSpaceMetadata";
+import { SpaceId } from "../utils/parseSpaceId";
+import { toHex } from "../utils/toHex";
 import { CardImage } from "./Card";
 import { CardText } from "./Card";
 
 interface Props {
-  id: number | string;
+  id: SpaceId;
   metadata: SpaceMetadata;
   sizes?: string;
 }
@@ -19,7 +21,10 @@ export default function SpaceCard({ id, metadata, sizes }: Props) {
   return (
     <div>
       <div className="group relative">
-        <Link href={`/space/${id}`} className="rounded-3xl">
+        <Link
+          href={id.type === "id" ? `/space/${id.value}` : `/space/${toHex(id.value)}`}
+          className="rounded-3xl"
+        >
           <CardImage group image={metadata.image} sizes={sizes}>
             <PlayerCount metadata={metadata} />
           </CardImage>
@@ -29,7 +34,7 @@ export default function SpaceCard({ id, metadata, sizes }: Props) {
 
         <div className="absolute bottom-0 left-0 z-20 hidden animate-fadeIn pl-3 pb-4 group-hover:block">
           <Link
-            href={`/play?id=${id}`}
+            href={id.type === "id" ? `/play?id=${id.value}` : `/play?tokenId=${toHex(id.value)}`}
             className="rounded-xl bg-white px-4 py-1.5 text-xl font-bold shadow transition hover:bg-neutral-200 hover:shadow-md active:bg-neutral-300"
           >
             Play

@@ -5,7 +5,7 @@ import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 import { ethersProvider } from "../ethers";
 import { prisma } from "../prisma";
 import { readSpaceMetadata } from "./readSpaceMetadata";
-import { validateSpace, ValidDatabaseSpace, ValidNFTSpace } from "./validateSpace";
+import { validateSpaceNFT, ValidDatabaseSpace, ValidSpaceNFT } from "./validateSpaceNFT";
 
 export async function fetchLatestSpaces(limit: number, owner?: string) {
   const [nftSpaces, databaseSpaces] = await Promise.all([
@@ -21,14 +21,14 @@ async function fetchNFTSpaces(limit: number, owner?: string) {
 
   const count = (await spaceContract.count()).toNumber();
 
-  const spaces: ValidNFTSpace[] = [];
+  const spaces: ValidSpaceNFT[] = [];
   const length = Math.min(limit, count);
   let nextSpaceId = count - 1;
 
   const fetchSpace = async () => {
     if (nextSpaceId === 0 || spaces.length === length) return;
 
-    const valid = await validateSpace(nextSpaceId--, owner);
+    const valid = await validateSpaceNFT(nextSpaceId--, owner);
 
     if (valid) spaces.push(valid);
     else await fetchSpace();
@@ -36,7 +36,7 @@ async function fetchNFTSpaces(limit: number, owner?: string) {
 
   await Promise.all(Array.from({ length }).map(fetchSpace));
 
-  return spaces.sort((a, b) => b.id - a.id);
+  return spaces.sort((a, b) => b.id.value - a.id.value);
 }
 
 async function fetchDatabaseSpaces(limit: number, owner?: string) {
@@ -53,11 +53,11 @@ async function fetchDatabaseSpaces(limit: number, owner?: string) {
     spaces.map(async (space) => {
       if (!space.SpaceModel) return;
 
-      const modelURI = cdnURL(S3Path.space(space.SpaceModel.publicId).model);
+      const modelURI = cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).model);
       const metadata = await readSpaceMetadata(modelURI);
       if (!metadata) return;
 
-      validSpaces.push({ id: space.publicId, metadata });
+      validSpaces.push({ id: { type: "id", value: space.publicId }, metadata });
     })
   );
 

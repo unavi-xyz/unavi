@@ -41,7 +41,7 @@ export default function Home() {
               <div className="flex w-full flex-col space-y-4 pt-4 lg:flex-row lg:space-y-0 lg:space-x-4">
                 <div className="mx-auto w-full max-w-lg lg:mx-0 lg:w-fit lg:max-w-none">
                   <Link
-                    href="/play?nft://0x4d"
+                    href="/play?tokenId=0x02"
                     className="flex h-12 items-center justify-center rounded-full bg-neutral-900 px-10 text-2xl font-bold text-white outline-neutral-400 transition hover:scale-105"
                   >
                     Play

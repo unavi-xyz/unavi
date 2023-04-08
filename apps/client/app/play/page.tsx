@@ -4,15 +4,14 @@ import { notFound } from "next/navigation";
 import React from "react";
 import { z } from "zod";
 
-import { fetchSpaceNFTMetadata } from "@/src/server/helpers/fetchSpaceNFTMetadata";
-import { httpsSchema, idSchema, nftSchema } from "@/src/server/helpers/processSpaceURI";
+import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { readSpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
-import { prisma } from "@/src/server/prisma";
-import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
 import SessionProvider from "../(navbar)/SessionProvider";
+import { SPACE_ID_LENGTH } from "../api/projects/constants";
 import App from "./App";
+import { SpaceUriId } from "./types";
 
 interface Props {
   searchParams?: { [key: string]: string | string[] | undefined };
@@ -22,7 +21,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const params = searchParamsSchema.safeParse(searchParams);
   if (!params.success) return {};
 
-  const metadata = await fetchSpaceMetdata(params.data);
+  const id = readSpaceId(params.data);
+  const metadata = await fetchMetadata(id);
   if (!metadata) return {};
 
   const { title, description, creator, image } = metadata;
@@ -53,59 +53,51 @@ export default async function Play({ searchParams }: Props) {
   const params = searchParamsSchema.safeParse(searchParams);
   if (!params.success) return notFound();
 
-  const metadata = await fetchSpaceMetdata(params.data);
+  const id = readSpaceId(params.data);
+  const metadata = await fetchMetadata(id);
   if (!metadata) notFound();
 
   return (
     <SessionProvider>
       <RainbowkitWrapper>
-        <App metadata={metadata} />
+        <App id={id} metadata={metadata} />
       </RainbowkitWrapper>
     </SessionProvider>
   );
 }
 
-async function fetchSpaceMetdata(params: z.infer<typeof searchParamsSchema>) {
-  let uri: string | undefined;
-
-  if ("id" in params) {
-    try {
-      const space = await prisma.space.findFirst({
-        where: { publicId: params.id },
-        include: { SpaceModel: true },
-      });
-      if (!space?.SpaceModel) return null;
-
-      uri = cdnURL(S3Path.space(space.SpaceModel.publicId).model);
-    } catch {
-      return null;
-    }
-  } else if ("nft" in params) {
-    try {
-      // Fetch metadata
-      const tokenId = parseInt(params.nft);
-      const metadata = await fetchSpaceNFTMetadata(tokenId);
-
-      // No model
-      if (!metadata?.animation_url) return null;
-
-      uri = metadata.animation_url;
-    } catch {
-      return null;
-    }
-  } else if ("uri" in params) {
-    uri = params.uri;
+function fetchMetadata(id: SpaceUriId) {
+  if (id.type === "uri") {
+    return readSpaceMetadata(id.value);
+  } else {
+    return fetchSpaceMetadata(id);
   }
-
-  if (!uri) return null;
-
-  const metadata = await readSpaceMetadata(uri);
-
-  return metadata;
 }
+
+function readSpaceId(params: Params): SpaceUriId {
+  if ("id" in params) {
+    return { type: "id", value: params.id };
+  } else if ("tokenId" in params) {
+    return { type: "tokenId", value: parseInt(params.tokenId) };
+  } else {
+    return { type: "uri", value: params.uri };
+  }
+}
+
+const httpsSchema = z.string().refine((param) => param.startsWith("https://"));
+
+const idSchema = z.string().refine((param) => {
+  return param.length === SPACE_ID_LENGTH;
+});
+
+const tokenIdSchema = z.string().refine((param) => {
+  return param.startsWith("0x");
+});
 
 const searchParamsSchema = z.union([
   z.object({ id: idSchema }),
-  z.object({ nft: nftSchema }),
+  z.object({ tokenId: tokenIdSchema }),
   z.object({ uri: httpsSchema }),
 ]);
+
+type Params = z.infer<typeof searchParamsSchema>;

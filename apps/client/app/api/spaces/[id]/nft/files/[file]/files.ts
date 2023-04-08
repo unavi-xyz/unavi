@@ -7,15 +7,14 @@ import { S3Path } from "@/src/utils/s3Paths";
 
 const expiresIn = 600; // 10 minutes
 
-export const SPACE_MODEL_FILE = {
-  IMAGE: "image",
-  MODEL: "model",
+export const SPACE_NFT_FILE = {
+  metadata: "metadata",
 } as const;
 
-export type SpaceModelFile = (typeof SPACE_MODEL_FILE)[keyof typeof SPACE_MODEL_FILE];
+export type SpaceNFTFile = (typeof SPACE_NFT_FILE)[keyof typeof SPACE_NFT_FILE];
 
-export async function getSpaceModelUploadURL(id: string, type: SpaceModelFile) {
-  const Key = S3Path.spaceModel(id)[type];
+export async function getSpaceNFTUploadURL(id: string, type: SpaceNFTFile) {
+  const Key = S3Path.spaceNFT(id)[type];
   const ContentType = getContentType(type);
   const command = new PutObjectCommand({
     Bucket: env.S3_BUCKET,
@@ -27,21 +26,17 @@ export async function getSpaceModelUploadURL(id: string, type: SpaceModelFile) {
   return url;
 }
 
-export async function getSpaceModelDownloadURL(id: string, type: SpaceModelFile) {
-  const Key = S3Path.spaceModel(id)[type];
+export async function getSpaceNFTDownloadURL(id: string, type: SpaceNFTFile) {
+  const Key = S3Path.spaceNFT(id)[type];
   const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key });
   const url = await getSignedUrl(s3Client, command, { expiresIn });
   return url;
 }
 
-function getContentType(type: SpaceModelFile) {
+function getContentType(type: SpaceNFTFile) {
   switch (type) {
-    case SPACE_MODEL_FILE.IMAGE: {
-      return "image/jpeg";
-    }
-
-    case SPACE_MODEL_FILE.MODEL: {
-      return "model/gltf-binary";
+    case SPACE_NFT_FILE.metadata: {
+      return "application/json";
     }
   }
 }

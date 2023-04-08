@@ -1,7 +1,6 @@
 import { MicButton, useClient } from "@wired-labs/react-client";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
@@ -17,21 +16,19 @@ import ChatBox from "../../src/play/ui/ChatBox";
 import MobileChatBox from "../../src/play/ui/MobileChatBox";
 import SettingsDialog from "../../src/play/ui/Settings/SettingsDialog";
 import { useIsMobile } from "../../src/utils/useIsMobile";
+import { SpaceUriId } from "./types";
 
 interface Props {
+  id: SpaceUriId;
   metadata: SpaceMetadata;
 }
 
-export default function Overlay({ metadata }: Props) {
+export default function Overlay({ id, metadata }: Props) {
   const [openSettings, setOpenSettings] = useState(false);
 
   const isMobile = useIsMobile();
   const isPointerLocked = usePointerLocked();
   const { host, micEnabled } = useClient();
-  const searchParams = useSearchParams();
-
-  const spaceParam = searchParams?.get("space");
-  const nftId = spaceParam?.startsWith("nft://") ? parseInt(spaceParam.slice(6)) : null;
 
   return (
     <>
@@ -40,7 +37,15 @@ export default function Overlay({ metadata }: Props) {
       {!isPointerLocked && (
         <div className="fixed top-4 left-5 z-20">
           <div className="flex items-center space-x-3 rounded-full bg-white/80 pr-10 backdrop-blur-lg">
-            <Link href={nftId !== null ? `/space/${toHex(nftId)}` : "/"}>
+            <Link
+              href={
+                id.type === "id"
+                  ? `/space/${id.value}`
+                  : id.type === "tokenId"
+                  ? `/space/${toHex(id.value)}`
+                  : "/explore"
+              }
+            >
               <div className="-ml-1">
                 <Image src={Logo} alt="Logo" width={48} height={48} draggable={false} />
               </div>

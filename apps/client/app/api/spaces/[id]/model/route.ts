@@ -29,7 +29,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   // Remove existing space model
   if (found.SpaceModel) {
     const allObjects = await listObjectsRecursive(
-      S3Path.space(found.SpaceModel.publicId).directory
+      S3Path.spaceModel(found.SpaceModel.publicId).directory
     );
 
     await Promise.all([

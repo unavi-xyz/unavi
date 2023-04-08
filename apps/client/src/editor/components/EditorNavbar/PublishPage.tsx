@@ -83,7 +83,7 @@ export default function PublishPage({ project }: Props) {
 
       // Create published model
       const { modelId } = await createSpaceModel(spaceId);
-      const imageURL = cdnURL(S3Path.space(modelId).image);
+      const imageURL = cdnURL(S3Path.spaceModel(modelId).image);
 
       // Update space image metadata
       const space = engine.scene.doc.getRoot().getExtension<Space>(Space.EXTENSION_NAME);
@@ -136,73 +136,6 @@ export default function PublishPage({ project }: Props) {
 
         if (!response.ok) throw new Error("Failed to upload image");
       }
-
-      // async function uploadMetadata(spaceId: number | undefined) {
-      //   const metadata: ERC721Metadata = {
-      //     animation_url: modelURL,
-      //     description,
-      //     external_url: spaceId
-      //       ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/space/${toHex(spaceId)}`
-      //       : `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${
-      //           profile ? toHex(profile.id) : session?.address
-      //         }`,
-      //     image: imageURL,
-      //     name: title,
-      //     attributes: [
-      //       {
-      //         trait_type: ATTRIBUTE_TYPES.HOST,
-      //         value: env.NEXT_PUBLIC_DEFAULT_HOST,
-      //       },
-      //     ],
-      //   };
-
-      //   // Upload to S3
-      //   const url = await getSpaceModelFileUpload(modelId, "metadata");
-
-      //   const response = await fetch(url, {
-      //     method: "PUT",
-      //     body: JSON.stringify(metadata),
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //       "x-amz-acl": "public-read",
-      //     },
-      //   });
-
-      //   if (!response.ok) throw new Error("Failed to upload metadata");
-      // }
-
-      // let spaceId = project?.spaceId;
-
-      // if (spaceId === undefined) {
-      //   toast.loading("Waiting for signature...", { id: toastId });
-
-      //   // Mint space NFT
-      //   const contentURI = cdnURL(S3Path.spa(spaceId).metadata);
-      //   const contract = Space__factory.connect(SPACE_ADDRESS, signer);
-      //   const tx = await contract.mintWithTokenURI(contentURI);
-
-      //   toast.loading("Minting space...", { id: toastId });
-
-      //   await tx.wait();
-
-      //   // Get space ID
-      //   // Loop backwards through all spaces until we find the matching content URI
-      //   const count = (await contract.count()).toNumber();
-      //   let i = 0;
-
-      //   while (spaceId === undefined && i < count) {
-      //     i++;
-      //     const tokenId = count - i;
-
-      //     const owner = await contract.ownerOf(tokenId);
-      //     if (owner !== session.address) continue;
-
-      //     const uri = await contract.tokenURI(tokenId);
-      //     if (uri !== contentURI) continue;
-
-      //     spaceId = tokenId;
-      //   }
-      // }
 
       toast.loading("Uploading metadata...", { id: toastId });
 

@@ -2,9 +2,9 @@ import { env } from "../env.mjs";
 import { toHex } from "./toHex";
 
 export class S3Path {
-  static nft = (nftId: number) =>
+  static spaceNFT = (nftId: string) =>
     ({
-      metadata: `nft/${nftId}/metadata.json`,
+      metadata: `nfts/${nftId}/metadata.json`,
     } as const);
 
   static profile = (profileId: number) => {
@@ -25,7 +25,7 @@ export class S3Path {
       model: `projects/${projectId}/model.glb`,
     } as const);
 
-  static space = (modelId: string) =>
+  static spaceModel = (modelId: string) =>
     ({
       directory: `spaces/${modelId}`,
       model: `spaces/${modelId}/model.glb`,
@@ -39,8 +39,9 @@ export class S3Path {
 }
 
 type PublicPath =
-  | ReturnType<typeof S3Path.space>["model" | "image"]
-  | ReturnType<ReturnType<typeof S3Path.space>["asset"]>
+  | ReturnType<typeof S3Path.spaceNFT>[keyof ReturnType<typeof S3Path.spaceNFT>]
+  | ReturnType<typeof S3Path.spaceModel>["model" | "image"]
+  | ReturnType<ReturnType<typeof S3Path.spaceModel>["asset"]>
   | ReturnType<typeof S3Path.profile>[keyof ReturnType<typeof S3Path.profile>]
   | ReturnType<typeof S3Path.temp>;
 

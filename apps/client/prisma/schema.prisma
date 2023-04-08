@@ -19,6 +19,7 @@ model Space {
 
   Project    Project[]
   SpaceModel SpaceModel?
+  SpaceNFT   SpaceNFT?
 }
 
 // A model that has been published to S3
@@ -31,8 +32,18 @@ model SpaceModel {
 
   Space   Space @relation(fields: [spaceId], references: [id])
   spaceId Int   @unique
+}
 
-  @@index([spaceId])
+// An NFT that is being stored within S3
+// It is linked to a space, so that it's metadata can be updated when the space is updated
+model SpaceNFT {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique @db.Char(14)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Space   Space @relation(fields: [spaceId], references: [id])
+  spaceId Int   @unique
 }
 
 // A project within the editor

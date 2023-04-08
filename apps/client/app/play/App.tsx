@@ -9,12 +9,14 @@ import { useHotkeys } from "@/src/play/hooks/useHotkeys";
 import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 
 import ClientApp from "./ClientApp";
+import { SpaceUriId } from "./types";
 
 interface Props {
+  id: SpaceUriId;
   metadata: SpaceMetadata;
 }
 
-export default function App({ metadata }: Props) {
+export default function App({ id, metadata }: Props) {
   const [scriptsReady, setScriptsReady] = useState(false);
 
   const provider = useProvider();
@@ -36,7 +38,7 @@ export default function App({ metadata }: Props) {
             ethers={signer ?? provider}
             skybox="/images/Skybox.jpg"
           >
-            <ClientApp metadata={metadata} />
+            <ClientApp id={id} metadata={metadata} />
           </Client>
         )}
       </div>

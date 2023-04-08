@@ -7,12 +7,14 @@ import LoadingScreen from "@/src/play/ui/LoadingScreen";
 import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 
 import FileDrop from "./FileDrop";
+import { SpaceUriId } from "./types";
 
 interface Props {
+  id: SpaceUriId;
   metadata: SpaceMetadata;
 }
 
-export default function ClientApp({ metadata }: Props) {
+export default function ClientApp({ id, metadata }: Props) {
   const { engine, loadingProgress, loadingText } = useClient();
 
   useLoadUser();
@@ -30,7 +32,7 @@ export default function ClientApp({ metadata }: Props) {
 
   return (
     <>
-      {loadingProgress == 1 ? <Overlay metadata={metadata} /> : null}
+      {loadingProgress == 1 ? <Overlay id={id} metadata={metadata} /> : null}
 
       <FileDrop />
 

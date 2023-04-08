@@ -79,7 +79,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         new CopyObjectCommand({
           Bucket: env.S3_BUCKET,
           CopySource: `${env.S3_BUCKET}/${S3Path.project(projectId).asset(asset)}`,
-          Key: S3Path.space(spaceModelId).asset(asset),
+          Key: S3Path.spaceModel(spaceModelId).asset(asset),
           ACL: "public-read",
         })
       );

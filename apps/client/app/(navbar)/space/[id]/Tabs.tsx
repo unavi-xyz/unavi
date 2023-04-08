@@ -1,6 +1,7 @@
 import { fetchSpaceNFTOwner } from "@/src/server/helpers/fetchSpaceNFTOwner";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
 import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
+import { prisma } from "@/src/server/prisma";
 import ButtonTabs, { TabContent } from "@/src/ui/ButtonTabs";
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
@@ -15,9 +16,10 @@ interface Props {
 export default async function Tabs({ id, metadata }: Props) {
   const session = await getServerSession();
 
-  const owner = id.type === "tokenId" ? await fetchSpaceNFTOwner(id.value) : null;
+  const owner =
+    id.type === "tokenId" ? await fetchSpaceNFTOwner(id.value) : await fetchSpaceDBOwner(id.value);
 
-  const isOwner = owner && session?.address === owner;
+  const isOwner = owner ? session?.address === owner : false;
 
   return (
     <>
@@ -38,4 +40,13 @@ export default async function Tabs({ id, metadata }: Props) {
       )}
     </>
   );
+}
+
+async function fetchSpaceDBOwner(id: string) {
+  const space = await prisma.space.findFirst({
+    where: { publicId: id },
+    select: { owner: true },
+  });
+
+  return space?.owner;
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "@/src/server/helpers/getServerSession";
-import { nanoid } from "@/src/server/nanoid";
+import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
 
 import { getAssetUpload } from "./s3";
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   if (!found) return new Response("Project not found", { status: 404 });
 
   // Create asset upload URL
-  const assetId = nanoid();
+  const assetId = nanoidShort();
   const url = await getAssetUpload(id, assetId);
 
   const json: PostAssetsResponse = { url, assetId };

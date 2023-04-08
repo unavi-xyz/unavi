@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "@/src/server/helpers/getServerSession";
-import { nanoid } from "@/src/server/nanoid";
+import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
 
 import { CreateProjectResponse, schema } from "./types";
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
   const { title } = schema.parse(await request.json());
 
-  const publicId = nanoid();
+  const publicId = nanoidShort();
   await prisma.project.create({ data: { publicId, owner: session.address, title } });
 
   const json: CreateProjectResponse = { id: publicId };

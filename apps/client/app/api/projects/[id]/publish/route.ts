@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "@/src/server/helpers/getServerSession";
-import { nanoid } from "@/src/server/nanoid";
+import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
 
 import { Params, paramsSchema } from "../types";
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // Create a new space if there is not one already
   if (!spaceId) {
-    const publicId = nanoid();
+    const publicId = nanoidShort();
 
     const newSpace = await prisma.space.create({
       data: { publicId, owner: session.address },

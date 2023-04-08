@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/src/env.mjs";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
 import { listObjectsRecursive } from "@/src/server/helpers/listObjectsRecursive";
-import { nanoid } from "@/src/server/nanoid";
+import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
 import { s3Client } from "@/src/server/s3";
 import { S3Path } from "@/src/utils/s3Paths";
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // Create new space model
   const model = await prisma.spaceModel.create({
-    data: { publicId: nanoid(), spaceId: found.id },
+    data: { publicId: nanoidShort(), spaceId: found.id },
   });
 
   const json: PostSpaceModelResponse = { modelId: model.publicId };

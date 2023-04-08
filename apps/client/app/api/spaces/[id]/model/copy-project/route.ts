@@ -9,7 +9,7 @@ import { NextRequest } from "next/server";
 import { env } from "@/src/env.mjs";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
 import { getUsedAssets } from "@/src/server/helpers/getUsedAssets";
-import { nanoid } from "@/src/server/nanoid";
+import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
 import { s3Client } from "@/src/server/s3";
 import { S3Path } from "@/src/utils/s3Paths";
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // If no space model, create one
   if (spaceModelId === undefined) {
-    const publicId = nanoid();
+    const publicId = nanoidShort();
     await prisma.spaceModel.create({ data: { publicId, spaceId: foundSpace.id } });
     spaceModelId = publicId;
   }

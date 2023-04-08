@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "@/src/server/helpers/getServerSession";
-import { nanoid } from "@/src/server/nanoid";
+import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
 
 import { Params, paramsSchema } from "../types";
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // Create NFT if it doesn't exist
   if (!nftId) {
-    const publicId = nanoid();
+    const publicId = nanoidShort();
 
     await prisma.spaceNFT.create({ data: { publicId, spaceId: found.id } });
 

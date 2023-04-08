@@ -27,7 +27,7 @@ export default async function Tabs({ id, metadata }: Props) {
         <ButtonTabs titles={["About", "Settings"]}>
           <TabContent value="About">
             {/* @ts-expect-error Server Component */}
-            <About description={metadata.description} />
+            <About id={id} metadata={metadata} />
           </TabContent>
           <TabContent value="Settings">
             {/* @ts-expect-error Server Component */}
@@ -36,7 +36,7 @@ export default async function Tabs({ id, metadata }: Props) {
         </ButtonTabs>
       ) : (
         // @ts-expect-error Server Component
-        <About description={metadata.description} />
+        <About id={id} metadata={metadata} />
       )}
     </>
   );

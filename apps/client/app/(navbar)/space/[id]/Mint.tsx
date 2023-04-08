@@ -125,6 +125,9 @@ export default function Mint({ id, metadata }: Props) {
         updateSpace(id.value, { tokenId }),
       ]);
 
+      // Wait for token to be indexed
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+
       toast.success("Space minted!", { id: toastId });
 
       // Redirect to new space url

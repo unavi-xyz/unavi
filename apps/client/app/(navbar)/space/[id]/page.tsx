@@ -102,7 +102,7 @@ export default async function Space({ params }: Props) {
                 {metadata.title || `Space ${params.id}`}
               </div>
 
-              <div className="space-y-1">
+              <div>
                 {profile ? (
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-neutral-500">By</div>

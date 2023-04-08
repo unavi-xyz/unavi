@@ -6,18 +6,19 @@ import { SpaceMetadata } from "../server/helpers/readSpaceMetadata";
 import { SpaceId } from "../utils/parseSpaceId";
 import { toHex } from "../utils/toHex";
 import { CardImage } from "./Card";
-import { CardText } from "./Card";
+import Tooltip from "./Tooltip";
 
 interface Props {
   id: SpaceId;
   metadata: SpaceMetadata;
+  tokenId?: number;
   sizes?: string;
 }
 
 /**
  * Wrapper around {@link Card} that links to the space page, and shows the player count.
  */
-export default function SpaceCard({ id, metadata, sizes }: Props) {
+export default function SpaceCard({ id, metadata, tokenId, sizes }: Props) {
   return (
     <div>
       <div className="group relative">
@@ -42,7 +43,17 @@ export default function SpaceCard({ id, metadata, sizes }: Props) {
         </div>
       </div>
 
-      <CardText text={metadata.title} />
+      <div className="flex items-center space-x-2 pt-2.5 pb-1">
+        {tokenId !== undefined ? (
+          <Tooltip text="Space Token ID" delayDuration={100}>
+            <div className="w-fit cursor-default rounded-full border border-sky-500/60 bg-sky-100 px-2 text-sm text-sky-600">
+              {toHex(tokenId)}
+            </div>
+          </Tooltip>
+        ) : null}
+
+        <div className="text-xl font-bold text-neutral-900">{metadata.title}</div>
+      </div>
     </div>
   );
 }

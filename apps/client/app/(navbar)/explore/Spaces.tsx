@@ -19,7 +19,12 @@ export default function Spaces({ spaces }: Props) {
   return (
     <>
       {filteredSpaces.map(({ id, metadata }) => (
-        <SpaceCard key={id.value} id={id} metadata={metadata} />
+        <SpaceCard
+          key={id.value}
+          id={id}
+          metadata={metadata}
+          tokenId={id.type === "tokenId" ? id.value : undefined}
+        />
       ))}
     </>
   );

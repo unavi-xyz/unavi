@@ -43,16 +43,16 @@ export default function SpaceCard({ id, metadata, tokenId, sizes }: Props) {
         </div>
       </div>
 
-      <div className="flex items-center space-x-2 pt-2.5 pb-1">
+      <div className="space-x-2 pt-2.5 pb-1">
         {tokenId !== undefined ? (
-          <Tooltip text="Space Token ID" delayDuration={100}>
-            <div className="w-fit cursor-default rounded-full border border-sky-500/60 bg-sky-100 px-2 text-sm text-sky-600">
-              {toHex(tokenId)}
-            </div>
+          <Tooltip text="Space is published to the blockchain as an NFT" delayDuration={200}>
+            <span className="w-fit cursor-default rounded-full border border-sky-500/60 bg-sky-100 px-2 text-sm text-sky-600">
+              NFT
+            </span>
           </Tooltip>
         ) : null}
 
-        <div className="text-xl font-bold text-neutral-900">{metadata.title}</div>
+        <span className="text-xl font-bold text-neutral-900">{metadata.title}</span>
       </div>
     </div>
   );

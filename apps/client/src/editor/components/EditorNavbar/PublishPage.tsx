@@ -1,4 +1,5 @@
 import { Space } from "@wired-labs/gltf-extensions";
+import { ERC721Metadata, ERC721MetadataSchema } from "contracts";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -13,6 +14,10 @@ import { MAX_DESCRIPTION_LENGTH, MAX_TITLE_LENGTH } from "@/app/api/projects/con
 import { copyProjectToModel } from "@/app/api/spaces/[id]/model/copy-project/helper";
 import { getSpaceModelFileUpload } from "@/app/api/spaces/[id]/model/files/[file]/helper";
 import { createSpaceModel } from "@/app/api/spaces/[id]/model/helper";
+import {
+  getSpaceNFTFileDownload,
+  getSpaceNFTFileUpload,
+} from "@/app/api/spaces/[id]/nft/files/[file]/helper";
 import { useEditorStore } from "@/app/editor/[id]/store";
 
 import { useSession } from "../../../client/auth/useSession";
@@ -80,11 +85,12 @@ export default function PublishPage({ project }: Props) {
       const savePromise = save();
 
       // Publish project
-      const { spaceId } = await publishProject(project.id);
+      const { spaceId, nftId } = await publishProject(project.id);
 
       // Create published model
       const { modelId } = await createSpaceModel(spaceId);
       const imageURL = cdnURL(S3Path.spaceModel(modelId).image);
+      const modelURL = cdnURL(S3Path.spaceModel(modelId).model);
 
       // Update space image metadata
       const space = engine.scene.doc.getRoot().getExtension<Space>(Space.EXTENSION_NAME);
@@ -138,12 +144,44 @@ export default function PublishPage({ project }: Props) {
         if (!response.ok) throw new Error("Failed to upload image");
       }
 
+      // If space has an NFT, update the metadata
+      async function uploadNftMetadata() {
+        if (!nftId) return;
+
+        const currentMetadataURL = await getSpaceNFTFileDownload(spaceId, "metadata");
+        const currentMetadataRes = await fetch(currentMetadataURL);
+        const currentMetadata = ERC721MetadataSchema.parse(await currentMetadataRes.json());
+
+        const erc721metadata: ERC721Metadata = {
+          ...currentMetadata,
+          name: title,
+          description,
+          image: imageURL,
+          animation_url: modelURL,
+        };
+
+        // Upload to S3
+        const url = await getSpaceNFTFileUpload(spaceId, "metadata");
+
+        const response = await fetch(url, {
+          method: "PUT",
+          body: JSON.stringify(erc721metadata),
+          headers: {
+            "Content-Type": "application/json",
+            "x-amz-acl": "public-read",
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to upload image");
+      }
+
       toast.loading("Uploading metadata...", { id: toastId });
 
       await Promise.all([
         copyProjectToModel(spaceId, { projectId: project.id }),
         uploadModel(),
         uploadImage(),
+        uploadNftMetadata(),
         linkProject(project.id, { spaceId }),
       ]);
 

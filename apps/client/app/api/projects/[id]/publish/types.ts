@@ -1,1 +1,1 @@
-export type PublishProjectResponse = { spaceId: string };
+export type PublishProjectResponse = { spaceId: string; nftId?: string };

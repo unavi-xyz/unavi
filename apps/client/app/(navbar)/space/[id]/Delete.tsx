@@ -2,6 +2,7 @@
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Space__factory, SPACE_ADDRESS } from "contracts";
+import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
@@ -27,7 +28,7 @@ export default function Delete({ id, address }: Props) {
   async function handleDelete() {
     if (loading) return;
 
-    const toastId = "delete";
+    const toastId = nanoid();
 
     setLoading(true);
 

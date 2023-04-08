@@ -1,5 +1,6 @@
 "use client";
 
+import { nanoid } from "nanoid";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -26,7 +27,7 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
     if (loading) return;
 
     const newSpaceId = inputRef.current?.value ?? "";
-    const toastId = "connect";
+    const toastId = nanoid();
 
     if (!newSpaceId) {
       // Disconnect project

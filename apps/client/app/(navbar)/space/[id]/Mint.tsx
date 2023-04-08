@@ -2,6 +2,7 @@
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
+import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
@@ -44,7 +45,7 @@ export default function Mint({ id, metadata }: Props) {
 
     setLoading(true);
 
-    const toastId = "mint";
+    const toastId = nanoid();
 
     async function uploadMetadata(tokenId: number | undefined) {
       if (!session?.address) throw new Error("Session not found");

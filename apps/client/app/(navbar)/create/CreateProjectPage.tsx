@@ -1,5 +1,6 @@
 "use client";
 
+import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -25,7 +26,7 @@ export default function CreateProjectPage() {
     if (loading) return;
     setLoading(true);
 
-    const toastId = "create-project";
+    const toastId = nanoid();
 
     async function uploadDefaultImage(id: string) {
       const res = await fetch("/images/Default-Space.jpg");

@@ -1,4 +1,5 @@
 import { Space } from "@wired-labs/gltf-extensions";
+import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -64,7 +65,7 @@ export default function PublishPage({ project }: Props) {
     if (loading) return;
     if (!signer) throw new Error("Signer not found");
 
-    const toastId = "publish";
+    const toastId = nanoid();
 
     async function publish() {
       const { engine } = useEditorStore.getState();

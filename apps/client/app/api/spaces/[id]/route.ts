@@ -8,7 +8,7 @@ import { prisma } from "@/src/server/prisma";
 import { s3Client } from "@/src/server/s3";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
-import { GetSpaceResponse, Params, paramsSchema } from "./types";
+import { GetSpaceResponse, Params, paramsSchema, patchSchema } from "./types";
 
 // Get space
 export async function GET(request: NextRequest, { params }: Params) {
@@ -29,6 +29,28 @@ export async function GET(request: NextRequest, { params }: Params) {
     uri: modelURI,
   };
   return NextResponse.json(json);
+}
+
+// Update space
+export async function PATCH(request: NextRequest, { params }: Params) {
+  const session = await getServerSession();
+  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+
+  const { id } = paramsSchema.parse(params);
+
+  // Verify user owns the space
+  const found = await prisma.space.findFirst({
+    where: { publicId: id, owner: session.address },
+    include: { SpaceModel: true },
+  });
+  if (!found) return new Response("Space not found", { status: 404 });
+
+  const { tokenId } = patchSchema.parse(await request.json());
+
+  // Update space
+  await prisma.space.update({ where: { id: found.id }, data: { tokenId } });
+
+  return NextResponse.json({ success: true });
 }
 
 // Delete space

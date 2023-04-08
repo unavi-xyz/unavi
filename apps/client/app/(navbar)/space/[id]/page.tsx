@@ -1,9 +1,11 @@
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
+import { fetchDBSpaceMetadata } from "@/src/server/helpers/fetchDBSpaceMetadata";
+import { fetchNFTSpaceMetadata } from "@/src/server/helpers/fetchNFTSpaceMetadata";
 import { fetchProfile } from "@/src/server/helpers/fetchProfile";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
@@ -50,7 +52,17 @@ interface Props {
 export default async function Space({ params }: Props) {
   const id = parseSpaceId(params.id);
 
-  const metadata = await fetchSpaceMetadata(id);
+  let metadata;
+
+  if (id.type === "tokenId") {
+    metadata = await fetchNFTSpaceMetadata(id.value);
+  } else {
+    metadata = await fetchDBSpaceMetadata(id.value);
+
+    // If space has a token, redirect to the token page
+    if (metadata && metadata.tokenId !== null) redirect(`/space/${toHex(metadata.tokenId)}`);
+  }
+
   if (!metadata) notFound();
 
   const profileId = metadata.creator.split("/").pop();

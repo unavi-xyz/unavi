@@ -2,10 +2,12 @@
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
+import { updateSpace } from "@/app/api/spaces/[id]/helper";
 import { mintSpace } from "@/app/api/spaces/[id]/mint/helper";
 import { getSpaceNFTFileUpload } from "@/app/api/spaces/[id]/nft/files/[file]/helper";
 import { useSession } from "@/src/client/auth/useSession";
@@ -26,6 +28,7 @@ interface Props {
 export default function Mint({ id, metadata }: Props) {
   const [loading, setLoading] = useState(false);
 
+  const router = useRouter();
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
   const { data: session } = useSession();
@@ -84,30 +87,47 @@ export default function Mint({ id, metadata }: Props) {
       toast.loading("Minting space...", { id: toastId });
       await tx.wait();
 
-      // Get token ID
-      // Loop backwards through all spaces until we find the matching content URI
-      const count = (await contract.count()).toNumber();
-      let i = 0;
-      let tokenId: number | undefined;
+      let attempts = 0;
 
-      while (tokenId === undefined && i < count) {
-        i++;
-        const nextId = count - i;
+      const findTokenId = async (): Promise<number> => {
+        // Loop backwards through past 10 tokens to find the one we just minted
+        const count = Math.min((await contract.count()).toNumber(), 10);
+        let i = 0;
 
-        const owner = await contract.ownerOf(nextId);
-        if (owner !== session.address) continue;
+        while (i < count) {
+          i++;
+          const nextId = count - i;
 
-        const uri = await contract.tokenURI(nextId);
-        if (uri !== metadataURI) continue;
+          const owner = await contract.ownerOf(nextId);
+          if (owner !== session.address) continue;
 
-        tokenId = nextId;
-      }
+          const uri = await contract.tokenURI(nextId);
+          if (uri !== metadataURI) continue;
 
-      // Upload metadata
+          return nextId;
+        }
+
+        attempts++;
+        if (attempts > 4) throw new Error("Failed to find token ID");
+
+        return new Promise((resolve) => setTimeout(() => resolve(findTokenId()), 1000));
+      };
+
+      const tokenId = await findTokenId();
+
       toast.loading("Uploading metadata...", { id: toastId });
-      await uploadMetadata(tokenId);
+
+      await Promise.all([
+        // Upload metadata
+        uploadMetadata(tokenId),
+        // Link NFT to space
+        updateSpace(id.value, { tokenId }),
+      ]);
 
       toast.success("Space minted!", { id: toastId });
+
+      // Redirect to new space url
+      router.push(`/space/${toHex(tokenId)}`);
     } catch (e) {
       toast.error(parseError(e, "Failed to mint NFT"), { id: toastId });
       console.error(e);

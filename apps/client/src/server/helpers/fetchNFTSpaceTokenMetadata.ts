@@ -3,7 +3,7 @@ import { cache } from "react";
 
 import { ethersProvider } from "../ethers";
 
-export const fetchSpaceNFTMetadata = cache(async (id: number) => {
+export const fetchNFTSpaceTokenMetadata = cache(async (id: number) => {
   try {
     const contract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
 

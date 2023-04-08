@@ -1,14 +1,14 @@
 import { ERC721Metadata } from "contracts";
 
+import { fetchNFTSpaceOwner } from "./fetchNFTSpaceOwner";
+import { fetchNFTSpaceTokenMetadata } from "./fetchNFTSpaceTokenMetadata";
 import { Profile } from "./fetchProfile";
 import { fetchProfileFromAddress } from "./fetchProfileFromAddress";
-import { fetchSpaceNFTMetadata } from "./fetchSpaceNFTMetadata";
-import { fetchSpaceNFTOwner } from "./fetchSpaceNFTOwner";
 
-export async function fetchSpaceNFT(id: number): Promise<Space | null> {
+export async function fetchNFTSpace(id: number): Promise<Space | null> {
   try {
-    const metadataPromise = fetchSpaceNFTMetadata(id);
-    const owner = await fetchSpaceNFTOwner(id);
+    const metadataPromise = fetchNFTSpaceTokenMetadata(id);
+    const owner = await fetchNFTSpaceOwner(id);
     const profile = await fetchProfileFromAddress(owner);
     const metadata = await metadataPromise;
 

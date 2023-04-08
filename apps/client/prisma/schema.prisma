@@ -17,6 +17,9 @@ model Space {
 
   owner String @db.Char(42)
 
+  // The token id of the NFT, if it exists
+  tokenId Int?
+
   Project    Project[]
   SpaceModel SpaceModel?
   SpaceNFT   SpaceNFT?

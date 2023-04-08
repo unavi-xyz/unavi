@@ -41,7 +41,7 @@ async function fetchNFTSpaces(limit: number, owner?: string) {
 
 async function fetchDatabaseSpaces(limit: number, owner?: string) {
   const spaces = await prisma.space.findMany({
-    where: { owner, SpaceModel: { isNot: null } },
+    where: { owner, SpaceModel: { isNot: null }, tokenId: null },
     include: { SpaceModel: true },
     orderBy: { updatedAt: "desc" },
     take: limit,

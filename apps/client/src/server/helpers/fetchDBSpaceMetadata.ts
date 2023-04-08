@@ -5,11 +5,11 @@ import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 import { prisma } from "../prisma";
 import { readSpaceMetadata, SpaceMetadata } from "./readSpaceMetadata";
 
-export const fetchSpaceDBMetadata = cache(async (id: string): Promise<SpaceMetadata | null> => {
+export const fetchDBSpaceMetadata = cache(async (id: string): Promise<DBSpaceMetadata | null> => {
   try {
     const space = await prisma.space.findFirst({
       where: { publicId: id },
-      select: { SpaceModel: { select: { publicId: true } } },
+      select: { SpaceModel: { select: { publicId: true } }, tokenId: true },
     });
     if (!space || !space.SpaceModel) throw new Error("Space not found");
 
@@ -17,8 +17,15 @@ export const fetchSpaceDBMetadata = cache(async (id: string): Promise<SpaceMetad
     const metadata = await readSpaceMetadata(modelURI);
     if (!metadata) throw new Error("Invalid space metadata");
 
-    return metadata;
+    return {
+      ...metadata,
+      tokenId: space.tokenId,
+    };
   } catch {
     return null;
   }
 });
+
+export interface DBSpaceMetadata extends SpaceMetadata {
+  tokenId: number | null;
+}

@@ -1,11 +1,14 @@
 import { Metadata } from "next";
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import React from "react";
 import { z } from "zod";
 
+import { fetchDBSpaceMetadata } from "@/src/server/helpers/fetchDBSpaceMetadata";
+import { fetchNFTSpaceMetadata } from "@/src/server/helpers/fetchNFTSpaceMetadata";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { readSpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
+import { toHex } from "@/src/utils/toHex";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
 import SessionProvider from "../(navbar)/SessionProvider";
@@ -22,7 +25,15 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   if (!params.success) return {};
 
   const id = readSpaceId(params.data);
-  const metadata = await fetchMetadata(id);
+
+  let metadata;
+
+  if (id.type === "uri") {
+    metadata = await readSpaceMetadata(id.value);
+  } else {
+    metadata = await fetchSpaceMetadata(id);
+  }
+
   if (!metadata) return {};
 
   const { title, description, creator, image } = metadata;
@@ -54,7 +65,20 @@ export default async function Play({ searchParams }: Props) {
   if (!params.success) return notFound();
 
   const id = readSpaceId(params.data);
-  const metadata = await fetchMetadata(id);
+
+  let metadata;
+
+  if (id.type === "tokenId") {
+    metadata = await fetchNFTSpaceMetadata(id.value);
+  } else if (id.type === "id") {
+    metadata = await fetchDBSpaceMetadata(id.value);
+
+    // If space has a token, redirect to the token page
+    if (metadata && metadata.tokenId !== null) redirect(`/play?tokenId=${toHex(metadata.tokenId)}`);
+  } else {
+    metadata = await readSpaceMetadata(id.value);
+  }
+
   if (!metadata) notFound();
 
   return (
@@ -64,14 +88,6 @@ export default async function Play({ searchParams }: Props) {
       </RainbowkitWrapper>
     </SessionProvider>
   );
-}
-
-function fetchMetadata(id: SpaceUriId) {
-  if (id.type === "uri") {
-    return readSpaceMetadata(id.value);
-  } else {
-    return fetchSpaceMetadata(id);
-  }
 }
 
 function readSpaceId(params: Params): SpaceUriId {

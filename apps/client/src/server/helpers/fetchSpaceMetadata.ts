@@ -1,19 +1,13 @@
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
-import { fetchSpaceDBMetadata } from "./fetchSpaceDBMetadata";
-import { fetchSpaceNFTMetadata } from "./fetchSpaceNFTMetadata";
-import { readSpaceMetadata, SpaceMetadata } from "./readSpaceMetadata";
+import { DBSpaceMetadata, fetchDBSpaceMetadata } from "./fetchDBSpaceMetadata";
+import { fetchNFTSpaceMetadata } from "./fetchNFTSpaceMetadata";
+import { SpaceMetadata } from "./readSpaceMetadata";
 
-export async function fetchSpaceMetadata(id: SpaceId): Promise<SpaceMetadata | null> {
+export function fetchSpaceMetadata(id: SpaceId): Promise<SpaceMetadata | DBSpaceMetadata | null> {
   if (id.type === "tokenId") {
-    const erc721metadata = await fetchSpaceNFTMetadata(id.value);
-    if (!erc721metadata?.animation_url) return null;
-
-    const metadata = await readSpaceMetadata(erc721metadata.animation_url);
-    if (!metadata) null;
-
-    return metadata;
+    return fetchNFTSpaceMetadata(id.value);
   } else {
-    return fetchSpaceDBMetadata(id.value);
+    return fetchDBSpaceMetadata(id.value);
   }
 }

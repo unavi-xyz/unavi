@@ -1,4 +1,4 @@
-import { fetchSpaceNFTOwner } from "@/src/server/helpers/fetchSpaceNFTOwner";
+import { fetchNFTSpaceOwner } from "@/src/server/helpers/fetchNFTSpaceOwner";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
 import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import { prisma } from "@/src/server/prisma";
@@ -17,7 +17,7 @@ export default async function Tabs({ id, metadata }: Props) {
   const session = await getServerSession();
 
   const owner =
-    id.type === "tokenId" ? await fetchSpaceNFTOwner(id.value) : await fetchSpaceDBOwner(id.value);
+    id.type === "tokenId" ? await fetchNFTSpaceOwner(id.value) : await fetchSpaceDBOwner(id.value);
 
   const isOwner = owner ? session?.address === owner : false;
 

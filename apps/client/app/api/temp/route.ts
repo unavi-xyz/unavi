@@ -7,6 +7,8 @@ import { nanoidShort } from "@/src/server/nanoid";
 import { s3Client } from "@/src/server/s3";
 import { S3Path } from "@/src/utils/s3Paths";
 
+import { GetTempResponse } from "./types";
+
 export const runtime = "edge";
 
 const expiresIn = 600; // 10 minutes
@@ -23,5 +25,6 @@ export async function POST() {
 
   const url = await getSignedUrl(s3Client, command, { expiresIn });
 
-  return NextResponse.json({ url, fileId });
+  const json: GetTempResponse = { url, fileId };
+  return NextResponse.json(json);
 }

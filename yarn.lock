@@ -3725,10 +3725,10 @@
     "@floating-ui/dom" "^0.5.3"
     use-isomorphic-layout-effect "^1.1.1"
 
-"@gltf-transform/core@3.1.7", "@gltf-transform/core@^3.1.7":
-  version "3.1.7"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.1.7.tgz#6397861f06551c59c63615a5ebbeaf8f75210a27"
-  integrity sha512-QbpnjkFLc/bkewbCpdJKoR6/wi/ADwTpG+LlaTGn6iVsDDlyMSs/XsHDZMM0jhwek17CSuDhTrw7CDoraS1M8g==
+"@gltf-transform/core@3.2.0", "@gltf-transform/core@^3.1.7":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.2.0.tgz#577ee928eabcc20f3c3e7d121008be47b9b1a1fe"
+  integrity sha512-Pi05jwG51CKi+9OCCNJaLxpeHhC7hZujNOEtynHAK0i5LDUyQEY5LxwJOgmAz9wJwa3Fxc29h9mccBN41lXKUg==
   dependencies:
     property-graph "^1.1.0"
 

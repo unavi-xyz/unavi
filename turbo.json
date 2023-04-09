@@ -34,10 +34,6 @@
         "VERCEL_URL"
       ]
     },
-    "docs#build": {
-      "dependsOn": ["^build", "generate"],
-      "outputs": ["build/**", "docs/packages/**"]
-    },
     "host#build": {
       "dependsOn": ["^build", "generate"],
       "outputs": ["build/**"],
@@ -49,11 +45,6 @@
         "SSL_CERT",
         "SSL_KEY"
       ]
-    },
-    "light-client#build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**"],
-      "env": ["ETH_PROVIDER", "NEXT_PUBLIC_DEFAULT_HOST", "NEXT_PUBLIC_SPACE_ID"]
     },
     "lint": {},
     "generate": {

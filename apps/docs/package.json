@@ -40,6 +40,6 @@
     "docusaurus-plugin-typedoc": "^0.18.0",
     "typedoc": "^0.23.28",
     "typedoc-plugin-markdown": "^3.14.0",
-    "typescript": "~5.0.2"
+    "typescript": "~5.0.4"
   }
 }

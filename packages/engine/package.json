@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@dimforge/rapier3d": "^0.11.2",
-    "@gltf-transform/core": "3.1.7",
+    "@gltf-transform/core": "3.2.0",
     "@gltf-transform/extensions": "3.1.7",
-    "@gltf-transform/functions": "3.1.7",
+    "@gltf-transform/functions": "3.2.0",
     "@pixiv/three-vrm": "^1.0.8",
     "@wired-labs/behave-graph-core": "^0.9.19",
     "@wired-labs/gltf-extensions": "*",
@@ -26,7 +26,7 @@
     "@types/offscreencanvas": "^2019.7.0",
     "@types/three": "^0.148.0",
     "tsconfig": "*",
-    "typescript": "~5.0.2"
+    "typescript": "~5.0.4"
   },
   "typedoc": {
     "entryPoint": "./src/index.ts",

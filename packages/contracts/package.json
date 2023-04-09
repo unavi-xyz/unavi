@@ -23,6 +23,6 @@
     "ethers": "^5.7.2",
     "tsconfig": "*",
     "typechain": "^8.1.1",
-    "typescript": "~5.0.2"
+    "typescript": "~5.0.4"
   }
 }

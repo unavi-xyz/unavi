@@ -34,6 +34,10 @@
         "VERCEL_URL"
       ]
     },
+    "docs#build": {
+      "dependsOn": ["^build", "generate"],
+      "outputs": ["build/**", "docs/packages/**"]
+    },
     "host#build": {
       "dependsOn": ["^build", "generate"],
       "outputs": ["build/**"],

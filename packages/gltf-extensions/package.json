@@ -16,7 +16,7 @@
     "lint": "cd ../.. && eslint --fix packages/gltf-extensions --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
-    "@gltf-transform/core": "3.1.7",
+    "@gltf-transform/core": "3.2.0",
     "@wired-labs/behave-graph-core": "^0.9.19",
     "zod": "^3.21.4"
   },

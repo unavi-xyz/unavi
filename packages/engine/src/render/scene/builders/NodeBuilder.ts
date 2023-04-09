@@ -388,17 +388,6 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
     newPrimitiveObject.bind(new Skeleton([]));
     this.scene.builders.primitive.setObject(primitiveId, newPrimitiveObject);
 
-    newPrimitiveObject.castShadow = primitiveObject.castShadow;
-    newPrimitiveObject.receiveShadow = primitiveObject.receiveShadow;
-    newPrimitiveObject.geometry = primitiveObject.geometry;
-    newPrimitiveObject.material = primitiveObject.material;
-    if (primitiveObject.morphTargetInfluences)
-      newPrimitiveObject.morphTargetInfluences = [...primitiveObject.morphTargetInfluences];
-    if (primitiveObject.morphTargetDictionary)
-      newPrimitiveObject.morphTargetDictionary = {
-        ...primitiveObject.morphTargetDictionary,
-      };
-
     // Normalize skin weights
     if (
       newPrimitiveObject.geometry.attributes.skinWeight &&
@@ -422,17 +411,6 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
     // Convert primitive to skinned mesh
     const newPrimitiveObject = new ThreeMesh();
     this.scene.builders.primitive.setObject(primitiveId, newPrimitiveObject);
-
-    newPrimitiveObject.castShadow = primitiveObject.castShadow;
-    newPrimitiveObject.receiveShadow = primitiveObject.receiveShadow;
-    newPrimitiveObject.geometry = primitiveObject.geometry;
-    newPrimitiveObject.material = primitiveObject.material;
-    if (primitiveObject.morphTargetInfluences)
-      newPrimitiveObject.morphTargetInfluences = [...primitiveObject.morphTargetInfluences];
-    if (primitiveObject.morphTargetDictionary)
-      newPrimitiveObject.morphTargetDictionary = {
-        ...primitiveObject.morphTargetDictionary,
-      };
 
     // Remove old primitive object
     primitiveObject.removeFromParent();

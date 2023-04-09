@@ -1,5 +1,11 @@
 # @wired-labs/gltf-extensions
 
+## 0.5.0
+
+### Minor Changes
+
+- 7a8ae74: add the WIRED_space extension
+
 ## 0.4.0
 
 ### Minor Changes

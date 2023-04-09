@@ -22,7 +22,7 @@
     "release": "turbo run lint build && changeset publish && git push --follow-tags"
   },
   "dependencies": {
-    "@changesets/cli": "^2.26.0"
+    "@changesets/cli": "^2.26.1"
   },
   "devDependencies": {
     "dotenv-cli": "^7.2.1",

@@ -22,13 +22,9 @@
     "mediasoup-client": "^3.6.82",
     "tsconfig": "*",
     "tsup": "^6.7.0",
-    "typescript": "~5.0.2"
+    "typescript": "~5.0.4"
   },
   "publishConfig": {
     "access": "public"
-  },
-  "typedoc": {
-    "entryPoint": "./src/index.ts",
-    "displayName": "Protocol"
   }
 }

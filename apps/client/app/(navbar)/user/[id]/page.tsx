@@ -92,7 +92,7 @@ export default async function User({ params: { id } }: { params: Params }) {
     <>
       <div className="flex justify-center">
         <div className="max-w-content">
-          <div className="h-48 w-full bg-neutral-200 md:h-72 xl:rounded-2xl">
+          <div className="h-40 w-full bg-neutral-200 md:h-72 xl:rounded-2xl">
             <div className="relative h-full w-full object-cover">
               {profile?.metadata?.animation_url ? (
                 isFromCDN(profile.metadata.animation_url) ? (

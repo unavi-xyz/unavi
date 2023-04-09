@@ -19,39 +19,7 @@ const config = {
     locales: ["en"],
   },
 
-  plugins: [
-    [
-      "docusaurus-plugin-typedoc",
-
-      /** @type {import('typedoc').TypeDocOptions} */
-      {
-        id: "typedoc",
-        entryPointStrategy: "packages",
-        entryPoints: [
-          "../../packages/engine",
-          "../../packages/gltf-extensions",
-          "../../packages/protocol",
-          "../../packages/react-client",
-        ],
-        readme: "none",
-        excludePrivate: true,
-        out: "packages",
-        sourceLinkTemplate: "https://github.com/wired-labs/wired/blob/{gitRevision}/{path}#L{line}",
-        sidebar: {
-          fullNames: true,
-        },
-      },
-    ],
-    [
-      "@docusaurus/plugin-content-docs",
-      {
-        id: "packages",
-        path: "./docs/packages",
-        routeBasePath: "/packages",
-        sidebarPath: require.resolve("./sidebars.js"),
-      },
-    ],
-  ],
+  plugins: [],
 
   presets: [
     [
@@ -62,7 +30,7 @@ const config = {
 
         docs: {
           editUrl: "https://github.com/wired-labs/wired/tree/main/apps/docs",
-          path: "./docs/main",
+          path: "./docs",
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
         },
@@ -90,18 +58,6 @@ const config = {
           src: "img/Logo-Dark.png",
         },
         items: [
-          {
-            to: "/",
-            label: "Docs",
-            position: "left",
-            activeBaseRegex: `^(?!/packages.*$).*`,
-          },
-          {
-            to: "/packages",
-            label: "Packages",
-            position: "left",
-            activeBaseRegex: `/packages`,
-          },
           {
             label: "Discord",
             href: "https://discord.gg/VCsAEneUMn",

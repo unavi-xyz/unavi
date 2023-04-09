@@ -59,10 +59,10 @@ export function useSave(projectId: string) {
 
     const date = new Date().toISOString();
 
-    xmpPacket.setProperty("dc:title", title);
+    xmpPacket.setProperty("dc:title", title.trimEnd());
     xmpPacket.setProperty("dc:creator", creator);
     xmpPacket.setProperty("dc:date", date);
-    xmpPacket.setProperty("dc:description", description);
+    xmpPacket.setProperty("dc:description", description.trimEnd());
 
     // Save space metadata
     let space = engine.scene.doc.getRoot().getExtension<Space>(Space.EXTENSION_NAME);

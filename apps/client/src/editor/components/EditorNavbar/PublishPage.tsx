@@ -1,7 +1,7 @@
 import { Space } from "@wired-labs/gltf-extensions";
 import { ERC721Metadata, ERC721MetadataSchema } from "contracts";
 import { nanoid } from "nanoid";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import useSWR from "swr";
@@ -38,8 +38,6 @@ interface Props {
 }
 
 export default function PublishPage({ project }: Props) {
-  const router = useRouter();
-
   const title = useEditorStore((state) => state.title);
   const description = useEditorStore((state) => state.description);
   const image = useEditorStore((state) => state.image);
@@ -79,7 +77,7 @@ export default function PublishPage({ project }: Props) {
       if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
 
-      toast.loading("Creating space...", { id: toastId });
+      toast.loading("Preparing space...", { id: toastId });
 
       // Start saving
       const savePromise = save();
@@ -185,15 +183,28 @@ export default function PublishPage({ project }: Props) {
         linkProject(project.id, { spaceId }),
       ]);
 
-      // Redirect to space
-      router.push(`/space/${spaceId}`);
+      toast.success(
+        (t) => (
+          <span className="space-x-4">
+            <span>Space published!</span>
+
+            <Link
+              href={`/space/${spaceId}`}
+              onClick={() => toast.dismiss(t.id)}
+              className="rounded-full bg-neutral-200 px-4 py-1 font-semibold transition hover:bg-neutral-300 active:opacity-80"
+            >
+              View
+            </Link>
+          </span>
+        ),
+        { id: toastId, duration: 20000 }
+      );
     }
 
     setLoading(true);
 
     try {
       await publish();
-      toast.success("Published!", { id: toastId });
     } catch (err) {
       toast.error(parseError(err, "Failed to publish."), { id: toastId });
       console.error(err);

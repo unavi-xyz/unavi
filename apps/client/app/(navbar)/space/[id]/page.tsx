@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { fetchDBSpaceMetadata } from "@/src/server/helpers/fetchDBSpaceMetadata";
 import { fetchNFTSpaceMetadata } from "@/src/server/helpers/fetchNFTSpaceMetadata";
 import { fetchProfile } from "@/src/server/helpers/fetchProfile";
+import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
 import { parseSpaceId } from "@/src/utils/parseSpaceId";
@@ -65,8 +66,16 @@ export default async function Space({ params }: Props) {
 
   if (!metadata) notFound();
 
-  const profileId = metadata.creator.split("/").pop();
-  const profile = profileId ? await fetchProfile(parseInt(profileId)) : null;
+  // Fetch creator profile
+  const creator = metadata.creator.split("/").pop();
+  const profileId = creator?.startsWith("0x") && creator.length < 42 ? creator : null;
+  const address = creator?.startsWith("0x") && creator.length === 42 ? creator : null;
+
+  const profile = profileId
+    ? await fetchProfile(parseInt(profileId))
+    : address
+    ? await fetchProfileFromAddress(address)
+    : null;
 
   return (
     <div className="flex justify-center">

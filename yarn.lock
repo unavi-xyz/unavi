@@ -3725,14 +3725,14 @@
     "@floating-ui/dom" "^0.5.3"
     use-isomorphic-layout-effect "^1.1.1"
 
-"@gltf-transform/core@3.2.0", "@gltf-transform/core@^3.1.7":
+"@gltf-transform/core@3.2.0", "@gltf-transform/core@^3.1.7", "@gltf-transform/core@^3.2.0":
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-3.2.0.tgz#577ee928eabcc20f3c3e7d121008be47b9b1a1fe"
   integrity sha512-Pi05jwG51CKi+9OCCNJaLxpeHhC7hZujNOEtynHAK0i5LDUyQEY5LxwJOgmAz9wJwa3Fxc29h9mccBN41lXKUg==
   dependencies:
     property-graph "^1.1.0"
 
-"@gltf-transform/extensions@3.1.7", "@gltf-transform/extensions@^3.1.7":
+"@gltf-transform/extensions@3.1.7":
   version "3.1.7"
   resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-3.1.7.tgz#084b50b0a4bd83a67e898721a2900730848225bf"
   integrity sha512-N4wSwTL1fdsIaYfnNfB8VDGby+rduSg9tG2/wC0XDYhkLUhOQzUlR3iyIta+Hdy4M8sgszfeOZjWn/geU6GjmA==
@@ -3740,13 +3740,21 @@
     "@gltf-transform/core" "^3.1.7"
     ktx-parse "^0.5.0"
 
-"@gltf-transform/functions@3.1.7":
-  version "3.1.7"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-3.1.7.tgz#6c8b409be84db34f77c4f5d5dc51eaed998602db"
-  integrity sha512-Tuj9jLdP0SjGwvq4qpvFBilTO9xYbbkVXfFolAq4wVytT2UwLBeIXV1lYZPm4aQLZUol4yuuhNlRXJ9wv6kVnA==
+"@gltf-transform/extensions@^3.2.0":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-3.2.0.tgz#b943c98769d3490b7285ef9bf79b77e5b5a11e92"
+  integrity sha512-wzQtxWgk7Zye/wE0l2kK5Z4yaVfp8Qxv2NhOshTb27SnMQLPMiAcERctlTTnidqOYhpeDJPk16KDx8fVV5D/lg==
   dependencies:
-    "@gltf-transform/core" "^3.1.7"
-    "@gltf-transform/extensions" "^3.1.7"
+    "@gltf-transform/core" "^3.2.0"
+    ktx-parse "^0.5.0"
+
+"@gltf-transform/functions@3.2.0":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-3.2.0.tgz#27e4cac72c3d4043bb91c528c34d35233d48c8fb"
+  integrity sha512-ZRNcGwaDP1SN3kr+oDjvLuZIxe9Ow6NDV5x/GUlgW+xwD2Z9CO9HdQzhiRgMuWuGsroEtn1p2iZTaPcEjy1eeQ==
+  dependencies:
+    "@gltf-transform/core" "^3.2.0"
+    "@gltf-transform/extensions" "^3.2.0"
     ktx-parse "^0.5.0"
     ndarray "^1.0.19"
     ndarray-lanczos "^0.3.0"

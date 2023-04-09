@@ -1,5 +1,6 @@
 import { Space__factory, SPACE_ADDRESS } from "contracts";
 
+import { env } from "@/src/env.mjs";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { ethersProvider } from "../ethers";
@@ -10,7 +11,7 @@ import { validateSpaceNFT, ValidDatabaseSpace, ValidSpaceNFT } from "./validateS
 export async function fetchLatestSpaces(limit: number, owner?: string) {
   const [nftSpaces, databaseSpaces] = await Promise.all([
     fetchNFTSpaces(limit, owner),
-    fetchDatabaseSpaces(limit, owner),
+    env.NEXT_PUBLIC_HAS_DATABASE ? fetchDatabaseSpaces(limit, owner) : [],
   ]);
 
   return [...nftSpaces, ...databaseSpaces];

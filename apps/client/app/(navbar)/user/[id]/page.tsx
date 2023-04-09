@@ -1,10 +1,12 @@
+import { Profile__factory, PROFILE_ADDRESS } from "contracts";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
 
+import { ethersProvider } from "@/src/server/ethers";
 import { fetchProfile } from "@/src/server/helpers/fetchProfile";
 import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
@@ -76,7 +78,16 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
 export default async function User({ params: { id } }: { params: Params }) {
   const isAddress = validateAddress(id);
 
-  const profile = isAddress ? await fetchProfileFromAddress(id) : await fetchProfile(parseInt(id));
+  if (isAddress) {
+    const contract = Profile__factory.connect(PROFILE_ADDRESS, ethersProvider);
+
+    const defaultProfileBigNumber = await contract.getDefaultProfile(id);
+    const profileId = defaultProfileBigNumber.toNumber();
+
+    if (profileId !== 0) redirect(`/user/${toHex(profileId)}`);
+  }
+
+  const profile = isAddress ? null : await fetchProfile(parseInt(id));
 
   if (!isAddress && !profile) notFound();
 

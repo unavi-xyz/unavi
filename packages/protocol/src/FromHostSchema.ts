@@ -2,11 +2,11 @@ import { z } from "zod";
 
 import { MediasoupSchema } from "./MediasoupSchema";
 
-const spaceId = z.number().int().positive();
+const spaceURI = z.string();
 const playerId = z.number().int().min(0).max(255);
 
 export const FromHostSchema = {
-  join_success: z.object({ spaceId, playerId }),
+  join_success: z.object({ uri: spaceURI, playerId }),
 
   // Players
   player_address: z.object({ playerId, address: z.string().nullable() }),

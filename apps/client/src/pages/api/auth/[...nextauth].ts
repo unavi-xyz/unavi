@@ -1,4 +1,3 @@
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { IncomingMessage } from "http";
 import { NextApiRequest, NextApiResponse } from "next";
 import NextAuth, { NextAuthOptions } from "next-auth";
@@ -8,7 +7,6 @@ import { SiweMessage } from "siwe";
 
 import { CustomSession } from "../../../client/auth/useSession";
 import { env } from "../../../env.mjs";
-import { prisma } from "../../../server/prisma";
 
 export function getAuthOptions(req: IncomingMessage | null = null): NextAuthOptions {
   const providers = [
@@ -68,7 +66,6 @@ export function getAuthOptions(req: IncomingMessage | null = null): NextAuthOpti
     },
 
     providers,
-    adapter: PrismaAdapter(prisma),
     secret: env.NEXTAUTH_SECRET,
     session: { strategy: "jwt" },
   };

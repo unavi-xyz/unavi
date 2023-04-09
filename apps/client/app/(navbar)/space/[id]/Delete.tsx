@@ -2,18 +2,21 @@
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Space__factory, SPACE_ADDRESS } from "contracts";
+import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
 
-import { deletePublication } from "@/app/api/publications/[id]/helper";
-import { getSpacePublication } from "@/app/api/spaces/[id]/publication/helper";
+import { getNFTSpace } from "@/app/api/nfts/[id]/space/helper";
+import { deleteSpace } from "@/app/api/spaces/[id]/helper";
 import { parseError } from "@/src/editor/utils/parseError";
+import { env } from "@/src/env.mjs";
 import Button from "@/src/ui/Button";
+import { SpaceId } from "@/src/utils/parseSpaceId";
 
 interface Props {
-  id: number;
+  id: SpaceId;
   address: string;
 }
 
@@ -27,32 +30,49 @@ export default function Delete({ id, address }: Props) {
   async function handleDelete() {
     if (loading) return;
 
-    if (!signer) {
-      if (openConnectModal) openConnectModal();
-      return;
-    }
-
-    const toastId = "delete";
+    const toastId = nanoid();
 
     setLoading(true);
 
-    async function deleteSpace() {
-      if (!signer) throw new Error("No signer");
+    async function handleDelete() {
+      if (id.type === "id") {
+        toast.loading("Deleting space...", { id: toastId });
+        await deleteSpace(id.value);
+      } else {
+        if (!signer) {
+          if (openConnectModal) openConnectModal();
+          return;
+        }
 
-      toast.loading("Waiting for signature...", { id: toastId });
-      const contract = Space__factory.connect(SPACE_ADDRESS, signer);
-      const tx = await contract.burn(id);
+        const contract = Space__factory.connect(SPACE_ADDRESS, signer);
 
-      toast.loading("Deleting data...", { id: toastId });
-      const publication = await getSpacePublication(id);
-      if (publication) await deletePublication(publication.id);
+        // Get token URI
+        const tokenURI = await contract.tokenURI(id.value);
+        const nftsPath = `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/nfts/`;
 
-      toast.loading("Waiting for transaction...", { id: toastId });
-      await tx.wait();
+        // Delete space NFT
+        toast.loading("Waiting for signature...", { id: toastId });
+        const tx = await contract.burn(id.value);
+
+        toast.loading("Deleting space...", { id: toastId });
+
+        if (tokenURI.startsWith(nftsPath)) {
+          // Get database nft id from token URI
+          const nftId = tokenURI.replace(nftsPath, "").replace("/metadata.json", "");
+
+          // Get space id
+          const { spaceId } = await getNFTSpace(nftId);
+
+          // Delete space from database
+          await deleteSpace(spaceId);
+        }
+
+        await tx.wait();
+      }
     }
 
     try {
-      await deleteSpace();
+      await handleDelete();
       toast.success("Space deleted.", { id: toastId });
 
       router.push(`/user/${address}`);

@@ -21,7 +21,7 @@ import { Client } from "@wired-labs/react-client";
 export default function App() {
   return (
     <Client
-      spaceId={13}
+      uri="https://path.to/space.glb"
       metadata={{...}}
       host="wss://host.thewired.space"
       skybox="/skybox.jpg"

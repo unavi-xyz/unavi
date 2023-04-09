@@ -1,7 +1,7 @@
 import { ChatMessage as IChatMessage } from "@wired-labs/react-client";
 import { useEffect, useState } from "react";
 
-import { usePlayStore } from "@/app/play/[id]/store";
+import { usePlayStore } from "@/app/play/store";
 
 import { usePlayerName } from "../hooks/usePlayerName";
 import { usePointerLocked } from "../hooks/usePointerLocked";

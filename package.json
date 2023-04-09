@@ -22,15 +22,15 @@
     "release": "turbo run lint build && changeset publish && git push --follow-tags"
   },
   "dependencies": {
-    "@changesets/cli": "^2.26.0"
+    "@changesets/cli": "^2.26.1"
   },
   "devDependencies": {
-    "dotenv-cli": "^7.1.0",
+    "dotenv-cli": "^7.2.1",
     "patch-package": "^6.5.1",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.8.7",
     "prettier-plugin-packagejson": "^2.4.3",
-    "prettier-plugin-prisma": "^4.10.0",
+    "prettier-plugin-prisma": "^4.12.0",
     "turbo": "^1.8.8"
   },
   "packageManager": "yarn@1.22.19",

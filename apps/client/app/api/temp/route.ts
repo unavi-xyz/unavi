@@ -1,11 +1,13 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
+import { nanoidShort } from "@/src/server/nanoid";
 import { s3Client } from "@/src/server/s3";
 import { S3Path } from "@/src/utils/s3Paths";
+
+import { GetTempResponse } from "./types";
 
 export const runtime = "edge";
 
@@ -13,7 +15,7 @@ const expiresIn = 600; // 10 minutes
 
 // Get temp upload URL
 export async function POST() {
-  const fileId = nanoid();
+  const fileId = nanoidShort();
 
   const command = new PutObjectCommand({
     Bucket: env.S3_BUCKET,
@@ -23,5 +25,6 @@ export async function POST() {
 
   const url = await getSignedUrl(s3Client, command, { expiresIn });
 
-  return NextResponse.json({ url, fileId });
+  const json: GetTempResponse = { url, fileId };
+  return NextResponse.json(json);
 }

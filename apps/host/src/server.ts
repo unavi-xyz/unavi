@@ -154,14 +154,13 @@ server.ws<UserData>("/*", {
 });
 
 // Handle HTTP requests
-server.get("/spaces/:id/player-count", (res, req) => {
-  const idString = req.getParameter(0);
-  const id = parseInt(idString);
+server.get("/player-count/*:uri", (res, req) => {
+  const uri = req.getUrl().slice(14);
 
-  const space = spaces.getSpace(id);
+  const space = spaces.getSpace(uri);
   const playerCount = space ? space.playerCount : 0;
 
-  console.info(`/spaces/${id}/player-count: ${playerCount}`);
+  console.info(`/player-count/${uri}: ${playerCount}`);
 
   res.write(String(playerCount));
   res.writeStatus("200 OK");

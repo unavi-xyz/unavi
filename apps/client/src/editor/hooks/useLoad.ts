@@ -15,13 +15,12 @@ export function useLoad(project: Project) {
     if (!engine || !project) return;
 
     useEditorStore.setState({
-      name: project.name,
+      title: project.title,
       description: project.description ?? "",
-      publicationId: project.publicationId,
     });
 
     return () => {
-      useEditorStore.setState({ name: "", description: "", publicationId: undefined });
+      useEditorStore.setState({ title: "", description: "" });
     };
   }, [engine, project]);
 

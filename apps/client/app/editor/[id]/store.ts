@@ -17,10 +17,9 @@ export interface IEditorStore {
   showColliders: boolean;
   tool: Tool;
 
-  name: string;
+  title: string;
   description: string;
   image: string | null;
-  publicationId: string | null;
 
   treeIds: string[];
   openIds: string[];
@@ -45,10 +44,9 @@ export const useEditorStore = create<IEditorStore>(() => ({
   showColliders: false,
   tool: "translate",
 
-  name: "",
+  title: "",
   description: "",
   image: null,
-  publicationId: null,
 
   treeIds: [],
   openIds: [],

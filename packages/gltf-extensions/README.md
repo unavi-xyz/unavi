@@ -7,6 +7,7 @@ Contains [glTF-Transform](https://github.com/donmccurdy/glTF-Transform) implemen
 - [OMI_collider](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_collider)
 - [OMI_spawn_point](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_spawn_point)
 - WIRED_avatar
+- WIRED_space
 
 Also contains partial implementations of the following extensions:
 

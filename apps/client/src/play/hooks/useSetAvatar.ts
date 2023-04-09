@@ -1,7 +1,7 @@
 import { useClient } from "@wired-labs/react-client";
 
 import { getTempUpload } from "@/app/api/temp/helper";
-import { usePlayStore } from "@/app/play/[id]/store";
+import { usePlayStore } from "@/app/play/store";
 
 import { cdnURL } from "../../utils/s3Paths";
 import { S3Path } from "../../utils/s3Paths";

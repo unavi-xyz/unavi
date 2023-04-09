@@ -2,7 +2,7 @@ import { ClientContext } from "@wired-labs/react-client";
 import { useContext, useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
-import { usePlayStore } from "@/app/play/[id]/store";
+import { usePlayStore } from "@/app/play/store";
 
 import { env } from "../../../env.mjs";
 import FileInput from "../../../ui/FileInput";

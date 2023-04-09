@@ -1,40 +1,32 @@
 import { HostAPI } from "@wired-labs/protocol";
-import { ATTRIBUTE_TYPES } from "contracts";
 import { cache } from "react";
 
-import { env } from "../../env.mjs";
-import { fetchSpaceMetadata } from "./fetchSpaceMetadata";
+import { readSpaceMetadata } from "./readSpaceMetadata";
 
-const DEFAULT_HOST =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:4000"
-    : `https://${env.NEXT_PUBLIC_DEFAULT_HOST}`;
-
-export const fetchPlayerCount = cache(async (id: number) => {
+export const fetchPlayerCount = cache(async (uri: string, host?: string) => {
   try {
-    const metadata = await fetchSpaceMetadata(id);
-    if (!metadata) throw new Error("Failed to fetch space metadata");
+    let spaceHost = host;
 
-    const hostAttribute = metadata.attributes?.find(
-      (attr) => attr.trait_type === ATTRIBUTE_TYPES.HOST
-    );
+    if (!spaceHost) {
+      const metadata = await readSpaceMetadata(uri);
+      if (!metadata) throw new Error("Failed to read space metadata");
 
-    const spaceHost = hostAttribute?.value ? `https://${hostAttribute.value}` : DEFAULT_HOST;
-    const host = spaceHost ?? DEFAULT_HOST;
+      spaceHost = metadata.host;
+    }
 
-    const response = await fetch(`${host}/${HostAPI.space(id).playerCount}`, {
+    const http = spaceHost.startsWith("localhost") ? "http" : "https";
+
+    const res = await fetch(`${http}://${spaceHost}/${HostAPI.playerCount(uri)}`, {
       cache: "no-store",
     });
+    if (!res.ok) throw new Error("Failed to fetch player count");
 
-    if (!response.ok) throw new Error("Failed to fetch player count");
-
-    const playerCountText = await response.text();
+    const playerCountText = await res.text();
     const playerCount = parseInt(playerCountText);
     if (isNaN(playerCount)) throw new Error("Failed to parse player count");
 
     return playerCount;
-  } catch (e) {
-    console.warn(e);
+  } catch {
     return 0;
   }
 });

@@ -3,12 +3,14 @@ import {
   KHRDracoMeshCompression,
   KHRMeshQuantization,
   KHRTextureTransform,
+  KHRXMP,
 } from "@gltf-transform/extensions";
 import {
   AudioExtension,
   AvatarExtension,
   BehaviorExtension,
   ColliderExtension,
+  SpaceExtension,
   SpawnPointExtension,
 } from "@wired-labs/gltf-extensions";
 
@@ -25,4 +27,6 @@ export const extensions = [
   KHRMeshQuantization,
   KHRTextureTransform,
   SpawnPointExtension,
+  SpaceExtension,
+  KHRXMP,
 ];

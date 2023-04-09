@@ -1,8 +1,18 @@
-import { getProjectFileUpload } from "@/app/api/projects/[id]/[file]/helper";
+import { Packet } from "@gltf-transform/extensions";
+import { Space } from "@wired-labs/gltf-extensions";
+
+import { getProjectFileUpload } from "@/app/api/projects/[id]/files/[file]/helper";
 import { updateProject } from "@/app/api/projects/[id]/helper";
 import { useEditorStore } from "@/app/editor/[id]/store";
+import { useSession } from "@/src/client/auth/useSession";
+import { env } from "@/src/env.mjs";
+import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
+import { toHex } from "@/src/utils/toHex";
 
 export function useSave(projectId: string) {
+  const { data: session } = useSession();
+  const { profile } = useProfileByAddress(session?.address);
+
   async function saveImage() {
     const { engine, canvas } = useEditorStore.getState();
     if (!engine || !canvas) throw new Error("No engine");
@@ -27,8 +37,42 @@ export function useSave(projectId: string) {
   }
 
   async function saveModel() {
-    const { engine } = useEditorStore.getState();
+    const { engine, title, description } = useEditorStore.getState();
     if (!engine) throw new Error("No engine");
+
+    // Save XMP metadata
+    let xmpPacket = engine.scene.doc.getRoot().getExtension<Packet>(Packet.EXTENSION_NAME);
+
+    if (!xmpPacket) {
+      xmpPacket = engine.scene.extensions.xmp
+        .createPacket()
+        .setContext({ dc: "http://purl.org/dc/elements/1.1/" });
+
+      engine.scene.doc.getRoot().setExtension(xmpPacket.extensionName, xmpPacket);
+    }
+
+    const creator = profile
+      ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${toHex(profile.id)}`
+      : session?.address
+      ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${session.address}`
+      : "";
+
+    const date = new Date().toISOString();
+
+    xmpPacket.setProperty("dc:title", title.trimEnd());
+    xmpPacket.setProperty("dc:creator", creator);
+    xmpPacket.setProperty("dc:date", date);
+    xmpPacket.setProperty("dc:description", description.trimEnd());
+
+    // Save space metadata
+    let space = engine.scene.doc.getRoot().getExtension<Space>(Space.EXTENSION_NAME);
+
+    if (!space) {
+      space = engine.scene.extensions.space.createSpace();
+      engine.scene.doc.getRoot().setExtension(space.extensionName, space);
+    }
+
+    space.setHost(env.NEXT_PUBLIC_DEFAULT_HOST);
 
     // Export to GLB
     const glb = await engine.scene.export();
@@ -46,9 +90,8 @@ export function useSave(projectId: string) {
   }
 
   async function saveMetadata() {
-    const { name, description } = useEditorStore.getState();
-
-    await updateProject(projectId, { name, description });
+    const { title, description } = useEditorStore.getState();
+    await updateProject(projectId, { title, description });
   }
 
   async function save() {
@@ -60,7 +103,7 @@ export function useSave(projectId: string) {
     await stopPlaying();
 
     try {
-      await Promise.all([saveImage(), saveModel(), saveMetadata()]);
+      await Promise.all([saveImage(), saveMetadata(), saveModel()]);
     } catch (err) {
       console.error(err);
     }

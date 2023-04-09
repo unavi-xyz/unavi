@@ -1,3 +1,5 @@
+"use client";
+
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import React, { useEffect, useState } from "react";
 
@@ -42,7 +44,7 @@ const Tooltip = React.forwardRef<HTMLDivElement, Props>(
               ref={ref}
               side={side}
               sideOffset={10}
-              className={`z-50 rounded-lg bg-neutral-800 px-3 py-2 text-xs font-bold leading-none text-white shadow transition ${
+              className={`z-50 rounded-lg bg-neutral-900/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur transition ${
                 visible ? "animate-scaleInFull" : "animate-scaleOutFull"
               }`}
             >

@@ -1,19 +1,12 @@
-import { ERC721Metadata } from "contracts";
-
 import { useHost } from "./useHost";
 import { useScene } from "./useScene";
 
 /**
  * Hook to join a space.
- *
- * @param id Space ID
- * @param metadata Space metadata
- * @param host Space host
- * @returns Space loading text and progress
  */
-export function useSpace(id: number | null, metadata: ERC721Metadata | null, host: string | null) {
-  const { isDownloaded, isLoaded } = useScene(metadata);
-  const { isConnected } = useHost(id, host);
+export function useSpace(uri: string | null, host: string | null) {
+  const { isDownloaded, isLoaded } = useScene(uri);
+  const { isConnected } = useHost(uri, host);
 
   const loadingText = !isDownloaded
     ? "Downloading scene..."

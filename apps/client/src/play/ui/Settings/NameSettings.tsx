@@ -1,7 +1,7 @@
 import { ClientContext } from "@wired-labs/react-client";
 import { useContext } from "react";
 
-import { usePlayStore } from "@/app/play/[id]/store";
+import { usePlayStore } from "@/app/play/store";
 
 import { useSession } from "../../../client/auth/useSession";
 import TextField from "../../../ui/TextField";

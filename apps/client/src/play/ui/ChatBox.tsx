@@ -1,7 +1,7 @@
 import { useClient } from "@wired-labs/react-client";
 import { useEffect, useRef } from "react";
 
-import { usePlayStore } from "@/app/play/[id]/store";
+import { usePlayStore } from "@/app/play/store";
 
 import { usePointerLocked } from "../hooks/usePointerLocked";
 import ChatMessage from "./ChatMessage";

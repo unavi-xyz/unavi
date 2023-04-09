@@ -1,7 +1,7 @@
 import { CreateProjectArgs, CreateProjectResponse } from "./types";
 
-export async function createProject(name?: string) {
-  const args: CreateProjectArgs = { name };
+export async function createProject(title?: string) {
+  const args: CreateProjectArgs = { title };
   const response = await fetch("/api/projects", {
     method: "POST",
     body: JSON.stringify(args),

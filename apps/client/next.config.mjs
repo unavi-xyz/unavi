@@ -100,11 +100,6 @@ export default await defineNextConfig({
   async redirects() {
     return [
       {
-        source: "/play",
-        destination: "/explore",
-        permanent: false,
-      },
-      {
         source: "/editor",
         destination: "/create",
         permanent: false,

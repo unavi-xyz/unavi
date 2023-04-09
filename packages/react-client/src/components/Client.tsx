@@ -42,8 +42,7 @@ export type HoverState = null | "equip_avatar" | "avatar_equipped";
 export interface IClientContext {
   ethersProvider: providers.Provider | Signer | null;
   host: string | null;
-  metadata: ERC721Metadata | null;
-  spaceId: number | null;
+  uri: string | null;
 
   engine: Engine | null;
 
@@ -78,8 +77,7 @@ export interface IClientContext {
 const defaultContext: IClientContext = {
   ethersProvider: null,
   host: null,
-  metadata: null,
-  spaceId: null,
+  uri: null,
 
   engine: null,
 
@@ -120,21 +118,12 @@ interface Props {
   ethers?: providers.Provider | Signer;
   host?: string;
   skybox?: string;
-  spaceId?: number;
+  uri?: string;
   metadata?: ERC721Metadata;
 }
 
 /**
  * A self-contained client for connecting to The Wired.
- *
- * @param animations The path to the animations folder.
- * @param children Any children to render.
- * @param defaultAvatar The path to the default avatar.
- * @param ethers The ethers provider to use.
- * @param host The host to connect to.
- * @param skybox The path to the skybox.
- * @param spaceId The space to connect to.
- * @param metadata The metadata for the space.
  */
 export function Client({
   animations,
@@ -144,7 +133,7 @@ export function Client({
   host,
   metadata,
   skybox,
-  spaceId,
+  uri,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -243,8 +232,7 @@ export function Client({
       value={{
         ethersProvider,
         host: usedHost || null,
-        metadata: metadata ?? null,
-        spaceId: spaceId ?? null,
+        uri: uri || null,
         engine,
         hoverState,
         setHoverState,
@@ -305,8 +293,8 @@ export function Client({
 }
 
 function Space() {
-  const { spaceId, metadata, host, setLoadingProgress, setLoadingText } = useContext(ClientContext);
-  const { loadingProgress, loadingText } = useSpace(spaceId, metadata, host);
+  const { uri, host, setLoadingProgress, setLoadingText } = useContext(ClientContext);
+  const { loadingProgress, loadingText } = useSpace(uri, host);
 
   useEffect(() => {
     setLoadingProgress(loadingProgress);

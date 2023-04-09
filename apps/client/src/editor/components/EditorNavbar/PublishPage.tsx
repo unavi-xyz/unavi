@@ -1,23 +1,26 @@
-import { ATTRIBUTE_TYPES, ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
-import { useRouter } from "next/navigation";
+import { Space } from "@wired-labs/gltf-extensions";
+import { ERC721Metadata, ERC721MetadataSchema } from "contracts";
+import { nanoid } from "nanoid";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import useSWR from "swr";
 import { useSigner } from "wagmi";
 
-import { GetFileDownloadResponse } from "@/app/api/projects/[id]/[file]/types";
-import { publishProject } from "@/app/api/projects/[id]/publication/helper";
-import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from "@/app/api/projects/constants";
-import { getPublicationFileUpload } from "@/app/api/publications/[id]/files/[file]/helper";
-import { linkPublication } from "@/app/api/publications/[id]/link/helper";
-import { copyProjectToModel } from "@/app/api/publications/[id]/models/[modelId]/copy-project/helper";
-import { getPublishedModelFileUpload } from "@/app/api/publications/[id]/models/[modelId]/files/[file]/helper";
-import { createPublishedModel } from "@/app/api/publications/[id]/models/helper";
+import { GetFileDownloadResponse } from "@/app/api/projects/[id]/files/[file]/types";
+import { linkProject } from "@/app/api/projects/[id]/link/helper";
+import { publishProject } from "@/app/api/projects/[id]/publish/helper";
+import { MAX_DESCRIPTION_LENGTH, MAX_TITLE_LENGTH } from "@/app/api/projects/constants";
+import { copyProjectToModel } from "@/app/api/spaces/[id]/model/copy-project/helper";
+import { getSpaceModelFileUpload } from "@/app/api/spaces/[id]/model/files/[file]/helper";
+import { createSpaceModel } from "@/app/api/spaces/[id]/model/helper";
+import {
+  getSpaceNFTFileDownload,
+  getSpaceNFTFileUpload,
+} from "@/app/api/spaces/[id]/nft/files/[file]/helper";
 import { useEditorStore } from "@/app/editor/[id]/store";
 
 import { useSession } from "../../../client/auth/useSession";
-import { env } from "../../../env.mjs";
-import { useProfileByAddress } from "../../../play/hooks/useProfileByAddress";
 import { fetcher } from "../../../play/utils/fetcher";
 import { Project } from "../../../server/helpers/fetchProject";
 import Button from "../../../ui/Button";
@@ -26,7 +29,6 @@ import TextArea from "../../../ui/TextArea";
 import TextField from "../../../ui/TextField";
 import { bytesToDisplay } from "../../../utils/bytesToDisplay";
 import { cdnURL, S3Path } from "../../../utils/s3Paths";
-import { toHex } from "../../../utils/toHex";
 import { useSave } from "../../hooks/useSave";
 import { cropImage } from "../../utils/cropImage";
 import { parseError } from "../../utils/parseError";
@@ -36,9 +38,7 @@ interface Props {
 }
 
 export default function PublishPage({ project }: Props) {
-  const router = useRouter();
-
-  const name = useEditorStore((state) => state.name);
+  const title = useEditorStore((state) => state.title);
   const description = useEditorStore((state) => state.description);
   const image = useEditorStore((state) => state.image);
 
@@ -46,9 +46,9 @@ export default function PublishPage({ project }: Props) {
   const { data: signer } = useSigner();
   const { save } = useSave(project.id);
 
-  const { profile } = useProfileByAddress(session?.address);
+  // const { profile } = useProfileByAddress(session?.address);
   const { data: imageDownload } = useSWR<GetFileDownloadResponse>(
-    () => `/api/projects/${project.id}/image`,
+    () => `/api/projects/${project.id}/files/image`,
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
@@ -68,7 +68,7 @@ export default function PublishPage({ project }: Props) {
     if (loading) return;
     if (!signer) throw new Error("Signer not found");
 
-    const toastId = "publish";
+    const toastId = nanoid();
 
     async function publish() {
       const { engine } = useEditorStore.getState();
@@ -77,23 +77,34 @@ export default function PublishPage({ project }: Props) {
       if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
 
-      // Save project
-      toast.loading("Saving...", { id: toastId });
-      await save();
+      toast.loading("Preparing space...", { id: toastId });
 
-      // Start optimizing model
-      toast.loading("Creating publication...", { id: toastId });
-      const optimizedModelPromise = engine.scene.export({ optimize: true });
+      // Start saving
+      const savePromise = save();
 
       // Publish project
-      const { id: publicationId } = await publishProject(project.id);
+      const { spaceId, nftId } = await publishProject(project.id);
 
       // Create published model
-      const modelId = await createPublishedModel(publicationId);
+      const { modelId } = await createSpaceModel(spaceId);
+      const imageURL = cdnURL(S3Path.spaceModel(modelId).image);
+      const modelURL = cdnURL(S3Path.spaceModel(modelId).model);
+
+      // Update space image metadata
+      const space = engine.scene.doc.getRoot().getExtension<Space>(Space.EXTENSION_NAME);
+      if (!space) throw new Error("Space extension not found");
+
+      space.setImage(imageURL);
+
+      await savePromise;
 
       async function uploadModel() {
-        const url = await getPublishedModelFileUpload(publicationId, modelId, "model");
-        const optimizedModel = await optimizedModelPromise;
+        if (!engine) throw new Error("Engine not found");
+
+        const [url, optimizedModel] = await Promise.all([
+          getSpaceModelFileUpload(spaceId, "model"),
+          engine.scene.export({ optimize: true }),
+        ]);
 
         const response = await fetch(url, {
           method: "PUT",
@@ -117,7 +128,7 @@ export default function PublishPage({ project }: Props) {
         const body = await res.blob();
 
         // Upload to S3
-        const url = await getPublishedModelFileUpload(publicationId, modelId, "image");
+        const url = await getSpaceModelFileUpload(spaceId, "image");
 
         const response = await fetch(url, {
           method: "PUT",
@@ -131,109 +142,69 @@ export default function PublishPage({ project }: Props) {
         if (!response.ok) throw new Error("Failed to upload image");
       }
 
-      async function uploadMetadata(spaceId: number | undefined) {
-        const modelURL = cdnURL(S3Path.publication(publicationId).model(modelId).model);
-        const imageURL = cdnURL(S3Path.publication(publicationId).model(modelId).image);
+      // If space has an NFT, update the metadata
+      async function uploadNftMetadata() {
+        if (!nftId) return;
 
-        const metadata: ERC721Metadata = {
-          animation_url: modelURL,
-          description,
-          external_url: spaceId
-            ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/space/${toHex(spaceId)}`
-            : `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${
-                profile ? toHex(profile.id) : session?.address
-              }`,
+        const currentMetadataURL = await getSpaceNFTFileDownload(spaceId, "metadata");
+        const currentMetadataRes = await fetch(currentMetadataURL);
+        const currentMetadata = ERC721MetadataSchema.parse(await currentMetadataRes.json());
+
+        const erc721metadata: ERC721Metadata = {
+          ...currentMetadata,
+          name: title.trimEnd(),
+          description: description.trimEnd(),
           image: imageURL,
-          name,
-          attributes: [
-            {
-              trait_type: ATTRIBUTE_TYPES.HOST,
-              value: env.NEXT_PUBLIC_DEFAULT_HOST,
-            },
-          ],
+          animation_url: modelURL,
         };
 
         // Upload to S3
-        const url = await getPublicationFileUpload(publicationId, "metadata");
+        const url = await getSpaceNFTFileUpload(spaceId, "metadata");
 
         const response = await fetch(url, {
           method: "PUT",
-          body: JSON.stringify(metadata),
+          body: JSON.stringify(erc721metadata),
           headers: {
             "Content-Type": "application/json",
             "x-amz-acl": "public-read",
           },
         });
 
-        if (!response.ok) throw new Error("Failed to upload metadata");
-      }
-
-      let spaceId = project?.publication?.spaceId ?? undefined;
-
-      if (spaceId === undefined) {
-        toast.loading("Waiting for signature...", { id: toastId });
-
-        // Mint space NFT
-        const contentURI = cdnURL(S3Path.publication(publicationId).metadata);
-        const contract = Space__factory.connect(SPACE_ADDRESS, signer);
-        const tx = await contract.mintWithTokenURI(contentURI);
-
-        toast.loading("Minting space...", { id: toastId });
-
-        await tx.wait();
-
-        // Get space ID
-        // Loop backwards through all spaces until we find the matching content URI
-        const count = (await contract.count()).toNumber();
-        let i = 0;
-
-        while (spaceId === undefined && i < count) {
-          i++;
-          const tokenId = count - i;
-
-          const owner = await contract.ownerOf(tokenId);
-          if (owner !== session.address) continue;
-
-          const uri = await contract.tokenURI(tokenId);
-          if (uri !== contentURI) continue;
-
-          spaceId = tokenId;
-        }
+        if (!response.ok) throw new Error("Failed to upload image");
       }
 
       toast.loading("Uploading metadata...", { id: toastId });
 
-      const promises: Promise<unknown>[] = [
-        copyProjectToModel(publicationId, modelId, { projectId: project.id }),
+      await Promise.all([
+        copyProjectToModel(spaceId, { projectId: project.id }),
         uploadModel(),
         uploadImage(),
-        uploadMetadata(spaceId),
-      ];
+        uploadNftMetadata(),
+        linkProject(project.id, { spaceId }),
+      ]);
 
-      if (spaceId !== undefined) promises.push(linkPublication(publicationId, spaceId));
+      toast.success(
+        (t) => (
+          <span className="space-x-4">
+            <span>Space published!</span>
 
-      await Promise.all(promises);
-
-      // Redirect to space if new space was created
-      if (!project?.publication?.spaceId) {
-        if (spaceId !== undefined) {
-          // Wait for eth provider to update
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-
-          // Redirect to space
-          router.push(`/space/${toHex(spaceId)}`);
-        } else {
-          // Redirect to profile
-          router.push(`/user/${profile ? toHex(profile.id) : session?.address}`);
-        }
-      }
+            <Link
+              href={`/space/${spaceId}`}
+              onClick={() => toast.dismiss(t.id)}
+              className="rounded-full bg-neutral-200 px-4 py-1 font-semibold transition hover:bg-neutral-300 active:opacity-80"
+            >
+              View
+            </Link>
+          </span>
+        ),
+        { id: toastId, duration: 20000 }
+      );
     }
 
     setLoading(true);
 
     try {
       await publish();
-      toast.success("Published!", { id: toastId });
     } catch (err) {
       toast.error(parseError(err, "Failed to publish."), { id: toastId });
       console.error(err);
@@ -247,15 +218,15 @@ export default function PublishPage({ project }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <TextField
-        label="Name"
-        name="name"
+        label="Title"
+        name="title"
         autoComplete="off"
-        maxLength={MAX_NAME_LENGTH}
-        defaultValue={name}
+        maxLength={MAX_TITLE_LENGTH}
+        defaultValue={title}
         disabled={loading}
         onChange={(e) => {
           const value = e.target.value;
-          useEditorStore.setState({ name: value });
+          useEditorStore.setState({ title: value });
         }}
       />
 

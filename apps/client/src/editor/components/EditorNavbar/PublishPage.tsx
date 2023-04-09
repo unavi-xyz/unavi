@@ -154,8 +154,8 @@ export default function PublishPage({ project }: Props) {
 
         const erc721metadata: ERC721Metadata = {
           ...currentMetadata,
-          name: title,
-          description,
+          name: title.trimEnd(),
+          description: description.trimEnd(),
           image: imageURL,
           animation_url: modelURL,
         };

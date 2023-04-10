@@ -1,7 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
-import { useSigner } from "wagmi";
 
 import SignInButton from "@/app/(navbar)/SignInButton";
 import { MAX_TITLE_LENGTH } from "@/app/api/projects/constants";
@@ -32,7 +31,6 @@ export default function EditorNavbar({ project }: Props) {
 
   const { save, saveImage } = useSave(project.id);
   const { status } = useSession();
-  const { data: signer } = useSigner();
 
   const isPublished = Boolean(project?.spaceId);
 
@@ -120,7 +118,7 @@ export default function EditorNavbar({ project }: Props) {
         <div className="flex h-full w-full items-center justify-end space-x-2">
           <PlayButton />
           <VisualsButton />
-          {status === "authenticated" && signer ? (
+          {status === "authenticated" ? (
             <Button disabled={!sceneLoaded} onClick={handleOpenPublish}>
               Publish
             </Button>

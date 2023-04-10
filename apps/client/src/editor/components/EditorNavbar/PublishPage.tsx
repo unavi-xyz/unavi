@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import useSWR from "swr";
-import { useSigner } from "wagmi";
 
 import { GetFileDownloadResponse } from "@/app/api/projects/[id]/files/[file]/types";
 import { linkProject } from "@/app/api/projects/[id]/link/helper";
@@ -43,7 +42,6 @@ export default function PublishPage({ project }: Props) {
   const image = useEditorStore((state) => state.image);
 
   const { data: session } = useSession();
-  const { data: signer } = useSigner();
   const { save } = useSave(project.id);
 
   // const { profile } = useProfileByAddress(session?.address);
@@ -66,7 +64,6 @@ export default function PublishPage({ project }: Props) {
     e.preventDefault();
 
     if (loading) return;
-    if (!signer) throw new Error("Signer not found");
 
     const toastId = nanoid();
 
@@ -74,7 +71,6 @@ export default function PublishPage({ project }: Props) {
       const { engine } = useEditorStore.getState();
 
       if (!engine) throw new Error("Engine not found");
-      if (!signer) throw new Error("Signer not found");
       if (!session) throw new Error("Session not found");
 
       toast.loading("Preparing space...", { id: toastId });

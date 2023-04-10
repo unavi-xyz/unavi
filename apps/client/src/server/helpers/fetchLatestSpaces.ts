@@ -11,56 +11,66 @@ import { validateSpaceNFT, ValidDatabaseSpace, ValidSpaceNFT } from "./validateS
 export async function fetchLatestSpaces(limit: number, owner?: string) {
   const [nftSpaces, databaseSpaces] = await Promise.all([
     fetchNFTSpaces(limit, owner),
-    env.NEXT_PUBLIC_HAS_DATABASE ? fetchDatabaseSpaces(limit, owner) : [],
+    fetchDatabaseSpaces(limit, owner),
   ]);
 
   return [...nftSpaces, ...databaseSpaces];
 }
 
 async function fetchNFTSpaces(limit: number, owner?: string) {
-  const spaceContract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
+  try {
+    const spaceContract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
 
-  const count = (await spaceContract.count()).toNumber();
+    const count = (await spaceContract.count()).toNumber();
 
-  const spaces: ValidSpaceNFT[] = [];
-  const length = Math.min(limit, count);
-  let nextSpaceId = count - 1;
+    const spaces: ValidSpaceNFT[] = [];
+    const length = Math.min(limit, count);
+    let nextSpaceId = count - 1;
 
-  const fetchSpace = async () => {
-    if (nextSpaceId === 0 || spaces.length === length) return;
+    const fetchSpace = async () => {
+      if (nextSpaceId === 0 || spaces.length === length) return;
 
-    const valid = await validateSpaceNFT(nextSpaceId--, owner);
+      const valid = await validateSpaceNFT(nextSpaceId--, owner);
 
-    if (valid) spaces.push(valid);
-    else await fetchSpace();
-  };
+      if (valid) spaces.push(valid);
+      else await fetchSpace();
+    };
 
-  await Promise.all(Array.from({ length }).map(fetchSpace));
+    await Promise.all(Array.from({ length }).map(fetchSpace));
 
-  return spaces.sort((a, b) => b.id.value - a.id.value);
+    return spaces.sort((a, b) => b.id.value - a.id.value);
+  } catch {
+    return [];
+  }
 }
 
 async function fetchDatabaseSpaces(limit: number, owner?: string) {
-  const spaces = await prisma.space.findMany({
-    where: { owner, SpaceModel: { isNot: null }, tokenId: null },
-    include: { SpaceModel: true },
-    orderBy: { updatedAt: "desc" },
-    take: limit,
-  });
+  if (!env.NEXT_PUBLIC_HAS_DATABASE) return [];
 
-  const validSpaces: ValidDatabaseSpace[] = [];
+  try {
+    const spaces = await prisma.space.findMany({
+      where: { owner, SpaceModel: { isNot: null }, tokenId: null },
+      include: { SpaceModel: true },
+      orderBy: { updatedAt: "desc" },
+      take: limit,
+    });
 
-  await Promise.all(
-    spaces.map(async (space) => {
-      if (!space.SpaceModel) return;
+    const validSpaces: ValidDatabaseSpace[] = [];
 
-      const modelURI = cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).model);
-      const metadata = await readSpaceMetadata(modelURI);
-      if (!metadata) return;
+    await Promise.all(
+      spaces.map(async (space) => {
+        if (!space.SpaceModel) return;
 
-      validSpaces.push({ id: { type: "id", value: space.publicId }, metadata });
-    })
-  );
+        const modelURI = cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).model);
+        const metadata = await readSpaceMetadata(modelURI);
+        if (!metadata) return;
 
-  return validSpaces;
+        validSpaces.push({ id: { type: "id", value: space.publicId }, metadata });
+      })
+    );
+
+    return validSpaces;
+  } catch {
+    return [];
+  }
 }

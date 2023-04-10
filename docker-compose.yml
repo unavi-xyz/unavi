@@ -9,7 +9,7 @@ services:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
       MINIO_ROOT_PASSWORD: ${S3_SECRET}
     ports:
-      - 9000:9000
+      - ${S3_PORT}:${S3_PORT}
       - 9090:9090
     volumes:
       - aws:/data
@@ -33,8 +33,7 @@ services:
     image: mysql:8
     restart: unless-stopped
     ports:
-      - 3306:3306
-      - 33060:33060
+      - ${MYSQL_PORT}:${MYSQL_PORT}
     volumes:
       - db:/var/lib/mysql
     working_dir: /var/lib/mysql

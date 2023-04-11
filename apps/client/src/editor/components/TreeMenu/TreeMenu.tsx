@@ -4,7 +4,7 @@ import TreeRoot from "./TreeRoot";
 
 export default function TreeMenu() {
   return (
-    <div className="h-full space-y-1 pb-28">
+    <div className="h-full space-y-1 pb-12">
       <div className="flex h-12 items-center justify-center space-x-2 py-1">
         <ObjectsButton />
         <SpecialsButton />

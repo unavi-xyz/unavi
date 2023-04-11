@@ -45,7 +45,7 @@ export default function InspectMenu({ projectId }: Props) {
   if (!spawn) availableComponents.push(COMPONENT_TYPE.SpawnPoint);
 
   return (
-    <div className="pr-2 pb-4">
+    <div className="h-full pb-12">
       <div className="flex w-full items-center justify-center pt-4">
         <input
           type="text"
@@ -58,7 +58,7 @@ export default function InspectMenu({ projectId }: Props) {
         />
       </div>
 
-      <div className="space-y-4 px-1">
+      <div className="h-full space-y-4 overflow-y-auto px-1 pb-2">
         <TransformComponent node={node} />
 
         {mesh && <MeshComponent mesh={mesh} />}

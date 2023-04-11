@@ -118,17 +118,17 @@ export default function Editor({ project }: Props) {
           <PanelGroup autoSaveId="editor-vertical" direction="vertical">
             <Panel>
               <PanelGroup autoSaveId="editor-horizontal" direction="horizontal">
-                <Panel collapsible defaultSize={15}>
+                <Panel collapsible defaultSize={15} minSize={10}>
                   <TreeMenu />
                 </Panel>
 
-                <PanelResizeHandle className="group w-2 p-[1px]">
+                <PanelResizeHandle className="group w-2 border-r p-[1px]">
                   <div className="h-full rounded-full transition duration-300 group-active:bg-neutral-300" />
                 </PanelResizeHandle>
 
                 <Panel minSize={30}>
                   {error ? (
-                    <div className="h-full space-y-2 border-x bg-neutral-100 pt-10 text-center">
+                    <div className="h-full space-y-2 bg-neutral-100 pt-10 text-center">
                       {error === ERROR_NOT_SIGNED_IN ? (
                         <h2>{error}</h2>
                       ) : error === ERROR_MESSAGE.UNAUTHORIZED ? (
@@ -149,11 +149,7 @@ export default function Editor({ project }: Props) {
                       )}
                     </div>
                   ) : (
-                    <div
-                      className={`h-full border-x bg-neutral-300 ${
-                        sceneLoaded ? "" : "animate-pulse"
-                      }`}
-                    >
+                    <div className={`h-full bg-neutral-300 ${sceneLoaded ? "" : "animate-pulse"}`}>
                       <div
                         ref={containerRef}
                         className={`relative h-full w-full overflow-hidden transition ${
@@ -172,25 +168,27 @@ export default function Editor({ project }: Props) {
                   )}
                 </Panel>
 
-                <PanelResizeHandle className="group w-2 p-[1px]">
+                <PanelResizeHandle className="group w-2 border-l p-[1px]">
                   <div className="h-full rounded-full transition duration-300 group-active:bg-neutral-300" />
                 </PanelResizeHandle>
 
-                <Panel collapsible defaultSize={20}>
+                <Panel collapsible defaultSize={20} minSize={15}>
                   <InspectMenu projectId={project.id} />
                 </Panel>
               </PanelGroup>
             </Panel>
 
-            <PanelResizeHandle className="group h-2 p-[1px]">
-              <div className="h-full w-full rounded-full transition duration-300 group-active:bg-neutral-300" />
-            </PanelResizeHandle>
+            {openScriptId ? (
+              <>
+                <PanelResizeHandle className="group h-2 border-t p-[1px]">
+                  <div className="h-full w-full rounded-full transition duration-300 group-active:bg-neutral-300" />
+                </PanelResizeHandle>
 
-            {openScriptId && (
-              <Panel defaultSize={60}>
-                <ScriptMenu key={openScriptId} scriptId={openScriptId} />
-              </Panel>
-            )}
+                <Panel defaultSize={60}>
+                  <ScriptMenu key={openScriptId} scriptId={openScriptId} />
+                </Panel>
+              </>
+            ) : null}
           </PanelGroup>
         </div>
       </div>

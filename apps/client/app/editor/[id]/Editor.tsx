@@ -116,7 +116,7 @@ export default function Editor({ project }: Props) {
 
         <div className="fixed h-full w-full animate-fadeInDelayed">
           <PanelGroup autoSaveId="editor-vertical" direction="vertical">
-            <Panel>
+            <Panel onResize={resize}>
               <PanelGroup autoSaveId="editor-horizontal" direction="horizontal">
                 <Panel collapsible defaultSize={15} minSize={10}>
                   <TreeMenu />
@@ -126,7 +126,7 @@ export default function Editor({ project }: Props) {
                   <div className="h-full rounded-full transition duration-300 group-active:bg-neutral-300" />
                 </PanelResizeHandle>
 
-                <Panel minSize={30}>
+                <Panel onResize={resize} minSize={30}>
                   {error ? (
                     <div className="h-full space-y-2 bg-neutral-100 pt-10 text-center">
                       {error === ERROR_NOT_SIGNED_IN ? (

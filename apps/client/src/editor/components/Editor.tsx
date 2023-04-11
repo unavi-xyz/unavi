@@ -97,6 +97,7 @@ export function Editor({ project, animationPath, defaultAvatar, skybox, children
     setEngine(newEngine);
 
     newEngine.controls = "orbit";
+    newEngine.start();
 
     return () => {
       newEngine.destroy();
@@ -133,6 +134,7 @@ export function Editor({ project, animationPath, defaultAvatar, skybox, children
       if (!engine || !loaded) return;
 
       if (value === "edit") {
+        // Exit play mode
         engine.audio.stop();
         engine.behavior.stop();
         engine.controls = "orbit";
@@ -150,14 +152,14 @@ export function Editor({ project, animationPath, defaultAvatar, skybox, children
         sceneRef.current = glb;
         hasSceneRef.current = true;
 
-        engine.audio.start();
-        engine.behavior.start();
+        // Enter play mode
         engine.controls = "player";
-        engine.render.send({ subject: "toggle_animations", data: true });
         engine.physics.send({ subject: "respawn", data: null });
+        engine.render.send({ subject: "toggle_animations", data: true });
+        engine.behavior.start();
+        await engine.audio.start();
       }
 
-      engine.start();
       setMode(value);
     },
     [engine, loaded]

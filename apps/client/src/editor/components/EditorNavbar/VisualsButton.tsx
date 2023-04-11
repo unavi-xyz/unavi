@@ -14,11 +14,7 @@ export default function VisualsButton() {
     if (!engine || !loaded) return;
 
     setEnabled((prev) => {
-      if (prev) engine.physics.send({ subject: "start", data: null });
-      else engine.physics.send({ subject: "stop", data: null });
-
       engine.showColliders = !prev;
-
       return !prev;
     });
   }, [engine, loaded]);

@@ -31,7 +31,12 @@ export default async function Page({ params: { id } }: { params: Params }) {
   return (
     <SessionProvider>
       <RainbowkitWrapper>
-        <Editor project={project} animationPath="/models" skybox="/images/Skybox.jpg">
+        <Editor
+          project={project}
+          animationPath="/models"
+          defaultAvatar="/models/Robot.vrm"
+          skybox="/images/Skybox.jpg"
+        >
           <EditorUI project={project} />
         </Editor>
       </RainbowkitWrapper>

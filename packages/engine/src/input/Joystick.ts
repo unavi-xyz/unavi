@@ -8,11 +8,12 @@ const INNER_RADIUS = 30;
  * Renders a joystick on the overlay canvas.
  */
 export class Joystick {
-  #module: InputModule;
+  readonly #module: InputModule;
 
   touchId: number | undefined = undefined;
 
-  #ctx: CanvasRenderingContext2D;
+  #canvas: HTMLCanvasElement | null = null;
+  #ctx: CanvasRenderingContext2D | null = null;
   #angle: number | undefined = undefined;
   #fixedX: number | undefined = undefined;
   #fixedY: number | undefined = undefined;
@@ -21,11 +22,19 @@ export class Joystick {
 
   constructor(module: InputModule) {
     this.#module = module;
+  }
 
-    const ctx = module.engine.overlayCanvas.getContext("2d");
-    if (!ctx) throw new Error("Could not get 2d context from overlay canvas");
+  get canvas() {
+    return this.#canvas;
+  }
 
-    this.#ctx = ctx;
+  set canvas(value: HTMLCanvasElement | null) {
+    if (value === this.#canvas) return;
+
+    this.#ctx = null;
+    this.#canvas = value;
+
+    if (value) this.#ctx = value.getContext("2d");
   }
 
   onTouchStart(x: number, y: number) {
@@ -68,12 +77,9 @@ export class Joystick {
   }
 
   update() {
-    this.#ctx.clearRect(
-      0,
-      0,
-      this.#module.engine.overlayCanvas.width,
-      this.#module.engine.overlayCanvas.height
-    );
+    if (!this.#ctx || !this.canvas) return;
+
+    this.#ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (
       this.#angle === undefined ||

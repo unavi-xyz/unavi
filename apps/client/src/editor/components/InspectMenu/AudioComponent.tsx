@@ -3,11 +3,11 @@ import { AudioEmitterDistanceModel, AudioEmitterType } from "@wired-labs/gltf-ex
 import { useState } from "react";
 
 import { getNewProjectAssetUpload } from "@/app/api/projects/[id]/assets/helper";
-import { useEditorStore } from "@/app/editor/[id]/store";
 
 import FileInput from "../../../ui/FileInput";
 import { useAudioEmitter } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";
+import { useEditor } from "../Editor";
 import EditorInput from "../ui/EditorInput";
 import SelectMenu from "../ui/SelectMenu";
 import ComponentMenu from "./ComponentMenu";
@@ -19,6 +19,8 @@ interface Props {
 }
 
 export default function AudioComponent({ node, projectId }: Props) {
+  const { mode } = useEditor();
+
   const audioEmitter = useAudioEmitter(node);
 
   const sources = useSubscribe(audioEmitter, "Sources") ?? [];
@@ -36,7 +38,6 @@ export default function AudioComponent({ node, projectId }: Props) {
   const autoPlay = useSubscribe(source, "AutoPlay") ?? false;
   const loop = useSubscribe(source, "Loop") ?? false;
 
-  const isPlaying = useEditorStore((state) => state.isPlaying);
   const [loadingFileUpload, setLoadingFileUpload] = useState(false);
 
   if (!audioEmitter) return null;
@@ -52,7 +53,7 @@ export default function AudioComponent({ node, projectId }: Props) {
         displayName={uri ? sourceName : undefined}
         placeholder="Upload MP3 File"
         accept=".mp3"
-        disabled={loadingFileUpload || isPlaying}
+        disabled={loadingFileUpload || mode === "play"}
         onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!source || !file) return;

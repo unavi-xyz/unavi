@@ -1,19 +1,16 @@
 import { useState } from "react";
 import { HiOutlineLightningBolt } from "react-icons/hi";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
 import { DropdownContent, DropdownMenu, DropdownTrigger } from "../../../ui/DropdownMenu";
 import IconButton from "../../../ui/IconButton";
+import { useEditor } from "../Editor";
 import SpecialsMenu from "./SpecialsMenu";
 
 export default function SpecialsButton() {
-  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
-  const isPlaying = useEditorStore((state) => state.isPlaying);
-
   const [open, setOpen] = useState(false);
 
-  const disabled = !sceneLoaded || isPlaying;
+  const { loaded, mode } = useEditor();
+  const disabled = !loaded || mode === "play";
 
   return (
     <DropdownMenu

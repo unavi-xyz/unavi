@@ -3,9 +3,9 @@ import { BehaviorVariable, ValueType } from "@wired-labs/gltf-extensions";
 import { useEffect, useState } from "react";
 import { IoIosArrowDown } from "react-icons/io";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
+import { useEditor } from "../Editor";
 import { useVariableAttribute } from "./hooks/useVariableAttribute";
+import { useScript } from "./Script";
 import { FlowNodeData, FlowNodeParamter } from "./types";
 import { flowIsVariableJSON } from "./utils/filters";
 
@@ -26,8 +26,8 @@ interface Props {
 export default function VariableInput({ data, onChange }: Props) {
   const [variableId, setVariableId] = useState<number>();
 
-  const isPlaying = useEditorStore((state) => state.isPlaying);
-  const variables = useEditorStore((state) => state.variables);
+  const { engine, mode } = useEditor();
+  const { variables, setVariables } = useScript();
   const variable = variableId !== undefined ? variables[variableId] ?? null : null;
 
   const variableName = useVariableAttribute(variable, "name") ?? "";
@@ -35,7 +35,6 @@ export default function VariableInput({ data, onChange }: Props) {
 
   // Load initial variable
   useEffect(() => {
-    const { engine } = useEditorStore.getState();
     if (!engine) return;
 
     const param = data["variable"];
@@ -44,7 +43,7 @@ export default function VariableInput({ data, onChange }: Props) {
     if (variables.length === 0) {
       const newVariable = engine.scene.extensions.behavior.createVariable();
       newVariable.setName(`Variable ${variables.length}`);
-      useEditorStore.setState({ variables: [...variables, newVariable] });
+      setVariables((prev) => [...prev, newVariable]);
     }
 
     // If variable is set, use it
@@ -60,7 +59,7 @@ export default function VariableInput({ data, onChange }: Props) {
     setVariableId(0);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [engine, data]);
 
   // Update node data
   useEffect(() => {
@@ -75,9 +74,8 @@ export default function VariableInput({ data, onChange }: Props) {
 
         <Select.Root
           value={String(variableId)}
-          disabled={isPlaying}
+          disabled={mode === "play"}
           onValueChange={(value) => {
-            const { engine } = useEditorStore.getState();
             if (!engine) return;
 
             const isNewVariable = Number(value) === variables.length;
@@ -86,7 +84,7 @@ export default function VariableInput({ data, onChange }: Props) {
               // Create new variable
               const newVariable = engine.scene.extensions.behavior.createVariable();
               newVariable.setName(`Variable ${variables.length}`);
-              useEditorStore.setState({ variables: [...variables, newVariable] });
+              setVariables((prev) => [...prev, newVariable]);
             }
 
             // Set new variable id
@@ -98,20 +96,20 @@ export default function VariableInput({ data, onChange }: Props) {
             <div className="flex h-6 w-36 rounded bg-neutral-200">
               <input
                 value={variableName}
-                disabled={isPlaying}
+                disabled={mode === "play"}
                 onChange={(e) => {
                   if (!variable) return;
                   variable.setName(e.currentTarget.value);
                 }}
                 // eslint-disable-next-line tailwindcss/no-custom-classname
                 className={`nodrag h-full w-32 rounded-l bg-neutral-200 px-2 focus:outline-none ${
-                  isPlaying ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+                  mode === "play" ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
                 }`}
               />
 
               <Select.Trigger
                 className={`flex h-full w-full items-center justify-center rounded-r ${
-                  isPlaying ? "" : "hover:bg-neutral-300/80 focus:outline-none"
+                  mode === "play" ? "" : "hover:bg-neutral-300/80 focus:outline-none"
                 }`}
               >
                 <IoIosArrowDown />
@@ -139,14 +137,16 @@ export default function VariableInput({ data, onChange }: Props) {
 
         <select
           value={variableType}
-          disabled={isPlaying}
+          disabled={mode === "play"}
           onChange={(e) => {
             if (!variable) return;
             variable.type = e.currentTarget.value;
           }}
           // eslint-disable-next-line tailwindcss/no-custom-classname
           className={`nodrag h-6 rounded bg-neutral-200 px-1 ${
-            isPlaying ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
+            mode === "play"
+              ? ""
+              : "hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
           }`}
         >
           {VALUE_TYPES.map((type) => (

@@ -1,7 +1,5 @@
 import { IoIosArrowForward } from "react-icons/io";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
 import {
   DropdownContent,
   DropdownItem,
@@ -9,9 +7,14 @@ import {
   DropdownSubContent,
   DropdownSubTrigger,
 } from "../../../ui/DropdownMenu";
+import { useEditor } from "../Editor";
 import { categories, categorizedNodes } from "./nodes";
+import { useScript } from "./Script";
 
 export default function AddNodeMenu() {
+  const { engine } = useEditor();
+  const { addNode, reactflow } = useScript();
+
   return (
     <DropdownContent>
       <div className="py-2">
@@ -35,9 +38,7 @@ export default function AddNodeMenu() {
                     <DropdownItem
                       key={node.type}
                       onClick={() => {
-                        const { engine, addNode, reactflow } = useEditorStore.getState();
                         if (!engine || !reactflow) return;
-
                         addNode(node.type, reactflow.project({ x: window.innerWidth / 3, y: 40 }));
                       }}
                       className="cursor-default px-6 capitalize focus:bg-neutral-200 focus:outline-none"

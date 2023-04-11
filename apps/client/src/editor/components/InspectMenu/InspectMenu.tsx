@@ -1,11 +1,10 @@
 import { EXTENSION_NAME } from "@wired-labs/gltf-extensions";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
 import { useNode } from "../../hooks/useNode";
 import { useNodeExtras } from "../../hooks/useNodeExtras";
 import { useSpawn } from "../../hooks/useSpawn";
 import { useSubscribe } from "../../hooks/useSubscribe";
+import { useEditor } from "../Editor";
 import AddComponentButton, { COMPONENT_TYPE, ComponentType } from "./AddComponentButton";
 import AudioComponent from "./AudioComponent";
 import AvatarComponent from "./AvatarComponent";
@@ -20,8 +19,9 @@ interface Props {
 }
 
 export default function InspectMenu({ projectId }: Props) {
-  const isPlaying = useEditorStore((state) => state.isPlaying);
-  const selectedId = useEditorStore((state) => state.selectedId);
+  const { selectedId } = useEditor();
+
+  const { mode } = useEditor();
   const node = useNode(selectedId);
   const name = useSubscribe(node, "Name");
   const mesh = useSubscribe(node, "Mesh");
@@ -50,10 +50,12 @@ export default function InspectMenu({ projectId }: Props) {
         <input
           type="text"
           value={name ?? ""}
-          disabled={isPlaying}
+          disabled={mode === "play"}
           onChange={(e) => node.setName(e.target.value)}
           className={`mx-10 w-full rounded-lg py-0.5 text-center text-2xl font-bold transition ${
-            isPlaying ? "disabled:bg-white" : "hover:bg-neutral-200/80 focus:bg-neutral-200/80"
+            mode === "play"
+              ? "disabled:bg-white"
+              : "hover:bg-neutral-200/80 focus:bg-neutral-200/80"
           }`}
         />
       </div>

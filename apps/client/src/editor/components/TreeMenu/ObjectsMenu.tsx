@@ -1,8 +1,7 @@
-import { MeshExtras } from "engine";
-
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { Engine, MeshExtras } from "engine";
 
 import { DropdownItem } from "../../../ui/DropdownMenu";
+import { useEditor } from "../Editor";
 
 const OBJECT_NAME = {
   Box: "Box",
@@ -14,11 +13,15 @@ const OBJECT_NAME = {
 type ObjectName = (typeof OBJECT_NAME)[keyof typeof OBJECT_NAME];
 
 export default function ObjectsMenu() {
+  const { engine, setSelectedId } = useEditor();
+
   function addObject(name: ObjectName) {
+    if (!engine) return;
+
     // Create node
-    const id = createNode(name);
+    const id = createNode(name, engine);
     // Select new node
-    useEditorStore.setState({ selectedId: id });
+    setSelectedId(id);
   }
 
   return (
@@ -36,10 +39,7 @@ export default function ObjectsMenu() {
   );
 }
 
-function createNode(name: ObjectName) {
-  const { engine } = useEditorStore.getState();
-  if (!engine) return;
-
+function createNode(name: ObjectName, engine: Engine) {
   const { id, object: node } = engine.scene.node.create();
 
   node.setName(name);

@@ -3,7 +3,7 @@ import { NodeExtras } from "engine";
 import { useNodeExtras } from "./useNodeExtras";
 import { useNodes } from "./useNodes";
 
-export function useScript(id: string) {
+export function useScriptExtras(id: string | null): ScriptExtras | null {
   const nodes = useNodes();
 
   const node =
@@ -17,5 +17,10 @@ export function useScript(id: string) {
   const scripts = extras?.scripts || [];
   const script = scripts.find((script) => script.id === id);
 
-  return script;
+  return script ?? null;
 }
+
+export type ScriptExtras = {
+  id: string;
+  name: string;
+};

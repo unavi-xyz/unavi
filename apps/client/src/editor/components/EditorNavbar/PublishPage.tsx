@@ -17,7 +17,6 @@ import {
   getSpaceNFTFileDownload,
   getSpaceNFTFileUpload,
 } from "@/app/api/spaces/[id]/nft/files/[file]/helper";
-import { useEditorStore } from "@/app/editor/[id]/store";
 
 import { useSession } from "../../../client/auth/useSession";
 import { fetcher } from "../../../play/utils/fetcher";
@@ -31,18 +30,20 @@ import { cdnURL, S3Path } from "../../../utils/s3Paths";
 import { useSave } from "../../hooks/useSave";
 import { cropImage } from "../../utils/cropImage";
 import { parseError } from "../../utils/parseError";
+import { useEditor } from "../Editor";
 
 interface Props {
   project: Project;
 }
 
 export default function PublishPage({ project }: Props) {
-  const title = useEditorStore((state) => state.title);
-  const description = useEditorStore((state) => state.description);
-  const image = useEditorStore((state) => state.image);
+  const { engine, title: editorTitle, image } = useEditor();
 
   const { data: session } = useSession();
-  const { save } = useSave(project.id);
+  const { save } = useSave(project);
+
+  const [title, setTitle] = useState(editorTitle);
+  const [description, setDescription] = useState(project.description);
 
   // const { profile } = useProfileByAddress(session?.address);
   const { data: imageDownload } = useSWR<GetFileDownloadResponse>(
@@ -58,18 +59,16 @@ export default function PublishPage({ project }: Props) {
     if (imageFile) return;
     if (image) cropImage(image).then(setImageFile);
     else if (imageDownload) cropImage(imageDownload.url).then(setImageFile);
-  }, [imageFile, imageDownload, image]);
+  }, [imageFile, image, imageDownload]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (loading) return;
+    if (loading || !engine || !session) return;
 
     const toastId = nanoid();
 
     async function publish() {
-      const { engine } = useEditorStore.getState();
-
       if (!engine) throw new Error("Engine not found");
       if (!session) throw new Error("Session not found");
 
@@ -220,10 +219,7 @@ export default function PublishPage({ project }: Props) {
         maxLength={MAX_TITLE_LENGTH}
         defaultValue={title}
         disabled={loading}
-        onChange={(e) => {
-          const value = e.target.value;
-          useEditorStore.setState({ title: value });
-        }}
+        onChange={(e) => setTitle(e.target.value)}
       />
 
       <TextArea
@@ -234,10 +230,7 @@ export default function PublishPage({ project }: Props) {
         maxLength={MAX_DESCRIPTION_LENGTH}
         defaultValue={description}
         disabled={loading}
-        onChange={(e) => {
-          const value = e.target.value;
-          useEditorStore.setState({ description: value });
-        }}
+        onChange={(e) => setDescription(e.target.value)}
       />
 
       <ImageInput

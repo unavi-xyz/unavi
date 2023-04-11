@@ -27,37 +27,27 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
 
     this.engine = engine;
 
-    // If OffscreenCanvas not supported, or in development, render on the main thread
-    if (typeof OffscreenCanvas === "undefined" || process.env.NODE_ENV === "development") {
-      import("./RenderThread").then(({ RenderThread }) => {
-        this.#worker = new FakeWorker();
-
-        const thread = new RenderThread(
-          this.#worker.insidePort.postMessage.bind(this.#worker.insidePort),
-          engine.canvas
-        );
-
-        this.#worker.insidePort.onmessage = thread.onmessage.bind(thread);
-        this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
-      });
-    } else {
-      const offscreen = engine.canvas.transferControlToOffscreen();
-
+    // If canvas is an OffscreenCanvas, render in a web worker
+    if (typeof OffscreenCanvas !== "undefined") {
       this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
         type: "module",
         name: "render",
       });
 
       this.#worker.onmessage = this.onmessage.bind(this);
+    } else {
+      import("./RenderThread").then(({ RenderThread }) => {
+        this.#worker = new FakeWorker();
 
-      // Send canvas to worker
-      this.send({ subject: "set_canvas", data: offscreen }, [offscreen]);
+        const thread = new RenderThread(
+          this.#worker.insidePort.postMessage.bind(this.#worker.insidePort)
+        );
+        thread.canvas = engine.canvas;
+
+        this.#worker.insidePort.onmessage = thread.onmessage.bind(thread);
+        this.#worker.outsidePort.onmessage = this.onmessage.bind(this);
+      });
     }
-
-    this.send({
-      subject: "set_size",
-      data: { width: engine.canvas.width, height: engine.canvas.height },
-    });
 
     this.send({ subject: "set_pixel_ratio", data: window.devicePixelRatio });
 

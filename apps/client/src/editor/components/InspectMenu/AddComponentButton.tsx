@@ -4,8 +4,6 @@ import { NodeExtras } from "engine";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
 import Button from "../../../ui/Button";
 import {
   DropdownContent,
@@ -14,6 +12,7 @@ import {
   DropdownMenuItemProps,
   DropdownTrigger,
 } from "../../../ui/DropdownMenu";
+import { useEditor } from "../Editor";
 
 export const COMPONENT_TYPE = {
   Audio: "Audio",
@@ -33,7 +32,7 @@ interface Props {
 }
 
 export default function AddComponentButton({ availableComponents, node, extras }: Props) {
-  const isPlaying = useEditorStore((state) => state.isPlaying);
+  const { engine, mode } = useEditor();
 
   const [open, setOpen] = useState(false);
 
@@ -42,12 +41,12 @@ export default function AddComponentButton({ availableComponents, node, extras }
       <DropdownMenu
         open={open}
         onOpenChange={(value) => {
-          if (value && isPlaying) return;
+          if (value && mode === "play") return;
           setOpen(value);
         }}
       >
         <DropdownTrigger asChild>
-          <Button disabled={isPlaying} className="rounded-xl px-8">
+          <Button disabled={mode === "play"} className="rounded-xl px-8">
             Add Component
           </Button>
         </DropdownTrigger>
@@ -57,7 +56,6 @@ export default function AddComponentButton({ availableComponents, node, extras }
             {availableComponents.includes(COMPONENT_TYPE.Audio) && (
               <ComponentButton
                 onClick={() => {
-                  const { engine } = useEditorStore.getState();
                   if (!engine) return;
 
                   const audioData = engine.scene.extensions.audio.createAudioData();
@@ -81,7 +79,6 @@ export default function AddComponentButton({ availableComponents, node, extras }
             {availableComponents.includes(COMPONENT_TYPE.Avatar) && (
               <ComponentButton
                 onClick={() => {
-                  const { engine } = useEditorStore.getState();
                   if (!engine) return;
 
                   const avatar = engine.scene.extensions.avatar.createAvatar();
@@ -97,7 +94,6 @@ export default function AddComponentButton({ availableComponents, node, extras }
             {availableComponents.includes(COMPONENT_TYPE.Mesh) && (
               <ComponentButton
                 onClick={() => {
-                  const { engine } = useEditorStore.getState();
                   if (!engine) return;
 
                   const { object: mesh } = engine.scene.mesh.create({
@@ -122,7 +118,6 @@ export default function AddComponentButton({ availableComponents, node, extras }
             {availableComponents.includes(COMPONENT_TYPE.Physics) && (
               <ComponentButton
                 onClick={() => {
-                  const { engine } = useEditorStore.getState();
                   if (!engine) return;
 
                   const collider = engine.scene.extensions.collider.createCollider();
@@ -138,7 +133,6 @@ export default function AddComponentButton({ availableComponents, node, extras }
             {availableComponents.includes(COMPONENT_TYPE.Script) && (
               <ComponentButton
                 onClick={() => {
-                  const { engine } = useEditorStore.getState();
                   if (!engine || !extras) return;
 
                   const newExtras = { ...extras };
@@ -156,7 +150,6 @@ export default function AddComponentButton({ availableComponents, node, extras }
             {availableComponents.includes(COMPONENT_TYPE.SpawnPoint) && (
               <ComponentButton
                 onClick={() => {
-                  const { engine } = useEditorStore.getState();
                   if (!engine) return;
 
                   const spawnPoint = engine.scene.extensions.spawn.createSpawnPoint();

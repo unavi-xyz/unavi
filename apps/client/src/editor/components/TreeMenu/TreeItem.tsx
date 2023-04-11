@@ -1,11 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { HiOutlineCube } from "react-icons/hi";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
 import { useNode } from "../../hooks/useNode";
 import { useSubscribe } from "../../hooks/useSubscribe";
+import { useEditor } from "../Editor";
+import { useTree } from "./Tree";
 import { isAncestor } from "./utils/isAncestor";
 import { moveNode } from "./utils/moveNode";
 
@@ -14,18 +14,15 @@ interface Props {
 }
 
 export default function TreeItem({ id }: Props) {
-  const engine = useEditorStore((state) => state.engine);
-  const draggingId = useEditorStore((state) => state.draggingId);
+  const { engine, mode, selectedId, setSelectedId } = useEditor();
+  const { openIds, draggingId, treeIds, setOpenIds, setDraggingId } = useTree();
+
   const node = useNode(id);
   const name = useSubscribe(node, "Name");
   const children = useSubscribe(node, "Children") ?? [];
-  const selectedId = useEditorStore((state) => state.selectedId);
-  const openIds = useEditorStore((state) => state.openIds);
-  const treeIds = useEditorStore((state) => state.treeIds);
-  const isPlaying = useEditorStore((state) => state.isPlaying);
 
-  const depth = useMemo(() => {
-    const getDepth = (id: string): number => {
+  const getDepth = useCallback(
+    (id: string): number => {
       if (!engine) return 0;
 
       const node = engine.scene.node.store.get(id);
@@ -35,22 +32,24 @@ export default function TreeItem({ id }: Props) {
       if (!parentId) return 0;
 
       return getDepth(parentId) + 1;
-    };
+    },
+    [engine]
+  );
 
+  const depth = useMemo(() => {
     return getDepth(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engine, id, treeIds]);
+  }, [id, getDepth]);
 
   // Open children if child selected
   useEffect(() => {
-    const { openIds } = useEditorStore.getState();
     if (!selectedId || !engine || selectedId === id || openIds.includes(id)) return;
-    if (isAncestor(id, selectedId, engine)) useEditorStore.setState({ openIds: [...openIds, id] });
-  }, [id, selectedId, engine]);
+    if (isAncestor(id, selectedId, engine)) setOpenIds((prev) => [...prev, id]);
+  }, [selectedId, engine, id, openIds, setOpenIds]);
 
   const isOpen = openIds.includes(id);
   const isSelected = selectedId === id;
   const hasChildren = children.length > 0;
+  const isPlaying = mode === "play";
 
   return (
     <div className="relative select-none">
@@ -63,15 +62,15 @@ export default function TreeItem({ id }: Props) {
         }`}
         onMouseDown={(e) => {
           e.stopPropagation();
-          useEditorStore.setState({ selectedId: id });
+          setSelectedId(id);
 
           if (e.button !== 0 || isPlaying) return;
 
-          useEditorStore.setState({ draggingId: id });
+          setDraggingId(id);
           document.body.style.cursor = "grabbing";
         }}
         onMouseUp={(e) => {
-          useEditorStore.setState({ selectedId: id });
+          setSelectedId(id);
 
           if (
             e.button !== 0 ||
@@ -97,11 +96,11 @@ export default function TreeItem({ id }: Props) {
 
           // Move dragged node
           const targetIndex = treeIds.indexOf(id);
-          moveNode(draggingId, targetIndex + 1);
+          moveNode(draggingId, targetIndex + 1, treeIds, engine);
 
           // Open children
           const alreadyOpen = openIds.includes(id);
-          if (!alreadyOpen) useEditorStore.setState({ openIds: [...openIds, id] });
+          if (!alreadyOpen) setOpenIds((prev) => [...prev, id]);
         }}
       >
         <div
@@ -111,11 +110,8 @@ export default function TreeItem({ id }: Props) {
 
             e.stopPropagation();
 
-            if (isOpen) {
-              useEditorStore.setState({ openIds: openIds.filter((x) => x !== id) });
-            } else {
-              useEditorStore.setState({ openIds: [...openIds, id] });
-            }
+            if (isOpen) setOpenIds((prev) => prev.filter((x) => x !== id));
+            else setOpenIds((prev) => [...prev, id]);
           }}
         >
           {hasChildren && (isOpen ? <IoMdArrowDropdown /> : <IoMdArrowDropright />)}
@@ -168,7 +164,7 @@ export default function TreeItem({ id }: Props) {
 
             // Move dragged node
             const targetIndex = treeIds.indexOf(id);
-            moveNode(draggingId, targetIndex);
+            moveNode(draggingId, targetIndex, treeIds, engine);
           }}
         >
           <div className="flex items-center">

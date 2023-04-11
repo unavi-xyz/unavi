@@ -1,5 +1,6 @@
 import ObjectsButton from "./ObjectsButton";
 import SpecialsButton from "./SpecialsButton";
+import Tree from "./Tree";
 import TreeRoot from "./TreeRoot";
 
 export default function TreeMenu() {
@@ -11,7 +12,9 @@ export default function TreeMenu() {
       </div>
 
       <div className="h-full w-full overflow-y-auto overflow-x-hidden">
-        <TreeRoot />
+        <Tree>
+          <TreeRoot />
+        </Tree>
       </div>
     </div>
   );

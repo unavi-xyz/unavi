@@ -18,15 +18,15 @@ export type ToRenderMessage =
   | MessageJSON<"get_stats">
   | MessageJSON<"set_base_uri", string>
   | MessageJSON<"player_input_direction", Vec2>
-  | MessageJSON<"set_animations_path", string>
-  | MessageJSON<"set_default_avatar", string>
-  | MessageJSON<"set_canvas", HTMLCanvasElement | OffscreenCanvas>
+  | MessageJSON<"set_animations_path", string | null>
+  | MessageJSON<"set_default_avatar", string | null>
+  | MessageJSON<"set_canvas", HTMLCanvasElement | OffscreenCanvas | null>
   | MessageJSON<"set_controls", ControlsType>
   | MessageJSON<"set_grounded", boolean>
   | MessageJSON<"set_sprinting", boolean>
   | MessageJSON<"set_pixel_ratio", number>
   | MessageJSON<"set_size", { width: number; height: number }>
-  | MessageJSON<"set_skybox", { uri: string | null }>
+  | MessageJSON<"set_skybox", string | null>
   | MessageJSON<"set_transform_controls_mode", "translate" | "rotate" | "scale">
   | MessageJSON<"set_transform_controls_target", { nodeId: string | null; attach: boolean }>
   | MessageJSON<

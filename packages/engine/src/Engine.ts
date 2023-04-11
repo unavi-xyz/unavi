@@ -8,11 +8,6 @@ import { RenderModule } from "./render/RenderModule";
 import { SceneModule } from "./scene/SceneModule";
 import { ControlsType } from "./types";
 
-export interface EngineOptions {
-  canvas: HTMLCanvasElement;
-  overlayCanvas: HTMLCanvasElement;
-}
-
 /**
  * The main engine class.
  *
@@ -20,8 +15,8 @@ export interface EngineOptions {
  * Requires {@link https://web.dev/cross-origin-isolation-guide/ cross-origin isolation} to be enabled.
  */
 export class Engine {
-  readonly canvas: HTMLCanvasElement;
-  readonly overlayCanvas: HTMLCanvasElement;
+  #canvas: HTMLCanvasElement | OffscreenCanvas | null = null;
+  #overlayCanvas: HTMLCanvasElement | null = null;
 
   readonly audio: AudioModule;
   readonly behavior: BehaviorModule;
@@ -43,16 +38,7 @@ export class Engine {
   #showColliders = false;
   #showBVH = false;
 
-  /**
-   * Creates a new engine instance.
-   *
-   * @param canvas The canvas to render to.
-   * @param overlayCanvas The canvas to render the overlay to.
-   */
-  constructor({ canvas, overlayCanvas }: EngineOptions) {
-    this.canvas = canvas;
-    this.overlayCanvas = overlayCanvas;
-
+  constructor() {
     this.inputPosition = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 2));
     this.inputRotation = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 2));
     this.userPosition = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));
@@ -67,6 +53,41 @@ export class Engine {
     this.player = new PlayerModules(this);
     this.render = new RenderModule(this);
     this.scene = new SceneModule(this);
+  }
+
+  get canvas() {
+    return this.#canvas;
+  }
+
+  set canvas(value: HTMLCanvasElement | OffscreenCanvas | null) {
+    if (value === this.#canvas) return;
+
+    // Convert to OffscreenCanvas if possible
+    if (value instanceof HTMLCanvasElement && typeof OffscreenCanvas === "undefined") {
+      const offscreen = value.transferControlToOffscreen();
+      this.#canvas = offscreen;
+      this.render.send({ subject: "set_canvas", data: offscreen }, [offscreen]);
+    } else if (value instanceof OffscreenCanvas) {
+      this.#canvas = value;
+      this.render.send({ subject: "set_canvas", data: value }, [value]);
+    } else {
+      this.#canvas = value;
+      this.render.send({ subject: "set_canvas", data: value });
+    }
+
+    if (value) {
+      this.render.send({ subject: "set_size", data: { width: value.width, height: value.height } });
+    }
+  }
+
+  get overlayCanvas() {
+    return this.#overlayCanvas;
+  }
+
+  set overlayCanvas(value: HTMLCanvasElement | null) {
+    if (value === this.#overlayCanvas) return;
+    this.#overlayCanvas = value;
+    this.input.canvas = value;
   }
 
   get controls() {

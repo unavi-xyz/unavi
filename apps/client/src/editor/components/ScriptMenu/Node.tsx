@@ -2,13 +2,12 @@ import { NodeCategory, NodeSpecJSON } from "@wired-labs/behave-graph-core";
 import { ConstantValue } from "@wired-labs/gltf-extensions";
 import { NodeProps, useEdges } from "reactflow";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
 import { useChangeNodeData } from "./hooks/useChangeNodeData";
 import { useVariableAttribute } from "./hooks/useVariableAttribute";
 import InputSocket from "./InputSocket";
 import NodeContainer from "./NodeContainer";
 import OutputSocket from "./OutputSocket";
+import { useScript } from "./Script";
 import { FlowNodeData, FlowNodeParamter } from "./types";
 import { flowIsConstantJSON, flowIsVariableJSON } from "./utils/filters";
 import { isHandleConnected } from "./utils/isHandleConnected";
@@ -67,7 +66,7 @@ interface SocketPairProps {
 }
 
 function SocketPair({ i, nextPair, input, output, nodeId, spec, data, onChange }: SocketPairProps) {
-  const variables = useEditorStore((state) => state.variables);
+  const { variables } = useScript();
   const edges = useEdges();
 
   const defaultValue: ConstantValue | undefined = input?.defaultValue

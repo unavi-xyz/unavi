@@ -1,6 +1,6 @@
 import { Connection, ReactFlowInstance } from "reactflow";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { BehaviorVariable } from "@/../../packages/gltf-extensions/dist";
 
 import { flowIsVariableJSON } from "./filters";
 import { getNodeSpecJSON } from "./getNodeSpecJSON";
@@ -9,7 +9,11 @@ import { isHandleConnected } from "./isHandleConnected";
 
 const specJSON = getNodeSpecJSON();
 
-export const isValidConnection = (connection: Connection, instance: ReactFlowInstance) => {
+export const isValidConnection = (
+  connection: Connection,
+  instance: ReactFlowInstance,
+  variables: BehaviorVariable[]
+) => {
   if (connection.source === null || connection.target === null) return false;
 
   const sourceNode = instance.getNode(connection.source);
@@ -44,7 +48,6 @@ export const isValidConnection = (connection: Connection, instance: ReactFlowIns
     if (sourceNode.type === "variable/get" || sourceNode.type === "variable/set") {
       const variableJson = sourceNode.data["variable"];
       if (flowIsVariableJSON(variableJson)) {
-        const { variables } = useEditorStore.getState();
         const variable = variables[variableJson.variableId];
         if (variable) {
           sourceType = variable.type;
@@ -59,7 +62,6 @@ export const isValidConnection = (connection: Connection, instance: ReactFlowIns
     if (targetNode.type === "variable/get" || targetNode.type === "variable/set") {
       const variableJson = targetNode.data["variable"];
       if (flowIsVariableJSON(variableJson)) {
-        const { variables } = useEditorStore.getState();
         const variable = variables[variableJson.variableId];
         if (variable) {
           targetType = variable.type;

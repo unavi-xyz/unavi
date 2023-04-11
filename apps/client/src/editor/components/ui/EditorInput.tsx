@@ -1,12 +1,12 @@
 import React from "react";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { useEditor } from "../Editor";
 
 const EditorInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ disabled, ...rest }, ref) => {
-    const isPlaying = useEditorStore((state) => state.isPlaying);
+    const { mode } = useEditor();
 
-    const isDisabled = disabled || isPlaying;
+    const isDisabled = disabled || mode === "play";
 
     return (
       <input

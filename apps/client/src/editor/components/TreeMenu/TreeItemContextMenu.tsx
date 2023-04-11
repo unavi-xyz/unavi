@@ -2,17 +2,18 @@ import * as ContextMenu from "@radix-ui/react-context-menu";
 import { deepDisposeNode } from "engine";
 import { MdClose } from "react-icons/md";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { useEditor } from "../Editor";
 
 export default function TreeItemContextMenu() {
+  const { engine, selectedId, setSelectedId } = useEditor();
+
   function handleDelete() {
-    const { engine, selectedId } = useEditorStore.getState();
     if (!engine || !selectedId) return;
 
     const node = engine.scene.node.store.get(selectedId);
     if (!node) throw new Error("Node not found");
 
-    useEditorStore.setState({ selectedId: null });
+    setSelectedId(null);
     deepDisposeNode(node);
   }
 

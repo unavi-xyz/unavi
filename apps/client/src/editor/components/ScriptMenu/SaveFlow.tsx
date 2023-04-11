@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { Edge, Node, useReactFlow } from "reactflow";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
+import { useEditor } from "../Editor";
+import { useScript } from "./Script";
 import { isValidConnection } from "./utils/isValidConnection";
 import { saveFlow } from "./utils/saveFlow";
 
@@ -15,10 +15,9 @@ interface Props {
 }
 
 export default function SaveFlow({ scriptId, loaded, setEdges, nodes, edges }: Props) {
+  const { engine } = useEditor();
+  const { variables } = useScript();
   const instance = useReactFlow();
-
-  const engine = useEditorStore((state) => state.engine);
-  const variables = useEditorStore((state) => state.variables);
 
   // Save nodes to engine
   useEffect(() => {
@@ -51,7 +50,8 @@ export default function SaveFlow({ scriptId, loaded, setEdges, nodes, edges }: P
             sourceHandle: edge.sourceHandle,
             targetHandle: edge.targetHandle,
           },
-          instance
+          instance,
+          variables
         );
 
         return valid;

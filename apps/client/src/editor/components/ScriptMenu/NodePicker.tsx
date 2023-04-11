@@ -2,15 +2,16 @@ import * as ContextMenu from "@radix-ui/react-context-menu";
 import { IoIosArrowForward } from "react-icons/io";
 import { XYPosition } from "reactflow";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
 import { categories, categorizedNodes } from "./nodes";
+import { useScript } from "./Script";
 
 interface Props {
   position?: XYPosition;
 }
 
 export default function NodePicker({ position }: Props) {
+  const { addNode } = useScript();
+
   if (!position) return null;
 
   return (
@@ -36,12 +37,7 @@ export default function NodePicker({ position }: Props) {
                     return (
                       <ContextMenu.Item
                         key={node.type}
-                        onClick={() => {
-                          const { engine, addNode } = useEditorStore.getState();
-                          if (!engine) return;
-
-                          addNode(node.type, position);
-                        }}
+                        onClick={() => addNode(node.type, position)}
                         className="cursor-default px-6 capitalize focus:bg-neutral-200 focus:outline-none"
                       >
                         {name}

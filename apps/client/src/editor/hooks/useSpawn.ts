@@ -1,9 +1,9 @@
 import { SPAWN_TITLE } from "@wired-labs/gltf-extensions";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { useEditor } from "../components/Editor";
 
 export function useSpawn(type: (typeof SPAWN_TITLE)[keyof typeof SPAWN_TITLE] = "Default") {
-  const engine = useEditorStore((state) => state.engine);
+  const { engine } = useEditor();
 
   const spawn = engine?.scene.getSpawn(type);
 

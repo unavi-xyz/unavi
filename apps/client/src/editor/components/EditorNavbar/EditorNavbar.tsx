@@ -4,13 +4,13 @@ import { MdArrowBackIosNew } from "react-icons/md";
 
 import SignInButton from "@/app/(navbar)/SignInButton";
 import { MAX_TITLE_LENGTH } from "@/app/api/projects/constants";
-import { useEditorStore } from "@/app/editor/[id]/store";
 
 import { useSession } from "../../../client/auth/useSession";
 import { Project } from "../../../server/helpers/fetchProject";
 import Button from "../../../ui/Button";
 import DialogContent, { DialogRoot } from "../../../ui/Dialog";
 import { useSave } from "../../hooks/useSave";
+import { useEditor } from "../Editor";
 import AutoGrowInput from "../ui/AutoGrowInput";
 import PlayButton from "./PlayButton";
 import PublishPage from "./PublishPage";
@@ -22,44 +22,32 @@ interface Props {
 }
 
 export default function EditorNavbar({ project }: Props) {
-  const router = useRouter();
-
-  const name = useEditorStore((state) => state.title);
-  const isSaving = useEditorStore((state) => state.isSaving);
-  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
+  const [title, setTitle] = useState(project.title);
 
-  const { save, saveImage } = useSave(project.id);
+  const { loaded, changeMode } = useEditor();
+  const { saving, save, saveImage } = useSave(project);
   const { status } = useSession();
+  const router = useRouter();
 
   const isPublished = Boolean(project?.spaceId);
 
   async function handleBack() {
-    // Exit play mode
-    const { stopPlaying } = useEditorStore.getState();
-    await stopPlaying();
-
     await save();
     router.push(`/project/${project.id}`);
   }
 
-  async function handleSave() {
-    // Exit play mode
-    const { stopPlaying } = useEditorStore.getState();
-    await stopPlaying();
-
-    await save();
-  }
-
   async function handleOpenPublish() {
-    if (!sceneLoaded) return;
+    if (!loaded) return;
 
     // Exit play mode
-    const { stopPlaying } = useEditorStore.getState();
-    await stopPlaying();
+    await changeMode("edit");
 
     // Start saving image
     saveImage();
+
+    // Wait for image to be saved
+    await new Promise((resolve) => setTimeout(resolve, 30));
 
     setOpenPublishDialog(true);
   }
@@ -91,17 +79,17 @@ export default function EditorNavbar({ project }: Props) {
                 name="title"
                 autoComplete="off"
                 maxLength={MAX_TITLE_LENGTH}
-                value={name}
-                onChange={(e) => useEditorStore.setState({ title: e.target.value })}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
               />
             ) : null}
 
             <div className="flex items-center pt-0.5 pl-2">
-              {isSaving ? (
+              {saving ? (
                 <div className="text-sm text-neutral-500">Saving...</div>
-              ) : sceneLoaded ? (
+              ) : loaded ? (
                 <button
-                  onClick={handleSave}
+                  onClick={save}
                   className={
                     "rounded-md px-2 py-0.5 text-sm text-neutral-500 opacity-0 transition hover:bg-neutral-200 hover:text-neutral-900 focus:opacity-100 active:bg-neutral-200 group-hover:opacity-100"
                   }
@@ -119,7 +107,7 @@ export default function EditorNavbar({ project }: Props) {
           <PlayButton />
           <VisualsButton />
           {status === "authenticated" ? (
-            <Button disabled={!sceneLoaded} onClick={handleOpenPublish}>
+            <Button disabled={!loaded} onClick={handleOpenPublish}>
               Publish
             </Button>
           ) : (

@@ -5,7 +5,7 @@ import { Engine } from "engine";
 import { Metadata } from "next";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
-import Split from "react-split";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 import EditorNavbar from "@/src/editor/components/EditorNavbar/EditorNavbar";
 import InspectMenu from "@/src/editor/components/InspectMenu/InspectMenu";
@@ -115,70 +115,83 @@ export default function Editor({ project }: Props) {
         </div>
 
         <div className="fixed h-full w-full animate-fadeInDelayed">
-          <Split
-            sizes={openScriptId ? [50, 50] : [100, 0]}
-            minSize={openScriptId ? [250, 250] : [250, 0]}
-            direction="vertical"
-            gutterSize={8}
-            className="h-full w-full"
-            onMouseUp={resize}
-          >
-            <Split
-              sizes={[15, 65, 25]}
-              minSize={[50, 400, 50]}
-              direction="horizontal"
-              gutterSize={4}
-              className={`flex w-full transition ${openScriptId ? "h-1/2" : "h-full"}`}
-              onMouseUp={resize}
-            >
-              <div>
-                <TreeMenu />
-              </div>
+          <PanelGroup autoSaveId="editor-vertical" direction="vertical">
+            <Panel>
+              <PanelGroup autoSaveId="editor-horizontal" direction="horizontal">
+                <Panel collapsible defaultSize={15}>
+                  <TreeMenu />
+                </Panel>
 
-              {error ? (
-                <div className="space-y-2 border-x bg-neutral-100 pt-10 text-center">
-                  {error === ERROR_NOT_SIGNED_IN ? (
-                    <h2>{error}</h2>
-                  ) : error === ERROR_MESSAGE.UNAUTHORIZED ? (
-                    <h2>Project not found.</h2>
-                  ) : (
-                    <h2>Failed to load project. {error}</h2>
-                  )}
+                <PanelResizeHandle className="group w-2 p-[1px]">
+                  <div className="h-full rounded-full transition duration-300 group-active:bg-neutral-300" />
+                </PanelResizeHandle>
 
-                  {error === ERROR_NOT_SIGNED_IN ? (
-                    <SignInButton />
+                <Panel minSize={30}>
+                  {error ? (
+                    <div className="h-full space-y-2 border-x bg-neutral-100 pt-10 text-center">
+                      {error === ERROR_NOT_SIGNED_IN ? (
+                        <h2>{error}</h2>
+                      ) : error === ERROR_MESSAGE.UNAUTHORIZED ? (
+                        <h2>Project not found.</h2>
+                      ) : (
+                        <h2>Failed to load project. {error}</h2>
+                      )}
+
+                      {error === ERROR_NOT_SIGNED_IN ? (
+                        <SignInButton />
+                      ) : (
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="rounded-lg border border-neutral-500 px-4 py-1 hover:bg-neutral-200 active:bg-neutral-300"
+                        >
+                          Try again
+                        </button>
+                      )}
+                    </div>
                   ) : (
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="rounded-lg border border-neutral-500 px-4 py-1 hover:bg-neutral-200 active:bg-neutral-300"
+                    <div
+                      className={`h-full border-x bg-neutral-300 ${
+                        sceneLoaded ? "" : "animate-pulse"
+                      }`}
                     >
-                      Try again
-                    </button>
+                      <div
+                        ref={containerRef}
+                        className={`relative h-full w-full overflow-hidden transition ${
+                          sceneLoaded ? "opacity-100" : "opacity-0"
+                        }`}
+                      >
+                        {isPlaying ? <Crosshair /> : null}
+
+                        <canvas ref={canvasRef} className="h-full w-full" />
+                        <canvas
+                          ref={overlayRef}
+                          className="absolute top-0 left-0 z-10 h-full w-full"
+                        />
+                      </div>
+                    </div>
                   )}
-                </div>
-              ) : (
-                <div className={`border-x bg-neutral-300 ${sceneLoaded ? "" : "animate-pulse"}`}>
-                  <div
-                    ref={containerRef}
-                    className={`relative h-full w-full overflow-hidden transition ${
-                      sceneLoaded ? "opacity-100" : "opacity-0"
-                    }`}
-                  >
-                    {isPlaying ? <Crosshair /> : null}
+                </Panel>
 
-                    <canvas ref={canvasRef} className="h-full w-full" />
-                    <canvas ref={overlayRef} className="absolute top-0 left-0 z-10 h-full w-full" />
-                  </div>
-                </div>
-              )}
+                <PanelResizeHandle className="group w-2 p-[1px]">
+                  <div className="h-full rounded-full transition duration-300 group-active:bg-neutral-300" />
+                </PanelResizeHandle>
 
-              <div className="overflow-y-auto">
-                <InspectMenu projectId={project.id} />
-              </div>
-            </Split>
+                <Panel collapsible defaultSize={20}>
+                  <InspectMenu projectId={project.id} />
+                </Panel>
+              </PanelGroup>
+            </Panel>
 
-            <div>{openScriptId && <ScriptMenu key={openScriptId} scriptId={openScriptId} />}</div>
-          </Split>
+            <PanelResizeHandle className="group h-2 p-[1px]">
+              <div className="h-full w-full rounded-full transition duration-300 group-active:bg-neutral-300" />
+            </PanelResizeHandle>
+
+            {openScriptId && (
+              <Panel defaultSize={60}>
+                <ScriptMenu key={openScriptId} scriptId={openScriptId} />
+              </Panel>
+            )}
+          </PanelGroup>
         </div>
       </div>
     </>

@@ -14,12 +14,11 @@ html {
   @apply opacity-0;
 }
 
-/* Scrollbar Width */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 16px;
 }
 
-/* Scrollbar Handle */
 ::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.3);
   border-radius: 16px;
@@ -29,27 +28,4 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.6);
-}
-
-/* React-dnd */
-.bg-position-move {
-  background-size: 200%;
-  background-position: left;
-  transition: background-position 50ms;
-}
-
-.bg-position-move:hover {
-  background-position: right;
-}
-
-/* React-split */
-.gutter.gutter-vertical {
-  cursor: row-resize;
-  @apply border-t;
-}
-
-.gutter.gutter-horizontal {
-  float: left;
-  height: calc(100%);
-  cursor: col-resize;
 }

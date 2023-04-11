@@ -46,7 +46,7 @@
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.0",
     "react-icons": "^4.8.0",
-    "react-split": "^2.0.14",
+    "react-resizable-panels": "^0.0.39",
     "reactflow": "^11.7.0",
     "sharp": "^0.32.0",
     "siwe": "^2.1.3",

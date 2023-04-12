@@ -1,12 +1,13 @@
 import { NodeIO } from "@gltf-transform/core";
-import { AudioEmitter, AudioExtension, Avatar, AvatarExtension } from "@wired-labs/gltf-extensions";
+import { AudioEmitter, Avatar } from "@wired-labs/gltf-extensions";
+import { extensions } from "engine";
 
 /**
  * Gets the assets used by a model
  */
 export async function getUsedAssets(model: Uint8Array) {
   // Load model
-  const io = new NodeIO().registerExtensions([AudioExtension, AvatarExtension]);
+  const io = new NodeIO().registerExtensions(extensions);
 
   const doc = await io.readBinary(model);
 

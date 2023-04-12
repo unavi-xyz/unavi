@@ -54,7 +54,6 @@
       "inputs": ["prisma/schema.prisma"]
     },
     "deploy": {
-      "dependsOn": ["lint", "build"],
       "cache": false
     },
     "dev": {

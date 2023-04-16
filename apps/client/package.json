@@ -36,7 +36,7 @@
     "contracts": "*",
     "engine": "*",
     "ethers": "^5.7.2",
-    "mediasoup-client": "^3.6.82",
+    "mediasoup-client": "^3.6.84",
     "meshoptimizer": "^0.18.1",
     "nanoid": "^4.0.2",
     "next": "13.3.1-canary.8",

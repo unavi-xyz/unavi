@@ -14,7 +14,7 @@
     "@gltf-transform/core": "3.2.0",
     "@gltf-transform/extensions": "3.1.7",
     "@gltf-transform/functions": "3.2.0",
-    "@pixiv/three-vrm": "^1.0.8",
+    "@pixiv/three-vrm": "^1.0.9",
     "@wired-labs/behave-graph-core": "^0.9.19",
     "@wired-labs/gltf-extensions": "*",
     "nanoid": "^4.0.2",

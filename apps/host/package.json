@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@wired-labs/protocol": "*",
-    "mediasoup": "^3.11.20",
+    "mediasoup": "^3.11.22",
     "nanoid": "^4.0.2",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.20.0",
     "zod": "^3.21.4"

@@ -21,7 +21,7 @@
     "engine": "*",
     "ethers": "^5.7.2",
     "mediasoup-client": "^3.6.82",
-    "nanoid": "^4.0.1"
+    "nanoid": "^4.0.2"
   },
   "devDependencies": {
     "@types/react": "^18.0.29",

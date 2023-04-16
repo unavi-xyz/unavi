@@ -20,7 +20,7 @@
     "contracts": "*",
     "engine": "*",
     "ethers": "^5.7.2",
-    "mediasoup-client": "^3.6.82",
+    "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2"
   },
   "devDependencies": {

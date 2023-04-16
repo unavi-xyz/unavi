@@ -12275,10 +12275,10 @@ media-typer@0.3.0:
   resolved "https://registry.yarnpkg.com/media-typer/-/media-typer-0.3.0.tgz#8710d7af0aa626f8fffa1ce00168545263255748"
   integrity sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==
 
-mediasoup-client@^3.6.82:
-  version "3.6.82"
-  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.82.tgz#82f19d8cf97839e9d4f3f421527a64fe2cd4d3ae"
-  integrity sha512-YtxxtpBcuHc2vroTiJKINiFRpxqyLQgJe0zvfsGEEUpQsPc/Lv2WKjFL2ucSoSWt5WBz6LQdWam/IlBR6GUcYw==
+mediasoup-client@^3.6.84:
+  version "3.6.84"
+  resolved "https://registry.yarnpkg.com/mediasoup-client/-/mediasoup-client-3.6.84.tgz#ae36724bf133d144a3ec0a055fa8b184b603dc25"
+  integrity sha512-eWkL0/rBPr9Bd8+qz4EqeYUg3+NtHNyAielk2BxfRiOyyKhknb38RabIM3L7eh9mi8qupZ3O11W7OkLSx+XRfQ==
   dependencies:
     "@types/debug" "^4.1.7"
     awaitqueue "^3.0.1"

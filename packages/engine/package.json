@@ -19,12 +19,12 @@
     "@wired-labs/gltf-extensions": "*",
     "nanoid": "^4.0.2",
     "property-graph": "^1.1.0",
-    "three": "^0.148.0",
+    "three": "^0.149.0",
     "three-mesh-bvh": "^0.5.23"
   },
   "devDependencies": {
     "@types/offscreencanvas": "^2019.7.0",
-    "@types/three": "^0.148.0",
+    "@types/three": "^0.149.0",
     "tsconfig": "*",
     "typescript": "~5.0.4"
   }

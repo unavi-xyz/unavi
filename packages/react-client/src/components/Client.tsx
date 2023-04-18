@@ -1,4 +1,4 @@
-import { ToHostMessage } from "@wired-labs/protocol";
+import { ToHostMessage } from "@unavi/protocol";
 import { ERC721Metadata, getHostFromMetadata } from "contracts";
 import { Engine } from "engine";
 import { providers, Signer } from "ethers";
@@ -9,15 +9,15 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
+  useMemo,
   useState,
 } from "react";
 
 import { Player } from "../classes/Player";
 import { LocalStorageKey } from "../constants";
 import { useAvatarEquip } from "../hooks/useAvatarEquip";
-import { useResizeCanvas } from "../hooks/useResizeCanvas";
 import { useSpace } from "../hooks/useSpace";
+import ClientCanvas from "./ClientCanvas";
 
 export type SystemMessage = {
   type: "system";
@@ -123,7 +123,7 @@ interface Props {
 }
 
 /**
- * A self-contained client for connecting to The Wired.
+ * A self-contained client for connecting to UNAVI.
  */
 export function Client({
   animations,
@@ -135,10 +135,6 @@ export function Client({
   skybox,
   uri,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const overlayRef = useRef<HTMLCanvasElement>(null);
-
   const [avatar, setAvatar] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [engine, setEngine] = useState<Engine | null>(defaultContext.engine);
@@ -154,7 +150,6 @@ export function Client({
   const [players, setPlayers] = useState<Player[]>([]);
   const [ws, setWs] = useState<WebSocket | null>(null);
 
-  useResizeCanvas(engine, canvasRef, overlayRef, containerRef);
   useAvatarEquip(engine, avatar, setAvatar, setHoverState);
 
   const spaceHost = metadata ? getHostFromMetadata(metadata) : "";
@@ -179,9 +174,7 @@ export function Client({
   }, [ethers]);
 
   useEffect(() => {
-    if (!canvasRef.current || !overlayRef.current) return;
-
-    const newEngine = new Engine({ canvas: canvasRef.current, overlayCanvas: overlayRef.current });
+    const newEngine = new Engine();
     newEngine.render.send({ subject: "toggle_animations", data: true });
     newEngine.start();
     setEngine(newEngine);
@@ -193,18 +186,18 @@ export function Client({
   }, []);
 
   useEffect(() => {
-    if (!engine || !animations) return;
-    engine.render.send({ subject: "set_animations_path", data: animations });
+    if (!engine) return;
+    engine.render.send({ subject: "set_animations_path", data: animations ?? null });
   }, [engine, animations]);
 
   useEffect(() => {
-    if (!engine || !defaultAvatar) return;
-    engine.render.send({ subject: "set_default_avatar", data: defaultAvatar });
+    if (!engine) return;
+    engine.render.send({ subject: "set_default_avatar", data: defaultAvatar ?? null });
   }, [engine, defaultAvatar]);
 
   useEffect(() => {
-    if (!engine || !skybox) return;
-    engine.render.send({ subject: "set_skybox", data: { uri: skybox } });
+    if (!engine) return;
+    engine.render.send({ subject: "set_skybox", data: skybox ?? null });
   }, [engine, skybox]);
 
   useEffect(() => {
@@ -227,63 +220,56 @@ export function Client({
     if (localAvatar) setAvatar(localAvatar);
   }, []);
 
+  const value = useMemo(
+    () => ({
+      ethersProvider,
+      host: usedHost || null,
+      uri: uri || null,
+      engine,
+      hoverState,
+      setHoverState,
+      ws,
+      setWs,
+      send,
+      playerId,
+      setPlayerId,
+      avatar,
+      setAvatar,
+      micTrack,
+      setMicTrack,
+      micEnabled,
+      setMicEnabled,
+      loadingProgress,
+      setLoadingProgress,
+      loadingText,
+      setLoadingText,
+      players,
+      setPlayers,
+      chatMessages,
+      setChatMessages,
+    }),
+    [
+      ethersProvider,
+      usedHost,
+      uri,
+      engine,
+      hoverState,
+      ws,
+      send,
+      playerId,
+      avatar,
+      micTrack,
+      micEnabled,
+      loadingProgress,
+      loadingText,
+      players,
+      chatMessages,
+    ]
+  );
+
   return (
-    <ClientContext.Provider
-      value={{
-        ethersProvider,
-        host: usedHost || null,
-        uri: uri || null,
-        engine,
-        hoverState,
-        setHoverState,
-        ws,
-        setWs,
-        send,
-        playerId,
-        setPlayerId,
-        avatar,
-        setAvatar,
-        micTrack,
-        setMicTrack,
-        micEnabled,
-        setMicEnabled,
-        loadingProgress,
-        setLoadingProgress,
-        loadingText,
-        setLoadingText,
-        players,
-        setPlayers,
-        chatMessages,
-        setChatMessages,
-      }}
-    >
-      <div
-        ref={containerRef}
-        style={{
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          overflow: "hidden",
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          style={{
-            width: "100%",
-            height: "100%",
-          }}
-        />
-        <canvas
-          ref={overlayRef}
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 10,
-            width: "100%",
-            height: "100%",
-          }}
-        />
-      </div>
+    <ClientContext.Provider value={value}>
+      <ClientCanvas engine={engine} />
 
       <Space />
 

@@ -1,22 +1,21 @@
 import { useEffect } from "react";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { Project } from "@/src/server/helpers/fetchProject";
 
+import { EditorMode } from "../components/Editor";
 import { useSave } from "./useSave";
 
 const AUTOSAVE_INTERVAL = 2 * 60 * 1000; // 2 minutes
 
-export function useAutosave(projectId: string) {
-  const { save } = useSave(projectId);
+export function useAutosave(project: Project, mode: EditorMode) {
+  const { save } = useSave(project);
 
   useEffect(() => {
+    if (mode !== "play") return;
+
     // Auto save on an interval
-    const interval = setInterval(() => {
-      const { isPlaying } = useEditorStore.getState();
-      if (isPlaying) return;
-      save();
-    }, AUTOSAVE_INTERVAL);
+    const interval = setInterval(save, AUTOSAVE_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [save]);
+  }, [mode, save]);
 }

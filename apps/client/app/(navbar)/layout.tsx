@@ -20,9 +20,7 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
               <div className="flex items-center space-x-2">
                 <Image src={Logo} alt="logo" priority width={40} height={40} />
 
-                <div className="hidden whitespace-nowrap text-lg font-black md:block">
-                  The Wired
-                </div>
+                <div className="hidden whitespace-nowrap text-lg font-black md:block">UNAVI</div>
               </div>
             </Link>
 

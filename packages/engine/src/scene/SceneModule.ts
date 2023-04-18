@@ -19,7 +19,7 @@ import {
   ColliderExtension,
   SpaceExtension,
   SpawnPointExtension,
-} from "@wired-labs/gltf-extensions";
+} from "@unavi/gltf-extensions";
 
 import { Engine } from "../Engine";
 import { extensions } from "../extensions";

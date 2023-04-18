@@ -1,9 +1,10 @@
 import { Primitive } from "@gltf-transform/core";
 import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
-import { Avatar } from "@wired-labs/gltf-extensions";
+import { Avatar } from "@unavi/gltf-extensions";
 import {
   Bone,
   BufferGeometry,
+  GLBufferAttribute,
   Mesh,
   Mesh as ThreeMesh,
   Object3D,
@@ -391,6 +392,7 @@ export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
     // Normalize skin weights
     if (
       newPrimitiveObject.geometry.attributes.skinWeight &&
+      !(newPrimitiveObject.geometry.attributes.skinWeight instanceof GLBufferAttribute) &&
       !newPrimitiveObject.geometry.attributes.skinWeight.normalized
     )
       newPrimitiveObject.normalizeSkinWeights();

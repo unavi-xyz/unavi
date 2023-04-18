@@ -1,9 +1,8 @@
 import { Node } from "@gltf-transform/core";
-import { BehaviorNode, BehaviorNodeExtras } from "@wired-labs/gltf-extensions";
-
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { BehaviorNode, BehaviorNodeExtras } from "@unavi/gltf-extensions";
 
 import { useNodeExtras } from "../../hooks/useNodeExtras";
+import { useEditor } from "../Editor";
 import EditorInput from "../ui/EditorInput";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
@@ -14,6 +13,7 @@ interface Props {
 }
 
 export default function ScriptComponent({ node, scriptId }: Props) {
+  const { engine, scriptId: openScriptId, setScriptId } = useEditor();
   const extras = useNodeExtras(node);
 
   if (!node || !extras) return null;
@@ -29,8 +29,7 @@ export default function ScriptComponent({ node, scriptId }: Props) {
       onRemove={() => {
         if (!node) return;
 
-        const { openScriptId, engine } = useEditorStore.getState();
-        if (openScriptId === scriptId) useEditorStore.setState({ openScriptId: null });
+        if (openScriptId === scriptId) setScriptId(null);
         if (!engine) return;
 
         // Remove script from node extras
@@ -72,7 +71,7 @@ export default function ScriptComponent({ node, scriptId }: Props) {
 
       <div className="flex justify-end">
         <button
-          onClick={() => useEditorStore.setState({ openScriptId: scriptId })}
+          onClick={() => setScriptId(scriptId)}
           className="rounded-full bg-neutral-200/80 px-8 py-0.5 transition hover:bg-neutral-300/80 active:opacity-80"
         >
           Open

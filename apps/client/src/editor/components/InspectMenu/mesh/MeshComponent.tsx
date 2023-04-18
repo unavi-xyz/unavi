@@ -1,9 +1,8 @@
 import { Mesh, Node } from "@gltf-transform/core";
 import { MeshExtras } from "engine";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
 import { useMeshExtras } from "../../../hooks/useMeshExtras";
+import { useEditor } from "../../Editor";
 import SelectMenu from "../../ui/SelectMenu";
 import ComponentMenu from "../ComponentMenu";
 import MenuRows from "../ui/MenuRows";
@@ -25,6 +24,7 @@ interface Props {
 }
 
 export default function MeshComponent({ mesh }: Props) {
+  const { engine } = useEditor();
   const extras = useMeshExtras(mesh);
 
   if (!mesh) return null;
@@ -50,9 +50,7 @@ export default function MeshComponent({ mesh }: Props) {
     <ComponentMenu
       title="Mesh"
       onRemove={() => {
-        const { engine } = useEditorStore.getState();
         if (!engine) return;
-
         mesh.dispose();
       }}
     >

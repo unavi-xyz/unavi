@@ -1,4 +1,4 @@
-import { HostAPI } from "@wired-labs/protocol";
+import { HostAPI } from "@unavi/protocol";
 import { cache } from "react";
 
 import { readSpaceMetadata } from "./readSpaceMetadata";

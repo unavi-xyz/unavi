@@ -1,6 +1,6 @@
 import { NodeIO } from "@gltf-transform/core";
 import { Packet } from "@gltf-transform/extensions";
-import { Space } from "@wired-labs/gltf-extensions";
+import { Space } from "@unavi/gltf-extensions";
 import { extensions } from "engine";
 import { cache } from "react";
 import { z } from "zod";

@@ -20,10 +20,10 @@ Create following script that will download and run the latest host image. Make s
 # Stop and remove any existing containers
 docker stop host
 docker rm host
-docker rmi ghcr.io/wired-labs/host
+docker rmi ghcr.io/unavi-xyz/host
 
 # Pull the latest image
-docker pull ghcr.io/wired-labs/host:latest
+docker pull ghcr.io/unavi-xyz/host:latest
 
 # Set environment variables
 export MEDIASOUP_ANNOUNCED_IP="123.45.67.89" # Your public IP
@@ -46,7 +46,7 @@ docker run -d --name host \
   -p $RTC_MIN_PORT-$RTC_MAX_PORT:$RTC_MIN_PORT-$RTC_MAX_PORT/tcp \
   -p $RTC_MIN_PORT-$RTC_MAX_PORT:$RTC_MIN_PORT-$RTC_MAX_PORT/udp \
   -p $RTC_MIN_PORT-$RTC_MAX_PORT:$RTC_MIN_PORT-$RTC_MAX_PORT/sctp \
-  ghcr.io/wired-labs/host
+  ghcr.io/unavi-xyz/host
 ```
 
 ### Step 2 - Run deploy script

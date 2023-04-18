@@ -3,7 +3,6 @@
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
 import { nanoid } from "nanoid";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useSigner } from "wagmi";
@@ -28,7 +27,6 @@ interface Props {
 export default function Mint({ id, metadata }: Props) {
   const [loading, setLoading] = useState(false);
 
-  const router = useRouter();
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
   const { data: session } = useSession();
@@ -126,9 +124,6 @@ export default function Mint({ id, metadata }: Props) {
       ]);
 
       toast.success("Space minted!", { id: toastId });
-
-      // Redirect to new space url
-      router.push(`/space/${toHex(tokenId)}`);
     } catch (e) {
       toast.error(parseError(e, "Failed to mint NFT"), { id: toastId });
       console.error(e);

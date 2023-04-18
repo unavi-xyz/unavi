@@ -1,11 +1,10 @@
 import { Node } from "@gltf-transform/core";
-import { parseJSONPath, ValueType } from "@wired-labs/gltf-extensions";
+import { parseJSONPath, ValueType } from "@unavi/gltf-extensions";
 import { useEffect, useMemo, useState } from "react";
-
-import { useEditorStore } from "@/app/editor/[id]/store";
 
 import { useNodes } from "../../hooks/useNodes";
 import { useSubscribe } from "../../hooks/useSubscribe";
+import { useEditor } from "../Editor";
 import { FlowNodeParamter } from "./types";
 
 interface Props {
@@ -23,7 +22,7 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
     return [];
   }, [pathType]);
 
-  const isPlaying = useEditorStore((state) => state.isPlaying);
+  const { mode } = useEditor();
   const nodes = useNodes();
 
   const [pathNode, setPathNode] = useState<Node>();
@@ -58,13 +57,13 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
     <div className="flex items-center space-x-1">
       <select
         value={pathNode ? nodes.indexOf(pathNode) : 0}
-        disabled={isPlaying}
+        disabled={mode === "play"}
         onChange={(e) => {
           const newNode = nodes[Number(e.currentTarget.value)];
           setPathNode(newNode);
         }}
         className={`h-6 rounded bg-neutral-200 px-1 ${
-          isPlaying ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+          mode === "play" ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
         }`}
       >
         {nodes.map((node, i) => (
@@ -76,12 +75,12 @@ export default function JsonPathInput({ onChange, value, pathType }: Props) {
 
       <select
         value={capitalizedProperty}
-        disabled={isPlaying}
+        disabled={mode === "play"}
         onChange={(e) => {
           setPathProperty(e.currentTarget.value.toLowerCase());
         }}
         className={`h-6 rounded bg-neutral-200 px-1 ${
-          isPlaying ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
+          mode === "play" ? "" : "hover:bg-neutral-300/80 focus:bg-neutral-300/80"
         }`}
       >
         {pathOptions.map((option) => {

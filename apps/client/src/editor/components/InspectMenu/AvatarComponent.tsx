@@ -2,11 +2,11 @@ import { Node } from "@gltf-transform/core";
 import { useState } from "react";
 
 import { getNewProjectAssetUpload } from "@/app/api/projects/[id]/assets/helper";
-import { useEditorStore } from "@/app/editor/[id]/store";
 
 import FileInput from "../../../ui/FileInput";
 import { useAvatar } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";
+import { useEditor } from "../Editor";
 import ComponentMenu from "./ComponentMenu";
 import MenuRows from "./ui/MenuRows";
 
@@ -16,10 +16,10 @@ interface Props {
 }
 
 export default function AvatarComponent({ projectId, node }: Props) {
+  const { mode } = useEditor();
   const avatar = useAvatar(node);
   const uri = useSubscribe(avatar, "URI");
   const equippable = useSubscribe(avatar, "Equippable");
-  const isPlaying = useEditorStore((state) => state.isPlaying);
 
   const [loading, setLoading] = useState(false);
 
@@ -39,7 +39,7 @@ export default function AvatarComponent({ projectId, node }: Props) {
         displayName={fileName || uriName}
         placeholder="Upload VRM File"
         accept=".vrm"
-        disabled={loading || isPlaying}
+        disabled={loading || mode === "play"}
         onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!avatar || !file || loading) return;
@@ -73,7 +73,7 @@ export default function AvatarComponent({ projectId, node }: Props) {
       <MenuRows titles={["Equippable"]}>
         <input
           type="checkbox"
-          disabled={loading || isPlaying}
+          disabled={loading || mode === "play"}
           checked={equippable ?? false}
           onChange={(e) => {
             avatar?.setEquippable(e.target.checked);

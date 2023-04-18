@@ -1,32 +1,32 @@
 <div align="center">
   <img src="./assets/Logo.png" alt="Wired Logo" height="200" />
-  <h1>The Wired</h1>
+  <h1>UNAVI</h1>
   <strong>An open and decentralized web-based metaverse platform.</strong>
 </div>
 
 <br />
 
 <div align="center">
-  <a href="https://docs.thewired.space">
+  <a href="https://docs.unavi.xyz">
     <img src="https://img.shields.io/badge/docs-read-informational" alt="Docs" />
   </a>
-  <a href="https://thewired.space">
+  <a href="https://unavi.xyz">
     <img src="https://therealsujitk-vercel-badge.vercel.app/?app=client-wired" alt="Vercel" />
   </a>
-  <a href="https://github.com/wired-labs/wired/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/wired-labs/wired" alt="License" />
+  <a href="https://github.com/unavi-xyz/wired/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/unavi-xyz/wired" alt="License" />
   </a>
   <a href="https://discord.gg/VCsAEneUMn">
     <img src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord" />
   </a>
-  <a href="https://twitter.com/TheWiredXR">
+  <a href="https://twitter.com/unavi_xyz">
     <img src="https://img.shields.io/badge/wired__xr--1DA1F2?logo=twitter" alt="Twitter" />
   </a>
 </div>
 
 ## 🔥 Features
 
-- Decentralized identity + content distribution over [Ethereum](https://github.com/wired-labs/contracts)
+- Decentralized identity + content distribution over [Ethereum](https://github.com/unavi-xyz/contracts)
 - Open backend, anyone can run their own servers
 - Custom multi-threaded, [glTF](https://github.com/KhronosGroup/glTF)-based game engine
 - [VRM](https://vrm.dev/) avatar support
@@ -38,7 +38,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 
 ### Apps
 
-- [client](apps/client): the main website used to access The Wired
+- [client](apps/client): the main website used to access UNAVI
 - [docs](apps/docs): a documentation website
 - [host](apps/host): dockerized server for hosting spaces
 

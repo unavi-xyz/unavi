@@ -1,9 +1,9 @@
 {
-  "name": "@wired-labs/protocol",
+  "name": "@unavi/protocol",
   "version": "0.3.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wired-labs/wired.git",
+    "url": "https://github.com/unavi-xyz/wired.git",
     "directory": "packages/protocol"
   },
   "license": "GPL-3.0-or-later",
@@ -19,7 +19,7 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "mediasoup-client": "^3.6.82",
+    "mediasoup-client": "^3.6.84",
     "tsconfig": "*",
     "tsup": "^6.7.0",
     "typescript": "~5.0.4"

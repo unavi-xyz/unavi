@@ -1,6 +1,6 @@
 import { MdClose } from "react-icons/md";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { useEditor } from "../Editor";
 
 interface Props {
   title?: string;
@@ -10,8 +10,8 @@ interface Props {
 }
 
 export default function ComponentMenu({ title, removeable = true, onRemove, children }: Props) {
-  const isPlaying = useEditorStore((state) => state.isPlaying);
-
+  const { mode } = useEditor();
+  const isPlaying = mode === "play";
   const outlineClass = !isPlaying && removeable ? "hover:ring-1" : "";
 
   return (

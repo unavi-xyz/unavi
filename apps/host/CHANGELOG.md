@@ -9,7 +9,7 @@
 ### Patch Changes
 
 - Updated dependencies [120335e]
-  - @wired-labs/protocol@0.3.0
+  - @unavi/protocol@0.3.0
 
 ## 0.2.1
 
@@ -17,7 +17,7 @@
 
 - 94c1f53: upgrade uWebsocket.js to v20.20.0
 - Updated dependencies [2f029aa]
-  - @wired-labs/protocol@0.2.0
+  - @unavi/protocol@0.2.0
 
 ## 0.2.0
 
@@ -28,7 +28,7 @@
 ### Patch Changes
 
 - Updated dependencies [1a93ffb]
-  - @wired-labs/protocol@0.1.0
+  - @unavi/protocol@0.1.0
 
 ## 0.1.1
 

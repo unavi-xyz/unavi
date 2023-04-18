@@ -24,7 +24,7 @@
       "purpose": "any"
     }
   ],
-  "name": "The Wired",
+  "name": "UNAVI",
   "scope": "/",
   "shortcuts": [
     {
@@ -36,7 +36,7 @@
       "url": "/explore"
     }
   ],
-  "short_name": "The Wired",
+  "short_name": "UNAVI",
   "splash_pages": null,
   "start_url": "/",
   "theme_color": "#191919"

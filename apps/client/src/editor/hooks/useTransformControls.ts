@@ -1,36 +1,33 @@
-import { useEffect } from "react";
+import { Engine } from "engine";
+import { Dispatch, SetStateAction, useEffect } from "react";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { EditorMode, Tool } from "../components/Editor";
 
-export function useTransformControls() {
-  const engine = useEditorStore((state) => state.engine);
-  const selectedId = useEditorStore((state) => state.selectedId);
-  const tool = useEditorStore((state) => state.tool);
-
+export function useTransformControls(
+  engine: Engine | null,
+  selectedId: string | null,
+  setSelectId: Dispatch<SetStateAction<string | null>>,
+  mode: EditorMode,
+  tool: Tool
+) {
   // Update selected object when user clicks on an object
   useEffect(() => {
-    if (!engine) return;
+    if (!engine || mode === "play") return;
 
     engine.render.addEventListener("clicked_node", (e) => {
-      const { isPlaying } = useEditorStore.getState();
-      if (isPlaying) return;
-
-      const nodeId = e.data.nodeId;
-      useEditorStore.setState({ selectedId: nodeId });
+      setSelectId(e.data.nodeId);
     });
-  }, [engine]);
+  }, [engine, mode, setSelectId]);
 
   // Attach transform controls to the selected object
   useEffect(() => {
     if (!engine) return;
 
-    const { isPlaying } = useEditorStore.getState();
-
     engine.render.send({
       subject: "set_transform_controls_target",
-      data: { nodeId: selectedId, attach: !isPlaying },
+      data: { nodeId: selectedId, attach: mode === "edit" },
     });
-  }, [engine, selectedId]);
+  }, [engine, selectedId, mode]);
 
   // Set mode
   useEffect(() => {

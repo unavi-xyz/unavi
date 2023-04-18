@@ -1,9 +1,9 @@
-import { SPAWN_TITLE } from "@wired-labs/gltf-extensions";
-
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { SPAWN_TITLE } from "@unavi/gltf-extensions";
+import { Engine } from "engine";
 
 import { DropdownItem } from "../../../ui/DropdownMenu";
 import { useSpawn } from "../../hooks/useSpawn";
+import { useEditor } from "../Editor";
 
 const OBJECT_NAME = {
   Spawn: "Spawn",
@@ -13,10 +13,10 @@ const OBJECT_NAME = {
 type ObjectName = (typeof OBJECT_NAME)[keyof typeof OBJECT_NAME];
 
 export default function SpecialsMenu() {
+  const { engine, setSelectedId } = useEditor();
   const spawn = useSpawn();
 
   function addObject(name: ObjectName) {
-    const { engine } = useEditorStore.getState();
     if (!engine) return;
 
     if (name === "Spawn" && spawn) {
@@ -24,15 +24,15 @@ export default function SpecialsMenu() {
       const spawnId = engine.scene.node.getId(spawn);
       if (!spawnId) throw new Error("Spawn node not found");
 
-      useEditorStore.setState({ selectedId: spawnId });
+      setSelectedId(spawnId);
       return;
     }
 
     // Create node
-    const id = createNode(name);
+    const id = createNode(name, engine);
 
     // Select new node
-    useEditorStore.setState({ selectedId: id });
+    setSelectedId(id);
   }
 
   return (
@@ -57,7 +57,6 @@ export default function SpecialsMenu() {
             accept=".gltf,.glb"
             className="hidden"
             onChange={async (e) => {
-              const { engine } = useEditorStore.getState();
               if (!engine) return;
 
               const file = e.target.files?.[0];
@@ -72,10 +71,7 @@ export default function SpecialsMenu() {
   );
 }
 
-function createNode(name: ObjectName) {
-  const { engine } = useEditorStore.getState();
-  if (!engine) return;
-
+function createNode(name: ObjectName, engine: Engine) {
   const { id, object: node } = engine.scene.node.create();
 
   node.setName(name);

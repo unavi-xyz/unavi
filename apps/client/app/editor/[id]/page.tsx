@@ -1,11 +1,12 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { Editor } from "@/src/editor/components/Editor";
+import EditorUI from "@/src/editor/components/EditorUI";
 import { fetchProject } from "@/src/server/helpers/fetchProject";
 
 import RainbowkitWrapper from "../../(navbar)/RainbowkitWrapper";
 import SessionProvider from "../../(navbar)/SessionProvider";
-import Editor from "./Editor";
 
 type Params = {
   id: string;
@@ -30,7 +31,14 @@ export default async function Page({ params: { id } }: { params: Params }) {
   return (
     <SessionProvider>
       <RainbowkitWrapper>
-        <Editor project={project} />
+        <Editor
+          project={project}
+          animationPath="/models"
+          defaultAvatar="/models/Robot.vrm"
+          skybox="/images/Skybox.jpg"
+        >
+          <EditorUI project={project} />
+        </Editor>
       </RainbowkitWrapper>
     </SessionProvider>
   );

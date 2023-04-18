@@ -1,4 +1,4 @@
-import { HoverState, useClient } from "@wired-labs/react-client";
+import { HoverState, useClient } from "@unavi/react-client";
 
 const ACTION_STATES: HoverState[] = ["equip_avatar"];
 

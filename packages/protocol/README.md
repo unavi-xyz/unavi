@@ -5,5 +5,5 @@ Contains types and zod schemas describing the interface between `client` and `ho
 ## Installation
 
 ```bash
-yarn install @wired-labs/protocol
+yarn install @unavi/protocol
 ```

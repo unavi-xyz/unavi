@@ -8,7 +8,7 @@ import Toast from "./Toast";
 
 const font = Nunito({ subsets: ["latin"] });
 
-const APP_NAME = "The Wired";
+const APP_NAME = "UNAVI";
 const DESCRIPTION = "An open metaverse platform";
 const HERO = "/images/Hero.png";
 
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     description: DESCRIPTION,
     images: [HERO],
-    site: "@TheWiredXR",
+    site: "@unavi_xyz",
     title: APP_NAME,
   },
   appleWebApp: {

@@ -8,24 +8,41 @@ import { TouchCameraControls } from "./TouchCameraControls";
  * and drag controls for camera movement on the right side of the screen.
  */
 export class MobileInput {
-  #module: InputModule;
-
   joystick: Joystick;
   touch: TouchCameraControls;
 
   #animationFrame: number | undefined = undefined;
+  #canvas: HTMLCanvasElement | null = null;
 
   constructor(module: InputModule) {
-    this.#module = module;
     this.joystick = new Joystick(module);
     this.touch = new TouchCameraControls(module);
 
-    const canvas = module.engine.overlayCanvas;
-    canvas.addEventListener("touchstart", this.#onTouchStart.bind(this));
-    canvas.addEventListener("touchmove", this.#onTouchMove.bind(this));
-    canvas.addEventListener("touchend", this.#onTouchEnd.bind(this));
-
     this.start();
+  }
+
+  get canvas() {
+    return this.#canvas;
+  }
+
+  set canvas(value: HTMLCanvasElement | null) {
+    if (value === this.#canvas) return;
+
+    if (this.#canvas) {
+      this.#canvas.removeEventListener("touchstart", this.#onTouchStart);
+      this.#canvas.removeEventListener("touchmove", this.#onTouchMove);
+      this.#canvas.removeEventListener("touchend", this.#onTouchEnd);
+    }
+
+    if (value) {
+      value.addEventListener("touchstart", this.#onTouchStart.bind(this));
+      value.addEventListener("touchmove", this.#onTouchMove.bind(this));
+      value.addEventListener("touchend", this.#onTouchEnd.bind(this));
+    }
+
+    this.#canvas = value;
+    this.joystick.canvas = value;
+    this.touch.canvas = value;
   }
 
   #onTouchStart(event: TouchEvent) {
@@ -40,12 +57,14 @@ export class MobileInput {
     event.preventDefault();
 
     // If left side of canvas, use joystick
-    if (touch.clientX < this.#module.engine.overlayCanvas.width / 2) {
-      this.joystick.touchId = touch.identifier;
-      this.joystick.onTouchStart(touch.clientX, touch.clientY);
-    } else {
-      this.touch.touchId = touch.identifier;
-      this.touch.onTouchStart(touch.clientX, touch.clientY);
+    if (this.canvas) {
+      if (touch.clientX < this.canvas.width / 2) {
+        this.joystick.touchId = touch.identifier;
+        this.joystick.onTouchStart(touch.clientX, touch.clientY);
+      } else {
+        this.touch.touchId = touch.identifier;
+        this.touch.onTouchStart(touch.clientX, touch.clientY);
+      }
     }
   }
 
@@ -95,9 +114,6 @@ export class MobileInput {
   destroy() {
     this.stop();
 
-    const canvas = this.#module.engine.overlayCanvas;
-    canvas.removeEventListener("touchstart", this.#onTouchStart.bind(this));
-    canvas.removeEventListener("touchmove", this.#onTouchMove.bind(this));
-    canvas.removeEventListener("touchend", this.#onTouchEnd.bind(this));
+    this.canvas = null;
   }
 }

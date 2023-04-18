@@ -1,17 +1,15 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useEffect, useMemo } from "react";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
 import { useNodes } from "../../hooks/useNodes";
+import { useEditor } from "../Editor";
+import { useTree } from "./Tree";
 import TreeItem from "./TreeItem";
 import TreeItemContextMenu from "./TreeItemContextMenu";
 
 export default function TreeRoot() {
-  const engine = useEditorStore((state) => state.engine);
-  const treeIds = useEditorStore((state) => state.treeIds);
-  const openIds = useEditorStore((state) => state.openIds);
-  const isPlaying = useEditorStore((state) => state.isPlaying);
+  const { engine, mode, setSelectedId } = useEditor();
+  const { openIds, setOpenIds, setTreeIds, setDraggingId, treeIds } = useTree();
 
   const nodes = useNodes();
   const nodeIds = useMemo(() => {
@@ -46,17 +44,16 @@ export default function TreeRoot() {
   useEffect(() => {
     const onMouseUp = () => {
       document.body.style.removeProperty("cursor");
-      useEditorStore.setState({ draggingId: null });
+      setDraggingId(null);
     };
 
     window.addEventListener("mouseup", onMouseUp);
     return () => window.removeEventListener("mouseup", onMouseUp);
-  }, []);
+  }, [setDraggingId]);
 
   useEffect(() => {
     if (!engine) return;
 
-    const { treeIds, openIds } = useEditorStore.getState();
     const newTreeIds = [...treeIds];
     const newOpenIds = [...openIds];
 
@@ -117,14 +114,16 @@ export default function TreeRoot() {
       newOpenIds.every((id, index) => openIds[index] === id) &&
       newOpenIds.length === openIds.length;
 
-    if (!isSameTree) useEditorStore.setState({ treeIds: newTreeIds });
-    if (!isSameOpen) useEditorStore.setState({ openIds: newOpenIds });
-  }, [engine, nodeIds]);
+    if (!isSameTree) setTreeIds(newTreeIds);
+    if (!isSameOpen) setOpenIds(newOpenIds);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine, nodeIds, setTreeIds, setOpenIds]);
 
   return (
     <ContextMenu.Root>
-      <div onMouseDown={() => useEditorStore.setState({ selectedId: null })} className="h-full">
-        <ContextMenu.Trigger disabled={isPlaying}>
+      <div onMouseDown={() => setSelectedId(null)} className="h-full">
+        <ContextMenu.Trigger disabled={mode === "play"}>
           {visibleIds.map((id) => {
             return <TreeItem key={id} id={id} />;
           })}

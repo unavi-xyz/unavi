@@ -14,6 +14,7 @@ export class InputModule {
   mobile: MobileInput;
 
   #isLocked = false;
+  #canvas: HTMLCanvasElement | null = null;
 
   constructor(engine: Engine) {
     this.engine = engine;
@@ -21,6 +22,17 @@ export class InputModule {
     this.mobile = new MobileInput(this);
 
     document.addEventListener("pointerlockchange", this.#onPointerLockChange);
+  }
+
+  get canvas() {
+    return this.#canvas;
+  }
+
+  set canvas(value: HTMLCanvasElement | null) {
+    if (value === this.#canvas) return;
+    this.#canvas = value;
+    this.keyboard.canvas = value;
+    this.mobile.canvas = value;
   }
 
   get isLocked() {

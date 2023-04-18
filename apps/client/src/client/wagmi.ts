@@ -32,7 +32,7 @@ const connectors = connectorsForWallets([
     wallets: [
       metaMaskWallet({ chains }),
       rainbowWallet({ chains }),
-      coinbaseWallet({ chains, appName: "The Wired" }),
+      coinbaseWallet({ chains, appName: "UNAVI" }),
       ...(needsInjectedWalletFallback ? [injectedWallet({ chains })] : []),
     ],
   },

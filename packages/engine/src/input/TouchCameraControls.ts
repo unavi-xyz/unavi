@@ -3,6 +3,7 @@ import { InputModule } from "./InputModule";
 
 export class TouchCameraControls {
   #module: InputModule;
+  canvas: HTMLCanvasElement | null = null;
 
   touchId: number | undefined = undefined;
 
@@ -56,14 +57,13 @@ export class TouchCameraControls {
       this.#fixedX === undefined ||
       this.#fixedY === undefined ||
       this.#innerX === undefined ||
-      this.#innerY === undefined
+      this.#innerY === undefined ||
+      !this.canvas
     )
       return;
 
-    const x =
-      (this.#fixedX - this.#innerX) / this.#module.engine.overlayCanvas.width + this.#cameraX;
-    const y =
-      (this.#fixedY - this.#innerY) / this.#module.engine.overlayCanvas.height + this.#cameraY;
+    const x = (this.#fixedX - this.#innerX) / this.canvas.width + this.#cameraX;
+    const y = (this.#fixedY - this.#innerY) / this.canvas.height + this.#cameraY;
 
     // Clamp Y to a little before screen edges
     const minY = Math.max(this.#startY - 1, -0.4);

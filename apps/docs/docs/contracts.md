@@ -4,7 +4,7 @@ sidebar_label: 📜 Contracts
 title: Contracts
 ---
 
-The Wired operates using smart contracts on the Ethereum blockchain. These contracts allow the decentralized storage of user profiles and space data.
+UNAVI operates using smart contracts on the Ethereum blockchain. These contracts allow the decentralized storage of user profiles and space data.
 
 ## 📜 Deployed Contracts
 

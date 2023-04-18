@@ -22,7 +22,7 @@ Check out the [official Next.js docs](https://nextjs.org/docs/deployment) for mo
 ### Step 1 - Clone the repository
 
 ```bash
-git clone https://github.com/wired-labs/wired.git
+git clone https://github.com/unavi-xyz/wired.git
 cd wired
 ```
 

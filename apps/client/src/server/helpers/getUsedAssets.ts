@@ -1,5 +1,5 @@
 import { NodeIO } from "@gltf-transform/core";
-import { AudioEmitter, Avatar } from "@wired-labs/gltf-extensions";
+import { AudioEmitter, Avatar } from "@unavi/gltf-extensions";
 import { extensions } from "engine";
 
 /**

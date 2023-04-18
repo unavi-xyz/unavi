@@ -1,4 +1,4 @@
-import { ChatMessage as IChatMessage } from "@wired-labs/react-client";
+import { ChatMessage as IChatMessage } from "@unavi/react-client";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/store";

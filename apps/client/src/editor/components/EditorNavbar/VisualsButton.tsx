@@ -1,28 +1,27 @@
+import { useCallback, useState } from "react";
 import { HiCubeTransparent } from "react-icons/hi";
-
-import { useEditorStore } from "@/app/editor/[id]/store";
 
 import IconButton from "../../../ui/IconButton";
 import Tooltip from "../../../ui/Tooltip";
+import { useEditor } from "../Editor";
 
 export default function VisualsButton() {
-  const showColliders = useEditorStore((state) => state.showColliders);
-  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
+  const { engine, loaded } = useEditor();
 
-  function handleToggleVisuals() {
-    const { engine } = useEditorStore.getState();
-    if (!engine || !sceneLoaded) return;
+  const [enabled, setEnabled] = useState(false);
 
-    if (showColliders) engine.physics.send({ subject: "stop", data: null });
-    else engine.physics.send({ subject: "start", data: null });
+  const handleToggleVisuals = useCallback(() => {
+    if (!engine || !loaded) return;
 
-    engine.showColliders = !showColliders;
-    useEditorStore.setState({ showColliders: !showColliders });
-  }
+    setEnabled((prev) => {
+      engine.showColliders = !prev;
+      return !prev;
+    });
+  }, [engine, loaded]);
 
   return (
-    <Tooltip text={`${showColliders ? "Hide" : "Show"} Colliders`} side="bottom">
-      <IconButton disabled={!sceneLoaded} selected={showColliders} onClick={handleToggleVisuals}>
+    <Tooltip text={`${enabled ? "Hide" : "Show"} Colliders`} side="bottom">
+      <IconButton disabled={!loaded} selected={enabled} onClick={handleToggleVisuals}>
         <HiCubeTransparent />
       </IconButton>
     </Tooltip>

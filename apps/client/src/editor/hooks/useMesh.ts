@@ -1,10 +1,10 @@
 import { Mesh } from "@gltf-transform/core";
 import { useEffect, useState } from "react";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { useEditor } from "../components/Editor";
 
 export function useMesh(id: string | null) {
-  const engine = useEditorStore((state) => state.engine);
+  const { engine } = useEditor();
 
   const [mesh, setMesh] = useState<Mesh | null>(null);
 

@@ -1,10 +1,5 @@
 import { NodeIO } from "@gltf-transform/core";
-import {
-  VRM,
-  VRM0,
-  VRM0MetadataExtension,
-  VRMMetadataExtension,
-} from "@wired-labs/gltf-extensions";
+import { VRM, VRM0, VRM0MetadataExtension, VRMMetadataExtension } from "@unavi/gltf-extensions";
 import { extensions } from "engine";
 
 import { getModelStats, ModelStats } from "./getModelStats";

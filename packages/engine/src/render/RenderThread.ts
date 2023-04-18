@@ -93,16 +93,11 @@ export class RenderThread {
   controls: ControlsType = DEFAULT_CONTROLS;
   #prevCameraPosition = new Vector3(2, 4, 8);
 
-  constructor(postMessage: PostMessage<FromRenderMessage>, canvas?: HTMLCanvasElement) {
+  constructor(postMessage: PostMessage<FromRenderMessage>) {
     this.postMessage = postMessage;
 
     this.renderScene = new RenderScene();
     this.player = new PlayerControls(this.camera, this.renderScene.root);
-
-    if (canvas) {
-      this.#canvas = canvas;
-      this.init();
-    }
 
     this.scene.add(this.renderScene.root);
     this.scene.add(this.player.group);
@@ -138,8 +133,7 @@ export class RenderThread {
 
     switch (subject) {
       case "set_canvas": {
-        this.#canvas = data;
-        this.init();
+        this.canvas = data;
         break;
       }
 
@@ -183,7 +177,7 @@ export class RenderThread {
       }
 
       case "set_skybox": {
-        this.loadSkybox(data.uri);
+        this.loadSkybox(data);
         break;
       }
 
@@ -239,6 +233,34 @@ export class RenderThread {
     }
   };
 
+  get canvas() {
+    return this.#canvas;
+  }
+
+  set canvas(canvas: HTMLCanvasElement | OffscreenCanvas | null) {
+    if (this.#canvas === canvas) return;
+    this.#canvas = canvas;
+
+    // Clean up old renderer
+    if (this.renderer) {
+      this.renderer.dispose();
+      this.renderer = null;
+    }
+
+    if (this.csm) {
+      this.csm.dispose();
+      this.csm = null;
+    }
+
+    if (this.composer) {
+      this.composer.dispose();
+      this.composer = null;
+    }
+
+    // Set up new renderer
+    if (canvas) this.init();
+  }
+
   async loadSkybox(uri: string | null) {
     // Clean up old skybox
     if (this.scene.background instanceof Texture) this.scene.background.dispose();
@@ -268,6 +290,7 @@ export class RenderThread {
   init() {
     if (!this.#canvas) return;
 
+    // Renderer
     this.renderer = new WebGLRenderer({
       canvas: this.#canvas,
       antialias: true,

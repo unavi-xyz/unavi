@@ -1,6 +1,6 @@
 "use client";
 
-import { Client } from "@wired-labs/react-client";
+import { Client } from "@unavi/react-client";
 import Script from "next/script";
 import { useState } from "react";
 import { useProvider, useSigner } from "wagmi";

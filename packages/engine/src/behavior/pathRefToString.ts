@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { ParamJsonPath } from "@wired-labs/gltf-extensions";
+import { ParamJsonPath } from "@unavi/gltf-extensions";
 
 import { Engine } from "../Engine";
 

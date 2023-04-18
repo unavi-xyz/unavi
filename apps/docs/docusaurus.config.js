@@ -5,9 +5,9 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula");
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: "The Wired Docs",
-  tagline: "The Wired - An open and decentralized web-based metaverse platform.",
-  url: "https://docs.thewired.space",
+  title: "UNAVI Docs",
+  tagline: "UNAVI - An open and decentralized web-based metaverse platform.",
+  url: "https://docs.unavi.xyz",
   baseUrl: "/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
@@ -29,7 +29,7 @@ const config = {
         blog: false,
 
         docs: {
-          editUrl: "https://github.com/wired-labs/wired/tree/main/apps/docs",
+          editUrl: "https://github.com/unavi-xyz/wired/tree/main/apps/docs",
           path: "./docs",
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
@@ -52,7 +52,7 @@ const config = {
       ],
 
       navbar: {
-        title: "The Wired",
+        title: "UNAVI",
         logo: {
           alt: "Logo",
           src: "img/Logo-Dark.png",
@@ -65,7 +65,7 @@ const config = {
             "aria-label": "Discord invite",
           },
           {
-            href: "https://github.com/wired-labs/wired",
+            href: "https://github.com/unavi-xyz/wired",
             position: "right",
             className: "header-github-link",
             "aria-label": "GitHub repository",

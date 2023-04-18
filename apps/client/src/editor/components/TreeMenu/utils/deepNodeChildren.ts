@@ -1,13 +1,9 @@
 import { Node } from "@gltf-transform/core";
+import { Engine } from "engine";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
-export function deepNodeChildren(node: Node): Node[] {
-  const { engine } = useEditorStore.getState();
-  if (!engine) return [];
-
+export function deepNodeChildren(node: Node, engine: Engine): Node[] {
   return node.listChildren().reduce((acc, child) => {
-    const childChildren = deepNodeChildren(child);
+    const childChildren = deepNodeChildren(child, engine);
     return [...acc, child, ...childChildren];
   }, [] as Node[]);
 }

@@ -1,4 +1,4 @@
-import { useClient } from "@wired-labs/react-client";
+import { useClient } from "@unavi/react-client";
 import { RenderStats } from "engine";
 import { useEffect, useState } from "react";
 

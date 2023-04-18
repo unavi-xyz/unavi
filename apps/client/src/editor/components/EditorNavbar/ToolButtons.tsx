@@ -4,22 +4,20 @@ import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { MdSync } from "react-icons/md";
 
-import { Tool, useEditorStore } from "@/app/editor/[id]/store";
-
 import IconButton from "../../../ui/IconButton";
 import Tooltip from "../../../ui/Tooltip";
+import { Tool, useEditor } from "../Editor";
 
 export default function ToolButtons() {
-  const tool = useEditorStore((state) => state.tool);
-  const sceneLoaded = useEditorStore((state) => state.sceneLoaded);
+  const { loaded, tool, setTool } = useEditor();
 
   return (
     <ToggleGroup.Root
       type="single"
       value={tool}
-      disabled={!sceneLoaded}
+      disabled={!loaded}
       onValueChange={(value: Tool | "") => {
-        if (value) useEditorStore.setState({ tool: value });
+        if (value) setTool(value);
       }}
       className="flex h-full w-full justify-center space-x-2"
     >
@@ -45,12 +43,13 @@ interface Props {
 }
 
 function ToolButton({ tool, tooltip, children }: Props) {
-  const selected = useEditorStore((state) => state.tool === tool);
+  const { tool: selectedTool, setTool } = useEditor();
+  const selected = selectedTool === tool;
 
   return (
     <Tooltip text={tooltip} side="bottom">
       <ToggleGroup.Item value={tool} asChild>
-        <IconButton selected={selected} onClick={() => useEditorStore.setState({ tool })}>
+        <IconButton selected={selected} onClick={() => setTool(tool)}>
           {children}
         </IconButton>
       </ToggleGroup.Item>

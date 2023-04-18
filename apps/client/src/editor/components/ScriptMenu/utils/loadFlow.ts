@@ -4,7 +4,7 @@ import {
   isJsonPath,
   isLink,
   isVariableConfig,
-} from "@wired-labs/gltf-extensions";
+} from "@unavi/gltf-extensions";
 import { Engine, pathRefToString } from "engine";
 import { nanoid } from "nanoid";
 import { Edge, Node } from "reactflow";

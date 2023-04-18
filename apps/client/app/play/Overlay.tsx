@@ -1,4 +1,4 @@
-import { MicButton, useClient } from "@wired-labs/react-client";
+import { MicButton, useClient } from "@unavi/react-client";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";

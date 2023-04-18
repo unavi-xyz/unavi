@@ -1,4 +1,4 @@
-import { useClient } from "@wired-labs/react-client";
+import { useClient } from "@unavi/react-client";
 import { useEffect, useRef } from "react";
 
 import { usePlayStore } from "@/app/play/store";

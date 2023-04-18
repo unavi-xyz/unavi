@@ -1,12 +1,12 @@
-import { InputSocketSpecJSON } from "@wired-labs/behave-graph-core";
-import { ConstantValue, ValueType } from "@wired-labs/gltf-extensions";
+import { InputSocketSpecJSON } from "@unavi/behave-graph-core";
+import { ConstantValue, ValueType } from "@unavi/gltf-extensions";
 import { FaCaretRight } from "react-icons/fa";
 import { Connection, Handle, Position, useReactFlow } from "reactflow";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
-
+import { useEditor } from "../Editor";
 import AutoSizeInput from "./AutoSizeInput";
 import JsonPathInput from "./JsonPathInput";
+import { useScript } from "./Script";
 import { FlowNodeParamter } from "./types";
 import { valueColorsMap } from "./utils/colors";
 import { isValidConnection } from "./utils/isValidConnection";
@@ -26,8 +26,9 @@ export default function InputSocket({
   valueType,
   pathType,
 }: InputSocketProps) {
+  const { mode } = useEditor();
+  const { variables } = useScript();
   const instance = useReactFlow();
-  const isPlaying = useEditorStore((state) => state.isPlaying);
 
   const isFlowSocket = valueType === "flow";
   const isJsonPath = name === "jsonPath";
@@ -64,10 +65,10 @@ export default function InputSocket({
             <AutoSizeInput
               type={inputType}
               value={String(value?.value ?? "")}
-              disabled={isPlaying}
+              disabled={mode === "play"}
               onChange={(e) => onChange(name, { value: e.currentTarget.value })}
               className={`h-6 rounded bg-neutral-200 px-2 ${
-                isPlaying
+                mode === "play"
                   ? ""
                   : "hover:bg-neutral-300/80 focus:bg-neutral-300/80 focus:outline-none"
               }`}
@@ -81,7 +82,9 @@ export default function InputSocket({
           id={name}
           type="target"
           position={Position.Left}
-          isValidConnection={(connection: Connection) => isValidConnection(connection, instance)}
+          isValidConnection={(connection: Connection) =>
+            isValidConnection(connection, instance, variables)
+          }
           style={{
             borderColor: valueColorsMap[valueType],
             backgroundColor: connected ? "#262626" : "#ffffff",

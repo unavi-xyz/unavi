@@ -1,4 +1,10 @@
-import { BoxGeometry, BufferGeometry, CylinderGeometry, SphereGeometry } from "three";
+import {
+  BoxGeometry,
+  BufferGeometry,
+  CylinderGeometry,
+  GLBufferAttribute,
+  SphereGeometry,
+} from "three";
 
 import { CustomMesh } from "../../../scene";
 import { THREE_ATTRIBUTE_NAMES } from "../constants";
@@ -37,6 +43,9 @@ export function getCustomMeshData(json: CustomMesh) {
   const indices = geometry.getIndex();
 
   if (!indices) throw new Error("No indices found");
+  if (positions instanceof GLBufferAttribute)
+    throw new Error("Positions are not a buffer attribute");
+  if (normals instanceof GLBufferAttribute) throw new Error("Normals are not a buffer attribute");
 
   return { positions: positions.array, normals: normals.array, indices: indices.array };
 }

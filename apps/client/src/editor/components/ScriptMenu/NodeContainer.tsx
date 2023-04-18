@@ -1,6 +1,6 @@
-import { NodeCategory, NodeSpecJSON } from "@wired-labs/behave-graph-core";
+import { NodeCategory, NodeSpecJSON } from "@unavi/behave-graph-core";
 
-import { useEditorStore } from "@/app/editor/[id]/store";
+import { useScript } from "./Script";
 
 interface Props {
   id: string;
@@ -11,9 +11,11 @@ interface Props {
 }
 
 export default function NodeContainer({ id, title, category, selected, children }: Props) {
+  const { setContextMenuNodeId } = useScript();
+
   return (
     <div
-      onContextMenu={() => useEditorStore.setState({ contextMenuNodeId: id })}
+      onContextMenu={() => setContextMenuNodeId(id)}
       className={`min-w-[120px] rounded bg-white/80 text-sm text-neutral-900 shadow hover:shadow-md
       ${selected ? "outline outline-2 outline-neutral-900" : ""}`}
     >

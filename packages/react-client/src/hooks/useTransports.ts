@@ -1,4 +1,4 @@
-import { MessageSchema } from "@wired-labs/protocol";
+import { MessageSchema } from "@unavi/protocol";
 import { Device } from "mediasoup-client";
 import { DataConsumer } from "mediasoup-client/lib/DataConsumer";
 import { Transport } from "mediasoup-client/lib/Transport";

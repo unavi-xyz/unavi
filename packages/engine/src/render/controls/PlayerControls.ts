@@ -175,7 +175,7 @@ export class PlayerControls {
 
       case "set_default_avatar": {
         this.#defaultAvatar = data;
-        if (!this.avatar) this.avatar = new Avatar(data, this.#camera);
+        if (!this.avatar && data) this.avatar = new Avatar(data, this.#camera);
         break;
       }
 

@@ -1,4 +1,4 @@
-import { FromHostMessage } from "@wired-labs/protocol";
+import { FromHostMessage } from "@unavi/protocol";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
 import { Producer } from "mediasoup/node/lib/Producer";
 

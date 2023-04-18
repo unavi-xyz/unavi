@@ -5,6 +5,7 @@ import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderEvent } from "./events";
 import { FromRenderMessage, RenderStats, ToRenderMessage } from "./messages";
+import type { RenderThread } from "./RenderThread";
 
 /**
  * Acts as an interface between the main thread and the render thread.
@@ -16,6 +17,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
   readonly engine: Engine;
 
   #worker: Worker | FakeWorker | null = null;
+  renderThread: RenderThread | null = null;
 
   ready = false;
   messageQueue: Array<{ message: ToRenderMessage; transferables?: Transferable[] }> = [];
@@ -28,7 +30,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     this.engine = engine;
 
     // If canvas is an OffscreenCanvas, render in a web worker
-    if (typeof OffscreenCanvas !== "undefined") {
+    if (engine.canvas instanceof OffscreenCanvas) {
       this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
         type: "module",
         name: "render",

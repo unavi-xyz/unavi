@@ -72,7 +72,7 @@ export class Engine {
       this.render.send({ subject: "set_canvas", data: value }, [value]);
     } else {
       this.#canvas = value;
-      this.render.send({ subject: "set_canvas", data: value });
+      if (this.render.renderThread) this.render.renderThread.canvas = value;
     }
 
     if (value) {

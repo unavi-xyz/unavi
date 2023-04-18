@@ -13,8 +13,8 @@
   <a href="https://unavi.xyz">
     <img src="https://therealsujitk-vercel-badge.vercel.app/?app=client-wired" alt="Vercel" />
   </a>
-  <a href="https://github.com/unavi-xyz/wired/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/unavi-xyz/wired" alt="License" />
+  <a href="https://github.com/unavi-xyz/unavi/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/unavi-xyz/unavi" alt="License" />
   </a>
   <a href="https://discord.gg/VCsAEneUMn">
     <img src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord" />

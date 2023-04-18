@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/unavi-xyz/wired.git",
+    "url": "https://github.com/unavi-xyz/unavi.git",
     "directory": "packages/protocol"
   },
   "license": "GPL-3.0-or-later",

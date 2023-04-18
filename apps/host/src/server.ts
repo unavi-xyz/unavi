@@ -1,4 +1,4 @@
-import { MessageSchema } from "@wired-labs/protocol";
+import { MessageSchema } from "@unavi/protocol";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";

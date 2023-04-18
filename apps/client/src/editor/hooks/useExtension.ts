@@ -1,5 +1,5 @@
 import { ExtensibleProperty, ExtensionProperty } from "@gltf-transform/core";
-import { AudioEmitter, Avatar, Collider, SpawnPoint } from "@wired-labs/gltf-extensions";
+import { AudioEmitter, Avatar, Collider, SpawnPoint } from "@unavi/gltf-extensions";
 import { useEffect, useState } from "react";
 
 export function useExtension<T extends ExtensionProperty>(

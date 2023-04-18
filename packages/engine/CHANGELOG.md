@@ -15,7 +15,7 @@
 - Updated dependencies [f285a6a]
 - Updated dependencies [bf4a266]
 - Updated dependencies [ac5cb1c]
-  - @wired-labs/gltf-extensions@0.4.0
+  - @unavi/gltf-extensions@0.4.0
 
 ## 0.1.0
 

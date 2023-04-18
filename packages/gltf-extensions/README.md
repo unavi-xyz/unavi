@@ -17,7 +17,7 @@ Also contains partial implementations of the following extensions:
 ## Installation
 
 ```bash
-yarn install @wired-labs/gltf-extensions
+yarn install @unavi/gltf-extensions
 ```
 
 ## Usage
@@ -26,7 +26,7 @@ Simply register the extensions you want with your glTF-Transform `io` instance:
 
 ```typescript
 import { NodeIO } from "@gltf-transform/core";
-import { ColliderExtension, SpawnPointExtension } from "@wired-labs/gltf-extensions";
+import { ColliderExtension, SpawnPointExtension } from "@unavi/gltf-extensions";
 
 // Register extensions
 const io = new NodeIO().registerExtensions([ColliderExtension, SpawnPointExtension]);

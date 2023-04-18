@@ -1,4 +1,4 @@
-import { NodeSpecJSON } from "@wired-labs/behave-graph-core";
+import { NodeSpecJSON } from "@unavi/behave-graph-core";
 
 export function getSockets(
   nodes: NodeSpecJSON[],

@@ -7,14 +7,14 @@
 <br />
 
 <div align="center">
-  <a href="https://docs.thewired.space">
+  <a href="https://docs.unavi.xyz">
     <img src="https://img.shields.io/badge/docs-read-informational" alt="Docs" />
   </a>
-  <a href="https://thewired.space">
+  <a href="https://unavi.xyz">
     <img src="https://therealsujitk-vercel-badge.vercel.app/?app=client-wired" alt="Vercel" />
   </a>
-  <a href="https://github.com/wired-labs/wired/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/wired-labs/wired" alt="License" />
+  <a href="https://github.com/unavi-xyz/wired/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/unavi-xyz/wired" alt="License" />
   </a>
   <a href="https://discord.gg/VCsAEneUMn">
     <img src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord" />
@@ -26,7 +26,7 @@
 
 ## 🔥 Features
 
-- Decentralized identity + content distribution over [Ethereum](https://github.com/wired-labs/contracts)
+- Decentralized identity + content distribution over [Ethereum](https://github.com/unavi-xyz/contracts)
 - Open backend, anyone can run their own servers
 - Custom multi-threaded, [glTF](https://github.com/KhronosGroup/glTF)-based game engine
 - [VRM](https://vrm.dev/) avatar support

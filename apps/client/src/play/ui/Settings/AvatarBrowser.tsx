@@ -1,4 +1,4 @@
-import { useClient } from "@wired-labs/react-client";
+import { useClient } from "@unavi/react-client";
 import { MdArrowBack } from "react-icons/md";
 import useSWR from "swr";
 

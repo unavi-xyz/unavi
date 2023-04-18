@@ -1,9 +1,9 @@
 {
-  "name": "@wired-labs/gltf-extensions",
+  "name": "@unavi/gltf-extensions",
   "version": "0.5.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wired-labs/wired.git",
+    "url": "https://github.com/unavi-xyz/wired.git",
     "directory": "packages/gltf-extensions"
   },
   "license": "GPL-3.0-or-later",
@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@gltf-transform/core": "3.2.0",
-    "@wired-labs/behave-graph-core": "^0.9.19",
+    "@unavi/behave-graph-core": "^0.9.20",
     "zod": "^3.21.4"
   },
   "devDependencies": {

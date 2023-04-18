@@ -1,4 +1,4 @@
-import { ClientContext } from "@wired-labs/react-client";
+import { ClientContext } from "@unavi/react-client";
 import { useContext } from "react";
 
 import { usePlayStore } from "@/app/play/store";

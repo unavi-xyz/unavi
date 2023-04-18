@@ -1,4 +1,4 @@
-# @wired-labs/protocol
+# @unavi/protocol
 
 ## 0.3.0
 

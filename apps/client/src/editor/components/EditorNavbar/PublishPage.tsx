@@ -1,4 +1,4 @@
-import { Space } from "@wired-labs/gltf-extensions";
+import { Space } from "@unavi/gltf-extensions";
 import { ERC721Metadata, ERC721MetadataSchema } from "contracts";
 import { nanoid } from "nanoid";
 import Link from "next/link";

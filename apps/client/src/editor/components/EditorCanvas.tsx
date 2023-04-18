@@ -1,4 +1,4 @@
-import { useResizeCanvas } from "@wired-labs/react-client";
+import { useResizeCanvas } from "@unavi/react-client";
 import React, { useCallback, useEffect, useRef } from "react";
 
 import SignInButton from "@/app/(navbar)/SignInButton";

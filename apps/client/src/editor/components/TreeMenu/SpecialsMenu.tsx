@@ -1,4 +1,4 @@
-import { SPAWN_TITLE } from "@wired-labs/gltf-extensions";
+import { SPAWN_TITLE } from "@unavi/gltf-extensions";
 import { Engine } from "engine";
 
 import { DropdownItem } from "../../../ui/DropdownMenu";

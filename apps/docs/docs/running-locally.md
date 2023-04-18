@@ -21,7 +21,7 @@ Before starting, ensure that you have the following tools:
 ### Step 1 - Clone the repository
 
 ```bash
-git clone https://github.com/wired-labs/wired.git
+git clone https://github.com/unavi-xyz/wired.git
 cd wired
 ```
 

@@ -1,4 +1,4 @@
-import { SPAWN_TITLE } from "@wired-labs/gltf-extensions";
+import { SPAWN_TITLE } from "@unavi/gltf-extensions";
 
 import { useEditor } from "../components/Editor";
 

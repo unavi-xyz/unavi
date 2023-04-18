@@ -9,7 +9,7 @@ import {
   SPAWN_TITLE,
   SpawnPoint,
   SpawnPointExtension,
-} from "@wired-labs/gltf-extensions";
+} from "@unavi/gltf-extensions";
 
 import { Accessors } from "./attributes/Accessors";
 import { Animations } from "./attributes/Animations";

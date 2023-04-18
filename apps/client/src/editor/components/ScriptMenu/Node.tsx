@@ -1,5 +1,5 @@
-import { NodeCategory, NodeSpecJSON } from "@wired-labs/behave-graph-core";
-import { ConstantValue } from "@wired-labs/gltf-extensions";
+import { NodeCategory, NodeSpecJSON } from "@unavi/behave-graph-core";
+import { ConstantValue } from "@unavi/gltf-extensions";
 import { NodeProps, useEdges } from "reactflow";
 
 import { useChangeNodeData } from "./hooks/useChangeNodeData";

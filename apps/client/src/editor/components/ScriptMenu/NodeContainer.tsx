@@ -1,4 +1,4 @@
-import { NodeCategory, NodeSpecJSON } from "@wired-labs/behave-graph-core";
+import { NodeCategory, NodeSpecJSON } from "@unavi/behave-graph-core";
 
 import { useScript } from "./Script";
 

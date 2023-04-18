@@ -1,5 +1,5 @@
 import { Packet } from "@gltf-transform/extensions";
-import { Space } from "@wired-labs/gltf-extensions";
+import { Space } from "@unavi/gltf-extensions";
 import { useCallback, useState } from "react";
 
 import { getProjectFileUpload } from "@/app/api/projects/[id]/files/[file]/helper";

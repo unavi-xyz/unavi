@@ -1,4 +1,4 @@
-import { BehaviorVariable } from "@wired-labs/gltf-extensions";
+import { BehaviorVariable } from "@unavi/gltf-extensions";
 import React, { Dispatch, SetStateAction, useContext, useMemo, useState } from "react";
 import { ReactFlowInstance, XYPosition } from "reactflow";
 

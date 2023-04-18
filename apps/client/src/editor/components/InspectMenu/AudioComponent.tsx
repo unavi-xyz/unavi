@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { AudioEmitterDistanceModel, AudioEmitterType } from "@wired-labs/gltf-extensions";
+import { AudioEmitterDistanceModel, AudioEmitterType } from "@unavi/gltf-extensions";
 import { useState } from "react";
 
 import { getNewProjectAssetUpload } from "@/app/api/projects/[id]/assets/helper";

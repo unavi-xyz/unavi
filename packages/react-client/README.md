@@ -5,7 +5,7 @@ React components and hooks for running a Wired client.
 ## Installation
 
 ```bash
-yarn install @wired-labs/react-client
+yarn install @unavi/react-client
 ```
 
 ## Usage
@@ -16,14 +16,14 @@ yarn install @wired-labs/react-client
 The `Client` component is a self-contained client for The Wired. It manages the connection to the host and renders the scene. Components can be passed in as children, and can access internal state using the `ClientContext` (for example, if you want to send messages to the host using the WebSocket connection).
 
 ```jsx
-import { Client } from "@wired-labs/react-client";
+import { Client } from "@unavi/react-client";
 
 export default function App() {
   return (
     <Client
       uri="https://path.to/space.glb"
       metadata={{...}}
-      host="wss://host.thewired.space"
+      host="wss://host.unavi.xyz"
       skybox="/skybox.jpg"
       defaultAvatar="/default-avatar.vrm"
       animations="/animations"

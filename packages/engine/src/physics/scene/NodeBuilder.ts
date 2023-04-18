@@ -1,6 +1,6 @@
 import { Collider, ColliderDesc, RigidBody, RigidBodyDesc, TriMesh } from "@dimforge/rapier3d";
 import { Node } from "@gltf-transform/core";
-import { Collider as ColliderExt } from "@wired-labs/gltf-extensions";
+import { Collider as ColliderExt } from "@unavi/gltf-extensions";
 
 import { NodeJSON } from "../../scene";
 import { Vec3 } from "../../types";

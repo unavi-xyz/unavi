@@ -6138,6 +6138,11 @@
     "@typescript-eslint/types" "5.58.0"
     eslint-visitor-keys "^3.3.0"
 
+"@unavi/behave-graph-core@^0.9.20":
+  version "0.9.20"
+  resolved "https://registry.yarnpkg.com/@unavi/behave-graph-core/-/behave-graph-core-0.9.20.tgz#e7837bc0e1c3e9d6e0598a1fd5bdf31b8a23c955"
+  integrity sha512-Q23R1bMLH0zj3MOjHGaRIKeoDWNglQMkxbQLFx9WjQrSCcugsfUD+Zo4YODrNmmKewvutn0oK/pq5GNutCbpSQ==
+
 "@vanilla-extract/css@1.9.1":
   version "1.9.1"
   resolved "https://registry.yarnpkg.com/@vanilla-extract/css/-/css-1.9.1.tgz#337b79faa5f8f98915a90c3fe3c30b54be746c09"
@@ -6716,11 +6721,6 @@
   dependencies:
     "@webassemblyjs/ast" "1.11.1"
     "@xtuc/long" "4.2.2"
-
-"@wired-labs/behave-graph-core@^0.9.19":
-  version "0.9.19"
-  resolved "https://registry.yarnpkg.com/@wired-labs/behave-graph-core/-/behave-graph-core-0.9.19.tgz#70dfb317565adf42f3c0d1b516df2164c606dd79"
-  integrity sha512-LbgBALqawFW0dFaJkdPhLa9m7z9iwIfcK1aLkI7yXiw8Ln3mC6ruez+HQcTz5MiarJLYMZx0+js8J/YiRQIEMA==
 
 "@xtuc/ieee754@^1.2.0":
   version "1.2.0"

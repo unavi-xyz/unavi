@@ -1,6 +1,6 @@
 import { Primitive } from "@gltf-transform/core";
 import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
-import { Avatar } from "@wired-labs/gltf-extensions";
+import { Avatar } from "@unavi/gltf-extensions";
 import {
   Bone,
   BufferGeometry,

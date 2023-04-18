@@ -1,4 +1,4 @@
-import { MessageSchema, ToHostMessage } from "@wired-labs/protocol";
+import { MessageSchema, ToHostMessage } from "@unavi/protocol";
 import { Device } from "mediasoup-client";
 import { useContext, useEffect, useState } from "react";
 

@@ -12,7 +12,7 @@ import {
   ColliderExtension,
   SpaceExtension,
   SpawnPointExtension,
-} from "@wired-labs/gltf-extensions";
+} from "@unavi/gltf-extensions";
 
 /**
  * List of extensions supported by the engine.

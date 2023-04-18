@@ -1,4 +1,4 @@
-import { Avatar } from "@wired-labs/gltf-extensions";
+import { Avatar } from "@unavi/gltf-extensions";
 import { Engine, MAX_AVATAR_EQUIP_DISTANCE, RenderEvent } from "engine";
 import { useEffect } from "react";
 

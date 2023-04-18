@@ -1,4 +1,4 @@
-# @wired-labs/gltf-extensions
+# @unavi/gltf-extensions
 
 ## 0.5.0
 

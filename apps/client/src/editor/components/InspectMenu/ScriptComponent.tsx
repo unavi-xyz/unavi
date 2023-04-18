@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { BehaviorNode, BehaviorNodeExtras } from "@wired-labs/gltf-extensions";
+import { BehaviorNode, BehaviorNodeExtras } from "@unavi/gltf-extensions";
 
 import { useNodeExtras } from "../../hooks/useNodeExtras";
 import { useEditor } from "../Editor";

@@ -1,4 +1,4 @@
-import { MessageSchema } from "@wired-labs/protocol";
+import { MessageSchema } from "@unavi/protocol";
 import { Producer } from "mediasoup-client/lib/Producer";
 import { Transport } from "mediasoup-client/lib/Transport";
 import { useEffect, useState } from "react";

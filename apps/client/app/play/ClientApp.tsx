@@ -1,4 +1,4 @@
-import { useClient } from "@wired-labs/react-client";
+import { useClient } from "@unavi/react-client";
 import { useEffect } from "react";
 
 import Overlay from "@/app/play/Overlay";

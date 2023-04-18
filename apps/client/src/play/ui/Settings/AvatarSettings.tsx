@@ -1,4 +1,4 @@
-import { ClientContext } from "@wired-labs/react-client";
+import { ClientContext } from "@unavi/react-client";
 import { useContext, useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 

@@ -1,4 +1,4 @@
-import { EventEmitter } from "@wired-labs/behave-graph-core";
+import { EventEmitter } from "@unavi/behave-graph-core";
 
 import { RenderScene } from "../RenderScene";
 

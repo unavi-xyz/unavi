@@ -1,4 +1,4 @@
-import { ToHostMessage } from "@wired-labs/protocol";
+import { ToHostMessage } from "@unavi/protocol";
 import { ERC721Metadata, getHostFromMetadata } from "contracts";
 import { Engine } from "engine";
 import { providers, Signer } from "ethers";

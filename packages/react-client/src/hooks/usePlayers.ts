@@ -1,4 +1,4 @@
-import { MessageSchema } from "@wired-labs/protocol";
+import { MessageSchema } from "@unavi/protocol";
 import { nanoid } from "nanoid";
 import { useEffect } from "react";
 

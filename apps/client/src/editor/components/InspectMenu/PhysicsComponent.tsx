@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { Collider, ColliderExtension, ColliderType } from "@wired-labs/gltf-extensions";
+import { Collider, ColliderExtension, ColliderType } from "@unavi/gltf-extensions";
 
 import { useCollider } from "../../hooks/useExtension";
 import { useSubscribe } from "../../hooks/useSubscribe";

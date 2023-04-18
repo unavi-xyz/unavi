@@ -10,7 +10,7 @@ import {
   registerSceneProfile,
   Registry,
   validateGraph,
-} from "@wired-labs/behave-graph-core";
+} from "@unavi/behave-graph-core";
 
 import { Engine } from "../Engine";
 import { BehaviorScene } from "./BehaviorScene";

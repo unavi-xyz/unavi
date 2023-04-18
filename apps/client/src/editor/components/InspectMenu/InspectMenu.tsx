@@ -1,4 +1,4 @@
-import { EXTENSION_NAME } from "@wired-labs/gltf-extensions";
+import { EXTENSION_NAME } from "@unavi/gltf-extensions";
 
 import { useNode } from "../../hooks/useNode";
 import { useNodeExtras } from "../../hooks/useNodeExtras";

@@ -1,4 +1,4 @@
-import { BehaviorVariable } from "@wired-labs/gltf-extensions";
+import { BehaviorVariable } from "@unavi/gltf-extensions";
 import { useEffect, useState } from "react";
 
 export function useVariableAttribute<T extends BehaviorVariable, A extends keyof T>(

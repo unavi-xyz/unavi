@@ -1,5 +1,5 @@
 import * as Select from "@radix-ui/react-select";
-import { BehaviorVariable, ValueType } from "@wired-labs/gltf-extensions";
+import { BehaviorVariable, ValueType } from "@unavi/gltf-extensions";
 import { useEffect, useState } from "react";
 import { IoIosArrowDown } from "react-icons/io";
 

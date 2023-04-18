@@ -1,4 +1,4 @@
-import { useClient } from "@wired-labs/react-client";
+import { useClient } from "@unavi/react-client";
 
 import { getTempUpload } from "@/app/api/temp/helper";
 import { usePlayStore } from "@/app/play/store";

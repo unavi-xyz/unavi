@@ -4,7 +4,7 @@ import {
   registerSceneProfile,
   Registry,
   writeNodeSpecsToJSON,
-} from "@wired-labs/behave-graph-core";
+} from "@unavi/behave-graph-core";
 
 let nodeSpecJSON: NodeSpecJSON[] | undefined = undefined;
 

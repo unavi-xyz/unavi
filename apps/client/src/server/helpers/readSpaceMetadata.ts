@@ -10,7 +10,7 @@ import { env } from "@/src/env.mjs";
 
 export const readSpaceMetadata = cache(async (uri: string): Promise<SpaceMetadata | null> => {
   try {
-    const res = await fetch(uri);
+    const res = await fetch(uri, { next: { revalidate: 60 } });
     const buffer = await res.arrayBuffer();
     const array = new Uint8Array(buffer);
 

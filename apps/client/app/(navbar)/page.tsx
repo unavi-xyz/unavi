@@ -31,7 +31,7 @@ export default function Home() {
           <section className="relative -mt-24 flex h-screen flex-col-reverse items-center justify-center lg:flex-row lg:justify-start">
             <div className="w-full space-y-2">
               <div className="text-center text-6xl font-black transition lg:text-start lg:text-7xl">
-                The Wired
+                UNAVI
               </div>
 
               <div className="text-center text-xl lg:text-start lg:text-3xl">
@@ -65,7 +65,7 @@ export default function Home() {
               <div className="z-10 pr-36">
                 <Image
                   src={Screenshot1}
-                  alt="Screenshot of The Wired"
+                  alt="Screenshot of UNAVI"
                   priority
                   sizes="(min-width: 1024px) 40vw, 75vw"
                   className="rounded-3xl"
@@ -75,7 +75,7 @@ export default function Home() {
               <div className="-mt-20 pl-36 lg:-mt-28">
                 <Image
                   src={Screenshot2}
-                  alt="Screenshot of The Wired"
+                  alt="Screenshot of UNAVI"
                   priority
                   sizes="(min-width: 1024px) 40vw, 75vw"
                   className="rounded-3xl"
@@ -116,7 +116,7 @@ export default function Home() {
               <div className="relative h-48 w-full sm:h-80">
                 <Image
                   src={Screenshot3}
-                  alt="Screenshot of The Wired"
+                  alt="Screenshot of UNAVI"
                   fill
                   sizes="(min-width: 1024px) 50vw, 100vw"
                   className="rounded-3xl object-cover"
@@ -129,8 +129,8 @@ export default function Home() {
                 The Spatial Web
               </div>
               <div className="text-center text-lg text-neutral-700 lg:text-start lg:text-xl">
-                The Wired reimagines the web as an interconnected network of 3D spaces, instead of
-                2D websites.{" "}
+                UNAVI reimagines the web as an interconnected network of 3D spaces, instead of 2D
+                websites.{" "}
                 <strong className="text-black">
                   Anyone can host their own space, on their own servers.
                 </strong>
@@ -154,7 +154,7 @@ export default function Home() {
               <div className="relative h-48 w-full sm:h-80">
                 <Image
                   src={Screenshot4}
-                  alt="Screenshot of The Wired"
+                  alt="Screenshot of UNAVI"
                   fill
                   sizes="(min-width: 1024px) 50vw, 100vw"
                   className="rounded-3xl object-cover"

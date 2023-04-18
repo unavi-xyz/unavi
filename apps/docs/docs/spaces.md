@@ -50,4 +50,4 @@ The host server adds **multiplayer functionality** to your space. It acts as an 
 
 The team runs a free host server that is used by default for any spaces created at [unavi.xyz](https://unavi.xyz). However, you also have the option to run your own host server, giving you complete control and ownership of your creations. Check out the [deployment guide](/deployment/host) for more information on how to self-host.
 
-Travel between spaces is not limited to a single host server. You can travel between spaces hosted on different servers, just like you can visit different websites on the web. The ability to self-host spaces is a critical aspect of maintaining The Wired as an open network.
+Travel between spaces is not limited to a single host server. You can travel between spaces hosted on different servers, just like you can visit different websites on the web. The ability to self-host spaces is a critical aspect of maintaining UNAVI as an open network.

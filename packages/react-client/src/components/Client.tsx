@@ -123,7 +123,7 @@ interface Props {
 }
 
 /**
- * A self-contained client for connecting to The Wired.
+ * A self-contained client for connecting to UNAVI.
  */
 export function Client({
   animations,

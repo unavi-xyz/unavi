@@ -1,6 +1,6 @@
 # Client
 
-The main website used to access The Wired.
+The main website used to access UNAVI.
 
 ## Tech Stack
 

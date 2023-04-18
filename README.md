@@ -1,6 +1,6 @@
 <div align="center">
   <img src="./assets/Logo.png" alt="Wired Logo" height="200" />
-  <h1>The Wired</h1>
+  <h1>UNAVI</h1>
   <strong>An open and decentralized web-based metaverse platform.</strong>
 </div>
 
@@ -38,7 +38,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 
 ### Apps
 
-- [client](apps/client): the main website used to access The Wired
+- [client](apps/client): the main website used to access UNAVI
 - [docs](apps/docs): a documentation website
 - [host](apps/host): dockerized server for hosting spaces
 

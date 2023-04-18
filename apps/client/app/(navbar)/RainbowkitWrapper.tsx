@@ -20,7 +20,7 @@ const theme = lightTheme({
 });
 
 const getSiweMessageOptions: GetSiweMessageOptions = () => ({
-  statement: "🔌 Sign in to The Wired",
+  statement: "Sign in to UNAVI 🌐",
 });
 
 interface Props {

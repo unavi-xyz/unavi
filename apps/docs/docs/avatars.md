@@ -4,17 +4,17 @@ sidebar_label: 💃 Avatars
 title: Avatars
 ---
 
-You can upload and use custom VRM avatars within The Wired.
+You can upload and use custom VRM avatars within UNAVI.
 
 ## 🤔 What is VRM?
 
 [VRM](https://vrm.dev/) is a free and open file format for 3D avatars, supported by many applications. You can create a VRM avatar using the [VRoid Editor](https://vroid.com/editor/en), or export to the `.vrm` file format from blender using [this blender plugin](https://github.com/saturday06/VRM_Addon_for_Blender).
 
-The Wired supports both the VRM 0.0 and 1.0 standards.
+UNAVI supports both the VRM 0.0 and 1.0 standards.
 
 ## 🚀 Performance Ranks
 
-The Wired categorizes avatars into performance ranks based on their optimization levels. This is not a perfect system, but it should give you a rough idea of how well an avatar will perform in The Wired.
+UNAVI categorizes avatars into performance ranks based on their optimization levels. This is not a perfect system, but it should give you a rough idea of how well an avatar will perform in UNAVI.
 
 It's important to keep in mind that players may automatically block low-performing avatars, so it's a good idea to optimize your avatar as much as possible.
 

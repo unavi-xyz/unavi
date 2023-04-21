@@ -1,3 +1,5 @@
+import { NodeSpecJSON } from "@unavi/behave-graph-core";
+
 import { getNodeSpecJSON } from "./utils/getNodeSpecJSON";
 
 const allNodes = getNodeSpecJSON();
@@ -13,7 +15,7 @@ const HIDDEN_NODES = [
   "scene/set/vec2",
 ];
 
-export const usedNodes = allNodes.filter((node) => {
+export const usedNodes: NodeSpecJSON[] = allNodes.filter((node) => {
   const type = node.type.toLowerCase();
 
   if (type.includes("color")) return false;

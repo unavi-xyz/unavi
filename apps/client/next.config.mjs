@@ -74,10 +74,12 @@ export default await defineNextConfig({
   experimental: {
     appDir: true,
     typedRoutes: true,
+    outputFileTracingExcludes: { "**": ["**swc/core**"] },
   },
   images: {
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT],
   },
+  outputFileTracing: true,
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
   transpilePackages: ["engine", "contracts"],

@@ -1,4 +1,4 @@
-import { Document } from "@gltf-transform/core";
+import { Document, Node } from "@gltf-transform/core";
 import { KHRXMP } from "@gltf-transform/extensions";
 import {
   AudioExtension,
@@ -86,7 +86,7 @@ export class Scene {
     this.animation.processChanges();
   }
 
-  getSpawn(title: (typeof SPAWN_TITLE)[keyof typeof SPAWN_TITLE] = "Default") {
+  getSpawn(title: (typeof SPAWN_TITLE)[keyof typeof SPAWN_TITLE] = "Default"): Node | undefined {
     return this.doc
       .getRoot()
       .listNodes()

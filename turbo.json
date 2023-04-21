@@ -50,9 +50,6 @@
     "generate": {
       "cache": false
     },
-    "client#generate": {
-      "inputs": ["prisma/schema.prisma"]
-    },
     "deploy": {
       "cache": false
     },

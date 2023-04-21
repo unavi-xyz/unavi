@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 import { metadata as baseMetadata } from "../../layout";
 import CreateProjectButton from "./CreateProjectButton";
@@ -31,11 +32,15 @@ export default function Create() {
           <CreateProjectButton />
         </div>
 
-        {/* @ts-expect-error Server Component */}
-        <Projects />
+        <Suspense fallback={null}>
+          {/* @ts-expect-error Server Component */}
+          <Projects />
+        </Suspense>
 
-        {/* @ts-expect-error Server Component */}
-        <Published />
+        <Suspense fallback={null}>
+          {/* @ts-expect-error Server Component */}
+          <Published />
+        </Suspense>
       </div>
     </div>
   );

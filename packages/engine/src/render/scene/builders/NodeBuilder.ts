@@ -1,4 +1,4 @@
-import { Primitive } from "@gltf-transform/core";
+import { Node, Primitive } from "@gltf-transform/core";
 import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import { Avatar } from "@unavi/gltf-extensions";
 import {
@@ -23,7 +23,7 @@ import { Builder } from "./Builder";
  * @internal
  * Handles the conversion of nodes to Three.js objects.
  */
-export class NodeBuilder extends Builder<NodeJSON, Bone | Object3D> {
+export class NodeBuilder extends Builder<Node, NodeJSON, Bone | Object3D> {
   avatarObjects = new Map<string, Object3D>();
 
   bvhHelpers = new Map<StaticGeometryGenerator, MeshBVHVisualizer>();

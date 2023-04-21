@@ -1,4 +1,5 @@
-import { Texture } from "three";
+import { Texture } from "@gltf-transform/core";
+import { Texture as ThreeTexture } from "three";
 
 import { TextureJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
@@ -8,14 +9,14 @@ import { Builder } from "./Builder";
  * @internal
  * Handles the conversion of textures to Three.js objects.
  */
-export class TextureBuilder extends Builder<TextureJSON, Texture> {
+export class TextureBuilder extends Builder<Texture, TextureJSON, ThreeTexture> {
   add(json: Partial<TextureJSON>, id: string) {
     const previousObject = this.getObject(id);
     if (previousObject) throw new Error(`Texture with id ${id} already exists.`);
 
     const { object: texture } = this.scene.texture.create(json, id);
 
-    const object = new Texture();
+    const object = new ThreeTexture();
 
     this.setObject(id, object);
 

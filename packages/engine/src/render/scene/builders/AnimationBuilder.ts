@@ -1,3 +1,4 @@
+import { Animation } from "@gltf-transform/core";
 import {
   AnimationClip,
   InterpolateDiscrete,
@@ -20,7 +21,7 @@ import { Builder } from "./Builder";
  * @internal
  * Handles the conversion of animations to Three.js objects.
  */
-export class AnimationBuilder extends Builder<AnimationJSON, AnimationClip> {
+export class AnimationBuilder extends Builder<Animation, AnimationJSON, AnimationClip> {
   add(json: Partial<AnimationJSON>, id: string) {
     const previousObject = this.getObject(id);
     if (previousObject) throw new Error(`Animation with id ${id} already exists.`);

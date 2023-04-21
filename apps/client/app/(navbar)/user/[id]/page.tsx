@@ -173,7 +173,7 @@ export default async function User({ params: { id } }: { params: Params }) {
         </div>
       </div>
 
-      <div className="flex justify-center pt-4 pb-8">
+      <div className="flex justify-center pb-8 pt-4">
         <div className="max-w-content mx-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <Suspense
             fallback={Array.from({ length: 3 }).map((_, i) => (

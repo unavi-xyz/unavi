@@ -16,15 +16,15 @@
   },
   "dependencies": {
     "@wired-protocol/types": "^0.0.11",
-    "mediasoup": "^3.11.22",
+    "mediasoup": "^3.11.24",
     "nanoid": "^4.0.2",
-    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.20.0",
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.20.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/node": "^18.15.11",
+    "@types/node": "^18.15.13",
     "concurrently": "^8.0.1",
-    "eslint": "^8.36.0",
+    "eslint": "^8.38.0",
     "eslint-config-custom": "workspace:*",
     "nodemon": "^2.0.22",
     "tsconfig": "workspace:*",

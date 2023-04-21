@@ -9,7 +9,7 @@ export default function MobileChatBox() {
   return (
     <div className="space-y-2 p-2">
       {openChat && (
-        <div className="fixed left-0 bottom-0 z-50 flex h-full w-full flex-col justify-between space-y-4 bg-black/40 p-4 backdrop-blur-lg">
+        <div className="fixed bottom-0 left-0 z-50 flex h-full w-full flex-col justify-between space-y-4 bg-black/40 p-4 backdrop-blur-lg">
           <div className="flex w-full justify-end">
             <button
               onClick={() => setOpenChat(false)}

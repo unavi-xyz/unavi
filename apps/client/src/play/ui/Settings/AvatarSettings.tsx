@@ -57,7 +57,7 @@ export default function AvatarSettings({ setPage }: Props) {
 
       {showStats && avatar ? (
         statsError ? (
-          <div className="rounded-xl bg-red-100 py-2.5 px-4 text-red-900">
+          <div className="rounded-xl bg-red-100 px-4 py-2.5 text-red-900">
             Failed to load avatar information
           </div>
         ) : (

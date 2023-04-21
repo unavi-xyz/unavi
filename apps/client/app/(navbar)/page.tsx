@@ -38,7 +38,7 @@ export default function Home() {
                 An open metaverse platform.
               </div>
 
-              <div className="flex w-full flex-col space-y-4 pt-4 lg:flex-row lg:space-y-0 lg:space-x-4">
+              <div className="flex w-full flex-col space-y-4 pt-4 lg:flex-row lg:space-x-4 lg:space-y-0">
                 <div className="mx-auto w-full max-w-lg lg:mx-0 lg:w-fit lg:max-w-none">
                   <Link
                     href="/play?tokenId=0x17"
@@ -111,7 +111,7 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="show-on-scroll mt-20 flex flex-col space-y-8 lg:mt-32 lg:flex-row lg:space-y-0  lg:space-x-20">
+          <section className="show-on-scroll mt-20 flex flex-col space-y-8 lg:mt-32 lg:flex-row lg:space-x-20  lg:space-y-0">
             <div className="w-full">
               <div className="relative h-48 w-full sm:h-80">
                 <Image
@@ -138,7 +138,7 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="show-on-scroll mt-24 flex flex-col-reverse space-y-8 lg:mt-40 lg:flex-row lg:space-y-0 lg:space-x-20">
+          <section className="show-on-scroll mt-24 flex flex-col-reverse space-y-8 lg:mt-40 lg:flex-row lg:space-x-20 lg:space-y-0">
             <div className="flex w-full flex-col justify-center space-y-4 pt-8 lg:pt-0">
               <div className="text-center text-3xl font-black lg:text-start lg:text-4xl">
                 Cross Platform
@@ -188,7 +188,7 @@ export default function Home() {
           <section className="show-on-scroll mt-24 space-y-4 pb-32 lg:mt-40">
             <div className="text-center text-3xl font-black lg:text-4xl">Join the Community</div>
 
-            <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl lg:flex-row lg:space-y-0 lg:space-x-4">
+            <div className="flex w-full flex-col justify-center space-y-4 pt-2 text-xl lg:flex-row lg:space-x-4 lg:space-y-0">
               <div className="w-full lg:w-fit">
                 <a
                   href={DISCORD_URL}

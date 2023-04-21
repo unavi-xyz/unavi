@@ -35,7 +35,7 @@ export default function Overlay({ id, metadata }: Props) {
       <SettingsDialog open={openSettings} setOpen={setOpenSettings} />
 
       {!isPointerLocked && (
-        <div className="fixed top-4 left-5 z-20">
+        <div className="fixed left-5 top-4 z-20">
           <div className="flex items-center space-x-3 rounded-full bg-white/80 pr-10 backdrop-blur-lg">
             <Link
               href={
@@ -59,13 +59,13 @@ export default function Overlay({ id, metadata }: Props) {
         </div>
       )}
 
-      <div className="fixed top-16 left-0 z-20 p-4">
+      <div className="fixed left-0 top-16 z-20 p-4">
         <Stats />
       </div>
 
       <Crosshair />
 
-      <div className="fixed top-0 right-0 z-20 space-x-2 p-4">
+      <div className="fixed right-0 top-0 z-20 space-x-2 p-4">
         <MicButton className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95">
           {micEnabled ? <MdMic /> : <MdMicOff className="text-red-700" />}
         </MicButton>

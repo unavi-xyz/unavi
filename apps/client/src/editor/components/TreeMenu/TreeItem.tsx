@@ -125,7 +125,7 @@ export default function TreeItem({ id }: Props) {
       {draggingId && draggingId !== id ? (
         <div
           style={{ paddingLeft: `${depth + 2}rem` }}
-          className="absolute left-0 -top-0.5 h-2 w-full opacity-0 hover:opacity-100"
+          className="absolute -top-0.5 left-0 h-2 w-full opacity-0 hover:opacity-100"
           onMouseUp={() => {
             if (
               !engine ||

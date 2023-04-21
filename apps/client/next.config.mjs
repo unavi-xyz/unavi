@@ -1,9 +1,6 @@
 import { withAxiom } from "next-axiom";
-import path from "path";
 
 import { env } from "./src/env.mjs";
-
-const __dirname = path.resolve();
 
 const securityHeaders = [
   {
@@ -77,15 +74,10 @@ export default await defineNextConfig({
   experimental: {
     appDir: true,
     typedRoutes: true,
-    outputFileTracingRoot: path.join(__dirname, "../../"),
-    outputFileTracingExcludes: {
-      "**": ["**swc/core**"],
-    },
   },
   images: {
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT],
   },
-  output: "standalone",
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
   transpilePackages: ["engine", "contracts"],

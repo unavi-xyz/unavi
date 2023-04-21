@@ -16,7 +16,7 @@
     "@gltf-transform/functions": "3.2.0",
     "@pixiv/three-vrm": "^1.0.9",
     "@unavi/behave-graph-core": "^0.9.20",
-    "@unavi/gltf-extensions": "*",
+    "@unavi/gltf-extensions": "workspace:*",
     "nanoid": "^4.0.2",
     "property-graph": "^1.1.0",
     "three": "^0.149.0",
@@ -25,7 +25,10 @@
   "devDependencies": {
     "@types/offscreencanvas": "^2019.7.0",
     "@types/three": "^0.149.0",
-    "tsconfig": "*",
+    "tsconfig": "workspace:*",
+    "eslint": "^8.36.0",
+    "eslint-config-custom": "workspace:*",
+    "@types/node": "^18.15.11",
     "typescript": "~5.0.4"
   }
 }

@@ -91,7 +91,7 @@ export class Collider extends ExtensionProperty<ICollider> {
     this.set("height", height);
   }
 
-  getMesh() {
+  getMesh(): Mesh | null {
     return this.getRef("mesh");
   }
 

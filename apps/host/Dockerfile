@@ -2,7 +2,7 @@ FROM node:18 AS builder
 WORKDIR /app
 
 # Prune files
-RUN yarn global add turbo
+RUN pnpm global add turbo
 COPY . .
 RUN turbo prune --scope=host --docker
 
@@ -18,13 +18,13 @@ RUN \
 # Install NPM dependencies
 COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/yarn.lock ./yarn.lock
-RUN yarn install
+COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install
 
 # Build the project and its dependencies
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
-RUN yarn turbo build --filter=host...
+RUN pnpm turbo build --filter=host...
 
 FROM node:18 AS runner
 WORKDIR /app

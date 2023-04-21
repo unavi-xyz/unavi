@@ -7,7 +7,7 @@ RUN apk update
 WORKDIR /app
 
 # Prune the repo to only include files needed for the build
-RUN yarn global add turbo
+RUN pnpm global add turbo
 COPY . .
 RUN turbo prune --scope=client --docker
 
@@ -20,12 +20,12 @@ WORKDIR /app
 # First install the dependencies (as they change less often)
 COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/yarn.lock ./yarn.lock
-RUN yarn install
+COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install
 
 # Apply patches
 COPY patches patches
-RUN yarn patch-package
+RUN pnpm patch-package
 
 # Build the project
 COPY --from=builder /app/out/full/ .
@@ -38,7 +38,7 @@ COPY turbo.json turbo.json
 # ARG TURBO_TOKEN
 # ENV TURBO_TOKEN=$TURBO_TOKEN
 
-RUN yarn turbo run build --filter=client...
+RUN pnpm turbo run build --filter=client...
 
 FROM node:alpine AS runner
 WORKDIR /app

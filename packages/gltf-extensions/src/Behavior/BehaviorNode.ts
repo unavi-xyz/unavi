@@ -44,7 +44,7 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     });
   }
 
-  getVariable() {
+  getVariable(): BehaviorVariable | null {
     return this.getRef("variable");
   }
 
@@ -52,7 +52,7 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     this.setRef("variable", variable);
   }
 
-  getLink(linkId: string) {
+  getLink(linkId: string): BehaviorNode | null {
     return this.getRefMap("links", linkId);
   }
 
@@ -60,7 +60,7 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     this.setRefMap("links", linkId, behaviorNode);
   }
 
-  getNode(nodeId: string) {
+  getNode(nodeId: string): Node | null {
     return this.getRefMap("nodes", nodeId);
   }
 
@@ -80,7 +80,7 @@ export class BehaviorNode extends ExtensionProperty<IBehaviorNode> {
     return this.listRefMapKeys("flow");
   }
 
-  getFlow(key: string) {
+  getFlow(key: string): BehaviorNode | null {
     return this.getRefMap("flow", key);
   }
 

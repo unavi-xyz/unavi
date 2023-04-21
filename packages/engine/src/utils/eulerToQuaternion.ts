@@ -1,4 +1,4 @@
-import { Vec3, Vec4 } from "engine";
+import { Vec3, Vec4 } from "../types";
 
 export function eulerToQuaternion([x, y, z]: Vec3): Vec4 {
   const c1 = Math.cos(x / 2);

@@ -12,7 +12,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --onSuccess \"tsc --emitDeclarationOnly\"",
-    "dev": "yarn build -- --watch",
+    "dev": "pnpm build -- --watch",
     "lint": "cd ../.. && eslint --fix packages/gltf-extensions --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
@@ -21,8 +21,10 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "tsconfig": "*",
+    "tsconfig": "workspace:*",
     "tsup": "^6.7.0",
+    "eslint": "^8.36.0",
+    "eslint-config-custom": "workspace:*",
     "typescript": "~5.0.4"
   },
   "publishConfig": {

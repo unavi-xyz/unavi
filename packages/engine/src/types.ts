@@ -1,11 +1,9 @@
-import { BaseEvent } from "property-graph";
+import type { BaseEvent } from "property-graph";
 
 export type PostMessage<M extends MessageJSON = MessageJSON> = (
   message: M,
-  transfer?: Transferable[]
+  options?: StructuredSerializeOptions
 ) => void;
-
-export type Transferable = ArrayBuffer | MessagePort | ImageBitmap | OffscreenCanvas;
 
 export type MessageJSON<Subject extends string = string, Data = unknown> = {
   subject: Subject;

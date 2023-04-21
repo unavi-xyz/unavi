@@ -24,16 +24,16 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: "yarn"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: yarn --prefer-offline --frozen-lockfile
+        run: pnpm --prefer-offline --frozen-lockfile
 
       - name: Run ESLint
-        run: yarn lint
+        run: pnpm lint
 
       - name: Run Prettier
-        run: yarn format
+        run: pnpm format
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v9

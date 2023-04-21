@@ -34,7 +34,7 @@
 
 ## 📦 What's inside?
 
-This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com/lang/en/) as a package manager. It includes the following apps / packages:
+This [turborepo](https://turborepo.org/) uses [pnpm](https://pnpm.io/) as a package manager. It includes the following apps / packages:
 
 ### Apps
 
@@ -62,7 +62,7 @@ This [turborepo](https://turborepo.org/) uses [Yarn](https://classic.yarnpkg.com
 The client can be run locally using Docker. To do so, run the following command:
 
 ```bash
-yarn docker:prod
+pnpm docker:prod
 ```
 
 This will start the client on port 3000. You can then access it at [http://localhost:3000](http://localhost:3000).
@@ -70,7 +70,7 @@ This will start the client on port 3000. You can then access it at [http://local
 To stop the client, run the following command:
 
 ```bash
-yarn docker:stop
+pnpm docker:stop
 ```
 
 ## ⚙️ Development
@@ -80,7 +80,7 @@ yarn docker:stop
 To install all apps and packages, run the following command:
 
 ```bash
-yarn install
+pnpm install
 ```
 
 > ⚠️ If you run into issues installing, it's probably mediasoup. Follow the steps on their [installation guide](https://mediasoup.org/documentation/v3/mediasoup/installation/) to get it to work (pay attention to the versions very carefully). Mediasoup tends to be easier to install on Linux, so if you're on Windows, consider using [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install).
@@ -90,7 +90,7 @@ yarn install
 To build all apps and packages, run the following command:
 
 ```bash
-yarn build
+pnpm build
 ```
 
 ### Develop
@@ -98,11 +98,11 @@ yarn build
 To work on the client, you will need to use Docker to run services it relies on (such as the database). To do so, run the following command:
 
 ```bash
-yarn docker:dev
+pnpm docker:dev
 ```
 
 If you don't need that, you can run all apps and packages in development mode using the following command:
 
 ```bash
-yarn dev
+pnpm dev
 ```

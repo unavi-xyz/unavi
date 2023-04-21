@@ -9,7 +9,7 @@ RUN \
 
 # Install npm dependencies
 COPY package.json package.json
-COPY yarn.lock yarn.lock
+COPY pnpm-lock.yaml pnpm-lock.yaml
 COPY patches patches
 
 COPY apps/client/package.json apps/client/package.json
@@ -22,16 +22,16 @@ COPY packages/eslint-config-custom/package.json packages/eslint-config-custom/pa
 COPY packages/protocol/package.json packages/protocol/package.json
 COPY packages/tsconfig/package.json packages/tsconfig/package.json
 
-RUN yarn install
+RUN pnpm install
 
 # Copy source
 COPY . .
 
 # Start dev server
 CMD \
- yarn patch-package \
- && yarn generate \
+ pnpm patch-package \
+ && pnpm generate \
  && cd ./apps/client \
- && yarn prisma db push --accept-data-loss \
+ && pnpm prisma db push --accept-data-loss \
  && cd ../.. \
- && yarn dev
+ && pnpm dev

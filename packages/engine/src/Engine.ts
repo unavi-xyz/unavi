@@ -66,10 +66,10 @@ export class Engine {
     if (value instanceof HTMLCanvasElement && typeof OffscreenCanvas === "undefined") {
       const offscreen = value.transferControlToOffscreen();
       this.#canvas = offscreen;
-      this.render.send({ subject: "set_canvas", data: offscreen }, [offscreen]);
+      this.render.send({ subject: "set_canvas", data: offscreen }, { transfer: [offscreen] });
     } else if (value instanceof OffscreenCanvas) {
       this.#canvas = value;
-      this.render.send({ subject: "set_canvas", data: value }, [value]);
+      this.render.send({ subject: "set_canvas", data: value }, { transfer: [value] });
     } else {
       this.#canvas = value;
       if (this.render.renderThread) this.render.renderThread.canvas = value;

@@ -19,9 +19,9 @@
     "@ethersproject/providers": "^5.7.1",
     "@typechain/ethers-v5": "^10.2.0",
     "eslint": "^8.36.0",
-    "eslint-config-custom": "*",
+    "eslint-config-custom": "workspace:*",
     "ethers": "^5.7.2",
-    "tsconfig": "*",
+    "tsconfig": "workspace:*",
     "typechain": "^8.1.1",
     "typescript": "~5.0.4"
   }

@@ -1,5 +1,3 @@
-import { Transferable } from "../types";
-
 /**
  * Wrap code in a fake worker to mimic a web worker interface.
  * This allows us to run code in either a web worker or the main thread, while keeping the same API.
@@ -19,8 +17,8 @@ export class FakeWorker<To = unknown, From = unknown> {
   }
 
   // Send a message to the worker
-  postMessage(message: To, transfer?: Transferable[]) {
-    this.outsidePort.postMessage(message, transfer);
+  postMessage(message: To, options?: StructuredSerializeOptions) {
+    this.outsidePort.postMessage(message, options);
   }
 
   // Receive a message from the worker

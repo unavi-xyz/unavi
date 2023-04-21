@@ -10,7 +10,6 @@ import {
   AvatarExtension,
   BehaviorExtension,
   ColliderExtension,
-  SpaceExtension,
   SpawnPointExtension,
 } from "@unavi/gltf-extensions";
 
@@ -27,6 +26,5 @@ export const extensions = [
   KHRMeshQuantization,
   KHRTextureTransform,
   SpawnPointExtension,
-  SpaceExtension,
   KHRXMP,
 ];

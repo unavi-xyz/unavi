@@ -5,8 +5,8 @@ import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { ethersProvider } from "../ethers";
 import { prisma } from "../prisma";
-import { readSpaceMetadata } from "./readSpaceMetadata";
-import { validateSpaceNFT, ValidDatabaseSpace, ValidSpaceNFT } from "./validateSpaceNFT";
+import { fetchWorldMetadata } from "./fetchWorldMetadata";
+import { validateSpaceNFT, ValidDBSpace, ValidNFTSpace } from "./validateSpaceNFT";
 
 export async function fetchLatestSpaces(limit: number, owner?: string) {
   const [nftSpaces, databaseSpaces] = await Promise.all([
@@ -23,7 +23,7 @@ async function fetchNFTSpaces(limit: number, owner?: string) {
 
     const count = (await spaceContract.count()).toNumber();
 
-    const spaces: ValidSpaceNFT[] = [];
+    const spaces: ValidNFTSpace[] = [];
     const length = Math.min(limit, count);
     let nextSpaceId = count - 1;
 
@@ -55,14 +55,14 @@ async function fetchDatabaseSpaces(limit: number, owner?: string) {
       take: limit,
     });
 
-    const validSpaces: ValidDatabaseSpace[] = [];
+    const validSpaces: ValidDBSpace[] = [];
 
     await Promise.all(
       spaces.map(async (space) => {
         if (!space.SpaceModel) return;
 
         const modelURI = cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).model);
-        const metadata = await readSpaceMetadata(modelURI);
+        const metadata = await fetchWorldMetadata(modelURI);
         if (!metadata) return;
 
         validSpaces.push({ id: { type: "id", value: space.publicId }, metadata });

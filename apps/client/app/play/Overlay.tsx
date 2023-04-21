@@ -1,4 +1,5 @@
 import { MicButton, useClient } from "@unavi/react-client";
+import { WorldMetadata } from "@wired-protocol/types";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -6,7 +7,6 @@ import { IoMdSettings } from "react-icons/io";
 import { MdMic, MdMicOff } from "react-icons/md";
 
 import Logo from "@/public/images/Logo.png";
-import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import { toHex } from "@/src/utils/toHex";
 
 import Crosshair from "../../src/play/Crosshair";
@@ -20,7 +20,7 @@ import { SpaceUriId } from "./types";
 
 interface Props {
   id: SpaceUriId;
-  metadata: SpaceMetadata;
+  metadata: WorldMetadata;
 }
 
 export default function Overlay({ id, metadata }: Props) {
@@ -52,7 +52,7 @@ export default function Overlay({ id, metadata }: Props) {
             </Link>
 
             <div>
-              <div className="text-lg font-bold leading-6">{metadata.title}</div>
+              <div className="text-lg font-bold leading-6">{metadata.info?.name}</div>
               <div className="text-sm leading-4 text-neutral-700">{host}</div>
             </div>
           </div>

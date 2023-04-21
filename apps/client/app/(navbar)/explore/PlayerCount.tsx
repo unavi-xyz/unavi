@@ -1,16 +1,20 @@
 "use client";
 
+import { WorldMetadata } from "@wired-protocol/types";
 import { MdPeople } from "react-icons/md";
 
 import { usePlayerCount } from "@/app/api/player-count/helper";
-import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
+import { env } from "@/src/env.mjs";
 
 interface Props {
-  metadata: SpaceMetadata;
+  metadata: WorldMetadata;
 }
 
 export default function PlayerCount({ metadata }: Props) {
-  const { playerCount } = usePlayerCount({ host: metadata.host, uri: metadata.uri });
+  const { playerCount } = usePlayerCount({
+    host: metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST,
+    uri: metadata.model,
+  });
 
   if (!playerCount) return null;
 

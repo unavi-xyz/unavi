@@ -1,8 +1,8 @@
+import { WorldMetadata } from "@wired-protocol/types";
 import Link from "next/link";
 
 import PlayerCount from "@/app/(navbar)/explore/PlayerCount";
 
-import { SpaceMetadata } from "../server/helpers/readSpaceMetadata";
 import { SpaceId } from "../utils/parseSpaceId";
 import { toHex } from "../utils/toHex";
 import { CardImage } from "./Card";
@@ -10,7 +10,7 @@ import Tooltip from "./Tooltip";
 
 interface Props {
   id: SpaceId;
-  metadata: SpaceMetadata;
+  metadata: WorldMetadata;
   tokenId?: number;
   sizes?: string;
 }
@@ -26,7 +26,7 @@ export default function SpaceCard({ id, metadata, tokenId, sizes }: Props) {
           href={id.type === "id" ? `/space/${id.value}` : `/space/${toHex(id.value)}`}
           className="rounded-3xl"
         >
-          <CardImage group image={metadata.image} sizes={sizes}>
+          <CardImage group image={metadata.info?.image} sizes={sizes}>
             <PlayerCount metadata={metadata} />
           </CardImage>
 
@@ -52,7 +52,7 @@ export default function SpaceCard({ id, metadata, tokenId, sizes }: Props) {
           </Tooltip>
         ) : null}
 
-        <span className="text-xl font-bold text-neutral-900">{metadata.title}</span>
+        <span className="text-xl font-bold text-neutral-900">{metadata.info?.name}</span>
       </div>
     </div>
   );

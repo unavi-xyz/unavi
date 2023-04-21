@@ -1,5 +1,4 @@
 import { Packet } from "@gltf-transform/extensions";
-import { Space } from "@unavi/gltf-extensions";
 import { useCallback, useState } from "react";
 
 import { getProjectFileUpload } from "@/app/api/projects/[id]/files/[file]/helper";
@@ -68,16 +67,6 @@ export function useSave(project: Project) {
     xmpPacket.setProperty("dc:creator", creator);
     xmpPacket.setProperty("dc:date", date);
     xmpPacket.setProperty("dc:description", project.description.trimEnd());
-
-    // Save space metadata
-    let space = engine.scene.doc.getRoot().getExtension<Space>(Space.EXTENSION_NAME);
-
-    if (!space) {
-      space = engine.scene.extensions.space.createSpace();
-      engine.scene.doc.getRoot().setExtension(space.extensionName, space);
-    }
-
-    space.setHost(env.NEXT_PUBLIC_DEFAULT_HOST);
 
     // Export to GLB
     const glb = await engine.scene.export({ log: process.env.NODE_ENV === "development" });

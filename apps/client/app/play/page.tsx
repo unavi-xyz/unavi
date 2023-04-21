@@ -7,7 +7,7 @@ import { z } from "zod";
 import { fetchDBSpaceMetadata } from "@/src/server/helpers/fetchDBSpaceMetadata";
 import { fetchNFTSpaceMetadata } from "@/src/server/helpers/fetchNFTSpaceMetadata";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
-import { readSpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
+import { fetchWorldMetadata } from "@/src/server/helpers/fetchWorldMetadata";
 import { toHex } from "@/src/utils/toHex";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
@@ -29,14 +29,25 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   let metadata;
 
   if (id.type === "uri") {
-    metadata = await readSpaceMetadata(id.value);
+    metadata = await fetchWorldMetadata(id.value);
   } else {
     metadata = await fetchSpaceMetadata(id);
   }
 
   if (!metadata) return {};
 
-  const { title, description, creator, image } = metadata;
+  const title =
+    metadata.info?.name || id.type === "id"
+      ? `Space ${id.value}`
+      : id.type === "tokenId"
+      ? `Space ${toHex(id.value)}`
+      : id.value;
+
+  const description = metadata.info?.description || "";
+
+  const author = metadata.info?.author;
+
+  const image = metadata.info?.image;
 
   return {
     title,
@@ -44,7 +55,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     openGraph: {
       title,
       description,
-      creators: creator ? [creator] : undefined,
+      creators: author ? [author] : undefined,
       images: image ? [{ url: image }] : undefined,
     },
     twitter: {
@@ -76,7 +87,7 @@ export default async function Play({ searchParams }: Props) {
     // If space has a token, redirect to the token page
     if (metadata && metadata.tokenId !== null) redirect(`/play?tokenId=${toHex(metadata.tokenId)}`);
   } else {
-    metadata = await readSpaceMetadata(id.value);
+    metadata = await fetchWorldMetadata(id.value);
   }
 
   if (!metadata) notFound();
@@ -91,13 +102,9 @@ export default async function Play({ searchParams }: Props) {
 }
 
 function readSpaceId(params: Params): SpaceUriId {
-  if ("id" in params) {
-    return { type: "id", value: params.id };
-  } else if ("tokenId" in params) {
-    return { type: "tokenId", value: parseInt(params.tokenId) };
-  } else {
-    return { type: "uri", value: params.uri };
-  }
+  if ("id" in params) return { type: "id", value: params.id };
+  else if ("tokenId" in params) return { type: "tokenId", value: parseInt(params.tokenId) };
+  else return { type: "uri", value: params.uri };
 }
 
 const httpsSchema = z.string().refine((param) => param.startsWith("https://"));

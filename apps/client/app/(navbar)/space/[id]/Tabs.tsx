@@ -1,6 +1,7 @@
+import { WorldMetadata } from "@wired-protocol/types";
+
 import { fetchNFTSpaceOwner } from "@/src/server/helpers/fetchNFTSpaceOwner";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
-import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import { prisma } from "@/src/server/prisma";
 import ButtonTabs, { TabContent } from "@/src/ui/ButtonTabs";
 import { SpaceId } from "@/src/utils/parseSpaceId";
@@ -10,7 +11,7 @@ import Settings from "./Settings";
 
 interface Props {
   id: SpaceId;
-  metadata: SpaceMetadata;
+  metadata: WorldMetadata;
 }
 
 export default async function Tabs({ id, metadata }: Props) {

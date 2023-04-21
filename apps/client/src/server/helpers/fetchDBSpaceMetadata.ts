@@ -1,9 +1,10 @@
+import { WorldMetadata } from "@wired-protocol/types";
 import { cache } from "react";
 
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { prisma } from "../prisma";
-import { readSpaceMetadata, SpaceMetadata } from "./readSpaceMetadata";
+import { fetchWorldMetadata } from "./fetchWorldMetadata";
 
 export const fetchDBSpaceMetadata = cache(async (id: string): Promise<DBSpaceMetadata | null> => {
   try {
@@ -14,7 +15,7 @@ export const fetchDBSpaceMetadata = cache(async (id: string): Promise<DBSpaceMet
     if (!space || !space.SpaceModel) throw new Error("Space not found");
 
     const modelURI = cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).model);
-    const metadata = await readSpaceMetadata(modelURI);
+    const metadata = await fetchWorldMetadata(modelURI);
     if (!metadata) throw new Error("Invalid space metadata");
 
     return {
@@ -26,6 +27,4 @@ export const fetchDBSpaceMetadata = cache(async (id: string): Promise<DBSpaceMet
   }
 });
 
-export interface DBSpaceMetadata extends SpaceMetadata {
-  tokenId: number | null;
-}
+export type DBSpaceMetadata = WorldMetadata & { tokenId: number | null };

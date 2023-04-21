@@ -9,6 +9,7 @@ const expiresIn = 600; // 10 minutes
 
 export const SPACE_MODEL_FILE = {
   IMAGE: "image",
+  METADATA: "metadata",
   MODEL: "model",
 } as const;
 
@@ -38,6 +39,10 @@ function getContentType(type: SpaceModelFile) {
   switch (type) {
     case SPACE_MODEL_FILE.IMAGE: {
       return "image/jpeg";
+    }
+
+    case SPACE_MODEL_FILE.METADATA: {
+      return "application/json";
     }
 
     case SPACE_MODEL_FILE.MODEL: {

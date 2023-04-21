@@ -1,16 +1,18 @@
 import { cache } from "react";
 
-import { readSpaceMetadata } from "./readSpaceMetadata";
+import { env } from "@/src/env.mjs";
+
+import { fetchWorldMetadata } from "./fetchWorldMetadata";
 
 export const fetchPlayerCount = cache(async (uri: string, host?: string) => {
   try {
     let spaceHost = host;
 
     if (!spaceHost) {
-      const metadata = await readSpaceMetadata(uri);
+      const metadata = await fetchWorldMetadata(uri);
       if (!metadata) throw new Error("Failed to read space metadata");
 
-      spaceHost = metadata.host;
+      spaceHost = metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST;
     }
 
     const http = spaceHost.startsWith("localhost") ? "http" : "https";

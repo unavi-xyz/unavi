@@ -1,13 +1,15 @@
+import { WorldMetadata } from "@wired-protocol/types";
+
 import { SpaceDBId, SpaceNFTId } from "@/src/utils/parseSpaceId";
 
 import { fetchNFTSpaceOwner } from "./fetchNFTSpaceOwner";
 import { fetchNFTSpaceTokenMetadata } from "./fetchNFTSpaceTokenMetadata";
-import { readSpaceMetadata, SpaceMetadata } from "./readSpaceMetadata";
+import { fetchWorldMetadata } from "./fetchWorldMetadata";
 
 export async function validateSpaceNFT(
   tokenId: number,
   owner?: string
-): Promise<ValidSpaceNFT | null> {
+): Promise<ValidNFTSpace | null> {
   try {
     // Check if owned by owner
     if (owner) {
@@ -18,7 +20,7 @@ export async function validateSpaceNFT(
     const erc721metadata = await fetchNFTSpaceTokenMetadata(tokenId);
     if (!erc721metadata?.animation_url) throw new Error("Invalid nft metadata");
 
-    const metadata = await readSpaceMetadata(erc721metadata.animation_url);
+    const metadata = await fetchWorldMetadata(erc721metadata.animation_url);
     if (!metadata) throw new Error("Invalid space metadata");
 
     return { id: { type: "tokenId", value: tokenId }, metadata };
@@ -27,6 +29,6 @@ export async function validateSpaceNFT(
   }
 }
 
-export type ValidSpaceNFT = { id: SpaceNFTId; metadata: SpaceMetadata };
-export type ValidDatabaseSpace = { id: SpaceDBId; metadata: SpaceMetadata };
-export type ValidSpace = ValidSpaceNFT | ValidDatabaseSpace;
+export type ValidNFTSpace = { id: SpaceNFTId; metadata: WorldMetadata };
+export type ValidDBSpace = { id: SpaceDBId; metadata: WorldMetadata };
+export type ValidSpace = ValidNFTSpace | ValidDBSpace;

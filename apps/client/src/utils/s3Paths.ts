@@ -29,6 +29,7 @@ export class S3Path {
   static spaceModel = (modelId: string) =>
     ({
       directory: `spaces/${modelId}`,
+      metadata: `spaces/${modelId}/metadata.json`,
       model: `spaces/${modelId}/model.glb`,
       image: `spaces/${modelId}/image.jpg`,
       asset: (assetId: string) => `spaces/${modelId}/assets/${assetId}` as const,

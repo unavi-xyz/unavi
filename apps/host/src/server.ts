@@ -1,4 +1,5 @@
-import { MessageSchema } from "@unavi/protocol";
+import { RequestMessageSchema } from "@wired-protocol/types";
+import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
@@ -36,16 +37,16 @@ server.ws<UserData>("/*", {
     if (!player) return;
 
     const text = textDecoder.decode(buffer);
-    const parsed = MessageSchema.toHost.safeParse(JSON.parse(text));
+    const parsed = RequestMessageSchema.safeParse(JSON.parse(text));
 
     if (!parsed.success) {
       console.warn(parsed.error);
       return;
     }
 
-    const { subject, data } = parsed.data;
+    const { type, data } = parsed.data;
 
-    switch (subject) {
+    switch (type) {
       case "join": {
         player.join(data);
         break;
@@ -56,7 +57,7 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "chat": {
+      case "send_chat_message": {
         player.chat(data);
         break;
       }
@@ -76,46 +77,37 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "set_address": {
-        player.address = data;
-        break;
-      }
+      // case "set_address": {
+      //   player.address = data;
+      //   break;
+      // }
 
       // WebRTC
-      case "get_router_rtp_capabilities": {
-        player.send({ subject: "router_rtp_capabilities", data: router.rtpCapabilities });
+      case "webrtc_get_router_rtp_capabilities": {
+        player.send({ type: "webrtc_rtp_capabilities", data: router.rtpCapabilities });
         break;
       }
 
-      case "resume_audio": {
-        player.resumeAudio();
+      case "pause_audio": {
+        player.setPaused(data);
         break;
       }
 
-      case "create_transport": {
+      case "webrtc_create_transport": {
         createWebRtcTransport(router, webRtcServer)
           .then(({ transport, params }) => {
-            player.setTransport(data.type, transport);
+            player.setTransport(data, transport);
 
             player.send({
-              subject: "transport_created",
-              data: {
-                type: data.type,
-                options: {
-                  id: params.id,
-                  iceParameters: params.iceParameters,
-                  iceCandidates: params.iceCandidates,
-                  dtlsParameters: params.dtlsParameters,
-                  sctpParameters: params.sctpParameters,
-                },
-              },
+              type: "webrtc_transport_created",
+              data: { type: data, options: params },
             });
           })
           .catch((err) => console.warn(err));
         break;
       }
 
-      case "connect_transport": {
+      case "webrtc_connect_transport": {
         const transport =
           data.type === "producer" ? player.producerTransport : player.consumerTransport;
         if (!transport) break;
@@ -124,18 +116,18 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "produce": {
+      case "webrtc_produce": {
         player.produce(data);
         break;
       }
 
-      case "produce_data": {
+      case "webrtc_produce_data": {
         if (data.streamId === undefined) {
           console.warn("Stream ID is undefined");
           break;
         }
 
-        player.produceData(data as any);
+        player.produceData(data as SctpStreamParameters);
         break;
       }
 

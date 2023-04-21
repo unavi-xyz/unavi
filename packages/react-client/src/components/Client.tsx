@@ -1,4 +1,4 @@
-import { ToHostMessage } from "@unavi/protocol";
+import { RequestMessage } from "@wired-protocol/types";
 import { ERC721Metadata, getHostFromMetadata } from "contracts";
 import { Engine } from "engine";
 import { providers, Signer } from "ethers";
@@ -51,7 +51,7 @@ export interface IClientContext {
 
   ws: WebSocket | null;
   setWs: Dispatch<SetStateAction<WebSocket | null>>;
-  send: (message: ToHostMessage) => void;
+  send: (message: RequestMessage) => void;
 
   playerId: number | null;
   setPlayerId: Dispatch<SetStateAction<number | null>>;
@@ -156,7 +156,7 @@ export function Client({
   const usedHost = host || spaceHost;
 
   const send = useCallback(
-    (message: ToHostMessage) => {
+    (message: RequestMessage) => {
       if (!ws || ws.readyState !== ws.OPEN) return;
       ws.send(JSON.stringify(message));
     },
@@ -204,7 +204,7 @@ export function Client({
     if (!engine) return;
 
     // Send to host
-    send({ subject: "set_avatar", data: avatar });
+    send({ type: "set_avatar", data: avatar ?? "" });
 
     // Send to engine
     engine.render.send({ subject: "set_user_avatar", data: avatar });

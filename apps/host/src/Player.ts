@@ -1,4 +1,4 @@
-import { FromHostMessage } from "@unavi/protocol";
+import { ResponseMessage } from "@wired-protocol/types";
 import { Consumer } from "mediasoup/node/lib/Consumer";
 import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
@@ -36,7 +36,7 @@ export class Player {
     this.#registry = registry;
   }
 
-  send(message: FromHostMessage) {
+  send(message: ResponseMessage) {
     this.ws?.send(JSON.stringify(message));
   }
 
@@ -115,7 +115,7 @@ export class Player {
 
     this.ws?.subscribe(space.topic);
 
-    this.send({ subject: "join_success", data: { uri, playerId } });
+    this.send({ type: "join_success", data: playerId });
   }
 
   leave(uri: string) {
@@ -158,7 +158,7 @@ export class Player {
 
     try {
       this.producer = await this.producerTransport.produce({ kind: "audio", rtpParameters });
-      this.send({ subject: "producer_id", data: this.producer.id });
+      this.send({ type: "webrtc_producer_id", data: this.producer.id });
     } catch (err) {
       console.warn(err);
     }
@@ -169,7 +169,7 @@ export class Player {
 
     try {
       this.dataProducer = await this.producerTransport.produceData({ sctpStreamParameters });
-      this.send({ subject: "data_producer_id", data: this.dataProducer.id });
+      this.send({ type: "webrtc_data_producer_id", data: this.dataProducer.id });
     } catch (err) {
       console.warn(err);
     }
@@ -194,7 +194,7 @@ export class Player {
       consumers.set(playerId, consumer);
 
       this.send({
-        subject: "create_consumer",
+        type: "webrtc_create_consumer",
         data: {
           playerId,
           consumerId: consumer.id,
@@ -225,10 +225,10 @@ export class Player {
       dataConsumers.set(playerId, dataConsumer);
 
       this.send({
-        subject: "create_data_consumer",
+        type: "webrtc_create_data_consumer",
         data: {
           playerId,
-          consumerId: dataConsumer.id,
+          dataConsumerId: dataConsumer.id,
           dataProducerId: dataProducer.id,
           sctpStreamParameters: dataConsumer.sctpStreamParameters,
         },
@@ -238,10 +238,13 @@ export class Player {
     }
   }
 
-  resumeAudio() {
+  setPaused(value: boolean) {
     this.consumers.forEach((consumers) => {
       consumers.forEach((consumer) => {
-        if (consumer.paused && !consumer.closed) consumer.resume();
+        if (consumer.paused && !consumer.closed) {
+          if (value) consumer.pause();
+          else consumer.resume();
+        }
       });
     });
   }

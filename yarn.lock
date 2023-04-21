@@ -5228,6 +5228,13 @@
     "@webassemblyjs/ast" "1.11.1"
     "@xtuc/long" "4.2.2"
 
+"@wired-protocol/types@^0.0.11":
+  version "0.0.11"
+  resolved "https://registry.yarnpkg.com/@wired-protocol/types/-/types-0.0.11.tgz#501275855683a0d76f5b375e33fdb2bfbc7bc4bf"
+  integrity sha512-EqQCiz3ALbhTsKQ4mxjPVaDIIuVkXFp9mpmmxkORjz3ZfZ/mrOhYjnYoSzYB4BIIz1AArRwZZVx9ZJ7+T+fE/g==
+  dependencies:
+    zod "^3.21.4"
+
 "@xtuc/ieee754@^1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@xtuc/ieee754/-/ieee754-1.2.0.tgz#eef014a3145ae477a1cbc00cd1e552336dceb790"

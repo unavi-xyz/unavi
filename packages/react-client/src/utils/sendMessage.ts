@@ -1,6 +1,6 @@
-import { ToHostMessage } from "@unavi/protocol";
+import { RequestMessage } from "@wired-protocol/types";
 
-export function sendMessage(ws: WebSocket | null, message: ToHostMessage) {
+export function sendMessage(ws: WebSocket | null, message: RequestMessage) {
   if (!ws || ws.readyState !== ws.OPEN) return;
 
   ws.send(JSON.stringify(message));

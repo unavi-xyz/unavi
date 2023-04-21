@@ -1,4 +1,4 @@
-import { MessageSchema, ToHostMessage } from "@unavi/protocol";
+import { RequestMessage, ResponseMessageSchema } from "@wired-protocol/types";
 import { Device } from "mediasoup-client";
 import { useContext, useEffect, useState } from "react";
 
@@ -42,7 +42,7 @@ export function useHost(uri: string | null, host: string | null) {
     const newDevice = new Device();
     setDevice(newDevice);
 
-    const send = (message: ToHostMessage) => {
+    const send = (message: RequestMessage) => {
       if (!newWs || newWs.readyState !== newWs.OPEN) return;
       newWs.send(JSON.stringify(message));
     };
@@ -51,13 +51,13 @@ export function useHost(uri: string | null, host: string | null) {
       console.info("WebSocket - ✅ Connected to host");
 
       // Initiate WebRTC connection
-      send({ subject: "get_router_rtp_capabilities", data: null });
+      send({ type: "webrtc_get_router_rtp_capabilities", data: null });
 
       // Join space
-      send({ subject: "join", data: uri });
+      send({ type: "join", data: uri });
 
       engine.physics.addEventListener("user_grounded", (event) => {
-        send({ subject: "set_grounded", data: event.data });
+        send({ type: "set_grounded", data: event.data });
       });
     };
 
@@ -69,36 +69,42 @@ export function useHost(uri: string | null, host: string | null) {
     };
 
     newWs.onmessage = async (event: MessageEvent<string>) => {
-      const parsed = MessageSchema.fromHost.safeParse(JSON.parse(event.data));
+      const parsed = ResponseMessageSchema.safeParse(JSON.parse(event.data));
 
       if (!parsed.success) {
         console.warn(parsed.error);
         return;
       }
 
-      const { subject, data } = parsed.data;
+      const { type, data } = parsed.data;
 
-      switch (subject) {
+      switch (type) {
         case "join_success": {
-          console.info(`🌏 Joined space as player ${toHex(data.playerId)}`);
+          console.info(`🌏 Joined space as player ${toHex(data)}`);
 
           setIsConnected(true);
-          setPlayerId(data.playerId);
+          setPlayerId(data);
           break;
         }
 
-        case "router_rtp_capabilities": {
+        case "webrtc_rtp_capabilities": {
           if (newDevice.loaded) break;
 
           // Create device
           await newDevice.load({ routerRtpCapabilities: data });
 
           // Create transports
-          send({ subject: "create_transport", data: { type: "producer" } });
-          send({ subject: "create_transport", data: { type: "consumer" } });
+          send({ type: "webrtc_create_transport", data: "producer" });
+          send({ type: "webrtc_create_transport", data: "consumer" });
 
           // Set rtp capabilities
-          send({ subject: "set_rtp_capabilities", data: newDevice.rtpCapabilities });
+          send({
+            type: "set_rtp_capabilities",
+            data: {
+              codecs: newDevice.rtpCapabilities.codecs ?? [],
+              headerExtensions: newDevice.rtpCapabilities.headerExtensions ?? [],
+            },
+          });
           break;
         }
       }

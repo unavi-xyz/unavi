@@ -1,4 +1,4 @@
-import { FromHostMessage } from "@unavi/protocol";
+import { ResponseMessage } from "@wired-protocol/types";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
 import { Producer } from "mediasoup/node/lib/Producer";
 
@@ -56,8 +56,13 @@ export class Space {
     this.players.set(playerId, player);
 
     this.#publish({
-      subject: "player_joined",
-      data: { playerId, name: player.name, address: player.address, avatar: player.avatar },
+      type: "player_join",
+      data: {
+        playerId,
+        name: player.name || undefined,
+        avatar: player.avatar || undefined,
+        address: player.address || undefined,
+      },
     });
 
     // Tell new player about current players
@@ -65,13 +70,12 @@ export class Space {
       if (otherPlayer === player) return;
 
       player.send({
-        subject: "player_joined",
+        type: "player_join",
         data: {
           playerId: otherPlayerId,
-          name: otherPlayer.name,
-          address: otherPlayer.address,
-          avatar: otherPlayer.avatar,
-          beforeYou: true,
+          name: otherPlayer.name || undefined,
+          avatar: otherPlayer.avatar || undefined,
+          address: otherPlayer.address || undefined,
         },
       });
 
@@ -110,46 +114,52 @@ export class Space {
 
     this.players.delete(playerId);
 
-    this.#publish({ subject: "player_left", data: { playerId } });
+    this.#publish({ type: "player_leave", data: playerId });
 
     console.info(`👋 Player ${toHex(playerId)} left space ${this.uri}.`);
 
     if (this.playerCount === 0) this.#registry.removeSpace(this.uri);
   }
 
-  chat(player: Player, text: string) {
+  chat(player: Player, message: string) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ subject: "player_chat", data: { playerId, text, timestamp: Date.now() } });
+    this.#publish({ type: "chat_message", data: { playerId, message } });
   }
 
   setGrounded(player: Player, grounded: boolean) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ subject: "player_grounded", data: { playerId, grounded } });
+    this.#publish({ type: "player_grounded", data: { playerId, grounded } });
   }
 
   setName(player: Player, name: string | null) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ subject: "player_name", data: { playerId, name } });
+    this.#publish({
+      type: "player_name",
+      data: { playerId, name: name },
+    });
   }
 
   setAddress(player: Player, address: string | null) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ subject: "player_address", data: { playerId, address } });
+    this.#publish({ type: "player_address", data: { playerId, address } });
   }
 
   setAvatar(player: Player, avatar: string | null) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ subject: "player_avatar", data: { playerId, avatar } });
+    this.#publish({
+      type: "player_avatar",
+      data: { playerId, avatar: avatar },
+    });
   }
 
   setProducer(player: Player, producer: Producer) {
@@ -174,7 +184,7 @@ export class Space {
     });
   }
 
-  #publish(message: FromHostMessage) {
+  #publish(message: ResponseMessage) {
     this.#registry.server.publish(this.topic, JSON.stringify(message));
   }
 }

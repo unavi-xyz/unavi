@@ -1,0 +1,13 @@
+diff --git a/src/node.js b/src/node.js
+index 79bc085cb0230c69aaeb76bbc1374f43ab6414f4..109768a86dc1a5b2b82b9b9acfa06606c30482df 100644
+--- a/src/node.js
++++ b/src/node.js
+@@ -29,7 +29,7 @@ exports.colors = [6, 2, 3, 4, 5, 1];
+ try {
+ 	// Optional dependency (as in, doesn't need to be installed, NOT like optionalDependencies in package.json)
+ 	// eslint-disable-next-line import/no-extraneous-dependencies
+-	const supportsColor = require('supports-color');
++	const supportsColor = undefined
+ 
+ 	if (supportsColor && (supportsColor.stderr || supportsColor).level >= 2) {
+ 		exports.colors = [

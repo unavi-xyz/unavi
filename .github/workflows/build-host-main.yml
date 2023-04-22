@@ -67,5 +67,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Call deploy workflow
-        uses: ./.github/workflows/deploy-host-main.yml
+      - name: SSH remote commands
+        if: ${{ github.event_name == 'push' }}
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.HOST_HOST }}
+          username: ${{ secrets.HOST_USERNAME }}
+          key: ${{ secrets.HOST_KEY }}
+          script: sh /home/deploy.sh

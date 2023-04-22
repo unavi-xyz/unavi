@@ -9,17 +9,17 @@ import Spaces from "./Spaces";
 
 export const revalidate = 60;
 
-const TITLE = "Explore";
+const title = "Explore";
 
 export const metadata: Metadata = {
-  title: TITLE,
+  title,
   openGraph: {
     ...baseMetadata.openGraph,
-    title: TITLE,
+    title,
   },
   twitter: {
     ...baseMetadata.twitter,
-    title: TITLE,
+    title,
   },
 };
 

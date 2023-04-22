@@ -9,7 +9,7 @@ export const expiresIn = 600; // 10 minutes
 
 export const PROFILE_FILE = {
   IMAGE: "image",
-  COVER: "cover",
+  BACKGROUND: "background",
   METADATA: "metadata",
 } as const;
 
@@ -47,7 +47,7 @@ export function getContentType(type: ProfileFile) {
       return "image/jpeg";
     }
 
-    case PROFILE_FILE.COVER: {
+    case PROFILE_FILE.BACKGROUND: {
       return "image/jpeg";
     }
 

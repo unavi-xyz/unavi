@@ -23,8 +23,8 @@ interface Props {
 
 export default function Metadata({ profile }: Props) {
   const [bio, setBio] = useState(profile?.metadata?.bio ?? "");
-  const [profilePicture, setProfilePicture] = useState(profile?.metadata?.image ?? "");
-  const [coverImage, setCoverImage] = useState(profile?.metadata?.background ?? "");
+  const [image, setImage] = useState(profile?.metadata?.image ?? "");
+  const [background, setBackground] = useState(profile?.metadata?.background ?? "");
   const [saving, setSaving] = useState(false);
 
   const { data: signer } = useSigner();
@@ -40,6 +40,60 @@ export default function Metadata({ profile }: Props) {
       return;
     }
 
+    async function uploadImage() {
+      if (!profile) throw new Error("No profile found");
+
+      // Upload image to S3 if it's a new one
+      if (image.startsWith("blob:")) {
+        const uploadURL = await getProfileFileUpload(profile.id, "image");
+
+        const body = await fetch(image).then((res) => res.blob());
+
+        const imageResponse = await fetch(uploadURL, {
+          method: "PUT",
+          body,
+          headers: {
+            "Content-Type": "image/png",
+            "x-amz-acl": "public-read",
+          },
+        });
+
+        if (!imageResponse.ok) throw new Error("Failed to upload image");
+
+        return cdnURL(S3Path.profile(profile.id).image);
+      } else {
+        return image;
+      }
+    }
+
+    async function uploadBackground() {
+      if (!profile) throw new Error("No profile found");
+
+      // Upload background to S3 if it's a new one
+      if (background.startsWith("blob:")) {
+        const uploadURL = await getProfileFileUpload(profile.id, "background");
+
+        const body = await fetch(background).then((res) => res.blob());
+
+        const imageResponse = await fetch(uploadURL, {
+          method: "PUT",
+          body,
+          headers: {
+            "Content-Type": "image/png",
+            "x-amz-acl": "public-read",
+          },
+        });
+
+        if (!imageResponse.ok) throw new Error("Failed to upload background");
+
+        return cdnURL(S3Path.profile(profile.id).background);
+      } else {
+        return background;
+      }
+    }
+
+    const [imageURL, backgroundURL] = await Promise.all([uploadImage(), uploadBackground()]);
+
     async function saveMetadata() {
       if (!profile) throw new Error("No profile found");
       if (!signer) throw new Error("No signer found");
@@ -49,55 +103,14 @@ export default function Metadata({ profile }: Props) {
       // We only need ProfileMetadata for The Wired
       // But also support ERC721Metadata for OpenSea
       const metadata: ERC721Metadata & ProfileMetadata = {
-        background: coverImage,
-        animation_url: coverImage,
+        name: profile.handle?.string,
         bio,
+        image: imageURL,
+        background: backgroundURL,
+        animation_url: backgroundURL,
         description: bio,
         external_url: `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${hexId}`,
-        image: profilePicture,
-        name: profile.handle?.string,
       };
-
-      // Upload profile picture to S3 if it's a new one
-      if (profilePicture.startsWith("blob:")) {
-        const imageUrl = await getProfileFileUpload(profile.id, "image");
-
-        const body = await fetch(profilePicture).then((res) => res.blob());
-
-        const imageResponse = await fetch(imageUrl, {
-          method: "PUT",
-          body,
-          headers: {
-            "Content-Type": "image/png",
-            "x-amz-acl": "public-read",
-          },
-        });
-
-        if (!imageResponse.ok) throw new Error("Failed to upload profile picture");
-
-        metadata.image = cdnURL(S3Path.profile(profile.id).image);
-      }
-
-      // Upload cover image to S3 if it's a new one
-      const isCoverBlob = coverImage.startsWith("blob:");
-      if (isCoverBlob) {
-        const coverImageUrl = await getProfileFileUpload(profile.id, "cover");
-
-        const coverBody = await fetch(coverImage).then((res) => res.blob());
-
-        const coverImageResponse = await fetch(coverImageUrl, {
-          method: "PUT",
-          body: coverBody,
-          headers: {
-            "Content-Type": "image/png",
-            "x-amz-acl": "public-read",
-          },
-        });
-
-        if (!coverImageResponse.ok) throw new Error("Failed to upload cover image");
-
-        metadata.animation_url = cdnURL(S3Path.profile(profile.id).cover);
-      }
 
       // Upload metadata to S3
       const url = await getProfileFileUpload(profile.id, "metadata");
@@ -152,7 +165,7 @@ export default function Metadata({ profile }: Props) {
 
           <ImageInput
             name="Profile Picture"
-            src={profilePicture}
+            src={image}
             disabled={saving}
             onChange={async (e) => {
               if (!e.target.files) return;
@@ -166,14 +179,14 @@ export default function Metadata({ profile }: Props) {
               const croppedFile = await cropImage(url, 1);
               const croppedUrl = URL.createObjectURL(croppedFile);
 
-              setProfilePicture(croppedUrl);
+              setImage(croppedUrl);
             }}
             className="h-48 w-48 rounded-full object-cover"
           />
 
           <ImageInput
-            name="Cover Picture"
-            src={coverImage}
+            name="Background"
+            src={background}
             disabled={saving}
             onChange={async (e) => {
               if (!e.target.files) return;
@@ -187,7 +200,7 @@ export default function Metadata({ profile }: Props) {
               const croppedFile = await cropImage(url, 4);
               const croppedUrl = URL.createObjectURL(croppedFile);
 
-              setCoverImage(croppedUrl);
+              setBackground(croppedUrl);
             }}
             className="h-40 w-full rounded-xl object-cover"
           />

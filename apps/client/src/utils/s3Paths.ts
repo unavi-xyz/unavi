@@ -11,7 +11,7 @@ export class S3Path {
   static profile = (profileId: number) => {
     const hexId = toHex(profileId);
     return {
-      cover: `profiles/${hexId}/cover.jpg`,
+      background: `profiles/${hexId}/background.jpg`,
       image: `profiles/${hexId}/image.jpg`,
       metadata: `profiles/${hexId}/metadata.json`,
     } as const;

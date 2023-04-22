@@ -30,10 +30,6 @@ COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install
 
-# Apply patches
-COPY patches patches
-RUN pnpm patch-package
-
 # Build the project
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json

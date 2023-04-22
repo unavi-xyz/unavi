@@ -33,7 +33,7 @@ COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
 RUN pnpm turbo build --filter=host...
 
-FROM node:18-alpine AS runner
+FROM node:18 AS runner
 WORKDIR /app
 
 # Don't run production as root

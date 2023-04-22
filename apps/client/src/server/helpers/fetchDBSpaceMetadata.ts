@@ -16,12 +16,10 @@ export const fetchDBSpaceMetadata = cache(async (id: string): Promise<DBSpaceMet
 
     const modelURI = cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).model);
     const metadata = await fetchWorldMetadata(modelURI);
-    if (!metadata) throw new Error("Invalid space metadata");
 
-    return {
-      ...metadata,
-      tokenId: space.tokenId,
-    };
+    if (!metadata) return { tokenId: space.tokenId, model: "" };
+
+    return { ...metadata, tokenId: space.tokenId };
   } catch {
     return null;
   }

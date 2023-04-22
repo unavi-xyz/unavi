@@ -15,9 +15,10 @@ import { SpaceUriId } from "./types";
 interface Props {
   id: SpaceUriId;
   metadata: WorldMetadata;
+  uri: string;
 }
 
-export default function App({ id, metadata }: Props) {
+export default function App({ id, metadata, uri }: Props) {
   const [scriptsReady, setScriptsReady] = useState(false);
 
   const provider = useProvider();
@@ -37,7 +38,7 @@ export default function App({ id, metadata }: Props) {
       <div className="fixed h-screen w-screen">
         {scriptsReady && (
           <Client
-            uri={metadata.model}
+            uri={uri}
             host={host}
             animations="/models"
             defaultAvatar="/models/Robot.vrm"

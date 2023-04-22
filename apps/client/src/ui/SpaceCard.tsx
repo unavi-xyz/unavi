@@ -23,7 +23,7 @@ export default function SpaceCard({ id, metadata, tokenId, sizes }: Props) {
     <div>
       <div className="group relative">
         <Link
-          href={id.type === "id" ? `/space/${id.value}` : `/space/${toHex(id.value)}`}
+          href={id.type === "tokenId" ? `/space/${toHex(id.value)}` : `/space/${id.value}`}
           className="rounded-3xl"
         >
           <CardImage group image={metadata.info?.image} sizes={sizes}>
@@ -35,7 +35,9 @@ export default function SpaceCard({ id, metadata, tokenId, sizes }: Props) {
 
         <div className="absolute bottom-0 left-0 z-20 hidden animate-fadeIn pb-4 pl-3 group-hover:block">
           <Link
-            href={id.type === "id" ? `/play?id=${id.value}` : `/play?tokenId=${toHex(id.value)}`}
+            href={
+              id.type === "tokenId" ? `/play?tokenId=${toHex(id.value)}` : `/play?id=${id.value}`
+            }
             className="rounded-xl bg-white px-4 py-1.5 text-xl font-bold shadow transition hover:bg-neutral-200 hover:shadow-md active:bg-neutral-300"
           >
             Play

@@ -62,10 +62,10 @@ async function fetchDatabaseSpaces(limit: number, owner?: string) {
         if (!space.SpaceModel) return;
 
         const uri = cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).metadata);
-        const metadata = await fetchWorldMetadata(uri);
-        if (!metadata) return;
+        const world = await fetchWorldMetadata(uri);
+        if (!world) return;
 
-        validSpaces.push({ id: { type: "id", value: space.publicId }, metadata });
+        validSpaces.push({ id: { type: "id", value: space.publicId }, metadata: world.metadata });
       })
     );
 

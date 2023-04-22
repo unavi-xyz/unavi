@@ -20,10 +20,10 @@ export async function validateSpaceNFT(
     const erc721metadata = await fetchNFTSpaceTokenMetadata(tokenId);
     if (!erc721metadata?.animation_url) throw new Error("Invalid nft metadata");
 
-    const metadata = await fetchWorldMetadata(erc721metadata.animation_url);
-    if (!metadata) throw new Error("Invalid space metadata");
+    const world = await fetchWorldMetadata(erc721metadata.animation_url);
+    if (!world) throw new Error("Invalid world metadata");
 
-    return { id: { type: "tokenId", value: tokenId }, metadata };
+    return { id: { type: "tokenId", value: tokenId }, metadata: world.metadata };
   } catch {
     return null;
   }

@@ -6,8 +6,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { env } from "@/src/env.mjs";
-import { fetchDBSpaceMetadata } from "@/src/server/helpers/fetchDBSpaceMetadata";
-import { fetchNFTSpaceMetadata } from "@/src/server/helpers/fetchNFTSpaceMetadata";
+import { fetchDBSpaceURI } from "@/src/server/helpers/fetchDBSpaceURI";
 import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
@@ -24,8 +23,10 @@ export const revalidate = 60;
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = parseSpaceId(params.id);
 
-  const metadata = await fetchSpaceMetadata(id);
-  if (!metadata) return {};
+  const space = await fetchSpaceMetadata(id);
+  if (!space) return {};
+
+  const metadata = space.metadata;
 
   const value = id.value;
   const displayId = typeof value === "number" ? toHex(value) : value.slice(0, 6);
@@ -64,20 +65,21 @@ interface Props {
 export default async function Space({ params }: Props) {
   const id = parseSpaceId(params.id);
 
-  let metadata;
+  // Don't allow uri spaces
+  if (id.type === "uri") notFound();
 
-  if (id.type === "tokenId") {
-    metadata = await fetchNFTSpaceMetadata(id.value);
-  } else {
-    metadata = await fetchDBSpaceMetadata(id.value);
-
-    // If space has a token, redirect to the token page
-    if (metadata && metadata.tokenId !== null) redirect(`/space/${toHex(metadata.tokenId)}`);
+  // If db space has a token, redirect to the token page
+  if (id.type === "id") {
+    const res = await fetchDBSpaceURI(id.value);
+    if (res && res.tokenId !== null) redirect(`/space/${toHex(res.tokenId)}`);
   }
 
-  if (!metadata) notFound();
+  const space = await fetchSpaceMetadata(id);
+  if (!space) notFound();
 
-  // Fetch creator profile
+  const metadata = space.metadata;
+
+  // Fetch author profiles
   const authors = metadata.info?.authors;
 
   const profiles = authors

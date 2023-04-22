@@ -6,18 +6,18 @@ import { fetchWorldMetadata } from "./fetchWorldMetadata";
 
 export const fetchPlayerCount = cache(async (uri: string, host?: string) => {
   try {
-    let spaceHost = host;
+    let worldHost = host;
 
-    if (!spaceHost) {
-      const metadata = await fetchWorldMetadata(uri);
-      if (!metadata) throw new Error("Failed to read space metadata");
+    if (!worldHost) {
+      const world = await fetchWorldMetadata(uri);
+      if (!world) throw new Error("Failed to read world metadata");
 
-      spaceHost = metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST;
+      worldHost = world.metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST;
     }
 
-    const http = spaceHost.startsWith("localhost") ? "http" : "https";
+    const http = worldHost.startsWith("localhost") ? "http" : "https";
 
-    const res = await fetch(`${http}://${spaceHost}/player-count/${uri}`, {
+    const res = await fetch(`${http}://${worldHost}/player-count/${uri}`, {
       cache: "no-store",
     });
     if (!res.ok) throw new Error("Failed to fetch player count");

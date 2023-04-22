@@ -22,7 +22,7 @@ export const fetchProject = cache(async (id: string): Promise<Project | null> =>
 
     return {
       id: project.publicId,
-      title: project.title || project.name,
+      title: project.title,
       description: project.description,
       spaceId: project.Space ? project.Space.publicId : null,
       owner: project.owner,

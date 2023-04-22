@@ -28,8 +28,9 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
 
     this.engine = engine;
 
-    // If canvas is an OffscreenCanvas, render in a web worker
-    if (engine.canvas instanceof OffscreenCanvas) {
+    // If using OffscreenCanvas, render in a web worker
+    // Otherwise, render in the main thread
+    if (engine.useOffscreenCanvas) {
       this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
         type: "module",
         name: "render",

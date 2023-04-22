@@ -36,12 +36,9 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   if (!metadata) return {};
 
-  const title =
-    metadata.info?.name || id.type === "id"
-      ? `Space ${id.value}`
-      : id.type === "tokenId"
-      ? `Space ${toHex(id.value)}`
-      : id.value;
+  const value = id.value;
+  const displayId = typeof value === "number" ? toHex(value) : value;
+  const title = metadata.info?.name || `Space ${displayId}`;
 
   const description = metadata.info?.description || "";
 

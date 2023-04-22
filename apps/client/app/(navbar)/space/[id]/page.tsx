@@ -27,8 +27,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const metadata = await fetchSpaceMetadata(id);
   if (!metadata) return {};
 
-  const title =
-    metadata.info?.name || id.type === "id" ? `Space ${id.value}` : `Space ${toHex(id.value)}`;
+  const value = id.value;
+  const displayId = typeof value === "number" ? toHex(value) : value.slice(0, 6);
+  const title = metadata.info?.name || `Space ${displayId}`;
 
   const description = metadata.info?.description || "";
 

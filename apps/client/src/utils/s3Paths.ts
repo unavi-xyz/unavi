@@ -50,8 +50,8 @@ type PublicPath =
 export function cdnURL(path: PublicPath) {
   // Use http on localhost
   const http =
-    env.NEXT_PUBLIC_CDN_ENDPOINT.startsWith("localhost") ||
-    env.NEXT_PUBLIC_CDN_ENDPOINT.startsWith("127.0.0.1")
+    env.NEXT_PUBLIC_CDN_ENDPOINT?.startsWith("localhost") ||
+    env.NEXT_PUBLIC_CDN_ENDPOINT?.startsWith("127.0.0.1")
       ? "http"
       : "https";
 

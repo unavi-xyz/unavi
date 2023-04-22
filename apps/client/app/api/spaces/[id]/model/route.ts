@@ -34,12 +34,14 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     await Promise.all([
       // Remove objects from S3
-      s3Client.send(
-        new DeleteObjectsCommand({
-          Bucket: env.S3_BUCKET,
-          Delete: { Objects: allObjects.map((obj) => ({ Key: obj.Key })) },
-        })
-      ),
+      allObjects.length > 0
+        ? s3Client.send(
+            new DeleteObjectsCommand({
+              Bucket: env.S3_BUCKET,
+              Delete: { Objects: allObjects.map((obj) => ({ Key: obj.Key })) },
+            })
+          )
+        : null,
 
       // Remove from database
       prisma.spaceModel.delete({ where: { id: found.SpaceModel.id } }),

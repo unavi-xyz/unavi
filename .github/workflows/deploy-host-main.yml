@@ -1,11 +1,11 @@
 name: Deploy Host
 
 on:
-  registry_package:
-    types: [published]
+  workflow_dispatch:
+  workflow_call:
 
 jobs:
-  deploy-host:
+  deploy:
     name: Deploy
     runs-on: ubuntu-latest
     steps:

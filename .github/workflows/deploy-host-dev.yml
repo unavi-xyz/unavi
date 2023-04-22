@@ -1,9 +1,11 @@
-name: Deploy Host Dev
+name: Deploy Host (dev)
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  workflow_call:
 
 jobs:
-  deploy-host-dev:
+  deploy:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
@@ -13,5 +15,4 @@ jobs:
           host: ${{ secrets.DEVHOST_HOST }}
           username: ${{ secrets.DEVHOST_USERNAME }}
           key: ${{ secrets.DEVHOST_KEY }}
-          command_timeout: 30m
           script: sh /home/deploy.sh

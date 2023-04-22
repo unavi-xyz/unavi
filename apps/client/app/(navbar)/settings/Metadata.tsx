@@ -22,9 +22,9 @@ interface Props {
 }
 
 export default function Metadata({ profile }: Props) {
-  const [bio, setBio] = useState(profile?.metadata?.bio ?? "");
-  const [image, setImage] = useState(profile?.metadata?.image ?? "");
-  const [background, setBackground] = useState(profile?.metadata?.background ?? "");
+  const [bio, setBio] = useState<string | undefined>(profile?.metadata?.bio);
+  const [image, setImage] = useState<string | undefined>(profile?.metadata?.image);
+  const [background, setBackground] = useState<string | undefined>(profile?.metadata?.background);
   const [saving, setSaving] = useState(false);
 
   const { data: signer } = useSigner();
@@ -44,7 +44,7 @@ export default function Metadata({ profile }: Props) {
       if (!profile) throw new Error("No profile found");
 
       // Upload image to S3 if it's a new one
-      if (image.startsWith("blob:")) {
+      if (image?.startsWith("blob:")) {
         const uploadURL = await getProfileFileUpload(profile.id, "image");
 
         const body = await fetch(image).then((res) => res.blob());
@@ -70,7 +70,7 @@ export default function Metadata({ profile }: Props) {
       if (!profile) throw new Error("No profile found");
 
       // Upload background to S3 if it's a new one
-      if (background.startsWith("blob:")) {
+      if (background?.startsWith("blob:")) {
         const uploadURL = await getProfileFileUpload(profile.id, "background");
 
         const body = await fetch(background).then((res) => res.blob());
@@ -105,10 +105,10 @@ export default function Metadata({ profile }: Props) {
       const metadata: ERC721Metadata & ProfileMetadata = {
         name: profile.handle?.string,
         bio,
+        description: bio,
         image: imageURL,
         background: backgroundURL,
         animation_url: backgroundURL,
-        description: bio,
         external_url: `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${hexId}`,
       };
 

@@ -1,13 +1,20 @@
-FROM node:18 AS builder
+FROM node:18-alpine AS builder
 WORKDIR /app
 
+# Install global dependencies
+RUN npm i -g npm@latest; \
+ npm install -g pnpm turbo
+
 # Prune files
-RUN pnpm global add turbo
 COPY . .
-RUN turbo prune --scope=host --docker
+RUN pnpm turbo prune --scope=host --docker
 
 FROM node:18 AS installer
 WORKDIR /app
+
+# Install global dependencies
+RUN npm i -g npm@latest; \
+ npm install -g pnpm turbo
 
 # Install mediasoup dependencies
 RUN \
@@ -26,7 +33,7 @@ COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
 RUN pnpm turbo build --filter=host...
 
-FROM node:18 AS runner
+FROM node:18-alpine AS runner
 WORKDIR /app
 
 # Don't run production as root

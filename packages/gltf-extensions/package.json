@@ -12,7 +12,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --onSuccess \"tsc --emitDeclarationOnly\"",
-    "dev": "pnpm build -- --watch",
+    "dev": "pnpm build --watch",
     "lint": "cd ../.. && eslint --fix packages/gltf-extensions --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {

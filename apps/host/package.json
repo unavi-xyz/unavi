@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsup src/server.ts --format esm --dts",
-    "dev": "nodemon --watch src --ext ts --exec pnpm run build",
+    "dev": "nodemon --watch src --ext ts --exec pnpm build",
     "docker:build": "pnpm docker:clean || cd ../.. && docker build -t unavi-host -f apps/host/Dockerfile .",
     "docker:clean": "pnpm docker:stop || docker rmi unavi-host",
     "docker:start": "pnpm docker:stop || docker run --rm -e RTC_MIN_PORT=20000 -e RTC_MAX_PORT=20020 -e MEDIASOUP_ANNOUNCED_IP=127.0.0.1 -p 4000:4000 -p 20000-20020:20000-20020/tcp -p 20000-20020:20000-20020/udp --name wired-host unavi-host",
@@ -23,7 +23,6 @@
   },
   "devDependencies": {
     "@types/node": "^18.15.13",
-    "concurrently": "^8.0.1",
     "eslint": "^8.38.0",
     "eslint-config-custom": "workspace:*",
     "nodemon": "^2.0.22",

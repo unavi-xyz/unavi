@@ -3,7 +3,7 @@ import { WorldMetadata } from "@wired-protocol/types";
 import { SpaceDBId, SpaceNFTId } from "@/src/utils/parseSpaceId";
 
 import { fetchNFTSpaceOwner } from "./fetchNFTSpaceOwner";
-import { fetchNFTSpaceTokenMetadata } from "./fetchNFTSpaceTokenMetadata";
+import { fetchNFTSpaceURI } from "./fetchNFTSpaceURI";
 import { fetchWorldMetadata } from "./fetchWorldMetadata";
 
 export async function validateSpaceNFT(
@@ -17,10 +17,10 @@ export async function validateSpaceNFT(
       if (spaceOwner !== owner) throw new Error("Space not owned by owner");
     }
 
-    const erc721metadata = await fetchNFTSpaceTokenMetadata(tokenId);
-    if (!erc721metadata?.animation_url) throw new Error("Invalid nft metadata");
+    const uri = await fetchNFTSpaceURI(tokenId);
+    if (!uri) throw new Error("No space URI");
 
-    const world = await fetchWorldMetadata(erc721metadata.animation_url);
+    const world = await fetchWorldMetadata(uri);
     if (!world) throw new Error("Invalid world metadata");
 
     return { id: { type: "tokenId", value: tokenId }, metadata: world.metadata };

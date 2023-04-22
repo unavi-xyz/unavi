@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@changesets/cli": "^2.26.1",
-    "@wired-protocol/types": "^0.0.14"
+    "@wired-protocol/types": "^0.0.15"
   },
   "devDependencies": {
     "dotenv-cli": "^7.2.1",
